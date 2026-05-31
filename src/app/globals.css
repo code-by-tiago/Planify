@@ -1660,3 +1660,76 @@ body h3 {
 
 /* PLANIFY_CONVERSION_LANDING_9_20_11_END */
 
+/* PLANIFY_PLANNING_SMART_FIX_9_21_1_START */
+
+/*
+  Planify 9.21.1 — Ajuste pos-deploy dos campos inteligentes de Planejamentos
+
+  Corrige:
+  - Listagem completa ao clicar no campo
+  - Componente curricular compativel com etapa/area
+  - Lingua Espanhola no Ensino Medio
+  - Campo Conteudos sem menu indevido
+  - Filtro visual de habilidades BNCC repetidas/excessivas
+*/
+
+.planify-smart-field {
+  cursor: pointer;
+}
+
+.planify-smart-field-menu {
+  position: absolute;
+  z-index: 99999;
+  display: none;
+  max-height: 310px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.99);
+  box-shadow: 0 22px 60px rgba(15, 23, 42, 0.16);
+  padding: 8px;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.planify-smart-field-menu.is-open {
+  display: grid;
+  gap: 4px;
+}
+
+.planify-smart-field-menu__option {
+  width: 100%;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: #101828;
+  cursor: pointer;
+  font-size: 0.92rem;
+  font-weight: 760;
+  line-height: 1.25;
+  padding: 0.76rem 0.86rem;
+  text-align: left;
+}
+
+.planify-smart-field-menu__option:hover,
+.planify-smart-field-menu__option:focus {
+  background: #eef2ff;
+  color: #4f46e5;
+  outline: none;
+}
+
+.planify-bncc-filter-notice {
+  border: 1px solid rgba(79, 70, 229, 0.16);
+  border-radius: 16px;
+  background: linear-gradient(135deg, #eef2ff, #ecfeff);
+  color: #344054;
+  font-size: 0.88rem;
+  font-weight: 850;
+  line-height: 1.45;
+  margin-bottom: 0.85rem;
+  padding: 0.82rem 0.95rem;
+}
+
+/* PLANIFY_PLANNING_SMART_FIX_9_21_1_END */
+

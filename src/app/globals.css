@@ -1,26 +1,1662 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: dark;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+* {
+  box-sizing: border-box;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
+  background: #020617;
+  color: #f8fafc;
 }
+
+a {
+  text-decoration: none;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+::selection {
+  background: rgba(34, 211, 238, 0.28);
+  color: #ffffff;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #020617;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.35);
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(34, 211, 238, 0.45);
+}
+
+/* PLANIFY_LANDING_VIDEO_9_20_6_START */
+
+/*
+  Planify 9.20.6 — Landing premium com hero vídeo
+
+  Escopo:
+  - Nova home visual de alto nível
+  - Hero com área de vídeo pedagógico/fallback animado
+  - Visual limpo, claro e profissional
+  - Não altera APIs, banco, DOCX, Stripe, Admin, Biblioteca, Marketplace,
+    Editor funcional, Premium Gate ou rotas internas
+*/
+
+:root {
+  --pl-page: #fbfcff;
+  --pl-soft: #f5f7ff;
+  --pl-card: #ffffff;
+  --pl-card-soft: #f8fafc;
+  --pl-text: #101828;
+  --pl-muted: #667085;
+  --pl-line: rgba(15, 23, 42, 0.10);
+  --pl-indigo: #4f46e5;
+  --pl-blue: #2563eb;
+  --pl-cyan: #0891b2;
+  --pl-teal: #0d9488;
+  --pl-purple: #7c3aed;
+  --pl-shadow: 0 28px 80px rgba(15, 23, 42, 0.10);
+  --pl-shadow-soft: 0 16px 42px rgba(15, 23, 42, 0.08);
+}
+
+html,
+body {
+  background:
+    radial-gradient(circle at 8% 5%, rgba(124, 58, 237, 0.12), transparent 28rem),
+    radial-gradient(circle at 92% 8%, rgba(8, 145, 178, 0.14), transparent 30rem),
+    linear-gradient(180deg, #ffffff 0%, var(--pl-soft) 52%, #ffffff 100%) !important;
+  color: var(--pl-text) !important;
+}
+
+/* Mantém páginas internas mais claras sem mexer em lógica */
+body [class*="bg-slate-950"],
+body [class*="bg-slate-900"],
+body [class*="bg-slate-800"],
+body [class*="bg-black"] {
+  background-color: rgba(255,255,255,0.94) !important;
+  color: var(--pl-text) !important;
+}
+
+body [class*="text-white"] {
+  color: var(--pl-text) !important;
+}
+
+body [class*="text-slate-100"],
+body [class*="text-slate-200"],
+body [class*="text-slate-300"] {
+  color: #344054 !important;
+}
+
+body [class*="text-slate-400"],
+body [class*="text-slate-500"] {
+  color: var(--pl-muted) !important;
+}
+
+body [class*="border-white/"],
+body [class*="border-slate-"],
+body [class*="border-cyan-300/"] {
+  border-color: var(--pl-line) !important;
+}
+
+body input,
+body textarea,
+body select {
+  background: #ffffff !important;
+  color: var(--pl-text) !important;
+  border-color: var(--pl-line) !important;
+}
+
+/* Logo */
+.planify-brand-logo {
+  min-width: fit-content;
+  color: var(--pl-text);
+}
+
+.planify-brand-logo__icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 16px;
+  flex: 0 0 auto;
+}
+
+.planify-brand-logo__text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.05;
+}
+
+.planify-brand-logo__name {
+  color: var(--pl-text);
+  font-size: 1.35rem;
+  font-weight: 950;
+  letter-spacing: -0.045em;
+}
+
+.planify-brand-logo__tagline {
+  margin-top: 0.25rem;
+  color: var(--pl-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+/* Landing */
+.planify-landing {
+  min-height: 100vh;
+  color: var(--pl-text);
+  overflow-x: hidden;
+}
+
+.planify-public-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 1rem clamp(1rem, 4vw, 3rem);
+  background: rgba(255, 255, 255, 0.88);
+  border-bottom: 1px solid var(--pl-line);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+}
+
+.planify-header-brand {
+  display: inline-flex;
+  width: fit-content;
+  text-decoration: none;
+}
+
+.planify-header-nav,
+.planify-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.planify-header-nav {
+  justify-content: center;
+  border: 1px solid var(--pl-line);
+  border-radius: 999px;
+  background: rgba(255,255,255,0.72);
+  padding: 0.35rem;
+}
+
+.planify-header-nav a,
+.planify-header-actions a {
+  text-decoration: none;
+}
+
+.planify-header-nav a {
+  color: #344054;
+  font-size: 0.94rem;
+  font-weight: 750;
+  padding: 0.75rem 1rem;
+  border-radius: 999px;
+}
+
+.planify-header-nav a:hover {
+  background: #f2f4f7;
+  color: var(--pl-indigo);
+}
+
+.planify-header-actions {
+  justify-content: flex-end;
+}
+
+/* Botões */
+.planify-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  min-height: 44px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  padding: 0.75rem 1.15rem;
+  font-weight: 850;
+  text-decoration: none;
+  transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease;
+}
+
+.planify-btn:hover {
+  transform: translateY(-1px);
+}
+
+.planify-btn--large {
+  min-height: 54px;
+  padding: 0.9rem 1.45rem;
+  font-size: 1rem;
+}
+
+.planify-btn--primary {
+  background: linear-gradient(135deg, var(--pl-indigo), var(--pl-blue));
+  color: #ffffff !important;
+  box-shadow: 0 18px 40px rgba(37, 99, 235, 0.22);
+}
+
+.planify-btn--primary:hover {
+  box-shadow: 0 22px 50px rgba(37, 99, 235, 0.28);
+}
+
+.planify-btn--secondary,
+.planify-btn--ghost {
+  background: #ffffff;
+  color: var(--pl-text) !important;
+  border-color: var(--pl-line);
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
+}
+
+/* Hero */
+.planify-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.02fr) minmax(420px, 0.98fr);
+  gap: clamp(2rem, 4vw, 4rem);
+  align-items: center;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: clamp(3rem, 7vw, 6.5rem) clamp(1rem, 4vw, 3rem) 3.5rem;
+}
+
+.planify-hero__content h1 {
+  max-width: 760px;
+  margin: 1.2rem 0 1.25rem;
+  font-size: clamp(3.2rem, 7.2vw, 6.2rem);
+  line-height: 0.92;
+  letter-spacing: -0.075em;
+  font-weight: 980;
+  color: #101828;
+}
+
+.planify-hero__lead {
+  max-width: 660px;
+  color: #475467;
+  font-size: clamp(1.05rem, 2vw, 1.32rem);
+  line-height: 1.65;
+  letter-spacing: -0.02em;
+}
+
+.planify-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  border: 1px solid rgba(79, 70, 229, 0.16);
+  background: rgba(255,255,255,0.82);
+  border-radius: 999px;
+  padding: 0.55rem 0.8rem;
+  color: var(--pl-indigo);
+  font-size: 0.86rem;
+  font-weight: 850;
+  box-shadow: 0 10px 28px rgba(15,23,42,0.05);
+}
+
+.planify-pill__dot {
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--pl-purple), var(--pl-cyan));
+  box-shadow: 0 0 0 6px rgba(37, 99, 235, 0.08);
+}
+
+.planify-hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.85rem;
+  margin-top: 2rem;
+}
+
+.planify-hero__proof {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-top: 1.8rem;
+}
+
+.planify-hero__proof span {
+  border: 1px solid var(--pl-line);
+  background: rgba(255,255,255,0.82);
+  border-radius: 999px;
+  padding: 0.52rem 0.72rem;
+  color: #475467;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+/* Hero video */
+.planify-hero__media {
+  position: relative;
+}
+
+.planify-video-card {
+  position: relative;
+  border: 1px solid rgba(15, 23, 42, 0.10);
+  border-radius: 2rem;
+  background: #ffffff;
+  box-shadow: var(--pl-shadow);
+  overflow: hidden;
+}
+
+.planify-video-card::before {
+  content: "";
+  position: absolute;
+  inset: -35%;
+  background:
+    radial-gradient(circle, rgba(124, 58, 237, 0.18), transparent 24rem),
+    radial-gradient(circle, rgba(8, 145, 178, 0.18), transparent 24rem);
+  z-index: 0;
+  animation: planifyFloatGlow 9s ease-in-out infinite alternate;
+}
+
+.planify-video-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.planify-video-card__topbar {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 1rem 1.1rem;
+  border-bottom: 1px solid var(--pl-line);
+  background: rgba(255,255,255,0.76);
+}
+
+.planify-video-card__topbar span {
+  width: 0.72rem;
+  height: 0.72rem;
+  border-radius: 999px;
+  background: #e4e7ec;
+}
+
+.planify-video-card__topbar strong {
+  margin-left: auto;
+  color: #475467;
+  font-size: 0.82rem;
+  font-weight: 850;
+}
+
+.planify-video-frame {
+  position: relative;
+  min-height: 440px;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, rgba(16,24,40,0.18), rgba(16,24,40,0.54)),
+    radial-gradient(circle at 18% 20%, rgba(124, 58, 237, 0.35), transparent 18rem),
+    radial-gradient(circle at 80% 25%, rgba(6, 182, 212, 0.32), transparent 18rem),
+    linear-gradient(135deg, #1e1b4b, #0f172a);
+}
+
+.planify-video-frame__video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.35;
+}
+
+.planify-video-frame__fallback {
+  position: absolute;
+  inset: 0;
+  padding: 2rem;
+}
+
+.planify-classroom {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.planify-board {
+  position: absolute;
+  left: 4%;
+  top: 8%;
+  width: 68%;
+  border: 1px solid rgba(255,255,255,0.22);
+  border-radius: 1.45rem;
+  background: rgba(255,255,255,0.13);
+  padding: 1.35rem;
+  color: #ffffff;
+  backdrop-filter: blur(18px);
+  animation: planifyRise 700ms ease both;
+}
+
+.planify-board span {
+  display: inline-flex;
+  margin-bottom: 0.65rem;
+  color: #a5f3fc;
+  font-size: 0.8rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+}
+
+.planify-board strong {
+  display: block;
+  font-size: clamp(1.55rem, 3vw, 2.3rem);
+  line-height: 1;
+  letter-spacing: -0.05em;
+}
+
+.planify-board small {
+  display: block;
+  margin-top: 0.75rem;
+  color: rgba(255,255,255,0.76);
+  font-size: 0.95rem;
+}
+
+.planify-teacher-card,
+.planify-ai-card {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  border: 1px solid rgba(255,255,255,0.20);
+  border-radius: 1.25rem;
+  background: rgba(255,255,255,0.90);
+  padding: 1rem;
+  color: var(--pl-text);
+  box-shadow: 0 20px 55px rgba(0,0,0,0.20);
+  backdrop-filter: blur(16px);
+}
+
+.planify-teacher-card {
+  right: 4%;
+  bottom: 10%;
+  width: min(300px, 72%);
+  animation: planifyFloat 5s ease-in-out infinite;
+}
+
+.planify-ai-card {
+  left: 7%;
+  bottom: 18%;
+  width: min(330px, 78%);
+  animation: planifyFloat 5.8s ease-in-out infinite reverse;
+}
+
+.planify-avatar,
+.planify-ai-card__spark {
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 1rem;
+  color: #ffffff;
+  font-weight: 950;
+  background: linear-gradient(135deg, var(--pl-indigo), var(--pl-cyan));
+}
+
+.planify-teacher-card strong,
+.planify-ai-card strong {
+  display: block;
+  font-size: 0.95rem;
+}
+
+.planify-teacher-card span,
+.planify-ai-card span {
+  display: block;
+  margin-top: 0.2rem;
+  color: #667085;
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+.planify-play {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  display: grid;
+  place-items: center;
+  width: 5.3rem;
+  height: 5.3rem;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.90);
+  color: var(--pl-indigo);
+  font-size: 1.55rem;
+  box-shadow: 0 20px 45px rgba(0,0,0,0.20);
+  transform: translate(-50%, -50%);
+}
+
+.planify-video-card__footer {
+  display: grid;
+  grid-template-columns: 1fr 150px;
+  gap: 1rem;
+  align-items: center;
+  padding: 1.1rem;
+  border-top: 1px solid var(--pl-line);
+  background: rgba(255,255,255,0.88);
+}
+
+.planify-video-card__footer strong,
+.planify-video-card__footer span {
+  display: block;
+}
+
+.planify-video-card__footer strong {
+  color: var(--pl-text);
+  font-size: 0.96rem;
+}
+
+.planify-video-card__footer span {
+  margin-top: 0.2rem;
+  color: var(--pl-muted);
+  font-size: 0.82rem;
+}
+
+.planify-progress {
+  height: 0.65rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e4e7ec;
+}
+
+.planify-progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--pl-indigo), var(--pl-cyan));
+}
+
+/* Seções */
+.planify-section {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: clamp(3rem, 6vw, 5rem) clamp(1rem, 4vw, 3rem);
+}
+
+.planify-section--compact {
+  padding-top: 2rem;
+}
+
+.planify-section__header {
+  max-width: 780px;
+  margin-bottom: 1.8rem;
+}
+
+.planify-section__header span,
+.planify-workflow__text span,
+.planify-final-cta span {
+  color: var(--pl-indigo);
+  font-size: 0.86rem;
+  font-weight: 950;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.planify-section__header h2,
+.planify-workflow__text h2,
+.planify-final-cta h2 {
+  margin: 0.8rem 0 0;
+  color: var(--pl-text);
+  font-size: clamp(2.15rem, 4.6vw, 4.1rem);
+  line-height: 0.98;
+  letter-spacing: -0.065em;
+  font-weight: 950;
+}
+
+.planify-feature-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.planify-feature-card {
+  border: 1px solid var(--pl-line);
+  border-radius: 1.6rem;
+  background: #ffffff;
+  padding: 1.4rem;
+  box-shadow: var(--pl-shadow-soft);
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.planify-feature-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--pl-shadow);
+}
+
+.planify-feature-card__icon {
+  display: grid;
+  place-items: center;
+  width: 2.8rem;
+  height: 2.8rem;
+  border-radius: 1rem;
+  background: linear-gradient(135deg, #eef2ff, #ecfeff);
+  color: var(--pl-indigo);
+  font-weight: 950;
+}
+
+.planify-feature-card h3 {
+  margin: 1.1rem 0 0.55rem;
+  font-size: 1.08rem;
+  letter-spacing: -0.03em;
+  font-weight: 950;
+}
+
+.planify-feature-card p {
+  color: var(--pl-muted);
+  font-size: 0.94rem;
+  line-height: 1.65;
+}
+
+.planify-feature-card a {
+  display: inline-flex;
+  margin-top: 1rem;
+  color: var(--pl-indigo);
+  font-weight: 900;
+  text-decoration: none;
+}
+
+/* Workflow */
+.planify-workflow {
+  display: grid;
+  grid-template-columns: 0.92fr 1.08fr;
+  gap: 2rem;
+  align-items: center;
+}
+
+.planify-workflow__text p {
+  max-width: 560px;
+  margin: 1rem 0 1.5rem;
+  color: var(--pl-muted);
+  font-size: 1.03rem;
+  line-height: 1.7;
+}
+
+.planify-workflow__steps {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.planify-step {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 1rem;
+  align-items: center;
+  border: 1px solid var(--pl-line);
+  border-radius: 1.35rem;
+  background: #ffffff;
+  padding: 1rem;
+  box-shadow: var(--pl-shadow-soft);
+}
+
+.planify-step span {
+  display: grid;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 1rem;
+  background: #eef2ff;
+  color: var(--pl-indigo);
+  font-weight: 950;
+}
+
+.planify-step strong {
+  color: var(--pl-text);
+  font-size: 1rem;
+}
+
+/* Preview */
+.planify-dashboard-preview {
+  padding-top: 1rem;
+}
+
+.planify-dashboard-preview__panel {
+  display: grid;
+  grid-template-columns: 250px 1fr;
+  min-height: 420px;
+  overflow: hidden;
+  border: 1px solid var(--pl-line);
+  border-radius: 2rem;
+  background: #ffffff;
+  box-shadow: var(--pl-shadow);
+}
+
+.planify-dashboard-preview__sidebar {
+  display: grid;
+  align-content: start;
+  gap: 0.55rem;
+  border-right: 1px solid var(--pl-line);
+  background: #f8fafc;
+  padding: 1rem;
+}
+
+.planify-dashboard-preview__sidebar span {
+  border-radius: 1rem;
+  padding: 0.9rem 1rem;
+  color: #667085;
+  font-weight: 850;
+}
+
+.planify-dashboard-preview__sidebar .active {
+  background: #eef2ff;
+  color: var(--pl-indigo);
+}
+
+.planify-dashboard-preview__content {
+  padding: 1.2rem;
+}
+
+.planify-dashboard-preview__toolbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 1px solid var(--pl-line);
+  padding-bottom: 1rem;
+  color: var(--pl-muted);
+}
+
+.planify-dashboard-preview__toolbar strong {
+  color: var(--pl-text);
+}
+
+.planify-doc-preview {
+  margin: 1.4rem auto 0;
+  max-width: 720px;
+  border: 1px solid var(--pl-line);
+  border-radius: 1rem;
+  background: #ffffff;
+  padding: 1.5rem;
+  box-shadow: var(--pl-shadow-soft);
+}
+
+.planify-doc-preview .line {
+  height: 0.8rem;
+  width: 70%;
+  margin-bottom: 0.75rem;
+  border-radius: 999px;
+  background: #e4e7ec;
+}
+
+.planify-doc-preview .line.wide {
+  width: 92%;
+  height: 1.1rem;
+}
+
+.planify-doc-preview .line.small {
+  width: 42%;
+}
+
+.planify-doc-preview .table {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid #d0d5dd;
+  border-radius: 0.75rem;
+  margin: 1.2rem 0;
+}
+
+.planify-doc-preview .table span {
+  min-height: 4.2rem;
+  background: #f8fafc;
+}
+
+/* CTA final */
+.planify-final-cta {
+  max-width: 1040px;
+  margin: 2rem auto 5rem;
+  border: 1px solid rgba(79, 70, 229, 0.16);
+  border-radius: 2rem;
+  background:
+    radial-gradient(circle at 10% 20%, rgba(124, 58, 237, 0.12), transparent 20rem),
+    radial-gradient(circle at 90% 0%, rgba(8, 145, 178, 0.16), transparent 22rem),
+    #ffffff;
+  padding: clamp(2rem, 5vw, 4rem);
+  text-align: center;
+  box-shadow: var(--pl-shadow);
+}
+
+.planify-final-cta h2 {
+  max-width: 780px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.planify-final-cta div {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.85rem;
+  margin-top: 1.7rem;
+}
+
+/* Editor: preservar folha */
+body .planify-editor-page {
+  background: #ffffff !important;
+  color: #0f172a !important;
+}
+
+/* Animações */
+@keyframes planifyFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
+}
+
+@keyframes planifyFloatGlow {
+  0% { transform: translate3d(-3%, -2%, 0) rotate(0deg); }
+  100% { transform: translate3d(3%, 2%, 0) rotate(8deg); }
+}
+
+@keyframes planifyRise {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Responsivo */
+@media (max-width: 1100px) {
+  .planify-public-header {
+    grid-template-columns: 1fr auto;
+  }
+
+  .planify-header-nav {
+    display: none;
+  }
+
+  .planify-hero,
+  .planify-workflow {
+    grid-template-columns: 1fr;
+  }
+
+  .planify-hero__content h1 {
+    max-width: 900px;
+  }
+
+  .planify-feature-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .planify-dashboard-preview__panel {
+    grid-template-columns: 1fr;
+  }
+
+  .planify-dashboard-preview__sidebar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    border-right: 0;
+    border-bottom: 1px solid var(--pl-line);
+  }
+}
+
+@media (max-width: 720px) {
+  .planify-public-header {
+    padding: 0.85rem 1rem;
+  }
+
+  .planify-brand-logo__tagline,
+  .planify-header-actions .planify-btn--ghost {
+    display: none;
+  }
+
+  .planify-hero {
+    grid-template-columns: 1fr;
+    padding-top: 2.5rem;
+  }
+
+  .planify-hero__content h1 {
+    font-size: clamp(2.6rem, 14vw, 4rem);
+  }
+
+  .planify-video-frame {
+    min-height: 360px;
+  }
+
+  .planify-feature-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .planify-dashboard-preview__sidebar {
+    grid-template-columns: 1fr;
+  }
+
+  .planify-video-card__footer {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* PLANIFY_LANDING_VIDEO_9_20_6_END */
+
+/* PLANIFY_COMPACT_HOME_9_20_7_START */
+
+/* Planify 9.20.7 — Home compacta + planos sem texto técnico */
+
+.planify-landing--compact .planify-public-header{min-height:76px;padding-top:.72rem;padding-bottom:.72rem}.planify-landing--compact .planify-hero--compact{min-height:auto;padding-top:clamp(2.2rem,4.5vw,4.4rem);padding-bottom:clamp(2rem,4vw,3.2rem);gap:clamp(1.6rem,3.5vw,3rem)}.planify-landing--compact .planify-hero__content h1{max-width:650px;margin:1rem 0;font-size:clamp(2.85rem,6vw,5.15rem);line-height:.94;letter-spacing:-.075em}.planify-landing--compact .planify-hero__lead{max-width:560px;font-size:clamp(1rem,1.65vw,1.18rem);line-height:1.55}.planify-landing--compact .planify-hero__actions{margin-top:1.4rem}.planify-hero__proof--compact{margin-top:1.15rem!important}.planify-hero__proof--compact span{padding:.43rem .62rem;font-size:.78rem}.planify-video-card--compact{max-width:560px;margin-left:auto}.planify-video-card--compact .planify-video-frame{min-height:340px}.planify-video-card--compact .planify-board{width:64%;padding:1.05rem}.planify-video-card--compact .planify-board strong{font-size:clamp(1.35rem,2.4vw,1.85rem)}.planify-video-card--compact .planify-teacher-card,.planify-video-card--compact .planify-ai-card{padding:.82rem;border-radius:1rem}.planify-video-card--compact .planify-play{width:4.25rem;height:4.25rem;font-size:1.2rem}.planify-section--compact{padding-top:clamp(2rem,4vw,3.2rem)!important;padding-bottom:clamp(2rem,4vw,3.2rem)!important}.planify-section__header--compact{margin-bottom:1.25rem}.planify-section__header--compact h2{max-width:760px;font-size:clamp(1.9rem,3.4vw,3.05rem);line-height:1.02}.planify-feature-grid--compact{gap:.85rem}.planify-feature-card--compact{padding:1.1rem;border-radius:1.25rem}.planify-feature-card--compact .planify-feature-card__icon{width:2.35rem;height:2.35rem;border-radius:.85rem}.planify-feature-card--compact h3{margin-top:.85rem;margin-bottom:.42rem;font-size:1rem}.planify-feature-card--compact p{font-size:.88rem;line-height:1.48}.planify-feature-card--compact a{margin-top:.7rem;font-size:.9rem}.planify-workflow--compact{padding-top:clamp(2rem,4vw,3rem)!important;padding-bottom:clamp(2rem,4vw,3rem)!important}.planify-workflow--compact .planify-workflow__text h2{max-width:560px;font-size:clamp(1.9rem,3.7vw,3.25rem)}.planify-workflow--compact .planify-workflow__text p{margin-top:.85rem;margin-bottom:1.2rem;max-width:500px;font-size:.98rem;line-height:1.58}.planify-workflow--compact .planify-step{padding:.78rem;border-radius:1rem}.planify-workflow--compact .planify-step span{width:2.45rem;height:2.45rem;border-radius:.82rem;font-size:.84rem}.planify-workflow--compact .planify-step strong{font-size:.92rem}.planify-final-cta--compact{margin-top:1.2rem;margin-bottom:3rem;padding:clamp(1.8rem,4vw,3rem)}.planify-final-cta--compact h2{max-width:680px;font-size:clamp(1.95rem,4vw,3.35rem)}
+
+body .planify-technical-note,body .stripe-technical-note,body [data-planify-technical-note="true"]{display:none!important}body section:has(code),body div:has(> code){display:none!important}body main a[href*="checkout"],body main button{max-width:100%}body [class*="rounded-"][class*="shadow"]{scroll-margin-top:100px}
+
+@media(max-width:1100px){.planify-landing--compact .planify-hero--compact{grid-template-columns:1fr}.planify-video-card--compact{max-width:720px;margin-left:0}.planify-feature-grid--compact{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:720px){.planify-landing--compact .planify-hero__content h1{font-size:clamp(2.4rem,12vw,3.6rem)}.planify-video-card--compact .planify-video-frame{min-height:300px}.planify-feature-grid--compact{grid-template-columns:1fr}}
+
+/* PLANIFY_COMPACT_HOME_9_20_7_END */
+
+/* PLANIFY_INTERNAL_REFINEMENT_9_20_8_START */
+
+/*
+  Planify 9.20.8 — Refinamento visual das páginas internas
+
+  Objetivo:
+  - Manter a mesma linguagem visual da home 9.20.7/9.20.6.
+  - Clarear e compactar páginas internas.
+  - Padronizar cards, botões, formulários, tabelas e painéis.
+  - Não alterar lógica, APIs, banco, DOCX, Stripe, Admin, Biblioteca,
+    Marketplace, Editor funcional, Premium Gate, login ou assinaturas.
+*/
+
+:root {
+  --pl-internal-page: #fbfcff;
+  --pl-internal-soft: #f5f7ff;
+  --pl-internal-card: #ffffff;
+  --pl-internal-card-soft: #f8fafc;
+  --pl-internal-text: #101828;
+  --pl-internal-soft-text: #344054;
+  --pl-internal-muted: #667085;
+  --pl-internal-line: rgba(15, 23, 42, 0.10);
+  --pl-internal-line-strong: rgba(37, 99, 235, 0.16);
+  --pl-internal-primary: #4f46e5;
+  --pl-internal-blue: #2563eb;
+  --pl-internal-cyan: #0891b2;
+  --pl-internal-green: #047857;
+  --pl-internal-amber: #92400e;
+  --pl-internal-rose: #be123c;
+  --pl-internal-shadow: 0 18px 50px rgba(15, 23, 42, 0.08);
+  --pl-internal-shadow-soft: 0 10px 28px rgba(15, 23, 42, 0.06);
+}
+
+/* Base interna clara */
+body {
+  background:
+    radial-gradient(circle at 5% 0%, rgba(124, 58, 237, 0.08), transparent 26rem),
+    radial-gradient(circle at 95% 6%, rgba(8, 145, 178, 0.10), transparent 28rem),
+    linear-gradient(180deg, #ffffff 0%, var(--pl-internal-soft) 52%, #ffffff 100%) !important;
+  color: var(--pl-internal-text) !important;
+}
+
+/* Cabeçalho global */
+body header {
+  background: rgba(255, 255, 255, 0.92) !important;
+  color: var(--pl-internal-text) !important;
+  border-color: var(--pl-internal-line) !important;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04) !important;
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+}
+
+body header nav,
+body header [class*="rounded-full"],
+body header [class*="rounded-2xl"] {
+  background: rgba(255, 255, 255, 0.82) !important;
+  border-color: var(--pl-internal-line) !important;
+  box-shadow: none !important;
+}
+
+/* Remove peso escuro das páginas internas sem afetar lógica */
+body [class*="bg-slate-950"],
+body [class*="bg-slate-900"],
+body [class*="bg-slate-800"],
+body [class*="bg-black"] {
+  background-color: rgba(255, 255, 255, 0.94) !important;
+  color: var(--pl-internal-text) !important;
+}
+
+/* Cards e superfícies */
+body [class*="bg-white/"],
+body [class*="bg-white\["] {
+  background-color: rgba(255, 255, 255, 0.96) !important;
+}
+
+body [class*="rounded-"][class*="border"] {
+  border-color: var(--pl-internal-line) !important;
+}
+
+body [class*="shadow-2xl"],
+body [class*="shadow-xl"],
+body [class*="shadow-lg"] {
+  box-shadow: var(--pl-internal-shadow) !important;
+}
+
+/* Cards coloridos mais suaves */
+body [class*="bg-cyan-300/"],
+body [class*="bg-sky-300/"],
+body [class*="bg-blue-300/"] {
+  background: linear-gradient(135deg, #eff6ff, #ecfeff) !important;
+  border-color: rgba(8, 145, 178, 0.16) !important;
+}
+
+body [class*="bg-emerald-300/"] {
+  background-color: #ecfdf5 !important;
+  border-color: rgba(4, 120, 87, 0.16) !important;
+}
+
+body [class*="bg-amber-300/"] {
+  background-color: #fffbeb !important;
+  border-color: rgba(146, 64, 14, 0.16) !important;
+}
+
+body [class*="bg-rose-300/"] {
+  background-color: #fff1f2 !important;
+  border-color: rgba(190, 18, 60, 0.16) !important;
+}
+
+/* Tipografia */
+body [class*="text-white"] {
+  color: var(--pl-internal-text) !important;
+}
+
+body [class*="text-slate-100"],
+body [class*="text-slate-200"],
+body [class*="text-slate-300"],
+body [class*="text-gray-100"],
+body [class*="text-gray-200"],
+body [class*="text-gray-300"] {
+  color: var(--pl-internal-soft-text) !important;
+}
+
+body [class*="text-slate-400"],
+body [class*="text-slate-500"],
+body [class*="text-gray-400"],
+body [class*="text-gray-500"] {
+  color: var(--pl-internal-muted) !important;
+}
+
+body [class*="text-cyan-100"],
+body [class*="text-cyan-200"],
+body [class*="text-cyan-300"],
+body [class*="text-sky-100"],
+body [class*="text-sky-200"],
+body [class*="text-sky-300"] {
+  color: var(--pl-internal-cyan) !important;
+}
+
+body [class*="text-emerald-100"],
+body [class*="text-emerald-200"],
+body [class*="text-emerald-300"] {
+  color: var(--pl-internal-green) !important;
+}
+
+body [class*="text-amber-100"],
+body [class*="text-amber-200"],
+body [class*="text-amber-300"] {
+  color: var(--pl-internal-amber) !important;
+}
+
+body [class*="text-rose-100"],
+body [class*="text-rose-200"],
+body [class*="text-rose-300"] {
+  color: var(--pl-internal-rose) !important;
+}
+
+/* Hero/PageHero interno mais compacto */
+body main > section:first-child,
+body main > div:first-child > section:first-child {
+  scroll-margin-top: 92px;
+}
+
+body main h1 {
+  letter-spacing: -0.055em;
+}
+
+body main h1:not(.planify-hero__content h1) {
+  font-size: clamp(2.2rem, 4.5vw, 4.15rem);
+  line-height: 1;
+}
+
+body main h2 {
+  letter-spacing: -0.045em;
+}
+
+/* Botões internos no padrão da home */
+body button,
+body a {
+  text-underline-offset: 4px;
+}
+
+body button[class*="bg-white"],
+body a[class*="bg-white"] {
+  background: #ffffff !important;
+  color: var(--pl-internal-text) !important;
+  border: 1px solid var(--pl-internal-line) !important;
+  box-shadow: var(--pl-internal-shadow-soft) !important;
+}
+
+body button[class*="bg-white"]:hover,
+body a[class*="bg-white"]:hover {
+  background: #f8fafc !important;
+  border-color: var(--pl-internal-line-strong) !important;
+  transform: translateY(-1px);
+}
+
+/* Botões de ação claros com destaque */
+body [class*="bg-cyan-300/"] button,
+body [class*="bg-blue-300/"] button,
+body [class*="bg-sky-300/"] button,
+body [class*="bg-emerald-300/"] button {
+  border-color: rgba(37, 99, 235, 0.14) !important;
+}
+
+/* Formulários */
+body input,
+body textarea,
+body select {
+  background: #ffffff !important;
+  color: var(--pl-internal-text) !important;
+  border-color: var(--pl-internal-line) !important;
+  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.03) !important;
+}
+
+body input::placeholder,
+body textarea::placeholder {
+  color: #98a2b3 !important;
+}
+
+body option {
+  background: #ffffff !important;
+  color: var(--pl-internal-text) !important;
+}
+
+/* Tabelas e documentos */
+body table {
+  background: #ffffff;
+}
+
+body th,
+body td {
+  border-color: rgba(100, 116, 139, 0.30) !important;
+}
+
+/* Dashboard, Biblioteca, Marketplace, Admin: cards mais compactos */
+body [class*="grid"] > [class*="rounded-"][class*="border"] {
+  overflow: hidden;
+}
+
+body [class*="rounded-"][class*="border"][class*="p-8"],
+body [class*="rounded-"][class*="border"][class*="p-10"] {
+  padding: clamp(1.25rem, 2.5vw, 2rem) !important;
+}
+
+/* Áreas premium e alertas sem tom técnico */
+body code {
+  background: #f2f4f7;
+  color: #344054;
+  border: 1px solid var(--pl-internal-line);
+  border-radius: 0.55rem;
+  padding: 0.12rem 0.35rem;
+}
+
+/* Editor: mantém folha, mas suaviza entorno */
+body .planify-editor-page {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  box-shadow: 0 26px 70px rgba(15, 23, 42, 0.14) !important;
+}
+
+body .planify-editor-page * {
+  color: inherit;
+}
+
+/* Toolbar do editor mais clara e compacta */
+body .planify-editor-page + *,
+body .planify-editor-page ~ * {
+  color: var(--pl-internal-text);
+}
+
+/* Login/Admin: cards mais profissionais */
+body form,
+body [class*="backdrop-blur"] {
+  border-color: var(--pl-internal-line) !important;
+}
+
+/* Navbar com Admin/Entrar/Acessar painel mais limpa */
+body header a[href="/admin"],
+body header a[href="/login"],
+body header a[href="/dashboard"] {
+  border-color: var(--pl-internal-line) !important;
+}
+
+/* Microinterações */
+body [class*="rounded-"][class*="border"] {
+  transition:
+    transform 160ms ease,
+    background-color 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+body [class*="rounded-"][class*="border"]:hover {
+  border-color: rgba(37, 99, 235, 0.18) !important;
+}
+
+/* Seleção/foco */
+body ::selection {
+  background: rgba(37, 99, 235, 0.18);
+}
+
+body :focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.22);
+  outline-offset: 2px;
+}
+
+/* Reduz espaçamentos excessivos comuns em páginas internas */
+body main > section:not(.planify-hero):not(.planify-section):not(.planify-final-cta) {
+  padding-top: clamp(1.5rem, 3vw, 3rem);
+  padding-bottom: clamp(1.5rem, 3vw, 3rem);
+}
+
+/* Responsivo */
+@media (max-width: 760px) {
+  body main h1:not(.planify-hero__content h1) {
+    font-size: clamp(2rem, 10vw, 3.2rem);
+  }
+
+  body [class*="rounded-"][class*="border"][class*="p-8"],
+  body [class*="rounded-"][class*="border"][class*="p-10"] {
+    padding: 1rem !important;
+  }
+}
+
+@media print {
+  body {
+    background: #ffffff !important;
+  }
+}
+
+/* PLANIFY_INTERNAL_REFINEMENT_9_20_8_END */
+
+/* PLANIFY_SMART_FIELDS_9_20_9_START */
+
+/*
+  Planify 9.20.9 — Campos inteligentes e textos profissionais
+
+  Escopo:
+  - Sugestões roláveis em campos de Planejamentos/Materiais
+  - Compatibilidade entre etapa, ano/série, área e componente
+  - Correção visual de textos com encoding quebrado no DOM
+  - Separação visual de Biblioteca e Marketplace
+  - Não altera APIs, DOCX, IA, Stripe, banco, login ou assinaturas
+*/
+
+.planify-smart-field {
+  cursor: pointer;
+}
+
+.planify-smart-field:focus {
+  border-color: rgba(79, 70, 229, 0.36) !important;
+  box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.10) !important;
+}
+
+.planify-smart-field-menu {
+  position: absolute;
+  z-index: 99999;
+  display: none;
+  max-height: 280px;
+  overflow-y: auto;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 22px 60px rgba(15, 23, 42, 0.16);
+  padding: 8px;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.planify-smart-field-menu.is-open {
+  display: grid;
+  gap: 4px;
+}
+
+.planify-smart-field-menu__option {
+  width: 100%;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: #101828;
+  cursor: pointer;
+  font-size: 0.92rem;
+  font-weight: 750;
+  line-height: 1.25;
+  padding: 0.72rem 0.82rem;
+  text-align: left;
+}
+
+.planify-smart-field-menu__option:hover {
+  background: #eef2ff;
+  color: #4f46e5;
+}
+
+.planify-feature-grid--five {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.planify-generated-marketplace-link {
+  margin-left: 0.75rem;
+}
+
+/* Biblioteca mais profissional */
+body:has(a[href="/biblioteca"]) h1,
+body:has(a[href="/marketplace"]) h1 {
+  text-wrap: balance;
+}
+
+body main p {
+  text-wrap: pretty;
+}
+
+/* Evita que títulos quebrem feio após correção de encoding */
+body h1,
+body h2,
+body h3 {
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: none;
+}
+
+/* Ajuste dos cards em telas médias */
+@media (max-width: 1180px) {
+  .planify-feature-grid--five {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .planify-feature-grid--five {
+    grid-template-columns: 1fr;
+  }
+
+  .planify-smart-field-menu {
+    max-width: calc(100vw - 24px);
+  }
+}
+
+/* PLANIFY_SMART_FIELDS_9_20_9_END */
+
+/* PLANIFY_CONVERSION_LANDING_9_20_11_START */
+
+/*
+  Planify 9.20.11 — Landing final de conversao
+
+  Escopo:
+  - Beneficios
+  - Como funciona
+  - Seguranca/premium sem texto tecnico
+  - Depoimentos/validacao social
+  - FAQ
+  - CTA final
+  - Nao altera APIs, banco, DOCX, Stripe, Supabase, login ou assinaturas
+*/
+
+.planify-landing--conversion .planify-hero--conversion {
+  padding-bottom: clamp(1.7rem, 3vw, 2.4rem);
+}
+
+.planify-landing--conversion .planify-hero__content h1 {
+  max-width: 720px;
+}
+
+.planify-benefit-strip {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.65rem;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 clamp(1rem, 4vw, 3rem) clamp(1.4rem, 3vw, 2.2rem);
+}
+
+.planify-benefit-strip span {
+  border: 1px solid rgba(15, 23, 42, 0.10);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+  color: #344054;
+  font-size: 0.86rem;
+  font-weight: 850;
+  padding: 0.62rem 0.82rem;
+}
+
+.planify-conversion-section {
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: clamp(2rem, 4.6vw, 4.2rem) clamp(1rem, 4vw, 3rem);
+}
+
+.planify-conversion-heading {
+  max-width: 780px;
+  margin-bottom: 1.35rem;
+}
+
+.planify-conversion-heading span,
+.planify-kicker {
+  color: #4f46e5;
+  font-size: 0.82rem;
+  font-weight: 950;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.planify-conversion-heading h2,
+.planify-security-section h2 {
+  margin: 0.7rem 0 0;
+  color: #101828;
+  font-size: clamp(1.95rem, 3.9vw, 3.6rem);
+  font-weight: 950;
+  letter-spacing: -0.06em;
+  line-height: 1;
+}
+
+.planify-conversion-heading p,
+.planify-security-section p,
+.planify-final-cta--conversion p {
+  color: #667085;
+  font-size: 1rem;
+  line-height: 1.65;
+}
+
+.planify-how-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.planify-how-card,
+.planify-testimonial-card,
+.planify-faq-item {
+  border: 1px solid rgba(15, 23, 42, 0.10);
+  border-radius: 1.35rem;
+  background: #ffffff;
+  box-shadow: 0 16px 42px rgba(15, 23, 42, 0.07);
+}
+
+.planify-how-card {
+  padding: 1.15rem;
+}
+
+.planify-how-card > span {
+  display: grid;
+  place-items: center;
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 0.9rem;
+  background: #eef2ff;
+  color: #4f46e5;
+  font-size: 0.86rem;
+  font-weight: 950;
+}
+
+.planify-how-card h3 {
+  margin: 0.95rem 0 0.45rem;
+  color: #101828;
+  font-size: 1rem;
+  font-weight: 950;
+  letter-spacing: -0.03em;
+}
+
+.planify-how-card p {
+  margin: 0;
+  color: #667085;
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.planify-security-section {
+  display: grid;
+  grid-template-columns: minmax(0, 0.95fr) minmax(320px, 1.05fr);
+  gap: 1.25rem;
+  align-items: center;
+}
+
+.planify-security-section > div:first-child {
+  border: 1px solid rgba(79, 70, 229, 0.13);
+  border-radius: 1.7rem;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(124, 58, 237, 0.10), transparent 18rem),
+    radial-gradient(circle at 100% 0%, rgba(8, 145, 178, 0.12), transparent 18rem),
+    #ffffff;
+  box-shadow: 0 20px 55px rgba(15, 23, 42, 0.08);
+  padding: clamp(1.35rem, 3vw, 2.1rem);
+}
+
+.planify-security-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.planify-security-grid span {
+  border: 1px solid rgba(15, 23, 42, 0.10);
+  border-radius: 1.25rem;
+  background: #ffffff;
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.06);
+  color: #344054;
+  font-weight: 900;
+  padding: 1rem;
+}
+
+.planify-testimonial-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+.planify-testimonial-card {
+  padding: 1.2rem;
+}
+
+.planify-testimonial-card p {
+  margin: 0;
+  color: #344054;
+  font-size: 0.96rem;
+  line-height: 1.62;
+}
+
+.planify-testimonial-card strong {
+  display: block;
+  margin-top: 1rem;
+  color: #101828;
+  font-size: 0.92rem;
+  font-weight: 950;
+}
+
+.planify-faq-grid {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.planify-faq-item {
+  padding: 0;
+  overflow: hidden;
+}
+
+.planify-faq-item summary {
+  cursor: pointer;
+  color: #101828;
+  font-weight: 950;
+  list-style: none;
+  padding: 1rem 1.1rem;
+}
+
+.planify-faq-item summary::-webkit-details-marker {
+  display: none;
+}
+
+.planify-faq-item summary::after {
+  content: "+";
+  float: right;
+  color: #4f46e5;
+  font-weight: 950;
+}
+
+.planify-faq-item[open] summary::after {
+  content: "–";
+}
+
+.planify-faq-item p {
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+  color: #667085;
+  line-height: 1.6;
+  margin: 0;
+  padding: 0.9rem 1.1rem 1.1rem;
+}
+
+.planify-final-cta--conversion p {
+  max-width: 640px;
+  margin: 1rem auto 0;
+}
+
+.planify-final-cta--conversion {
+  margin-top: 1rem;
+}
+
+/* Remove termos tecnicos visuais remanescentes em planos/home, sem mexer em logica */
+.planify-technical-note,
+.stripe-technical-note,
+[data-planify-technical-note="true"] {
+  display: none !important;
+}
+
+@media (max-width: 1100px) {
+  .planify-how-grid,
+  .planify-testimonial-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .planify-security-section {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .planify-how-grid,
+  .planify-testimonial-grid,
+  .planify-security-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .planify-conversion-section {
+    padding-top: 1.6rem;
+    padding-bottom: 1.6rem;
+  }
+}
+
+/* PLANIFY_CONVERSION_LANDING_9_20_11_END */
+

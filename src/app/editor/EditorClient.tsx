@@ -1,0 +1,1585 @@
+"use client";
+
+import {
+  ChangeEvent,
+  MouseEvent as ReactMouseEvent,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+
+type StoredEditorDocument = {
+  type?: string;
+  title?: string;
+  html?: string;
+  content?: string;
+  updatedAt?: string;
+};
+
+type SavedDocument = {
+  id: string;
+  title: string;
+  html: string;
+  updatedAt: string;
+};
+
+const STORAGE_DOCUMENT_KEY = "planify_editor_document";
+const STORAGE_CONTENT_KEY = "planify_editor_content";
+const STORAGE_SAVED_KEY = "planify_editor_saved_documents";
+
+const defaultDocument = `
+  <article class="planify-doc">
+    <h1>Documento pedagógico</h1>
+    <p>Comece a editar seu material aqui. Você pode inserir tabelas, imagens, listas, títulos e ajustar a formatação.</p>
+    <table>
+      <tbody>
+        <tr>
+          <td><strong>Campo</strong></td>
+          <td><strong>Informação</strong></td>
+        </tr>
+        <tr>
+          <td>Professor</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>Componente</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>Turma</td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+  </article>
+`;
+
+const fontOptions = [
+  "Arial",
+  "Times New Roman",
+  "Calibri",
+  "Verdana",
+  "Georgia",
+  "Cambria",
+  "Tahoma",
+];
+
+const fontSizeOptions = [
+  { label: "10", value: "10pt" },
+  { label: "11", value: "11pt" },
+  { label: "12", value: "12pt" },
+  { label: "14", value: "14pt" },
+  { label: "16", value: "16pt" },
+  { label: "18", value: "18pt" },
+  { label: "24", value: "24pt" },
+];
+
+const lineHeightOptions = [
+  { label: "1.0", value: "1" },
+  { label: "1.15", value: "1.15" },
+  { label: "1.5", value: "1.5" },
+  { label: "2.0", value: "2" },
+];
+
+function nowLabel() {
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "short",
+  }).format(new Date());
+}
+
+function createId() {
+  return `editor-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function getDocumentTitleFromHtml(html: string) {
+  if (typeof window === "undefined") {
+    return "Documento Planify";
+  }
+
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, "text/html");
+  const firstHeading = doc.querySelector("h1,h2,h3");
+
+  return firstHeading?.textContent?.trim() || "Documento Planify";
+}
+
+function sanitizeFilename(value: string) {
+  return (
+    value
+      .normalize("NFD")
+      .replace(/\p{Diacritic}/gu, "")
+      .replace(/[^a-zA-Z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .toLowerCase()
+      .slice(0, 80) || "documento-planify"
+  );
+}
+
+function downloadBlob(filename: string, mimeType: string, content: BlobPart) {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+
+  window.setTimeout(() => URL.revokeObjectURL(url), 500);
+}
+
+function wrapAsFullHtml(title: string, body: string) {
+  return `<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <title>${title}</title>
+  <style>
+    body {
+      font-family: "Times New Roman", Times, serif;
+      font-size: 12pt;
+      color: #0f172a;
+      line-height: 1.5;
+      margin: 3cm 2cm 2cm 3cm;
+      text-align: justify;
+    }
+
+    h1, h2, h3 {
+      color: #0f172a;
+      line-height: 1.2;
+      font-weight: 700;
+      text-align: left;
+    }
+
+    h1 {
+      font-size: 14pt;
+      text-transform: uppercase;
+      text-align: center;
+      margin: 0 0 24pt;
+    }
+
+    h2 {
+      font-size: 13pt;
+      margin: 18pt 0 12pt;
+    }
+
+    h3 {
+      font-size: 12pt;
+      margin: 14pt 0 8pt;
+    }
+
+    p {
+      margin: 0 0 10pt;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0;
+      text-align: left;
+    }
+
+    td, th {
+      border: 1px solid #cbd5e1;
+      padding: 8px;
+      vertical-align: top;
+    }
+
+    img {
+      max-width: 100%;
+      height: auto;
+    }
+
+    figure {
+      break-inside: avoid;
+    }
+
+    blockquote {
+      margin: 12pt 0 12pt 4cm;
+      font-size: 10pt;
+      line-height: 1;
+      text-align: justify;
+    }
+
+    .page-break {
+      page-break-after: always;
+      border: 0;
+      border-top: 2px dashed #94a3b8;
+      margin: 32px 0;
+    }
+
+    @page {
+      size: A4;
+      margin: 3cm 2cm 2cm 3cm;
+    }
+  </style>
+</head>
+<body>
+${body}
+</body>
+</html>`;
+}
+
+function loadSavedDocuments(): SavedDocument[] {
+  if (typeof window === "undefined") {
+    return [];
+  }
+
+  try {
+    const raw = window.localStorage.getItem(STORAGE_SAVED_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+
+    return Array.isArray(parsed) ? parsed.slice(0, 20) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveSavedDocuments(items: SavedDocument[]) {
+  window.localStorage.setItem(STORAGE_SAVED_KEY, JSON.stringify(items.slice(0, 20)));
+}
+
+function loadInitialDocument(): { title: string; html: string } {
+  if (typeof window === "undefined") {
+    return {
+      title: "Documento Planify",
+      html: defaultDocument,
+    };
+  }
+
+  try {
+    const storedDocumentRaw = window.localStorage.getItem(STORAGE_DOCUMENT_KEY);
+    const storedDocument = storedDocumentRaw
+      ? (JSON.parse(storedDocumentRaw) as StoredEditorDocument)
+      : null;
+
+    const content =
+      storedDocument?.html ||
+      storedDocument?.content ||
+      window.localStorage.getItem(STORAGE_CONTENT_KEY) ||
+      defaultDocument;
+
+    return {
+      title: storedDocument?.title || getDocumentTitleFromHtml(content),
+      html: content,
+    };
+  } catch {
+    const content = window.localStorage.getItem(STORAGE_CONTENT_KEY) || defaultDocument;
+
+    return {
+      title: getDocumentTitleFromHtml(content),
+      html: content,
+    };
+  }
+}
+
+function closestFigure(image: HTMLImageElement) {
+  const figure = image.closest("figure");
+
+  return figure instanceof HTMLElement ? figure : image;
+}
+
+function clearImageOutline(image: HTMLImageElement | null) {
+  if (!image) {
+    return;
+  }
+
+  image.style.outline = "";
+  image.style.outlineOffset = "";
+  image.style.cursor = "pointer";
+}
+
+function closestEditableBlock(node: Node | null, editor: HTMLElement | null) {
+  if (!node || !editor) {
+    return null;
+  }
+
+  let current: Node | null =
+    node.nodeType === Node.TEXT_NODE ? node.parentNode : node;
+
+  while (current && current !== editor) {
+    if (current instanceof HTMLElement) {
+      const tag = current.tagName.toLowerCase();
+
+      if (
+        [
+          "p",
+          "div",
+          "li",
+          "h1",
+          "h2",
+          "h3",
+          "h4",
+          "blockquote",
+          "td",
+          "th",
+          "figure",
+        ].includes(tag)
+      ) {
+        return current;
+      }
+    }
+
+    current = current.parentNode;
+  }
+
+  return null;
+}
+
+export function EditorClient() {
+  const editorRef = useRef<HTMLDivElement | null>(null);
+  const imageInputRef = useRef<HTMLInputElement | null>(null);
+  const selectedImageRef = useRef<HTMLImageElement | null>(null);
+  const [title, setTitle] = useState("Documento Planify");
+  const [status, setStatus] = useState("Editor pronto.");
+  const [savedDocuments, setSavedDocuments] = useState<SavedDocument[]>([]);
+  const [wordCount, setWordCount] = useState(0);
+  const [selectedBlock, setSelectedBlock] = useState("p");
+  const [fontFamily, setFontFamily] = useState("Times New Roman");
+  const [fontSizePt, setFontSizePt] = useState("12pt");
+  const [lineHeight, setLineHeight] = useState("1.5");
+  const [spacingBefore, setSpacingBefore] = useState(0);
+  const [spacingAfter, setSpacingAfter] = useState(10);
+  const [firstLineIndent, setFirstLineIndent] = useState(1.25);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [selectedImageName, setSelectedImageName] = useState("");
+  const [selectedImageWidth, setSelectedImageWidth] = useState(60);
+
+  const lastSavedLabel = useMemo(() => nowLabel(), []);
+
+  useEffect(() => {
+    const initial = loadInitialDocument();
+
+    setTitle(initial.title);
+    setSavedDocuments(loadSavedDocuments());
+
+    if (editorRef.current) {
+      editorRef.current.innerHTML = initial.html;
+      prepareImagesInsideEditor();
+      updateWordCount();
+    }
+
+    setIsLoaded(true);
+    setStatus(`Documento carregado. Última verificação: ${lastSavedLabel}`);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (!isLoaded) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      persistCurrentDocument("Salvo automaticamente.");
+    }, 1200);
+
+    return () => window.clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [title, wordCount, isLoaded]);
+
+  function focusEditor() {
+    editorRef.current?.focus();
+  }
+
+  function getEditorHtml() {
+    return editorRef.current?.innerHTML || "";
+  }
+
+  function setEditorHtml(html: string) {
+    clearSelectedImage();
+
+    if (editorRef.current) {
+      editorRef.current.innerHTML = html;
+      prepareImagesInsideEditor();
+      updateWordCount();
+      persistCurrentDocument("Documento carregado.");
+    }
+  }
+
+  function updateWordCount() {
+    const text = editorRef.current?.innerText || "";
+    const words = text
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean);
+
+    setWordCount(words.length);
+  }
+
+  function exec(command: string, value?: string) {
+    focusEditor();
+    document.execCommand(command, false, value);
+    updateWordCount();
+    persistCurrentDocument("Alteração aplicada.");
+  }
+
+  function getSelectionBlock() {
+    const editor = editorRef.current;
+    const selection = window.getSelection();
+
+    if (!editor || !selection || selection.rangeCount === 0) {
+      return null;
+    }
+
+    const node = selection.anchorNode;
+
+    if (!node || !editor.contains(node)) {
+      return null;
+    }
+
+    return closestEditableBlock(node, editor);
+  }
+
+  function applyToCurrentBlock(styles: Partial<CSSStyleDeclaration>, message: string) {
+    focusEditor();
+
+    const block = getSelectionBlock() || editorRef.current;
+
+    if (!block) {
+      setStatus("Clique no texto que deseja ajustar.");
+      return;
+    }
+
+    Object.entries(styles).forEach(([key, value]) => {
+      if (typeof value === "string") {
+        block.style.setProperty(key.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`), value);
+      }
+    });
+
+    updateWordCount();
+    persistCurrentDocument(message);
+  }
+
+  function applyFontFamily(value: string) {
+    setFontFamily(value);
+    exec("fontName", value);
+  }
+
+  function applyFontSize(value: string) {
+    setFontSizePt(value);
+    applyToCurrentBlock({ fontSize: value }, `Fonte ajustada para ${value}.`);
+  }
+
+  function applyLineHeight(value: string) {
+    setLineHeight(value);
+    applyToCurrentBlock({ lineHeight: value }, `Espaçamento entre linhas ${value}.`);
+  }
+
+  function applyParagraphSpacing(before: number, after: number) {
+    setSpacingBefore(before);
+    setSpacingAfter(after);
+    applyToCurrentBlock(
+      {
+        marginTop: `${before}pt`,
+        marginBottom: `${after}pt`,
+      },
+      "Espaçamento de parágrafo ajustado.",
+    );
+  }
+
+  function applyFirstLineIndent(value: number) {
+    setFirstLineIndent(value);
+    applyToCurrentBlock(
+      {
+        textIndent: `${value}cm`,
+      },
+      "Recuo de primeira linha ajustado.",
+    );
+  }
+
+  function applyNormalAbnt() {
+    applyToCurrentBlock(
+      {
+        fontFamily: '"Times New Roman", Times, serif',
+        fontSize: "12pt",
+        lineHeight: "1.5",
+        textAlign: "justify",
+        textIndent: "1.25cm",
+        marginTop: "0pt",
+        marginBottom: "10pt",
+      },
+      "Texto normal ABNT aplicado.",
+    );
+  }
+
+  function applyTitleAbnt() {
+    exec("formatBlock", "h1");
+    applyToCurrentBlock(
+      {
+        fontFamily: '"Times New Roman", Times, serif',
+        fontSize: "14pt",
+        lineHeight: "1.5",
+        textAlign: "center",
+        textIndent: "0",
+        textTransform: "uppercase",
+        marginTop: "0pt",
+        marginBottom: "24pt",
+      },
+      "Título ABNT aplicado.",
+    );
+  }
+
+  function applyCitationAbnt() {
+    exec("formatBlock", "blockquote");
+    applyToCurrentBlock(
+      {
+        fontFamily: '"Times New Roman", Times, serif',
+        fontSize: "10pt",
+        lineHeight: "1",
+        textAlign: "justify",
+        textIndent: "0",
+        marginLeft: "4cm",
+        marginTop: "12pt",
+        marginBottom: "12pt",
+      },
+      "Citação ABNT aplicada.",
+    );
+  }
+
+  function applyAbntToDocument() {
+    const editor = editorRef.current;
+
+    if (!editor) {
+      return;
+    }
+
+    editor.classList.add("planify-abnt-page");
+    editor.style.fontFamily = '"Times New Roman", Times, serif';
+    editor.style.fontSize = "12pt";
+    editor.style.lineHeight = "1.5";
+    editor.style.textAlign = "justify";
+
+    editor.querySelectorAll("p, li").forEach((node) => {
+      if (node instanceof HTMLElement) {
+        node.style.fontFamily = '"Times New Roman", Times, serif';
+        node.style.fontSize = "12pt";
+        node.style.lineHeight = "1.5";
+        node.style.textAlign = "justify";
+        node.style.textIndent = "1.25cm";
+        node.style.marginTop = "0pt";
+        node.style.marginBottom = "10pt";
+      }
+    });
+
+    editor.querySelectorAll("h1").forEach((node) => {
+      if (node instanceof HTMLElement) {
+        node.style.fontFamily = '"Times New Roman", Times, serif';
+        node.style.fontSize = "14pt";
+        node.style.lineHeight = "1.5";
+        node.style.textAlign = "center";
+        node.style.textIndent = "0";
+        node.style.textTransform = "uppercase";
+      }
+    });
+
+    editor.querySelectorAll("h2, h3").forEach((node) => {
+      if (node instanceof HTMLElement) {
+        node.style.fontFamily = '"Times New Roman", Times, serif';
+        node.style.fontSize = "12pt";
+        node.style.lineHeight = "1.5";
+        node.style.textAlign = "left";
+        node.style.textIndent = "0";
+      }
+    });
+
+    editor.querySelectorAll("blockquote").forEach((node) => {
+      if (node instanceof HTMLElement) {
+        node.style.fontFamily = '"Times New Roman", Times, serif';
+        node.style.fontSize = "10pt";
+        node.style.lineHeight = "1";
+        node.style.textAlign = "justify";
+        node.style.textIndent = "0";
+        node.style.marginLeft = "4cm";
+      }
+    });
+
+    setFontFamily("Times New Roman");
+    setFontSizePt("12pt");
+    setLineHeight("1.5");
+    setSpacingBefore(0);
+    setSpacingAfter(10);
+    setFirstLineIndent(1.25);
+    persistCurrentDocument("Padrão ABNT aplicado ao documento.");
+  }
+
+  function prepareImagesInsideEditor() {
+    const editor = editorRef.current;
+
+    if (!editor) {
+      return;
+    }
+
+    editor.querySelectorAll("img").forEach((node) => {
+      if (!(node instanceof HTMLImageElement)) {
+        return;
+      }
+
+      node.dataset.planifyImage = "true";
+      node.style.maxWidth = "100%";
+      node.style.height = "auto";
+      node.style.cursor = "pointer";
+
+      if (!node.style.width) {
+        node.style.width = "60%";
+      }
+
+      const parent = node.parentElement;
+
+      if (parent?.tagName.toLowerCase() === "figure") {
+        parent.style.maxWidth = "100%";
+
+        if (!parent.style.textAlign) {
+          parent.style.textAlign = "center";
+        }
+      }
+    });
+  }
+
+  function persistCurrentDocument(message = "Documento salvo.") {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    prepareImagesInsideEditor();
+
+    const html = getEditorHtml();
+    const currentTitle = title.trim() || getDocumentTitleFromHtml(html);
+
+    window.localStorage.setItem(
+      STORAGE_DOCUMENT_KEY,
+      JSON.stringify({
+        type: "editor",
+        title: currentTitle,
+        html,
+        content: html,
+        updatedAt: new Date().toISOString(),
+      }),
+    );
+
+    window.localStorage.setItem(STORAGE_CONTENT_KEY, html);
+    setStatus(`${message} ${nowLabel()}`);
+  }
+
+  function saveVersion() {
+    const html = getEditorHtml();
+    const currentTitle = title.trim() || getDocumentTitleFromHtml(html);
+    const next: SavedDocument = {
+      id: createId(),
+      title: currentTitle,
+      html,
+      updatedAt: new Date().toISOString(),
+    };
+
+    const updated = [next, ...savedDocuments].slice(0, 20);
+    setSavedDocuments(updated);
+    saveSavedDocuments(updated);
+    persistCurrentDocument("Versão salva.");
+  }
+
+  function loadVersion(item: SavedDocument) {
+    const confirmed = window.confirm(`Abrir a versão "${item.title}" no editor?`);
+
+    if (!confirmed) {
+      return;
+    }
+
+    setTitle(item.title);
+    setEditorHtml(item.html);
+    setStatus("Versão carregada.");
+  }
+
+  function removeVersion(id: string) {
+    const updated = savedDocuments.filter((item) => item.id !== id);
+
+    setSavedDocuments(updated);
+    saveSavedDocuments(updated);
+    setStatus("Versão removida.");
+  }
+
+  function handleBlockChange(value: string) {
+    setSelectedBlock(value);
+    exec("formatBlock", value);
+  }
+
+  function insertTable() {
+    const rowsRaw = window.prompt("Quantas linhas?", "3");
+    const colsRaw = window.prompt("Quantas colunas?", "3");
+
+    const rows = Math.max(1, Math.min(20, Number(rowsRaw) || 3));
+    const cols = Math.max(1, Math.min(10, Number(colsRaw) || 3));
+
+    let html = '<table><tbody>';
+
+    for (let rowIndex = 0; rowIndex < rows; rowIndex += 1) {
+      html += "<tr>";
+
+      for (let colIndex = 0; colIndex < cols; colIndex += 1) {
+        html += `<td>${rowIndex === 0 ? "<strong></strong>" : "<br>"}</td>`;
+      }
+
+      html += "</tr>";
+    }
+
+    html += "</tbody></table><p><br></p>";
+
+    exec("insertHTML", html);
+  }
+
+  function insertPageBreak() {
+    exec("insertHTML", '<hr class="page-break"><p><br></p>');
+  }
+
+  function insertDivider() {
+    exec("insertHorizontalRule");
+  }
+
+  function triggerImagePicker() {
+    imageInputRef.current?.click();
+  }
+
+  function handleImageSelected(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      setStatus("Selecione uma imagem válida.");
+      return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      const src = String(reader.result || "");
+
+      if (!src) {
+        return;
+      }
+
+      exec(
+        "insertHTML",
+        `<figure data-planify-figure="true" style="margin: 16px auto; max-width:100%; text-align:center;">
+          <img data-planify-image="true" src="${src}" alt="${file.name}" style="width:60%;max-width:100%;height:auto;border-radius:12px;cursor:pointer;" />
+          <figcaption style="font-size:12px;color:#64748b;margin-top:6px;">${file.name}</figcaption>
+        </figure><p><br></p>`,
+      );
+
+      prepareImagesInsideEditor();
+      setStatus("Imagem inserida. Clique nela para ajustar tamanho e posição.");
+      event.target.value = "";
+    };
+
+    reader.readAsDataURL(file);
+  }
+
+  function clearFormatting() {
+    exec("removeFormat");
+    exec("formatBlock", "p");
+  }
+
+  function newDocument() {
+    const confirmed = window.confirm(
+      "Criar um novo documento em branco? Salve a versão atual antes se quiser manter uma cópia.",
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setTitle("Documento Planify");
+    setEditorHtml(defaultDocument);
+    setStatus("Novo documento criado.");
+  }
+
+  function printDocument() {
+    persistCurrentDocument("Documento preparado para impressão.");
+    window.print();
+  }
+
+  function downloadHtml() {
+    const html = wrapAsFullHtml(title, getEditorHtml());
+    const filename = `${sanitizeFilename(title)}.html`;
+
+    downloadBlob(filename, "text/html;charset=utf-8", html);
+    setStatus("HTML baixado.");
+  }
+
+  function downloadWordCompatible() {
+    const html = wrapAsFullHtml(title, getEditorHtml());
+    const filename = `${sanitizeFilename(title)}.doc`;
+
+    downloadBlob(filename, "application/msword;charset=utf-8", html);
+    setStatus("Arquivo Word compatível baixado.");
+  }
+
+  function copyHtml() {
+    const html = getEditorHtml();
+
+    navigator.clipboard
+      .writeText(html)
+      .then(() => setStatus("HTML copiado."))
+      .catch(() => setStatus("Não foi possível copiar o HTML."));
+  }
+
+  function selectImage(image: HTMLImageElement) {
+    if (selectedImageRef.current && selectedImageRef.current !== image) {
+      clearImageOutline(selectedImageRef.current);
+    }
+
+    selectedImageRef.current = image;
+    image.dataset.planifyImage = "true";
+    image.style.maxWidth = "100%";
+    image.style.height = "auto";
+    image.style.cursor = "pointer";
+    image.style.outline = "3px solid #22d3ee";
+    image.style.outlineOffset = "4px";
+
+    const width = Number.parseInt(image.style.width || "60", 10);
+
+    setSelectedImageName(image.alt || "Imagem selecionada");
+    setSelectedImageWidth(Number.isFinite(width) ? width : 60);
+    setStatus("Imagem selecionada. Use os controles de tamanho e posição.");
+  }
+
+  function clearSelectedImage() {
+    clearImageOutline(selectedImageRef.current);
+    selectedImageRef.current = null;
+    setSelectedImageName("");
+  }
+
+  function handleEditorClick(event: ReactMouseEvent<HTMLDivElement>) {
+    const target = event.target;
+
+    if (target instanceof HTMLImageElement) {
+      selectImage(target);
+      return;
+    }
+
+    if (!(target instanceof HTMLInputElement)) {
+      clearSelectedImage();
+    }
+  }
+
+  function applyImageWidth(width: number) {
+    const image = selectedImageRef.current;
+
+    if (!image) {
+      setStatus("Clique em uma imagem primeiro.");
+      return;
+    }
+
+    const safeWidth = Math.max(10, Math.min(100, Math.round(width)));
+    const figure = closestFigure(image);
+
+    image.style.width = `${safeWidth}%`;
+    image.style.maxWidth = "100%";
+    image.style.height = "auto";
+    figure.style.maxWidth = "100%";
+
+    setSelectedImageWidth(safeWidth);
+    persistCurrentDocument(`Imagem ajustada para ${safeWidth}%.`);
+  }
+
+  function alignSelectedImage(position: "left" | "center" | "right") {
+    const image = selectedImageRef.current;
+
+    if (!image) {
+      setStatus("Clique em uma imagem primeiro.");
+      return;
+    }
+
+    const figure = closestFigure(image);
+
+    figure.style.float = "";
+    figure.style.clear = "";
+    figure.style.display = "block";
+    figure.style.maxWidth = "100%";
+
+    if (position === "left") {
+      figure.style.margin = "16px auto 16px 0";
+      figure.style.textAlign = "left";
+    }
+
+    if (position === "center") {
+      figure.style.margin = "16px auto";
+      figure.style.textAlign = "center";
+    }
+
+    if (position === "right") {
+      figure.style.margin = "16px 0 16px auto";
+      figure.style.textAlign = "right";
+    }
+
+    persistCurrentDocument("Posição da imagem ajustada.");
+  }
+
+  function floatSelectedImage(position: "left" | "right") {
+    const image = selectedImageRef.current;
+
+    if (!image) {
+      setStatus("Clique em uma imagem primeiro.");
+      return;
+    }
+
+    const figure = closestFigure(image);
+
+    figure.style.float = position;
+    figure.style.display = "block";
+    figure.style.maxWidth = `${selectedImageWidth}%`;
+    figure.style.margin =
+      position === "left"
+        ? "8px 18px 12px 0"
+        : "8px 0 12px 18px";
+    figure.style.textAlign = position;
+
+    image.style.width = "100%";
+
+    persistCurrentDocument(
+      position === "left"
+        ? "Imagem flutuando à esquerda."
+        : "Imagem flutuando à direita.",
+    );
+  }
+
+  function clearImageFloat() {
+    const image = selectedImageRef.current;
+
+    if (!image) {
+      setStatus("Clique em uma imagem primeiro.");
+      return;
+    }
+
+    const figure = closestFigure(image);
+
+    figure.style.float = "";
+    figure.style.clear = "both";
+    figure.style.display = "block";
+    figure.style.maxWidth = "100%";
+    figure.style.margin = "16px auto";
+    figure.style.textAlign = "center";
+
+    image.style.width = `${selectedImageWidth}%`;
+    image.style.maxWidth = "100%";
+    image.style.height = "auto";
+
+    persistCurrentDocument("Flutuação da imagem removida.");
+  }
+
+  function removeSelectedImage() {
+    const image = selectedImageRef.current;
+
+    if (!image) {
+      setStatus("Clique em uma imagem primeiro.");
+      return;
+    }
+
+    const confirmed = window.confirm("Remover esta imagem do documento?");
+
+    if (!confirmed) {
+      return;
+    }
+
+    const figure = image.closest("figure");
+
+    if (figure) {
+      figure.remove();
+    } else {
+      image.remove();
+    }
+
+    clearSelectedImage();
+    updateWordCount();
+    persistCurrentDocument("Imagem removida.");
+  }
+
+  return (
+    <section className="mx-auto max-w-7xl px-5 py-10 sm:px-8">
+      <div className="grid gap-6 xl:grid-cols-[280px_1fr]">
+        <aside className="space-y-5">
+          <div className="rounded-[2rem] border border-cyan-300/20 bg-cyan-300/10 p-5 shadow-2xl shadow-cyan-500/10">
+            <p className="text-sm font-black uppercase tracking-[0.24em] text-cyan-300">
+              Documento
+            </p>
+
+            <label className="mt-4 grid gap-2">
+              <span className="text-sm font-bold text-cyan-100">Título</span>
+              <input
+                value={title}
+                onChange={(event) => setTitle(event.target.value)}
+                onBlur={() => persistCurrentDocument("Título salvo.")}
+                className="h-12 rounded-2xl border border-white/10 bg-slate-950/60 px-4 text-sm font-bold text-white outline-none focus:border-cyan-300/50"
+              />
+            </label>
+
+            <div className="mt-5 grid gap-3">
+              <button
+                type="button"
+                onClick={saveVersion}
+                className="rounded-2xl bg-white px-5 py-3 text-sm font-black text-slate-950 transition hover:bg-cyan-100"
+              >
+                Salvar versão
+              </button>
+
+              <button
+                type="button"
+                onClick={newDocument}
+                className="rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-black text-white transition hover:bg-white/10"
+              >
+                Novo documento
+              </button>
+
+              <button
+                type="button"
+                onClick={applyAbntToDocument}
+                className="rounded-2xl border border-emerald-300/25 bg-emerald-300/10 px-5 py-3 text-sm font-black text-emerald-100 transition hover:bg-emerald-300/20"
+              >
+                Aplicar padrão ABNT
+              </button>
+
+              <button
+                type="button"
+                onClick={printDocument}
+                className="rounded-2xl border border-cyan-300/25 bg-cyan-300/10 px-5 py-3 text-sm font-black text-cyan-100 transition hover:bg-cyan-300/20"
+              >
+                Imprimir / PDF
+              </button>
+
+              <button
+                type="button"
+                onClick={downloadWordCompatible}
+                className="rounded-2xl border border-emerald-300/25 bg-emerald-300/10 px-5 py-3 text-sm font-black text-emerald-100 transition hover:bg-emerald-300/20"
+              >
+                Baixar Word .doc
+              </button>
+
+              <button
+                type="button"
+                onClick={downloadHtml}
+                className="rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-black text-white transition hover:bg-white/10"
+              >
+                Baixar HTML
+              </button>
+            </div>
+
+            <div className="mt-5 rounded-2xl border border-white/10 bg-slate-950/45 p-4 text-sm leading-7 text-cyan-100/85">
+              <p>{status}</p>
+              <p className="mt-2 font-black">{wordCount} palavra(s)</p>
+            </div>
+          </div>
+
+          <div className="rounded-[2rem] border border-white/10 bg-white/[0.06] p-5">
+            <p className="text-sm font-black uppercase tracking-[0.24em] text-cyan-300">
+              Versões salvas
+            </p>
+
+            <div className="mt-4 grid gap-3">
+              {savedDocuments.length > 0 ? (
+                savedDocuments.map((item) => (
+                  <div
+                    key={item.id}
+                    className="rounded-2xl border border-white/10 bg-slate-950/45 p-4"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => loadVersion(item)}
+                      className="text-left text-sm font-black text-white hover:text-cyan-200"
+                    >
+                      {item.title}
+                    </button>
+                    <p className="mt-1 text-xs text-slate-400">
+                      {new Intl.DateTimeFormat("pt-BR", {
+                        dateStyle: "short",
+                        timeStyle: "short",
+                      }).format(new Date(item.updatedAt))}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => removeVersion(item.id)}
+                      className="mt-3 text-xs font-black text-rose-200 hover:text-rose-100"
+                    >
+                      Remover
+                    </button>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm leading-7 text-slate-400">
+                  Nenhuma versão salva ainda.
+                </p>
+              )}
+            </div>
+          </div>
+        </aside>
+
+        <div className="space-y-5">
+          <div className="sticky top-24 z-20 rounded-[2rem] border border-white/10 bg-slate-950/95 p-4 shadow-2xl backdrop-blur-2xl">
+            <input
+              ref={imageInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleImageSelected}
+            />
+
+            <div className="flex flex-wrap items-center gap-2">
+              <select
+                value={selectedBlock}
+                onChange={(event) => handleBlockChange(event.target.value)}
+                className="h-10 rounded-xl border border-white/10 bg-slate-900 px-3 text-sm font-bold text-white outline-none"
+              >
+                <option value="p">Parágrafo</option>
+                <option value="h1">Título 1</option>
+                <option value="h2">Título 2</option>
+                <option value="h3">Título 3</option>
+                <option value="blockquote">Citação</option>
+                <option value="pre">Código/Bloco</option>
+              </select>
+
+              <select
+                value={fontFamily}
+                onChange={(event) => applyFontFamily(event.target.value)}
+                className="h-10 rounded-xl border border-white/10 bg-slate-900 px-3 text-sm font-bold text-white outline-none"
+              >
+                {fontOptions.map((font) => (
+                  <option key={font} value={font} className="bg-slate-950">
+                    {font}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                value={fontSizePt}
+                onChange={(event) => applyFontSize(event.target.value)}
+                className="h-10 rounded-xl border border-white/10 bg-slate-900 px-3 text-sm font-bold text-white outline-none"
+              >
+                {fontSizeOptions.map((item) => (
+                  <option key={item.value} value={item.value} className="bg-slate-950">
+                    {item.label}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                value={lineHeight}
+                onChange={(event) => applyLineHeight(event.target.value)}
+                className="h-10 rounded-xl border border-white/10 bg-slate-900 px-3 text-sm font-bold text-white outline-none"
+              >
+                {lineHeightOptions.map((item) => (
+                  <option key={item.value} value={item.value} className="bg-slate-950">
+                    Linha {item.label}
+                  </option>
+                ))}
+              </select>
+
+              {[
+                ["B", "bold", "Negrito"],
+                ["I", "italic", "Itálico"],
+                ["U", "underline", "Sublinhado"],
+                ["S", "strikeThrough", "Riscado"],
+              ].map(([label, command, aria]) => (
+                <button
+                  key={command}
+                  type="button"
+                  onClick={() => exec(command)}
+                  aria-label={aria}
+                  className="h-10 min-w-10 rounded-xl border border-white/10 bg-white/5 px-3 text-sm font-black text-white transition hover:bg-white/10"
+                >
+                  {label}
+                </button>
+              ))}
+
+              <div className="h-8 w-px bg-white/10" />
+
+              {[
+                ["•", "insertUnorderedList", "Lista com marcadores"],
+                ["1.", "insertOrderedList", "Lista numerada"],
+                ["←", "justifyLeft", "Alinhar à esquerda"],
+                ["↔", "justifyCenter", "Centralizar"],
+                ["→", "justifyRight", "Alinhar à direita"],
+                ["☰", "justifyFull", "Justificar"],
+              ].map(([label, command, aria]) => (
+                <button
+                  key={command}
+                  type="button"
+                  onClick={() => exec(command)}
+                  aria-label={aria}
+                  className="h-10 min-w-10 rounded-xl border border-white/10 bg-white/5 px-3 text-sm font-black text-white transition hover:bg-white/10"
+                >
+                  {label}
+                </button>
+              ))}
+
+              <label className="flex h-10 items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 text-xs font-black text-white">
+                Cor
+                <input
+                  type="color"
+                  onChange={(event) => exec("foreColor", event.target.value)}
+                  className="h-6 w-8 cursor-pointer border-0 bg-transparent"
+                />
+              </label>
+
+              <label className="flex h-10 items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 text-xs font-black text-white">
+                Fundo
+                <input
+                  type="color"
+                  onChange={(event) => exec("hiliteColor", event.target.value)}
+                  className="h-6 w-8 cursor-pointer border-0 bg-transparent"
+                />
+              </label>
+
+              <button
+                type="button"
+                onClick={insertTable}
+                className="h-10 rounded-xl border border-white/10 bg-white/5 px-3 text-sm font-black text-white transition hover:bg-white/10"
+              >
+                Tabela
+              </button>
+
+              <button
+                type="button"
+                onClick={triggerImagePicker}
+                className="h-10 rounded-xl border border-white/10 bg-white/5 px-3 text-sm font-black text-white transition hover:bg-white/10"
+              >
+                Imagem
+              </button>
+
+              <button
+                type="button"
+                onClick={insertDivider}
+                className="h-10 rounded-xl border border-white/10 bg-white/5 px-3 text-sm font-black text-white transition hover:bg-white/10"
+              >
+                Linha
+              </button>
+
+              <button
+                type="button"
+                onClick={insertPageBreak}
+                className="h-10 rounded-xl border border-white/10 bg-white/5 px-3 text-sm font-black text-white transition hover:bg-white/10"
+              >
+                Quebra
+              </button>
+
+              <button
+                type="button"
+                onClick={clearFormatting}
+                className="h-10 rounded-xl border border-amber-300/25 bg-amber-300/10 px-3 text-sm font-black text-amber-100 transition hover:bg-amber-300/20"
+              >
+                Limpar
+              </button>
+            </div>
+
+            <div className="mt-3 rounded-2xl border border-emerald-300/20 bg-emerald-300/10 p-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="mr-1 text-xs font-black uppercase tracking-[0.18em] text-emerald-200">
+                  ABNT
+                </span>
+
+                <button
+                  type="button"
+                  onClick={applyNormalAbnt}
+                  className="h-9 rounded-xl border border-white/10 bg-white/5 px-3 text-xs font-black text-white transition hover:bg-white/10"
+                >
+                  Texto normal
+                </button>
+
+                <button
+                  type="button"
+                  onClick={applyTitleAbnt}
+                  className="h-9 rounded-xl border border-white/10 bg-white/5 px-3 text-xs font-black text-white transition hover:bg-white/10"
+                >
+                  Título
+                </button>
+
+                <button
+                  type="button"
+                  onClick={applyCitationAbnt}
+                  className="h-9 rounded-xl border border-white/10 bg-white/5 px-3 text-xs font-black text-white transition hover:bg-white/10"
+                >
+                  Citação
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => applyParagraphSpacing(0, 10)}
+                  className="h-9 rounded-xl border border-white/10 bg-white/5 px-3 text-xs font-black text-white transition hover:bg-white/10"
+                >
+                  Espaço padrão
+                </button>
+
+                <label className="flex h-9 items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 text-xs font-black text-white">
+                  Antes
+                  <input
+                    type="number"
+                    min={0}
+                    max={72}
+                    value={spacingBefore}
+                    onChange={(event) =>
+                      applyParagraphSpacing(Number(event.target.value), spacingAfter)
+                    }
+                    className="h-7 w-14 rounded-lg border border-white/10 bg-slate-950 px-2 text-xs text-white outline-none"
+                  />
+                </label>
+
+                <label className="flex h-9 items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 text-xs font-black text-white">
+                  Depois
+                  <input
+                    type="number"
+                    min={0}
+                    max={72}
+                    value={spacingAfter}
+                    onChange={(event) =>
+                      applyParagraphSpacing(spacingBefore, Number(event.target.value))
+                    }
+                    className="h-7 w-14 rounded-lg border border-white/10 bg-slate-950 px-2 text-xs text-white outline-none"
+                  />
+                </label>
+
+                <label className="flex h-9 items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 text-xs font-black text-white">
+                  Recuo 1ª linha
+                  <input
+                    type="number"
+                    min={0}
+                    max={4}
+                    step={0.25}
+                    value={firstLineIndent}
+                    onChange={(event) => applyFirstLineIndent(Number(event.target.value))}
+                    className="h-7 w-16 rounded-lg border border-white/10 bg-slate-950 px-2 text-xs text-white outline-none"
+                  />
+                  cm
+                </label>
+              </div>
+            </div>
+
+            <div className="mt-3 rounded-2xl border border-cyan-300/20 bg-cyan-300/10 p-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="mr-1 text-xs font-black uppercase tracking-[0.18em] text-cyan-200">
+                  Imagem
+                </span>
+
+                {selectedImageName ? (
+                  <span className="max-w-56 truncate rounded-xl bg-slate-950/60 px-3 py-2 text-xs font-bold text-cyan-100">
+                    {selectedImageName}
+                  </span>
+                ) : (
+                  <span className="rounded-xl bg-slate-950/60 px-3 py-2 text-xs font-bold text-slate-400">
+                    Clique em uma imagem para ajustar
+                  </span>
+                )}
+
+                {[25, 40, 50, 60, 75, 100].map((size) => (
+                  <button
+                    key={size}
+                    type="button"
+                    onClick={() => applyImageWidth(size)}
+                    className="h-9 rounded-xl border border-white/10 bg-white/5 px-3 text-xs font-black text-white transition hover:bg-white/10"
+                  >
+                    {size}%
+                  </button>
+                ))}
+
+                <label className="flex h-9 items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 text-xs font-black text-white">
+                  Largura
+                  <input
+                    type="number"
+                    min={10}
+                    max={100}
+                    value={selectedImageWidth}
+                    onChange={(event) => applyImageWidth(Number(event.target.value))}
+                    className="h-7 w-16 rounded-lg border border-white/10 bg-slate-950 px-2 text-xs text-white outline-none"
+                  />
+                  %
+                </label>
+
+                <button
+                  type="button"
+                  onClick={() => alignSelectedImage("left")}
+                  className="h-9 rounded-xl border border-white/10 bg-white/5 px-3 text-xs font-black text-white transition hover:bg-white/10"
+                >
+                  Esq.
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => alignSelectedImage("center")}
+                  className="h-9 rounded-xl border border-white/10 bg-white/5 px-3 text-xs font-black text-white transition hover:bg-white/10"
+                >
+                  Centro
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => alignSelectedImage("right")}
+                  className="h-9 rounded-xl border border-white/10 bg-white/5 px-3 text-xs font-black text-white transition hover:bg-white/10"
+                >
+                  Dir.
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => floatSelectedImage("left")}
+                  className="h-9 rounded-xl border border-cyan-300/25 bg-cyan-300/10 px-3 text-xs font-black text-cyan-100 transition hover:bg-cyan-300/20"
+                >
+                  Texto à direita
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => floatSelectedImage("right")}
+                  className="h-9 rounded-xl border border-cyan-300/25 bg-cyan-300/10 px-3 text-xs font-black text-cyan-100 transition hover:bg-cyan-300/20"
+                >
+                  Texto à esquerda
+                </button>
+
+                <button
+                  type="button"
+                  onClick={clearImageFloat}
+                  className="h-9 rounded-xl border border-white/10 bg-white/5 px-3 text-xs font-black text-white transition hover:bg-white/10"
+                >
+                  Normal
+                </button>
+
+                <button
+                  type="button"
+                  onClick={removeSelectedImage}
+                  className="h-9 rounded-xl border border-rose-300/25 bg-rose-300/10 px-3 text-xs font-black text-rose-100 transition hover:bg-rose-300/20"
+                >
+                  Remover
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-[2rem] border border-white/10 bg-white/[0.06] p-3 shadow-2xl backdrop-blur-2xl">
+            <div className="rounded-[1.5rem] bg-slate-200 p-3 sm:p-6">
+              <div
+                ref={editorRef}
+                contentEditable
+                suppressContentEditableWarning
+                onClick={handleEditorClick}
+                onInput={() => {
+                  prepareImagesInsideEditor();
+                  updateWordCount();
+                  persistCurrentDocument("Editando...");
+                }}
+                onBlur={() => persistCurrentDocument("Documento salvo.")}
+                className="planify-editor-page mx-auto min-h-[29.7cm] w-full max-w-[21cm] rounded-sm bg-white px-[2cm] py-[2cm] text-slate-950 shadow-2xl outline-none sm:px-[2cm] sm:py-[2cm]"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <style jsx global>{`
+        .planify-editor-page {
+          font-family: "Times New Roman", Times, serif;
+          font-size: 12pt;
+          line-height: 1.5;
+        }
+
+        .planify-editor-page.planify-abnt-page {
+          padding: 3cm 2cm 2cm 3cm !important;
+          text-align: justify;
+        }
+
+        .planify-editor-page h1 {
+          font-size: 2rem;
+          font-weight: 800;
+          margin: 0 0 1rem;
+        }
+
+        .planify-editor-page h2 {
+          font-size: 1.55rem;
+          font-weight: 800;
+          margin: 1.25rem 0 0.75rem;
+        }
+
+        .planify-editor-page h3 {
+          font-size: 1.25rem;
+          font-weight: 800;
+          margin: 1rem 0 0.5rem;
+        }
+
+        .planify-editor-page p {
+          margin: 0.65rem 0;
+        }
+
+        .planify-editor-page ul,
+        .planify-editor-page ol {
+          margin: 0.75rem 0;
+          padding-left: 1.5rem;
+        }
+
+        .planify-editor-page table {
+          width: 100%;
+          border-collapse: collapse;
+          margin: 1rem 0;
+        }
+
+        .planify-editor-page td,
+        .planify-editor-page th {
+          border: 1px solid #cbd5e1;
+          padding: 0.55rem;
+          vertical-align: top;
+        }
+
+        .planify-editor-page img {
+          max-width: 100%;
+          height: auto;
+          cursor: pointer;
+        }
+
+        .planify-editor-page figure {
+          max-width: 100%;
+          break-inside: avoid;
+        }
+
+        .planify-editor-page figure::after {
+          content: "";
+          display: table;
+          clear: both;
+        }
+
+        .planify-editor-page blockquote {
+          border-left: 4px solid #38bdf8;
+          margin: 1rem 0;
+          padding: 0.5rem 1rem;
+          background: #f8fafc;
+        }
+
+        .planify-editor-page .page-break {
+          page-break-after: always;
+          border: 0;
+          border-top: 2px dashed #94a3b8;
+          margin: 2rem 0;
+        }
+
+        @media print {
+          body {
+            background: #ffffff !important;
+          }
+
+          header,
+          footer,
+          aside,
+          .sticky,
+          .border-b {
+            display: none !important;
+          }
+
+          .planify-editor-page {
+            box-shadow: none !important;
+            max-width: none !important;
+            min-height: auto !important;
+            padding: 0 !important;
+          }
+        }
+      `}</style>
+    </section>
+  );
+}
+
+export default EditorClient;

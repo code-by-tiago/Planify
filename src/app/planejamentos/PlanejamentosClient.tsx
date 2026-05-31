@@ -1,0 +1,1159 @@
+"use client";
+
+import { useMemo, useState } from "react";
+
+type TipoPlanejamento = "anual" | "trimestral";
+type DocxDownloadMode = "anual" | "trimestral";
+
+type BnccSkill = {
+  id: string;
+  codigo: string;
+  descricao: string;
+  texto?: string;
+  label?: string;
+  etapa?: string;
+  anoSerie?: string;
+  area?: string;
+  componente?: string;
+  conteudo: string;
+  source?: "local" | "fallback";
+};
+
+type BnccGroup = {
+  conteudo: string;
+  habilidades: BnccSkill[];
+};
+
+type PlanningMatrixItem = {
+  conteudo: string;
+  trimestre: number;
+  aulaInicio: number;
+  aulaFim: number;
+  habilidades: Array<{ codigo: string; descricao: string; conteudo?: string }>;
+  objetivos: string;
+  metodologia: string;
+  recursos: string;
+  avaliacao: string;
+  evidencias: string;
+};
+
+type GeneratedPlanning = {
+  tipoPlanejamento: string;
+  titulo: string;
+  resumo: string;
+  conteudos: PlanningMatrixItem[];
+};
+
+type FormState = {
+  escola: string;
+  professor: string;
+  etapa: string;
+  anoSerie: string;
+  areaConhecimento: string;
+  componenteCurricular: string;
+  cargaHoraria: string;
+  tipoPlanejamento: TipoPlanejamento;
+  trimestre: string;
+  conteudos: string;
+  objetivos: string;
+  observacoes: string;
+};
+
+const initialForm: FormState = {
+  escola: "",
+  professor: "",
+  etapa: "Ensino Médio",
+  anoSerie: "3ª série",
+  areaConhecimento: "Linguagens e suas Tecnologias",
+  componenteCurricular: "Língua Portuguesa",
+  cargaHoraria: "80 períodos",
+  tipoPlanejamento: "anual",
+  trimestre: "1",
+  conteudos: "",
+  objetivos: "",
+  observacoes: "",
+};
+
+const exemplos = {
+  fundamental: {
+    etapa: "Ensino Fundamental",
+    anoSerie: "5º ano",
+    areaConhecimento: "Ciências Humanas",
+    componenteCurricular: "História",
+    cargaHoraria: "60 períodos",
+    conteudos:
+      "Povos originários do Brasil\nChegada dos portugueses e primeiros contatos\nColonização e organização do território\nCultura, memória e diversidade",
+    objetivos:
+      "Compreender processos históricos, reconhecer diferentes grupos sociais e relacionar fontes históricas ao estudo do passado.",
+    observacoes:
+      "Turma com foco em leitura, debate, registros no caderno e atividades de interpretação histórica.",
+  },
+  medio: {
+    etapa: "Ensino Médio",
+    anoSerie: "3ª série",
+    areaConhecimento: "Linguagens e suas Tecnologias",
+    componenteCurricular: "Língua Portuguesa",
+    cargaHoraria: "80 períodos",
+    conteudos:
+      "Tipos de texto: descrição, narração e dissertação\nEstrutura dissertativa-argumentativa: introdução com tese, desenvolvimento e conclusão\nCompetências do ENEM: domínio da norma padrão e proposta de intervenção detalhada\nRepertório sociocultural: uso de dados, filosofia, história e literatura nos argumentos",
+    objetivos:
+      "Desenvolver competências de leitura, análise, argumentação, escrita e revisão de textos.",
+    observacoes:
+      "Turma com foco em preparação para avaliações externas e produção textual orientada.",
+  },
+};
+
+function splitConteudos(text: string) {
+  return text
+    .split(/\r?\n|;/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function safeFilename(value: string) {
+  return (
+    value
+      .normalize("NFD")
+      .replace(/\p{Diacritic}/gu, "")
+      .replace(/[^a-zA-Z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .toLowerCase()
+      .slice(0, 90) || "planejamento-planify"
+  );
+}
+
+function normalizeSkill(skill: any, fallbackConteudo = ""): BnccSkill {
+  const codigo = String(skill?.codigo || skill?.code || "BNCC").trim();
+  const descricao = String(
+    skill?.descricao || skill?.description || skill?.texto || skill?.label || "",
+  )
+    .replace(codigo, "")
+    .replace(/^[-–—:.\s]+/, "")
+    .trim();
+
+  return {
+    id:
+      String(skill?.id || "").trim() ||
+      `${codigo}-${fallbackConteudo}-${descricao}`.slice(0, 160),
+    codigo,
+    descricao: descricao || "Descrição oficial não informada.",
+    texto: skill?.texto || `${codigo} — ${descricao}`,
+    label: skill?.label || `${codigo} — ${descricao}`,
+    etapa: skill?.etapa,
+    anoSerie: skill?.anoSerie,
+    area: skill?.area,
+    componente: skill?.componente,
+    conteudo: String(skill?.conteudo || fallbackConteudo || "Conteúdo informado"),
+    source: skill?.source === "local" ? "local" : "fallback",
+  };
+}
+
+function groupSkillsFromResponse(data: any, conteudos: string[]) {
+  const groups: BnccGroup[] = [];
+
+  if (Array.isArray(data?.conteudos)) {
+    for (const group of data.conteudos) {
+      const conteudo = String(group?.conteudo || "").trim();
+
+      if (!conteudo) continue;
+
+      groups.push({
+        conteudo,
+        habilidades: Array.isArray(group?.habilidades)
+          ? group.habilidades.map((skill: any) => normalizeSkill(skill, conteudo))
+          : [],
+      });
+    }
+  }
+
+  if (groups.length > 0) return groups;
+
+  return conteudos.map((conteudo) => ({
+    conteudo,
+    habilidades: [],
+  }));
+}
+
+function Pill({
+  children,
+  tone = "cyan",
+}: {
+  children: React.ReactNode;
+  tone?: "cyan" | "emerald" | "slate" | "amber";
+}) {
+  const styles = {
+    cyan: "border-cyan-300/30 bg-cyan-300/10 text-cyan-100",
+    emerald: "border-emerald-300/30 bg-emerald-300/10 text-emerald-100",
+    slate: "border-white/10 bg-white/5 text-slate-200",
+    amber: "border-amber-300/30 bg-amber-300/10 text-amber-100",
+  };
+
+  return (
+    <span className={`rounded-full border px-3 py-1 text-xs font-black ${styles[tone]}`}>
+      {children}
+    </span>
+  );
+}
+
+
+function escapeHtml(value: unknown) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function nl2br(value: unknown) {
+  return escapeHtml(value).replace(/\n/g, "<br />");
+}
+
+function skillFullText(skill: { codigo?: string; descricao?: string }) {
+  const codigo = String(skill?.codigo || "BNCC");
+  const descricao = String(skill?.descricao || "");
+
+  return descricao ? `${codigo} — ${descricao}` : codigo;
+}
+
+function editorUnitFor(form: FormState, item: PlanningMatrixItem) {
+  const component = form.componenteCurricular
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "");
+  const content = item.conteudo
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "");
+
+  if (component.includes("lingua portuguesa") || component.includes("portugues")) {
+    if (content.includes("texto") || content.includes("argument") || content.includes("dissert")) {
+      return "Produção textual e análise linguística";
+    }
+
+    if (content.includes("leitura") || content.includes("interpret")) {
+      return "Leitura e interpretação";
+    }
+
+    return "Leitura, produção textual e oralidade";
+  }
+
+  if (component.includes("historia")) return "Tempo, memória, cultura e sociedade";
+  if (component.includes("matematica")) return "Números, álgebra, geometria e grandezas";
+  if (component.includes("geografia")) return "O sujeito e seu lugar no mundo";
+  if (component.includes("ciencias")) return "Matéria, energia, vida e evolução";
+
+  return form.areaConhecimento || "Unidade temática";
+}
+
+function refineEditorContent(content: string, slot: number) {
+  const focuses = [
+    "introdução, contextualização e diagnóstico",
+    "desenvolvimento, análise e aplicação orientada",
+    "aprofundamento, prática e sistematização",
+    "revisão, produção, avaliação e retomada",
+  ];
+
+  const normalized = content
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "");
+
+  if (
+    normalized.includes("introducao") ||
+    normalized.includes("desenvolvimento") ||
+    normalized.includes("aprofundamento") ||
+    normalized.includes("revisao")
+  ) {
+    return content;
+  }
+
+  return `${content} — ${focuses[slot % focuses.length]}`;
+}
+
+function sequenceEditorAnnualRows(items: PlanningMatrixItem[], trimester: number, rowCount = 4) {
+  const safeItems = items.length > 0 ? items : [];
+  const rows: PlanningMatrixItem[] = [];
+
+  if (safeItems.length === 0) {
+    return rows;
+  }
+
+  for (let index = 0; index < rowCount; index += 1) {
+    const source = safeItems[index] || safeItems[index % safeItems.length];
+    const missing = !safeItems[index];
+
+    rows.push({
+      ...source,
+      trimestre: trimester,
+      conteudo: missing ? refineEditorContent(source.conteudo, index) : source.conteudo,
+      aulaInicio: index * 10 + 1,
+      aulaFim: (index + 1) * 10,
+    });
+  }
+
+  return rows;
+}
+
+function editorItemsByTrimester(planning: GeneratedPlanning, trimester: number) {
+  const explicit = planning.conteudos.filter((item) => Number(item.trimestre) === trimester);
+
+  if (explicit.length > 0) {
+    return explicit;
+  }
+
+  const chunkSize = Math.max(1, Math.ceil(planning.conteudos.length / 3));
+  const start = (trimester - 1) * chunkSize;
+
+  return planning.conteudos.slice(start, start + chunkSize);
+}
+
+function saveAnnualMatrixSnapshot(form: FormState, planning: GeneratedPlanning) {
+  if (form.tipoPlanejamento !== "anual") {
+    return;
+  }
+
+  const snapshot = {
+    form,
+    planning,
+    updatedAt: new Date().toISOString(),
+  };
+
+  localStorage.setItem("planify_matriz_anual", JSON.stringify(snapshot));
+}
+
+function buildOfficialEditorHtml(form: FormState, planning: GeneratedPlanning) {
+  const baseStyles = `
+    <style>
+      .planify-doc { font-family: Arial, sans-serif; color: #111827; line-height: 1.35; }
+      .planify-doc h1 { text-align: center; font-size: 22px; margin: 10px 0 14px; }
+      .planify-doc h2 { font-size: 18px; margin: 22px 0 10px; color: #0f766e; }
+      .planify-doc h3 { font-size: 15px; margin: 16px 0 8px; color: #0f172a; }
+      .planify-doc table { width: 100%; border-collapse: collapse; margin: 10px 0 18px; table-layout: fixed; }
+      .planify-doc th, .planify-doc td { border: 1px solid #64748b; padding: 8px; vertical-align: top; font-size: 12px; }
+      .planify-doc th { background: #e2e8f0; font-weight: 700; }
+      .planify-doc .header td:first-child { width: 24%; background: #e2e8f0; font-weight: 700; }
+      .planify-doc .trim-title { background: #0f766e; color: white; font-weight: 700; text-align: center; }
+      .planify-doc .small { font-size: 11px; color: #334155; }
+    </style>
+  `;
+
+  const identity = `
+    <table class="header">
+      <tr><td>Escola</td><td>${escapeHtml(form.escola || "Escola não informada")}</td></tr>
+      <tr><td>Professor(a)</td><td>${escapeHtml(form.professor || "Professor(a) não informado(a)")}</td></tr>
+      <tr><td>Etapa / Ano-Série</td><td>${escapeHtml(form.etapa)} — ${escapeHtml(form.anoSerie)}</td></tr>
+      <tr><td>Área / Componente</td><td>${escapeHtml(form.areaConhecimento)} — ${escapeHtml(form.componenteCurricular)}</td></tr>
+      <tr><td>Carga horária</td><td>${escapeHtml(form.cargaHoraria)}</td></tr>
+    </table>
+  `;
+
+  if (form.tipoPlanejamento === "trimestral") {
+    const trimester = Number(form.trimestre || 1);
+    const items = sequenceEditorAnnualRows(
+      planning.conteudos.filter((item) => Number(item.trimestre) === trimester).length
+        ? planning.conteudos.filter((item) => Number(item.trimestre) === trimester)
+        : planning.conteudos,
+      trimester,
+      Math.max(1, planning.conteudos.length),
+    );
+
+    const tables = items
+      .map(
+        (item) => `
+          <table>
+            <tr><th colspan="2" class="trim-title">${trimester}º trimestre - Aula nº ${item.aulaInicio} a ${item.aulaFim}</th></tr>
+            <tr><td><strong>Objetos de conhecimento</strong></td><td>${escapeHtml(item.conteudo)}</td></tr>
+            <tr><td><strong>Habilidades BNCC</strong></td><td>${nl2br(item.habilidades.map(skillFullText).join("\n"))}</td></tr>
+            <tr><td><strong>Objetivos / expectativas</strong></td><td>${escapeHtml(item.objetivos)}</td></tr>
+            <tr><td><strong>Metodologia / etapas</strong></td><td>${escapeHtml(item.metodologia)}</td></tr>
+            <tr><td><strong>Recursos</strong></td><td>${escapeHtml(item.recursos)}</td></tr>
+            <tr><td><strong>Evidências e avaliação</strong></td><td>${nl2br(`${item.evidencias}\n${item.avaliacao}`)}</td></tr>
+          </table>
+        `,
+      )
+      .join("");
+
+    return `
+      ${baseStyles}
+      <article class="planify-doc">
+        <h1>PLANEJAMENTO TRIMESTRAL — ${trimester}º TRIMESTRE</h1>
+        ${identity}
+        ${tables}
+      </article>
+    `;
+  }
+
+  const trimesterBlocks = [1, 2, 3]
+    .map((trimester) => {
+      const items = sequenceEditorAnnualRows(editorItemsByTrimester(planning, trimester), trimester, 4);
+
+      const rows = items
+        .map(
+          (item) => `
+            <tr>
+              <td>${escapeHtml(editorUnitFor(form, item))}</td>
+              <td>${escapeHtml(item.conteudo)}</td>
+              <td>${nl2br(item.habilidades.map(skillFullText).join("\n"))}</td>
+              <td>${escapeHtml(item.objetivos)}</td>
+              <td>10 período(s)</td>
+              <td>${item.aulaInicio} a ${item.aulaFim}</td>
+            </tr>
+          `,
+        )
+        .join("");
+
+      const projectText = items.map((item) => item.conteudo).join("; ");
+      const evaluationText = items.map((item) => item.avaliacao).filter(Boolean).join("\n");
+
+      return `
+        <h2>${trimester}º trimestre</h2>
+        <table>
+          <tr>
+            <th>Unidade Temática</th>
+            <th>Objetos de Conhecimento</th>
+            <th>Habilidades</th>
+            <th>Expectativas de aprendizagem</th>
+            <th>Previsão de carga horária</th>
+            <th>Aula nº</th>
+          </tr>
+          ${rows}
+        </table>
+
+        <table>
+          <tr><td><strong>Projetos interdisciplinares / Temas integradores</strong></td><td>Integração dos conteúdos do trimestre (${escapeHtml(projectText)}) por meio de leitura, pesquisa, produção, participação coletiva e socialização das aprendizagens.</td></tr>
+          <tr><td><strong>Instrumentos de avaliação</strong></td><td>${nl2br(evaluationText || "Observação contínua, registros, atividades concluídas, participação, produções individuais/coletivas e devolutivas do professor.")}</td></tr>
+        </table>
+      `;
+    })
+    .join("");
+
+  return `
+    ${baseStyles}
+    <article class="planify-doc">
+      <h1>PLANEJAMENTO ANUAL</h1>
+      ${identity}
+      ${trimesterBlocks}
+    </article>
+  `;
+}
+
+export function PlanejamentosClient() {
+  const [form, setForm] = useState<FormState>(initialForm);
+  const [groups, setGroups] = useState<BnccGroup[]>([]);
+  const [selectedSkills, setSelectedSkills] = useState<BnccSkill[]>([]);
+  const [generatedPlanning, setGeneratedPlanning] = useState<GeneratedPlanning | null>(null);
+  const [usedAI, setUsedAI] = useState<boolean | null>(null);
+  const [status, setStatus] = useState("Aguardando");
+  const [loadingBncc, setLoadingBncc] = useState(false);
+  const [loadingPlan, setLoadingPlan] = useState(false);
+  const [loadingDocx, setLoadingDocx] = useState(false);
+  const [error, setError] = useState("");
+
+  const conteudos = useMemo(() => splitConteudos(form.conteudos), [form.conteudos]);
+
+  const stats = useMemo(
+    () => ({
+      conteudos: conteudos.length,
+      sugeridas: groups.reduce((total, group) => total + group.habilidades.length, 0),
+      selecionadas: selectedSkills.length,
+      matriz: generatedPlanning?.conteudos?.length || 0,
+    }),
+    [conteudos.length, groups, selectedSkills.length, generatedPlanning],
+  );
+
+  function invalidateGenerated() {
+    setGeneratedPlanning(null);
+    setUsedAI(null);
+  }
+
+  function updateField<K extends keyof FormState>(key: K, value: FormState[K]) {
+    setForm((current) => ({
+      ...current,
+      [key]: value,
+    }));
+
+    if (
+      key === "conteudos" ||
+      key === "etapa" ||
+      key === "anoSerie" ||
+      key === "areaConhecimento" ||
+      key === "componenteCurricular" ||
+      key === "tipoPlanejamento" ||
+      key === "trimestre"
+    ) {
+      setGroups([]);
+      setSelectedSkills([]);
+      invalidateGenerated();
+      setStatus("Aguardando nova sugestão");
+      setError("");
+    }
+  }
+
+  function applyExample(kind: keyof typeof exemplos) {
+    setForm((current) => ({ ...current, ...exemplos[kind] }));
+    setGroups([]);
+    setSelectedSkills([]);
+    invalidateGenerated();
+    setStatus("Exemplo preenchido. Agora sugira as habilidades BNCC.");
+    setError("");
+  }
+
+  function clearAll() {
+    setForm(initialForm);
+    setGroups([]);
+    setSelectedSkills([]);
+    invalidateGenerated();
+    setStatus("Aguardando");
+    setError("");
+  }
+
+  function isSelected(skill: BnccSkill) {
+    return selectedSkills.some((item) => item.id === skill.id);
+  }
+
+  function toggleSkill(skill: BnccSkill) {
+    invalidateGenerated();
+    setSelectedSkills((current) => {
+      const exists = current.some((item) => item.id === skill.id);
+      return exists ? current.filter((item) => item.id !== skill.id) : [...current, skill];
+    });
+  }
+
+  function selectGroup(group: BnccGroup) {
+    invalidateGenerated();
+    setSelectedSkills((current) => {
+      const map = new Map(current.map((skill) => [skill.id, skill]));
+      for (const skill of group.habilidades.slice(0, 3)) map.set(skill.id, skill);
+      return Array.from(map.values());
+    });
+  }
+
+  function removeGroup(group: BnccGroup) {
+    invalidateGenerated();
+    setSelectedSkills((current) =>
+      current.filter((skill) => !group.habilidades.some((item) => item.id === skill.id)),
+    );
+  }
+
+  function buildBasePayload() {
+    return {
+      tipoPlanejamento: form.tipoPlanejamento,
+      escola: form.escola,
+      professor: form.professor,
+      etapa: form.etapa,
+      anoSerie: form.anoSerie,
+      areaConhecimento: form.areaConhecimento,
+      componenteCurricular: form.componenteCurricular,
+      cargaHoraria: form.cargaHoraria,
+      trimestre: form.trimestre,
+      conteudos: form.conteudos,
+      objetivosGerais: form.objetivos,
+      observacoes: form.observacoes,
+      habilidadesSelecionadas: selectedSkills.map((skill) => ({
+        codigo: skill.codigo,
+        descricao: skill.descricao,
+        etapa: skill.etapa || form.etapa,
+        anoSerie: skill.anoSerie || form.anoSerie,
+        area: skill.area || form.areaConhecimento,
+        componente: skill.componente || form.componenteCurricular,
+        conteudo: skill.conteudo,
+      })),
+    };
+  }
+
+  async function suggestBncc() {
+    setError("");
+
+    if (conteudos.length === 0) {
+      setError("Informe pelo menos um conteúdo. A sugestão BNCC usa a caixa Conteúdos como base principal.");
+      return;
+    }
+
+    setLoadingBncc(true);
+    setStatus("Buscando habilidades BNCC pelos conteúdos...");
+
+    try {
+      const response = await fetch("/api/bncc/sugerir", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(buildBasePayload()),
+      });
+
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok || !data?.success) {
+        throw new Error(data?.error?.message || "Não foi possível sugerir habilidades BNCC.");
+      }
+
+      const nextGroups = groupSkillsFromResponse(data, conteudos);
+      const autoSelected = nextGroups.flatMap((group) => group.habilidades.slice(0, 3));
+
+      setGroups(nextGroups);
+      setSelectedSkills(autoSelected);
+      invalidateGenerated();
+      setStatus("Habilidades sugeridas. Agora gere o planejamento com IA.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao sugerir habilidades BNCC.");
+      setStatus("Erro na sugestão");
+    } finally {
+      setLoadingBncc(false);
+    }
+  }
+
+  async function generatePlanning() {
+    setError("");
+
+    if (conteudos.length === 0) {
+      setError("Informe os conteúdos antes de gerar o planejamento.");
+      return;
+    }
+
+    if (selectedSkills.length === 0) {
+      setError("Sugira e selecione pelo menos uma habilidade BNCC antes de gerar o planejamento.");
+      return;
+    }
+
+    setLoadingPlan(true);
+    setStatus("Gerando matriz pedagógica com IA...");
+
+    try {
+      const response = await fetch("/api/planejamentos/gerar-ia", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(buildBasePayload()),
+      });
+
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok || !data?.success || !data?.planejamento) {
+        throw new Error(data?.error?.message || "Não foi possível gerar o planejamento com IA.");
+      }
+
+      setGeneratedPlanning(data.planejamento);
+      saveAnnualMatrixSnapshot(form, data.planejamento);
+      setUsedAI(Boolean(data.usedAI));
+      setStatus(
+        data.usedAI
+          ? "Matriz pedagógica gerada com IA. Agora baixe o DOCX oficial."
+          : "Matriz criada em modo seguro. Agora baixe o DOCX oficial.",
+      );
+
+      if (data.warning) {
+        setError(data.warning);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao gerar planejamento com IA.");
+      setStatus("Erro ao gerar planejamento");
+    } finally {
+      setLoadingPlan(false);
+    }
+  }
+
+  async function downloadDocxWithMode(mode: DocxDownloadMode, trimester?: number) {
+    setError("");
+
+    if (!generatedPlanning) {
+      setError("Gere o planejamento anual com IA antes de baixar o DOCX oficial.");
+      return;
+    }
+
+    setLoadingDocx(true);
+    setStatus(
+      mode === "trimestral"
+        ? `Preenchendo modelo oficial do ${trimester}º trimestre...`
+        : "Preenchendo modelo oficial anual...",
+    );
+
+    try {
+      const response = await fetch("/api/planejamentos/docx-oficial", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...buildBasePayload(),
+          tipoPlanejamento: mode,
+          trimestre: trimester ? String(trimester) : form.trimestre,
+          matrizPlanejamento: generatedPlanning,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => null);
+        throw new Error(data?.error?.message || "Não foi possível gerar o DOCX oficial.");
+      }
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const anchor = window.document.createElement("a");
+      const filename =
+        mode === "trimestral"
+          ? `planejamento-trimestral-${trimester}-${form.componenteCurricular}-${form.anoSerie}`
+          : `planejamento-anual-${form.componenteCurricular}-${form.anoSerie}`;
+
+      anchor.href = url;
+      anchor.download = `${safeFilename(filename)}.docx`;
+      anchor.click();
+      URL.revokeObjectURL(url);
+
+      setStatus(
+        mode === "trimestral"
+          ? `${trimester}º trimestre baixado com base na matriz anual.`
+          : "Planejamento anual DOCX oficial baixado.",
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao baixar DOCX.");
+      setStatus("Erro ao gerar DOCX");
+    } finally {
+      setLoadingDocx(false);
+    }
+  }
+
+  async function downloadDocx() {
+    await downloadDocxWithMode(form.tipoPlanejamento, Number(form.trimestre || 1));
+  }
+
+  async function downloadAnnualAndTrimestersPackage() {
+    setError("");
+
+    if (!generatedPlanning) {
+      setError("Gere o planejamento anual com IA antes de baixar o pacote.");
+      return;
+    }
+
+    if (form.tipoPlanejamento !== "anual") {
+      setError("Para baixar anual + trimestrais, gere primeiro o Planejamento Anual.");
+      return;
+    }
+
+    setLoadingDocx(true);
+    setStatus("Gerando pacote com anual + trimestrais...");
+
+    try {
+      const response = await fetch("/api/planejamentos/docx-pacote", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...buildBasePayload(),
+          tipoPlanejamento: "anual",
+          matrizPlanejamento: generatedPlanning,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => null);
+        throw new Error(data?.error?.message || "Não foi possível gerar o pacote DOCX.");
+      }
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const anchor = window.document.createElement("a");
+
+      anchor.href = url;
+      anchor.download = `${safeFilename(`planify-anual-trimestrais-${form.componenteCurricular}-${form.anoSerie}`)}.zip`;
+      anchor.click();
+      URL.revokeObjectURL(url);
+
+      setStatus("Pacote anual + trimestrais baixado com sucesso.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao baixar pacote.");
+      setStatus("Erro ao gerar pacote");
+    } finally {
+      setLoadingDocx(false);
+    }
+  }
+
+  function sendToEditor() {
+    if (!generatedPlanning) {
+      setError("Gere o planejamento com IA antes de enviar para o Editor.");
+      return;
+    }
+
+    const html = buildOfficialEditorHtml(form, generatedPlanning);
+    const documentData = {
+      type: "planejamento",
+      title: generatedPlanning.titulo || "Planejamento",
+      html,
+      content: html,
+      payload: { ...buildBasePayload(), matrizPlanejamento: generatedPlanning },
+      updatedAt: new Date().toISOString(),
+    };
+
+    localStorage.setItem("planify_editor_document", JSON.stringify(documentData));
+    localStorage.setItem("planify_current_document", JSON.stringify(documentData));
+    localStorage.setItem("planify_editor_content", html);
+    localStorage.setItem("editorContent", html);
+    localStorage.setItem("documentoEditor", html);
+
+    window.location.href = "/editor?from=planejamentos";
+  }
+
+  return (
+    <main className="min-h-screen bg-slate-950 text-white">
+      <section className="mx-auto grid max-w-7xl gap-6 px-5 py-10 lg:grid-cols-[0.78fr_1.22fr]">
+        <aside className="space-y-6">
+          <div className="rounded-[2.25rem] border border-cyan-300/20 bg-cyan-300/10 p-7 shadow-2xl shadow-cyan-500/10">
+            <p className="text-sm font-black uppercase tracking-[0.32em] text-cyan-300">
+              Fluxo correto
+            </p>
+            <h1 className="mt-4 text-4xl font-black tracking-tight text-white">
+              BNCC → IA → DOCX oficial
+            </h1>
+            <p className="mt-5 text-sm leading-7 text-cyan-100/80">
+              Primeiro sugira habilidades por conteúdo, depois gere a matriz pedagógica com IA e só então baixe o modelo oficial preenchido.
+            </p>
+
+            <div className="mt-6 grid gap-3">
+              <div className="rounded-2xl border border-white/10 bg-slate-950/45 p-4">
+                <p className="text-xs font-black uppercase tracking-[0.25em] text-cyan-200">Conteúdos</p>
+                <p className="mt-2 text-3xl font-black">{stats.conteudos}</p>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-slate-950/45 p-4">
+                <p className="text-xs font-black uppercase tracking-[0.25em] text-cyan-200">Selecionadas</p>
+                <p className="mt-2 text-3xl font-black">{stats.selecionadas}</p>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-slate-950/45 p-4">
+                <p className="text-xs font-black uppercase tracking-[0.25em] text-cyan-200">Matriz IA</p>
+                <p className="mt-2 text-3xl font-black">{stats.matriz}</p>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-slate-950/45 p-4">
+                <p className="text-xs font-black uppercase tracking-[0.25em] text-cyan-200">Status</p>
+                <p className="mt-2 text-xl font-black">{status}</p>
+              </div>
+            </div>
+
+            {generatedPlanning && form.tipoPlanejamento === "anual" ? (
+              <div className="mt-6 rounded-[1.75rem] border border-emerald-300/20 bg-emerald-300/10 p-5">
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                  <div>
+                    <p className="text-sm font-black uppercase tracking-[0.28em] text-emerald-300">
+                      Matriz anual aprovada
+                    </p>
+                    <h3 className="mt-2 text-2xl font-black text-white">
+                      Baixar anual e trimestrais coerentes
+                    </h3>
+                    <p className="mt-2 text-sm leading-7 text-emerald-100/85">
+                      Os trimestrais abaixo usam exatamente a mesma matriz anual,
+                      os mesmos conteúdos e as mesmas habilidades BNCC. Não há nova
+                      busca de BNCC para trimestre.
+                    </p>
+                  </div>
+
+                  <Pill tone="emerald">Baseado no anual</Pill>
+                </div>
+
+                <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+                  <button
+                    type="button"
+                    onClick={() => downloadDocxWithMode("anual")}
+                    disabled={loadingDocx}
+                    className="rounded-2xl bg-white px-5 py-4 text-sm font-black text-slate-950 transition hover:-translate-y-1 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    Anual DOCX
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => downloadDocxWithMode("trimestral", 1)}
+                    disabled={loadingDocx}
+                    className="rounded-2xl border border-white/10 bg-white/5 px-5 py-4 text-sm font-black text-white transition hover:-translate-y-1 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    1º Trimestre
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => downloadDocxWithMode("trimestral", 2)}
+                    disabled={loadingDocx}
+                    className="rounded-2xl border border-white/10 bg-white/5 px-5 py-4 text-sm font-black text-white transition hover:-translate-y-1 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    2º Trimestre
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => downloadDocxWithMode("trimestral", 3)}
+                    disabled={loadingDocx}
+                    className="rounded-2xl border border-white/10 bg-white/5 px-5 py-4 text-sm font-black text-white transition hover:-translate-y-1 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    3º Trimestre
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={downloadAnnualAndTrimestersPackage}
+                    disabled={loadingDocx}
+                    className="rounded-2xl border border-cyan-300/30 bg-cyan-300/10 px-5 py-4 text-sm font-black text-cyan-100 transition hover:-translate-y-1 hover:bg-cyan-300/20 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    Pacote ZIP
+                  </button>
+                </div>
+              </div>
+            ) : null}
+          </div>
+
+          <div className="rounded-[2.25rem] border border-white/10 bg-white/[0.06] p-7 shadow-2xl backdrop-blur-2xl">
+            <p className="text-sm font-black uppercase tracking-[0.32em] text-cyan-300">Exemplos</p>
+            <h2 className="mt-4 text-2xl font-black">Preenchimento ideal</h2>
+            <div className="mt-6 grid gap-3">
+              <button type="button" onClick={() => applyExample("fundamental")} className="rounded-2xl bg-white px-5 py-4 text-sm font-black text-slate-950 transition hover:-translate-y-1 hover:bg-cyan-100">
+                Exemplo Fundamental
+              </button>
+              <button type="button" onClick={() => applyExample("medio")} className="rounded-2xl border border-cyan-300/30 bg-cyan-300/10 px-5 py-4 text-sm font-black text-cyan-100 transition hover:-translate-y-1 hover:bg-cyan-300/20">
+                Exemplo Ensino Médio
+              </button>
+            </div>
+          </div>
+        </aside>
+
+        <section className="space-y-6">
+          <div className="rounded-[2.25rem] border border-white/10 bg-white/[0.06] p-7 shadow-2xl backdrop-blur-2xl">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <p className="text-sm font-black uppercase tracking-[0.32em] text-cyan-300">Dados</p>
+                <h2 className="mt-4 text-4xl font-black text-white">Informações do planejamento</h2>
+              </div>
+              <button type="button" onClick={clearAll} className="rounded-2xl border border-white/10 bg-white/5 px-6 py-4 text-sm font-black text-white transition hover:bg-white/10">
+                Limpar tudo
+              </button>
+            </div>
+
+            <div className="mt-8 grid gap-5 md:grid-cols-2">
+              <label className="grid gap-2">
+                <span className="text-sm font-bold text-slate-300">Escola</span>
+                <input value={form.escola} onChange={(event) => updateField("escola", event.target.value)} placeholder="Nome da escola" className="rounded-2xl border border-white/10 bg-slate-950/65 px-5 py-4 text-sm text-white outline-none transition focus:border-cyan-300/60" />
+              </label>
+              <label className="grid gap-2">
+                <span className="text-sm font-bold text-slate-300">Professor</span>
+                <input value={form.professor} onChange={(event) => updateField("professor", event.target.value)} placeholder="Nome do professor" className="rounded-2xl border border-white/10 bg-slate-950/65 px-5 py-4 text-sm text-white outline-none transition focus:border-cyan-300/60" />
+              </label>
+              <label className="grid gap-2">
+                <span className="text-sm font-bold text-slate-300">Etapa</span>
+                <select value={form.etapa} onChange={(event) => updateField("etapa", event.target.value)} className="rounded-2xl border border-white/10 bg-slate-950/65 px-5 py-4 text-sm text-white outline-none transition focus:border-cyan-300/60">
+                  <option>Educação Infantil</option>
+                  <option>Ensino Fundamental</option>
+                  <option>Ensino Médio</option>
+                </select>
+              </label>
+              <label className="grid gap-2">
+                <span className="text-sm font-bold text-slate-300">Ano/Série</span>
+                <input value={form.anoSerie} onChange={(event) => updateField("anoSerie", event.target.value)} placeholder="Ex.: 5º ano, 3ª série" className="rounded-2xl border border-white/10 bg-slate-950/65 px-5 py-4 text-sm text-white outline-none transition focus:border-cyan-300/60" />
+              </label>
+              <label className="grid gap-2">
+                <span className="text-sm font-bold text-slate-300">Área do conhecimento</span>
+                <input value={form.areaConhecimento} onChange={(event) => updateField("areaConhecimento", event.target.value)} placeholder="Ex.: Linguagens e suas Tecnologias" className="rounded-2xl border border-white/10 bg-slate-950/65 px-5 py-4 text-sm text-white outline-none transition focus:border-cyan-300/60" />
+              </label>
+              <label className="grid gap-2">
+                <span className="text-sm font-bold text-slate-300">Componente curricular</span>
+                <input value={form.componenteCurricular} onChange={(event) => updateField("componenteCurricular", event.target.value)} placeholder="Ex.: Língua Portuguesa" className="rounded-2xl border border-white/10 bg-slate-950/65 px-5 py-4 text-sm text-white outline-none transition focus:border-cyan-300/60" />
+              </label>
+              <label className="grid gap-2">
+                <span className="text-sm font-bold text-slate-300">Carga horária</span>
+                <input value={form.cargaHoraria} onChange={(event) => updateField("cargaHoraria", event.target.value)} placeholder="Ex.: 80 períodos" className="rounded-2xl border border-white/10 bg-slate-950/65 px-5 py-4 text-sm text-white outline-none transition focus:border-cyan-300/60" />
+              </label>
+              <label className="grid gap-2">
+                <span className="text-sm font-bold text-slate-300">Tipo</span>
+                <select value={form.tipoPlanejamento} onChange={(event) => updateField("tipoPlanejamento", event.target.value as TipoPlanejamento)} className="rounded-2xl border border-white/10 bg-slate-950/65 px-5 py-4 text-sm text-white outline-none transition focus:border-cyan-300/60">
+                  <option value="anual">Anual</option>
+                  <option value="trimestral">Trimestral</option>
+                </select>
+              </label>
+              {form.tipoPlanejamento === "trimestral" ? (
+                <label className="grid gap-2">
+                  <span className="text-sm font-bold text-slate-300">Trimestre</span>
+                  <select value={form.trimestre} onChange={(event) => updateField("trimestre", event.target.value)} className="rounded-2xl border border-white/10 bg-slate-950/65 px-5 py-4 text-sm text-white outline-none transition focus:border-cyan-300/60">
+                    <option value="1">1º trimestre</option>
+                    <option value="2">2º trimestre</option>
+                    <option value="3">3º trimestre</option>
+                  </select>
+                </label>
+              ) : null}
+            </div>
+
+            <div className="mt-5 grid gap-5">
+              <label className="grid gap-2">
+                <span className="text-sm font-bold text-slate-300">Conteúdos</span>
+                <textarea value={form.conteudos} onChange={(event) => updateField("conteudos", event.target.value)} rows={6} placeholder={"Digite um conteúdo por linha.\nEx.: Estrutura dissertativa-argumentativa\nEx.: Repertório sociocultural"} className="rounded-2xl border border-white/10 bg-slate-950/65 px-5 py-4 text-sm leading-7 text-white outline-none transition focus:border-cyan-300/60" />
+                <span className="text-xs text-cyan-100/70">Este campo é suficiente para buscar e sugerir habilidades BNCC.</span>
+              </label>
+
+              <label className="grid gap-2">
+                <span className="text-sm font-bold text-slate-300">Objetivos gerais</span>
+                <textarea value={form.objetivos} onChange={(event) => updateField("objetivos", event.target.value)} rows={3} placeholder="Opcional. Ajuda no texto pedagógico do DOCX." className="rounded-2xl border border-white/10 bg-slate-950/65 px-5 py-4 text-sm leading-7 text-white outline-none transition focus:border-cyan-300/60" />
+              </label>
+
+              <label className="grid gap-2">
+                <span className="text-sm font-bold text-slate-300">Observações</span>
+                <textarea value={form.observacoes} onChange={(event) => updateField("observacoes", event.target.value)} rows={3} placeholder="Opcional. Informe perfil da turma, foco pedagógico ou necessidades específicas." className="rounded-2xl border border-white/10 bg-slate-950/65 px-5 py-4 text-sm leading-7 text-white outline-none transition focus:border-cyan-300/60" />
+              </label>
+            </div>
+
+            {error ? (
+              <div className="mt-6 rounded-2xl border border-amber-300/30 bg-amber-300/10 p-4 text-sm font-bold text-amber-100">
+                {error}
+              </div>
+            ) : null}
+
+            <div className="mt-7 grid gap-3 xl:grid-cols-4">
+              <button type="button" onClick={suggestBncc} disabled={loadingBncc} className="rounded-2xl bg-white px-6 py-4 text-sm font-black text-slate-950 transition hover:-translate-y-1 hover:bg-cyan-100 disabled:cursor-not-allowed disabled:opacity-60">
+                {loadingBncc ? "Sugerindo BNCC..." : "1. Sugerir BNCC"}
+              </button>
+              <button type="button" onClick={generatePlanning} disabled={loadingPlan} className="rounded-2xl border border-cyan-300/30 bg-cyan-300/10 px-6 py-4 text-sm font-black text-cyan-100 transition hover:-translate-y-1 hover:bg-cyan-300/20 disabled:cursor-not-allowed disabled:opacity-60">
+                {loadingPlan ? "Gerando com IA..." : "2. Gerar planejamento com IA"}
+              </button>
+              <button type="button" onClick={downloadDocx} disabled={loadingDocx || !generatedPlanning} className="rounded-2xl border border-emerald-300/30 bg-emerald-300/10 px-6 py-4 text-sm font-black text-emerald-100 transition hover:-translate-y-1 hover:bg-emerald-300/20 disabled:cursor-not-allowed disabled:opacity-50">
+                {loadingDocx ? "Preenchendo DOCX..." : "3. Baixar DOCX atual"}
+              </button>
+              <button type="button" onClick={sendToEditor} disabled={!generatedPlanning} className="rounded-2xl border border-white/10 bg-white/5 px-6 py-4 text-sm font-black text-white transition hover:-translate-y-1 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50">
+                Enviar ao Editor
+              </button>
+            </div>
+
+            {generatedPlanning && form.tipoPlanejamento === "anual" ? (
+              <div className="mt-6 rounded-[1.75rem] border border-emerald-300/20 bg-emerald-300/10 p-5">
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                  <div>
+                    <p className="text-sm font-black uppercase tracking-[0.28em] text-emerald-300">
+                      Matriz anual aprovada
+                    </p>
+                    <h3 className="mt-2 text-2xl font-black text-white">
+                      Baixar anual e trimestrais coerentes
+                    </h3>
+                    <p className="mt-2 text-sm leading-7 text-emerald-100/85">
+                      Os trimestrais abaixo usam exatamente a mesma matriz anual,
+                      os mesmos conteúdos e as mesmas habilidades BNCC. Não há nova
+                      busca de BNCC para trimestre.
+                    </p>
+                  </div>
+
+                  <Pill tone="emerald">Baseado no anual</Pill>
+                </div>
+
+                <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+                  <button
+                    type="button"
+                    onClick={() => downloadDocxWithMode("anual")}
+                    disabled={loadingDocx}
+                    className="rounded-2xl bg-white px-5 py-4 text-sm font-black text-slate-950 transition hover:-translate-y-1 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    Anual DOCX
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => downloadDocxWithMode("trimestral", 1)}
+                    disabled={loadingDocx}
+                    className="rounded-2xl border border-white/10 bg-white/5 px-5 py-4 text-sm font-black text-white transition hover:-translate-y-1 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    1º Trimestre
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => downloadDocxWithMode("trimestral", 2)}
+                    disabled={loadingDocx}
+                    className="rounded-2xl border border-white/10 bg-white/5 px-5 py-4 text-sm font-black text-white transition hover:-translate-y-1 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    2º Trimestre
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => downloadDocxWithMode("trimestral", 3)}
+                    disabled={loadingDocx}
+                    className="rounded-2xl border border-white/10 bg-white/5 px-5 py-4 text-sm font-black text-white transition hover:-translate-y-1 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    3º Trimestre
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={downloadAnnualAndTrimestersPackage}
+                    disabled={loadingDocx}
+                    className="rounded-2xl border border-cyan-300/30 bg-cyan-300/10 px-5 py-4 text-sm font-black text-cyan-100 transition hover:-translate-y-1 hover:bg-cyan-300/20 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    Pacote ZIP
+                  </button>
+                </div>
+              </div>
+            ) : null}
+          </div>
+
+          <div className="rounded-[2.25rem] border border-white/10 bg-white/[0.06] p-7 shadow-2xl backdrop-blur-2xl">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="text-sm font-black uppercase tracking-[0.32em] text-cyan-300">BNCC por conteúdo</p>
+                <h2 className="mt-4 text-3xl font-black text-white">Habilidades sugeridas</h2>
+                <p className="mt-3 text-sm leading-7 text-slate-400">Revise os cards e deixe selecionadas apenas as habilidades que devem entrar no planejamento.</p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Pill tone="cyan">{stats.sugeridas} sugeridas</Pill>
+                <Pill tone="emerald">{stats.selecionadas} selecionadas</Pill>
+                {usedAI !== null ? <Pill tone={usedAI ? "emerald" : "amber"}>{usedAI ? "IA usada" : "Modo seguro"}</Pill> : null}
+              </div>
+            </div>
+
+            {groups.length === 0 ? (
+              <div className="mt-7 rounded-2xl border border-dashed border-white/15 bg-slate-950/45 p-7 text-sm leading-7 text-slate-400">
+                Nenhuma sugestão ainda. Preencha os conteúdos e clique em <strong className="text-white">Sugerir BNCC</strong>.
+              </div>
+            ) : (
+              <div className="mt-7 grid gap-5">
+                {groups.map((group) => (
+                  <div key={group.conteudo} className="rounded-[1.75rem] border border-white/10 bg-slate-950/45 p-5">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                      <div>
+                        <p className="text-xs font-black uppercase tracking-[0.25em] text-cyan-300">Conteúdo</p>
+                        <h3 className="mt-2 text-xl font-black text-white">{group.conteudo}</h3>
+                      </div>
+                      <div className="flex gap-2">
+                        <button type="button" onClick={() => selectGroup(group)} className="rounded-xl border border-emerald-300/30 bg-emerald-300/10 px-4 py-2 text-xs font-black text-emerald-100 transition hover:bg-emerald-300/20">
+                          Usar todas
+                        </button>
+                        <button type="button" onClick={() => removeGroup(group)} className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs font-black text-slate-200 transition hover:bg-white/10">
+                          Remover
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="mt-5 grid gap-3">
+                      {group.habilidades.map((skill) => {
+                        const selected = isSelected(skill);
+                        return (
+                          <button key={skill.id} type="button" onClick={() => toggleSkill(skill)} className={`rounded-2xl border p-5 text-left transition hover:-translate-y-1 ${selected ? "border-emerald-300/40 bg-emerald-300/10" : "border-white/10 bg-white/[0.04] hover:border-cyan-300/40 hover:bg-cyan-300/10"}`}>
+                            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                              <div>
+                                <p className="text-lg font-black text-white">{skill.codigo}</p>
+                                <p className="mt-2 text-sm leading-7 text-slate-300">{skill.descricao}</p>
+                              </div>
+                              <Pill tone={selected ? "emerald" : "slate"}>{selected ? "Selecionada" : "Clique para usar"}</Pill>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {generatedPlanning ? (
+              <div className="mt-7 rounded-[1.75rem] border border-emerald-300/20 bg-emerald-300/10 p-5">
+                <p className="text-sm font-black uppercase tracking-[0.28em] text-emerald-300">Matriz gerada</p>
+                <h3 className="mt-3 text-2xl font-black text-white">{generatedPlanning.titulo}</h3>
+                <p className="mt-3 text-sm leading-7 text-emerald-100/85">{generatedPlanning.resumo}</p>
+                <div className="mt-4 grid gap-2">
+                  {generatedPlanning.conteudos.map((item) => (
+                    <div key={`${item.conteudo}-${item.aulaInicio}`} className="rounded-2xl border border-white/10 bg-slate-950/45 p-4">
+                      <p className="font-black text-white">{item.conteudo}</p>
+                      <p className="mt-1 text-sm text-slate-400">Aulas {item.aulaInicio} a {item.aulaFim} · {item.habilidades.length} habilidade(s)</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+          </div>
+        </section>
+      </section>
+    </main>
+  );
+}

@@ -1,0 +1,469 @@
+"use client";
+
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import type { EditorDocument } from "../../types/editor";
+import type { HistoryFilter, HistoryItem } from "../../types/history";
+import {
+  clearHistoryItems,
+  filterHistoryItems,
+  getHistoryTypeOptions,
+  loadHistoryItems,
+  removeHistoryItem,
+} from "../../lib/history/history-storage";
+import { saveEditorDocument } from "../../lib/editor/editor-storage";
+
+type StatusState = {
+  type: "info" | "success" | "warning";
+  message: string;
+};
+
+const initialFilter: HistoryFilter = {
+  query: "",
+  source: "todos",
+  type: "todos",
+  status: "todos",
+};
+
+const sourceLabels: Record<string, string> = {
+  todos: "Todos",
+  planejamento: "Planejamentos",
+  material: "Materiais",
+  manual: "Editor manual",
+  historico: "Histórico",
+  biblioteca: "Biblioteca",
+  marketplace: "Marketplace",
+};
+
+const statusLabels: Record<string, string> = {
+  todos: "Todos",
+  rascunho: "Rascunho",
+  pronto: "Pronto",
+  arquivado: "Arquivado",
+};
+
+function statusClass(type: StatusState["type"]) {
+  if (type === "success") {
+    return "border-emerald-300/30 bg-emerald-300/10 text-emerald-100";
+  }
+
+  if (type === "warning") {
+    return "border-amber-300/30 bg-amber-300/10 text-amber-100";
+  }
+
+  return "border-cyan-300/30 bg-cyan-300/10 text-cyan-100";
+}
+
+function formatDate(value: string): string {
+  try {
+    return new Intl.DateTimeFormat("pt-BR", {
+      dateStyle: "short",
+      timeStyle: "short",
+    }).format(new Date(value));
+  } catch {
+    return value;
+  }
+}
+
+function historyItemToEditorDocument(item: HistoryItem): EditorDocument {
+  return {
+    id: item.id,
+    source: item.source,
+    title: item.title,
+    subtitle: item.subtitle,
+    type: item.type,
+    content: item.content,
+    raw: item.raw,
+    createdAt: item.createdAt,
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+function getSourceBadgeClass(source: string): string {
+  if (source === "planejamento") {
+    return "border-cyan-300/30 bg-cyan-300/10 text-cyan-100";
+  }
+
+  if (source === "material") {
+    return "border-violet-300/30 bg-violet-300/10 text-violet-100";
+  }
+
+  if (source === "manual") {
+    return "border-emerald-300/30 bg-emerald-300/10 text-emerald-100";
+  }
+
+  return "border-white/10 bg-white/5 text-slate-200";
+}
+
+export function HistoricoClient() {
+  const router = useRouter();
+  const [items, setItems] = useState<HistoryItem[]>([]);
+  const [filter, setFilter] = useState<HistoryFilter>(initialFilter);
+  const [selectedItem, setSelectedItem] = useState<HistoryItem | null>(null);
+  const [status, setStatus] = useState<StatusState | null>(null);
+
+  useEffect(() => {
+    const loaded = loadHistoryItems();
+    setItems(loaded);
+    setSelectedItem(loaded[0] ?? null);
+  }, []);
+
+  const typeOptions = useMemo(() => getHistoryTypeOptions(items), [items]);
+  const filteredItems = useMemo(() => filterHistoryItems(items, filter), [items, filter]);
+
+  const totals = useMemo(() => {
+    return {
+      todos: items.length,
+      planejamentos: items.filter((item) => item.source === "planejamento").length,
+      materiais: items.filter((item) => item.source === "material").length,
+      editor: items.filter((item) => item.source === "manual").length,
+    };
+  }, [items]);
+
+  function updateFilter<K extends keyof HistoryFilter>(key: K, value: HistoryFilter[K]) {
+    setFilter((current) => ({
+      ...current,
+      [key]: value,
+    }));
+  }
+
+  function openInEditor(item: HistoryItem) {
+    saveEditorDocument(historyItemToEditorDocument(item));
+    router.push("/editor");
+  }
+
+  function removeItem(item: HistoryItem) {
+    const next = removeHistoryItem(item.id);
+    setItems(next);
+
+    if (selectedItem?.id === item.id) {
+      setSelectedItem(next[0] ?? null);
+    }
+
+    setStatus({
+      type: "success",
+      message: "Item removido do histórico local.",
+    });
+  }
+
+  function clearAll() {
+    clearHistoryItems();
+    setItems([]);
+    setSelectedItem(null);
+    setStatus({
+      type: "info",
+      message: "Histórico local limpo.",
+    });
+  }
+
+  function reloadHistory() {
+    const loaded = loadHistoryItems();
+    setItems(loaded);
+    setSelectedItem(loaded[0] ?? null);
+    setStatus({
+      type: "success",
+      message: "Histórico local recarregado.",
+    });
+  }
+
+  return (
+    <section className="mx-auto max-w-7xl px-5 pb-24 sm:px-8">
+      <div className="grid gap-6 xl:grid-cols-[0.78fr_1.22fr]">
+        <aside className="grid gap-6 xl:sticky xl:top-28 xl:h-fit">
+          <div className="rounded-[2rem] border border-cyan-300/20 bg-cyan-300/10 p-6 shadow-2xl shadow-cyan-500/10 backdrop-blur-2xl">
+            <p className="text-sm font-black uppercase tracking-[0.25em] text-cyan-300">
+              Histórico local
+            </p>
+            <h2 className="mt-3 text-3xl font-black text-white">
+              Documentos recentes
+            </h2>
+            <p className="mt-4 text-sm leading-7 text-cyan-100/85">
+              Enquanto o Supabase não é conectado, o Planify organiza os itens no navegador para validar o fluxo completo.
+            </p>
+
+            <div className="mt-6 grid gap-3">
+              {[
+                ["Total", String(totals.todos)],
+                ["Planejamentos", String(totals.planejamentos)],
+                ["Materiais", String(totals.materiais)],
+                ["Editor", String(totals.editor)],
+              ].map(([label, value]) => (
+                <div key={label} className="rounded-2xl border border-white/10 bg-slate-950/45 p-4">
+                  <p className="text-xs font-black uppercase tracking-[0.18em] text-cyan-200">
+                    {label}
+                  </p>
+                  <p className="mt-2 text-2xl font-black text-white">{value}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-[2rem] border border-white/10 bg-white/[0.06] p-6 shadow-2xl backdrop-blur-2xl">
+            <p className="text-sm font-black uppercase tracking-[0.25em] text-cyan-300">
+              Ações
+            </p>
+
+            <div className="mt-6 grid gap-3">
+              <button
+                type="button"
+                onClick={reloadHistory}
+                className="rounded-2xl bg-white px-5 py-4 text-sm font-black text-slate-950 transition hover:-translate-y-1 hover:bg-cyan-100"
+              >
+                Recarregar histórico
+              </button>
+
+              <button
+                type="button"
+                onClick={clearAll}
+                className="rounded-2xl border border-rose-300/30 bg-rose-300/10 px-5 py-4 text-sm font-black text-rose-100 transition hover:-translate-y-1 hover:bg-rose-300/20"
+              >
+                Limpar histórico local
+              </button>
+
+              <Link
+                href="/planejamentos"
+                className="rounded-2xl border border-white/10 bg-white/5 px-5 py-4 text-center text-sm font-black text-white transition hover:-translate-y-1 hover:bg-white/10"
+              >
+                Novo planejamento
+              </Link>
+
+              <Link
+                href="/materiais"
+                className="rounded-2xl border border-white/10 bg-white/5 px-5 py-4 text-center text-sm font-black text-white transition hover:-translate-y-1 hover:bg-white/10"
+              >
+                Novo material
+              </Link>
+            </div>
+          </div>
+        </aside>
+
+        <div className="grid gap-6">
+          <div className="rounded-[2rem] border border-white/10 bg-white/[0.06] p-6 shadow-2xl backdrop-blur-2xl">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+              <div>
+                <p className="text-sm font-black uppercase tracking-[0.25em] text-cyan-300">
+                  Filtros
+                </p>
+                <h2 className="mt-3 text-3xl font-black text-white">
+                  Encontre documentos
+                </h2>
+              </div>
+
+              <span className="rounded-full border border-cyan-300/30 bg-cyan-300/10 px-4 py-2 text-sm font-black text-cyan-100">
+                {filteredItems.length} resultado(s)
+              </span>
+            </div>
+
+            <div className="mt-8 grid gap-4 md:grid-cols-4">
+              <label className="grid gap-2 md:col-span-2">
+                <span className="text-sm font-bold text-slate-300">Busca</span>
+                <input
+                  value={filter.query}
+                  onChange={(event) => updateFilter("query", event.target.value)}
+                  placeholder="Buscar por título, conteúdo, tipo..."
+                  className="h-14 rounded-2xl border border-white/10 bg-slate-950/50 px-4 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300/50"
+                />
+              </label>
+
+              <label className="grid gap-2">
+                <span className="text-sm font-bold text-slate-300">Fonte</span>
+                <select
+                  value={filter.source}
+                  onChange={(event) => updateFilter("source", event.target.value as HistoryFilter["source"])}
+                  className="h-14 rounded-2xl border border-white/10 bg-slate-950/50 px-4 text-sm text-white outline-none transition focus:border-cyan-300/50"
+                >
+                  {Object.entries(sourceLabels).map(([value, label]) => (
+                    <option key={value} value={value} className="bg-slate-950">
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="grid gap-2">
+                <span className="text-sm font-bold text-slate-300">Tipo</span>
+                <select
+                  value={filter.type}
+                  onChange={(event) => updateFilter("type", event.target.value)}
+                  className="h-14 rounded-2xl border border-white/10 bg-slate-950/50 px-4 text-sm text-white outline-none transition focus:border-cyan-300/50"
+                >
+                  <option value="todos" className="bg-slate-950">
+                    Todos
+                  </option>
+                  {typeOptions.map((type) => (
+                    <option key={type} value={type} className="bg-slate-950">
+                      {type}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+
+            {status && (
+              <div className={`mt-6 rounded-2xl border p-4 text-sm font-bold ${statusClass(status.type)}`}>
+                {status.message}
+              </div>
+            )}
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-[0.92fr_1.08fr]">
+            <div className="grid gap-4">
+              {filteredItems.length > 0 ? (
+                filteredItems.map((item) => (
+                  <article
+                    key={item.id}
+                    className={`rounded-[1.5rem] border p-5 transition hover:-translate-y-1 ${
+                      selectedItem?.id === item.id
+                        ? "border-cyan-300/40 bg-cyan-300/10"
+                        : "border-white/10 bg-white/[0.06] hover:border-cyan-300/30"
+                    }`}
+                  >
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedItem(item)}
+                        className="text-left"
+                      >
+                        <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-black ${getSourceBadgeClass(item.source)}`}>
+                          {sourceLabels[item.source] || item.source}
+                        </span>
+                        <h3 className="mt-4 text-xl font-black text-white">
+                          {item.title}
+                        </h3>
+                        {item.subtitle && (
+                          <p className="mt-1 text-sm font-bold text-cyan-200">
+                            {item.subtitle}
+                          </p>
+                        )}
+                        <p className="mt-3 line-clamp-3 text-sm leading-6 text-slate-400">
+                          {item.contentPreview}
+                        </p>
+                        <p className="mt-3 text-xs font-bold text-slate-500">
+                          Atualizado em {formatDate(item.updatedAt)}
+                        </p>
+                      </button>
+
+                      <div className="flex shrink-0 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => openInEditor(item)}
+                          className="rounded-xl bg-white px-4 py-2 text-xs font-black text-slate-950 transition hover:bg-cyan-100"
+                        >
+                          Editor
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => removeItem(item)}
+                          className="rounded-xl border border-rose-300/30 bg-rose-300/10 px-4 py-2 text-xs font-black text-rose-100 transition hover:bg-rose-300/20"
+                        >
+                          Remover
+                        </button>
+                      </div>
+                    </div>
+                  </article>
+                ))
+              ) : (
+                <div className="rounded-[2rem] border border-white/10 bg-white/[0.06] p-8 text-center shadow-2xl backdrop-blur-2xl">
+                  <p className="text-sm font-black uppercase tracking-[0.25em] text-cyan-300">
+                    Vazio
+                  </p>
+                  <h3 className="mt-3 text-2xl font-black text-white">
+                    Nenhum item encontrado
+                  </h3>
+                  <p className="mt-3 text-sm leading-7 text-slate-400">
+                    Gere um planejamento ou material e envie para o editor para alimentar o histórico local.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <aside className="rounded-[2rem] border border-white/10 bg-white/[0.06] p-6 shadow-2xl backdrop-blur-2xl lg:sticky lg:top-28 lg:h-fit">
+              {selectedItem ? (
+                <>
+                  <p className="text-sm font-black uppercase tracking-[0.25em] text-cyan-300">
+                    Detalhes
+                  </p>
+                  <h2 className="mt-3 text-3xl font-black text-white">
+                    {selectedItem.title}
+                  </h2>
+                  {selectedItem.subtitle && (
+                    <p className="mt-2 text-sm font-bold text-cyan-200">
+                      {selectedItem.subtitle}
+                    </p>
+                  )}
+
+                  <div className="mt-6 grid gap-3">
+                    <div className="rounded-2xl border border-white/10 bg-slate-950/50 p-4">
+                      <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-400">
+                        Fonte
+                      </p>
+                      <p className="mt-2 text-sm font-black text-white">
+                        {sourceLabels[selectedItem.source] || selectedItem.source}
+                      </p>
+                    </div>
+
+                    <div className="rounded-2xl border border-white/10 bg-slate-950/50 p-4">
+                      <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-400">
+                        Tipo
+                      </p>
+                      <p className="mt-2 text-sm font-black text-white">
+                        {selectedItem.type}
+                      </p>
+                    </div>
+
+                    <div className="rounded-2xl border border-white/10 bg-slate-950/50 p-4">
+                      <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-400">
+                        Atualizado
+                      </p>
+                      <p className="mt-2 text-sm font-black text-white">
+                        {formatDate(selectedItem.updatedAt)}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-6 max-h-[420px] overflow-auto rounded-2xl border border-white/10 bg-slate-950/60 p-4">
+                    <pre className="whitespace-pre-wrap text-xs leading-6 text-slate-300">
+                      {selectedItem.content}
+                    </pre>
+                  </div>
+
+                  <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                    <button
+                      type="button"
+                      onClick={() => openInEditor(selectedItem)}
+                      className="rounded-2xl bg-white px-5 py-4 text-sm font-black text-slate-950 transition hover:-translate-y-1 hover:bg-cyan-100"
+                    >
+                      Abrir no Editor
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => removeItem(selectedItem)}
+                      className="rounded-2xl border border-rose-300/30 bg-rose-300/10 px-5 py-4 text-sm font-black text-rose-100 transition hover:-translate-y-1 hover:bg-rose-300/20"
+                    >
+                      Remover
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div className="py-12 text-center">
+                  <p className="text-sm font-black uppercase tracking-[0.25em] text-cyan-300">
+                    Selecione
+                  </p>
+                  <h2 className="mt-3 text-3xl font-black text-white">
+                    Nenhum documento selecionado
+                  </h2>
+                  <p className="mt-3 text-sm leading-7 text-slate-400">
+                    Clique em um item do histórico para visualizar os detalhes.
+                  </p>
+                </div>
+              )}
+            </aside>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}

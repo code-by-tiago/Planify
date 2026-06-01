@@ -1,3 +1,4 @@
+import { PageBackNavigation } from "../../components/PageBackNavigation";
 import { PremiumRouteGuard } from "../../components/PremiumRouteGuard";
 import { PlanejamentosClient } from "./PlanejamentosClient";
 
@@ -7,6 +8,7 @@ export default function PlanejamentosPage() {
   return (
     <>
       <PremiumRouteGuard />
+      <PageBackNavigation />
       <PlanejamentosClient />
     </>
   );

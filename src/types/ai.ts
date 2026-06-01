@@ -126,6 +126,7 @@ export type MaterialAISection = {
   titulo: string;
   conteudo: string;
   itens: string[];
+  visualHtml?: string;
 };
 
 export type MaterialAIGame = {
@@ -180,6 +181,8 @@ export type MaterialAIOutput = {
   adaptacoesInclusivas: string[];
   sugestoesUso: string[];
   alertas: string[];
+  visualHtml?: string;
+  printHtml?: string;
 };
 
 export type GeminiGenerateJSONOptions = {

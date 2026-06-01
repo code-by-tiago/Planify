@@ -14,6 +14,7 @@ type StoredEditorDocument = {
   title?: string;
   html?: string;
   content?: string;
+  payload?: Record<string, unknown>;
   updatedAt?: string;
 };
 
@@ -119,6 +120,10 @@ function sanitizeFilename(value: string) {
 
 function downloadBlob(filename: string, mimeType: string, content: BlobPart) {
   const blob = new Blob([content], { type: mimeType });
+  downloadExistingBlob(filename, blob);
+}
+
+function downloadExistingBlob(filename: string, blob: Blob) {
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
 
@@ -129,6 +134,26 @@ function downloadBlob(filename: string, mimeType: string, content: BlobPart) {
   anchor.remove();
 
   window.setTimeout(() => URL.revokeObjectURL(url), 500);
+}
+
+function filenameFromResponse(response: Response, fallback: string) {
+  const custom = response.headers.get("X-Planify-Filename");
+
+  if (custom?.toLowerCase().endsWith(".docx")) {
+    return custom;
+  }
+
+  const disposition = response.headers.get("Content-Disposition") || "";
+  const utf8Match = disposition.match(/filename\*=UTF-8''([^;]+)/i);
+  const asciiMatch = disposition.match(/filename="?([^";]+)"?/i);
+  const raw = utf8Match?.[1] || asciiMatch?.[1] || fallback;
+
+  try {
+    const decoded = decodeURIComponent(raw);
+    return decoded.toLowerCase().endsWith(".docx") ? decoded : `${decoded.replace(/\.doc$/i, "")}.docx`;
+  } catch {
+    return fallback.toLowerCase().endsWith(".docx") ? fallback : `${fallback}.docx`;
+  }
 }
 
 function wrapAsFullHtml(title: string, body: string) {
@@ -242,11 +267,12 @@ function saveSavedDocuments(items: SavedDocument[]) {
   window.localStorage.setItem(STORAGE_SAVED_KEY, JSON.stringify(items.slice(0, 20)));
 }
 
-function loadInitialDocument(): { title: string; html: string } {
+function loadInitialDocument(): { title: string; html: string; storedDocument: StoredEditorDocument | null } {
   if (typeof window === "undefined") {
     return {
       title: "Documento Planify",
       html: defaultDocument,
+      storedDocument: null,
     };
   }
 
@@ -265,6 +291,7 @@ function loadInitialDocument(): { title: string; html: string } {
     return {
       title: storedDocument?.title || getDocumentTitleFromHtml(content),
       html: content,
+      storedDocument,
     };
   } catch {
     const content = window.localStorage.getItem(STORAGE_CONTENT_KEY) || defaultDocument;
@@ -272,6 +299,7 @@ function loadInitialDocument(): { title: string; html: string } {
     return {
       title: getDocumentTitleFromHtml(content),
       html: content,
+      storedDocument: null,
     };
   }
 }
@@ -347,6 +375,7 @@ export function EditorClient() {
   const [isLoaded, setIsLoaded] = useState(false);
   const [selectedImageName, setSelectedImageName] = useState("");
   const [selectedImageWidth, setSelectedImageWidth] = useState(60);
+  const [documentSource, setDocumentSource] = useState<StoredEditorDocument | null>(null);
 
   const lastSavedLabel = useMemo(() => nowLabel(), []);
 
@@ -354,6 +383,7 @@ export function EditorClient() {
     const initial = loadInitialDocument();
 
     setTitle(initial.title);
+    setDocumentSource(initial.storedDocument);
     setSavedDocuments(loadSavedDocuments());
 
     if (editorRef.current) {
@@ -648,13 +678,16 @@ export function EditorClient() {
     const html = getEditorHtml();
     const currentTitle = title.trim() || getDocumentTitleFromHtml(html);
 
+    const source = documentSource;
+
     window.localStorage.setItem(
       STORAGE_DOCUMENT_KEY,
       JSON.stringify({
-        type: "editor",
+        type: source?.type || "editor",
         title: currentTitle,
         html,
         content: html,
+        payload: source?.payload,
         updatedAt: new Date().toISOString(),
       }),
     );
@@ -687,6 +720,7 @@ export function EditorClient() {
     }
 
     setTitle(item.title);
+    setDocumentSource(null);
     setEditorHtml(item.html);
     setStatus("Versão carregada.");
   }
@@ -792,6 +826,7 @@ export function EditorClient() {
     }
 
     setTitle("Documento Planify");
+    setDocumentSource(null);
     setEditorHtml(defaultDocument);
     setStatus("Novo documento criado.");
   }
@@ -809,12 +844,69 @@ export function EditorClient() {
     setStatus("HTML baixado.");
   }
 
-  function downloadWordCompatible() {
-    const html = wrapAsFullHtml(title, getEditorHtml());
-    const filename = `${sanitizeFilename(title)}.doc`;
+  function editorSectionsFromHtml(html: string) {
+    const parser = new DOMParser();
+    const document = parser.parseFromString(html, "text/html");
+    const content = document.body.innerText.replace(/\n{3,}/g, "\n\n").trim();
 
-    downloadBlob(filename, "application/msword;charset=utf-8", html);
-    setStatus("Arquivo Word compatível baixado.");
+    return [
+      {
+        title: "Conteúdo editado",
+        content: content || "Documento sem conteúdo.",
+      },
+    ];
+  }
+
+  async function downloadDocxReal() {
+    setStatus("Gerando DOCX real...");
+
+    try {
+      const source = documentSource;
+      const isOfficialPlanning =
+        source?.type === "planejamento" &&
+        source.payload &&
+        typeof source.payload === "object" &&
+        "matrizPlanejamento" in source.payload;
+
+      const response = isOfficialPlanning
+        ? await fetch("/api/planejamentos/docx-oficial", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(source.payload),
+          })
+        : await fetch("/api/documentos/docx", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              kind: "generic",
+              document: {
+                title: title.trim() || "Documento Planify",
+                subtitle: "Documento editado no Editor Planify",
+                badge: "Planify",
+                sections: editorSectionsFromHtml(getEditorHtml()),
+                filename: sanitizeFilename(title),
+              },
+            }),
+          });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => null);
+        throw new Error(data?.error?.message || "Não foi possível gerar o DOCX real.");
+      }
+
+      const blob = await response.blob();
+      const fallback = `${sanitizeFilename(title)}.docx`;
+      const filename = filenameFromResponse(response, fallback);
+
+      downloadExistingBlob(filename, blob);
+      setStatus(
+        isOfficialPlanning
+          ? "DOCX oficial baixado a partir da matriz do planejamento."
+          : "DOCX real baixado.",
+      );
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Erro ao baixar DOCX real.");
+    }
   }
 
   function copyHtml() {
@@ -1051,10 +1143,10 @@ export function EditorClient() {
 
               <button
                 type="button"
-                onClick={downloadWordCompatible}
+                onClick={downloadDocxReal}
                 className="rounded-2xl border border-emerald-300/25 bg-emerald-300/10 px-5 py-3 text-sm font-black text-emerald-100 transition hover:bg-emerald-300/20"
               >
-                Baixar Word .doc
+                Baixar DOCX real
               </button>
 
               <button

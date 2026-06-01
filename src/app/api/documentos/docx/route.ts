@@ -30,6 +30,7 @@ export async function POST(request: NextRequest) {
         "Content-Type":
           "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         "Content-Disposition": `attachment; filename="${filename}.docx"; filename*=UTF-8''${encodeURIComponent(filename)}.docx`,
+        "X-Planify-Filename": `${filename}.docx`,
         "Cache-Control": "no-store",
       },
     });

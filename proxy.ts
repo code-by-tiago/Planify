@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { isAdminRoute, isProtectedRoute } from "./config/protected-routes";
-import type { AccessCookiePayload } from "./types/access";
+import { isAdminRoute, isProtectedRoute } from "./src/config/protected-routes";
+import type { AccessCookiePayload } from "./src/types/access";
 
 const COOKIE_NAME = "planify_access";
 
@@ -95,7 +95,7 @@ function redirectToDenied(request: NextRequest) {
   return NextResponse.redirect(url);
 }
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   // PLANIFY_ADMIN_GATE_PUBLIC_OPTIONS_9154
   // Admin tem guarda própria e não deve cair no fluxo de professor premium.
   if (request.nextUrl.pathname === "/admin" || request.nextUrl.pathname.startsWith("/admin/")) {

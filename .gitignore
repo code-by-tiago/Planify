@@ -25,3 +25,12 @@ out/
 !.env.example
 *.bak-*
 *.log
+
+# Backups locais dos scripts de correção
+backups/
+planify-backups/
+
+
+# Cache TypeScript
+tsconfig.tsbuildinfo
+

@@ -148,7 +148,8 @@ export default async function PlanosPage({ searchParams }: PlanosPageProps) {
               </ul>
 
               <Link
-                href={`?plan=${plan.key}`}
+                href={`/api/stripe/checkout?plan=${plan.key}`}
+                prefetch={false}
                 className={`mt-8 flex rounded-2xl px-6 py-4 text-center text-sm font-black transition hover:-translate-y-1 ${
                   plan.highlighted
                     ? "bg-white text-slate-950 hover:bg-cyan-100"

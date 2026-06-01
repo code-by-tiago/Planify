@@ -74,6 +74,101 @@ const initialForm: FormState = {
   observacoes: "",
 };
 
+const EDUCATION_OPTIONS = {
+  "Educação Infantil": {
+    years: ["Berçário", "Maternal I", "Maternal II", "Pré I", "Pré II"],
+    areas: ["Campos de experiências"],
+    componentsByArea: {
+      "Campos de experiências": [
+        "O eu, o outro e o nós",
+        "Corpo, gestos e movimentos",
+        "Traços, sons, cores e formas",
+        "Escuta, fala, pensamento e imaginação",
+        "Espaços, tempos, quantidades, relações e transformações",
+      ],
+    },
+  },
+  "Ensino Fundamental": {
+    years: ["1º ano", "2º ano", "3º ano", "4º ano", "5º ano", "6º ano", "7º ano", "8º ano", "9º ano"],
+    areas: ["Linguagens", "Matemática", "Ciências da Natureza", "Ciências Humanas", "Ensino Religioso"],
+    componentsByArea: {
+      Linguagens: ["Língua Portuguesa", "Arte", "Educação Física", "Língua Inglesa"],
+      Matemática: ["Matemática"],
+      "Ciências da Natureza": ["Ciências"],
+      "Ciências Humanas": ["História", "Geografia"],
+      "Ensino Religioso": ["Ensino Religioso"],
+    },
+  },
+  "Ensino Médio": {
+    years: ["1ª série", "2ª série", "3ª série"],
+    areas: [
+      "Linguagens e suas Tecnologias",
+      "Matemática e suas Tecnologias",
+      "Ciências da Natureza e suas Tecnologias",
+      "Ciências Humanas e Sociais Aplicadas",
+    ],
+    componentsByArea: {
+      "Linguagens e suas Tecnologias": [
+        "Língua Portuguesa",
+        "Arte",
+        "Educação Física",
+        "Língua Inglesa",
+        "Língua Espanhola",
+      ],
+      "Matemática e suas Tecnologias": ["Matemática"],
+      "Ciências da Natureza e suas Tecnologias": ["Biologia", "Física", "Química"],
+      "Ciências Humanas e Sociais Aplicadas": ["História", "Geografia", "Filosofia", "Sociologia"],
+    },
+  },
+} as const;
+
+type EducationStage = keyof typeof EDUCATION_OPTIONS;
+
+function isEducationStage(value: string): value is EducationStage {
+  return value in EDUCATION_OPTIONS;
+}
+
+function getEducationConfig(stage: string) {
+  return EDUCATION_OPTIONS[isEducationStage(stage) ? stage : "Ensino Médio"];
+}
+
+function getAreaOptions(stage: string) {
+  return [...getEducationConfig(stage).areas];
+}
+
+function getYearOptions(stage: string) {
+  return [...getEducationConfig(stage).years];
+}
+
+function getComponentOptions(stage: string, area: string) {
+  const config = getEducationConfig(stage);
+  const selectedArea = config.areas.includes(area as never) ? area : config.areas[0];
+  const options = config.componentsByArea[selectedArea as keyof typeof config.componentsByArea];
+
+  return options ? [...options] : Object.values(config.componentsByArea).flat();
+}
+
+function normalizeEducationalFields(current: FormState, patch: Partial<FormState>) {
+  const next: FormState = { ...current, ...patch };
+  const config = getEducationConfig(next.etapa);
+
+  if (!config.years.includes(next.anoSerie as never)) {
+    next.anoSerie = config.years[0];
+  }
+
+  if (!config.areas.includes(next.areaConhecimento as never)) {
+    next.areaConhecimento = config.areas[0];
+  }
+
+  const components = getComponentOptions(next.etapa, next.areaConhecimento);
+
+  if (!components.includes(next.componenteCurricular)) {
+    next.componenteCurricular = components[0] || "";
+  }
+
+  return next;
+}
+
 const exemplos = {
   fundamental: {
     etapa: "Ensino Fundamental",
@@ -452,6 +547,13 @@ export function PlanejamentosClient() {
 
   const conteudos = useMemo(() => splitConteudos(form.conteudos), [form.conteudos]);
 
+  const yearOptions = useMemo(() => getYearOptions(form.etapa), [form.etapa]);
+  const areaOptions = useMemo(() => getAreaOptions(form.etapa), [form.etapa]);
+  const componentOptions = useMemo(
+    () => getComponentOptions(form.etapa, form.areaConhecimento),
+    [form.etapa, form.areaConhecimento],
+  );
+
   const stats = useMemo(
     () => ({
       conteudos: conteudos.length,
@@ -468,10 +570,7 @@ export function PlanejamentosClient() {
   }
 
   function updateField<K extends keyof FormState>(key: K, value: FormState[K]) {
-    setForm((current) => ({
-      ...current,
-      [key]: value,
-    }));
+    setForm((current) => normalizeEducationalFields(current, { [key]: value }));
 
     if (
       key === "conteudos" ||
@@ -491,7 +590,7 @@ export function PlanejamentosClient() {
   }
 
   function applyExample(kind: keyof typeof exemplos) {
-    setForm((current) => ({ ...current, ...exemplos[kind] }));
+    setForm((current) => normalizeEducationalFields(current, exemplos[kind]));
     setGroups([]);
     setSelectedSkills([]);
     invalidateGenerated();
@@ -929,22 +1028,34 @@ export function PlanejamentosClient() {
               <label className="grid gap-2">
                 <span className="text-sm font-bold text-slate-300">Etapa</span>
                 <select value={form.etapa} onChange={(event) => updateField("etapa", event.target.value)} className="rounded-2xl border border-white/10 bg-slate-950/65 px-5 py-4 text-sm text-white outline-none transition focus:border-cyan-300/60">
-                  <option>Educação Infantil</option>
-                  <option>Ensino Fundamental</option>
-                  <option>Ensino Médio</option>
+                  {Object.keys(EDUCATION_OPTIONS).map((stage) => (
+                    <option key={stage} value={stage}>{stage}</option>
+                  ))}
                 </select>
               </label>
               <label className="grid gap-2">
                 <span className="text-sm font-bold text-slate-300">Ano/Série</span>
-                <input value={form.anoSerie} onChange={(event) => updateField("anoSerie", event.target.value)} placeholder="Ex.: 5º ano, 3ª série" className="rounded-2xl border border-white/10 bg-slate-950/65 px-5 py-4 text-sm text-white outline-none transition focus:border-cyan-300/60" />
+                <select value={form.anoSerie} onChange={(event) => updateField("anoSerie", event.target.value)} className="rounded-2xl border border-white/10 bg-slate-950/65 px-5 py-4 text-sm text-white outline-none transition focus:border-cyan-300/60">
+                  {yearOptions.map((year) => (
+                    <option key={year} value={year}>{year}</option>
+                  ))}
+                </select>
               </label>
               <label className="grid gap-2">
                 <span className="text-sm font-bold text-slate-300">Área do conhecimento</span>
-                <input value={form.areaConhecimento} onChange={(event) => updateField("areaConhecimento", event.target.value)} placeholder="Ex.: Linguagens e suas Tecnologias" className="rounded-2xl border border-white/10 bg-slate-950/65 px-5 py-4 text-sm text-white outline-none transition focus:border-cyan-300/60" />
+                <select value={form.areaConhecimento} onChange={(event) => updateField("areaConhecimento", event.target.value)} className="rounded-2xl border border-white/10 bg-slate-950/65 px-5 py-4 text-sm text-white outline-none transition focus:border-cyan-300/60">
+                  {areaOptions.map((area) => (
+                    <option key={area} value={area}>{area}</option>
+                  ))}
+                </select>
               </label>
               <label className="grid gap-2">
                 <span className="text-sm font-bold text-slate-300">Componente curricular</span>
-                <input value={form.componenteCurricular} onChange={(event) => updateField("componenteCurricular", event.target.value)} placeholder="Ex.: Língua Portuguesa" className="rounded-2xl border border-white/10 bg-slate-950/65 px-5 py-4 text-sm text-white outline-none transition focus:border-cyan-300/60" />
+                <select value={form.componenteCurricular} onChange={(event) => updateField("componenteCurricular", event.target.value)} className="rounded-2xl border border-white/10 bg-slate-950/65 px-5 py-4 text-sm text-white outline-none transition focus:border-cyan-300/60">
+                  {componentOptions.map((component) => (
+                    <option key={component} value={component}>{component}</option>
+                  ))}
+                </select>
               </label>
               <label className="grid gap-2">
                 <span className="text-sm font-bold text-slate-300">Carga horária</span>

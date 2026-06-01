@@ -1116,7 +1116,7 @@ export function EditorClient() {
         </aside>
 
         <div className="space-y-5">
-          <div className="sticky top-24 z-20 rounded-[2rem] border border-white/10 bg-slate-950/95 p-4 shadow-2xl backdrop-blur-2xl">
+          <div className="relative rounded-[2rem] border border-white/10 bg-slate-950/95 p-4 shadow-2xl backdrop-blur-2xl">
             <input
               ref={imageInputRef}
               type="file"

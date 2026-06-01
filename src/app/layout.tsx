@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { PlanifyFieldEnhancer } from "../components/PlanifyFieldEnhancer";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -14,8 +13,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR">
-      <body>
-        <PlanifyFieldEnhancer />{children}</body>
+      <body>{children}</body>
     </html>
   );
 }

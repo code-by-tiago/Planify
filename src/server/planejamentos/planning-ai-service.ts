@@ -59,6 +59,109 @@ function normalizeText(value: unknown): string {
     .trim();
 }
 
+
+function normalizeSearch(value: unknown): string {
+  return normalizeText(value)
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "");
+}
+
+const SPANISH_EM_PLANNING_SKILLS: PlanningSkill[] = [
+  {
+    codigo: "EM13LGG102",
+    descricao:
+      "Analisar visões de mundo, conflitos de interesse, preconceitos e ideologias presentes nos discursos veiculados nas diferentes mídias, ampliando suas possibilidades de explicação, interpretação e intervenção crítica da/na realidade.",
+    componente: "Língua Espanhola",
+    area: "Linguagens e suas Tecnologias",
+    etapa: "Ensino Médio",
+    anoSerie: "1ª a 3ª série",
+  },
+  {
+    codigo: "EM13LGG301",
+    descricao:
+      "Participar de processos de produção individual e colaborativa em diferentes linguagens (artísticas, corporais e verbais), levando em conta suas formas e seus funcionamentos, para produzir sentidos em diferentes contextos.",
+    componente: "Língua Espanhola",
+    area: "Linguagens e suas Tecnologias",
+    etapa: "Ensino Médio",
+    anoSerie: "1ª a 3ª série",
+  },
+  {
+    codigo: "EM13LGG401",
+    descricao:
+      "Analisar criticamente textos de modo a compreender e caracterizar as línguas como fenômeno (geo)político, histórico, social, cultural, variável, heterogêneo e sensível aos contextos de uso.",
+    componente: "Língua Espanhola",
+    area: "Linguagens e suas Tecnologias",
+    etapa: "Ensino Médio",
+    anoSerie: "1ª a 3ª série",
+  },
+];
+
+function isSpanishHighSchoolPayload(payload?: PlanningAiPayload): boolean {
+  if (!payload) {
+    return false;
+  }
+
+  const component = normalizeSearch(payload.componenteCurricular);
+  const stage = normalizeSearch(`${payload.etapa || ""} ${payload.anoSerie || ""}`);
+
+  const isSpanish =
+    component.includes("lingua espanhola") ||
+    component.includes("espanhol") ||
+    component.includes("espanola") ||
+    component.includes("lengua espanola");
+  const isHighSchool =
+    stage.includes("ensino medio") ||
+    stage.includes("medio") ||
+    stage.includes("1 serie") ||
+    stage.includes("1a serie") ||
+    stage.includes("1ª serie") ||
+    stage.includes("2 serie") ||
+    stage.includes("2a serie") ||
+    stage.includes("2ª serie") ||
+    stage.includes("3 serie") ||
+    stage.includes("3a serie") ||
+    stage.includes("3ª serie");
+
+  return isSpanish && isHighSchool;
+}
+
+function spanishHighSchoolSkillCodesForContent(content: string): string[] {
+  const normalized = normalizeSearch(content);
+  const codes: string[] = [];
+
+  if (/gramatic|gramatica|verbo|verbos|conjug|tempo verbal|presente|preterito|pretérito|futuro|imperativo|subjuntivo|ser\b|estar\b|tener\b|haber\b|gustar|pronome|pronombres|artigo|articulos|artículo|substantivo|sustantivo|adjetivo|adverbio|preposi|conect|vocab|vocabulario|vocabulário|lexico|léxico|numerais|numeros|alfabeto|pronuncia|fonetica|fonética/.test(normalized)) {
+    codes.push("EM13LGG102");
+  }
+
+  if (/leitura|leer|lectura|interpret|compreens|comprension|compreensão|texto|textos|escrita|escribir|redacao|redação|producao textual|produção textual|oralidade|oral|fala|escuta|dialogo|diálogo|conversa|entrevista|genero textual|gênero textual|carta|email|e-mail|noticia|notícia|resenha|relato|roteiro|argument|opiniao|opinião/.test(normalized)) {
+    codes.push("EM13LGG301");
+  }
+
+  if (/cultura|cultural|hispan|hispânico|hispanico|hispano|paises|países|pais|país|america latina|américa latina|latino|espanha|mexico|méxico|argentina|uruguai|paraguai|chile|colombia|colômbia|peru|bolivia|bolívia|literatura|literario|literário|poesia|poema|conto|romance|autor|autores|obra|obras|diversidade|identidade|festividade|celebracao|celebração|dia de los muertos|mundo global|global|variedade|variacao|variação|sotaque|dialeto/.test(normalized)) {
+    codes.push("EM13LGG401");
+  }
+
+  return Array.from(new Set(codes.length > 0 ? codes : ["EM13LGG401"])).slice(0, 2);
+}
+
+function buildSpanishPlanningRules(payload: PlanningAiPayload): string {
+  if (!isSpanishHighSchoolPayload(payload)) {
+    return "";
+  }
+
+  return `
+REGRAS ESPECÍFICAS PARA LÍNGUA ESPANHOLA NO ENSINO MÉDIO:
+- A BNCC não possui código específico de Língua Espanhola no Ensino Médio.
+- Use somente habilidades EM13LGG da área de Linguagens e suas Tecnologias já selecionadas.
+- Não repita automaticamente as mesmas 3 habilidades em todos os conteúdos.
+- Cada conteúdo deve receber no máximo 1 ou 2 habilidades.
+- Gramática, verbos e vocabulário: priorize EM13LGG102.
+- Leitura, interpretação, oralidade e escrita: priorize EM13LGG301.
+- Cultura hispânica, literatura, países, diversidade e variação linguística: priorize EM13LGG401.
+`.trim();
+}
+
 function splitConteudos(value: unknown): string[] {
   if (Array.isArray(value)) {
     return value
@@ -147,17 +250,31 @@ function normalizeSkill(skill: unknown): PlanningSkill {
   };
 }
 
-function skillsForContent(content: string, skills: PlanningSkill[]): PlanningSkill[] {
-  const normalized = content
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/\p{Diacritic}/gu, "");
+function skillsForContent(
+  content: string,
+  skills: PlanningSkill[],
+  payload?: PlanningAiPayload,
+): PlanningSkill[] {
+  if (isSpanishHighSchoolPayload(payload)) {
+    const codes = spanishHighSchoolSkillCodesForContent(content);
+    const sourceSkills = skills.length > 0 ? skills : SPANISH_EM_PLANNING_SKILLS;
+    const selected = codes
+      .map((code) =>
+        sourceSkills.find((skill) => skill.codigo.toUpperCase() === code) ||
+        SPANISH_EM_PLANNING_SKILLS.find((skill) => skill.codigo === code),
+      )
+      .filter((skill): skill is PlanningSkill => Boolean(skill))
+      .map((skill) => ({ ...skill, conteudo: content }));
+
+    if (selected.length > 0) {
+      return selected.slice(0, 2);
+    }
+  }
+
+  const normalized = normalizeSearch(content);
 
   const byContent = skills.filter((skill) => {
-    const skillContent = normalizeText(skill.conteudo)
-      .toLowerCase()
-      .normalize("NFD")
-      .replace(/\p{Diacritic}/gu, "");
+    const skillContent = normalizeSearch(skill.conteudo);
 
     return (
       skillContent &&
@@ -210,7 +327,7 @@ function fallbackPlanning(payload: PlanningAiPayload, warning?: string): Plannin
       trimestre,
       aulaInicio,
       aulaFim,
-      habilidades: skillsForContent(conteudo, skills),
+      habilidades: skillsForContent(conteudo, skills, payload),
       objetivos:
         normalizeText(payload.objetivosGerais || payload.objetivos) ||
         `Compreender, aplicar e sistematizar conhecimentos relacionados a ${conteudo}, desenvolvendo análise, participação, registro e produção conforme a etapa escolar.`,
@@ -301,9 +418,12 @@ function sanitizeAiResult(value: unknown, payload: PlanningAiPayload): PlanningA
       trimestre,
       aulaInicio: indexDentroTrimestre * 10 + 1,
       aulaFim: (indexDentroTrimestre + 1) * 10,
-      habilidades: Array.isArray(itemRecord.habilidades)
-        ? itemRecord.habilidades.map(normalizeSkill).slice(0, 3)
-        : skillsForContent(conteudo, selectedSkills),
+      habilidades:
+        selectedSkills.length > 0
+          ? skillsForContent(conteudo, selectedSkills, payload)
+          : Array.isArray(itemRecord.habilidades)
+            ? itemRecord.habilidades.map(normalizeSkill).slice(0, 3)
+            : skillsForContent(conteudo, selectedSkills, payload),
       objetivos:
         normalizeText(itemRecord.objetivos || itemRecord.objetivo) ||
         `Desenvolver aprendizagens relacionadas a ${conteudo}.`,
@@ -373,6 +493,8 @@ ${conteudos.map((item, index) => `${index + 1}. ${item}`).join("\n")}
 
 Habilidades selecionadas:
 ${selectedSkills.map((skill) => `- ${skill.codigo} — ${skill.descricao} | conteúdo: ${skill.conteudo || ""}`).join("\n")}
+
+${buildSpanishPlanningRules(payload)}
 
 Regras obrigatórias:
 1. Retorne uma matriz em planejamento.conteudos.

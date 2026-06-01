@@ -173,6 +173,46 @@ const FALLBACK_SKILLS: SkillCandidate[] = [
   },
 ];
 
+
+const SPANISH_EM_SKILLS: SkillCandidate[] = [
+  {
+    codigo: "EM13LGG102",
+    descricao:
+      "Analisar visões de mundo, conflitos de interesse, preconceitos e ideologias presentes nos discursos veiculados nas diferentes mídias, ampliando suas possibilidades de explicação, interpretação e intervenção crítica da/na realidade.",
+    etapa: "Ensino Médio",
+    anoSerie: "1ª a 3ª série",
+    area: "Linguagens e suas Tecnologias",
+    componente: "Língua Espanhola",
+    rawText:
+      "gramática verbos vocabulário léxico estrutura linguística análise linguística variação discursos mídias linguagem",
+    source: "local",
+  },
+  {
+    codigo: "EM13LGG301",
+    descricao:
+      "Participar de processos de produção individual e colaborativa em diferentes linguagens (artísticas, corporais e verbais), levando em conta suas formas e seus funcionamentos, para produzir sentidos em diferentes contextos.",
+    etapa: "Ensino Médio",
+    anoSerie: "1ª a 3ª série",
+    area: "Linguagens e suas Tecnologias",
+    componente: "Língua Espanhola",
+    rawText:
+      "leitura interpretação compreensão produção textual escrita oralidade textos gêneros sentidos práticas de linguagem",
+    source: "local",
+  },
+  {
+    codigo: "EM13LGG401",
+    descricao:
+      "Analisar criticamente textos de modo a compreender e caracterizar as línguas como fenômeno (geo)político, histórico, social, cultural, variável, heterogêneo e sensível aos contextos de uso.",
+    etapa: "Ensino Médio",
+    anoSerie: "1ª a 3ª série",
+    area: "Linguagens e suas Tecnologias",
+    componente: "Língua Espanhola",
+    rawText:
+      "cultura hispânica países literatura diversidade global línguas fenômeno geopolítico histórico social cultural variação",
+    source: "local",
+  },
+];
+
 function normalizeText(value: unknown): string {
   return String(value ?? "")
     .replace(/\r\n/g, "\n")
@@ -566,6 +606,264 @@ function scoreCandidate(
   return score;
 }
 
+
+function isSpanishComponent(payload: BnccSuggestionPayload): boolean {
+  const value = normalizeSearch(
+    [
+      getString(payload, ["componenteCurricular", "componente"]),
+      getString(payload, ["areaConhecimento", "area"]),
+    ].join(" "),
+  );
+
+  return (
+    value.includes("lingua espanhola") ||
+    value.includes("espanhol") ||
+    value.includes("espanola") ||
+    value.includes("lengua espanola")
+  );
+}
+
+function isHighSchoolPayload(payload: BnccSuggestionPayload): boolean {
+  const value = normalizeSearch(
+    [
+      getString(payload, ["etapa"]),
+      getString(payload, ["anoSerie", "serie", "ano"]),
+    ].join(" "),
+  );
+
+  return (
+    value.includes("ensino medio") ||
+    value.includes("medio") ||
+    value.includes("1 serie") ||
+    value.includes("1a serie") ||
+    value.includes("1ª serie") ||
+    value.includes("2 serie") ||
+    value.includes("2a serie") ||
+    value.includes("2ª serie") ||
+    value.includes("3 serie") ||
+    value.includes("3a serie") ||
+    value.includes("3ª serie")
+  );
+}
+
+function getFundamentalGrade(payload: BnccSuggestionPayload): number | null {
+  const value = normalizeSearch(
+    [getString(payload, ["anoSerie", "serie", "ano"]), getString(payload, ["etapa"])].join(
+      " ",
+    ),
+  );
+  const match = value.match(/\b([6-9])\b/);
+
+  return match ? Number(match[1]) : null;
+}
+
+function isFundamentalSpanishPayload(payload: BnccSuggestionPayload): boolean {
+  const etapa = normalizeSearch(getString(payload, ["etapa"]));
+
+  return isSpanishComponent(payload) && !isHighSchoolPayload(payload) && (
+    etapa.includes("fundamental") || getFundamentalGrade(payload) !== null
+  );
+}
+
+function buildSuggestionFromCandidate(
+  candidate: SkillCandidate,
+  content: string,
+  index: number,
+  score: number,
+): BnccSkillSuggestion {
+  const codigo = candidate.codigo || `BNCC-${index + 1}`;
+  const descricao = candidate.descricao || candidate.rawText;
+
+  return {
+    id: `${codigo}-${normalizeSearch(content).slice(0, 28)}-${index}`,
+    codigo,
+    descricao,
+    texto: `${codigo} — ${descricao}`,
+    label: `${codigo} — ${descricao}`,
+    etapa: candidate.etapa,
+    anoSerie: candidate.anoSerie,
+    area: candidate.area,
+    componente: candidate.componente,
+    conteudo: content,
+    score,
+    source: candidate.source,
+  };
+}
+
+function classifySpanishHighSchoolSkills(content: string): SkillCandidate[] {
+  const normalized = normalizeSearch(content);
+  const selected: SkillCandidate[] = [];
+
+  const grammarPattern =
+    /gramatic|gramatica|verbo|verbos|conjug|tempo verbal|presente|preterito|pretérito|futuro|imperativo|subjuntivo|ser\b|estar\b|tener\b|haber\b|gustar|pronome|pronombres|artigo|articulos|artículo|substantivo|sustantivo|adjetivo|adverbio|preposi|conect|vocab|vocabulario|vocabulário|lexico|léxico|numerais|numeros|alfabeto|pronuncia|fonetica|fonética/;
+  const readingPattern =
+    /leitura|leer|lectura|interpret|compreens|comprension|compreensão|texto|textos|escrita|escribir|redacao|redação|producao textual|produção textual|oralidade|oral|fala|escuta|dialogo|diálogo|conversa|entrevista|genero textual|gênero textual|carta|email|e-mail|noticia|notícia|resenha|relato|roteiro|argument|opiniao|opinião/;
+  const culturePattern =
+    /cultura|cultural|hispan|hispânico|hispanico|hispano|paises|países|pais|país|america latina|américa latina|latino|espanha|mexico|méxico|argentina|uruguai|paraguai|chile|colombia|colômbia|peru|bolivia|bolívia|literatura|literario|literário|poesia|poema|conto|romance|autor|autores|obra|obras|diversidade|identidade|festividade|celebracao|celebração|dia de los muertos|mundo global|global|variedade|variacao|variação|sotaque|dialeto/;
+
+  if (grammarPattern.test(normalized)) {
+    selected.push(SPANISH_EM_SKILLS[0]);
+  }
+
+  if (readingPattern.test(normalized)) {
+    selected.push(SPANISH_EM_SKILLS[1]);
+  }
+
+  if (culturePattern.test(normalized)) {
+    selected.push(SPANISH_EM_SKILLS[2]);
+  }
+
+  if (selected.length === 0) {
+    selected.push(SPANISH_EM_SKILLS[2]);
+  }
+
+  const unique = new Map<string, SkillCandidate>();
+
+  for (const skill of selected) {
+    unique.set(skill.codigo, skill);
+  }
+
+  return Array.from(unique.values()).slice(0, 2);
+}
+
+function buildSpanishHighSchoolResponse(payload: BnccSuggestionPayload, conteudos: string[]) {
+  const grouped = conteudos.map((conteudo) => ({
+    conteudo,
+    habilidades: classifySpanishHighSchoolSkills(conteudo).map((candidate, index) =>
+      buildSuggestionFromCandidate(candidate, conteudo, index, 100 - index),
+    ),
+  }));
+  const habilidades = grouped.flatMap((group) => group.habilidades);
+
+  return {
+    conteudos: grouped,
+    habilidades,
+    sugeridas: habilidades,
+    skills: habilidades,
+    items: habilidades,
+    data: {
+      conteudos: grouped,
+      habilidades,
+      sugeridas: habilidades,
+    },
+    total: habilidades.length,
+    source: "local",
+    message:
+      "Língua Espanhola no Ensino Médio usa habilidades da área de Linguagens e suas Tecnologias, distribuídas por conteúdo sem repetição em massa.",
+  };
+}
+
+function gradeFromCode(code: string): number | null {
+  const match = code.toUpperCase().match(/^EF0([6-9])LI/);
+
+  return match ? Number(match[1]) : null;
+}
+
+function scoreSpanishFundamentalCandidate(
+  candidate: SkillCandidate,
+  content: string,
+  axis: "grammar" | "reading" | "culture",
+): number {
+  const text = normalizeSearch(`${candidate.codigo} ${candidate.descricao} ${candidate.rawText}`);
+  const contentTerms = expandTerms(content);
+  let score = 0;
+
+  for (const term of contentTerms) {
+    if (text.includes(term)) {
+      score += 4;
+    }
+  }
+
+  if (axis === "grammar") {
+    if (/gramatic|conhecimento linguistico|linguistic|verbo|verbais|vocab|lexic|lexical|repertorio lexical|presente|passado|futuro|imperativo|conector|pronome|modal/.test(text)) {
+      score += 25;
+    }
+  }
+
+  if (axis === "reading") {
+    if (/oral|leitura|ler|texto|textos|compreens|informac|hipotese|sentido|escrita|produzir|planejar|revisar|partilha|interagir/.test(text)) {
+      score += 25;
+    }
+  }
+
+  if (axis === "culture") {
+    if (/intercultural|cultura|cultural|sociedade|comunidade|mundo|globalizado|variacao|variacao linguistica|preconceito|lingua inglesa na sociedade/.test(text)) {
+      score += 25;
+    }
+  }
+
+  return score;
+}
+
+function classifySpanishFundamentalAxis(content: string): "grammar" | "reading" | "culture" {
+  const normalized = normalizeSearch(content);
+
+  if (/cultura|hispan|paises|países|pais|país|literatura|festividade|historia|história|diversidade|variedade|variacao|variação|sotaque|dialeto|america latina|américa latina/.test(normalized)) {
+    return "culture";
+  }
+
+  if (/leitura|interpret|texto|escrita|producao|produção|oral|dialogo|diálogo|audio|áudio|musica|música|canção|cancao|entrevista|noticia|notícia|genero|gênero/.test(normalized)) {
+    return "reading";
+  }
+
+  return "grammar";
+}
+
+function buildSpanishFundamentalResponse(
+  payload: BnccSuggestionPayload,
+  conteudos: string[],
+  candidates: SkillCandidate[],
+) {
+  const grade = getFundamentalGrade(payload);
+  const filtered = candidates.filter((candidate) => {
+    const code = candidate.codigo.toUpperCase();
+
+    return code.startsWith("EF") && code.includes("LI") && (!grade || gradeFromCode(code) === grade);
+  });
+
+  if (filtered.length === 0) {
+    return null;
+  }
+
+  const grouped = conteudos.map((conteudo) => {
+    const axis = classifySpanishFundamentalAxis(conteudo);
+    const ranked = filtered
+      .map((candidate) => ({
+        candidate,
+        score: scoreSpanishFundamentalCandidate(candidate, conteudo, axis),
+      }))
+      .filter((item) => item.score > 0)
+      .sort((a, b) => b.score - a.score || a.candidate.codigo.localeCompare(b.candidate.codigo))
+      .slice(0, 2);
+    const chosen = ranked.length > 0 ? ranked : filtered.slice(0, 1).map((candidate) => ({ candidate, score: 1 }));
+
+    return {
+      conteudo,
+      habilidades: chosen.map(({ candidate, score }, index) =>
+        buildSuggestionFromCandidate(candidate, conteudo, index, score),
+      ),
+    };
+  });
+  const habilidades = grouped.flatMap((group) => group.habilidades);
+
+  return {
+    conteudos: grouped,
+    habilidades,
+    sugeridas: habilidades,
+    skills: habilidades,
+    items: habilidades,
+    data: {
+      conteudos: grouped,
+      habilidades,
+      sugeridas: habilidades,
+    },
+    total: habilidades.length,
+    source: "local",
+    message:
+      "Língua Espanhola no Ensino Fundamental foi tratada por espelhamento pedagógico das habilidades oficiais de Língua Inglesa do ano informado, com 1 ou 2 habilidades por conteúdo.",
+  };
+}
+
 function chooseForContent(
   content: string,
   payload: BnccSuggestionPayload,
@@ -590,25 +888,9 @@ function chooseForContent(
           .sort((a, b) => b.score - a.score)
           .slice(0, 3);
 
-  return chosen.map(({ candidate, score }, index) => {
-    const codigo = candidate.codigo || `BNCC-${index + 1}`;
-    const descricao = candidate.descricao || candidate.rawText;
-
-    return {
-      id: `${codigo}-${normalizeSearch(content).slice(0, 28)}-${index}`,
-      codigo,
-      descricao,
-      texto: `${codigo} — ${descricao}`,
-      label: `${codigo} — ${descricao}`,
-      etapa: candidate.etapa,
-      anoSerie: candidate.anoSerie,
-      area: candidate.area,
-      componente: candidate.componente,
-      conteudo: content,
-      score,
-      source: candidate.source,
-    };
-  });
+  return chosen.map(({ candidate, score }, index) =>
+    buildSuggestionFromCandidate(candidate, content, index, score),
+  );
 }
 
 export function suggestBnccByConteudos(payload: BnccSuggestionPayload) {
@@ -625,6 +907,19 @@ export function suggestBnccByConteudos(payload: BnccSuggestionPayload) {
   }
 
   const localSkills = loadLocalSkills();
+
+  if (isSpanishComponent(payload) && isHighSchoolPayload(payload)) {
+    return buildSpanishHighSchoolResponse(payload, conteudos);
+  }
+
+  if (isFundamentalSpanishPayload(payload)) {
+    const spanishFundamental = buildSpanishFundamentalResponse(payload, conteudos, localSkills);
+
+    if (spanishFundamental) {
+      return spanishFundamental;
+    }
+  }
+
   const candidates = localSkills.length > 0 ? localSkills : FALLBACK_SKILLS;
 
   const grouped = conteudos.map((conteudo) => ({

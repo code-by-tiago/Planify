@@ -147,10 +147,10 @@ export function formatMaterialForEditor(material: MaterialAIOutput): string {
   parts.push(listSection("Orientações ao aluno", material.orientacoesAluno));
   parts.push(section("Introdução", material.introducao));
 
-  if (material.secoes.length > 0) {
+  if ((material.secoes || []).length > 0) {
     parts.push("## Seções");
 
-    for (const [index, secao] of material.secoes.entries()) {
+    for (const [index, secao] of (material.secoes || []).entries()) {
       parts.push(
         [
           `### ${index + 1}. ${secao.titulo}`,
@@ -165,10 +165,10 @@ export function formatMaterialForEditor(material: MaterialAIOutput): string {
     }
   }
 
-  if (material.questoes.length > 0) {
+  if ((material.questoes || []).length > 0) {
     parts.push("## Questões");
 
-    for (const question of material.questoes) {
+    for (const question of (material.questoes || [])) {
       parts.push(
         [
           `### Questão ${question.numero}`,
@@ -192,6 +192,7 @@ export function formatMaterialForEditor(material: MaterialAIOutput): string {
         "## Jogo pedagógico",
         "",
         `Nome: ${material.jogo.nome}`,
+        material.jogo.tipoJogo ? `Modelo: ${material.jogo.tipoJogo}` : "",
         "",
         `Objetivo: ${material.jogo.objetivo}`,
         "",
@@ -252,13 +253,13 @@ export function formatMaterialForEditor(material: MaterialAIOutput): string {
     );
   }
 
-  parts.push(listSection("Critérios de avaliação", material.criteriosAvaliacao));
-  parts.push(listSection("Gabarito", material.gabarito));
-  parts.push(listSection("Adaptações inclusivas", material.adaptacoesInclusivas));
-  parts.push(listSection("Sugestões de uso", material.sugestoesUso));
+  parts.push(listSection("Critérios de avaliação", material.criteriosAvaliacao || []));
+  parts.push(listSection("Gabarito", material.gabarito || []));
+  parts.push(listSection("Adaptações inclusivas", material.adaptacoesInclusivas || []));
+  parts.push(listSection("Sugestões de uso", material.sugestoesUso || []));
 
-  if (material.alertas.length > 0) {
-    parts.push(listSection("Alertas internos", material.alertas));
+  if ((material.alertas || []).length > 0) {
+    parts.push(listSection("Alertas internos", material.alertas || []));
   }
 
   return parts.filter((part) => part.trim()).join("\n\n");

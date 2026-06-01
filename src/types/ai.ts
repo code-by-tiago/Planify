@@ -103,6 +103,7 @@ export type MaterialAIInput = {
   areaConhecimento?: string;
   componenteCurricular: string;
   tipo: MaterialAIType;
+  modeloJogo?: string;
   tema: string;
   quantidadeQuestoes?: string;
   duracao?: string;
@@ -129,6 +130,7 @@ export type MaterialAISection = {
 
 export type MaterialAIGame = {
   nome: string;
+  tipoJogo?: string;
   objetivo: string;
   materiais: string[];
   preparacao: string[];

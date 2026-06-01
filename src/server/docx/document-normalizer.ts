@@ -48,7 +48,7 @@ function materialToSpec(document: AnyRecord): DocxDocumentSpec {
   for (const section of asArray(document.secoes)) {
     sections.push({
       title: section.titulo || section.title || "Seção",
-      content: section.descricao || section.description || "",
+      content: section.conteudo || section.content || section.descricao || section.description || "",
       items: section.itens || [],
     });
   }
@@ -100,6 +100,14 @@ function materialToSpec(document: AnyRecord): DocxDocumentSpec {
       {
         title: "Modo de jogar",
         items: document.jogo.modoDeJogar || [],
+      },
+      {
+        title: "Variações do jogo",
+        items: document.jogo.variacoes || [],
+      },
+      {
+        title: "Fechamento pedagógico",
+        content: document.jogo.fechamento || "",
       },
     );
   }

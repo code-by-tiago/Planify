@@ -60,9 +60,12 @@ function materialRulesByType(type: string): string[] {
     return [
       "Não crie quantidade de questões como requisito obrigatório.",
       "Preencha obrigatoriamente o bloco jogo.",
-      "Crie nome do jogo, objetivo, materiais, preparação, regras e modo de jogar.",
-      "Inclua variações e fechamento pedagógico.",
-      "Se fizer sentido, inclua cartelas, comandos ou peças em formato textual pronto para impressão dentro das seções.",
+      "Crie um jogo pedagógico real, imprimível, editável e aplicável em sala de aula.",
+      "Use exatamente o modelo de jogo solicitado: caça-palavras, cruzadinha, bingo pedagógico, jogo da memória, dominó pedagógico, quiz com gabarito ou cartas recortáveis.",
+      "Inclua nome do jogo, tipoJogo, objetivo, materiais, preparação, regras, modo de jogar, variações e fechamento pedagógico.",
+      "Inclua nas seções o material pronto para impressão: grades, cartelas, cartas, peças, pistas, perguntas, comandos ou banco de palavras conforme o modelo solicitado.",
+      "Inclua gabarito completo para o professor.",
+      "Não entregue uma página vazia, genérica ou apenas com regras. O jogo precisa conter peças/conteúdo pronto para uso.",
       "Não preencha o bloco projeto.",
       "Não preencha o bloco roteiro.",
     ];
@@ -106,6 +109,7 @@ export function buildMaterialSystemInstruction(): string {
     "Nesta etapa, não crie DOCX.",
     "Preencha somente o bloco específico do tipo solicitado.",
     "Se o tipo não for jogo, o campo jogo deve ser null.",
+    "Quando o tipo for jogo, gere um material realmente imprimível, com peças/cartelas/pistas/perguntas e gabarito.",
     "Se o tipo não for projeto, o campo projeto deve ser null.",
     "Se o tipo não for roteiro, o campo roteiro deve ser null.",
     "Não inclua explicações fora do JSON.",
@@ -131,6 +135,7 @@ Ano/Série: ${input.anoSerie}
 Área do conhecimento: ${input.areaConhecimento || "Não informado"}
 Componente curricular: ${input.componenteCurricular}
 Tipo de material: ${input.tipo}
+Modelo de jogo, se houver: ${input.modeloJogo || "Não se aplica"}
 Tema: ${input.tema}
 Quantidade de questões: ${input.quantidadeQuestoes || "Não se aplica ou não informado"}
 Duração: ${input.duracao || "Não informado"}
@@ -154,11 +159,12 @@ REGRAS GERAIS:
 4. Não gere DOCX.
 5. Não invente códigos BNCC.
 6. Se o tipo for jogo, não trate como prova nem atividade com quantidade obrigatória de questões.
-7. Se o tipo for prova ou atividade, crie questões conforme a quantidade solicitada quando houver.
-8. Se o tipo NÁO for jogo, retorne "jogo": null.
-9. Se o tipo NÁO for projeto, retorne "projeto": null.
-10. Se o tipo NÁO for roteiro, retorne "roteiro": null.
-11. Retorne apenas JSON válido.
+7. Se o tipo for jogo, use o modelo informado e entregue material pronto para imprimir, recortar quando necessário, aplicar e corrigir.
+8. Se o tipo for prova ou atividade, crie questões conforme a quantidade solicitada quando houver.
+9. Se o tipo NÃO for jogo, retorne "jogo": null.
+10. Se o tipo NÃO for projeto, retorne "projeto": null.
+11. Se o tipo NÃO for roteiro, retorne "roteiro": null.
+12. Retorne apenas JSON válido.
 
 REGRAS ESPECÍFICAS DO TIPO:
 ${typeRules.map((rule) => `- ${rule}`).join("\n")}
@@ -201,7 +207,17 @@ FORMATO JSON EXATO:
       "criterioCorrecao": "string"
     }
   ],
-  "jogo": null,
+  "jogo": {
+    "nome": "string",
+    "tipoJogo": "string",
+    "objetivo": "string",
+    "materiais": ["string"],
+    "preparacao": ["string"],
+    "regras": ["string"],
+    "modoDeJogar": ["string"],
+    "variacoes": ["string"],
+    "fechamento": "string"
+  },
   "projeto": null,
   "roteiro": null,
   "criteriosAvaliacao": ["string"],

@@ -154,8 +154,8 @@ function normalizeCommonOutput(output: Partial<MaterialAIOutput>, input: Materia
 }
 
 function mergeGameWithAI(input: MaterialAIInput, aiOutput?: Partial<MaterialAIOutput>, aiWarning?: string): MaterialAIOutput {
-  const visual = buildVisualGameMaterial(input);
   const output = aiOutput || {};
+  const visual = buildVisualGameMaterial(input, output);
   const aiObjectives = normalizeStringArray(output.objetivos);
   const aiTeacher = normalizeStringArray(output.orientacoesProfessor);
   const aiStudent = normalizeStringArray(output.orientacoesAluno);

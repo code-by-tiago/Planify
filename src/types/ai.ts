@@ -129,6 +129,18 @@ export type MaterialAISection = {
   visualHtml?: string;
 };
 
+
+export type MaterialAIGameSeedTerm = {
+  termo: string;
+  resposta: string;
+  pista: string;
+  categoria?: string;
+};
+
+export type MaterialAIGameVisualSeed = {
+  termos: MaterialAIGameSeedTerm[];
+};
+
 export type MaterialAIGame = {
   nome: string;
   tipoJogo?: string;
@@ -181,6 +193,7 @@ export type MaterialAIOutput = {
   adaptacoesInclusivas: string[];
   sugestoesUso: string[];
   alertas: string[];
+  jogoVisualSeed?: MaterialAIGameVisualSeed;
   visualHtml?: string;
   printHtml?: string;
 };

@@ -64,6 +64,8 @@ function materialRulesByType(type: string): string[] {
       "Use exatamente o modelo de jogo solicitado: caça-palavras, cruzadinha, bingo pedagógico, jogo da memória, dominó pedagógico, quiz com gabarito ou cartas recortáveis.",
       "Inclua nome do jogo, tipoJogo, objetivo, materiais, preparação, regras, modo de jogar, variações e fechamento pedagógico.",
       "Inclua nas seções o material pronto para impressão: grades, cartelas, cartas, peças, pistas, perguntas, comandos ou banco de palavras conforme o modelo solicitado.",
+      "Para jogo, preencha também jogoVisualSeed.termos com termos específicos do tema: cada item deve ter termo, resposta sem espaços, pista sem entregar a resposta e categoria.",
+      "As pistas devem ter nexo com o tema informado pelo professor. Exemplo: se o tema for Jó, use termos como Jó, paciência, fidelidade, sofrimento, provação, esperança e integridade, com pistas bíblico-pedagógicas coerentes.",
       "Inclua gabarito completo para o professor.",
       "Não entregue uma página vazia, genérica ou apenas com regras. O jogo precisa conter peças/conteúdo pronto para uso.",
       "Não preencha o bloco projeto.",
@@ -110,6 +112,7 @@ export function buildMaterialSystemInstruction(): string {
     "Preencha somente o bloco específico do tipo solicitado.",
     "Se o tipo não for jogo, o campo jogo deve ser null.",
     "Quando o tipo for jogo, gere um material realmente imprimível, com peças/cartelas/pistas/perguntas e gabarito.",
+    "Quando o tipo for jogo, gere banco semântico contextual em jogoVisualSeed.termos. Esse banco será usado pelo motor visual do Planify para montar cruzadinha, caça-palavras, bingo, memória, dominó, quiz e cartas.",
     "Se o tipo não for projeto, o campo projeto deve ser null.",
     "Se o tipo não for roteiro, o campo roteiro deve ser null.",
     "Não inclua explicações fora do JSON.",
@@ -224,7 +227,17 @@ FORMATO JSON EXATO:
   "gabarito": ["string"],
   "adaptacoesInclusivas": ["string"],
   "sugestoesUso": ["string"],
-  "alertas": ["string"]
+  "alertas": ["string"],
+  "jogoVisualSeed": {
+    "termos": [
+      {
+        "termo": "string",
+        "resposta": "PALAVRASEMACENTOSEMESPACOS",
+        "pista": "string sem entregar a resposta",
+        "categoria": "string"
+      }
+    ]
+  }
 }
 `.trim();
 }

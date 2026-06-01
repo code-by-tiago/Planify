@@ -11,6 +11,8 @@ export type PremiumGameModel =
 
 type WordPlacement = {
   word: string;
+  label: string;
+  clue: string;
   row: number;
   col: number;
   direction: string;
@@ -19,6 +21,51 @@ type WordPlacement = {
 type WordSearch = {
   grid: string[][];
   placed: WordPlacement[];
+};
+
+type GameSeedTerm = {
+  label: string;
+  answer: string;
+  clue: string;
+  category?: string;
+};
+
+type GameSeedPayload = {
+  termos?: Array<{
+    termo?: string;
+    resposta?: string;
+    palavra?: string;
+    pista?: string;
+    dica?: string;
+    definicao?: string;
+    categoria?: string;
+  }>;
+  perguntas?: Array<{
+    pergunta?: string;
+    resposta?: string;
+    alternativas?: string[];
+  }>;
+};
+
+type MaterialOutputWithSeed = Partial<MaterialAIOutput> & {
+  jogoVisualSeed?: GameSeedPayload;
+  termosDoJogo?: GameSeedPayload["termos"];
+  bancoDePalavras?: GameSeedPayload["termos"];
+};
+
+type CrosswordPlacement = {
+  number: number;
+  answer: string;
+  label: string;
+  clue: string;
+  row: number;
+  col: number;
+  direction: "across" | "down";
+};
+
+type CrosswordBoard = {
+  grid: string[][];
+  placements: CrosswordPlacement[];
 };
 
 const GAME_LABELS: Record<PremiumGameModel, string> = {
@@ -31,19 +78,112 @@ const GAME_LABELS: Record<PremiumGameModel, string> = {
   cartas: "Cartas recortáveis",
 };
 
-const DEFAULT_TERMS = [
-  "Conceito",
-  "Exemplo",
-  "Leitura",
-  "Cultura",
-  "Contexto",
-  "Vocabulário",
-  "Síntese",
-  "Aplicação",
-  "Revisão",
-  "Interpretação",
-  "Produção",
-  "Linguagem",
+const DEFAULT_SEEDS: GameSeedTerm[] = [
+  { label: "Conceito", answer: "CONCEITO", clue: "Ideia principal estudada em uma aula ou atividade." },
+  { label: "Exemplo", answer: "EXEMPLO", clue: "Situação usada para tornar uma explicação mais clara." },
+  { label: "Leitura", answer: "LEITURA", clue: "Prática de compreender informações em um texto." },
+  { label: "Cultura", answer: "CULTURA", clue: "Conjunto de valores, costumes, conhecimentos e formas de vida." },
+  { label: "Contexto", answer: "CONTEXTO", clue: "Conjunto de circunstâncias que ajuda a interpretar uma informação." },
+  { label: "Vocabulário", answer: "VOCABULARIO", clue: "Conjunto de palavras trabalhadas em determinado tema." },
+  { label: "Síntese", answer: "SINTESE", clue: "Resumo organizado das ideias mais importantes." },
+  { label: "Aplicação", answer: "APLICACAO", clue: "Uso prático de um conhecimento em uma situação." },
+  { label: "Revisão", answer: "REVISAO", clue: "Retomada de conteúdos para fortalecer a aprendizagem." },
+  { label: "Interpretação", answer: "INTERPRETACAO", clue: "Ato de compreender sentidos explícitos e implícitos." },
+  { label: "Produção", answer: "PRODUCAO", clue: "Criação de texto, resposta, solução ou material autoral." },
+  { label: "Linguagem", answer: "LINGUAGEM", clue: "Forma de comunicação por palavras, imagens, sons ou gestos." },
+];
+
+const KNOWLEDGE_PACKS: Array<{ keys: string[]; componentKeys?: string[]; terms: GameSeedTerm[] }> = [
+  {
+    keys: ["jo", "livro de jo", "personagem biblico", "sofrimento de jo", "historia de jo"],
+    componentKeys: ["ensino religioso"],
+    terms: [
+      { label: "Jó", answer: "JO", clue: "Personagem bíblico lembrado por permanecer fiel durante grandes provações.", category: "personagem" },
+      { label: "Paciência", answer: "PACIENCIA", clue: "Virtude associada à espera confiante diante das dificuldades.", category: "valor" },
+      { label: "Fidelidade", answer: "FIDELIDADE", clue: "Atitude de manter compromisso e confiança mesmo em momentos difíceis.", category: "valor" },
+      { label: "Sofrimento", answer: "SOFRIMENTO", clue: "Experiência dolorosa enfrentada pelo personagem central da narrativa.", category: "tema" },
+      { label: "Esperança", answer: "ESPERANCA", clue: "Confiança de que a vida pode ser reconstruída após a dor.", category: "valor" },
+      { label: "Provação", answer: "PROVACAO", clue: "Situação difícil que coloca a fé e a perseverança à prova.", category: "conceito" },
+      { label: "Integridade", answer: "INTEGRIDADE", clue: "Qualidade de agir com retidão e coerência moral.", category: "valor" },
+      { label: "Sabedoria", answer: "SABEDORIA", clue: "Capacidade de refletir profundamente sobre a vida, a fé e as escolhas.", category: "conceito" },
+      { label: "Justiça", answer: "JUSTICA", clue: "Busca pelo que é correto, verdadeiro e digno nas relações humanas.", category: "valor" },
+      { label: "Confiança", answer: "CONFIANCA", clue: "Postura de acreditar e permanecer firme mesmo sem respostas imediatas.", category: "valor" },
+      { label: "Amigos", answer: "AMIGOS", clue: "Pessoas que dialogam com Jó durante sua experiência de sofrimento.", category: "personagens" },
+      { label: "Restauração", answer: "RESTAURACAO", clue: "Momento de reconstrução e renovação apresentado ao final da narrativa.", category: "tema" },
+    ],
+  },
+  {
+    keys: ["ensino religioso", "religioso", "valores", "religiao", "fé", "fe"],
+    componentKeys: ["ensino religioso"],
+    terms: [
+      { label: "Respeito", answer: "RESPEITO", clue: "Atitude de considerar a dignidade e a crença do outro." },
+      { label: "Diálogo", answer: "DIALOGO", clue: "Conversa aberta para compreender ideias e experiências diferentes." },
+      { label: "Empatia", answer: "EMPATIA", clue: "Capacidade de tentar compreender o sentimento e a situação do outro." },
+      { label: "Tradição", answer: "TRADICAO", clue: "Conjunto de práticas e memórias transmitidas entre gerações." },
+      { label: "Diversidade", answer: "DIVERSIDADE", clue: "Presença de diferentes modos de viver, crer e interpretar o mundo." },
+      { label: "Ética", answer: "ETICA", clue: "Reflexão sobre atitudes, valores e responsabilidade nas escolhas." },
+      { label: "Solidariedade", answer: "SOLIDARIEDADE", clue: "Ação de apoio e cuidado com quem precisa." },
+      { label: "Comunidade", answer: "COMUNIDADE", clue: "Grupo de pessoas que compartilham vínculos, práticas e convivência." },
+    ],
+  },
+  {
+    keys: ["paises hispanicos", "mundo hispanico", "saudacoes", "espanhol", "lingua espanhola", "america latina"],
+    componentKeys: ["lingua espanhola", "língua espanhola"],
+    terms: [
+      { label: "Saludos", answer: "SALUDOS", clue: "Expressões usadas para cumprimentar alguém em espanhol." },
+      { label: "Hispânico", answer: "HISPANICO", clue: "Relacionado aos povos, países e culturas de língua espanhola." },
+      { label: "Cultura", answer: "CULTURA", clue: "Costumes, valores e práticas de um povo ou grupo social." },
+      { label: "Diversidade", answer: "DIVERSIDADE", clue: "Variedade de identidades, costumes e formas de expressão." },
+      { label: "Vocabulário", answer: "VOCABULARIO", clue: "Conjunto de palavras usadas para comunicar uma ideia." },
+      { label: "México", answer: "MEXICO", clue: "País hispânico localizado na América do Norte." },
+      { label: "Argentina", answer: "ARGENTINA", clue: "País hispânico do Cone Sul conhecido pelo tango e pela região dos pampas." },
+      { label: "Colômbia", answer: "COLOMBIA", clue: "País hispânico sul-americano banhado pelo Caribe e pelo Pacífico." },
+      { label: "Pronúncia", answer: "PRONUNCIA", clue: "Modo como os sons de uma língua são articulados." },
+      { label: "Apresentação", answer: "APRESENTACAO", clue: "Situação comunicativa em que alguém diz seu nome e informações pessoais." },
+    ],
+  },
+  {
+    keys: ["leitura", "interpretacao", "interpretação", "texto", "narrativo", "conto", "crônica", "cronica"],
+    componentKeys: ["lingua portuguesa", "língua portuguesa"],
+    terms: [
+      { label: "Narrador", answer: "NARRADOR", clue: "Voz que conta os acontecimentos de uma narrativa." },
+      { label: "Personagem", answer: "PERSONAGEM", clue: "Ser que participa das ações em uma história." },
+      { label: "Enredo", answer: "ENREDO", clue: "Sequência dos acontecimentos principais de uma narrativa." },
+      { label: "Conflito", answer: "CONFLITO", clue: "Problema ou tensão que movimenta a história." },
+      { label: "Inferência", answer: "INFERENCIA", clue: "Conclusão construída a partir de pistas do texto." },
+      { label: "Contexto", answer: "CONTEXTO", clue: "Informações que ajudam a compreender uma situação comunicativa." },
+      { label: "Tema", answer: "TEMA", clue: "Assunto principal abordado em um texto." },
+      { label: "Síntese", answer: "SINTESE", clue: "Resumo das ideias essenciais de um texto." },
+    ],
+  },
+  {
+    keys: ["matematica", "matemática", "fração", "fracao", "equacao", "equação", "porcentagem", "geometria"],
+    componentKeys: ["matematica", "matemática"],
+    terms: [
+      { label: "Equação", answer: "EQUACAO", clue: "Sentença matemática que apresenta uma igualdade com valor desconhecido." },
+      { label: "Fração", answer: "FRACAO", clue: "Representação de uma parte de um todo." },
+      { label: "Porcentagem", answer: "PORCENTAGEM", clue: "Forma de representar uma razão em relação a cem." },
+      { label: "Ângulo", answer: "ANGULO", clue: "Abertura formada por duas semirretas com mesma origem." },
+      { label: "Perímetro", answer: "PERIMETRO", clue: "Medida do contorno de uma figura plana." },
+      { label: "Área", answer: "AREA", clue: "Medida da superfície ocupada por uma figura." },
+      { label: "Proporção", answer: "PROPORCAO", clue: "Relação de igualdade entre duas razões." },
+      { label: "Gráfico", answer: "GRAFICO", clue: "Representação visual de dados ou relações numéricas." },
+    ],
+  },
+  {
+    keys: ["ciencias", "ciências", "ecossistema", "celula", "célula", "energia", "agua", "água", "sustentabilidade"],
+    componentKeys: ["ciências", "biologia", "física", "química"],
+    terms: [
+      { label: "Ecossistema", answer: "ECOSSISTEMA", clue: "Conjunto formado pelos seres vivos e pelo ambiente em que interagem." },
+      { label: "Célula", answer: "CELULA", clue: "Unidade básica estrutural e funcional dos seres vivos." },
+      { label: "Energia", answer: "ENERGIA", clue: "Capacidade de realizar trabalho ou provocar transformações." },
+      { label: "Matéria", answer: "MATERIA", clue: "Tudo aquilo que possui massa e ocupa espaço." },
+      { label: "Água", answer: "AGUA", clue: "Substância essencial à vida, formada por hidrogênio e oxigênio." },
+      { label: "Sustentabilidade", answer: "SUSTENTABILIDADE", clue: "Uso responsável dos recursos para preservar o presente e o futuro." },
+      { label: "Experimento", answer: "EXPERIMENTO", clue: "Procedimento usado para investigar uma hipótese." },
+      { label: "Hipótese", answer: "HIPOTESE", clue: "Explicação provisória que pode ser testada." },
+    ],
+  },
 ];
 
 function escapeHtml(value: unknown): string {
@@ -57,6 +197,16 @@ function escapeHtml(value: unknown): string {
 
 function normalizeText(value: unknown): string {
   return String(value ?? "").trim();
+}
+
+function normalizeForSearch(value: unknown): string {
+  return String(value ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase("pt-BR")
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function normalizeModel(value: unknown): PremiumGameModel {
@@ -88,59 +238,122 @@ function splitItems(value: MaterialAIInput["conteudos"] | string | undefined): s
     .filter(Boolean);
 }
 
-function uniqueItems(items: string[]): string[] {
+function uniqueByAnswer(items: GameSeedTerm[]): GameSeedTerm[] {
   return Array.from(
     new Map(
       items
-        .map((item) => item.trim())
-        .filter(Boolean)
-        .map((item) => [item.toLocaleLowerCase("pt-BR"), item]),
+        .filter((item) => item.answer && item.clue)
+        .map((item) => [item.answer.toLocaleLowerCase("pt-BR"), item]),
     ).values(),
   );
 }
 
-function normalizeWord(value: string): string {
-  return value
+function normalizeWord(value: string, minLength = 2): string {
+  const normalized = value
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-zA-Z]/g, "")
+    .replace(/[^a-zA-Z0-9]/g, "")
     .toUpperCase();
+
+  if (normalized.length < minLength) return "";
+  return normalized;
 }
 
 function titleCase(value: string): string {
   const clean = value.trim();
   if (!clean) return clean;
-  return clean.charAt(0).toLocaleUpperCase("pt-BR") + clean.slice(1);
+  return clean.charAt(0).toLocaleUpperCase("pt-BR") + clean.slice(1).toLocaleLowerCase("pt-BR");
 }
 
-function getTerms(input: MaterialAIInput, limit = 24): string[] {
-  const conteudos = splitItems(input.conteudos);
-  const tema = normalizeText(input.tema);
-  const base = uniqueItems([tema, ...conteudos].filter(Boolean));
-  const expanded = base.flatMap((item) => {
-    const words = item
-      .split(/\s+/)
-      .map((word) => word.trim())
-      .filter((word) => normalizeWord(word).length >= 4);
-
-    return [item, ...words];
-  });
-
-  const terms = uniqueItems(expanded)
-    .map((item) => item.replace(/\s+/g, " ").trim())
-    .filter((item) => item.length >= 3)
-    .slice(0, limit);
-
-  return terms.length ? terms : DEFAULT_TERMS.slice(0, limit);
+function removeAnswerFromClue(clue: string, answer: string, fallback: string): string {
+  const cleaned = normalizeText(clue);
+  if (!cleaned) return fallback;
+  const answerSearch = normalizeForSearch(answer);
+  const clueSearch = normalizeForSearch(cleaned);
+  if (answerSearch && clueSearch.includes(answerSearch) && answerSearch.length > 3) return fallback;
+  return cleaned;
 }
 
-function getWords(input: MaterialAIInput, limit = 14): string[] {
-  const words = getTerms(input, 32)
-    .map(normalizeWord)
-    .filter((word) => word.length >= 4 && word.length <= 14);
+function clueForRawTerm(term: string, input: MaterialAIInput): string {
+  const component = normalizeText(input.componenteCurricular) || "componente curricular";
+  const theme = normalizeText(input.tema) || "tema estudado";
+  return `Conceito trabalhado em ${component}, relacionado ao tema "${theme}", que deve ser reconhecido pelos estudantes.`;
+}
 
-  const result = uniqueItems(words).slice(0, limit);
-  return result.length >= 6 ? result : uniqueItems([...result, ...DEFAULT_TERMS.map(normalizeWord)]).slice(0, limit);
+function seedFromRawTerm(term: string, input: MaterialAIInput): GameSeedTerm | null {
+  const clean = term.replace(/\s+/g, " ").trim();
+  if (!clean) return null;
+
+  const beforeSeparator = clean.split(/[:–—-]/)[0]?.trim() || clean;
+  const words = beforeSeparator.split(/\s+/).filter(Boolean);
+  const preferred = words.length > 3 ? words.find((word) => normalizeWord(word, 4)) || beforeSeparator : beforeSeparator;
+  const answer = normalizeWord(preferred, 2);
+  if (!answer || answer.length > 15) return null;
+
+  return {
+    label: titleCase(preferred),
+    answer,
+    clue: clueForRawTerm(preferred, input),
+    category: "conteúdo informado",
+  };
+}
+
+function extractAiSeeds(aiOutput?: MaterialOutputWithSeed): GameSeedTerm[] {
+  const rawTerms = [
+    ...(aiOutput?.jogoVisualSeed?.termos || []),
+    ...(aiOutput?.termosDoJogo || []),
+    ...(aiOutput?.bancoDePalavras || []),
+  ];
+
+  return rawTerms
+    .map((item): GameSeedTerm | null => {
+      const rawLabel = item.termo || item.palavra || item.resposta || "";
+      const rawAnswer = item.resposta || item.palavra || item.termo || "";
+      const answer = normalizeWord(rawAnswer, 2);
+      if (!answer || answer.length > 15) return null;
+      const label = normalizeText(rawLabel) || titleCase(answer);
+      const fallback = `Conceito relacionado a ${label}, trabalhado no tema informado pelo professor.`;
+      return {
+        label,
+        answer,
+        clue: removeAnswerFromClue(item.pista || item.dica || item.definicao || "", answer, fallback),
+        category: item.categoria || "termo gerado pela IA",
+      } satisfies GameSeedTerm;
+    })
+    .filter((item): item is GameSeedTerm => Boolean(item));
+}
+
+function knowledgeSeeds(input: MaterialAIInput): GameSeedTerm[] {
+  const text = normalizeForSearch(`${input.tema || ""} ${splitItems(input.conteudos).join(" ")}`);
+  const component = normalizeForSearch(input.componenteCurricular || "");
+  const exactMatches: GameSeedTerm[] = [];
+  const componentMatches: GameSeedTerm[] = [];
+
+  for (const pack of KNOWLEDGE_PACKS) {
+    const keyMatch = pack.keys.some((key) => {
+      const normalizedKey = normalizeForSearch(key);
+      return normalizedKey && (` ${text} `).includes(` ${normalizedKey} `);
+    });
+    const componentMatch = (pack.componentKeys || []).some((key) => component.includes(normalizeForSearch(key)));
+
+    if (keyMatch) exactMatches.push(...pack.terms);
+    else if (componentMatch) componentMatches.push(...pack.terms);
+  }
+
+  return exactMatches.length ? exactMatches : componentMatches;
+}
+
+function buildSeeds(input: MaterialAIInput, aiOutput?: MaterialOutputWithSeed, limit = 24): GameSeedTerm[] {
+  const aiSeeds = extractAiSeeds(aiOutput);
+  const packSeeds = knowledgeSeeds(input);
+  const rawSeeds = [input.tema, ...splitItems(input.conteudos)]
+    .map((item) => seedFromRawTerm(String(item || ""), input))
+    .filter((item): item is GameSeedTerm => Boolean(item));
+
+  const primary = uniqueByAnswer([...aiSeeds, ...packSeeds, ...rawSeeds]);
+  const withFallback = primary.length >= 8 ? primary : uniqueByAnswer([...primary, ...DEFAULT_SEEDS]);
+
+  return withFallback.slice(0, limit);
 }
 
 function chunk<T>(items: T[], size: number): T[][] {
@@ -151,22 +364,15 @@ function chunk<T>(items: T[], size: number): T[][] {
   return chunks;
 }
 
-function makeClue(term: string, input: MaterialAIInput, index: number): string {
-  const tema = normalizeText(input.tema) || "conteúdo estudado";
-  const componente = normalizeText(input.componenteCurricular) || "componente curricular";
-  const templates = [
-    `Conceito relacionado ao tema ${tema}: ${term}.`,
-    `Elemento de ${componente} trabalhado na aula: ${term}.`,
-    `Palavra-chave usada para revisar ${tema}: ${term}.`,
-    `Item que deve ser explicado com exemplo pelos estudantes: ${term}.`,
-  ];
-
-  return templates[index % templates.length];
+function getSeedWords(input: MaterialAIInput, aiOutput?: MaterialOutputWithSeed, limit = 14): GameSeedTerm[] {
+  return buildSeeds(input, aiOutput, 32)
+    .filter((seed) => seed.answer.length >= 2 && seed.answer.length <= 15)
+    .slice(0, limit);
 }
 
-function wordSearch(input: MaterialAIInput): WordSearch {
-  const words = getWords(input, 14);
-  const size = words.some((word) => word.length > 11) ? 16 : 14;
+function wordSearch(input: MaterialAIInput, aiOutput?: MaterialOutputWithSeed): WordSearch {
+  const seeds = getSeedWords(input, aiOutput, 14);
+  const size = seeds.some((seed) => seed.answer.length > 11) ? 16 : 14;
   const grid = Array.from({ length: size }, () => Array.from({ length: size }, () => ""));
   const placed: WordPlacement[] = [];
   const directions = [
@@ -186,20 +392,20 @@ function wordSearch(input: MaterialAIInput): WordSearch {
     return true;
   }
 
-  function place(word: string, row: number, col: number, dr: number, dc: number, direction: string) {
-    for (let index = 0; index < word.length; index++) {
-      grid[row + dr * index][col + dc * index] = word[index];
+  function place(seed: GameSeedTerm, row: number, col: number, dr: number, dc: number, direction: string) {
+    for (let index = 0; index < seed.answer.length; index++) {
+      grid[row + dr * index][col + dc * index] = seed.answer[index];
     }
-    placed.push({ word, row: row + 1, col: col + 1, direction });
+    placed.push({ word: seed.answer, label: seed.label, clue: seed.clue, row: row + 1, col: col + 1, direction });
   }
 
-  words.forEach((word, wordIndex) => {
-    for (let attempt = 0; attempt < size * size * 2; attempt++) {
-      const direction = directions[(wordIndex + attempt) % directions.length];
-      const row = (wordIndex * 3 + attempt * 2) % size;
-      const col = (wordIndex * 5 + attempt * 3) % size;
-      if (canPlace(word, row, col, direction.dr, direction.dc)) {
-        place(word, row, col, direction.dr, direction.dc, direction.label);
+  seeds.forEach((seed, seedIndex) => {
+    for (let attempt = 0; attempt < size * size * 3; attempt++) {
+      const direction = directions[(seedIndex + attempt) % directions.length];
+      const row = (seedIndex * 3 + attempt * 2) % size;
+      const col = (seedIndex * 5 + attempt * 3) % size;
+      if (canPlace(seed.answer, row, col, direction.dr, direction.dc)) {
+        place(seed, row, col, direction.dr, direction.dc, direction.label);
         return;
       }
     }
@@ -252,9 +458,9 @@ function renderPrintableCards(cards: Array<{ title: string; body: string; footer
     .join("")}</div>`;
 }
 
-function bingoCards(input: MaterialAIInput): string[][][] {
-  const terms = getTerms(input, 32);
-  const base = terms.length >= 16 ? terms : uniqueItems([...terms, ...DEFAULT_TERMS]);
+function bingoCards(input: MaterialAIInput, aiOutput?: MaterialOutputWithSeed): string[][][] {
+  const terms = buildSeeds(input, aiOutput, 32).map((seed) => seed.label);
+  const base = terms.length >= 16 ? terms : [...terms, ...DEFAULT_SEEDS.map((seed) => seed.label)];
 
   return Array.from({ length: 6 }).map((_, cardIndex) => {
     const cells = Array.from({ length: 16 }).map((__, cellIndex) => {
@@ -280,106 +486,219 @@ function renderBingoCard(rows: string[][], index: number): string {
   </div>`;
 }
 
-function crosswordRows(input: MaterialAIInput): Array<{ number: number; answer: string; clue: string; cells: string[] }> {
-  return getWords(input, 12).map((word, index) => ({
-    number: index + 1,
-    answer: word,
-    clue: makeClue(word, input, index),
-    cells: word.split(""),
-  }));
+function canPlaceCrossword(grid: string[][], answer: string, row: number, col: number, direction: "across" | "down") {
+  const size = grid.length;
+  const dr = direction === "down" ? 1 : 0;
+  const dc = direction === "across" ? 1 : 0;
+  const beforeRow = row - dr;
+  const beforeCol = col - dc;
+  const afterRow = row + dr * answer.length;
+  const afterCol = col + dc * answer.length;
+
+  if (row < 0 || col < 0 || row + dr * (answer.length - 1) >= size || col + dc * (answer.length - 1) >= size) return false;
+  if (grid[beforeRow]?.[beforeCol]) return false;
+  if (grid[afterRow]?.[afterCol]) return false;
+
+  let intersections = 0;
+
+  for (let index = 0; index < answer.length; index++) {
+    const r = row + dr * index;
+    const c = col + dc * index;
+    const current = grid[r][c];
+    if (current && current !== answer[index]) return false;
+    if (current === answer[index]) intersections += 1;
+
+    if (!current) {
+      if (direction === "across" && (grid[r - 1]?.[c] || grid[r + 1]?.[c])) return false;
+      if (direction === "down" && (grid[r]?.[c - 1] || grid[r]?.[c + 1])) return false;
+    }
+  }
+
+  return { intersections };
 }
 
-function renderCrossword(rows: Array<{ number: number; answer: string; clue: string; cells: string[] }>): string {
-  return `<div style="margin:14px 0;">${rows
-    .map(
-      (row) => `<div style="display:flex;align-items:center;gap:8px;margin:8px 0;break-inside:avoid;">
-        <div style="width:28px;height:28px;border-radius:999px;background:#0f766e;color:white;text-align:center;line-height:28px;font-weight:900;">${row.number}</div>
-        <div style="display:flex;">${row.cells
-          .map(() => `<span style="display:inline-block;width:30px;height:30px;border:1px solid #111827;background:#fff;"></span>`)
-          .join("")}</div>
-      </div>`,
-    )
-    .join("")}</div>`;
+function placeCrossword(grid: string[][], answer: string, row: number, col: number, direction: "across" | "down") {
+  const dr = direction === "down" ? 1 : 0;
+  const dc = direction === "across" ? 1 : 0;
+  for (let index = 0; index < answer.length; index++) {
+    grid[row + dr * index][col + dc * index] = answer[index];
+  }
 }
 
-function dataSection(title: string, content: string, items: string[] = []): MaterialAISection {
-  return { titulo: title, conteudo: content, itens: items };
+function buildCrosswordBoard(input: MaterialAIInput, aiOutput?: MaterialOutputWithSeed): CrosswordBoard {
+  const seeds = getSeedWords(input, aiOutput, 12)
+    .filter((seed) => seed.answer.length >= 2 && seed.answer.length <= 13)
+    .sort((a, b) => b.answer.length - a.answer.length);
+  const longest = seeds[0]?.answer.length || 8;
+  const size = Math.min(21, Math.max(15, longest + 6, seeds.length + 7));
+  const grid = Array.from({ length: size }, () => Array.from({ length: size }, () => ""));
+  const placements: CrosswordPlacement[] = [];
+
+  const first = seeds[0] || DEFAULT_SEEDS[0];
+  const startRow = Math.floor(size / 2);
+  const startCol = Math.max(1, Math.floor((size - first.answer.length) / 2));
+  placeCrossword(grid, first.answer, startRow, startCol, "across");
+  placements.push({ number: 1, answer: first.answer, label: first.label, clue: first.clue, row: startRow, col: startCol, direction: "across" });
+
+  for (const seed of seeds.slice(1)) {
+    let best: { row: number; col: number; direction: "across" | "down"; score: number } | null = null;
+
+    for (let wordIndex = 0; wordIndex < seed.answer.length; wordIndex++) {
+      const letter = seed.answer[wordIndex];
+      for (let row = 0; row < size; row++) {
+        for (let col = 0; col < size; col++) {
+          if (grid[row][col] !== letter) continue;
+          for (const direction of ["across", "down"] as const) {
+            const candidateRow = direction === "down" ? row - wordIndex : row;
+            const candidateCol = direction === "across" ? col - wordIndex : col;
+            const result = canPlaceCrossword(grid, seed.answer, candidateRow, candidateCol, direction);
+            if (!result || result.intersections === 0) continue;
+            const centerPenalty = Math.abs(candidateRow - size / 2) + Math.abs(candidateCol - size / 2);
+            const directionBonus = placements[placements.length - 1]?.direction === direction ? 0 : 2;
+            const score = result.intersections * 20 + directionBonus - centerPenalty;
+            if (!best || score > best.score) best = { row: candidateRow, col: candidateCol, direction, score };
+          }
+        }
+      }
+    }
+
+    if (best) {
+      placeCrossword(grid, seed.answer, best.row, best.col, best.direction);
+      placements.push({
+        number: placements.length + 1,
+        answer: seed.answer,
+        label: seed.label,
+        clue: seed.clue,
+        row: best.row,
+        col: best.col,
+        direction: best.direction,
+      });
+    }
+  }
+
+  return { grid, placements };
 }
 
-function commonOutput(input: MaterialAIInput, label: string, visualHtml: string, sections: MaterialAISection[], gabarito: string[]): MaterialAIOutput {
+function crosswordBounds(board: CrosswordBoard) {
+  const used: Array<[number, number]> = [];
+  for (let row = 0; row < board.grid.length; row++) {
+    for (let col = 0; col < board.grid[row].length; col++) {
+      if (board.grid[row][col]) used.push([row, col]);
+    }
+  }
+  const rows = used.map(([row]) => row);
+  const cols = used.map(([, col]) => col);
+  return {
+    minRow: Math.max(0, Math.min(...rows) - 1),
+    maxRow: Math.min(board.grid.length - 1, Math.max(...rows) + 1),
+    minCol: Math.max(0, Math.min(...cols) - 1),
+    maxCol: Math.min(board.grid.length - 1, Math.max(...cols) + 1),
+  };
+}
+
+function renderCrosswordGrid(board: CrosswordBoard, showAnswers: boolean): string {
+  const bounds = crosswordBounds(board);
+  const numberMap = new Map<string, number>();
+  for (const placement of board.placements) {
+    const key = `${placement.row}:${placement.col}`;
+    if (!numberMap.has(key)) numberMap.set(key, placement.number);
+  }
+
+  const rows: string[] = [];
+  for (let row = bounds.minRow; row <= bounds.maxRow; row++) {
+    const cells: string[] = [];
+    for (let col = bounds.minCol; col <= bounds.maxCol; col++) {
+      const letter = board.grid[row]?.[col] || "";
+      const number = numberMap.get(`${row}:${col}`);
+      if (!letter) {
+        cells.push(`<td style="width:30px;height:30px;border:1px solid transparent;background:#f1f5f9;"></td>`);
+      } else {
+        cells.push(`<td style="position:relative;width:30px;height:30px;border:1px solid #111827;background:#ffffff;text-align:center;vertical-align:middle;font-family:Arial, sans-serif;font-size:14px;font-weight:900;">
+          ${number ? `<span style="position:absolute;top:1px;left:2px;font-size:8px;font-weight:800;color:#0f766e;">${number}</span>` : ""}
+          ${showAnswers ? escapeHtml(letter) : ""}
+        </td>`);
+      }
+    }
+    rows.push(`<tr>${cells.join("")}</tr>`);
+  }
+
+  return `<table style="border-collapse:collapse;margin:16px 0;width:auto;">${rows.join("")}</table>`;
+}
+
+function renderCrosswordClues(board: CrosswordBoard) {
+  const across = board.placements.filter((placement) => placement.direction === "across");
+  const down = board.placements.filter((placement) => placement.direction === "down");
+  const renderList = (items: CrosswordPlacement[]) =>
+    items.length
+      ? `<ol>${items.map((item) => `<li><strong>${item.number}.</strong> ${escapeHtml(item.clue)} <em>(${item.answer.length} letras)</em></li>`).join("")}</ol>`
+      : `<p>Nenhuma pista nesta direção.</p>`;
+
+  return `<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin:14px 0;">
+    <div><h3>Horizontais</h3>${renderList(across)}</div>
+    <div><h3>Verticais</h3>${renderList(down)}</div>
+  </div>`;
+}
+
+function dataSection(titulo: string, conteudo: string, itens: string[] = []): MaterialAISection {
+  return { titulo, conteudo, itens };
+}
+
+function commonOutput(
+  input: MaterialAIInput,
+  label: string,
+  visualHtml: string,
+  sections: MaterialAISection[],
+  gabarito: string[],
+): MaterialAIOutput {
+  const tema = normalizeText(input.tema) || "tema estudado";
   const conteudos = splitItems(input.conteudos);
-  const objetivos = splitItems(input.objetivos || "");
-  const title = normalizeText(input.titulo) || `${label} — ${normalizeText(input.tema) || "Material pedagógico"}`;
 
   return {
-    titulo: title,
-    subtitulo: `${label} — ${normalizeText(input.componenteCurricular) || "Componente curricular"}`,
+    titulo: normalizeText(input.titulo) || `${label} — ${tema}`,
+    subtitulo: `${label} para ${normalizeText(input.anoSerie) || "turma"}`,
     tipo: "jogo",
-    resumo: `Jogo pedagógico visual, imprimível e editável para trabalhar ${normalizeText(input.tema) || "o conteúdo informado"}.`,
+    resumo: `Jogo pedagógico visual, contextualizado ao tema ${tema}, pronto para editar, imprimir e aplicar em sala.`,
     dadosGerais: {
-      escola: normalizeText(input.escola),
-      professor: normalizeText(input.professor),
-      etapa: normalizeText(input.etapa),
-      anoSerie: normalizeText(input.anoSerie),
-      areaConhecimento: normalizeText(input.areaConhecimento),
-      componenteCurricular: normalizeText(input.componenteCurricular),
-      tema: normalizeText(input.tema),
-      duracao: normalizeText(input.duracao),
+      escola: input.escola || "",
+      professor: input.professor || "",
+      etapa: input.etapa,
+      anoSerie: input.anoSerie,
+      areaConhecimento: input.areaConhecimento || "",
+      componenteCurricular: input.componenteCurricular,
+      tema,
+      duracao: input.duracao || "",
     },
-    objetivos: objetivos.length
-      ? objetivos
-      : [
-          `Revisar ${normalizeText(input.tema) || "o conteúdo"} por meio de um jogo pedagógico visual e participativo.`,
-          "Estimular associação, atenção, argumentação e registro das aprendizagens.",
-        ],
+    objetivos: [
+      `Retomar conceitos essenciais relacionados a ${tema}.`,
+      "Promover aprendizagem ativa por meio de desafio visual e colaboração.",
+      "Registrar evidências de compreensão durante a correção coletiva.",
+    ],
     conteudos,
     orientacoesProfessor: [
       "Imprima a versão do aluno e mantenha o gabarito apenas com o professor.",
-      "Explique as regras em até cinco minutos e faça uma rodada demonstrativa.",
-      "Organize individualmente, em duplas ou grupos conforme o tempo disponível.",
+      "Antes do jogo, retome rapidamente o tema e os conceitos usados nas pistas.",
+      "Durante a aplicação, peça que os estudantes justifiquem as respostas encontradas.",
       "Finalize com correção coletiva, retomada dos conceitos e registro de aprendizagem.",
     ],
     orientacoesAluno: [
-      "Leia o comando do jogo com atenção antes de iniciar.",
-      "Participe respeitando a vez dos colegas e registrando as respostas quando solicitado.",
-      "Na correção, explique como chegou às respostas e anote os pontos que precisa revisar.",
+      "Leia o comando e as pistas com atenção antes de iniciar.",
+      "Procure relacionar cada resposta ao conteúdo estudado em aula.",
+      "Ao corrigir, explique como chegou às respostas e anote os pontos que precisa revisar.",
     ],
-    introducao: "Material visual gerado em formato editável para impressão, recorte, aplicação em sala e revisão no Editor Planify.",
+    introducao: `Material visual gerado para o tema ${tema}, com estrutura pronta para uso em sala de aula.`,
     secoes: sections,
     questoes: [],
     jogo: {
-      nome: title,
+      nome: label,
       tipoJogo: label,
-      objetivo: `Aplicar ${normalizeText(input.tema) || "o conteúdo"} em uma dinâmica lúdica, imprimível e avaliável.`,
-      materiais: ["Material impresso", "Lápis ou caneta", "Tesoura sem ponta quando houver recorte", "Gabarito do professor"],
-      preparacao: [
-        "Gerar ou revisar o material no Editor Planify.",
-        "Imprimir cópias suficientes para estudantes, duplas ou grupos.",
-        "Recortar cartas, peças ou fichas quando o modelo exigir.",
-      ],
-      regras: [
-        "Seguir o comando específico do jogo.",
-        "Registrar respostas quando solicitado.",
-        "Justificar respostas em pelo menos uma rodada de socialização.",
-        "Conferir o resultado com o gabarito ao final.",
-      ],
-      modoDeJogar: [
-        "Distribua o material.",
-        "Leia o objetivo e as regras.",
-        "Defina o tempo da rodada.",
-        "Acompanhe as estratégias dos estudantes.",
-        "Conclua com correção coletiva e síntese.",
-      ],
-      variacoes: [
-        "Aplicar como revisão individual.",
-        "Aplicar em duplas com justificativa oral.",
-        "Aplicar por equipes com pontuação.",
-        "Usar como estação de aprendizagem.",
-      ],
-      fechamento: "Peça que os estudantes registrem uma síntese curta com três aprendizagens, uma dúvida e um exemplo do conteúdo.",
+      objetivo: `Revisar e consolidar o tema ${tema} por meio de jogo pedagógico visual.`,
+      materiais: ["Material impresso", "Lápis ou caneta", "Quadro para correção coletiva"],
+      preparacao: ["Abrir no Editor se desejar ajustar termos ou pistas.", "Imprimir a versão do aluno.", "Separar o gabarito para uso do professor."],
+      regras: ["Realizar individualmente, em dupla ou em grupo.", "Registrar as respostas de forma organizada.", "Justificar ao menos três respostas durante a socialização."],
+      modoDeJogar: ["Ler as pistas ou comandos.", "Resolver o jogo no tempo combinado.", "Conferir em correção coletiva.", "Registrar a aprendizagem principal."],
+      variacoes: ["Transformar em competição por equipes.", "Pedir que os estudantes criem novas pistas.", "Usar como revisão antes de avaliação."],
+      fechamento: "Finalize retomando conceitos, esclarecendo dúvidas e relacionando o jogo aos objetivos da aula.",
     },
-    projeto: undefined,
-    roteiro: undefined,
     criteriosAvaliacao: [
       "Participação e colaboração durante o jogo.",
       "Compreensão dos conceitos trabalhados.",
@@ -390,7 +709,7 @@ function commonOutput(input: MaterialAIInput, label: string, visualHtml: string,
     adaptacoesInclusivas: [
       "Ampliar fonte ou espaçamento antes de imprimir, se necessário.",
       "Permitir realização em dupla para estudantes que precisam de apoio.",
-      "Ler comandos em voz alta para garantir compreensão.",
+      "Ler comandos e pistas em voz alta para garantir compreensão.",
     ],
     sugestoesUso: [
       "Usar como revisão antes de avaliação.",
@@ -403,17 +722,17 @@ function commonOutput(input: MaterialAIInput, label: string, visualHtml: string,
   };
 }
 
-export function buildVisualGameMaterial(input: MaterialAIInput): MaterialAIOutput {
+export function buildVisualGameMaterial(input: MaterialAIInput, aiOutput?: MaterialOutputWithSeed): MaterialAIOutput {
   const model = normalizeModel(input.modeloJogo);
   const label = GAME_LABELS[model];
   const tema = normalizeText(input.tema) || "tema estudado";
-  const terms = getTerms(input, 30);
+  const seeds = buildSeeds(input, aiOutput, 30);
   let visualHtml = "";
   let sections: MaterialAISection[] = [];
   let gabarito: string[] = [];
 
   if (model === "caca_palavras") {
-    const game = wordSearch(input);
+    const game = wordSearch(input, aiOutput);
     const words = game.placed.map((item) => item.word);
     visualHtml = `
       <section style="font-family:Arial, sans-serif;color:#111827;">
@@ -422,60 +741,64 @@ export function buildVisualGameMaterial(input: MaterialAIInput): MaterialAIOutpu
         ${renderGridTable(game.grid)}
         <h3>Banco de palavras</h3>
         ${renderWordBank(words)}
+        <h3>Pistas rápidas</h3>
+        <ol>${game.placed.map((item) => `<li>${escapeHtml(item.clue)}</li>`).join("")}</ol>
         <h2>Gabarito do professor</h2>
         <table style="border-collapse:collapse;width:100%;"><tr><th style="border:1px solid #111827;padding:8px;">Palavra</th><th style="border:1px solid #111827;padding:8px;">Início</th><th style="border:1px solid #111827;padding:8px;">Direção</th></tr>${game.placed
           .map((item) => `<tr><td style="border:1px solid #111827;padding:8px;">${escapeHtml(item.word)}</td><td style="border:1px solid #111827;padding:8px;">linha ${item.row}, coluna ${item.col}</td><td style="border:1px solid #111827;padding:8px;">${escapeHtml(item.direction)}</td></tr>`)
           .join("")}</table>
       </section>`;
     sections = [
-      dataSection("Grade visual do caça-palavras", "O Editor exibirá a grade em quadradinhos, o banco de palavras e o gabarito."),
+      dataSection("Grade visual do caça-palavras", "Grade em quadradinhos, banco de palavras, pistas e gabarito."),
       dataSection("Palavras do jogo", "Palavras que aparecem na grade:", words),
     ];
-    gabarito = game.placed.map((item) => `${item.word}: linha ${item.row}, coluna ${item.col}, ${item.direction}.`);
+    gabarito = game.placed.map((item) => `${item.word}: linha ${item.row}, coluna ${item.col}, ${item.direction}. Pista: ${item.clue}`);
   }
 
   if (model === "cruzadinha") {
-    const rows = crosswordRows(input);
+    const board = buildCrosswordBoard(input, aiOutput);
     visualHtml = `
       <section style="font-family:Arial, sans-serif;color:#111827;">
         <h2>Cruzadinha — versão do aluno</h2>
-        <p>Leia as pistas e preencha os quadradinhos com as respostas corretas.</p>
-        ${renderCrossword(rows)}
-        <h3>Pistas</h3>
-        <ol>${rows.map((row) => `<li>${escapeHtml(row.clue)} (${row.answer.length} letras)</li>`).join("")}</ol>
+        <p>Leia as pistas, observe a numeração e preencha a cruzadinha com respostas relacionadas ao tema <strong>${escapeHtml(tema)}</strong>.</p>
+        ${renderCrosswordGrid(board, false)}
+        ${renderCrosswordClues(board)}
         <h2>Gabarito do professor</h2>
-        <ol>${rows.map((row) => `<li>${escapeHtml(row.answer)}</li>`).join("")}</ol>
+        ${renderCrosswordGrid(board, true)}
+        <ol>${board.placements.map((item) => `<li><strong>${item.number}. ${escapeHtml(item.answer)}</strong> — ${escapeHtml(item.clue)}</li>`).join("")}</ol>
       </section>`;
     sections = [
-      dataSection("Cruzadinha visual", "O Editor exibirá os quadradinhos de preenchimento, pistas numeradas e gabarito."),
-      dataSection("Pistas da cruzadinha", "Pistas para os estudantes:", rows.map((row) => `${row.number}. ${row.clue}`)),
+      dataSection("Cruzadinha visual conectada", "A cruzadinha é montada em grade única, com palavras cruzadas, pistas horizontais/verticais e gabarito."),
+      dataSection("Pistas da cruzadinha", "Pistas para os estudantes:", board.placements.map((row) => `${row.number}. ${row.clue}`)),
     ];
-    gabarito = rows.map((row) => `${row.number}. ${row.answer}`);
+    gabarito = board.placements.map((row) => `${row.number}. ${row.answer} — ${row.clue}`);
   }
 
   if (model === "bingo") {
-    const cards = bingoCards(input);
-    const callList = terms.slice(0, 28);
+    const cards = bingoCards(input, aiOutput);
+    const callList = seeds.slice(0, 28);
     visualHtml = `
       <section style="font-family:Arial, sans-serif;color:#111827;">
         <h2>Bingo pedagógico — cartelas para imprimir</h2>
-        <p>O professor sorteia os itens da lista de chamada. Os estudantes marcam o termo correspondente na cartela.</p>
+        <p>O professor sorteia as pistas. Os estudantes marcam na cartela o termo correspondente.</p>
         <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;">${cards.map(renderBingoCard).join("")}</div>
         <h2>Lista de chamada do professor</h2>
-        ${renderWordBank(callList)}
+        <table style="border-collapse:collapse;width:100%;"><tr><th style="border:1px solid #111827;padding:8px;">Termo</th><th style="border:1px solid #111827;padding:8px;">Pista de chamada</th></tr>${callList
+          .map((seed) => `<tr><td style="border:1px solid #111827;padding:8px;font-weight:700;">${escapeHtml(seed.label)}</td><td style="border:1px solid #111827;padding:8px;">${escapeHtml(seed.clue)}</td></tr>`)
+          .join("")}</table>
       </section>`;
     sections = [
-      dataSection("Cartelas visuais de bingo", "O Editor exibirá seis cartelas diferentes em tabela 4x4."),
-      dataSection("Lista de chamada", "Itens para sorteio ou leitura pelo professor:", callList),
+      dataSection("Cartelas visuais de bingo", "Seis cartelas diferentes em tabela 4x4."),
+      dataSection("Lista de chamada", "Itens para sorteio ou leitura pelo professor:", callList.map((seed) => `${seed.label}: ${seed.clue}`)),
     ];
-    gabarito = callList.map((term, index) => `${index + 1}. ${term}`);
+    gabarito = callList.map((seed, index) => `${index + 1}. ${seed.label}: ${seed.clue}`);
   }
 
   if (model === "memoria") {
-    const pairs = terms.slice(0, 12);
-    const cards = pairs.flatMap((term, index) => [
-      { title: `Par ${index + 1}A`, body: titleCase(term), footer: "Carta conceito" },
-      { title: `Par ${index + 1}B`, body: makeClue(term, input, index), footer: "Carta pista" },
+    const pairs = seeds.slice(0, 12);
+    const cards = pairs.flatMap((seed, index) => [
+      { title: `Par ${index + 1}A`, body: seed.label, footer: "Carta conceito" },
+      { title: `Par ${index + 1}B`, body: seed.clue, footer: "Carta pista" },
     ]);
     visualHtml = `
       <section style="font-family:Arial, sans-serif;color:#111827;">
@@ -483,22 +806,22 @@ export function buildVisualGameMaterial(input: MaterialAIInput): MaterialAIOutpu
         <p>Recorte as cartas. O par correto une a carta de conceito à carta de pista.</p>
         ${renderPrintableCards(cards, 4)}
         <h2>Gabarito do professor</h2>
-        <ol>${pairs.map((term, index) => `<li>Par ${index + 1}: ${escapeHtml(titleCase(term))} ↔ ${escapeHtml(makeClue(term, input, index))}</li>`).join("")}</ol>
+        <ol>${pairs.map((seed, index) => `<li>Par ${index + 1}: ${escapeHtml(seed.label)} ↔ ${escapeHtml(seed.clue)}</li>`).join("")}</ol>
       </section>`;
     sections = [
-      dataSection("Cartas visuais recortáveis", "O Editor exibirá cartas em grade, com bordas tracejadas para recorte."),
-      dataSection("Pares corretos", "Relação conceito ↔ pista:", pairs.map((term, index) => `Par ${index + 1}: ${titleCase(term)} ↔ ${makeClue(term, input, index)}`)),
+      dataSection("Cartas visuais recortáveis", "Cartas em grade, com bordas tracejadas para recorte."),
+      dataSection("Pares corretos", "Relação conceito ↔ pista:", pairs.map((seed, index) => `Par ${index + 1}: ${seed.label} ↔ ${seed.clue}`)),
     ];
-    gabarito = pairs.map((term, index) => `Par ${index + 1}: ${titleCase(term)} ↔ ${makeClue(term, input, index)}`);
+    gabarito = pairs.map((seed, index) => `Par ${index + 1}: ${seed.label} ↔ ${seed.clue}`);
   }
 
   if (model === "domino") {
-    const pieces = terms.slice(0, 14);
-    const cards = pieces.map((term, index) => {
+    const pieces = seeds.slice(0, 14);
+    const cards = pieces.map((seed, index) => {
       const next = pieces[(index + 1) % pieces.length] || pieces[0];
       return {
         title: `Peça ${index + 1}`,
-        body: `${titleCase(term)}  |  ${makeClue(next, input, index)}`,
+        body: `${seed.label}  |  ${next.clue}`,
         footer: "Recorte na borda tracejada e encaixe pela associação correta.",
       };
     });
@@ -508,21 +831,21 @@ export function buildVisualGameMaterial(input: MaterialAIInput): MaterialAIOutpu
         <p>Cada peça tem dois lados. Encaixe a resposta ao conceito ou pista correspondente.</p>
         ${renderPrintableCards(cards, 2)}
         <h2>Sequência sugerida do gabarito</h2>
-        <ol>${pieces.map((term, index) => `<li>Peça ${index + 1}: ${escapeHtml(titleCase(term))}</li>`).join("")}</ol>
+        <ol>${pieces.map((seed, index) => `<li>Peça ${index + 1}: ${escapeHtml(seed.label)} deve conectar com pista de ${escapeHtml(pieces[(index + 1) % pieces.length]?.label || pieces[0]?.label || "termo")}</li>`).join("")}</ol>
       </section>`;
     sections = [
-      dataSection("Peças visuais do dominó", "O Editor exibirá peças retangulares recortáveis com dois lados."),
-      dataSection("Sequência de conferência", "Sequência sugerida para correção:", pieces.map((term, index) => `Peça ${index + 1}: ${titleCase(term)}`)),
+      dataSection("Peças visuais do dominó", "Peças retangulares recortáveis com dois lados."),
+      dataSection("Sequência de conferência", "Sequência sugerida para correção:", pieces.map((seed, index) => `Peça ${index + 1}: ${seed.label}`)),
     ];
-    gabarito = pieces.map((term, index) => `Peça ${index + 1}: ${titleCase(term)}.`);
+    gabarito = pieces.map((seed, index) => `Peça ${index + 1}: ${seed.label}.`);
   }
 
   if (model === "quiz") {
-    const quizTerms = terms.slice(0, 12);
-    const questions = quizTerms.map((term, index) => ({
+    const quizSeeds = seeds.slice(0, 12);
+    const questions = quizSeeds.map((seed, index) => ({
       title: `Pergunta ${index + 1}`,
-      body: `Explique ou aplique o conceito "${term}" em uma situação relacionada ao tema ${tema}.`,
-      footer: "Valor sugerido: 1 ponto + 1 ponto pela justificativa.",
+      body: `${seed.clue} Qual é o conceito ou termo estudado? Justifique com uma frase relacionada ao tema ${tema}.`,
+      footer: "Valor sugerido: 1 ponto pela resposta + 1 ponto pela justificativa.",
     }));
     visualHtml = `
       <section style="font-family:Arial, sans-serif;color:#111827;">
@@ -533,17 +856,17 @@ export function buildVisualGameMaterial(input: MaterialAIInput): MaterialAIOutpu
         <table style="border-collapse:collapse;width:100%;"><tr><th style="border:1px solid #111827;padding:8px;">Equipe</th><th style="border:1px solid #111827;padding:8px;">Rodada 1</th><th style="border:1px solid #111827;padding:8px;">Rodada 2</th><th style="border:1px solid #111827;padding:8px;">Total</th></tr>${[1, 2, 3, 4].map((row) => `<tr><td style="border:1px solid #111827;padding:10px;">Equipe ${row}</td><td style="border:1px solid #111827;padding:10px;"></td><td style="border:1px solid #111827;padding:10px;"></td><td style="border:1px solid #111827;padding:10px;"></td></tr>`).join("")}</table>
       </section>`;
     sections = [
-      dataSection("Cartões visuais do quiz", "O Editor exibirá cartões de perguntas prontos para imprimir e recortar."),
+      dataSection("Cartões visuais do quiz", "Cartões de perguntas prontos para imprimir e recortar."),
       dataSection("Perguntas", "Perguntas do quiz:", questions.map((question) => question.body)),
     ];
-    gabarito = quizTerms.map((term, index) => `Pergunta ${index + 1}: resposta deve explicar ${term} com exemplo coerente ao tema ${tema}.`);
+    gabarito = quizSeeds.map((seed, index) => `Pergunta ${index + 1}: ${seed.label}. Justificativa esperada: ${seed.clue}`);
   }
 
   if (model === "cartas") {
-    const source = terms.slice(0, 24);
-    const cards = source.map((term, index) => ({
+    const source = seeds.slice(0, 24);
+    const cards = source.map((seed, index) => ({
       title: `Carta ${index + 1}`,
-      body: `${titleCase(term)} — explique, exemplifique ou relacione com ${tema}.`,
+      body: `${seed.label} — ${seed.clue}`,
       footer: index % 4 === 0 ? "Carta desafio" : index % 4 === 1 ? "Carta exemplo" : index % 4 === 2 ? "Carta associação" : "Carta síntese",
     }));
     visualHtml = `
@@ -555,10 +878,10 @@ export function buildVisualGameMaterial(input: MaterialAIInput): MaterialAIOutpu
         <ol><li>Cada grupo compra uma carta.</li><li>Responde com justificativa.</li><li>Outro grupo pode complementar.</li><li>O professor valida e pontua.</li></ol>
       </section>`;
     sections = [
-      dataSection("Baralho visual recortável", "O Editor exibirá cartas em grade com bordas tracejadas."),
+      dataSection("Baralho visual recortável", "Cartas em grade com bordas tracejadas."),
       dataSection("Cartas do baralho", "Itens gerados:", cards.map((card) => `${card.title}: ${card.body}`)),
     ];
-    gabarito = source.slice(0, 16).map((term, index) => `Carta ${index + 1}: aceitar resposta coerente que relacione ${term} ao tema ${tema}.`);
+    gabarito = source.slice(0, 16).map((seed, index) => `Carta ${index + 1}: resposta deve relacionar ${seed.label} ao tema ${tema}. Pista base: ${seed.clue}`);
   }
 
   return commonOutput(input, label, visualHtml.trim(), sections, gabarito);

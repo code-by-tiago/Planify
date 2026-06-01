@@ -298,6 +298,25 @@ function seedFromRawTerm(term: string, input: MaterialAIInput): GameSeedTerm | n
   };
 }
 
+
+function seedsFromTextBlock(text: string, input: MaterialAIInput): GameSeedTerm[] {
+  const raw = normalizeText(text);
+  if (!raw) return [];
+
+  const seeds: GameSeedTerm[] = [];
+  const [beforeColon, afterColon = ""] = raw.split(/[:：]/);
+  const candidates = [beforeColon, ...afterColon.split(/,|;|\|/)]
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+  for (const candidate of candidates) {
+    const seed = seedFromRawTerm(candidate, input);
+    if (seed) seeds.push(seed);
+  }
+
+  return seeds;
+}
+
 function extractAiSeeds(aiOutput?: MaterialOutputWithSeed): GameSeedTerm[] {
   const rawTerms = [
     ...(aiOutput?.jogoVisualSeed?.termos || []),
@@ -347,8 +366,7 @@ function buildSeeds(input: MaterialAIInput, aiOutput?: MaterialOutputWithSeed, l
   const aiSeeds = extractAiSeeds(aiOutput);
   const packSeeds = knowledgeSeeds(input);
   const rawSeeds = [input.tema, ...splitItems(input.conteudos)]
-    .map((item) => seedFromRawTerm(String(item || ""), input))
-    .filter((item): item is GameSeedTerm => Boolean(item));
+    .flatMap((item) => seedsFromTextBlock(String(item || ""), input));
 
   const primary = uniqueByAnswer([...aiSeeds, ...packSeeds, ...rawSeeds]);
   const withFallback = primary.length >= 8 ? primary : uniqueByAnswer([...primary, ...DEFAULT_SEEDS]);

@@ -198,6 +198,53 @@ export type MaterialAIOutput = {
   printHtml?: string;
 };
 
+
+export type MaterialContentSuggestionInput = {
+  etapa: string;
+  anoSerie: string;
+  areaConhecimento?: string;
+  componenteCurricular: string;
+  tema: string;
+  tipo?: MaterialAIType;
+  modeloJogo?: string;
+  quantidade?: number | string;
+  observacoes?: string;
+};
+
+export type MaterialSuggestedContent = {
+  id: string;
+  titulo: string;
+  descricao: string;
+  palavrasChave: string[];
+  objetivos: string[];
+  dificuldade: string;
+  tempoEstimado: string;
+  justificativaPedagogica: string;
+};
+
+export type MaterialRecommendedOption = {
+  tipo: string;
+  modeloJogo?: string;
+  titulo: string;
+  motivo: string;
+};
+
+export type MaterialContentSuggestionOutput = {
+  tema: string;
+  etapa: string;
+  anoSerie: string;
+  areaConhecimento?: string;
+  componenteCurricular: string;
+  resumoPedagogico: string;
+  conteudos: MaterialSuggestedContent[];
+  objetivosGerais: string[];
+  palavrasChaveGerais: string[];
+  materiaisRecomendados: MaterialRecommendedOption[];
+  jogosRecomendados: MaterialRecommendedOption[];
+  observacoesDeUso: string[];
+  alertas: string[];
+};
+
 export type GeminiGenerateJSONOptions = {
   systemInstruction: string;
   prompt: string;

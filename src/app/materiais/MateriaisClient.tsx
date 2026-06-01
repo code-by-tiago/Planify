@@ -47,6 +47,40 @@ type StatusState = {
   message: string;
 };
 
+type SuggestedContent = {
+  id: string;
+  titulo: string;
+  descricao: string;
+  palavrasChave: string[];
+  objetivos: string[];
+  dificuldade: string;
+  tempoEstimado: string;
+  justificativaPedagogica: string;
+};
+
+type RecommendedOption = {
+  tipo: string;
+  modeloJogo?: string;
+  titulo: string;
+  motivo: string;
+};
+
+type SuggestionOutput = {
+  tema: string;
+  etapa: string;
+  anoSerie: string;
+  areaConhecimento?: string;
+  componenteCurricular: string;
+  resumoPedagogico: string;
+  conteudos: SuggestedContent[];
+  objetivosGerais: string[];
+  palavrasChaveGerais: string[];
+  materiaisRecomendados: RecommendedOption[];
+  jogosRecomendados: RecommendedOption[];
+  observacoesDeUso: string[];
+  alertas: string[];
+};
+
 type MaterialSection = {
   titulo: string;
   descricao?: string;
@@ -110,46 +144,19 @@ const initialForm: FormState = {
   titulo: "",
   escola: "",
   professor: "",
-  etapa: "Ensino Médio",
-  anoSerie: "1ª série",
-  areaConhecimento: "Linguagens e suas Tecnologias",
-  componenteCurricular: "Língua Espanhola",
+  etapa: "Ensino Fundamental",
+  anoSerie: "6º ano",
+  areaConhecimento: "",
+  componenteCurricular: "Ensino Religioso",
   tema: "",
   tipo: "jogo",
-  modeloJogo: "caca_palavras",
+  modeloJogo: "cruzadinha",
   quantidadeQuestoes: "10",
   duracao: "1 período",
   objetivos: "",
   conteudos: "",
   orientacoes: "",
   observacoes: "",
-};
-
-const exemploJogo: FormState = {
-  ...initialForm,
-  titulo: "Caça-palavras visual — Mundo Hispânico",
-  tema: "Países hispânicos, saudações e cultura",
-  modeloJogo: "caca_palavras",
-  conteudos:
-    "Países hispânicos\nSaudações em espanhol\nVocabulário de apresentação\nCultura e diversidade\nVariação linguística\nAmérica Latina",
-  objetivos: "Revisar vocabulário e aspectos culturais da Língua Espanhola por meio de jogo visual imprimível.",
-  orientacoes: "Gerar jogo pronto para imprimir, com versão do aluno, gabarito e abertura no Editor.",
-};
-
-const exemploAtividade: FormState = {
-  ...initialForm,
-  titulo: "Atividade de leitura e interpretação",
-  etapa: "Ensino Fundamental",
-  anoSerie: "6º ano",
-  areaConhecimento: "",
-  componenteCurricular: "Língua Portuguesa",
-  tipo: "atividade",
-  tema: "Leitura e interpretação de textos",
-  quantidadeQuestoes: "10",
-  duracao: "2 períodos",
-  conteudos:
-    "Leitura de texto narrativo\nLocalização de informações explícitas\nInferência de sentidos\nProdução de respostas escritas",
-  objetivos: "Desenvolver leitura, interpretação e produção escrita.",
 };
 
 const etapaOptions = ["Educação Infantil", "Ensino Fundamental", "Ensino Médio"];
@@ -199,7 +206,7 @@ const componentesEnsinoMedio: Record<string, string[]> = {
 };
 
 const materialTypes: Array<{ value: MaterialType; label: string; description: string }> = [
-  { value: "jogo", label: "Jogo pedagógico visual", description: "Caça-palavras, bingo, memória, dominó, quiz e cartas recortáveis." },
+  { value: "jogo", label: "Jogo pedagógico visual", description: "Cruzadinha, caça-palavras, bingo, memória, dominó, quiz e cartas." },
   { value: "atividade", label: "Atividade", description: "Questões orientadas com resposta esperada." },
   { value: "prova", label: "Prova", description: "Avaliação com gabarito e critérios." },
   { value: "apostila", label: "Apostila", description: "Explicação didática, exemplos e exercícios." },
@@ -209,9 +216,9 @@ const materialTypes: Array<{ value: MaterialType; label: string; description: st
 ];
 
 const gameModelOptions: Array<{ value: GameModel; label: string; description: string }> = [
+  { value: "cruzadinha", label: "Cruzadinha", description: "Grade cruzada, pistas horizontais/verticais e gabarito." },
   { value: "caca_palavras", label: "Caça-palavras", description: "Grade real com quadradinhos, banco de palavras e gabarito." },
-  { value: "cruzadinha", label: "Cruzadinha", description: "Quadradinhos de resposta, pistas numeradas e gabarito." },
-  { value: "bingo", label: "Bingo", description: "Seis cartelas diferentes e lista de chamada do professor." },
+  { value: "bingo", label: "Bingo", description: "Cartelas diferentes e lista de chamada do professor." },
   { value: "memoria", label: "Memória", description: "Cartas recortáveis de conceito e pista." },
   { value: "domino", label: "Dominó", description: "Peças retangulares recortáveis para associação." },
   { value: "quiz", label: "Quiz", description: "Cartões de perguntas e folha de pontuação." },
@@ -237,6 +244,36 @@ const gameLabels: Record<GameModel, string> = {
   quiz: "Quiz com gabarito",
   cartas: "Cartas recortáveis",
 };
+
+const quickExamples = [
+  {
+    label: "Ensino Religioso",
+    tema: "Jó e a fidelidade diante das provações",
+    etapa: "Ensino Fundamental",
+    anoSerie: "6º ano",
+    componente: "Ensino Religioso",
+    area: "",
+    jogo: "cruzadinha" as GameModel,
+  },
+  {
+    label: "Espanhol",
+    tema: "Países hispânicos, saudações e cultura",
+    etapa: "Ensino Médio",
+    anoSerie: "1ª série",
+    componente: "Língua Espanhola",
+    area: "Linguagens e suas Tecnologias",
+    jogo: "bingo" as GameModel,
+  },
+  {
+    label: "Português",
+    tema: "Leitura e interpretação de texto narrativo",
+    etapa: "Ensino Fundamental",
+    anoSerie: "7º ano",
+    componente: "Língua Portuguesa",
+    area: "",
+    jogo: "quiz" as GameModel,
+  },
+];
 
 function splitLines(value: string) {
   return value
@@ -269,28 +306,38 @@ function escapeHtml(value: unknown) {
     .replaceAll("'", "&#039;");
 }
 
-function validateForm(form: FormState): string | null {
+function contentLineFromSuggestion(item: SuggestedContent) {
+  const keywords = (item.palavrasChave || []).slice(0, 8).join(", ");
+  return `${item.titulo}: ${keywords || item.descricao}`;
+}
+
+function buildSelectedContentLines(items: SuggestedContent[], selectedIds: string[], manual: string) {
+  const manualLines = splitLines(manual);
+  if (manualLines.length) return manualLines;
+  return items.filter((item) => selectedIds.includes(item.id)).map(contentLineFromSuggestion);
+}
+
+function validateForm(form: FormState, contentLines: string[]): string | null {
   if (!form.anoSerie) return "Selecione o ano/série.";
   if (isEnsinoMedio(form.etapa) && !form.areaConhecimento) return "Selecione a área do conhecimento.";
   if (!form.componenteCurricular) return "Selecione o componente curricular.";
   if (!form.tema.trim()) return "Informe o tema central.";
-  if (splitLines(form.conteudos).length === 0) return "Informe ao menos um conteúdo.";
+  if (contentLines.length === 0) return "Clique em Sugerir conteúdos inteligentes ou informe conteúdos no modo avançado.";
   if (needsQuestionQuantity(form.tipo) && !form.quantidadeQuestoes.trim()) return "Informe a quantidade de questões.";
   return null;
 }
 
-function materialFromVisualBuilder(form: FormState): GeneratedMaterial {
+function materialFromVisualBuilder(form: FormState, conteudos: string[]): GeneratedMaterial {
   return buildVisualGameMaterial({
     ...form,
     titulo: form.titulo || `${gameLabels[form.modeloJogo]} — ${form.tema}`,
-    conteudos: splitLines(form.conteudos),
+    conteudos,
   }) as GeneratedMaterial;
 }
 
-function buildFallbackMaterial(form: FormState): GeneratedMaterial {
-  if (form.tipo === "jogo") return materialFromVisualBuilder(form);
+function buildFallbackMaterial(form: FormState, conteudos: string[]): GeneratedMaterial {
+  if (form.tipo === "jogo") return materialFromVisualBuilder(form, conteudos);
 
-  const conteudos = splitLines(form.conteudos);
   const quantidade = Number(form.quantidadeQuestoes) || 5;
   return {
     tipo: typeLabels[form.tipo],
@@ -313,8 +360,8 @@ function buildFallbackMaterial(form: FormState): GeneratedMaterial {
     orientacoesProfessor: ["Apresente os objetivos.", "Acompanhe a realização.", "Finalize com correção coletiva."],
     orientacoesAluno: ["Leia os comandos com atenção.", "Registre suas respostas.", "Revise antes de entregar."],
     secoes: conteudos.map((conteudo, index) => ({
-      titulo: `Seção ${index + 1}: ${conteudo}`,
-      conteudo: `Atividades orientadas para desenvolver o conteúdo ${conteudo}.`,
+      titulo: `Seção ${index + 1}: ${conteudo.split(":")[0]}`,
+      conteudo: `Atividades orientadas para desenvolver: ${conteudo}.`,
       itens: ["Retomada", "Exploração guiada", "Registro", "Socialização"],
     })),
     questoes: needsQuestionQuantity(form.tipo)
@@ -338,10 +385,10 @@ function buildFallbackMaterial(form: FormState): GeneratedMaterial {
   };
 }
 
-function normalizeGeneratedMaterial(material: GeneratedMaterial, form: FormState): GeneratedMaterial {
+function normalizeGeneratedMaterial(material: GeneratedMaterial, form: FormState, conteudos: string[]): GeneratedMaterial {
   if (form.tipo === "jogo") {
     const visual = material.visualHtml || material.printHtml;
-    if (!visual || !material.jogo) return materialFromVisualBuilder(form);
+    if (!visual || !material.jogo) return materialFromVisualBuilder(form, conteudos);
   }
 
   return {
@@ -362,7 +409,7 @@ function normalizeGeneratedMaterial(material: GeneratedMaterial, form: FormState
       ...material.dadosGerais,
     },
     objetivos: material.objetivos || splitLines(form.objetivos),
-    conteudos: material.conteudos || splitLines(form.conteudos),
+    conteudos: material.conteudos || conteudos,
     orientacoesProfessor: material.orientacoesProfessor || [],
     orientacoesAluno: material.orientacoesAluno || [],
     secoes: material.secoes || [],
@@ -442,7 +489,7 @@ function buildMaterialEditorHtml(material: GeneratedMaterial) {
 
   ${material.introducao ? `<h2>Introdução</h2>${renderTextBlock(material.introducao)}` : ""}
   ${(material.objetivos || []).length ? `<h2>Objetivos</h2>${renderList(material.objetivos)}` : ""}
-  ${(material.conteudos || []).length ? `<h2>Conteúdos</h2>${renderList(material.conteudos)}` : ""}
+  ${(material.conteudos || []).length ? `<h2>Conteúdos trabalhados</h2>${renderList(material.conteudos)}` : ""}
 
   ${visualHtml ? `<div style="margin:24px 0;padding:16px;border:1px solid #cbd5e1;border-radius:12px;background:#fff;">${visualHtml}</div>` : ""}
 
@@ -473,12 +520,19 @@ function buildMaterialEditorHtml(material: GeneratedMaterial) {
 
 export function MateriaisClient() {
   const [form, setForm] = useState<FormState>(initialForm);
-  const [status, setStatus] = useState<StatusState>({ type: "idle", message: "Preencha poucos campos essenciais e gere o material." });
+  const [status, setStatus] = useState<StatusState>({ type: "idle", message: "Comece por etapa, componente e tema. O Planify sugere conteúdos inteligentes antes de gerar." });
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isSuggesting, setIsSuggesting] = useState(false);
   const [generatedMaterial, setGeneratedMaterial] = useState<GeneratedMaterial | null>(null);
+  const [suggestions, setSuggestions] = useState<SuggestionOutput | null>(null);
+  const [selectedSuggestionIds, setSelectedSuggestionIds] = useState<string[]>([]);
   const [showAdvanced, setShowAdvanced] = useState(false);
 
-  const conteudos = useMemo(() => splitLines(form.conteudos), [form.conteudos]);
+  const manualConteudos = useMemo(() => splitLines(form.conteudos), [form.conteudos]);
+  const selectedContents = useMemo(
+    () => buildSelectedContentLines(suggestions?.conteudos || [], selectedSuggestionIds, form.conteudos),
+    [form.conteudos, selectedSuggestionIds, suggestions],
+  );
   const componentesDisponiveis = useMemo(() => getComponentesDisponiveis(form), [form]);
   const selectedGameModel = gameModelOptions.find((item) => item.value === form.modeloJogo);
 
@@ -491,58 +545,149 @@ export function MateriaisClient() {
         next.componenteCurricular = value === "Ensino Médio" ? "Língua Espanhola" : "";
       }
       if (key === "areaConhecimento") next.componenteCurricular = "";
-      if (key === "tipo" && value === "jogo") {
-        next.quantidadeQuestoes = "";
-        next.modeloJogo = next.modeloJogo || "caca_palavras";
-      }
-      if (key === "tipo" && value !== "jogo" && !next.quantidadeQuestoes) next.quantidadeQuestoes = "10";
+      if (key === "tipo" && value === "jogo") next.modeloJogo = next.modeloJogo || "cruzadinha";
       return next;
     });
+
+    if (["etapa", "anoSerie", "areaConhecimento", "componenteCurricular", "tema"].includes(String(key))) {
+      setSuggestions(null);
+      setSelectedSuggestionIds([]);
+    }
   }
 
   function clearAll() {
     setForm(initialForm);
     setGeneratedMaterial(null);
-    setStatus({ type: "idle", message: "Campos limpos. Comece novamente pelos campos essenciais." });
+    setSuggestions(null);
+    setSelectedSuggestionIds([]);
+    setStatus({ type: "idle", message: "Campos limpos. Informe o tema e clique em Sugerir conteúdos inteligentes." });
   }
 
-  function applyExample(type: "atividade" | "jogo") {
-    setForm(type === "atividade" ? exemploAtividade : exemploJogo);
+  function applyQuickExample(example: (typeof quickExamples)[number]) {
+    setForm({
+      ...initialForm,
+      etapa: example.etapa,
+      anoSerie: example.anoSerie,
+      areaConhecimento: example.area,
+      componenteCurricular: example.componente,
+      tema: example.tema,
+      tipo: "jogo",
+      modeloJogo: example.jogo,
+      titulo: `${gameLabels[example.jogo]} — ${example.tema}`,
+    });
     setGeneratedMaterial(null);
-    setStatus({ type: "info", message: type === "jogo" ? "Exemplo de jogo visual aplicado." : "Exemplo de atividade aplicado." });
+    setSuggestions(null);
+    setSelectedSuggestionIds([]);
+    setStatus({ type: "info", message: "Exemplo aplicado. Agora clique em Sugerir conteúdos inteligentes." });
+  }
+
+  async function suggestContents() {
+    if (!form.anoSerie) {
+      setStatus({ type: "error", message: "Selecione o ano/série antes de sugerir conteúdos." });
+      return;
+    }
+    if (isEnsinoMedio(form.etapa) && !form.areaConhecimento) {
+      setStatus({ type: "error", message: "Selecione a área do conhecimento." });
+      return;
+    }
+    if (!form.componenteCurricular) {
+      setStatus({ type: "error", message: "Selecione o componente curricular." });
+      return;
+    }
+    if (!form.tema.trim()) {
+      setStatus({ type: "error", message: "Informe o tema central para o Planify sugerir conteúdos." });
+      return;
+    }
+
+    setIsSuggesting(true);
+    setStatus({ type: "info", message: "Analisando tema, etapa, série e componente para sugerir conteúdos compatíveis..." });
+
+    try {
+      const response = await fetch("/api/ai/material/sugerir-conteudos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          etapa: form.etapa,
+          anoSerie: form.anoSerie,
+          areaConhecimento: form.areaConhecimento,
+          componenteCurricular: form.componenteCurricular,
+          tema: form.tema,
+          tipo: form.tipo,
+          modeloJogo: form.modeloJogo,
+          quantidade: 6,
+          observacoes: form.observacoes,
+        }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result?.success) {
+        throw new Error(result?.error?.message || result?.message || "Não foi possível sugerir conteúdos agora.");
+      }
+      const data = result.data as SuggestionOutput;
+      const ids = (data.conteudos || []).map((item) => item.id);
+      setSuggestions(data);
+      setSelectedSuggestionIds(ids);
+      setStatus({ type: "success", message: "Conteúdos inteligentes sugeridos. Revise, desmarque o que não quiser e gere o material." });
+    } catch (error) {
+      setStatus({ type: "error", message: error instanceof Error ? error.message : "Não foi possível sugerir conteúdos agora." });
+    } finally {
+      setIsSuggesting(false);
+    }
+  }
+
+  function toggleSuggestion(id: string) {
+    setSelectedSuggestionIds((current) => (current.includes(id) ? current.filter((item) => item !== id) : [...current, id]));
+  }
+
+  function applySelectedSuggestionsToField() {
+    if (!suggestions) return;
+    const lines = suggestions.conteudos
+      .filter((item) => selectedSuggestionIds.includes(item.id))
+      .map(contentLineFromSuggestion);
+    setForm((current) => ({ ...current, conteudos: lines.join("\n"), objetivos: suggestions.objetivosGerais.join("\n") }));
+    setStatus({ type: "success", message: "Conteúdos aprovados aplicados ao modo avançado. Agora você pode editar manualmente se quiser." });
+  }
+
+  function useRecommended(option: RecommendedOption) {
+    const tipo = ["atividade", "prova", "apostila", "sequencia", "jogo", "projeto", "roteiro"].includes(option.tipo)
+      ? (option.tipo as MaterialType)
+      : "jogo";
+    const model = gameModelOptions.some((item) => item.value === option.modeloJogo) ? (option.modeloJogo as GameModel) : form.modeloJogo;
+    setForm((current) => ({ ...current, tipo, modeloJogo: model || "cruzadinha" }));
+    setStatus({ type: "info", message: `Formato aplicado: ${option.titulo}.` });
   }
 
   async function generateMaterial() {
-    const validation = validateForm(form);
+    const conteudos = selectedContents;
+    const validation = validateForm(form, conteudos);
     if (validation) {
       setStatus({ type: "error", message: validation });
       return;
     }
 
     setIsGenerating(true);
-    setStatus({ type: "info", message: form.tipo === "jogo" ? `Montando ${selectedGameModel?.label || "jogo"} visual com IA e construtor Planify...` : "Gerando material didático com IA..." });
+    setStatus({ type: "info", message: form.tipo === "jogo" ? `Gerando ${selectedGameModel?.label || "jogo"} com conteúdos aprovados...` : "Gerando material didático com IA..." });
 
     try {
       const response = await fetch("/api/ai/material", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, titulo: form.titulo || `${typeLabels[form.tipo]} — ${form.tema}` }),
+        body: JSON.stringify({ ...form, conteudos, titulo: form.titulo || `${typeLabels[form.tipo]} — ${form.tema}` }),
       });
       const result = await response.json();
       if (!response.ok || !result?.success) {
         throw new Error(result?.error?.message || result?.message || "Não foi possível gerar material agora.");
       }
-      const material = normalizeGeneratedMaterial((result.data || result.material) as GeneratedMaterial, form);
+      const material = normalizeGeneratedMaterial((result.data || result.material) as GeneratedMaterial, form, conteudos);
       setGeneratedMaterial(material);
       saveToLocalHistory(material);
-      setStatus({ type: "success", message: form.tipo === "jogo" ? "Jogo visual gerado com material real para imprimir, editar e aplicar." : "Material gerado com IA." });
+      setStatus({ type: "success", message: form.tipo === "jogo" ? "Jogo visual gerado com conteúdos coerentes, gabarito e versão editável." : "Material gerado com IA." });
     } catch (error) {
-      const fallback = buildFallbackMaterial(form);
+      const fallback = buildFallbackMaterial(form, conteudos);
       setGeneratedMaterial(fallback);
       saveToLocalHistory(fallback);
       setStatus({
         type: "success",
-        message: error instanceof Error ? `A IA não respondeu agora. O construtor Planify gerou uma versão visual premium. Detalhe: ${error.message}` : "O construtor Planify gerou uma versão visual premium.",
+        message: error instanceof Error ? `A IA não respondeu agora. O construtor Planify gerou uma versão visual. Detalhe: ${error.message}` : "O construtor Planify gerou uma versão visual.",
       });
     } finally {
       setIsGenerating(false);
@@ -567,42 +712,33 @@ export function MateriaisClient() {
         : "border-cyan-300/20 bg-cyan-300/10 text-cyan-100";
 
   return (
-    <section className="mx-auto grid max-w-7xl gap-6 px-5 py-10 lg:grid-cols-[0.72fr_1.28fr] sm:px-8">
+    <section className="mx-auto grid max-w-7xl gap-6 px-5 py-10 lg:grid-cols-[0.7fr_1.3fr] sm:px-8">
       <aside className="space-y-6">
         <div className="rounded-[2rem] border border-cyan-300/20 bg-cyan-300/10 p-6 shadow-2xl shadow-cyan-500/10">
-          <p className="text-sm font-black uppercase tracking-[0.28em] text-cyan-300">Gerador premium</p>
+          <p className="text-sm font-black uppercase tracking-[0.28em] text-cyan-300">Assistente pedagógico</p>
           <h1 className="mt-4 text-3xl font-black text-white">Materiais com IA</h1>
           <p className="mt-4 text-sm leading-7 text-cyan-100/80">
-            Agora o modo jogo usa um construtor visual: ele monta grade, cartelas, cartas e peças reais para abrir no Editor.
+            Informe o tema central. O Planify sugere conteúdos, palavras-chave, objetivos e os melhores jogos antes de gerar o material.
           </p>
 
           <div className="mt-6 grid gap-3">
-            {[
-              ["Tipo", form.tipo === "jogo" ? selectedGameModel?.label || "Jogo" : typeLabels[form.tipo]],
-              ["Conteúdos", String(conteudos.length)],
-              ["Componente", form.componenteCurricular || "Selecione"],
-              ["Status", isGenerating ? "Gerando" : "Pronto"],
-            ].map(([label, value]) => (
-              <div key={label} className="rounded-2xl border border-white/10 bg-slate-950/45 p-4">
-                <p className="text-xs font-black uppercase tracking-[0.18em] text-cyan-200">{label}</p>
-                <p className="mt-2 text-xl font-black text-white">{value}</p>
-              </div>
+            {quickExamples.map((example) => (
+              <button
+                key={example.label}
+                type="button"
+                onClick={() => applyQuickExample(example)}
+                className="rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-3 text-left text-sm text-white transition hover:-translate-y-0.5 hover:bg-white/10"
+              >
+                <span className="block font-black text-cyan-100">Exemplo: {example.label}</span>
+                <span className="mt-1 block text-xs leading-5 text-slate-400">{example.tema}</span>
+              </button>
             ))}
-          </div>
-
-          <div className="mt-6 grid gap-3">
-            <button type="button" onClick={() => applyExample("jogo")} className="rounded-2xl border border-cyan-300/20 bg-cyan-300/10 px-5 py-4 text-sm font-black text-cyan-100 transition hover:-translate-y-1 hover:bg-cyan-300/20">
-              Exemplo de jogo visual
-            </button>
-            <button type="button" onClick={() => applyExample("atividade")} className="rounded-2xl border border-white/10 bg-white/5 px-5 py-4 text-sm font-black text-white transition hover:-translate-y-1 hover:bg-white/10">
-              Exemplo de atividade
-            </button>
           </div>
         </div>
 
         {form.tipo === "jogo" && (
           <div className="rounded-[2rem] border border-emerald-300/20 bg-emerald-300/10 p-6 shadow-2xl shadow-emerald-500/10">
-            <p className="text-sm font-black uppercase tracking-[0.24em] text-emerald-200">Escolha o jogo</p>
+            <p className="text-sm font-black uppercase tracking-[0.24em] text-emerald-200">Jogo visual</p>
             <div className="mt-4 grid gap-3">
               {gameModelOptions.map((game) => (
                 <button
@@ -633,10 +769,10 @@ export function MateriaisClient() {
         <div className="rounded-[2rem] border border-white/10 bg-white/[0.06] p-6 shadow-2xl backdrop-blur-2xl">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <p className="text-sm font-black uppercase tracking-[0.28em] text-cyan-300">Campos essenciais</p>
-              <h2 className="mt-3 text-3xl font-black text-white">Crie com menos preenchimento</h2>
+              <p className="text-sm font-black uppercase tracking-[0.28em] text-cyan-300">Modo rápido inteligente</p>
+              <h2 className="mt-3 text-3xl font-black text-white">Tema → conteúdos → material</h2>
               <p className="mt-3 text-sm leading-7 text-slate-400">
-                Para jogos, basta escolher etapa, componente, tipo, tema e conteúdos. Escola, professor e objetivos ficam em dados avançados.
+                Primeiro gere sugestões compatíveis com a turma. Depois aprove, ajuste e gere o material ou jogo.
               </p>
             </div>
             <button type="button" onClick={clearAll} className="rounded-2xl border border-white/10 bg-white/5 px-6 py-4 text-sm font-black text-white transition hover:-translate-y-1 hover:bg-white/10">
@@ -645,11 +781,6 @@ export function MateriaisClient() {
           </div>
 
           <div className="mt-6 grid gap-4 md:grid-cols-2">
-            <label className="grid gap-2 md:col-span-2">
-              <span className="text-sm font-bold text-slate-300">Título opcional</span>
-              <input value={form.titulo} onChange={(event) => updateField("titulo", event.target.value)} placeholder="Se deixar vazio, o Planify cria automaticamente" className="h-14 rounded-2xl border border-white/10 bg-slate-950/50 px-4 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300/50" />
-            </label>
-
             <label className="grid gap-2">
               <span className="text-sm font-bold text-slate-300">Etapa</span>
               <select value={form.etapa} onChange={(event) => updateField("etapa", event.target.value)} className="h-14 rounded-2xl border border-white/10 bg-slate-950/50 px-4 text-sm text-white outline-none transition focus:border-cyan-300/50">
@@ -684,7 +815,7 @@ export function MateriaisClient() {
             </label>
 
             <label className="grid gap-2">
-              <span className="text-sm font-bold text-slate-300">Tipo</span>
+              <span className="text-sm font-bold text-slate-300">Tipo de material</span>
               <select value={form.tipo} onChange={(event) => updateField("tipo", event.target.value as MaterialType)} className="h-14 rounded-2xl border border-white/10 bg-slate-950/50 px-4 text-sm text-white outline-none transition focus:border-cyan-300/50">
                 {materialTypes.map((type) => <option key={type.value} value={type.value} className="bg-slate-950">{type.label}</option>)}
               </select>
@@ -699,51 +830,98 @@ export function MateriaisClient() {
               </label>
             )}
 
-            <label className="grid gap-2">
-              <span className="text-sm font-bold text-slate-300">Tema</span>
-              <input value={form.tema} onChange={(event) => updateField("tema", event.target.value)} placeholder="Ex.: Países hispânicos e cultura" className="h-14 rounded-2xl border border-white/10 bg-slate-950/50 px-4 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300/50" />
-            </label>
-
-            {needsQuestionQuantity(form.tipo) && (
-              <label className="grid gap-2">
-                <span className="text-sm font-bold text-slate-300">Quantidade de questões</span>
-                <input value={form.quantidadeQuestoes} onChange={(event) => updateField("quantidadeQuestoes", event.target.value)} placeholder="10" className="h-14 rounded-2xl border border-white/10 bg-slate-950/50 px-4 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300/50" />
-              </label>
-            )}
-
-            <label className="grid gap-2">
-              <span className="text-sm font-bold text-slate-300">Duração opcional</span>
-              <input value={form.duracao} onChange={(event) => updateField("duracao", event.target.value)} placeholder="Ex.: 1 período" className="h-14 rounded-2xl border border-white/10 bg-slate-950/50 px-4 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300/50" />
-            </label>
-
             <label className="grid gap-2 md:col-span-2">
-              <span className="text-sm font-bold text-slate-300">Conteúdos</span>
-              <textarea value={form.conteudos} onChange={(event) => updateField("conteudos", event.target.value)} rows={5} placeholder={"Digite um conteúdo por linha.\nEx.: Países hispânicos\nEx.: Saudações em espanhol\nEx.: Cultura e diversidade"} className="rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-4 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300/50" />
+              <span className="text-sm font-bold text-slate-300">Tema central</span>
+              <input value={form.tema} onChange={(event) => updateField("tema", event.target.value)} placeholder="Ex.: Jó e a fidelidade diante das provações" className="h-14 rounded-2xl border border-white/10 bg-slate-950/50 px-4 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300/50" />
             </label>
-
-            <div className="md:col-span-2">
-              <button type="button" onClick={() => setShowAdvanced((value) => !value)} className="rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-black text-white transition hover:bg-white/10">
-                {showAdvanced ? "Ocultar dados avançados" : "Mostrar dados avançados opcionais"}
-              </button>
-            </div>
-
-            {showAdvanced && (
-              <div className="grid gap-4 rounded-2xl border border-white/10 bg-slate-950/35 p-4 md:col-span-2 md:grid-cols-2">
-                <label className="grid gap-2"><span className="text-sm font-bold text-slate-300">Escola</span><input value={form.escola} onChange={(event) => updateField("escola", event.target.value)} placeholder="Nome da escola" className="h-14 rounded-2xl border border-white/10 bg-slate-950/50 px-4 text-sm text-white outline-none placeholder:text-slate-500" /></label>
-                <label className="grid gap-2"><span className="text-sm font-bold text-slate-300">Professor</span><input value={form.professor} onChange={(event) => updateField("professor", event.target.value)} placeholder="Nome do professor" className="h-14 rounded-2xl border border-white/10 bg-slate-950/50 px-4 text-sm text-white outline-none placeholder:text-slate-500" /></label>
-                <label className="grid gap-2 md:col-span-2"><span className="text-sm font-bold text-slate-300">Objetivos</span><textarea value={form.objetivos} onChange={(event) => updateField("objetivos", event.target.value)} rows={3} placeholder="Objetivos pedagógicos específicos" className="rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-4 text-sm text-white outline-none placeholder:text-slate-500" /></label>
-                <label className="grid gap-2 md:col-span-2"><span className="text-sm font-bold text-slate-300">Orientações</span><textarea value={form.orientacoes} onChange={(event) => updateField("orientacoes", event.target.value)} rows={3} placeholder="Detalhes de impressão, grupos, dificuldade ou recortes" className="rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-4 text-sm text-white outline-none placeholder:text-slate-500" /></label>
-                <label className="grid gap-2 md:col-span-2"><span className="text-sm font-bold text-slate-300">Observações</span><textarea value={form.observacoes} onChange={(event) => updateField("observacoes", event.target.value)} rows={3} placeholder="Características da turma ou adaptações" className="rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-4 text-sm text-white outline-none placeholder:text-slate-500" /></label>
-              </div>
-            )}
           </div>
 
           <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+            <button type="button" onClick={suggestContents} disabled={isSuggesting} className="rounded-2xl bg-cyan-200 px-6 py-4 text-sm font-black text-slate-950 transition hover:-translate-y-1 hover:bg-white disabled:cursor-not-allowed disabled:opacity-60">
+              {isSuggesting ? "Sugerindo..." : "Sugerir conteúdos inteligentes"}
+            </button>
+            <button type="button" onClick={() => setShowAdvanced((value) => !value)} className="rounded-2xl border border-white/10 bg-white/5 px-6 py-4 text-sm font-black text-white transition hover:-translate-y-1 hover:bg-white/10">
+              {showAdvanced ? "Ocultar modo avançado" : "Modo avançado opcional"}
+            </button>
+          </div>
+
+          {showAdvanced && (
+            <div className="mt-6 grid gap-4 rounded-2xl border border-white/10 bg-slate-950/35 p-4 md:grid-cols-2">
+              <label className="grid gap-2 md:col-span-2"><span className="text-sm font-bold text-slate-300">Título opcional</span><input value={form.titulo} onChange={(event) => updateField("titulo", event.target.value)} placeholder="Se deixar vazio, o Planify cria automaticamente" className="h-14 rounded-2xl border border-white/10 bg-slate-950/50 px-4 text-sm text-white outline-none placeholder:text-slate-500" /></label>
+              <label className="grid gap-2"><span className="text-sm font-bold text-slate-300">Escola</span><input value={form.escola} onChange={(event) => updateField("escola", event.target.value)} placeholder="Nome da escola" className="h-14 rounded-2xl border border-white/10 bg-slate-950/50 px-4 text-sm text-white outline-none placeholder:text-slate-500" /></label>
+              <label className="grid gap-2"><span className="text-sm font-bold text-slate-300">Professor</span><input value={form.professor} onChange={(event) => updateField("professor", event.target.value)} placeholder="Nome do professor" className="h-14 rounded-2xl border border-white/10 bg-slate-950/50 px-4 text-sm text-white outline-none placeholder:text-slate-500" /></label>
+              {needsQuestionQuantity(form.tipo) && <label className="grid gap-2"><span className="text-sm font-bold text-slate-300">Quantidade de questões</span><input value={form.quantidadeQuestoes} onChange={(event) => updateField("quantidadeQuestoes", event.target.value)} placeholder="10" className="h-14 rounded-2xl border border-white/10 bg-slate-950/50 px-4 text-sm text-white outline-none placeholder:text-slate-500" /></label>}
+              <label className="grid gap-2"><span className="text-sm font-bold text-slate-300">Duração</span><input value={form.duracao} onChange={(event) => updateField("duracao", event.target.value)} placeholder="Ex.: 1 período" className="h-14 rounded-2xl border border-white/10 bg-slate-950/50 px-4 text-sm text-white outline-none placeholder:text-slate-500" /></label>
+              <label className="grid gap-2 md:col-span-2"><span className="text-sm font-bold text-slate-300">Conteúdos manuais</span><textarea value={form.conteudos} onChange={(event) => updateField("conteudos", event.target.value)} rows={5} placeholder={"Use somente se quiser substituir as sugestões.\nEx.: Jó na tradição bíblica: Jó, fé, provação"} className="rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-4 text-sm text-white outline-none placeholder:text-slate-500" /></label>
+              <label className="grid gap-2 md:col-span-2"><span className="text-sm font-bold text-slate-300">Objetivos</span><textarea value={form.objetivos} onChange={(event) => updateField("objetivos", event.target.value)} rows={3} placeholder="Objetivos pedagógicos específicos" className="rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-4 text-sm text-white outline-none placeholder:text-slate-500" /></label>
+              <label className="grid gap-2 md:col-span-2"><span className="text-sm font-bold text-slate-300">Orientações e observações</span><textarea value={form.observacoes} onChange={(event) => updateField("observacoes", event.target.value)} rows={3} placeholder="Características da turma, dificuldade, impressão, recortes ou adaptação" className="rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-4 text-sm text-white outline-none placeholder:text-slate-500" /></label>
+            </div>
+          )}
+        </div>
+
+        {suggestions && (
+          <div className="rounded-[2rem] border border-emerald-300/20 bg-emerald-300/10 p-6 shadow-2xl shadow-emerald-500/10">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <p className="text-sm font-black uppercase tracking-[0.25em] text-emerald-200">Conteúdos sugeridos</p>
+                <h2 className="mt-3 text-2xl font-black text-white">Revise antes de gerar</h2>
+                <p className="mt-3 text-sm leading-7 text-emerald-50/80">{suggestions.resumoPedagogico}</p>
+              </div>
+              <button type="button" onClick={applySelectedSuggestionsToField} className="rounded-2xl border border-emerald-200/30 bg-white px-5 py-3 text-sm font-black text-slate-950 transition hover:-translate-y-1 hover:bg-emerald-50">
+                Aplicar no modo avançado
+              </button>
+            </div>
+
+            <div className="mt-5 grid gap-3 md:grid-cols-2">
+              {suggestions.conteudos.map((item) => {
+                const selected = selectedSuggestionIds.includes(item.id);
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => toggleSuggestion(item.id)}
+                    className={`rounded-2xl border p-4 text-left transition hover:-translate-y-0.5 ${selected ? "border-emerald-200/70 bg-white text-slate-950" : "border-white/10 bg-slate-950/45 text-white hover:bg-white/10"}`}
+                  >
+                    <span className="block text-xs font-black uppercase tracking-[0.18em] opacity-70">{selected ? "Selecionado" : "Removido"} • {item.dificuldade} • {item.tempoEstimado}</span>
+                    <span className="mt-2 block text-lg font-black">{item.titulo}</span>
+                    <span className="mt-2 block text-sm leading-6 opacity-80">{item.descricao}</span>
+                    <span className="mt-3 block text-xs font-bold opacity-70">Palavras-chave: {(item.palavrasChave || []).join(", ")}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="mt-6 grid gap-4 md:grid-cols-2">
+              <div className="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
+                <p className="text-sm font-black uppercase tracking-[0.2em] text-cyan-200">Jogos recomendados</p>
+                <div className="mt-3 grid gap-2">
+                  {suggestions.jogosRecomendados.slice(0, 4).map((option, index) => (
+                    <button key={`${option.titulo}-${index}`} type="button" onClick={() => useRecommended(option)} className="rounded-xl border border-white/10 bg-white/5 p-3 text-left text-sm text-white transition hover:bg-white/10">
+                      <strong>{option.titulo}</strong><br /><span className="text-slate-400">{option.motivo}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
+                <p className="text-sm font-black uppercase tracking-[0.2em] text-cyan-200">Objetivos sugeridos</p>
+                <ul className="mt-3 space-y-2 text-sm leading-6 text-slate-300">
+                  {suggestions.objetivosGerais.slice(0, 5).map((objetivo) => <li key={objetivo}>• {objetivo}</li>)}
+                </ul>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="rounded-[2rem] border border-white/10 bg-white/[0.06] p-6 shadow-2xl backdrop-blur-2xl">
+          <div className="flex flex-col gap-3 sm:flex-row">
             <button type="button" onClick={generateMaterial} disabled={isGenerating} className="rounded-2xl bg-white px-6 py-4 text-sm font-black text-slate-950 transition hover:-translate-y-1 hover:bg-cyan-100 disabled:cursor-not-allowed disabled:opacity-60">
               {isGenerating ? "Gerando..." : form.tipo === "jogo" ? `Gerar ${selectedGameModel?.label || "jogo visual"}` : "Gerar material"}
             </button>
             <Link href="/historico" className="rounded-2xl border border-white/10 bg-white/5 px-6 py-4 text-center text-sm font-black text-white transition hover:-translate-y-1 hover:bg-white/10">Ver histórico</Link>
           </div>
+          <p className="mt-4 text-xs leading-6 text-slate-500">
+            Conteúdos que serão usados: {selectedContents.length || manualConteudos.length || 0}. Para melhor resultado, use as sugestões inteligentes aprovadas.
+          </p>
         </div>
 
         <div className="rounded-[2rem] border border-white/10 bg-white/[0.06] p-6 shadow-2xl backdrop-blur-2xl">
@@ -754,7 +932,7 @@ export function MateriaisClient() {
               <p className="mt-3 text-sm leading-7 text-slate-400">{generatedMaterial.resumo || generatedMaterial.introducao}</p>
 
               {generatedMaterial.visualHtml || generatedMaterial.printHtml ? (
-                <div className="mt-6 max-h-[720px] overflow-auto rounded-2xl border border-slate-200 bg-white p-5 text-slate-900" dangerouslySetInnerHTML={{ __html: generatedMaterial.visualHtml || generatedMaterial.printHtml || "" }} />
+                <div className="mt-6 max-h-[780px] overflow-auto rounded-2xl border border-slate-200 bg-white p-5 text-slate-900" dangerouslySetInnerHTML={{ __html: generatedMaterial.visualHtml || generatedMaterial.printHtml || "" }} />
               ) : (
                 <div className="mt-6 grid gap-4">
                   {(generatedMaterial.secoes || []).slice(0, 4).map((section, index) => (
@@ -776,7 +954,9 @@ export function MateriaisClient() {
             <div>
               <p className="text-sm font-black uppercase tracking-[0.25em] text-cyan-300">Prévia</p>
               <h2 className="mt-3 text-3xl font-black text-white">Aguardando geração</h2>
-              <p className="mt-3 text-sm leading-7 text-slate-400">Escolha o tipo de material, informe tema e conteúdos. Se for jogo, o resultado aparecerá com grade, cartelas, cartas ou peças reais.</p>
+              <p className="mt-3 text-sm leading-7 text-slate-400">
+                O resultado aparecerá aqui. Para jogos, a prévia deve mostrar grade, cartelas, cartas ou peças reais antes de abrir no Editor.
+              </p>
             </div>
           )}
         </div>

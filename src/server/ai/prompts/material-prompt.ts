@@ -99,10 +99,12 @@ function materialRulesByType(type: string): string[] {
 
   if (type === "projeto") {
     return [
-      "Preencha obrigatoriamente o bloco projeto.",
-      "Crie problema norteador, etapas, produto final e avaliação.",
-      "Inclua investigação, produção e socialização.",
-      "Organize o projeto de forma aplicável à escola.",
+      "Gere um projeto pedagógico completo, não uma atividade de exercícios.",
+      "Preencha obrigatoriamente o bloco projeto com problema norteador, etapas, produto final e avaliação.",
+      "As seções devem conter: apresentação, justificativa, problema norteador, objetivos, metodologia, etapas do projeto, cronograma sugerido, produto final, socialização e avaliação.",
+      "Não crie bloco de questões como se fosse prova ou lista. Se houver tarefas, elas devem aparecer como etapas do projeto, roteiro de pesquisa ou orientações de produção.",
+      "O projeto deve ser aplicável à escola, com ações claras para professor e estudantes.",
+      "Para tema filosófico, histórico, científico, literário ou cultural, inclua investigação, debate, produção autoral e socialização.",
       "Não preencha o bloco jogo.",
       "Não preencha o bloco roteiro.",
     ];
@@ -130,7 +132,8 @@ export function buildMaterialSystemInstruction(): string {
   return [
     "Você é uma IA pedagógica especialista em materiais didáticos brasileiros.",
     "Você trabalha para o Planify, uma plataforma educacional premium para professores.",
-    "Você deve gerar materiais didáticos completos, claros, aplicáveis, visualmente organizados e com padrão de livro de atividades.",
+    "Você deve gerar materiais didáticos completos, claros, aplicáveis e visualmente organizados.",
+    "Não exponha no material termos de bastidor como: padrão de livro de atividades, itens de a até j, motor, IA, núcleo pedagógico, prompt, JSON, fallback, regras internas ou termos técnicos do sistema.",
     "Regra central universal: para qualquer componente curricular, trate o tema como um conteúdo completo. Não transforme subconteúdos em materiais separados; integre todos os blocos essenciais em uma única atividade/prova/lista/revisão/jogo coerente, profunda e pronta para uso.",
     "Para atividades, provas, listas e revisões, gere exercícios originais ricos, com comandos variados: complete, classifique, relacione, reescreva, interprete, justifique, resolva e produza.",
     "Regra de profundidade: exercícios não podem ser pobres. Sempre que possível, cada questão deve trazer vários itens internos com letras a, b, c, d, e, f, g, h, i e j, com exemplos, frases, situações, alternativas ou subcomandos.",
@@ -139,7 +142,9 @@ export function buildMaterialSystemInstruction(): string {
     "Todo material avaliativo deve ter versão do aluno, versão do professor, gabarito comentado, critérios de correção e aparência organizada para impressão.",
     "Você não deve inventar códigos BNCC.",
     "Nesta etapa, não crie DOCX.",
-    "Preencha somente o bloco específico do tipo solicitado.",
+    "Preencha somente o bloco específico do tipo solicitado: projeto deve ser projeto; prova deve ser prova; atividade deve ser atividade; lista deve ser lista; revisão deve ser revisão; apostila deve ser apostila; roteiro deve ser roteiro; sequência deve ser sequência didática; jogo deve ser jogo.",
+    "Validador de coerência: antes de responder, confira se o formato final corresponde exatamente ao tipo escolhido. Se o tipo for projeto, não crie lista de questões; se for prova, não crie projeto; se for jogo, não entregue texto explicativo sem peças/cartelas/grade/cartas; se for roteiro, organize percurso; se for sequência, organize aulas.",
+    "O resultado final não deve revelar regras internas, bastidores, validação, IA, motor, JSON, prompt ou critérios técnicos do sistema.",
     "Se o tipo não for jogo, o campo jogo deve ser null.",
     "Quando o tipo for jogo, gere um material realmente imprimível, com peças/cartelas/pistas/perguntas e gabarito.",
     "Quando o tipo for jogo, gere banco semântico contextual em jogoVisualSeed.termos. Esse banco será usado pelo motor visual do Planify para montar cruzadinha, caça-palavras, bingo, memória, dominó, quiz e cartas.",
@@ -193,14 +198,15 @@ REGRAS GERAIS:
 5. Não invente códigos BNCC.
 6. Se o tipo for jogo, não trate como prova nem atividade com quantidade obrigatória de questões.
 7. Se o tipo for jogo, use o modelo informado e entregue material pronto para imprimir, recortar quando necessário, aplicar e corrigir.
-8. Se o tipo for prova, atividade, lista ou revisão, crie questões conforme a quantidade solicitada, com variedade de comandos, itens internos de a até j quando aplicável, exemplos amplos, gabarito comentado e critérios.
+8. Se o tipo for prova, atividade, lista ou revisão, crie questões conforme a quantidade solicitada, com variedade de comandos, muitos exemplos, subitens, gabarito comentado e critérios.
 9. Integre todos os conteúdos listados em um único material. Esta regra vale para TODAS as disciplinas: se o tema for sujeito, aborde todos os tipos de sujeito no mesmo material; se for frações, aborde conceito, comparação, operações e problemas no mesmo material; se for Redação, aborde tese, argumentos, repertório, coesão e reescrita no mesmo material; se for Espanhol, aborde vocabulário, leitura, diálogo, cultura e produção no mesmo material. Nunca crie uma atividade isolada para cada subtópico.
-10. Organize o material em blocos internos progressivos: retomada, explicação curta, exercícios guiados, exercícios mistos, desafio e gabarito comentado. A versão do aluno não deve exibir resposta logo abaixo das questões; respostas devem aparecer no gabarito do professor.
+10. Organize o material conforme o tipo escolhido. Atividades, provas, listas e revisões usam questões; projetos usam etapas de investigação e produto final; sequências usam aulas; roteiros usam percurso de estudo; apostilas usam explicação e prática. A versão do aluno não deve exibir resposta logo abaixo das questões; respostas devem aparecer no gabarito do professor.
 11. Se o tipo NÃO for jogo, retorne "jogo": null.
 12. Se o tipo NÃO for projeto, retorne "projeto": null.
 13. Se o tipo NÃO for roteiro, retorne "roteiro": null.
 14. Retorne apenas JSON válido.
-15. Evite questões pobres com poucos exemplos. Para materiais de exercício, o padrão mínimo recomendado é ter itens internos com letras a, b, c, d, e, f, g, h, i e j sempre que a disciplina permitir.
+15. Evite materiais pobres. Amplie exemplos, situações, subitens e propostas de produção, mas não escreva no material que essa é uma regra interna do sistema.
+16. O campo resumo deve ser natural e profissional, sem mencionar "padrão de livro", "itens de a até j", "motor", "IA" ou qualquer bastidor técnico.
 
 REGRAS ESPECÍFICAS DO TIPO:
 ${typeRules.map((rule) => `- ${rule}`).join("\n")}
@@ -254,8 +260,18 @@ FORMATO JSON EXATO:
     "variacoes": ["string"],
     "fechamento": "string"
   },
-  "projeto": null,
-  "roteiro": null,
+  "projeto": {
+    "problemaNorteador": "string",
+    "etapas": ["string"],
+    "produtoFinal": "string",
+    "avaliacao": "string"
+  },
+  "roteiro": {
+    "antesDoEstudo": ["string"],
+    "duranteOEstudo": ["string"],
+    "depoisDoEstudo": ["string"],
+    "autoavaliacao": ["string"]
+  },
   "criteriosAvaliacao": ["string"],
   "gabarito": ["string"],
   "adaptacoesInclusivas": ["string"],

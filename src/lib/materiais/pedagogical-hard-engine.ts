@@ -53,6 +53,25 @@ function contentTitle(line: string): string {
   return cleanTitle(line.split(":")[0] || line).slice(0, 120) || "conteúdo estudado";
 }
 
+function displayTitle(value: unknown): string {
+  const words = String(value || "")
+    .trim()
+    .replace(/\s+/g, " ")
+    .split(" ")
+    .filter(Boolean);
+
+  if (!words.length) return "tema estudado";
+
+  const lowerWords = new Set(["de", "da", "do", "das", "dos", "e", "em", "a", "o", "as", "os", "para", "por", "com"]);
+  return words
+    .map((word, index) => {
+      const clean = word.toLocaleLowerCase("pt-BR");
+      if (index > 0 && lowerWords.has(clean)) return clean;
+      return clean.charAt(0).toLocaleUpperCase("pt-BR") + clean.slice(1);
+    })
+    .join(" ");
+}
+
 function clampQuestionCount(value: unknown, fallback = 10): number {
   const parsed = Number(String(value || "").replace(/[^0-9]/g, ""));
   if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
@@ -115,7 +134,7 @@ function profileFor(input: MaterialAIInput): DisciplineProfile {
   if (component.includes("portuguesa")) {
     return {
       eixo: "Leitura, análise linguística e produção textual",
-      abertura: `Este material trabalha ${tema} com exercícios amplos de leitura, interpretação, vocabulário, análise linguística, identificação, classificação, reescrita, justificativa e produção curta, em padrão de livro de atividades.`,
+      abertura: `Este material trabalha ${tema} com leitura, interpretação, vocabulário, análise linguística, identificação, classificação, reescrita, justificativa e produção curta.`,
       objetivos: [
         "Compreender sentidos explícitos e implícitos em textos e enunciados.",
         "Analisar recursos linguísticos, pontuação, classes ou funções conforme o conteúdo.",
@@ -169,6 +188,27 @@ function profileFor(input: MaterialAIInput): DisciplineProfile {
       comandos: ["interpretação", "valor", "reflexão", "situação", "justificativa", "convivência", "atitude", "síntese"],
       vocabulario: ["respeito", "convivência", "valor", "ética", "narrativa", "reflexão", "atitude", "diálogo", "responsabilidade", "solidariedade"],
       criterios: ["respeito", "argumentação", "relação com o tema", "clareza da reflexão"],
+    };
+  }
+
+
+  if (component.includes("filosofia")) {
+    const isDescartes = normalize(tema).includes("descartes");
+    return {
+      eixo: "Investigação filosófica, argumentação e produção autoral",
+      abertura: isDescartes
+        ? `Este material trabalha ${tema} a partir do contexto da Filosofia Moderna, da dúvida metódica, do cogito, do racionalismo, do método e do legado cartesiano para a ciência e para a ideia de sujeito.`
+        : `Este material trabalha ${tema} por meio de problema filosófico, conceitos centrais, leitura orientada, debate, argumentação, produção autoral e socialização das ideias.`,
+      objetivos: [
+        "Compreender o problema filosófico central do tema.",
+        "Analisar conceitos, argumentos e exemplos ligados ao pensamento estudado.",
+        "Produzir síntese, debate, apresentação ou produto autoral com clareza conceitual.",
+      ],
+      comandos: ["problema", "conceito", "argumento", "contexto", "debate", "síntese", "comparação", "produção"],
+      vocabulario: isDescartes
+        ? ["Descartes", "dúvida metódica", "cogito", "razão", "racionalismo", "método", "certeza", "sujeito", "ciência", "filosofia moderna"]
+        : ["problema", "conceito", "argumento", "pensamento", "contexto", "debate", "ética", "conhecimento", "razão", "síntese"],
+      criterios: ["clareza conceitual", "argumentação", "relação com o tema", "organização da produção", "participação"],
     };
   }
 
@@ -408,6 +448,13 @@ function buildExerciseTemplates(input: MaterialAIInput, profile: DisciplineProfi
     ];
   }
 
+
+  if (component.includes("filosofia")) {
+    return [
+      { tipo: "investigação filosófica", comando: `Responda aos itens sobre ${theme}.\n${lettered(["Qual é o problema filosófico central?", "Que conceito precisa ser compreendido primeiro?", "Que pergunta pode orientar a investigação?", "Que argumento pode ser apresentado?", "Que exemplo ajuda a entender o tema?", "Que crítica ou dúvida pode ser levantada?", "Que relação existe com a vida atual?", "Que ideia pode ser debatida em grupo?", "Que síntese pode ser produzida?", "Que produto final comunicaria bem a aprendizagem?"])}`, resposta: "Respostas coerentes com o problema filosófico, conceitos, argumentos, exemplos e síntese do tema.", criterio: "Avaliar clareza conceitual, argumentação, relação com o tema e capacidade de síntese." },
+    ];
+  }
+
   if (component.includes("historia") || component.includes("geografia") || component.includes("filosofia") || component.includes("sociologia")) {
     return [
       { tipo: "análise contextual", comando: `Responda aos itens sobre ${theme}.\n${lettered(["Defina o conceito central.", "Localize o tema no tempo ou espaço, quando aplicável.", "Cite uma causa.", "Cite uma consequência.", "Relacione o tema à sociedade.", "Compare duas situações.", "Indique uma fonte ou exemplo que poderia ser analisado.", "Explique uma permanência ou mudança.", "Crie uma pergunta crítica.", "Escreva uma síntese."])}`, resposta: "Respostas contextualizadas com causa, consequência, comparação e síntese.", criterio: "Avaliar contextualização, argumentação e uso de exemplos." },
@@ -451,6 +498,12 @@ function makeQuestion(template: ExerciseTemplate, numero: number, tipoMaterial: 
 }
 
 function buildQuestions(input: MaterialAIInput, profile: DisciplineProfile, conteudos: string[]): MaterialAIQuestion[] {
+  const type = normalize(input.tipo);
+
+  if (type === "projeto" || type === "sequencia" || type === "roteiro") {
+    return [];
+  }
+
   const quantity = clampQuestionCount(input.quantidadeQuestoes, normalize(input.tipo) === "prova" ? 10 : 10);
   const templates = buildExerciseTemplates(input, profile, conteudos);
   const questions: MaterialAIQuestion[] = [];
@@ -469,7 +522,7 @@ function sectionsFor(input: MaterialAIInput, profile: DisciplineProfile, conteud
   const textBase = buildTextBase(input, profile, conteudos);
   const blocos = [
     `Bloco 1 — Aquecimento: leitura do tema, vocabulário essencial e exemplos iniciais.`,
-    `Bloco 2 — Fixação guiada: questões com itens de a até j para ampliar repertório e prática.`,
+    `Bloco 2 — Fixação guiada: questões com vários exemplos e situações para ampliar repertório e prática.`,
     `Bloco 3 — Aplicação: exercícios mistos, reescrita, análise, cálculo, produção ou interpretação conforme a disciplina.`,
     `Bloco 4 — Desafio e síntese: produção final, justificativa e correção comentada.`,
   ];
@@ -491,10 +544,95 @@ function sectionsFor(input: MaterialAIInput, profile: DisciplineProfile, conteud
   }
 
   if (type === "projeto") {
+    const temaFormatado = displayTitle(theme);
     return [
-      { titulo: "Problema norteador", conteudo: `Como compreender e aplicar ${theme} em uma produção significativa para a turma?`, itens: ["Investigação", "Registro", "Produção", "Socialização"] },
-      { titulo: "Etapas do projeto", conteudo: "Organização do trabalho em etapas curtas, com acompanhamento e produto final.", itens: ["Pesquisa inicial", "Produção orientada", "Revisão", "Apresentação"] },
-      { titulo: "Produto final", conteudo: "Cartaz, texto, apresentação, painel, jogo, mapa conceitual ou material digital editável.", itens: ["Criatividade", "Clareza", "Coerência", "Participação"] },
+      {
+        titulo: "Apresentação do projeto",
+        conteudo: `Projeto escolar sobre ${temaFormatado}, organizado para transformar o tema em investigação, produção autoral, socialização e avaliação. A proposta parte de uma questão norteadora, orienta a pesquisa dos estudantes e conduz a turma a produzir um resultado final compartilhável.`,
+        itens: [
+          "Tema central do projeto",
+          "Justificativa pedagógica",
+          "Questão norteadora",
+          "Produto final",
+          "Avaliação processual",
+        ],
+      },
+      {
+        titulo: "Problema norteador",
+        conteudo: `De que maneira o estudo de ${temaFormatado} ajuda a compreender ideias, problemas, escolhas, contextos ou práticas presentes na vida social, cultural, científica ou escolar dos estudantes?`,
+        itens: [
+          "O que já sabemos sobre o tema?",
+          "Que perguntas queremos investigar?",
+          "Que fontes podem ajudar a turma?",
+          "Que produto final pode comunicar a aprendizagem?",
+        ],
+      },
+      {
+        titulo: "Objetivos do projeto",
+        conteudo: "Objetivos organizados para orientar o trabalho do professor e dos estudantes durante todas as etapas.",
+        itens: [
+          `Compreender aspectos centrais de ${temaFormatado}.`,
+          "Investigar informações, exemplos, conceitos e situações ligados ao tema.",
+          "Organizar descobertas em registros, debates, esquemas ou produções autorais.",
+          "Produzir um resultado final claro, criativo e coerente com a proposta.",
+          "Apresentar e avaliar o percurso de aprendizagem da turma.",
+        ],
+      },
+      {
+        titulo: "Etapa 1 — Mobilização da turma",
+        conteudo: `Inicie com uma conversa orientada sobre ${temaFormatado}. Levante conhecimentos prévios, registre hipóteses, apresente imagens, frases, pequenos textos, problemas ou perguntas disparadoras relacionados ao tema.`,
+        itens: [
+          "Pergunta disparadora no quadro",
+          "Registro das hipóteses dos estudantes",
+          "Leitura ou breve apresentação inicial",
+          "Organização dos grupos ou duplas",
+        ],
+      },
+      {
+        titulo: "Etapa 2 — Pesquisa e investigação",
+        conteudo: "Oriente a turma a buscar informações, exemplos, conceitos, fatos, argumentos ou referências adequadas ao ano/série. O professor acompanha a seleção das informações e ajuda a transformar pesquisa em aprendizagem organizada.",
+        itens: [
+          "Pesquisa guiada com roteiro",
+          "Anotações individuais ou em grupo",
+          "Seleção de ideias principais",
+          "Organização de fontes e exemplos",
+          "Discussão intermediária com mediação do professor",
+        ],
+      },
+      {
+        titulo: "Etapa 3 — Produção do material final",
+        conteudo: "Cada grupo transforma a investigação em uma produção concreta para apresentar à turma. A produção precisa demonstrar compreensão do tema, clareza nas informações e autoria dos estudantes.",
+        itens: [
+          "Painel explicativo",
+          "Seminário curto",
+          "Cartaz ou infográfico",
+          "Mapa conceitual",
+          "Podcast, vídeo curto ou apresentação digital",
+          "Texto autoral, roteiro, maquete, exposição ou jogo educativo",
+        ],
+      },
+      {
+        titulo: "Etapa 4 — Socialização",
+        conteudo: "Organize uma rodada de apresentações. Cada grupo explica o que pesquisou, mostra o produto final e responde perguntas dos colegas. O professor registra avanços, dúvidas e pontos para retomada.",
+        itens: [
+          "Apresentação de 3 a 5 minutos por grupo",
+          "Perguntas dos colegas",
+          "Registro das principais aprendizagens",
+          "Síntese coletiva final",
+        ],
+      },
+      {
+        titulo: "Etapa 5 — Avaliação e fechamento",
+        conteudo: "Finalize com avaliação do processo, autoavaliação dos estudantes e devolutiva do professor. A avaliação deve considerar pesquisa, participação, clareza, coerência e qualidade do produto final.",
+        itens: [
+          "Participação durante as etapas",
+          "Qualidade da pesquisa",
+          "Organização das ideias",
+          "Clareza do produto final",
+          "Apresentação oral ou escrita",
+          "Autoavaliação e revisão",
+        ],
+      },
     ];
   }
 
@@ -508,14 +646,14 @@ function sectionsFor(input: MaterialAIInput, profile: DisciplineProfile, conteud
 
   return [
     { titulo: "Texto-base ou situação inicial", conteudo: textBase, itens: [] },
-    { titulo: "Percurso da atividade", conteudo: "O material foi construído como folha ampla de exercícios, com comandos variados e itens internos de a até j para ampliar prática, exemplos e possibilidades de resposta.", itens: blocos },
+    { titulo: "Percurso da atividade", conteudo: "O material organiza leitura, exemplos, prática orientada, aplicação e síntese para ampliar a aprendizagem do tema.", itens: blocos },
     { titulo: "Banco de palavras e conceitos", conteudo: "Use este banco como apoio durante a correção, adaptação, retomada ou ampliação da atividade.", itens: Array.from(new Set([...profile.vocabulario, ...conteudos.flatMap((line) => line.split(/[:,]/).map((x) => x.trim()).filter(Boolean)).slice(0, 10)])).slice(0, 16) },
   ];
 }
 
 function titleByType(input: MaterialAIInput): string {
   const map: Record<string, string> = {
-    atividade: "Atividade completa",
+    atividade: "Atividade",
     prova: "Prova",
     apostila: "Apostila",
     lista: "Lista de exercícios",
@@ -526,6 +664,63 @@ function titleByType(input: MaterialAIInput): string {
   };
   const label = map[normalize(input.tipo)] || "Material";
   return input.titulo || `${label} — ${input.tema}`;
+}
+
+function summaryByType(input: MaterialAIInput): string {
+  const tema = displayTitle(input.tema || "tema estudado");
+  const type = normalize(input.tipo);
+
+  if (type === "projeto") {
+    return `Projeto pronto para desenvolver ${tema} com investigação, produção, socialização, produto final e avaliação.`;
+  }
+
+  if (type === "sequencia") {
+    return `Sequência didática pronta para trabalhar ${tema} em etapas de aula, com mediação, prática e avaliação.`;
+  }
+
+  if (type === "roteiro") {
+    return `Roteiro de estudo organizado para orientar o estudante no estudo de ${tema}, com leitura, registro, tarefas e autoavaliação.`;
+  }
+
+  if (type === "apostila") {
+    return `Apostila pronta para estudar ${tema}, com explicação, exemplos, exercícios e síntese.`;
+  }
+
+  if (type === "prova") {
+    return `Avaliação pronta sobre ${tema}, com questões variadas, critérios e gabarito do professor.`;
+  }
+
+  if (type === "lista") {
+    return `Lista de exercícios pronta sobre ${tema}, com prática progressiva e correção orientada.`;
+  }
+
+  if (type === "revisao") {
+    return `Revisão pronta sobre ${tema}, com retomada, exercícios e fechamento da aprendizagem.`;
+  }
+
+  return `Atividade sobre ${tema}, com prática orientada, exercícios e gabarito do professor.`;
+}
+
+function projectTeacherGuidance(theme: string): string[] {
+  const temaFormatado = displayTitle(theme);
+  return [
+    `Apresente o projeto sobre ${temaFormatado} e combine o produto final com a turma.`,
+    "Organize grupos, papéis e prazos antes da pesquisa.",
+    "Acompanhe os registros durante o processo, não apenas a apresentação final.",
+    "Oriente a seleção de informações confiáveis e a transformação das ideias em produção autoral.",
+    "Finalize com socialização, devolutiva e autoavaliação.",
+  ];
+}
+
+function projectStudentGuidance(theme: string): string[] {
+  const temaFormatado = displayTitle(theme);
+  return [
+    `Investigue o tema ${temaFormatado} com atenção às perguntas do projeto.`,
+    "Registre as descobertas mais importantes com suas próprias palavras.",
+    "Participe da produção do material final do grupo.",
+    "Prepare sua apresentação com clareza e respeito ao tempo combinado.",
+    "Revise o trabalho antes da socialização.",
+  ];
 }
 
 export function buildHardPedagogicalMaterial(input: MaterialAIInput): MaterialAIOutput {
@@ -540,7 +735,7 @@ export function buildHardPedagogicalMaterial(input: MaterialAIInput): MaterialAI
     titulo: titleByType(input),
     subtitulo: `${input.componenteCurricular} • ${input.anoSerie}`,
     tipo: input.tipo,
-    resumo: `Material amplo em padrão de livro de atividades, com exemplos, itens internos de a até j, progressão didática, versão do aluno e gabarito do professor.`,
+    resumo: summaryByType(input),
     dadosGerais: {
       escola: input.escola || "",
       professor: input.professor || "",
@@ -553,17 +748,17 @@ export function buildHardPedagogicalMaterial(input: MaterialAIInput): MaterialAI
     },
     objetivos: input.objetivos ? splitConteudos(input.objetivos) : profile.objetivos,
     conteudos: safeConteudos,
-    orientacoesProfessor: [
+    orientacoesProfessor: type === "projeto" ? projectTeacherGuidance(input.tema || "tema estudado") : [
       "Aplique a versão do aluno sem mostrar o gabarito.",
       "Explique os comandos e resolva um item-modelo antes da produção individual.",
       "Use a correção comentada para identificar dificuldades, comparar respostas e retomar conceitos.",
       "Valorize justificativas, estratégias e revisão, não apenas respostas finais.",
       "Adapte tempo, quantidade de itens ou apoio conforme o perfil da turma.",
     ],
-    orientacoesAluno: [
+    orientacoesAluno: type === "projeto" ? projectStudentGuidance(input.tema || "tema estudado") : [
       "Leia cada comando com atenção antes de responder.",
-      "Observe todos os itens com letras e responda na ordem solicitada.",
-      "Sublinhe palavras importantes do enunciado.",
+      "Responda todos os itens solicitados no enunciado.",
+      "Sublinhe palavras importantes do comando.",
       "Justifique respostas quando solicitado.",
       "Revise sua escrita, cálculo ou explicação antes de entregar.",
     ],
@@ -573,10 +768,17 @@ export function buildHardPedagogicalMaterial(input: MaterialAIInput): MaterialAI
     jogo: undefined,
     projeto: type === "projeto"
       ? {
-          problemaNorteador: `Como transformar ${input.tema} em uma produção significativa para a turma?`,
-          etapas: ["Pesquisa e levantamento de ideias", "Produção orientada", "Revisão com critérios", "Socialização do produto final"],
-          produtoFinal: "Material, apresentação, painel, texto, jogo, mapa ou produção autoral relacionada ao tema.",
-          avaliacao: "Avaliar participação, pesquisa, coerência do produto, clareza da apresentação e evolução do estudante.",
+          problemaNorteador: `De que maneira o estudo de ${displayTitle(input.tema || "tema estudado")} pode ser investigado, produzido e apresentado pela turma de forma significativa?`,
+          etapas: [
+            "Mobilização e levantamento de conhecimentos prévios",
+            "Pesquisa orientada e registro das descobertas",
+            "Planejamento do produto final",
+            "Produção em grupo ou individual",
+            "Apresentação e socialização",
+            "Avaliação, autoavaliação e fechamento",
+          ],
+          produtoFinal: "Apresentação, painel, texto autoral, infográfico, seminário, exposição, vídeo curto, mapa conceitual, jogo educativo ou material digital sobre o tema.",
+          avaliacao: "Avaliar participação, pesquisa, organização das ideias, coerência do produto, clareza da apresentação, colaboração e evolução do estudante.",
         }
       : undefined,
     roteiro: type === "roteiro"
@@ -587,22 +789,28 @@ export function buildHardPedagogicalMaterial(input: MaterialAIInput): MaterialAI
           autoavaliacao: ["Entendi o tema?", "Consigo justificar minhas respostas?", "Que ponto preciso revisar?"],
         }
       : undefined,
-    criteriosAvaliacao: profile.criterios,
-    gabarito: questions.map((question) => `Questão ${question.numero}: ${question.respostaEsperada} Critério: ${question.criterioCorrecao}`),
+    criteriosAvaliacao: type === "projeto"
+      ? ["participação", "pesquisa", "organização das ideias", "qualidade do produto final", "clareza da apresentação", "colaboração", "autoavaliação"]
+      : profile.criterios,
+    gabarito: type === "projeto" || type === "sequencia" || type === "roteiro" ? [] : questions.map((question) => `Questão ${question.numero}: ${question.respostaEsperada} Critério: ${question.criterioCorrecao}`),
     adaptacoesInclusivas: [
       "Reduzir a quantidade de itens sem reduzir o objetivo central quando necessário.",
       "Permitir leitura compartilhada dos comandos.",
       "Oferecer banco de palavras, exemplos ou tempo adicional para estudantes que precisarem.",
       "Transformar itens discursivos em resposta oral ou produção em dupla quando fizer sentido pedagógico.",
     ],
-    sugestoesUso: [
-      "Usar como atividade em sala, tarefa, revisão, recuperação ou avaliação formativa.",
-      "Abrir no Editor para ajustar cabeçalho, espaço para resposta e quantidade de questões.",
-      "Salvar uma versão do aluno e uma versão do professor com gabarito.",
-    ],
-    alertas: [
-      "Material original gerado pelo Planify com estrutura didática inspirada em padrões pedagógicos, sem copiar exercícios de obras didáticas.",
-    ],
+    sugestoesUso: type === "projeto"
+      ? [
+          "Usar como projeto bimestral, sequência de aulas, trabalho em grupo ou culminância temática.",
+          "Adaptar o produto final ao tempo disponível e aos recursos da escola.",
+          "Registrar evidências do processo durante todas as etapas.",
+        ]
+      : [
+          "Usar em sala, tarefa, revisão, recuperação ou avaliação formativa.",
+          "Abrir no Editor para ajustar cabeçalho, espaço de resposta e apresentação final.",
+          "Salvar uma versão do aluno e uma versão do professor com gabarito.",
+        ],
+    alertas: [],
   };
 }
 
@@ -641,7 +849,7 @@ export function enhanceHardPedagogicalMaterial(input: MaterialAIInput, generated
     criteriosAvaliacao: mergeArrays(generated.criteriosAvaliacao, hard.criteriosAvaliacao),
     adaptacoesInclusivas: mergeArrays(generated.adaptacoesInclusivas, hard.adaptacoesInclusivas),
     sugestoesUso: mergeArrays(generated.sugestoesUso, hard.sugestoesUso),
-    alertas: mergeArrays(generated.alertas, hard.alertas),
+    alertas: hard.alertas,
     jogo: undefined,
   };
 }

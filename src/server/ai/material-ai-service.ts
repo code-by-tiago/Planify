@@ -11,6 +11,7 @@ import type {
 } from "../../types/ai";
 import { buildVisualGameMaterial } from "../../lib/materiais/game-builder";
 import { enhanceHardPedagogicalMaterial, shouldUseHardPedagogicalEngine } from "../../lib/materiais/pedagogical-hard-engine";
+import { enforceMaterialTypeContract } from "../../lib/materiais/material-type-validator";
 import { generateGeminiJSON } from "./gemini-client";
 import {
   buildMaterialPrompt,
@@ -218,14 +219,13 @@ export async function generateMaterialWithAI(rawInput: MaterialAIInput): Promise
         topP: 0.8,
         maxOutputTokens: 9000,
       });
-      return mergeGameWithAI(input, generated);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "IA indisponível";
-      return mergeGameWithAI(
+      return enforceMaterialTypeContract(input, mergeGameWithAI(input, generated));
+    } catch {
+      return enforceMaterialTypeContract(input, mergeGameWithAI(
         input,
         undefined,
-        `A IA não respondeu plenamente, então o Planify usou o construtor visual premium de jogos. Detalhe técnico: ${message}`,
-      );
+        "O Planify preparou uma versão visual pronta para uso em sala.",
+      ));
     }
   }
 
@@ -240,11 +240,11 @@ export async function generateMaterialWithAI(rawInput: MaterialAIInput): Promise
       });
 
       const normalized = normalizeCommonOutput(generated, input);
-      return enhanceHardPedagogicalMaterial(input, normalized);
-    } catch (error) {
-      return enhanceHardPedagogicalMaterial(input, {
-        alertas: [error instanceof Error ? `A IA não respondeu plenamente, então o Planify usou o motor pedagógico hard. Detalhe técnico: ${error.message}` : "A IA não respondeu plenamente, então o Planify usou o motor pedagógico hard."],
-      });
+      return enforceMaterialTypeContract(input, enhanceHardPedagogicalMaterial(input, normalized));
+    } catch {
+      return enforceMaterialTypeContract(input, enhanceHardPedagogicalMaterial(input, {
+        alertas: [],
+      }));
     }
   }
 
@@ -256,7 +256,7 @@ export async function generateMaterialWithAI(rawInput: MaterialAIInput): Promise
     maxOutputTokens: 10000,
   });
 
-  return normalizeCommonOutput(generated, input);
+  return enforceMaterialTypeContract(input, normalizeCommonOutput(generated, input));
 }
 
 
@@ -467,11 +467,10 @@ export async function suggestMaterialContents(rawInput: MaterialContentSuggestio
     });
 
     return normalizeSuggestionOutput(generated, fallback);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "IA indisponível";
+  } catch {
     return {
       ...fallback,
-      alertas: [`A IA não respondeu plenamente, então o Planify usou o núcleo pedagógico interno. Detalhe técnico: ${message}`],
+      alertas: [],
     };
   }
 }

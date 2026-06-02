@@ -134,6 +134,18 @@ type GeneratedMaterial = {
     variacoes?: string[];
     fechamento?: string;
   } | null;
+  projeto?: {
+    problemaNorteador: string;
+    etapas: string[];
+    produtoFinal: string;
+    avaliacao: string;
+  } | null;
+  roteiro?: {
+    antesDoEstudo: string[];
+    duranteOEstudo: string[];
+    depoisDoEstudo: string[];
+    autoavaliacao: string[];
+  } | null;
   criteriosAvaliacao?: string[];
   adaptacoesInclusivas?: string[];
   sugestoesUso?: string[];
@@ -385,6 +397,26 @@ function buildDefaultContentLines(form: FormState) {
     ];
   }
 
+
+  if (component.includes("filosofia")) {
+    if (theme.includes("descartes")) {
+      return [
+        `${tema}: contexto da Filosofia Moderna e busca por fundamentos seguros do conhecimento`,
+        `${tema}: dúvida metódica, método filosófico e crítica às certezas imediatas`,
+        `${tema}: cogito, razão e sujeito pensante`,
+        `${tema}: racionalismo, ciência, método e influência no pensamento moderno`,
+        `${tema}: debate, produção autoral e socialização das aprendizagens`,
+      ];
+    }
+
+    return [
+      `${tema}: problema filosófico central e conceitos fundamentais`,
+      `${tema}: contexto, pensadores, argumentos e perguntas orientadoras`,
+      `${tema}: análise crítica, debate, comparação de ideias e aplicação na realidade`,
+      `${tema}: produção autoral, síntese e socialização filosófica`,
+    ];
+  }
+
   if (component.includes("matematica")) {
     return [
       `${tema}: conceitos essenciais e exemplos resolvidos`,
@@ -560,6 +592,8 @@ function normalizeGeneratedMaterial(material: GeneratedMaterial, form: FormState
     secoes: material.secoes || [],
     questoes: material.questoes || [],
     gabarito: material.gabarito || [],
+    projeto: material.projeto || null,
+    roteiro: material.roteiro || null,
     criteriosAvaliacao: material.criteriosAvaliacao || [],
     adaptacoesInclusivas: material.adaptacoesInclusivas || [],
     sugestoesUso: material.sugestoesUso || [],
@@ -646,7 +680,7 @@ function buildMaterialEditorHtml(material: GeneratedMaterial) {
 ${css}
 <article class="planify-doc">
   <div class="planify-cover">
-    <span class="planify-badge">Material pedagógico Planify</span>
+    <span class="planify-badge">Material pedagógico</span>
     <h1>${escapeHtml(material.titulo || "Material Planify")}</h1>
     ${material.subtitulo ? `<p><strong>${escapeHtml(material.subtitulo)}</strong></p>` : ""}
     ${material.resumo ? `<p>${escapeHtml(material.resumo)}</p>` : ""}
@@ -688,7 +722,9 @@ ${css}
         .join("")
     : ""}
 
-  ${questions.length ? `<div class="planify-box"><h2 class="planify-section-title">Versão do aluno — questões</h2><p>Resolva com atenção. Quando houver itens com letras, responda todos os itens solicitados.</p></div>${questions
+  ${material.projeto ? `<div class="planify-box"><h2 class="planify-section-title">Síntese do projeto</h2><p><strong>Problema norteador:</strong> ${escapeHtml(material.projeto.problemaNorteador)}</p><p><strong>Produto final:</strong> ${escapeHtml(material.projeto.produtoFinal)}</p><p><strong>Avaliação:</strong> ${escapeHtml(material.projeto.avaliacao)}</p>${renderList(material.projeto.etapas)}</div>` : ""}
+
+  ${questions.length ? `<div class="planify-box"><h2 class="planify-section-title">Versão do aluno</h2><p>Realize as propostas com atenção e registre suas respostas com clareza.</p></div>${questions
     .map(
       (question) => `<div class="planify-question"><span class="planify-question-type">${escapeHtml(question.tipo || "questão")}</span><h3>Questão ${question.numero}</h3><p>${renderQuestionText(question.enunciado)}</p>${renderList(question.alternativas)}${renderStudentAnswerSpace()}</div>`,
     )
@@ -809,7 +845,7 @@ export function MateriaisClient() {
       const data = result.data as SuggestionOutput;
       setSuggestions(data);
       setSelectedSuggestionIds([]);
-      setStatus({ type: "success", message: "Conteúdos organizados. O material será gerado como uma folha completa sobre o tema." });
+      setStatus({ type: "success", message: "Conteúdos organizados para o tema escolhido." });
     } catch (error) {
       setStatus({ type: "error", message: error instanceof Error ? error.message : "Não foi possível preparar os conteúdos agora." });
     } finally {
@@ -917,7 +953,7 @@ export function MateriaisClient() {
       const material = normalizeGeneratedMaterial((result.data || result.material) as GeneratedMaterial, form, conteudos);
       setGeneratedMaterial(material);
       saveToLocalHistory(material);
-      setStatus({ type: "success", message: form.tipo === "jogo" ? "Jogo visual gerado com abordagem completa do tema, gabarito e versão editável." : "Material completo gerado com IA." });
+      setStatus({ type: "success", message: form.tipo === "jogo" ? "Jogo pronto para revisar no Editor." : `${typeLabels[form.tipo]} pronto para revisar no Editor.` });
     } catch (error) {
       if (conteudos.length === 0) conteudos = buildDefaultContentLines(form);
       const fallback = buildFallbackMaterial(form, conteudos);
@@ -925,7 +961,7 @@ export function MateriaisClient() {
       saveToLocalHistory(fallback);
       setStatus({
         type: "success",
-        message: error instanceof Error ? `A IA não respondeu agora. O Planify gerou uma versão completa do material. Detalhe: ${error.message}` : "O Planify gerou uma versão completa do material.",
+        message: "Material pronto para revisar no Editor.",
       });
     } finally {
       setIsGenerating(false);
@@ -956,7 +992,7 @@ export function MateriaisClient() {
           <p className="text-sm font-black uppercase tracking-[0.28em] text-cyan-300">Criação pedagógica</p>
           <h1 className="mt-4 text-3xl font-black text-white">Materiais didáticos</h1>
           <p className="mt-4 text-sm leading-7 text-cyan-100/80">
-            Escolha a turma, o componente, o tipo de material e o tema. O Planify entrega uma folha completa, com exercícios, exemplos, gabarito e versão editável.
+            Escolha a turma, o componente, o tipo e o tema. O Planify prepara um material pronto para revisar, editar e aplicar.
           </p>
 
           <div className="mt-6 grid gap-3">
@@ -1010,7 +1046,7 @@ export function MateriaisClient() {
               <p className="text-sm font-black uppercase tracking-[0.28em] text-cyan-300">Dados</p>
               <h2 className="mt-3 text-3xl font-black text-white">Informações do material</h2>
               <p className="mt-3 text-sm leading-7 text-slate-400">
-                Preencha os dados principais para gerar atividades, provas, listas, revisões, jogos ou apostilas em formato editável.
+                Preencha os dados principais e gere o material no formato escolhido.
               </p>
             </div>
             <button type="button" onClick={clearAll} className="rounded-2xl border border-white/10 bg-white/5 px-6 py-4 text-sm font-black text-white transition hover:-translate-y-1 hover:bg-white/10">
@@ -1075,7 +1111,7 @@ export function MateriaisClient() {
           </div>
 
           <div className="mt-6 rounded-2xl border border-cyan-300/20 bg-cyan-300/10 p-4 text-sm leading-7 text-cyan-50/85">
-            <strong className="text-white">Material completo:</strong> o resultado sai em uma única folha estruturada, com conteúdo, exercícios, exemplos, gabarito e orientações conforme o tipo escolhido.
+            <strong className="text-white">Material completo:</strong> o resultado respeita o tipo escolhido e trabalha o tema de forma organizada.
           </div>
         </div>
 
@@ -1087,7 +1123,7 @@ export function MateriaisClient() {
             <Link href="/historico" className="rounded-2xl border border-white/10 bg-white/5 px-6 py-4 text-center text-sm font-black text-white transition hover:-translate-y-1 hover:bg-white/10">Ver histórico</Link>
           </div>
           <p className="mt-4 text-xs leading-6 text-slate-500">
-            O material será criado como uma folha completa, com exemplos, questões e gabarito conforme o tipo escolhido.
+            O Planify monta o material conforme o formato selecionado: atividade, prova, lista, revisão, projeto, roteiro, apostila, sequência ou jogo.
           </p>
         </div>
 

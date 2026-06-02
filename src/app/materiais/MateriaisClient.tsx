@@ -565,65 +565,105 @@ function renderTextBlock(value: string | undefined) {
     .join("");
 }
 
+function renderQuestionText(value: string | undefined) {
+  const text = String(value || "").trim();
+  if (!text) return "";
+  return escapeHtml(text).replaceAll("\n", "<br />");
+}
+
+function renderStudentAnswerSpace() {
+  return `<div style="margin-top:12px;border:1px dashed #cbd5e1;border-radius:12px;padding:12px;background:#f8fafc;color:#64748b;font-size:12px;">
+    Espaço para resposta: ____________________________________________________________________________________<br />
+    _________________________________________________________________________________________________________<br />
+    _________________________________________________________________________________________________________
+  </div>`;
+}
+
 function buildMaterialEditorHtml(material: GeneratedMaterial) {
   const dados = material.dadosGerais || {};
   const sections = material.secoes || [];
   const questions = material.questoes || [];
   const visualHtml = material.visualHtml || material.printHtml || "";
 
+  const css = `
+<style>
+  .planify-doc{font-family:Arial,Helvetica,sans-serif;color:#0f172a;line-height:1.55;}
+  .planify-cover{border:1px solid #dbeafe;border-radius:18px;padding:22px;margin:0 0 22px;background:linear-gradient(135deg,#eff6ff,#f8fafc);}
+  .planify-cover h1{margin:0 0 8px;font-size:30px;line-height:1.15;color:#0f172a;}
+  .planify-cover p{margin:6px 0;color:#334155;}
+  .planify-badge{display:inline-block;padding:6px 10px;border-radius:999px;background:#e0f2fe;color:#0369a1;font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.08em;}
+  .planify-box{border:1px solid #e2e8f0;border-radius:16px;padding:16px;margin:18px 0;background:#ffffff;break-inside:avoid;page-break-inside:avoid;}
+  .planify-box.soft{background:#f8fafc;}
+  .planify-section-title{margin:0 0 10px;font-size:20px;color:#0f172a;}
+  .planify-question{border:1px solid #cbd5e1;border-radius:16px;padding:16px;margin:16px 0;background:#ffffff;break-inside:avoid;page-break-inside:avoid;}
+  .planify-question h3{margin:0 0 8px;font-size:18px;color:#0f172a;}
+  .planify-question-type{display:inline-block;margin-bottom:8px;padding:4px 8px;border-radius:999px;background:#dcfce7;color:#166534;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;}
+  .planify-teacher{border-color:#fde68a;background:#fffbeb;}
+  .planify-table{width:100%;border-collapse:collapse;margin:12px 0;}
+  .planify-table td{border:1px solid #cbd5e1;padding:8px;vertical-align:top;}
+  .planify-table td:first-child{width:32%;font-weight:700;background:#f8fafc;}
+  .planify-list{margin:8px 0 0 20px;}
+  @media print{.planify-doc{font-size:12pt}.planify-box,.planify-question{break-inside:avoid;page-break-inside:avoid}.planify-cover{break-after:avoid}}
+</style>`;
+
   return `
+${css}
 <article class="planify-doc">
-  <h1>${escapeHtml(material.titulo || "Material Planify")}</h1>
-  ${material.subtitulo ? `<p><em>${escapeHtml(material.subtitulo)}</em></p>` : ""}
-  ${material.resumo ? `<p>${escapeHtml(material.resumo)}</p>` : ""}
+  <div class="planify-cover">
+    <span class="planify-badge">Material pedagógico Planify</span>
+    <h1>${escapeHtml(material.titulo || "Material Planify")}</h1>
+    ${material.subtitulo ? `<p><strong>${escapeHtml(material.subtitulo)}</strong></p>` : ""}
+    ${material.resumo ? `<p>${escapeHtml(material.resumo)}</p>` : ""}
+  </div>
 
-  <h2>Dados gerais</h2>
-  <table>
-    <tbody>
-      ${[
-        ["Escola", dados.escola],
-        ["Professor", dados.professor],
-        ["Etapa", dados.etapa],
-        ["Ano/Série", dados.anoSerie],
-        ["Área", dados.areaConhecimento],
-        ["Componente", dados.componenteCurricular],
-        ["Tema", dados.tema],
-        ["Duração", dados.duracao],
-      ]
-        .filter(([, value]) => String(value || "").trim())
-        .map(([label, value]) => `<tr><td><strong>${escapeHtml(label)}</strong></td><td>${escapeHtml(value)}</td></tr>`)
-        .join("")}
-    </tbody>
-  </table>
+  <div class="planify-box soft">
+    <h2 class="planify-section-title">Dados gerais</h2>
+    <table class="planify-table">
+      <tbody>
+        ${[
+          ["Escola", dados.escola],
+          ["Professor", dados.professor],
+          ["Etapa", dados.etapa],
+          ["Ano/Série", dados.anoSerie],
+          ["Área", dados.areaConhecimento],
+          ["Componente", dados.componenteCurricular],
+          ["Tema", dados.tema],
+          ["Duração", dados.duracao],
+        ]
+          .filter(([, value]) => String(value || "").trim())
+          .map(([label, value]) => `<tr><td>${escapeHtml(label)}</td><td>${escapeHtml(value)}</td></tr>`)
+          .join("")}
+      </tbody>
+    </table>
+  </div>
 
-  ${material.introducao ? `<h2>Introdução</h2>${renderTextBlock(material.introducao)}` : ""}
-  ${(material.objetivos || []).length ? `<h2>Objetivos</h2>${renderList(material.objetivos)}` : ""}
-  ${(material.conteudos || []).length ? `<h2>Conteúdos trabalhados</h2>${renderList(material.conteudos)}` : ""}
+  ${material.introducao ? `<div class="planify-box"><h2 class="planify-section-title">Introdução didática</h2>${renderTextBlock(material.introducao)}</div>` : ""}
+  ${(material.objetivos || []).length ? `<div class="planify-box"><h2 class="planify-section-title">Objetivos de aprendizagem</h2>${renderList(material.objetivos)}</div>` : ""}
+  ${(material.conteudos || []).length ? `<div class="planify-box"><h2 class="planify-section-title">Conteúdos trabalhados</h2>${renderList(material.conteudos)}</div>` : ""}
 
-  ${visualHtml ? `<div style="margin:24px 0;padding:16px;border:1px solid #cbd5e1;border-radius:12px;background:#fff;">${visualHtml}</div>` : ""}
-
-  ${(material.orientacoesProfessor || []).length ? `<h2>Orientações ao professor</h2>${renderList(material.orientacoesProfessor)}` : ""}
-  ${(material.orientacoesAluno || []).length ? `<h2>Orientações aos alunos</h2>${renderList(material.orientacoesAluno)}` : ""}
+  ${visualHtml ? `<div class="planify-box">${visualHtml}</div>` : ""}
 
   ${!visualHtml
     ? sections
         .map((section, index) => {
           const content = section.conteudo || section.descricao || "";
-          return `<h2>${index + 1}. ${escapeHtml(section.titulo || "Seção")}</h2>${renderTextBlock(content)}${renderList(section.itens)}`;
+          return `<div class="planify-box"><h2 class="planify-section-title">${index + 1}. ${escapeHtml(section.titulo || "Seção")}</h2>${renderTextBlock(content)}${renderList(section.itens)}</div>`;
         })
         .join("")
     : ""}
 
-  ${questions.length ? `<h2>Questões</h2>${questions
+  ${questions.length ? `<div class="planify-box"><h2 class="planify-section-title">Versão do aluno — questões</h2><p>Resolva com atenção. Quando houver itens com letras, responda todos os itens solicitados.</p></div>${questions
     .map(
-      (question) => `<h3>Questão ${question.numero}</h3><p>${escapeHtml(question.enunciado)}</p>${renderList(question.alternativas)}${question.respostaEsperada ? `<p><strong>Resposta esperada:</strong> ${escapeHtml(question.respostaEsperada)}</p>` : ""}`,
+      (question) => `<div class="planify-question"><span class="planify-question-type">${escapeHtml(question.tipo || "questão")}</span><h3>Questão ${question.numero}</h3><p>${renderQuestionText(question.enunciado)}</p>${renderList(question.alternativas)}${renderStudentAnswerSpace()}</div>`,
     )
     .join("")}` : ""}
 
-  ${(material.gabarito || []).length ? `<h2>Gabarito</h2>${renderList(material.gabarito)}` : ""}
-  ${(material.criteriosAvaliacao || []).length ? `<h2>Critérios de avaliação</h2>${renderList(material.criteriosAvaliacao)}` : ""}
-  ${(material.adaptacoesInclusivas || []).length ? `<h2>Adaptações inclusivas</h2>${renderList(material.adaptacoesInclusivas)}` : ""}
-  ${(material.sugestoesUso || []).length ? `<h2>Sugestões de uso</h2>${renderList(material.sugestoesUso)}` : ""}
+  ${(material.gabarito || []).length ? `<div class="planify-box planify-teacher"><h2 class="planify-section-title">Versão do professor — gabarito comentado</h2>${renderList(material.gabarito)}</div>` : ""}
+  ${(material.orientacoesProfessor || []).length ? `<div class="planify-box planify-teacher"><h2 class="planify-section-title">Orientações ao professor</h2>${renderList(material.orientacoesProfessor)}</div>` : ""}
+  ${(material.orientacoesAluno || []).length ? `<div class="planify-box"><h2 class="planify-section-title">Orientações aos alunos</h2>${renderList(material.orientacoesAluno)}</div>` : ""}
+  ${(material.criteriosAvaliacao || []).length ? `<div class="planify-box"><h2 class="planify-section-title">Critérios de avaliação</h2>${renderList(material.criteriosAvaliacao)}</div>` : ""}
+  ${(material.adaptacoesInclusivas || []).length ? `<div class="planify-box"><h2 class="planify-section-title">Adaptações inclusivas</h2>${renderList(material.adaptacoesInclusivas)}</div>` : ""}
+  ${(material.sugestoesUso || []).length ? `<div class="planify-box"><h2 class="planify-section-title">Sugestões de uso</h2>${renderList(material.sugestoesUso)}</div>` : ""}
 </article>`.trim();
 }
 

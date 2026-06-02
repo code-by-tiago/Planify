@@ -15,8 +15,9 @@ function materialRulesByType(type: string): string[] {
   if (type === "atividade") {
     return [
       "Crie questões claras, progressivas e adequadas à série, em padrão de livro de atividades.",
+      "Cada questão deve ser ampla: use itens internos com letras a até j sempre que fizer sentido, trazendo muitos exemplos e situações para prática.",
       "Varie comandos: lacunas, classificação, relação, reescrita, interpretação, justificativa, aplicação e desafio.",
-      "Inclua enunciados completos, espaço de resposta quando aplicável e progressão básico-intermediário-desafio.",
+      "Inclua enunciados completos, vários exemplos, itens de a até j quando aplicável, espaço de resposta quando aplicável e progressão básico-intermediário-desafio.",
       "Inclua resposta esperada e critério de correção.",
       "Não preencha o bloco jogo.",
       "Não preencha o bloco projeto.",
@@ -27,7 +28,7 @@ function materialRulesByType(type: string): string[] {
   if (type === "prova") {
     return [
       "Crie uma avaliação organizada, com instruções e critérios, semelhante a prova escolar real.",
-      "Inclua questões objetivas, discursivas, contextualizadas e pelo menos uma questão desafio quando fizer sentido.",
+      "Inclua questões objetivas com alternativas A-E, discursivas, contextualizadas, itens internos com letras e pelo menos uma questão desafio quando fizer sentido.",
       "Inclua gabarito e critérios de correção.",
       "Não preencha o bloco jogo.",
       "Não preencha o bloco projeto.",
@@ -37,8 +38,8 @@ function materialRulesByType(type: string): string[] {
 
   if (type === "lista") {
     return [
-      "Crie lista de exercícios com progressão básico, intermediário e desafio.",
-      "Use comandos variados em padrão de livro de atividades: complete, relacione, classifique, reescreva, resolva, interprete e justifique.",
+      "Crie lista de exercícios com progressão básico, intermediário e desafio, com questões amplas e vários itens internos de a até j.",
+      "Use comandos variados em padrão de livro de atividades: complete, relacione, classifique, reescreva, resolva, interprete e justifique, sempre com muitos exemplos práticos.",
       "Inclua gabarito comentado e critérios de correção.",
       "Não preencha o bloco jogo.",
       "Não preencha o bloco projeto.",
@@ -48,7 +49,7 @@ function materialRulesByType(type: string): string[] {
 
   if (type === "revisao") {
     return [
-      "Crie revisão guiada com síntese, retomada, exercícios de fixação, desafio e autoavaliação.",
+      "Crie revisão guiada com síntese, retomada, exercícios de fixação com muitos itens, desafio e autoavaliação.",
       "Use linguagem clara para aluno e orientações de correção para professor.",
       "Inclua gabarito comentado e pontos de atenção.",
       "Não preencha o bloco jogo.",
@@ -129,10 +130,13 @@ export function buildMaterialSystemInstruction(): string {
   return [
     "Você é uma IA pedagógica especialista em materiais didáticos brasileiros.",
     "Você trabalha para o Planify, uma plataforma educacional premium para professores.",
-    "Você deve gerar materiais didáticos completos, claros, aplicáveis e com padrão de livro de atividades.",
+    "Você deve gerar materiais didáticos completos, claros, aplicáveis, visualmente organizados e com padrão de livro de atividades.",
     "Regra central universal: para qualquer componente curricular, trate o tema como um conteúdo completo. Não transforme subconteúdos em materiais separados; integre todos os blocos essenciais em uma única atividade/prova/lista/revisão/jogo coerente, profunda e pronta para uso.",
-    "Para atividades, provas, listas e revisões, gere exercícios originais com comandos variados: complete, classifique, relacione, reescreva, interprete, justifique, resolva e produza.",
-    "Todo material avaliativo deve ter versão do aluno, versão do professor, gabarito comentado e critérios de correção.",
+    "Para atividades, provas, listas e revisões, gere exercícios originais ricos, com comandos variados: complete, classifique, relacione, reescreva, interprete, justifique, resolva e produza.",
+    "Regra de profundidade: exercícios não podem ser pobres. Sempre que possível, cada questão deve trazer vários itens internos com letras a, b, c, d, e, f, g, h, i e j, com exemplos, frases, situações, alternativas ou subcomandos.",
+    "Provas devem ter questões objetivas com alternativas A, B, C, D e E quando aplicável, além de questões discursivas com itens internos.",
+    "A versão do aluno deve conter questões sem respostas logo abaixo; o gabarito comentado deve ficar separado na versão do professor.",
+    "Todo material avaliativo deve ter versão do aluno, versão do professor, gabarito comentado, critérios de correção e aparência organizada para impressão.",
     "Você não deve inventar códigos BNCC.",
     "Nesta etapa, não crie DOCX.",
     "Preencha somente o bloco específico do tipo solicitado.",
@@ -189,13 +193,14 @@ REGRAS GERAIS:
 5. Não invente códigos BNCC.
 6. Se o tipo for jogo, não trate como prova nem atividade com quantidade obrigatória de questões.
 7. Se o tipo for jogo, use o modelo informado e entregue material pronto para imprimir, recortar quando necessário, aplicar e corrigir.
-8. Se o tipo for prova ou atividade, crie questões conforme a quantidade solicitada, com variedade de comandos e gabarito comentado.
+8. Se o tipo for prova, atividade, lista ou revisão, crie questões conforme a quantidade solicitada, com variedade de comandos, itens internos de a até j quando aplicável, exemplos amplos, gabarito comentado e critérios.
 9. Integre todos os conteúdos listados em um único material. Esta regra vale para TODAS as disciplinas: se o tema for sujeito, aborde todos os tipos de sujeito no mesmo material; se for frações, aborde conceito, comparação, operações e problemas no mesmo material; se for Redação, aborde tese, argumentos, repertório, coesão e reescrita no mesmo material; se for Espanhol, aborde vocabulário, leitura, diálogo, cultura e produção no mesmo material. Nunca crie uma atividade isolada para cada subtópico.
-10. Organize o material em blocos internos progressivos: retomada, explicação curta, exercícios guiados, exercícios mistos, desafio e gabarito comentado.
+10. Organize o material em blocos internos progressivos: retomada, explicação curta, exercícios guiados, exercícios mistos, desafio e gabarito comentado. A versão do aluno não deve exibir resposta logo abaixo das questões; respostas devem aparecer no gabarito do professor.
 11. Se o tipo NÃO for jogo, retorne "jogo": null.
 12. Se o tipo NÃO for projeto, retorne "projeto": null.
 13. Se o tipo NÃO for roteiro, retorne "roteiro": null.
 14. Retorne apenas JSON válido.
+15. Evite questões pobres com poucos exemplos. Para materiais de exercício, o padrão mínimo recomendado é ter itens internos com letras a, b, c, d, e, f, g, h, i e j sempre que a disciplina permitir.
 
 REGRAS ESPECÍFICAS DO TIPO:
 ${typeRules.map((rule) => `- ${rule}`).join("\n")}

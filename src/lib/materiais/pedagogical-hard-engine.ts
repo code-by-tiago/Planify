@@ -22,6 +22,8 @@ type DisciplineProfile = {
   criterios: string[];
 };
 
+const LETTERS = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"];
+
 function splitConteudos(value: MaterialAIInput["conteudos"]): string[] {
   if (Array.isArray(value)) return value.map((item) => String(item).trim()).filter(Boolean);
   return String(value || "")
@@ -54,7 +56,7 @@ function contentTitle(line: string): string {
 function clampQuestionCount(value: unknown, fallback = 10): number {
   const parsed = Number(String(value || "").replace(/[^0-9]/g, ""));
   if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
-  return Math.max(4, Math.min(parsed, 20));
+  return Math.max(8, Math.min(parsed, 25));
 }
 
 function isHardType(type: string): boolean {
@@ -66,6 +68,16 @@ export function shouldUseHardPedagogicalEngine(type: string): boolean {
   return isHardType(type);
 }
 
+function lettered(items: string[]): string {
+  const clean = items.map((item) => String(item || "").trim()).filter(Boolean);
+  return clean.slice(0, 10).map((item, index) => `${LETTERS[index]}) ${item}`).join("\n");
+}
+
+function answerKey(items: string[]): string {
+  const clean = items.map((item) => String(item || "").trim()).filter(Boolean);
+  return clean.slice(0, 10).map((item, index) => `${LETTERS[index]}) ${item}`).join("; ");
+}
+
 function profileFor(input: MaterialAIInput): DisciplineProfile {
   const component = normalize(input.componenteCurricular);
   const tema = input.tema || "tema estudado";
@@ -73,14 +85,14 @@ function profileFor(input: MaterialAIInput): DisciplineProfile {
   if (component.includes("redacao") || component.includes("redação")) {
     return {
       eixo: "Produção textual e argumentação",
-      abertura: `Este material trabalha ${tema} com foco em planejamento, tese, argumentos, repertório, coesão, coerência, reescrita e melhoria progressiva do texto.`,
+      abertura: `Este material trabalha ${tema} como uma oficina completa de redação, com leitura da proposta, recorte temático, tese, argumentos, repertório, coesão, coerência, parágrafo, reescrita e revisão orientada.`,
       objetivos: [
         "Planejar textos com tese, argumentos e conclusão coerentes.",
         "Usar repertório sociocultural de forma pertinente ao tema.",
         "Revisar parágrafos, conectivos, coesão e proposta de intervenção quando aplicável.",
       ],
       comandos: ["tese", "argumento", "repertório", "coesão", "reescrita", "intervenção", "parágrafo", "conclusão"],
-      vocabulario: ["tese", "argumento", "repertório", "coesão", "coerência", "parágrafo", "intervenção", "conclusão"],
+      vocabulario: ["tese", "argumento", "repertório", "coesão", "coerência", "parágrafo", "intervenção", "conclusão", "recorte", "proposta"],
       criterios: ["clareza da tese", "pertinência dos argumentos", "organização dos parágrafos", "uso de conectivos", "adequação à proposta"],
     };
   }
@@ -88,14 +100,14 @@ function profileFor(input: MaterialAIInput): DisciplineProfile {
   if (component.includes("escrita criativa")) {
     return {
       eixo: "Autoria, narrativa e criação literária",
-      abertura: `Este material trabalha ${tema} com foco em autoria, imaginação, personagem, cenário, conflito, narrador, diálogo, clímax, desfecho e revisão criativa.`,
+      abertura: `Este material trabalha ${tema} como oficina de escrita criativa, com personagem, cenário, conflito, narrador, diálogo, clímax, desfecho, descrição, estilo e revisão autoral.`,
       objetivos: [
         "Criar narrativas com personagem, cenário, conflito e desfecho.",
         "Experimentar foco narrativo, diálogo e descrição expressiva.",
         "Revisar o texto criativo considerando clareza, ritmo e originalidade.",
       ],
       comandos: ["personagem", "cenário", "conflito", "narrador", "diálogo", "clímax", "desfecho", "descrição"],
-      vocabulario: ["personagem", "cenário", "conflito", "narrador", "diálogo", "clímax", "desfecho", "descrição"],
+      vocabulario: ["personagem", "cenário", "conflito", "narrador", "diálogo", "clímax", "desfecho", "descrição", "atmosfera", "voz"],
       criterios: ["criatividade", "coerência narrativa", "construção de personagens", "uso de detalhes", "revisão do texto"],
     };
   }
@@ -103,14 +115,14 @@ function profileFor(input: MaterialAIInput): DisciplineProfile {
   if (component.includes("portuguesa")) {
     return {
       eixo: "Leitura, análise linguística e produção textual",
-      abertura: `Este material trabalha ${tema} com exercícios de leitura, interpretação, vocabulário, análise linguística, classificação, reescrita e justificativa, em padrão semelhante a livros de atividades.`,
+      abertura: `Este material trabalha ${tema} com exercícios amplos de leitura, interpretação, vocabulário, análise linguística, identificação, classificação, reescrita, justificativa e produção curta, em padrão de livro de atividades.`,
       objetivos: [
         "Compreender sentidos explícitos e implícitos em textos e enunciados.",
         "Analisar recursos linguísticos, pontuação, classes ou funções conforme o conteúdo.",
         "Reescrever e justificar respostas com base no contexto.",
       ],
       comandos: ["lacuna", "classificação", "reescrita", "justificativa", "interpretação", "vocabulário", "pontuação", "análise"],
-      vocabulario: ["texto", "contexto", "sentido", "termo", "frase", "pontuação", "classe", "função"],
+      vocabulario: ["texto", "contexto", "sentido", "termo", "frase", "pontuação", "classe", "função", "reescrita", "justificativa"],
       criterios: ["compreensão do comando", "uso de evidências", "adequação linguística", "justificativa"],
     };
   }
@@ -118,14 +130,14 @@ function profileFor(input: MaterialAIInput): DisciplineProfile {
   if (component.includes("espanhola") || component.includes("espanhol")) {
     return {
       eixo: "Comunicação, vocabulário e cultura hispânica",
-      abertura: `Este material trabalha ${tema} com vocabulário contextual, leitura curta, diálogos, tradução contextual, cultura hispânica e produção de frases em espanhol.`,
+      abertura: `Este material trabalha ${tema} com vocabulário contextual, leitura curta, diálogos, tradução contextual, cultura hispânica, produção de frases e prática comunicativa em espanhol.`,
       objetivos: [
         "Usar vocabulário espanhol em contextos comunicativos.",
         "Interpretar frases e pequenos textos relacionados ao tema.",
         "Produzir respostas curtas, diálogos ou cartões em espanhol.",
       ],
       comandos: ["vocabulário", "diálogo", "tradução", "frase", "interpretação", "cultura", "associação", "produção"],
-      vocabulario: ["palabra", "frase", "diálogo", "saludo", "cultura", "país", "lectura", "respuesta"],
+      vocabulario: ["palabra", "frase", "diálogo", "saludo", "cultura", "país", "lectura", "respuesta", "verbo", "contexto"],
       criterios: ["vocabulário correto", "compreensão contextual", "uso comunicativo", "pronúncia ou leitura"],
     };
   }
@@ -133,14 +145,14 @@ function profileFor(input: MaterialAIInput): DisciplineProfile {
   if (component.includes("matematica")) {
     return {
       eixo: "Raciocínio, procedimentos e resolução de problemas",
-      abertura: `Este material trabalha ${tema} com exercícios graduados, cálculo, interpretação de problemas, representação, justificativa e desafio final.`,
+      abertura: `Este material trabalha ${tema} com exercícios graduados, cálculo, interpretação de problemas, representação, justificativa, comparação de estratégias e desafio final.`,
       objetivos: [
         "Resolver exercícios com procedimentos adequados.",
         "Interpretar situações-problema e justificar estratégias.",
         "Conferir resultados e aplicar o conteúdo em desafios contextualizados.",
       ],
       comandos: ["calcule", "resolva", "complete", "compare", "explique", "problema", "tabela", "desafio"],
-      vocabulario: ["cálculo", "resultado", "estratégia", "problema", "tabela", "operação", "unidade", "padrão"],
+      vocabulario: ["cálculo", "resultado", "estratégia", "problema", "tabela", "operação", "unidade", "padrão", "representação", "estimativa"],
       criterios: ["procedimento correto", "organização dos cálculos", "interpretação", "resultado"],
     };
   }
@@ -148,14 +160,14 @@ function profileFor(input: MaterialAIInput): DisciplineProfile {
   if (component.includes("religioso")) {
     return {
       eixo: "Leitura reflexiva, valores e convivência",
-      abertura: `Este material trabalha ${tema} com leitura reflexiva, análise de valores, interpretação de narrativa, convivência, ética e aplicação no cotidiano escolar.`,
+      abertura: `Este material trabalha ${tema} com leitura reflexiva, análise de valores, interpretação de narrativa, convivência, ética, respeito à diversidade e aplicação no cotidiano escolar.`,
       objetivos: [
         "Relacionar narrativas, valores e atitudes do cotidiano.",
         "Interpretar situações com respeito à diversidade de crenças e visões de mundo.",
         "Produzir respostas reflexivas com justificativa clara.",
       ],
       comandos: ["interpretação", "valor", "reflexão", "situação", "justificativa", "convivência", "atitude", "síntese"],
-      vocabulario: ["respeito", "convivência", "valor", "ética", "narrativa", "reflexão", "atitude", "diálogo"],
+      vocabulario: ["respeito", "convivência", "valor", "ética", "narrativa", "reflexão", "atitude", "diálogo", "responsabilidade", "solidariedade"],
       criterios: ["respeito", "argumentação", "relação com o tema", "clareza da reflexão"],
     };
   }
@@ -163,14 +175,14 @@ function profileFor(input: MaterialAIInput): DisciplineProfile {
   if (component.includes("historia") || component.includes("geografia") || component.includes("filosofia") || component.includes("sociologia")) {
     return {
       eixo: "Análise social, temporal, espacial e cidadã",
-      abertura: `Este material trabalha ${tema} com leitura de contexto, análise de fontes/situações, comparação, argumentação e aplicação social do conhecimento.`,
+      abertura: `Este material trabalha ${tema} com leitura de contexto, análise de fontes/situações, comparação, argumentação, vocabulário conceitual e aplicação social do conhecimento.`,
       objetivos: [
         "Analisar fatos, conceitos ou situações do tema.",
         "Relacionar o conteúdo ao contexto social, histórico ou geográfico.",
         "Argumentar com base em evidências e exemplos.",
       ],
       comandos: ["analise", "compare", "relacione", "explique", "fonte", "contexto", "argumente", "síntese"],
-      vocabulario: ["tempo", "espaço", "sociedade", "cultura", "fonte", "cidadania", "território", "processo"],
+      vocabulario: ["tempo", "espaço", "sociedade", "cultura", "fonte", "cidadania", "território", "processo", "causa", "consequência"],
       criterios: ["contextualização", "uso de evidências", "argumentação", "clareza"],
     };
   }
@@ -178,134 +190,232 @@ function profileFor(input: MaterialAIInput): DisciplineProfile {
   if (component.includes("ciencias") || component.includes("biologia") || component.includes("fisica") || component.includes("quimica")) {
     return {
       eixo: "Investigação, explicação científica e aplicação",
-      abertura: `Este material trabalha ${tema} com observação, conceitos científicos, análise de situações, interpretação de dados e aplicação em problemas.`,
+      abertura: `Este material trabalha ${tema} com observação, conceitos científicos, análise de situações, interpretação de dados, hipóteses, evidências e aplicação em problemas.`,
       objetivos: [
         "Identificar conceitos científicos centrais.",
         "Interpretar situações, dados ou fenômenos relacionados ao tema.",
         "Explicar relações de causa, efeito, processo ou evidência.",
       ],
       comandos: ["observe", "explique", "classifique", "relacione", "hipótese", "dados", "experimento", "conclusão"],
-      vocabulario: ["fenômeno", "processo", "evidência", "dados", "hipótese", "experimento", "resultado", "ambiente"],
+      vocabulario: ["fenômeno", "processo", "evidência", "dados", "hipótese", "experimento", "resultado", "ambiente", "organismo", "energia"],
       criterios: ["conceito correto", "explicação científica", "uso de dados", "conclusão"],
     };
   }
 
   return {
     eixo: "Compreensão, aplicação e síntese",
-    abertura: `Este material trabalha ${tema} com exercícios graduados, revisão, aplicação e produção final.`,
+    abertura: `Este material trabalha ${tema} com exercícios graduados, revisão, aplicação, produção final e correção comentada.`,
     objetivos: [
       "Compreender conceitos essenciais do tema.",
       "Aplicar conhecimentos em exercícios e situações-problema.",
       "Registrar sínteses e justificar respostas.",
     ],
     comandos: ["complete", "relacione", "explique", "interprete", "classifique", "justifique", "aplique", "desafio"],
-    vocabulario: ["conceito", "exemplo", "aplicação", "síntese", "desafio", "registro", "resposta", "revisão"],
+    vocabulario: ["conceito", "exemplo", "aplicação", "síntese", "desafio", "registro", "resposta", "revisão", "contexto", "produção"],
     criterios: ["compreensão", "clareza", "aplicação", "organização"],
   };
 }
 
 function buildTextBase(input: MaterialAIInput, profile: DisciplineProfile, conteudos: string[]): string {
   const theme = input.tema || "tema estudado";
-  const sample = conteudos.slice(0, 3).map(contentTitle).join(", ");
+  const sample = conteudos.slice(0, 4).map(contentTitle).join(", ");
   return [
-    `Leia o texto-base e resolva os exercícios.`,
-    `O tema ${theme} pode ser estudado por meio de ${sample || "conceitos, exemplos e situações de aprendizagem"}.`,
+    `Leia o texto-base e resolva os exercícios com atenção aos comandos.`,
+    `O tema ${theme} será estudado de forma completa, relacionando ${sample || "conceitos, exemplos e situações de aprendizagem"}.`,
     profile.abertura,
-    `Durante a atividade, observe os comandos, organize suas respostas e justifique quando solicitado.`,
+    `Durante a atividade, observe exemplos, compare casos, registre justificativas e revise suas respostas antes da entrega.`,
   ].join("\n\n");
+}
+
+function buildSubjectTemplates(theme: string): ExerciseTemplate[] {
+  return [
+    {
+      tipo: "identificação ampla",
+      comando: `Identifique e sublinhe o sujeito nas orações abaixo:\n${lettered([
+        "Os estudantes revisaram a lição antes da prova.",
+        "Chegaram cedo ao teatro municipal.",
+        "Há muitas dúvidas sobre o conteúdo.",
+        "A professora e os alunos organizaram a exposição.",
+        "Precisa-se de colaboradores para a campanha.",
+        "Faz dois anos que moro nesta cidade.",
+        "Meus irmãos mais velhos viajaram ontem.",
+        "Durante a reunião, discutiram vários problemas.",
+        "Existem alternativas para resolver a situação.",
+        "Choveu durante toda a madrugada.",
+      ])}`,
+      resposta: answerKey([
+        "Os estudantes",
+        "sujeito oculto/desinencial: eles/elas",
+        "oração sem sujeito, com verbo haver no sentido de existir",
+        "A professora e os alunos",
+        "sujeito indeterminado, com índice de indeterminação do sujeito",
+        "oração sem sujeito, com verbo fazer indicando tempo decorrido",
+        "Meus irmãos mais velhos",
+        "sujeito indeterminado pelo verbo na 3ª pessoa do plural sem referente claro",
+        "alternativas",
+        "oração sem sujeito, fenômeno da natureza",
+      ]),
+      criterio: "Avaliar se o estudante localiza o termo sobre o qual se declara algo e distingue sujeito expresso, oculto, indeterminado e oração sem sujeito.",
+    },
+    {
+      tipo: "classificação completa",
+      comando: `Classifique o sujeito em cada frase: simples, composto, oculto, indeterminado ou oração sem sujeito.\n${lettered([
+        "A menina e o irmão chegaram atrasados.",
+        "O professor explicou o conteúdo.",
+        "Falaram muito sobre o assunto no corredor.",
+        "Neva em algumas regiões do mundo.",
+        "Estudamos para a avaliação final.",
+        "O vento forte derrubou galhos da árvore.",
+        "Havia muitos livros sobre a mesa.",
+        "A diretora, os pais e os alunos participaram da reunião.",
+        "Vende-se uma casa antiga no centro.",
+        "Anoiteceu rapidamente na serra.",
+      ])}`,
+      resposta: answerKey([
+        "sujeito composto",
+        "sujeito simples",
+        "sujeito indeterminado",
+        "oração sem sujeito",
+        "sujeito oculto/desinencial: nós",
+        "sujeito simples",
+        "oração sem sujeito",
+        "sujeito composto",
+        "sujeito simples: uma casa antiga",
+        "oração sem sujeito",
+      ]),
+      criterio: "Considerar classificação, justificativa e observação da forma verbal.",
+    },
+    {
+      tipo: "núcleo do sujeito",
+      comando: `Identifique o núcleo do sujeito em cada oração.\n${lettered([
+        "Aqueles livros antigos estavam na estante.",
+        "Minha colega de sala venceu o concurso.",
+        "As crianças do bairro brincavam na praça.",
+        "O pequeno cachorro da vizinha latiu muito.",
+        "Os alunos responsáveis entregaram os trabalhos.",
+        "A professora de Ciências organizou o laboratório.",
+        "Meu primo mais novo aprendeu a nadar.",
+        "As flores amarelas do jardim murcharam.",
+        "O grupo de voluntários chegou cedo.",
+        "A cidade inteira acompanhou o desfile.",
+      ])}`,
+      resposta: answerKey(["livros", "colega", "crianças", "cachorro", "alunos", "professora", "primo", "flores", "grupo", "cidade"]),
+      criterio: "Verificar se o estudante identifica o termo principal do sujeito, sem confundir adjuntos ou complementos.",
+    },
+    {
+      tipo: "reescrita e transformação",
+      comando: `Reescreva as orações conforme o comando indicado.\n${lettered([
+        "'Vendemos todos os ingressos.' Transforme o sujeito oculto em sujeito simples explícito.",
+        "'A menina chegou.' Acrescente outro núcleo para formar sujeito composto.",
+        "'Os alunos atentos resolveram a atividade.' Reduza o sujeito ao núcleo.",
+        "'Precisa-se de ajudantes.' Explique o efeito da partícula 'se'.",
+        "'Há muitas perguntas.' Reescreva mantendo o sentido de existência.",
+        "'Choveu ontem.' Explique por que não há sujeito.",
+        "'João e Maria estudaram.' Transforme em sujeito simples, sem mudar completamente a ideia.",
+        "'Compraram os livros.' Torne o sujeito explícito pelo contexto.",
+        "'Faz cinco dias.' Complete a oração mantendo verbo impessoal.",
+        "'Existem soluções.' Identifique sujeito e substitua por sinônimo.",
+      ])}`,
+      resposta: "Aceitar reescritas coerentes. Exemplos: a) Nós vendemos todos os ingressos. b) A menina e o irmão chegaram. c) alunos. d) Indetermina o sujeito quando ligada a verbo transitivo indireto/intransitivo/de ligação. e) Existem muitas perguntas. f) verbo indica fenômeno da natureza. g) Os estudantes estudaram. h) Eles compraram os livros. i) Faz cinco dias que espero. j) Sujeito: soluções; alternativas/respostas.",
+      criterio: "Avaliar se a transformação preserva sentido e demonstra domínio do tipo de sujeito.",
+    },
+    {
+      tipo: "lacunas conceituais",
+      comando: `Complete as lacunas com termos do estudo sobre ${theme}.\n${lettered([
+        "O sujeito ________ possui apenas um núcleo.",
+        "O sujeito ________ possui dois ou mais núcleos.",
+        "O sujeito ________ pode ser identificado pela desinência verbal.",
+        "Na oração sem sujeito, o verbo é chamado de ________.",
+        "O verbo haver, no sentido de existir, forma oração ________ sujeito.",
+        "Em 'Precisa-se de funcionários', o sujeito é ________.",
+        "O núcleo do sujeito é a palavra ________ do sujeito.",
+        "Fenômenos da natureza geralmente formam oração ________ sujeito.",
+        "Em 'Nós estudamos', o sujeito é ________.",
+        "Em 'A mãe e o filho saíram', o sujeito é ________.",
+      ])}`,
+      resposta: answerKey(["simples", "composto", "oculto/desinencial", "impessoal", "sem", "indeterminado", "principal/central", "sem", "simples", "composto"]),
+      criterio: "Conferir domínio de conceitos e vocabulário gramatical.",
+    },
+    {
+      tipo: "análise textual",
+      comando: `Leia o trecho e responda aos itens.\nTrecho: "Na escola, os estudantes organizaram uma campanha solidária. Recolheram alimentos, conversaram com as famílias e ajudaram muitas pessoas. Havia alegria nos corredores."\n${lettered([
+        "Identifique o sujeito da primeira oração.",
+        "Qual é o núcleo desse sujeito?",
+        "Classifique o sujeito da primeira oração.",
+        "Em 'Recolheram alimentos', que tipo de sujeito aparece?",
+        "Qual termo do contexto ajuda a recuperar esse sujeito?",
+        "Em 'Havia alegria', há sujeito? Explique.",
+        "Reescreva 'Recolheram alimentos' com sujeito explícito.",
+        "Crie uma oração com sujeito composto relacionada ao trecho.",
+        "Retire do trecho uma ação praticada pelos estudantes.",
+        "Explique como a identificação do sujeito ajuda na compreensão do texto.",
+      ])}`,
+      resposta: "a) os estudantes; b) estudantes; c) sujeito simples; d) oculto/desinencial; e) os estudantes; f) não, verbo haver no sentido de existir; g) Os estudantes recolheram alimentos; h) resposta pessoal coerente; i) recolheram/conversaram/ajudaram; j) ajuda a saber quem pratica ou sofre a ação.",
+      criterio: "Avaliar análise integrada em contexto textual, não apenas frases soltas.",
+    },
+  ];
 }
 
 function buildExerciseTemplates(input: MaterialAIInput, profile: DisciplineProfile, conteudos: string[]): ExerciseTemplate[] {
   const theme = input.tema || "tema estudado";
   const c = conteudos.length ? conteudos.map(contentTitle) : [theme];
   const component = normalize(input.componenteCurricular);
+  const type = normalize(input.tipo);
+
+  if (component.includes("portuguesa") && normalize(theme).includes("sujeito")) {
+    return buildSubjectTemplates(theme);
+  }
 
   if (component.includes("redacao") || component.includes("redação")) {
     return [
-      { tipo: "planejamento textual", comando: `Defina uma tese clara para o tema "${theme}" em uma frase.`, resposta: "Tese objetiva, defensável e relacionada ao tema.", criterio: "Verificar se há ponto de vista claro e adequado ao recorte temático." },
-      { tipo: "argumentação", comando: `Escreva dois argumentos diferentes que poderiam sustentar essa tese.`, resposta: "Dois argumentos coerentes, não repetidos e conectados à tese.", criterio: "Avaliar pertinência, variedade e relação com a tese." },
-      { tipo: "repertório", comando: `Indique um repertório sociocultural que poderia enriquecer a discussão sobre ${theme} e explique seu uso.`, resposta: "Repertório pertinente, explicado e articulado ao argumento.", criterio: "Considerar pertinência e explicação, evitando citação solta." },
-      { tipo: "coesão", comando: "Reescreva o período usando um conectivo de conclusão: 'O problema exige reflexão. A escola pode contribuir para o debate.'", resposta: "Ex.: O problema exige reflexão; portanto, a escola pode contribuir para o debate.", criterio: "Observar uso adequado do conectivo e manutenção do sentido." },
-      { tipo: "parágrafo", comando: `Produza um parágrafo de desenvolvimento sobre ${c[0]}, com tópico frasal, explicação e exemplo.`, resposta: "Parágrafo organizado com ideia central, desenvolvimento e exemplo.", criterio: "Avaliar estrutura, coerência, repertório e progressão textual." },
-      { tipo: "revisão", comando: "Revise a frase: 'As pessoas precisa entender melhor esse assunto porque ele é importante para todos.'", resposta: "As pessoas precisam entender melhor esse assunto porque ele é importante para todos.", criterio: "Corrigir concordância verbal e manter o sentido." },
+      { tipo: "leitura da proposta", comando: `Analise a proposta temática sobre "${theme}" e responda.\n${lettered(["Qual é o tema central?", "Qual recorte específico poderia ser adotado?", "Que problema social aparece no tema?", "Quem é afetado por esse problema?", "Que causa pode ser levantada?", "Que consequência pode ser discutida?", "Qual tese inicial você defenderia?", "Que argumento histórico caberia?", "Que argumento social caberia?", "Que intervenção ou conclusão seria coerente?"])}`, resposta: "Respostas devem demonstrar leitura da proposta, recorte temático, tese e planejamento argumentativo.", criterio: "Avaliar compreensão do tema, recorte e coerência do planejamento." },
+      { tipo: "tese e argumentos", comando: `Monte um projeto de texto com base em ${theme}.\n${lettered(["Escreva uma tese em uma frase.", "Crie um argumento de causa.", "Crie um argumento de consequência.", "Crie um argumento de comparação.", "Indique um exemplo do cotidiano.", "Indique um repertório cultural possível.", "Escreva um tópico frasal.", "Escolha um conectivo de adição.", "Escolha um conectivo de conclusão.", "Escreva uma frase de fechamento."])}`, resposta: "Projeto de texto coerente, com tese clara, argumentos variados e conectivos adequados.", criterio: "Observar progressão argumentativa e pertinência ao tema." },
+      { tipo: "reescrita", comando: `Reescreva e melhore os trechos abaixo, tornando-os mais formais e claros.\n${lettered(["O assunto é muito importante e todo mundo devia saber.", "As pessoas tem que pensar melhor nisso.", "Isso acontece por causa de muitas coisas.", "A sociedade precisa mudar de atitude.", "O problema é grande e ruim.", "Muita gente sofre com esse tema.", "A escola pode ajudar nisso aí.", "O governo tem que fazer alguma coisa.", "Esse tema está na mídia toda hora.", "Conclui-se que é preciso resolver."])}`, resposta: "Aceitar reescritas com formalidade, precisão vocabular, concordância e coesão.", criterio: "Avaliar melhoria linguística, clareza e adequação ao gênero." },
     ];
   }
 
   if (component.includes("escrita criativa")) {
     return [
-      { tipo: "personagem", comando: `Crie uma personagem ligada ao tema "${theme}" e descreva uma característica física e uma emocional.`, resposta: "Personagem com traço físico e emocional coerente.", criterio: "Avaliar clareza, criatividade e coerência com o tema." },
-      { tipo: "cenário", comando: `Descreva o cenário onde a história acontece usando pelo menos três detalhes sensoriais.`, resposta: "Descrição com visão, som, cheiro, textura ou sensação.", criterio: "Observar riqueza descritiva e ambientação." },
-      { tipo: "conflito", comando: `Apresente um conflito que mova a narrativa e envolva ${c[0]}.`, resposta: "Conflito claro, com problema ou desejo que impulsione a história.", criterio: "Avaliar se o conflito cria interesse narrativo." },
-      { tipo: "diálogo", comando: "Escreva um diálogo curto entre duas personagens, usando travessão e fala natural.", resposta: "Diálogo com marcação adequada e relação com o conflito.", criterio: "Observar pontuação, clareza e voz das personagens." },
-      { tipo: "continuação", comando: `Continue a história em cinco linhas, conduzindo a narrativa para um clímax.`, resposta: "Continuação com progressão, tensão e coerência.", criterio: "Avaliar criatividade, coesão e desenvolvimento." },
-      { tipo: "desfecho", comando: "Crie um desfecho surpreendente, mas coerente, para a narrativa.", resposta: "Desfecho que resolve ou ressignifica o conflito.", criterio: "Observar coerência, efeito final e originalidade." },
-    ];
-  }
-
-  if (component.includes("portuguesa") && normalize(theme).includes("sujeito")) {
-    return [
-      { tipo: "identificação", comando: "Leia as orações e sublinhe o sujeito de cada uma: a) Os estudantes revisaram a lição. b) Chegaram cedo ao teatro. c) Há muitas dúvidas na turma.", resposta: "a) Os estudantes. b) Sujeito oculto/desinencial: eles/elas, conforme o contexto. c) Oração sem sujeito, com verbo haver no sentido de existir.", criterio: "Verificar identificação do sujeito e reconhecimento de oração sem sujeito." },
-      { tipo: "classificação", comando: "Classifique o sujeito nas frases: a) A menina e o irmão chegaram. b) Choveu durante a noite. c) Precisa-se de voluntários. d) O professor explicou o conteúdo.", resposta: "a) Sujeito composto. b) Oração sem sujeito. c) Sujeito indeterminado. d) Sujeito simples.", criterio: "Avaliar classificação correta e justificativa gramatical." },
-      { tipo: "núcleo", comando: "Identifique o núcleo do sujeito: a) Aqueles livros antigos estavam na estante. b) Minha colega de sala venceu o concurso. c) As crianças do bairro brincavam na praça.", resposta: "a) livros. b) colega. c) crianças.", criterio: "Considerar a identificação do termo principal do sujeito." },
-      { tipo: "reescrita", comando: "Reescreva a oração 'Vendemos todos os ingressos' transformando o sujeito oculto em sujeito simples explícito.", resposta: "Ex.: Nós vendemos todos os ingressos.", criterio: "Verificar explicitação adequada do sujeito sem alterar o sentido." },
-      { tipo: "justificativa", comando: "Explique por que a oração 'Faz três anos que moro aqui' é considerada oração sem sujeito.", resposta: "Porque o verbo fazer indica tempo decorrido e, nesse uso, é impessoal, não apresentando sujeito.", criterio: "Avaliar uso do conceito de verbo impessoal e clareza da explicação." },
-      { tipo: "aplicação", comando: "Crie uma frase com sujeito simples, uma com sujeito composto, uma com sujeito indeterminado e uma oração sem sujeito.", resposta: "Quatro frases coerentes, cada uma representando corretamente o tipo solicitado.", criterio: "Verificar produção própria e adequação dos tipos de sujeito." },
-      { tipo: "análise mista", comando: "Analise as frases e indique sujeito, núcleo e classificação: a) Os alunos atentos resolveram a atividade. b) Falaram muito sobre o assunto. c) Existe uma solução possível. d) Ventou bastante ontem.", resposta: "a) sujeito: Os alunos atentos; núcleo: alunos; simples. b) sujeito indeterminado. c) sujeito: uma solução possível; núcleo: solução; simples. d) oração sem sujeito.", criterio: "Avaliar identificação, núcleo e classificação em conjunto." },
-      { tipo: "desafio", comando: "Explique a diferença entre sujeito indeterminado e sujeito oculto usando exemplos próprios.", resposta: "Sujeito oculto pode ser identificado pela desinência verbal ou contexto; sujeito indeterminado não se sabe ou não se quer determinar. Deve trazer exemplos coerentes.", criterio: "Considerar comparação clara e exemplos adequados." },
-    ];
-  }
-
-  if (component.includes("portuguesa")) {
-    return [
-      { tipo: "interpretação", comando: `Explique, com suas palavras, a ideia principal do texto-base sobre ${theme}.`, resposta: "Resposta que identifique o tema central e sua abordagem.", criterio: "Verificar compreensão global e clareza." },
-      { tipo: "localização", comando: `Retire do texto-base uma informação que se relacione diretamente a ${c[0]}.`, resposta: "Informação coerente retirada ou parafraseada do texto-base.", criterio: "Avaliar relação com o conteúdo e fidelidade ao texto." },
-      { tipo: "lacuna", comando: `Complete: O estudo de ${theme} exige leitura, ________ e justificativa das respostas.`, resposta: "interpretação", criterio: "Aceitar termos equivalentes, como análise/compreensão, se fizer sentido." },
-      { tipo: "classificação", comando: "Classifique a função da palavra destacada na frase: 'A leitura atenta ajuda muito.' Palavra destacada: 'atenta'.", resposta: "Adjetivo, pois caracteriza o substantivo leitura.", criterio: "Considerar classificação e justificativa." },
-      { tipo: "reescrita", comando: "Reescreva a frase substituindo 'muito importante' por uma expressão mais precisa e formal.", resposta: "Ex.: relevante, essencial, significativo, fundamental.", criterio: "Avaliar adequação vocabular e preservação do sentido." },
-      { tipo: "justificativa", comando: `Justifique por que ${c[0]} pode ajudar na compreensão do tema.`, resposta: "Justificativa coerente com o conteúdo e o texto-base.", criterio: "Exigir explicação, não apenas opinião solta." },
+      { tipo: "oficina de criação", comando: `Planeje uma narrativa sobre ${theme}.\n${lettered(["Crie o nome do protagonista.", "Defina uma característica marcante.", "Descreva o cenário inicial.", "Apresente um conflito.", "Crie um objeto importante para a história.", "Escreva uma fala do protagonista.", "Apresente um obstáculo.", "Crie uma virada narrativa.", "Escreva uma frase de clímax.", "Planeje um desfecho coerente."])}`, resposta: "Planejamento narrativo com personagem, cenário, conflito, clímax e desfecho.", criterio: "Avaliar coerência, criatividade e desenvolvimento narrativo." },
+      { tipo: "descrição expressiva", comando: `Complete as propostas de escrita criativa.\n${lettered(["Descreva o lugar usando visão.", "Descreva o lugar usando som.", "Descreva o lugar usando cheiro.", "Descreva uma emoção do personagem.", "Crie uma metáfora para o medo.", "Crie uma comparação para a alegria.", "Escreva uma frase de suspense.", "Escreva uma frase poética.", "Transforme uma frase simples em frase expressiva.", "Revise uma frase para deixá-la mais clara."])}`, resposta: "Produções autorais com recursos descritivos e revisão criativa.", criterio: "Observar riqueza vocabular, coerência sensorial e expressividade." },
     ];
   }
 
   if (component.includes("matematica")) {
     return [
-      { tipo: "conceito", comando: `Explique o conceito central relacionado a ${c[0]} e dê um exemplo numérico.`, resposta: "Explicação correta acompanhada de exemplo adequado.", criterio: "Conferir conceito, exemplo e linguagem matemática." },
-      { tipo: "cálculo", comando: "Resolva uma situação com os dados: 12, 18 e 30. Organize o cálculo e explique a estratégia usada.", resposta: "Resposta depende do conteúdo; deve apresentar cálculo, operação e justificativa.", criterio: "Avaliar procedimento, organização e resultado." },
-      { tipo: "tabela", comando: `Monte uma tabela simples com três exemplos de ${theme} e seus respectivos resultados.`, resposta: "Tabela coerente com exemplos e resultados compatíveis.", criterio: "Observar organização e relação entre dados." },
-      { tipo: "problema", comando: `Crie e resolva um problema contextualizado envolvendo ${c[0]}.`, resposta: "Problema coerente, solução organizada e resultado conferido.", criterio: "Avaliar criação, resolução e conferência." },
-      { tipo: "erro comum", comando: "Identifique um erro comum ao resolver esse tipo de exercício e explique como evitá-lo.", resposta: "Erro plausível e estratégia preventiva.", criterio: "Verificar compreensão do procedimento." },
-      { tipo: "desafio", comando: `Resolva um desafio mais complexo envolvendo dois conteúdos: ${c[0]} e ${c[1] || c[0]}.`, resposta: "Solução com etapas e justificativa.", criterio: "Avaliar raciocínio e explicação." },
+      { tipo: "cálculo e procedimento", comando: `Resolva os itens e registre o procedimento.\n${lettered(["Calcule 1/2 + 1/4.", "Calcule 3/5 - 1/5.", "Calcule 2/3 de 18.", "Compare 4/8 e 1/2.", "Represente 0,25 em forma de fração.", "Simplifique 6/12.", "Calcule 1/3 + 1/6.", "Transforme 75% em fração.", "Calcule 2/5 de 30.", "Explique qual estratégia você usou em um dos itens."])}`, resposta: "a) 3/4; b) 2/5; c) 12; d) equivalentes; e) 1/4; f) 1/2; g) 1/2; h) 3/4; i) 12; j) explicação coerente.", criterio: "Avaliar cálculo, procedimento e justificativa." },
+      { tipo: "problemas contextualizados", comando: `Resolva os problemas sobre ${theme}.\n${lettered(["Ana leu 1/4 de um livro de 80 páginas. Quantas páginas leu?", "Uma pizza foi dividida em 8 partes e João comeu 3. Que fração comeu?", "Em uma turma de 30 alunos, 2/5 praticam esportes. Quantos são?", "Compare 2/3 e 3/4 usando desenho ou cálculo.", "Uma receita usa 1/2 xícara de leite. Para dobrar a receita, quanto será usado?", "Pedro gastou 25% de 40 reais. Quanto gastou?", "Explique por que 5/10 equivale a 1/2.", "Crie um problema envolvendo 3/4.", "Resolva o problema criado por você.", "Escreva uma dica para evitar erro em frações."])}`, resposta: "a) 20; b) 3/8; c) 12; d) 3/4 maior; e) 1 xícara; f) 10 reais; g) equivalência por simplificação; h-i) respostas coerentes; j) dica pertinente.", criterio: "Avaliar interpretação, cálculo e criação de problema." },
     ];
   }
 
   if (component.includes("espanhola") || component.includes("espanhol")) {
     return [
-      { tipo: "vocabulário", comando: `Escreva cinco palavras em espanhol relacionadas a ${theme} e seus significados em português.`, resposta: "Lista com palavras pertinentes e traduções/contextos adequados.", criterio: "Observar pertinência e grafia." },
-      { tipo: "associação", comando: "Relacione expressão e uso: 'Hola', '¿Cómo estás?', 'Gracias', 'Hasta luego'.", resposta: "Saudação; pergunta sobre estado; agradecimento; despedida.", criterio: "Avaliar associação correta em contexto." },
-      { tipo: "diálogo", comando: `Complete um diálogo curto em espanhol usando duas palavras ligadas a ${c[0]}.`, resposta: "Diálogo simples, coerente e com vocabulário do tema.", criterio: "Considerar comunicação e adequação lexical." },
-      { tipo: "interpretação", comando: "Leia a frase: 'La cultura hispánica reúne diferentes países, historias y formas de hablar.' O que ela afirma?", resposta: "Afirma que há diversidade cultural e linguística no mundo hispânico.", criterio: "Verificar compreensão contextual." },
-      { tipo: "produção", comando: `Produza três frases em espanhol sobre ${theme}.`, resposta: "Frases simples, corretas e relacionadas ao tema.", criterio: "Avaliar vocabulário, sentido e estrutura." },
-      { tipo: "cultura", comando: "Cite um país hispânico e uma característica cultural que poderia ser pesquisada pela turma.", resposta: "País e característica cultural pertinente.", criterio: "Considerar pertinência e respeito cultural." },
+      { tipo: "vocabulário e comunicação", comando: `Complete os itens em espanhol, considerando o tema ${theme}.\n${lettered(["Escreva uma saudação.", "Escreva uma despedida.", "Pergunte o nome de alguém.", "Responda como você se chama.", "Escreva uma frase com um verbo regular em -AR.", "Associe 'gracias' ao uso correto.", "Traduza uma frase simples para o português.", "Crie uma frase com vocabulário do tema.", "Escreva um pequeno diálogo de duas falas.", "Cite um país hispânico relacionado ao estudo cultural."])}`, resposta: "Aceitar respostas simples e corretas em espanhol, com tradução/uso contextual quando solicitado.", criterio: "Avaliar vocabulário, estrutura comunicativa e relação com o tema." },
+      { tipo: "leitura e cultura", comando: `Leia: "La lengua española está presente en diferentes países y culturas, con palabras, acentos y costumbres variadas." Responda.\n${lettered(["Qual é a ideia principal do texto?", "Que palavra indica diversidade?", "Cite um elemento cultural mencionado.", "Explique o sentido de 'costumbres'.", "Escreva uma pergunta em espanhol sobre o texto.", "Responda à sua pergunta.", "Cite um país de língua espanhola.", "Escreva uma frase sobre esse país.", "Relacione língua e cultura.", "Produza uma síntese em português."])}`, resposta: "Respostas devem reconhecer diversidade linguística e cultural do mundo hispânico.", criterio: "Avaliar compreensão, vocabulário e respeito cultural." },
     ];
   }
 
   if (component.includes("religioso")) {
     return [
-      { tipo: "compreensão", comando: `Explique a ideia central do tema ${theme} em até três linhas.`, resposta: "Explicação clara e respeitosa do tema.", criterio: "Avaliar compreensão e respeito à diversidade." },
-      { tipo: "valor", comando: `Identifique um valor relacionado a ${c[0]} e explique como ele pode aparecer na convivência escolar.`, resposta: "Valor pertinente e aplicação no cotidiano.", criterio: "Observar relação com convivência e ética." },
-      { tipo: "situação", comando: "Leia: 'Um colega passa por dificuldade e a turma precisa decidir como agir.' Que atitude respeitosa poderia ser tomada?", resposta: "Atitude de acolhimento, escuta, ajuda ou solidariedade.", criterio: "Avaliar empatia e justificativa." },
-      { tipo: "comparação", comando: `Compare ${c[0]} com uma situação atual de paciência, respeito ou responsabilidade.`, resposta: "Comparação coerente e respeitosa.", criterio: "Exigir relação clara entre tema e cotidiano." },
-      { tipo: "justificativa", comando: "Justifique por que o diálogo é importante em situações de conflito.", resposta: "Porque permite escuta, compreensão e busca de solução respeitosa.", criterio: "Avaliar argumentação ética." },
-      { tipo: "síntese", comando: `Escreva uma frase-síntese sobre a aprendizagem principal de ${theme}.`, resposta: "Síntese clara e adequada ao tema.", criterio: "Observar concisão e pertinência." },
+      { tipo: "leitura reflexiva", comando: `Responda aos itens sobre ${theme}, relacionando narrativa, valores e convivência.\n${lettered(["Quem ou o que está no centro do tema?", "Qual valor principal pode ser estudado?", "Que atitude positiva aparece no tema?", "Que dificuldade ou conflito pode ser analisado?", "Como esse tema se relaciona à convivência escolar?", "Que exemplo do cotidiano pode ser citado?", "Que atitude respeitosa seria adequada?", "Que palavra sintetiza a aprendizagem?", "Crie uma pergunta reflexiva sobre o tema.", "Responda à pergunta criada."])}`, resposta: "Respostas reflexivas, respeitosas e coerentes com o tema.", criterio: "Avaliar compreensão, respeito à diversidade e aplicação ética." },
+      { tipo: "situações de convivência", comando: `Analise as situações e indique uma atitude adequada.\n${lettered(["Um colega é excluído de uma atividade.", "Dois alunos discordam sobre uma crença.", "Alguém precisa de ajuda para estudar.", "A turma presencia uma injustiça.", "Um aluno faz uma pergunta sobre sentido da vida.", "Um colega demonstra tristeza.", "Uma tradição religiosa diferente é apresentada.", "Há conflito durante trabalho em grupo.", "Alguém compartilha uma experiência pessoal.", "A turma precisa construir uma regra de respeito."])}`, resposta: "Atitudes de escuta, respeito, solidariedade, diálogo e responsabilidade.", criterio: "Avaliar ética, convivência e argumentação respeitosa." },
+    ];
+  }
+
+  if (component.includes("ciencias") || component.includes("biologia") || component.includes("fisica") || component.includes("quimica")) {
+    return [
+      { tipo: "investigação científica", comando: `Analise os itens sobre ${theme}.\n${lettered(["Defina o conceito principal.", "Cite um exemplo do fenômeno.", "Indique uma possível causa.", "Indique uma consequência.", "Formule uma hipótese.", "Diga que dado ajudaria a testar a hipótese.", "Explique um processo relacionado.", "Relacione o tema ao cotidiano.", "Crie uma pergunta investigativa.", "Escreva uma conclusão curta."])}`, resposta: "Respostas científicas coerentes, com conceito, hipótese, evidência e conclusão.", criterio: "Avaliar precisão conceitual e raciocínio científico." },
+    ];
+  }
+
+  if (component.includes("historia") || component.includes("geografia") || component.includes("filosofia") || component.includes("sociologia")) {
+    return [
+      { tipo: "análise contextual", comando: `Responda aos itens sobre ${theme}.\n${lettered(["Defina o conceito central.", "Localize o tema no tempo ou espaço, quando aplicável.", "Cite uma causa.", "Cite uma consequência.", "Relacione o tema à sociedade.", "Compare duas situações.", "Indique uma fonte ou exemplo que poderia ser analisado.", "Explique uma permanência ou mudança.", "Crie uma pergunta crítica.", "Escreva uma síntese."])}`, resposta: "Respostas contextualizadas com causa, consequência, comparação e síntese.", criterio: "Avaliar contextualização, argumentação e uso de exemplos." },
     ];
   }
 
   return [
-    { tipo: "compreensão", comando: `Explique o que você entendeu sobre ${theme}.`, resposta: "Resposta coerente com o tema.", criterio: "Avaliar compreensão geral." },
-    { tipo: "conceito", comando: `Defina ${c[0]} com suas palavras.`, resposta: "Definição clara e adequada.", criterio: "Observar clareza e relação com o conteúdo." },
-    { tipo: "relação", comando: `Relacione ${c[0]} com ${c[1] || theme}.`, resposta: "Relação coerente entre os conteúdos.", criterio: "Avaliar conexão lógica." },
-    { tipo: "aplicação", comando: `Dê um exemplo de aplicação de ${theme} no cotidiano.`, resposta: "Exemplo pertinente.", criterio: "Observar contextualização." },
-    { tipo: "justificativa", comando: "Justifique sua resposta anterior com uma explicação completa.", resposta: "Justificativa organizada.", criterio: "Avaliar argumentação." },
-    { tipo: "desafio", comando: `Crie uma pergunta desafiadora sobre ${theme} e responda.`, resposta: "Pergunta e resposta coerentes.", criterio: "Avaliar autoria e síntese." },
+    { tipo: "compreensão ampla", comando: `Responda aos itens sobre ${theme}.\n${lettered(["Defina o tema com suas palavras.", "Cite um exemplo.", "Explique uma ideia importante.", "Relacione com uma situação do cotidiano.", "Complete uma informação essencial.", "Classifique um elemento do tema.", "Compare dois aspectos.", "Justifique uma resposta.", "Crie uma pergunta desafiadora.", "Escreva uma síntese final."])}`, resposta: "Respostas coerentes com o tema, com exemplos e justificativas.", criterio: "Avaliar compreensão, aplicação e organização." },
   ];
 }
 
@@ -315,14 +425,15 @@ function makeQuestion(template: ExerciseTemplate, numero: number, tipoMaterial: 
     return {
       numero,
       tipo: "objetiva",
-      enunciado: `${template.comando}\nAssinale a alternativa que melhor representa a resposta esperada.`,
+      enunciado: `${template.comando}\n\nAssinale a alternativa que melhor representa a ideia central do exercício.`,
       alternativas: template.alternativas?.length
         ? template.alternativas
         : [
-            `A) ${template.resposta}`,
-            "B) Resposta sem relação com o conteúdo.",
-            "C) Resposta incompleta, sem justificativa.",
-            "D) Resposta que contradiz o comando.",
+            `A) ${template.resposta.split(";")[0] || template.resposta}`,
+            "B) Resposta parcialmente correta, mas sem justificar o conteúdo.",
+            "C) Resposta que ignora o tema principal.",
+            "D) Resposta que contradiz o comando apresentado.",
+            "E) Resposta genérica, sem relação com os exemplos analisados.",
           ],
       respostaEsperada: `Alternativa A. ${template.resposta}`,
       criterioCorrecao: template.criterio,
@@ -340,7 +451,7 @@ function makeQuestion(template: ExerciseTemplate, numero: number, tipoMaterial: 
 }
 
 function buildQuestions(input: MaterialAIInput, profile: DisciplineProfile, conteudos: string[]): MaterialAIQuestion[] {
-  const quantity = clampQuestionCount(input.quantidadeQuestoes, normalize(input.tipo) === "prova" ? 10 : 8);
+  const quantity = clampQuestionCount(input.quantidadeQuestoes, normalize(input.tipo) === "prova" ? 10 : 10);
   const templates = buildExerciseTemplates(input, profile, conteudos);
   const questions: MaterialAIQuestion[] = [];
 
@@ -357,24 +468,25 @@ function sectionsFor(input: MaterialAIInput, profile: DisciplineProfile, conteud
   const type = normalize(input.tipo);
   const textBase = buildTextBase(input, profile, conteudos);
   const blocos = [
-    `Bloco 1 — Retomada: questões 1 a ${Math.min(3, questions.length)} trabalham conceitos, leitura e identificação inicial.`,
-    `Bloco 2 — Aplicação: questões ${Math.min(4, questions.length)} a ${Math.min(7, questions.length)} exigem análise, relação, reescrita, cálculo ou produção guiada.`,
-    `Bloco 3 — Desafio: questões finais pedem justificativa, síntese, criação ou resolução mais completa.`,
+    `Bloco 1 — Aquecimento: leitura do tema, vocabulário essencial e exemplos iniciais.`,
+    `Bloco 2 — Fixação guiada: questões com itens de a até j para ampliar repertório e prática.`,
+    `Bloco 3 — Aplicação: exercícios mistos, reescrita, análise, cálculo, produção ou interpretação conforme a disciplina.`,
+    `Bloco 4 — Desafio e síntese: produção final, justificativa e correção comentada.`,
   ];
 
   if (type === "apostila") {
     return [
-      { titulo: "Explicação didática", conteudo: `${profile.abertura}\n\nConceitos trabalhados: ${conteudos.map(contentTitle).join(", ")}.`, itens: profile.vocabulario.slice(0, 8) },
-      { titulo: "Exemplos orientados", conteudo: `Use exemplos próximos da realidade da turma para mostrar como ${theme} aparece em diferentes situações.`, itens: questions.slice(0, 4).map((q) => q.enunciado) },
+      { titulo: "Explicação didática", conteudo: `${profile.abertura}\n\nConceitos trabalhados: ${conteudos.map(contentTitle).join(", ")}.`, itens: profile.vocabulario.slice(0, 10) },
+      { titulo: "Exemplos orientados", conteudo: `Use exemplos próximos da realidade da turma para mostrar como ${theme} aparece em diferentes situações.`, itens: questions.slice(0, 5).map((q) => q.enunciado.split("\n")[0]) },
       { titulo: "Exercícios de fixação", conteudo: "Resolva os exercícios com atenção aos comandos e registre as respostas no caderno ou na folha impressa.", itens: questions.map((q) => `Questão ${q.numero}: ${q.tipo}`) },
     ];
   }
 
   if (type === "sequencia") {
     return [
-      { titulo: "Aula 1 — Sondagem e contextualização", conteudo: `Apresente o tema ${theme}, levante conhecimentos prévios e explore exemplos iniciais.`, itens: ["Roda de conversa", "Registro no quadro", "Pergunta disparadora"] },
+      { titulo: "Aula 1 — Sondagem e contextualização", conteudo: `Apresente o tema ${theme}, levante conhecimentos prévios e explore exemplos iniciais.`, itens: ["Roda de conversa", "Registro no quadro", "Pergunta disparadora", "Vocabulário essencial"] },
       { titulo: "Aula 2 — Exercícios guiados", conteudo: "Aplique exercícios graduados com mediação do professor e correção parcial.", itens: blocos },
-      { titulo: "Aula 3 — Produção, revisão e avaliação", conteudo: "Finalize com atividade de síntese, socialização e gabarito comentado.", itens: ["Produção individual ou em dupla", "Correção coletiva", "Autoavaliação"] },
+      { titulo: "Aula 3 — Produção, revisão e avaliação", conteudo: "Finalize com atividade de síntese, socialização e gabarito comentado.", itens: ["Produção individual ou em dupla", "Correção coletiva", "Autoavaliação", "Retomada dos erros frequentes"] },
     ];
   }
 
@@ -388,22 +500,22 @@ function sectionsFor(input: MaterialAIInput, profile: DisciplineProfile, conteud
 
   if (type === "roteiro") {
     return [
-      { titulo: "Antes do estudo", conteudo: `Leia o tema ${theme}, observe os conteúdos e marque dúvidas iniciais.`, itens: ["O que já sei?", "O que preciso aprender?", "Quais palavras são importantes?"] },
-      { titulo: "Durante o estudo", conteudo: "Resolva as questões, sublinhe comandos e registre justificativas.", itens: questions.slice(0, 6).map((q) => `Questão ${q.numero}: ${q.tipo}`) },
+      { titulo: "Antes do estudo", conteudo: `Leia o tema ${theme}, observe os conteúdos e marque dúvidas iniciais.`, itens: ["O que já sei?", "O que preciso aprender?", "Quais palavras são importantes?", "Onde posso aplicar esse conteúdo?"] },
+      { titulo: "Durante o estudo", conteudo: "Resolva as questões, sublinhe comandos e registre justificativas.", itens: questions.slice(0, 8).map((q) => `Questão ${q.numero}: ${q.tipo}`) },
       { titulo: "Depois do estudo", conteudo: "Revise o gabarito, corrija respostas e escreva uma síntese do que aprendeu.", itens: ["Corrigir", "Reescrever", "Sintetizar", "Autoavaliar"] },
     ];
   }
 
   return [
     { titulo: "Texto-base ou situação inicial", conteudo: textBase, itens: [] },
-    { titulo: "Organização dos exercícios", conteudo: "A atividade foi construída com comandos variados, inspirados em estruturas de livros didáticos: lacunas, classificação, reescrita, interpretação, associação, justificativa e desafio.", itens: blocos },
-    { titulo: "Banco de palavras e conceitos", conteudo: "Use este banco como apoio durante a correção ou para adaptação da atividade.", itens: Array.from(new Set([...profile.vocabulario, ...conteudos.flatMap((line) => line.split(/[:,]/).map((x) => x.trim()).filter(Boolean)).slice(0, 8)])).slice(0, 12) },
+    { titulo: "Percurso da atividade", conteudo: "O material foi construído como folha ampla de exercícios, com comandos variados e itens internos de a até j para ampliar prática, exemplos e possibilidades de resposta.", itens: blocos },
+    { titulo: "Banco de palavras e conceitos", conteudo: "Use este banco como apoio durante a correção, adaptação, retomada ou ampliação da atividade.", itens: Array.from(new Set([...profile.vocabulario, ...conteudos.flatMap((line) => line.split(/[:,]/).map((x) => x.trim()).filter(Boolean)).slice(0, 10)])).slice(0, 16) },
   ];
 }
 
 function titleByType(input: MaterialAIInput): string {
   const map: Record<string, string> = {
-    atividade: "Atividade",
+    atividade: "Atividade completa",
     prova: "Prova",
     apostila: "Apostila",
     lista: "Lista de exercícios",
@@ -428,7 +540,7 @@ export function buildHardPedagogicalMaterial(input: MaterialAIInput): MaterialAI
     titulo: titleByType(input),
     subtitulo: `${input.componenteCurricular} • ${input.anoSerie}`,
     tipo: input.tipo,
-    resumo: `Material em padrão livro de atividades, com progressão didática, exercícios variados, versão do aluno e gabarito do professor.`,
+    resumo: `Material amplo em padrão de livro de atividades, com exemplos, itens internos de a até j, progressão didática, versão do aluno e gabarito do professor.`,
     dadosGerais: {
       escola: input.escola || "",
       professor: input.professor || "",
@@ -443,12 +555,14 @@ export function buildHardPedagogicalMaterial(input: MaterialAIInput): MaterialAI
     conteudos: safeConteudos,
     orientacoesProfessor: [
       "Aplique a versão do aluno sem mostrar o gabarito.",
-      "Explique os comandos antes do início e resolva um item-modelo com a turma.",
-      "Use a correção comentada para identificar dificuldades e retomar conceitos.",
-      "Adapte quantidade, tempo e apoio conforme o perfil da turma.",
+      "Explique os comandos e resolva um item-modelo antes da produção individual.",
+      "Use a correção comentada para identificar dificuldades, comparar respostas e retomar conceitos.",
+      "Valorize justificativas, estratégias e revisão, não apenas respostas finais.",
+      "Adapte tempo, quantidade de itens ou apoio conforme o perfil da turma.",
     ],
     orientacoesAluno: [
       "Leia cada comando com atenção antes de responder.",
+      "Observe todos os itens com letras e responda na ordem solicitada.",
       "Sublinhe palavras importantes do enunciado.",
       "Justifique respostas quando solicitado.",
       "Revise sua escrita, cálculo ou explicação antes de entregar.",
@@ -493,7 +607,7 @@ export function buildHardPedagogicalMaterial(input: MaterialAIInput): MaterialAI
 }
 
 function enoughQuestions(output: Partial<MaterialAIOutput>, input: MaterialAIInput): boolean {
-  const expected = normalize(input.tipo) === "prova" ? Math.min(clampQuestionCount(input.quantidadeQuestoes, 10), 10) : 4;
+  const expected = normalize(input.tipo) === "prova" ? Math.min(clampQuestionCount(input.quantidadeQuestoes, 10), 10) : 8;
   return Array.isArray(output.questoes) && output.questoes.length >= expected;
 }
 
@@ -502,9 +616,16 @@ function mergeArrays(primary: string[] | undefined, fallback: string[]): string[
   return Array.from(new Set(values.map((item) => String(item || "").trim()).filter(Boolean)));
 }
 
+function hasRichLetteredItems(output: Partial<MaterialAIOutput>): boolean {
+  const questions = Array.isArray(output.questoes) ? output.questoes : [];
+  if (!questions.length) return false;
+  const richCount = questions.filter((question) => /(^|\n)j\)/i.test(String(question.enunciado || ""))).length;
+  return richCount >= Math.min(3, questions.length);
+}
+
 export function enhanceHardPedagogicalMaterial(input: MaterialAIInput, generated?: Partial<MaterialAIOutput>): MaterialAIOutput {
   const hard = buildHardPedagogicalMaterial(input);
-  if (!generated || !enoughQuestions(generated, input)) return hard;
+  if (!generated || !enoughQuestions(generated, input) || !hasRichLetteredItems(generated)) return hard;
 
   return {
     ...hard,

@@ -242,6 +242,19 @@ function buildExerciseTemplates(input: MaterialAIInput, profile: DisciplineProfi
     ];
   }
 
+  if (component.includes("portuguesa") && normalize(theme).includes("sujeito")) {
+    return [
+      { tipo: "identificação", comando: "Leia as orações e sublinhe o sujeito de cada uma: a) Os estudantes revisaram a lição. b) Chegaram cedo ao teatro. c) Há muitas dúvidas na turma.", resposta: "a) Os estudantes. b) Sujeito oculto/desinencial: eles/elas, conforme o contexto. c) Oração sem sujeito, com verbo haver no sentido de existir.", criterio: "Verificar identificação do sujeito e reconhecimento de oração sem sujeito." },
+      { tipo: "classificação", comando: "Classifique o sujeito nas frases: a) A menina e o irmão chegaram. b) Choveu durante a noite. c) Precisa-se de voluntários. d) O professor explicou o conteúdo.", resposta: "a) Sujeito composto. b) Oração sem sujeito. c) Sujeito indeterminado. d) Sujeito simples.", criterio: "Avaliar classificação correta e justificativa gramatical." },
+      { tipo: "núcleo", comando: "Identifique o núcleo do sujeito: a) Aqueles livros antigos estavam na estante. b) Minha colega de sala venceu o concurso. c) As crianças do bairro brincavam na praça.", resposta: "a) livros. b) colega. c) crianças.", criterio: "Considerar a identificação do termo principal do sujeito." },
+      { tipo: "reescrita", comando: "Reescreva a oração 'Vendemos todos os ingressos' transformando o sujeito oculto em sujeito simples explícito.", resposta: "Ex.: Nós vendemos todos os ingressos.", criterio: "Verificar explicitação adequada do sujeito sem alterar o sentido." },
+      { tipo: "justificativa", comando: "Explique por que a oração 'Faz três anos que moro aqui' é considerada oração sem sujeito.", resposta: "Porque o verbo fazer indica tempo decorrido e, nesse uso, é impessoal, não apresentando sujeito.", criterio: "Avaliar uso do conceito de verbo impessoal e clareza da explicação." },
+      { tipo: "aplicação", comando: "Crie uma frase com sujeito simples, uma com sujeito composto, uma com sujeito indeterminado e uma oração sem sujeito.", resposta: "Quatro frases coerentes, cada uma representando corretamente o tipo solicitado.", criterio: "Verificar produção própria e adequação dos tipos de sujeito." },
+      { tipo: "análise mista", comando: "Analise as frases e indique sujeito, núcleo e classificação: a) Os alunos atentos resolveram a atividade. b) Falaram muito sobre o assunto. c) Existe uma solução possível. d) Ventou bastante ontem.", resposta: "a) sujeito: Os alunos atentos; núcleo: alunos; simples. b) sujeito indeterminado. c) sujeito: uma solução possível; núcleo: solução; simples. d) oração sem sujeito.", criterio: "Avaliar identificação, núcleo e classificação em conjunto." },
+      { tipo: "desafio", comando: "Explique a diferença entre sujeito indeterminado e sujeito oculto usando exemplos próprios.", resposta: "Sujeito oculto pode ser identificado pela desinência verbal ou contexto; sujeito indeterminado não se sabe ou não se quer determinar. Deve trazer exemplos coerentes.", criterio: "Considerar comparação clara e exemplos adequados." },
+    ];
+  }
+
   if (component.includes("portuguesa")) {
     return [
       { tipo: "interpretação", comando: `Explique, com suas palavras, a ideia principal do texto-base sobre ${theme}.`, resposta: "Resposta que identifique o tema central e sua abordagem.", criterio: "Verificar compreensão global e clareza." },

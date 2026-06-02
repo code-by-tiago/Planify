@@ -151,7 +151,7 @@ const initialForm: FormState = {
   areaConhecimento: "",
   componenteCurricular: "Ensino Religioso",
   tema: "",
-  tipo: "jogo",
+  tipo: "atividade",
   modeloJogo: "cruzadinha",
   quantidadeQuestoes: "10",
   duracao: "1 período",
@@ -262,6 +262,7 @@ const quickExamples = [
     componente: "Ensino Religioso",
     area: "",
     jogo: "cruzadinha" as GameModel,
+    tipo: "atividade" as MaterialType,
   },
   {
     label: "Espanhol",
@@ -271,6 +272,7 @@ const quickExamples = [
     componente: "Língua Espanhola",
     area: "Linguagens e suas Tecnologias",
     jogo: "bingo" as GameModel,
+    tipo: "jogo" as MaterialType,
   },
   {
     label: "Português",
@@ -280,6 +282,7 @@ const quickExamples = [
     componente: "Língua Portuguesa",
     area: "",
     jogo: "quiz" as GameModel,
+    tipo: "atividade" as MaterialType,
   },
   {
     label: "Redação",
@@ -289,6 +292,7 @@ const quickExamples = [
     componente: "Redação",
     area: "Linguagens e suas Tecnologias",
     jogo: "cartas" as GameModel,
+    tipo: "prova" as MaterialType,
   },
   {
     label: "Escrita Criativa",
@@ -298,6 +302,7 @@ const quickExamples = [
     componente: "Escrita Criativa",
     area: "",
     jogo: "memoria" as GameModel,
+    tipo: "lista" as MaterialType,
   },
 ];
 
@@ -337,18 +342,96 @@ function contentLineFromSuggestion(item: SuggestedContent) {
   return `${item.titulo}: ${keywords || item.descricao}`;
 }
 
-function buildSelectedContentLines(items: SuggestedContent[], selectedIds: string[], manual: string) {
-  const manualLines = splitLines(manual);
-  if (manualLines.length) return manualLines;
-  return items.filter((item) => selectedIds.includes(item.id)).map(contentLineFromSuggestion);
+function normalizeForMatch(value: string) {
+  return value
+    .toLocaleLowerCase("pt-BR")
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "");
 }
 
-function validateForm(form: FormState, contentLines: string[]): string | null {
+function buildDefaultContentLines(form: FormState) {
+  const tema = form.tema.trim();
+  if (!tema) return [];
+
+  const component = normalizeForMatch(form.componenteCurricular);
+  const theme = normalizeForMatch(tema);
+
+  if (component.includes("portuguesa") && theme.includes("sujeito")) {
+    return [
+      `Conceito de sujeito e predicado: identificação do termo sobre o qual se declara algo e do que se afirma sobre ele`,
+      `Sujeito simples e sujeito composto: núcleo do sujeito, concordância e comparação entre estruturas`,
+      `Sujeito oculto, indeterminado e oração sem sujeito: reconhecimento pelo contexto, forma verbal e sentido`,
+      `Análise sintática aplicada: classificação, justificativa, reescrita de orações e correção de inadequações`,
+      `Exercícios mistos sobre ${tema}: aplicação integrada dos tipos de sujeito em frases e pequenos textos`,
+    ];
+  }
+
+  if (component.includes("redacao") || component.includes("redação")) {
+    return [
+      `${tema}: recorte temático, tese e ponto de vista`,
+      `${tema}: argumentos, exemplos e repertório sociocultural`,
+      `${tema}: coesão, coerência, parágrafo e progressão textual`,
+      `${tema}: conclusão, proposta quando aplicável e reescrita orientada`,
+      `${tema}: exercícios de análise, planejamento e produção textual`,
+    ];
+  }
+
+  if (component.includes("escrita criativa")) {
+    return [
+      `${tema}: criação de personagem, cenário e atmosfera narrativa`,
+      `${tema}: conflito, foco narrativo, diálogo e progressão da história`,
+      `${tema}: clímax, desfecho, revisão criativa e estilo autoral`,
+      `${tema}: exercícios de ampliação, reescrita, continuidade e criação guiada`,
+    ];
+  }
+
+  if (component.includes("matematica")) {
+    return [
+      `${tema}: conceitos essenciais e exemplos resolvidos`,
+      `${tema}: procedimentos, cálculos, representações e comparação de estratégias`,
+      `${tema}: problemas contextualizados com leitura, resolução e justificativa`,
+      `${tema}: exercícios graduados, desafios e correção comentada`,
+    ];
+  }
+
+  if (component.includes("religioso")) {
+    return [
+      `${tema}: narrativa, personagens, contexto e ideias centrais`,
+      `${tema}: valores, atitudes, convivência, respeito e reflexão ética`,
+      `${tema}: interpretação, aplicação no cotidiano e produção reflexiva`,
+      `${tema}: exercícios de compreensão, análise, justificativa e síntese`,
+    ];
+  }
+
+  if (component.includes("espanhola") || component.includes("inglesa")) {
+    return [
+      `${tema}: vocabulário central, expressões e uso contextual`,
+      `${tema}: leitura curta, interpretação, diálogo e comunicação`,
+      `${tema}: estrutura linguística, produção de frases e prática guiada`,
+      `${tema}: cultura, variação linguística e aplicação em situações reais`,
+    ];
+  }
+
+  return [
+    `${tema}: conceitos centrais, vocabulário e exemplos essenciais`,
+    `${tema}: compreensão, análise e aplicação em situações contextualizadas`,
+    `${tema}: exercícios básicos, intermediários e desafios`,
+    `${tema}: síntese, produção final e correção comentada`,
+  ];
+}
+
+function buildUnifiedContentLines(form: FormState, items: SuggestedContent[]) {
+  const manualLines = splitLines(form.conteudos);
+  if (manualLines.length) return manualLines;
+  if (items.length) return items.map(contentLineFromSuggestion);
+  return buildDefaultContentLines(form);
+}
+
+function validateForm(form: FormState): string | null {
   if (!form.anoSerie) return "Selecione o ano/série.";
   if (isEnsinoMedio(form.etapa) && !form.areaConhecimento) return "Selecione a área do conhecimento.";
   if (!form.componenteCurricular) return "Selecione o componente curricular.";
   if (!form.tema.trim()) return "Informe o tema central.";
-  if (contentLines.length === 0) return "Clique em Sugerir conteúdos inteligentes ou informe conteúdos no modo avançado.";
   if (needsQuestionQuantity(form.tipo) && !form.quantidadeQuestoes.trim()) return "Informe a quantidade de questões.";
   return null;
 }
@@ -546,18 +629,17 @@ function buildMaterialEditorHtml(material: GeneratedMaterial) {
 
 export function MateriaisClient() {
   const [form, setForm] = useState<FormState>(initialForm);
-  const [status, setStatus] = useState<StatusState>({ type: "idle", message: "Comece por etapa, componente e tema. O Planify sugere conteúdos inteligentes antes de gerar." });
+  const [status, setStatus] = useState<StatusState>({ type: "idle", message: "Informe etapa, série, componente, tipo e tema. O Planify faz a expansão pedagógica completa internamente e entrega um único material avançado, sem cards e sem modo avançado." });
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [generatedMaterial, setGeneratedMaterial] = useState<GeneratedMaterial | null>(null);
   const [suggestions, setSuggestions] = useState<SuggestionOutput | null>(null);
   const [selectedSuggestionIds, setSelectedSuggestionIds] = useState<string[]>([]);
-  const [showAdvanced, setShowAdvanced] = useState(false);
-
+  
   const manualConteudos = useMemo(() => splitLines(form.conteudos), [form.conteudos]);
   const selectedContents = useMemo(
-    () => buildSelectedContentLines(suggestions?.conteudos || [], selectedSuggestionIds, form.conteudos),
-    [form.conteudos, selectedSuggestionIds, suggestions],
+    () => buildUnifiedContentLines(form, suggestions?.conteudos || []),
+    [form, suggestions],
   );
   const componentesDisponiveis = useMemo(() => getComponentesDisponiveis(form), [form]);
   const selectedGameModel = gameModelOptions.find((item) => item.value === form.modeloJogo);
@@ -586,7 +668,7 @@ export function MateriaisClient() {
     setGeneratedMaterial(null);
     setSuggestions(null);
     setSelectedSuggestionIds([]);
-    setStatus({ type: "idle", message: "Campos limpos. Informe o tema e clique em Sugerir conteúdos inteligentes." });
+    setStatus({ type: "idle", message: "Campos limpos. Informe o tema e gere um material completo. O mapa pedagógico será preparado automaticamente." });
   }
 
   function applyQuickExample(example: (typeof quickExamples)[number]) {
@@ -597,14 +679,14 @@ export function MateriaisClient() {
       areaConhecimento: example.area,
       componenteCurricular: example.componente,
       tema: example.tema,
-      tipo: "jogo",
+      tipo: example.tipo,
       modeloJogo: example.jogo,
       titulo: `${gameLabels[example.jogo]} — ${example.tema}`,
     });
     setGeneratedMaterial(null);
     setSuggestions(null);
     setSelectedSuggestionIds([]);
-    setStatus({ type: "info", message: "Exemplo aplicado. Agora clique em Sugerir conteúdos inteligentes." });
+    setStatus({ type: "info", message: "Exemplo aplicado. Agora clique em gerar: o Planify fará a expansão completa do tema automaticamente." });
   }
 
   async function suggestContents() {
@@ -621,12 +703,12 @@ export function MateriaisClient() {
       return;
     }
     if (!form.tema.trim()) {
-      setStatus({ type: "error", message: "Informe o tema central para o Planify sugerir conteúdos." });
+      setStatus({ type: "error", message: "Informe o tema central para o Planify preparar o mapa pedagógico." });
       return;
     }
 
     setIsSuggesting(true);
-    setStatus({ type: "info", message: "Analisando tema, etapa, série e componente para sugerir conteúdos compatíveis..." });
+    setStatus({ type: "info", message: "Analisando tema, etapa, série e componente para montar um mapa pedagógico interno..." });
 
     try {
       const response = await fetch("/api/ai/material/sugerir-conteudos", {
@@ -646,14 +728,14 @@ export function MateriaisClient() {
       });
       const result = await response.json();
       if (!response.ok || !result?.success) {
-        throw new Error(result?.error?.message || result?.message || "Não foi possível sugerir conteúdos agora.");
+        throw new Error(result?.error?.message || result?.message || "Não foi possível preparar o mapa pedagógico agora.");
       }
       const data = result.data as SuggestionOutput;
       setSuggestions(data);
       setSelectedSuggestionIds([]);
-      setStatus({ type: "success", message: "Conteúdos inteligentes sugeridos. Eles vêm desmarcados por padrão; escolha manualmente o que deseja usar." });
+      setStatus({ type: "success", message: "Mapa pedagógico interno preparado. O material será gerado em uma única atividade completa, abordando os subconteúdos essenciais do tema." });
     } catch (error) {
-      setStatus({ type: "error", message: error instanceof Error ? error.message : "Não foi possível sugerir conteúdos agora." });
+      setStatus({ type: "error", message: error instanceof Error ? error.message : "Não foi possível preparar o mapa pedagógico agora." });
     } finally {
       setIsSuggesting(false);
     }
@@ -700,17 +782,53 @@ export function MateriaisClient() {
   }
 
   async function generateMaterial() {
-    const conteudos = selectedContents;
-    const validation = validateForm(form, conteudos);
+    const validation = validateForm(form);
     if (validation) {
       setStatus({ type: "error", message: validation });
       return;
     }
 
     setIsGenerating(true);
-    setStatus({ type: "info", message: form.tipo === "jogo" ? `Gerando ${selectedGameModel?.label || "jogo"} com conteúdos aprovados...` : "Gerando material didático com IA..." });
+    setStatus({ type: "info", message: form.tipo === "jogo" ? `Gerando ${selectedGameModel?.label || "jogo"} com o tema completo...` : "Gerando material didático completo com IA..." });
+
+    let conteudos = selectedContents;
 
     try {
+      if (manualConteudos.length === 0 && !suggestions?.conteudos?.length) {
+        setStatus({ type: "info", message: "Preparando mapa pedagógico interno para abordar o tema completo..." });
+        try {
+          const response = await fetch("/api/ai/material/sugerir-conteudos", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              etapa: form.etapa,
+              anoSerie: form.anoSerie,
+              areaConhecimento: form.areaConhecimento,
+              componenteCurricular: form.componenteCurricular,
+              tema: form.tema,
+              tipo: form.tipo,
+              modeloJogo: form.modeloJogo,
+              quantidade: 6,
+              observacoes: form.observacoes,
+            }),
+          });
+          const result = await response.json();
+          if (response.ok && result?.success && result.data) {
+            const data = result.data as SuggestionOutput;
+            setSuggestions(data);
+            conteudos = buildUnifiedContentLines(form, data.conteudos || []);
+          }
+        } catch {
+          conteudos = buildDefaultContentLines(form);
+        }
+      }
+
+      if (conteudos.length === 0) {
+        conteudos = buildDefaultContentLines(form);
+      }
+
+      setStatus({ type: "info", message: form.tipo === "jogo" ? `Gerando ${selectedGameModel?.label || "jogo"} com o tema completo...` : "Gerando material didático completo com IA..." });
+
       const response = await fetch("/api/ai/material", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -723,14 +841,15 @@ export function MateriaisClient() {
       const material = normalizeGeneratedMaterial((result.data || result.material) as GeneratedMaterial, form, conteudos);
       setGeneratedMaterial(material);
       saveToLocalHistory(material);
-      setStatus({ type: "success", message: form.tipo === "jogo" ? "Jogo visual gerado com conteúdos coerentes, gabarito e versão editável." : "Material gerado com IA." });
+      setStatus({ type: "success", message: form.tipo === "jogo" ? "Jogo visual gerado com abordagem completa do tema, gabarito e versão editável." : "Material completo gerado com IA." });
     } catch (error) {
+      if (conteudos.length === 0) conteudos = buildDefaultContentLines(form);
       const fallback = buildFallbackMaterial(form, conteudos);
       setGeneratedMaterial(fallback);
       saveToLocalHistory(fallback);
       setStatus({
         type: "success",
-        message: error instanceof Error ? `A IA não respondeu agora. O construtor Planify gerou uma versão visual. Detalhe: ${error.message}` : "O construtor Planify gerou uma versão visual.",
+        message: error instanceof Error ? `A IA não respondeu agora. O construtor Planify gerou uma versão completa com mapa interno. Detalhe: ${error.message}` : "O construtor Planify gerou uma versão completa com mapa interno.",
       });
     } finally {
       setIsGenerating(false);
@@ -761,7 +880,7 @@ export function MateriaisClient() {
           <p className="text-sm font-black uppercase tracking-[0.28em] text-cyan-300">Assistente pedagógico</p>
           <h1 className="mt-4 text-3xl font-black text-white">Materiais com IA</h1>
           <p className="mt-4 text-sm leading-7 text-cyan-100/80">
-            Informe o tema central. O Planify sugere conteúdos, palavras-chave, objetivos e os melhores jogos antes de gerar o material.
+            Informe apenas o tema central. O Planify identifica os subconteúdos necessários por trás e gera uma atividade, prova, lista, revisão ou jogo completo, sem obrigar o professor a escolher vários cards.
           </p>
 
           <div className="mt-6 grid gap-3">
@@ -812,10 +931,10 @@ export function MateriaisClient() {
         <div className="rounded-[2rem] border border-white/10 bg-white/[0.06] p-6 shadow-2xl backdrop-blur-2xl">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <p className="text-sm font-black uppercase tracking-[0.28em] text-cyan-300">Modo rápido inteligente</p>
-              <h2 className="mt-3 text-3xl font-black text-white">Tema → conteúdos → material</h2>
+              <p className="text-sm font-black uppercase tracking-[0.28em] text-cyan-300">Motor pedagógico automático</p>
+              <h2 className="mt-3 text-3xl font-black text-white">Tema único → material completo e avançado</h2>
               <p className="mt-3 text-sm leading-7 text-slate-400">
-                Primeiro gere sugestões compatíveis com a turma. Depois aprove, ajuste e gere o material ou jogo.
+                O professor informa o tema. O Planify identifica todos os subconteúdos essenciais e entrega um único material completo, robusto e coerente com a turma, sem cards obrigatórios e sem modo avançado.
               </p>
             </div>
             <button type="button" onClick={clearAll} className="rounded-2xl border border-white/10 bg-white/5 px-6 py-4 text-sm font-black text-white transition hover:-translate-y-1 hover:bg-white/10">
@@ -879,92 +998,10 @@ export function MateriaisClient() {
             </label>
           </div>
 
-          <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-            <button type="button" onClick={suggestContents} disabled={isSuggesting} className="rounded-2xl bg-cyan-200 px-6 py-4 text-sm font-black text-slate-950 transition hover:-translate-y-1 hover:bg-white disabled:cursor-not-allowed disabled:opacity-60">
-              {isSuggesting ? "Sugerindo..." : "Sugerir conteúdos inteligentes"}
-            </button>
-            <button type="button" onClick={() => setShowAdvanced((value) => !value)} className="rounded-2xl border border-white/10 bg-white/5 px-6 py-4 text-sm font-black text-white transition hover:-translate-y-1 hover:bg-white/10">
-              {showAdvanced ? "Ocultar modo avançado" : "Modo avançado opcional"}
-            </button>
+          <div className="mt-6 rounded-2xl border border-cyan-300/20 bg-cyan-300/10 p-4 text-sm leading-7 text-cyan-50/85">
+            <strong className="text-white">Opção única avançada:</strong> o professor não precisa escolher cards nem abrir modo avançado. O Planify cria o mapa pedagógico completo por trás e integra todos os subconteúdos essenciais no mesmo material.
           </div>
-
-          {showAdvanced && (
-            <div className="mt-6 grid gap-4 rounded-2xl border border-white/10 bg-slate-950/35 p-4 md:grid-cols-2">
-              <label className="grid gap-2 md:col-span-2"><span className="text-sm font-bold text-slate-300">Título opcional</span><input value={form.titulo} onChange={(event) => updateField("titulo", event.target.value)} placeholder="Se deixar vazio, o Planify cria automaticamente" className="h-14 rounded-2xl border border-white/10 bg-slate-950/50 px-4 text-sm text-white outline-none placeholder:text-slate-500" /></label>
-              <label className="grid gap-2"><span className="text-sm font-bold text-slate-300">Escola</span><input value={form.escola} onChange={(event) => updateField("escola", event.target.value)} placeholder="Nome da escola" className="h-14 rounded-2xl border border-white/10 bg-slate-950/50 px-4 text-sm text-white outline-none placeholder:text-slate-500" /></label>
-              <label className="grid gap-2"><span className="text-sm font-bold text-slate-300">Professor</span><input value={form.professor} onChange={(event) => updateField("professor", event.target.value)} placeholder="Nome do professor" className="h-14 rounded-2xl border border-white/10 bg-slate-950/50 px-4 text-sm text-white outline-none placeholder:text-slate-500" /></label>
-              {needsQuestionQuantity(form.tipo) && <label className="grid gap-2"><span className="text-sm font-bold text-slate-300">Quantidade de questões</span><input value={form.quantidadeQuestoes} onChange={(event) => updateField("quantidadeQuestoes", event.target.value)} placeholder="10" className="h-14 rounded-2xl border border-white/10 bg-slate-950/50 px-4 text-sm text-white outline-none placeholder:text-slate-500" /></label>}
-              <label className="grid gap-2"><span className="text-sm font-bold text-slate-300">Duração</span><input value={form.duracao} onChange={(event) => updateField("duracao", event.target.value)} placeholder="Ex.: 1 período" className="h-14 rounded-2xl border border-white/10 bg-slate-950/50 px-4 text-sm text-white outline-none placeholder:text-slate-500" /></label>
-              <label className="grid gap-2 md:col-span-2"><span className="text-sm font-bold text-slate-300">Conteúdos manuais</span><textarea value={form.conteudos} onChange={(event) => updateField("conteudos", event.target.value)} rows={5} placeholder={"Use somente se quiser substituir as sugestões.\nEx.: Jó na tradição bíblica: Jó, fé, provação"} className="rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-4 text-sm text-white outline-none placeholder:text-slate-500" /></label>
-              <label className="grid gap-2 md:col-span-2"><span className="text-sm font-bold text-slate-300">Objetivos</span><textarea value={form.objetivos} onChange={(event) => updateField("objetivos", event.target.value)} rows={3} placeholder="Objetivos pedagógicos específicos" className="rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-4 text-sm text-white outline-none placeholder:text-slate-500" /></label>
-              <label className="grid gap-2 md:col-span-2"><span className="text-sm font-bold text-slate-300">Orientações e observações</span><textarea value={form.observacoes} onChange={(event) => updateField("observacoes", event.target.value)} rows={3} placeholder="Características da turma, dificuldade, impressão, recortes ou adaptação" className="rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-4 text-sm text-white outline-none placeholder:text-slate-500" /></label>
-            </div>
-          )}
         </div>
-
-        {suggestions && (
-          <div className="rounded-[2rem] border border-emerald-300/20 bg-emerald-300/10 p-6 shadow-2xl shadow-emerald-500/10">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-              <div>
-                <p className="text-sm font-black uppercase tracking-[0.25em] text-emerald-200">Conteúdos sugeridos</p>
-                <h2 className="mt-3 text-2xl font-black text-white">Revise antes de gerar</h2>
-                <p className="mt-3 text-sm leading-7 text-emerald-50/80">{suggestions.resumoPedagogico}</p>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <button type="button" onClick={selectRecommendedSuggestions} className="rounded-2xl border border-emerald-200/30 bg-white px-4 py-3 text-xs font-black text-slate-950 transition hover:-translate-y-1 hover:bg-emerald-50">
-                  Selecionar recomendadas
-                </button>
-                <button type="button" onClick={selectAllSuggestions} className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-xs font-black text-white transition hover:-translate-y-1 hover:bg-white/15">
-                  Selecionar todas
-                </button>
-                <button type="button" onClick={clearSuggestionSelection} className="rounded-2xl border border-white/10 bg-slate-950/30 px-4 py-3 text-xs font-black text-slate-200 transition hover:-translate-y-1 hover:bg-white/10">
-                  Limpar seleção
-                </button>
-                <button type="button" onClick={applySelectedSuggestionsToField} className="rounded-2xl border border-emerald-200/30 bg-white px-4 py-3 text-xs font-black text-slate-950 transition hover:-translate-y-1 hover:bg-emerald-50">
-                  Aplicar no modo avançado
-                </button>
-              </div>
-            </div>
-
-            <div className="mt-5 grid gap-3 md:grid-cols-2">
-              {suggestions.conteudos.map((item) => {
-                const selected = selectedSuggestionIds.includes(item.id);
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => toggleSuggestion(item.id)}
-                    className={`rounded-2xl border p-4 text-left transition hover:-translate-y-0.5 ${selected ? "border-emerald-200/70 bg-white text-slate-950" : "border-white/10 bg-slate-950/45 text-white hover:bg-white/10"}`}
-                  >
-                    <span className="block text-xs font-black uppercase tracking-[0.18em] opacity-70">{selected ? "Selecionado" : "Clique para usar"} • {item.dificuldade} • {item.tempoEstimado}</span>
-                    <span className="mt-2 block text-lg font-black">{item.titulo}</span>
-                    <span className="mt-2 block text-sm leading-6 opacity-80">{item.descricao}</span>
-                    <span className="mt-3 block text-xs font-bold opacity-70">Palavras-chave: {(item.palavrasChave || []).join(", ")}</span>
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="mt-6 grid gap-4 md:grid-cols-2">
-              <div className="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
-                <p className="text-sm font-black uppercase tracking-[0.2em] text-cyan-200">Jogos recomendados</p>
-                <div className="mt-3 grid gap-2">
-                  {suggestions.jogosRecomendados.slice(0, 4).map((option, index) => (
-                    <button key={`${option.titulo}-${index}`} type="button" onClick={() => useRecommended(option)} className="rounded-xl border border-white/10 bg-white/5 p-3 text-left text-sm text-white transition hover:bg-white/10">
-                      <strong>{option.titulo}</strong><br /><span className="text-slate-400">{option.motivo}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
-                <p className="text-sm font-black uppercase tracking-[0.2em] text-cyan-200">Objetivos sugeridos</p>
-                <ul className="mt-3 space-y-2 text-sm leading-6 text-slate-300">
-                  {suggestions.objetivosGerais.slice(0, 5).map((objetivo) => <li key={objetivo}>• {objetivo}</li>)}
-                </ul>
-              </div>
-            </div>
-          </div>
-        )}
 
         <div className="rounded-[2rem] border border-white/10 bg-white/[0.06] p-6 shadow-2xl backdrop-blur-2xl">
           <div className="flex flex-col gap-3 sm:flex-row">
@@ -974,7 +1011,7 @@ export function MateriaisClient() {
             <Link href="/historico" className="rounded-2xl border border-white/10 bg-white/5 px-6 py-4 text-center text-sm font-black text-white transition hover:-translate-y-1 hover:bg-white/10">Ver histórico</Link>
           </div>
           <p className="mt-4 text-xs leading-6 text-slate-500">
-            Conteúdos que serão usados: {selectedContents.length || manualConteudos.length || 0}. As sugestões vêm desmarcadas por padrão. Escolha conteúdos ou preencha o modo avançado.
+            O Planify abordará o tema como um conteúdo completo. Subconteúdos internos previstos: {selectedContents.length || manualConteudos.length || 0}. A expansão é automática, única e avançada para todos os componentes.
           </p>
         </div>
 

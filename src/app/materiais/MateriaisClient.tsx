@@ -436,6 +436,42 @@ function validateForm(form: FormState): string | null {
   return null;
 }
 
+const materialProgressSteps = [
+  "Interpretando o tema e o nível da turma",
+  "Organizando os conteúdos essenciais",
+  "Criando exercícios variados e produtivos",
+  "Separando versão do aluno e gabarito",
+  "Revisando clareza, sequência e apresentação",
+];
+
+function MaterialGenerationPanel({ label }: { label: string }) {
+  return (
+    <div className="rounded-[1.75rem] border border-cyan-300/25 bg-cyan-300/10 p-5 shadow-2xl shadow-cyan-500/10">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-xs font-black uppercase tracking-[0.25em] text-cyan-200">Preparando material</p>
+          <h3 className="mt-2 text-xl font-black text-white">{label}</h3>
+        </div>
+        <div className="flex gap-2" aria-hidden="true">
+          <span className="h-3 w-3 animate-pulse rounded-full bg-cyan-200" />
+          <span className="h-3 w-3 animate-pulse rounded-full bg-blue-200 [animation-delay:120ms]" />
+          <span className="h-3 w-3 animate-pulse rounded-full bg-emerald-200 [animation-delay:240ms]" />
+        </div>
+      </div>
+      <div className="mt-5 grid gap-3 md:grid-cols-5">
+        {materialProgressSteps.map((step, index) => (
+          <div key={step} className="rounded-2xl border border-white/10 bg-slate-950/35 p-3">
+            <div className="mb-3 h-1.5 overflow-hidden rounded-full bg-white/10">
+              <span className="block h-full animate-pulse rounded-full bg-cyan-200" style={{ width: `${Math.min(100, 34 + index * 14)}%` }} />
+            </div>
+            <p className="text-xs font-bold leading-5 text-cyan-50/90">{step}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function materialFromVisualBuilder(form: FormState, conteudos: string[]): GeneratedMaterial {
   return buildVisualGameMaterial({
     ...form,
@@ -669,7 +705,7 @@ ${css}
 
 export function MateriaisClient() {
   const [form, setForm] = useState<FormState>(initialForm);
-  const [status, setStatus] = useState<StatusState>({ type: "idle", message: "Informe etapa, série, componente, tipo e tema. O Planify faz a expansão pedagógica completa internamente e entrega um único material avançado, sem cards e sem modo avançado." });
+  const [status, setStatus] = useState<StatusState>({ type: "idle", message: "Informe os dados e o tema. O Planify prepara um material completo, organizado e pronto para editar." });
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [generatedMaterial, setGeneratedMaterial] = useState<GeneratedMaterial | null>(null);
@@ -708,7 +744,7 @@ export function MateriaisClient() {
     setGeneratedMaterial(null);
     setSuggestions(null);
     setSelectedSuggestionIds([]);
-    setStatus({ type: "idle", message: "Campos limpos. Informe o tema e gere um material completo. O mapa pedagógico será preparado automaticamente." });
+    setStatus({ type: "idle", message: "Campos limpos. Informe o tema e gere um material completo." });
   }
 
   function applyQuickExample(example: (typeof quickExamples)[number]) {
@@ -726,7 +762,7 @@ export function MateriaisClient() {
     setGeneratedMaterial(null);
     setSuggestions(null);
     setSelectedSuggestionIds([]);
-    setStatus({ type: "info", message: "Exemplo aplicado. Agora clique em gerar: o Planify fará a expansão completa do tema automaticamente." });
+    setStatus({ type: "info", message: "Exemplo aplicado. Clique em gerar para criar o material completo." });
   }
 
   async function suggestContents() {
@@ -743,12 +779,12 @@ export function MateriaisClient() {
       return;
     }
     if (!form.tema.trim()) {
-      setStatus({ type: "error", message: "Informe o tema central para o Planify preparar o mapa pedagógico." });
+      setStatus({ type: "error", message: "Informe o tema central do material." });
       return;
     }
 
     setIsSuggesting(true);
-    setStatus({ type: "info", message: "Analisando tema, etapa, série e componente para montar um mapa pedagógico interno..." });
+    setStatus({ type: "info", message: "Analisando tema, etapa, série e componente..." });
 
     try {
       const response = await fetch("/api/ai/material/sugerir-conteudos", {
@@ -768,14 +804,14 @@ export function MateriaisClient() {
       });
       const result = await response.json();
       if (!response.ok || !result?.success) {
-        throw new Error(result?.error?.message || result?.message || "Não foi possível preparar o mapa pedagógico agora.");
+        throw new Error(result?.error?.message || result?.message || "Não foi possível preparar os conteúdos agora.");
       }
       const data = result.data as SuggestionOutput;
       setSuggestions(data);
       setSelectedSuggestionIds([]);
-      setStatus({ type: "success", message: "Mapa pedagógico interno preparado. O material será gerado em uma única atividade completa, abordando os subconteúdos essenciais do tema." });
+      setStatus({ type: "success", message: "Conteúdos organizados. O material será gerado como uma folha completa sobre o tema." });
     } catch (error) {
-      setStatus({ type: "error", message: error instanceof Error ? error.message : "Não foi possível preparar o mapa pedagógico agora." });
+      setStatus({ type: "error", message: error instanceof Error ? error.message : "Não foi possível preparar os conteúdos agora." });
     } finally {
       setIsSuggesting(false);
     }
@@ -809,7 +845,7 @@ export function MateriaisClient() {
       .filter((item) => selectedSuggestionIds.includes(item.id))
       .map(contentLineFromSuggestion);
     setForm((current) => ({ ...current, conteudos: lines.join("\n"), objetivos: suggestions.objetivosGerais.join("\n") }));
-    setStatus({ type: "success", message: "Conteúdos aprovados aplicados ao modo avançado. Agora você pode editar manualmente se quiser." });
+    setStatus({ type: "success", message: "Conteúdos aplicados ao material." });
   }
 
   function useRecommended(option: RecommendedOption) {
@@ -829,13 +865,13 @@ export function MateriaisClient() {
     }
 
     setIsGenerating(true);
-    setStatus({ type: "info", message: form.tipo === "jogo" ? `Gerando ${selectedGameModel?.label || "jogo"} com o tema completo...` : "Gerando material didático completo com IA..." });
+    setStatus({ type: "info", message: form.tipo === "jogo" ? `Gerando ${selectedGameModel?.label || "jogo"} com o tema completo...` : "Criando material completo..." });
 
     let conteudos = selectedContents;
 
     try {
       if (manualConteudos.length === 0 && !suggestions?.conteudos?.length) {
-        setStatus({ type: "info", message: "Preparando mapa pedagógico interno para abordar o tema completo..." });
+        setStatus({ type: "info", message: "Organizando o tema completo..." });
         try {
           const response = await fetch("/api/ai/material/sugerir-conteudos", {
             method: "POST",
@@ -867,7 +903,7 @@ export function MateriaisClient() {
         conteudos = buildDefaultContentLines(form);
       }
 
-      setStatus({ type: "info", message: form.tipo === "jogo" ? `Gerando ${selectedGameModel?.label || "jogo"} com o tema completo...` : "Gerando material didático completo com IA..." });
+      setStatus({ type: "info", message: form.tipo === "jogo" ? `Gerando ${selectedGameModel?.label || "jogo"} com o tema completo...` : "Criando material completo..." });
 
       const response = await fetch("/api/ai/material", {
         method: "POST",
@@ -889,7 +925,7 @@ export function MateriaisClient() {
       saveToLocalHistory(fallback);
       setStatus({
         type: "success",
-        message: error instanceof Error ? `A IA não respondeu agora. O construtor Planify gerou uma versão completa com mapa interno. Detalhe: ${error.message}` : "O construtor Planify gerou uma versão completa com mapa interno.",
+        message: error instanceof Error ? `A IA não respondeu agora. O Planify gerou uma versão completa do material. Detalhe: ${error.message}` : "O Planify gerou uma versão completa do material.",
       });
     } finally {
       setIsGenerating(false);
@@ -917,10 +953,10 @@ export function MateriaisClient() {
     <section className="mx-auto grid max-w-7xl gap-6 px-5 py-10 lg:grid-cols-[0.7fr_1.3fr] sm:px-8">
       <aside className="space-y-6">
         <div className="rounded-[2rem] border border-cyan-300/20 bg-cyan-300/10 p-6 shadow-2xl shadow-cyan-500/10">
-          <p className="text-sm font-black uppercase tracking-[0.28em] text-cyan-300">Assistente pedagógico</p>
-          <h1 className="mt-4 text-3xl font-black text-white">Materiais com IA</h1>
+          <p className="text-sm font-black uppercase tracking-[0.28em] text-cyan-300">Criação pedagógica</p>
+          <h1 className="mt-4 text-3xl font-black text-white">Materiais didáticos</h1>
           <p className="mt-4 text-sm leading-7 text-cyan-100/80">
-            Informe apenas o tema central. O Planify identifica os subconteúdos necessários por trás e gera uma atividade, prova, lista, revisão ou jogo completo, sem obrigar o professor a escolher vários cards.
+            Escolha a turma, o componente, o tipo de material e o tema. O Planify entrega uma folha completa, com exercícios, exemplos, gabarito e versão editável.
           </p>
 
           <div className="mt-6 grid gap-3">
@@ -971,10 +1007,10 @@ export function MateriaisClient() {
         <div className="rounded-[2rem] border border-white/10 bg-white/[0.06] p-6 shadow-2xl backdrop-blur-2xl">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <p className="text-sm font-black uppercase tracking-[0.28em] text-cyan-300">Motor pedagógico automático</p>
-              <h2 className="mt-3 text-3xl font-black text-white">Tema único → material completo e avançado</h2>
+              <p className="text-sm font-black uppercase tracking-[0.28em] text-cyan-300">Dados</p>
+              <h2 className="mt-3 text-3xl font-black text-white">Informações do material</h2>
               <p className="mt-3 text-sm leading-7 text-slate-400">
-                O professor informa o tema. O Planify identifica todos os subconteúdos essenciais e entrega um único material completo, robusto e coerente com a turma, sem cards obrigatórios e sem modo avançado.
+                Preencha os dados principais para gerar atividades, provas, listas, revisões, jogos ou apostilas em formato editável.
               </p>
             </div>
             <button type="button" onClick={clearAll} className="rounded-2xl border border-white/10 bg-white/5 px-6 py-4 text-sm font-black text-white transition hover:-translate-y-1 hover:bg-white/10">
@@ -1039,7 +1075,7 @@ export function MateriaisClient() {
           </div>
 
           <div className="mt-6 rounded-2xl border border-cyan-300/20 bg-cyan-300/10 p-4 text-sm leading-7 text-cyan-50/85">
-            <strong className="text-white">Opção única avançada:</strong> o professor não precisa escolher cards nem abrir modo avançado. O Planify cria o mapa pedagógico completo por trás e integra todos os subconteúdos essenciais no mesmo material.
+            <strong className="text-white">Material completo:</strong> o resultado sai em uma única folha estruturada, com conteúdo, exercícios, exemplos, gabarito e orientações conforme o tipo escolhido.
           </div>
         </div>
 
@@ -1051,9 +1087,13 @@ export function MateriaisClient() {
             <Link href="/historico" className="rounded-2xl border border-white/10 bg-white/5 px-6 py-4 text-center text-sm font-black text-white transition hover:-translate-y-1 hover:bg-white/10">Ver histórico</Link>
           </div>
           <p className="mt-4 text-xs leading-6 text-slate-500">
-            O Planify abordará o tema como um conteúdo completo. Subconteúdos internos previstos: {selectedContents.length || manualConteudos.length || 0}. A expansão é automática, única e avançada para todos os componentes.
+            O material será criado como uma folha completa, com exemplos, questões e gabarito conforme o tipo escolhido.
           </p>
         </div>
+
+        {isGenerating ? (
+          <MaterialGenerationPanel label={form.tipo === "jogo" ? `Montando ${selectedGameModel?.label || "jogo"}` : `Criando ${typeLabels[form.tipo].toLocaleLowerCase("pt-BR")}`} />
+        ) : null}
 
         <div className="rounded-[2rem] border border-white/10 bg-white/[0.06] p-6 shadow-2xl backdrop-blur-2xl">
           {generatedMaterial ? (

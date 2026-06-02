@@ -158,14 +158,7 @@ export default function HomePage() {
         </div>
 
         <div className="planify-hero__media" aria-label="Previa visual da plataforma Planify">
-          <div className="planify-video-card planify-video-card--compact">
-            <div className="planify-video-card__topbar">
-              <span />
-              <span />
-              <span />
-              <strong>Planify Studio</strong>
-            </div>
-
+          <div className="planify-video-card planify-video-card--compact planify-video-card--clean-only">
             <div className="planify-video-frame">
               <video
                 className="planify-video-frame__video"
@@ -180,20 +173,6 @@ export default function HomePage() {
 
               <div className="planify-video-frame__fallback planify-video-frame__fallback--clean" aria-hidden="true">
                 <div className="planify-video-clean-glow" />
-              </div>
-
-              <button className="planify-play planify-play--clean" type="button" aria-label="Prévia visual do Planify">
-                ▶
-              </button>
-            </div>
-
-            <div className="planify-video-card__footer planify-video-card__footer--clean">
-              <div>
-                <strong>Planify em ação</strong>
-                <span>planejamentos, materiais inteligentes e editor em uma só plataforma</span>
-              </div>
-              <div className="planify-progress" aria-hidden="true">
-                <span style={{ width: "82%" }} />
               </div>
             </div>
           </div>

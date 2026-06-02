@@ -207,6 +207,43 @@ function splitConteudos(text: string) {
     .filter(Boolean);
 }
 
+const planningProgressSteps = [
+  "Lendo os dados informados",
+  "Organizando conteúdos e habilidades",
+  "Montando a matriz pedagógica",
+  "Revisando coerência por período",
+  "Preparando o resultado final",
+];
+
+function PlanningGenerationPanel({ label }: { label: string }) {
+  return (
+    <div className="mt-6 rounded-[1.75rem] border border-cyan-300/25 bg-cyan-300/10 p-5 shadow-2xl shadow-cyan-500/10">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-xs font-black uppercase tracking-[0.25em] text-cyan-200">Preparando</p>
+          <h3 className="mt-2 text-xl font-black text-white">{label}</h3>
+        </div>
+        <div className="flex gap-2" aria-hidden="true">
+          <span className="h-3 w-3 animate-pulse rounded-full bg-cyan-200" />
+          <span className="h-3 w-3 animate-pulse rounded-full bg-blue-200 [animation-delay:120ms]" />
+          <span className="h-3 w-3 animate-pulse rounded-full bg-emerald-200 [animation-delay:240ms]" />
+        </div>
+      </div>
+      <div className="mt-5 grid gap-3 md:grid-cols-5">
+        {planningProgressSteps.map((step, index) => (
+          <div key={step} className="rounded-2xl border border-white/10 bg-slate-950/35 p-3">
+            <div className="mb-3 h-1.5 overflow-hidden rounded-full bg-white/10">
+              <span className="block h-full animate-pulse rounded-full bg-cyan-200" style={{ width: `${Math.min(100, 32 + index * 15)}%` }} />
+            </div>
+            <p className="text-xs font-bold leading-5 text-cyan-50/90">{step}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+
 function safeFilename(value: string) {
   return (
     value
@@ -1119,6 +1156,12 @@ export function PlanejamentosClient() {
                 Enviar ao Editor
               </button>
             </div>
+
+            {loadingBncc || loadingPlan || loadingDocx ? (
+              <PlanningGenerationPanel
+                label={loadingBncc ? "Buscando habilidades compatíveis" : loadingDocx ? "Preparando documento oficial" : "Gerando planejamento"}
+              />
+            ) : null}
 
             {generatedPlanning && form.tipoPlanejamento === "anual" ? (
               <div className="mt-6 rounded-[1.75rem] border border-emerald-300/20 bg-emerald-300/10 p-5">

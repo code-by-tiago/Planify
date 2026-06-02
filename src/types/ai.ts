@@ -88,6 +88,8 @@ export type MaterialAIType =
   | "atividade"
   | "prova"
   | "apostila"
+  | "lista"
+  | "revisao"
   | "sequencia"
   | "jogo"
   | "projeto"

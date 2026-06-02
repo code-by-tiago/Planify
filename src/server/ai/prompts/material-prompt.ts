@@ -14,8 +14,9 @@ function normalizeConteudos(conteudos: MaterialAIInput["conteudos"]): string[] {
 function materialRulesByType(type: string): string[] {
   if (type === "atividade") {
     return [
-      "Crie questões claras, progressivas e adequadas à série.",
-      "Inclua enunciados completos.",
+      "Crie questões claras, progressivas e adequadas à série, em padrão de livro de atividades.",
+      "Varie comandos: lacunas, classificação, relação, reescrita, interpretação, justificativa, aplicação e desafio.",
+      "Inclua enunciados completos, espaço de resposta quando aplicável e progressão básico-intermediário-desafio.",
       "Inclua resposta esperada e critério de correção.",
       "Não preencha o bloco jogo.",
       "Não preencha o bloco projeto.",
@@ -25,9 +26,31 @@ function materialRulesByType(type: string): string[] {
 
   if (type === "prova") {
     return [
-      "Crie uma avaliação organizada, com instruções e critérios.",
-      "Inclua questões objetivas e discursivas quando fizer sentido.",
+      "Crie uma avaliação organizada, com instruções e critérios, semelhante a prova escolar real.",
+      "Inclua questões objetivas, discursivas, contextualizadas e pelo menos uma questão desafio quando fizer sentido.",
       "Inclua gabarito e critérios de correção.",
+      "Não preencha o bloco jogo.",
+      "Não preencha o bloco projeto.",
+      "Não preencha o bloco roteiro.",
+    ];
+  }
+
+  if (type === "lista") {
+    return [
+      "Crie lista de exercícios com progressão básico, intermediário e desafio.",
+      "Use comandos variados em padrão de livro de atividades: complete, relacione, classifique, reescreva, resolva, interprete e justifique.",
+      "Inclua gabarito comentado e critérios de correção.",
+      "Não preencha o bloco jogo.",
+      "Não preencha o bloco projeto.",
+      "Não preencha o bloco roteiro.",
+    ];
+  }
+
+  if (type === "revisao") {
+    return [
+      "Crie revisão guiada com síntese, retomada, exercícios de fixação, desafio e autoavaliação.",
+      "Use linguagem clara para aluno e orientações de correção para professor.",
+      "Inclua gabarito comentado e pontos de atenção.",
       "Não preencha o bloco jogo.",
       "Não preencha o bloco projeto.",
       "Não preencha o bloco roteiro.",
@@ -106,7 +129,9 @@ export function buildMaterialSystemInstruction(): string {
   return [
     "Você é uma IA pedagógica especialista em materiais didáticos brasileiros.",
     "Você trabalha para o SaaS Planify.",
-    "Você deve gerar materiais didáticos completos, claros e aplicáveis.",
+    "Você deve gerar materiais didáticos completos, claros, aplicáveis e com padrão de livro de atividades.",
+    "Para atividades, provas, listas e revisões, gere exercícios originais com comandos variados: complete, classifique, relacione, reescreva, interprete, justifique, resolva e produza.",
+    "Todo material avaliativo deve ter versão do aluno, versão do professor, gabarito comentado e critérios de correção.",
     "Você não deve inventar códigos BNCC.",
     "Nesta etapa, não crie DOCX.",
     "Preencha somente o bloco específico do tipo solicitado.",
@@ -163,7 +188,7 @@ REGRAS GERAIS:
 5. Não invente códigos BNCC.
 6. Se o tipo for jogo, não trate como prova nem atividade com quantidade obrigatória de questões.
 7. Se o tipo for jogo, use o modelo informado e entregue material pronto para imprimir, recortar quando necessário, aplicar e corrigir.
-8. Se o tipo for prova ou atividade, crie questões conforme a quantidade solicitada quando houver.
+8. Se o tipo for prova ou atividade, crie questões conforme a quantidade solicitada, com variedade de comandos e gabarito comentado.
 9. Se o tipo NÃO for jogo, retorne "jogo": null.
 10. Se o tipo NÃO for projeto, retorne "projeto": null.
 11. Se o tipo NÃO for roteiro, retorne "roteiro": null.

@@ -9,6 +9,8 @@ type MaterialType =
   | "atividade"
   | "prova"
   | "apostila"
+  | "lista"
+  | "revisao"
   | "sequencia"
   | "jogo"
   | "projeto"
@@ -178,6 +180,8 @@ const componentesByEtapa: Record<string, string[]> = {
   ],
   "Ensino Fundamental": [
     "Língua Portuguesa",
+    "Redação",
+    "Escrita Criativa",
     "Arte",
     "Educação Física",
     "Língua Inglesa",
@@ -199,7 +203,7 @@ const areasEnsinoMedio = [
 ];
 
 const componentesEnsinoMedio: Record<string, string[]> = {
-  "Linguagens e suas Tecnologias": ["Língua Portuguesa", "Arte", "Educação Física", "Língua Inglesa", "Língua Espanhola"],
+  "Linguagens e suas Tecnologias": ["Língua Portuguesa", "Redação", "Escrita Criativa", "Arte", "Educação Física", "Língua Inglesa", "Língua Espanhola"],
   "Matemática e suas Tecnologias": ["Matemática"],
   "Ciências da Natureza e suas Tecnologias": ["Biologia", "Física", "Química"],
   "Ciências Humanas e Sociais Aplicadas": ["História", "Geografia", "Filosofia", "Sociologia"],
@@ -209,6 +213,8 @@ const materialTypes: Array<{ value: MaterialType; label: string; description: st
   { value: "jogo", label: "Jogo pedagógico visual", description: "Cruzadinha, caça-palavras, bingo, memória, dominó, quiz e cartas." },
   { value: "atividade", label: "Atividade", description: "Questões orientadas com resposta esperada." },
   { value: "prova", label: "Prova", description: "Avaliação com gabarito e critérios." },
+  { value: "lista", label: "Lista de exercícios", description: "Exercícios em progressão: básico, intermediário e desafio." },
+  { value: "revisao", label: "Revisão", description: "Retomada com síntese, exercícios e autoavaliação." },
   { value: "apostila", label: "Apostila", description: "Explicação didática, exemplos e exercícios." },
   { value: "sequencia", label: "Sequência didática", description: "Etapas de aula e mediações." },
   { value: "projeto", label: "Projeto", description: "Problema, etapas e produto final." },
@@ -228,6 +234,8 @@ const gameModelOptions: Array<{ value: GameModel; label: string; description: st
 const typeLabels: Record<MaterialType, string> = {
   atividade: "Atividade",
   prova: "Prova",
+  lista: "Lista de exercícios",
+  revisao: "Revisão",
   apostila: "Apostila",
   sequencia: "Sequência didática",
   jogo: "Jogo pedagógico visual",
@@ -273,6 +281,24 @@ const quickExamples = [
     area: "",
     jogo: "quiz" as GameModel,
   },
+  {
+    label: "Redação",
+    tema: "Argumentação, tese e repertório sociocultural",
+    etapa: "Ensino Médio",
+    anoSerie: "3ª série",
+    componente: "Redação",
+    area: "Linguagens e suas Tecnologias",
+    jogo: "cartas" as GameModel,
+  },
+  {
+    label: "Escrita Criativa",
+    tema: "Criação de personagens, conflito e desfecho narrativo",
+    etapa: "Ensino Fundamental",
+    anoSerie: "8º ano",
+    componente: "Escrita Criativa",
+    area: "",
+    jogo: "memoria" as GameModel,
+  },
 ];
 
 function splitLines(value: string) {
@@ -287,7 +313,7 @@ function isEnsinoMedio(etapa: string) {
 }
 
 function needsQuestionQuantity(tipo: MaterialType) {
-  return tipo === "atividade" || tipo === "prova";
+  return tipo === "atividade" || tipo === "prova" || tipo === "lista" || tipo === "revisao";
 }
 
 function getComponentesDisponiveis(form: FormState) {
@@ -623,10 +649,9 @@ export function MateriaisClient() {
         throw new Error(result?.error?.message || result?.message || "Não foi possível sugerir conteúdos agora.");
       }
       const data = result.data as SuggestionOutput;
-      const ids = (data.conteudos || []).map((item) => item.id);
       setSuggestions(data);
-      setSelectedSuggestionIds(ids);
-      setStatus({ type: "success", message: "Conteúdos inteligentes sugeridos. Revise, desmarque o que não quiser e gere o material." });
+      setSelectedSuggestionIds([]);
+      setStatus({ type: "success", message: "Conteúdos inteligentes sugeridos. Eles vêm desmarcados por padrão; escolha manualmente o que deseja usar." });
     } catch (error) {
       setStatus({ type: "error", message: error instanceof Error ? error.message : "Não foi possível sugerir conteúdos agora." });
     } finally {
@@ -636,6 +661,24 @@ export function MateriaisClient() {
 
   function toggleSuggestion(id: string) {
     setSelectedSuggestionIds((current) => (current.includes(id) ? current.filter((item) => item !== id) : [...current, id]));
+  }
+
+  function selectAllSuggestions() {
+    if (!suggestions) return;
+    setSelectedSuggestionIds((suggestions.conteudos || []).map((item) => item.id));
+  }
+
+  function clearSuggestionSelection() {
+    setSelectedSuggestionIds([]);
+  }
+
+  function selectRecommendedSuggestions() {
+    if (!suggestions) return;
+    const ids = (suggestions.conteudos || [])
+      .filter((item) => !String(item.dificuldade || "").toLocaleLowerCase("pt-BR").includes("avançado"))
+      .slice(0, 5)
+      .map((item) => item.id);
+    setSelectedSuggestionIds(ids);
   }
 
   function applySelectedSuggestionsToField() {
@@ -648,7 +691,7 @@ export function MateriaisClient() {
   }
 
   function useRecommended(option: RecommendedOption) {
-    const tipo = ["atividade", "prova", "apostila", "sequencia", "jogo", "projeto", "roteiro"].includes(option.tipo)
+    const tipo = ["atividade", "prova", "lista", "revisao", "apostila", "sequencia", "jogo", "projeto", "roteiro"].includes(option.tipo)
       ? (option.tipo as MaterialType)
       : "jogo";
     const model = gameModelOptions.some((item) => item.value === option.modeloJogo) ? (option.modeloJogo as GameModel) : form.modeloJogo;
@@ -867,9 +910,20 @@ export function MateriaisClient() {
                 <h2 className="mt-3 text-2xl font-black text-white">Revise antes de gerar</h2>
                 <p className="mt-3 text-sm leading-7 text-emerald-50/80">{suggestions.resumoPedagogico}</p>
               </div>
-              <button type="button" onClick={applySelectedSuggestionsToField} className="rounded-2xl border border-emerald-200/30 bg-white px-5 py-3 text-sm font-black text-slate-950 transition hover:-translate-y-1 hover:bg-emerald-50">
-                Aplicar no modo avançado
-              </button>
+              <div className="flex flex-wrap gap-2">
+                <button type="button" onClick={selectRecommendedSuggestions} className="rounded-2xl border border-emerald-200/30 bg-white px-4 py-3 text-xs font-black text-slate-950 transition hover:-translate-y-1 hover:bg-emerald-50">
+                  Selecionar recomendadas
+                </button>
+                <button type="button" onClick={selectAllSuggestions} className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-xs font-black text-white transition hover:-translate-y-1 hover:bg-white/15">
+                  Selecionar todas
+                </button>
+                <button type="button" onClick={clearSuggestionSelection} className="rounded-2xl border border-white/10 bg-slate-950/30 px-4 py-3 text-xs font-black text-slate-200 transition hover:-translate-y-1 hover:bg-white/10">
+                  Limpar seleção
+                </button>
+                <button type="button" onClick={applySelectedSuggestionsToField} className="rounded-2xl border border-emerald-200/30 bg-white px-4 py-3 text-xs font-black text-slate-950 transition hover:-translate-y-1 hover:bg-emerald-50">
+                  Aplicar no modo avançado
+                </button>
+              </div>
             </div>
 
             <div className="mt-5 grid gap-3 md:grid-cols-2">
@@ -882,7 +936,7 @@ export function MateriaisClient() {
                     onClick={() => toggleSuggestion(item.id)}
                     className={`rounded-2xl border p-4 text-left transition hover:-translate-y-0.5 ${selected ? "border-emerald-200/70 bg-white text-slate-950" : "border-white/10 bg-slate-950/45 text-white hover:bg-white/10"}`}
                   >
-                    <span className="block text-xs font-black uppercase tracking-[0.18em] opacity-70">{selected ? "Selecionado" : "Removido"} • {item.dificuldade} • {item.tempoEstimado}</span>
+                    <span className="block text-xs font-black uppercase tracking-[0.18em] opacity-70">{selected ? "Selecionado" : "Clique para usar"} • {item.dificuldade} • {item.tempoEstimado}</span>
                     <span className="mt-2 block text-lg font-black">{item.titulo}</span>
                     <span className="mt-2 block text-sm leading-6 opacity-80">{item.descricao}</span>
                     <span className="mt-3 block text-xs font-bold opacity-70">Palavras-chave: {(item.palavrasChave || []).join(", ")}</span>
@@ -920,7 +974,7 @@ export function MateriaisClient() {
             <Link href="/historico" className="rounded-2xl border border-white/10 bg-white/5 px-6 py-4 text-center text-sm font-black text-white transition hover:-translate-y-1 hover:bg-white/10">Ver histórico</Link>
           </div>
           <p className="mt-4 text-xs leading-6 text-slate-500">
-            Conteúdos que serão usados: {selectedContents.length || manualConteudos.length || 0}. Para melhor resultado, use as sugestões inteligentes aprovadas.
+            Conteúdos que serão usados: {selectedContents.length || manualConteudos.length || 0}. As sugestões vêm desmarcadas por padrão. Escolha conteúdos ou preencha o modo avançado.
           </p>
         </div>
 

@@ -92,7 +92,7 @@ const EDUCATION_OPTIONS = {
     years: ["1º ano", "2º ano", "3º ano", "4º ano", "5º ano", "6º ano", "7º ano", "8º ano", "9º ano"],
     areas: ["Linguagens", "Matemática", "Ciências da Natureza", "Ciências Humanas", "Ensino Religioso"],
     componentsByArea: {
-      Linguagens: ["Língua Portuguesa", "Arte", "Educação Física", "Língua Inglesa"],
+      Linguagens: ["Língua Portuguesa", "Redação", "Escrita Criativa", "Arte", "Educação Física", "Língua Inglesa", "Língua Espanhola"],
       Matemática: ["Matemática"],
       "Ciências da Natureza": ["Ciências"],
       "Ciências Humanas": ["História", "Geografia"],
@@ -110,6 +110,8 @@ const EDUCATION_OPTIONS = {
     componentsByArea: {
       "Linguagens e suas Tecnologias": [
         "Língua Portuguesa",
+        "Redação",
+        "Escrita Criativa",
         "Arte",
         "Educação Física",
         "Língua Inglesa",
@@ -686,12 +688,11 @@ export function PlanejamentosClient() {
       }
 
       const nextGroups = groupSkillsFromResponse(data, conteudos);
-      const autoSelected = nextGroups.flatMap((group) => group.habilidades.slice(0, 3));
 
       setGroups(nextGroups);
-      setSelectedSkills(autoSelected);
+      setSelectedSkills([]);
       invalidateGenerated();
-      setStatus("Habilidades sugeridas. Agora gere o planejamento com IA.");
+      setStatus("Habilidades sugeridas. Escolha manualmente quais entrarão no planejamento.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao sugerir habilidades BNCC.");
       setStatus("Erro na sugestão");
@@ -1194,7 +1195,7 @@ export function PlanejamentosClient() {
               <div>
                 <p className="text-sm font-black uppercase tracking-[0.32em] text-cyan-300">BNCC por conteúdo</p>
                 <h2 className="mt-4 text-3xl font-black text-white">Habilidades sugeridas</h2>
-                <p className="mt-3 text-sm leading-7 text-slate-400">Revise os cards e deixe selecionadas apenas as habilidades que devem entrar no planejamento.</p>
+                <p className="mt-3 text-sm leading-7 text-slate-400">As sugestões vêm desmarcadas por padrão. Clique apenas nas habilidades que deseja usar no planejamento.</p>
               </div>
               <div className="flex flex-wrap gap-2">
                 <Pill tone="cyan">{stats.sugeridas} sugeridas</Pill>
@@ -1218,7 +1219,7 @@ export function PlanejamentosClient() {
                       </div>
                       <div className="flex gap-2">
                         <button type="button" onClick={() => selectGroup(group)} className="rounded-xl border border-emerald-300/30 bg-emerald-300/10 px-4 py-2 text-xs font-black text-emerald-100 transition hover:bg-emerald-300/20">
-                          Usar todas
+                          Selecionar grupo
                         </button>
                         <button type="button" onClick={() => removeGroup(group)} className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs font-black text-slate-200 transition hover:bg-white/10">
                           Remover

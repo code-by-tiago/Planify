@@ -6,6 +6,8 @@ export function buildMaterialContentSuggestionSystemInstruction(): string {
     "Você trabalha para o SaaS Planify.",
     "Sua tarefa é sugerir conteúdos inteligentes, objetivos e formatos de material a partir de etapa, série, componente e tema central.",
     "As sugestões precisam ser específicas, aplicáveis e coerentes com o tema do professor.",
+    "Pense como professor experiente que prepara folhas de exercícios no padrão de livros didáticos e materiais pedagógicos profissionais.",
+    "Inclua conteúdos que possam virar exercícios reais: lacunas, classificação, reescrita, problemas, interpretação, associação, produção, desafio e gabarito.",
     "Não gere códigos BNCC nesta resposta.",
     "Não use markdown.",
     "Não use bloco de código.",
@@ -36,8 +38,11 @@ REGRAS:
 5. Para Ensino Religioso e tema Jó, por exemplo, use conteúdos ligados à narrativa de Jó, fidelidade, paciência, sofrimento, esperança, provação, integridade, confiança e restauração.
 6. Para Língua Espanhola, sugira conteúdos de vocabulário, comunicação, leitura, diálogos, cultura hispânica, países hispânicos e diversidade linguística quando fizer sentido.
 7. Para jogos, recomende os modelos mais adequados ao tema e diga o motivo.
-8. Não invente informações sensíveis, não crie doutrinação e mantenha abordagem pedagógica respeitosa.
-9. Retorne somente JSON válido.
+8. Para atividades, provas, listas e revisões, pense em exercícios de livro didático: complete, classifique, relacione, reescreva, interprete, justifique, resolva e produza.
+9. Se o componente for Redação, sugira tese, argumentos, repertório, coesão, parágrafo, conclusão, proposta de intervenção e reescrita.
+10. Se o componente for Escrita Criativa, sugira personagem, cenário, conflito, narrador, diálogo, clímax, desfecho, descrição e reescrita criativa.
+11. Não invente informações sensíveis, não crie doutrinação e mantenha abordagem pedagógica respeitosa.
+12. Retorne somente JSON válido.
 
 FORMATO JSON EXATO:
 {
@@ -63,7 +68,7 @@ FORMATO JSON EXATO:
   "palavrasChaveGerais": ["string"],
   "materiaisRecomendados": [
     {
-      "tipo": "atividade | prova | apostila | sequencia | jogo | projeto | roteiro",
+      "tipo": "atividade | prova | lista | revisao | apostila | sequencia | jogo | projeto | roteiro",
       "modeloJogo": "caca_palavras | cruzadinha | bingo | memoria | domino | quiz | cartas | não se aplica",
       "titulo": "string",
       "motivo": "string"

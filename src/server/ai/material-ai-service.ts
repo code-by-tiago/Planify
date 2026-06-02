@@ -10,6 +10,7 @@ import type {
   MaterialSuggestedContent,
 } from "../../types/ai";
 import { buildVisualGameMaterial } from "../../lib/materiais/game-builder";
+import { enhanceHardPedagogicalMaterial, shouldUseHardPedagogicalEngine } from "../../lib/materiais/pedagogical-hard-engine";
 import { generateGeminiJSON } from "./gemini-client";
 import {
   buildMaterialPrompt,
@@ -56,7 +57,7 @@ function isRoteiro(type: string): boolean {
 }
 
 function needsQuestionQuantity(type: string): boolean {
-  return normalizeType(type) === "atividade" || normalizeType(type) === "prova";
+  return ["atividade", "prova", "lista", "revisao"].includes(normalizeType(type));
 }
 
 function normalizeStringArray(value: unknown): string[] {
@@ -228,6 +229,25 @@ export async function generateMaterialWithAI(rawInput: MaterialAIInput): Promise
     }
   }
 
+  if (shouldUseHardPedagogicalEngine(input.tipo)) {
+    try {
+      const generated = await generateGeminiJSON<MaterialAIOutput>({
+        systemInstruction: buildMaterialSystemInstruction(),
+        prompt: buildMaterialPrompt(input),
+        temperature: 0.3,
+        topP: 0.82,
+        maxOutputTokens: 12000,
+      });
+
+      const normalized = normalizeCommonOutput(generated, input);
+      return enhanceHardPedagogicalMaterial(input, normalized);
+    } catch (error) {
+      return enhanceHardPedagogicalMaterial(input, {
+        alertas: [error instanceof Error ? `A IA não respondeu plenamente, então o Planify usou o motor pedagógico hard. Detalhe técnico: ${error.message}` : "A IA não respondeu plenamente, então o Planify usou o motor pedagógico hard."],
+      });
+    }
+  }
+
   const generated = await generateGeminiJSON<MaterialAIOutput>({
     systemInstruction: buildMaterialSystemInstruction(),
     prompt: buildMaterialPrompt(input),
@@ -309,6 +329,24 @@ function fallbackSuggestedContents(input: MaterialContentSuggestionInput): Mater
       content("c4", "Revisão por desafios", "Desafios graduados para fixação, cooperação e avaliação formativa.", ["desafio", "revisão", "jogo", "fixação"], ["Consolidar procedimentos.", "Colaborar na resolução de desafios."], "Intermediário"),
     ];
     palavrasChaveGerais = ["problema", "cálculo", "raciocínio", "estratégia", "resultado", "desafio", "revisão", "aplicação"];
+  } else if (component.includes("redacao") || component.includes("redação")) {
+    conteudos = [
+      content("c1", "Tema, recorte e tese", `Definição do recorte do tema ${tema}, construção de ponto de vista e formulação de tese clara.`, ["tese", "tema", "recorte", "ponto de vista"], ["Formular tese pertinente ao tema.", "Delimitar o recorte argumentativo."], "Básico"),
+      content("c2", "Argumentos e repertório", "Construção de argumentos consistentes com repertório sociocultural pertinente e explicado.", ["argumento", "repertório", "evidência", "exemplo"], ["Selecionar repertório pertinente.", "Relacionar evidências à tese."], "Intermediário"),
+      content("c3", "Coesão, coerência e parágrafo", "Organização de parágrafos, conectivos, progressão textual e unidade de sentido.", ["coesão", "coerência", "conectivos", "parágrafo"], ["Usar conectivos adequados.", "Organizar parágrafos com progressão."], "Intermediário"),
+      content("c4", "Conclusão e proposta de intervenção", "Elaboração de conclusão, síntese e proposta de intervenção quando o gênero solicitar.", ["conclusão", "intervenção", "agente", "ação"], ["Concluir o texto com coerência.", "Elaborar proposta detalhada quando necessário."], "Intermediário"),
+      content("c5", "Reescrita e revisão orientada", "Revisão de linguagem, adequação, clareza, concordância, pontuação e melhoria da argumentação.", ["reescrita", "revisão", "clareza", "adequação"], ["Revisar o próprio texto.", "Melhorar precisão e clareza."], "Intermediário"),
+    ];
+    palavrasChaveGerais = ["tese", "argumento", "repertório", "coesão", "coerência", "parágrafo", "conclusão", "intervenção", "reescrita", "revisão"];
+  } else if (component.includes("escrita criativa")) {
+    conteudos = [
+      content("c1", "Personagem e ponto de vista", `Criação de personagem, narrador e foco narrativo ligados ao tema ${tema}.`, ["personagem", "narrador", "foco narrativo", "voz"], ["Criar personagem coerente.", "Experimentar ponto de vista narrativo."], "Básico"),
+      content("c2", "Cenário e atmosfera", "Construção de espaço, tempo, detalhes sensoriais e atmosfera narrativa.", ["cenário", "atmosfera", "descrição", "detalhes"], ["Descrever ambiente com expressividade.", "Usar detalhes sensoriais."], "Intermediário"),
+      content("c3", "Conflito, clímax e desfecho", "Organização da progressão narrativa com problema, tensão, clímax e resolução.", ["conflito", "clímax", "desfecho", "tensão"], ["Criar conflito narrativo.", "Conduzir a história a um desfecho coerente."], "Intermediário"),
+      content("c4", "Diálogo e ritmo", "Uso de diálogo, travessão, pausas, ritmo e naturalidade nas falas.", ["diálogo", "travessão", "fala", "ritmo"], ["Escrever diálogos claros.", "Usar pontuação adequada."], "Intermediário"),
+      content("c5", "Oficina de reescrita criativa", "Revisão de narrativa, ampliação de cenas, cortes, melhoria de imagens e escolha de palavras.", ["reescrita", "imagem", "cena", "estilo"], ["Reescrever cenas com intenção.", "Aprimorar estilo e clareza."], "Intermediário"),
+    ];
+    palavrasChaveGerais = ["personagem", "narrador", "cenário", "conflito", "clímax", "desfecho", "diálogo", "descrição", "reescrita", "autoria"];
   } else if (component.includes("portuguesa")) {
     conteudos = [
       content("c1", "Leitura e compreensão", `Leitura orientada de textos ligados ao tema ${tema}.`, ["leitura", "texto", "compreensão", "contexto"], ["Localizar informações.", "Compreender sentidos do texto."], "Básico"),
@@ -348,7 +386,10 @@ function fallbackSuggestedContents(input: MaterialContentSuggestionInput): Mater
     palavrasChaveGerais: uniq(palavrasChaveGerais),
     materiaisRecomendados: [
       { tipo: "jogo", modeloJogo: input.modeloJogo || "cruzadinha", titulo: "Jogo pedagógico visual", motivo: "Transforma o tema em material imprimível, editável e mais engajador." },
-      { tipo: "atividade", titulo: "Atividade guiada", motivo: "Boa para registrar compreensão individual e corrigir em sala." },
+      { tipo: "atividade", titulo: "Atividade guiada estilo livro", motivo: "Boa para registrar compreensão individual com comandos variados e gabarito." },
+      { tipo: "prova", titulo: "Prova com gabarito comentado", motivo: "Avalia compreensão com questões objetivas, discursivas e contextualizadas." },
+      { tipo: "lista", titulo: "Lista de exercícios progressiva", motivo: "Organiza exercícios básicos, intermediários e desafios." },
+      { tipo: "revisao", titulo: "Revisão guiada", motivo: "Retoma conteúdos com síntese, exercícios e autoavaliação." },
       { tipo: "sequencia", titulo: "Sequência didática curta", motivo: "Organiza o tema em etapas de aula com progressão." },
     ],
     jogosRecomendados,

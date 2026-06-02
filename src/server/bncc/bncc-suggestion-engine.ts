@@ -603,6 +603,15 @@ function scoreCandidate(
     score += 6;
   }
 
+  if (
+    (componente.includes("redacao") ||
+      componente.includes("redação") ||
+      componente.includes("escrita criativa")) &&
+    /LP|LGG/.test(candidate.codigo)
+  ) {
+    score += 14;
+  }
+
   return score;
 }
 

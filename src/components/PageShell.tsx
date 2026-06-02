@@ -78,10 +78,7 @@ export function PageShell({ children }: PageShellProps) {
         <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[1fr_auto]">
           <div>
             <div className="flex items-center gap-3">
-              <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-300 to-violet-500 text-sm font-black">
-                P
-              </span>
-              <span className="text-xl font-black">Planify</span>
+              <PlanifyBrandLogo />
             </div>
             <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-400">
               Plataforma premium para professores criarem, editarem e organizarem

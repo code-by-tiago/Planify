@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Planify | SaaS Educacional",
-  description: "SaaS premium para planejamentos, materiais didáticos, editor, biblioteca e marketplace educacional.",
+  title: "Planify | Plataforma Educacional",
+  description: "Plataforma educacional premium para planejamentos, materiais didáticos, editor, biblioteca e marketplace pedagógico.",
 };
 
 export default function RootLayout({

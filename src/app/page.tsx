@@ -5,7 +5,7 @@ export const dynamic = "force-static";
 
 const heroTitle = "Planeje, crie e edite aulas com padrão profissional.";
 const heroLead =
-  "O Planify ajuda professores a gerar planejamentos oficiais, materiais didáticos, documentos editáveis, biblioteca premium e marketplace em uma experiência simples e organizada.";
+  "O Planify ajuda professores a planejar, criar materiais didáticos inteligentes, editar documentos pedagógicos e organizar recursos em uma experiência simples, elegante e profissional.";
 
 const features = [
   {
@@ -178,35 +178,23 @@ export default function HomePage() {
                 <source src="/videos/planify-hero.mp4" type="video/mp4" />
               </video>
 
-              <div className="planify-video-frame__fallback">
-                <div className="planify-classroom">
-                  <div className="planify-board">
-                    <span>BNCC + conteúdo</span>
-                    <strong>Planejamento pronto</strong>
-                    <small>Anual, trimestral e editável</small>
-                  </div>
-
-                  <div className="planify-teacher-card">
-                    <div className="planify-avatar">P</div>
-                    <div>
-                      <strong>Documento oficial</strong>
-                      <span>pronto para revisar e baixar</span>
-                    </div>
-                  </div>
-
-                  <div className="planify-ai-card">
-                    <span className="planify-ai-card__spark">✦</span>
-                    <div>
-                      <strong>IA pedagógica</strong>
-                      <span>objetivos, aulas e habilidades alinhadas</span>
-                    </div>
-                  </div>
-                </div>
+              <div className="planify-video-frame__fallback planify-video-frame__fallback--clean" aria-hidden="true">
+                <div className="planify-video-clean-glow" />
               </div>
 
-              <button className="planify-play" type="button" aria-label="Previa visual">
+              <button className="planify-play planify-play--clean" type="button" aria-label="Prévia visual do Planify">
                 ▶
               </button>
+            </div>
+
+            <div className="planify-video-card__footer planify-video-card__footer--clean">
+              <div>
+                <strong>Planify em ação</strong>
+                <span>planejamentos, materiais inteligentes e editor em uma só plataforma</span>
+              </div>
+              <div className="planify-progress" aria-hidden="true">
+                <span style={{ width: "82%" }} />
+              </div>
             </div>
           </div>
         </div>

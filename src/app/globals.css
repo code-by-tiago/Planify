@@ -1733,3 +1733,91 @@ body h3 {
 
 /* PLANIFY_PLANNING_SMART_FIX_9_21_1_END */
 
+
+
+/* PLANIFY_BRANDING_PRINT_REFINEMENT_9_23_4_START */
+/* Escopo: impressão limpa, hero menos poluído e marca educacional premium. */
+
+.planify-brand-logo__tagline {
+  letter-spacing: -0.01em;
+}
+
+.planify-logo-cap {
+  transform-origin: 32px 18px;
+}
+
+.planify-header-brand .planify-brand-logo__icon,
+header .planify-brand-logo__icon {
+  filter: drop-shadow(0 12px 18px rgba(37, 99, 235, 0.16));
+}
+
+.planify-video-frame__video {
+  opacity: 0.82 !important;
+  filter: saturate(1.08) contrast(1.03);
+}
+
+.planify-video-frame__fallback--clean {
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 18% 18%, rgba(124, 58, 237, 0.10), transparent 16rem),
+    radial-gradient(circle at 82% 22%, rgba(8, 145, 178, 0.12), transparent 18rem),
+    linear-gradient(180deg, rgba(15, 23, 42, 0.04), rgba(15, 23, 42, 0.22));
+}
+
+.planify-video-clean-glow {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.08), transparent 42%);
+}
+
+.planify-video-card .planify-board,
+.planify-video-card .planify-teacher-card,
+.planify-video-card .planify-ai-card {
+  display: none !important;
+}
+
+.planify-play--clean {
+  width: 4.35rem !important;
+  height: 4.35rem !important;
+  background: rgba(255, 255, 255, 0.86) !important;
+  color: #2563eb !important;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.22) !important;
+}
+
+.planify-video-card__footer--clean {
+  grid-template-columns: minmax(0, 1fr) 150px;
+}
+
+.planify-video-card__footer--clean strong {
+  font-size: 1rem;
+}
+
+.planify-video-card__footer--clean span {
+  font-size: 0.86rem;
+}
+
+@media (max-width: 720px) {
+  .planify-video-card__footer--clean {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media print {
+  body {
+    background: #ffffff !important;
+  }
+
+  .planify-public-header,
+  .planify-header-nav,
+  .planify-header-actions,
+  header,
+  footer,
+  aside,
+  nav,
+  button,
+  .planify-editor-toolbar,
+  .planify-no-print {
+    display: none !important;
+  }
+}
+/* PLANIFY_BRANDING_PRINT_REFINEMENT_9_23_4_END */

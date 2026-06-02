@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { headerLinks } from "../lib/navigation";
+import { PlanifyBrandLogo } from "./PlanifyBrandLogo";
 
 export function AppHeader() {
   const pathname = usePathname();
@@ -20,15 +21,8 @@ export function AppHeader() {
   return (
     <header className="sticky top-0 z-50 border-b border-white/10 bg-slate-950/85 backdrop-blur-2xl">
       <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-5 sm:px-8">
-        <Link href="/" className="group flex items-center gap-3" onClick={() => setIsOpen(false)}>
-          <div className="relative flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-300 via-blue-500 to-violet-600 text-sm font-black text-white shadow-2xl shadow-blue-500/30">
-            <span className="absolute inset-0 rounded-2xl bg-white/20 opacity-0 transition group-hover:opacity-100" />
-            <span className="relative">P</span>
-          </div>
-          <div>
-            <p className="text-lg font-black tracking-tight text-white">Planify</p>
-            <p className="text-xs font-semibold text-slate-400">SaaS educacional premium</p>
-          </div>
+        <Link href="/" className="group flex items-center gap-3" onClick={() => setIsOpen(false)} aria-label="Planify início">
+          <PlanifyBrandLogo />
         </Link>
 
         <nav className="hidden items-center rounded-full border border-white/10 bg-white/[0.04] p-1 xl:flex">

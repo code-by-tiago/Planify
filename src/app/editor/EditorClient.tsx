@@ -136,6 +136,55 @@ function downloadExistingBlob(filename: string, blob: Blob) {
   window.setTimeout(() => URL.revokeObjectURL(url), 500);
 }
 
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function wrapAsCleanPrintHtml(title: string, body: string) {
+  const safeTitle = escapeHtml(title || "Documento Planify");
+
+  return `<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <title>${safeTitle}</title>
+  <style>
+    @page { size: A4 portrait; margin: 1.2cm; }
+    html, body { background: #ffffff; color: #0f172a; margin: 0; }
+    body { font-family: "Times New Roman", Times, serif; font-size: 12pt; line-height: 1.5; }
+    .planify-print-document { width: 100%; max-width: 18.6cm; margin: 0 auto; }
+    h1, h2, h3 { color: #0f172a; line-height: 1.2; page-break-after: avoid; }
+    p { margin: 0 0 0.65rem; }
+    table { width: 100%; border-collapse: collapse; margin: 0.8rem 0; page-break-inside: avoid; }
+    td, th { border: 1px solid #cbd5e1; padding: 0.45rem; vertical-align: top; }
+    figure, img, table, blockquote, .planify-game-card, .planify-game-board, .planify-bingo-card, .planify-memory-card, .planify-domino-piece { break-inside: avoid; page-break-inside: avoid; }
+    img { max-width: 100%; height: auto; }
+    .page-break { break-after: page; page-break-after: always; border: 0; }
+    [contenteditable], button, input, select, textarea { outline: 0 !important; }
+    @media print {
+      html, body { width: 210mm; min-height: 297mm; }
+      .planify-print-document { max-width: none; }
+    }
+  </style>
+</head>
+<body>
+  <main class="planify-print-document">
+    ${body}
+  </main>
+  <script>
+    window.addEventListener("load", function () {
+      window.setTimeout(function () { window.print(); }, 250);
+    });
+  </script>
+</body>
+</html>`;
+}
+
 function filenameFromResponse(response: Response, fallback: string) {
   const custom = response.headers.get("X-Planify-Filename");
 
@@ -832,8 +881,22 @@ export function EditorClient() {
   }
 
   function printDocument() {
-    persistCurrentDocument("Documento preparado para impressão.");
-    window.print();
+    persistCurrentDocument("Documento preparado para impressão limpa.");
+
+    const cleanPrintHtml = wrapAsCleanPrintHtml(title, getEditorHtml());
+    const printWindow = window.open("", "_blank", "width=1024,height=720");
+
+    if (!printWindow) {
+      setStatus("Não foi possível abrir a janela limpa. Use Ctrl+P e desative cabeçalhos/rodapés do navegador, se necessário.");
+      window.print();
+      return;
+    }
+
+    printWindow.document.open();
+    printWindow.document.write(cleanPrintHtml);
+    printWindow.document.close();
+    printWindow.focus();
+    setStatus("PDF/impressão limpa preparado em uma nova janela.");
   }
 
   function downloadHtml() {
@@ -1138,7 +1201,7 @@ export function EditorClient() {
                 onClick={printDocument}
                 className="rounded-2xl border border-cyan-300/25 bg-cyan-300/10 px-5 py-3 text-sm font-black text-cyan-100 transition hover:bg-cyan-300/20"
               >
-                Imprimir / PDF
+                Imprimir / PDF limpo
               </button>
 
               <button
@@ -1649,24 +1712,45 @@ export function EditorClient() {
           margin: 2rem 0;
         }
 
+        @page {
+          size: A4 portrait;
+          margin: 1.2cm;
+        }
+
         @media print {
           body {
             background: #ffffff !important;
           }
 
-          header,
-          footer,
-          aside,
-          .sticky,
-          .border-b {
-            display: none !important;
+          body * {
+            visibility: hidden !important;
+          }
+
+          .planify-editor-page,
+          .planify-editor-page * {
+            visibility: visible !important;
           }
 
           .planify-editor-page {
-            box-shadow: none !important;
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 100% !important;
             max-width: none !important;
             min-height: auto !important;
+            margin: 0 !important;
             padding: 0 !important;
+            border: 0 !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+          }
+
+          .planify-editor-page table,
+          .planify-editor-page figure,
+          .planify-editor-page img,
+          .planify-editor-page blockquote {
+            break-inside: avoid !important;
+            page-break-inside: avoid !important;
           }
         }
       `}</style>

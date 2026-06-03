@@ -1832,3 +1832,58 @@ header .planify-brand-logo__icon {
   }
 }
 /* PLANIFY_BRANDING_PRINT_REFINEMENT_9_23_4_END */
+
+/* PLANIFY_UI3_ETAPA3_START */
+
+/*
+  Planify — Etapa 3 (Home, Login, Dashboard e Planos)
+
+  Escopo:
+  - Neutraliza, APENAS dentro de .planify-ui3, os overrides globais legados
+    (blocos 9.20.6 e 9.20.8) que forçavam bg-slate-* -> branco e text-white -> escuro.
+  - Permite que o design system da Etapa 2 (PlanifyButton/PlanifyCard/etc.)
+    renderize cores corretas nas páginas redesenhadas.
+  - NÃO afeta páginas internas legadas (PageShell), que continuam claras.
+  - Não altera APIs, banco, DOCX, Stripe, Supabase, IA ou rotas internas.
+*/
+
+.planify-ui3 [class*="text-white"] {
+  color: #ffffff !important;
+}
+
+.planify-ui3 [class*="bg-slate-950"] {
+  background-color: #020617 !important;
+}
+
+.planify-ui3 [class*="bg-slate-900"] {
+  background-color: #0f172a !important;
+}
+
+.planify-ui3 [class*="bg-slate-800"] {
+  background-color: #1e293b !important;
+}
+
+/* Mantém o contraste das superfícies muito claras dentro do escopo */
+.planify-ui3 [class*="text-slate-950"] {
+  color: #020617 !important;
+}
+
+/* Sombra consistente para botões/áreas escuras redesenhadas */
+.planify-ui3 [class*="shadow-slate-200"] {
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.16) !important;
+}
+
+/* Cabeçalho público fixo das páginas redesenhadas */
+.planify-ui3 .planify-ui3-header {
+  background: rgba(255, 255, 255, 0.85) !important;
+  border-color: rgba(15, 23, 42, 0.08) !important;
+  box-shadow: 0 8px 30px rgba(15, 23, 42, 0.05) !important;
+}
+
+/* Botões/links dentro do header não devem ser forçados a branco */
+.planify-ui3 .planify-ui3-header [class*="rounded-2xl"],
+.planify-ui3 .planify-ui3-header [class*="rounded-full"] {
+  box-shadow: none !important;
+}
+
+/* PLANIFY_UI3_ETAPA3_END */

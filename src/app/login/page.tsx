@@ -4,10 +4,16 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
-import { PlanifyBrand } from "@/components/pro/PlanifyBrand";
+import { PublicHeader } from "@/components/public/PublicHeader";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 
 type Mode = "login" | "signup";
+
+const benefits = [
+  "Geradores com IA para planejamentos e materiais",
+  "Alinhamento à BNCC e exportação em DOCX oficial",
+  "Editor integrado, histórico e biblioteca premium",
+];
 
 export default function LoginPage() {
   const router = useRouter();
@@ -99,67 +105,49 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#f6f7fb] text-slate-950">
-      <header className="border-b border-slate-200 bg-white px-5 py-4">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3">
-          <PlanifyBrand href="/" />
+    <main className="planify-ui3 min-h-screen">
+      <PublicHeader />
 
-          <nav className="flex items-center gap-2">
-            <Link
-              href="/"
-              className="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-black text-slate-700 transition hover:border-slate-950"
-            >
-              Início
-            </Link>
-            <Link
-              href="/planos"
-              className="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-black text-slate-700 transition hover:border-slate-950"
-            >
-              Planos
-            </Link>
-            <Link
-              href="/dashboard"
-              className="rounded-2xl bg-slate-950 px-4 py-2 text-sm font-black text-white shadow-lg shadow-slate-200"
-            >
-              Painel
-            </Link>
-          </nav>
-        </div>
-      </header>
-
-      <section className="mx-auto grid min-h-[calc(100vh-80px)] max-w-6xl items-center gap-8 px-5 py-8 lg:grid-cols-[0.9fr_1.1fr]">
+      <section className="mx-auto grid max-w-6xl items-center gap-10 px-5 py-12 sm:px-8 lg:grid-cols-[0.95fr_1.05fr] lg:py-16">
+        {/* Coluna informativa */}
         <div className="hidden lg:block">
-          <div className="inline-flex items-center gap-2 rounded-2xl bg-blue-50 px-4 py-2 text-xs font-black uppercase tracking-[0.18em] text-blue-700">
+          <span className="inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-indigo-50 px-4 py-2 text-xs font-black uppercase tracking-[0.18em] text-indigo-700">
             <PlanifyIcon name="lock" className="h-4 w-4" />
             Acesso Planify
-          </div>
-          <h1 className="mt-5 max-w-xl text-5xl font-black leading-tight tracking-tight text-slate-950">
+          </span>
+
+          <h1 className="mt-6 text-4xl font-black leading-tight tracking-tight text-slate-950 lg:text-5xl">
             Entre para acessar suas ferramentas pedagógicas.
           </h1>
-          <p className="mt-4 max-w-lg text-base font-semibold leading-7 text-slate-600">
-            Use o mesmo e-mail da assinatura para liberar recursos premium,
-            materiais, planejamentos, editor e histórico.
+
+          <p className="mt-5 max-w-lg text-base font-semibold leading-7 text-slate-600">
+            Use o mesmo e-mail da sua assinatura para liberar os recursos premium
+            do Planify.
           </p>
 
-          {premiumRequired ? (
-            <div className="mt-6 rounded-[1.5rem] border border-blue-100 bg-blue-50 p-4">
-              <p className="text-sm font-black text-blue-800">
-                Login necessário para continuar
-              </p>
-              <p className="mt-1 text-sm font-semibold leading-6 text-blue-700">
-                Após entrar, o Planify verificará automaticamente se o e-mail
-                possui plano ativo.
-              </p>
-            </div>
-          ) : null}
+          <ul className="mt-8 grid gap-3">
+            {benefits.map((item) => (
+              <li
+                key={item}
+                className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 shadow-sm"
+              >
+                <PlanifyIcon
+                  name="checkCircle"
+                  className="h-5 w-5 shrink-0 text-emerald-600"
+                />
+                {item}
+              </li>
+            ))}
+          </ul>
         </div>
 
-        <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-xl shadow-slate-200 sm:p-8">
+        {/* Formulário */}
+        <div className="rounded-[2.25rem] border border-slate-200 bg-white p-6 shadow-xl shadow-slate-200/70 sm:p-8">
           <div className="mb-6">
-            <p className="text-xs font-black uppercase tracking-[0.2em] text-blue-700">
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-indigo-700">
               Planify
             </p>
-            <h2 className="mt-2 text-4xl font-black tracking-tight text-slate-950">
+            <h2 className="mt-2 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
               {mode === "login" ? "Entrar na conta" : "Criar conta"}
             </h2>
             <p className="mt-2 text-sm font-semibold text-slate-500">
@@ -169,6 +157,24 @@ export default function LoginPage() {
             </p>
           </div>
 
+          {premiumRequired ? (
+            <div className="mb-6 flex gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+              <PlanifyIcon
+                name="alertCircle"
+                className="h-5 w-5 shrink-0 text-amber-600"
+              />
+              <div>
+                <p className="text-sm font-black text-amber-800">
+                  Plano ativo necessário
+                </p>
+                <p className="mt-1 text-sm font-semibold leading-6 text-amber-700">
+                  Faça login com um e-mail que possua assinatura ativa. O Planify
+                  verifica o acesso premium automaticamente após a entrada.
+                </p>
+              </div>
+            </div>
+          ) : null}
+
           <div className="mb-5 grid grid-cols-2 rounded-2xl border border-slate-200 bg-slate-50 p-1">
             <button
               type="button"
@@ -176,7 +182,7 @@ export default function LoginPage() {
               className={`rounded-xl px-4 py-3 text-sm font-black transition ${
                 mode === "login"
                   ? "bg-white text-slate-950 shadow-sm"
-                  : "text-slate-500"
+                  : "text-slate-500 hover:text-slate-800"
               }`}
             >
               Entrar
@@ -187,7 +193,7 @@ export default function LoginPage() {
               className={`rounded-xl px-4 py-3 text-sm font-black transition ${
                 mode === "signup"
                   ? "bg-white text-slate-950 shadow-sm"
-                  : "text-slate-500"
+                  : "text-slate-500 hover:text-slate-800"
               }`}
             >
               Criar conta
@@ -204,7 +210,8 @@ export default function LoginPage() {
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
                 placeholder="professor@email.com"
-                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-4 text-sm font-semibold outline-none transition focus:border-slate-950"
+                autoComplete="email"
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm font-semibold text-slate-950 outline-none transition focus:border-slate-950 focus:bg-white"
               />
             </label>
 
@@ -217,7 +224,8 @@ export default function LoginPage() {
                 value={senha}
                 onChange={(event) => setSenha(event.target.value)}
                 placeholder="Mínimo 6 caracteres"
-                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-4 text-sm font-semibold outline-none transition focus:border-slate-950"
+                autoComplete={mode === "login" ? "current-password" : "new-password"}
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm font-semibold text-slate-950 outline-none transition focus:border-slate-950 focus:bg-white"
               />
             </label>
 
@@ -239,6 +247,19 @@ export default function LoginPage() {
                 : "Criar conta"}
             </button>
           </form>
+
+          <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+            <p className="text-sm font-bold text-slate-600">
+              Ainda não tem um plano ativo?
+            </p>
+            <Link
+              href="/planos"
+              className="inline-flex items-center gap-1 text-sm font-black text-indigo-700 transition hover:text-indigo-900"
+            >
+              Ver planos
+              <PlanifyIcon name="arrowRight" className="h-4 w-4" />
+            </Link>
+          </div>
 
           <p className="mt-5 text-center text-xs font-semibold leading-5 text-slate-500">
             O acesso às ferramentas premium depende de assinatura ativa ou

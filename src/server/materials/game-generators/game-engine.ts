@@ -182,23 +182,40 @@ function normalizeBlueprintItems(blueprint: MaterialGameBlueprint, input: Materi
     });
 }
 
+const palette = {
+  section: "margin: 28px 0; padding: 22px; border: 1px solid #dbeafe; border-radius: 18px; background: #ffffff; page-break-inside: avoid; break-inside: avoid;",
+  teacher: "margin: 28px 0; padding: 22px; border: 1px solid #fde68a; border-radius: 18px; background: #fffbeb; page-break-inside: avoid; break-inside: avoid;",
+  title: "margin: 0 0 14px; color: #0f172a; font-size: 20px; line-height: 1.25;",
+  text: "margin: 0 0 12px; color: #334155; line-height: 1.65;",
+  table: "width: 100%; border-collapse: collapse; margin: 16px 0 8px; font-size: 13px;",
+  th: "border: 1px solid #cbd5e1; padding: 10px; background: #f8fafc; color: #0f172a; text-align: left; vertical-align: top; font-weight: 800;",
+  td: "border: 1px solid #cbd5e1; padding: 10px; color: #0f172a; vertical-align: top;",
+};
+
+function sectionHtml(title: string, content: string, variant: "student" | "teacher" | "neutral" = "neutral"): string {
+  if (!content.trim()) return "";
+  const style = variant === "teacher" ? palette.teacher : palette.section;
+  return `<section style="${style}"><h2 style="${palette.title}">${escapeHtml(title)}</h2>${content}</section>`;
+}
+
 function tableHtml(table: GameTable): string {
-  const head = `<thead><tr>${table.headers.map((header) => `<th>${escapeHtml(header)}</th>`).join("")}</tr></thead>`;
+  const head = `<thead><tr>${table.headers.map((header) => `<th style="${palette.th}">${escapeHtml(header)}</th>`).join("")}</tr></thead>`;
   const body = `<tbody>${table.rows
-    .map((row) => `<tr>${row.map((cell) => `<td>${escapeHtml(cell)}</td>`).join("")}</tr>`)
+    .map((row) => `<tr>${row.map((cell) => `<td style="${palette.td}">${escapeHtml(cell)}</td>`).join("")}</tr>`)
     .join("")}</tbody>`;
 
-  return `<h3>${escapeHtml(table.title)}</h3><table>${head}${body}</table>`;
+  return `<div style="margin: 18px 0;"><h3 style="margin: 0 0 10px; color: #0f172a; font-size: 16px;">${escapeHtml(table.title)}</h3><table style="${palette.table}">${head}${body}</table></div>`;
 }
 
-function listHtml(title: string, items: string[]): string {
+function listHtml(title: string, items: string[], variant: "student" | "teacher" | "neutral" = "neutral"): string {
   if (!items.length) return "";
-  return `<h2>${escapeHtml(title)}</h2><ul>${items.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`;
+  const content = `<ul style="margin: 0; padding-left: 22px; color: #334155; line-height: 1.7;">${items.map((item) => `<li style="margin: 7px 0;">${escapeHtml(item)}</li>`).join("")}</ul>`;
+  return sectionHtml(title, content, variant);
 }
 
-function paragraphSection(title: string, text: string): string {
+function paragraphSection(title: string, text: string, variant: "student" | "teacher" | "neutral" = "neutral"): string {
   if (!text) return "";
-  return `<h2>${escapeHtml(title)}</h2><p>${escapeHtml(text)}</p>`;
+  return sectionHtml(title, `<p style="${palette.text}">${escapeHtml(text)}</p>`, variant);
 }
 
 function gridToTableHtml(title: string, grid: string[][], revealLetters: boolean): string {
@@ -207,11 +224,12 @@ function gridToTableHtml(title: string, grid: string[][], revealLetters: boolean
       const isEmpty = !cell || cell === "#";
       const content = isEmpty ? "" : revealLetters ? escapeHtml(cell) : "";
       const marker = isEmpty ? "■" : content || "&nbsp;";
-      return `<td>${marker}</td>`;
+      const bg = isEmpty ? "#e2e8f0" : "#ffffff";
+      return `<td style="border:1px solid #94a3b8; width:28px; height:28px; text-align:center; vertical-align:middle; font-family:Arial, sans-serif; font-size:14px; font-weight:800; background:${bg}; color:#0f172a;">${marker}</td>`;
     }).join("")}</tr>`)
     .join("");
 
-  return `<h3>${escapeHtml(title)}</h3><table><tbody>${rows}</tbody></table>`;
+  return `<div style="margin: 18px 0; overflow-x:auto;"><h3 style="margin: 0 0 12px; color: #0f172a; font-size: 16px;">${escapeHtml(title)}</h3><table style="border-collapse: collapse; margin: 0 auto 12px; width: auto;"><tbody>${rows}</tbody></table></div>`;
 }
 
 function buildWordSearchGrid(words: string[], seedText: string): string[][] {
@@ -576,39 +594,65 @@ export function buildGameMaterialFromBlueprint(
   const adaptacoes = compactArray(blueprint.adaptacoesInclusivas);
   const criterios = compactArray(blueprint.criteriosAvaliacao);
 
+  const overviewRows = [
+    ["Formato", formatRule.label],
+    ["Organização", input.jogoDinamica?.organizacao || blueprint.organizacao || "Grupos"],
+    ["Duração", input.jogoDinamica?.duracao || blueprint.tempoEstimado || "30 a 50 minutos"],
+    ["Participantes", input.jogoDinamica?.participantes || "Turma inteira"],
+    ["Movimento", input.jogoDinamica?.nivelMovimento || "baixo a moderado"],
+  ];
+
+  const dadosJogoHtml = tableHtml({
+    title: "Ficha técnica do jogo",
+    headers: ["Campo", "Descrição"],
+    rows: overviewRows,
+  });
+
+  const studentHtml = artifact.studentSections.join("\n");
+  const teacherHtml = artifact.teacherSections.join("\n");
+
   const html = sanitizeMaterialHtml(`
-<article class="planify-material planify-game-material">
-  <h1>${escapeHtml(title)}</h1>
-  <p><strong>${escapeHtml(subtitle)}</strong></p>
-  <p>${escapeHtml(resumo)}</p>
+<article class="planify-material planify-game-material" style="font-family: Arial, sans-serif; color:#0f172a; line-height:1.6; max-width: 920px; margin: 0 auto;">
+  <header style="margin: 0 0 30px; padding: 28px; border-radius: 24px; background: linear-gradient(135deg,#ecfeff,#ffffff,#ecfdf5); border: 1px solid #bae6fd;">
+    <p style="margin:0 0 10px; color:#0891b2; font-size:12px; letter-spacing:.16em; text-transform:uppercase; font-weight:800;">Jogo pedagógico imprimível</p>
+    <h1 style="margin:0; color:#0f172a; font-size:30px; line-height:1.12;">${escapeHtml(title)}</h1>
+    <p style="margin:12px 0 0; color:#334155; font-weight:700;">${escapeHtml(subtitle)}</p>
+    <p style="margin:16px 0 0; color:#475569; line-height:1.7;">${escapeHtml(resumo)}</p>
+  </header>
 
-  ${paragraphSection("Objetivo pedagógico", blueprint.objetivoPedagogico || `Revisar e aplicar conhecimentos sobre ${input.temaCentral}.`)}
-  ${paragraphSection("Contextualização", blueprint.contextualizacao || `Este jogo trabalha ${input.temaCentral} de forma ativa e adequada ao ${input.anoSerie}.`)}
+  ${sectionHtml("1. Visão geral pedagógica", `
+    <p style="${palette.text}"><strong>Objetivo:</strong> ${escapeHtml(blueprint.objetivoPedagogico || `Revisar e aplicar conhecimentos sobre ${input.temaCentral}.`)}</p>
+    <p style="${palette.text}"><strong>Contextualização:</strong> ${escapeHtml(blueprint.contextualizacao || `Este jogo trabalha ${input.temaCentral} de forma ativa e adequada ao ${input.anoSerie}.`)}</p>
+  `)}
 
-  <h2>Dados do jogo</h2>
-  <table>
-    <tbody>
-      <tr><th>Formato</th><td>${escapeHtml(formatRule.label)}</td></tr>
-      <tr><th>Organização</th><td>${escapeHtml(input.jogoDinamica?.organizacao || blueprint.organizacao || "Grupos")}</td></tr>
-      <tr><th>Duração</th><td>${escapeHtml(input.jogoDinamica?.duracao || blueprint.tempoEstimado || "30 a 50 minutos")}</td></tr>
-      <tr><th>Participantes</th><td>${escapeHtml(input.jogoDinamica?.participantes || "Turma inteira")}</td></tr>
-      <tr><th>Movimento</th><td>${escapeHtml(input.jogoDinamica?.nivelMovimento || "baixo a moderado")}</td></tr>
-    </tbody>
-  </table>
+  ${sectionHtml("2. Dados e preparação", dadosJogoHtml)}
+  ${listHtml("3. Materiais necessários", materiais.length ? materiais : [input.jogoDinamica?.materiais || "Folhas impressas, quadro, canetas e material de registro."])}
+  ${listHtml("4. Preparação do professor", preparacao.length ? preparacao : ["Imprimir ou projetar o material.", "Explicar o objetivo pedagógico e as regras antes de iniciar.", "Organizar a turma conforme o formato escolhido."])}
+  ${listHtml("5. Como aplicar", comoJogar.length ? comoJogar : ["Apresente o desafio inicial.", "Distribua os materiais aos estudantes.", "Acompanhe as respostas e promova mediação durante o jogo.", "Finalize com correção comentada e síntese do conteúdo."])}
+  ${listHtml("6. Regras", regras.length ? regras : ["Respeitar a vez de cada grupo ou estudante.", "Registrar as respostas antes da conferência.", "Justificar respostas quando solicitado.", "Vence quem demonstrar melhor compreensão, cooperação e participação."])}
+  ${listHtml("7. Pontuação ou cooperação", pontuacao.length ? pontuacao : ["1 ponto por resposta correta.", "Bônus para justificativa bem explicada.", "Possibilidade de pontuação cooperativa para envolver toda a turma."])}
 
-  ${listHtml("Materiais necessários", materiais.length ? materiais : [input.jogoDinamica?.materiais || "Folhas impressas, quadro, canetas e material de registro."])}
-  ${listHtml("Preparação do professor", preparacao.length ? preparacao : ["Imprimir ou projetar o material.", "Explicar o objetivo pedagógico e as regras antes de iniciar.", "Organizar a turma conforme o formato escolhido."])}
-  ${listHtml("Como jogar", comoJogar.length ? comoJogar : ["Apresente o desafio inicial.", "Distribua os materiais aos estudantes.", "Acompanhe as respostas e promova mediação durante o jogo.", "Finalize com correção comentada e síntese do conteúdo."])}
-  ${listHtml("Regras", regras.length ? regras : ["Respeitar a vez de cada grupo ou estudante.", "Registrar as respostas antes da conferência.", "Justificar respostas quando solicitado.", "Vence quem demonstrar melhor compreensão, cooperação e participação."])}
-  ${listHtml("Pontuação ou cooperação", pontuacao.length ? pontuacao : ["1 ponto por resposta correta.", "Bônus para justificativa bem explicada.", "Possibilidade de pontuação cooperativa para envolver toda a turma."])}
+  <div class="page-break" style="height:1px; margin: 34px 0; border-top: 2px dashed #cbd5e1; page-break-after: always; break-after: page;"></div>
 
-  <h2>Versão do aluno</h2>
-  ${artifact.studentSections.join("\n")}
+  <section style="margin: 32px 0; padding: 24px; border: 2px solid #0f172a; border-radius: 20px; background:#ffffff; page-break-inside: avoid; break-inside: avoid;">
+    <p style="margin:0 0 8px; color:#475569; font-size:12px; letter-spacing:.14em; text-transform:uppercase; font-weight:800;">Versão do aluno</p>
+    <h2 style="margin:0 0 18px; color:#0f172a; font-size:24px;">${escapeHtml(formatRule.label)} — folha de aplicação</h2>
+    <table style="${palette.table}"><tbody>
+      <tr><th style="${palette.th}">Nome</th><td style="${palette.td}"></td><th style="${palette.th}">Turma</th><td style="${palette.td}"></td></tr>
+      <tr><th style="${palette.th}">Data</th><td style="${palette.td}"></td><th style="${palette.th}">Tema</th><td style="${palette.td}">${escapeHtml(input.temaCentral)}</td></tr>
+    </tbody></table>
+    <div style="margin-top: 24px;">${studentHtml}</div>
+  </section>
 
-  <h2>Versão do professor e gabarito</h2>
-  ${artifact.teacherSections.join("\n")}
+  <div class="page-break" style="height:1px; margin: 34px 0; border-top: 2px dashed #cbd5e1; page-break-after: always; break-after: page;"></div>
 
-  ${listHtml("Fechamento pedagógico", fechamento.length ? fechamento : [`Promova uma conversa final sobre o que foi aprendido em ${input.temaCentral}.`, "Peça aos estudantes que expliquem quais conceitos foram mais importantes."])}
+  <section style="margin: 32px 0; padding: 24px; border: 2px solid #f59e0b; border-radius: 20px; background:#fffbeb; page-break-inside: avoid; break-inside: avoid;">
+    <p style="margin:0 0 8px; color:#92400e; font-size:12px; letter-spacing:.14em; text-transform:uppercase; font-weight:800;">Versão do professor</p>
+    <h2 style="margin:0 0 18px; color:#0f172a; font-size:24px;">Gabarito, mediação e respostas</h2>
+    <div style="margin-top: 18px;">${teacherHtml}</div>
+  </section>
+
+  ${listHtml("Fechamento pedagógico", fechamento.length ? fechamento : [`Promova uma conversa final sobre o que foi aprendido em ${input.temaCentral}.`, "Peça aos estudantes que expliquem quais conceitos foram mais importantes."], "teacher")}
   ${listHtml("Adaptações inclusivas", adaptacoes.length ? adaptacoes : [input.inclusaoAcessibilidade || "Usar leitura clara, apoio visual e mediação para estudantes que precisem de mais tempo."])}
   ${listHtml("Critérios de avaliação", criterios.length ? criterios : ["Participação e cooperação.", "Compreensão dos conceitos.", "Justificativa das respostas.", "Registro adequado das descobertas."])}
 </article>

@@ -514,8 +514,6 @@ export function normalizeGeneratedMaterial(
   const criterios = compactStringArray(raw.criteriosAvaliacao);
   const sugestoes = compactStringArray(raw.sugestoesUsoProfessor);
   const objetivos = compactStringArray(raw.objetivosAprendizagem || raw.objetivos);
-  const htmlEditor = sanitizeMaterialHtml(raw.htmlEditor || "");
-
   const material: PlanifyGeneratedMaterial = {
     metadata: {
       titulo: title,
@@ -543,7 +541,7 @@ export function normalizeGeneratedMaterial(
     gabarito,
     criteriosAvaliacao: criterios.length ? criterios : ["Compreensão do conteúdo.", "Clareza nas respostas.", "Uso adequado dos conceitos estudados."],
     sugestoesUsoProfessor: sugestoes.length ? sugestoes : ["Apresentar os objetivos antes da aplicação.", "Acompanhar dúvidas durante a atividade.", "Finalizar com correção comentada."],
-    htmlEditor,
+    htmlEditor: "",
     titulo: title,
     subtitulo: subtitle,
     tipo: getMaterialTypeLabel(input.tipoMaterial),
@@ -568,9 +566,7 @@ export function normalizeGeneratedMaterial(
     alertas: [],
   };
 
-  if (!material.htmlEditor) {
-    material.htmlEditor = buildMaterialHtml(material);
-  }
+  material.htmlEditor = buildMaterialHtml(material);
 
   return material;
 }

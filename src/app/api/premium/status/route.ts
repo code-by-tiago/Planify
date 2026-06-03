@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient, type SupabaseClient, type User } from "@supabase/supabase-js";
+import {
+  createClient,
+  type SupabaseClient,
+  type User,
+} from "@supabase/supabase-js";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -8,9 +12,7 @@ type DbRecord = Record<string, unknown>;
 
 function getSupabaseConfig() {
   const url =
-    process.env.NEXT_PUBLIC_SUPABASE_URL ||
-    process.env.SUPABASE_URL ||
-    "";
+    process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || "";
 
   const anonKey =
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
@@ -58,7 +60,12 @@ function hasAdminRole(user: User) {
   const role = String(metadata.role || metadata.perfil || "").toLowerCase();
   const isAdmin = metadata.admin === true || metadata.is_admin === true;
 
-  return isAdmin || role === "admin" || role === "owner" || role === "proprietario";
+  return (
+    isAdmin ||
+    role === "admin" ||
+    role === "owner" ||
+    role === "proprietario"
+  );
 }
 
 function isDateInFuture(value: unknown) {
@@ -186,15 +193,12 @@ export async function GET(request: NextRequest) {
   const { url, anonKey, serviceKey } = getSupabaseConfig();
 
   if (!url || !anonKey) {
-    return NextResponse.json(
-      {
-        authenticated: false,
-        premium: false,
-        email: "",
-        message: "Supabase não configurado para verificar acesso.",
-      },
-      { status: 200 }
-    );
+    return NextResponse.json({
+      authenticated: false,
+      premium: false,
+      email: "",
+      message: "Supabase não configurado para verificar acesso.",
+    });
   }
 
   const token = request.headers
@@ -203,30 +207,24 @@ export async function GET(request: NextRequest) {
     .trim();
 
   if (!token) {
-    return NextResponse.json(
-      {
-        authenticated: false,
-        premium: false,
-        email: "",
-        message: "Sessão não encontrada.",
-      },
-      { status: 200 }
-    );
+    return NextResponse.json({
+      authenticated: false,
+      premium: false,
+      email: "",
+      message: "Sessão não encontrada.",
+    });
   }
 
   const authClient = createClient(url, anonKey);
   const { data, error } = await authClient.auth.getUser(token);
 
   if (error || !data.user) {
-    return NextResponse.json(
-      {
-        authenticated: false,
-        premium: false,
-        email: "",
-        message: "Sessão inválida ou expirada.",
-      },
-      { status: 200 }
-    );
+    return NextResponse.json({
+      authenticated: false,
+      premium: false,
+      email: "",
+      message: "Sessão inválida ou expirada.",
+    });
   }
 
   const user = data.user;

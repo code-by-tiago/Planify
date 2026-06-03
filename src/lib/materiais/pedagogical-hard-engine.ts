@@ -814,8 +814,33 @@ export function buildHardPedagogicalMaterial(input: MaterialAIInput): MaterialAI
   };
 }
 
+function textSize(output: Partial<MaterialAIOutput>): number {
+  return [
+    output.titulo,
+    output.subtitulo,
+    output.resumo,
+    output.introducao,
+    ...(Array.isArray(output.objetivos) ? output.objetivos : []),
+    ...(Array.isArray(output.conteudos) ? output.conteudos : []),
+    ...(Array.isArray(output.orientacoesProfessor) ? output.orientacoesProfessor : []),
+    ...(Array.isArray(output.orientacoesAluno) ? output.orientacoesAluno : []),
+    ...(Array.isArray(output.secoes) ? output.secoes.flatMap((section) => [section.titulo, section.conteudo, ...(section.itens || [])]) : []),
+    ...(Array.isArray(output.questoes) ? output.questoes.flatMap((question) => [question.enunciado, ...(question.alternativas || []), question.respostaEsperada, question.criterioCorrecao]) : []),
+    ...(Array.isArray(output.gabarito) ? output.gabarito : []),
+  ].join("\n").trim().length;
+}
+
+function expectedQuestionCount(input: MaterialAIInput): number {
+  const type = normalize(input.tipo);
+  if (type === "prova") return Math.min(clampQuestionCount(input.quantidadeQuestoes, 10), 12);
+  if (["atividade", "lista", "revisao"].includes(type)) return Math.min(clampQuestionCount(input.quantidadeQuestoes, 10), 10);
+  if (type === "apostila") return 3;
+  return 0;
+}
+
 function enoughQuestions(output: Partial<MaterialAIOutput>, input: MaterialAIInput): boolean {
-  const expected = normalize(input.tipo) === "prova" ? Math.min(clampQuestionCount(input.quantidadeQuestoes, 10), 10) : 8;
+  const expected = expectedQuestionCount(input);
+  if (!expected) return true;
   return Array.isArray(output.questoes) && output.questoes.length >= expected;
 }
 
@@ -824,32 +849,117 @@ function mergeArrays(primary: string[] | undefined, fallback: string[]): string[
   return Array.from(new Set(values.map((item) => String(item || "").trim()).filter(Boolean)));
 }
 
-function hasRichLetteredItems(output: Partial<MaterialAIOutput>): boolean {
+function hasDetailedQuestions(output: Partial<MaterialAIOutput>, input: MaterialAIInput): boolean {
+  const type = normalize(input.tipo);
+  if (!["atividade", "prova", "lista", "revisao", "apostila"].includes(type)) return true;
+
   const questions = Array.isArray(output.questoes) ? output.questoes : [];
-  if (!questions.length) return false;
-  const richCount = questions.filter((question) => /(^|\n)j\)/i.test(String(question.enunciado || ""))).length;
-  return richCount >= Math.min(3, questions.length);
+  if (!questions.length) return type === "apostila";
+
+  const detailedCount = questions.filter((question) => {
+    const enunciado = String(question.enunciado || "");
+    const alternativas = Array.isArray(question.alternativas) ? question.alternativas : [];
+    return enunciado.length >= 120 || /\n|a\)|b\)|c\)/i.test(enunciado) || alternativas.length >= 4;
+  }).length;
+
+  if (type === "prova") {
+    const hasObjective = questions.some((question) => Array.isArray(question.alternativas) && question.alternativas.length >= 4);
+    return hasObjective && detailedCount >= Math.min(4, questions.length);
+  }
+
+  if (type === "apostila") return true;
+
+  return detailedCount >= Math.min(5, questions.length);
+}
+
+function hasStrongSections(output: Partial<MaterialAIOutput>, input: MaterialAIInput): boolean {
+  const type = normalize(input.tipo);
+  const sections = Array.isArray(output.secoes) ? output.secoes : [];
+  const count = sections.length;
+  const size = textSize(output);
+  const joined = normalize(sections.map((section) => `${section.titulo} ${section.conteudo} ${(section.itens || []).join(" ")}`).join(" "));
+
+  if (type === "apostila") {
+    return count >= 5 && size >= 2200 && /(capitulo|unidade|explicacao|conceito|glossario|sintese|curiosidade|exemplo|fixacao)/.test(joined);
+  }
+
+  if (type === "sequencia") {
+    return count >= 3 && /(aula|momento|desenvolvimento|fechamento|avaliacao)/.test(joined);
+  }
+
+  if (type === "projeto") {
+    return Boolean(output.projeto) || (count >= 5 && /(problema norteador|justificativa|produto final|socializacao|avaliacao|cronograma)/.test(joined));
+  }
+
+  if (type === "roteiro") {
+    return Boolean(output.roteiro) || (count >= 3 && /(antes do estudo|durante o estudo|depois do estudo|autoavaliacao)/.test(joined));
+  }
+
+  return count >= 2 && size >= 1600;
+}
+
+function shouldPreferGenerated(input: MaterialAIInput, generated?: Partial<MaterialAIOutput>): boolean {
+  if (!generated) return false;
+  const type = normalize(input.tipo);
+
+  if (["projeto", "sequencia", "roteiro"].includes(type)) {
+    return hasStrongSections(generated, input) && textSize(generated) >= 1500;
+  }
+
+  if (type === "apostila") {
+    return hasStrongSections(generated, input) && (Array.isArray(generated.questoes) ? generated.questoes.length >= 3 : true);
+  }
+
+  return enoughQuestions(generated, input) && hasDetailedQuestions(generated, input) && textSize(generated) >= 2200;
+}
+
+function cleanSpecificBlocks(input: MaterialAIInput, output: MaterialAIOutput): MaterialAIOutput {
+  const type = normalize(input.tipo);
+  return {
+    ...output,
+    tipo: type,
+    jogo: undefined,
+    projeto: type === "projeto" ? output.projeto : undefined,
+    roteiro: type === "roteiro" ? output.roteiro : undefined,
+    questoes: ["projeto", "sequencia", "roteiro"].includes(type) ? [] : output.questoes,
+    gabarito: ["projeto", "sequencia", "roteiro"].includes(type) ? [] : output.gabarito,
+    alertas: [],
+  };
 }
 
 export function enhanceHardPedagogicalMaterial(input: MaterialAIInput, generated?: Partial<MaterialAIOutput>): MaterialAIOutput {
   const hard = buildHardPedagogicalMaterial(input);
-  if (!generated || !enoughQuestions(generated, input) || !hasRichLetteredItems(generated)) return hard;
 
-  return {
+  if (!shouldPreferGenerated(input, generated)) {
+    return cleanSpecificBlocks(input, hard);
+  }
+
+  const type = normalize(input.tipo);
+  const generatedSections = Array.isArray(generated?.secoes) ? generated.secoes : [];
+  const generatedQuestions = Array.isArray(generated?.questoes) ? generated.questoes : [];
+  const generatedGabarito = Array.isArray(generated?.gabarito) ? generated.gabarito : [];
+
+  const merged: MaterialAIOutput = {
     ...hard,
-    ...generated,
-    dadosGerais: { ...hard.dadosGerais, ...(generated.dadosGerais || {}) },
-    objetivos: mergeArrays(generated.objetivos, hard.objetivos).slice(0, 8),
-    conteudos: mergeArrays(generated.conteudos, hard.conteudos),
-    orientacoesProfessor: mergeArrays(generated.orientacoesProfessor, hard.orientacoesProfessor),
-    orientacoesAluno: mergeArrays(generated.orientacoesAluno, hard.orientacoesAluno),
-    secoes: Array.isArray(generated.secoes) && generated.secoes.length >= 2 ? generated.secoes : hard.secoes,
-    questoes: Array.isArray(generated.questoes) && generated.questoes.length >= hard.questoes.length ? generated.questoes : hard.questoes,
-    gabarito: Array.isArray(generated.gabarito) && generated.gabarito.length >= hard.gabarito.length ? generated.gabarito : hard.gabarito,
-    criteriosAvaliacao: mergeArrays(generated.criteriosAvaliacao, hard.criteriosAvaliacao),
-    adaptacoesInclusivas: mergeArrays(generated.adaptacoesInclusivas, hard.adaptacoesInclusivas),
-    sugestoesUso: mergeArrays(generated.sugestoesUso, hard.sugestoesUso),
-    alertas: hard.alertas,
+    ...(generated as MaterialAIOutput),
+    tipo: type,
+    dadosGerais: { ...hard.dadosGerais, ...(generated?.dadosGerais || {}) },
+    objetivos: mergeArrays(generated?.objetivos, hard.objetivos).slice(0, 10),
+    conteudos: mergeArrays(generated?.conteudos, hard.conteudos),
+    orientacoesProfessor: mergeArrays(generated?.orientacoesProfessor, hard.orientacoesProfessor).slice(0, 12),
+    orientacoesAluno: mergeArrays(generated?.orientacoesAluno, hard.orientacoesAluno).slice(0, 10),
+    introducao: String(generated?.introducao || hard.introducao),
+    secoes: generatedSections.length ? generatedSections : hard.secoes,
+    questoes: generatedQuestions.length || type === "apostila" ? generatedQuestions : hard.questoes,
+    gabarito: generatedGabarito.length || type === "apostila" ? generatedGabarito : hard.gabarito,
+    criteriosAvaliacao: mergeArrays(generated?.criteriosAvaliacao, hard.criteriosAvaliacao).slice(0, 12),
+    adaptacoesInclusivas: mergeArrays(generated?.adaptacoesInclusivas, hard.adaptacoesInclusivas).slice(0, 8),
+    sugestoesUso: mergeArrays(generated?.sugestoesUso, hard.sugestoesUso).slice(0, 8),
+    alertas: [],
     jogo: undefined,
+    projeto: type === "projeto" ? generated?.projeto || hard.projeto : undefined,
+    roteiro: type === "roteiro" ? generated?.roteiro || hard.roteiro : undefined,
   };
+
+  return cleanSpecificBlocks(input, merged);
 }

@@ -109,6 +109,11 @@ export type MaterialAIInput = {
   tema: string;
   quantidadeQuestoes?: string;
   duracao?: string;
+  finalidade?: string;
+  nivelAprofundamento?: string;
+  contextoTurma?: string;
+  recursosDisponiveis?: string;
+  criteriosAvaliacaoPersonalizados?: string;
   objetivos?: string;
   conteudos: string[] | string;
   orientacoes?: string;

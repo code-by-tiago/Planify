@@ -119,6 +119,10 @@ function publicText(output: MaterialAIOutput): string {
   ].join("\n");
 }
 
+function outputTextSize(output: MaterialAIOutput): number {
+  return publicText(output).replace(/\s+/g, " ").trim().length;
+}
+
 function hasSection(output: MaterialAIOutput, pattern: RegExp): boolean {
   return output.secoes.some((section) => pattern.test(normalize(`${section.titulo} ${section.conteudo} ${section.itens.join(" ")}`)));
 }
@@ -159,9 +163,12 @@ function hasSequenciaStructure(output: MaterialAIOutput): boolean {
 }
 
 function hasApostilaStructure(output: MaterialAIOutput): boolean {
-  return hasSection(output, /explicacao|conceito|unidade/)
-    && hasSection(output, /exemplo|atividade|exercicio/)
-    && (output.questoes.length >= 4 || hasSection(output, /fixacao|pratica|revisao/));
+  const sectionCount = Array.isArray(output.secoes) ? output.secoes.length : 0;
+  const hasTeachingFlow = hasSection(output, /capitulo|unidade|explicacao|conceito|contextualizacao|apresentacao/)
+    && hasSection(output, /exemplo|curiosidade|vocabulario|glossario|sintese|fixacao|pratica|exercicio/);
+
+  return (sectionCount >= 5 && outputTextSize(output) >= 2200 && hasTeachingFlow)
+    || (sectionCount >= 4 && hasTeachingFlow && (output.questoes.length >= 3 || hasSection(output, /fixacao|pratica|revisao|exercicio/)));
 }
 
 function hasAssessmentStructure(output: MaterialAIOutput): boolean {

@@ -12,148 +12,131 @@ function normalizeConteudos(conteudos: MaterialAIInput["conteudos"]): string[] {
 }
 
 function materialRulesByType(type: string): string[] {
-  if (type === "atividade") {
+  const normalizedType = String(type || "").trim().toLowerCase();
+
+  if (normalizedType === "atividade") {
     return [
-      "Crie questões claras, progressivas e adequadas à série, em padrão de livro de atividades.",
-      "Cada questão deve ser ampla: use itens internos com letras a até j sempre que fizer sentido, trazendo muitos exemplos e situações para prática.",
-      "Varie comandos: lacunas, classificação, relação, reescrita, interpretação, justificativa, aplicação e desafio.",
-      "Inclua enunciados completos, vários exemplos, itens de a até j quando aplicável, espaço de resposta quando aplicável e progressão básico-intermediário-desafio.",
-      "Inclua resposta esperada e critério de correção.",
-      "Não preencha o bloco jogo.",
-      "Não preencha o bloco projeto.",
-      "Não preencha o bloco roteiro.",
+      "Entregue uma atividade escolar completa, não uma apostila, não uma prova e não um projeto.",
+      "Organize aquecimento, desenvolvimento, prática, desafio e fechamento.",
+      "Crie questões progressivas, contextualizadas e variadas: interpretação, associação, classificação, produção, justificativa, análise, aplicação e síntese.",
+      "Inclua enunciados completos, exemplos suficientes, resposta esperada, critério de correção e orientações de aplicação.",
+      "A versão do aluno deve ficar sem resposta logo abaixo da questão; o gabarito deve ficar separado.",
+      "Não preencha jogo, projeto nem roteiro.",
     ];
   }
 
-  if (type === "prova") {
+  if (normalizedType === "prova") {
     return [
-      "Crie uma avaliação organizada, com instruções e critérios, semelhante a prova escolar real.",
-      "Inclua questões objetivas com alternativas A-E, discursivas, contextualizadas, itens internos com letras e pelo menos uma questão desafio quando fizer sentido.",
-      "Inclua gabarito e critérios de correção.",
-      "Não preencha o bloco jogo.",
-      "Não preencha o bloco projeto.",
-      "Não preencha o bloco roteiro.",
+      "Entregue uma avaliação escolar real, com instruções, distribuição equilibrada de dificuldade e critérios claros.",
+      "Inclua questões objetivas com alternativas A-E quando fizer sentido, questões discursivas, questão contextualizada e questão de maior desafio.",
+      "Não transforme a prova em apostila: explicações devem ser breves e apenas quando necessárias ao enunciado.",
+      "Inclua gabarito comentado e critérios de correção por questão.",
+      "Não preencha jogo, projeto nem roteiro.",
     ];
   }
 
-  if (type === "lista") {
+  if (normalizedType === "lista") {
     return [
-      "Crie lista de exercícios com progressão básico, intermediário e desafio, com questões amplas e vários itens internos de a até j.",
-      "Use comandos variados em padrão de livro de atividades: complete, relacione, classifique, reescreva, resolva, interprete e justifique, sempre com muitos exemplos práticos.",
-      "Inclua gabarito comentado e critérios de correção.",
-      "Não preencha o bloco jogo.",
-      "Não preencha o bloco projeto.",
-      "Não preencha o bloco roteiro.",
+      "Entregue lista de exercícios progressiva, com blocos básico, intermediário e desafio.",
+      "Crie prática suficiente para o aluno treinar de verdade, com comandos variados e contextualizados ao tema.",
+      "Inclua gabarito comentado, critérios e indicação de erros comuns para retomada.",
+      "Não transforme a lista em apostila longa; foco em prática organizada.",
+      "Não preencha jogo, projeto nem roteiro.",
     ];
   }
 
-  if (type === "revisao") {
+  if (normalizedType === "revisao") {
     return [
-      "Crie revisão guiada com síntese, retomada, exercícios de fixação com muitos itens, desafio e autoavaliação.",
-      "Use linguagem clara para aluno e orientações de correção para professor.",
-      "Inclua gabarito comentado e pontos de atenção.",
-      "Não preencha o bloco jogo.",
-      "Não preencha o bloco projeto.",
-      "Não preencha o bloco roteiro.",
+      "Entregue revisão guiada, com síntese inicial, mapa mental textual, retomada dos conceitos, exercícios, desafio e autoavaliação.",
+      "O material deve ajudar o aluno a lembrar, reorganizar e aplicar o conteúdo.",
+      "Inclua gabarito comentado, pontos de atenção e sugestões de retomada para o professor.",
+      "Não preencha jogo, projeto nem roteiro.",
     ];
   }
 
-  if (type === "apostila") {
+  if (normalizedType === "apostila") {
     return [
-      "Crie explicação didática do conteúdo.",
-      "Inclua exemplos e atividades ao final.",
-      "Organize em seções curtas e objetivas.",
-      "Não preencha o bloco jogo.",
-      "Não preencha o bloco projeto.",
-      "Não preencha o bloco roteiro.",
+      "Entregue uma APOSTILA, não uma atividade solta, não uma prova e não uma sequência de aula.",
+      "A apostila deve ter capa textual, apresentação, objetivos, capítulos/unidades, explicações consistentes, exemplos contextualizados, boxes de curiosidade, vocabulário, imagens ou infográficos sugeridos, exercícios de fixação, síntese final, glossário e referências/sugestões de aprofundamento adequadas ao nível escolar.",
+      "Cada seção precisa ensinar o conteúdo antes de pedir exercício. Não comece com questões.",
+      "Contextualize o tema ao componente curricular informado. Se o tema for Amazônia em Geografia, trabalhe território, biodiversidade, povos, economia, impactos ambientais, conservação e cidadania; não transforme em atividade de Língua Portuguesa. Se for Ciências, trate ecossistema, biodiversidade, ciclo da água e impactos. Se for História, trate ocupação, povos, conflitos e processos históricos.",
+      "Use linguagem de apostila: explicativa, organizada, progressiva e adequada ao ano/série.",
+      "Inclua exercícios apenas como bloco de prática ao final de unidades ou no fim da apostila, com gabarito separado.",
+      "Não preencha jogo, projeto nem roteiro.",
     ];
   }
 
-  if (type === "sequencia") {
+  if (normalizedType === "sequencia") {
     return [
-      "Crie etapas de aula com início, desenvolvimento e fechamento.",
-      "Inclua recursos, mediações e avaliação.",
-      "Organize a progressão didática.",
-      "Não preencha o bloco jogo.",
-      "Não preencha o bloco projeto.",
-      "Não preencha o bloco roteiro.",
+      "Entregue sequência didática, não lista de questões.",
+      "Organize aulas ou momentos com objetivos, tempo estimado, recursos, desenvolvimento, intervenção do professor, atividade do estudante, evidências e avaliação.",
+      "Inclua progressão: sondagem, contextualização, desenvolvimento, prática, socialização, avaliação e retomada.",
+      "Não preencha jogo, projeto nem roteiro.",
+      "Não crie bloco de questões como estrutura principal.",
     ];
   }
 
-  if (type === "jogo") {
+  if (normalizedType === "jogo") {
     return [
-      "Não crie quantidade de questões como requisito obrigatório.",
-      "Preencha obrigatoriamente o bloco jogo.",
-      "Crie um jogo pedagógico real, imprimível, editável e aplicável em sala de aula.",
-      "Use exatamente o modelo de jogo solicitado: caça-palavras, cruzadinha, bingo pedagógico, jogo da memória, dominó pedagógico, quiz com gabarito ou cartas recortáveis.",
-      "Inclua nome do jogo, tipoJogo, objetivo, materiais, preparação, regras, modo de jogar, variações e fechamento pedagógico.",
-      "Inclua nas seções o material pronto para impressão: grades, cartelas, cartas, peças, pistas, perguntas, comandos ou banco de palavras conforme o modelo solicitado.",
-      "Para jogo, preencha também jogoVisualSeed.termos com termos específicos do tema: cada item deve ter termo, resposta sem espaços, pista sem entregar a resposta e categoria.",
-      "As pistas devem ter nexo com o tema informado pelo professor. Exemplo: se o tema for Jó, use termos como Jó, paciência, fidelidade, sofrimento, provação, esperança e integridade, com pistas bíblico-pedagógicas coerentes.",
+      "Entregue um jogo pedagógico real, imprimível, editável e aplicável em sala de aula.",
+      "Use exatamente o modelo de jogo solicitado: caça-palavras, cruzadinha, bingo, memória, dominó, quiz ou cartas.",
+      "Inclua nome do jogo, objetivo, materiais, preparação, regras, modo de jogar, variações e fechamento pedagógico.",
+      "Inclua material pronto para impressão: grades, cartelas, cartas, peças, pistas, perguntas, comandos ou banco de palavras conforme o modelo solicitado.",
+      "Preencha jogoVisualSeed.termos com termos específicos do tema; cada termo deve ter resposta sem espaços e sem acentos, pista contextual e categoria.",
       "Inclua gabarito completo para o professor.",
-      "Não entregue uma página vazia, genérica ou apenas com regras. O jogo precisa conter peças/conteúdo pronto para uso.",
-      "Não preencha o bloco projeto.",
-      "Não preencha o bloco roteiro.",
+      "Não entregue apenas regras. O jogo precisa conter peças, cartelas, perguntas, pistas ou grade pronta.",
+      "Não preencha projeto nem roteiro.",
     ];
   }
 
-  if (type === "projeto") {
+  if (normalizedType === "projeto") {
     return [
-      "Gere um projeto pedagógico completo, não uma atividade de exercícios.",
-      "Preencha obrigatoriamente o bloco projeto com problema norteador, etapas, produto final e avaliação.",
-      "As seções devem conter: apresentação, justificativa, problema norteador, objetivos, metodologia, etapas do projeto, cronograma sugerido, produto final, socialização e avaliação.",
-      "Não crie bloco de questões como se fosse prova ou lista. Se houver tarefas, elas devem aparecer como etapas do projeto, roteiro de pesquisa ou orientações de produção.",
+      "Entregue projeto pedagógico completo, não atividade de exercícios.",
+      "Preencha projeto com problema norteador, etapas, produto final e avaliação.",
+      "As seções devem conter apresentação, justificativa, problema norteador, objetivos, metodologia, cronograma, etapas, produto final, socialização, avaliação e rubrica simples.",
+      "Se houver tarefas, elas devem aparecer como etapas do projeto, roteiro de pesquisa ou orientação de produção, não como prova.",
       "O projeto deve ser aplicável à escola, com ações claras para professor e estudantes.",
-      "Para tema filosófico, histórico, científico, literário ou cultural, inclua investigação, debate, produção autoral e socialização.",
-      "Não preencha o bloco jogo.",
-      "Não preencha o bloco roteiro.",
+      "Não preencha jogo nem roteiro.",
+      "Não crie bloco de questões como estrutura principal.",
     ];
   }
 
-  if (type === "roteiro") {
+  if (normalizedType === "roteiro") {
     return [
-      "Preencha obrigatoriamente o bloco roteiro.",
-      "Crie roteiro de estudo com antes, durante e depois.",
-      "Inclua tarefas de leitura, registro e autoavaliação.",
-      "Organize linguagem autônoma para o aluno.",
-      "Não preencha o bloco jogo.",
-      "Não preencha o bloco projeto.",
+      "Entregue roteiro de estudo autônomo, não apostila e não prova.",
+      "Preencha roteiro com antes do estudo, durante o estudo, depois do estudo e autoavaliação.",
+      "Inclua leitura guiada, perguntas orientadoras, tarefas de registro, revisão e checagem de aprendizagem.",
+      "Use linguagem direta para o aluno.",
+      "Não preencha jogo nem projeto.",
     ];
   }
 
   return [
     "Crie material didático claro, profissional e aplicável.",
-    "Organize em seções com instruções e critérios.",
+    "Organize em seções com instruções, prática e critérios.",
     "Não preencha blocos específicos que não correspondam ao tipo solicitado.",
   ];
 }
 
 export function buildMaterialSystemInstruction(): string {
   return [
-    "Você é uma IA pedagógica especialista em materiais didáticos brasileiros.",
-    "Você trabalha para o Planify, uma plataforma educacional premium para professores.",
-    "Você deve gerar materiais didáticos completos, claros, aplicáveis e visualmente organizados.",
-    "Não exponha no material termos de bastidor como: padrão de livro de atividades, itens de a até j, motor, IA, núcleo pedagógico, prompt, JSON, fallback, regras internas ou termos técnicos do sistema.",
-    "Regra central universal: para qualquer componente curricular, trate o tema como um conteúdo completo. Não transforme subconteúdos em materiais separados; integre todos os blocos essenciais em uma única atividade/prova/lista/revisão/jogo coerente, profunda e pronta para uso.",
-    "Para atividades, provas, listas e revisões, gere exercícios originais ricos, com comandos variados: complete, classifique, relacione, reescreva, interprete, justifique, resolva e produza.",
-    "Regra de profundidade: exercícios não podem ser pobres. Sempre que possível, cada questão deve trazer vários itens internos com letras a, b, c, d, e, f, g, h, i e j, com exemplos, frases, situações, alternativas ou subcomandos.",
-    "Provas devem ter questões objetivas com alternativas A, B, C, D e E quando aplicável, além de questões discursivas com itens internos.",
-    "A versão do aluno deve conter questões sem respostas logo abaixo; o gabarito comentado deve ficar separado na versão do professor.",
-    "Todo material avaliativo deve ter versão do aluno, versão do professor, gabarito comentado, critérios de correção e aparência organizada para impressão.",
-    "Você não deve inventar códigos BNCC.",
-    "Nesta etapa, não crie DOCX.",
-    "Preencha somente o bloco específico do tipo solicitado: projeto deve ser projeto; prova deve ser prova; atividade deve ser atividade; lista deve ser lista; revisão deve ser revisão; apostila deve ser apostila; roteiro deve ser roteiro; sequência deve ser sequência didática; jogo deve ser jogo.",
-    "Validador de coerência: antes de responder, confira se o formato final corresponde exatamente ao tipo escolhido. Se o tipo for projeto, não crie lista de questões; se for prova, não crie projeto; se for jogo, não entregue texto explicativo sem peças/cartelas/grade/cartas; se for roteiro, organize percurso; se for sequência, organize aulas.",
-    "O resultado final não deve revelar regras internas, bastidores, validação, IA, motor, JSON, prompt ou critérios técnicos do sistema.",
-    "Se o tipo não for jogo, o campo jogo deve ser null.",
-    "Quando o tipo for jogo, gere um material realmente imprimível, com peças/cartelas/pistas/perguntas e gabarito.",
-    "Quando o tipo for jogo, gere banco semântico contextual em jogoVisualSeed.termos. Esse banco será usado pelo motor visual do Planify para montar cruzadinha, caça-palavras, bingo, memória, dominó, quiz e cartas.",
-    "Se o tipo não for projeto, o campo projeto deve ser null.",
-    "Se o tipo não for roteiro, o campo roteiro deve ser null.",
-    "Não inclua explicações fora do JSON.",
-    "Não use markdown.",
-    "Não use bloco de código.",
-    "Retorne exclusivamente JSON válido.",
+    "Você é uma IA pedagógica especialista em materiais didáticos brasileiros para professores da Educação Básica.",
+    "Você trabalha para o Planify, uma plataforma educacional premium.",
+    "Sua prioridade absoluta é obedecer ao TIPO DE MATERIAL solicitado pelo professor.",
+    "Nunca misture formatos: apostila ensina em capítulos; prova avalia; atividade pratica; lista treina; revisão retoma; sequência organiza aulas; projeto investiga e produz; roteiro orienta estudo; jogo entrega peças ou dinâmica pronta.",
+    "O material deve ser adequado à etapa, ao ano/série, ao componente curricular e ao tema.",
+    "Não transforme tema de Geografia, Ciências, História, Filosofia, Matemática ou Ensino Religioso em atividade de Língua Portuguesa, salvo se o componente escolhido for Língua Portuguesa, Redação ou Escrita Criativa.",
+    "Aprofunde o conteúdo com linguagem escolar, exemplos, contextualização, progressão e aplicabilidade real em sala.",
+    "Para temas amplos, delimite em unidades coerentes sem fugir do tema central.",
+    "A versão do aluno deve conter comandos e espaços de resposta, mas não deve revelar respostas logo abaixo das questões.",
+    "O gabarito, respostas esperadas e critérios devem ficar separados para o professor.",
+    "Não invente códigos BNCC.",
+    "Não crie DOCX nesta etapa.",
+    "Não exponha termos de bastidor como motor, prompt, JSON, fallback, regra interna, IA, validação técnica ou critérios do sistema dentro do material.",
+    "Se o tipo não for jogo, retorne jogo como null ou omita conteúdo real desse bloco.",
+    "Se o tipo não for projeto, retorne projeto como null ou omita conteúdo real desse bloco.",
+    "Se o tipo não for roteiro, retorne roteiro como null ou omita conteúdo real desse bloco.",
+    "Retorne exclusivamente JSON válido, sem markdown e sem bloco de código.",
   ].join("\n");
 }
 
@@ -164,8 +147,8 @@ export function buildMaterialPrompt(input: MaterialAIInput): string {
   return `
 Gere um material didático profissional para o Planify.
 
-DADOS:
-Título: ${input.titulo}
+DADOS DO PROFESSOR E DA TURMA:
+Título: ${input.titulo || "Não informado"}
 Escola: ${input.escola || "Não informado"}
 Professor: ${input.professor || "Não informado"}
 Etapa: ${input.etapa}
@@ -174,39 +157,43 @@ Ano/Série: ${input.anoSerie}
 Componente curricular: ${input.componenteCurricular}
 Tipo de material: ${input.tipo}
 Modelo de jogo, se houver: ${input.modeloJogo || "Não se aplica"}
-Tema: ${input.tema}
+Tema central: ${input.tema}
 Quantidade de questões: ${input.quantidadeQuestoes || "Não se aplica ou não informado"}
-Duração: ${input.duracao || "Não informado"}
+Duração/tempo estimado: ${input.duracao || "Não informado"}
+Finalidade de uso: ${input.finalidade || "Não informado"}
+Nível de aprofundamento: ${input.nivelAprofundamento || "Completo"}
+Contexto da turma/dificuldades: ${input.contextoTurma || "Não informado"}
+Recursos disponíveis: ${input.recursosDisponiveis || "Não informado"}
+Critérios personalizados de avaliação: ${input.criteriosAvaliacaoPersonalizados || "Não informado"}
 
-CONTEÚDOS:
-${conteudos.map((conteudo) => `- ${conteudo}`).join("\n")}
+CONTEÚDOS SELECIONADOS:
+${conteudos.length ? conteudos.map((conteudo) => `- ${conteudo}`).join("\n") : "- Use o tema central para organizar os conteúdos essenciais."}
 
-OBJETIVOS:
+OBJETIVOS INFORMADOS PELO PROFESSOR:
 ${input.objetivos || "Não informado"}
 
-ORIENTAÇÕES:
+ORIENTAÇÕES DO PROFESSOR:
 ${input.orientacoes || "Não informado"}
 
 OBSERVAÇÕES:
 ${input.observacoes || "Não informado"}
 
-REGRAS GERAIS:
-1. O material deve ser adequado à etapa, ano/série e componente.
-2. Use linguagem clara, pedagógica e profissional.
-3. Não diga que é uma simulação.
-4. Não gere DOCX.
-5. Não invente códigos BNCC.
-6. Se o tipo for jogo, não trate como prova nem atividade com quantidade obrigatória de questões.
-7. Se o tipo for jogo, use o modelo informado e entregue material pronto para imprimir, recortar quando necessário, aplicar e corrigir.
-8. Se o tipo for prova, atividade, lista ou revisão, crie questões conforme a quantidade solicitada, com variedade de comandos, muitos exemplos, subitens, gabarito comentado e critérios.
-9. Integre todos os conteúdos listados em um único material. Esta regra vale para TODAS as disciplinas: se o tema for sujeito, aborde todos os tipos de sujeito no mesmo material; se for frações, aborde conceito, comparação, operações e problemas no mesmo material; se for Redação, aborde tese, argumentos, repertório, coesão e reescrita no mesmo material; se for Espanhol, aborde vocabulário, leitura, diálogo, cultura e produção no mesmo material. Nunca crie uma atividade isolada para cada subtópico.
-10. Organize o material conforme o tipo escolhido. Atividades, provas, listas e revisões usam questões; projetos usam etapas de investigação e produto final; sequências usam aulas; roteiros usam percurso de estudo; apostilas usam explicação e prática. A versão do aluno não deve exibir resposta logo abaixo das questões; respostas devem aparecer no gabarito do professor.
-11. Se o tipo NÃO for jogo, retorne "jogo": null.
-12. Se o tipo NÃO for projeto, retorne "projeto": null.
-13. Se o tipo NÃO for roteiro, retorne "roteiro": null.
-14. Retorne apenas JSON válido.
-15. Evite materiais pobres. Amplie exemplos, situações, subitens e propostas de produção, mas não escreva no material que essa é uma regra interna do sistema.
-16. O campo resumo deve ser natural e profissional, sem mencionar "padrão de livro", "itens de a até j", "motor", "IA" ou qualquer bastidor técnico.
+REGRAS UNIVERSAIS:
+1. O material deve obedecer exatamente ao tipo selecionado.
+2. O conteúdo deve ser profundo, coerente, aplicável, sem repetição e sem encher espaço com frases genéricas.
+3. Nunca crie material raso com apenas comandos soltos.
+4. Nunca copie a mesma pergunta com pequenas mudanças.
+5. Integre todos os conteúdos selecionados em um único material coerente.
+6. Se o professor informou contexto da turma, recursos, finalidade, critérios ou observações, use isso para personalizar o material.
+7. Se o tipo for apostila, explique antes de exercitar e organize em capítulos/unidades.
+8. Se o tipo for prova, avalie sem virar apostila.
+9. Se o tipo for atividade, proponha prática orientada sem virar prova formal.
+10. Se o tipo for projeto, use etapas de investigação e produto final, não lista de exercícios.
+11. Se o tipo for sequência, organize aulas/momentos, não questões.
+12. Se o tipo for jogo, entregue material visual/prático pronto para uso.
+13. Use linguagem adequada ao ano/série, sem infantilizar turma avançada e sem complexidade excessiva para anos iniciais.
+14. Respeite o componente curricular: Geografia deve ter raciocínio espacial/territorial; Ciências deve ter investigação científica; História deve ter processos históricos; Matemática deve ter resolução e procedimentos; Línguas devem trabalhar linguagem; Ensino Religioso deve tratar valores e diversidade com respeito.
+15. Retorne apenas JSON válido.
 
 REGRAS ESPECÍFICAS DO TIPO:
 ${typeRules.map((rule) => `- ${rule}`).join("\n")}
@@ -249,34 +236,14 @@ FORMATO JSON EXATO:
       "criterioCorrecao": "string"
     }
   ],
-  "jogo": {
-    "nome": "string",
-    "tipoJogo": "string",
-    "objetivo": "string",
-    "materiais": ["string"],
-    "preparacao": ["string"],
-    "regras": ["string"],
-    "modoDeJogar": ["string"],
-    "variacoes": ["string"],
-    "fechamento": "string"
-  },
-  "projeto": {
-    "problemaNorteador": "string",
-    "etapas": ["string"],
-    "produtoFinal": "string",
-    "avaliacao": "string"
-  },
-  "roteiro": {
-    "antesDoEstudo": ["string"],
-    "duranteOEstudo": ["string"],
-    "depoisDoEstudo": ["string"],
-    "autoavaliacao": ["string"]
-  },
+  "jogo": null,
+  "projeto": null,
+  "roteiro": null,
   "criteriosAvaliacao": ["string"],
   "gabarito": ["string"],
   "adaptacoesInclusivas": ["string"],
   "sugestoesUso": ["string"],
-  "alertas": ["string"],
+  "alertas": [],
   "jogoVisualSeed": {
     "termos": [
       {

@@ -38,6 +38,11 @@ type FormState = {
   modeloJogo: GameModel;
   quantidadeQuestoes: string;
   duracao: string;
+  finalidade: string;
+  nivelAprofundamento: string;
+  contextoTurma: string;
+  recursosDisponiveis: string;
+  criteriosAvaliacaoPersonalizados: string;
   objetivos: string;
   conteudos: string;
   orientacoes: string;
@@ -167,6 +172,11 @@ const initialForm: FormState = {
   modeloJogo: "cruzadinha",
   quantidadeQuestoes: "10",
   duracao: "1 período",
+  finalidade: "Aula em sala",
+  nivelAprofundamento: "Completo",
+  contextoTurma: "",
+  recursosDisponiveis: "Quadro, caderno, impressão e projetor quando disponível",
+  criteriosAvaliacaoPersonalizados: "",
   objetivos: "",
   conteudos: "",
   orientacoes: "",
@@ -266,6 +276,16 @@ const gameLabels: Record<GameModel, string> = {
 };
 
 const quickExamples = [
+  {
+    label: "Geografia",
+    tema: "Amazônia: biodiversidade, povos, território e conservação",
+    etapa: "Ensino Fundamental",
+    anoSerie: "7º ano",
+    componente: "Geografia",
+    area: "",
+    jogo: "quiz" as GameModel,
+    tipo: "apostila" as MaterialType,
+  },
   {
     label: "Ensino Religioso",
     tema: "Jó e a fidelidade diante das provações",
@@ -754,6 +774,7 @@ export function MateriaisClient() {
     [form, suggestions],
   );
   const componentesDisponiveis = useMemo(() => getComponentesDisponiveis(form), [form]);
+  const selectedType = materialTypes.find((item) => item.value === form.tipo);
   const selectedGameModel = gameModelOptions.find((item) => item.value === form.modeloJogo);
 
   function updateField<K extends keyof FormState>(key: K, value: FormState[K]) {
@@ -955,14 +976,21 @@ export function MateriaisClient() {
       saveToLocalHistory(material);
       setStatus({ type: "success", message: form.tipo === "jogo" ? "Jogo pronto para revisar no Editor." : `${typeLabels[form.tipo]} pronto para revisar no Editor.` });
     } catch (error) {
-      if (conteudos.length === 0) conteudos = buildDefaultContentLines(form);
-      const fallback = buildFallbackMaterial(form, conteudos);
-      setGeneratedMaterial(fallback);
-      saveToLocalHistory(fallback);
-      setStatus({
-        type: "success",
-        message: "Material pronto para revisar no Editor.",
-      });
+      if (form.tipo === "jogo") {
+        if (conteudos.length === 0) conteudos = buildDefaultContentLines(form);
+        const fallback = buildFallbackMaterial(form, conteudos);
+        setGeneratedMaterial(fallback);
+        saveToLocalHistory(fallback);
+        setStatus({ type: "success", message: "Jogo visual pronto para revisar no Editor." });
+      } else {
+        setGeneratedMaterial(null);
+        setStatus({
+          type: "error",
+          message: error instanceof Error
+            ? error.message
+            : "Não foi possível gerar o material agora. Revise os campos e tente novamente.",
+        });
+      }
     } finally {
       setIsGenerating(false);
     }
@@ -1056,6 +1084,36 @@ export function MateriaisClient() {
 
           <div className="mt-6 grid gap-4 md:grid-cols-2">
             <label className="grid gap-2">
+              <span className="text-sm font-bold text-slate-300">Título do material</span>
+              <input value={form.titulo} onChange={(event) => updateField("titulo", event.target.value)} placeholder="Ex.: Apostila — Amazônia" className="h-14 rounded-2xl border border-white/10 bg-slate-950/50 px-4 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300/50" />
+            </label>
+
+            <label className="grid gap-2">
+              <span className="text-sm font-bold text-slate-300">Finalidade</span>
+              <select value={form.finalidade} onChange={(event) => updateField("finalidade", event.target.value)} className="h-14 rounded-2xl border border-white/10 bg-slate-950/50 px-4 text-sm text-white outline-none transition focus:border-cyan-300/50">
+                {[
+                  "Aula em sala",
+                  "Tarefa de casa",
+                  "Revisão",
+                  "Recuperação",
+                  "Avaliação",
+                  "Trabalho em grupo",
+                  "Material de apoio impresso",
+                ].map((item) => <option key={item} value={item} className="bg-slate-950">{item}</option>)}
+              </select>
+            </label>
+
+            <label className="grid gap-2">
+              <span className="text-sm font-bold text-slate-300">Escola</span>
+              <input value={form.escola} onChange={(event) => updateField("escola", event.target.value)} placeholder="Nome da escola" className="h-14 rounded-2xl border border-white/10 bg-slate-950/50 px-4 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300/50" />
+            </label>
+
+            <label className="grid gap-2">
+              <span className="text-sm font-bold text-slate-300">Professor(a)</span>
+              <input value={form.professor} onChange={(event) => updateField("professor", event.target.value)} placeholder="Nome do professor" className="h-14 rounded-2xl border border-white/10 bg-slate-950/50 px-4 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300/50" />
+            </label>
+
+            <label className="grid gap-2">
               <span className="text-sm font-bold text-slate-300">Etapa</span>
               <select value={form.etapa} onChange={(event) => updateField("etapa", event.target.value)} className="h-14 rounded-2xl border border-white/10 bg-slate-950/50 px-4 text-sm text-white outline-none transition focus:border-cyan-300/50">
                 {etapaOptions.map((item) => <option key={item} value={item} className="bg-slate-950">{item}</option>)}
@@ -1093,6 +1151,7 @@ export function MateriaisClient() {
               <select value={form.tipo} onChange={(event) => updateField("tipo", event.target.value as MaterialType)} className="h-14 rounded-2xl border border-white/10 bg-slate-950/50 px-4 text-sm text-white outline-none transition focus:border-cyan-300/50">
                 {materialTypes.map((type) => <option key={type.value} value={type.value} className="bg-slate-950">{type.label}</option>)}
               </select>
+              {selectedType?.description ? <span className="text-xs leading-5 text-slate-500">{selectedType.description}</span> : null}
             </label>
 
             {form.tipo === "jogo" && (
@@ -1104,10 +1163,116 @@ export function MateriaisClient() {
               </label>
             )}
 
+            {needsQuestionQuantity(form.tipo) && (
+              <label className="grid gap-2">
+                <span className="text-sm font-bold text-slate-300">Quantidade de questões</span>
+                <input value={form.quantidadeQuestoes} onChange={(event) => updateField("quantidadeQuestoes", event.target.value)} placeholder="Ex.: 10" className="h-14 rounded-2xl border border-white/10 bg-slate-950/50 px-4 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300/50" />
+              </label>
+            )}
+
+            <label className="grid gap-2">
+              <span className="text-sm font-bold text-slate-300">Duração/tempo estimado</span>
+              <input value={form.duracao} onChange={(event) => updateField("duracao", event.target.value)} placeholder="Ex.: 2 períodos" className="h-14 rounded-2xl border border-white/10 bg-slate-950/50 px-4 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300/50" />
+            </label>
+
+            <label className="grid gap-2">
+              <span className="text-sm font-bold text-slate-300">Nível de aprofundamento</span>
+              <select value={form.nivelAprofundamento} onChange={(event) => updateField("nivelAprofundamento", event.target.value)} className="h-14 rounded-2xl border border-white/10 bg-slate-950/50 px-4 text-sm text-white outline-none transition focus:border-cyan-300/50">
+                {["Essencial", "Completo", "Avançado", "Muito aprofundado"].map((item) => <option key={item} value={item} className="bg-slate-950">{item}</option>)}
+              </select>
+            </label>
+
             <label className="grid gap-2 md:col-span-2">
               <span className="text-sm font-bold text-slate-300">Tema central</span>
-              <input value={form.tema} onChange={(event) => updateField("tema", event.target.value)} placeholder="Ex.: Jó e a fidelidade diante das provações" className="h-14 rounded-2xl border border-white/10 bg-slate-950/50 px-4 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300/50" />
+              <input value={form.tema} onChange={(event) => updateField("tema", event.target.value)} placeholder="Ex.: Amazônia: biodiversidade, povos, território e conservação" className="h-14 rounded-2xl border border-white/10 bg-slate-950/50 px-4 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300/50" />
             </label>
+
+            <label className="grid gap-2 md:col-span-2">
+              <span className="text-sm font-bold text-slate-300">Conteúdos que devem entrar no material</span>
+              <textarea value={form.conteudos} onChange={(event) => updateField("conteudos", event.target.value)} rows={5} placeholder="Um conteúdo por linha. Ex.: localização da Amazônia; biodiversidade; povos indígenas e comunidades tradicionais; desmatamento; conservação" className="rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-4 text-sm leading-7 text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300/50" />
+              <span className="text-xs leading-5 text-slate-500">Se deixar em branco, o Planify organiza automaticamente conteúdos coerentes com o tema, a série e o componente.</span>
+            </label>
+
+            <label className="grid gap-2 md:col-span-2">
+              <span className="text-sm font-bold text-slate-300">Objetivos de aprendizagem</span>
+              <textarea value={form.objetivos} onChange={(event) => updateField("objetivos", event.target.value)} rows={4} placeholder="Opcional. Informe objetivos específicos ou deixe a IA estruturar." className="rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-4 text-sm leading-7 text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300/50" />
+            </label>
+
+            <label className="grid gap-2 md:col-span-2">
+              <span className="text-sm font-bold text-slate-300">Contexto da turma / dificuldades</span>
+              <textarea value={form.contextoTurma} onChange={(event) => updateField("contextoTurma", event.target.value)} rows={3} placeholder="Ex.: turma com dificuldade de leitura, precisa de exemplos concretos e linguagem objetiva." className="rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-4 text-sm leading-7 text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300/50" />
+            </label>
+
+            <label className="grid gap-2">
+              <span className="text-sm font-bold text-slate-300">Recursos disponíveis</span>
+              <textarea value={form.recursosDisponiveis} onChange={(event) => updateField("recursosDisponiveis", event.target.value)} rows={3} placeholder="Ex.: quadro, projetor, impressão, laboratório, internet." className="rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-4 text-sm leading-7 text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300/50" />
+            </label>
+
+            <label className="grid gap-2">
+              <span className="text-sm font-bold text-slate-300">Critérios de avaliação</span>
+              <textarea value={form.criteriosAvaliacaoPersonalizados} onChange={(event) => updateField("criteriosAvaliacaoPersonalizados", event.target.value)} rows={3} placeholder="Opcional. Ex.: clareza, participação, uso de conceitos, argumentação." className="rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-4 text-sm leading-7 text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300/50" />
+            </label>
+
+            <label className="grid gap-2 md:col-span-2">
+              <span className="text-sm font-bold text-slate-300">Orientações especiais</span>
+              <textarea value={form.orientacoes} onChange={(event) => updateField("orientacoes", event.target.value)} rows={3} placeholder="Ex.: incluir leitura curta, glossário, box de curiosidade, atividade em grupo ou gabarito comentado." className="rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-4 text-sm leading-7 text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300/50" />
+            </label>
+
+            <label className="grid gap-2 md:col-span-2">
+              <span className="text-sm font-bold text-slate-300">Observações</span>
+              <textarea value={form.observacoes} onChange={(event) => updateField("observacoes", event.target.value)} rows={3} placeholder="Opcional. Ex.: evitar textos longos demais, incluir exemplos brasileiros, preparar para impressão." className="rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-4 text-sm leading-7 text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300/50" />
+            </label>
+          </div>
+
+          <div className="mt-6 rounded-2xl border border-emerald-300/20 bg-emerald-300/10 p-5">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+              <div>
+                <p className="text-sm font-black uppercase tracking-[0.22em] text-emerald-200">Curadoria inteligente</p>
+                <h3 className="mt-2 text-xl font-black text-white">Organizar conteúdos antes de gerar</h3>
+                <p className="mt-2 text-sm leading-7 text-emerald-50/80">
+                  Use quando o professor só informar o tema. O Planify sugere conteúdos, objetivos e formatos coerentes antes da geração final.
+                </p>
+              </div>
+              <button type="button" onClick={suggestContents} disabled={isSuggesting} className="rounded-2xl bg-emerald-200 px-5 py-4 text-sm font-black text-slate-950 transition hover:-translate-y-1 hover:bg-white disabled:cursor-not-allowed disabled:opacity-60">
+                {isSuggesting ? "Organizando..." : "Sugerir conteúdos"}
+              </button>
+            </div>
+
+            {suggestions ? (
+              <div className="mt-5 grid gap-4">
+                <div className="rounded-2xl border border-white/10 bg-slate-950/35 p-4">
+                  <p className="text-sm leading-7 text-emerald-50/90">{suggestions.resumoPedagogico}</p>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <button type="button" onClick={selectRecommendedSuggestions} className="rounded-xl bg-white px-4 py-2 text-xs font-black text-slate-950">Usar recomendados</button>
+                    <button type="button" onClick={selectAllSuggestions} className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs font-black text-white">Selecionar todos</button>
+                    <button type="button" onClick={clearSuggestionSelection} className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs font-black text-white">Limpar seleção</button>
+                    <button type="button" onClick={applySelectedSuggestionsToField} disabled={!selectedSuggestionIds.length} className="rounded-xl border border-emerald-200/40 bg-emerald-200/15 px-4 py-2 text-xs font-black text-emerald-50 disabled:cursor-not-allowed disabled:opacity-50">Aplicar ao campo conteúdos</button>
+                  </div>
+                </div>
+
+                <div className="grid gap-3 md:grid-cols-2">
+                  {suggestions.conteudos.map((item) => {
+                    const selected = selectedSuggestionIds.includes(item.id);
+                    return (
+                      <button key={item.id} type="button" onClick={() => toggleSuggestion(item.id)} className={`rounded-2xl border p-4 text-left transition hover:-translate-y-0.5 ${selected ? "border-emerald-200/70 bg-emerald-200 text-slate-950" : "border-white/10 bg-slate-950/45 text-white hover:bg-white/10"}`}>
+                        <span className="block text-sm font-black">{item.titulo}</span>
+                        <span className="mt-2 block text-xs leading-5 opacity-80">{item.descricao}</span>
+                        <span className="mt-3 block text-[11px] font-black uppercase tracking-[0.16em] opacity-70">{item.dificuldade} • {item.tempoEstimado}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="grid gap-3 md:grid-cols-2">
+                  {(suggestions.materiaisRecomendados || []).slice(0, 4).map((option) => (
+                    <button key={`${option.tipo}-${option.titulo}`} type="button" onClick={() => useRecommended(option)} className="rounded-2xl border border-white/10 bg-white/5 p-4 text-left text-white transition hover:-translate-y-0.5 hover:bg-white/10">
+                      <span className="block text-sm font-black">{option.titulo}</span>
+                      <span className="mt-2 block text-xs leading-5 text-slate-400">{option.motivo}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
           </div>
 
           <div className="mt-6 rounded-2xl border border-cyan-300/20 bg-cyan-300/10 p-4 text-sm leading-7 text-cyan-50/85">
@@ -1142,13 +1307,35 @@ export function MateriaisClient() {
                 <div className="mt-6 max-h-[780px] overflow-auto rounded-2xl border border-slate-200 bg-white p-5 text-slate-900" dangerouslySetInnerHTML={{ __html: generatedMaterial.visualHtml || generatedMaterial.printHtml || "" }} />
               ) : (
                 <div className="mt-6 grid gap-4">
-                  {(generatedMaterial.secoes || []).slice(0, 4).map((section, index) => (
+                  {(generatedMaterial.secoes || []).slice(0, 8).map((section, index) => (
                     <div key={`${section.titulo}-${index}`} className="rounded-2xl border border-white/10 bg-slate-950/50 p-5">
                       <p className="text-xs font-black uppercase tracking-[0.18em] text-cyan-300">Seção {index + 1}</p>
                       <h3 className="mt-2 text-xl font-black text-white">{section.titulo}</h3>
                       <p className="mt-3 whitespace-pre-line text-sm leading-7 text-slate-400">{section.conteudo || section.descricao}</p>
+                      {section.itens?.length ? (
+                        <ul className="mt-4 grid gap-2 text-sm leading-6 text-slate-300">
+                          {section.itens.slice(0, 8).map((item, itemIndex) => (
+                            <li key={`${section.titulo}-${itemIndex}`} className="rounded-xl border border-white/10 bg-white/5 px-3 py-2">{item}</li>
+                          ))}
+                        </ul>
+                      ) : null}
                     </div>
                   ))}
+
+                  {(generatedMaterial.questoes || []).length ? (
+                    <div className="rounded-2xl border border-emerald-300/20 bg-emerald-300/10 p-5">
+                      <p className="text-xs font-black uppercase tracking-[0.18em] text-emerald-200">Questões</p>
+                      <h3 className="mt-2 text-xl font-black text-white">{(generatedMaterial.questoes || []).length} questão(ões) preparadas</h3>
+                      <div className="mt-4 grid gap-3">
+                        {(generatedMaterial.questoes || []).slice(0, 4).map((question) => (
+                          <div key={question.numero} className="rounded-xl border border-white/10 bg-slate-950/45 p-4">
+                            <p className="text-sm font-black text-white">Questão {question.numero} • {question.tipo}</p>
+                            <p className="mt-2 whitespace-pre-line text-xs leading-6 text-slate-400">{question.enunciado}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
               )}
 

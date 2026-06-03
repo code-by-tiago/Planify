@@ -230,22 +230,16 @@ export async function generateMaterialWithAI(rawInput: MaterialAIInput): Promise
   }
 
   if (shouldUseHardPedagogicalEngine(input.tipo)) {
-    try {
-      const generated = await generateGeminiJSON<MaterialAIOutput>({
-        systemInstruction: buildMaterialSystemInstruction(),
-        prompt: buildMaterialPrompt(input),
-        temperature: 0.3,
-        topP: 0.82,
-        maxOutputTokens: 12000,
-      });
+    const generated = await generateGeminiJSON<MaterialAIOutput>({
+      systemInstruction: buildMaterialSystemInstruction(),
+      prompt: buildMaterialPrompt(input),
+      temperature: 0.28,
+      topP: 0.82,
+      maxOutputTokens: 14000,
+    });
 
-      const normalized = normalizeCommonOutput(generated, input);
-      return enforceMaterialTypeContract(input, enhanceHardPedagogicalMaterial(input, normalized));
-    } catch {
-      return enforceMaterialTypeContract(input, enhanceHardPedagogicalMaterial(input, {
-        alertas: [],
-      }));
-    }
+    const normalized = normalizeCommonOutput(generated, input);
+    return enforceMaterialTypeContract(input, enhanceHardPedagogicalMaterial(input, normalized));
   }
 
   const generated = await generateGeminiJSON<MaterialAIOutput>({
@@ -321,6 +315,16 @@ function fallbackSuggestedContents(input: MaterialContentSuggestionInput): Mater
       content("c5", "Produção guiada", "Criação de frases, cartões, respostas curtas ou apresentações usando o vocabulário estudado.", ["producción", "frases", "presentación", "comunicación"], ["Produzir frases simples em espanhol.", "Usar o tema em uma proposta comunicativa."], "Intermediário"),
     ];
     palavrasChaveGerais = ["saludos", "vocabulario", "diálogo", "lectura", "cultura", "hispánico", "países", "diversidad", "pronunciación", "presentación"];
+  } else if ((component.includes("geografia") || component.includes("ciencias humanas") || component.includes("humanas")) && theme.includes("amazonia")) {
+    conteudos = [
+      content("c1", "Localização e dimensão territorial da Amazônia", "Estudo da Amazônia como região de grande extensão, presença em diferentes estados brasileiros e importância para a organização do território.", ["Amazônia", "território", "região", "Brasil"], ["Localizar a Amazônia no território brasileiro.", "Relacionar extensão territorial e diversidade regional."], "Básico"),
+      content("c2", "Biodiversidade, rios e clima", "Análise da floresta, dos rios, do clima equatorial, da biodiversidade e das relações entre elementos naturais.", ["biodiversidade", "rios", "clima", "floresta"], ["Reconhecer características naturais da Amazônia.", "Explicar relações entre clima, água, vegetação e biodiversidade."], "Intermediário"),
+      content("c3", "Povos indígenas e comunidades tradicionais", "Estudo de povos indígenas, ribeirinhos, quilombolas, extrativistas e saberes tradicionais ligados ao território amazônico.", ["povos indígenas", "ribeirinhos", "quilombolas", "saberes tradicionais"], ["Valorizar a diversidade sociocultural da Amazônia.", "Relacionar território, cultura e modos de vida."], "Intermediário"),
+      content("c4", "Economia, trabalho e uso dos recursos naturais", "Reflexão sobre atividades econômicas, extrativismo, agricultura, mineração, transporte, energia e conflitos pelo uso do território.", ["economia", "extrativismo", "mineração", "recursos naturais"], ["Analisar formas de uso econômico da Amazônia.", "Reconhecer conflitos e impactos relacionados aos recursos naturais."], "Intermediário"),
+      content("c5", "Desmatamento, queimadas e impactos ambientais", "Análise de causas e consequências do desmatamento, das queimadas e da perda de biodiversidade, com foco em leitura crítica e cidadania ambiental.", ["desmatamento", "queimadas", "impactos", "conservação"], ["Identificar impactos ambientais na Amazônia.", "Relacionar ações humanas e transformação da paisagem."], "Intermediário"),
+      content("c6", "Conservação, cidadania e futuro da Amazônia", "Síntese sobre proteção ambiental, desenvolvimento sustentável, políticas públicas, ciência, educação e participação social.", ["conservação", "sustentabilidade", "cidadania", "futuro"], ["Propor atitudes de conservação e cidadania.", "Elaborar síntese crítica sobre o futuro da Amazônia."], "Intermediário"),
+    ];
+    palavrasChaveGerais = ["Amazônia", "território", "biodiversidade", "rios", "clima", "povos indígenas", "ribeirinhos", "extrativismo", "desmatamento", "queimadas", "conservação", "sustentabilidade"];
   } else if (component.includes("matematica")) {
     conteudos = [
       content("c1", "Conceitos essenciais", `Retomada dos conceitos matemáticos centrais ligados ao tema ${tema}.`, ["conceito", "definição", "propriedade", "relação"], ["Identificar conceitos matemáticos do tema.", "Usar linguagem matemática adequada."], "Básico"),

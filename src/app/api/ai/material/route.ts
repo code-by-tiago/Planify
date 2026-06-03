@@ -81,7 +81,7 @@ export async function GET() {
   return NextResponse.json(
     {
       success: true,
-      message: "API de materiais didáticos com Gemini ativa. Use POST para gerar.",
+      message: "API de materiais didáticos com IA ativa. Use POST para gerar.",
       endpoint: "/api/ai/material",
       metodo: "POST",
     },

@@ -2325,12 +2325,12 @@ html:has(.pl-dashboard-root) body {
   );
 }
 
-.pl-teachy-home-v2 {
-  background: linear-gradient(180deg, #eef1f8 0%, #f8fafc 45%, #ffffff 100%);
+.pl-teachy-board {
+  scrollbar-gutter: stable;
 }
 
-.pl-teachy-prompt textarea {
-  min-height: 4.5rem;
+.pl-teachy-board .pl-teachy-prompt textarea {
+  min-height: 3rem;
 }
 
 .pl-sidebar-teachy {

@@ -136,78 +136,85 @@ export default function PlanifyDashboardShell() {
       </PlanifyShellSidebar>
 
       {/* Área principal: flex-1, h-screen, overflow-hidden */}
-      <main className="flex h-screen min-w-0 flex-1 flex-col overflow-hidden">
-        <header className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-2.5 sm:px-5">
-          <div className="flex min-w-0 flex-1 items-center gap-3">
+      <main className="flex h-screen min-w-0 flex-1 flex-col overflow-hidden bg-[#f0f2f8]">
+        {selectedToolId ? (
+          <header className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-2.5 sm:px-5">
+            <div className="flex min-w-0 flex-1 items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setSidebarOpen(true)}
+                aria-label="Abrir menu de ferramentas"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-600 transition hover:bg-slate-100 lg:hidden"
+              >
+                <PlanifyIcon name="menu" className="h-5 w-5" />
+              </button>
+
+              <div className="min-w-0 flex-1">
+                <nav
+                  aria-label="Localização"
+                  className="mb-0.5 flex flex-wrap items-center gap-1 text-[11px] font-bold text-slate-400"
+                >
+                  <button
+                    type="button"
+                    onClick={() => selectTool(null)}
+                    className="transition hover:text-indigo-600"
+                  >
+                    Início
+                  </button>
+                  <PlanifyIcon
+                    name="chevronRight"
+                    className="h-3 w-3 shrink-0 opacity-60"
+                  />
+                  <span className="text-indigo-600">
+                    {activeTool?.shortTitle}
+                  </span>
+                </nav>
+                <h1 className="truncate text-base font-black text-slate-950">
+                  {activeTool?.title}
+                </h1>
+              </div>
+
+              <div className="hidden shrink-0 sm:block">
+                <PlanifyBrand compact />
+              </div>
+            </div>
+
+            <div className="flex shrink-0 items-center gap-2">
+              <Link
+                href="/historico"
+                className="hidden rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-black text-slate-600 transition hover:border-indigo-200 sm:inline-flex"
+              >
+                Histórico
+              </Link>
+              <Link
+                href="/planos"
+                className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-black text-white transition hover:bg-indigo-700"
+              >
+                Planos
+              </Link>
+            </div>
+          </header>
+        ) : (
+          <div className="flex shrink-0 items-center justify-between gap-2 border-b border-slate-200/80 bg-white/90 px-4 py-2 sm:px-5 lg:hidden">
             <button
               type="button"
               onClick={() => setSidebarOpen(true)}
-              aria-label="Abrir menu de ferramentas"
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-600 transition hover:bg-slate-100 lg:hidden"
+              aria-label="Abrir menu"
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100"
             >
               <PlanifyIcon name="menu" className="h-5 w-5" />
             </button>
-
-            <div className="min-w-0 flex-1">
-              {selectedToolId ? (
-                <>
-                  <nav
-                    aria-label="Localização"
-                    className="mb-0.5 flex flex-wrap items-center gap-1 text-[11px] font-bold text-slate-400"
-                  >
-                    <button
-                      type="button"
-                      onClick={() => selectTool(null)}
-                      className="transition hover:text-indigo-600"
-                    >
-                      Início
-                    </button>
-                    <PlanifyIcon
-                      name="chevronRight"
-                      className="h-3 w-3 shrink-0 opacity-60"
-                    />
-                    <span className="text-indigo-600">
-                      {activeTool?.shortTitle}
-                    </span>
-                  </nav>
-                  <h1 className="truncate text-base font-black text-slate-950">
-                    {activeTool?.title}
-                  </h1>
-                </>
-              ) : (
-                <>
-                  <h1 className="truncate text-base font-black text-slate-950">
-                    Planify Studio
-                  </h1>
-                  <p className="truncate text-xs font-semibold text-slate-500">
-                    Selecione uma ferramenta na barra lateral
-                  </p>
-                </>
-              )}
-            </div>
-
-            <div className="hidden shrink-0 sm:block">
-              <PlanifyBrand compact />
-            </div>
-          </div>
-
-          <div className="flex shrink-0 items-center gap-2">
-            <Link
-              href="/historico"
-              className="hidden rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-black text-slate-600 transition hover:border-indigo-200 sm:inline-flex"
-            >
-              Histórico
-            </Link>
+            <PlanifyBrand compact />
             <Link
               href="/planos"
-              className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-black text-white transition hover:bg-indigo-700"
+              className="rounded-lg bg-indigo-600 px-2.5 py-1.5 text-[10px] font-black text-white"
             >
               Planos
             </Link>
           </div>
-        </header>
+        )}
 
-        {/* Quadrante: conteúdo da ferramenta ou home — adapta ao espaço, sem estourar */}
+        {/* Quadrante: home estilo Teachy ou ferramenta in-panel */}
         <div className="min-h-0 flex-1 overflow-hidden">
           {selectedToolId ? (
             <TeachyMateriaisStudio

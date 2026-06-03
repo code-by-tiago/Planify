@@ -237,6 +237,19 @@ export function MateriaisClient({
     }
 
     window.addEventListener("planify-objetivo-hint", onObjetivoHint);
+
+    try {
+      const stored = sessionStorage.getItem("planify-studio-objetivo-hint");
+      if (stored) {
+        sessionStorage.removeItem("planify-studio-objetivo-hint");
+        setObjetivo((prev) =>
+          prev.trim() ? `${prev.trim()}\n${stored}` : stored,
+        );
+      }
+    } catch {
+      /* ignore */
+    }
+
     return () =>
       window.removeEventListener("planify-objetivo-hint", onObjetivoHint);
   }, [studioMode]);

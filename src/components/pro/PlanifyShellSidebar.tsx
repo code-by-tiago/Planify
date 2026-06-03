@@ -1,0 +1,89 @@
+"use client";
+
+import { AnimatePresence, motion } from "framer-motion";
+import type { ReactNode } from "react";
+import { PlanifyBrand } from "@/components/pro/PlanifyBrand";
+import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
+import { PlanifySidebarUser } from "@/components/pro/PlanifySidebarUser";
+
+const reduceMotion = {
+  hidden: { opacity: 0 },
+  show: { opacity: 1 },
+};
+
+type PlanifyShellSidebarProps = {
+  children: ReactNode;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  lumiHint?: string;
+};
+
+export function PlanifyShellSidebar({
+  children,
+  open,
+  onOpenChange,
+  lumiHint = "Toque numa ferramenta e crie em segundos.",
+}: PlanifyShellSidebarProps) {
+  const footer = <PlanifySidebarUser lumiHint={lumiHint} />;
+
+  const brandBlock = (
+    <div className="shrink-0 border-b border-rose-100/50 px-4 py-4">
+      <PlanifyBrand />
+      <p className="mt-2 text-[11px] font-bold leading-snug text-slate-500">
+        Materiais com IA alinhados à BNCC
+      </p>
+    </div>
+  );
+
+  return (
+    <>
+      <aside className="pl-sidebar hidden h-screen w-[min(280px,28vw)] shrink-0 flex-col overflow-hidden border-r lg:flex">
+        {brandBlock}
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">{children}</div>
+        {footer}
+      </aside>
+
+      <AnimatePresence>
+        {open ? (
+          <>
+            <motion.div
+              key="overlay"
+              variants={reduceMotion}
+              initial="hidden"
+              animate="show"
+              exit="hidden"
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 z-40 bg-violet-950/40 backdrop-blur-sm lg:hidden"
+              onClick={() => onOpenChange(false)}
+              aria-hidden="true"
+            />
+            <motion.aside
+              key="drawer"
+              initial={{ x: "-100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "-100%" }}
+              transition={{ type: "spring", stiffness: 320, damping: 34 }}
+              className="pl-sidebar fixed inset-y-0 left-0 z-50 flex h-screen w-[min(300px,88vw)] flex-col overflow-hidden border-r shadow-2xl lg:hidden"
+            >
+              <div className="flex shrink-0 items-center justify-between border-b border-rose-100/50 px-4 py-4">
+                <PlanifyBrand />
+                <button
+                  type="button"
+                  onClick={() => onOpenChange(false)}
+                  aria-label="Fechar menu"
+                  className="flex h-9 w-9 items-center justify-center rounded-2xl text-violet-400 transition hover:bg-white/80"
+                >
+                  <PlanifyIcon name="close" className="h-5 w-5" />
+                </button>
+              </div>
+              <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+                {children}
+              </div>
+              {footer}
+            </motion.aside>
+          </>
+        ) : null}
+      </AnimatePresence>
+    </>
+  );
+}

@@ -2036,9 +2036,16 @@ header .planify-brand-logo__icon {
 
 /* Shell fullscreen — página não rola, só painéis internos */
 html:has(.pl-shell-root),
-html:has(.pl-shell-root) body {
+html:has(.pl-shell-root) body,
+html:has(.pl-dashboard-root),
+html:has(.pl-dashboard-root) body {
   height: 100%;
   overflow: hidden;
+}
+
+.pl-dashboard-root {
+  max-height: 100vh;
+  max-height: 100dvh;
 }
 
 .pl-shell-root {
@@ -2286,6 +2293,33 @@ html:has(.pl-shell-root) body {
 .pl-dash-bento {
   max-width: 1400px;
   margin-inline: auto;
+}
+
+/* Studio estilo Teachy */
+.pl-teachy-shell .pl-sidebar {
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  border-color: rgba(226, 232, 240, 0.9);
+}
+
+.pl-teachy-shell .pl-nav-active {
+  background: linear-gradient(
+    120deg,
+    #4f46e5,
+    #6366f1 55%,
+    #818cf8
+  ) !important;
+}
+
+.pl-teachy-home {
+  scrollbar-gutter: stable;
+}
+
+.pl-teachy-hero {
+  background-image: radial-gradient(
+    80% 60% at 100% 0%,
+    rgba(99, 102, 241, 0.06),
+    transparent 55%
+  );
 }
 
 /* PLANIFY_UI3_APP_V2_END */

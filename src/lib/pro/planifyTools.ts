@@ -267,7 +267,7 @@ export const planifyTools: PlanifyTool[] = [
 ];
 
 export const appNavigation = [
-  { label: "Início", href: "/dashboard", icon: "home" as const },
+  { label: "Assistente IA", href: "/dashboard", icon: "home" as const },
   { label: "Materiais", href: "/materiais", icon: "materials" as const },
   { label: "Planejamentos", href: "/planejamentos", icon: "clipboard" as const },
   { label: "Editor", href: "/editor", icon: "editor" as const },

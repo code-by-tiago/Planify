@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
@@ -35,28 +35,28 @@ type MaterialHistoryItem = {
 const HISTORY_KEY = "planify-historico-materiais";
 
 const formatoJogos: { id: FormatoJogo; label: string }[] = [
-  { id: "caca-palavras", label: "Caça-palavras" },
+  { id: "caca-palavras", label: "CaÃ§a-palavras" },
   { id: "cruzadinha", label: "Cruzadinha" },
   { id: "quiz", label: "Quiz" },
   { id: "bingo", label: "Bingo" },
   { id: "trilha", label: "Trilha" },
-  { id: "memoria", label: "Memória" },
+  { id: "memoria", label: "MemÃ³ria" },
 ];
 
 const sugestoesTema: Record<PlanifyToolId, string[]> = {
-  apostila: ["Amazônia e biodiversidade", "Frações no cotidiano", "Romantismo no Brasil"],
-  atividade: ["Interpretação de texto", "Sistema solar", "Porcentagem"],
-  prova: ["Revolução Industrial", "Equações do 1º grau", "Ecologia"],
-  slides: ["Estados físicos da matéria", "Verbos", "Brasil República"],
-  projeto: ["Feira de ciências", "Consciência negra", "Educação financeira"],
+  apostila: ["AmazÃ´nia e biodiversidade", "FraÃ§Ãµes no cotidiano", "Romantismo no Brasil"],
+  atividade: ["InterpretaÃ§Ã£o de texto", "Sistema solar", "Porcentagem"],
+  prova: ["RevoluÃ§Ã£o Industrial", "EquaÃ§Ãµes do 1Âº grau", "Ecologia"],
+  slides: ["Estados fÃ­sicos da matÃ©ria", "Verbos", "Brasil RepÃºblica"],
+  projeto: ["Feira de ciÃªncias", "ConsciÃªncia negra", "EducaÃ§Ã£o financeira"],
   jogo: ["Biomas brasileiros", "Tabuada", "Classes gramaticais"],
-  sequencia: ["Leitura e produção textual", "Geometria plana", "Água e sociedade"],
-  resumo: ["Ciclo da água", "Fotossíntese", "Média, moda e mediana"],
-  lista: ["Funções do 1º grau", "Sistema digestório", "Crase"],
-  "plano-aula": ["Amazônia", "Porcentagem", "Gêneros textuais"],
-  flashcards: ["Revolução Francesa", "Ecossistemas", "Classes de palavras"],
-  redacao: ["Meio ambiente", "Tecnologia na educação", "Cidadania digital"],
-  "mapa-mental": ["Fotossíntese", "Brasil Colônia", "Figuras de linguagem"],
+  sequencia: ["Leitura e produÃ§Ã£o textual", "Geometria plana", "Ãgua e sociedade"],
+  resumo: ["Ciclo da Ã¡gua", "FotossÃ­ntese", "MÃ©dia, moda e mediana"],
+  lista: ["FunÃ§Ãµes do 1Âº grau", "Sistema digestÃ³rio", "Crase"],
+  "plano-aula": ["AmazÃ´nia", "Porcentagem", "GÃªneros textuais"],
+  flashcards: ["RevoluÃ§Ã£o Francesa", "Ecossistemas", "Classes de palavras"],
+  redacao: ["Meio ambiente", "Tecnologia na educaÃ§Ã£o", "Cidadania digital"],
+  "mapa-mental": ["FotossÃ­ntese", "Brasil ColÃ´nia", "Figuras de linguagem"],
 };
 
 function escapeHtml(value: string): string {
@@ -81,7 +81,7 @@ function textToHtml(value: string): string {
     .filter(Boolean);
 
   if (lines.length === 0) {
-    return "<p>Material gerado sem conteúdo textual.</p>";
+    return "<p>Material gerado sem conteÃºdo textual.</p>";
   }
 
   return lines
@@ -134,7 +134,7 @@ function extractHtmlFromResponse(data: unknown): string {
 
 function buildTitle(mode: PlanifyToolId, tema: string): string {
   const config = getPlanifyTool(mode);
-  return `${config.shortTitle} — ${tema || "Material Planify"}`;
+  return `${config.shortTitle} â€” ${tema || "Material Planify"}`;
 }
 
 function loadHistory(): MaterialHistoryItem[] {
@@ -157,11 +157,24 @@ function formatDate(value: string): string {
   }
 }
 
-export function MateriaisClient() {
+type MateriaisClientProps = {
+  /** Modo embutido no dashboard: só o painel da ferramenta, sem catálogo */
+  studioMode?: boolean;
+  initialTipo?: PlanifyToolId;
+  initialTema?: string;
+  onStudioClose?: () => void;
+};
+
+export function MateriaisClient({
+  studioMode = false,
+  initialTipo,
+  initialTema = "",
+  onStudioClose,
+}: MateriaisClientProps = {}) {
   const [categoria, setCategoria] = useState<ToolCategoryId>("todos");
-  const [tipo, setTipo] = useState<PlanifyToolId>("slides");
-  const [modalAberto, setModalAberto] = useState(false);
-  const [tema, setTema] = useState("");
+  const [tipo, setTipo] = useState<PlanifyToolId>(initialTipo ?? "slides");
+  const [modalAberto, setModalAberto] = useState(studioMode);
+  const [tema, setTema] = useState(initialTema);
   const [etapa, setEtapa] = useState("Ensino Fundamental");
   const [anoSerie, setAnoSerie] = useState("");
   const [componente, setComponente] = useState("");
@@ -177,6 +190,13 @@ export function MateriaisClient() {
   const [historico, setHistorico] = useState<MaterialHistoryItem[]>([]);
 
   useEffect(() => {
+    if (studioMode && initialTipo) {
+      setTipo(initialTipo);
+      setModalAberto(true);
+      setHistorico(loadHistory());
+      return;
+    }
+
     const params = new URLSearchParams(window.location.search);
     const tipoUrl = params.get("tipo");
     const categoriaUrl = params.get("categoria");
@@ -191,7 +211,35 @@ export function MateriaisClient() {
     }
 
     setHistorico(loadHistory());
-  }, []);
+  }, [studioMode, initialTipo]);
+
+  useEffect(() => {
+    if (!studioMode || !initialTipo) return;
+    setTipo(initialTipo);
+    setResultadoHtml("");
+    setErro("");
+    setModalAberto(true);
+  }, [studioMode, initialTipo]);
+
+  useEffect(() => {
+    if (initialTema.trim()) setTema(initialTema.trim());
+  }, [initialTema]);
+
+  useEffect(() => {
+    if (!studioMode) return;
+
+    function onObjetivoHint(event: Event) {
+      const snippet = (event as CustomEvent<string>).detail;
+      if (!snippet || typeof snippet !== "string") return;
+      setObjetivo((prev) =>
+        prev.trim() ? `${prev.trim()}\n${snippet}` : snippet,
+      );
+    }
+
+    window.addEventListener("planify-objetivo-hint", onObjetivoHint);
+    return () =>
+      window.removeEventListener("planify-objetivo-hint", onObjetivoHint);
+  }, [studioMode]);
 
   const mode = useMemo(() => getPlanifyTool(tipo), [tipo]);
   const isJogo = tipo === "jogo";
@@ -351,7 +399,7 @@ td,th{border:1px solid #d1d5db;padding:8px;}
     }
 
     if (!anoSerie.trim()) {
-      setErro("Informe o ano/série para adequar a linguagem.");
+      setErro("Informe o ano/sÃ©rie para adequar a linguagem.");
       return;
     }
 
@@ -395,7 +443,7 @@ td,th{border:1px solid #d1d5db;padding:8px;}
         const message =
           data && typeof data === "object" && "message" in data
             ? String((data as { message?: unknown }).message)
-            : "Não foi possível gerar o material.";
+            : "NÃ£o foi possÃ­vel gerar o material.";
         throw new Error(message);
       }
 
@@ -403,7 +451,7 @@ td,th{border:1px solid #d1d5db;padding:8px;}
 
       if (!html) {
         throw new Error(
-          "A API respondeu, mas não retornou conteúdo em um formato reconhecido."
+          "A API respondeu, mas nÃ£o retornou conteÃºdo em um formato reconhecido."
         );
       }
 
@@ -425,13 +473,326 @@ td,th{border:1px solid #d1d5db;padding:8px;}
     void executarGeracao();
   }
 
+  function fecharPainel() {
+    if (studioMode && onStudioClose) {
+      onStudioClose();
+      return;
+    }
+    setModalAberto(false);
+  }
+
+  const painelCriacao = modalAberto ? (
+    <div
+      className={`flex h-full min-h-0 flex-col overflow-hidden rounded-[2rem] border border-indigo-100/80 bg-white shadow-[0_8px_40px_-16px_rgba(99,102,241,0.2)] ${
+        studioMode ? "rounded-none border-0 shadow-none" : ""
+      }`}
+    >
+      <div className="flex shrink-0 items-center justify-between gap-4 border-b border-slate-100 px-5 py-4">
+        <div className="flex items-center gap-3">
+          <div
+            className={`flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${mode.accent} text-white`}
+          >
+            <PlanifyIcon name={mode.icon} className="h-5 w-5" />
+          </div>
+          <div>
+            <p className="text-sm font-black leading-none text-slate-950">
+              {mode.title}
+            </p>
+            <p className="mt-0.5 text-xs font-semibold text-slate-500">
+              {mode.description}
+            </p>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={fecharPainel}
+          aria-label={studioMode ? "Voltar ao inÃ­cio" : "Voltar ao catÃ¡logo"}
+          className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-black text-slate-600 transition hover:border-indigo-300 hover:text-slate-950"
+        >
+          <PlanifyIcon name="arrowLeft" className="h-4 w-4" />
+          <span className="hidden sm:inline">
+            {studioMode ? "InÃ­cio" : "CatÃ¡logo"}
+          </span>
+        </button>
+      </div>
+
+      <div
+        className={`grid min-h-0 flex-1 lg:grid-cols-[0.9fr_1.1fr] ${
+          studioMode ? "min-h-0" : "min-h-[600px] lg:min-h-[680px]"
+        }`}
+      >
+        <form
+          onSubmit={gerarMaterial}
+          className="min-h-0 overflow-y-auto overscroll-contain border-r border-slate-100 p-5"
+        >
+          <h2 className="text-2xl font-black tracking-tight text-slate-950">
+            {mode.title}
+          </h2>
+          <p className="mt-1 text-sm font-semibold text-slate-500">
+            {mode.description}
+          </p>
+
+          <div className="mt-5 grid gap-4 md:grid-cols-2">
+            <label className="md:col-span-2">
+              <span className="mb-2 block text-sm font-black text-slate-700">
+                {mode.primaryFieldLabel}
+              </span>
+              <input
+                value={tema}
+                onChange={(event) => setTema(event.target.value)}
+                placeholder="Digite ou escolha um assunto..."
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-950 outline-none transition focus:border-slate-950 focus:bg-white"
+              />
+            </label>
+
+            <label>
+              <span className="mb-2 block text-sm font-black text-slate-700">
+                Disciplina
+              </span>
+              <input
+                value={componente}
+                onChange={(event) => setComponente(event.target.value)}
+                placeholder="Ex.: LÃ­ngua Portuguesa"
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-950 outline-none transition focus:border-slate-950 focus:bg-white"
+              />
+            </label>
+
+            <label>
+              <span className="mb-2 block text-sm font-black text-slate-700">
+                Ano escolar
+              </span>
+              <input
+                value={anoSerie}
+                onChange={(event) => setAnoSerie(event.target.value)}
+                placeholder="Ex.: 6Âº ano, 2Âª sÃ©rie EM"
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-950 outline-none transition focus:border-slate-950 focus:bg-white"
+              />
+            </label>
+
+            <label>
+              <span className="mb-2 block text-sm font-black text-slate-700">
+                Etapa
+              </span>
+              <select
+                value={etapa}
+                onChange={(event) => setEtapa(event.target.value)}
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-950 outline-none transition focus:border-slate-950 focus:bg-white"
+              >
+                <option>EducaÃ§Ã£o Infantil</option>
+                <option>Ensino Fundamental</option>
+                <option>Ensino MÃ©dio</option>
+                <option>EJA</option>
+              </select>
+            </label>
+
+            <label>
+              <span className="mb-2 block text-sm font-black text-slate-700">
+                Dificuldade
+              </span>
+              <select
+                value={dificuldade}
+                onChange={(event) =>
+                  setDificuldade(event.target.value as Dificuldade)
+                }
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-950 outline-none transition focus:border-slate-950 focus:bg-white"
+              >
+                <option value="facil">FÃ¡cil</option>
+                <option value="media">MÃ©dia</option>
+                <option value="avancada">AvanÃ§ada</option>
+              </select>
+            </label>
+
+            {isJogo ? (
+              <label>
+                <span className="mb-2 block text-sm font-black text-slate-700">
+                  Tipo de jogo
+                </span>
+                <select
+                  value={formatoJogo}
+                  onChange={(event) =>
+                    setFormatoJogo(event.target.value as FormatoJogo)
+                  }
+                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-950 outline-none transition focus:border-slate-950 focus:bg-white"
+                >
+                  {formatoJogos.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : (
+              <label>
+                <span className="mb-2 block text-sm font-black text-slate-700">
+                  Quantidade
+                </span>
+                <input
+                  value={quantidade}
+                  onChange={(event) => setQuantidade(event.target.value)}
+                  placeholder="Ex.: 10 questÃµes, 12 slides"
+                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-950 outline-none transition focus:border-slate-950 focus:bg-white"
+                />
+              </label>
+            )}
+
+            <label className="md:col-span-2">
+              <span className="mb-2 block text-sm font-black text-slate-700">
+                ObservaÃ§Ãµes opcionais
+              </span>
+              <textarea
+                value={objetivo}
+                onChange={(event) => setObjetivo(event.target.value)}
+                placeholder="Ex.: linguagem simples, foco em revisÃ£o, exemplos do cotidiano..."
+                rows={3}
+                className="w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-950 outline-none transition focus:border-slate-950 focus:bg-white"
+              />
+            </label>
+          </div>
+
+          <div className="mt-4 flex flex-wrap gap-2">
+            {(sugestoesTema[tipo] || []).map((item) => (
+              <button
+                key={item}
+                type="button"
+                onClick={() => setTema(item)}
+                className="rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-600 transition hover:border-slate-950 hover:text-slate-950"
+              >
+                {item}
+              </button>
+            ))}
+          </div>
+
+          <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+            <label className="flex cursor-pointer items-center gap-3 rounded-2xl bg-slate-50 px-4 py-3 text-sm font-bold text-slate-700">
+              <input
+                type="checkbox"
+                checked={incluirGabarito}
+                onChange={(event) => setIncluirGabarito(event.target.checked)}
+                className="h-4 w-4 accent-slate-950"
+              />
+              Incluir gabarito/soluÃ§Ã£o
+            </label>
+
+            <button
+              type="button"
+              onClick={limparFormulario}
+              className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-700 transition hover:border-slate-950"
+            >
+              Limpar
+            </button>
+          </div>
+
+          {erro ? (
+            <div className="mt-4 flex items-start gap-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-700">
+              <PlanifyIcon name="alertCircle" className="mt-0.5 h-4 w-4 shrink-0" />
+              {erro}
+            </div>
+          ) : null}
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-indigo-600 via-violet-600 to-rose-500 px-6 py-4 text-sm font-black text-white shadow-[0_8px_24px_-10px_rgba(99,102,241,0.6)] transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {loading ? (
+              "Gerando..."
+            ) : (
+              <>
+                <PlanifyIcon name="spark" className="h-4 w-4" />
+                Criar {mode.shortTitle}
+              </>
+            )}
+          </button>
+        </form>
+
+        <section className="min-h-0 overflow-y-auto overscroll-contain bg-slate-50 p-5">
+          {loading ? (
+            <div className="flex h-full min-h-[280px] items-center justify-center">
+              <div className="w-full max-w-md rounded-[2rem] border border-slate-200 bg-white p-7 text-center shadow-xl">
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-slate-950 text-white">
+                  <PlanifyIcon name={mode.icon} className="h-7 w-7" />
+                </div>
+                <h3 className="mt-5 text-2xl font-black text-slate-950">
+                  {mode.loadingTitle}
+                </h3>
+                <p className="mt-2 text-sm font-semibold leading-6 text-slate-600">
+                  {mode.loadingDescription}
+                </p>
+                <div className="mt-6 h-2 overflow-hidden rounded-full bg-slate-100">
+                  <div className="h-full w-2/3 animate-pulse rounded-full bg-indigo-600" />
+                </div>
+              </div>
+            </div>
+          ) : resultadoHtml ? (
+            <div>
+              <div className="mb-4 flex flex-wrap justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => void executarGeracao()}
+                  disabled={loading}
+                  className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 transition hover:border-slate-950 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <PlanifyIcon name="spark" className="h-4 w-4" />
+                  Regenerar
+                </button>
+                <button
+                  type="button"
+                  onClick={abrirNoEditor}
+                  className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 transition hover:border-slate-950"
+                >
+                  <PlanifyIcon name="editor" className="h-4 w-4" />
+                  Abrir no Editor
+                </button>
+                <button
+                  type="button"
+                  onClick={baixarWord}
+                  className="inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-4 py-2 text-sm font-black text-white transition hover:-translate-y-0.5"
+                >
+                  <PlanifyIcon name="download" className="h-4 w-4" />
+                  Baixar .doc
+                </button>
+              </div>
+              <article
+                className="rounded-3xl border border-slate-200 bg-white p-6 text-sm leading-7 text-slate-800 shadow-sm [&_h1]:text-3xl [&_h1]:font-black [&_h2]:mt-6 [&_h2]:text-xl [&_h2]:font-black [&_h3]:mt-4 [&_h3]:font-black [&_li]:ml-5 [&_ol]:list-decimal [&_p]:my-3 [&_table]:w-full [&_table]:border-collapse [&_td]:border [&_td]:border-slate-200 [&_td]:p-2 [&_th]:border [&_th]:border-slate-200 [&_th]:p-2 [&_ul]:list-disc"
+                dangerouslySetInnerHTML={{ __html: resultadoHtml }}
+              />
+            </div>
+          ) : (
+            <div className="flex h-full min-h-[280px] items-center justify-center">
+              <div className="max-w-md text-center">
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-white text-slate-700 shadow-sm">
+                  <PlanifyIcon name={mode.icon} className="h-7 w-7" />
+                </div>
+                <h3 className="mt-5 text-2xl font-black text-slate-950">
+                  Pronto para criar
+                </h3>
+                <p className="mt-2 text-sm font-semibold leading-6 text-slate-500">
+                  Preencha disciplina, ano escolar e assunto. O resultado aparece
+                  aqui e pode ir direto para o Editor.
+                </p>
+              </div>
+            </div>
+          )}
+        </section>
+      </div>
+    </div>
+  ) : null;
+
+  if (studioMode) {
+    return (
+      <div className="flex h-full min-h-0 w-full flex-col overflow-hidden">
+        {painelCriacao}
+      </div>
+    );
+  }
+
   return (
     <PlanifyWorkspacePane>
     <div>
-      {/* ── Catálogo (visível quando painel fechado) ── */}
+      {/* â”€â”€ CatÃ¡logo (visÃ­vel quando painel fechado) â”€â”€ */}
       {!modalAberto ? (
         <>
-        {/* Catálogo + busca + categorias */}
+        {/* CatÃ¡logo + busca + categorias */}
         <section className="pl-section-hero overflow-hidden rounded-[1.85rem] border border-fuchsia-100/70 p-5 shadow-[0_8px_32px_-16px_rgba(236,72,153,0.12)] sm:p-6">
           <div className="grid gap-4 lg:grid-cols-[1fr_360px] lg:items-center">
             <div>
@@ -443,7 +804,7 @@ td,th{border:1px solid #d1d5db;padding:8px;}
                 Escolha uma ferramenta e gere o material em segundos.
               </h1>
               <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-violet-500/90">
-                Catálogo organizado por categoria. Clique na ferramenta para abrir o painel de criação com IA.
+                CatÃ¡logo organizado por categoria. Clique na ferramenta para abrir o painel de criaÃ§Ã£o com IA.
               </p>
             </div>
 
@@ -530,7 +891,7 @@ td,th{border:1px solid #d1d5db;padding:8px;}
           </section>
         )}
 
-        {/* Materiais recentes (histórico) */}
+        {/* Materiais recentes (histÃ³rico) */}
         {historico.length > 0 ? (
           <section className="mt-5 rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -547,7 +908,7 @@ td,th{border:1px solid #d1d5db;padding:8px;}
                   href="/historico"
                   className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 transition hover:border-slate-950"
                 >
-                  Ver histórico
+                  Ver histÃ³rico
                 </Link>
                 <button
                   type="button"
@@ -578,8 +939,8 @@ td,th{border:1px solid #d1d5db;padding:8px;}
                       </span>
                       <span className="mt-0.5 block truncate text-xs font-semibold text-slate-500">
                         {itemTool.shortTitle}
-                        {item.componente ? ` • ${item.componente}` : ""}
-                        {item.createdAt ? ` • ${formatDate(item.createdAt)}` : ""}
+                        {item.componente ? ` â€¢ ${item.componente}` : ""}
+                        {item.createdAt ? ` â€¢ ${formatDate(item.createdAt)}` : ""}
                       </span>
                     </span>
                   </button>
@@ -591,293 +952,7 @@ td,th{border:1px solid #d1d5db;padding:8px;}
         </>
       ) : null}
 
-      {/* ── Painel de criação in-place ── */}
-      {modalAberto ? (
-        <div className="overflow-hidden rounded-[2rem] border border-indigo-100/80 bg-white shadow-[0_8px_40px_-16px_rgba(99,102,241,0.2)]">
-          <div className="flex items-center justify-between gap-4 border-b border-slate-100 px-5 py-4">
-              <div className="flex items-center gap-3">
-                <div className={`flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${mode.accent} text-white`}>
-                  <PlanifyIcon name={mode.icon} className="h-5 w-5" />
-                </div>
-                <div>
-                  <p className="text-sm font-black leading-none text-slate-950">
-                    {mode.title}
-                  </p>
-                  <p className="mt-0.5 text-xs font-semibold text-slate-500">
-                    {mode.description}
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setModalAberto(false)}
-                aria-label="Voltar ao catálogo"
-                className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-black text-slate-600 transition hover:border-indigo-300 hover:text-slate-950"
-              >
-                <PlanifyIcon name="arrowLeft" className="h-4 w-4" />
-                <span className="hidden sm:inline">Catálogo</span>
-              </button>
-            </div>
-
-            <div className="grid min-h-[600px] lg:grid-cols-[0.9fr_1.1fr] lg:min-h-[680px]">
-              <form
-                onSubmit={gerarMaterial}
-                className="overflow-y-auto border-r border-slate-100 p-5"
-              >
-                <h2 className="text-2xl font-black tracking-tight text-slate-950">
-                  {mode.title}
-                </h2>
-                <p className="mt-1 text-sm font-semibold text-slate-500">
-                  {mode.description}
-                </p>
-
-                <div className="mt-5 grid gap-4 md:grid-cols-2">
-                  <label className="md:col-span-2">
-                    <span className="mb-2 block text-sm font-black text-slate-700">
-                      {mode.primaryFieldLabel}
-                    </span>
-                    <input
-                      value={tema}
-                      onChange={(event) => setTema(event.target.value)}
-                      placeholder="Digite ou escolha um assunto..."
-                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-950 outline-none transition focus:border-slate-950 focus:bg-white"
-                    />
-                  </label>
-
-                  <label>
-                    <span className="mb-2 block text-sm font-black text-slate-700">
-                      Disciplina
-                    </span>
-                    <input
-                      value={componente}
-                      onChange={(event) => setComponente(event.target.value)}
-                      placeholder="Ex.: Língua Portuguesa"
-                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-950 outline-none transition focus:border-slate-950 focus:bg-white"
-                    />
-                  </label>
-
-                  <label>
-                    <span className="mb-2 block text-sm font-black text-slate-700">
-                      Ano escolar
-                    </span>
-                    <input
-                      value={anoSerie}
-                      onChange={(event) => setAnoSerie(event.target.value)}
-                      placeholder="Ex.: 6º ano, 2ª série EM"
-                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-950 outline-none transition focus:border-slate-950 focus:bg-white"
-                    />
-                  </label>
-
-                  <label>
-                    <span className="mb-2 block text-sm font-black text-slate-700">
-                      Etapa
-                    </span>
-                    <select
-                      value={etapa}
-                      onChange={(event) => setEtapa(event.target.value)}
-                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-950 outline-none transition focus:border-slate-950 focus:bg-white"
-                    >
-                      <option>Educação Infantil</option>
-                      <option>Ensino Fundamental</option>
-                      <option>Ensino Médio</option>
-                      <option>EJA</option>
-                    </select>
-                  </label>
-
-                  <label>
-                    <span className="mb-2 block text-sm font-black text-slate-700">
-                      Dificuldade
-                    </span>
-                    <select
-                      value={dificuldade}
-                      onChange={(event) =>
-                        setDificuldade(event.target.value as Dificuldade)
-                      }
-                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-950 outline-none transition focus:border-slate-950 focus:bg-white"
-                    >
-                      <option value="facil">Fácil</option>
-                      <option value="media">Média</option>
-                      <option value="avancada">Avançada</option>
-                    </select>
-                  </label>
-
-                  {isJogo ? (
-                    <label>
-                      <span className="mb-2 block text-sm font-black text-slate-700">
-                        Tipo de jogo
-                      </span>
-                      <select
-                        value={formatoJogo}
-                        onChange={(event) =>
-                          setFormatoJogo(event.target.value as FormatoJogo)
-                        }
-                        className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-950 outline-none transition focus:border-slate-950 focus:bg-white"
-                      >
-                        {formatoJogos.map((item) => (
-                          <option key={item.id} value={item.id}>
-                            {item.label}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  ) : (
-                    <label>
-                      <span className="mb-2 block text-sm font-black text-slate-700">
-                        Quantidade
-                      </span>
-                      <input
-                        value={quantidade}
-                        onChange={(event) => setQuantidade(event.target.value)}
-                        placeholder="Ex.: 10 questões, 12 slides"
-                        className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-950 outline-none transition focus:border-slate-950 focus:bg-white"
-                      />
-                    </label>
-                  )}
-
-                  <label className="md:col-span-2">
-                    <span className="mb-2 block text-sm font-black text-slate-700">
-                      Observações opcionais
-                    </span>
-                    <textarea
-                      value={objetivo}
-                      onChange={(event) => setObjetivo(event.target.value)}
-                      placeholder="Ex.: linguagem simples, foco em revisão, exemplos do cotidiano..."
-                      rows={3}
-                      className="w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-950 outline-none transition focus:border-slate-950 focus:bg-white"
-                    />
-                  </label>
-                </div>
-
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {(sugestoesTema[tipo] || []).map((item) => (
-                    <button
-                      key={item}
-                      type="button"
-                      onClick={() => setTema(item)}
-                      className="rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-600 transition hover:border-slate-950 hover:text-slate-950"
-                    >
-                      {item}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
-                  <label className="flex cursor-pointer items-center gap-3 rounded-2xl bg-slate-50 px-4 py-3 text-sm font-bold text-slate-700">
-                    <input
-                      type="checkbox"
-                      checked={incluirGabarito}
-                      onChange={(event) =>
-                        setIncluirGabarito(event.target.checked)
-                      }
-                      className="h-4 w-4 accent-slate-950"
-                    />
-                    Incluir gabarito/solução
-                  </label>
-
-                  <button
-                    type="button"
-                    onClick={limparFormulario}
-                    className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-700 transition hover:border-slate-950"
-                  >
-                    Limpar
-                  </button>
-                </div>
-
-                {erro ? (
-                  <div className="mt-4 flex items-start gap-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-700">
-                    <PlanifyIcon name="alertCircle" className="mt-0.5 h-4 w-4 shrink-0" />
-                    {erro}
-                  </div>
-                ) : null}
-
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-indigo-600 via-violet-600 to-rose-500 px-6 py-4 text-sm font-black text-white shadow-[0_8px_24px_-10px_rgba(99,102,241,0.6)] transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {loading ? (
-                    "Gerando..."
-                  ) : (
-                    <>
-                      <PlanifyIcon name="spark" className="h-4 w-4" />
-                      Criar {mode.shortTitle}
-                    </>
-                  )}
-                </button>
-              </form>
-
-              <section className="min-h-0 overflow-y-auto bg-slate-50 p-5">
-                {loading ? (
-                  <div className="flex h-full min-h-[420px] items-center justify-center">
-                    <div className="w-full max-w-md rounded-[2rem] border border-slate-200 bg-white p-7 text-center shadow-xl">
-                      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-slate-950 text-white">
-                        <PlanifyIcon name={mode.icon} className="h-7 w-7" />
-                      </div>
-                      <h3 className="mt-5 text-2xl font-black text-slate-950">
-                        {mode.loadingTitle}
-                      </h3>
-                      <p className="mt-2 text-sm font-semibold leading-6 text-slate-600">
-                        {mode.loadingDescription}
-                      </p>
-                      <div className="mt-6 h-2 overflow-hidden rounded-full bg-slate-100">
-                        <div className="h-full w-2/3 animate-pulse rounded-full bg-indigo-600" />
-                      </div>
-                    </div>
-                  </div>
-                ) : resultadoHtml ? (
-                  <div>
-                    <div className="mb-4 flex flex-wrap justify-end gap-2">
-                      <button
-                        type="button"
-                        onClick={() => void executarGeracao()}
-                        disabled={loading}
-                        className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 transition hover:border-slate-950 disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        <PlanifyIcon name="spark" className="h-4 w-4" />
-                        Regenerar
-                      </button>
-                      <button
-                        type="button"
-                        onClick={abrirNoEditor}
-                        className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 transition hover:border-slate-950"
-                      >
-                        <PlanifyIcon name="editor" className="h-4 w-4" />
-                        Abrir no Editor
-                      </button>
-                      <button
-                        type="button"
-                        onClick={baixarWord}
-                        className="inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-4 py-2 text-sm font-black text-white transition hover:-translate-y-0.5"
-                      >
-                        <PlanifyIcon name="download" className="h-4 w-4" />
-                        Baixar .doc
-                      </button>
-                    </div>
-                    <article
-                      className="rounded-3xl border border-slate-200 bg-white p-6 text-sm leading-7 text-slate-800 shadow-sm [&_h1]:text-3xl [&_h1]:font-black [&_h2]:mt-6 [&_h2]:text-xl [&_h2]:font-black [&_h3]:mt-4 [&_h3]:font-black [&_li]:ml-5 [&_ol]:list-decimal [&_p]:my-3 [&_table]:w-full [&_table]:border-collapse [&_td]:border [&_td]:border-slate-200 [&_td]:p-2 [&_th]:border [&_th]:border-slate-200 [&_th]:p-2 [&_ul]:list-disc"
-                      dangerouslySetInnerHTML={{ __html: resultadoHtml }}
-                    />
-                  </div>
-                ) : (
-                  <div className="flex h-full min-h-[420px] items-center justify-center">
-                    <div className="max-w-md text-center">
-                      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-white text-slate-700 shadow-sm">
-                        <PlanifyIcon name={mode.icon} className="h-7 w-7" />
-                      </div>
-                      <h3 className="mt-5 text-2xl font-black text-slate-950">
-                        Pronto para criar
-                      </h3>
-                      <p className="mt-2 text-sm font-semibold leading-6 text-slate-500">
-                        Preencha disciplina, ano escolar e assunto. O resultado
-                        aparece aqui e pode ir direto para o Editor.
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </section>
-            </div>
-        </div>
-      ) : null}
+      {painelCriacao}
     </div>
     </PlanifyWorkspacePane>
   );

@@ -118,6 +118,11 @@ export async function GET(request: NextRequest) {
       ? "Seu login está ativo, mas é necessário plano premium para continuar."
       : "Acesso premium confirmado.";
 
+  const planKey =
+    access.subscription?.planKey ||
+    access.subscription?.planId ||
+    null;
+
   return NextResponse.json(
     {
       authenticated,
@@ -128,6 +133,7 @@ export async function GET(request: NextRequest) {
       isAdmin: Boolean(admin.isAdmin || isOwner),
       role: isOwner || admin.isAdmin ? "admin" : access.user?.role || "user",
       email,
+      planKey,
       checkedAt: new Date().toISOString(),
     },
     {

@@ -33,6 +33,8 @@ type MaterialHistoryItem = {
   createdAt: string;
 };
 
+const HISTORY_KEY = "planify-historico-materiais";
+
 const formatoJogos: { id: FormatoJogo; label: string }[] = [
   { id: "caca-palavras", label: "Caça-palavras" },
   { id: "cruzadinha", label: "Cruzadinha" },
@@ -136,6 +138,26 @@ function buildTitle(mode: PlanifyToolId, tema: string): string {
   return `${config.shortTitle} — ${tema || "Material Planify"}`;
 }
 
+function loadHistory(): MaterialHistoryItem[] {
+  try {
+    const raw = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]") as unknown;
+    return Array.isArray(raw) ? (raw as MaterialHistoryItem[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function formatDate(value: string): string {
+  try {
+    return new Date(value).toLocaleDateString("pt-BR", {
+      day: "2-digit",
+      month: "short",
+    });
+  } catch {
+    return "";
+  }
+}
+
 function MateriaisStudio() {
   const [categoria, setCategoria] = useState<ToolCategoryId>("todos");
   const [tipo, setTipo] = useState<PlanifyToolId>("slides");
@@ -153,6 +175,7 @@ function MateriaisStudio() {
   const [erro, setErro] = useState("");
   const [loading, setLoading] = useState(false);
   const [busca, setBusca] = useState("");
+  const [historico, setHistorico] = useState<MaterialHistoryItem[]>([]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -167,6 +190,8 @@ function MateriaisStudio() {
     if (toolCategories.some((category) => category.id === categoriaUrl)) {
       setCategoria(categoriaUrl as ToolCategoryId);
     }
+
+    setHistorico(loadHistory());
   }, []);
 
   const mode = useMemo(() => getPlanifyTool(tipo), [tipo]);
@@ -235,6 +260,28 @@ function MateriaisStudio() {
         localStorage.setItem(key, JSON.stringify([item]));
       }
     });
+
+    setHistorico(loadHistory());
+  }
+
+  function limparHistorico() {
+    const keys = [
+      "planify-historico-materiais",
+      "planify_historico_materiais",
+      "planifyHistoricoMateriais",
+    ];
+    keys.forEach((key) => localStorage.removeItem(key));
+    setHistorico([]);
+  }
+
+  function reabrirHistorico(item: MaterialHistoryItem) {
+    setTipo(item.tipo);
+    setTema(item.tema);
+    setComponente(item.componente);
+    setAnoSerie(item.anoSerie);
+    setResultadoHtml(item.html);
+    setErro("");
+    setModalAberto(true);
   }
 
   function abrirNoEditor() {
@@ -379,30 +426,40 @@ td,th{border:1px solid #d1d5db;padding:8px;}
     <PlanifyAppFrame
       active="/materiais"
       title="Materiais"
-      subtitle="Ferramentas compactas para criação pedagógica"
+      subtitle="Catálogo de ferramentas de criação com IA"
       action={
-        <Link
-          href="/editor"
-          className="rounded-2xl bg-slate-950 px-4 py-2 text-sm font-black text-white shadow-lg shadow-slate-200"
-        >
-          Editor
-        </Link>
+        <div className="planify-ui3 flex items-center gap-2">
+          <Link
+            href="/historico"
+            className="hidden rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-black text-slate-700 transition hover:border-slate-950 sm:inline-flex"
+          >
+            Histórico
+          </Link>
+          <Link
+            href="/editor"
+            className="inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-4 py-2.5 text-sm font-black text-white shadow-lg shadow-slate-200"
+          >
+            <PlanifyIcon name="editor" className="h-4 w-4" />
+            Editor
+          </Link>
+        </div>
       }
     >
-      <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6">
-        <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="grid gap-4 lg:grid-cols-[1fr_360px]">
+      <div className="planify-ui3 mx-auto max-w-7xl px-4 py-5 sm:px-6">
+        {/* Catálogo + busca + categorias */}
+        <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+          <div className="grid gap-4 lg:grid-cols-[1fr_360px] lg:items-center">
             <div>
-              <div className="inline-flex items-center gap-2 rounded-2xl bg-blue-50 px-3 py-2 text-xs font-black uppercase tracking-[0.18em] text-blue-700">
-                <PlanifyIcon name="materials" className="h-4 w-4" />
+              <span className="inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-indigo-700">
+                <PlanifyIcon name="spark" className="h-4 w-4" />
                 Criar com IA
-              </div>
-              <h1 className="mt-4 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
-                Escolha uma ferramenta e gere o material em uma janela limpa.
+              </span>
+              <h1 className="mt-4 text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">
+                Escolha uma ferramenta e gere o material em segundos.
               </h1>
-              <p className="mt-2 max-w-3xl text-sm font-semibold leading-6 text-slate-600">
-                A tela fica compacta: busca, categorias e cards rápidos. O formulário
-                abre em modal para evitar rolagem longa e manter o foco.
+              <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-slate-600">
+                Catálogo organizado por categoria. O formulário abre em um painel
+                limpo, com campos adequados a cada tipo de material.
               </p>
             </div>
 
@@ -415,12 +472,13 @@ td,th{border:1px solid #d1d5db;padding:8px;}
                 value={busca}
                 onChange={(event) => setBusca(event.target.value)}
                 placeholder="Buscar ferramenta..."
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-4 pl-12 pr-4 text-sm font-semibold outline-none transition focus:border-slate-950 focus:bg-white"
+                aria-label="Buscar ferramenta"
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-4 pl-12 pr-4 text-sm font-semibold text-slate-950 outline-none transition focus:border-slate-950 focus:bg-white"
               />
             </div>
           </div>
 
-          <div className="mt-5 flex gap-2 overflow-x-auto pb-2">
+          <div className="mt-5 flex gap-2 overflow-x-auto pb-1">
             {toolCategories.map((item) => {
               const active = item.id === categoria;
 
@@ -432,7 +490,7 @@ td,th{border:1px solid #d1d5db;padding:8px;}
                   className={`flex shrink-0 items-center gap-2 rounded-2xl border px-4 py-2 text-sm font-black transition ${
                     active
                       ? "border-slate-950 bg-slate-950 text-white"
-                      : "border-slate-200 bg-white text-slate-600 hover:border-slate-950"
+                      : "border-slate-200 bg-white text-slate-600 hover:border-slate-950 hover:text-slate-950"
                   }`}
                 >
                   <PlanifyIcon name={item.icon} className="h-4 w-4" />
@@ -443,47 +501,133 @@ td,th{border:1px solid #d1d5db;padding:8px;}
           </div>
         </section>
 
-        <section className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
-          {ferramentasFiltradas.map((item) => (
+        {/* Cards de ferramentas */}
+        {ferramentasFiltradas.length > 0 ? (
+          <section className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+            {ferramentasFiltradas.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => selecionarFerramenta(item.id)}
+                className="group relative min-h-[156px] rounded-[1.5rem] border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:-translate-y-1 hover:border-slate-950 hover:shadow-xl"
+              >
+                {item.popular ? (
+                  <span className="absolute right-3 top-3 rounded-full bg-indigo-50 px-2 py-1 text-[10px] font-black uppercase tracking-wide text-indigo-700">
+                    Popular
+                  </span>
+                ) : null}
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-700 transition group-hover:bg-slate-950 group-hover:text-white">
+                  <PlanifyIcon name={item.icon} className="h-5 w-5" />
+                </div>
+                <h3 className="mt-4 text-sm font-black leading-tight text-slate-950">
+                  {item.title}
+                </h3>
+                <p className="mt-1 line-clamp-3 text-xs font-semibold leading-5 text-slate-500">
+                  {item.description}
+                </p>
+              </button>
+            ))}
+          </section>
+        ) : (
+          <section className="mt-5 rounded-[1.5rem] border border-dashed border-slate-200 bg-white p-8 text-center shadow-sm">
+            <p className="text-sm font-bold text-slate-600">
+              Nenhuma ferramenta encontrada para essa busca ou categoria.
+            </p>
             <button
-              key={item.id}
               type="button"
-              onClick={() => selecionarFerramenta(item.id)}
-              className="group relative min-h-[154px] rounded-[1.5rem] border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:-translate-y-1 hover:border-slate-950 hover:shadow-xl"
+              onClick={() => {
+                setBusca("");
+                setCategoria("todos");
+              }}
+              className="mt-3 inline-flex rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 transition hover:border-slate-950"
             >
-              {item.popular ? (
-                <span className="absolute right-3 top-3 rounded-full bg-blue-50 px-2 py-1 text-[10px] font-black uppercase tracking-wide text-blue-700">
-                  Popular
-                </span>
-              ) : null}
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 text-slate-700 group-hover:bg-slate-950 group-hover:text-white">
-                <PlanifyIcon name={item.icon} className="h-5 w-5" />
-              </div>
-              <h3 className="mt-4 text-sm font-black leading-tight text-slate-950">
-                {item.title}
-              </h3>
-              <p className="mt-1 line-clamp-3 text-xs font-semibold leading-5 text-slate-500">
-                {item.description}
-              </p>
+              Limpar filtros
             </button>
-          ))}
-        </section>
+          </section>
+        )}
+
+        {/* Materiais recentes (histórico) */}
+        {historico.length > 0 ? (
+          <section className="mt-5 rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-black tracking-tight text-slate-950">
+                  Materiais recentes
+                </h2>
+                <p className="text-sm font-semibold text-slate-500">
+                  Reabra um material gerado recentemente neste dispositivo.
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Link
+                  href="/historico"
+                  className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 transition hover:border-slate-950"
+                >
+                  Ver histórico
+                </Link>
+                <button
+                  type="button"
+                  onClick={limparHistorico}
+                  className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-500 transition hover:border-rose-300 hover:text-rose-600"
+                >
+                  Limpar
+                </button>
+              </div>
+            </div>
+
+            <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {historico.slice(0, 6).map((item) => {
+                const itemTool = getPlanifyTool(item.tipo);
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => reabrirHistorico(item)}
+                    className="group flex items-start gap-3 rounded-[1.4rem] border border-slate-200 bg-slate-50 p-4 text-left transition hover:-translate-y-0.5 hover:border-slate-950 hover:bg-white hover:shadow-lg"
+                  >
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white text-slate-700 shadow-sm transition group-hover:bg-slate-950 group-hover:text-white">
+                      <PlanifyIcon name={itemTool.icon} className="h-5 w-5" />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block truncate text-sm font-black text-slate-950">
+                        {item.tema || itemTool.shortTitle}
+                      </span>
+                      <span className="mt-0.5 block truncate text-xs font-semibold text-slate-500">
+                        {itemTool.shortTitle}
+                        {item.componente ? ` • ${item.componente}` : ""}
+                        {item.createdAt ? ` • ${formatDate(item.createdAt)}` : ""}
+                      </span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        ) : null}
       </div>
 
+      {/* Modal/painel de criação */}
       {modalAberto ? (
-        <div className="fixed inset-0 z-50 bg-slate-950/55 p-3 backdrop-blur-sm sm:p-5">
+        <div className="planify-ui3 fixed inset-0 z-50 bg-slate-950/55 p-3 backdrop-blur-sm sm:p-5">
           <div className="mx-auto flex h-full max-w-6xl flex-col overflow-hidden rounded-[2rem] bg-white shadow-2xl">
             <div className="flex items-center justify-between gap-4 border-b border-slate-100 px-5 py-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-700">
+                  <PlanifyIcon name={mode.icon} className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-sm font-black leading-none text-slate-950">
+                    {mode.title}
+                  </p>
+                  <p className="mt-1 text-xs font-semibold text-slate-500">
+                    Painel de criação
+                  </p>
+                </div>
+              </div>
               <button
                 type="button"
                 onClick={() => setModalAberto(false)}
-                className="rounded-2xl px-3 py-2 text-sm font-black text-slate-600 transition hover:bg-slate-100"
-              >
-                Voltar
-              </button>
-              <button
-                type="button"
-                onClick={() => setModalAberto(false)}
+                aria-label="Fechar painel"
                 className="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-100 text-slate-700 transition hover:bg-slate-950 hover:text-white"
               >
                 <PlanifyIcon name="close" className="h-5 w-5" />
@@ -495,14 +639,7 @@ td,th{border:1px solid #d1d5db;padding:8px;}
                 onSubmit={gerarMaterial}
                 className="overflow-y-auto border-r border-slate-100 p-5"
               >
-                <div
-                  className={`mb-4 inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r ${mode.accent} px-4 py-2 text-xs font-black uppercase tracking-[0.18em] text-white`}
-                >
-                  <PlanifyIcon name={mode.icon} className="h-4 w-4" />
-                  {mode.title}
-                </div>
-
-                <h2 className="text-3xl font-black tracking-tight text-slate-950">
+                <h2 className="text-2xl font-black tracking-tight text-slate-950">
                   {mode.title}
                 </h2>
                 <p className="mt-1 text-sm font-semibold text-slate-500">
@@ -518,7 +655,7 @@ td,th{border:1px solid #d1d5db;padding:8px;}
                       value={tema}
                       onChange={(event) => setTema(event.target.value)}
                       placeholder="Digite ou escolha um assunto..."
-                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold outline-none transition focus:border-slate-950 focus:bg-white"
+                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-950 outline-none transition focus:border-slate-950 focus:bg-white"
                     />
                   </label>
 
@@ -530,7 +667,7 @@ td,th{border:1px solid #d1d5db;padding:8px;}
                       value={componente}
                       onChange={(event) => setComponente(event.target.value)}
                       placeholder="Ex.: Língua Portuguesa"
-                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold outline-none transition focus:border-slate-950 focus:bg-white"
+                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-950 outline-none transition focus:border-slate-950 focus:bg-white"
                     />
                   </label>
 
@@ -542,7 +679,7 @@ td,th{border:1px solid #d1d5db;padding:8px;}
                       value={anoSerie}
                       onChange={(event) => setAnoSerie(event.target.value)}
                       placeholder="Ex.: 6º ano, 2ª série EM"
-                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold outline-none transition focus:border-slate-950 focus:bg-white"
+                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-950 outline-none transition focus:border-slate-950 focus:bg-white"
                     />
                   </label>
 
@@ -553,7 +690,7 @@ td,th{border:1px solid #d1d5db;padding:8px;}
                     <select
                       value={etapa}
                       onChange={(event) => setEtapa(event.target.value)}
-                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold outline-none transition focus:border-slate-950 focus:bg-white"
+                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-950 outline-none transition focus:border-slate-950 focus:bg-white"
                     >
                       <option>Educação Infantil</option>
                       <option>Ensino Fundamental</option>
@@ -571,7 +708,7 @@ td,th{border:1px solid #d1d5db;padding:8px;}
                       onChange={(event) =>
                         setDificuldade(event.target.value as Dificuldade)
                       }
-                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold outline-none transition focus:border-slate-950 focus:bg-white"
+                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-950 outline-none transition focus:border-slate-950 focus:bg-white"
                     >
                       <option value="facil">Fácil</option>
                       <option value="media">Média</option>
@@ -589,7 +726,7 @@ td,th{border:1px solid #d1d5db;padding:8px;}
                         onChange={(event) =>
                           setFormatoJogo(event.target.value as FormatoJogo)
                         }
-                        className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold outline-none transition focus:border-slate-950 focus:bg-white"
+                        className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-950 outline-none transition focus:border-slate-950 focus:bg-white"
                       >
                         {formatoJogos.map((item) => (
                           <option key={item.id} value={item.id}>
@@ -607,7 +744,7 @@ td,th{border:1px solid #d1d5db;padding:8px;}
                         value={quantidade}
                         onChange={(event) => setQuantidade(event.target.value)}
                         placeholder="Ex.: 10 questões, 12 slides"
-                        className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold outline-none transition focus:border-slate-950 focus:bg-white"
+                        className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-950 outline-none transition focus:border-slate-950 focus:bg-white"
                       />
                     </label>
                   )}
@@ -621,7 +758,7 @@ td,th{border:1px solid #d1d5db;padding:8px;}
                       onChange={(event) => setObjetivo(event.target.value)}
                       placeholder="Ex.: linguagem simples, foco em revisão, exemplos do cotidiano..."
                       rows={3}
-                      className="w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold outline-none transition focus:border-slate-950 focus:bg-white"
+                      className="w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-950 outline-none transition focus:border-slate-950 focus:bg-white"
                     />
                   </label>
                 </div>
@@ -647,7 +784,7 @@ td,th{border:1px solid #d1d5db;padding:8px;}
                       onChange={(event) =>
                         setIncluirGabarito(event.target.checked)
                       }
-                      className="h-4 w-4"
+                      className="h-4 w-4 accent-slate-950"
                     />
                     Incluir gabarito/solução
                   </label>
@@ -662,7 +799,8 @@ td,th{border:1px solid #d1d5db;padding:8px;}
                 </div>
 
                 {erro ? (
-                  <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
+                  <div className="mt-4 flex items-start gap-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-700">
+                    <PlanifyIcon name="alertCircle" className="mt-0.5 h-4 w-4 shrink-0" />
                     {erro}
                   </div>
                 ) : null}
@@ -670,9 +808,16 @@ td,th{border:1px solid #d1d5db;padding:8px;}
                 <button
                   type="submit"
                   disabled={loading}
-                  className="mt-5 w-full rounded-2xl bg-blue-600 px-6 py-4 text-sm font-black text-white shadow-xl shadow-blue-100 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-6 py-4 text-sm font-black text-white shadow-lg shadow-slate-200 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {loading ? "Gerando..." : `Criar ${mode.shortTitle}`}
+                  {loading ? (
+                    "Gerando..."
+                  ) : (
+                    <>
+                      <PlanifyIcon name="spark" className="h-4 w-4" />
+                      Criar {mode.shortTitle}
+                    </>
+                  )}
                 </button>
               </form>
 
@@ -690,7 +835,7 @@ td,th{border:1px solid #d1d5db;padding:8px;}
                         {mode.loadingDescription}
                       </p>
                       <div className="mt-6 h-2 overflow-hidden rounded-full bg-slate-100">
-                        <div className="h-full w-2/3 animate-pulse rounded-full bg-blue-600" />
+                        <div className="h-full w-2/3 animate-pulse rounded-full bg-indigo-600" />
                       </div>
                     </div>
                   </div>
@@ -700,20 +845,22 @@ td,th{border:1px solid #d1d5db;padding:8px;}
                       <button
                         type="button"
                         onClick={abrirNoEditor}
-                        className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 transition hover:border-slate-950"
+                        className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 transition hover:border-slate-950"
                       >
+                        <PlanifyIcon name="editor" className="h-4 w-4" />
                         Abrir no Editor
                       </button>
                       <button
                         type="button"
                         onClick={baixarWord}
-                        className="rounded-2xl bg-slate-950 px-4 py-2 text-sm font-black text-white transition hover:-translate-y-0.5"
+                        className="inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-4 py-2 text-sm font-black text-white transition hover:-translate-y-0.5"
                       >
+                        <PlanifyIcon name="download" className="h-4 w-4" />
                         Baixar .doc
                       </button>
                     </div>
                     <article
-                      className="rounded-3xl border border-slate-200 bg-white p-6 text-sm leading-7 text-slate-800 shadow-sm [&_h1]:text-3xl [&_h1]:font-black [&_h2]:mt-6 [&_h2]:text-xl [&_h2]:font-black [&_h3]:mt-4 [&_h3]:font-black [&_li]:ml-5 [&_ol]:list-decimal [&_p]:my-3 [&_table]:w-full [&_table]:border-collapse [&_td]:border [&_td]:border-slate-200 [&_td]:p-2 [&_th]:border [&_th]:border-slate-200 [&_th]:p-2"
+                      className="rounded-3xl border border-slate-200 bg-white p-6 text-sm leading-7 text-slate-800 shadow-sm [&_h1]:text-3xl [&_h1]:font-black [&_h2]:mt-6 [&_h2]:text-xl [&_h2]:font-black [&_h3]:mt-4 [&_h3]:font-black [&_li]:ml-5 [&_ol]:list-decimal [&_p]:my-3 [&_table]:w-full [&_table]:border-collapse [&_td]:border [&_td]:border-slate-200 [&_td]:p-2 [&_th]:border [&_th]:border-slate-200 [&_th]:p-2 [&_ul]:list-disc"
                       dangerouslySetInnerHTML={{ __html: resultadoHtml }}
                     />
                   </div>

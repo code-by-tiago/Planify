@@ -2,50 +2,47 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import {
+  MATERIAL_SIZE_OPTIONS,
+  MATERIAL_TYPE_OPTIONS,
+  getMaterialCreditCost,
+  getMaterialTypeLabel,
+  materialTypeNeedsQuestions,
+  type MaterialGeneratorSize,
+  type MaterialGeneratorType,
+} from "../../config/material-credits";
 import { downloadDocxDocument } from "../../lib/downloads/docx-download-client";
-import { buildVisualGameMaterial } from "../../lib/materiais/game-builder";
-
-type MaterialType =
-  | "atividade"
-  | "prova"
-  | "apostila"
-  | "lista"
-  | "revisao"
-  | "sequencia"
-  | "jogo"
-  | "projeto"
-  | "roteiro";
-
-type GameModel =
-  | "caca_palavras"
-  | "cruzadinha"
-  | "bingo"
-  | "memoria"
-  | "domino"
-  | "quiz"
-  | "cartas";
+import {
+  createEditorDocument,
+  saveEditorDocument,
+} from "../../lib/editor/editor-storage";
+import type {
+  MaterialGenerationResponse,
+  MaterialGeneratorBNCCSkill,
+  MaterialGeneratorQuestionType,
+  PlanifyGeneratedMaterial,
+} from "../../types/material-generator";
 
 type FormState = {
-  titulo: string;
   escola: string;
   professor: string;
-  etapa: string;
+  turma: string;
+  tipoMaterial: MaterialGeneratorType;
+  etapaEnsino: string;
   anoSerie: string;
   areaConhecimento: string;
   componenteCurricular: string;
-  tema: string;
-  tipo: MaterialType;
-  modeloJogo: GameModel;
+  temaCentral: string;
+  objetivo: string;
+  tamanho: MaterialGeneratorSize;
+  nivelDificuldade: string;
   quantidadeQuestoes: string;
-  duracao: string;
-  finalidade: string;
-  nivelAprofundamento: string;
-  contextoTurma: string;
+  tiposQuestao: MaterialGeneratorQuestionType[];
+  gerarGabarito: boolean;
+  gerarVersaoProfessor: boolean;
   recursosDisponiveis: string;
-  criteriosAvaliacaoPersonalizados: string;
-  objetivos: string;
-  conteudos: string;
-  orientacoes: string;
+  inclusaoAcessibilidade: string;
+  tomLinguagem: string;
   observacoes: string;
 };
 
@@ -54,146 +51,54 @@ type StatusState = {
   message: string;
 };
 
-type SuggestedContent = {
-  id: string;
-  titulo: string;
-  descricao: string;
-  palavrasChave: string[];
-  objetivos: string[];
-  dificuldade: string;
-  tempoEstimado: string;
-  justificativaPedagogica: string;
-};
-
-type RecommendedOption = {
-  tipo: string;
-  modeloJogo?: string;
-  titulo: string;
-  motivo: string;
-};
-
-type SuggestionOutput = {
-  tema: string;
-  etapa: string;
-  anoSerie: string;
-  areaConhecimento?: string;
-  componenteCurricular: string;
-  resumoPedagogico: string;
-  conteudos: SuggestedContent[];
-  objetivosGerais: string[];
-  palavrasChaveGerais: string[];
-  materiaisRecomendados: RecommendedOption[];
-  jogosRecomendados: RecommendedOption[];
-  observacoesDeUso: string[];
-  alertas: string[];
-};
-
-type MaterialSection = {
-  titulo: string;
-  descricao?: string;
-  conteudo?: string;
-  itens?: string[];
-  visualHtml?: string;
-};
-
-type MaterialQuestion = {
-  numero: number;
-  tipo?: string;
-  enunciado: string;
-  alternativas?: string[];
-  respostaEsperada?: string;
-  criterioCorrecao?: string;
-};
-
-type GeneratedMaterial = {
-  tipo: string;
-  titulo: string;
-  subtitulo?: string;
-  resumo?: string;
-  dadosGerais: {
-    escola?: string;
-    professor?: string;
-    etapa?: string;
-    anoSerie?: string;
-    areaConhecimento?: string;
-    componenteCurricular?: string;
-    tema?: string;
-    duracao?: string;
-  };
-  objetivos?: string[];
-  conteudos?: string[];
-  introducao?: string;
-  orientacoesProfessor?: string[];
-  orientacoesAluno?: string[];
-  secoes?: MaterialSection[];
-  questoes?: MaterialQuestion[];
-  gabarito?: string[];
-  jogo?: {
-    nome: string;
-    tipoJogo?: string;
-    objetivo: string;
-    materiais: string[];
-    preparacao: string[];
-    regras: string[];
-    modoDeJogar: string[];
-    variacoes?: string[];
-    fechamento?: string;
-  } | null;
-  projeto?: {
-    problemaNorteador: string;
-    etapas: string[];
-    produtoFinal: string;
-    avaliacao: string;
-  } | null;
-  roteiro?: {
-    antesDoEstudo: string[];
-    duranteOEstudo: string[];
-    depoisDoEstudo: string[];
-    autoavaliacao: string[];
-  } | null;
-  criteriosAvaliacao?: string[];
-  adaptacoesInclusivas?: string[];
-  sugestoesUso?: string[];
-  alertas?: string[];
-  visualHtml?: string;
-  printHtml?: string;
+type BnccSuggestion = MaterialGeneratorBNCCSkill & {
+  id?: string;
+  texto?: string;
+  label?: string;
+  score?: number;
 };
 
 const initialForm: FormState = {
-  titulo: "",
   escola: "",
   professor: "",
-  etapa: "Ensino Fundamental",
-  anoSerie: "6º ano",
+  turma: "",
+  tipoMaterial: "apostila",
+  etapaEnsino: "Ensino Fundamental",
+  anoSerie: "7º ano",
   areaConhecimento: "",
-  componenteCurricular: "Ensino Religioso",
-  tema: "",
-  tipo: "atividade",
-  modeloJogo: "cruzadinha",
-  quantidadeQuestoes: "10",
-  duracao: "1 período",
-  finalidade: "Aula em sala",
-  nivelAprofundamento: "Completo",
-  contextoTurma: "",
+  componenteCurricular: "Geografia",
+  temaCentral: "",
+  objetivo: "ensinar",
+  tamanho: "medio",
+  nivelDificuldade: "intermediario",
+  quantidadeQuestoes: "8",
+  tiposQuestao: ["discursiva", "multipla_escolha", "analise_contextualizada"],
+  gerarGabarito: true,
+  gerarVersaoProfessor: true,
   recursosDisponiveis: "Quadro, caderno, impressão e projetor quando disponível",
-  criteriosAvaliacaoPersonalizados: "",
-  objetivos: "",
-  conteudos: "",
-  orientacoes: "",
+  inclusaoAcessibilidade: "Linguagem clara e instruções objetivas",
+  tomLinguagem: "claro, profissional e adequado à turma",
   observacoes: "",
 };
 
-const etapaOptions = ["Educação Infantil", "Ensino Fundamental", "Ensino Médio"];
+const etapaOptions = ["Educação Infantil", "Ensino Fundamental", "Ensino Médio", "EJA"];
 
 const anoSerieByEtapa: Record<string, string[]> = {
   "Educação Infantil": ["Creche", "Pré-escola"],
   "Ensino Fundamental": ["1º ano", "2º ano", "3º ano", "4º ano", "5º ano", "6º ano", "7º ano", "8º ano", "9º ano"],
   "Ensino Médio": ["1ª série", "2ª série", "3ª série"],
+  EJA: ["Alfabetização", "Anos iniciais", "Anos finais", "Ensino Médio"],
 };
+
+const areasEnsinoMedio = [
+  "Linguagens e suas Tecnologias",
+  "Matemática e suas Tecnologias",
+  "Ciências da Natureza e suas Tecnologias",
+  "Ciências Humanas e Sociais Aplicadas",
+];
 
 const componentesByEtapa: Record<string, string[]> = {
   "Educação Infantil": [
-    "Campos de experiências",
     "O eu, o outro e o nós",
     "Corpo, gestos e movimentos",
     "Traços, sons, cores e formas",
@@ -214,1370 +119,703 @@ const componentesByEtapa: Record<string, string[]> = {
     "Geografia",
     "Ensino Religioso",
   ],
-  "Ensino Médio": [],
+  "Ensino Médio": [
+    "Língua Portuguesa",
+    "Redação",
+    "Escrita Criativa",
+    "Arte",
+    "Educação Física",
+    "Língua Inglesa",
+    "Língua Espanhola",
+    "Matemática",
+    "Biologia",
+    "Física",
+    "Química",
+    "História",
+    "Geografia",
+    "Filosofia",
+    "Sociologia",
+  ],
+  EJA: [
+    "Língua Portuguesa",
+    "Matemática",
+    "Ciências",
+    "História",
+    "Geografia",
+    "Arte",
+    "Educação Física",
+    "Língua Inglesa",
+  ],
 };
 
-const areasEnsinoMedio = [
-  "Linguagens e suas Tecnologias",
-  "Matemática e suas Tecnologias",
-  "Ciências da Natureza e suas Tecnologias",
-  "Ciências Humanas e Sociais Aplicadas",
+const objetivoOptions = [
+  { value: "ensinar", label: "Ensinar conteúdo novo" },
+  { value: "revisar", label: "Revisar conteúdo" },
+  { value: "avaliar", label: "Avaliar aprendizagem" },
+  { value: "aprofundar", label: "Aprofundar o tema" },
+  { value: "recuperar_aprendizagem", label: "Recuperar aprendizagem" },
 ];
 
-const componentesEnsinoMedio: Record<string, string[]> = {
-  "Linguagens e suas Tecnologias": ["Língua Portuguesa", "Redação", "Escrita Criativa", "Arte", "Educação Física", "Língua Inglesa", "Língua Espanhola"],
-  "Matemática e suas Tecnologias": ["Matemática"],
-  "Ciências da Natureza e suas Tecnologias": ["Biologia", "Física", "Química"],
-  "Ciências Humanas e Sociais Aplicadas": ["História", "Geografia", "Filosofia", "Sociologia"],
-};
-
-const materialTypes: Array<{ value: MaterialType; label: string; description: string }> = [
-  { value: "jogo", label: "Jogo pedagógico visual", description: "Cruzadinha, caça-palavras, bingo, memória, dominó, quiz e cartas." },
-  { value: "atividade", label: "Atividade", description: "Questões orientadas com resposta esperada." },
-  { value: "prova", label: "Prova", description: "Avaliação com gabarito e critérios." },
-  { value: "lista", label: "Lista de exercícios", description: "Exercícios em progressão: básico, intermediário e desafio." },
-  { value: "revisao", label: "Revisão", description: "Retomada com síntese, exercícios e autoavaliação." },
-  { value: "apostila", label: "Apostila", description: "Explicação didática, exemplos e exercícios." },
-  { value: "sequencia", label: "Sequência didática", description: "Etapas de aula e mediações." },
-  { value: "projeto", label: "Projeto", description: "Problema, etapas e produto final." },
-  { value: "roteiro", label: "Roteiro de estudo", description: "Estudo autônomo orientado." },
+const difficultyOptions = [
+  { value: "basico", label: "Básico" },
+  { value: "intermediario", label: "Intermediário" },
+  { value: "avancado", label: "Avançado" },
 ];
 
-const gameModelOptions: Array<{ value: GameModel; label: string; description: string }> = [
-  { value: "cruzadinha", label: "Cruzadinha", description: "Grade cruzada, pistas horizontais/verticais e gabarito." },
-  { value: "caca_palavras", label: "Caça-palavras", description: "Grade real com quadradinhos, banco de palavras e gabarito." },
-  { value: "bingo", label: "Bingo", description: "Cartelas diferentes e lista de chamada do professor." },
-  { value: "memoria", label: "Memória", description: "Cartas recortáveis de conceito e pista." },
-  { value: "domino", label: "Dominó", description: "Peças retangulares recortáveis para associação." },
-  { value: "quiz", label: "Quiz", description: "Cartões de perguntas e folha de pontuação." },
-  { value: "cartas", label: "Cartas", description: "Baralho pedagógico com desafios recortáveis." },
+const questionTypeOptions: Array<{ value: MaterialGeneratorQuestionType; label: string }> = [
+  { value: "multipla_escolha", label: "Múltipla escolha" },
+  { value: "discursiva", label: "Discursiva" },
+  { value: "verdadeiro_falso", label: "Verdadeiro/Falso" },
+  { value: "complete", label: "Complete" },
+  { value: "associacao", label: "Associação" },
+  { value: "analise_contextualizada", label: "Análise contextualizada" },
 ];
 
-const typeLabels: Record<MaterialType, string> = {
-  atividade: "Atividade",
-  prova: "Prova",
-  lista: "Lista de exercícios",
-  revisao: "Revisão",
-  apostila: "Apostila",
-  sequencia: "Sequência didática",
-  jogo: "Jogo pedagógico visual",
-  projeto: "Projeto",
-  roteiro: "Roteiro de estudo",
-};
-
-const gameLabels: Record<GameModel, string> = {
-  caca_palavras: "Caça-palavras",
-  cruzadinha: "Cruzadinha",
-  bingo: "Bingo pedagógico",
-  memoria: "Jogo da memória",
-  domino: "Dominó pedagógico",
-  quiz: "Quiz com gabarito",
-  cartas: "Cartas recortáveis",
-};
-
-const quickExamples = [
-  {
-    label: "Geografia",
-    tema: "Amazônia: biodiversidade, povos, território e conservação",
-    etapa: "Ensino Fundamental",
-    anoSerie: "7º ano",
-    componente: "Geografia",
-    area: "",
-    jogo: "quiz" as GameModel,
-    tipo: "apostila" as MaterialType,
-  },
-  {
-    label: "Ensino Religioso",
-    tema: "Jó e a fidelidade diante das provações",
-    etapa: "Ensino Fundamental",
-    anoSerie: "6º ano",
-    componente: "Ensino Religioso",
-    area: "",
-    jogo: "cruzadinha" as GameModel,
-    tipo: "atividade" as MaterialType,
-  },
-  {
-    label: "Espanhol",
-    tema: "Países hispânicos, saudações e cultura",
-    etapa: "Ensino Médio",
-    anoSerie: "1ª série",
-    componente: "Língua Espanhola",
-    area: "Linguagens e suas Tecnologias",
-    jogo: "bingo" as GameModel,
-    tipo: "jogo" as MaterialType,
-  },
-  {
-    label: "Português",
-    tema: "Leitura e interpretação de texto narrativo",
-    etapa: "Ensino Fundamental",
-    anoSerie: "7º ano",
-    componente: "Língua Portuguesa",
-    area: "",
-    jogo: "quiz" as GameModel,
-    tipo: "atividade" as MaterialType,
-  },
-  {
-    label: "Redação",
-    tema: "Argumentação, tese e repertório sociocultural",
-    etapa: "Ensino Médio",
-    anoSerie: "3ª série",
-    componente: "Redação",
-    area: "Linguagens e suas Tecnologias",
-    jogo: "cartas" as GameModel,
-    tipo: "prova" as MaterialType,
-  },
-  {
-    label: "Escrita Criativa",
-    tema: "Criação de personagens, conflito e desfecho narrativo",
-    etapa: "Ensino Fundamental",
-    anoSerie: "8º ano",
-    componente: "Escrita Criativa",
-    area: "",
-    jogo: "memoria" as GameModel,
-    tipo: "lista" as MaterialType,
-  },
-];
-
-function splitLines(value: string) {
-  return value
-    .split(/\r?\n|;/)
-    .map((item) => item.trim())
-    .filter(Boolean);
+function fieldBase() {
+  return "w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-900 shadow-sm outline-none transition focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100";
 }
 
-function isEnsinoMedio(etapa: string) {
-  return etapa === "Ensino Médio";
+function labelBase() {
+  return "text-xs font-black uppercase tracking-[0.18em] text-slate-500";
 }
 
-function needsQuestionQuantity(tipo: MaterialType) {
-  return tipo === "atividade" || tipo === "prova" || tipo === "lista" || tipo === "revisao" || tipo === "apostila";
+function sanitizePreviewHtml(html: string): string {
+  return String(html || "")
+    .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, "")
+    .replace(/<iframe[\s\S]*?>[\s\S]*?<\/iframe>/gi, "")
+    .replace(/<style[\s\S]*?>[\s\S]*?<\/style>/gi, "")
+    .replace(/\son[a-z]+\s*=\s*"[^"]*"/gi, "")
+    .replace(/\son[a-z]+\s*=\s*'[^']*'/gi, "")
+    .replace(/javascript:/gi, "");
 }
 
-function quantityLabel(tipo: MaterialType) {
-  if (tipo === "apostila") return "Quantidade de exercícios de fixação";
-  if (tipo === "prova") return "Quantidade de questões da prova";
-  return "Quantidade de questões";
+function materialTitle(material: PlanifyGeneratedMaterial | null): string {
+  return material?.titulo || material?.metadata?.titulo || "Material didático Planify";
 }
 
-function getComponentesDisponiveis(form: FormState) {
-  if (isEnsinoMedio(form.etapa)) {
-    return form.areaConhecimento ? componentesEnsinoMedio[form.areaConhecimento] || [] : [];
-  }
-  return componentesByEtapa[form.etapa] || [];
+function materialSubtitle(material: PlanifyGeneratedMaterial | null): string {
+  return material?.subtitulo || `${material?.metadata?.componenteCurricular || "Componente"} • ${material?.metadata?.anoSerie || "Ano/Série"}`;
 }
 
-function escapeHtml(value: unknown) {
-  return String(value ?? "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-}
+function normalizeBnccSuggestion(item: BnccSuggestion): MaterialGeneratorBNCCSkill | null {
+  const codigo = String(item.codigo || "").trim().toUpperCase();
+  const descricao = String(item.descricao || item.texto || item.label || "").trim();
 
-function contentLineFromSuggestion(item: SuggestedContent) {
-  const keywords = (item.palavrasChave || []).slice(0, 8).join(", ");
-  return `${item.titulo}: ${keywords || item.descricao}`;
-}
-
-function normalizeForMatch(value: string) {
-  return value
-    .toLocaleLowerCase("pt-BR")
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "");
-}
-
-function buildDefaultContentLines(form: FormState) {
-  const tema = form.tema.trim();
-  if (!tema) return [];
-
-  const component = normalizeForMatch(form.componenteCurricular);
-  const theme = normalizeForMatch(tema);
-
-  if (component.includes("portuguesa") && theme.includes("sujeito")) {
-    return [
-      `Conceito de sujeito e predicado: identificação do termo sobre o qual se declara algo e do que se afirma sobre ele`,
-      `Sujeito simples e sujeito composto: núcleo do sujeito, concordância e comparação entre estruturas`,
-      `Sujeito oculto, indeterminado e oração sem sujeito: reconhecimento pelo contexto, forma verbal e sentido`,
-      `Análise sintática aplicada: classificação, justificativa, reescrita de orações e correção de inadequações`,
-      `Exercícios mistos sobre ${tema}: aplicação integrada dos tipos de sujeito em frases e pequenos textos`,
-    ];
-  }
-
-  if (component.includes("redacao") || component.includes("redação")) {
-    return [
-      `${tema}: recorte temático, tese e ponto de vista`,
-      `${tema}: argumentos, exemplos e repertório sociocultural`,
-      `${tema}: coesão, coerência, parágrafo e progressão textual`,
-      `${tema}: conclusão, proposta quando aplicável e reescrita orientada`,
-      `${tema}: exercícios de análise, planejamento e produção textual`,
-    ];
-  }
-
-  if (component.includes("escrita criativa")) {
-    return [
-      `${tema}: criação de personagem, cenário e atmosfera narrativa`,
-      `${tema}: conflito, foco narrativo, diálogo e progressão da história`,
-      `${tema}: clímax, desfecho, revisão criativa e estilo autoral`,
-      `${tema}: exercícios de ampliação, reescrita, continuidade e criação guiada`,
-    ];
-  }
-
-
-  if (component.includes("filosofia")) {
-    if (theme.includes("descartes")) {
-      return [
-        `${tema}: contexto da Filosofia Moderna e busca por fundamentos seguros do conhecimento`,
-        `${tema}: dúvida metódica, método filosófico e crítica às certezas imediatas`,
-        `${tema}: cogito, razão e sujeito pensante`,
-        `${tema}: racionalismo, ciência, método e influência no pensamento moderno`,
-        `${tema}: debate, produção autoral e socialização das aprendizagens`,
-      ];
-    }
-
-    return [
-      `${tema}: problema filosófico central e conceitos fundamentais`,
-      `${tema}: contexto, pensadores, argumentos e perguntas orientadoras`,
-      `${tema}: análise crítica, debate, comparação de ideias e aplicação na realidade`,
-      `${tema}: produção autoral, síntese e socialização filosófica`,
-    ];
-  }
-
-  if (component.includes("matematica")) {
-    return [
-      `${tema}: conceitos essenciais e exemplos resolvidos`,
-      `${tema}: procedimentos, cálculos, representações e comparação de estratégias`,
-      `${tema}: problemas contextualizados com leitura, resolução e justificativa`,
-      `${tema}: exercícios graduados, desafios e correção comentada`,
-    ];
-  }
-
-  if (component.includes("religioso")) {
-    return [
-      `${tema}: narrativa, personagens, contexto e ideias centrais`,
-      `${tema}: valores, atitudes, convivência, respeito e reflexão ética`,
-      `${tema}: interpretação, aplicação no cotidiano e produção reflexiva`,
-      `${tema}: exercícios de compreensão, análise, justificativa e síntese`,
-    ];
-  }
-
-  if (component.includes("espanhola") || component.includes("inglesa")) {
-    return [
-      `${tema}: vocabulário central, expressões e uso contextual`,
-      `${tema}: leitura curta, interpretação, diálogo e comunicação`,
-      `${tema}: estrutura linguística, produção de frases e prática guiada`,
-      `${tema}: cultura, variação linguística e aplicação em situações reais`,
-    ];
-  }
-
-  return [
-    `${tema}: conceitos centrais, vocabulário e exemplos essenciais`,
-    `${tema}: compreensão, análise e aplicação em situações contextualizadas`,
-    `${tema}: exercícios básicos, intermediários e desafios`,
-    `${tema}: síntese, produção final e correção comentada`,
-  ];
-}
-
-function buildUnifiedContentLines(form: FormState, items: SuggestedContent[]) {
-  const manualLines = splitLines(form.conteudos);
-  if (manualLines.length) return manualLines;
-  if (items.length) return items.map(contentLineFromSuggestion);
-  return buildDefaultContentLines(form);
-}
-
-function validateForm(form: FormState): string | null {
-  if (!form.anoSerie) return "Selecione o ano/série.";
-  if (isEnsinoMedio(form.etapa) && !form.areaConhecimento) return "Selecione a área do conhecimento.";
-  if (!form.componenteCurricular) return "Selecione o componente curricular.";
-  if (!form.tema.trim()) return "Informe o tema central.";
-  if (needsQuestionQuantity(form.tipo) && !form.quantidadeQuestoes.trim()) return form.tipo === "apostila" ? "Informe a quantidade de exercícios de fixação." : "Informe a quantidade de questões.";
-  return null;
-}
-
-const materialProgressSteps = [
-  "Lendo o pedido do professor com precisão",
-  "Consultando a base pedagógica curada",
-  "Organizando o produto no formato certo",
-  "Separando versão do aluno e gabarito",
-  "Auditando estrutura, quantidade e qualidade",
-];
-
-const materialGenerationMessages = [
-  "Transformando referências pedagógicas confiáveis em um produto original e pronto para sala.",
-  "Organizando cada questão como produto final, sem texto corrido e sem promessa vazia.",
-  "Separando a versão do aluno do gabarito para facilitar impressão, edição e aplicação.",
-  "Conferindo formato, quantidade, tópicos, resposta esperada e critério de correção.",
-  "Aplicando padrões de apostila, prova, atividade, lista, projeto ou sequência conforme o tipo escolhido.",
-];
-
-const materialQuoteCards = [
-  { author: "Inspiração aristotélica", text: "Excelência é transformar cuidado em hábito e hábito em obra bem-feita." },
-  { author: "Inspiração socrática", text: "Uma boa pergunta acende o pensamento antes de pedir uma resposta." },
-  { author: "Inspiração humanista", text: "Ensinar bem é respeitar o contexto, a inteligência e o tempo de quem aprende." },
-  { author: "Planify", text: "O professor pediu um produto; o Planify entrega material pronto, claro e aplicável." },
-  { author: "Planify Knowledge Engine", text: "Conhecimento amplo só vira excelência quando passa por curadoria, estrutura e validação." },
-  { author: "Planify", text: "Cada questão precisa merecer o tempo do professor e provocar aprendizagem real." },
-];
-
-function MaterialGenerationFloatingCard({ label, messageIndex }: { label: string; messageIndex: number }) {
-  const quote = materialQuoteCards[messageIndex % materialQuoteCards.length];
-
-  return (
-    <div aria-live="polite" className="pointer-events-none fixed left-1/2 top-24 z-[120] w-[min(92vw,560px)] -translate-x-1/2 rounded-[1.75rem] border border-cyan-200 bg-white p-5 text-slate-950 shadow-2xl shadow-cyan-950/30 ring-1 ring-cyan-100">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="text-[11px] font-black uppercase tracking-[0.24em] text-cyan-700">Planify em criação premium</p>
-          <h3 className="mt-2 text-xl font-black">{label}</h3>
-        </div>
-        <div className="flex gap-1.5 pt-1" aria-hidden="true">
-          <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-cyan-500" />
-          <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-blue-500 [animation-delay:120ms]" />
-          <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-emerald-500 [animation-delay:240ms]" />
-        </div>
-      </div>
-      <div className="mt-3 rounded-2xl border border-cyan-100 bg-cyan-50 p-4">
-        <p className="text-sm font-black leading-6 text-slate-900">“{quote.text}”</p>
-        <p className="mt-2 text-xs font-black uppercase tracking-[0.18em] text-cyan-700">{quote.author}</p>
-      </div>
-      <p className="mt-3 text-xs font-bold leading-5 text-slate-700">Aguarde: estamos consultando a base pedagógica curada e auditando estrutura, quantidade, tópicos, gabarito e apresentação antes de mostrar o produto final.</p>
-    </div>
-  );
-}
-
-function MaterialGenerationPanel({ label, messageIndex }: { label: string; messageIndex: number }) {
-  const message = materialGenerationMessages[messageIndex % materialGenerationMessages.length];
-  const quote = materialQuoteCards[messageIndex % materialQuoteCards.length];
-
-  return (
-    <div className="rounded-[1.75rem] border border-cyan-200 bg-gradient-to-br from-cyan-50 via-white to-emerald-50 p-5 text-slate-950 shadow-2xl shadow-cyan-500/10">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="text-xs font-black uppercase tracking-[0.25em] text-cyan-700">Preparando material</p>
-          <h3 className="mt-2 text-xl font-black text-slate-950">{label}</h3>
-        </div>
-        <div className="flex gap-2" aria-hidden="true">
-          <span className="h-3 w-3 animate-pulse rounded-full bg-cyan-500" />
-          <span className="h-3 w-3 animate-pulse rounded-full bg-blue-500 [animation-delay:120ms]" />
-          <span className="h-3 w-3 animate-pulse rounded-full bg-emerald-500 [animation-delay:240ms]" />
-        </div>
-      </div>
-
-      <div className="mt-5 rounded-2xl border border-cyan-200 bg-white p-4 text-sm font-bold leading-7 text-slate-800 shadow-sm">
-        {message}
-      </div>
-
-      <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
-        <p className="text-xs font-black uppercase tracking-[0.2em] text-emerald-700">Frase para a criação</p>
-        <p className="mt-2 text-sm font-bold leading-7 text-slate-800">“{quote.text}”</p>
-        <p className="mt-1 text-xs font-black text-emerald-700">{quote.author}</p>
-      </div>
-
-      <div className="mt-5 grid gap-3 md:grid-cols-5">
-        {materialProgressSteps.map((step, index) => (
-          <div key={step} className="rounded-2xl border border-cyan-100 bg-white/80 p-3 shadow-sm">
-            <div className="mb-3 h-1.5 overflow-hidden rounded-full bg-slate-200">
-              <span className="block h-full animate-pulse rounded-full bg-cyan-500" style={{ width: `${Math.min(100, 34 + index * 14)}%` }} />
-            </div>
-            <p className="text-xs font-black leading-5 text-slate-900">{step}</p>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function materialFromVisualBuilder(form: FormState, conteudos: string[]): GeneratedMaterial {
-  return buildVisualGameMaterial({
-    ...form,
-    titulo: form.titulo || `${gameLabels[form.modeloJogo]} — ${form.tema}`,
-    conteudos,
-  }) as GeneratedMaterial;
-}
-
-function buildFallbackMaterial(form: FormState, conteudos: string[]): GeneratedMaterial {
-  if (form.tipo === "jogo") return materialFromVisualBuilder(form, conteudos);
-
-  const quantidade = Number(form.quantidadeQuestoes) || 5;
-  return {
-    tipo: typeLabels[form.tipo],
-    titulo: form.titulo || `${typeLabels[form.tipo]} — ${form.tema}`,
-    subtitulo: `${typeLabels[form.tipo]} — ${form.componenteCurricular}`,
-    resumo: "Material estruturado para apoiar a prática docente com objetivos claros e linguagem adequada à turma.",
-    dadosGerais: {
-      escola: form.escola,
-      professor: form.professor,
-      etapa: form.etapa,
-      anoSerie: form.anoSerie,
-      areaConhecimento: form.areaConhecimento,
-      componenteCurricular: form.componenteCurricular,
-      tema: form.tema,
-      duracao: form.duracao,
-    },
-    objetivos: splitLines(form.objetivos).length ? splitLines(form.objetivos) : [`Desenvolver aprendizagem sobre ${form.tema}.`],
-    conteudos,
-    introducao: "Material didático estruturado para aplicação em sala, revisão e edição no Planify Editor.",
-    orientacoesProfessor: ["Apresente os objetivos.", "Acompanhe a realização.", "Finalize com correção coletiva."],
-    orientacoesAluno: ["Leia os comandos com atenção.", "Registre suas respostas.", "Revise antes de entregar."],
-    secoes: conteudos.map((conteudo, index) => ({
-      titulo: `Seção ${index + 1}: ${conteudo.split(":")[0]}`,
-      conteudo: `Atividades orientadas para desenvolver: ${conteudo}.`,
-      itens: ["Retomada", "Exploração guiada", "Registro", "Socialização"],
-    })),
-    questoes: needsQuestionQuantity(form.tipo)
-      ? Array.from({ length: quantidade }).map((_, index) => ({
-          numero: index + 1,
-          tipo: "discursiva",
-          enunciado: `Questão ${index + 1}: responda uma situação relacionada ao tema ${form.tema}.`,
-          alternativas: [],
-          respostaEsperada: "Resposta coerente com o conteúdo estudado.",
-          criterioCorrecao: "Considerar compreensão, organização e relação com o conteúdo.",
-        }))
-      : [],
-    gabarito: needsQuestionQuantity(form.tipo)
-      ? Array.from({ length: quantidade }).map((_, index) => `Questão ${index + 1}: resposta esperada conforme o conteúdo.`)
-      : [],
-    jogo: null,
-    criteriosAvaliacao: ["Participação", "Compreensão", "Organização", "Argumentação"],
-    adaptacoesInclusivas: ["Permitir apoio em dupla quando necessário.", "Adaptar tempo e quantidade conforme a turma."],
-    sugestoesUso: ["Usar em sala, reforço, tarefa ou revisão."],
-    alertas: [],
-  };
-}
-
-function normalizeGeneratedMaterial(material: GeneratedMaterial, form: FormState, conteudos: string[]): GeneratedMaterial {
-  if (form.tipo === "jogo") {
-    const visual = material.visualHtml || material.printHtml;
-    if (!visual || !material.jogo) return materialFromVisualBuilder(form, conteudos);
-  }
+  if (!codigo || !descricao) return null;
 
   return {
-    ...material,
-    tipo: material.tipo || form.tipo,
-    titulo: material.titulo || form.titulo || `${typeLabels[form.tipo]} — ${form.tema}`,
-    subtitulo: material.subtitulo || `${typeLabels[form.tipo]} — ${form.componenteCurricular}`,
-    resumo: material.resumo || "Material didático gerado com base nos dados informados.",
-    dadosGerais: {
-      escola: form.escola,
-      professor: form.professor,
-      etapa: form.etapa,
-      anoSerie: form.anoSerie,
-      areaConhecimento: form.areaConhecimento,
-      componenteCurricular: form.componenteCurricular,
-      tema: form.tema,
-      duracao: form.duracao,
-      ...material.dadosGerais,
-    },
-    objetivos: material.objetivos || splitLines(form.objetivos),
-    conteudos: material.conteudos || conteudos,
-    orientacoesProfessor: material.orientacoesProfessor || [],
-    orientacoesAluno: material.orientacoesAluno || [],
-    secoes: material.secoes || [],
-    questoes: material.questoes || [],
-    gabarito: material.gabarito || [],
-    projeto: material.projeto || null,
-    roteiro: material.roteiro || null,
-    criteriosAvaliacao: material.criteriosAvaliacao || [],
-    adaptacoesInclusivas: material.adaptacoesInclusivas || [],
-    sugestoesUso: material.sugestoesUso || [],
-    alertas: material.alertas || [],
+    codigo,
+    descricao,
+    etapa: item.etapa,
+    anoSerie: item.anoSerie,
+    componente: item.componente,
+    area: item.area,
+    conteudo: item.conteudo,
   };
 }
 
-function saveToLocalHistory(material: GeneratedMaterial) {
-  const item = {
-    id: crypto.randomUUID(),
-    type: "material",
-    title: material.titulo,
-    subtitle: `${material.tipo} • ${material.dadosGerais.componenteCurricular || "Componente não informado"}`,
-    createdAt: new Date().toISOString(),
-    content: material,
-  };
-
-  const key = "planify_history";
-  const current = JSON.parse(localStorage.getItem(key) || "[]") as unknown[];
-  localStorage.setItem(key, JSON.stringify([item, ...current].slice(0, 50)));
+function sameSkill(a: MaterialGeneratorBNCCSkill, b: MaterialGeneratorBNCCSkill): boolean {
+  return a.codigo === b.codigo && a.descricao === b.descricao;
 }
 
-async function downloadDocument(material: GeneratedMaterial) {
-  await downloadDocxDocument("material", material, material.titulo || "material-planify");
-}
-
-function renderList(items: string[] | undefined) {
-  const valid = (items || []).filter(Boolean);
-  if (valid.length === 0) return "";
-  return `<ul>${valid.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`;
-}
-
-function renderTextBlock(value: string | undefined) {
-  const text = String(value || "").trim();
-  if (!text) return "";
-  return text
-    .split(/\n{2,}/)
-    .map((paragraph) => `<p>${escapeHtml(paragraph).replaceAll("\n", "<br />")}</p>`)
+function buildFallbackPreview(material: PlanifyGeneratedMaterial): string {
+  const sections = (material.secoes || [])
+    .map((section) => {
+      const blocks = (section.conteudo || [])
+        .map((block) => `<p>${block.texto}</p>`)
+        .join("");
+      return `<h2>${section.titulo}</h2>${blocks}`;
+    })
     .join("");
-}
 
-function splitLetteredItems(value: string) {
-  const text = String(value || "").trim();
-  const markerRegex = /(^|\s)([a-jA-J])\)\s*/g;
-  const markers = Array.from(text.matchAll(markerRegex));
-  if (markers.length < 2) return null;
-
-  const firstMarker = markers[0];
-  const intro = text.slice(0, firstMarker.index).trim().replace(/[:;,.\-–—]+$/, "");
-  const items = markers.map((marker, index) => {
-    const startIndex = Number(marker.index) + marker[0].length;
-    const endIndex = index + 1 < markers.length ? Number(markers[index + 1].index) : text.length;
-    return text.slice(startIndex, endIndex).trim().replace(/^[;,.\-–—]+/, "").trim();
-  }).filter(Boolean);
-
-  return items.length >= 2 ? { intro, items } : null;
-}
-
-function splitCommandAndItems(value: string) {
-  const text = String(value || "")
-    .replace(/\s+•\s+/g, "\n• ")
-    .replace(/\s+([a-jA-J])\)\s+/g, "\n$1) ")
-    .trim();
-  const colonIndex = text.indexOf(":");
-  if (colonIndex < 18) return null;
-
-  const command = text.slice(0, colonIndex).trim();
-  const rest = text.slice(colonIndex + 1).trim();
-  if (!command || rest.length < 12) return null;
-
-  const lineItems = rest
-    .split(/\r?\n/g)
-    .map((item) => item.trim().replace(/^[-•]\s*/, "").replace(/^[;,.\-–—]+/, "").trim())
-    .filter((item) => item.length >= 4);
-
-  if (lineItems.length >= 2) return { command, items: lineItems };
-
-  const bulletItems = rest
-    .split(/\s*[•]\s*/g)
-    .map((item) => item.trim().replace(/^[;,.\-–—]+/, "").trim())
-    .filter((item) => item.length >= 4);
-
-  if (bulletItems.length >= 2) return { command, items: bulletItems };
-
-  const sentenceItems = rest
-    .split(/(?<=[.!?])\s+(?=[A-ZÁÉÍÓÚÂÊÔÃÕÇ"“])/g)
-    .map((item) => item.trim().replace(/^[;,.\-–—]+/, "").trim())
-    .filter((item) => item.length >= 8 && item.length <= 180);
-
-  if (sentenceItems.length >= 3) return { command, items: sentenceItems };
-
-  const semicolonItems = rest
-    .split(/;|\s{2,}/g)
-    .map((item) => item.trim().replace(/^[;,.\-–—]+/, "").trim())
-    .filter((item) => item.length >= 8 && item.length <= 180);
-
-  return semicolonItems.length >= 3 ? { command, items: semicolonItems } : null;
-}
-
-function getQuestionSubitems(value: string | undefined) {
-  const text = String(value || "").trim();
-  return splitLetteredItems(text)?.items || splitCommandAndItems(text)?.items || [];
-}
-
-function renderQuestionText(value: string | undefined) {
-  const text = String(value || "").trim();
-  if (!text) return "";
-
-  const splitLettered = splitLetteredItems(text);
-  if (splitLettered) {
-    return `${splitLettered.intro ? `<p class="planify-question-command"><strong>Comando:</strong> ${escapeHtml(splitLettered.intro)}:</p>` : ""}<ol class="planify-subitems" type="a">${splitLettered.items.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ol>`;
-  }
-
-  const splitCommand = splitCommandAndItems(text);
-  if (splitCommand) {
-    return `<p class="planify-question-command"><strong>Comando:</strong> ${escapeHtml(splitCommand.command)}:</p><ul class="planify-question-items">${splitCommand.items.map((item) => `<li>${escapeHtml(item.replace(/^[-•]\s*/, ""))}</li>`).join("")}</ul>`;
-  }
-
-  const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
-  const bulletLines = lines.filter((line) => /^[-•]/.test(line));
-  const normalLines = lines.filter((line) => !/^[-•]/.test(line));
-  const normalHtml = normalLines.map((line) => `<p>${escapeHtml(line)}</p>`).join("");
-  const bulletHtml = bulletLines.length
-    ? `<ul class="planify-question-steps">${bulletLines.map((line) => `<li>${escapeHtml(line.replace(/^[-•]\s*/, ""))}</li>`).join("")}</ul>`
-    : "";
-  return `${normalHtml}${bulletHtml}`;
-}
-
-function renderAlternativesList(items: string[] | undefined) {
-  const valid = (items || []).filter(Boolean);
-  if (valid.length === 0) return "";
-  return `<ol class="planify-alternatives" type="A">${valid.map((item) => `<li>${escapeHtml(item.replace(/^[A-Ea-e][).:-]\s*/, ""))}</li>`).join("")}</ol>`;
-}
-
-
-function renderStudentAnswerSpace(question?: MaterialQuestion) {
-  const subitems = getQuestionSubitems(question?.enunciado);
-
-  if (subitems.length >= 2) {
-    return `<div class="planify-answer-space">
-      <p><strong>Espaço para resposta:</strong></p>
-      <ol class="planify-answer-grid" type="a">
-        ${subitems.map(() => `<li><span class="planify-answer-line"></span><span class="planify-answer-line short"></span></li>`).join("")}
-      </ol>
-    </div>`;
-  }
-
-  return `<div class="planify-answer-space">
-    <p><strong>Espaço para resposta:</strong></p>
-    ${Array.from({ length: 6 }).map((_, index) => `<span class="planify-answer-line ${index % 3 === 2 ? "short" : ""}"></span>`).join("")}
-  </div>`;
-}
-
-function normalizeMaterialKind(value: unknown) {
-  return String(value || "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLocaleLowerCase("pt-BR")
-    .trim();
-}
-
-function isDirectProductKind(value: unknown) {
-  return ["atividade", "prova", "lista", "revisao"].includes(normalizeMaterialKind(value));
-}
-
-function renderQuestionCard(question: MaterialQuestion) {
-  return `<div class="planify-question"><span class="planify-question-type">${escapeHtml(question.tipo || "questão")}</span><h3>Questão ${question.numero}</h3><div class="planify-question-enunciado">${renderQuestionText(question.enunciado)}</div>${renderAlternativesList(question.alternativas)}${renderStudentAnswerSpace(question)}</div>`;
-}
-
-function buildMaterialEditorHtml(material: GeneratedMaterial) {
-  const dados = material.dadosGerais || {};
-  const sections = material.secoes || [];
-  const questions = material.questoes || [];
-  const visualHtml = material.visualHtml || material.printHtml || "";
-  const directProduct = isDirectProductKind(material.tipo);
-
-  const css = `
-<style>
-  .planify-doc{font-family:Arial,Helvetica,sans-serif;color:#0f172a;line-height:1.55;}
-  .planify-cover{border:1px solid #dbeafe;border-radius:18px;padding:22px;margin:0 0 22px;background:linear-gradient(135deg,#eff6ff,#f8fafc);}
-  .planify-cover h1{margin:0 0 8px;font-size:30px;line-height:1.15;color:#0f172a;}
-  .planify-cover p{margin:6px 0;color:#334155;}
-  .planify-badge{display:inline-block;padding:6px 10px;border-radius:999px;background:#e0f2fe;color:#0369a1;font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.08em;}
-  .planify-box{border:1px solid #e2e8f0;border-radius:16px;padding:16px;margin:18px 0;background:#ffffff;break-inside:avoid;page-break-inside:avoid;}
-  .planify-box.soft{background:#f8fafc;}
-  .planify-section-title{margin:0 0 10px;font-size:20px;color:#0f172a;}
-  .planify-question{border:1px solid #cbd5e1;border-radius:16px;padding:16px;margin:16px 0;background:#ffffff;break-inside:avoid;page-break-inside:avoid;}
-  .planify-question h3{margin:0 0 10px;font-size:20px;color:#0f172a;border-bottom:1px solid #e2e8f0;padding-bottom:8px;}
-  .planify-question-enunciado p{margin:6px 0 8px;}
-  .planify-question-command{border-left:4px solid #06b6d4;background:#f0f9ff;padding:10px 12px;border-radius:10px;color:#0f172a;}
-  .planify-question-items{margin:12px 0 0 20px;padding:0;}
-  .planify-question-items li{margin:8px 0;padding-left:4px;}
-  .planify-question-steps{margin:10px 0 0 20px;padding:0;}
-  .planify-question-steps li{margin:5px 0;}
-  .planify-subitems{margin:12px 0 0 24px;padding:0;}
-  .planify-subitems li{margin:8px 0;padding-left:4px;}
-  .planify-answer-space{margin-top:14px;border:1px dashed #94a3b8;border-radius:14px;padding:14px;background:#f8fafc;color:#475569;font-size:12px;}
-  .planify-answer-space p{margin:0 0 8px;}
-  .planify-answer-grid{margin:0 0 0 22px;padding:0;}
-  .planify-answer-grid li{margin:10px 0;}
-  .planify-answer-line{display:block;height:1.6em;border-bottom:1px solid #94a3b8;margin:3px 0;}
-  .planify-answer-line.short{width:62%;}
-  .planify-alternatives{margin:12px 0 0 22px;padding:0;}
-  .planify-alternatives li{margin:6px 0;padding-left:4px;}
-  .planify-question-type{display:inline-block;margin-bottom:8px;padding:4px 8px;border-radius:999px;background:#dcfce7;color:#166534;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;}
-  .planify-teacher{border-color:#fde68a;background:#fffbeb;}
-  .planify-table{width:100%;border-collapse:collapse;margin:12px 0;}
-  .planify-table td{border:1px solid #cbd5e1;padding:8px;vertical-align:top;}
-  .planify-table td:first-child{width:32%;font-weight:700;background:#f8fafc;}
-  .planify-list{margin:8px 0 0 20px;}
-  .planify-divider{margin:26px 0 18px;border:0;border-top:2px solid #e2e8f0;}
-  @media print{.planify-doc{font-size:12pt}.planify-box,.planify-question{break-inside:avoid;page-break-inside:avoid}.planify-cover{break-after:avoid}}
-</style>`;
-
-  const dadosGeraisHtml = `<div class="planify-box soft">
-    <h2 class="planify-section-title">Dados gerais</h2>
-    <table class="planify-table">
-      <tbody>
-        ${[
-          ["Escola", dados.escola],
-          ["Professor", dados.professor],
-          ["Etapa", dados.etapa],
-          ["Ano/Série", dados.anoSerie],
-          ["Área", dados.areaConhecimento],
-          ["Componente", dados.componenteCurricular],
-          ["Tema", dados.tema],
-          ["Duração", dados.duracao],
-        ]
-          .filter(([, value]) => String(value || "").trim())
-          .map(([label, value]) => `<tr><td>${escapeHtml(label)}</td><td>${escapeHtml(value)}</td></tr>`)
-          .join("")}
-      </tbody>
-    </table>
-  </div>`;
-
-  const frontMatterHtml = directProduct
-    ? ""
-    : `${material.introducao ? `<div class="planify-box"><h2 class="planify-section-title">Introdução didática</h2>${renderTextBlock(material.introducao)}</div>` : ""}
-  ${(material.objetivos || []).length ? `<div class="planify-box"><h2 class="planify-section-title">Objetivos de aprendizagem</h2>${renderList(material.objetivos)}</div>` : ""}
-  ${(material.conteudos || []).length ? `<div class="planify-box"><h2 class="planify-section-title">Conteúdos trabalhados</h2>${renderList(material.conteudos)}</div>` : ""}`;
-
-  const sectionsHtml = !visualHtml && !directProduct
-    ? sections
-        .map((section, index) => {
-          const content = section.conteudo || section.descricao || "";
-          return `<div class="planify-box"><h2 class="planify-section-title">${index + 1}. ${escapeHtml(section.titulo || "Seção")}</h2>${renderTextBlock(content)}${renderList(section.itens)}</div>`;
-        })
-        .join("")
-    : "";
-
-  const questionsHtml = questions.length
-    ? `<div class="planify-box"><h2 class="planify-section-title">VERSÃO DO ALUNO</h2><table class="planify-table"><tbody><tr><td>Nome</td><td></td></tr><tr><td>Turma</td><td></td></tr><tr><td>Data</td><td></td></tr></tbody></table></div>${questions.map(renderQuestionCard).join("")}`
-    : "";
-
-  const teacherHtml = `${(material.gabarito || []).length ? `<div class="planify-box planify-teacher"><h2 class="planify-section-title">VERSÃO DO PROFESSOR — GABARITO</h2>${renderList(material.gabarito)}</div>` : ""}
-  ${(material.criteriosAvaliacao || []).length ? `<div class="planify-box planify-teacher"><h2 class="planify-section-title">Critérios de correção</h2>${renderList(material.criteriosAvaliacao)}</div>` : ""}`;
-
-  const supportHtml = directProduct
-    ? `${(material.adaptacoesInclusivas || []).length ? `<div class="planify-box"><h2 class="planify-section-title">Adaptações inclusivas</h2>${renderList(material.adaptacoesInclusivas)}</div>` : ""}`
-    : `${(material.orientacoesProfessor || []).length ? `<div class="planify-box planify-teacher"><h2 class="planify-section-title">Orientações ao professor</h2>${renderList(material.orientacoesProfessor)}</div>` : ""}
-  ${(material.orientacoesAluno || []).length ? `<div class="planify-box"><h2 class="planify-section-title">Orientações aos alunos</h2>${renderList(material.orientacoesAluno)}</div>` : ""}
-  ${(material.adaptacoesInclusivas || []).length ? `<div class="planify-box"><h2 class="planify-section-title">Adaptações inclusivas</h2>${renderList(material.adaptacoesInclusivas)}</div>` : ""}
-  ${(material.sugestoesUso || []).length ? `<div class="planify-box"><h2 class="planify-section-title">Sugestões de uso</h2>${renderList(material.sugestoesUso)}</div>` : ""}`;
-
-  return `
-${css}
-<article class="planify-doc">
-  <div class="planify-cover">
-    <span class="planify-badge">${directProduct ? "Material pronto" : "Material pedagógico"}</span>
-    <h1>${escapeHtml(material.titulo || "Material Planify")}</h1>
-    ${material.subtitulo ? `<p><strong>${escapeHtml(material.subtitulo)}</strong></p>` : ""}
-    ${!directProduct && material.resumo ? `<p>${escapeHtml(material.resumo)}</p>` : ""}
-  </div>
-
-  ${dadosGeraisHtml}
-  ${frontMatterHtml}
-  ${visualHtml ? `<div class="planify-box">${visualHtml}</div>` : ""}
-  ${sectionsHtml}
-  ${material.projeto ? `<div class="planify-box"><h2 class="planify-section-title">Síntese do projeto</h2><p><strong>Problema norteador:</strong> ${escapeHtml(material.projeto.problemaNorteador)}</p><p><strong>Produto final:</strong> ${escapeHtml(material.projeto.produtoFinal)}</p><p><strong>Avaliação:</strong> ${escapeHtml(material.projeto.avaliacao)}</p>${renderList(material.projeto.etapas)}</div>` : ""}
-  ${questionsHtml}
-  ${questionsHtml && teacherHtml ? `<hr class="planify-divider" />` : ""}
-  ${teacherHtml}
-  ${supportHtml}
-</article>`.trim();
+  return `<article><h1>${material.titulo}</h1><p>${material.resumo}</p>${sections}</article>`;
 }
 
 export function MateriaisClient() {
   const [form, setForm] = useState<FormState>(initialForm);
-  const [status, setStatus] = useState<StatusState>({ type: "idle", message: "Informe os dados e o tema. O Planify prepara um material completo, organizado e pronto para editar." });
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [isSuggesting, setIsSuggesting] = useState(false);
-  const [generatedMaterial, setGeneratedMaterial] = useState<GeneratedMaterial | null>(null);
-  const [suggestions, setSuggestions] = useState<SuggestionOutput | null>(null);
-  const [selectedSuggestionIds, setSelectedSuggestionIds] = useState<string[]>([]);
-  const [showSuggestionsPanel, setShowSuggestionsPanel] = useState(false);
-  
-  const generationMessageIndex = useMemo(() => {
-    const seed = `${form.tipo}-${form.tema}-${form.componenteCurricular}-${form.quantidadeQuestoes}`;
-    return Array.from(seed).reduce((sum, char) => sum + char.charCodeAt(0), 0);
-  }, [form.tipo, form.tema, form.componenteCurricular, form.quantidadeQuestoes]);
+  const [status, setStatus] = useState<StatusState>({ type: "idle", message: "" });
+  const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [bnccLoading, setBnccLoading] = useState(false);
+  const [generating, setGenerating] = useState(false);
+  const [bnccSuggestions, setBnccSuggestions] = useState<MaterialGeneratorBNCCSkill[]>([]);
+  const [selectedBncc, setSelectedBncc] = useState<MaterialGeneratorBNCCSkill[]>([]);
+  const [material, setMaterial] = useState<PlanifyGeneratedMaterial | null>(null);
+  const [creditMessage, setCreditMessage] = useState<string>("");
 
-  const manualConteudos = useMemo(() => splitLines(form.conteudos), [form.conteudos]);
-  const selectedContents = useMemo(
-    () => buildUnifiedContentLines(form, suggestions?.conteudos || []),
-    [form, suggestions],
+  const creditCost = useMemo(
+    () => getMaterialCreditCost(form.tipoMaterial, form.tamanho),
+    [form.tipoMaterial, form.tamanho],
   );
-  const componentesDisponiveis = useMemo(() => getComponentesDisponiveis(form), [form]);
-  const selectedType = materialTypes.find((item) => item.value === form.tipo);
-  const selectedGameModel = gameModelOptions.find((item) => item.value === form.modeloJogo);
 
-  function updateField<K extends keyof FormState>(key: K, value: FormState[K]) {
+  const availableYears = anoSerieByEtapa[form.etapaEnsino] || anoSerieByEtapa["Ensino Fundamental"];
+  const availableComponents = componentesByEtapa[form.etapaEnsino] || componentesByEtapa["Ensino Fundamental"];
+  const needsQuestions = materialTypeNeedsQuestions(form.tipoMaterial);
+
+  function update<K extends keyof FormState>(key: K, value: FormState[K]) {
+    setForm((current) => ({
+      ...current,
+      [key]: value,
+    }));
+  }
+
+  function updateEtapa(value: string) {
+    const nextYears = anoSerieByEtapa[value] || anoSerieByEtapa["Ensino Fundamental"];
+    const nextComponents = componentesByEtapa[value] || componentesByEtapa["Ensino Fundamental"];
+
+    setForm((current) => ({
+      ...current,
+      etapaEnsino: value,
+      anoSerie: nextYears[0] || current.anoSerie,
+      areaConhecimento: value === "Ensino Médio" ? current.areaConhecimento || areasEnsinoMedio[0] : "",
+      componenteCurricular: nextComponents[0] || current.componenteCurricular,
+    }));
+    setBnccSuggestions([]);
+    setSelectedBncc([]);
+  }
+
+  function toggleQuestionType(value: MaterialGeneratorQuestionType) {
     setForm((current) => {
-      const next = { ...current, [key]: value };
-      if (key === "etapa") {
-        next.anoSerie = "";
-        next.areaConhecimento = value === "Ensino Médio" ? "Linguagens e suas Tecnologias" : "";
-        next.componenteCurricular = value === "Ensino Médio" ? "Língua Espanhola" : "";
-      }
-      if (key === "areaConhecimento") next.componenteCurricular = "";
-      if (key === "tipo" && value === "jogo") next.modeloJogo = next.modeloJogo || "cruzadinha";
-      return next;
+      const exists = current.tiposQuestao.includes(value);
+      const tiposQuestao = exists
+        ? current.tiposQuestao.filter((item) => item !== value)
+        : [...current.tiposQuestao, value];
+
+      return {
+        ...current,
+        tiposQuestao,
+      };
     });
-
-    if (["etapa", "anoSerie", "areaConhecimento", "componenteCurricular", "tema"].includes(String(key))) {
-      setSuggestions(null);
-      setSelectedSuggestionIds([]);
-      setShowSuggestionsPanel(false);
-    }
   }
 
-  function clearAll() {
-    setForm(initialForm);
-    setGeneratedMaterial(null);
-    setSuggestions(null);
-    setSelectedSuggestionIds([]);
-    setShowSuggestionsPanel(false);
-    setStatus({ type: "idle", message: "Campos limpos. Informe o tema e gere um material completo." });
-  }
-
-  function applyQuickExample(example: (typeof quickExamples)[number]) {
-    setForm({
-      ...initialForm,
-      etapa: example.etapa,
-      anoSerie: example.anoSerie,
-      areaConhecimento: example.area,
-      componenteCurricular: example.componente,
-      tema: example.tema,
-      tipo: example.tipo,
-      modeloJogo: example.jogo,
-      titulo: `${gameLabels[example.jogo]} — ${example.tema}`,
+  function toggleBncc(skill: MaterialGeneratorBNCCSkill) {
+    setSelectedBncc((current) => {
+      const exists = current.some((item) => sameSkill(item, skill));
+      if (exists) return current.filter((item) => !sameSkill(item, skill));
+      return [...current, skill];
     });
-    setGeneratedMaterial(null);
-    setSuggestions(null);
-    setSelectedSuggestionIds([]);
-    setShowSuggestionsPanel(false);
-    setStatus({ type: "info", message: "Exemplo aplicado. Clique em gerar para criar o material completo." });
   }
 
-  async function suggestContents() {
-    if (!form.anoSerie) {
-      setStatus({ type: "error", message: "Selecione o ano/série antes de sugerir conteúdos." });
-      return;
-    }
-    if (isEnsinoMedio(form.etapa) && !form.areaConhecimento) {
-      setStatus({ type: "error", message: "Selecione a área do conhecimento." });
-      return;
-    }
-    if (!form.componenteCurricular) {
-      setStatus({ type: "error", message: "Selecione o componente curricular." });
-      return;
-    }
-    if (!form.tema.trim()) {
-      setStatus({ type: "error", message: "Informe o tema central do material." });
+  function validateForm(): string | null {
+    if (!form.tipoMaterial) return "Selecione o tipo de material.";
+    if (!form.etapaEnsino) return "Selecione a etapa.";
+    if (!form.anoSerie) return "Selecione o ano/série.";
+    if (!form.componenteCurricular) return "Selecione o componente curricular.";
+    if (!form.temaCentral.trim()) return "Informe o tema central.";
+    if (needsQuestions && !form.quantidadeQuestoes.trim()) return "Informe a quantidade de questões/exercícios.";
+    return null;
+  }
+
+  async function suggestBncc() {
+    const error = validateForm();
+    if (error) {
+      setStatus({ type: "error", message: error });
       return;
     }
 
-    setIsSuggesting(true);
-    setShowSuggestionsPanel(true);
-    setStatus({ type: "info", message: "Analisando tema, etapa, série e componente..." });
+    setBnccLoading(true);
+    setStatus({ type: "info", message: "Buscando habilidades BNCC oficiais compatíveis com o tema." });
 
     try {
-      const response = await fetch("/api/ai/material/sugerir-conteudos", {
+      const response = await fetch("/api/bncc/sugerir", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({
-          etapa: form.etapa,
+          etapa: form.etapaEnsino,
           anoSerie: form.anoSerie,
           areaConhecimento: form.areaConhecimento,
           componenteCurricular: form.componenteCurricular,
-          tema: form.tema,
-          tipo: form.tipo,
-          modeloJogo: form.modeloJogo,
-          quantidade: 6,
-          observacoes: form.observacoes,
+          conteudos: [form.temaCentral],
+          tema: form.temaCentral,
         }),
       });
-      const result = await response.json();
-      if (!response.ok || !result?.success) {
-        throw new Error(result?.error?.message || result?.message || "Não foi possível preparar os conteúdos agora.");
+
+      const json = await response.json();
+
+      if (!response.ok || json.success === false) {
+        throw new Error(json?.error?.message || "Não foi possível sugerir BNCC.");
       }
-      const data = result.data as SuggestionOutput;
-      setSuggestions(data);
-      setSelectedSuggestionIds([]);
-      setStatus({ type: "success", message: "Conteúdos organizados para o tema escolhido." });
+
+      const rawItems = (json.habilidades || json.sugeridas || json.skills || json.items || []) as BnccSuggestion[];
+      const normalized = rawItems
+        .map(normalizeBnccSuggestion)
+        .filter((item): item is MaterialGeneratorBNCCSkill => Boolean(item));
+      const unique = normalized.filter(
+        (item, index, array) => array.findIndex((other) => sameSkill(other, item)) === index,
+      );
+
+      setBnccSuggestions(unique);
+      setSelectedBncc(unique.slice(0, 3));
+      setStatus({
+        type: unique.length ? "success" : "info",
+        message: unique.length
+          ? `Foram encontradas ${unique.length} habilidade(s). Selecione apenas as que deseja usar.`
+          : "Nenhuma habilidade foi encontrada para esse recorte. O material será gerado sem inventar BNCC.",
+      });
     } catch (error) {
-      setStatus({ type: "error", message: error instanceof Error ? error.message : "Não foi possível preparar os conteúdos agora." });
+      setStatus({
+        type: "error",
+        message: error instanceof Error ? error.message : "Erro ao sugerir BNCC.",
+      });
     } finally {
-      setIsSuggesting(false);
+      setBnccLoading(false);
     }
-  }
-
-  function toggleSuggestion(id: string) {
-    setSelectedSuggestionIds((current) => (current.includes(id) ? current.filter((item) => item !== id) : [...current, id]));
-  }
-
-  function selectAllSuggestions() {
-    if (!suggestions) return;
-    setSelectedSuggestionIds((suggestions.conteudos || []).map((item) => item.id));
-  }
-
-  function clearSuggestionSelection() {
-    setSelectedSuggestionIds([]);
-  }
-
-  function selectRecommendedSuggestions() {
-    if (!suggestions) return;
-    const ids = (suggestions.conteudos || [])
-      .filter((item) => !String(item.dificuldade || "").toLocaleLowerCase("pt-BR").includes("avançado"))
-      .slice(0, 5)
-      .map((item) => item.id);
-    setSelectedSuggestionIds(ids);
-  }
-
-  function applySelectedSuggestionsToField() {
-    if (!suggestions) return;
-    const lines = suggestions.conteudos
-      .filter((item) => selectedSuggestionIds.includes(item.id))
-      .map(contentLineFromSuggestion);
-    setForm((current) => ({ ...current, conteudos: lines.join("\n"), objetivos: suggestions.objetivosGerais.join("\n") }));
-    setStatus({ type: "success", message: "Conteúdos aplicados ao material." });
-  }
-
-  function useRecommended(option: RecommendedOption) {
-    const tipo = ["atividade", "prova", "lista", "revisao", "apostila", "sequencia", "jogo", "projeto", "roteiro"].includes(option.tipo)
-      ? (option.tipo as MaterialType)
-      : "jogo";
-    const model = gameModelOptions.some((item) => item.value === option.modeloJogo) ? (option.modeloJogo as GameModel) : form.modeloJogo;
-    setForm((current) => ({ ...current, tipo, modeloJogo: model || "cruzadinha" }));
-    setStatus({ type: "info", message: `Formato aplicado: ${option.titulo}.` });
   }
 
   async function generateMaterial() {
-    const validation = validateForm(form);
-    if (validation) {
-      setStatus({ type: "error", message: validation });
+    const error = validateForm();
+    if (error) {
+      setStatus({ type: "error", message: error });
       return;
     }
 
-    setIsGenerating(true);
-    setStatus({ type: "info", message: form.tipo === "jogo" ? `Gerando ${selectedGameModel?.label || "jogo"} com o tema completo...` : "Criando material completo..." });
-
-    let conteudos = selectedContents;
+    setGenerating(true);
+    setMaterial(null);
+    setCreditMessage("");
+    setStatus({
+      type: "info",
+      message: "Gerando material com IA e validando a estrutura para edição, Word e PDF.",
+    });
 
     try {
-      if (manualConteudos.length === 0 && !suggestions?.conteudos?.length) {
-        setStatus({ type: "info", message: "Organizando o tema completo..." });
-        try {
-          const response = await fetch("/api/ai/material/sugerir-conteudos", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              etapa: form.etapa,
-              anoSerie: form.anoSerie,
-              areaConhecimento: form.areaConhecimento,
-              componenteCurricular: form.componenteCurricular,
-              tema: form.tema,
-              tipo: form.tipo,
-              modeloJogo: form.modeloJogo,
-              quantidade: 6,
-              observacoes: form.observacoes,
-            }),
-          });
-          const result = await response.json();
-          if (response.ok && result?.success && result.data) {
-            const data = result.data as SuggestionOutput;
-            conteudos = buildUnifiedContentLines(form, data.conteudos || []);
-          }
-        } catch {
-          conteudos = buildDefaultContentLines(form);
-        }
-      }
-
-      if (conteudos.length === 0) {
-        conteudos = buildDefaultContentLines(form);
-      }
-
-      setStatus({ type: "info", message: form.tipo === "jogo" ? `Gerando ${selectedGameModel?.label || "jogo"} com o tema completo...` : "Criando material completo..." });
-
-      const response = await fetch("/api/ai/material", {
+      const response = await fetch("/api/materiais/gerar", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, conteudos, titulo: form.titulo || `${typeLabels[form.tipo]} — ${form.tema}` }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...form,
+          quantidadeQuestoes: Number(form.quantidadeQuestoes) || 0,
+          habilidadesBncc: selectedBncc,
+          idempotencyKey:
+            typeof crypto !== "undefined" && "randomUUID" in crypto
+              ? crypto.randomUUID()
+              : `material_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+        }),
       });
-      const result = await response.json();
-      if (!response.ok || !result?.success) {
-        throw new Error(result?.error?.message || result?.message || "Não foi possível gerar material agora.");
+
+      const json = (await response.json()) as MaterialGenerationResponse | { success: false; error?: { message?: string; details?: string } };
+
+      if (!response.ok || !json.success) {
+        const errorPayload = !json.success ? json.error : null;
+        throw new Error(errorPayload?.message || errorPayload?.details || "Não foi possível gerar o material.");
       }
-      const material = normalizeGeneratedMaterial((result.data || result.material) as GeneratedMaterial, form, conteudos);
-      setGeneratedMaterial(material);
-      saveToLocalHistory(material);
-      setStatus({ type: "success", message: form.tipo === "jogo" ? "Jogo pronto para revisar no Editor." : `${typeLabels[form.tipo]} pronto para revisar no Editor.` });
+
+      setMaterial(json.data.material);
+      setCreditMessage(json.data.credit.message);
+      setStatus({
+        type: "success",
+        message: json.data.duplicate
+          ? "Material recuperado sem consumir créditos duplicados."
+          : "Material gerado com sucesso. Você já pode abrir no editor, baixar em Word ou imprimir em PDF.",
+      });
     } catch (error) {
-      if (form.tipo === "jogo") {
-        if (conteudos.length === 0) conteudos = buildDefaultContentLines(form);
-        const fallback = buildFallbackMaterial(form, conteudos);
-        setGeneratedMaterial(fallback);
-        saveToLocalHistory(fallback);
-        setStatus({ type: "success", message: "Jogo visual pronto para revisar no Editor." });
-      } else {
-        setGeneratedMaterial(null);
-        setStatus({
-          type: "error",
-          message: error instanceof Error
-            ? error.message
-            : "Não foi possível gerar o material agora. Revise os campos e tente novamente.",
-        });
-      }
+      setStatus({
+        type: "error",
+        message: error instanceof Error ? error.message : "Erro ao gerar material.",
+      });
     } finally {
-      setIsGenerating(false);
+      setGenerating(false);
     }
   }
 
   function openInEditor() {
-    if (!generatedMaterial) return;
-    const html = buildMaterialEditorHtml(generatedMaterial);
-    localStorage.setItem(
-      "planify_editor_document",
-      JSON.stringify({ type: "material", title: generatedMaterial.titulo || "Material Planify", html, content: html, updatedAt: new Date().toISOString() }),
-    );
+    if (!material) return;
+
+    const document = createEditorDocument({
+      source: "material",
+      title: materialTitle(material),
+      subtitle: materialSubtitle(material),
+      type: material.tipo || form.tipoMaterial,
+      content: material.htmlEditor || buildFallbackPreview(material),
+      raw: material,
+    });
+
+    saveEditorDocument(document);
     window.location.href = "/editor";
   }
 
-  const statusClass =
-    status.type === "success"
-      ? "border-emerald-300/30 bg-emerald-300/10 text-emerald-100"
-      : status.type === "error"
-        ? "border-rose-300/30 bg-rose-300/10 text-rose-100"
-        : "border-cyan-300/20 bg-cyan-300/10 text-cyan-100";
+  async function downloadWord() {
+    if (!material) return;
+
+    try {
+      await downloadDocxDocument("material", material, materialTitle(material));
+    } catch (error) {
+      setStatus({
+        type: "error",
+        message: error instanceof Error ? error.message : "Não foi possível baixar o Word.",
+      });
+    }
+  }
+
+  function printPdf() {
+    window.print();
+  }
+
+  function clearAll() {
+    setForm(initialForm);
+    setStatus({ type: "idle", message: "" });
+    setAdvancedOpen(false);
+    setBnccSuggestions([]);
+    setSelectedBncc([]);
+    setMaterial(null);
+    setCreditMessage("");
+  }
+
+  const previewHtml = material ? sanitizePreviewHtml(material.htmlEditor || buildFallbackPreview(material)) : "";
 
   return (
-    <section className="mx-auto grid max-w-7xl gap-6 px-5 py-10 lg:grid-cols-[0.7fr_1.3fr] sm:px-8">
-      <aside className="space-y-6">
-        <div className="rounded-[2rem] border border-cyan-300/20 bg-cyan-300/10 p-6 shadow-2xl shadow-cyan-500/10">
-          <p className="text-sm font-black uppercase tracking-[0.28em] text-cyan-300">Criação pedagógica</p>
-          <h1 className="mt-4 text-3xl font-black text-white">Materiais didáticos</h1>
-          <p className="mt-4 text-sm leading-7 text-cyan-100/80">
-            Escolha a turma, o componente, o tipo e o tema. O Planify prepara um material pronto para revisar, editar e aplicar.
-          </p>
-          <div className="mt-4 rounded-2xl border border-cyan-300/20 bg-slate-950/40 p-4 text-xs font-bold leading-6 text-cyan-50">
-            Motor com base pedagógica curada: BNCC, REA/OER, Bloom, acessibilidade e contratos específicos por tipo de material.
+    <main className="space-y-8 text-slate-950">
+      <section className="overflow-hidden rounded-[2rem] border border-cyan-100 bg-gradient-to-br from-slate-950 via-cyan-950 to-slate-900 p-6 text-white shadow-2xl shadow-cyan-950/20 md:p-8">
+        <div className="grid gap-8 lg:grid-cols-[1.15fr_0.85fr] lg:items-end">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.28em] text-cyan-200">Gerador IA de Materiais Didáticos</p>
+            <h1 className="mt-4 max-w-4xl text-3xl font-black tracking-tight md:text-5xl">
+              Materiais prontos para sala, com esforço zero para o professor.
+            </h1>
+            <p className="mt-4 max-w-3xl text-sm font-semibold leading-7 text-cyan-50/90 md:text-base">
+              Escolha tipo, turma, componente e tema. O Planify organiza a estrutura, respeita o formato do material, separa versão do aluno e gabarito, abre no editor e permite exportar.
+            </p>
           </div>
 
-          <div className="mt-6 grid gap-3">
-            {quickExamples.map((example) => (
-              <button
-                key={example.label}
-                type="button"
-                onClick={() => applyQuickExample(example)}
-                className="rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-3 text-left text-sm text-white transition hover:-translate-y-0.5 hover:bg-white/10"
-              >
-                <span className="block font-black text-cyan-100">Exemplo: {example.label}</span>
-                <span className="mt-1 block text-xs leading-5 text-slate-400">{example.tema}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {form.tipo === "jogo" && (
-          <div className="rounded-[2rem] border border-emerald-300/20 bg-emerald-300/10 p-6 shadow-2xl shadow-emerald-500/10">
-            <p className="text-sm font-black uppercase tracking-[0.24em] text-emerald-200">Jogo visual</p>
-            <div className="mt-4 grid gap-3">
-              {gameModelOptions.map((game) => (
-                <button
-                  key={game.value}
-                  type="button"
-                  onClick={() => updateField("modeloJogo", game.value)}
-                  className={`rounded-2xl border px-4 py-3 text-left transition hover:-translate-y-0.5 ${
-                    form.modeloJogo === game.value
-                      ? "border-emerald-200/60 bg-white text-slate-950"
-                      : "border-white/10 bg-slate-950/40 text-emerald-50 hover:bg-white/10"
-                  }`}
-                >
-                  <span className="block text-sm font-black">{game.label}</span>
-                  <span className="mt-1 block text-xs leading-5 opacity-80">{game.description}</span>
-                </button>
-              ))}
+          <div className="rounded-[1.5rem] border border-white/15 bg-white/10 p-5 shadow-xl backdrop-blur">
+            <p className="text-xs font-black uppercase tracking-[0.22em] text-cyan-100">Custo estimado</p>
+            <div className="mt-3 flex items-end justify-between gap-4">
+              <div>
+                <p className="text-4xl font-black">{creditCost}</p>
+                <p className="text-sm font-bold text-cyan-100">créditos nesta geração</p>
+              </div>
+              <div className="rounded-2xl bg-white px-4 py-3 text-right text-slate-950">
+                <p className="text-xs font-black uppercase text-slate-500">Tipo</p>
+                <p className="text-sm font-black">{getMaterialTypeLabel(form.tipoMaterial)}</p>
+              </div>
             </div>
+            {creditMessage ? <p className="mt-3 text-xs font-bold text-cyan-50">{creditMessage}</p> : null}
           </div>
-        )}
-
-        <div className={`rounded-[1.5rem] border p-5 text-sm leading-7 ${statusClass}`}>
-          <p className="font-black uppercase tracking-[0.2em]">Status</p>
-          <p className="mt-2">{status.message}</p>
         </div>
-      </aside>
+      </section>
 
-      <div className="space-y-6">
-        <div className="rounded-[2rem] border border-white/10 bg-white/[0.06] p-6 shadow-2xl backdrop-blur-2xl">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+      <section className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
+        <div className="space-y-6 rounded-[2rem] border border-slate-200 bg-white p-5 shadow-xl shadow-slate-950/5 md:p-6">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-sm font-black uppercase tracking-[0.28em] text-cyan-300">Dados</p>
-              <h2 className="mt-3 text-3xl font-black text-white">Informações do material</h2>
-              <p className="mt-3 text-sm leading-7 text-slate-400">
-                Preencha os dados principais e gere o material no formato escolhido.
-              </p>
+              <p className={labelBase()}>Formulário inteligente</p>
+              <h2 className="mt-1 text-2xl font-black">Configuração do material</h2>
             </div>
-            <button type="button" onClick={clearAll} className="rounded-2xl border border-white/10 bg-white/5 px-6 py-4 text-sm font-black text-white transition hover:-translate-y-1 hover:bg-white/10">
+            <button
+              type="button"
+              onClick={clearAll}
+              className="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-black text-slate-700 transition hover:border-red-200 hover:bg-red-50 hover:text-red-700"
+            >
               Limpar tudo
             </button>
           </div>
 
-          <div className="mt-6 grid gap-4 md:grid-cols-2">
-            <label className="grid gap-2">
-              <span className="text-sm font-bold text-slate-300">Título do material</span>
-              <input value={form.titulo} onChange={(event) => updateField("titulo", event.target.value)} placeholder="Ex.: Apostila — Amazônia" className="h-14 rounded-2xl border border-white/10 bg-slate-950/50 px-4 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300/50" />
-            </label>
-
-            <label className="grid gap-2">
-              <span className="text-sm font-bold text-slate-300">Finalidade</span>
-              <select value={form.finalidade} onChange={(event) => updateField("finalidade", event.target.value)} className="h-14 rounded-2xl border border-white/10 bg-slate-950/50 px-4 text-sm text-white outline-none transition focus:border-cyan-300/50">
-                {[
-                  "Aula em sala",
-                  "Tarefa de casa",
-                  "Revisão",
-                  "Recuperação",
-                  "Avaliação",
-                  "Trabalho em grupo",
-                  "Material de apoio impresso",
-                ].map((item) => <option key={item} value={item} className="bg-slate-950">{item}</option>)}
+          <div className="grid gap-4 md:grid-cols-2">
+            <label className="space-y-2 md:col-span-2">
+              <span className={labelBase()}>Tipo de material</span>
+              <select
+                className={fieldBase()}
+                value={form.tipoMaterial}
+                onChange={(event) => update("tipoMaterial", event.target.value as MaterialGeneratorType)}
+              >
+                {MATERIAL_TYPE_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
               </select>
             </label>
 
-            <label className="grid gap-2">
-              <span className="text-sm font-bold text-slate-300">Escola</span>
-              <input value={form.escola} onChange={(event) => updateField("escola", event.target.value)} placeholder="Nome da escola" className="h-14 rounded-2xl border border-white/10 bg-slate-950/50 px-4 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300/50" />
-            </label>
-
-            <label className="grid gap-2">
-              <span className="text-sm font-bold text-slate-300">Professor(a)</span>
-              <input value={form.professor} onChange={(event) => updateField("professor", event.target.value)} placeholder="Nome do professor" className="h-14 rounded-2xl border border-white/10 bg-slate-950/50 px-4 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300/50" />
-            </label>
-
-            <label className="grid gap-2">
-              <span className="text-sm font-bold text-slate-300">Etapa</span>
-              <select value={form.etapa} onChange={(event) => updateField("etapa", event.target.value)} className="h-14 rounded-2xl border border-white/10 bg-slate-950/50 px-4 text-sm text-white outline-none transition focus:border-cyan-300/50">
-                {etapaOptions.map((item) => <option key={item} value={item} className="bg-slate-950">{item}</option>)}
+            <label className="space-y-2">
+              <span className={labelBase()}>Etapa</span>
+              <select className={fieldBase()} value={form.etapaEnsino} onChange={(event) => updateEtapa(event.target.value)}>
+                {etapaOptions.map((option) => <option key={option}>{option}</option>)}
               </select>
             </label>
 
-            <label className="grid gap-2">
-              <span className="text-sm font-bold text-slate-300">Ano/Série</span>
-              <select value={form.anoSerie} onChange={(event) => updateField("anoSerie", event.target.value)} className="h-14 rounded-2xl border border-white/10 bg-slate-950/50 px-4 text-sm text-white outline-none transition focus:border-cyan-300/50">
-                <option value="" className="bg-slate-950">Selecione</option>
-                {(anoSerieByEtapa[form.etapa] || []).map((item) => <option key={item} value={item} className="bg-slate-950">{item}</option>)}
+            <label className="space-y-2">
+              <span className={labelBase()}>Ano/Série</span>
+              <select className={fieldBase()} value={form.anoSerie} onChange={(event) => update("anoSerie", event.target.value)}>
+                {availableYears.map((option) => <option key={option}>{option}</option>)}
               </select>
             </label>
 
-            {isEnsinoMedio(form.etapa) && (
-              <label className="grid gap-2">
-                <span className="text-sm font-bold text-slate-300">Área do conhecimento</span>
-                <select value={form.areaConhecimento} onChange={(event) => updateField("areaConhecimento", event.target.value)} className="h-14 rounded-2xl border border-white/10 bg-slate-950/50 px-4 text-sm text-white outline-none transition focus:border-cyan-300/50">
-                  <option value="" className="bg-slate-950">Selecione</option>
-                  {areasEnsinoMedio.map((item) => <option key={item} value={item} className="bg-slate-950">{item}</option>)}
+            {form.etapaEnsino === "Ensino Médio" ? (
+              <label className="space-y-2 md:col-span-2">
+                <span className={labelBase()}>Área do conhecimento</span>
+                <select className={fieldBase()} value={form.areaConhecimento} onChange={(event) => update("areaConhecimento", event.target.value)}>
+                  {areasEnsinoMedio.map((option) => <option key={option}>{option}</option>)}
                 </select>
               </label>
-            )}
+            ) : null}
 
-            <label className="grid gap-2">
-              <span className="text-sm font-bold text-slate-300">Componente curricular</span>
-              <select value={form.componenteCurricular} onChange={(event) => updateField("componenteCurricular", event.target.value)} className="h-14 rounded-2xl border border-white/10 bg-slate-950/50 px-4 text-sm text-white outline-none transition focus:border-cyan-300/50">
-                <option value="" className="bg-slate-950">{isEnsinoMedio(form.etapa) && !form.areaConhecimento ? "Selecione a área primeiro" : "Selecione"}</option>
-                {componentesDisponiveis.map((item) => <option key={item} value={item} className="bg-slate-950">{item}</option>)}
+            <label className="space-y-2 md:col-span-2">
+              <span className={labelBase()}>Componente curricular</span>
+              <select className={fieldBase()} value={form.componenteCurricular} onChange={(event) => update("componenteCurricular", event.target.value)}>
+                {availableComponents.map((option) => <option key={option}>{option}</option>)}
               </select>
             </label>
 
-            <label className="grid gap-2">
-              <span className="text-sm font-bold text-slate-300">Tipo de material</span>
-              <select value={form.tipo} onChange={(event) => updateField("tipo", event.target.value as MaterialType)} className="h-14 rounded-2xl border border-white/10 bg-slate-950/50 px-4 text-sm text-white outline-none transition focus:border-cyan-300/50">
-                {materialTypes.map((type) => <option key={type.value} value={type.value} className="bg-slate-950">{type.label}</option>)}
-              </select>
-              {selectedType?.description ? <span className="text-xs leading-5 text-slate-500">{selectedType.description}</span> : null}
+            <label className="space-y-2 md:col-span-2">
+              <span className={labelBase()}>Tema central</span>
+              <input
+                className={fieldBase()}
+                value={form.temaCentral}
+                onChange={(event) => update("temaCentral", event.target.value)}
+                placeholder="Ex.: Amazônia, frações, Revolução Industrial, energia elétrica..."
+              />
             </label>
 
-            {form.tipo === "jogo" && (
-              <label className="grid gap-2">
-                <span className="text-sm font-bold text-slate-300">Modelo de jogo</span>
-                <select value={form.modeloJogo} onChange={(event) => updateField("modeloJogo", event.target.value as GameModel)} className="h-14 rounded-2xl border border-emerald-300/30 bg-slate-950/50 px-4 text-sm text-white outline-none transition focus:border-emerald-300/60">
-                  {gameModelOptions.map((game) => <option key={game.value} value={game.value} className="bg-slate-950">{game.label}</option>)}
-                </select>
-              </label>
-            )}
-
-            {needsQuestionQuantity(form.tipo) && (
-              <label className="grid gap-2">
-                <span className="text-sm font-bold text-slate-300">{quantityLabel(form.tipo)}</span>
-                <input value={form.quantidadeQuestoes} onChange={(event) => updateField("quantidadeQuestoes", event.target.value.replace(/[^0-9]/g, ""))} placeholder="Ex.: 10" className="h-14 rounded-2xl border border-white/10 bg-slate-950/50 px-4 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300/50" />
-                <span className="text-xs leading-5 text-slate-500">O Planify vai conferir a entrega: se pedir 10, o material deve sair com 10.</span>
-              </label>
-            )}
-
-            <label className="grid gap-2">
-              <span className="text-sm font-bold text-slate-300">Duração/tempo estimado</span>
-              <input value={form.duracao} onChange={(event) => updateField("duracao", event.target.value)} placeholder="Ex.: 2 períodos" className="h-14 rounded-2xl border border-white/10 bg-slate-950/50 px-4 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300/50" />
-            </label>
-
-            <label className="grid gap-2">
-              <span className="text-sm font-bold text-slate-300">Nível de aprofundamento</span>
-              <select value={form.nivelAprofundamento} onChange={(event) => updateField("nivelAprofundamento", event.target.value)} className="h-14 rounded-2xl border border-white/10 bg-slate-950/50 px-4 text-sm text-white outline-none transition focus:border-cyan-300/50">
-                {["Essencial", "Completo", "Avançado", "Muito aprofundado"].map((item) => <option key={item} value={item} className="bg-slate-950">{item}</option>)}
+            <label className="space-y-2">
+              <span className={labelBase()}>Objetivo</span>
+              <select className={fieldBase()} value={form.objetivo} onChange={(event) => update("objetivo", event.target.value)}>
+                {objetivoOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
               </select>
             </label>
 
-            <label className="grid gap-2 md:col-span-2">
-              <span className="text-sm font-bold text-slate-300">Tema central</span>
-              <input value={form.tema} onChange={(event) => updateField("tema", event.target.value)} placeholder="Ex.: Amazônia: biodiversidade, povos, território e conservação" className="h-14 rounded-2xl border border-white/10 bg-slate-950/50 px-4 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300/50" />
+            <label className="space-y-2">
+              <span className={labelBase()}>Tamanho</span>
+              <select className={fieldBase()} value={form.tamanho} onChange={(event) => update("tamanho", event.target.value as MaterialGeneratorSize)}>
+                {MATERIAL_SIZE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+              </select>
             </label>
 
-            <label className="grid gap-2 md:col-span-2">
-              <span className="text-sm font-bold text-slate-300">Conteúdos que devem entrar no material</span>
-              <textarea value={form.conteudos} onChange={(event) => updateField("conteudos", event.target.value)} rows={5} placeholder="Um conteúdo por linha. Ex.: localização da Amazônia; biodiversidade; povos indígenas e comunidades tradicionais; desmatamento; conservação" className="rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-4 text-sm leading-7 text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300/50" />
-              <span className="text-xs leading-5 text-slate-500">Se deixar em branco, o Planify organiza automaticamente conteúdos coerentes com o tema, a série e o componente.</span>
+            <label className="space-y-2">
+              <span className={labelBase()}>Dificuldade</span>
+              <select className={fieldBase()} value={form.nivelDificuldade} onChange={(event) => update("nivelDificuldade", event.target.value)}>
+                {difficultyOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+              </select>
             </label>
 
-            <label className="grid gap-2 md:col-span-2">
-              <span className="text-sm font-bold text-slate-300">Objetivos de aprendizagem</span>
-              <textarea value={form.objetivos} onChange={(event) => updateField("objetivos", event.target.value)} rows={4} placeholder="Opcional. Informe objetivos específicos ou deixe a IA estruturar." className="rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-4 text-sm leading-7 text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300/50" />
-            </label>
-
-            <label className="grid gap-2 md:col-span-2">
-              <span className="text-sm font-bold text-slate-300">Contexto da turma / dificuldades</span>
-              <textarea value={form.contextoTurma} onChange={(event) => updateField("contextoTurma", event.target.value)} rows={3} placeholder="Ex.: turma com dificuldade de leitura, precisa de exemplos concretos e linguagem objetiva." className="rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-4 text-sm leading-7 text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300/50" />
-            </label>
-
-            <label className="grid gap-2">
-              <span className="text-sm font-bold text-slate-300">Recursos disponíveis</span>
-              <textarea value={form.recursosDisponiveis} onChange={(event) => updateField("recursosDisponiveis", event.target.value)} rows={3} placeholder="Ex.: quadro, projetor, impressão, laboratório, internet." className="rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-4 text-sm leading-7 text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300/50" />
-            </label>
-
-            <label className="grid gap-2">
-              <span className="text-sm font-bold text-slate-300">Critérios de avaliação</span>
-              <textarea value={form.criteriosAvaliacaoPersonalizados} onChange={(event) => updateField("criteriosAvaliacaoPersonalizados", event.target.value)} rows={3} placeholder="Opcional. Ex.: clareza, participação, uso de conceitos, argumentação." className="rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-4 text-sm leading-7 text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300/50" />
-            </label>
-
-            <label className="grid gap-2 md:col-span-2">
-              <span className="text-sm font-bold text-slate-300">Orientações especiais</span>
-              <textarea value={form.orientacoes} onChange={(event) => updateField("orientacoes", event.target.value)} rows={3} placeholder="Ex.: incluir leitura curta, glossário, box de curiosidade, atividade em grupo ou gabarito comentado." className="rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-4 text-sm leading-7 text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300/50" />
-            </label>
-
-            <label className="grid gap-2 md:col-span-2">
-              <span className="text-sm font-bold text-slate-300">Observações</span>
-              <textarea value={form.observacoes} onChange={(event) => updateField("observacoes", event.target.value)} rows={3} placeholder="Opcional. Ex.: evitar textos longos demais, incluir exemplos brasileiros, preparar para impressão." className="rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-4 text-sm leading-7 text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300/50" />
+            <label className="space-y-2">
+              <span className={labelBase()}>{needsQuestions ? "Questões/Exercícios" : "Questões complementares"}</span>
+              <input
+                className={fieldBase()}
+                type="number"
+                min={0}
+                max={60}
+                value={form.quantidadeQuestoes}
+                onChange={(event) => update("quantidadeQuestoes", event.target.value)}
+                disabled={!needsQuestions && form.tipoMaterial !== "apostila"}
+              />
             </label>
           </div>
 
-          <div className="mt-6 rounded-2xl border border-emerald-300/20 bg-emerald-300/10 p-5">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-              <div>
-                <p className="text-sm font-black uppercase tracking-[0.22em] text-emerald-200">Curadoria opcional</p>
-                <h3 className="mt-2 text-xl font-black text-white">Sugerir conteúdos somente quando desejar</h3>
-                <p className="mt-2 text-sm leading-7 text-emerald-50/80">
-                  Esta área só abre quando você clicar. Ao gerar direto, o Planify organiza internamente sem poluir a página com sugestões.
-                </p>
-              </div>
-              <button type="button" onClick={suggestContents} disabled={isSuggesting} className="rounded-2xl bg-emerald-200 px-5 py-4 text-sm font-black text-slate-950 transition hover:-translate-y-1 hover:bg-white disabled:cursor-not-allowed disabled:opacity-60">
-                {isSuggesting ? "Organizando..." : "Sugerir conteúdos"}
-              </button>
-            </div>
+          <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4">
+            <button
+              type="button"
+              onClick={() => setAdvancedOpen((value) => !value)}
+              className="flex w-full items-center justify-between gap-4 text-left"
+            >
+              <span>
+                <span className={labelBase()}>Campos avançados</span>
+                <strong className="mt-1 block text-lg font-black">BNCC, gabarito, acessibilidade e recursos</strong>
+              </span>
+              <span className="rounded-full bg-white px-3 py-1 text-sm font-black text-slate-700 shadow-sm">{advancedOpen ? "Fechar" : "Abrir"}</span>
+            </button>
 
-            {showSuggestionsPanel && suggestions ? (
-              <div className="mt-5 grid gap-4">
-                <div className="rounded-2xl border border-white/10 bg-slate-950/35 p-4">
-                  <p className="text-sm leading-7 text-emerald-50/90">{suggestions.resumoPedagogico}</p>
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    <button type="button" onClick={selectRecommendedSuggestions} className="rounded-xl bg-white px-4 py-2 text-xs font-black text-slate-950">Usar recomendados</button>
-                    <button type="button" onClick={selectAllSuggestions} className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs font-black text-white">Selecionar todos</button>
-                    <button type="button" onClick={clearSuggestionSelection} className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs font-black text-white">Limpar seleção</button>
-                    <button type="button" onClick={applySelectedSuggestionsToField} disabled={!selectedSuggestionIds.length} className="rounded-xl border border-emerald-200/40 bg-emerald-200/15 px-4 py-2 text-xs font-black text-emerald-50 disabled:cursor-not-allowed disabled:opacity-50">Aplicar ao campo conteúdos</button>
+            {advancedOpen ? (
+              <div className="mt-5 space-y-4">
+                <div className="grid gap-4 md:grid-cols-3">
+                  <label className="space-y-2">
+                    <span className={labelBase()}>Escola</span>
+                    <input className={fieldBase()} value={form.escola} onChange={(event) => update("escola", event.target.value)} />
+                  </label>
+                  <label className="space-y-2">
+                    <span className={labelBase()}>Professor</span>
+                    <input className={fieldBase()} value={form.professor} onChange={(event) => update("professor", event.target.value)} />
+                  </label>
+                  <label className="space-y-2">
+                    <span className={labelBase()}>Turma</span>
+                    <input className={fieldBase()} value={form.turma} onChange={(event) => update("turma", event.target.value)} />
+                  </label>
+                </div>
+
+                <div>
+                  <span className={labelBase()}>Tipos de questão</span>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {questionTypeOptions.map((option) => {
+                      const selected = form.tiposQuestao.includes(option.value);
+                      return (
+                        <button
+                          key={option.value}
+                          type="button"
+                          onClick={() => toggleQuestionType(option.value)}
+                          className={`rounded-full border px-3 py-2 text-xs font-black transition ${selected ? "border-cyan-500 bg-cyan-50 text-cyan-800" : "border-slate-200 bg-white text-slate-600 hover:border-cyan-200"}`}
+                        >
+                          {selected ? "✓ " : "+ "}{option.label}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
 
-                <div className="grid gap-3 md:grid-cols-2">
-                  {suggestions.conteudos.map((item) => {
-                    const selected = selectedSuggestionIds.includes(item.id);
-                    return (
-                      <button key={item.id} type="button" onClick={() => toggleSuggestion(item.id)} className={`rounded-2xl border p-4 text-left transition hover:-translate-y-0.5 ${selected ? "border-emerald-200/70 bg-emerald-200 text-slate-950" : "border-white/10 bg-slate-950/45 text-white hover:bg-white/10"}`}>
-                        <span className="block text-sm font-black">{item.titulo}</span>
-                        <span className="mt-2 block text-xs leading-5 opacity-80">{item.descricao}</span>
-                        <span className="mt-3 block text-[11px] font-black uppercase tracking-[0.16em] opacity-70">{item.dificuldade} • {item.tempoEstimado}</span>
-                      </button>
-                    );
-                  })}
+                <div className="grid gap-4 md:grid-cols-2">
+                  <label className="flex items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white p-4">
+                    <span>
+                      <span className="block text-sm font-black">Gerar gabarito</span>
+                      <span className="text-xs font-semibold text-slate-500">Separado da versão do aluno.</span>
+                    </span>
+                    <input type="checkbox" checked={form.gerarGabarito} onChange={(event) => update("gerarGabarito", event.target.checked)} />
+                  </label>
+
+                  <label className="flex items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white p-4">
+                    <span>
+                      <span className="block text-sm font-black">Versão do professor</span>
+                      <span className="text-xs font-semibold text-slate-500">Com critérios e sugestões.</span>
+                    </span>
+                    <input type="checkbox" checked={form.gerarVersaoProfessor} onChange={(event) => update("gerarVersaoProfessor", event.target.checked)} />
+                  </label>
                 </div>
 
-                <div className="grid gap-3 md:grid-cols-2">
-                  {(suggestions.materiaisRecomendados || []).slice(0, 4).map((option) => (
-                    <button key={`${option.tipo}-${option.titulo}`} type="button" onClick={() => useRecommended(option)} className="rounded-2xl border border-white/10 bg-white/5 p-4 text-left text-white transition hover:-translate-y-0.5 hover:bg-white/10">
-                      <span className="block text-sm font-black">{option.titulo}</span>
-                      <span className="mt-2 block text-xs leading-5 text-slate-400">{option.motivo}</span>
-                    </button>
-                  ))}
-                </div>
+                <label className="space-y-2">
+                  <span className={labelBase()}>Recursos disponíveis</span>
+                  <input className={fieldBase()} value={form.recursosDisponiveis} onChange={(event) => update("recursosDisponiveis", event.target.value)} />
+                </label>
+
+                <label className="space-y-2">
+                  <span className={labelBase()}>Inclusão e acessibilidade</span>
+                  <input className={fieldBase()} value={form.inclusaoAcessibilidade} onChange={(event) => update("inclusaoAcessibilidade", event.target.value)} />
+                </label>
+
+                <label className="space-y-2">
+                  <span className={labelBase()}>Observações do professor</span>
+                  <textarea className={`${fieldBase()} min-h-28`} value={form.observacoes} onChange={(event) => update("observacoes", event.target.value)} placeholder="Ex.: turma com dificuldade de leitura, material para recuperação, evitar atividade em grupo..." />
+                </label>
               </div>
             ) : null}
           </div>
 
-          <div className="mt-6 rounded-2xl border border-cyan-300/20 bg-cyan-300/10 p-4 text-sm leading-7 text-cyan-50/85">
-            <strong className="text-white">Material completo com conferência:</strong> o resultado respeita o tipo escolhido, o tema, o componente curricular e a quantidade solicitada de questões/exercícios.
-          </div>
-        </div>
+          <div className="rounded-[1.5rem] border border-cyan-100 bg-cyan-50 p-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className={labelBase()}>BNCC oficial</p>
+                <h3 className="text-lg font-black">Habilidades selecionáveis</h3>
+                <p className="mt-1 text-sm font-semibold text-slate-600">O material só usa as habilidades marcadas aqui. Se nenhuma for marcada, a IA não inventa BNCC.</p>
+              </div>
+              <button
+                type="button"
+                onClick={suggestBncc}
+                disabled={bnccLoading || generating}
+                className="rounded-2xl bg-slate-950 px-5 py-3 text-sm font-black text-white shadow-lg shadow-slate-950/20 transition hover:bg-cyan-800 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {bnccLoading ? "Buscando..." : "Sugerir BNCC"}
+              </button>
+            </div>
 
-        <div className="rounded-[2rem] border border-white/10 bg-white/[0.06] p-6 shadow-2xl backdrop-blur-2xl">
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <button type="button" onClick={generateMaterial} disabled={isGenerating} className="rounded-2xl bg-white px-6 py-4 text-sm font-black text-slate-950 transition hover:-translate-y-1 hover:bg-cyan-100 disabled:cursor-not-allowed disabled:opacity-60">
-              {isGenerating ? "Gerando..." : form.tipo === "jogo" ? `Gerar ${selectedGameModel?.label || "jogo visual"}` : "Gerar material"}
-            </button>
-            <Link href="/historico" className="rounded-2xl border border-white/10 bg-white/5 px-6 py-4 text-center text-sm font-black text-white transition hover:-translate-y-1 hover:bg-white/10">Ver histórico</Link>
-          </div>
-          <p className="mt-4 text-xs leading-6 text-slate-500">
-            O Planify monta o material conforme o formato selecionado: atividade, prova, lista, revisão, projeto, roteiro, apostila, sequência ou jogo.
-          </p>
-        </div>
-
-        {isGenerating ? (
-          <>
-            <MaterialGenerationFloatingCard label={form.tipo === "jogo" ? `Montando ${selectedGameModel?.label || "jogo"}` : `Criando ${typeLabels[form.tipo].toLocaleLowerCase("pt-BR")}`} messageIndex={generationMessageIndex} />
-            <MaterialGenerationPanel label={form.tipo === "jogo" ? `Montando ${selectedGameModel?.label || "jogo"}` : `Criando ${typeLabels[form.tipo].toLocaleLowerCase("pt-BR")}`} messageIndex={generationMessageIndex} />
-          </>
-        ) : null}
-
-        <div className="rounded-[2rem] border border-white/10 bg-white/[0.06] p-6 shadow-2xl backdrop-blur-2xl">
-          {generatedMaterial ? (
-            <div>
-              <p className="text-sm font-black uppercase tracking-[0.25em] text-cyan-300">Prévia</p>
-              <h2 className="mt-3 text-3xl font-black text-white">{generatedMaterial.titulo}</h2>
-              <p className="mt-3 text-sm leading-7 text-slate-400">
-                {isDirectProductKind(generatedMaterial.tipo) ? "Versão do aluno + gabarito do professor, direto para revisar, imprimir ou editar." : generatedMaterial.resumo || generatedMaterial.introducao}
-              </p>
-
-              {generatedMaterial.visualHtml || generatedMaterial.printHtml ? (
-                <div className="mt-6 max-h-[780px] overflow-auto rounded-2xl border border-slate-200 bg-white p-5 text-slate-900" dangerouslySetInnerHTML={{ __html: generatedMaterial.visualHtml || generatedMaterial.printHtml || "" }} />
-              ) : (
-                <div className="mt-6 grid gap-4">
-                  {(generatedMaterial.secoes || []).slice(0, 8).map((section, index) => (
-                    <div key={`${section.titulo}-${index}`} className="rounded-2xl border border-white/10 bg-slate-950/50 p-5">
-                      <p className="text-xs font-black uppercase tracking-[0.18em] text-cyan-300">Seção {index + 1}</p>
-                      <h3 className="mt-2 text-xl font-black text-white">{section.titulo}</h3>
-                      <p className="mt-3 whitespace-pre-line text-sm leading-7 text-slate-400">{section.conteudo || section.descricao}</p>
-                      {section.itens?.length ? (
-                        <ul className="mt-4 grid gap-2 text-sm leading-6 text-slate-300">
-                          {section.itens.slice(0, 8).map((item, itemIndex) => (
-                            <li key={`${section.titulo}-${itemIndex}`} className="rounded-xl border border-white/10 bg-white/5 px-3 py-2">{item}</li>
-                          ))}
-                        </ul>
-                      ) : null}
-                    </div>
-                  ))}
-
-                  {(generatedMaterial.questoes || []).length ? (
-                    <div className="rounded-2xl border border-emerald-300/20 bg-emerald-300/10 p-5">
-                      <p className="text-xs font-black uppercase tracking-[0.18em] text-emerald-200">Versão do aluno</p>
-                      <h3 className="mt-2 text-xl font-black text-white">{(generatedMaterial.questoes || []).length} questão(ões) preparadas + gabarito</h3>
-                      <div className="mt-4 grid gap-3">
-                        {(generatedMaterial.questoes || []).slice(0, 4).map((question) => (
-                          <div key={question.numero} className="rounded-xl border border-white/10 bg-slate-950/45 p-4">
-                            <p className="text-sm font-black text-white">Questão {question.numero} • {question.tipo}</p>
-                            <p className="mt-2 whitespace-pre-line text-xs leading-6 text-slate-400">{question.enunciado}</p>
-                          </div>
-                        ))}
+            {bnccSuggestions.length > 0 ? (
+              <div className="mt-4 grid gap-3">
+                {bnccSuggestions.map((skill) => {
+                  const selected = selectedBncc.some((item) => sameSkill(item, skill));
+                  return (
+                    <button
+                      key={`${skill.codigo}-${skill.descricao}`}
+                      type="button"
+                      onClick={() => toggleBncc(skill)}
+                      className={`rounded-2xl border p-4 text-left transition ${selected ? "border-cyan-400 bg-white shadow-md shadow-cyan-500/10" : "border-slate-200 bg-white/70 hover:border-cyan-200"}`}
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <span className="rounded-full bg-slate-950 px-3 py-1 text-xs font-black text-white">{skill.codigo}</span>
+                          <p className="mt-3 text-sm font-bold leading-6 text-slate-800">{skill.descricao}</p>
+                        </div>
+                        <span className={`rounded-full px-3 py-1 text-xs font-black ${selected ? "bg-cyan-100 text-cyan-800" : "bg-slate-100 text-slate-500"}`}>{selected ? "Usando" : "Usar"}</span>
                       </div>
-                    </div>
-                  ) : null}
-                </div>
-              )}
+                    </button>
+                  );
+                })}
+              </div>
+            ) : null}
+          </div>
 
-              <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-                <button type="button" onClick={openInEditor} className="rounded-2xl bg-white px-6 py-4 text-sm font-black text-slate-950 transition hover:-translate-y-1 hover:bg-cyan-100">Abrir no Editor</button>
-                <button type="button" onClick={() => downloadDocument(generatedMaterial)} className="rounded-2xl border border-white/10 bg-white/5 px-6 py-4 text-sm font-black text-white transition hover:-translate-y-1 hover:bg-white/10">Baixar DOCX</button>
+          {status.type !== "idle" ? (
+            <div className={`rounded-2xl border p-4 text-sm font-bold leading-6 ${status.type === "error" ? "border-red-200 bg-red-50 text-red-700" : status.type === "success" ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-blue-200 bg-blue-50 text-blue-800"}`}>
+              {status.message}
+            </div>
+          ) : null}
+
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <button
+              type="button"
+              onClick={generateMaterial}
+              disabled={generating || bnccLoading}
+              className="flex-1 rounded-2xl bg-gradient-to-r from-cyan-600 to-emerald-600 px-5 py-4 text-sm font-black text-white shadow-xl shadow-cyan-500/20 transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {generating ? "Gerando material..." : `Gerar material • ${creditCost} créditos`}
+            </button>
+            <Link href="/dashboard" className="rounded-2xl border border-slate-200 px-5 py-4 text-center text-sm font-black text-slate-700 transition hover:border-cyan-200 hover:bg-cyan-50">
+              Voltar
+            </Link>
+          </div>
+        </div>
+
+        <div className="space-y-6">
+          {generating ? (
+            <div className="rounded-[2rem] border border-cyan-200 bg-white p-6 shadow-xl shadow-cyan-950/10">
+              <p className={labelBase()}>Criação em andamento</p>
+              <h2 className="mt-2 text-2xl font-black">O Planify está montando o material no formato certo.</h2>
+              <div className="mt-6 grid gap-3 md:grid-cols-2">
+                {["Analisando tipo de material", "Separando versão do aluno e professor", "Conferindo BNCC selecionada", "Preparando HTML editável"].map((item, index) => (
+                  <div key={item} className="rounded-2xl border border-cyan-100 bg-cyan-50 p-4">
+                    <div className="h-1.5 overflow-hidden rounded-full bg-white">
+                      <span className="block h-full animate-pulse rounded-full bg-cyan-500" style={{ width: `${45 + index * 12}%` }} />
+                    </div>
+                    <p className="mt-3 text-sm font-black text-slate-800">{item}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+          {material ? (
+            <div className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-xl shadow-slate-950/5 md:p-6">
+              <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+                <div>
+                  <p className={labelBase()}>Material gerado</p>
+                  <h2 className="mt-2 text-2xl font-black">{materialTitle(material)}</h2>
+                  <p className="mt-2 text-sm font-bold text-slate-500">{materialSubtitle(material)}</p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <button type="button" onClick={openInEditor} className="rounded-2xl bg-slate-950 px-4 py-3 text-sm font-black text-white transition hover:bg-cyan-800">Abrir no Editor</button>
+                  <button type="button" onClick={downloadWord} className="rounded-2xl border border-cyan-200 bg-cyan-50 px-4 py-3 text-sm font-black text-cyan-800 transition hover:bg-cyan-100">Baixar Word</button>
+                  <button type="button" onClick={printPdf} className="rounded-2xl border border-slate-200 px-4 py-3 text-sm font-black text-slate-700 transition hover:bg-slate-50">PDF/Imprimir</button>
+                </div>
+              </div>
+
+              <div className="mt-5 grid gap-3 md:grid-cols-4">
+                <div className="rounded-2xl bg-slate-50 p-4">
+                  <p className="text-xs font-black uppercase text-slate-500">Tipo</p>
+                  <p className="mt-1 font-black">{material.tipo}</p>
+                </div>
+                <div className="rounded-2xl bg-slate-50 p-4">
+                  <p className="text-xs font-black uppercase text-slate-500">Questões</p>
+                  <p className="mt-1 font-black">{material.questoes?.length || 0}</p>
+                </div>
+                <div className="rounded-2xl bg-slate-50 p-4">
+                  <p className="text-xs font-black uppercase text-slate-500">BNCC</p>
+                  <p className="mt-1 font-black">{material.metadata.bncc?.length || 0}</p>
+                </div>
+                <div className="rounded-2xl bg-slate-50 p-4">
+                  <p className="text-xs font-black uppercase text-slate-500">Créditos</p>
+                  <p className="mt-1 font-black">{material.metadata.creditCost || creditCost}</p>
+                </div>
+              </div>
+
+              <div className="planify-material-preview mt-6 rounded-[1.5rem] border border-slate-200 bg-white p-5 text-slate-900 shadow-inner">
+                <div dangerouslySetInnerHTML={{ __html: previewHtml }} />
               </div>
             </div>
           ) : (
-            <div>
-              <p className="text-sm font-black uppercase tracking-[0.25em] text-cyan-300">Prévia</p>
-              <h2 className="mt-3 text-3xl font-black text-white">Aguardando geração</h2>
-              <p className="mt-3 text-sm leading-7 text-slate-400">
-                O resultado aparecerá aqui. Para jogos, a prévia deve mostrar grade, cartelas, cartas ou peças reais antes de abrir no Editor.
+            <div className="rounded-[2rem] border border-dashed border-slate-300 bg-white p-8 text-center shadow-xl shadow-slate-950/5">
+              <p className="text-xs font-black uppercase tracking-[0.22em] text-slate-400">Prévia</p>
+              <h2 className="mt-3 text-2xl font-black">Seu material aparecerá aqui</h2>
+              <p className="mx-auto mt-3 max-w-xl text-sm font-semibold leading-7 text-slate-500">
+                O novo motor foi separado de Planejamentos para evitar mistura de formatos. Apostila será apostila, prova será prova, atividade será atividade e jogo só será gerado quando for escolhido.
               </p>
             </div>
           )}
         </div>
-      </div>
-    </section>
+      </section>
+    </main>
   );
 }
-
-export default MateriaisClient;

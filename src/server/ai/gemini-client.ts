@@ -95,6 +95,7 @@ export async function generateGeminiJSON<T>(
         topP: options.topP ?? 0.8,
         maxOutputTokens: options.maxOutputTokens ?? 8192,
         responseMimeType: "application/json",
+        ...(options.responseSchema ? { responseSchema: options.responseSchema } : {}),
       },
     }),
   });

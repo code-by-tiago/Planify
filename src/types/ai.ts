@@ -259,4 +259,5 @@ export type GeminiGenerateJSONOptions = {
   topP?: number;
   maxOutputTokens?: number;
   model?: string;
+  responseSchema?: unknown;
 };

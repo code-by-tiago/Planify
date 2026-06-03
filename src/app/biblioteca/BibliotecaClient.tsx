@@ -1,5 +1,7 @@
 ﻿"use client";
 
+import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
+import { PlanifyPageHero } from "@/components/pro/PlanifyPageHero";
 import { useEffect, useMemo, useState } from "react";
 
 type BibliotecaItem = {
@@ -168,16 +170,26 @@ export function BibliotecaClient() {
   }, [items, query, etapa, tipo]);
 
   return (
-    <section className="mx-auto grid max-w-7xl gap-6 px-4 py-6 lg:grid-cols-[0.78fr_1.22fr] sm:px-6">
+    <PlanifyWorkspacePane
+      header={
+        <PlanifyPageHero
+          badge="Biblioteca"
+          icon="library"
+          title="Acervo oficial do Planify"
+          description="Materiais pedagógicos premium prontos para usar na sua turma."
+        />
+      }
+    >
+    <div className="grid gap-6 lg:grid-cols-[0.78fr_1.22fr]">
       <aside className="space-y-6">
-        <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
-          <p className="text-sm font-black uppercase tracking-[0.28em] text-indigo-700">
-            Biblioteca Premium
+        <div className="rounded-[1.85rem] border border-violet-100/70 bg-white/95 p-6 shadow-sm">
+          <p className="text-[10px] font-black uppercase tracking-[0.28em] text-fuchsia-600">
+            Filtros
           </p>
-          <h1 className="mt-4 text-3xl font-black tracking-tight text-slate-950">
-            Acervo oficial do Planify
-          </h1>
-          <p className="mt-4 text-sm leading-7 text-slate-600">
+          <h2 className="mt-3 text-2xl font-black tracking-tight text-violet-950">
+            Encontre o material ideal
+          </h2>
+          <p className="mt-4 text-sm leading-7 text-violet-500/90">
             Aqui aparecem apenas materiais pedagógicos reais disponíveis na Biblioteca Premium.
           </p>
 
@@ -396,7 +408,8 @@ export function BibliotecaClient() {
           </div>
         ) : null}
       </div>
-    </section>
+    </div>
+    </PlanifyWorkspacePane>
   );
 }
 

@@ -103,7 +103,7 @@ export const planifyTools: PlanifyTool[] = [
     primaryFieldLabel: "Tema da apresentação",
     loadingTitle: "Criando apresentação",
     loadingDescription: "Organizando roteiro, títulos, tópicos e sugestões visuais.",
-    accent: "from-indigo-500 to-blue-500",
+    accent: "from-violet-300 via-fuchsia-300 to-pink-300",
   },
   {
     id: "prova",
@@ -117,7 +117,7 @@ export const planifyTools: PlanifyTool[] = [
     primaryFieldLabel: "Conteúdo da prova",
     loadingTitle: "Gerando prova",
     loadingDescription: "Montando questões, pontuação e respostas esperadas.",
-    accent: "from-blue-600 to-cyan-500",
+    accent: "from-sky-300 via-blue-300 to-indigo-300",
   },
   {
     id: "lista",
@@ -131,7 +131,7 @@ export const planifyTools: PlanifyTool[] = [
     primaryFieldLabel: "Assunto da lista",
     loadingTitle: "Criando lista de exercícios",
     loadingDescription: "Distribuindo questões e níveis de dificuldade.",
-    accent: "from-sky-600 to-blue-500",
+    accent: "from-cyan-300 via-sky-300 to-blue-300",
   },
   {
     id: "plano-aula",
@@ -145,7 +145,7 @@ export const planifyTools: PlanifyTool[] = [
     primaryFieldLabel: "Tema da aula",
     loadingTitle: "Estruturando plano de aula",
     loadingDescription: "Preparando objetivos, etapas e avaliação.",
-    accent: "from-emerald-600 to-teal-500",
+    accent: "from-emerald-300 via-teal-300 to-cyan-300",
   },
   {
     id: "sequencia",
@@ -158,7 +158,7 @@ export const planifyTools: PlanifyTool[] = [
     primaryFieldLabel: "Tema da sequência",
     loadingTitle: "Montando sequência didática",
     loadingDescription: "Organizando aulas, atividades e avaliação formativa.",
-    accent: "from-teal-600 to-cyan-500",
+    accent: "from-teal-300 via-cyan-300 to-sky-300",
   },
   {
     id: "apostila",
@@ -171,7 +171,7 @@ export const planifyTools: PlanifyTool[] = [
     primaryFieldLabel: "Tema da apostila",
     loadingTitle: "Gerando apostila",
     loadingDescription: "Organizando explicações, exemplos e atividades.",
-    accent: "from-blue-700 to-indigo-500",
+    accent: "from-indigo-300 via-violet-300 to-purple-300",
   },
   {
     id: "atividade",
@@ -184,7 +184,7 @@ export const planifyTools: PlanifyTool[] = [
     primaryFieldLabel: "Tema da atividade",
     loadingTitle: "Criando atividade",
     loadingDescription: "Montando comandos, etapas e fechamento.",
-    accent: "from-violet-600 to-purple-500",
+    accent: "from-purple-300 via-violet-300 to-fuchsia-300",
   },
   {
     id: "jogo",
@@ -197,7 +197,7 @@ export const planifyTools: PlanifyTool[] = [
     primaryFieldLabel: "Tema do jogo",
     loadingTitle: "Criando jogo pedagógico",
     loadingDescription: "Preparando regras, versão do aluno e solução.",
-    accent: "from-fuchsia-600 to-violet-500",
+    accent: "from-rose-300 via-pink-300 to-fuchsia-400",
   },
   {
     id: "projeto",
@@ -210,7 +210,7 @@ export const planifyTools: PlanifyTool[] = [
     primaryFieldLabel: "Tema do projeto",
     loadingTitle: "Estruturando projeto",
     loadingDescription: "Criando etapas, cronograma e critérios avaliativos.",
-    accent: "from-amber-600 to-orange-500",
+    accent: "from-amber-200 via-orange-200 to-rose-200",
   },
   {
     id: "resumo",
@@ -223,7 +223,7 @@ export const planifyTools: PlanifyTool[] = [
     primaryFieldLabel: "Tema do resumo",
     loadingTitle: "Preparando resumo",
     loadingDescription: "Selecionando ideias principais e exemplos.",
-    accent: "from-slate-700 to-slate-500",
+    accent: "from-violet-200 via-slate-200 to-rose-200",
   },
   {
     id: "flashcards",
@@ -236,7 +236,7 @@ export const planifyTools: PlanifyTool[] = [
     primaryFieldLabel: "Tema dos flashcards",
     loadingTitle: "Criando flashcards",
     loadingDescription: "Separando perguntas e respostas curtas.",
-    accent: "from-lime-600 to-emerald-500",
+    accent: "from-lime-300 via-emerald-300 to-teal-300",
   },
   {
     id: "redacao",
@@ -249,7 +249,7 @@ export const planifyTools: PlanifyTool[] = [
     primaryFieldLabel: "Tema ou proposta da redação",
     loadingTitle: "Preparando correção orientada",
     loadingDescription: "Organizando critérios, devolutiva e melhorias.",
-    accent: "from-rose-600 to-red-500",
+    accent: "from-rose-300 via-pink-300 to-red-300",
   },
   {
     id: "mapa-mental",
@@ -262,7 +262,7 @@ export const planifyTools: PlanifyTool[] = [
     primaryFieldLabel: "Tema do mapa mental",
     loadingTitle: "Criando mapa mental",
     loadingDescription: "Relacionando conceitos e tópicos essenciais.",
-    accent: "from-purple-600 to-indigo-500",
+    accent: "from-purple-300 via-fuchsia-300 to-indigo-300",
   },
 ];
 

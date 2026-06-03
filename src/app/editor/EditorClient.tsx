@@ -1,5 +1,7 @@
 "use client";
 
+import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
+import { PlanifyPageHero } from "@/components/pro/PlanifyPageHero";
 import {
   ChangeEvent,
   MouseEvent as ReactMouseEvent,
@@ -1153,7 +1155,16 @@ export function EditorClient() {
   }
 
   return (
-    <section className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
+    <PlanifyWorkspacePane
+      header={
+        <PlanifyPageHero
+          badge="Editor"
+          icon="editor"
+          title="Finalize, formate e exporte"
+          description="Documentos pedagógicos com tabelas, imagens e versões salvas no navegador."
+        />
+      }
+    >
       <div className="grid gap-6 xl:grid-cols-[280px_1fr]">
         <aside className="space-y-5">
           <div className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
@@ -1754,7 +1765,7 @@ export function EditorClient() {
           }
         }
       `}</style>
-    </section>
+    </PlanifyWorkspacePane>
   );
 }
 

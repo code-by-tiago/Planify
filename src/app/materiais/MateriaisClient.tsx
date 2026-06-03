@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
+import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
 import {
   getPlanifyTool,
   planifyTools,
@@ -425,22 +426,23 @@ td,th{border:1px solid #d1d5db;padding:8px;}
   }
 
   return (
-    <div className="planify-ui3 mx-auto max-w-7xl px-4 py-5 sm:px-6">
+    <PlanifyWorkspacePane>
+    <div>
       {/* ── Catálogo (visível quando painel fechado) ── */}
       {!modalAberto ? (
         <>
         {/* Catálogo + busca + categorias */}
-        <section className="planify-ui3 pl-section-hero overflow-hidden rounded-[2rem] border border-indigo-100/60 p-5 shadow-sm sm:p-6">
+        <section className="pl-section-hero overflow-hidden rounded-[1.85rem] border border-fuchsia-100/70 p-5 shadow-[0_8px_32px_-16px_rgba(236,72,153,0.12)] sm:p-6">
           <div className="grid gap-4 lg:grid-cols-[1fr_360px] lg:items-center">
             <div>
-              <span className="pl-badge-indigo planify-ui3">
+              <span className="pl-badge-indigo">
                 <PlanifyIcon name="spark" className="h-3.5 w-3.5" />
                 Criar com IA
               </span>
-              <h1 className="mt-4 text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">
+              <h1 className="mt-4 text-2xl font-black tracking-tight text-violet-950 sm:text-3xl">
                 Escolha uma ferramenta e gere o material em segundos.
               </h1>
-              <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-slate-600">
+              <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-violet-500/90">
                 Catálogo organizado por categoria. Clique na ferramenta para abrir o painel de criação com IA.
               </p>
             </div>
@@ -448,14 +450,14 @@ td,th{border:1px solid #d1d5db;padding:8px;}
             <div className="relative">
               <PlanifyIcon
                 name="search"
-                className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400"
+                className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-fuchsia-300"
               />
               <input
                 value={busca}
                 onChange={(event) => setBusca(event.target.value)}
                 placeholder="Buscar ferramenta..."
                 aria-label="Buscar ferramenta"
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-4 pl-12 pr-4 text-sm font-semibold text-slate-950 outline-none transition focus:border-slate-950 focus:bg-white"
+                className="w-full rounded-2xl border border-rose-100/90 bg-white/95 py-4 pl-12 pr-4 text-sm font-semibold text-violet-950 outline-none transition focus:border-fuchsia-300 focus:bg-white focus:ring-4 focus:ring-fuchsia-100/80"
               />
             </div>
           </div>
@@ -471,8 +473,8 @@ td,th{border:1px solid #d1d5db;padding:8px;}
                   onClick={() => setCategoria(item.id)}
                   className={`flex shrink-0 items-center gap-2 rounded-2xl border px-4 py-2 text-sm font-black transition ${
                     active
-                      ? "border-indigo-600 bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-[0_4px_14px_-4px_rgba(99,102,241,0.5)]"
-                      : "border-indigo-100 bg-white text-slate-600 hover:border-indigo-300 hover:text-slate-950"
+                      ? "border-fuchsia-200 bg-gradient-to-r from-violet-500 via-fuchsia-500 to-rose-400 text-white shadow-[0_4px_14px_-4px_rgba(192,38,211,0.45)]"
+                      : "border-violet-100 bg-white text-violet-600 hover:border-fuchsia-200 hover:text-violet-950"
                   }`}
                 >
                   <PlanifyIcon name={item.icon} className="h-4 w-4" />
@@ -491,7 +493,7 @@ td,th{border:1px solid #d1d5db;padding:8px;}
                 key={item.id}
                 type="button"
                 onClick={() => selecionarFerramenta(item.id)}
-                className="group relative min-h-[156px] rounded-[1.5rem] border border-indigo-50 bg-white p-4 text-left shadow-[0_2px_8px_-4px_rgba(79,70,229,0.1)] transition hover:-translate-y-1 hover:border-indigo-200 hover:shadow-[0_16px_36px_-14px_rgba(99,102,241,0.22)]"
+                className="group relative min-h-[156px] rounded-[1.5rem] border border-violet-50/90 bg-white/90 p-4 text-left shadow-sm transition hover:-translate-y-1 hover:border-fuchsia-200 hover:shadow-[0_16px_36px_-14px_rgba(167,139,250,0.35)]"
               >
                 {item.popular ? (
                   <span className="absolute right-3 top-3 rounded-full bg-amber-50 px-2 py-1 text-[10px] font-black uppercase tracking-wide text-amber-700">
@@ -501,10 +503,10 @@ td,th{border:1px solid #d1d5db;padding:8px;}
                 <div className={`flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br ${item.accent} text-white shadow-sm transition group-hover:scale-110`}>
                   <PlanifyIcon name={item.icon} className="h-5 w-5" />
                 </div>
-                <h3 className="mt-4 text-sm font-black leading-tight text-slate-950">
+                <h3 className="mt-4 text-sm font-black leading-tight text-violet-950">
                   {item.title}
                 </h3>
-                <p className="mt-1 line-clamp-3 text-xs font-semibold leading-5 text-slate-500">
+                <p className="mt-1 line-clamp-3 text-xs font-semibold leading-5 text-violet-400">
                   {item.description}
                 </p>
               </button>
@@ -877,6 +879,7 @@ td,th{border:1px solid #d1d5db;padding:8px;}
         </div>
       ) : null}
     </div>
+    </PlanifyWorkspacePane>
   );
 }
 

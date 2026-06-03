@@ -2025,19 +2025,41 @@ header .planify-brand-logo__icon {
   --pl-shadow-lift: 0 22px 48px -22px rgba(79, 70, 229, 0.5);
 }
 
-/* Fundo alegre do workspace autenticado (substitui o cinza chapado) */
+/* Fundo alegre do workspace — lavanda + rosa + pêssego */
 .pl-app-bg {
   background:
-    radial-gradient(60% 50% at 12% 0%, rgba(99, 102, 241, 0.08), transparent 60%),
-    radial-gradient(55% 45% at 100% 8%, rgba(251, 113, 133, 0.08), transparent 60%),
-    radial-gradient(50% 55% at 88% 100%, rgba(245, 158, 11, 0.06), transparent 60%),
-    #f7f5ff;
+    radial-gradient(55% 45% at 8% 0%, rgba(167, 139, 250, 0.14), transparent 55%),
+    radial-gradient(50% 40% at 92% 6%, rgba(244, 114, 182, 0.12), transparent 55%),
+    radial-gradient(45% 50% at 50% 100%, rgba(251, 207, 232, 0.2), transparent 60%),
+    linear-gradient(160deg, #fdf8ff 0%, #fff5f9 50%, #f8f5ff 100%);
 }
 
-/* Painel lateral do shell */
+/* Shell fullscreen — página não rola, só painéis internos */
+html:has(.pl-shell-root),
+html:has(.pl-shell-root) body {
+  height: 100%;
+  overflow: hidden;
+}
+
+.pl-shell-root {
+  max-height: 100vh;
+  max-height: 100dvh;
+}
+
+.pl-main-pane {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Painel lateral — lavanda + rosa, tom feminino acolhedor */
 .pl-sidebar {
-  background: linear-gradient(180deg, #ffffff 0%, #fcfaff 100%);
-  border-color: rgba(79, 70, 229, 0.1);
+  background: linear-gradient(
+    175deg,
+    #fff9fb 0%,
+    #fdf4ff 38%,
+    #f5f3ff 100%
+  );
+  border-color: rgba(244, 114, 182, 0.12);
+  box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.8);
 }
 
 /* Item de navegação ativo: gradiente da marca, não preto chapado */
@@ -2251,6 +2273,19 @@ header .planify-brand-logo__icon {
 
 @media (prefers-reduced-motion: reduce) {
   .pl-shimmer { animation: none; }
+}
+
+/* Dashboard studio — bento dentro do quadrante principal */
+.pl-dash-root {
+  background:
+    radial-gradient(40% 35% at 100% 0%, rgba(244, 114, 182, 0.08), transparent 55%),
+    radial-gradient(35% 30% at 0% 100%, rgba(167, 139, 250, 0.1), transparent 50%),
+    transparent;
+}
+
+.pl-dash-bento {
+  max-width: 1400px;
+  margin-inline: auto;
 }
 
 /* PLANIFY_UI3_APP_V2_END */

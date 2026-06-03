@@ -1,5 +1,7 @@
 "use client";
 
+import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
+import { PlanifyPageHero } from "@/components/pro/PlanifyPageHero";
 import { useMemo, useState } from "react";
 
 type TipoPlanejamento = "anual" | "trimestral";
@@ -217,11 +219,11 @@ const planningProgressSteps = [
 
 function PlanningGenerationPanel({ label }: { label: string }) {
   return (
-    <div className="mt-6 rounded-[1.75rem] border border-cyan-300/25 bg-cyan-300/10 p-5 shadow-2xl shadow-cyan-500/10">
+    <div className="mt-6 rounded-[1.75rem] border border-fuchsia-100/70 bg-gradient-to-br from-violet-50/80 to-rose-50/60 p-5 shadow-sm">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-xs font-black uppercase tracking-[0.25em] text-cyan-200">Preparando</p>
-          <h3 className="mt-2 text-xl font-black text-white">{label}</h3>
+          <p className="text-xs font-black uppercase tracking-[0.25em] text-violet-400">Preparando</p>
+          <h3 className="mt-2 text-xl font-black text-violet-950">{label}</h3>
         </div>
         <div className="flex gap-2" aria-hidden="true">
           <span className="h-3 w-3 animate-pulse rounded-full bg-cyan-200" />
@@ -231,11 +233,11 @@ function PlanningGenerationPanel({ label }: { label: string }) {
       </div>
       <div className="mt-5 grid gap-3 md:grid-cols-5">
         {planningProgressSteps.map((step, index) => (
-          <div key={step} className="rounded-2xl border border-white/10 bg-slate-950/35 p-3">
+          <div key={step} className="rounded-2xl border border-violet-100/80 bg-white/80 p-3">
             <div className="mb-3 h-1.5 overflow-hidden rounded-full bg-white/10">
               <span className="block h-full animate-pulse rounded-full bg-cyan-200" style={{ width: `${Math.min(100, 32 + index * 15)}%` }} />
             </div>
-            <p className="text-xs font-bold leading-5 text-cyan-50/90">{step}</p>
+            <p className="text-xs font-bold leading-5 text-violet-600">{step}</p>
           </div>
         ))}
       </div>
@@ -925,50 +927,59 @@ export function PlanejamentosClient() {
   }
 
   return (
-    <div className="bg-slate-950 text-white">
-      <section className="mx-auto grid max-w-7xl gap-6 px-5 py-10 lg:grid-cols-[0.78fr_1.22fr]">
+    <PlanifyWorkspacePane
+      header={
+        <PlanifyPageHero
+          badge="Planejamentos"
+          icon="clipboard"
+          title="BNCC → IA → DOCX oficial"
+          description="Sugira habilidades por conteúdo, gere a matriz pedagógica com IA e baixe o modelo oficial preenchido."
+        />
+      }
+    >
+      <section className="grid gap-6 lg:grid-cols-[0.78fr_1.22fr]">
         <aside className="space-y-6">
-          <div className="rounded-[2.25rem] border border-cyan-300/20 bg-cyan-300/10 p-7 shadow-2xl shadow-cyan-500/10">
-            <p className="text-sm font-black uppercase tracking-[0.32em] text-cyan-300">
+          <div className="rounded-[1.85rem] border border-fuchsia-100/70 bg-gradient-to-br from-white via-violet-50/40 to-rose-50/50 p-6 shadow-sm">
+            <p className="text-[10px] font-black uppercase tracking-[0.28em] text-fuchsia-600">
               Fluxo correto
             </p>
-            <h1 className="mt-4 text-4xl font-black tracking-tight text-white">
-              BNCC → IA → DOCX oficial
-            </h1>
-            <p className="mt-5 text-sm leading-7 text-cyan-100/80">
-              Primeiro sugira habilidades por conteúdo, depois gere a matriz pedagógica com IA e só então baixe o modelo oficial preenchido.
+            <h2 className="mt-3 text-2xl font-black tracking-tight text-violet-950">
+              Seu planejamento em 3 passos
+            </h2>
+            <p className="mt-3 text-sm leading-7 text-violet-500/90">
+              BNCC, matriz com IA e exportação DOCX — tudo alinhado ao que a escola pede.
             </p>
 
-            <div className="mt-6 grid gap-3">
-              <div className="rounded-2xl border border-white/10 bg-slate-950/45 p-4">
-                <p className="text-xs font-black uppercase tracking-[0.25em] text-cyan-200">Conteúdos</p>
-                <p className="mt-2 text-3xl font-black">{stats.conteudos}</p>
+            <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+              <div className="rounded-2xl border border-violet-100/80 bg-white/80 p-4">
+                <p className="text-xs font-black uppercase tracking-[0.25em] text-violet-400">Conteúdos</p>
+                <p className="mt-2 text-3xl font-black text-violet-950">{stats.conteudos}</p>
               </div>
-              <div className="rounded-2xl border border-white/10 bg-slate-950/45 p-4">
-                <p className="text-xs font-black uppercase tracking-[0.25em] text-cyan-200">Selecionadas</p>
-                <p className="mt-2 text-3xl font-black">{stats.selecionadas}</p>
+              <div className="rounded-2xl border border-violet-100/80 bg-white/80 p-4">
+                <p className="text-xs font-black uppercase tracking-[0.25em] text-violet-400">Selecionadas</p>
+                <p className="mt-2 text-3xl font-black text-violet-950">{stats.selecionadas}</p>
               </div>
-              <div className="rounded-2xl border border-white/10 bg-slate-950/45 p-4">
-                <p className="text-xs font-black uppercase tracking-[0.25em] text-cyan-200">Matriz IA</p>
-                <p className="mt-2 text-3xl font-black">{stats.matriz}</p>
+              <div className="rounded-2xl border border-violet-100/80 bg-white/80 p-4">
+                <p className="text-xs font-black uppercase tracking-[0.25em] text-violet-400">Matriz IA</p>
+                <p className="mt-2 text-3xl font-black text-violet-950">{stats.matriz}</p>
               </div>
-              <div className="rounded-2xl border border-white/10 bg-slate-950/45 p-4">
-                <p className="text-xs font-black uppercase tracking-[0.25em] text-cyan-200">Status</p>
-                <p className="mt-2 text-xl font-black">{status}</p>
+              <div className="rounded-2xl border border-violet-100/80 bg-white/80 p-4">
+                <p className="text-xs font-black uppercase tracking-[0.25em] text-violet-400">Status</p>
+                <p className="mt-2 text-lg font-black text-violet-950">{status}</p>
               </div>
             </div>
 
             {generatedPlanning && form.tipoPlanejamento === "anual" ? (
-              <div className="mt-6 rounded-[1.75rem] border border-emerald-300/20 bg-emerald-300/10 p-5">
+              <div className="mt-6 rounded-[1.75rem] border border-emerald-200/80 bg-emerald-50/80 p-5">
                 <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                   <div>
-                    <p className="text-sm font-black uppercase tracking-[0.28em] text-emerald-300">
+                    <p className="text-[10px] font-black uppercase tracking-[0.28em] text-emerald-600">
                       Matriz anual aprovada
                     </p>
-                    <h3 className="mt-2 text-2xl font-black text-white">
+                    <h3 className="mt-2 text-2xl font-black text-violet-950">
                       Baixar anual e trimestrais coerentes
                     </h3>
-                    <p className="mt-2 text-sm leading-7 text-emerald-100/85">
+                    <p className="mt-2 text-sm leading-7 text-emerald-700/90">
                       Os trimestrais abaixo usam exatamente a mesma matriz anual,
                       os mesmos conteúdos e as mesmas habilidades BNCC. Não há nova
                       busca de BNCC para trimestre.
@@ -992,7 +1003,7 @@ export function PlanejamentosClient() {
                     type="button"
                     onClick={() => downloadDocxWithMode("trimestral", 1)}
                     disabled={loadingDocx}
-                    className="rounded-2xl border border-white/10 bg-white/5 px-5 py-4 text-sm font-black text-white transition hover:-translate-y-1 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="rounded-2xl border border-violet-100 bg-violet-50/60 px-5 py-4 text-sm font-black text-violet-800 transition hover:-translate-y-1 hover:bg-violet-100/80 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     1º Trimestre
                   </button>
@@ -1001,7 +1012,7 @@ export function PlanejamentosClient() {
                     type="button"
                     onClick={() => downloadDocxWithMode("trimestral", 2)}
                     disabled={loadingDocx}
-                    className="rounded-2xl border border-white/10 bg-white/5 px-5 py-4 text-sm font-black text-white transition hover:-translate-y-1 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="rounded-2xl border border-violet-100 bg-violet-50/60 px-5 py-4 text-sm font-black text-violet-800 transition hover:-translate-y-1 hover:bg-violet-100/80 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     2º Trimestre
                   </button>
@@ -1010,7 +1021,7 @@ export function PlanejamentosClient() {
                     type="button"
                     onClick={() => downloadDocxWithMode("trimestral", 3)}
                     disabled={loadingDocx}
-                    className="rounded-2xl border border-white/10 bg-white/5 px-5 py-4 text-sm font-black text-white transition hover:-translate-y-1 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="rounded-2xl border border-violet-100 bg-violet-50/60 px-5 py-4 text-sm font-black text-violet-800 transition hover:-translate-y-1 hover:bg-violet-100/80 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     3º Trimestre
                   </button>
@@ -1019,7 +1030,7 @@ export function PlanejamentosClient() {
                     type="button"
                     onClick={downloadAnnualAndTrimestersPackage}
                     disabled={loadingDocx}
-                    className="rounded-2xl border border-cyan-300/30 bg-cyan-300/10 px-5 py-4 text-sm font-black text-cyan-100 transition hover:-translate-y-1 hover:bg-cyan-300/20 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="rounded-2xl border border-fuchsia-200 bg-gradient-to-r from-violet-50 to-rose-50 px-5 py-4 text-sm font-black text-violet-800 transition hover:-translate-y-1 hover:border-fuchsia-300 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     Pacote ZIP
                   </button>
@@ -1028,14 +1039,14 @@ export function PlanejamentosClient() {
             ) : null}
           </div>
 
-          <div className="rounded-[2.25rem] border border-white/10 bg-white/[0.06] p-7 shadow-2xl backdrop-blur-2xl">
-            <p className="text-sm font-black uppercase tracking-[0.32em] text-cyan-300">Exemplos</p>
+          <div className="rounded-[1.85rem] border border-violet-100/70 bg-white/95 p-6 shadow-sm">
+            <p className="text-[10px] font-black uppercase tracking-[0.28em] text-fuchsia-600">Exemplos</p>
             <h2 className="mt-4 text-2xl font-black">Preenchimento ideal</h2>
             <div className="mt-6 grid gap-3">
               <button type="button" onClick={() => applyExample("fundamental")} className="rounded-2xl bg-white px-5 py-4 text-sm font-black text-slate-950 transition hover:-translate-y-1 hover:bg-cyan-100">
                 Exemplo Fundamental
               </button>
-              <button type="button" onClick={() => applyExample("medio")} className="rounded-2xl border border-cyan-300/30 bg-cyan-300/10 px-5 py-4 text-sm font-black text-cyan-100 transition hover:-translate-y-1 hover:bg-cyan-300/20">
+              <button type="button" onClick={() => applyExample("medio")} className="rounded-2xl border border-fuchsia-200 bg-gradient-to-r from-violet-50 to-rose-50 px-5 py-4 text-sm font-black text-violet-800 transition hover:-translate-y-1 hover:border-fuchsia-300">
                 Exemplo Ensino Médio
               </button>
             </div>
@@ -1043,73 +1054,73 @@ export function PlanejamentosClient() {
         </aside>
 
         <section className="space-y-6">
-          <div className="rounded-[2.25rem] border border-white/10 bg-white/[0.06] p-7 shadow-2xl backdrop-blur-2xl">
+          <div className="rounded-[1.85rem] border border-violet-100/70 bg-white/95 p-6 shadow-sm">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div>
-                <p className="text-sm font-black uppercase tracking-[0.32em] text-cyan-300">Dados</p>
-                <h2 className="mt-4 text-4xl font-black text-white">Informações do planejamento</h2>
+                <p className="text-[10px] font-black uppercase tracking-[0.28em] text-fuchsia-600">Dados</p>
+                <h2 className="mt-4 text-3xl font-black text-violet-950">Informações do planejamento</h2>
               </div>
-              <button type="button" onClick={clearAll} className="rounded-2xl border border-white/10 bg-white/5 px-6 py-4 text-sm font-black text-white transition hover:bg-white/10">
+              <button type="button" onClick={clearAll} className="rounded-2xl border border-violet-100 bg-violet-50/60 px-6 py-4 text-sm font-black text-violet-800 transition hover:bg-violet-100/80">
                 Limpar tudo
               </button>
             </div>
 
             <div className="mt-8 grid gap-5 md:grid-cols-2">
               <label className="grid gap-2">
-                <span className="text-sm font-bold text-slate-300">Escola</span>
-                <input value={form.escola} onChange={(event) => updateField("escola", event.target.value)} placeholder="Nome da escola" className="rounded-2xl border border-white/10 bg-slate-950/65 px-5 py-4 text-sm text-white outline-none transition focus:border-cyan-300/60" />
+                <span className="text-sm font-bold text-violet-500">Escola</span>
+                <input value={form.escola} onChange={(event) => updateField("escola", event.target.value)} placeholder="Nome da escola" className="rounded-2xl border border-rose-100/90 bg-white px-5 py-4 text-sm font-semibold text-violet-950 outline-none transition focus:border-fuchsia-300 focus:ring-4 focus:ring-fuchsia-100/80" />
               </label>
               <label className="grid gap-2">
-                <span className="text-sm font-bold text-slate-300">Professor</span>
-                <input value={form.professor} onChange={(event) => updateField("professor", event.target.value)} placeholder="Nome do professor" className="rounded-2xl border border-white/10 bg-slate-950/65 px-5 py-4 text-sm text-white outline-none transition focus:border-cyan-300/60" />
+                <span className="text-sm font-bold text-violet-500">Professor</span>
+                <input value={form.professor} onChange={(event) => updateField("professor", event.target.value)} placeholder="Nome do professor" className="rounded-2xl border border-rose-100/90 bg-white px-5 py-4 text-sm font-semibold text-violet-950 outline-none transition focus:border-fuchsia-300 focus:ring-4 focus:ring-fuchsia-100/80" />
               </label>
               <label className="grid gap-2">
-                <span className="text-sm font-bold text-slate-300">Etapa</span>
-                <select value={form.etapa} onChange={(event) => updateField("etapa", event.target.value)} className="rounded-2xl border border-white/10 bg-slate-950/65 px-5 py-4 text-sm text-white outline-none transition focus:border-cyan-300/60">
+                <span className="text-sm font-bold text-violet-500">Etapa</span>
+                <select value={form.etapa} onChange={(event) => updateField("etapa", event.target.value)} className="rounded-2xl border border-rose-100/90 bg-white px-5 py-4 text-sm font-semibold text-violet-950 outline-none transition focus:border-fuchsia-300 focus:ring-4 focus:ring-fuchsia-100/80">
                   {Object.keys(EDUCATION_OPTIONS).map((stage) => (
                     <option key={stage} value={stage}>{stage}</option>
                   ))}
                 </select>
               </label>
               <label className="grid gap-2">
-                <span className="text-sm font-bold text-slate-300">Ano/Série</span>
-                <select value={form.anoSerie} onChange={(event) => updateField("anoSerie", event.target.value)} className="rounded-2xl border border-white/10 bg-slate-950/65 px-5 py-4 text-sm text-white outline-none transition focus:border-cyan-300/60">
+                <span className="text-sm font-bold text-violet-500">Ano/Série</span>
+                <select value={form.anoSerie} onChange={(event) => updateField("anoSerie", event.target.value)} className="rounded-2xl border border-rose-100/90 bg-white px-5 py-4 text-sm font-semibold text-violet-950 outline-none transition focus:border-fuchsia-300 focus:ring-4 focus:ring-fuchsia-100/80">
                   {yearOptions.map((year) => (
                     <option key={year} value={year}>{year}</option>
                   ))}
                 </select>
               </label>
               <label className="grid gap-2">
-                <span className="text-sm font-bold text-slate-300">Área do conhecimento</span>
-                <select value={form.areaConhecimento} onChange={(event) => updateField("areaConhecimento", event.target.value)} className="rounded-2xl border border-white/10 bg-slate-950/65 px-5 py-4 text-sm text-white outline-none transition focus:border-cyan-300/60">
+                <span className="text-sm font-bold text-violet-500">Área do conhecimento</span>
+                <select value={form.areaConhecimento} onChange={(event) => updateField("areaConhecimento", event.target.value)} className="rounded-2xl border border-rose-100/90 bg-white px-5 py-4 text-sm font-semibold text-violet-950 outline-none transition focus:border-fuchsia-300 focus:ring-4 focus:ring-fuchsia-100/80">
                   {areaOptions.map((area) => (
                     <option key={area} value={area}>{area}</option>
                   ))}
                 </select>
               </label>
               <label className="grid gap-2">
-                <span className="text-sm font-bold text-slate-300">Componente curricular</span>
-                <select value={form.componenteCurricular} onChange={(event) => updateField("componenteCurricular", event.target.value)} className="rounded-2xl border border-white/10 bg-slate-950/65 px-5 py-4 text-sm text-white outline-none transition focus:border-cyan-300/60">
+                <span className="text-sm font-bold text-violet-500">Componente curricular</span>
+                <select value={form.componenteCurricular} onChange={(event) => updateField("componenteCurricular", event.target.value)} className="rounded-2xl border border-rose-100/90 bg-white px-5 py-4 text-sm font-semibold text-violet-950 outline-none transition focus:border-fuchsia-300 focus:ring-4 focus:ring-fuchsia-100/80">
                   {componentOptions.map((component) => (
                     <option key={component} value={component}>{component}</option>
                   ))}
                 </select>
               </label>
               <label className="grid gap-2">
-                <span className="text-sm font-bold text-slate-300">Carga horária</span>
-                <input value={form.cargaHoraria} onChange={(event) => updateField("cargaHoraria", event.target.value)} placeholder="Ex.: 80 períodos" className="rounded-2xl border border-white/10 bg-slate-950/65 px-5 py-4 text-sm text-white outline-none transition focus:border-cyan-300/60" />
+                <span className="text-sm font-bold text-violet-500">Carga horária</span>
+                <input value={form.cargaHoraria} onChange={(event) => updateField("cargaHoraria", event.target.value)} placeholder="Ex.: 80 períodos" className="rounded-2xl border border-rose-100/90 bg-white px-5 py-4 text-sm font-semibold text-violet-950 outline-none transition focus:border-fuchsia-300 focus:ring-4 focus:ring-fuchsia-100/80" />
               </label>
               <label className="grid gap-2">
-                <span className="text-sm font-bold text-slate-300">Tipo</span>
-                <select value={form.tipoPlanejamento} onChange={(event) => updateField("tipoPlanejamento", event.target.value as TipoPlanejamento)} className="rounded-2xl border border-white/10 bg-slate-950/65 px-5 py-4 text-sm text-white outline-none transition focus:border-cyan-300/60">
+                <span className="text-sm font-bold text-violet-500">Tipo</span>
+                <select value={form.tipoPlanejamento} onChange={(event) => updateField("tipoPlanejamento", event.target.value as TipoPlanejamento)} className="rounded-2xl border border-rose-100/90 bg-white px-5 py-4 text-sm font-semibold text-violet-950 outline-none transition focus:border-fuchsia-300 focus:ring-4 focus:ring-fuchsia-100/80">
                   <option value="anual">Anual</option>
                   <option value="trimestral">Trimestral</option>
                 </select>
               </label>
               {form.tipoPlanejamento === "trimestral" ? (
                 <label className="grid gap-2">
-                  <span className="text-sm font-bold text-slate-300">Trimestre</span>
-                  <select value={form.trimestre} onChange={(event) => updateField("trimestre", event.target.value)} className="rounded-2xl border border-white/10 bg-slate-950/65 px-5 py-4 text-sm text-white outline-none transition focus:border-cyan-300/60">
+                  <span className="text-sm font-bold text-violet-500">Trimestre</span>
+                  <select value={form.trimestre} onChange={(event) => updateField("trimestre", event.target.value)} className="rounded-2xl border border-rose-100/90 bg-white px-5 py-4 text-sm font-semibold text-violet-950 outline-none transition focus:border-fuchsia-300 focus:ring-4 focus:ring-fuchsia-100/80">
                     <option value="1">1º trimestre</option>
                     <option value="2">2º trimestre</option>
                     <option value="3">3º trimestre</option>
@@ -1120,19 +1131,19 @@ export function PlanejamentosClient() {
 
             <div className="mt-5 grid gap-5">
               <label className="grid gap-2">
-                <span className="text-sm font-bold text-slate-300">Conteúdos</span>
-                <textarea value={form.conteudos} onChange={(event) => updateField("conteudos", event.target.value)} rows={6} placeholder={"Digite um conteúdo por linha.\nEx.: Estrutura dissertativa-argumentativa\nEx.: Repertório sociocultural"} className="rounded-2xl border border-white/10 bg-slate-950/65 px-5 py-4 text-sm leading-7 text-white outline-none transition focus:border-cyan-300/60" />
+                <span className="text-sm font-bold text-violet-500">Conteúdos</span>
+                <textarea value={form.conteudos} onChange={(event) => updateField("conteudos", event.target.value)} rows={6} placeholder={"Digite um conteúdo por linha.\nEx.: Estrutura dissertativa-argumentativa\nEx.: Repertório sociocultural"} className="rounded-2xl border border-rose-100/90 bg-white px-5 py-4 text-sm font-semibold leading-7 text-violet-950 outline-none transition focus:border-fuchsia-300 focus:ring-4 focus:ring-fuchsia-100/80" />
                 <span className="text-xs text-cyan-100/70">Este campo é suficiente para buscar e sugerir habilidades BNCC.</span>
               </label>
 
               <label className="grid gap-2">
-                <span className="text-sm font-bold text-slate-300">Objetivos gerais</span>
-                <textarea value={form.objetivos} onChange={(event) => updateField("objetivos", event.target.value)} rows={3} placeholder="Opcional. Ajuda no texto pedagógico do DOCX." className="rounded-2xl border border-white/10 bg-slate-950/65 px-5 py-4 text-sm leading-7 text-white outline-none transition focus:border-cyan-300/60" />
+                <span className="text-sm font-bold text-violet-500">Objetivos gerais</span>
+                <textarea value={form.objetivos} onChange={(event) => updateField("objetivos", event.target.value)} rows={3} placeholder="Opcional. Ajuda no texto pedagógico do DOCX." className="rounded-2xl border border-rose-100/90 bg-white px-5 py-4 text-sm font-semibold leading-7 text-violet-950 outline-none transition focus:border-fuchsia-300 focus:ring-4 focus:ring-fuchsia-100/80" />
               </label>
 
               <label className="grid gap-2">
-                <span className="text-sm font-bold text-slate-300">Observações</span>
-                <textarea value={form.observacoes} onChange={(event) => updateField("observacoes", event.target.value)} rows={3} placeholder="Opcional. Informe perfil da turma, foco pedagógico ou necessidades específicas." className="rounded-2xl border border-white/10 bg-slate-950/65 px-5 py-4 text-sm leading-7 text-white outline-none transition focus:border-cyan-300/60" />
+                <span className="text-sm font-bold text-violet-500">Observações</span>
+                <textarea value={form.observacoes} onChange={(event) => updateField("observacoes", event.target.value)} rows={3} placeholder="Opcional. Informe perfil da turma, foco pedagógico ou necessidades específicas." className="rounded-2xl border border-rose-100/90 bg-white px-5 py-4 text-sm font-semibold leading-7 text-violet-950 outline-none transition focus:border-fuchsia-300 focus:ring-4 focus:ring-fuchsia-100/80" />
               </label>
             </div>
 
@@ -1152,7 +1163,7 @@ export function PlanejamentosClient() {
               <button type="button" onClick={downloadDocx} disabled={loadingDocx || !generatedPlanning} className="rounded-2xl border border-emerald-300/30 bg-emerald-300/10 px-6 py-4 text-sm font-black text-emerald-100 transition hover:-translate-y-1 hover:bg-emerald-300/20 disabled:cursor-not-allowed disabled:opacity-50">
                 {loadingDocx ? "Preenchendo DOCX..." : "3. Baixar DOCX atual"}
               </button>
-              <button type="button" onClick={sendToEditor} disabled={!generatedPlanning} className="rounded-2xl border border-white/10 bg-white/5 px-6 py-4 text-sm font-black text-white transition hover:-translate-y-1 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50">
+              <button type="button" onClick={sendToEditor} disabled={!generatedPlanning} className="rounded-2xl border border-violet-100 bg-violet-50/60 px-6 py-4 text-sm font-black text-violet-800 transition hover:-translate-y-1 hover:bg-violet-100/80 disabled:cursor-not-allowed disabled:opacity-50">
                 Enviar ao Editor
               </button>
             </div>
@@ -1164,16 +1175,16 @@ export function PlanejamentosClient() {
             ) : null}
 
             {generatedPlanning && form.tipoPlanejamento === "anual" ? (
-              <div className="mt-6 rounded-[1.75rem] border border-emerald-300/20 bg-emerald-300/10 p-5">
+              <div className="mt-6 rounded-[1.75rem] border border-emerald-200/80 bg-emerald-50/80 p-5">
                 <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                   <div>
-                    <p className="text-sm font-black uppercase tracking-[0.28em] text-emerald-300">
+                    <p className="text-[10px] font-black uppercase tracking-[0.28em] text-emerald-600">
                       Matriz anual aprovada
                     </p>
-                    <h3 className="mt-2 text-2xl font-black text-white">
+                    <h3 className="mt-2 text-2xl font-black text-violet-950">
                       Baixar anual e trimestrais coerentes
                     </h3>
-                    <p className="mt-2 text-sm leading-7 text-emerald-100/85">
+                    <p className="mt-2 text-sm leading-7 text-emerald-700/90">
                       Os trimestrais abaixo usam exatamente a mesma matriz anual,
                       os mesmos conteúdos e as mesmas habilidades BNCC. Não há nova
                       busca de BNCC para trimestre.
@@ -1197,7 +1208,7 @@ export function PlanejamentosClient() {
                     type="button"
                     onClick={() => downloadDocxWithMode("trimestral", 1)}
                     disabled={loadingDocx}
-                    className="rounded-2xl border border-white/10 bg-white/5 px-5 py-4 text-sm font-black text-white transition hover:-translate-y-1 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="rounded-2xl border border-violet-100 bg-violet-50/60 px-5 py-4 text-sm font-black text-violet-800 transition hover:-translate-y-1 hover:bg-violet-100/80 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     1º Trimestre
                   </button>
@@ -1206,7 +1217,7 @@ export function PlanejamentosClient() {
                     type="button"
                     onClick={() => downloadDocxWithMode("trimestral", 2)}
                     disabled={loadingDocx}
-                    className="rounded-2xl border border-white/10 bg-white/5 px-5 py-4 text-sm font-black text-white transition hover:-translate-y-1 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="rounded-2xl border border-violet-100 bg-violet-50/60 px-5 py-4 text-sm font-black text-violet-800 transition hover:-translate-y-1 hover:bg-violet-100/80 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     2º Trimestre
                   </button>
@@ -1215,7 +1226,7 @@ export function PlanejamentosClient() {
                     type="button"
                     onClick={() => downloadDocxWithMode("trimestral", 3)}
                     disabled={loadingDocx}
-                    className="rounded-2xl border border-white/10 bg-white/5 px-5 py-4 text-sm font-black text-white transition hover:-translate-y-1 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="rounded-2xl border border-violet-100 bg-violet-50/60 px-5 py-4 text-sm font-black text-violet-800 transition hover:-translate-y-1 hover:bg-violet-100/80 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     3º Trimestre
                   </button>
@@ -1224,7 +1235,7 @@ export function PlanejamentosClient() {
                     type="button"
                     onClick={downloadAnnualAndTrimestersPackage}
                     disabled={loadingDocx}
-                    className="rounded-2xl border border-cyan-300/30 bg-cyan-300/10 px-5 py-4 text-sm font-black text-cyan-100 transition hover:-translate-y-1 hover:bg-cyan-300/20 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="rounded-2xl border border-fuchsia-200 bg-gradient-to-r from-violet-50 to-rose-50 px-5 py-4 text-sm font-black text-violet-800 transition hover:-translate-y-1 hover:border-fuchsia-300 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     Pacote ZIP
                   </button>
@@ -1233,11 +1244,11 @@ export function PlanejamentosClient() {
             ) : null}
           </div>
 
-          <div className="rounded-[2.25rem] border border-white/10 bg-white/[0.06] p-7 shadow-2xl backdrop-blur-2xl">
+          <div className="rounded-[1.85rem] border border-violet-100/70 bg-white/95 p-6 shadow-sm">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <p className="text-sm font-black uppercase tracking-[0.32em] text-cyan-300">BNCC por conteúdo</p>
-                <h2 className="mt-4 text-3xl font-black text-white">Habilidades sugeridas</h2>
+                <p className="text-[10px] font-black uppercase tracking-[0.28em] text-fuchsia-600">BNCC por conteúdo</p>
+                <h2 className="mt-4 text-3xl font-black text-violet-950">Habilidades sugeridas</h2>
                 <p className="mt-3 text-sm leading-7 text-slate-400">As sugestões vêm desmarcadas por padrão. Clique apenas nas habilidades que deseja usar no planejamento.</p>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -1248,17 +1259,17 @@ export function PlanejamentosClient() {
             </div>
 
             {groups.length === 0 ? (
-              <div className="mt-7 rounded-2xl border border-dashed border-white/15 bg-slate-950/45 p-7 text-sm leading-7 text-slate-400">
-                Nenhuma sugestão ainda. Preencha os conteúdos e clique em <strong className="text-white">Sugerir BNCC</strong>.
+              <div className="mt-7 rounded-2xl border border-dashed border-fuchsia-200 bg-rose-50/50 p-7 text-sm leading-7 text-violet-500">
+                Nenhuma sugestão ainda. Preencha os conteúdos e clique em <strong className="text-violet-950">Sugerir BNCC</strong>.
               </div>
             ) : (
               <div className="mt-7 grid gap-5">
                 {groups.map((group) => (
-                  <div key={group.conteudo} className="rounded-[1.75rem] border border-white/10 bg-slate-950/45 p-5">
+                  <div key={group.conteudo} className="rounded-[1.75rem] border border-violet-100/80 bg-white/90 p-5">
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                       <div>
-                        <p className="text-xs font-black uppercase tracking-[0.25em] text-cyan-300">Conteúdo</p>
-                        <h3 className="mt-2 text-xl font-black text-white">{group.conteudo}</h3>
+                        <p className="text-xs font-black uppercase tracking-[0.25em] text-fuchsia-600">Conteúdo</p>
+                        <h3 className="mt-2 text-xl font-black text-violet-950">{group.conteudo}</h3>
                       </div>
                       <div className="flex gap-2">
                         <button type="button" onClick={() => selectGroup(group)} className="rounded-xl border border-emerald-300/30 bg-emerald-300/10 px-4 py-2 text-xs font-black text-emerald-100 transition hover:bg-emerald-300/20">
@@ -1274,10 +1285,10 @@ export function PlanejamentosClient() {
                       {group.habilidades.map((skill) => {
                         const selected = isSelected(skill);
                         return (
-                          <button key={skill.id} type="button" onClick={() => toggleSkill(skill)} className={`rounded-2xl border p-5 text-left transition hover:-translate-y-1 ${selected ? "border-emerald-300/40 bg-emerald-300/10" : "border-white/10 bg-white/[0.04] hover:border-cyan-300/40 hover:bg-cyan-300/10"}`}>
+                          <button key={skill.id} type="button" onClick={() => toggleSkill(skill)} className={`rounded-2xl border p-5 text-left transition hover:-translate-y-1 ${selected ? "border-emerald-200 bg-emerald-50/80" : "border-violet-100 bg-violet-50/30 hover:border-fuchsia-200 hover:bg-rose-50/50"}`}>
                             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                               <div>
-                                <p className="text-lg font-black text-white">{skill.codigo}</p>
+                                <p className="text-lg font-black text-violet-950">{skill.codigo}</p>
                                 <p className="mt-2 text-sm leading-7 text-slate-300">{skill.descricao}</p>
                               </div>
                               <Pill tone={selected ? "emerald" : "slate"}>{selected ? "Selecionada" : "Clique para usar"}</Pill>
@@ -1292,14 +1303,14 @@ export function PlanejamentosClient() {
             )}
 
             {generatedPlanning ? (
-              <div className="mt-7 rounded-[1.75rem] border border-emerald-300/20 bg-emerald-300/10 p-5">
-                <p className="text-sm font-black uppercase tracking-[0.28em] text-emerald-300">Matriz gerada</p>
-                <h3 className="mt-3 text-2xl font-black text-white">{generatedPlanning.titulo}</h3>
-                <p className="mt-3 text-sm leading-7 text-emerald-100/85">{generatedPlanning.resumo}</p>
+              <div className="mt-7 rounded-[1.75rem] border border-emerald-200/80 bg-emerald-50/80 p-5">
+                <p className="text-[10px] font-black uppercase tracking-[0.28em] text-emerald-600">Matriz gerada</p>
+                <h3 className="mt-3 text-2xl font-black text-violet-950">{generatedPlanning.titulo}</h3>
+                <p className="mt-3 text-sm leading-7 text-emerald-700/90">{generatedPlanning.resumo}</p>
                 <div className="mt-4 grid gap-2">
                   {generatedPlanning.conteudos.map((item) => (
-                    <div key={`${item.conteudo}-${item.aulaInicio}`} className="rounded-2xl border border-white/10 bg-slate-950/45 p-4">
-                      <p className="font-black text-white">{item.conteudo}</p>
+                    <div key={`${item.conteudo}-${item.aulaInicio}`} className="rounded-2xl border border-violet-100/80 bg-white/80 p-4">
+                      <p className="font-black text-violet-950">{item.conteudo}</p>
                       <p className="mt-1 text-sm text-slate-400">Aulas {item.aulaInicio} a {item.aulaFim} · {item.habilidades.length} habilidade(s)</p>
                     </div>
                   ))}
@@ -1309,6 +1320,6 @@ export function PlanejamentosClient() {
           </div>
         </section>
       </section>
-    </div>
+    </PlanifyWorkspacePane>
   );
 }

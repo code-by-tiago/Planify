@@ -1,5 +1,7 @@
 "use client";
 
+import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
+import { PlanifyPageHero } from "@/components/pro/PlanifyPageHero";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -168,17 +170,26 @@ export function HistoricoClient() {
   }
 
   return (
-    <section className="mx-auto max-w-7xl px-4 py-5 pb-16 sm:px-6">
+    <PlanifyWorkspacePane
+      header={
+        <PlanifyPageHero
+          badge="Histórico"
+          icon="history"
+          title="Tudo que você criou"
+          description="Planejamentos, materiais e rascunhos do editor — organizados no seu navegador."
+        />
+      }
+    >
       <div className="grid gap-6 xl:grid-cols-[0.78fr_1.22fr]">
         <aside className="grid gap-6 xl:sticky xl:top-5 xl:h-fit">
-          <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
-            <p className="text-sm font-black uppercase tracking-[0.25em] text-indigo-600">
-              Histórico local
+          <div className="rounded-[1.85rem] border border-violet-100/70 bg-white/95 p-6 shadow-sm">
+            <p className="text-[10px] font-black uppercase tracking-[0.25em] text-fuchsia-600">
+              Resumo
             </p>
-            <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-950">
+            <h2 className="mt-3 text-2xl font-black tracking-tight text-violet-950">
               Documentos recentes
             </h2>
-            <p className="mt-4 text-sm leading-7 text-slate-600">
+            <p className="mt-4 text-sm leading-7 text-violet-500/90">
               Enquanto o Supabase não é conectado, o Planify organiza os itens no navegador para validar o fluxo completo.
             </p>
 
@@ -464,6 +475,6 @@ export function HistoricoClient() {
           </div>
         </div>
       </div>
-    </section>
+    </PlanifyWorkspacePane>
   );
 }

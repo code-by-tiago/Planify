@@ -1,5 +1,7 @@
 "use client";
 
+import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
+import { PlanifyPageHero } from "@/components/pro/PlanifyPageHero";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 
 type MarketplaceItem = {
@@ -323,18 +325,28 @@ export function MarketplaceClient() {
   }
 
   return (
-    <section className="mx-auto grid max-w-7xl gap-6 px-4 py-6 lg:grid-cols-[0.82fr_1.18fr] sm:px-6">
+    <PlanifyWorkspacePane
+      header={
+        <PlanifyPageHero
+          badge="Marketplace"
+          icon="market"
+          title="Compartilhe com a comunidade"
+          description="Publique materiais pedagógicos para outras professoras premium."
+        />
+      }
+    >
+    <div className="grid gap-6 lg:grid-cols-[0.82fr_1.18fr]">
       <aside className="space-y-6">
-        <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="rounded-[1.85rem] border border-violet-100/70 bg-white/95 p-6 shadow-sm">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <p className="text-sm font-black uppercase tracking-[0.28em] text-indigo-700">
-                Compartilhar
+              <p className="text-[10px] font-black uppercase tracking-[0.28em] text-fuchsia-600">
+                Publicar
               </p>
-              <h2 className="mt-4 text-3xl font-black tracking-tight text-slate-950">
-                Publicar material
+              <h2 className="mt-3 text-2xl font-black tracking-tight text-violet-950">
+                Novo material
               </h2>
-              <p className="mt-3 text-sm leading-7 text-slate-600">
+              <p className="mt-3 text-sm leading-7 text-violet-500/90">
                 Envie um material pedagógico para outros professores premium baixarem.
               </p>
             </div>
@@ -661,7 +673,8 @@ export function MarketplaceClient() {
           </div>
         ) : null}
       </div>
-    </section>
+    </div>
+    </PlanifyWorkspacePane>
   );
 }
 

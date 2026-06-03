@@ -157,25 +157,36 @@ export default function PlanifyDashboardShell() {
       <PlanifyShellSidebar
         open={sidebarOpen}
         onOpenChange={setSidebarOpen}
+        variant="teachy"
         lumiHint="Assistente IA · pressione / para buscar ferramentas"
       >
         {sidebarNav}
       </PlanifyShellSidebar>
 
-      <section className="flex h-screen min-w-0 flex-1 flex-col overflow-hidden bg-[#f4f6fb]">
-        <header className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-200/90 bg-white px-4 py-3 shadow-sm sm:px-5">
+      <section className="flex h-screen min-w-0 flex-1 flex-col overflow-hidden bg-[#eef1f8]">
+        <header
+          className={`flex shrink-0 items-center justify-between gap-3 border-b px-4 sm:px-5 ${
+            selectedToolId
+              ? "border-slate-200/90 bg-white py-3 shadow-sm"
+              : "border-transparent bg-transparent py-2.5"
+          }`}
+        >
           <div className="flex min-w-0 flex-1 items-center gap-3">
             <button
               type="button"
               onClick={() => setSidebarOpen(true)}
               aria-label="Abrir menu"
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-slate-600 transition hover:bg-slate-100 lg:hidden"
+              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition lg:hidden ${
+                selectedToolId
+                  ? "text-slate-600 hover:bg-slate-100"
+                  : "text-indigo-700 hover:bg-white/80"
+              }`}
             >
               <PlanifyIcon name="menu" className="h-5 w-5" />
             </button>
 
-            <div className="min-w-0 flex-1">
-              {selectedToolId ? (
+            {selectedToolId ? (
+              <div className="min-w-0 flex-1">
                 <nav
                   aria-label="Localização"
                   className="mb-0.5 flex flex-wrap items-center gap-1 text-[11px] font-bold text-slate-400"
@@ -195,36 +206,46 @@ export default function PlanifyDashboardShell() {
                     {activeTool?.shortTitle}
                   </span>
                 </nav>
-              ) : (
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600">
-                  Assistente IA para professoras
-                </span>
-              )}
-              <h1 className="truncate text-lg font-black tracking-tight text-slate-950">
-                {activeTool ? activeTool.title : "Materiais com IA"}
-              </h1>
-              <p className="truncate text-xs font-semibold text-slate-500">
-                {activeTool
-                  ? activeTool.description
-                  : "BNCC · planejamento · criação · correção"}
-              </p>
-            </div>
+                <h1 className="truncate text-lg font-black tracking-tight text-slate-950">
+                  {activeTool?.title}
+                </h1>
+                <p className="truncate text-xs font-semibold text-slate-500">
+                  {activeTool?.description}
+                </p>
+              </div>
+            ) : (
+              <div className="min-w-0 flex-1 lg:hidden">
+                <p className="text-sm font-black text-indigo-700">
+                  Planify Studio
+                </p>
+              </div>
+            )}
 
-            <div className="hidden shrink-0 lg:block">
-              <PlanifyBrand compact />
-            </div>
+            {!selectedToolId ? (
+              <div className="hidden min-w-0 flex-1 lg:block">
+                <PlanifyBrand compact />
+              </div>
+            ) : (
+              <div className="hidden shrink-0 lg:block">
+                <PlanifyBrand compact />
+              </div>
+            )}
           </div>
 
           <div className="flex shrink-0 items-center gap-2">
             <Link
               href="/historico"
-              className="hidden rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-600 transition hover:border-indigo-200 sm:inline-flex"
+              className={`hidden rounded-xl border px-3 py-2 text-xs font-black transition sm:inline-flex ${
+                selectedToolId
+                  ? "border-slate-200 bg-white text-slate-600 hover:border-indigo-200"
+                  : "border-white/80 bg-white/70 text-slate-600 hover:bg-white"
+              }`}
             >
               Histórico
             </Link>
             <Link
               href="/planos"
-              className="rounded-xl border border-indigo-100 bg-indigo-50 px-3.5 py-2 text-xs font-black text-indigo-700 transition hover:bg-indigo-100"
+              className="rounded-xl border border-indigo-200 bg-indigo-600 px-3.5 py-2 text-xs font-black text-white transition hover:bg-indigo-700"
             >
               Planos
             </Link>

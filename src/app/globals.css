@@ -2322,4 +2322,26 @@ html:has(.pl-dashboard-root) body {
   );
 }
 
+.pl-teachy-home-v2 {
+  background: linear-gradient(180deg, #eef1f8 0%, #f8fafc 45%, #ffffff 100%);
+}
+
+.pl-teachy-prompt textarea {
+  min-height: 4.5rem;
+}
+
+.pl-sidebar-teachy {
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%) !important;
+  border-color: rgba(226, 232, 240, 0.95) !important;
+}
+
+.pl-teachy-shell .pl-sidebar-teachy .pl-nav-active {
+  background: linear-gradient(
+    120deg,
+    #4f46e5,
+    #6366f1 55%,
+    #818cf8
+  ) !important;
+}
+
 /* PLANIFY_UI3_APP_V2_END */

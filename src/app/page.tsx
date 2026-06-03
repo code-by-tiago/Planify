@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { PublicHeader } from "@/components/public/PublicHeader";
 import { PublicFooter } from "@/components/public/PublicFooter";
+import StudioSessionRedirect from "@/components/dashboard/StudioSessionRedirect";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { Reveal } from "@/components/public/landing/Reveal";
 import { HeroShowcase } from "@/components/public/landing/HeroShowcase";
@@ -193,6 +194,7 @@ const faqItems = [
 export default function HomePage() {
   return (
     <main className="planify-ui3 min-h-screen overflow-x-clip">
+      <StudioSessionRedirect />
       <PublicHeader active="home" />
 
       {/* Hero */}

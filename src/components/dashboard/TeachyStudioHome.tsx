@@ -24,6 +24,24 @@ type TeachyStudioHomeProps = {
   initialTopic?: string;
 };
 
+function greeting(): string {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Bom dia";
+  if (hour < 18) return "Boa tarde";
+  return "Boa noite";
+}
+
+const quickStarts: {
+  id: PlanifyToolId;
+  label: string;
+  icon: (typeof planifyTools)[number]["icon"];
+}[] = [
+  { id: "slides", label: "Slides", icon: "presentation" },
+  { id: "plano-aula", label: "Plano de aula", icon: "clipboard" },
+  { id: "prova", label: "Prova / quiz", icon: "fileText" },
+  { id: "lista", label: "Lista", icon: "listChecks" },
+];
+
 export default function TeachyStudioHome({
   onSelectTool,
   category,
@@ -33,6 +51,7 @@ export default function TeachyStudioHome({
   const router = useRouter();
   const [topic, setTopic] = useState(initialTopic);
   const [gridQuery, setGridQuery] = useState("");
+  const [showFullCatalog, setShowFullCatalog] = useState(false);
 
   useEffect(() => {
     setTopic(initialTopic);
@@ -54,16 +73,22 @@ export default function TeachyStudioHome({
     () =>
       teachyFeaturedToolIds
         .map((id) => planifyTools.find((t) => t.id === id))
-        .filter(Boolean),
+        .filter((tool): tool is (typeof planifyTools)[number] => Boolean(tool)),
     [],
   );
+
+  const displayTools = useMemo(() => {
+    if (gridQuery.trim() || category !== "todos" || showFullCatalog) {
+      return filteredTools;
+    }
+    return featured;
+  }, [category, featured, filteredTools, gridQuery, showFullCatalog]);
 
   function handleLessonSubmit(event: FormEvent) {
     event.preventDefault();
     const tema = topic.trim();
     if (!tema) return;
-    const params = new URLSearchParams({ tema });
-    router.push(`/planejamentos?${params.toString()}`);
+    router.push(`/planejamentos?${new URLSearchParams({ tema }).toString()}`);
   }
 
   function openToolFromTopic(toolId: PlanifyToolId) {
@@ -79,260 +104,225 @@ export default function TeachyStudioHome({
   }
 
   return (
-    <div className="pl-teachy-home flex h-full min-h-0 w-full flex-col overflow-hidden bg-[#f4f6fb]">
-      <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain">
-        <div className="mx-auto w-full max-w-6xl px-4 py-5 sm:px-6 sm:py-6">
-          {/* Hero — Assistente IA (estilo Teachy) */}
-          <section className="pl-teachy-hero rounded-[1.75rem] border border-slate-200/80 bg-white p-5 shadow-[0_8px_40px_-24px_rgba(15,23,42,0.12)] sm:p-7">
-            <div className="flex flex-wrap items-start justify-between gap-4">
-              <div className="max-w-2xl">
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-3 py-1 text-[11px] font-black uppercase tracking-wide text-indigo-700">
-                  <PlanifyIcon name="spark" className="h-3.5 w-3.5" />
-                  Assistente IA · BNCC
-                </span>
-                <h1 className="mt-3 text-2xl font-black tracking-tight text-slate-950 sm:text-[1.85rem] sm:leading-tight">
-                  Sua aula inteira pronta em poucos cliques
-                </h1>
-                <p className="mt-2 text-sm font-semibold leading-relaxed text-slate-500">
-                  Escreva o assunto, escolha a série no planejamento e receba
-                  materiais coesos — plano, slides, atividades e avaliação no
-                  mesmo tema.
-                </p>
-              </div>
-              <div className="hidden sm:block">
-                <LumiMascot size={72} animated withAura />
-              </div>
+    <div className="pl-teachy-home pl-teachy-home-v2 flex h-full min-h-0 w-full flex-col overflow-hidden">
+      {/* Assistente central — ocupa a viewport visível */}
+      <section className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
+        <div
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,rgba(79,70,229,0.14),transparent_55%),radial-gradient(ellipse_50%_40%_at_100%_50%,rgba(56,189,248,0.08),transparent_50%)]"
+          aria-hidden
+        />
+
+        <div className="relative flex min-h-0 flex-1 flex-col items-center justify-center px-4 py-8 sm:px-8">
+          <div className="mb-5 flex items-center gap-3">
+            <LumiMascot size={56} animated withAura />
+            <div>
+              <p className="text-sm font-black text-indigo-600">
+                {greeting()}, professora
+              </p>
+              <p className="text-xs font-semibold text-slate-500">
+                Assistente IA · BNCC · Planify Studio
+              </p>
             </div>
+          </div>
 
-            <form onSubmit={handleLessonSubmit} className="mt-5">
-              <label className="block text-xs font-black uppercase tracking-wide text-slate-500">
-                Tema da aula
-              </label>
-              <div className="mt-2 flex flex-col gap-2 sm:flex-row">
-                <input
-                  value={topic}
-                  onChange={(e) => setTopic(e.target.value)}
-                  placeholder="Ex.: Ciclo da água, Revolução Industrial, Frações…"
-                  className="min-w-0 flex-1 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm font-semibold text-slate-900 outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-4 focus:ring-indigo-100"
-                />
-                <button
-                  type="submit"
-                  className="inline-flex shrink-0 items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-6 py-3.5 text-sm font-black text-white shadow-[0_8px_24px_-8px_rgba(79,70,229,0.55)] transition hover:bg-indigo-700"
-                >
-                  <PlanifyIcon name="layers" className="h-4 w-4" />
-                  Construtor de aula
-                </button>
-              </div>
-            </form>
+          <h1 className="max-w-2xl text-center text-2xl font-black tracking-tight text-slate-950 sm:text-4xl sm:leading-tight">
+            Qual o tema da sua{" "}
+            <span className="bg-gradient-to-r from-indigo-600 to-sky-500 bg-clip-text text-transparent">
+              próxima aula?
+            </span>
+          </h1>
+          <p className="mt-3 max-w-lg text-center text-sm font-semibold leading-relaxed text-slate-500">
+            Descreva o assunto uma vez. O Planify monta plano, slides, atividades
+            e avaliação no mesmo tema — como no Teachy.
+          </p>
 
-            {topic.trim() ? (
-              <div className="mt-5 rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50/80 to-white p-4">
-                <p className="text-xs font-black text-indigo-800">
-                  Pacote sugerido para “{topic.trim()}”
-                </p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {lessonBundleTools.map((item) => (
+          <form
+            onSubmit={handleLessonSubmit}
+            className="pl-teachy-prompt mt-8 w-full max-w-2xl"
+          >
+            <div className="rounded-[1.75rem] border border-slate-200/90 bg-white p-2 shadow-[0_24px_80px_-32px_rgba(79,70,229,0.35)] ring-1 ring-indigo-100/80">
+              <textarea
+                value={topic}
+                onChange={(e) => setTopic(e.target.value)}
+                rows={3}
+                placeholder="Ex.: Ciclo da água no 4º ano, Revolução Industrial no EM, Frações com situações do cotidiano…"
+                className="w-full resize-none rounded-2xl border-0 bg-transparent px-4 py-3 text-base font-semibold text-slate-900 outline-none placeholder:text-slate-400"
+              />
+              <div className="flex flex-col gap-2 border-t border-slate-100 px-2 py-2 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-wrap gap-1.5">
+                  {quickStarts.map((item) => (
                     <button
                       key={item.id}
                       type="button"
                       onClick={() => openToolFromTopic(item.id)}
-                      className="inline-flex items-center gap-2 rounded-xl border border-white bg-white/90 px-3 py-2 text-left text-xs font-bold text-slate-700 shadow-sm transition hover:border-indigo-200 hover:shadow-md"
+                      className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-[11px] font-black text-slate-600 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
                     >
-                      <PlanifyIcon
-                        name={item.icon}
-                        className="h-4 w-4 text-indigo-500"
-                      />
-                      <span>
-                        {item.label}
-                        <span className="ml-1.5 font-semibold text-slate-400">
-                          · {item.tag}
-                        </span>
-                      </span>
+                      <PlanifyIcon name={item.icon} className="h-3.5 w-3.5" />
+                      {item.label}
                     </button>
                   ))}
                 </div>
-              </div>
-            ) : null}
-          </section>
-
-          {/* Fluxo Teachy: planejar → aula → exportar → corrigir */}
-          <section className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {teachyWorkflowSteps.map((item) => (
-              <div
-                key={item.step}
-                className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm"
-              >
-                <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-100 text-sm font-black text-indigo-700">
-                  {item.step}
-                </span>
-                <p className="mt-3 text-sm font-black text-slate-900">
-                  {item.title}
-                </p>
-                <p className="mt-1 text-xs font-semibold leading-5 text-slate-500">
-                  {item.description}
-                </p>
-              </div>
-            ))}
-          </section>
-
-          {/* Destaques */}
-          <section className="mt-6">
-            <div className="flex flex-wrap items-end justify-between gap-2">
-              <div>
-                <h2 className="text-base font-black text-slate-950">
-                  Ferramentas em destaque
-                </h2>
-                <p className="text-xs font-semibold text-slate-500">
-                  Mais de 13 formatos alinhados à prática em sala
-                </p>
+                <button
+                  type="submit"
+                  className="inline-flex shrink-0 items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-black text-white shadow-[0_12px_32px_-12px_rgba(79,70,229,0.65)] transition hover:bg-indigo-700"
+                >
+                  <PlanifyIcon name="layers" className="h-4 w-4" />
+                  Montar aula completa
+                </button>
               </div>
             </div>
-            <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-8">
-              {featured.map((tool) =>
-                tool ? (
+          </form>
+
+          {topic.trim() ? (
+            <div className="mt-6 w-full max-w-2xl rounded-2xl border border-indigo-100/80 bg-white/90 p-4 shadow-sm backdrop-blur-sm">
+              <p className="text-center text-xs font-black uppercase tracking-wide text-indigo-700">
+                Pacote sugerido · {topic.trim()}
+              </p>
+              <div className="mt-3 flex flex-wrap justify-center gap-2">
+                {lessonBundleTools.map((item) => (
                   <button
-                    key={tool.id}
+                    key={item.id}
                     type="button"
-                    onClick={() => openToolFromTopic(tool.id)}
-                    className="group flex flex-col items-center rounded-2xl border border-slate-200/90 bg-white p-3 text-center shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-md"
+                    onClick={() => openToolFromTopic(item.id)}
+                    className="inline-flex items-center gap-2 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-xs font-bold text-slate-700 transition hover:border-indigo-200 hover:bg-white hover:shadow-md"
                   >
-                    <span
-                      className={`flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br ${tool.accent} text-white shadow-sm transition group-hover:scale-105`}
-                    >
-                      <PlanifyIcon name={tool.icon} className="h-5 w-5" />
-                    </span>
-                    <span className="mt-2 line-clamp-2 text-[11px] font-black leading-tight text-slate-800">
-                      {tool.shortTitle}
+                    <PlanifyIcon
+                      name={item.icon}
+                      className="h-4 w-4 text-indigo-500"
+                    />
+                    {item.label}
+                    <span className="font-semibold text-slate-400">
+                      · {item.tag}
                     </span>
                   </button>
-                ) : null,
-              )}
-            </div>
-          </section>
-
-          {/* Catálogo completo */}
-          <section className="mt-6 rounded-[1.75rem] border border-slate-200/80 bg-white p-4 shadow-sm sm:p-5">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h2 className="text-base font-black text-slate-950">
-                  Todas as ferramentas
-                </h2>
-                <p className="text-xs font-semibold text-slate-500">
-                  Gere materiais personalizados — sem prompt complexo
-                </p>
-              </div>
-              <div className="relative w-full sm:max-w-xs">
-                <PlanifyIcon
-                  name="search"
-                  className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-300"
-                />
-                <input
-                  value={gridQuery}
-                  onChange={(e) => setGridQuery(e.target.value)}
-                  placeholder="Filtrar ferramentas…"
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-3 text-sm font-semibold outline-none focus:border-indigo-300 focus:bg-white"
-                />
+                ))}
               </div>
             </div>
+          ) : null}
+        </div>
+      </section>
 
-            <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
-              {toolCategories.map((cat) => {
-                const active = category === cat.id;
-                return (
-                  <button
-                    key={cat.id}
-                    type="button"
-                    onClick={() => onCategoryChange(cat.id)}
-                    className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3.5 py-2 text-xs font-black transition ${
-                      active
-                        ? "border-indigo-200 bg-indigo-600 text-white shadow-md"
-                        : "border-slate-200 bg-white text-slate-600 hover:border-indigo-200"
-                    }`}
-                  >
-                    <PlanifyIcon name={cat.icon} className="h-3.5 w-3.5" />
-                    {cat.label}
-                  </button>
-                );
-              })}
+      {/* Ferramentas — painel inferior deslizante */}
+      <section className="shrink-0 border-t border-slate-200/90 bg-white shadow-[0_-8px_40px_-24px_rgba(15,23,42,0.12)]">
+        <div className="mx-auto max-w-6xl px-4 py-4 sm:px-6">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <h2 className="text-sm font-black text-slate-950">
+                Ferramentas com IA
+              </h2>
+              <p className="text-xs font-semibold text-slate-500">
+                13+ formatos · clique e gere no painel ao lado
+              </p>
             </div>
+            <div className="relative w-full lg:max-w-xs">
+              <PlanifyIcon
+                name="search"
+                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-300"
+              />
+              <input
+                value={gridQuery}
+                onChange={(e) => setGridQuery(e.target.value)}
+                placeholder="Filtrar ferramentas…"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-3 text-sm font-semibold outline-none focus:border-indigo-300 focus:bg-white"
+              />
+            </div>
+          </div>
 
-            <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-              {filteredTools.map((tool) => (
+          <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+            {toolCategories.map((cat) => {
+              const active = category === cat.id;
+              return (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => onCategoryChange(cat.id)}
+                  className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3.5 py-2 text-xs font-black transition ${
+                    active
+                      ? "border-indigo-200 bg-indigo-600 text-white shadow-md"
+                      : "border-slate-200 bg-slate-50 text-slate-600 hover:border-indigo-200"
+                  }`}
+                >
+                  <PlanifyIcon name={cat.icon} className="h-3.5 w-3.5" />
+                  {cat.label}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="mt-3 max-h-[220px] overflow-y-auto overscroll-contain pr-1">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8">
+              {displayTools.map((tool) => (
                 <button
                   key={tool.id}
                   type="button"
                   onClick={() => openToolFromTopic(tool.id)}
-                  className="group rounded-2xl border border-slate-100 bg-slate-50/50 p-3 text-left transition hover:border-indigo-200 hover:bg-white hover:shadow-md"
+                  className="group flex flex-col items-center rounded-2xl border border-slate-100 bg-slate-50/80 p-2.5 text-center transition hover:border-indigo-200 hover:bg-white hover:shadow-md"
                 >
                   <span
-                    className={`flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${tool.accent} text-white shadow-sm`}
+                    className={`flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${tool.accent} text-white shadow-sm transition group-hover:scale-105`}
                   >
                     <PlanifyIcon name={tool.icon} className="h-4 w-4" />
                   </span>
-                  <p className="mt-2.5 text-sm font-black text-slate-900">
+                  <span className="mt-2 line-clamp-2 text-[10px] font-black leading-tight text-slate-800">
                     {tool.shortTitle}
-                  </p>
-                  <p className="mt-0.5 line-clamp-2 text-[11px] font-semibold leading-4 text-slate-500">
-                    {tool.description}
-                  </p>
+                  </span>
                 </button>
               ))}
             </div>
 
-            {filteredTools.length === 0 ? (
-              <p className="py-8 text-center text-sm font-semibold text-slate-400">
-                Nenhuma ferramenta nesta categoria.
+            {displayTools.length === 0 ? (
+              <p className="py-6 text-center text-sm font-semibold text-slate-400">
+                Nenhuma ferramenta encontrada.
               </p>
             ) : null}
-          </section>
 
-          {/* Biblioteca / comunidade */}
-          <section className="mt-5 mb-2 grid gap-3 sm:grid-cols-3">
+            {!gridQuery.trim() && category === "todos" && !showFullCatalog ? (
+              <button
+                type="button"
+                onClick={() => setShowFullCatalog(true)}
+                className="mt-3 w-full rounded-xl border border-dashed border-indigo-200 py-2.5 text-xs font-black text-indigo-600 transition hover:bg-indigo-50"
+              >
+                Ver catálogo completo ({planifyTools.length} ferramentas)
+              </button>
+            ) : null}
+          </div>
+        </div>
+      </section>
+
+      {/* Atalhos + fluxo — compacto */}
+      <section className="shrink-0 border-t border-slate-100 bg-[#eef1f8] px-4 py-3 sm:px-6">
+        <div className="mx-auto flex max-w-6xl flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-wrap gap-2">
             {[
-              {
-                title: "Planejamentos BNCC",
-                href: "/planejamentos",
-                icon: "clipboard" as const,
-                desc: "DOCX oficial + IA",
-              },
-              {
-                title: "Biblioteca",
-                href: "/biblioteca",
-                icon: "library" as const,
-                desc: "Materiais salvos",
-              },
-              {
-                title: "Marketplace",
-                href: "/marketplace",
-                icon: "market" as const,
-                desc: "Recursos da comunidade",
-              },
+              { title: "Planejamentos", href: "/planejamentos", icon: "clipboard" as const },
+              { title: "Biblioteca", href: "/biblioteca", icon: "library" as const },
+              { title: "Marketplace", href: "/marketplace", icon: "market" as const },
             ].map((card) => (
               <Link
                 key={card.href}
                 href={card.href}
-                className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-indigo-200 hover:shadow-md"
+                className="inline-flex items-center gap-2 rounded-xl border border-white bg-white px-3 py-2 text-xs font-black text-slate-700 shadow-sm transition hover:border-indigo-200"
               >
-                <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
-                  <PlanifyIcon name={card.icon} className="h-5 w-5" />
-                </span>
-                <span>
-                  <span className="block text-sm font-black text-slate-900">
-                    {card.title}
-                  </span>
-                  <span className="text-xs font-semibold text-slate-500">
-                    {card.desc}
-                  </span>
-                </span>
-                <PlanifyIcon
-                  name="arrowRight"
-                  className="ml-auto h-4 w-4 text-slate-300"
-                />
+                <PlanifyIcon name={card.icon} className="h-4 w-4 text-indigo-500" />
+                {card.title}
               </Link>
             ))}
-          </section>
+          </div>
+          <div className="hidden items-center gap-4 lg:flex">
+            {teachyWorkflowSteps.map((step) => (
+              <span
+                key={step.step}
+                className="text-[10px] font-bold text-slate-500"
+              >
+                <span className="mr-1 font-black text-indigo-600">
+                  {step.step}.
+                </span>
+                {step.title}
+              </span>
+            ))}
+          </div>
         </div>
-      </div>
+      </section>
     </div>
   );
 }

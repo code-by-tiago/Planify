@@ -664,8 +664,22 @@ function renderTextBlock(value: string | undefined) {
 function renderQuestionText(value: string | undefined) {
   const text = String(value || "").trim();
   if (!text) return "";
-  return escapeHtml(text).replaceAll("\n", "<br />");
+  const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  const bulletLines = lines.filter((line) => /^[-•]/.test(line));
+  const normalLines = lines.filter((line) => !/^[-•]/.test(line));
+  const normalHtml = normalLines.map((line) => `<p>${escapeHtml(line)}</p>`).join("");
+  const bulletHtml = bulletLines.length
+    ? `<ul class="planify-question-steps">${bulletLines.map((line) => `<li>${escapeHtml(line.replace(/^[-•]\s*/, ""))}</li>`).join("")}</ul>`
+    : "";
+  return `${normalHtml}${bulletHtml}`;
 }
+
+function renderAlternativesList(items: string[] | undefined) {
+  const valid = (items || []).filter(Boolean);
+  if (valid.length === 0) return "";
+  return `<ol class="planify-alternatives" type="A">${valid.map((item) => `<li>${escapeHtml(item.replace(/^[A-Ea-e][).:-]\s*/, ""))}</li>`).join("")}</ol>`;
+}
+
 
 function renderStudentAnswerSpace() {
   return `<div style="margin-top:12px;border:1px dashed #cbd5e1;border-radius:12px;padding:12px;background:#f8fafc;color:#64748b;font-size:12px;">
@@ -675,11 +689,28 @@ function renderStudentAnswerSpace() {
   </div>`;
 }
 
+function normalizeMaterialKind(value: unknown) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase("pt-BR")
+    .trim();
+}
+
+function isDirectProductKind(value: unknown) {
+  return ["atividade", "prova", "lista", "revisao"].includes(normalizeMaterialKind(value));
+}
+
+function renderQuestionCard(question: MaterialQuestion) {
+  return `<div class="planify-question"><span class="planify-question-type">${escapeHtml(question.tipo || "questão")}</span><h3>Questão ${question.numero}</h3><div class="planify-question-enunciado">${renderQuestionText(question.enunciado)}</div>${renderAlternativesList(question.alternativas)}${renderStudentAnswerSpace()}</div>`;
+}
+
 function buildMaterialEditorHtml(material: GeneratedMaterial) {
   const dados = material.dadosGerais || {};
   const sections = material.secoes || [];
   const questions = material.questoes || [];
   const visualHtml = material.visualHtml || material.printHtml || "";
+  const directProduct = isDirectProductKind(material.tipo);
 
   const css = `
 <style>
@@ -693,26 +724,22 @@ function buildMaterialEditorHtml(material: GeneratedMaterial) {
   .planify-section-title{margin:0 0 10px;font-size:20px;color:#0f172a;}
   .planify-question{border:1px solid #cbd5e1;border-radius:16px;padding:16px;margin:16px 0;background:#ffffff;break-inside:avoid;page-break-inside:avoid;}
   .planify-question h3{margin:0 0 8px;font-size:18px;color:#0f172a;}
+  .planify-question-enunciado p{margin:6px 0 8px;}
+  .planify-question-steps{margin:10px 0 0 20px;padding:0;}
+  .planify-question-steps li{margin:5px 0;}
+  .planify-alternatives{margin:12px 0 0 22px;padding:0;}
+  .planify-alternatives li{margin:6px 0;padding-left:4px;}
   .planify-question-type{display:inline-block;margin-bottom:8px;padding:4px 8px;border-radius:999px;background:#dcfce7;color:#166534;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;}
   .planify-teacher{border-color:#fde68a;background:#fffbeb;}
   .planify-table{width:100%;border-collapse:collapse;margin:12px 0;}
   .planify-table td{border:1px solid #cbd5e1;padding:8px;vertical-align:top;}
   .planify-table td:first-child{width:32%;font-weight:700;background:#f8fafc;}
   .planify-list{margin:8px 0 0 20px;}
+  .planify-divider{margin:26px 0 18px;border:0;border-top:2px solid #e2e8f0;}
   @media print{.planify-doc{font-size:12pt}.planify-box,.planify-question{break-inside:avoid;page-break-inside:avoid}.planify-cover{break-after:avoid}}
 </style>`;
 
-  return `
-${css}
-<article class="planify-doc">
-  <div class="planify-cover">
-    <span class="planify-badge">Material pedagógico</span>
-    <h1>${escapeHtml(material.titulo || "Material Planify")}</h1>
-    ${material.subtitulo ? `<p><strong>${escapeHtml(material.subtitulo)}</strong></p>` : ""}
-    ${material.resumo ? `<p>${escapeHtml(material.resumo)}</p>` : ""}
-  </div>
-
-  <div class="planify-box soft">
+  const dadosGeraisHtml = `<div class="planify-box soft">
     <h2 class="planify-section-title">Dados gerais</h2>
     <table class="planify-table">
       <tbody>
@@ -731,37 +758,56 @@ ${css}
           .join("")}
       </tbody>
     </table>
-  </div>
+  </div>`;
 
-  ${material.introducao ? `<div class="planify-box"><h2 class="planify-section-title">Introdução didática</h2>${renderTextBlock(material.introducao)}</div>` : ""}
+  const frontMatterHtml = directProduct
+    ? ""
+    : `${material.introducao ? `<div class="planify-box"><h2 class="planify-section-title">Introdução didática</h2>${renderTextBlock(material.introducao)}</div>` : ""}
   ${(material.objetivos || []).length ? `<div class="planify-box"><h2 class="planify-section-title">Objetivos de aprendizagem</h2>${renderList(material.objetivos)}</div>` : ""}
-  ${(material.conteudos || []).length ? `<div class="planify-box"><h2 class="planify-section-title">Conteúdos trabalhados</h2>${renderList(material.conteudos)}</div>` : ""}
+  ${(material.conteudos || []).length ? `<div class="planify-box"><h2 class="planify-section-title">Conteúdos trabalhados</h2>${renderList(material.conteudos)}</div>` : ""}`;
 
-  ${visualHtml ? `<div class="planify-box">${visualHtml}</div>` : ""}
-
-  ${!visualHtml
+  const sectionsHtml = !visualHtml && !directProduct
     ? sections
         .map((section, index) => {
           const content = section.conteudo || section.descricao || "";
           return `<div class="planify-box"><h2 class="planify-section-title">${index + 1}. ${escapeHtml(section.titulo || "Seção")}</h2>${renderTextBlock(content)}${renderList(section.itens)}</div>`;
         })
         .join("")
-    : ""}
+    : "";
 
-  ${material.projeto ? `<div class="planify-box"><h2 class="planify-section-title">Síntese do projeto</h2><p><strong>Problema norteador:</strong> ${escapeHtml(material.projeto.problemaNorteador)}</p><p><strong>Produto final:</strong> ${escapeHtml(material.projeto.produtoFinal)}</p><p><strong>Avaliação:</strong> ${escapeHtml(material.projeto.avaliacao)}</p>${renderList(material.projeto.etapas)}</div>` : ""}
+  const questionsHtml = questions.length
+    ? `<div class="planify-box"><h2 class="planify-section-title">VERSÃO DO ALUNO</h2><table class="planify-table"><tbody><tr><td>Nome</td><td></td></tr><tr><td>Turma</td><td></td></tr><tr><td>Data</td><td></td></tr></tbody></table></div>${questions.map(renderQuestionCard).join("")}`
+    : "";
 
-  ${questions.length ? `<div class="planify-box"><h2 class="planify-section-title">Versão do aluno</h2><p>Realize as propostas com atenção e registre suas respostas com clareza.</p></div>${questions
-    .map(
-      (question) => `<div class="planify-question"><span class="planify-question-type">${escapeHtml(question.tipo || "questão")}</span><h3>Questão ${question.numero}</h3><p>${renderQuestionText(question.enunciado)}</p>${renderList(question.alternativas)}${renderStudentAnswerSpace()}</div>`,
-    )
-    .join("")}` : ""}
+  const teacherHtml = `${(material.gabarito || []).length ? `<div class="planify-box planify-teacher"><h2 class="planify-section-title">VERSÃO DO PROFESSOR — GABARITO</h2>${renderList(material.gabarito)}</div>` : ""}
+  ${(material.criteriosAvaliacao || []).length ? `<div class="planify-box planify-teacher"><h2 class="planify-section-title">Critérios de correção</h2>${renderList(material.criteriosAvaliacao)}</div>` : ""}`;
 
-  ${(material.gabarito || []).length ? `<div class="planify-box planify-teacher"><h2 class="planify-section-title">Versão do professor — gabarito comentado</h2>${renderList(material.gabarito)}</div>` : ""}
-  ${(material.orientacoesProfessor || []).length ? `<div class="planify-box planify-teacher"><h2 class="planify-section-title">Orientações ao professor</h2>${renderList(material.orientacoesProfessor)}</div>` : ""}
+  const supportHtml = directProduct
+    ? `${(material.adaptacoesInclusivas || []).length ? `<div class="planify-box"><h2 class="planify-section-title">Adaptações inclusivas</h2>${renderList(material.adaptacoesInclusivas)}</div>` : ""}`
+    : `${(material.orientacoesProfessor || []).length ? `<div class="planify-box planify-teacher"><h2 class="planify-section-title">Orientações ao professor</h2>${renderList(material.orientacoesProfessor)}</div>` : ""}
   ${(material.orientacoesAluno || []).length ? `<div class="planify-box"><h2 class="planify-section-title">Orientações aos alunos</h2>${renderList(material.orientacoesAluno)}</div>` : ""}
-  ${(material.criteriosAvaliacao || []).length ? `<div class="planify-box"><h2 class="planify-section-title">Critérios de avaliação</h2>${renderList(material.criteriosAvaliacao)}</div>` : ""}
   ${(material.adaptacoesInclusivas || []).length ? `<div class="planify-box"><h2 class="planify-section-title">Adaptações inclusivas</h2>${renderList(material.adaptacoesInclusivas)}</div>` : ""}
-  ${(material.sugestoesUso || []).length ? `<div class="planify-box"><h2 class="planify-section-title">Sugestões de uso</h2>${renderList(material.sugestoesUso)}</div>` : ""}
+  ${(material.sugestoesUso || []).length ? `<div class="planify-box"><h2 class="planify-section-title">Sugestões de uso</h2>${renderList(material.sugestoesUso)}</div>` : ""}`;
+
+  return `
+${css}
+<article class="planify-doc">
+  <div class="planify-cover">
+    <span class="planify-badge">${directProduct ? "Material pronto" : "Material pedagógico"}</span>
+    <h1>${escapeHtml(material.titulo || "Material Planify")}</h1>
+    ${material.subtitulo ? `<p><strong>${escapeHtml(material.subtitulo)}</strong></p>` : ""}
+    ${!directProduct && material.resumo ? `<p>${escapeHtml(material.resumo)}</p>` : ""}
+  </div>
+
+  ${dadosGeraisHtml}
+  ${frontMatterHtml}
+  ${visualHtml ? `<div class="planify-box">${visualHtml}</div>` : ""}
+  ${sectionsHtml}
+  ${material.projeto ? `<div class="planify-box"><h2 class="planify-section-title">Síntese do projeto</h2><p><strong>Problema norteador:</strong> ${escapeHtml(material.projeto.problemaNorteador)}</p><p><strong>Produto final:</strong> ${escapeHtml(material.projeto.produtoFinal)}</p><p><strong>Avaliação:</strong> ${escapeHtml(material.projeto.avaliacao)}</p>${renderList(material.projeto.etapas)}</div>` : ""}
+  ${questionsHtml}
+  ${questionsHtml && teacherHtml ? `<hr class="planify-divider" />` : ""}
+  ${teacherHtml}
+  ${supportHtml}
 </article>`.trim();
 }
 
@@ -1308,7 +1354,9 @@ export function MateriaisClient() {
             <div>
               <p className="text-sm font-black uppercase tracking-[0.25em] text-cyan-300">Prévia</p>
               <h2 className="mt-3 text-3xl font-black text-white">{generatedMaterial.titulo}</h2>
-              <p className="mt-3 text-sm leading-7 text-slate-400">{generatedMaterial.resumo || generatedMaterial.introducao}</p>
+              <p className="mt-3 text-sm leading-7 text-slate-400">
+                {isDirectProductKind(generatedMaterial.tipo) ? "Versão do aluno + gabarito do professor, direto para revisar, imprimir ou editar." : generatedMaterial.resumo || generatedMaterial.introducao}
+              </p>
 
               {generatedMaterial.visualHtml || generatedMaterial.printHtml ? (
                 <div className="mt-6 max-h-[780px] overflow-auto rounded-2xl border border-slate-200 bg-white p-5 text-slate-900" dangerouslySetInnerHTML={{ __html: generatedMaterial.visualHtml || generatedMaterial.printHtml || "" }} />
@@ -1331,8 +1379,8 @@ export function MateriaisClient() {
 
                   {(generatedMaterial.questoes || []).length ? (
                     <div className="rounded-2xl border border-emerald-300/20 bg-emerald-300/10 p-5">
-                      <p className="text-xs font-black uppercase tracking-[0.18em] text-emerald-200">Questões</p>
-                      <h3 className="mt-2 text-xl font-black text-white">{(generatedMaterial.questoes || []).length} questão(ões) preparadas</h3>
+                      <p className="text-xs font-black uppercase tracking-[0.18em] text-emerald-200">Versão do aluno</p>
+                      <h3 className="mt-2 text-xl font-black text-white">{(generatedMaterial.questoes || []).length} questão(ões) preparadas + gabarito</h3>
                       <div className="mt-4 grid gap-3">
                         {(generatedMaterial.questoes || []).slice(0, 4).map((question) => (
                           <div key={question.numero} className="rounded-xl border border-white/10 bg-slate-950/45 p-4">

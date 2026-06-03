@@ -83,6 +83,10 @@ function isHardType(type: string): boolean {
   return ["atividade", "prova", "lista", "revisao", "apostila", "sequencia", "roteiro", "projeto"].includes(t);
 }
 
+function isDirectProductType(type: string): boolean {
+  return ["atividade", "prova", "lista", "revisao"].includes(normalize(type));
+}
+
 export function shouldUseHardPedagogicalEngine(type: string): boolean {
   return isHardType(type);
 }
@@ -519,6 +523,11 @@ function buildQuestions(input: MaterialAIInput, profile: DisciplineProfile, cont
 function sectionsFor(input: MaterialAIInput, profile: DisciplineProfile, conteudos: string[], questions: MaterialAIQuestion[]): MaterialAISection[] {
   const theme = input.tema || "tema estudado";
   const type = normalize(input.tipo);
+
+  if (isDirectProductType(type)) {
+    return [];
+  }
+
   const textBase = buildTextBase(input, profile, conteudos);
   const blocos = [
     `Bloco 1 — Aquecimento: leitura do tema, vocabulário essencial e exemplos iniciais.`,
@@ -745,18 +754,18 @@ function summaryByType(input: MaterialAIInput): string {
   }
 
   if (type === "prova") {
-    return `Avaliação pronta sobre ${tema}, com questões variadas, critérios e gabarito do professor.`;
+    return `Prova pronta: versão do aluno e gabarito do professor.`;
   }
 
   if (type === "lista") {
-    return `Lista de exercícios pronta sobre ${tema}, com prática progressiva e correção orientada.`;
+    return `Lista pronta: versão do aluno e gabarito do professor.`;
   }
 
   if (type === "revisao") {
-    return `Revisão pronta sobre ${tema}, com retomada, exercícios e fechamento da aprendizagem.`;
+    return `Revisão pronta: versão do aluno e gabarito do professor.`;
   }
 
-  return `Atividade sobre ${tema}, com prática orientada, exercícios e gabarito do professor.`;
+  return `Atividade pronta: versão do aluno e gabarito do professor.`;
 }
 
 function projectTeacherGuidance(theme: string): string[] {
@@ -806,21 +815,27 @@ export function buildHardPedagogicalMaterial(input: MaterialAIInput): MaterialAI
     },
     objetivos: input.objetivos ? splitConteudos(input.objetivos) : profile.objetivos,
     conteudos: safeConteudos,
-    orientacoesProfessor: type === "projeto" ? projectTeacherGuidance(input.tema || "tema estudado") : [
+    orientacoesProfessor: type === "projeto" ? projectTeacherGuidance(input.tema || "tema estudado") : isDirectProductType(type) ? [
+      "Aplicar somente a versão do aluno.",
+      "Usar o gabarito separado para correção e devolutiva.",
+    ] : [
       "Aplique a versão do aluno sem mostrar o gabarito.",
       "Explique os comandos e resolva um item-modelo antes da produção individual.",
       "Use a correção comentada para identificar dificuldades, comparar respostas e retomar conceitos.",
       "Valorize justificativas, estratégias e revisão, não apenas respostas finais.",
       "Adapte tempo, quantidade de itens ou apoio conforme o perfil da turma.",
     ],
-    orientacoesAluno: type === "projeto" ? projectStudentGuidance(input.tema || "tema estudado") : [
+    orientacoesAluno: type === "projeto" ? projectStudentGuidance(input.tema || "tema estudado") : isDirectProductType(type) ? [
+      "Leia os comandos com atenção.",
+      "Responda no espaço indicado.",
+    ] : [
       "Leia cada comando com atenção antes de responder.",
       "Responda todos os itens solicitados no enunciado.",
       "Sublinhe palavras importantes do comando.",
       "Justifique respostas quando solicitado.",
       "Revise sua escrita, cálculo ou explicação antes de entregar.",
     ],
-    introducao: profile.abertura,
+    introducao: isDirectProductType(type) ? "" : profile.abertura,
     secoes: sections,
     questoes: questions,
     jogo: undefined,
@@ -863,7 +878,9 @@ export function buildHardPedagogicalMaterial(input: MaterialAIInput): MaterialAI
           "Adaptar o produto final ao tempo disponível e aos recursos da escola.",
           "Registrar evidências do processo durante todas as etapas.",
         ]
-      : [
+      : isDirectProductType(type)
+        ? ["Entregar a versão do aluno e manter o gabarito com o professor."]
+        : [
           "Usar em sala, tarefa, revisão, recuperação ou avaliação formativa.",
           "Abrir no Editor para ajustar cabeçalho, espaço de resposta e apresentação final.",
           "Salvar uma versão do aluno e uma versão do professor com gabarito.",

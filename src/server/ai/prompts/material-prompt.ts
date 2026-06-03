@@ -1,5 +1,6 @@
 import type { MaterialAIInput } from "../../../types/ai";
 import { buildSpecialistPromptBlock } from "../../../lib/materiais/material-specialist-blueprints";
+import { buildMaterialStructureContract } from "../../../lib/materiais/material-structure-contracts";
 
 function normalizeConteudos(conteudos: MaterialAIInput["conteudos"]): string[] {
   if (Array.isArray(conteudos)) {
@@ -18,7 +19,9 @@ function materialRulesByType(type: string): string[] {
   if (normalizedType === "atividade") {
     return [
       "Entregue uma atividade escolar completa, não uma apostila, não uma prova e não um projeto.",
-      "Organize aquecimento, desenvolvimento, prática, desafio e fechamento.",
+      "Não comece com apresentação longa. Entregue a VERSÃO DO ALUNO diretamente, com cabeçalho, comandos e questões.",
+      "Depois entregue GABARITO DO PROFESSOR separado, com respostas esperadas e critérios.",
+      "Organize aquecimento, desenvolvimento, prática, desafio e fechamento apenas dentro dos comandos, sem texto explicativo antes do material.",
       "Crie questões progressivas, contextualizadas e variadas: interpretação, associação, classificação, produção, justificativa, análise, aplicação e síntese.",
       "Inclua enunciados completos, exemplos suficientes, resposta esperada, critério de correção e orientações de aplicação.",
       "A versão do aluno deve ficar sem resposta logo abaixo da questão; o gabarito deve ficar separado.",
@@ -28,7 +31,8 @@ function materialRulesByType(type: string): string[] {
 
   if (normalizedType === "prova") {
     return [
-      "Entregue uma avaliação escolar real, com instruções, distribuição equilibrada de dificuldade e critérios claros.",
+      "Entregue uma avaliação escolar real pronta para aplicar, começando por cabeçalho, instruções breves e questões.",
+      "Não escreva justificativa pedagógica antes da prova. O professor quer a prova pronta.",
       "Inclua questões objetivas com alternativas A-E quando fizer sentido, questões discursivas, questão contextualizada e questão de maior desafio.",
       "Não transforme a prova em apostila: explicações devem ser breves e apenas quando necessárias ao enunciado.",
       "Inclua gabarito comentado e critérios de correção por questão.",
@@ -38,7 +42,8 @@ function materialRulesByType(type: string): string[] {
 
   if (normalizedType === "lista") {
     return [
-      "Entregue lista de exercícios progressiva, com blocos básico, intermediário e desafio.",
+      "Entregue lista de exercícios progressiva pronta para o aluno resolver, sem introdução longa.",
+      "Separe VERSÃO DO ALUNO e GABARITO DO PROFESSOR.",
       "Crie prática suficiente para o aluno treinar de verdade, com comandos variados e contextualizados ao tema.",
       "Inclua gabarito comentado, critérios e indicação de erros comuns para retomada.",
       "Não transforme a lista em apostila longa; foco em prática organizada.",
@@ -48,7 +53,8 @@ function materialRulesByType(type: string): string[] {
 
   if (normalizedType === "revisao") {
     return [
-      "Entregue revisão guiada, com síntese inicial, mapa mental textual, retomada dos conceitos, exercícios, desafio e autoavaliação.",
+      "Entregue revisão guiada objetiva, com síntese curta e foco em exercícios, retomada e gabarito.",
+      "Não escreva apresentação longa antes da revisão.",
       "O material deve ajudar o aluno a lembrar, reorganizar e aplicar o conteúdo.",
       "Inclua gabarito comentado, pontos de atenção e sugestões de retomada para o professor.",
       "Não preencha jogo, projeto nem roteiro.",
@@ -57,7 +63,8 @@ function materialRulesByType(type: string): string[] {
 
   if (normalizedType === "apostila") {
     return [
-      "Entregue uma APOSTILA, não uma atividade solta, não uma prova e não uma sequência de aula.",
+      "Entregue uma APOSTILA pronta, não uma atividade solta, não uma prova e não uma sequência de aula.",
+      "A apostila pode ter apresentação, mas deve ser curta e ir rápido ao conteúdo.",
       "A apostila deve ter capa textual, apresentação, objetivos, capítulos/unidades, explicações consistentes, exemplos contextualizados, boxes de curiosidade, vocabulário, imagens ou infográficos sugeridos, exercícios de fixação, síntese final, glossário e referências/sugestões de aprofundamento adequadas ao nível escolar.",
       "Se houver quantidade de questões/exercícios informada, entregue EXATAMENTE essa quantidade no array questoes e no gabarito separado.",
       "Cada seção precisa ensinar o conteúdo antes de pedir exercício. Não comece com questões.",
@@ -125,6 +132,8 @@ export function buildMaterialSystemInstruction(): string {
     "Você é uma IA pedagógica especialista em materiais didáticos brasileiros para professores da Educação Básica.",
     "Você trabalha para o Planify, uma plataforma educacional premium.",
     "Sua prioridade absoluta é obedecer ao TIPO DE MATERIAL solicitado pelo professor.",
+    "Sua segunda prioridade é entregar o produto pronto, sem preâmbulo, sem justificativa longa e sem explicar o que você vai fazer antes de entregar.",
+    "Para atividade, prova, lista, revisão e exercícios, a entrega deve começar pelo material utilizável: VERSÃO DO ALUNO e depois GABARITO DO PROFESSOR.",
     "Nunca misture formatos: apostila ensina em capítulos; prova avalia; atividade pratica; lista treina; revisão retoma; sequência organiza aulas; projeto investiga e produz; roteiro orienta estudo; jogo entrega peças ou dinâmica pronta.",
     "O material deve ser adequado à etapa, ao ano/série, ao componente curricular e ao tema.",
     "Não transforme tema de Geografia, Ciências, História, Filosofia, Matemática ou Ensino Religioso em atividade de Língua Portuguesa, salvo se o componente escolhido for Língua Portuguesa, Redação ou Escrita Criativa.",
@@ -146,6 +155,7 @@ export function buildMaterialPrompt(input: MaterialAIInput): string {
   const conteudos = normalizeConteudos(input.conteudos);
   const typeRules = materialRulesByType(input.tipo);
   const specialistBlock = buildSpecialistPromptBlock(input);
+  const structureContract = buildMaterialStructureContract(input);
 
   return `
 Gere um material didático profissional para o Planify.
@@ -184,6 +194,9 @@ ${input.observacoes || "Não informado"}
 CONTRATO DE ESPECIALISTA PLANIFY:
 ${specialistBlock}
 
+CONTRATO DE ESTRUTURA VISUAL E PEDAGÓGICA:
+${structureContract}
+
 REGRAS UNIVERSAIS:
 1. O material deve obedecer exatamente ao tipo selecionado.
 2. O conteúdo deve ser profundo, coerente, aplicável, sem repetição e sem encher espaço com frases genéricas.
@@ -207,6 +220,16 @@ REGRAS UNIVERSAIS:
 
 REGRAS ESPECÍFICAS DO TIPO:
 ${typeRules.map((rule) => `- ${rule}`).join("\n")}
+
+CONTRATO DE ENTREGA DIRETA AO PRODUTO:
+- Não escreva frases de abertura como "Este material foi elaborado", "A seguir", "Apresento", "Objetivo deste material" ou justificativas pedagógicas antes do produto.
+- Para atividade, prova, lista, revisão e exercícios: coloque o material em formato direto, com questões no array questoes e gabarito separado no array gabarito.
+- Atividades, exercícios e listas não podem vir como parágrafo corrido dentro de secoes. Devem vir como itens numerados no array questoes.
+- Quando um enunciado tiver mais de uma ação, organize em tópicos curtos usando linhas com "•".
+- A versão do aluno nunca deve revelar resposta logo abaixo da questão.
+- O gabarito do professor deve ser completo, coerente com as questões finais e separado.
+- Se o professor pedir quantidade de questões, isso é contrato: entregar exatamente a quantidade solicitada.
+- Use orientacoesProfessor, orientacoesAluno, sugestoesUso e adaptacoesInclusivas apenas como notas finais curtas, nunca como parte principal antes das questões.
 
 FORMATO JSON EXATO:
 {
@@ -240,7 +263,7 @@ FORMATO JSON EXATO:
     {
       "numero": 1,
       "tipo": "string",
-      "enunciado": "string",
+      "enunciado": "string em formato objetivo; use linhas com • quando houver mais de uma ação",
       "alternativas": ["string"],
       "respostaEsperada": "string",
       "criterioCorrecao": "string"

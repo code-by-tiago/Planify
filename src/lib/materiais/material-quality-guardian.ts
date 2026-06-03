@@ -6,6 +6,11 @@ import type {
 } from "../../types/ai";
 import { buildHardPedagogicalMaterial } from "./pedagogical-hard-engine";
 import {
+  enforceQuestionBulletStructure,
+  shouldUseBulletStructure,
+  structureSectionsForMaterial,
+} from "./material-structure-contracts";
+import {
   buildCompletionQuestion,
   buildContentCoverageSection,
   buildRequiredSections,
@@ -60,6 +65,39 @@ const NUMBER_WORDS: Record<string, number> = {
   quarenta: 40,
 };
 
+const DIRECT_PRODUCT_TYPES = new Set(["atividade", "prova", "lista", "revisao"]);
+
+function isDirectProductMaterial(input: MaterialAIInput): boolean {
+  return DIRECT_PRODUCT_TYPES.has(canonicalMaterialType(input.tipo));
+}
+
+function productTypeLabel(input: MaterialAIInput): string {
+  const labels: Record<string, string> = {
+    atividade: "Atividade",
+    prova: "Prova",
+    lista: "Lista de exercícios",
+    revisao: "Revisão",
+  };
+  return labels[canonicalMaterialType(input.tipo)] || "Material";
+}
+
+function stripPreambleText(value: unknown): string {
+  return String(value || "")
+    .replace(/^(este material foi (elaborado|organizado|preparado)[^.!?]*[.!?]\s*)+/i, "")
+    .replace(/^(a seguir[,\s]+(apresento|segue|temos)[^.!?]*[.!?]\s*)+/i, "")
+    .replace(/^(objetivo deste material[^.!?]*[.!?]\s*)+/i, "")
+    .replace(/^(esta proposta[^.!?]*[.!?]\s*)+/i, "")
+    .trim();
+}
+
+function compactFinalNotes(values: string[], limit = 3): string[] {
+  return normalizeStringList(values)
+    .map((item) => stripPreambleText(item))
+    .filter((item) => item.length > 0)
+    .slice(0, limit);
+}
+
+
 function cleanNumberText(value: string): string {
   return normalizeForPedagogy(value).replace(/\s+/g, "");
 }
@@ -111,23 +149,24 @@ function questionSignature(question: Partial<MaterialAIQuestion>): string {
   return normalizeForPedagogy(`${question.tipo || ""} ${question.enunciado || ""}`).slice(0, 220);
 }
 
-function cleanQuestion(question: Partial<MaterialAIQuestion>, index: number): MaterialAIQuestion {
+function cleanQuestion(question: Partial<MaterialAIQuestion>, index: number, useBulletStructure = false): MaterialAIQuestion {
   const tipo = String(question.tipo || "discursiva contextualizada").trim() || "discursiva contextualizada";
   const enunciado = String(question.enunciado || "").trim();
   const respostaEsperada = String(question.respostaEsperada || "Resposta esperada conforme o conteúdo estudado.").trim();
   const criterioCorrecao = String(question.criterioCorrecao || "Avaliar coerência, domínio do conteúdo, justificativa e clareza.").trim();
+  const safeEnunciado = enunciado || `Responda com base no conteúdo estudado.`;
 
   return {
     numero: index + 1,
     tipo,
-    enunciado: enunciado || `Questão ${index + 1}: responda com base no conteúdo estudado.`,
+    enunciado: useBulletStructure ? enforceQuestionBulletStructure(safeEnunciado) : safeEnunciado,
     alternativas: normalizeStringList(question.alternativas),
     respostaEsperada,
     criterioCorrecao,
   };
 }
 
-function uniqueQuestions(primary: Partial<MaterialAIQuestion>[], fallback: Partial<MaterialAIQuestion>[]): MaterialAIQuestion[] {
+function uniqueQuestions(primary: Partial<MaterialAIQuestion>[], fallback: Partial<MaterialAIQuestion>[], useBulletStructure = false): MaterialAIQuestion[] {
   const signatures = new Set<string>();
   const questions: MaterialAIQuestion[] = [];
 
@@ -135,7 +174,7 @@ function uniqueQuestions(primary: Partial<MaterialAIQuestion>[], fallback: Parti
     const signature = questionSignature(question);
     if (!signature || signatures.has(signature)) return;
     signatures.add(signature);
-    questions.push(cleanQuestion(question, questions.length));
+    questions.push(cleanQuestion(question, questions.length, useBulletStructure));
   });
 
   return questions;
@@ -145,12 +184,13 @@ function ensureExactQuestions(input: MaterialAIInput, output: MaterialAIOutput, 
   const expected = requestedQuestionCount(input);
   if (expected === null) return [];
 
-  const merged = uniqueQuestions(output.questoes || [], fallback.questoes || []);
+  const useBulletStructure = shouldUseBulletStructure(input.tipo);
+  const merged = uniqueQuestions(output.questoes || [], fallback.questoes || [], useBulletStructure);
   while (merged.length < expected) {
     merged.push(buildCompletionQuestion(input, merged.length));
   }
 
-  const exact = merged.slice(0, expected).map((question, index) => cleanQuestion(question, index));
+  const exact = merged.slice(0, expected).map((question, index) => cleanQuestion(question, index, useBulletStructure));
 
   if ((output.questoes || []).length !== expected) {
     issues.push({
@@ -202,6 +242,10 @@ function hasSectionForKeywords(sections: MaterialAISection[], keywords: string[]
 }
 
 function ensureBlueprintSections(input: MaterialAIInput, output: MaterialAIOutput, fallback: MaterialAIOutput, issues: QualityIssue[]): MaterialAISection[] {
+  if (isDirectProductMaterial(input)) {
+    return [];
+  }
+
   const blueprint = getMaterialBlueprint(input);
   const current = mergeUniqueSections([...(output.secoes || []), ...(fallback.secoes || [])]);
   const required = buildRequiredSections(input);
@@ -237,6 +281,10 @@ function ensureBlueprintSections(input: MaterialAIInput, output: MaterialAIOutpu
 }
 
 function ensureContentCoverage(input: MaterialAIInput, sections: MaterialAISection[], questions: MaterialAIQuestion[], issues: QualityIssue[]): MaterialAISection[] {
+  if (isDirectProductMaterial(input)) {
+    return sections;
+  }
+
   const contents = normalizeInputContents(input.conteudos);
   if (!contents.length) return sections;
 
@@ -263,6 +311,21 @@ function ensureCommonQualityArrays(input: MaterialAIInput, output: MaterialAIOut
   const blueprint = getMaterialBlueprint(input);
   const theme = String(input.tema || "tema estudado").trim() || "tema estudado";
   const component = String(input.componenteCurricular || "componente curricular").trim() || "componente curricular";
+
+  if (isDirectProductMaterial(input)) {
+    return {
+      objetivos: normalizeStringList(output.objetivos).slice(0, 4),
+      orientacoesProfessor: compactFinalNotes(output.orientacoesProfessor, 3),
+      orientacoesAluno: compactFinalNotes(output.orientacoesAluno, 2),
+      criteriosAvaliacao: normalizeStringList(output.criteriosAvaliacao).length ? normalizeStringList(output.criteriosAvaliacao).slice(0, 5) : [
+        "Correção de acordo com o gabarito.",
+        "Clareza, organização e coerência nas respostas.",
+        "Justificativas compatíveis com o componente curricular quando solicitadas.",
+      ],
+      adaptacoesInclusivas: compactFinalNotes(output.adaptacoesInclusivas, 3),
+      sugestoesUso: compactFinalNotes(output.sugestoesUso, 2),
+    };
+  }
 
   return {
     objetivos: normalizeStringList(output.objetivos).length ? normalizeStringList(output.objetivos) : [
@@ -352,12 +415,19 @@ export function guardMaterialQuality(input: MaterialAIInput, output: MaterialAIO
   const withoutWrongBlocks = removeWrongBlocks(input, output);
   const questions = ensureExactQuestions(input, withoutWrongBlocks, fallback, issues);
   const sectionsFromBlueprint = ensureBlueprintSections(input, withoutWrongBlocks, fallback, issues);
-  const sections = ensureContentCoverage(input, sectionsFromBlueprint, questions, issues);
+  const sections = structureSectionsForMaterial(input.tipo, ensureContentCoverage(input, sectionsFromBlueprint, questions, issues), input.tema);
   const qualityArrays = ensureCommonQualityArrays(input, withoutWrongBlocks);
   const specialBlocks = ensureSpecialBlocks(input, withoutWrongBlocks);
 
   const title = String(withoutWrongBlocks.titulo || input.titulo || `${input.tipo} — ${input.tema}`).trim();
   const subtitle = String(withoutWrongBlocks.subtitulo || `${blueprint.specialistName.replace("Especialista Planify em ", "")} para ${input.anoSerie}`).trim();
+
+  const directProduct = isDirectProductMaterial(input);
+  const directSummary = `${productTypeLabel(input)} pronta: versão do aluno e gabarito do professor.`;
+  const cleanResumo = directProduct ? directSummary : stripPreambleText(withoutWrongBlocks.resumo || blueprint.qualityMission);
+  const cleanIntroducao = directProduct
+    ? ""
+    : stripPreambleText(withoutWrongBlocks.introducao || `Material organizado para trabalhar ${input.tema} em ${input.componenteCurricular}.`);
 
   return {
     ...withoutWrongBlocks,
@@ -366,10 +436,10 @@ export function guardMaterialQuality(input: MaterialAIInput, output: MaterialAIO
     titulo: title,
     subtitulo: subtitle,
     tipo: blueprint.kind,
-    resumo: String(withoutWrongBlocks.resumo || blueprint.qualityMission).trim(),
-    introducao: String(withoutWrongBlocks.introducao || `Este material foi organizado para trabalhar ${input.tema} em ${input.componenteCurricular}, respeitando o ano/série, a finalidade e o tipo solicitado pelo professor.`).trim(),
+    resumo: cleanResumo,
+    introducao: cleanIntroducao,
     conteudos: normalizeStringList(withoutWrongBlocks.conteudos).length ? normalizeStringList(withoutWrongBlocks.conteudos) : normalizeInputContents(input.conteudos),
-    secoes: sections,
+    secoes: directProduct ? [] : sections,
     questoes: questions,
     gabarito: questions.length ? buildGabarito(questions) : normalizeStringList(withoutWrongBlocks.gabarito),
     alertas: [],

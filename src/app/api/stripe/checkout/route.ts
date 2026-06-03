@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createStripeCheckoutSession } from "../../../../server/stripe/checkout-service";
-import type { BillingPlanKey } from "../../../../types/billing";
+import {
+  normalizeBillingPlanKey,
+  type BillingPlanKey,
+} from "../../../../types/billing";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -10,19 +13,7 @@ function getPlanFromRequest(request: NextRequest): BillingPlanKey | null {
     request.nextUrl.searchParams.get("plan") ||
     request.nextUrl.searchParams.get("tipo");
 
-  if (plan === "monthly" || plan === "yearly") {
-    return plan;
-  }
-
-  if (plan === "mensal") {
-    return "monthly";
-  }
-
-  if (plan === "anual") {
-    return "yearly";
-  }
-
-  return null;
+  return normalizeBillingPlanKey(plan);
 }
 
 function redirectToPlans(request: NextRequest, reason: string) {
@@ -79,20 +70,15 @@ export async function POST(request: NextRequest) {
       tipo?: string;
     };
 
-    const rawPlan = body.plan || body.tipo;
-    const planKey =
-      rawPlan === "monthly" || rawPlan === "mensal"
-        ? "monthly"
-        : rawPlan === "yearly" || rawPlan === "anual"
-          ? "yearly"
-          : null;
+    const planKey = normalizeBillingPlanKey(body.plan || body.tipo);
 
     if (!planKey) {
       return NextResponse.json(
         {
           success: false,
           error: {
-            message: "Plano inválido. Use monthly/yearly ou mensal/anual.",
+            message:
+              "Plano inválido. Use monthly, premium, yearly, mensal ou anual.",
           },
         },
         { status: 400 },

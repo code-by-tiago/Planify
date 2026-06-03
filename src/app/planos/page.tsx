@@ -37,7 +37,7 @@ function getAlert(params: Awaited<NonNullable<PlanosPageProps["searchParams"]>>)
       type: "warning",
       title: "Escolha um plano",
       message:
-        "Selecione mensal ou anual para iniciar o checkout com segurança.",
+        "Selecione Pro mensal, Premium ou Pro anual para iniciar o checkout com segurança.",
     };
   }
 
@@ -56,7 +56,7 @@ function getAlert(params: Awaited<NonNullable<PlanosPageProps["searchParams"]>>)
       title: "Não foi possível iniciar o checkout",
       message:
         params?.message ||
-        "Verifique as variáveis do Stripe no .env.local e tente novamente.",
+        "Verifique as variáveis do Stripe no .env.local e na Vercel e tente novamente.",
     };
   }
 
@@ -93,7 +93,8 @@ export default async function PlanosPage({ searchParams }: PlanosPageProps) {
 
           <p className="mt-6 max-w-3xl text-base leading-8 text-cyan-100/85">
             Acesso aos geradores com IA, planejamentos com BNCC, materiais
-            didáticos, editor e histórico organizado.
+            didáticos, editor, histórico organizado, biblioteca premium e
+            marketplace.
           </p>
 
           {alert && (
@@ -106,28 +107,28 @@ export default async function PlanosPage({ searchParams }: PlanosPageProps) {
           )}
         </div>
 
-        <div className="mt-8 grid gap-6 lg:grid-cols-2">
+        <div className="mt-8 grid gap-6 lg:grid-cols-3">
           {billingPlans.map((plan) => (
             <article
               key={plan.key}
-              className={`relative rounded-[2.5rem] border p-8 shadow-2xl backdrop-blur-2xl ${
+              className={`relative flex min-h-full flex-col rounded-[2.5rem] border p-7 shadow-2xl backdrop-blur-2xl ${
                 plan.highlighted
-                  ? "border-cyan-300/40 bg-cyan-300/10 shadow-cyan-500/10"
+                  ? "border-cyan-300/50 bg-cyan-300/10 shadow-cyan-500/10"
                   : "border-white/10 bg-white/[0.06]"
               }`}
             >
-              {plan.highlighted && (
-                <span className="absolute right-6 top-6 rounded-full border border-cyan-300/30 bg-cyan-300/10 px-4 py-2 text-xs font-black uppercase tracking-[0.18em] text-cyan-100">
-                  Melhor escolha
+              {plan.badgeLabel && (
+                <span className="absolute right-5 top-5 rounded-full border border-cyan-300/30 bg-cyan-300/10 px-4 py-2 text-xs font-black uppercase tracking-[0.18em] text-cyan-100">
+                  {plan.badgeLabel}
                 </span>
               )}
 
-              <p className="text-sm font-black uppercase tracking-[0.25em] text-cyan-300">
+              <p className="pr-28 text-sm font-black uppercase tracking-[0.25em] text-cyan-300">
                 {plan.name}
               </p>
 
-              <div className="mt-6 flex items-end gap-3">
-                <span className="text-5xl font-black text-white">
+              <div className="mt-6 flex flex-wrap items-end gap-3">
+                <span className="text-4xl font-black text-white xl:text-5xl">
                   {plan.priceLabel}
                 </span>
                 <span className="pb-2 text-sm font-bold text-slate-400">
@@ -135,31 +136,33 @@ export default async function PlanosPage({ searchParams }: PlanosPageProps) {
                 </span>
               </div>
 
+              <div className="mt-5 rounded-2xl border border-cyan-300/20 bg-cyan-300/10 px-4 py-3 text-sm font-black text-cyan-100">
+                {plan.creditsLabel}
+              </div>
+
               <p className="mt-5 text-sm leading-7 text-slate-400">
                 {plan.description}
               </p>
 
               <ul className="mt-8 grid gap-3 text-sm leading-6 text-slate-300">
-                <li>• Gerador IA de planejamentos</li>
-                <li>• Gerador IA de materiais didáticos</li>
-                <li>• Editor e histórico de documentos</li>
-                <li>• Biblioteca premium e marketplace</li>
-                <li>• Acesso premium ao dashboard</li>
+                {plan.features.map((feature) => (
+                  <li key={feature}>• {feature}</li>
+                ))}
               </ul>
 
-              <Link
-                href={`/api/stripe/checkout?plan=${plan.key}`}
-                prefetch={false}
-                className={`mt-8 flex rounded-2xl px-6 py-4 text-center text-sm font-black transition hover:-translate-y-1 ${
-                  plan.highlighted
-                    ? "bg-white text-slate-950 hover:bg-cyan-100"
-                    : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
-                }`}
-              >
-                <span className="w-full">
-                  Assinar {plan.key === "monthly" ? "mensal" : "anual"}
-                </span>
-              </Link>
+              <div className="mt-auto pt-8">
+                <Link
+                  href={`/api/stripe/checkout?plan=${plan.key}`}
+                  prefetch={false}
+                  className={`flex rounded-2xl px-6 py-4 text-center text-sm font-black transition hover:-translate-y-1 ${
+                    plan.highlighted
+                      ? "bg-white text-slate-950 hover:bg-cyan-100"
+                      : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
+                  }`}
+                >
+                  <span className="w-full">{plan.ctaLabel}</span>
+                </Link>
+              </div>
             </article>
           ))}
         </div>
@@ -169,10 +172,12 @@ export default async function PlanosPage({ searchParams }: PlanosPageProps) {
             Segurança
           </p>
           <h2 className="mt-3 text-3xl font-black text-white">
-            
+            Checkout seguro e créditos controlados pelo Planify.
           </h2>
           <p className="mt-3 text-sm leading-7 text-slate-400">
-            
+            Os botões criam sessões de assinatura no servidor. A Stripe processa
+            o pagamento, enquanto o Planify controla plano ativo, créditos,
+            histórico e acesso premium no banco de dados.
           </p>
         </div>
       </section>

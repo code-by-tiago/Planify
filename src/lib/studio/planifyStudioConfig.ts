@@ -19,7 +19,21 @@ export type MaterialMode =
   | "projeto"
   | "jogo"
   | "sequencia"
-  | "resumo";
+  | "resumo"
+  | "lista"
+  | "plano-aula"
+  | "flashcards"
+  | "redacao"
+  | "mapa-mental";
+
+export type MaterialCategory =
+  | "todos"
+  | "planejamento"
+  | "preparar-aulas"
+  | "avaliacoes"
+  | "engajar"
+  | "correcao"
+  | "infantil";
 
 export type MaterialModeConfig = {
   id: MaterialMode;
@@ -27,6 +41,8 @@ export type MaterialModeConfig = {
   shortTitle: string;
   icon: string;
   description: string;
+  category: MaterialCategory;
+  popular?: boolean;
   loadingTitle: string;
   loadingDescription: string;
   primaryFieldLabel: string;
@@ -51,12 +67,12 @@ export const studioAreas: StudioArea[] = [
     slug: "materiais",
     title: "Materiais Didáticos",
     shortTitle: "Materiais",
-    subtitle: "Apostilas, atividades e jogos",
+    subtitle: "Apostilas, provas, slides e jogos",
     description:
       "Crie materiais com estrutura adequada para cada formato, sem misturar tipos.",
     href: "/materiais",
     icon: "✨",
-    badge: "Novo Studio",
+    badge: "Studio",
     featured: true,
     accent: "from-violet-500 to-fuchsia-400",
   },
@@ -129,40 +145,45 @@ export const studioAreas: StudioArea[] = [
   },
 ];
 
+export const materialCategories: {
+  id: MaterialCategory;
+  label: string;
+  icon: string;
+}[] = [
+  { id: "todos", label: "Todos", icon: "✨" },
+  { id: "planejamento", label: "Planejamento", icon: "📋" },
+  { id: "preparar-aulas", label: "Preparar aulas", icon: "🎬" },
+  { id: "avaliacoes", label: "Avaliações", icon: "✅" },
+  { id: "engajar", label: "Engajar alunos", icon: "🎲" },
+  { id: "correcao", label: "Correção", icon: "✍️" },
+  { id: "infantil", label: "Educação infantil", icon: "🧸" },
+];
+
 export const materialModes: MaterialModeConfig[] = [
   {
-    id: "apostila",
-    title: "Apostila completa",
-    shortTitle: "Apostila",
-    icon: "📘",
+    id: "slides",
+    title: "Apresentação de Slides",
+    shortTitle: "Slides",
+    icon: "🖼️",
+    category: "preparar-aulas",
+    popular: true,
     description:
-      "Explicação, exemplos, atividades, gabarito e estrutura pronta para impressão.",
-    loadingTitle: "Gerando sua apostila com IA...",
+      "Aula em slides com títulos curtos, tópicos e roteiro do professor.",
+    loadingTitle: "Criando seus slides...",
     loadingDescription:
-      "Organizando explicações, exemplos, atividades e gabarito em uma estrutura limpa.",
-    primaryFieldLabel: "Tema da apostila",
-    accent: "from-blue-500 to-cyan-400",
-  },
-  {
-    id: "atividade",
-    title: "Atividade pedagógica",
-    shortTitle: "Atividade",
-    icon: "🧩",
-    description:
-      "Comandos claros para alunos, objetivos, tempo estimado e avaliação.",
-    loadingTitle: "Criando sua atividade...",
-    loadingDescription:
-      "Montando comandos, etapas, critérios e proposta adequada à turma.",
-    primaryFieldLabel: "Tema da atividade",
-    accent: "from-emerald-500 to-teal-400",
+      "Separando ideias por telas, com sequência didática e sugestões visuais.",
+    primaryFieldLabel: "Tema da apresentação",
+    accent: "from-violet-500 to-purple-400",
   },
   {
     id: "prova",
-    title: "Prova avaliativa",
+    title: "Prova Avaliativa",
     shortTitle: "Prova",
-    icon: "✅",
+    icon: "📄",
+    category: "avaliacoes",
+    popular: true,
     description:
-      "Questões objetivas e discursivas, níveis de dificuldade, instruções e gabarito.",
+      "Questões objetivas e discursivas, instruções, pontuação e gabarito.",
     loadingTitle: "Gerando sua prova...",
     loadingDescription:
       "Distribuindo questões, dificuldade, gabarito e critérios de correção.",
@@ -170,36 +191,55 @@ export const materialModes: MaterialModeConfig[] = [
     accent: "from-amber-500 to-orange-400",
   },
   {
-    id: "slides",
-    title: "Roteiro de slides",
-    shortTitle: "Slides",
-    icon: "🖼️",
+    id: "lista",
+    title: "Lista de Exercícios",
+    shortTitle: "Exercícios",
+    icon: "📝",
+    category: "avaliacoes",
+    popular: true,
     description:
-      "Aula em formato de slides com títulos curtos, tópicos e roteiro do professor.",
-    loadingTitle: "Criando seus slides...",
+      "Lista objetiva/discursiva com níveis de dificuldade e gabarito.",
+    loadingTitle: "Criando a lista de exercícios...",
     loadingDescription:
-      "Separando ideias por telas, com sequência didática e sugestões visuais.",
-    primaryFieldLabel: "Tema da aula em slides",
-    accent: "from-violet-500 to-purple-400",
+      "Montando questões, comandos, dificuldade e respostas esperadas.",
+    primaryFieldLabel: "Assunto da lista",
+    accent: "from-blue-500 to-cyan-400",
   },
   {
-    id: "projeto",
-    title: "Projeto pedagógico",
-    shortTitle: "Projeto",
-    icon: "🚀",
+    id: "plano-aula",
+    title: "Plano de Aula",
+    shortTitle: "Plano de Aula",
+    icon: "📋",
+    category: "planejamento",
+    popular: true,
     description:
-      "Objetivos, etapas, produto final, avaliação, cronograma e interdisciplinaridade.",
-    loadingTitle: "Estruturando seu projeto...",
+      "Plano de aula com objetivos, desenvolvimento, recursos e avaliação.",
+    loadingTitle: "Estruturando o plano de aula...",
     loadingDescription:
-      "Criando etapas, entregáveis, critérios avaliativos e cronograma pedagógico.",
-    primaryFieldLabel: "Tema do projeto",
-    accent: "from-rose-500 to-pink-400",
+      "Organizando objetivos, metodologia, recursos e avaliação.",
+    primaryFieldLabel: "Tema da aula",
+    accent: "from-sky-500 to-cyan-400",
+  },
+  {
+    id: "sequencia",
+    title: "Sequência Didática",
+    shortTitle: "Sequência",
+    icon: "🗂️",
+    category: "planejamento",
+    description:
+      "Conteúdo distribuído em aulas com objetivos, atividades e avaliação.",
+    loadingTitle: "Montando a sequência didática...",
+    loadingDescription:
+      "Organizando aulas, progressão, atividades e avaliação formativa.",
+    primaryFieldLabel: "Tema da sequência",
+    accent: "from-cyan-500 to-sky-400",
   },
   {
     id: "jogo",
-    title: "Jogo pedagógico",
+    title: "Jogo Pedagógico",
     shortTitle: "Jogos",
     icon: "🎲",
+    category: "engajar",
     description:
       "Caça-palavras, cruzadinha, quiz, bingo, trilha e jogos com layout próprio.",
     loadingTitle: "Criando seu jogo pedagógico...",
@@ -209,23 +249,11 @@ export const materialModes: MaterialModeConfig[] = [
     accent: "from-fuchsia-500 to-pink-400",
   },
   {
-    id: "sequencia",
-    title: "Sequência didática",
-    shortTitle: "Sequência",
-    icon: "🪜",
-    description:
-      "Aulas encadeadas com objetivos, desenvolvimento e avaliação por etapa.",
-    loadingTitle: "Montando a sequência didática...",
-    loadingDescription:
-      "Organizando aulas, progressão, atividades e avaliação formativa.",
-    primaryFieldLabel: "Tema da sequência",
-    accent: "from-cyan-500 to-sky-400",
-  },
-  {
     id: "resumo",
-    title: "Resumo guiado",
+    title: "Resumo",
     shortTitle: "Resumo",
-    icon: "🔎",
+    icon: "📑",
+    category: "preparar-aulas",
     description:
       "Resumo claro, tópicos essenciais, glossário e perguntas de revisão.",
     loadingTitle: "Preparando seu resumo...",
@@ -234,13 +262,97 @@ export const materialModes: MaterialModeConfig[] = [
     primaryFieldLabel: "Tema do resumo",
     accent: "from-slate-600 to-slate-400",
   },
+  {
+    id: "apostila",
+    title: "Apostila Completa",
+    shortTitle: "Apostila",
+    icon: "📘",
+    category: "preparar-aulas",
+    description:
+      "Explicação, exemplos, atividades, gabarito e estrutura para impressão.",
+    loadingTitle: "Gerando sua apostila com IA...",
+    loadingDescription:
+      "Organizando explicações, exemplos, atividades e gabarito em uma estrutura limpa.",
+    primaryFieldLabel: "Tema da apostila",
+    accent: "from-blue-500 to-cyan-400",
+  },
+  {
+    id: "atividade",
+    title: "Atividade Pedagógica",
+    shortTitle: "Atividade",
+    icon: "🧩",
+    category: "engajar",
+    description:
+      "Comandos claros para alunos, objetivos, tempo estimado e avaliação.",
+    loadingTitle: "Criando sua atividade...",
+    loadingDescription:
+      "Montando comandos, etapas, critérios e proposta adequada à turma.",
+    primaryFieldLabel: "Tema da atividade",
+    accent: "from-emerald-500 to-teal-400",
+  },
+  {
+    id: "projeto",
+    title: "Projeto Pedagógico",
+    shortTitle: "Projeto",
+    icon: "🚀",
+    category: "planejamento",
+    description:
+      "Objetivos, etapas, produto final, cronograma, avaliação e rubrica.",
+    loadingTitle: "Estruturando seu projeto...",
+    loadingDescription:
+      "Criando etapas, entregáveis, critérios avaliativos e cronograma pedagógico.",
+    primaryFieldLabel: "Tema do projeto",
+    accent: "from-rose-500 to-pink-400",
+  },
+  {
+    id: "flashcards",
+    title: "Flashcards",
+    shortTitle: "Flashcards",
+    icon: "🃏",
+    category: "engajar",
+    description:
+      "Cartões de pergunta e resposta para revisão rápida e estudo ativo.",
+    loadingTitle: "Criando flashcards...",
+    loadingDescription:
+      "Transformando o conteúdo em cartões objetivos de revisão.",
+    primaryFieldLabel: "Tema dos flashcards",
+    accent: "from-lime-500 to-emerald-400",
+  },
+  {
+    id: "redacao",
+    title: "Corretor de Redação",
+    shortTitle: "Redação",
+    icon: "✍️",
+    category: "correcao",
+    description:
+      "Critérios, devolutiva, pontos de melhoria e sugestão de reescrita.",
+    loadingTitle: "Preparando correção orientada...",
+    loadingDescription:
+      "Organizando critérios, devolutiva e sugestões pedagógicas.",
+    primaryFieldLabel: "Tema ou proposta da redação",
+    accent: "from-red-500 to-rose-400",
+  },
+  {
+    id: "mapa-mental",
+    title: "Mapa Mental",
+    shortTitle: "Mapa Mental",
+    icon: "🧠",
+    category: "preparar-aulas",
+    description:
+      "Organização visual em tópicos centrais, ramos e conceitos conectados.",
+    loadingTitle: "Criando mapa mental...",
+    loadingDescription:
+      "Organizando conceitos, relações e tópicos essenciais.",
+    primaryFieldLabel: "Tema do mapa mental",
+    accent: "from-indigo-500 to-violet-400",
+  },
 ];
 
 export const quickCreate = [
   { label: "Plano anual", href: "/planejamentos", icon: "📅" },
   { label: "Plano trimestral", href: "/planejamentos", icon: "🧭" },
   { label: "Apostila", href: "/materiais?tipo=apostila", icon: "📘" },
-  { label: "Prova", href: "/materiais?tipo=prova", icon: "✅" },
+  { label: "Prova", href: "/materiais?tipo=prova", icon: "📄" },
   { label: "Slides", href: "/materiais?tipo=slides", icon: "🖼️" },
   { label: "Jogo", href: "/materiais?tipo=jogo", icon: "🎲" },
 ];

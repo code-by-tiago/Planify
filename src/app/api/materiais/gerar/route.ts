@@ -11,7 +11,12 @@ type TipoMaterial =
   | "projeto"
   | "jogo"
   | "sequencia"
-  | "resumo";
+  | "resumo"
+  | "lista"
+  | "plano-aula"
+  | "flashcards"
+  | "redacao"
+  | "mapa-mental";
 
 type MaterialRequest = {
   tipoMaterial?: TipoMaterial;
@@ -102,10 +107,6 @@ function fallbackTextToHtml(value: string) {
         return `<h2>${escapeHtml(line.replace(/^#{1,3}\s+/, ""))}</h2>`;
       }
 
-      if (/^[-•]\s+/.test(line)) {
-        return `<p>${escapeHtml(line)}</p>`;
-      }
-
       return `<p>${escapeHtml(line)}</p>`;
     })
     .join("\n");
@@ -120,11 +121,16 @@ function tipoLabel(tipo: TipoMaterial) {
     apostila: "apostila completa",
     atividade: "atividade pedagógica",
     prova: "prova avaliativa",
-    slides: "roteiro de slides",
+    slides: "apresentação de slides",
     projeto: "projeto pedagógico",
     jogo: "jogo pedagógico",
     sequencia: "sequência didática",
     resumo: "resumo guiado",
+    lista: "lista de exercícios",
+    "plano-aula": "plano de aula",
+    flashcards: "flashcards",
+    redacao: "correção orientada de redação",
+    "mapa-mental": "mapa mental",
   };
 
   return labels[tipo] || "material didático";
@@ -162,6 +168,16 @@ function estruturaPorTipo(payload: MaterialRequest) {
       "Estruture como sequência didática: objetivo geral, aulas/etapas numeradas, habilidades trabalhadas de forma descritiva, desenvolvimento, atividades, recursos, avaliação formativa e fechamento.",
     resumo:
       "Estruture como resumo guiado: explicação clara, tópicos essenciais, conceitos-chave, glossário, exemplos rápidos, perguntas de revisão e síntese final.",
+    lista:
+      "Estruture como lista de exercícios: cabeçalho, instruções, questões numeradas, variedade de formatos, níveis de dificuldade, espaço de resposta e gabarito quando solicitado.",
+    "plano-aula":
+      "Estruture como plano de aula: identificação, tema, objetivos, conhecimentos prévios, metodologia, desenvolvimento por etapas, recursos, avaliação, adaptação e fechamento.",
+    flashcards:
+      "Estruture como flashcards: tabela com frente e verso, pergunta objetiva, resposta curta, nível de dificuldade e sugestão de uso em sala.",
+    redacao:
+      "Estruture como correção orientada de redação: critérios, rubrica, pontos fortes, pontos de melhoria, orientações de reescrita e proposta de intervenção quando fizer sentido.",
+    "mapa-mental":
+      "Estruture como mapa mental textual: tema central, ramos principais, sub-ramos, conceitos-chave, conexões e versão resumida para copiar no quadro.",
   };
 
   return `${base}\n${common}\n${gabarito}\n${byType[tipo]}`;

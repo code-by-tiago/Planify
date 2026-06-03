@@ -4,7 +4,7 @@ import { quickCreate, studioAreas } from "@/lib/studio/planifyStudioConfig";
 function PlanifyLogo() {
   return (
     <div className="flex items-center gap-3">
-      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-950 text-xl text-white shadow-lg shadow-slate-300">
+      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-950 text-xl font-black text-white shadow-lg shadow-slate-300">
         P
       </div>
       <div>
@@ -176,36 +176,6 @@ export default function PlanifyStudioShell() {
                     </div>
                   </Link>
                 ))}
-              </div>
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-3">
-              <div className="rounded-[2rem] border border-cyan-100 bg-cyan-50 p-5">
-                <p className="text-2xl">⚡</p>
-                <p className="mt-3 text-sm font-black text-slate-950">
-                  Fluxo rápido
-                </p>
-                <p className="mt-1 text-xs leading-5 text-slate-600">
-                  Menos campos na tela e mais decisão guiada por tipo.
-                </p>
-              </div>
-              <div className="rounded-[2rem] border border-violet-100 bg-violet-50 p-5">
-                <p className="text-2xl">🎯</p>
-                <p className="mt-3 text-sm font-black text-slate-950">
-                  Motores separados
-                </p>
-                <p className="mt-1 text-xs leading-5 text-slate-600">
-                  Apostila, prova, slides e jogos não se misturam.
-                </p>
-              </div>
-              <div className="rounded-[2rem] border border-emerald-100 bg-emerald-50 p-5">
-                <p className="text-2xl">🧠</p>
-                <p className="mt-3 text-sm font-black text-slate-950">
-                  IA integrada
-                </p>
-                <p className="mt-1 text-xs leading-5 text-slate-600">
-                  Mantém a geração do Planify com backend próprio.
-                </p>
               </div>
             </div>
           </div>

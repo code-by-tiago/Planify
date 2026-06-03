@@ -1,5 +1,9 @@
 import Link from "next/link";
-import { materialModes, quickCreate, studioAreas } from "@/lib/studio/planifyStudioConfig";
+import {
+  materialModes,
+  quickCreate,
+  studioAreas,
+} from "@/lib/studio/planifyStudioConfig";
 
 export default function HomePage() {
   const mainAreas = studioAreas.slice(0, 6);
@@ -77,27 +81,6 @@ export default function HomePage() {
               >
                 Ver planos
               </Link>
-            </div>
-
-            <div className="mt-8 grid grid-cols-3 gap-3 max-w-xl">
-              <div className="rounded-3xl border border-white/10 bg-white/10 p-4">
-                <p className="text-2xl font-black">DOCX</p>
-                <p className="mt-1 text-xs font-semibold text-slate-400">
-                  modelos oficiais
-                </p>
-              </div>
-              <div className="rounded-3xl border border-white/10 bg-white/10 p-4">
-                <p className="text-2xl font-black">BNCC</p>
-                <p className="mt-1 text-xs font-semibold text-slate-400">
-                  seleção guiada
-                </p>
-              </div>
-              <div className="rounded-3xl border border-white/10 bg-white/10 p-4">
-                <p className="text-2xl font-black">IA</p>
-                <p className="mt-1 text-xs font-semibold text-slate-400">
-                  materiais reais
-                </p>
-              </div>
             </div>
           </div>
 

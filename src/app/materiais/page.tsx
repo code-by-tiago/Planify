@@ -2,9 +2,12 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import PremiumAccessGate from "@/components/premium/PremiumAccessGate";
 import {
   getMaterialMode,
+  materialCategories,
   materialModes,
+  type MaterialCategory,
   type MaterialMode,
 } from "@/lib/studio/planifyStudioConfig";
 
@@ -28,27 +31,32 @@ type MaterialHistoryItem = {
   createdAt: string;
 };
 
-const exemplosPorTipo: Record<MaterialMode, string[]> = {
-  apostila: ["AmazÃ´nia e biodiversidade", "FraÃ§Ãµes no cotidiano", "Romantismo no Brasil"],
-  atividade: ["InterpretaÃ§Ã£o de texto", "Sistema solar", "Porcentagem"],
-  prova: ["RevoluÃ§Ã£o Industrial", "EquaÃ§Ãµes do 1Âº grau", "Ecologia"],
-  slides: ["Estados fÃ­sicos da matÃ©ria", "Verbos", "Brasil RepÃºblica"],
-  projeto: ["Feira de ciÃªncias", "ConsciÃªncia negra", "EducaÃ§Ã£o financeira"],
-  jogo: ["Biomas brasileiros", "Tabuada", "Classes gramaticais"],
-  sequencia: ["Leitura e produÃ§Ã£o textual", "Geometria plana", "Ãgua e sociedade"],
-  resumo: ["Ciclo da Ã¡gua", "FotossÃ­ntese", "MÃ©dia, moda e mediana"],
-};
-
 const formatoJogos: { id: FormatoJogo; label: string; icon: string }[] = [
-  { id: "caca-palavras", label: "CaÃ§a-palavras", icon: "ðŸ” " },
-  { id: "cruzadinha", label: "Cruzadinha", icon: "âœš" },
-  { id: "quiz", label: "Quiz", icon: "âš¡" },
-  { id: "bingo", label: "Bingo", icon: "ðŸŽŸï¸" },
-  { id: "trilha", label: "Trilha", icon: "ðŸ›¤ï¸" },
-  { id: "memoria", label: "MemÃ³ria", icon: "ðŸƒ" },
+  { id: "caca-palavras", label: "Caça-palavras", icon: "🔠" },
+  { id: "cruzadinha", label: "Cruzadinha", icon: "✚" },
+  { id: "quiz", label: "Quiz", icon: "⚡" },
+  { id: "bingo", label: "Bingo", icon: "🎟️" },
+  { id: "trilha", label: "Trilha", icon: "🛤️" },
+  { id: "memoria", label: "Memória", icon: "🃏" },
 ];
 
-function escapeHtml(value: string) {
+const sugestoesTema: Record<MaterialMode, string[]> = {
+  apostila: ["Amazônia e biodiversidade", "Frações no cotidiano", "Romantismo no Brasil"],
+  atividade: ["Interpretação de texto", "Sistema solar", "Porcentagem"],
+  prova: ["Revolução Industrial", "Equações do 1º grau", "Ecologia"],
+  slides: ["Estados físicos da matéria", "Verbos", "Brasil República"],
+  projeto: ["Feira de ciências", "Consciência negra", "Educação financeira"],
+  jogo: ["Biomas brasileiros", "Tabuada", "Classes gramaticais"],
+  sequencia: ["Leitura e produção textual", "Geometria plana", "Água e sociedade"],
+  resumo: ["Ciclo da água", "Fotossíntese", "Média, moda e mediana"],
+  lista: ["Funções do 1º grau", "Sistema digestório", "Crase"],
+  "plano-aula": ["Amazônia", "Porcentagem", "Gêneros textuais"],
+  flashcards: ["Revolução Francesa", "Ecossistemas", "Classes de palavras"],
+  redacao: ["Meio ambiente", "Tecnologia na educação", "Cidadania digital"],
+  "mapa-mental": ["Fotossíntese", "Brasil Colônia", "Figuras de linguagem"],
+};
+
+function escapeHtml(value: string): string {
   return value
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
@@ -57,7 +65,7 @@ function escapeHtml(value: string) {
     .replaceAll("'", "&#039;");
 }
 
-function textToHtml(value: string) {
+function textToHtml(value: string): string {
   const clean = value.replace(/```html|```/g, "").trim();
 
   if (/<[a-z][\s\S]*>/i.test(clean)) {
@@ -70,21 +78,13 @@ function textToHtml(value: string) {
     .filter(Boolean);
 
   if (lines.length === 0) {
-    return "<p>Material gerado sem conteÃºdo textual.</p>";
+    return "<p>Material gerado sem conteúdo textual.</p>";
   }
 
   return lines
     .map((line) => {
       if (/^#{1,3}\s+/.test(line)) {
         return `<h2>${escapeHtml(line.replace(/^#{1,3}\s+/, ""))}</h2>`;
-      }
-
-      if (/^\d+[\).\s-]/.test(line) || /^[-â€¢]/.test(line)) {
-        return `<p>${escapeHtml(line)}</p>`;
-      }
-
-      if (line.length < 86 && line === line.toUpperCase()) {
-        return `<h2>${escapeHtml(line)}</h2>`;
       }
 
       return `<p>${escapeHtml(line)}</p>`;
@@ -129,13 +129,15 @@ function extractHtmlFromResponse(data: unknown): string {
   return "";
 }
 
-function buildTitle(mode: MaterialMode, tema: string) {
+function buildTitle(mode: MaterialMode, tema: string): string {
   const config = getMaterialMode(mode);
-  return `${config.shortTitle} â€” ${tema || "Material Planify"}`;
+  return `${config.shortTitle} — ${tema || "Material Planify"}`;
 }
 
-export default function MateriaisPage() {
-  const [tipo, setTipo] = useState<MaterialMode>("apostila");
+function MateriaisStudio() {
+  const [categoria, setCategoria] = useState<MaterialCategory>("todos");
+  const [tipo, setTipo] = useState<MaterialMode>("slides");
+  const [modalAberto, setModalAberto] = useState(false);
   const [tema, setTema] = useState("");
   const [etapa, setEtapa] = useState("Ensino Fundamental");
   const [anoSerie, setAnoSerie] = useState("");
@@ -148,20 +150,45 @@ export default function MateriaisPage() {
   const [resultadoHtml, setResultadoHtml] = useState("");
   const [erro, setErro] = useState("");
   const [loading, setLoading] = useState(false);
+  const [busca, setBusca] = useState("");
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const tipoUrl = params.get("tipo");
+
     if (materialModes.some((mode) => mode.id === tipoUrl)) {
       setTipo(tipoUrl as MaterialMode);
+      setModalAberto(true);
     }
   }, []);
 
   const mode = useMemo(() => getMaterialMode(tipo), [tipo]);
   const isJogo = tipo === "jogo";
-  const exemplos = exemplosPorTipo[tipo];
 
-  function limparTudo() {
+  const ferramentasFiltradas = useMemo(() => {
+    const term = busca.trim().toLowerCase();
+
+    return materialModes.filter((item) => {
+      const matchCategoria =
+        categoria === "todos" || item.category === categoria;
+      const matchBusca =
+        !term ||
+        item.title.toLowerCase().includes(term) ||
+        item.shortTitle.toLowerCase().includes(term) ||
+        item.description.toLowerCase().includes(term);
+
+      return matchCategoria && matchBusca;
+    });
+  }, [busca, categoria]);
+
+  function selecionarFerramenta(novoTipo: MaterialMode) {
+    setTipo(novoTipo);
+    setResultadoHtml("");
+    setErro("");
+    setModalAberto(true);
+  }
+
+  function limparFormulario() {
     setTema("");
     setAnoSerie("");
     setComponente("");
@@ -194,7 +221,7 @@ export default function MateriaisPage() {
 
     keys.forEach((key) => {
       try {
-        const current = JSON.parse(localStorage.getItem(key) || "[]");
+        const current = JSON.parse(localStorage.getItem(key) || "[]") as unknown;
         const list = Array.isArray(current) ? current : [];
         localStorage.setItem(key, JSON.stringify([item, ...list].slice(0, 50)));
       } catch {
@@ -246,7 +273,6 @@ body{font-family:Arial,sans-serif;line-height:1.45;color:#111827;padding:32px;}
 h1,h2,h3{color:#0f172a;}
 table{border-collapse:collapse;width:100%;}
 td,th{border:1px solid #d1d5db;padding:8px;}
-.section{margin:20px 0;}
 </style>
 </head>
 <body>${resultadoHtml}</body>
@@ -273,7 +299,7 @@ td,th{border:1px solid #d1d5db;padding:8px;}
     }
 
     if (!anoSerie.trim()) {
-      setErro("Informe o ano/sÃ©rie para adequar a linguagem.");
+      setErro("Informe o ano/série para adequar a linguagem.");
       return;
     }
 
@@ -302,7 +328,7 @@ td,th{border:1px solid #d1d5db;padding:8px;}
         formatoJogo: isJogo ? formatoJogo : null,
         incluirGabarito,
         orientacaoDeQualidade:
-          "Gerar material pedagÃ³gico profissional, bem estruturado, sem misturar formatos, pronto para ediÃ§Ã£o e impressÃ£o.",
+          "Gerar material pedagógico profissional, bem estruturado, sem misturar formatos, pronto para edição e impressão.",
       };
 
       const response = await fetch("/api/materiais/gerar", {
@@ -313,13 +339,13 @@ td,th{border:1px solid #d1d5db;padding:8px;}
         body: JSON.stringify(payload),
       });
 
-      const data = await response.json().catch(() => null);
+      const data = (await response.json().catch(() => null)) as unknown;
 
       if (!response.ok) {
         const message =
           data && typeof data === "object" && "message" in data
             ? String((data as { message?: unknown }).message)
-            : "NÃ£o foi possÃ­vel gerar o material.";
+            : "Não foi possível gerar o material.";
         throw new Error(message);
       }
 
@@ -327,7 +353,7 @@ td,th{border:1px solid #d1d5db;padding:8px;}
 
       if (!html) {
         throw new Error(
-          "A API respondeu, mas nÃ£o retornou conteÃºdo em um formato reconhecido."
+          "A API respondeu, mas não retornou conteúdo em um formato reconhecido."
         );
       }
 
@@ -345,354 +371,470 @@ td,th{border:1px solid #d1d5db;padding:8px;}
   }
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,#f0f9ff_0,#f8fafc_40%,#ffffff_100%)] text-slate-950">
-      {loading ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-[2rem] border border-white/40 bg-white p-6 text-center shadow-2xl">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-slate-950 text-3xl text-white">
-              {mode.icon}
+    <main className="min-h-screen bg-[#f6f7fb] text-slate-950">
+      <div className="grid min-h-screen lg:grid-cols-[248px_1fr]">
+        <aside className="hidden border-r border-slate-200 bg-white px-4 py-5 lg:block">
+          <Link href="/dashboard" className="mb-6 flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-950 text-lg font-black text-white">
+              P
             </div>
-            <h2 className="mt-5 text-2xl font-black text-slate-950">
-              {mode.loadingTitle}
-            </h2>
-            <p className="mt-2 text-sm font-medium leading-6 text-slate-600">
-              {mode.loadingDescription}
-            </p>
-            <div className="mt-6 h-2 overflow-hidden rounded-full bg-slate-100">
-              <div className="h-full w-2/3 animate-pulse rounded-full bg-slate-950" />
+            <div>
+              <p className="text-sm font-black text-slate-950">Planify</p>
+              <p className="text-xs font-bold text-slate-400">Studio</p>
             </div>
-          </div>
-        </div>
-      ) : null}
+          </Link>
 
-      <div className="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-4 py-4 sm:px-6 lg:px-8">
-        <header className="mb-4 flex flex-wrap items-center justify-between gap-4 rounded-[2rem] border border-white bg-white/85 px-5 py-4 shadow-xl shadow-slate-200 backdrop-blur">
-          <div>
+          <nav className="space-y-1">
             <Link
               href="/dashboard"
-              className="text-xs font-black uppercase tracking-[0.22em] text-slate-400 transition hover:text-slate-950"
+              className="flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-black text-slate-600 transition hover:bg-slate-100"
             >
-              â† Voltar ao Studio
+              🏠 Início
             </Link>
-            <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">
-              Gerador IA de Materiais
-            </h1>
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={limparTudo}
-              className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 transition hover:border-slate-950"
+            <Link
+              href="/materiais"
+              className="flex items-center gap-3 rounded-2xl bg-violet-50 px-3 py-3 text-sm font-black text-violet-700"
             >
-              Limpar tudo
-            </button>
+              ✨ Materiais
+            </Link>
+            <Link
+              href="/planejamentos"
+              className="flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-black text-slate-600 transition hover:bg-slate-100"
+            >
+              📋 Planejamentos
+            </Link>
             <Link
               href="/editor"
-              className="rounded-2xl bg-slate-950 px-4 py-2 text-sm font-black text-white shadow-lg shadow-slate-300 transition hover:-translate-y-0.5"
+              className="flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-black text-slate-600 transition hover:bg-slate-100"
             >
-              Abrir Editor
+              📝 Editor
             </Link>
-          </div>
-        </header>
-
-        <section className="grid flex-1 gap-4 lg:grid-cols-[0.92fr_1.08fr]">
-          <aside className="rounded-[2.2rem] border border-white bg-white/90 p-4 shadow-xl shadow-slate-200 backdrop-blur">
-            <div className="mb-4 px-2">
-              <p className="text-sm font-black uppercase tracking-[0.2em] text-slate-400">
-                Escolha o que criar
-              </p>
-              <p className="mt-1 text-sm font-medium text-slate-600">
-                Cada tipo usa estrutura prÃ³pria. Jogos nÃ£o aparecem misturados
-                com apostilas ou atividades.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              {materialModes.map((item) => {
-                const active = item.id === tipo;
-
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => {
-                      setTipo(item.id);
-                      setResultadoHtml("");
-                      setErro("");
-                    }}
-                    className={`group rounded-3xl border p-4 text-left transition hover:-translate-y-1 ${
-                      active
-                        ? "border-slate-950 bg-slate-950 text-white shadow-xl shadow-slate-300"
-                        : "border-slate-100 bg-white text-slate-950 hover:border-slate-950 hover:shadow-lg"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="text-3xl">{item.icon}</span>
-                      {active ? (
-                        <span className="rounded-full bg-white px-2 py-1 text-[10px] font-black uppercase tracking-wide text-slate-950">
-                          Ativo
-                        </span>
-                      ) : null}
-                    </div>
-                    <p className="mt-4 text-sm font-black">{item.shortTitle}</p>
-                    <p
-                      className={`mt-1 line-clamp-2 text-xs leading-5 ${
-                        active ? "text-slate-300" : "text-slate-500"
-                      }`}
-                    >
-                      {item.description}
-                    </p>
-                  </button>
-                );
-              })}
-            </div>
-          </aside>
-
-          <section className="grid gap-4 lg:grid-rows-[auto_1fr]">
-            <form
-              onSubmit={gerarMaterial}
-              className="rounded-[2.2rem] border border-white bg-white p-5 shadow-xl shadow-slate-200"
+            <Link
+              href="/historico"
+              className="flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-black text-slate-600 transition hover:bg-slate-100"
             >
-              <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
-                <div>
-                  <div
-                    className={`mb-3 inline-flex rounded-full bg-gradient-to-r ${mode.accent} px-4 py-2 text-xs font-black uppercase tracking-[0.2em] text-white`}
-                  >
-                    {mode.icon} {mode.title}
-                  </div>
-                  <h2 className="text-2xl font-black tracking-tight text-slate-950">
-                    FormulÃ¡rio inteligente
-                  </h2>
-                  <p className="mt-1 text-sm font-medium text-slate-600">
-                    Preencha sÃ³ o essencial. A IA organiza o formato correto.
-                  </p>
+              🗂️ Histórico
+            </Link>
+            <Link
+              href="/biblioteca"
+              className="flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-black text-slate-600 transition hover:bg-slate-100"
+            >
+              📚 Biblioteca
+            </Link>
+            <Link
+              href="/marketplace"
+              className="flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-black text-slate-600 transition hover:bg-slate-100"
+            >
+              🤝 Marketplace
+            </Link>
+          </nav>
+
+          <div className="mt-6 rounded-3xl border border-slate-100 bg-slate-50 p-4">
+            <p className="text-sm font-black text-slate-950">Acesso premium</p>
+            <p className="mt-1 text-xs leading-5 text-slate-500">
+              Ferramentas liberadas somente para contas com plano ativo.
+            </p>
+          </div>
+        </aside>
+
+        <section className="min-w-0">
+          <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/90 px-4 py-3 backdrop-blur sm:px-6">
+            <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3">
+              <div className="flex min-w-0 flex-1 items-center gap-3">
+                <Link
+                  href="/dashboard"
+                  className="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-100 text-lg font-black text-slate-700 transition hover:bg-slate-950 hover:text-white lg:hidden"
+                >
+                  P
+                </Link>
+                <div className="relative min-w-[220px] flex-1 max-w-xl">
+                  <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
+                    🔎
+                  </span>
+                  <input
+                    value={busca}
+                    onChange={(event) => setBusca(event.target.value)}
+                    placeholder="Busque ferramentas, tópicos, materiais..."
+                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3 pl-11 pr-4 text-sm font-semibold outline-none transition focus:border-slate-950 focus:bg-white"
+                  />
                 </div>
               </div>
 
-              <div className="grid gap-4 md:grid-cols-2">
-                <label className="md:col-span-2">
-                  <span className="mb-2 block text-sm font-black text-slate-700">
-                    {mode.primaryFieldLabel}
-                  </span>
-                  <input
-                    value={tema}
-                    onChange={(event) => setTema(event.target.value)}
-                    placeholder="Ex.: AmazÃ´nia, fraÃ§Ãµes, ecologia, interpretaÃ§Ã£o de texto..."
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold outline-none transition focus:border-slate-950 focus:bg-white"
-                  />
-                </label>
+              <div className="flex items-center gap-2">
+                <Link
+                  href="/planos"
+                  className="hidden rounded-2xl bg-violet-100 px-4 py-2 text-sm font-black text-violet-700 sm:inline-flex"
+                >
+                  Planify Premium
+                </Link>
+                <Link
+                  href="/editor"
+                  className="rounded-2xl bg-slate-950 px-4 py-2 text-sm font-black text-white shadow-lg shadow-slate-200"
+                >
+                  Editor
+                </Link>
+              </div>
+            </div>
+          </header>
 
-                <label>
-                  <span className="mb-2 block text-sm font-black text-slate-700">
-                    Etapa
-                  </span>
-                  <select
-                    value={etapa}
-                    onChange={(event) => setEtapa(event.target.value)}
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold outline-none transition focus:border-slate-950 focus:bg-white"
-                  >
-                    <option>EducaÃ§Ã£o Infantil</option>
-                    <option>Ensino Fundamental</option>
-                    <option>Ensino MÃ©dio</option>
-                    <option>EJA</option>
-                  </select>
-                </label>
+          <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6">
+            <div className="relative overflow-hidden rounded-[2rem] border border-emerald-100 bg-gradient-to-r from-emerald-100 via-lime-50 to-amber-50 p-5 shadow-sm">
+              <div className="relative z-10 flex flex-wrap items-center justify-between gap-4">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-[0.22em] text-emerald-700">
+                    Novidade no Planify
+                  </p>
+                  <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">
+                    Crie materiais personalizados com IA
+                  </h1>
+                  <p className="mt-1 max-w-2xl text-sm font-semibold text-slate-600">
+                    Escolha uma ferramenta, preencha poucos campos e gere um
+                    material com estrutura própria para o tipo selecionado.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => selecionarFerramenta("plano-aula")}
+                  className="rounded-2xl bg-slate-950 px-5 py-3 text-sm font-black text-white shadow-lg shadow-slate-300 transition hover:-translate-y-0.5"
+                >
+                  Criar aula agora
+                </button>
+              </div>
+            </div>
 
-                <label>
-                  <span className="mb-2 block text-sm font-black text-slate-700">
-                    Ano/SÃ©rie
-                  </span>
-                  <input
-                    value={anoSerie}
-                    onChange={(event) => setAnoSerie(event.target.value)}
-                    placeholder="Ex.: 6Âº ano, 1Âª sÃ©rie EM..."
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold outline-none transition focus:border-slate-950 focus:bg-white"
-                  />
-                </label>
+            <div className="mt-5">
+              <h2 className="text-xl font-black tracking-tight text-slate-950">
+                Criar materiais personalizados com IA
+              </h2>
+              <p className="mt-1 text-sm font-semibold text-slate-500">
+                Selecionadas para você com base no fluxo de professores.
+              </p>
 
-                <label>
-                  <span className="mb-2 block text-sm font-black text-slate-700">
-                    Componente curricular
-                  </span>
-                  <input
-                    value={componente}
-                    onChange={(event) => setComponente(event.target.value)}
-                    placeholder="Ex.: Geografia, MatemÃ¡tica, LÃ­ngua Portuguesa..."
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold outline-none transition focus:border-slate-950 focus:bg-white"
-                  />
-                </label>
+              <div className="mt-4 flex gap-2 overflow-x-auto pb-2">
+                {materialCategories.map((item) => {
+                  const active = item.id === categoria;
 
-                <label>
-                  <span className="mb-2 block text-sm font-black text-slate-700">
-                    Dificuldade
-                  </span>
-                  <select
-                    value={dificuldade}
-                    onChange={(event) =>
-                      setDificuldade(event.target.value as Dificuldade)
-                    }
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold outline-none transition focus:border-slate-950 focus:bg-white"
-                  >
-                    <option value="facil">FÃ¡cil</option>
-                    <option value="media">MÃ©dia</option>
-                    <option value="avancada">AvanÃ§ada</option>
-                  </select>
-                </label>
-
-                {isJogo ? (
-                  <label>
-                    <span className="mb-2 block text-sm font-black text-slate-700">
-                      Tipo de jogo
-                    </span>
-                    <select
-                      value={formatoJogo}
-                      onChange={(event) =>
-                        setFormatoJogo(event.target.value as FormatoJogo)
-                      }
-                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold outline-none transition focus:border-slate-950 focus:bg-white"
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => setCategoria(item.id)}
+                      className={`flex shrink-0 items-center gap-2 rounded-2xl border px-4 py-2 text-sm font-black transition ${
+                        active
+                          ? "border-slate-950 bg-slate-950 text-white"
+                          : "border-slate-200 bg-white text-slate-600 hover:border-slate-950"
+                      }`}
                     >
-                      {formatoJogos.map((item) => (
-                        <option key={item.id} value={item.id}>
-                          {item.icon} {item.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                ) : (
-                  <label>
+                      <span>{item.icon}</span>
+                      {item.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+              {ferramentasFiltradas.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => selecionarFerramenta(item.id)}
+                  className="group relative min-h-[148px] rounded-[1.6rem] border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:-translate-y-1 hover:border-slate-950 hover:shadow-xl"
+                >
+                  {item.popular ? (
+                    <span className="absolute left-3 top-3 rounded-full bg-blue-100 px-2 py-1 text-[10px] font-black text-blue-700">
+                      Popular
+                    </span>
+                  ) : null}
+                  <div className="mt-6 text-3xl">{item.icon}</div>
+                  <h3 className="mt-3 text-sm font-black leading-tight text-slate-950">
+                    {item.title}
+                  </h3>
+                  <p className="mt-1 text-xs font-semibold leading-5 text-slate-500">
+                    {item.description}
+                  </p>
+                </button>
+              ))}
+            </div>
+          </div>
+        </section>
+      </div>
+
+      {modalAberto ? (
+        <div className="fixed inset-0 z-50 bg-slate-950/55 p-3 backdrop-blur-sm sm:p-5">
+          <div className="mx-auto flex h-full max-w-6xl flex-col overflow-hidden rounded-[2rem] bg-white shadow-2xl">
+            <div className="flex items-center justify-between gap-4 border-b border-slate-100 px-5 py-4">
+              <button
+                type="button"
+                onClick={() => setModalAberto(false)}
+                className="rounded-2xl px-3 py-2 text-sm font-black text-slate-600 transition hover:bg-slate-100"
+              >
+                ← Voltar
+              </button>
+              <button
+                type="button"
+                onClick={() => setModalAberto(false)}
+                className="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-100 text-xl font-black text-slate-700 transition hover:bg-slate-950 hover:text-white"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="grid min-h-0 flex-1 lg:grid-cols-[0.92fr_1.08fr]">
+              <form
+                onSubmit={gerarMaterial}
+                className="overflow-y-auto border-r border-slate-100 p-5"
+              >
+                <div
+                  className={`mb-4 inline-flex rounded-2xl bg-gradient-to-r ${mode.accent} px-4 py-2 text-xs font-black uppercase tracking-[0.18em] text-white`}
+                >
+                  {mode.icon} {mode.title}
+                </div>
+
+                <h2 className="text-3xl font-black tracking-tight text-slate-950">
+                  {mode.title}
+                </h2>
+                <p className="mt-1 text-sm font-semibold text-slate-500">
+                  {mode.description}
+                </p>
+
+                <div className="mt-5 grid gap-4 md:grid-cols-2">
+                  <label className="md:col-span-2">
                     <span className="mb-2 block text-sm font-black text-slate-700">
-                      Quantidade/ExtensÃ£o
+                      {mode.primaryFieldLabel}
                     </span>
                     <input
-                      value={quantidade}
-                      onChange={(event) => setQuantidade(event.target.value)}
-                      placeholder="Ex.: 10 questÃµes, 8 pÃ¡ginas, 12 slides..."
+                      value={tema}
+                      onChange={(event) => setTema(event.target.value)}
+                      placeholder="Digite ou escolha um assunto..."
                       className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold outline-none transition focus:border-slate-950 focus:bg-white"
                     />
                   </label>
-                )}
 
-                <label className="md:col-span-2">
-                  <span className="mb-2 block text-sm font-black text-slate-700">
-                    Objetivo ou observaÃ§Ã£o opcional
-                  </span>
-                  <textarea
-                    value={objetivo}
-                    onChange={(event) => setObjetivo(event.target.value)}
-                    placeholder="Ex.: material para revisÃ£o, linguagem simples, incluir exemplos do cotidiano, foco em interpretaÃ§Ã£o..."
-                    rows={3}
-                    className="w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold outline-none transition focus:border-slate-950 focus:bg-white"
-                  />
-                </label>
-              </div>
+                  <label>
+                    <span className="mb-2 block text-sm font-black text-slate-700">
+                      Disciplina
+                    </span>
+                    <input
+                      value={componente}
+                      onChange={(event) => setComponente(event.target.value)}
+                      placeholder="Ex.: Língua Portuguesa"
+                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold outline-none transition focus:border-slate-950 focus:bg-white"
+                    />
+                  </label>
 
-              {isJogo ? (
-                <div className="mt-4 rounded-3xl border border-fuchsia-100 bg-fuchsia-50 p-4">
-                  <p className="text-sm font-black text-slate-950">
-                    Ãrea de jogos ativada
-                  </p>
-                  <p className="mt-1 text-sm leading-6 text-slate-600">
-                    O formulÃ¡rio normal foi adaptado para jogos. A geraÃ§Ã£o vai
-                    criar regras, versÃ£o do aluno e gabarito do jogo escolhido.
-                  </p>
+                  <label>
+                    <span className="mb-2 block text-sm font-black text-slate-700">
+                      Ano escolar
+                    </span>
+                    <input
+                      value={anoSerie}
+                      onChange={(event) => setAnoSerie(event.target.value)}
+                      placeholder="Ex.: [EM] 2ª série"
+                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold outline-none transition focus:border-slate-950 focus:bg-white"
+                    />
+                  </label>
+
+                  <label>
+                    <span className="mb-2 block text-sm font-black text-slate-700">
+                      Etapa
+                    </span>
+                    <select
+                      value={etapa}
+                      onChange={(event) => setEtapa(event.target.value)}
+                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold outline-none transition focus:border-slate-950 focus:bg-white"
+                    >
+                      <option>Educação Infantil</option>
+                      <option>Ensino Fundamental</option>
+                      <option>Ensino Médio</option>
+                      <option>EJA</option>
+                    </select>
+                  </label>
+
+                  <label>
+                    <span className="mb-2 block text-sm font-black text-slate-700">
+                      Dificuldade
+                    </span>
+                    <select
+                      value={dificuldade}
+                      onChange={(event) =>
+                        setDificuldade(event.target.value as Dificuldade)
+                      }
+                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold outline-none transition focus:border-slate-950 focus:bg-white"
+                    >
+                      <option value="facil">Fácil</option>
+                      <option value="media">Média</option>
+                      <option value="avancada">Avançada</option>
+                    </select>
+                  </label>
+
+                  {isJogo ? (
+                    <label>
+                      <span className="mb-2 block text-sm font-black text-slate-700">
+                        Tipo de jogo
+                      </span>
+                      <select
+                        value={formatoJogo}
+                        onChange={(event) =>
+                          setFormatoJogo(event.target.value as FormatoJogo)
+                        }
+                        className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold outline-none transition focus:border-slate-950 focus:bg-white"
+                      >
+                        {formatoJogos.map((item) => (
+                          <option key={item.id} value={item.id}>
+                            {item.icon} {item.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  ) : (
+                    <label>
+                      <span className="mb-2 block text-sm font-black text-slate-700">
+                        Quantidade
+                      </span>
+                      <input
+                        value={quantidade}
+                        onChange={(event) => setQuantidade(event.target.value)}
+                        placeholder="Ex.: 10 questões, 12 slides..."
+                        className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold outline-none transition focus:border-slate-950 focus:bg-white"
+                      />
+                    </label>
+                  )}
+
+                  <label className="md:col-span-2">
+                    <span className="mb-2 block text-sm font-black text-slate-700">
+                      Observações opcionais
+                    </span>
+                    <textarea
+                      value={objetivo}
+                      onChange={(event) => setObjetivo(event.target.value)}
+                      placeholder="Ex.: linguagem simples, foco em revisão, incluir exemplos do cotidiano..."
+                      rows={3}
+                      className="w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold outline-none transition focus:border-slate-950 focus:bg-white"
+                    />
+                  </label>
                 </div>
-              ) : null}
 
-              <div className="mt-4 flex flex-wrap gap-2">
-                {exemplos.map((item) => (
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {(sugestoesTema[tipo] || []).map((item) => (
+                    <button
+                      key={item}
+                      type="button"
+                      onClick={() => setTema(item)}
+                      className="rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-600 transition hover:border-slate-950 hover:text-slate-950"
+                    >
+                      {item}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+                  <label className="flex cursor-pointer items-center gap-3 rounded-2xl bg-slate-50 px-4 py-3 text-sm font-bold text-slate-700">
+                    <input
+                      type="checkbox"
+                      checked={incluirGabarito}
+                      onChange={(event) =>
+                        setIncluirGabarito(event.target.checked)
+                      }
+                      className="h-4 w-4"
+                    />
+                    Incluir gabarito/solução
+                  </label>
+
                   <button
-                    key={item}
                     type="button"
-                    onClick={() => setTema(item)}
-                    className="rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-600 transition hover:border-slate-950 hover:text-slate-950"
+                    onClick={limparFormulario}
+                    className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-700 transition hover:border-slate-950"
                   >
-                    {item}
+                    Limpar
                   </button>
-                ))}
-              </div>
+                </div>
 
-              <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
-                <label className="flex cursor-pointer items-center gap-3 rounded-2xl bg-slate-50 px-4 py-3 text-sm font-bold text-slate-700">
-                  <input
-                    type="checkbox"
-                    checked={incluirGabarito}
-                    onChange={(event) => setIncluirGabarito(event.target.checked)}
-                    className="h-4 w-4"
-                  />
-                  Incluir gabarito/soluÃ§Ã£o
-                </label>
+                {erro ? (
+                  <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
+                    {erro}
+                  </div>
+                ) : null}
 
                 <button
                   type="submit"
                   disabled={loading}
-                  className="rounded-2xl bg-slate-950 px-6 py-3 text-sm font-black text-white shadow-xl shadow-slate-300 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="mt-5 w-full rounded-2xl bg-blue-600 px-6 py-4 text-sm font-black text-white shadow-xl shadow-blue-200 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  Gerar com IA
+                  {loading ? "Gerando..." : `Criar ${mode.shortTitle}`}
                 </button>
-              </div>
+              </form>
 
-              {erro ? (
-                <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
-                  {erro}
-                </div>
-              ) : null}
-            </form>
-
-            <div className="min-h-[360px] rounded-[2.2rem] border border-white bg-white p-5 shadow-xl shadow-slate-200">
-              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <p className="text-sm font-black uppercase tracking-[0.2em] text-slate-400">
-                    Resultado
-                  </p>
-                  <h2 className="text-2xl font-black tracking-tight text-slate-950">
-                    PrÃ©via editÃ¡vel
-                  </h2>
-                </div>
-
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={abrirNoEditor}
-                    disabled={!resultadoHtml}
-                    className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 transition hover:border-slate-950 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    Abrir no Editor
-                  </button>
-                  <button
-                    type="button"
-                    onClick={baixarWord}
-                    disabled={!resultadoHtml}
-                    className="rounded-2xl bg-slate-950 px-4 py-2 text-sm font-black text-white transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    Baixar .doc
-                  </button>
-                </div>
-              </div>
-
-              {resultadoHtml ? (
-                <article
-                  className="prose prose-slate max-w-none rounded-3xl border border-slate-100 bg-slate-50 p-5"
-                  dangerouslySetInnerHTML={{ __html: resultadoHtml }}
-                />
-              ) : (
-                <div className="flex min-h-[260px] flex-col items-center justify-center rounded-3xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center">
-                  <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-white text-3xl shadow-sm">
-                    {mode.icon}
+              <section className="min-h-0 overflow-y-auto bg-slate-50 p-5">
+                {loading ? (
+                  <div className="flex h-full min-h-[420px] items-center justify-center">
+                    <div className="w-full max-w-md rounded-[2rem] border border-white bg-white p-6 text-center shadow-xl">
+                      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-slate-950 text-3xl text-white">
+                        {mode.icon}
+                      </div>
+                      <h3 className="mt-5 text-2xl font-black text-slate-950">
+                        {mode.loadingTitle}
+                      </h3>
+                      <p className="mt-2 text-sm font-medium leading-6 text-slate-600">
+                        {mode.loadingDescription}
+                      </p>
+                      <div className="mt-6 h-2 overflow-hidden rounded-full bg-slate-100">
+                        <div className="h-full w-2/3 animate-pulse rounded-full bg-blue-600" />
+                      </div>
+                    </div>
                   </div>
-                  <h3 className="mt-5 text-xl font-black text-slate-950">
-                    Seu material aparecerÃ¡ aqui
-                  </h3>
-                  <p className="mt-2 max-w-md text-sm leading-6 text-slate-600">
-                    Escolha o tipo, informe tema, sÃ©rie e componente. O Planify
-                    vai gerar uma estrutura compatÃ­vel com o formato escolhido.
-                  </p>
-                </div>
-              )}
+                ) : resultadoHtml ? (
+                  <div>
+                    <div className="mb-4 flex flex-wrap justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={abrirNoEditor}
+                        className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 transition hover:border-slate-950"
+                      >
+                        Abrir no Editor
+                      </button>
+                      <button
+                        type="button"
+                        onClick={baixarWord}
+                        className="rounded-2xl bg-slate-950 px-4 py-2 text-sm font-black text-white transition hover:-translate-y-0.5"
+                      >
+                        Baixar .doc
+                      </button>
+                    </div>
+                    <article
+                      className="prose prose-slate max-w-none rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"
+                      dangerouslySetInnerHTML={{ __html: resultadoHtml }}
+                    />
+                  </div>
+                ) : (
+                  <div className="flex h-full min-h-[420px] items-center justify-center">
+                    <div className="max-w-md text-center">
+                      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-white text-3xl shadow-sm">
+                        {mode.icon}
+                      </div>
+                      <h3 className="mt-5 text-2xl font-black text-slate-950">
+                        Pronto para criar
+                      </h3>
+                      <p className="mt-2 text-sm font-semibold leading-6 text-slate-500">
+                        Preencha disciplina, ano escolar e assunto. O resultado
+                        aparece aqui e pode ir direto para o Editor.
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </section>
             </div>
-          </section>
-        </section>
-      </div>
+          </div>
+        </div>
+      ) : null}
     </main>
+  );
+}
+
+export default function MateriaisPage() {
+  return (
+    <PremiumAccessGate featureName="o Gerador IA de Materiais">
+      <MateriaisStudio />
+    </PremiumAccessGate>
   );
 }

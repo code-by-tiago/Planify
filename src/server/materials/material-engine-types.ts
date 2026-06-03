@@ -46,6 +46,26 @@ export type MaterialEngineInput = {
   incluirGabarito?: boolean;
 };
 
+export type ExamQuestion = {
+  number: number;
+  type: string;
+  statement: string;
+  options: string[];
+  answer: string;
+};
+
+export type MindMapBranch = {
+  title: string;
+  items: string[];
+};
+
+export type LessonPlanStep = {
+  stage: string;
+  duration: string;
+  description: string;
+  resources: string[];
+};
+
 export type MaterialEngineResponse = {
   title: string;
   subtitle: string;
@@ -77,4 +97,14 @@ export type MaterialEngineResponse = {
     front: string;
     back: string;
   }>;
+  exam?: {
+    questions: ExamQuestion[];
+  };
+  mindMap?: {
+    central: string;
+    branches: MindMapBranch[];
+  };
+  lessonPlan?: {
+    steps: LessonPlanStep[];
+  };
 };

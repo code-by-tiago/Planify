@@ -17,9 +17,12 @@ const typeLabels: Record<MaterialEngineType, string> = {
 };
 
 function specializedRules(request: MaterialEngineRequest): string[] {
+  const { quantidade } = request;
+
   if (request.tipoMaterial === "jogo") {
     return [
       `Formato obrigatório do jogo: ${request.formatoJogo || "jogo pedagógico"}.`,
+      "Preencha o objeto 'game' com 'format', 'rules' (passo a passo de aplicação) e 'components' (peças/recursos necessários).",
       "Inclua regras claras, componentes do jogo e sequência de aplicação em sala.",
       "Não transformar jogo em lista de exercícios comum.",
     ];
@@ -27,22 +30,104 @@ function specializedRules(request: MaterialEngineRequest): string[] {
 
   if (request.tipoMaterial === "slides") {
     return [
-      "Entregar slides com títulos curtos, bullets objetivos e notas de fala do professor.",
-      "Evitar parágrafos longos no conteúdo dos slides.",
+      `Gerar exatamente ${quantidade} slides no array 'slides'.`,
+      "O primeiro slide é a capa (título do tema + subtítulo curto) e o último é o fechamento/síntese.",
+      "Distribuir os slides intermediários em: objetivos da aula, desenvolvimento do conteúdo em blocos, exemplo/aplicação prática e uma pergunta de checagem.",
+      "Cada slide deve ter 'title' curto e direto, 'bullets' objetivos (3 a 5 itens, frases curtas, sem parágrafos) e 'speakerNotes' com a fala detalhada do professor para aquele slide.",
+      "Nunca deixar um slide sem bullets nem sem notas de fala.",
+      "Manter coesão narrativa: cada slide avança o raciocínio do anterior.",
     ];
   }
 
   if (request.tipoMaterial === "flashcards") {
     return [
-      "Gerar flashcards com frente objetiva e verso claro.",
+      `Gerar exatamente ${quantidade} flashcards no array 'flashcards'.`,
+      "Cada flashcard deve ter 'front' (pergunta/conceito objetivo) e 'back' (resposta clara e curta).",
       "Evitar respostas extensas no verso.",
     ];
   }
 
   if (request.tipoMaterial === "prova") {
     return [
-      "Separar claramente o bloco de questões do gabarito.",
-      "Incluir equilíbrio de dificuldade nas questões.",
+      `Gerar exatamente ${quantidade} questões no array 'exam.questions'.`,
+      "Numerar as questões em ordem ('number' começando em 1).",
+      "Variar os tipos de questão (multipla-escolha, verdadeiro-falso, dissertativa, completar) quando fizer sentido.",
+      "Para questões de multipla-escolha, preencher 'options' com 4 a 5 alternativas; para os demais tipos, 'options' pode ficar vazio.",
+      request.incluirGabarito
+        ? "Preencher 'answer' de cada questão com a resposta correta e também consolidar o gabarito no array 'answerKey'."
+        : "Deixar 'answer' vazio e não preencher 'answerKey' (o professor não quer gabarito).",
+      "Equilibrar a dificuldade das questões conforme o nível solicitado.",
+    ];
+  }
+
+  if (request.tipoMaterial === "lista") {
+    return [
+      `Gerar exatamente ${quantidade} exercícios no array 'exam.questions'.`,
+      "Numerar os exercícios em ordem ('number' começando em 1).",
+      "Priorizar exercícios práticos e progressivos sobre o tema.",
+      request.incluirGabarito
+        ? "Preencher 'answer' de cada exercício e consolidar o gabarito no array 'answerKey'."
+        : "Deixar 'answer' vazio e não preencher 'answerKey'.",
+    ];
+  }
+
+  if (request.tipoMaterial === "mapa-mental") {
+    return [
+      "Preencher o objeto 'mindMap' com 'central' (conceito central) e 'branches' (ramos principais).",
+      "Cada ramo deve ter 'title' e 'items' (subtópicos curtos e hierárquicos).",
+      "Gerar entre 4 e 7 ramos, cada um com 2 a 5 subtópicos.",
+      "Não escrever parágrafos longos: o mapa mental é hierárquico e sintético.",
+    ];
+  }
+
+  if (request.tipoMaterial === "plano-aula") {
+    return [
+      "Preencher o objeto 'lessonPlan.steps' com as etapas da aula em ordem cronológica.",
+      "Cada etapa deve ter 'stage' (ex.: Introdução, Desenvolvimento, Prática, Fechamento), 'duration' (tempo estimado), 'description' e 'resources'.",
+      "Incluir objetivos de aprendizagem nas 'sections' e formas de avaliação nas 'teacherNotes'.",
+    ];
+  }
+
+  if (request.tipoMaterial === "sequencia") {
+    return [
+      "Organizar como sequência didática com aulas/encontros progressivos nas 'sections'.",
+      "Cada seção representa uma aula com objetivos, conteúdos e atividades encadeadas.",
+      "Incluir avaliação processual e produto final nas 'teacherNotes'.",
+    ];
+  }
+
+  if (request.tipoMaterial === "projeto") {
+    return [
+      "Estruturar como projeto pedagógico: problema norteador, justificativa, etapas de execução e produto final nas 'sections'.",
+      "Detalhar tarefas concretas e papéis dos estudantes nas 'activities'.",
+      "Definir critérios de avaliação do projeto nas 'teacherNotes'.",
+    ];
+  }
+
+  if (request.tipoMaterial === "redacao") {
+    return [
+      "Entregar uma proposta de redação completa: tema, gênero textual, comando claro e textos motivadores nas 'sections'.",
+      "Incluir critérios de correção e competências avaliadas nas 'teacherNotes'.",
+      request.incluirGabarito
+        ? "Incluir uma redação modelo ou critérios de nota no 'answerKey'."
+        : "Não incluir redação modelo.",
+    ];
+  }
+
+  if (request.tipoMaterial === "resumo") {
+    return [
+      "Entregar um resumo guiado por seções temáticas, com os pontos-chave em 'bullets'.",
+      "Incluir um quadro de revisão ou perguntas de fixação nas 'activities'.",
+    ];
+  }
+
+  if (request.tipoMaterial === "atividade") {
+    return [
+      `Gerar aproximadamente ${quantidade} itens/exercícios distribuídos nas 'activities'.`,
+      "Cada atividade deve ter instruções claras e itens aplicáveis em sala.",
+      request.incluirGabarito
+        ? "Consolidar as respostas no array 'answerKey'."
+        : "Não incluir gabarito.",
     ];
   }
 
@@ -50,6 +135,7 @@ function specializedRules(request: MaterialEngineRequest): string[] {
     return [
       "Estruturar por seções progressivas com explicação antes da prática.",
       "Não iniciar a apostila diretamente com questões.",
+      "Fechar com atividades de fixação nas 'activities'.",
     ];
   }
 

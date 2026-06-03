@@ -343,8 +343,7 @@ td,th{border:1px solid #d1d5db;padding:8px;}
     URL.revokeObjectURL(url);
   }
 
-  async function gerarMaterial(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function executarGeracao() {
     setErro("");
 
     if (!tema.trim()) {
@@ -420,6 +419,11 @@ td,th{border:1px solid #d1d5db;padding:8px;}
     } finally {
       setLoading(false);
     }
+  }
+
+  function gerarMaterial(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    void executarGeracao();
   }
 
   return (
@@ -842,6 +846,15 @@ td,th{border:1px solid #d1d5db;padding:8px;}
                 ) : resultadoHtml ? (
                   <div>
                     <div className="mb-4 flex flex-wrap justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={() => void executarGeracao()}
+                        disabled={loading}
+                        className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 transition hover:border-slate-950 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        <PlanifyIcon name="spark" className="h-4 w-4" />
+                        Regenerar
+                      </button>
                       <button
                         type="button"
                         onClick={abrirNoEditor}

@@ -91,9 +91,101 @@ const FLASHCARDS_SCHEMA = {
   required: [...BASE_MATERIAL_SCHEMA.required, "flashcards"],
 };
 
+const EXAM_SCHEMA = {
+  ...BASE_MATERIAL_SCHEMA,
+  properties: {
+    ...BASE_MATERIAL_SCHEMA.properties,
+    exam: {
+      type: "OBJECT",
+      properties: {
+        questions: {
+          type: "ARRAY",
+          items: {
+            type: "OBJECT",
+            properties: {
+              number: { type: "INTEGER" },
+              type: {
+                type: "STRING",
+                enum: [
+                  "multipla-escolha",
+                  "verdadeiro-falso",
+                  "dissertativa",
+                  "completar",
+                ],
+              },
+              statement: { type: "STRING" },
+              options: { type: "ARRAY", items: { type: "STRING" } },
+              answer: { type: "STRING" },
+            },
+            required: ["number", "type", "statement", "options", "answer"],
+          },
+        },
+      },
+      required: ["questions"],
+    },
+  },
+  required: [...BASE_MATERIAL_SCHEMA.required, "exam"],
+};
+
+const MINDMAP_SCHEMA = {
+  ...BASE_MATERIAL_SCHEMA,
+  properties: {
+    ...BASE_MATERIAL_SCHEMA.properties,
+    mindMap: {
+      type: "OBJECT",
+      properties: {
+        central: { type: "STRING" },
+        branches: {
+          type: "ARRAY",
+          items: {
+            type: "OBJECT",
+            properties: {
+              title: { type: "STRING" },
+              items: { type: "ARRAY", items: { type: "STRING" } },
+            },
+            required: ["title", "items"],
+          },
+        },
+      },
+      required: ["central", "branches"],
+    },
+  },
+  required: [...BASE_MATERIAL_SCHEMA.required, "mindMap"],
+};
+
+const LESSON_PLAN_SCHEMA = {
+  ...BASE_MATERIAL_SCHEMA,
+  properties: {
+    ...BASE_MATERIAL_SCHEMA.properties,
+    lessonPlan: {
+      type: "OBJECT",
+      properties: {
+        steps: {
+          type: "ARRAY",
+          items: {
+            type: "OBJECT",
+            properties: {
+              stage: { type: "STRING" },
+              duration: { type: "STRING" },
+              description: { type: "STRING" },
+              resources: { type: "ARRAY", items: { type: "STRING" } },
+            },
+            required: ["stage", "duration", "description", "resources"],
+          },
+        },
+      },
+      required: ["steps"],
+    },
+  },
+  required: [...BASE_MATERIAL_SCHEMA.required, "lessonPlan"],
+};
+
 export function getMaterialEngineSchema(type: MaterialEngineType) {
   if (type === "jogo") return GAME_SCHEMA;
   if (type === "slides") return SLIDES_SCHEMA;
   if (type === "flashcards") return FLASHCARDS_SCHEMA;
+  if (type === "prova" || type === "lista") return EXAM_SCHEMA;
+  if (type === "mapa-mental") return MINDMAP_SCHEMA;
+  if (type === "plano-aula") return LESSON_PLAN_SCHEMA;
   return BASE_MATERIAL_SCHEMA;
 }

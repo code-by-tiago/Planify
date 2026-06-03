@@ -16,7 +16,7 @@ type PlanifyShellSidebarProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   lumiHint?: string;
-  /** Sidebar branca estilo Teachy (Studio /dashboard) */
+  /** Sidebar clara no painel principal (/dashboard) */
   variant?: "default" | "teachy";
 };
 
@@ -40,9 +40,7 @@ export function PlanifyShellSidebar({
     <div className={`shrink-0 border-b ${brandBorder} px-4 py-4`}>
       <PlanifyBrand />
       <p className="mt-2 text-[11px] font-bold leading-snug text-slate-500">
-        {isTeachy
-          ? "Studio · assistente IA para aulas"
-          : "Materiais com IA alinhados à BNCC"}
+        Materiais com IA alinhados à BNCC
       </p>
     </div>
   );

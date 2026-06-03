@@ -1931,11 +1931,138 @@ header .planify-brand-logo__icon {
 
 /* Texto com gradiente da marca (aplicar em span sem classes text-*) */
 .planify-ui3 .pl-gradient-text {
-  background: linear-gradient(120deg, #4f46e5 0%, #7c3aed 55%, #2563eb 100%);
+  background: linear-gradient(120deg, #2563eb 0%, #0ea5e9 45%, #10b981 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
   color: transparent;
+}
+
+/* Páginas públicas — mesma identidade do app (lavanda/índigo) */
+.planify-public {
+  background: linear-gradient(160deg, #fdf8ff 0%, #fff5f9 50%, #f8f5ff 100%);
+  color: var(--pl-ink, #1e1b2e);
+}
+
+.planify-public .pl-btn-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 9999px;
+  padding: 0.875rem 1.75rem;
+  font-size: 0.875rem;
+  font-weight: 800;
+  color: #fff;
+  background: linear-gradient(120deg, #4f46e5, #7c3aed 55%, #6366f1);
+  box-shadow: var(--pl-shadow-soft, 0 12px 34px -18px rgba(79, 70, 229, 0.45));
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.planify-public .pl-btn-brand:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--pl-shadow-lift);
+}
+
+.planify-public .pl-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 9999px;
+  padding: 0.875rem 1.75rem;
+  font-size: 0.875rem;
+  font-weight: 800;
+  color: #4c1d95;
+  background: #fff;
+  border: 1px solid rgba(79, 70, 229, 0.15);
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.planify-public .pl-btn-secondary:hover {
+  border-color: rgba(79, 70, 229, 0.35);
+  background: #faf7ff;
+}
+
+.planify-public .planify-ui3-header {
+  background: rgba(255, 255, 255, 0.92) !important;
+  border-color: rgba(79, 70, 229, 0.1) !important;
+}
+
+/* Legado Teachy — mantido para páginas antigas se necessário */
+.planify-teachy-landing .pl-teachy-gradient-text {
+  background: linear-gradient(90deg, #2563eb 0%, #0ea5e9 50%, #10b981 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+.planify-teachy-landing .pl-teachy-cta {
+  background: #ffd15c;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.06);
+}
+
+.planify-teachy-landing .pl-teachy-band-wrap {
+  padding-top: 0.5rem;
+}
+
+.planify-teachy-landing .pl-teachy-band {
+  background: #e8ecff;
+  border-radius: 2.5rem 2.5rem 0 0;
+}
+
+@media (min-width: 1024px) {
+  .planify-teachy-landing .pl-teachy-band {
+    border-radius: 3.5rem 3.5rem 0 0;
+  }
+}
+
+/* Blob azul atrás do mockup do hero (Teachy) */
+.planify-teachy-landing .pl-teachy-hero-blob {
+  background:
+    radial-gradient(ellipse 85% 75% at 70% 45%, #2563eb 0%, #3b82f6 35%, transparent 72%),
+    radial-gradient(ellipse 50% 40% at 90% 80%, #60a5fa 0%, transparent 70%);
+  border-radius: 45% 55% 60% 40% / 50% 45% 55% 50%;
+  opacity: 0.92;
+  transform: rotate(-8deg);
+}
+
+/* Carrossel de depoimentos */
+@keyframes pl-teachy-testimonials {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.planify-teachy-landing .pl-teachy-testimonials {
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 6%, #000 94%, transparent);
+  mask-image: linear-gradient(to right, transparent, #000 6%, #000 94%, transparent);
+}
+
+.planify-teachy-landing .pl-teachy-testimonials__track {
+  display: flex;
+  width: max-content;
+  padding-inline: 1.25rem;
+  animation: pl-teachy-testimonials 48s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .planify-teachy-landing .pl-teachy-testimonials__track {
+    animation: none;
+    flex-wrap: wrap;
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Faixa de parceiros / confiança */
+.planify-teachy-landing .pl-teachy-partners {
+  border-top: 1px solid #e2e8f0;
+  border-bottom: 1px solid #e2e8f0;
+  background: #fff;
 }
 
 /* Cartão de vidro claro para mockups de produto */
@@ -2307,9 +2434,9 @@ html:has(.pl-dashboard-root) body {
 .pl-teachy-shell .pl-nav-active {
   background: linear-gradient(
     120deg,
-    #4f46e5,
-    #6366f1 55%,
-    #818cf8
+    #2563eb,
+    #3b82f6 55%,
+    #60a5fa
   ) !important;
 }
 
@@ -2341,9 +2468,9 @@ html:has(.pl-dashboard-root) body {
 .pl-teachy-shell .pl-sidebar-teachy .pl-nav-active {
   background: linear-gradient(
     120deg,
-    #4f46e5,
-    #6366f1 55%,
-    #818cf8
+    #2563eb,
+    #3b82f6 55%,
+    #60a5fa
   ) !important;
 }
 

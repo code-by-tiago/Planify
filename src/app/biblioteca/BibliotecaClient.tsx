@@ -203,7 +203,7 @@ export function BibliotecaClient() {
               <div className="mt-3 flex flex-col gap-2 sm:flex-row">
                 <a
                   href="/login?redirect=/biblioteca&premium=required"
-                  className="rounded-xl bg-slate-950 px-4 py-3 text-center text-sm font-black text-white"
+                  className="rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-3 text-center text-sm font-black text-white hover:opacity-95"
                 >
                   Fazer login
                 </a>
@@ -274,7 +274,7 @@ export function BibliotecaClient() {
             <button
               type="button"
               onClick={loadPremiumMaterials}
-              className="rounded-2xl bg-slate-950 px-5 py-3 text-sm font-black text-white transition"
+              className="rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-3 text-sm font-black text-white transition hover:opacity-95"
             >
               Atualizar biblioteca
             </button>
@@ -300,7 +300,7 @@ export function BibliotecaClient() {
 
           <div className="mt-6 grid gap-4">
             {loading ? (
-              <div className="rounded-2xl border border-cyan-200 bg-cyan-50 p-6 text-sm leading-7 text-cyan-700">
+              <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-6 text-sm leading-7 text-indigo-700">
                 Carregando materiais reais da Biblioteca Premium...
               </div>
             ) : filteredItems.length > 0 ? (
@@ -322,7 +322,7 @@ export function BibliotecaClient() {
                         {item.description}
                       </p>
                     </div>
-                    <span className="rounded-full border border-cyan-200 bg-cyan-50 px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-cyan-700">
+                    <span className="rounded-full border border-indigo-200 bg-indigo-50 px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-indigo-700">
                       {item.tipoMaterial || item.categoria}
                     </span>
                   </div>
@@ -385,7 +385,7 @@ export function BibliotecaClient() {
               <button
                 type="button"
                 onClick={() => openInEditor(selected)}
-                className="rounded-2xl bg-slate-950 px-6 py-4 text-sm font-black text-white transition hover:-translate-y-1"
+                className="rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-6 py-4 text-sm font-black text-white transition hover:-translate-y-1 hover:opacity-95"
               >
                 Abrir no Editor
               </button>

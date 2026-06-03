@@ -106,7 +106,7 @@ export default function TeachyStudioHome({
   }
 
   return (
-    <div className="pl-teachy-board flex h-full min-h-0 w-full flex-col overflow-hidden bg-[#f0f2f8]">
+    <div className="pl-teachy-board flex h-full min-h-0 w-full flex-col overflow-hidden bg-transparent">
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
         <div className="mx-auto w-full max-w-5xl px-4 py-5 sm:px-6 sm:py-6">
           {/* Bloco 1 — Construtor de aula (estrutura Teachy) */}
@@ -114,7 +114,7 @@ export default function TeachyStudioHome({
             <div className="border-b border-slate-100 px-4 py-4 sm:px-5">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600">
                     Assistente IA · BNCC
                   </p>
                   <h1 className="mt-1 truncate text-lg font-black text-slate-950 sm:text-xl">
@@ -124,7 +124,7 @@ export default function TeachyStudioHome({
                 <button
                   type="button"
                   onClick={() => setEditingTheme((v) => !v)}
-                  className="shrink-0 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-black text-slate-600 transition hover:border-indigo-200 hover:text-indigo-700"
+                  className="shrink-0 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-black text-slate-600 transition hover:border-blue-200 hover:text-blue-700"
                 >
                   {editingTheme ? "Fechar tema" : "Alterar tema"}
                 </button>
@@ -139,7 +139,7 @@ export default function TeachyStudioHome({
                     value={topic}
                     onChange={(e) => setTopic(e.target.value)}
                     placeholder="Ex.: Ciclo da água, Frações, Revolução Industrial…"
-                    className="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-900 outline-none focus:border-indigo-400 focus:bg-white focus:ring-4 focus:ring-indigo-100"
+                    className="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-900 outline-none focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100"
                     autoFocus
                   />
                   <div className="mt-3 flex flex-wrap gap-2">
@@ -152,7 +152,7 @@ export default function TeachyStudioHome({
                     </button>
                     <button
                       type="submit"
-                      className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-black text-white hover:bg-indigo-700"
+                      className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-xs font-black text-white hover:bg-blue-700"
                     >
                       <PlanifyIcon name="layers" className="h-3.5 w-3.5" />
                       Montar aula completa
@@ -182,13 +182,13 @@ export default function TeachyStudioHome({
                         key={item.id}
                         type="button"
                         onClick={() => openTool(item.id)}
-                        className="group flex min-w-[140px] max-w-[200px] flex-1 flex-col rounded-xl border border-slate-100 bg-slate-50/80 p-3 text-left transition hover:border-indigo-200 hover:bg-white hover:shadow-md"
+                        className="group flex min-w-[140px] max-w-[200px] flex-1 flex-col rounded-xl border border-slate-100 bg-slate-50/80 p-3 text-left transition hover:border-blue-200 hover:bg-white hover:shadow-md"
                       >
                         <span className="flex items-center gap-2">
-                          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-100 text-indigo-600">
+                          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-100 text-blue-600">
                             <PlanifyIcon name={item.icon} className="h-4 w-4" />
                           </span>
-                          <span className="text-[10px] font-black uppercase text-indigo-600">
+                          <span className="text-[10px] font-black uppercase text-blue-600">
                             {item.label}
                           </span>
                         </span>
@@ -230,7 +230,7 @@ export default function TeachyStudioHome({
                   value={toolSearch}
                   onChange={(e) => setToolSearch(e.target.value)}
                   placeholder="Buscar ferramenta…"
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-3 text-sm font-semibold outline-none focus:border-indigo-300 focus:bg-white"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-3 text-sm font-semibold outline-none focus:border-blue-300 focus:bg-white"
                 />
               </div>
             </div>
@@ -242,7 +242,7 @@ export default function TeachyStudioHome({
                     key={tool.id}
                     type="button"
                     onClick={() => openTool(tool.id)}
-                    className="flex shrink-0 items-center gap-2 rounded-full border border-indigo-100 bg-indigo-50 px-3 py-2 text-xs font-black text-indigo-800 transition hover:bg-indigo-100"
+                    className="flex shrink-0 items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-2 text-xs font-black text-blue-800 transition hover:bg-blue-100"
                   >
                     <PlanifyIcon name={tool.icon} className="h-3.5 w-3.5" />
                     {tool.shortTitle}
@@ -261,8 +261,8 @@ export default function TeachyStudioHome({
                     onClick={() => setCategory(cat.id)}
                     className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-black transition ${
                       active
-                        ? "border-indigo-200 bg-indigo-600 text-white"
-                        : "border-slate-200 bg-white text-slate-600 hover:border-indigo-200"
+                        ? "border-blue-200 bg-blue-600 text-white"
+                        : "border-slate-200 bg-white text-slate-600 hover:border-blue-200"
                     }`}
                   >
                     <PlanifyIcon name={cat.icon} className="h-3.5 w-3.5" />
@@ -278,7 +278,7 @@ export default function TeachyStudioHome({
                   key={tool.id}
                   type="button"
                   onClick={() => openTool(tool.id)}
-                  className="flex items-center gap-2.5 rounded-xl border border-slate-100 bg-slate-50/60 p-2.5 text-left transition hover:border-indigo-200 hover:bg-white hover:shadow-sm"
+                  className="flex items-center gap-2.5 rounded-xl border border-slate-100 bg-slate-50/60 p-2.5 text-left transition hover:border-blue-200 hover:bg-white hover:shadow-sm"
                 >
                   <span
                     className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br ${tool.accent} text-white`}

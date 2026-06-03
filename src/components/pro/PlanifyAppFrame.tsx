@@ -21,7 +21,7 @@ type FrameProps = {
 export default function PlanifyAppFrame({
   children,
   active,
-  title = "Planify Studio",
+  title = "Planify",
   subtitle = "Central de criação pedagógica",
   action,
   compact = false,
@@ -49,7 +49,7 @@ export default function PlanifyAppFrame({
 
   const pageMeta = useMemo(() => {
     if (pathname === "/dashboard") {
-      return { title: "Studio", subtitle: "Sua central de criação" };
+      return { title: "Planify", subtitle: "Sua central de criação" };
     }
     if (pathname.startsWith("/materiais")) {
       return { title: "Materiais", subtitle: "Ferramentas com IA" };
@@ -81,7 +81,7 @@ export default function PlanifyAppFrame({
       className="pl-btn-primary w-full justify-center rounded-2xl py-3"
     >
       <PlanifyIcon name="spark" className="h-4 w-4" />
-      Assistente IA
+      Início
     </Link>
   );
 

@@ -1,95 +1,90 @@
 import Link from "next/link";
-import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
+import { PlanifyBrand } from "@/components/pro/PlanifyBrand";
+import { planifyTools, toolCategories } from "@/lib/pro/planifyTools";
 
-const footerColumns: { title: string; links: { href: string; label: string }[] }[] = [
-  {
-    title: "Produto",
-    links: [
-      { href: "/", label: "Início" },
-      { href: "/#recursos", label: "Ferramentas" },
-      { href: "/planos", label: "Planos" },
-    ],
-  },
-  {
-    title: "Conta",
-    links: [
-      { href: "/login", label: "Entrar" },
-      { href: "/dashboard", label: "Acessar painel" },
-    ],
-  },
-  {
-    title: "Suporte",
-    links: [
-      { href: "/contato", label: "Contato" },
-      { href: "/planos", label: "Dúvidas sobre planos" },
-    ],
-  },
+const solutionLinks = [
+  { href: "/dashboard", label: "Painel Planify" },
+  { href: "/planejamentos", label: "Planejamentos BNCC" },
+  { href: "/dashboard?tipo=redacao", label: "Correção de redação" },
+  { href: "/biblioteca", label: "Biblioteca" },
+];
+
+const resourceLinks = [
+  { href: "/#ferramentas", label: "Ferramentas" },
+  { href: "/planos", label: "Planos" },
+  { href: "/contato", label: "Contato" },
+  { href: "/login", label: "Entrar" },
 ];
 
 export function PublicFooter() {
   const year = new Date().getFullYear();
+  const popularTools = planifyTools.filter((t) => t.popular);
 
   return (
-    <footer className="border-t border-slate-200 bg-white/70">
+    <footer className="border-t border-indigo-100/80 bg-white/80">
       <div className="mx-auto max-w-7xl px-5 py-14 sm:px-8">
-        <div className="grid gap-10 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
-          <div className="max-w-sm">
-            <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-950 text-white">
-                <PlanifyIcon name="spark" className="h-5 w-5" />
-              </div>
-              <div>
-                <p className="text-base font-black tracking-tight text-slate-950">
-                  Planify
-                </p>
-                <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
-                  Studio
-                </p>
-              </div>
-            </div>
-            <p className="mt-5 text-sm font-semibold leading-7 text-slate-600">
-              Inteligência artificial, alinhamento à BNCC e exportação em DOCX
-              oficial para professores criarem aulas e materiais em minutos.
+        <p className="text-center text-sm font-semibold text-slate-500">
+          Planify — inteligência artificial para professores
+        </p>
+
+        <div className="mt-10 grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
+          <div>
+            <PlanifyBrand href="/" />
+            <p className="mt-4 text-sm font-medium leading-7 text-slate-600">
+              13 ferramentas com IA, planejamentos, editor, histórico e DOCX
+              oficial — tudo no mesmo painel.
             </p>
-            <div className="mt-6 flex flex-wrap gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-black text-slate-600">
-                <PlanifyIcon name="checkCircle" className="h-3.5 w-3.5 text-emerald-600" />
-                Alinhado à BNCC
-              </span>
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-black text-slate-600">
-                <PlanifyIcon name="fileText" className="h-3.5 w-3.5 text-indigo-600" />
-                DOCX oficial
-              </span>
-            </div>
           </div>
 
-          {footerColumns.map((column) => (
-            <div key={column.title}>
-              <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-400">
-                {column.title}
-              </p>
-              <nav className="mt-4 grid gap-3">
-                {column.links.map((item) => (
-                  <Link
-                    key={`${column.title}-${item.label}`}
-                    href={item.href}
-                    className="text-sm font-bold text-slate-600 transition hover:text-slate-950"
-                  >
-                    {item.label}
-                  </Link>
-                ))}
-              </nav>
-            </div>
-          ))}
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.16em] text-indigo-500">
+              Soluções
+            </p>
+            <nav className="mt-4 grid gap-2.5">
+              {solutionLinks.map((item) => (
+                <Link key={item.href} href={item.href} className="text-sm font-semibold text-slate-600 hover:text-indigo-700">
+                  {item.label}
+                </Link>
+              ))}
+            </nav>
+          </div>
+
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.16em] text-indigo-500">
+              Recursos
+            </p>
+            <nav className="mt-4 grid gap-2.5">
+              {resourceLinks.map((item) => (
+                <Link key={item.href} href={item.href} className="text-sm font-semibold text-slate-600 hover:text-indigo-700">
+                  {item.label}
+                </Link>
+              ))}
+            </nav>
+          </div>
+
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.16em] text-indigo-500">
+              Ferramentas populares
+            </p>
+            <nav className="mt-4 grid gap-2.5">
+              {popularTools.map((item) => (
+                <Link key={item.id} href={item.href} className="text-sm font-semibold text-slate-600 hover:text-indigo-700">
+                  {item.shortTitle}
+                </Link>
+              ))}
+              <Link href="/dashboard" className="text-sm font-bold text-indigo-600">
+                Ver todas ({planifyTools.length}) →
+              </Link>
+            </nav>
+            <p className="mt-4 text-[10px] font-bold uppercase tracking-wide text-slate-400">
+              {toolCategories.filter((c) => c.id !== "todos").map((c) => c.label).join(" · ")}
+            </p>
+          </div>
         </div>
 
-        <div className="mt-12 flex flex-col items-start justify-between gap-4 border-t border-slate-200 pt-6 sm:flex-row sm:items-center">
-          <p className="text-xs font-semibold text-slate-400">
-            © {year} Planify. Todos os direitos reservados.
-          </p>
-          <p className="text-xs font-semibold text-slate-400">
-            Plataforma educacional para professores.
-          </p>
+        <div className="mt-12 flex flex-col items-center justify-between gap-3 border-t border-indigo-50 pt-6 text-center sm:flex-row sm:text-left">
+          <p className="text-xs font-medium text-slate-400">© {year} Planify</p>
+          <p className="text-xs font-medium text-slate-400">Educação básica · BNCC · Brasil</p>
         </div>
       </div>
     </footer>

@@ -1,4 +1,5 @@
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
+import { dashboardToolHref } from "@/lib/pro/toolRoutes";
 import type { PlanifyIconName } from "@/lib/pro/planifyTools";
 
 const navIconTone: Record<string, string> = {
@@ -23,7 +24,7 @@ export function PlanifyNavIcon({ name }: { name: PlanifyIconName }) {
   );
 }
 
-/** Rota preferida para abrir ferramenta no Studio fullscreen */
+/** Rota canônica para abrir ferramenta no painel */
 export function studioToolHref(toolId: string) {
-  return `/dashboard?tipo=${toolId}`;
+  return dashboardToolHref(toolId);
 }

@@ -8,20 +8,24 @@ type ButtonLinkProps = {
   className?: string;
 };
 
-export function ButtonLink({ href, children, variant = "primary", className = "" }: ButtonLinkProps) {
+export function ButtonLink({
+  href,
+  children,
+  variant = "primary",
+  className = "",
+}: ButtonLinkProps) {
   const variants = {
     primary:
-      "bg-white text-slate-950 shadow-2xl shadow-white/10 hover:-translate-y-1 hover:bg-cyan-100",
+      "bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-md hover:opacity-95",
     secondary:
-      "border border-white/10 bg-white/5 text-white hover:-translate-y-1 hover:border-cyan-300/40 hover:bg-cyan-300/10",
-    ghost:
-      "text-cyan-200 hover:text-white",
+      "border border-slate-200 bg-white text-slate-700 hover:border-indigo-200 hover:text-indigo-700",
+    ghost: "text-indigo-600 hover:text-indigo-800",
   };
 
   return (
     <Link
       href={href}
-      className={`inline-flex items-center justify-center rounded-2xl px-6 py-3.5 text-sm font-black transition ${variants[variant]} ${className}`}
+      className={`inline-flex items-center justify-center rounded-full px-6 py-3 text-sm font-bold transition ${variants[variant]} ${className}`}
     >
       {children}
     </Link>

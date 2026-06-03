@@ -50,7 +50,7 @@ export function PlanifyCardHeader({
     <div className="flex flex-wrap items-start justify-between gap-3">
       <div className="min-w-0">
         {eyebrow && (
-          <p className="mb-2 text-xs font-black uppercase tracking-[0.18em] text-blue-700">
+          <p className="mb-2 text-xs font-black uppercase tracking-[0.18em] text-indigo-600">
             {eyebrow}
           </p>
         )}

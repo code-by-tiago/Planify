@@ -5,12 +5,15 @@ type BrandProps = {
   href?: string;
   compact?: boolean;
   dark?: boolean;
+  /** Oculta o subtítulo (útil em espaços estreitos) */
+  hideTagline?: boolean;
 };
 
 export function PlanifyBrand({
   href = "/dashboard",
   compact = false,
   dark = false,
+  hideTagline = false,
 }: BrandProps) {
   const content = (
     <div className="flex items-center gap-3">
@@ -32,13 +35,15 @@ export function PlanifyBrand({
           >
             Planify
           </p>
-          <p
-            className={`mt-1 text-xs font-bold uppercase tracking-[0.18em] ${
-              dark ? "text-slate-300" : "text-indigo-400"
-            }`}
-          >
-            Studio
-          </p>
+          {!hideTagline ? (
+            <p
+              className={`mt-1 text-[11px] font-bold uppercase tracking-[0.16em] ${
+                dark ? "text-slate-300" : "text-indigo-500"
+              }`}
+            >
+              IA pedagógica · BNCC
+            </p>
+          ) : null}
         </div>
       ) : null}
     </div>

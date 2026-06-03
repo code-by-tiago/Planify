@@ -102,9 +102,9 @@ export function PremiumRouteGuard() {
   }
 
   return (
-    <div className="flex items-center justify-center gap-3 border-b border-white/10 bg-white/5 px-5 py-3 text-center">
-      <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-      <span className="text-sm font-bold text-slate-300">
+    <div className="flex items-center justify-center gap-3 border-b border-indigo-100 bg-indigo-50/90 px-5 py-3 text-center">
+      <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-indigo-200 border-t-indigo-600" />
+      <span className="text-sm font-bold text-indigo-800">
         Validando acesso...
       </span>
     </div>

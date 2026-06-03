@@ -1,44 +1,53 @@
 import Link from "next/link";
-import { PageShell } from "../../../components/PageShell";
+import { PublicHeader } from "@/components/public/PublicHeader";
+import { PublicFooter } from "@/components/public/PublicFooter";
+import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 
 export const dynamic = "force-dynamic";
 
 export default function PlanosSucessoPage() {
   return (
-    <PageShell>
-      <section className="mx-auto grid min-h-[70vh] max-w-4xl place-items-center px-5 py-20 text-center sm:px-8">
-        <div className="rounded-[2.5rem] border border-emerald-300/20 bg-emerald-300/10 p-8 shadow-2xl shadow-emerald-500/10 backdrop-blur-2xl">
-          <p className="text-sm font-black uppercase tracking-[0.3em] text-emerald-200">
-            Assinatura iniciada
-          </p>
+    <main className="planify-ui3 planify-public flex min-h-screen flex-col">
+      <PublicHeader active="planos" />
 
-          <h1 className="mt-5 text-4xl font-black tracking-tight text-white sm:text-6xl">
-            Pagamento processado pelo Stripe.
-          </h1>
+      <section className="mx-auto flex max-w-2xl flex-1 flex-col items-center justify-center px-5 py-16 text-center sm:px-8">
+        <span className="flex h-16 w-16 items-center justify-center rounded-3xl bg-emerald-50 text-emerald-600">
+          <PlanifyIcon name="checkCircle" className="h-8 w-8" />
+        </span>
 
-          <p className="mt-6 text-base leading-8 text-emerald-100/85">
-            Se o webhook do Stripe já estiver configurado, seu acesso será
-            liberado automaticamente. Caso esteja em ambiente local, valide o
-            webhook antes de testar usuários comuns.
-          </p>
+        <p className="mt-6 text-xs font-black uppercase tracking-[0.2em] text-emerald-600">
+          Assinatura iniciada
+        </p>
 
-          <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
-            <Link
-              href="/login"
-              className="rounded-2xl bg-white px-6 py-4 text-sm font-black text-slate-950 transition hover:-translate-y-1 hover:bg-emerald-100"
-            >
-              Fazer login
-            </Link>
+        <h1 className="mt-4 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
+          Pagamento processado com{" "}
+          <span className="pl-gradient-text">sucesso.</span>
+        </h1>
 
-            <Link
-              href="/dashboard"
-              className="rounded-2xl border border-white/10 bg-white/5 px-6 py-4 text-sm font-black text-white transition hover:-translate-y-1 hover:bg-white/10"
-            >
-              Ir ao dashboard
-            </Link>
-          </div>
+        <p className="mt-5 text-base font-medium leading-7 text-slate-600">
+          Se o webhook do Stripe estiver configurado, seu acesso premium será
+          liberado automaticamente. Em ambiente local, valide o webhook antes de
+          testar com usuários comuns.
+        </p>
+
+        <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+          <Link
+            href="/login"
+            className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-indigo-600 to-violet-600 px-7 py-3.5 text-sm font-bold text-white hover:opacity-95"
+          >
+            Fazer login
+          </Link>
+          <Link
+            href="/dashboard"
+            className="pl-btn-brand inline-flex items-center justify-center gap-2 rounded-full px-7 py-3.5 text-sm font-bold text-slate-900"
+          >
+            Ir ao painel
+            <PlanifyIcon name="arrowRight" className="h-4 w-4" />
+          </Link>
         </div>
       </section>
-    </PageShell>
+
+      <PublicFooter />
+    </main>
   );
 }

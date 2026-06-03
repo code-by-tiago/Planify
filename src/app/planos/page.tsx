@@ -2,7 +2,6 @@ import Link from "next/link";
 import { PublicHeader } from "@/components/public/PublicHeader";
 import { PublicFooter } from "@/components/public/PublicFooter";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
-import { Reveal } from "@/components/public/landing/Reveal";
 import { LandingFaq } from "@/components/public/landing/LandingFaq";
 import { billingPlans } from "../../types/billing";
 
@@ -154,147 +153,170 @@ const planFaq = [
   },
 ];
 
+const includedFeatures = [
+  "13 ferramentas com IA",
+  "Construtor de aula e planejamentos BNCC",
+  "Editor, histórico e biblioteca premium",
+  "Exportação em DOCX oficial",
+];
+
 export default async function PlanosPage({ searchParams }: PlanosPageProps) {
   const params = searchParams ? await searchParams : {};
   const alert = getAlert(params);
 
   return (
-    <main className="planify-ui3 min-h-screen overflow-x-clip">
+    <main className="planify-ui3 planify-public min-h-screen overflow-x-clip">
       <PublicHeader active="planos" />
 
       {/* Hero */}
-      <section className="pl-aurora relative">
-        <div className="pl-grid absolute inset-0 -z-10" aria-hidden="true" />
-        <div className="mx-auto max-w-7xl px-5 py-16 sm:px-8 lg:py-20">
-          <Reveal>
-            <div className="max-w-3xl">
-              <span className="inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-white/80 px-4 py-2 text-xs font-black uppercase tracking-[0.18em] text-indigo-700 shadow-sm backdrop-blur">
-                <PlanifyIcon name="plans" className="h-4 w-4" />
-                Planos Planify
+      <section className="mx-auto max-w-7xl px-5 py-14 sm:px-8 lg:py-20">
+        <div className="max-w-3xl">
+          <p className="text-xs font-black uppercase tracking-[0.2em] text-indigo-600">
+            Planos Planify
+          </p>
+          <h1 className="mt-4 text-4xl font-black leading-[1.06] tracking-tight text-slate-950 sm:text-5xl">
+            Libere o Planify e crie materiais{" "}
+            <span className="pl-gradient-text">sem limites manuais.</span>
+          </h1>
+          <p className="mt-5 max-w-2xl text-lg font-medium leading-8 text-slate-600">
+            Mesma proposta das plataformas pedagógicas modernas: IA, BNCC e
+            ferramentas em um só lugar — com créditos claros e checkout seguro.
+          </p>
+
+          <ul className="mt-6 flex flex-wrap gap-2">
+            {includedFeatures.map((item) => (
+              <span
+                key={item}
+                className="inline-flex items-center gap-1.5 rounded-full border border-blue-100 bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-800"
+              >
+                <PlanifyIcon name="checkCircle" className="h-3.5 w-3.5" />
+                {item}
               </span>
+            ))}
+          </ul>
+        </div>
 
-              <h1 className="mt-6 text-4xl font-black leading-[1.05] tracking-tight text-slate-950 sm:text-5xl">
-                Escolha seu plano e libere o{" "}
-                <span className="pl-gradient-text">Planify Premium</span>.
-              </h1>
-
-              <p className="mt-5 max-w-2xl text-lg font-semibold leading-8 text-slate-600">
-                Acesso aos geradores com IA, planejamentos alinhados à BNCC,
-                materiais didáticos, editor, histórico organizado, biblioteca
-                premium e marketplace pedagógico.
-              </p>
+        {alert && (
+          <div
+            className={`mt-8 flex max-w-3xl gap-3 rounded-2xl border p-5 ${alertClass(alert.type)}`}
+          >
+            <PlanifyIcon
+              name={alert.type === "success" ? "checkCircle" : "alertCircle"}
+              className="h-5 w-5 shrink-0"
+            />
+            <div>
+              <p className="text-sm font-black">{alert.title}</p>
+              <p className="mt-1 text-sm font-medium leading-6">{alert.message}</p>
             </div>
-          </Reveal>
+          </div>
+        )}
 
-          {alert && (
-            <div className={`mt-8 flex gap-3 rounded-2xl border p-5 ${alertClass(alert.type)}`}>
-              <PlanifyIcon
-                name={alert.type === "success" ? "checkCircle" : "alertCircle"}
-                className="h-5 w-5 shrink-0"
-              />
-              <div>
-                <p className="text-sm font-black">{alert.title}</p>
-                <p className="mt-1 text-sm font-semibold leading-6">{alert.message}</p>
-              </div>
-            </div>
-          )}
-
-          <div className="mt-10 grid items-stretch gap-6 lg:grid-cols-3">
-            {billingPlans.map((plan, index) => (
-              <Reveal key={plan.key} delay={index * 0.08}>
-                <article
-                  className={`relative flex h-full flex-col rounded-[2rem] border p-7 shadow-sm transition hover:-translate-y-1 hover:shadow-xl ${
+        <div className="mt-12 grid items-stretch gap-6 lg:grid-cols-3">
+          {billingPlans.map((plan) => (
+            <article
+              key={plan.key}
+              className={`relative flex h-full flex-col rounded-3xl border p-7 transition hover:shadow-lg ${
+                plan.highlighted
+                      ? "border-indigo-300 bg-white shadow-md ring-2 ring-indigo-500/30 lg:scale-[1.02]"
+                  : "border-slate-200 bg-white shadow-sm"
+              }`}
+            >
+              {plan.badgeLabel && (
+                <span
+                  className={`absolute right-6 top-6 rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] ${
                     plan.highlighted
-                      ? "border-slate-950 bg-white ring-2 ring-slate-950 lg:scale-[1.03]"
-                      : "border-slate-200 bg-white"
+                      ? "bg-indigo-600 text-white"
+                      : "bg-indigo-50 text-indigo-700"
                   }`}
                 >
-                  {plan.badgeLabel && (
-                    <span
-                      className={`absolute right-6 top-6 rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] ${
-                        plan.highlighted
-                          ? "bg-slate-950 text-white"
-                          : "bg-indigo-50 text-indigo-700"
-                      }`}
-                    >
-                      {plan.badgeLabel}
-                    </span>
-                  )}
+                  {plan.badgeLabel}
+                </span>
+              )}
 
-                  <p className="pr-24 text-xs font-black uppercase tracking-[0.2em] text-indigo-700">
-                    {plan.name}
-                  </p>
+              <p className="pr-24 text-xs font-black uppercase tracking-[0.2em] text-blue-600">
+                {plan.name}
+              </p>
 
-                  <div className="mt-5 flex flex-wrap items-end gap-2">
-                    <span className="text-4xl font-black tracking-tight text-slate-950">
-                      {plan.priceLabel}
-                    </span>
-                    <span className="pb-1.5 text-sm font-bold text-slate-500">
-                      {plan.recurrenceLabel}
-                    </span>
-                  </div>
+              <div className="mt-5 flex flex-wrap items-end gap-2">
+                <span className="text-4xl font-black tracking-tight text-slate-950">
+                  {plan.priceLabel}
+                </span>
+                <span className="pb-1.5 text-sm font-semibold text-slate-500">
+                  {plan.recurrenceLabel}
+                </span>
+              </div>
 
-                  <div className="mt-4 inline-flex w-fit items-center gap-2 rounded-2xl border border-indigo-100 bg-indigo-50 px-4 py-2 text-sm font-black text-indigo-700">
-                    <PlanifyIcon name="spark" className="h-4 w-4" />
-                    {plan.creditsLabel}
-                  </div>
+              <div className="mt-4 inline-flex w-fit items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-4 py-2 text-sm font-bold text-blue-700">
+                <PlanifyIcon name="spark" className="h-4 w-4" />
+                {plan.creditsLabel}
+              </div>
 
-                  <p className="mt-5 text-sm font-semibold leading-6 text-slate-600">
-                    {plan.description}
-                  </p>
+              <p className="mt-5 text-sm font-medium leading-6 text-slate-600">
+                {plan.description}
+              </p>
 
-                  <ul className="mt-6 grid gap-3 text-sm font-semibold leading-6 text-slate-700">
-                    {plan.features.map((feature) => (
-                      <li key={feature} className="flex items-start gap-2.5">
-                        <PlanifyIcon
-                          name="checkCircle"
-                          className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600"
-                        />
-                        {feature}
-                      </li>
-                    ))}
-                  </ul>
+              <ul className="mt-6 grid flex-1 gap-3 text-sm font-medium leading-6 text-slate-700">
+                {plan.features.map((feature) => (
+                  <li key={feature} className="flex items-start gap-2.5">
+                    <PlanifyIcon
+                      name="checkCircle"
+                      className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600"
+                    />
+                    {feature}
+                  </li>
+                ))}
+              </ul>
 
-                  <div className="mt-auto pt-8">
-                    <Link
-                      href={`/api/stripe/checkout?plan=${plan.key}`}
-                      prefetch={false}
-                      className={`flex w-full items-center justify-center gap-2 rounded-2xl px-6 py-4 text-sm font-black transition hover:-translate-y-0.5 ${
-                        plan.highlighted
-                          ? "bg-slate-950 text-white shadow-lg shadow-slate-200"
-                          : "border border-slate-200 bg-white text-slate-900 hover:border-slate-950"
-                      }`}
-                    >
-                      {plan.ctaLabel}
-                      <PlanifyIcon name="arrowRight" className="h-4 w-4" />
-                    </Link>
-                  </div>
-                </article>
-              </Reveal>
-            ))}
-          </div>
+              <div className="mt-auto pt-8">
+                <Link
+                  href={`/api/stripe/checkout?plan=${plan.key}`}
+                  prefetch={false}
+                  className={`flex w-full items-center justify-center gap-2 rounded-full px-6 py-3.5 text-sm font-bold transition ${
+                    plan.highlighted
+                      ? "pl-btn-brand text-slate-900 hover:brightness-95"
+                      : "border border-slate-200 bg-white text-slate-900 hover:border-blue-300 hover:text-blue-700"
+                  }`}
+                >
+                  {plan.ctaLabel}
+                  <PlanifyIcon name="arrowRight" className="h-4 w-4" />
+                </Link>
+              </div>
+            </article>
+          ))}
         </div>
+
+        <p className="mt-8 text-center text-sm font-medium text-slate-500">
+          Já tem conta?{" "}
+          <Link href="/login" className="font-bold text-blue-600 hover:text-blue-800">
+            Entrar
+          </Link>
+          {" · "}
+          <Link
+            href="/dashboard"
+            className="font-bold text-blue-600 hover:text-blue-800"
+          >
+            Ir ao painel
+          </Link>
+        </p>
       </section>
 
-      {/* Comparativo */}
-      <section className="mx-auto max-w-7xl px-5 py-12 sm:px-8">
-        <Reveal>
-          <div className="max-w-2xl">
-            <span className="text-xs font-black uppercase tracking-[0.18em] text-indigo-700">
-              Comparativo
-            </span>
-            <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
-              Compare os planos lado a lado.
-            </h2>
-          </div>
-        </Reveal>
+      {/* Comparativo — faixa lavanda */}
+      <section className="border-y border-indigo-100/50 pl-app-bg py-14 sm:py-16">
+        <div className="mx-auto max-w-7xl px-5 sm:px-8">
+          <h2 className="text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
+            Compare os planos{" "}
+            <span className="pl-gradient-text">lado a lado.</span>
+          </h2>
+          <p className="mt-3 max-w-xl text-base font-medium text-slate-600">
+            Créditos, geradores, editor e biblioteca — tudo incluído em cada
+            assinatura ativa.
+          </p>
 
-        <Reveal>
-          <div className="mt-8 overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
+          <div className="mt-8 overflow-hidden rounded-3xl border border-white/60 bg-white shadow-sm">
             <div className="overflow-x-auto">
               <table className="w-full min-w-[640px] border-collapse text-left">
                 <thead>
-                  <tr className="border-b border-slate-200 bg-slate-50">
+                  <tr className="border-b border-slate-200 bg-slate-50/80">
                     <th className="px-6 py-5 text-xs font-black uppercase tracking-[0.16em] text-slate-500">
                       Recurso
                     </th>
@@ -302,13 +324,13 @@ export default async function PlanosPage({ searchParams }: PlanosPageProps) {
                       <th
                         key={plan.key}
                         className={`px-6 py-5 text-sm font-black ${
-                          plan.highlighted ? "text-slate-950" : "text-slate-700"
+                          plan.highlighted ? "text-blue-700" : "text-slate-700"
                         }`}
                       >
                         <span className="flex items-center gap-2">
                           {plan.name}
                           {plan.highlighted ? (
-                            <span className="rounded-full bg-slate-950 px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.14em] text-white">
+                            <span className="rounded-full bg-blue-600 px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.14em] text-white">
                               Popular
                             </span>
                           ) : null}
@@ -319,14 +341,20 @@ export default async function PlanosPage({ searchParams }: PlanosPageProps) {
                 </thead>
                 <tbody>
                   {comparisonRows.map((row) => (
-                    <tr key={row.label} className="border-b border-slate-100 last:border-0">
+                    <tr
+                      key={row.label}
+                      className="border-b border-slate-100 last:border-0"
+                    >
                       <td className="px-6 py-4 text-sm font-bold text-slate-700">
                         {row.label}
                       </td>
                       {billingPlans.map((plan) => {
                         const value = row.values[plan.key];
                         return (
-                          <td key={plan.key} className="px-6 py-4 text-sm font-semibold text-slate-600">
+                          <td
+                            key={plan.key}
+                            className="px-6 py-4 text-sm font-medium text-slate-600"
+                          >
                             {typeof value === "boolean" ? (
                               value ? (
                                 <PlanifyIcon
@@ -337,7 +365,9 @@ export default async function PlanosPage({ searchParams }: PlanosPageProps) {
                                 <span className="text-slate-300">—</span>
                               )
                             ) : (
-                              <span className="font-black text-slate-900">{value}</span>
+                              <span className="font-bold text-slate-900">
+                                {value}
+                              </span>
                             )}
                           </td>
                         );
@@ -348,45 +378,65 @@ export default async function PlanosPage({ searchParams }: PlanosPageProps) {
               </table>
             </div>
           </div>
-        </Reveal>
+        </div>
       </section>
 
       {/* Garantias */}
-      <section className="mx-auto max-w-7xl px-5 py-8 sm:px-8">
+      <section className="mx-auto max-w-7xl px-5 py-12 sm:px-8">
         <div className="grid gap-4 sm:grid-cols-3">
-          {guarantees.map((item, index) => (
-            <Reveal key={item.title} delay={index * 0.08}>
-              <div className="flex h-full items-start gap-3 rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-700">
-                  <PlanifyIcon name={item.icon} className="h-5 w-5" />
-                </span>
-                <div>
-                  <p className="text-sm font-black text-slate-950">{item.title}</p>
-                  <p className="mt-1 text-sm font-semibold leading-6 text-slate-600">
-                    {item.description}
-                  </p>
-                </div>
+          {guarantees.map((item) => (
+            <div
+              key={item.title}
+              className="flex h-full items-start gap-3 rounded-3xl border border-slate-100 bg-white p-5 shadow-sm"
+            >
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
+                <PlanifyIcon name={item.icon} className="h-5 w-5" />
+              </span>
+              <div>
+                <p className="text-sm font-black text-slate-950">{item.title}</p>
+                <p className="mt-1 text-sm font-medium leading-6 text-slate-600">
+                  {item.description}
+                </p>
               </div>
-            </Reveal>
+            </div>
           ))}
         </div>
       </section>
 
       {/* FAQ */}
       <section className="mx-auto max-w-3xl px-5 py-12 sm:px-8">
-        <Reveal>
-          <div className="text-center">
-            <span className="text-xs font-black uppercase tracking-[0.18em] text-indigo-700">
-              Perguntas frequentes
-            </span>
-            <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
-              Dúvidas sobre os planos.
-            </h2>
-          </div>
-        </Reveal>
-
-        <div className="mt-9">
+        <h2 className="text-center text-2xl font-black text-slate-950 sm:text-3xl">
+          Dúvidas sobre os planos
+        </h2>
+        <div className="mt-8">
           <LandingFaq items={planFaq} />
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section className="mx-auto max-w-7xl px-5 pb-16 sm:px-8">
+        <div className="rounded-[2rem] bg-gradient-to-br from-blue-600 to-blue-700 px-8 py-10 text-center text-white sm:px-12">
+          <h2 className="text-2xl font-black sm:text-3xl">
+            Pronto para começar grátis?
+          </h2>
+          <p className="mx-auto mt-3 max-w-lg text-sm font-medium text-blue-100">
+            Crie sua conta, escolha um plano e acesse o Construtor de aula com as
+            13 ferramentas do Planify.
+          </p>
+          <div className="mt-6 flex flex-wrap justify-center gap-3">
+            <Link
+              href="/login"
+              className="pl-btn-brand inline-flex items-center gap-2 rounded-full px-7 py-3.5 text-sm font-bold text-slate-900"
+            >
+              Criar conta
+            </Link>
+            <Link
+              href="/dashboard"
+              className="inline-flex items-center gap-2 rounded-full border border-white/30 px-7 py-3.5 text-sm font-bold text-white hover:bg-white/10"
+            >
+              Acessar painel
+            </Link>
+          </div>
         </div>
       </section>
 

@@ -106,7 +106,7 @@ export default function PlanifyDashboardShell() {
           : "/planejamentos"
       }
       onClick={closeSidebar}
-      className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-4 py-3 text-sm font-black text-white transition hover:bg-indigo-700"
+      className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-3 text-sm font-black text-white transition hover:opacity-95"
     >
       <PlanifyIcon name="layers" className="h-4 w-4" />
       Construtor de aula
@@ -115,7 +115,7 @@ export default function PlanifyDashboardShell() {
 
   return (
     /* Container pai: flex lado a lado, 100% da tela, sem scroll da página */
-    <div className="planify-ui3 pl-dashboard-root flex h-screen w-screen overflow-hidden bg-slate-100 text-slate-950">
+    <div className="planify-ui3 pl-dashboard-root pl-app-bg flex h-screen w-screen overflow-hidden text-slate-950">
       <PlanifyShellSidebar
         open={sidebarOpen}
         onOpenChange={setSidebarOpen}
@@ -136,7 +136,7 @@ export default function PlanifyDashboardShell() {
       </PlanifyShellSidebar>
 
       {/* Área principal: flex-1, h-screen, overflow-hidden */}
-      <main className="flex h-screen min-w-0 flex-1 flex-col overflow-hidden bg-[#f0f2f8]">
+      <main className="flex h-screen min-w-0 flex-1 flex-col overflow-hidden bg-[#f8f5ff]/80">
         {selectedToolId ? (
           <header className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-2.5 sm:px-5">
             <div className="flex min-w-0 flex-1 items-center gap-3">
@@ -157,7 +157,7 @@ export default function PlanifyDashboardShell() {
                   <button
                     type="button"
                     onClick={() => selectTool(null)}
-                    className="transition hover:text-indigo-600"
+                    className="transition hover:text-blue-600"
                   >
                     Início
                   </button>
@@ -165,7 +165,7 @@ export default function PlanifyDashboardShell() {
                     name="chevronRight"
                     className="h-3 w-3 shrink-0 opacity-60"
                   />
-                  <span className="text-indigo-600">
+                  <span className="text-blue-600">
                     {activeTool?.shortTitle}
                   </span>
                 </nav>
@@ -182,13 +182,13 @@ export default function PlanifyDashboardShell() {
             <div className="flex shrink-0 items-center gap-2">
               <Link
                 href="/historico"
-                className="hidden rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-black text-slate-600 transition hover:border-indigo-200 sm:inline-flex"
+                className="hidden rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-black text-slate-600 transition hover:border-blue-200 sm:inline-flex"
               >
                 Histórico
               </Link>
               <Link
                 href="/planos"
-                className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-black text-white transition hover:bg-indigo-700"
+                className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-black text-white transition hover:bg-blue-700"
               >
                 Planos
               </Link>
@@ -207,7 +207,7 @@ export default function PlanifyDashboardShell() {
             <PlanifyBrand compact />
             <Link
               href="/planos"
-              className="rounded-lg bg-indigo-600 px-2.5 py-1.5 text-[10px] font-black text-white"
+              className="rounded-lg bg-blue-600 px-2.5 py-1.5 text-[10px] font-black text-white"
             >
               Planos
             </Link>

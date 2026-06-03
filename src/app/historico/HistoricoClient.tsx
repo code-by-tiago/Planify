@@ -54,7 +54,7 @@ function statusClass(type: StatusState["type"]) {
     return "border-amber-200 bg-amber-50 text-amber-700";
   }
 
-  return "border-cyan-200 bg-cyan-50 text-cyan-700";
+  return "border-indigo-200 bg-indigo-50 text-indigo-700";
 }
 
 function formatDate(value: string): string {
@@ -84,7 +84,7 @@ function historyItemToEditorDocument(item: HistoryItem): EditorDocument {
 
 function getSourceBadgeClass(source: string): string {
   if (source === "planejamento") {
-    return "border-cyan-200 bg-cyan-50 text-cyan-700";
+    return "border-indigo-200 bg-indigo-50 text-indigo-700";
   }
 
   if (source === "material") {
@@ -219,7 +219,7 @@ export function HistoricoClient() {
               <button
                 type="button"
                 onClick={reloadHistory}
-                className="rounded-2xl bg-slate-950 px-5 py-4 text-sm font-black text-white transition hover:-translate-y-1"
+                className="rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-4 text-sm font-black text-white transition hover:-translate-y-1 hover:opacity-95"
               >
                 Recarregar histórico
               </button>
@@ -261,7 +261,7 @@ export function HistoricoClient() {
                 </h2>
               </div>
 
-              <span className="rounded-full border border-cyan-200 bg-cyan-50 px-4 py-2 text-sm font-black text-cyan-700">
+              <span className="rounded-full border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-black text-indigo-700">
                 {filteredItems.length} resultado(s)
               </span>
             </div>
@@ -343,7 +343,7 @@ export function HistoricoClient() {
                           {item.title}
                         </h3>
                         {item.subtitle && (
-                          <p className="mt-1 text-sm font-bold text-cyan-700">
+                          <p className="mt-1 text-sm font-bold text-indigo-700">
                             {item.subtitle}
                           </p>
                         )}
@@ -359,7 +359,7 @@ export function HistoricoClient() {
                         <button
                           type="button"
                           onClick={() => openInEditor(item)}
-                          className="rounded-xl bg-slate-950 px-4 py-2 text-xs font-black text-white transition"
+                          className="rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-2 text-xs font-black text-white transition hover:opacity-95"
                         >
                           Editor
                         </button>
@@ -400,7 +400,7 @@ export function HistoricoClient() {
                     {selectedItem.title}
                   </h2>
                   {selectedItem.subtitle && (
-                    <p className="mt-2 text-sm font-bold text-cyan-700">
+                    <p className="mt-2 text-sm font-bold text-indigo-700">
                       {selectedItem.subtitle}
                     </p>
                   )}
@@ -444,7 +444,7 @@ export function HistoricoClient() {
                     <button
                       type="button"
                       onClick={() => openInEditor(selectedItem)}
-                      className="rounded-2xl bg-slate-950 px-5 py-4 text-sm font-black text-white transition hover:-translate-y-1"
+                      className="rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-4 text-sm font-black text-white transition hover:-translate-y-1 hover:opacity-95"
                     >
                       Abrir no Editor
                     </button>

@@ -130,9 +130,7 @@ export function PlanifySidebarNav({
                     }`}
                   >
                     <PlanifyNavIcon name={item.icon} />
-                    <span className="truncate">
-                      {item.href === "/dashboard" ? "Assistente IA" : item.label}
-                    </span>
+                    <span className="truncate">{item.label}</span>
                   </button>
                 );
               }

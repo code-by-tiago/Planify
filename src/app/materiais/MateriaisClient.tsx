@@ -722,7 +722,7 @@ td,th{border:1px solid #d1d5db;padding:8px;}
           {loading ? (
             <div className="flex h-full min-h-[280px] items-center justify-center">
               <div className="w-full max-w-md rounded-[2rem] border border-slate-200 bg-white p-7 text-center shadow-xl">
-                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-slate-950 text-white">
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-br from-indigo-600 to-violet-600 text-white">
                   <PlanifyIcon name={mode.icon} className="h-7 w-7" />
                 </div>
                 <h3 className="mt-5 text-2xl font-black text-slate-950">
@@ -759,7 +759,7 @@ td,th{border:1px solid #d1d5db;padding:8px;}
                 <button
                   type="button"
                   onClick={baixarWord}
-                  className="inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-4 py-2 text-sm font-black text-white transition hover:-translate-y-0.5"
+                  className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-2 text-sm font-black text-white transition hover:-translate-y-0.5 hover:opacity-95"
                 >
                   <PlanifyIcon name="download" className="h-4 w-4" />
                   Baixar .doc
@@ -943,7 +943,7 @@ td,th{border:1px solid #d1d5db;padding:8px;}
                     onClick={() => reabrirHistorico(item)}
                     className="group flex items-start gap-3 rounded-[1.4rem] border border-slate-200 bg-slate-50 p-4 text-left transition hover:-translate-y-0.5 hover:border-slate-950 hover:bg-white hover:shadow-lg"
                   >
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white text-slate-700 shadow-sm transition group-hover:bg-slate-950 group-hover:text-white">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white text-slate-700 shadow-sm transition group-hover:bg-indigo-600 group-hover:text-white">
                       <PlanifyIcon name={itemTool.icon} className="h-5 w-5" />
                     </span>
                     <span className="min-w-0">

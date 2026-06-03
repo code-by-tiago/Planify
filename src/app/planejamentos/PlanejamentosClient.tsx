@@ -318,10 +318,10 @@ function Pill({
   tone?: "cyan" | "emerald" | "slate" | "amber";
 }) {
   const styles = {
-    cyan: "border-cyan-300/30 bg-cyan-300/10 text-cyan-100",
-    emerald: "border-emerald-300/30 bg-emerald-300/10 text-emerald-100",
-    slate: "border-white/10 bg-white/5 text-slate-200",
-    amber: "border-amber-300/30 bg-amber-300/10 text-amber-100",
+    cyan: "border-indigo-200 bg-indigo-50 text-indigo-700",
+    emerald: "border-emerald-200 bg-emerald-50 text-emerald-700",
+    slate: "border-slate-200 bg-slate-50 text-slate-700",
+    amber: "border-amber-200 bg-amber-50 text-amber-700",
   };
 
   return (
@@ -1133,7 +1133,7 @@ export function PlanejamentosClient() {
               <label className="grid gap-2">
                 <span className="text-sm font-bold text-violet-500">Conteúdos</span>
                 <textarea value={form.conteudos} onChange={(event) => updateField("conteudos", event.target.value)} rows={6} placeholder={"Digite um conteúdo por linha.\nEx.: Estrutura dissertativa-argumentativa\nEx.: Repertório sociocultural"} className="rounded-2xl border border-rose-100/90 bg-white px-5 py-4 text-sm font-semibold leading-7 text-violet-950 outline-none transition focus:border-fuchsia-300 focus:ring-4 focus:ring-fuchsia-100/80" />
-                <span className="text-xs text-cyan-100/70">Este campo é suficiente para buscar e sugerir habilidades BNCC.</span>
+                <span className="text-xs text-indigo-600/80">Este campo é suficiente para buscar e sugerir habilidades BNCC.</span>
               </label>
 
               <label className="grid gap-2">
@@ -1157,7 +1157,7 @@ export function PlanejamentosClient() {
               <button type="button" onClick={suggestBncc} disabled={loadingBncc} className="rounded-2xl bg-white px-6 py-4 text-sm font-black text-slate-950 transition hover:-translate-y-1 hover:bg-cyan-100 disabled:cursor-not-allowed disabled:opacity-60">
                 {loadingBncc ? "Sugerindo BNCC..." : "1. Sugerir BNCC"}
               </button>
-              <button type="button" onClick={generatePlanning} disabled={loadingPlan} className="rounded-2xl border border-cyan-300/30 bg-cyan-300/10 px-6 py-4 text-sm font-black text-cyan-100 transition hover:-translate-y-1 hover:bg-cyan-300/20 disabled:cursor-not-allowed disabled:opacity-60">
+              <button type="button" onClick={generatePlanning} disabled={loadingPlan} className="rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-6 py-4 text-sm font-black text-white transition hover:-translate-y-1 hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60">
                 {loadingPlan ? "Gerando com IA..." : "2. Gerar planejamento com IA"}
               </button>
               <button type="button" onClick={downloadDocx} disabled={loadingDocx || !generatedPlanning} className="rounded-2xl border border-emerald-300/30 bg-emerald-300/10 px-6 py-4 text-sm font-black text-emerald-100 transition hover:-translate-y-1 hover:bg-emerald-300/20 disabled:cursor-not-allowed disabled:opacity-50">
@@ -1275,7 +1275,7 @@ export function PlanejamentosClient() {
                         <button type="button" onClick={() => selectGroup(group)} className="rounded-xl border border-emerald-300/30 bg-emerald-300/10 px-4 py-2 text-xs font-black text-emerald-100 transition hover:bg-emerald-300/20">
                           Selecionar grupo
                         </button>
-                        <button type="button" onClick={() => removeGroup(group)} className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs font-black text-slate-200 transition hover:bg-white/10">
+                        <button type="button" onClick={() => removeGroup(group)} className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-black text-slate-700 transition hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700">
                           Remover
                         </button>
                       </div>

@@ -464,7 +464,7 @@ export function MarketplaceClient() {
                 type="file"
                 accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.png,.jpg,.jpeg,.webp,.txt,.zip"
                 onChange={(event) => setFile(event.target.files?.[0] || null)}
-                className="mt-3 block w-full text-sm text-slate-700 file:mr-4 file:rounded-xl file:border-0 file:bg-slate-950 file:px-4 file:py-2 file:text-sm file:font-black file:text-white"
+                className="mt-3 block w-full text-sm text-slate-700 file:mr-4 file:rounded-xl file:border-0 file:bg-gradient-to-r file:from-indigo-600 file:to-violet-600 file:px-4 file:py-2 file:text-sm file:font-black file:text-white"
                 required
               />
               {file ? (
@@ -491,7 +491,7 @@ export function MarketplaceClient() {
             <button
               type="submit"
               disabled={loading}
-              className="rounded-2xl bg-slate-950 px-6 py-4 text-sm font-black text-white transition hover:-translate-y-1 disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-6 py-4 text-sm font-black text-white transition hover:-translate-y-1 hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {loading ? "Publicando..." : "Publicar no Marketplace"}
             </button>
@@ -535,7 +535,7 @@ export function MarketplaceClient() {
             <button
               type="button"
               onClick={() => loadItems(mineOnly)}
-              className="rounded-2xl bg-slate-950 px-5 py-3 text-sm font-black text-white transition"
+              className="rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-3 text-sm font-black text-white transition hover:opacity-95"
             >
               Atualizar
             </button>
@@ -561,7 +561,7 @@ export function MarketplaceClient() {
 
           <div className="mt-6 grid gap-4">
             {loading ? (
-              <div className="rounded-2xl border border-cyan-200 bg-cyan-50 p-6 text-sm leading-7 text-cyan-700">
+              <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-6 text-sm leading-7 text-indigo-700">
                 Carregando Marketplace...
               </div>
             ) : filteredItems.length > 0 ? (
@@ -583,7 +583,7 @@ export function MarketplaceClient() {
                         {item.description}
                       </p>
                     </div>
-                    <span className="rounded-full border border-cyan-200 bg-cyan-50 px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-cyan-700">
+                    <span className="rounded-full border border-indigo-200 bg-indigo-50 px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-indigo-700">
                       {item.tipoMaterial}
                     </span>
                   </div>
@@ -651,7 +651,7 @@ export function MarketplaceClient() {
                   href={selected.signedUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="rounded-2xl bg-slate-950 px-6 py-4 text-center text-sm font-black text-white transition hover:-translate-y-1"
+                  className="rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-6 py-4 text-center text-sm font-black text-white transition hover:-translate-y-1 hover:opacity-95"
                 >
                   Baixar material
                 </a>

@@ -13,7 +13,7 @@ type MateriaisTipoRedirectProps = {
 };
 
 /**
- * Redireciona /materiais?tipo=… para o Studio (/dashboard?tipo=…).
+ * Redireciona /materiais?tipo=… para o painel (/dashboard?tipo=…).
  */
 export default function MateriaisTipoRedirect({
   children,
@@ -42,7 +42,7 @@ export default function MateriaisTipoRedirect({
         <div className="text-center">
           <span className="inline-block h-8 w-8 animate-spin rounded-full border-2 border-violet-200 border-t-fuchsia-500" />
           <p className="mt-4 text-sm font-bold text-violet-500">
-            Abrindo no Studio…
+            Abrindo no painel…
           </p>
         </div>
       </main>

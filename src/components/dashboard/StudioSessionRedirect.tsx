@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 /**
- * Em usuários premium autenticados, envia da landing para o Studio (/dashboard).
+ * Em usuários premium autenticados, envia da landing para o painel (/dashboard).
  */
 export default function StudioSessionRedirect() {
   const router = useRouter();

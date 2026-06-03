@@ -506,8 +506,81 @@ export function buildCompletionQuestion(input: MaterialAIInput, index: number): 
   const theme = String(input.tema || content).trim() || content;
   const component = String(input.componenteCurricular || "componente curricular").trim() || "componente curricular";
   const kind = blueprint.kind;
+  const normalizedComponent = normalizeForPedagogy(component);
+  const normalizedTheme = normalizeForPedagogy(theme);
   const isObjective = kind === "prova" && index % 3 === 0;
   const lens = getComponentLens(input)[0] || `Mantenha foco em ${component}.`;
+
+  if (normalizedComponent.includes("portugues") && normalizedTheme.includes("sujeito")) {
+    const subjectQuestions = [
+      {
+        tipo: "identificação sintática",
+        enunciado: `Leia a oração: "Os estudantes revisaram a lição antes da prova." Identifique o sujeito e destaque seu núcleo.`,
+        respostaEsperada: "Sujeito: Os estudantes. Núcleo: estudantes.",
+        criterioCorrecao: "Considerar correta a identificação do sujeito e do núcleo, com escrita clara e sem confundir sujeito com predicado.",
+      },
+      {
+        tipo: "classificação do sujeito",
+        enunciado: `Classifique o sujeito da oração: "A professora e os alunos organizaram a exposição." Explique por que ele recebe essa classificação.`,
+        respostaEsperada: "Sujeito composto, pois possui dois núcleos: professora e alunos.",
+        criterioCorrecao: "Avaliar classificação correta e justificativa baseada na presença de mais de um núcleo.",
+      },
+      {
+        tipo: "sujeito oculto",
+        enunciado: `Na frase "Chegamos cedo ao teatro municipal", identifique o sujeito e explique como ele pode ser reconhecido.`,
+        respostaEsperada: "Sujeito oculto/desinencial: nós. É reconhecido pela forma verbal chegamos.",
+        criterioCorrecao: "Considerar correta a indicação de nós e a justificativa pela desinência verbal.",
+      },
+      {
+        tipo: "oração sem sujeito",
+        enunciado: `Analise a oração "Há muitas dúvidas sobre o conteúdo". Ela possui sujeito? Justifique sua resposta.`,
+        respostaEsperada: "Não possui sujeito; é oração sem sujeito, pois o verbo haver foi usado com sentido de existir.",
+        criterioCorrecao: "Avaliar identificação correta da oração sem sujeito e justificativa pelo uso impessoal do verbo haver.",
+      },
+      {
+        tipo: "sujeito indeterminado",
+        enunciado: `Explique por que a frase "Precisa-se de colaboradores para a campanha" apresenta sujeito indeterminado.`,
+        respostaEsperada: "Porque não se identifica quem precisa; a construção com verbo na 3ª pessoa + se indica indeterminação do sujeito nesse caso.",
+        criterioCorrecao: "Avaliar explicação coerente sobre indeterminação e uso da partícula se.",
+      },
+      {
+        tipo: "reescrita com sujeito claro",
+        enunciado: `Reescreva a frase "Entregaram os trabalhos no prazo" tornando o sujeito explícito e mantendo o sentido da ação.`,
+        respostaEsperada: "Exemplo: Os estudantes entregaram os trabalhos no prazo.",
+        criterioCorrecao: "Aceitar reescritas coerentes que explicitem o sujeito e mantenham o sentido da oração.",
+      },
+      {
+        tipo: "comparação sintática",
+        enunciado: `Compare as orações "O aluno participou do debate" e "O aluno e a colega participaram do debate". Classifique o sujeito em cada uma.`,
+        respostaEsperada: "Na primeira, sujeito simples. Na segunda, sujeito composto.",
+        criterioCorrecao: "Avaliar classificação correta e percepção da diferença entre um núcleo e dois núcleos.",
+      },
+      {
+        tipo: "análise em contexto",
+        enunciado: `Leia: "Durante a reunião, discutiu-se a organização da feira cultural." Identifique o tipo de sujeito e explique o papel do termo "se".`,
+        respostaEsperada: "Sujeito indeterminado, pois a ação é apresentada sem identificar quem discutiu; o se contribui para essa indeterminação.",
+        criterioCorrecao: "Avaliar identificação do sujeito e explicação adequada do uso do se no contexto.",
+      },
+      {
+        tipo: "produção de frases",
+        enunciado: "Crie duas frases sobre a rotina escolar: uma com sujeito simples e outra com sujeito composto. Depois, sublinhe o sujeito em cada frase.",
+        respostaEsperada: "Resposta pessoal. Deve apresentar uma frase com um núcleo no sujeito e outra com dois ou mais núcleos.",
+        criterioCorrecao: "Avaliar adequação das frases, identificação do sujeito e classificação coerente.",
+      },
+      {
+        tipo: "desafio de revisão",
+        enunciado: `Corrija a análise: "Na frase 'Choveu durante a noite', o sujeito é 'a noite'." Explique o erro e apresente a classificação correta.`,
+        respostaEsperada: "A análise está incorreta. A oração não possui sujeito, pois o verbo chover indica fenômeno da natureza.",
+        criterioCorrecao: "Avaliar correção do erro, classificação como oração sem sujeito e justificativa adequada.",
+      },
+    ];
+    const selected = subjectQuestions[index % subjectQuestions.length];
+    return {
+      numero: index + 1,
+      alternativas: [],
+      ...selected,
+    };
+  }
 
   if (isObjective) {
     return {

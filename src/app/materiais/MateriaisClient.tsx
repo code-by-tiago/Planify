@@ -495,34 +495,48 @@ function validateForm(form: FormState): string | null {
 }
 
 const materialProgressSteps = [
-  "Interpretando o tema e o nível da turma",
-  "Organizando os conteúdos essenciais",
-  "Criando exercícios variados e produtivos",
+  "Lendo o pedido do professor com precisão",
+  "Organizando o produto no formato certo",
+  "Criando questões e blocos com estrutura",
   "Separando versão do aluno e gabarito",
-  "Revisando clareza, sequência e apresentação",
+  "Revisando quantidade, clareza e apresentação",
 ];
 
-function MaterialGenerationPanel({ label }: { label: string }) {
+const materialGenerationMessages = [
+  "Estamos lapidando o material para que ele saia pronto para usar em sala.",
+  "Organizando cada questão como produto final, sem texto corrido e sem promessa vazia.",
+  "Separando a versão do aluno do gabarito para facilitar impressão, edição e aplicação.",
+  "Conferindo se o formato escolhido combina com o que será entregue ao professor.",
+];
+
+function MaterialGenerationPanel({ label, messageIndex }: { label: string; messageIndex: number }) {
+  const message = materialGenerationMessages[messageIndex % materialGenerationMessages.length];
+
   return (
-    <div className="rounded-[1.75rem] border border-cyan-300/25 bg-cyan-300/10 p-5 shadow-2xl shadow-cyan-500/10">
+    <div className="rounded-[1.75rem] border border-cyan-200 bg-gradient-to-br from-cyan-50 via-sky-50 to-emerald-50 p-5 shadow-2xl shadow-cyan-500/10">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-xs font-black uppercase tracking-[0.25em] text-cyan-200">Preparando material</p>
-          <h3 className="mt-2 text-xl font-black text-white">{label}</h3>
+          <p className="text-xs font-black uppercase tracking-[0.25em] text-cyan-700">Preparando material</p>
+          <h3 className="mt-2 text-xl font-black text-slate-950">{label}</h3>
         </div>
         <div className="flex gap-2" aria-hidden="true">
-          <span className="h-3 w-3 animate-pulse rounded-full bg-cyan-200" />
-          <span className="h-3 w-3 animate-pulse rounded-full bg-blue-200 [animation-delay:120ms]" />
-          <span className="h-3 w-3 animate-pulse rounded-full bg-emerald-200 [animation-delay:240ms]" />
+          <span className="h-3 w-3 animate-pulse rounded-full bg-cyan-500" />
+          <span className="h-3 w-3 animate-pulse rounded-full bg-blue-500 [animation-delay:120ms]" />
+          <span className="h-3 w-3 animate-pulse rounded-full bg-emerald-500 [animation-delay:240ms]" />
         </div>
       </div>
+
+      <div className="mt-5 rounded-2xl border border-cyan-200 bg-white/80 p-4 text-sm font-bold leading-7 text-slate-800 shadow-sm">
+        {message}
+      </div>
+
       <div className="mt-5 grid gap-3 md:grid-cols-5">
         {materialProgressSteps.map((step, index) => (
-          <div key={step} className="rounded-2xl border border-white/10 bg-slate-950/35 p-3">
-            <div className="mb-3 h-1.5 overflow-hidden rounded-full bg-white/10">
-              <span className="block h-full animate-pulse rounded-full bg-cyan-200" style={{ width: `${Math.min(100, 34 + index * 14)}%` }} />
+          <div key={step} className="rounded-2xl border border-cyan-100 bg-white/80 p-3 shadow-sm">
+            <div className="mb-3 h-1.5 overflow-hidden rounded-full bg-slate-200">
+              <span className="block h-full animate-pulse rounded-full bg-cyan-500" style={{ width: `${Math.min(100, 34 + index * 14)}%` }} />
             </div>
-            <p className="text-xs font-bold leading-5 text-cyan-50/90">{step}</p>
+            <p className="text-xs font-black leading-5 text-slate-800">{step}</p>
           </div>
         ))}
       </div>
@@ -661,9 +675,32 @@ function renderTextBlock(value: string | undefined) {
     .join("");
 }
 
+function splitLetteredItems(value: string) {
+  const text = String(value || "").trim();
+  const markerRegex = /(^|\s)([a-jA-J])\)\s*/g;
+  const markers = Array.from(text.matchAll(markerRegex));
+  if (markers.length < 2) return null;
+
+  const firstMarker = markers[0];
+  const intro = text.slice(0, firstMarker.index).trim().replace(/[:;,.\-–—]+$/, "");
+  const items = markers.map((marker, index) => {
+    const startIndex = Number(marker.index) + marker[0].length;
+    const endIndex = index + 1 < markers.length ? Number(markers[index + 1].index) : text.length;
+    return text.slice(startIndex, endIndex).trim().replace(/^[;,.\-–—]+/, "").trim();
+  }).filter(Boolean);
+
+  return items.length >= 2 ? { intro, items } : null;
+}
+
 function renderQuestionText(value: string | undefined) {
   const text = String(value || "").trim();
   if (!text) return "";
+
+  const splitLettered = splitLetteredItems(text);
+  if (splitLettered) {
+    return `${splitLettered.intro ? `<p>${escapeHtml(splitLettered.intro)}:</p>` : ""}<ol class="planify-subitems" type="a">${splitLettered.items.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ol>`;
+  }
+
   const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
   const bulletLines = lines.filter((line) => /^[-•]/.test(line));
   const normalLines = lines.filter((line) => !/^[-•]/.test(line));
@@ -727,6 +764,8 @@ function buildMaterialEditorHtml(material: GeneratedMaterial) {
   .planify-question-enunciado p{margin:6px 0 8px;}
   .planify-question-steps{margin:10px 0 0 20px;padding:0;}
   .planify-question-steps li{margin:5px 0;}
+  .planify-subitems{margin:12px 0 0 24px;padding:0;}
+  .planify-subitems li{margin:8px 0;padding-left:4px;}
   .planify-alternatives{margin:12px 0 0 22px;padding:0;}
   .planify-alternatives li{margin:6px 0;padding-left:4px;}
   .planify-question-type{display:inline-block;margin-bottom:8px;padding:4px 8px;border-radius:999px;background:#dcfce7;color:#166534;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;}
@@ -819,7 +858,13 @@ export function MateriaisClient() {
   const [generatedMaterial, setGeneratedMaterial] = useState<GeneratedMaterial | null>(null);
   const [suggestions, setSuggestions] = useState<SuggestionOutput | null>(null);
   const [selectedSuggestionIds, setSelectedSuggestionIds] = useState<string[]>([]);
+  const [showSuggestionsPanel, setShowSuggestionsPanel] = useState(false);
   
+  const generationMessageIndex = useMemo(() => {
+    const seed = `${form.tipo}-${form.tema}-${form.componenteCurricular}-${form.quantidadeQuestoes}`;
+    return Array.from(seed).reduce((sum, char) => sum + char.charCodeAt(0), 0);
+  }, [form.tipo, form.tema, form.componenteCurricular, form.quantidadeQuestoes]);
+
   const manualConteudos = useMemo(() => splitLines(form.conteudos), [form.conteudos]);
   const selectedContents = useMemo(
     () => buildUnifiedContentLines(form, suggestions?.conteudos || []),
@@ -845,6 +890,7 @@ export function MateriaisClient() {
     if (["etapa", "anoSerie", "areaConhecimento", "componenteCurricular", "tema"].includes(String(key))) {
       setSuggestions(null);
       setSelectedSuggestionIds([]);
+      setShowSuggestionsPanel(false);
     }
   }
 
@@ -853,6 +899,7 @@ export function MateriaisClient() {
     setGeneratedMaterial(null);
     setSuggestions(null);
     setSelectedSuggestionIds([]);
+    setShowSuggestionsPanel(false);
     setStatus({ type: "idle", message: "Campos limpos. Informe o tema e gere um material completo." });
   }
 
@@ -871,6 +918,7 @@ export function MateriaisClient() {
     setGeneratedMaterial(null);
     setSuggestions(null);
     setSelectedSuggestionIds([]);
+    setShowSuggestionsPanel(false);
     setStatus({ type: "info", message: "Exemplo aplicado. Clique em gerar para criar o material completo." });
   }
 
@@ -893,6 +941,7 @@ export function MateriaisClient() {
     }
 
     setIsSuggesting(true);
+    setShowSuggestionsPanel(true);
     setStatus({ type: "info", message: "Analisando tema, etapa, série e componente..." });
 
     try {
@@ -1000,7 +1049,6 @@ export function MateriaisClient() {
           const result = await response.json();
           if (response.ok && result?.success && result.data) {
             const data = result.data as SuggestionOutput;
-            setSuggestions(data);
             conteudos = buildUnifiedContentLines(form, data.conteudos || []);
           }
         } catch {
@@ -1280,10 +1328,10 @@ export function MateriaisClient() {
           <div className="mt-6 rounded-2xl border border-emerald-300/20 bg-emerald-300/10 p-5">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
               <div>
-                <p className="text-sm font-black uppercase tracking-[0.22em] text-emerald-200">Curadoria inteligente</p>
-                <h3 className="mt-2 text-xl font-black text-white">Organizar conteúdos antes de gerar</h3>
+                <p className="text-sm font-black uppercase tracking-[0.22em] text-emerald-200">Curadoria opcional</p>
+                <h3 className="mt-2 text-xl font-black text-white">Sugerir conteúdos somente quando desejar</h3>
                 <p className="mt-2 text-sm leading-7 text-emerald-50/80">
-                  Use quando o professor só informar o tema. O Planify sugere conteúdos, objetivos e formatos coerentes antes da geração final.
+                  Esta área só abre quando você clicar. Ao gerar direto, o Planify organiza internamente sem poluir a página com sugestões.
                 </p>
               </div>
               <button type="button" onClick={suggestContents} disabled={isSuggesting} className="rounded-2xl bg-emerald-200 px-5 py-4 text-sm font-black text-slate-950 transition hover:-translate-y-1 hover:bg-white disabled:cursor-not-allowed disabled:opacity-60">
@@ -1291,7 +1339,7 @@ export function MateriaisClient() {
               </button>
             </div>
 
-            {suggestions ? (
+            {showSuggestionsPanel && suggestions ? (
               <div className="mt-5 grid gap-4">
                 <div className="rounded-2xl border border-white/10 bg-slate-950/35 p-4">
                   <p className="text-sm leading-7 text-emerald-50/90">{suggestions.resumoPedagogico}</p>
@@ -1346,7 +1394,7 @@ export function MateriaisClient() {
         </div>
 
         {isGenerating ? (
-          <MaterialGenerationPanel label={form.tipo === "jogo" ? `Montando ${selectedGameModel?.label || "jogo"}` : `Criando ${typeLabels[form.tipo].toLocaleLowerCase("pt-BR")}`} />
+          <MaterialGenerationPanel label={form.tipo === "jogo" ? `Montando ${selectedGameModel?.label || "jogo"}` : `Criando ${typeLabels[form.tipo].toLocaleLowerCase("pt-BR")}`} messageIndex={generationMessageIndex} />
         ) : null}
 
         <div className="rounded-[2rem] border border-white/10 bg-white/[0.06] p-6 shadow-2xl backdrop-blur-2xl">

@@ -22,8 +22,9 @@ function materialRulesByType(type: string): string[] {
       "Não comece com apresentação longa. Entregue a VERSÃO DO ALUNO diretamente, com cabeçalho, comandos e questões.",
       "Depois entregue GABARITO DO PROFESSOR separado, com respostas esperadas e critérios.",
       "Organize aquecimento, desenvolvimento, prática, desafio e fechamento apenas dentro dos comandos, sem texto explicativo antes do material.",
-      "Crie questões progressivas, contextualizadas e variadas: interpretação, associação, classificação, produção, justificativa, análise, aplicação e síntese.",
-      "Inclua enunciados completos, exemplos suficientes, resposta esperada, critério de correção e orientações de aplicação.",
+      "Crie questões progressivas, contextualizadas e variadas: identificação, classificação, reescrita, interpretação, associação, produção, justificativa, análise, aplicação e síntese.",
+      "Não compacte várias letras a), b), c), d) dentro de uma única questão. Cada pergunta principal deve ser uma questão própria no array questoes.",
+      "Inclua enunciados completos, exemplos suficientes, resposta esperada, critério de correção e comandos de aplicação.",
       "A versão do aluno deve ficar sem resposta logo abaixo da questão; o gabarito deve ficar separado.",
       "Não preencha jogo, projeto nem roteiro.",
     ];
@@ -45,6 +46,7 @@ function materialRulesByType(type: string): string[] {
       "Entregue lista de exercícios progressiva pronta para o aluno resolver, sem introdução longa.",
       "Separe VERSÃO DO ALUNO e GABARITO DO PROFESSOR.",
       "Crie prática suficiente para o aluno treinar de verdade, com comandos variados e contextualizados ao tema.",
+      "Não entregue exercícios em forma de parágrafo. Cada exercício deve ser item numerado, com comando próprio e espaço de resposta.",
       "Inclua gabarito comentado, critérios e indicação de erros comuns para retomada.",
       "Não transforme a lista em apostila longa; foco em prática organizada.",
       "Não preencha jogo, projeto nem roteiro.",
@@ -134,6 +136,7 @@ export function buildMaterialSystemInstruction(): string {
     "Sua prioridade absoluta é obedecer ao TIPO DE MATERIAL solicitado pelo professor.",
     "Sua segunda prioridade é entregar o produto pronto, sem preâmbulo, sem justificativa longa e sem explicar o que você vai fazer antes de entregar.",
     "Para atividade, prova, lista, revisão e exercícios, a entrega deve começar pelo material utilizável: VERSÃO DO ALUNO e depois GABARITO DO PROFESSOR.",
+    "Atividade, lista, prova e revisão devem ter forma de folha escolar: questões numeradas, comandos diretos, tópicos, alternativas ou espaço de resposta. Não entregue como textão.",
     "Nunca misture formatos: apostila ensina em capítulos; prova avalia; atividade pratica; lista treina; revisão retoma; sequência organiza aulas; projeto investiga e produz; roteiro orienta estudo; jogo entrega peças ou dinâmica pronta.",
     "O material deve ser adequado à etapa, ao ano/série, ao componente curricular e ao tema.",
     "Não transforme tema de Geografia, Ciências, História, Filosofia, Matemática ou Ensino Religioso em atividade de Língua Portuguesa, salvo se o componente escolhido for Língua Portuguesa, Redação ou Escrita Criativa.",
@@ -213,10 +216,11 @@ REGRAS UNIVERSAIS:
 13. Use linguagem adequada ao ano/série, sem infantilizar turma avançada e sem complexidade excessiva para anos iniciais.
 14. CONTRATO DE PRECISÃO: quando houver quantidade informada, o array questoes deve conter exatamente essa quantidade, sem uma a menos, sem uma a mais. Se o professor pedir 10 questões, entregue 10 objetos numerados de 1 a 10 e 10 itens correspondentes no gabarito.
 15. Cada questão deve ter enunciado completo, comando claro, resposta esperada e critério de correção. Provas devem combinar objetivas e discursivas quando fizer sentido.
-16. Não deixe promessa solta no texto: se disser “responda às questões abaixo”, as questões precisam existir logo no bloco próprio.
-17. Respeite o componente curricular: Geografia deve ter raciocínio espacial/territorial; Ciências deve ter investigação científica; História deve ter processos históricos; Matemática deve ter resolução e procedimentos; Línguas devem trabalhar linguagem; Ensino Religioso deve tratar valores e diversidade com respeito.
-18. Retorne apenas JSON válido.
-19. Antes de finalizar, faça uma checagem interna: tipo correto, todos os conteúdos usados, quantidade exata de questões, gabarito correspondente, seções completas e nenhuma promessa sem entrega.
+16. Não compacte várias perguntas em uma só questão com a), b), c), d). Se existirem 10 itens pedidos, crie 10 objetos em questoes.
+17. Não deixe promessa solta no texto: se disser “responda às questões abaixo”, as questões precisam existir logo no bloco próprio.
+18. Respeite o componente curricular: Geografia deve ter raciocínio espacial/territorial; Ciências deve ter investigação científica; História deve ter processos históricos; Matemática deve ter resolução e procedimentos; Línguas devem trabalhar linguagem; Ensino Religioso deve tratar valores e diversidade com respeito.
+19. Retorne apenas JSON válido.
+20. Antes de finalizar, faça uma checagem interna: tipo correto, todos os conteúdos usados, quantidade exata de questões, gabarito correspondente, seções completas e nenhuma promessa sem entrega.
 
 REGRAS ESPECÍFICAS DO TIPO:
 ${typeRules.map((rule) => `- ${rule}`).join("\n")}
@@ -225,6 +229,7 @@ CONTRATO DE ENTREGA DIRETA AO PRODUTO:
 - Não escreva frases de abertura como "Este material foi elaborado", "A seguir", "Apresento", "Objetivo deste material" ou justificativas pedagógicas antes do produto.
 - Para atividade, prova, lista, revisão e exercícios: coloque o material em formato direto, com questões no array questoes e gabarito separado no array gabarito.
 - Atividades, exercícios e listas não podem vir como parágrafo corrido dentro de secoes. Devem vir como itens numerados no array questoes.
+- Não use uma questão com vários itens a), b), c), d) para simular quantidade. Cada pergunta principal deve ser objeto próprio.
 - Quando um enunciado tiver mais de uma ação, organize em tópicos curtos usando linhas com "•".
 - A versão do aluno nunca deve revelar resposta logo abaixo da questão.
 - O gabarito do professor deve ser completo, coerente com as questões finais e separado.
@@ -263,7 +268,7 @@ FORMATO JSON EXATO:
     {
       "numero": 1,
       "tipo": "string",
-      "enunciado": "string em formato objetivo; use linhas com • quando houver mais de uma ação",
+      "enunciado": "string em formato objetivo; uma pergunta principal por objeto; use linhas com • quando houver mais de uma ação",
       "alternativas": ["string"],
       "respostaEsperada": "string",
       "criterioCorrecao": "string"

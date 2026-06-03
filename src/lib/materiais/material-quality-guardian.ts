@@ -7,6 +7,7 @@ import type {
 import { buildHardPedagogicalMaterial } from "./pedagogical-hard-engine";
 import {
   enforceQuestionBulletStructure,
+  expandPackedQuestion,
   shouldUseBulletStructure,
   structureSectionsForMaterial,
 } from "./material-structure-contracts";
@@ -170,7 +171,7 @@ function uniqueQuestions(primary: Partial<MaterialAIQuestion>[], fallback: Parti
   const signatures = new Set<string>();
   const questions: MaterialAIQuestion[] = [];
 
-  [...primary, ...fallback].forEach((question) => {
+  [...primary, ...fallback].flatMap(expandPackedQuestion).forEach((question) => {
     const signature = questionSignature(question);
     if (!signature || signatures.has(signature)) return;
     signatures.add(signature);

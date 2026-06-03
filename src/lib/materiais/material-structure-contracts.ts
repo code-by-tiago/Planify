@@ -1,4 +1,4 @@
-import type { MaterialAIInput, MaterialAISection } from "../../types/ai";
+import type { MaterialAIInput, MaterialAIQuestion, MaterialAISection } from "../../types/ai";
 import { canonicalMaterialType, normalizeForPedagogy } from "./material-specialist-blueprints";
 
 export function buildMaterialStructureContract(input: MaterialAIInput): string {
@@ -9,6 +9,7 @@ export function buildMaterialStructureContract(input: MaterialAIInput): string {
     "A estrutura visual do material deve combinar com o tipo solicitado; não entregue tudo como texto corrido.",
     "Não use parágrafos longos para atividades, exercícios, listas, provas ou revisões. Use questões numeradas, tópicos, itens e comandos claros.",
     "Não coloque exercícios escondidos dentro de seções em forma de texto. Quando houver questão, ela deve estar no array questoes.",
+    "Não compacte várias perguntas em uma única questão usando a), b), c), d). Cada pergunta principal deve ser um objeto separado em questoes.",
     "A versão do aluno deve ser limpa, imprimível e pronta para uso. O gabarito deve ficar separado para o professor.",
     "Cada seção deve ter função real: ensinar, orientar, praticar, revisar, avaliar ou produzir. Nada de seção decorativa.",
   ];
@@ -19,6 +20,7 @@ export function buildMaterialStructureContract(input: MaterialAIInput): string {
       `Para ${kind}, use formato de folha de atividade: cabeçalho, comandos curtos, uma questão por item e espaço de resposta.`,
       "Cada questão deve ser direta e organizada em tópicos quando tiver mais de uma ação: • observe, • responda, • justifique, • registre.",
       "Evite texto explicativo antes das questões; explique apenas dentro do enunciado quando for indispensável para resolver.",
+      "Não entregue uma questão gigante com várias letras dentro; transforme cada item relevante em questão própria ou em subitens visuais curtos.",
       "Varie o formato das questões: completar, relacionar, classificar, interpretar, justificar, comparar, produzir e desafio final.",
       "O gabarito deve repetir a numeração da versão do aluno e trazer resposta esperada objetiva.",
     ].join("\n");
@@ -114,6 +116,53 @@ export function enforceQuestionBulletStructure(value: unknown): string {
   return [first, ...actions.slice(0, 4).map((sentence) => `• ${sentence.replace(/^[-•]\s*/, "")}`)].join("\n");
 }
 
+
+
+type LetteredSplit = {
+  intro: string;
+  items: string[];
+};
+
+export function splitLetteredSubitems(value: unknown): LetteredSplit | null {
+  const text = String(value || "").trim();
+  const markerRegex = /(^|\s)([a-jA-J])\)\s*/g;
+  const markers = Array.from(text.matchAll(markerRegex));
+  if (markers.length < 3) return null;
+
+  const firstMarker = markers[0];
+  const intro = text.slice(0, firstMarker.index).trim().replace(/[:;,.\-–—]+$/, "");
+  const items = markers
+    .map((marker, index) => {
+      const start = Number(marker.index) + marker[0].length;
+      const end = index + 1 < markers.length ? Number(markers[index + 1].index) : text.length;
+      return text.slice(start, end).trim().replace(/^[;,.\-–—]+/, "").trim();
+    })
+    .filter((item) => item.length >= 3);
+
+  return items.length >= 3 ? { intro, items } : null;
+}
+
+function inferActionFromIntro(intro: string): string {
+  const clean = intro.trim().replace(/[:;,.\-–—]+$/, "");
+  if (!clean) return "Resolva o item";
+  return clean.length > 150 ? clean.slice(0, 147).trim() + "..." : clean;
+}
+
+export function expandPackedQuestion(question: Partial<MaterialAIQuestion>): Partial<MaterialAIQuestion>[] {
+  const split = splitLetteredSubitems(question.enunciado);
+  if (!split) return [question];
+
+  const action = inferActionFromIntro(split.intro);
+  return split.items.map((item, index) => ({
+    ...question,
+    tipo: question.tipo || "item estruturado",
+    enunciado: `${action}: ${item}`,
+    alternativas: [],
+    respostaEsperada: question.respostaEsperada || "Resposta esperada conforme o comando e o conteúdo estudado.",
+    criterioCorrecao: question.criterioCorrecao || "Avaliar se o estudante resolveu o item com clareza, coerência e domínio do conteúdo.",
+    numero: index + 1,
+  }));
+}
 export function structureSectionsForMaterial(kindValue: unknown, sections: MaterialAISection[], theme: string): MaterialAISection[] {
   const kind = canonicalMaterialType(kindValue);
   const cleanTheme = String(theme || "tema estudado").trim() || "tema estudado";

@@ -1,0 +1,35 @@
+{
+  "version": "1.0.0",
+  "genericRubric": [
+    {
+      "criterion": "Compreensão do conteúdo",
+      "excellent": "domina conceito e aplica com precisão",
+      "good": "compreende o essencial",
+      "basic": "apresenta compreensão parcial",
+      "needsWork": "confunde conceito central"
+    },
+    {
+      "criterion": "Clareza da resposta",
+      "excellent": "responde com organização e linguagem adequada",
+      "good": "responde com clareza suficiente",
+      "basic": "resposta incompleta ou pouco organizada",
+      "needsWork": "resposta vaga ou sem relação"
+    },
+    {
+      "criterion": "Justificativa/evidência",
+      "excellent": "usa exemplo, dado, texto ou procedimento para sustentar",
+      "good": "justifica parcialmente",
+      "basic": "cita sem explicar",
+      "needsWork": "não justifica"
+    },
+    {
+      "criterion": "Aplicação",
+      "excellent": "transfere o conteúdo para nova situação",
+      "good": "aplica em situação semelhante",
+      "basic": "aplica com ajuda",
+      "needsWork": "não aplica"
+    }
+  ],
+  "questionCorrectionModel": "Para cada questão discursiva, registrar: resposta esperada, elementos mínimos, exemplos aceitáveis e erro comum a observar.",
+  "objectiveCorrectionModel": "Para questão objetiva, registrar alternativa correta e justificativa de uma linha."
+}

@@ -1,0 +1,30 @@
+{
+  "version": "1.0.0",
+  "hardGates": [
+    "Se pediu N questões, deve haver exatamente N questões.",
+    "Questões devem aparecer separadas por número.",
+    "Comando da questão não pode estar grudado no selo/título.",
+    "Itens a), b), c) devem estar em linhas separadas.",
+    "Gabarito não pode usar a mesma frase genérica para todas as questões.",
+    "Atividade/lista/prova não pode começar com justificativa pedagógica longa.",
+    "Apostila precisa ter capítulos/unidades e não apenas exercícios.",
+    "Projeto precisa ter problema norteador e produto final.",
+    "Jogo precisa ter peças/regras reais, não só descrição."
+  ],
+  "rejectIfContains": [
+    "Respostas coerentes com o tema",
+    "Avaliar compreensão, aplicação e organização",
+    "Este material foi elaborado",
+    "A seguir apresento"
+  ],
+  "studentTeacherSplit": [
+    "VERSÃO DO ALUNO",
+    "VERSÃO DO PROFESSOR — GABARITO"
+  ],
+  "minimumQualityByType": {
+    "atividade": "questões claras + espaços + gabarito específico",
+    "apostila": "capítulos + exemplos + exercícios + glossário + gabarito",
+    "prova": "cabeçalho + questões + pontuação + gabarito",
+    "lista": "progressão + gabarito comentado"
+  }
+}

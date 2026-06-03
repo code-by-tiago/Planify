@@ -1,0 +1,283 @@
+{
+  "version": "1.0.0",
+  "name": "Planify Pedagogical Brain — Base Universal Inicial",
+  "principles": [
+    "Entregar produto pronto, não explicação sobre o produto.",
+    "Cada tipo de material tem estrutura própria obrigatória.",
+    "A versão do aluno deve ser limpa, objetiva e aplicável em sala.",
+    "O gabarito do professor deve ser específico, útil e coerente com cada questão.",
+    "A base enriquece o motor; ela não autoriza copiar material protegido de terceiros.",
+    "Conteúdo original, organizado, progressivo e adequado à etapa escolar."
+  ],
+  "materialTypes": {
+    "atividade": {
+      "delivery": "Folha de atividade pronta para o aluno, com questões numeradas, comandos claros, tópicos e espaço de resposta.",
+      "requiredSections": [
+        "Cabeçalho",
+        "Versão do aluno",
+        "Questões",
+        "Espaço para resposta",
+        "Versão do professor — gabarito"
+      ],
+      "forbidden": [
+        "Textão antes da atividade",
+        "Justificativa pedagógica longa no começo",
+        "Comando colado no título",
+        "Questões em parágrafo corrido"
+      ],
+      "studentPattern": [
+        "Título",
+        "Nome/Turma/Data",
+        "Instrução curta",
+        "Questões numeradas",
+        "Espaço de resposta"
+      ],
+      "teacherPattern": [
+        "Gabarito específico por questão",
+        "Critérios de correção objetivos",
+        "Possíveis respostas aceitáveis quando for discursiva"
+      ]
+    },
+    "exercicios": {
+      "delivery": "Lista de prática com itens progressivos e comandos curtos.",
+      "requiredSections": [
+        "Bloco básico",
+        "Bloco intermediário",
+        "Bloco desafio",
+        "Gabarito"
+      ],
+      "forbidden": [
+        "Exercícios narrados como texto",
+        "Mais explicação do que prática",
+        "Gabarito genérico"
+      ],
+      "studentPattern": [
+        "Questões numeradas",
+        "Itens a), b), c) em linhas separadas",
+        "Alternativas ou lacunas quando aplicável"
+      ],
+      "teacherPattern": [
+        "Respostas específicas",
+        "Procedimento esperado",
+        "Observações sobre erros comuns"
+      ]
+    },
+    "lista": {
+      "delivery": "Lista progressiva de exercícios para fixação, aprofundamento e desafio.",
+      "requiredSections": [
+        "Básico",
+        "Intermediário",
+        "Desafio",
+        "Gabarito comentado"
+      ],
+      "forbidden": [
+        "Questões sem progressão",
+        "Gabarito repetido",
+        "Questões coladas"
+      ],
+      "studentPattern": [
+        "Questões 1 a N",
+        "Comandos em tópicos",
+        "Espaço suficiente para resposta"
+      ],
+      "teacherPattern": [
+        "Gabarito comentado",
+        "Critérios para discursivas",
+        "Pontuação opcional"
+      ]
+    },
+    "prova": {
+      "delivery": "Avaliação pronta para aplicação, com cabeçalho, instruções, pontuação e gabarito.",
+      "requiredSections": [
+        "Cabeçalho",
+        "Instruções",
+        "Questões objetivas/discursivas",
+        "Pontuação sugerida",
+        "Gabarito",
+        "Critérios"
+      ],
+      "forbidden": [
+        "Prova sem gabarito",
+        "Questões sem pontuação quando solicitada",
+        "Introdução longa"
+      ],
+      "studentPattern": [
+        "Nome/Turma/Data",
+        "Leia com atenção",
+        "Questões numeradas",
+        "Alternativas A-E quando objetiva"
+      ],
+      "teacherPattern": [
+        "Gabarito",
+        "Pontuação",
+        "Critério de correção de respostas abertas"
+      ]
+    },
+    "apostila": {
+      "delivery": "Material em formato de pequeno livro didático, com unidades, explicações, exemplos, boxes, síntese, glossário e exercícios.",
+      "requiredSections": [
+        "Capa textual",
+        "Sumário curto",
+        "Unidades/Capítulos",
+        "Exemplos",
+        "Boxes",
+        "Atividades",
+        "Glossário",
+        "Síntese",
+        "Gabarito"
+      ],
+      "forbidden": [
+        "Apostila virar folha de atividade",
+        "Só perguntas sem explicação",
+        "Texto raso de poucas linhas"
+      ],
+      "studentPattern": [
+        "Capítulos com subtítulos",
+        "Explicação progressiva",
+        "Exemplos resolvidos",
+        "Exercícios ao final"
+      ],
+      "teacherPattern": [
+        "Gabarito",
+        "Sugestão de uso",
+        "Critérios de avaliação"
+      ],
+      "minimumStructure": [
+        "3 a 6 unidades",
+        "exemplos concretos",
+        "atividade de fixação",
+        "atividade de aplicação",
+        "síntese final"
+      ]
+    },
+    "revisao": {
+      "delivery": "Material de revisão direto, com síntese curta, mapa de pontos importantes e exercícios.",
+      "requiredSections": [
+        "Retomada essencial",
+        "Pontos de atenção",
+        "Exercícios de revisão",
+        "Autoavaliação",
+        "Gabarito"
+      ],
+      "forbidden": [
+        "Revisão longa como apostila",
+        "Falta de exercícios",
+        "Resumo sem prática"
+      ],
+      "studentPattern": [
+        "Síntese em tópicos",
+        "Questões progressivas",
+        "Checklist final"
+      ],
+      "teacherPattern": [
+        "Gabarito",
+        "Critérios",
+        "Recomendações de retomada"
+      ]
+    },
+    "sequencia": {
+      "delivery": "Organização de aulas/momentos para condução pedagógica.",
+      "requiredSections": [
+        "Objetivos",
+        "Aulas/Momentos",
+        "Metodologia",
+        "Recursos",
+        "Evidências",
+        "Avaliação"
+      ],
+      "forbidden": [
+        "Sequência virar prova",
+        "Aulas sem tempo/momento",
+        "Falta de avaliação"
+      ],
+      "studentPattern": [
+        "Pode incluir atividade do aluno como anexo"
+      ],
+      "teacherPattern": [
+        "Momento inicial",
+        "Desenvolvimento",
+        "Fechamento",
+        "Avaliação formativa"
+      ]
+    },
+    "projeto": {
+      "delivery": "Projeto investigativo com problema norteador, etapas, produto final, socialização e rubrica.",
+      "requiredSections": [
+        "Problema norteador",
+        "Objetivos",
+        "Etapas",
+        "Produto final",
+        "Cronograma",
+        "Rubrica",
+        "Socialização"
+      ],
+      "forbidden": [
+        "Projeto virar lista de questões",
+        "Sem produto final",
+        "Sem critérios de avaliação"
+      ],
+      "studentPattern": [
+        "Missão",
+        "Etapas",
+        "Produto final",
+        "Checklist"
+      ],
+      "teacherPattern": [
+        "Mediação",
+        "Rubrica",
+        "Critérios de participação"
+      ]
+    },
+    "roteiro": {
+      "delivery": "Roteiro de estudo autônomo com antes, durante, depois e checagem.",
+      "requiredSections": [
+        "Antes de estudar",
+        "Durante o estudo",
+        "Depois do estudo",
+        "Autoavaliação",
+        "Gabarito quando houver questões"
+      ],
+      "forbidden": [
+        "Roteiro sem sequência",
+        "Comandos vagos"
+      ],
+      "studentPattern": [
+        "Passo 1",
+        "Passo 2",
+        "Passo 3",
+        "Checklist"
+      ],
+      "teacherPattern": [
+        "Orientação de acompanhamento",
+        "Critérios de autonomia"
+      ]
+    },
+    "jogo": {
+      "delivery": "Material jogável/imprimível, com regras, peças/cartas/pistas e gabarito.",
+      "requiredSections": [
+        "Nome do jogo",
+        "Objetivo",
+        "Materiais",
+        "Preparação",
+        "Regras",
+        "Peças/cartas",
+        "Gabarito"
+      ],
+      "forbidden": [
+        "Só descrição do jogo sem peças",
+        "Jogo sem regras",
+        "Jogo sem respostas"
+      ],
+      "studentPattern": [
+        "Cartas ou tabuleiro",
+        "Regras simples",
+        "Como vencer"
+      ],
+      "teacherPattern": [
+        "Mediação",
+        "Variações",
+        "Gabarito"
+      ]
+    }
+  }
+}

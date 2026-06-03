@@ -1,0 +1,79 @@
+{
+  "version": "1.0.0",
+  "methods": [
+    {
+      "name": "aula dialogada com prática guiada",
+      "bestFor": [
+        "atividade",
+        "revisao",
+        "sequencia"
+      ],
+      "steps": [
+        "ativar conhecimento prévio",
+        "explicar com exemplo",
+        "praticar",
+        "corrigir",
+        "sintetizar"
+      ]
+    },
+    {
+      "name": "resolução de problemas",
+      "bestFor": [
+        "matematica",
+        "ciencias",
+        "geografia"
+      ],
+      "steps": [
+        "ler situação",
+        "identificar dados",
+        "escolher estratégia",
+        "resolver",
+        "verificar"
+      ]
+    },
+    {
+      "name": "leitura orientada",
+      "bestFor": [
+        "portugues",
+        "historia",
+        "filosofia",
+        "sociologia"
+      ],
+      "steps": [
+        "pré-leitura",
+        "leitura com foco",
+        "análise",
+        "discussão",
+        "registro"
+      ]
+    },
+    {
+      "name": "projeto investigativo",
+      "bestFor": [
+        "projeto"
+      ],
+      "steps": [
+        "problema",
+        "hipóteses",
+        "pesquisa",
+        "produto",
+        "socialização",
+        "rubrica"
+      ]
+    },
+    {
+      "name": "gamificação pedagógica",
+      "bestFor": [
+        "jogo",
+        "revisao"
+      ],
+      "steps": [
+        "objetivo",
+        "regras",
+        "rodadas",
+        "feedback",
+        "fechamento"
+      ]
+    }
+  ]
+}

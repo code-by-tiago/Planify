@@ -1,0 +1,108 @@
+{
+  "version": "1.0.0",
+  "rules": [
+    "Toda questão deve ter título curto opcional separado do comando.",
+    "O comando deve vir em frase própria, nunca colado no selo/título.",
+    "Itens internos devem aparecer em linhas separadas.",
+    "Questões discursivas devem ter espaço de resposta proporcional ao comando.",
+    "O gabarito deve responder à questão específica, não usar frase genérica."
+  ],
+  "patterns": {
+    "objetiva": [
+      {
+        "structure": "enunciado + cinco alternativas",
+        "answerKey": "letra correta + justificativa curta",
+        "useWhen": "prova, revisão diagnóstica, checagem rápida"
+      },
+      {
+        "structure": "situação-problema + alternativas",
+        "answerKey": "letra correta + conceito aplicado",
+        "useWhen": "aplicação e análise"
+      }
+    ],
+    "discursiva": [
+      {
+        "structure": "comando claro + espaço para resposta",
+        "answerKey": "resposta esperada + exemplos aceitáveis + critérios",
+        "useWhen": "interpretação, argumentação, análise"
+      },
+      {
+        "structure": "pergunta contextualizada + justificativa",
+        "answerKey": "elementos mínimos que a resposta deve conter",
+        "useWhen": "ensino fundamental II e médio"
+      }
+    ],
+    "associacao": [
+      {
+        "structure": "coluna A + coluna B",
+        "answerKey": "pares corretos",
+        "useWhen": "conceitos, vocabulário, datas, autores, funções"
+      }
+    ],
+    "lacuna": [
+      {
+        "structure": "frases com lacunas numeradas",
+        "answerKey": "termos corretos por lacuna",
+        "useWhen": "vocabulário, conceitos, gramática, ciências"
+      }
+    ],
+    "classificacao": [
+      {
+        "structure": "lista de itens + categorias possíveis",
+        "answerKey": "classificação de cada item",
+        "useWhen": "gramática, ciências, geografia, história"
+      }
+    ],
+    "producao": [
+      {
+        "structure": "proposta + critérios + espaço de planejamento",
+        "answerKey": "rubrica de correção",
+        "useWhen": "redação, projeto, criação"
+      }
+    ]
+  },
+  "commandVerbs": {
+    "lembrar": [
+      "identifique",
+      "liste",
+      "nomeie",
+      "complete",
+      "reconheça"
+    ],
+    "compreender": [
+      "explique",
+      "classifique",
+      "resuma",
+      "interprete",
+      "descreva"
+    ],
+    "aplicar": [
+      "resolva",
+      "reescreva",
+      "utilize",
+      "relacione",
+      "aplique"
+    ],
+    "analisar": [
+      "compare",
+      "diferencie",
+      "justifique",
+      "analise",
+      "organize"
+    ],
+    "avaliar": [
+      "avalie",
+      "defenda",
+      "verifique",
+      "argumente",
+      "julgue"
+    ],
+    "criar": [
+      "produza",
+      "elabore",
+      "crie",
+      "planeje",
+      "proponha"
+    ]
+  }
+}

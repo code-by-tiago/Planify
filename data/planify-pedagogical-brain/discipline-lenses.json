@@ -1,0 +1,157 @@
+{
+  "version": "1.0.0",
+  "lenses": {
+    "Língua Portuguesa": {
+      "focus": [
+        "leitura",
+        "interpretação",
+        "análise linguística",
+        "produção textual",
+        "reescrita"
+      ],
+      "avoid": [
+        "frases soltas sem contexto",
+        "gabarito genérico",
+        "classificação sem justificativa"
+      ],
+      "quality": "questões com texto/base quando necessário, comandos claros e gabarito que explique o porquê"
+    },
+    "Matemática": {
+      "focus": [
+        "procedimento",
+        "raciocínio",
+        "problema contextualizado",
+        "representação",
+        "verificação"
+      ],
+      "avoid": [
+        "só conta mecânica",
+        "resposta sem passo",
+        "problema sem dados suficientes"
+      ],
+      "quality": "exercícios graduados, resolução esperada e erro comum previsto"
+    },
+    "Ciências": {
+      "focus": [
+        "fenômenos",
+        "investigação",
+        "evidências",
+        "conceitos",
+        "relações causa-consequência"
+      ],
+      "avoid": [
+        "definições decoradas",
+        "experimentos sem segurança",
+        "gabarito sem explicação"
+      ],
+      "quality": "conceito + exemplo + aplicação em situação observável"
+    },
+    "História": {
+      "focus": [
+        "temporalidade",
+        "fontes",
+        "sujeitos históricos",
+        "processos",
+        "permanências e rupturas"
+      ],
+      "avoid": [
+        "decoreba de datas",
+        "anacronismo",
+        "visão única"
+      ],
+      "quality": "contexto, fonte, interpretação e comparação"
+    },
+    "Geografia": {
+      "focus": [
+        "território",
+        "paisagem",
+        "lugar",
+        "escala",
+        "redes",
+        "natureza e sociedade"
+      ],
+      "avoid": [
+        "descrição solta",
+        "mapa sem leitura",
+        "conceito sem espaço"
+      ],
+      "quality": "localização, escala, relações espaciais e impactos"
+    },
+    "Filosofia": {
+      "focus": [
+        "problema",
+        "conceito",
+        "argumento",
+        "autor",
+        "debate",
+        "aplicação"
+      ],
+      "avoid": [
+        "opinião sem conceito",
+        "biografia rasa",
+        "pergunta moralista"
+      ],
+      "quality": "problema filosófico + argumento + comparação + reflexão fundamentada"
+    },
+    "Sociologia": {
+      "focus": [
+        "conceitos sociais",
+        "instituições",
+        "cultura",
+        "desigualdade",
+        "cidadania",
+        "pesquisa"
+      ],
+      "avoid": [
+        "achismo",
+        "estereótipo",
+        "questões sem contexto social"
+      ],
+      "quality": "conceito + fenômeno social + análise crítica"
+    },
+    "Arte": {
+      "focus": [
+        "fruição",
+        "repertório",
+        "linguagens",
+        "produção",
+        "contexto cultural"
+      ],
+      "avoid": [
+        "só desenho livre sem objetivo",
+        "ausência de apreciação"
+      ],
+      "quality": "apreciar, contextualizar e produzir"
+    },
+    "Educação Física": {
+      "focus": [
+        "práticas corporais",
+        "regras",
+        "estratégia",
+        "cooperação",
+        "saúde",
+        "cultura corporal"
+      ],
+      "avoid": [
+        "atividade física sem reflexão",
+        "competição como único foco"
+      ],
+      "quality": "vivência + reflexão + cuidado + inclusão"
+    },
+    "Língua Estrangeira": {
+      "focus": [
+        "vocabulário",
+        "comunicação",
+        "leitura",
+        "escuta",
+        "cultura",
+        "produção"
+      ],
+      "avoid": [
+        "tradução mecânica como único recurso",
+        "frases sem contexto"
+      ],
+      "quality": "uso comunicativo em contexto realista"
+    }
+  }
+}

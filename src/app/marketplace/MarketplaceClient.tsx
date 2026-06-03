@@ -323,18 +323,18 @@ export function MarketplaceClient() {
   }
 
   return (
-    <section className="mx-auto grid max-w-7xl gap-6 px-5 py-10 lg:grid-cols-[0.82fr_1.18fr] sm:px-8">
+    <section className="mx-auto grid max-w-7xl gap-6 px-4 py-6 lg:grid-cols-[0.82fr_1.18fr] sm:px-6">
       <aside className="space-y-6">
-        <div className="rounded-[2rem] border border-cyan-300/20 bg-cyan-300/10 p-6 shadow-2xl shadow-cyan-500/10">
+        <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <p className="text-sm font-black uppercase tracking-[0.28em] text-cyan-300">
+              <p className="text-sm font-black uppercase tracking-[0.28em] text-indigo-700">
                 Compartilhar
               </p>
-              <h2 className="mt-4 text-3xl font-black text-white">
+              <h2 className="mt-4 text-3xl font-black tracking-tight text-slate-950">
                 Publicar material
               </h2>
-              <p className="mt-3 text-sm leading-7 text-cyan-100/85">
+              <p className="mt-3 text-sm leading-7 text-slate-600">
                 Envie um material pedagógico para outros professores premium baixarem.
               </p>
             </div>
@@ -342,14 +342,14 @@ export function MarketplaceClient() {
             <button
               type="button"
               onClick={resetForm}
-              className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-black text-white transition hover:bg-white/10"
+              className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-700 transition hover:border-slate-950"
             >
               Limpar
             </button>
           </div>
 
           {error ? (
-            <div className="mt-5 rounded-2xl border border-amber-300/20 bg-amber-300/10 p-4 text-sm leading-7 text-amber-100">
+            <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-7 text-amber-700">
               {error}
             </div>
           ) : null}
@@ -359,7 +359,7 @@ export function MarketplaceClient() {
               value={form.title}
               onChange={(event) => updateForm("title", event.target.value)}
               placeholder="Título do material"
-              className="h-12 rounded-2xl border border-white/10 bg-slate-950/60 px-4 text-sm text-white outline-none placeholder:text-slate-500 focus:border-cyan-300/50"
+              className="h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-950 outline-none placeholder:text-slate-400 focus:border-slate-950 focus:bg-white"
               required
             />
 
@@ -367,7 +367,7 @@ export function MarketplaceClient() {
               value={form.description}
               onChange={(event) => updateForm("description", event.target.value)}
               placeholder="Descrição breve do material e como usar em aula."
-              className="min-h-24 rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500 focus:border-cyan-300/50"
+              className="min-h-24 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-950 outline-none placeholder:text-slate-400 focus:border-slate-950 focus:bg-white"
               required
             />
 
@@ -375,10 +375,10 @@ export function MarketplaceClient() {
               <select
                 value={form.etapa}
                 onChange={(event) => updateForm("etapa", event.target.value)}
-                className="h-12 rounded-2xl border border-white/10 bg-slate-950/60 px-4 text-sm text-white outline-none focus:border-cyan-300/50"
+                className="h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-950 outline-none focus:border-slate-950 focus:bg-white"
               >
                 {etapaOptions.map((item) => (
-                  <option key={item} value={item} className="bg-slate-950">
+                  <option key={item} value={item}>
                     {item}
                   </option>
                 ))}
@@ -387,10 +387,10 @@ export function MarketplaceClient() {
               <select
                 value={form.anoSerie}
                 onChange={(event) => updateForm("anoSerie", event.target.value)}
-                className="h-12 rounded-2xl border border-white/10 bg-slate-950/60 px-4 text-sm text-white outline-none focus:border-cyan-300/50"
+                className="h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-950 outline-none focus:border-slate-950 focus:bg-white"
               >
                 {availableYears.map((item) => (
-                  <option key={item} value={item} className="bg-slate-950">
+                  <option key={item} value={item}>
                     {item}
                   </option>
                 ))}
@@ -401,10 +401,10 @@ export function MarketplaceClient() {
               <select
                 value={form.componente}
                 onChange={(event) => updateForm("componente", event.target.value)}
-                className="h-12 rounded-2xl border border-white/10 bg-slate-950/60 px-4 text-sm text-white outline-none focus:border-cyan-300/50"
+                className="h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-950 outline-none focus:border-slate-950 focus:bg-white"
               >
                 {componenteOptions.map((item) => (
-                  <option key={item} value={item} className="bg-slate-950">
+                  <option key={item} value={item}>
                     {item}
                   </option>
                 ))}
@@ -413,10 +413,10 @@ export function MarketplaceClient() {
               <select
                 value={form.tipoMaterial}
                 onChange={(event) => updateForm("tipoMaterial", event.target.value)}
-                className="h-12 rounded-2xl border border-white/10 bg-slate-950/60 px-4 text-sm text-white outline-none focus:border-cyan-300/50"
+                className="h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-950 outline-none focus:border-slate-950 focus:bg-white"
               >
                 {tipoMaterialOptions.map((item) => (
-                  <option key={item} value={item} className="bg-slate-950">
+                  <option key={item} value={item}>
                     {item}
                   </option>
                 ))}
@@ -427,51 +427,51 @@ export function MarketplaceClient() {
               value={form.tema}
               onChange={(event) => updateForm("tema", event.target.value)}
               placeholder="Tema/conteúdo"
-              className="h-12 rounded-2xl border border-white/10 bg-slate-950/60 px-4 text-sm text-white outline-none placeholder:text-slate-500 focus:border-cyan-300/50"
+              className="h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-950 outline-none placeholder:text-slate-400 focus:border-slate-950 focus:bg-white"
             />
 
             <input
               value={form.authorName}
               onChange={(event) => updateForm("authorName", event.target.value)}
               placeholder="Nome do autor/professor"
-              className="h-12 rounded-2xl border border-white/10 bg-slate-950/60 px-4 text-sm text-white outline-none placeholder:text-slate-500 focus:border-cyan-300/50"
+              className="h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-950 outline-none placeholder:text-slate-400 focus:border-slate-950 focus:bg-white"
             />
 
             <input
               value={form.tags}
               onChange={(event) => updateForm("tags", event.target.value)}
               placeholder="Tags opcionais separadas por vírgula"
-              className="h-12 rounded-2xl border border-white/10 bg-slate-950/60 px-4 text-sm text-white outline-none placeholder:text-slate-500 focus:border-cyan-300/50"
+              className="h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-950 outline-none placeholder:text-slate-400 focus:border-slate-950 focus:bg-white"
             />
 
-            <label className="rounded-2xl border border-dashed border-cyan-300/30 bg-slate-950/50 p-5 text-sm font-bold text-cyan-100">
-              <span className="block text-xs font-black uppercase tracking-[0.2em] text-cyan-300">
+            <label className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-5 text-sm font-bold text-slate-700">
+              <span className="block text-xs font-black uppercase tracking-[0.2em] text-indigo-700">
                 Arquivo
               </span>
               <input
                 type="file"
                 accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.png,.jpg,.jpeg,.webp,.txt,.zip"
                 onChange={(event) => setFile(event.target.files?.[0] || null)}
-                className="mt-3 block w-full text-sm text-white file:mr-4 file:rounded-xl file:border-0 file:bg-white file:px-4 file:py-2 file:text-sm file:font-black file:text-slate-950"
+                className="mt-3 block w-full text-sm text-slate-700 file:mr-4 file:rounded-xl file:border-0 file:bg-slate-950 file:px-4 file:py-2 file:text-sm file:font-black file:text-white"
                 required
               />
               {file ? (
-                <span className="mt-3 block text-slate-300">
+                <span className="mt-3 block text-slate-600">
                   {file.name} — {formatBytes(file.size)}
                 </span>
               ) : (
-                <span className="mt-3 block text-slate-400">
+                <span className="mt-3 block text-slate-500">
                   DOCX, PDF, PPTX, XLSX, imagem, TXT ou ZIP.
                 </span>
               )}
             </label>
 
-            <label className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm font-bold text-white">
+            <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-bold text-slate-700">
               <input
                 type="checkbox"
                 checked={form.isPublished}
                 onChange={(event) => updateForm("isPublished", event.target.checked)}
-                className="h-5 w-5"
+                className="h-5 w-5 accent-slate-950"
               />
               Publicar imediatamente
             </label>
@@ -479,15 +479,15 @@ export function MarketplaceClient() {
             <button
               type="submit"
               disabled={loading}
-              className="rounded-2xl bg-white px-6 py-4 text-sm font-black text-slate-950 transition hover:-translate-y-1 hover:bg-cyan-100 disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-2xl bg-slate-950 px-6 py-4 text-sm font-black text-white transition hover:-translate-y-1 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {loading ? "Publicando..." : "Publicar no Marketplace"}
             </button>
           </form>
         </div>
 
-        <div className="rounded-[2rem] border border-white/10 bg-white/[0.06] p-5">
-          <p className="text-sm font-black uppercase tracking-[0.25em] text-cyan-300">
+        <div className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
+          <p className="text-sm font-black uppercase tracking-[0.25em] text-indigo-700">
             Filtros
           </p>
 
@@ -496,17 +496,17 @@ export function MarketplaceClient() {
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Buscar por tema, professor, componente..."
-              className="h-12 rounded-2xl border border-white/10 bg-slate-950/50 px-4 text-sm text-white outline-none placeholder:text-slate-500 focus:border-cyan-300/50"
+              className="h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-950 outline-none placeholder:text-slate-400 focus:border-slate-950 focus:bg-white"
             />
 
             <select
               value={etapaFilter}
               onChange={(event) => setEtapaFilter(event.target.value)}
-              className="h-12 rounded-2xl border border-white/10 bg-slate-950/50 px-4 text-sm text-white outline-none focus:border-cyan-300/50"
+              className="h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-950 outline-none focus:border-slate-950 focus:bg-white"
             >
-              <option value="Todas" className="bg-slate-950">Todas as etapas</option>
+              <option value="Todas">Todas as etapas</option>
               {etapaOptions.map((item) => (
-                <option key={item} value={item} className="bg-slate-950">
+                <option key={item} value={item}>
                   {item}
                 </option>
               ))}
@@ -515,7 +515,7 @@ export function MarketplaceClient() {
             <button
               type="button"
               onClick={toggleMineOnly}
-              className="rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-black text-white transition hover:bg-white/10"
+              className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-700 transition hover:border-slate-950"
             >
               {mineOnly ? "Ver todos publicados" : "Ver meus materiais"}
             </button>
@@ -523,33 +523,33 @@ export function MarketplaceClient() {
             <button
               type="button"
               onClick={() => loadItems(mineOnly)}
-              className="rounded-2xl border border-cyan-300/25 bg-cyan-300/10 px-5 py-3 text-sm font-black text-cyan-100 transition hover:bg-cyan-300/20"
+              className="rounded-2xl bg-slate-950 px-5 py-3 text-sm font-black text-white transition"
             >
               Atualizar
             </button>
           </div>
 
-          <div className="mt-5 rounded-2xl border border-white/10 bg-slate-950/45 p-4 text-sm leading-7 text-slate-300">
+          <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm leading-7 text-slate-600">
             {status}
           </div>
         </div>
       </aside>
 
       <div className="space-y-6">
-        <div className="rounded-[2rem] border border-white/10 bg-white/[0.06] p-6 shadow-2xl backdrop-blur-2xl">
-          <p className="text-sm font-black uppercase tracking-[0.28em] text-cyan-300">
+        <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+          <p className="text-sm font-black uppercase tracking-[0.28em] text-indigo-700">
             Materiais compartilhados
           </p>
-          <h2 className="mt-3 text-3xl font-black text-white">
+          <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-950">
             Troca entre professores
           </h2>
-          <p className="mt-3 text-sm leading-7 text-slate-400">
+          <p className="mt-3 text-sm leading-7 text-slate-600">
             Materiais reais publicados por professores premium.
           </p>
 
           <div className="mt-6 grid gap-4">
             {loading ? (
-              <div className="rounded-2xl border border-cyan-300/20 bg-cyan-300/10 p-6 text-sm leading-7 text-cyan-100">
+              <div className="rounded-2xl border border-cyan-200 bg-cyan-50 p-6 text-sm leading-7 text-cyan-700">
                 Carregando Marketplace...
               </div>
             ) : filteredItems.length > 0 ? (
@@ -560,23 +560,23 @@ export function MarketplaceClient() {
                   onClick={() => setSelected(item)}
                   className={`rounded-[1.5rem] border p-5 text-left transition hover:-translate-y-1 ${
                     selected?.id === item.id
-                      ? "border-cyan-300/40 bg-cyan-300/10"
-                      : "border-white/10 bg-slate-950/45 hover:bg-white/10"
+                      ? "border-slate-950 bg-slate-50"
+                      : "border-slate-200 bg-white hover:border-slate-950"
                   }`}
                 >
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div>
-                      <h3 className="text-xl font-black text-white">{item.title}</h3>
-                      <p className="mt-2 text-sm leading-7 text-slate-400">
+                      <h3 className="text-xl font-black text-slate-950">{item.title}</h3>
+                      <p className="mt-2 text-sm leading-7 text-slate-600">
                         {item.description}
                       </p>
                     </div>
-                    <span className="rounded-full border border-cyan-300/30 bg-cyan-300/10 px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-cyan-100">
+                    <span className="rounded-full border border-cyan-200 bg-cyan-50 px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-cyan-700">
                       {item.tipoMaterial}
                     </span>
                   </div>
 
-                  <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold text-slate-300">
+                  <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold text-slate-600">
                     <span>{item.etapa}</span>
                     <span>• {item.anoSerie}</span>
                     <span>• {item.componente}</span>
@@ -587,14 +587,14 @@ export function MarketplaceClient() {
                 </button>
               ))
             ) : (
-              <div className="rounded-[1.75rem] border border-amber-300/20 bg-amber-300/10 p-7">
-                <p className="text-sm font-black uppercase tracking-[0.24em] text-amber-200">
+              <div className="rounded-[1.75rem] border border-amber-200 bg-amber-50 p-7">
+                <p className="text-sm font-black uppercase tracking-[0.24em] text-amber-700">
                   Marketplace vazio
                 </p>
-                <h3 className="mt-3 text-2xl font-black text-white">
+                <h3 className="mt-3 text-2xl font-black text-slate-950">
                   Nenhum material compartilhado ainda.
                 </h3>
-                <p className="mt-3 text-sm leading-7 text-amber-100/85">
+                <p className="mt-3 text-sm leading-7 text-amber-700">
                   Publique o primeiro material para iniciar a troca entre professores.
                 </p>
               </div>
@@ -603,12 +603,12 @@ export function MarketplaceClient() {
         </div>
 
         {selected ? (
-          <div className="rounded-[2rem] border border-cyan-300/20 bg-cyan-300/10 p-6 shadow-2xl shadow-cyan-500/10">
-            <p className="text-sm font-black uppercase tracking-[0.25em] text-cyan-300">
+          <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+            <p className="text-sm font-black uppercase tracking-[0.25em] text-indigo-700">
               Detalhes
             </p>
-            <h2 className="mt-3 text-3xl font-black text-white">{selected.title}</h2>
-            <p className="mt-4 text-sm leading-7 text-cyan-100/85">
+            <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-950">{selected.title}</h2>
+            <p className="mt-4 text-sm leading-7 text-slate-600">
               {selected.description}
             </p>
 
@@ -624,11 +624,11 @@ export function MarketplaceClient() {
                 ["Tamanho", formatBytes(selected.fileSize)],
                 ["Publicado em", formatDate(selected.createdAt) || "—"],
               ].map(([label, value]) => (
-                <div key={label} className="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
-                  <p className="text-xs font-black uppercase tracking-[0.18em] text-cyan-200">
+                <div key={label} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-500">
                     {label}
                   </p>
-                  <p className="mt-2 text-sm font-bold text-white">{value}</p>
+                  <p className="mt-2 text-sm font-bold text-slate-950">{value}</p>
                 </div>
               ))}
             </div>
@@ -639,12 +639,12 @@ export function MarketplaceClient() {
                   href={selected.signedUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="rounded-2xl bg-white px-6 py-4 text-center text-sm font-black text-slate-950 transition hover:-translate-y-1 hover:bg-cyan-100"
+                  className="rounded-2xl bg-slate-950 px-6 py-4 text-center text-sm font-black text-white transition hover:-translate-y-1"
                 >
                   Baixar material
                 </a>
               ) : (
-                <span className="rounded-2xl border border-amber-300/20 bg-amber-300/10 px-6 py-4 text-center text-sm font-black text-amber-100">
+                <span className="rounded-2xl border border-amber-200 bg-amber-50 px-6 py-4 text-center text-sm font-black text-amber-700">
                   Anexo indisponível
                 </span>
               )}
@@ -653,7 +653,7 @@ export function MarketplaceClient() {
                 type="button"
                 onClick={() => removeItem(selected)}
                 disabled={loading}
-                className="rounded-2xl border border-rose-300/30 bg-rose-300/10 px-6 py-4 text-sm font-black text-rose-100 transition hover:-translate-y-1 hover:bg-rose-300/20 disabled:opacity-60"
+                className="rounded-2xl border border-rose-200 bg-rose-50 px-6 py-4 text-sm font-black text-rose-700 transition hover:-translate-y-1 disabled:opacity-60"
               >
                 Remover meu material
               </button>

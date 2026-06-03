@@ -1,292 +1,315 @@
-import crypto from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
-import { getMaterialCreditCost } from "../../../../config/material-credits";
-import { createClient as createSupabaseServerClient } from "../../../../lib/supabase/server";
-import {
-  generateMaterial,
-  getMaterialRequestHash,
-  normalizeMaterialRequest,
-  validateMaterialRequest,
-} from "../../../../server/materials/material-generator-service";
-import {
-  commitMaterialCredits,
-  refundMaterialCredits,
-  reserveMaterialCredits,
-  saveGeneratedMaterialRecord,
-} from "../../../../server/materials/material-credit-service";
-import { resolveAdminAccess } from "../../../../server/auth/admin-access";
-import { verifyPremiumAccess } from "../../../../server/auth/premium-access-service";
-import type {
-  MaterialGenerationErrorResponse,
-  MaterialGenerationResponse,
-} from "../../../../types/material-generator";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const PREMIUM_COOKIE_NAME = "planify_access";
-const ADMIN_COOKIE_NAME = "planify_admin_access";
-const OWNER_COOKIE_NAME = "planify_owner_access";
-const GEMINI_MODEL = "gemini-2.5-flash";
+type TipoMaterial =
+  | "apostila"
+  | "atividade"
+  | "prova"
+  | "slides"
+  | "projeto"
+  | "jogo"
+  | "sequencia"
+  | "resumo";
 
-function errorResponse(
-  code: string,
-  message: string,
-  status: number,
-  details?: string,
-) {
-  return NextResponse.json(
-    {
-      success: false,
-      error: {
-        code,
-        message,
-        details,
-      },
-    } satisfies MaterialGenerationErrorResponse,
-    { status },
-  );
-}
+type MaterialRequest = {
+  tipoMaterial?: TipoMaterial;
+  tipo?: TipoMaterial;
+  etapa?: string;
+  anoSerie?: string;
+  componenteCurricular?: string;
+  componente?: string;
+  tema?: string;
+  temaCentral?: string;
+  objetivo?: string;
+  objetivos?: string;
+  quantidade?: string;
+  dificuldade?: string;
+  formatoJogo?: string | null;
+  incluirGabarito?: boolean;
+};
 
-function isProbablyJwt(value: string | null): boolean {
-  return Boolean(value && value.split(".").length === 3);
-}
+type GeminiPart = {
+  text?: string;
+};
 
-function getBearerToken(request: NextRequest): string | null {
-  const authorization = request.headers.get("authorization") || request.headers.get("Authorization") || "";
-  const match = authorization.match(/^Bearer\s+(.+)$/i);
-  return match?.[1]?.trim() || null;
-}
-
-async function getSupabaseSessionToken(): Promise<string | null> {
-  try {
-    const supabase = await createSupabaseServerClient();
-    const { data } = await supabase.auth.getSession();
-    return data.session?.access_token || null;
-  } catch {
-    return null;
-  }
-}
-
-async function resolvePremiumByToken(token: string | null) {
-  if (!isProbablyJwt(token)) {
-    return verifyPremiumAccess(null);
-  }
-
-  return verifyPremiumAccess(token);
-}
-
-async function resolveApiAccess(request: NextRequest) {
-  const bearerToken = getBearerToken(request);
-  const premiumCookie = request.cookies.get(PREMIUM_COOKIE_NAME)?.value || null;
-  const adminToken = request.cookies.get(ADMIN_COOKIE_NAME)?.value || null;
-  const ownerToken = request.cookies.get(OWNER_COOKIE_NAME)?.value || null;
-
-  const supabaseSessionToken = await getSupabaseSessionToken();
-  const premiumToken = isProbablyJwt(bearerToken)
-    ? bearerToken
-    : isProbablyJwt(premiumCookie)
-      ? premiumCookie
-      : supabaseSessionToken;
-
-  const access = await resolvePremiumByToken(premiumToken);
-  const adminFromAdminCookie = await resolveAdminAccess(adminToken);
-  const adminFromOwnerCookie = adminFromAdminCookie.isAdmin
-    ? adminFromAdminCookie
-    : await resolveAdminAccess(ownerToken);
-  const adminFromBearer = adminFromOwnerCookie.isAdmin
-    ? adminFromOwnerCookie
-    : await resolveAdminAccess(bearerToken);
-  const admin = adminFromBearer.isAdmin
-    ? adminFromBearer
-    : await resolveAdminAccess(premiumToken);
-
-  const authenticated = Boolean(
-    access.authenticated ||
-      admin.authenticated ||
-      isProbablyJwt(ownerToken) ||
-      isProbablyJwt(adminToken),
-  );
-  const isAdminBypass = Boolean(admin.isAdmin);
-  const premium = Boolean(access.premium || isAdminBypass);
-  const userId = access.user?.id || admin.userId || null;
-  const email = access.user?.email || admin.email || null;
-
-  return {
-    authenticated,
-    premium,
-    isAdminBypass,
-    userId,
-    email,
+type GeminiResponse = {
+  candidates?: Array<{
+    content?: {
+      parts?: GeminiPart[];
+    };
+  }>;
+  error?: {
+    message?: string;
   };
+};
+
+const MODEL =
+  process.env.GEMINI_MODEL ||
+  process.env.GOOGLE_GEMINI_MODEL ||
+  "gemini-2.5-flash";
+
+function getGeminiApiKey() {
+  return (
+    process.env.GEMINI_API_KEY ||
+    process.env.GOOGLE_GEMINI_API_KEY ||
+    process.env.GOOGLE_API_KEY ||
+    ""
+  );
+}
+
+function asText(value: unknown, fallback = "") {
+  return typeof value === "string" && value.trim() ? value.trim() : fallback;
+}
+
+function stripCodeFence(value: string) {
+  return value
+    .replace(/^```html\s*/i, "")
+    .replace(/^```\s*/i, "")
+    .replace(/```$/i, "")
+    .trim();
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function fallbackTextToHtml(value: string) {
+  const clean = stripCodeFence(value);
+
+  if (/<[a-z][\s\S]*>/i.test(clean)) {
+    return clean;
+  }
+
+  const lines = clean
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  if (lines.length === 0) {
+    return "<p>Material gerado sem conteúdo textual.</p>";
+  }
+
+  return lines
+    .map((line) => {
+      if (/^#{1,3}\s+/.test(line)) {
+        return `<h2>${escapeHtml(line.replace(/^#{1,3}\s+/, ""))}</h2>`;
+      }
+
+      if (/^[-•]\s+/.test(line)) {
+        return `<p>${escapeHtml(line)}</p>`;
+      }
+
+      return `<p>${escapeHtml(line)}</p>`;
+    })
+    .join("\n");
+}
+
+function getTipo(payload: MaterialRequest): TipoMaterial {
+  return payload.tipoMaterial || payload.tipo || "apostila";
+}
+
+function tipoLabel(tipo: TipoMaterial) {
+  const labels: Record<TipoMaterial, string> = {
+    apostila: "apostila completa",
+    atividade: "atividade pedagógica",
+    prova: "prova avaliativa",
+    slides: "roteiro de slides",
+    projeto: "projeto pedagógico",
+    jogo: "jogo pedagógico",
+    sequencia: "sequência didática",
+    resumo: "resumo guiado",
+  };
+
+  return labels[tipo] || "material didático";
+}
+
+function estruturaPorTipo(payload: MaterialRequest) {
+  const tipo = getTipo(payload);
+  const formatoJogo = asText(payload.formatoJogo, "caça-palavras");
+  const incluirGabarito = payload.incluirGabarito !== false;
+
+  const base =
+    "Responda em HTML limpo, sem Markdown e sem bloco de código. Use h1, h2, h3, p, ul, ol, table quando fizer sentido. Não inclua CSS, scripts, links externos nem comentários técnicos.";
+
+  const common =
+    "Nunca misture formatos: se for apostila, não transforme em prova; se for jogo, não gere atividade comum; se for slides, não entregue texto corrido. O material precisa ter aparência pedagógica profissional, instruções claras e estrutura pronta para edição/impressão.";
+
+  const gabarito = incluirGabarito
+    ? "Inclua gabarito, respostas esperadas ou orientações de correção quando o formato permitir."
+    : "Não inclua gabarito.";
+
+  const byType: Record<TipoMaterial, string> = {
+    apostila:
+      "Estruture como apostila completa: capa textual, objetivos de aprendizagem, introdução, explicação principal, exemplos contextualizados, quadro de conceitos-chave, atividades de fixação, atividade final e gabarito quando solicitado.",
+    atividade:
+      "Estruture como atividade pedagógica: identificação, objetivo, tempo estimado, materiais necessários, contextualização, comandos para o aluno, etapas de desenvolvimento, critérios de avaliação e fechamento.",
+    prova:
+      "Estruture como prova avaliativa: cabeçalho, instruções ao estudante, questões objetivas, questões discursivas, distribuição equilibrada de dificuldade, pontuação sugerida e gabarito quando solicitado.",
+    slides:
+      "Estruture como roteiro de slides: cada slide deve ter título curto, tópicos essenciais, sugestão visual e fala breve do professor. Não escreva parágrafos longos nos slides.",
+    projeto:
+      "Estruture como projeto pedagógico: justificativa, objetivo geral, objetivos específicos, etapas, cronograma, produto final, recursos, avaliação, rubrica simples e possibilidades interdisciplinares.",
+    jogo:
+      `Estruture exclusivamente como jogo pedagógico do tipo ${formatoJogo}: objetivo do jogo, quantidade de participantes, materiais, regras, preparação, versão do aluno, conteúdo do jogo e gabarito/solução quando solicitado. Se for caça-palavras ou cruzadinha, gere lista de palavras, pistas e solução textual organizada.`,
+    sequencia:
+      "Estruture como sequência didática: objetivo geral, aulas/etapas numeradas, habilidades trabalhadas de forma descritiva, desenvolvimento, atividades, recursos, avaliação formativa e fechamento.",
+    resumo:
+      "Estruture como resumo guiado: explicação clara, tópicos essenciais, conceitos-chave, glossário, exemplos rápidos, perguntas de revisão e síntese final.",
+  };
+
+  return `${base}\n${common}\n${gabarito}\n${byType[tipo]}`;
+}
+
+function buildPrompt(payload: MaterialRequest) {
+  const tipo = getTipo(payload);
+  const tema = asText(payload.tema || payload.temaCentral);
+  const etapa = asText(payload.etapa, "não informada");
+  const anoSerie = asText(payload.anoSerie, "não informado");
+  const componente = asText(
+    payload.componenteCurricular || payload.componente,
+    "não informado"
+  );
+  const objetivo = asText(payload.objetivo || payload.objetivos, "não informado");
+  const quantidade = asText(payload.quantidade, "adequada ao formato");
+  const dificuldade = asText(payload.dificuldade, "média");
+
+  return `
+Você é a IA pedagógica do Planify, uma plataforma profissional para professores brasileiros.
+
+Tarefa: gerar ${tipoLabel(tipo)}.
+
+Dados:
+- Tema: ${tema}
+- Etapa: ${etapa}
+- Ano/Série: ${anoSerie}
+- Componente curricular: ${componente}
+- Objetivo/observação do professor: ${objetivo}
+- Quantidade/extensão desejada: ${quantidade}
+- Dificuldade: ${dificuldade}
+
+Regras de qualidade:
+${estruturaPorTipo(payload)}
+
+Cuidados obrigatórios:
+- Adeque linguagem e profundidade ao ano/série.
+- Organize bem espaços, títulos e seções.
+- Evite repetição.
+- Não mencione Gemini, API, prompt, modelo de IA ou bastidores técnicos.
+- Não invente dados sensíveis.
+- Não use conteúdo protegido de terceiros.
+- Entregue somente o HTML final do material.
+`.trim();
+}
+
+async function callGemini(prompt: string) {
+  const apiKey = getGeminiApiKey();
+
+  if (!apiKey) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "Chave da IA não encontrada no servidor. Configure GEMINI_API_KEY ou GOOGLE_GEMINI_API_KEY no ambiente.",
+      },
+      { status: 500 }
+    );
+  }
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${apiKey}`;
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      contents: [
+        {
+          role: "user",
+          parts: [{ text: prompt }],
+        },
+      ],
+      generationConfig: {
+        temperature: 0.55,
+        topP: 0.9,
+        maxOutputTokens: 8192,
+      },
+    }),
+  });
+
+  const data = (await response.json().catch(() => null)) as GeminiResponse | null;
+
+  if (!response.ok) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          data?.error?.message ||
+          "A IA não conseguiu gerar o material neste momento.",
+      },
+      { status: response.status }
+    );
+  }
+
+  const text =
+    data?.candidates?.[0]?.content?.parts
+      ?.map((part) => part.text || "")
+      .join("\n")
+      .trim() || "";
+
+  if (!text) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message: "A IA respondeu sem conteúdo utilizável.",
+      },
+      { status: 502 }
+    );
+  }
+
+  return NextResponse.json({
+    ok: true,
+    html: fallbackTextToHtml(text),
+    model: MODEL,
+  });
 }
 
 export async function POST(request: NextRequest) {
-  let reservedCreditMode: "reserved" | "bypass" | "duplicate" | "not_configured" = "bypass";
-  let userId: string | null = null;
-  let isAdminBypass = false;
-  let creditCost = 0;
-  let requestHash = "";
-  let idempotencyKey = "";
-
   try {
-    const access = await resolveApiAccess(request);
-    userId = access.userId;
-    isAdminBypass = access.isAdminBypass;
+    const payload = (await request.json()) as MaterialRequest;
+    const tema = asText(payload.tema || payload.temaCentral);
 
-    if (!access.authenticated) {
-      return errorResponse(
-        "not_authenticated",
-        "Faça login para gerar materiais didáticos.",
-        401,
-      );
-    }
-
-    if (!access.premium) {
-      return errorResponse(
-        "premium_required",
-        "Seu plano precisa estar ativo para usar o Gerador IA de Materiais.",
-        403,
-      );
-    }
-
-    const body = await request.json();
-    const input = normalizeMaterialRequest(body);
-    const validationErrors = validateMaterialRequest(input);
-
-    if (validationErrors.length > 0) {
-      return errorResponse(
-        "invalid_request",
-        validationErrors.join(" "),
-        400,
-      );
-    }
-
-    creditCost = getMaterialCreditCost(input.tipoMaterial, input.tamanho);
-    requestHash = getMaterialRequestHash(input);
-    idempotencyKey = input.idempotencyKey || crypto.randomUUID();
-
-    const reservation = await reserveMaterialCredits({
-      userId,
-      isAdminBypass,
-      cost: creditCost,
-      requestHash,
-      idempotencyKey,
-    });
-
-    reservedCreditMode = reservation.credit.mode;
-
-    if (reservation.duplicateMaterial) {
+    if (!tema) {
       return NextResponse.json(
         {
-          success: true,
-          data: {
-            material: reservation.duplicateMaterial,
-            credit: reservation.credit,
-            requestHash,
-            idempotencyKey,
-            duplicate: true,
-          },
-        } satisfies MaterialGenerationResponse,
-        { status: 200 },
+          ok: false,
+          message: "Informe o tema para gerar o material.",
+        },
+        { status: 400 }
       );
     }
 
-    if (reservedCreditMode === "not_configured" && !isAdminBypass) {
-      return errorResponse(
-        "credits_not_configured",
-        reservation.credit.message,
-        503,
-      );
-    }
-
-    const generated = await generateMaterial({
-      ...input,
-      idempotencyKey,
-    });
-
-    await saveGeneratedMaterialRecord({
-      userId,
-      title: generated.material.titulo,
-      materialType: input.tipoMaterial,
-      requestPayload: input,
-      responseJson: generated.material,
-      htmlEditor: generated.material.htmlEditor,
-      model: process.env.GEMINI_MODEL || GEMINI_MODEL,
-      creditCost,
-      requestHash,
-      idempotencyKey,
-    });
-
-    await commitMaterialCredits({
-      userId,
-      isAdminBypass,
-      cost: creditCost,
-      requestHash,
-      idempotencyKey,
-      creditMode: reservedCreditMode,
-    });
+    const prompt = buildPrompt(payload);
+    return await callGemini(prompt);
+  } catch (error) {
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Erro inesperado ao gerar material.";
 
     return NextResponse.json(
       {
-        success: true,
-        data: {
-          material: generated.material,
-          credit: reservation.credit,
-          requestHash,
-          idempotencyKey,
-          duplicate: false,
-        },
-      } satisfies MaterialGenerationResponse,
-      { status: 200 },
-    );
-  } catch (error) {
-    await refundMaterialCredits({
-      userId,
-      isAdminBypass,
-      cost: creditCost,
-      requestHash,
-      idempotencyKey,
-      creditMode: reservedCreditMode,
-    }).catch(() => undefined);
-
-    const message = error instanceof Error ? error.message : "Erro inesperado.";
-
-    if (message.includes("GEMINI_API_KEY")) {
-      return errorResponse(
-        "missing_api_key",
-        "A variável GEMINI_API_KEY não está configurada no servidor.",
-        500,
+        ok: false,
         message,
-      );
-    }
-
-    if (message.toLowerCase().includes("créditos insuficientes")) {
-      return errorResponse(
-        "insufficient_credits",
-        "Saldo de créditos insuficiente para gerar este material.",
-        402,
-        message,
-      );
-    }
-
-    return errorResponse(
-      "material_generation_failed",
-      "Não foi possível gerar o material didático agora.",
-      502,
-      message,
+      },
+      { status: 500 }
     );
   }
-}
-
-export async function GET() {
-  return NextResponse.json(
-    {
-      success: true,
-      message: "Gerador IA de Materiais ativo. Use POST para gerar.",
-      endpoint: "/api/materiais/gerar",
-      model: process.env.GEMINI_MODEL || GEMINI_MODEL,
-    },
-    { status: 200 },
-  );
 }

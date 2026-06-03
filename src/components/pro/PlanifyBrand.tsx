@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
+import { LumiMascot } from "@/components/pro/LumiMascot";
 
 type BrandProps = {
   href?: string;
@@ -15,11 +15,13 @@ export function PlanifyBrand({
   const content = (
     <div className="flex items-center gap-3">
       <div
-        className={`flex h-11 w-11 items-center justify-center rounded-2xl ${
-          dark ? "bg-white text-slate-950" : "bg-slate-950 text-white"
+        className={`flex h-12 w-12 items-center justify-center rounded-2xl ${
+          dark
+            ? "bg-white/10 ring-1 ring-white/15"
+            : "bg-gradient-to-br from-indigo-50 via-white to-rose-50 ring-1 ring-indigo-100"
         }`}
       >
-        <PlanifyIcon name="spark" className="h-5 w-5" />
+        <LumiMascot size={38} priority />
       </div>
       {!compact ? (
         <div>
@@ -32,7 +34,7 @@ export function PlanifyBrand({
           </p>
           <p
             className={`mt-1 text-xs font-bold uppercase tracking-[0.18em] ${
-              dark ? "text-slate-300" : "text-slate-400"
+              dark ? "text-slate-300" : "text-indigo-400"
             }`}
           >
             Studio

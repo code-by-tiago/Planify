@@ -16,6 +16,28 @@ export const MATERIAL_ENGINE_TYPES = [
 
 export type MaterialEngineType = (typeof MATERIAL_ENGINE_TYPES)[number];
 
+export const SLIDE_LAYOUTS = [
+  "capa",
+  "conteudo",
+  "duasColunas",
+  "destaque",
+  "fechamento",
+] as const;
+
+export type SlideLayout = (typeof SLIDE_LAYOUTS)[number];
+
+export const SLIDE_ACCENTS = [
+  "indigo",
+  "violet",
+  "coral",
+  "amber",
+  "emerald",
+  "sky",
+  "rose",
+] as const;
+
+export type SlideAccent = (typeof SLIDE_ACCENTS)[number];
+
 export type MaterialEngineRequest = {
   tipoMaterial: MaterialEngineType;
   etapa: string;
@@ -92,6 +114,16 @@ export type MaterialEngineResponse = {
     title: string;
     bullets: string[];
     speakerNotes: string;
+    /** Campos visuais opcionais (V2) — retrocompatíveis com slides antigos. */
+    layout?: SlideLayout;
+    subtitle?: string;
+    imagePrompt?: string;
+    accentColor?: SlideAccent;
+    iconHint?: string;
+    callout?: {
+      title?: string;
+      text?: string;
+    };
   }>;
   flashcards?: Array<{
     front: string;

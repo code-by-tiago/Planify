@@ -31,10 +31,17 @@ function specializedRules(request: MaterialEngineRequest): string[] {
   if (request.tipoMaterial === "slides") {
     return [
       `Gerar exatamente ${quantidade} slides no array 'slides'.`,
-      "O primeiro slide é a capa (título do tema + subtítulo curto) e o último é o fechamento/síntese.",
+      "O primeiro slide é a capa (layout 'capa') e o último é o fechamento/síntese (layout 'fechamento').",
       "Distribuir os slides intermediários em: objetivos da aula, desenvolvimento do conteúdo em blocos, exemplo/aplicação prática e uma pergunta de checagem.",
       "Cada slide deve ter 'title' curto e direto, 'bullets' objetivos (3 a 5 itens, frases curtas, sem parágrafos) e 'speakerNotes' com a fala detalhada do professor para aquele slide.",
-      "Nunca deixar um slide sem bullets nem sem notas de fala.",
+      "Nunca deixar um slide sem bullets nem sem notas de fala (exceto a capa, que pode ter poucos ou nenhum bullet).",
+      "DESIGN VISUAL (obrigatório, para slides bonitos e não só texto):",
+      "- 'layout': escolher por slide entre 'capa', 'conteudo', 'duasColunas', 'destaque' e 'fechamento'. Variar a composição ao longo da apresentação (não usar sempre o mesmo).",
+      "- 'subtitle': frase curta de apoio ao título (use principalmente na capa e em slides de seção).",
+      "- 'imagePrompt': descrição objetiva, em português, de UMA figura/ilustração que combine com o slide (ex.: 'ilustração de um ciclo da água com setas'). Inclua em pelo menos metade dos slides de conteúdo.",
+      "- 'accentColor': uma cor da paleta entre 'indigo', 'violet', 'coral', 'amber', 'emerald', 'sky', 'rose', coerente com o clima do slide.",
+      "- 'iconHint': uma palavra-chave simples do tema do slide (ex.: 'agua', 'livro', 'ideia').",
+      "- 'callout': em 1 a 3 slides estratégicos, preencher com 'title' curto e 'text' com um destaque (conceito-chave, curiosidade, dica ou pergunta provocadora).",
       "Manter coesão narrativa: cada slide avança o raciocínio do anterior.",
     ];
   }

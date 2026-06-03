@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import PlanifyAppFrame from "@/components/pro/PlanifyAppFrame";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import type { PlanifyIconName } from "@/lib/pro/planifyTools";
 import { planifyTools } from "@/lib/pro/planifyTools";
@@ -83,47 +82,50 @@ export default function PlanifyStudioShell() {
     return base.slice(0, 6);
   }, [query]);
 
-  const action = (
-    <div className="planify-ui3 flex items-center gap-2">
-      <form
-        onSubmit={(event) => event.preventDefault()}
-        className="hidden items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 sm:flex"
-      >
-        <PlanifyIcon name="search" className="h-4 w-4 text-slate-400" />
-        <input
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="Buscar ferramentas..."
-          aria-label="Buscar ferramentas"
-          className="w-40 bg-transparent text-sm font-semibold text-slate-950 outline-none placeholder:text-slate-400 lg:w-52"
-        />
-      </form>
-      <Link
-        href="/materiais"
-        className="inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-4 py-2.5 text-sm font-black text-white shadow-lg shadow-slate-200"
-      >
-        <PlanifyIcon name="plus" className="h-4 w-4" />
-        Criar agora
-      </Link>
-    </div>
-  );
-
   return (
-    <PlanifyAppFrame
-      active="/dashboard"
-      title="Planify Studio"
-      subtitle="Central de criação pedagógica"
-      action={action}
-    >
-      <div className="planify-ui3 mx-auto max-w-7xl px-4 py-5 sm:px-6">
+    <div className="planify-ui3 mx-auto max-w-7xl px-4 py-5 sm:px-6">
+      {/* Page header */}
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">
+            Planify Studio
+          </h1>
+          <p className="mt-0.5 text-sm font-semibold text-slate-500">
+            Central de criação pedagógica
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <form
+            onSubmit={(event) => event.preventDefault()}
+            className="hidden items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 sm:flex"
+          >
+            <PlanifyIcon name="search" className="h-4 w-4 text-slate-400" />
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Buscar ferramentas..."
+              aria-label="Buscar ferramentas"
+              className="w-40 bg-transparent text-sm font-semibold text-slate-950 outline-none placeholder:text-slate-400 lg:w-52"
+            />
+          </form>
+          <Link
+            href="/materiais"
+            className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-br from-indigo-600 via-violet-600 to-rose-500 px-4 py-2.5 text-sm font-black text-white shadow-[0_8px_20px_-8px_rgba(99,102,241,0.6)]"
+          >
+            <PlanifyIcon name="plus" className="h-4 w-4" />
+            Criar agora
+          </Link>
+        </div>
+      </div>
         {/* Criar agora */}
-        <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+        <section className="pl-section-hero planify-ui3 overflow-hidden rounded-[2rem] border border-indigo-100/60 p-5 shadow-sm sm:p-6">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
-              <p className="text-xs font-black uppercase tracking-[0.18em] text-indigo-700">
+              <span className="pl-badge-indigo planify-ui3">
+                <PlanifyIcon name="spark" className="h-3.5 w-3.5" />
                 Criar agora
-              </p>
-              <h2 className="mt-1.5 text-xl font-black tracking-tight text-slate-950 sm:text-2xl">
+              </span>
+              <h2 className="mt-3 text-xl font-black tracking-tight text-slate-950 sm:text-2xl">
                 Comece um novo material em um clique.
               </h2>
             </div>
@@ -134,10 +136,10 @@ export default function PlanifyStudioShell() {
               <Link
                 key={card.title}
                 href={card.href}
-                className="group rounded-[1.4rem] border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-1 hover:border-slate-950 hover:shadow-xl"
+                className="group rounded-[1.4rem] border border-white/80 bg-white p-4 shadow-[0_2px_8px_-4px_rgba(79,70,229,0.12)] transition hover:-translate-y-1 hover:border-indigo-200 hover:shadow-[0_16px_36px_-14px_rgba(99,102,241,0.28)]"
               >
                 <div
-                  className={`flex h-11 w-11 items-center justify-center rounded-2xl ${card.tone} transition group-hover:bg-slate-950 group-hover:text-white`}
+                  className={`flex h-11 w-11 items-center justify-center rounded-2xl ${card.tone} transition group-hover:scale-110`}
                 >
                   <PlanifyIcon name={card.icon} className="h-5 w-5" />
                 </div>
@@ -180,9 +182,9 @@ export default function PlanifyStudioShell() {
                   <Link
                     key={tool.id}
                     href={tool.href}
-                    className="group rounded-[1.4rem] border border-slate-200 bg-slate-50 p-4 transition hover:-translate-y-1 hover:border-slate-950 hover:bg-white hover:shadow-xl"
+                    className="group rounded-[1.4rem] border border-indigo-50 bg-slate-50/80 p-4 transition hover:-translate-y-1 hover:border-indigo-200 hover:bg-white hover:shadow-[0_14px_32px_-12px_rgba(99,102,241,0.22)]"
                   >
-                    <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-slate-700 shadow-sm transition group-hover:bg-slate-950 group-hover:text-white">
+                    <div className={`flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br ${tool.accent} text-white shadow-sm transition group-hover:scale-110`}>
                       <PlanifyIcon name={tool.icon} className="h-5 w-5" />
                     </div>
                     <p className="mt-3 text-sm font-black leading-tight text-slate-950">
@@ -239,14 +241,13 @@ export default function PlanifyStudioShell() {
 
             <Link
               href="/planejamentos"
-              className="mt-4 flex items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 py-3.5 text-sm font-black text-white shadow-lg shadow-slate-200 transition hover:-translate-y-0.5"
+              className="mt-4 flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-indigo-600 via-violet-600 to-rose-500 px-4 py-3.5 text-sm font-black text-white shadow-[0_10px_24px_-10px_rgba(99,102,241,0.55)] transition hover:-translate-y-0.5"
             >
               <PlanifyIcon name="clipboard" className="h-4 w-4" />
               Planejamento oficial
             </Link>
           </div>
         </section>
-      </div>
-    </PlanifyAppFrame>
+    </div>
   );
 }

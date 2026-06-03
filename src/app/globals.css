@@ -1887,3 +1887,370 @@ header .planify-brand-logo__icon {
 }
 
 /* PLANIFY_UI3_ETAPA3_END */
+
+/* PLANIFY_UI3_LANDING_START */
+
+/*
+  Planify — Redesign visual da landing (público)
+  Escopo: helpers puramente visuais, todos sob .planify-ui3, sem afetar
+  lógica, rotas, APIs ou páginas internas legadas.
+  Tokens de direção:
+    - Paleta: slate (neutro) + indigo/violet (primário) + sky (apoio).
+    - Raios generosos (1.5rem–2.5rem), tipografia font-black, sombras suaves.
+    - Motion sutil; tudo respeita prefers-reduced-motion.
+*/
+
+/* Brilho/aurora de fundo para heros e seções de destaque */
+.planify-ui3 .pl-aurora {
+  position: relative;
+  isolation: isolate;
+}
+
+.planify-ui3 .pl-aurora::before {
+  content: "";
+  position: absolute;
+  inset: -25% -10% 30% -10%;
+  z-index: -1;
+  background:
+    radial-gradient(45% 55% at 18% 18%, rgba(99, 102, 241, 0.20), transparent 70%),
+    radial-gradient(40% 55% at 82% 8%, rgba(56, 189, 248, 0.16), transparent 70%),
+    radial-gradient(35% 45% at 60% 80%, rgba(124, 58, 237, 0.12), transparent 70%);
+  filter: blur(8px);
+  pointer-events: none;
+}
+
+/* Grade técnica sutil de fundo */
+.planify-ui3 .pl-grid {
+  background-image:
+    linear-gradient(to right, rgba(15, 23, 42, 0.045) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(15, 23, 42, 0.045) 1px, transparent 1px);
+  background-size: 56px 56px;
+  -webkit-mask-image: radial-gradient(80% 60% at 50% 40%, #000 60%, transparent 100%);
+  mask-image: radial-gradient(80% 60% at 50% 40%, #000 60%, transparent 100%);
+}
+
+/* Texto com gradiente da marca (aplicar em span sem classes text-*) */
+.planify-ui3 .pl-gradient-text {
+  background: linear-gradient(120deg, #4f46e5 0%, #7c3aed 55%, #2563eb 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+/* Cartão de vidro claro para mockups de produto */
+.planify-ui3 .pl-glass {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.78));
+  backdrop-filter: blur(12px);
+}
+
+/* Marquee horizontal infinito (faixa de confiança) */
+@keyframes pl-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.planify-ui3 .pl-marquee {
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 12%, #000 88%, transparent);
+  mask-image: linear-gradient(to right, transparent, #000 12%, #000 88%, transparent);
+}
+
+.planify-ui3 .pl-marquee__track {
+  display: flex;
+  width: max-content;
+  animation: pl-marquee 32s linear infinite;
+}
+
+/* Flutuação suave para elementos decorativos */
+@keyframes pl-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.planify-ui3 .pl-float {
+  animation: pl-float 6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .planify-ui3 .pl-marquee__track,
+  .planify-ui3 .pl-float {
+    animation: none;
+  }
+}
+
+/* PLANIFY_UI3_LANDING_END */
+
+/* PLANIFY_UI3_APP_V2_START */
+
+/*
+  Planify — V2: App-shell "Teachy-style" + identidade com mascote (Lumi)
+
+  Escopo: tokens de marca, superfícies do workspace autenticado e motion,
+  todos sob .planify-ui3 / classes pl-app-*. Não altera APIs, rotas, DOCX,
+  Stripe, Supabase ou IA. Cor com propósito: índigo (primária) + coral
+  (acolhimento) + âmbar/pêssego (acento) + menta (sucesso), fundos pastéis.
+*/
+
+.planify-ui3 {
+  /* Marca */
+  --pl-primary: #6366f1;
+  --pl-primary-strong: #4f46e5;
+  --pl-coral: #fb7185;
+  --pl-coral-strong: #f43f5e;
+  --pl-amber: #f59e0b;
+  --pl-peach: #fdba74;
+  --pl-mint: #34d399;
+  --pl-ink: #1e1b2e;
+  --pl-muted: #6b7280;
+
+  /* Superfícies */
+  --pl-surface: #ffffff;
+  --pl-surface-2: #faf7ff;
+  --pl-line: rgba(79, 70, 229, 0.1);
+
+  /* Raios e sombras */
+  --pl-radius: 1.5rem;
+  --pl-radius-lg: 2rem;
+  --pl-shadow-soft: 0 12px 34px -18px rgba(79, 70, 229, 0.45);
+  --pl-shadow-lift: 0 22px 48px -22px rgba(79, 70, 229, 0.5);
+}
+
+/* Fundo alegre do workspace autenticado (substitui o cinza chapado) */
+.pl-app-bg {
+  background:
+    radial-gradient(60% 50% at 12% 0%, rgba(99, 102, 241, 0.08), transparent 60%),
+    radial-gradient(55% 45% at 100% 8%, rgba(251, 113, 133, 0.08), transparent 60%),
+    radial-gradient(50% 55% at 88% 100%, rgba(245, 158, 11, 0.06), transparent 60%),
+    #f7f5ff;
+}
+
+/* Painel lateral do shell */
+.pl-sidebar {
+  background: linear-gradient(180deg, #ffffff 0%, #fcfaff 100%);
+  border-color: rgba(79, 70, 229, 0.1);
+}
+
+/* Item de navegação ativo: gradiente da marca, não preto chapado */
+.pl-nav-active {
+  background: linear-gradient(120deg, var(--pl-primary-strong), #7c3aed 60%, var(--pl-coral)) !important;
+  color: #ffffff !important;
+  box-shadow: var(--pl-shadow-soft);
+}
+
+/* Chip/título de categoria */
+.pl-cat-label {
+  color: #8b5cf6;
+}
+
+/* Cartão de ferramenta na lateral (hover suave colorido) */
+.pl-tool-item:hover {
+  background: var(--pl-surface-2);
+  border-color: rgba(99, 102, 241, 0.35);
+}
+
+/* Caixa do mascote no rodapé da sidebar */
+.pl-lumi-card {
+  background: linear-gradient(140deg, rgba(99, 102, 241, 0.12), rgba(251, 113, 133, 0.14));
+  border: 1px solid rgba(99, 102, 241, 0.16);
+}
+
+/* Aura suave atrás do mascote em estados vazios/loading */
+.pl-lumi-aura {
+  position: relative;
+}
+
+.pl-lumi-aura::after {
+  content: "";
+  position: absolute;
+  inset: 8%;
+  z-index: -1;
+  border-radius: 9999px;
+  background: radial-gradient(closest-side, rgba(251, 113, 133, 0.35), transparent 70%);
+  filter: blur(6px);
+}
+
+/* Entrada suave do conteúdo central ao trocar de ferramenta */
+@keyframes pl-fade-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.pl-fade-rise {
+  animation: pl-fade-rise 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Flutuação leve do mascote */
+@keyframes pl-bob {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-1deg);
+  }
+  50% {
+    transform: translateY(-6px) rotate(1deg);
+  }
+}
+
+.pl-bob {
+  animation: pl-bob 5s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pl-fade-rise,
+  .pl-bob {
+    animation: none;
+  }
+}
+
+/* ── Cabeçalho de página (dentro do painel central) ─────────────────────── */
+.pl-page-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+/* ── Cards com lift colorido ao hover ───────────────────────────────────── */
+.pl-card {
+  background: #ffffff;
+  border: 1px solid rgba(79, 70, 229, 0.08);
+  border-radius: var(--pl-radius);
+  box-shadow: 0 2px 8px -4px rgba(79, 70, 229, 0.12);
+  transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.18s;
+}
+
+.pl-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 18px 40px -16px rgba(99, 102, 241, 0.28);
+  border-color: rgba(99, 102, 241, 0.35);
+}
+
+.pl-card-coral:hover {
+  box-shadow: 0 18px 40px -16px rgba(251, 113, 133, 0.3);
+  border-color: rgba(251, 113, 133, 0.35);
+}
+
+/* ── Botão primário gradiente Lumi ──────────────────────────────────────── */
+.pl-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.25rem;
+  border-radius: 1rem;
+  background: linear-gradient(135deg, #6366f1, #7c3aed 55%, #fb7185);
+  color: #ffffff;
+  font-size: 0.875rem;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+  box-shadow: 0 8px 24px -10px rgba(99, 102, 241, 0.55);
+  transition: transform 0.18s, box-shadow 0.18s;
+}
+
+.pl-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px -10px rgba(99, 102, 241, 0.65);
+}
+
+/* ── Badge de destaque (categoria, tag) ─────────────────────────────────── */
+.pl-badge-indigo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  background: rgba(99, 102, 241, 0.08);
+  color: #4f46e5;
+  font-size: 0.6875rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+
+.pl-badge-coral {
+  border-color: rgba(251, 113, 133, 0.25);
+  background: rgba(251, 113, 133, 0.1);
+  color: #e11d48;
+}
+
+.pl-badge-amber {
+  border-color: rgba(245, 158, 11, 0.25);
+  background: rgba(245, 158, 11, 0.1);
+  color: #b45309;
+}
+
+/* ── Empty state com Lumi ───────────────────────────────────────────────── */
+.pl-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 3rem 1.5rem;
+  gap: 1rem;
+}
+
+.pl-empty-title {
+  font-size: 1.25rem;
+  font-weight: 900;
+  color: var(--pl-ink);
+  letter-spacing: -0.02em;
+}
+
+.pl-empty-desc {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--pl-muted);
+  line-height: 1.6;
+  max-width: 28rem;
+}
+
+/* ── Gradiente de fundo para seções hero dentro das páginas ─────────────── */
+.pl-section-hero {
+  background:
+    radial-gradient(55% 55% at 10% 0%, rgba(99, 102, 241, 0.1), transparent 60%),
+    radial-gradient(45% 50% at 95% 5%, rgba(251, 113, 133, 0.09), transparent 55%),
+    #faf7ff;
+}
+
+/* ── Loading shimmer ────────────────────────────────────────────────────── */
+@keyframes pl-shimmer {
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+
+.pl-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(99, 102, 241, 0.06) 25%,
+    rgba(251, 113, 133, 0.08) 50%,
+    rgba(99, 102, 241, 0.06) 75%
+  );
+  background-size: 800px 100%;
+  animation: pl-shimmer 1.8s infinite linear;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pl-shimmer { animation: none; }
+}
+
+/* PLANIFY_UI3_APP_V2_END */

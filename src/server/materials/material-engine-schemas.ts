@@ -64,6 +64,24 @@ const SLIDES_SCHEMA = {
           title: { type: "STRING" },
           bullets: { type: "ARRAY", items: { type: "STRING" } },
           speakerNotes: { type: "STRING" },
+          layout: {
+            type: "STRING",
+            enum: ["capa", "conteudo", "duasColunas", "destaque", "fechamento"],
+          },
+          subtitle: { type: "STRING" },
+          imagePrompt: { type: "STRING" },
+          accentColor: {
+            type: "STRING",
+            enum: ["indigo", "violet", "coral", "amber", "emerald", "sky", "rose"],
+          },
+          iconHint: { type: "STRING" },
+          callout: {
+            type: "OBJECT",
+            properties: {
+              title: { type: "STRING" },
+              text: { type: "STRING" },
+            },
+          },
         },
         required: ["title", "bullets", "speakerNotes"],
       },

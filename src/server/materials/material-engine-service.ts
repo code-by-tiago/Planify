@@ -8,11 +8,15 @@ import {
   normalizeMaterialEngineRequest,
   validateMaterialEngineRequest,
 } from "./material-engine-validation";
-import type {
-  MaterialEngineInput,
-  MaterialEngineRequest,
-  MaterialEngineResponse,
-  MaterialEngineType,
+import {
+  SLIDE_ACCENTS,
+  SLIDE_LAYOUTS,
+  type MaterialEngineInput,
+  type MaterialEngineRequest,
+  type MaterialEngineResponse,
+  type MaterialEngineType,
+  type SlideAccent,
+  type SlideLayout,
 } from "./material-engine-types";
 
 function escapeHtml(value: string): string {
@@ -103,6 +107,67 @@ function renderGame(response: MaterialEngineResponse): string {
   `;
 }
 
+type SlideAccentTheme = {
+  base: string;
+  strong: string;
+  soft: string;
+  ink: string;
+};
+
+const SLIDE_ACCENT_THEMES: Record<string, SlideAccentTheme> = {
+  indigo: { base: "#6366f1", strong: "#4f46e5", soft: "#eef2ff", ink: "#3730a3" },
+  violet: { base: "#8b5cf6", strong: "#7c3aed", soft: "#f5f3ff", ink: "#5b21b6" },
+  coral: { base: "#fb7185", strong: "#f43f5e", soft: "#fff1f2", ink: "#9f1239" },
+  amber: { base: "#f59e0b", strong: "#d97706", soft: "#fffbeb", ink: "#92400e" },
+  emerald: { base: "#10b981", strong: "#059669", soft: "#ecfdf5", ink: "#065f46" },
+  sky: { base: "#0ea5e9", strong: "#0284c7", soft: "#f0f9ff", ink: "#075985" },
+  rose: { base: "#f43f5e", strong: "#e11d48", soft: "#fff1f2", ink: "#9f1239" },
+};
+
+const SLIDE_ACCENT_ROTATION = ["indigo", "violet", "sky", "emerald", "amber", "coral"];
+
+const SLIDE_PICTURE_SVG =
+  '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="m21 16-5-5L5 20"/></svg>';
+
+function slideBulletsHtml(bullets: string[], color: string): string {
+  const clean = bullets.filter((item) => item.trim());
+  if (!clean.length) return "";
+  return `<ul style="margin:0;padding-left:20px;list-style:disc;">${clean
+    .map(
+      (item) =>
+        `<li style="margin:7px 0;font-size:15px;line-height:1.55;color:#334155;"><span style="color:${color};">●</span>&nbsp;<span style="color:#1e293b;">${escapeHtml(item)}</span></li>`,
+    )
+    .join("")}</ul>`;
+}
+
+function slideFigureHtml(imagePrompt: string | undefined, theme: SlideAccentTheme): string {
+  if (!imagePrompt) return "";
+  return `<div style="border:1.5px dashed ${theme.base};border-radius:14px;background:${theme.soft};padding:16px;text-align:center;">
+      <span style="display:inline-flex;align-items:center;justify-content:center;width:46px;height:46px;border-radius:12px;background:#ffffff;color:${theme.strong};box-shadow:0 4px 10px rgba(15,23,42,0.08);">${SLIDE_PICTURE_SVG}</span>
+      <p style="margin:10px 0 0;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:${theme.ink};">Sugestão de imagem</p>
+      <p style="margin:4px 0 0;font-size:13px;line-height:1.5;color:#475569;">${escapeHtml(imagePrompt)}</p>
+    </div>`;
+}
+
+function slideCalloutHtml(
+  callout: { title?: string; text?: string } | undefined,
+  theme: SlideAccentTheme,
+): string {
+  if (!callout || !callout.text) return "";
+  return `<div style="margin-top:14px;border-left:4px solid ${theme.base};background:${theme.soft};border-radius:0 12px 12px 0;padding:12px 16px;">
+      ${callout.title ? `<p style="margin:0 0 4px;font-size:13px;font-weight:800;color:${theme.ink};">★ ${escapeHtml(callout.title)}</p>` : ""}
+      <p style="margin:0;font-size:14px;line-height:1.55;color:#334155;">${escapeHtml(callout.text)}</p>
+    </div>`;
+}
+
+function slideNotesHtml(notes: string, theme: SlideAccentTheme): string {
+  if (!notes) return "";
+  return `<div style="margin-top:14px;padding:11px 14px;background:#f8fafc;border-left:3px solid ${theme.base};border-radius:8px;">
+      <span style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:${theme.ink};margin-bottom:4px;">Notas do professor</span>
+      <span style="font-size:13px;line-height:1.55;color:#475569;">${escapeHtml(notes)}</span>
+    </div>`;
+}
+
 function renderSlides(response: MaterialEngineResponse): string {
   const slides = response.slides ?? [];
   if (!slides.length) return "";
@@ -112,36 +177,75 @@ function renderSlides(response: MaterialEngineResponse): string {
   const body = slides
     .map((slide, index) => {
       const number = index + 1;
-      const isCover = index === 0;
+      const isFirst = index === 0;
+      const isLast = index === total - 1;
+
+      const layout =
+        slide.layout ?? (isFirst ? "capa" : isLast ? "fechamento" : "conteudo");
+      const accentName =
+        slide.accentColor ?? SLIDE_ACCENT_ROTATION[index % SLIDE_ACCENT_ROTATION.length];
+      const theme = SLIDE_ACCENT_THEMES[accentName] ?? SLIDE_ACCENT_THEMES.indigo;
+
       const bullets = (slide.bullets || []).filter((item) => item.trim());
+      const tag =
+        layout === "capa" ? "CAPA" : layout === "fechamento" ? "FECHAMENTO" : `SLIDE ${number}`;
 
-      const bulletsHtml = bullets.length
-        ? `<ul style="margin:0;padding-left:22px;list-style:disc;">${bullets
-            .map(
-              (item) =>
-                `<li style="margin:6px 0;font-size:16px;line-height:1.5;color:#1e293b;">${escapeHtml(item)}</li>`,
-            )
-            .join("")}</ul>`
-        : "";
+      // Capa: bloco com gradiente da cor de destaque.
+      if (layout === "capa") {
+        return `
+          <div class="planify-slide" style="margin:0 0 22px;border-radius:18px;overflow:hidden;background:linear-gradient(135deg,${theme.strong},${theme.base});color:#ffffff;box-shadow:0 18px 40px -22px ${theme.base};">
+            <div style="padding:34px 30px;">
+              <span style="display:inline-block;font-size:11px;font-weight:800;letter-spacing:0.16em;text-transform:uppercase;background:rgba(255,255,255,0.2);padding:5px 12px;border-radius:999px;">Planify · Apresentação</span>
+              <h3 style="margin:16px 0 0;font-size:30px;font-weight:900;line-height:1.18;">${escapeHtml(slide.title)}</h3>
+              ${slide.subtitle ? `<p style="margin:12px 0 0;font-size:17px;font-weight:500;line-height:1.5;color:rgba(255,255,255,0.92);">${escapeHtml(slide.subtitle)}</p>` : ""}
+              <p style="margin:20px 0 0;font-size:12px;font-weight:700;color:rgba(255,255,255,0.85);">${total} slides</p>
+            </div>
+          </div>
+        `;
+      }
 
-      const notesHtml = slide.speakerNotes
-        ? `<div style="margin-top:14px;padding:12px 14px;background:#f8fafc;border-left:3px solid #6366f1;border-radius:8px;">
-             <span style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#6366f1;margin-bottom:4px;">Notas do professor</span>
-             <span style="font-size:13px;line-height:1.55;color:#475569;">${escapeHtml(slide.speakerNotes)}</span>
-           </div>`
-        : "";
+      const header = `<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 20px;background:${theme.soft};color:${theme.ink};border-bottom:1px solid ${theme.base}33;">
+          <span style="font-size:12px;font-weight:800;letter-spacing:0.06em;">${tag}</span>
+          <span style="font-size:12px;font-weight:700;opacity:0.8;">${number} / ${total}</span>
+        </div>`;
+
+      const titleHtml = `<h3 style="margin:0 0 14px;font-size:21px;font-weight:800;color:#0f172a;line-height:1.25;border-left:5px solid ${theme.base};padding-left:12px;">${escapeHtml(slide.title)}</h3>`;
+
+      const bulletsHtml = slideBulletsHtml(bullets, theme.base);
+      const figureHtml = slideFigureHtml(slide.imagePrompt, theme);
+      const calloutHtml = slideCalloutHtml(slide.callout, theme);
+      const notesHtml = slideNotesHtml(slide.speakerNotes, theme);
+
+      let inner = "";
+
+      if (layout === "duasColunas") {
+        const right = [figureHtml, calloutHtml].filter(Boolean).join("");
+        inner = `${titleHtml}
+          <div style="display:flex;flex-wrap:wrap;gap:18px;align-items:flex-start;">
+            <div style="flex:1 1 280px;min-width:240px;">${bulletsHtml}</div>
+            <div style="flex:1 1 220px;min-width:200px;">${right || figureHtml}</div>
+          </div>
+          ${notesHtml}`;
+      } else if (layout === "destaque") {
+        const bigCallout = slide.callout?.text
+          ? `<div style="margin:0 0 14px;text-align:center;background:${theme.soft};border:1px solid ${theme.base}33;border-radius:14px;padding:22px;">
+               ${slide.callout.title ? `<p style="margin:0 0 8px;font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:${theme.ink};">${escapeHtml(slide.callout.title)}</p>` : ""}
+               <p style="margin:0;font-size:20px;font-weight:700;line-height:1.4;color:#0f172a;">${escapeHtml(slide.callout.text)}</p>
+             </div>`
+          : "";
+        inner = `${titleHtml}${bigCallout}${bulletsHtml}${figureHtml ? `<div style="margin-top:14px;">${figureHtml}</div>` : ""}${notesHtml}`;
+      } else if (layout === "fechamento") {
+        inner = `${titleHtml}
+          ${slide.subtitle ? `<p style="margin:0 0 12px;font-size:15px;font-weight:600;color:${theme.ink};">${escapeHtml(slide.subtitle)}</p>` : ""}
+          ${bulletsHtml}${calloutHtml}${notesHtml}`;
+      } else {
+        inner = `${titleHtml}${bulletsHtml}${figureHtml ? `<div style="margin-top:14px;">${figureHtml}</div>` : ""}${calloutHtml}${notesHtml}`;
+      }
 
       return `
-        <div class="planify-slide" style="margin:0 0 20px;border:1px solid #e2e8f0;border-radius:16px;overflow:hidden;background:#ffffff;box-shadow:0 1px 3px rgba(15,23,42,0.08);">
-          <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 18px;background:${isCover ? "#0f172a" : "#eef2ff"};color:${isCover ? "#ffffff" : "#3730a3"};">
-            <span style="font-size:13px;font-weight:800;letter-spacing:0.04em;">${isCover ? "CAPA" : `SLIDE ${number}`}</span>
-            <span style="font-size:12px;font-weight:700;opacity:0.85;">${number} / ${total}</span>
-          </div>
-          <div style="padding:18px 22px 22px;">
-            <h3 style="margin:0 0 12px;font-size:${isCover ? "24px" : "20px"};font-weight:800;color:#0f172a;line-height:1.25;">${escapeHtml(slide.title)}</h3>
-            ${bulletsHtml}
-            ${notesHtml}
-          </div>
+        <div class="planify-slide" style="margin:0 0 22px;border:1px solid #e8e6f5;border-radius:18px;overflow:hidden;background:#ffffff;box-shadow:0 10px 30px -20px rgba(79,70,229,0.45);">
+          ${header}
+          <div style="padding:20px 24px 24px;">${inner}</div>
         </div>
       `;
     })
@@ -301,13 +405,45 @@ function normalizeOutput(
         }
       : undefined,
     slides: Array.isArray(response.slides)
-      ? response.slides.map((slide) => ({
-          title: String(slide?.title || "Slide"),
-          bullets: Array.isArray(slide?.bullets)
-            ? slide.bullets.map((item) => String(item))
-            : [],
-          speakerNotes: String(slide?.speakerNotes || ""),
-        }))
+      ? response.slides.map((slide) => {
+          const layout =
+            typeof slide?.layout === "string" &&
+            (SLIDE_LAYOUTS as readonly string[]).includes(slide.layout)
+              ? (slide.layout as SlideLayout)
+              : undefined;
+          const accentColor =
+            typeof slide?.accentColor === "string" &&
+            (SLIDE_ACCENTS as readonly string[]).includes(slide.accentColor)
+              ? (slide.accentColor as SlideAccent)
+              : undefined;
+          const calloutText = slide?.callout?.text
+            ? String(slide.callout.text)
+            : "";
+          const callout = calloutText
+            ? {
+                title: slide?.callout?.title
+                  ? String(slide.callout.title)
+                  : undefined,
+                text: calloutText,
+              }
+            : undefined;
+
+          return {
+            title: String(slide?.title || "Slide"),
+            bullets: Array.isArray(slide?.bullets)
+              ? slide.bullets.map((item) => String(item))
+              : [],
+            speakerNotes: String(slide?.speakerNotes || ""),
+            layout,
+            subtitle: slide?.subtitle ? String(slide.subtitle) : undefined,
+            imagePrompt: slide?.imagePrompt
+              ? String(slide.imagePrompt)
+              : undefined,
+            accentColor,
+            iconHint: slide?.iconHint ? String(slide.iconHint) : undefined,
+            callout,
+          };
+        })
       : undefined,
     flashcards: Array.isArray(response.flashcards)
       ? response.flashcards.map((item) => ({

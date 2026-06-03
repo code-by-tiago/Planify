@@ -925,7 +925,7 @@ export function PlanejamentosClient() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-950 text-white">
+    <div className="bg-slate-950 text-white">
       <section className="mx-auto grid max-w-7xl gap-6 px-5 py-10 lg:grid-cols-[0.78fr_1.22fr]">
         <aside className="space-y-6">
           <div className="rounded-[2.25rem] border border-cyan-300/20 bg-cyan-300/10 p-7 shadow-2xl shadow-cyan-500/10">
@@ -1309,6 +1309,6 @@ export function PlanejamentosClient() {
           </div>
         </section>
       </section>
-    </main>
+    </div>
   );
 }

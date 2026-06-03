@@ -168,11 +168,11 @@ export function HistoricoClient() {
   }
 
   return (
-    <section className="mx-auto max-w-7xl px-4 pb-20 sm:px-6">
+    <section className="mx-auto max-w-7xl px-4 py-5 pb-16 sm:px-6">
       <div className="grid gap-6 xl:grid-cols-[0.78fr_1.22fr]">
-        <aside className="grid gap-6 xl:sticky xl:top-28 xl:h-fit">
+        <aside className="grid gap-6 xl:sticky xl:top-5 xl:h-fit">
           <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
-            <p className="text-sm font-black uppercase tracking-[0.25em] text-indigo-700">
+            <p className="text-sm font-black uppercase tracking-[0.25em] text-indigo-600">
               Histórico local
             </p>
             <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-950">

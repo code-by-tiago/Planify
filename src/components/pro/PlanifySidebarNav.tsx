@@ -103,7 +103,7 @@ export function PlanifySidebarNav({
         {primaryAction ? <div className="mt-3">{primaryAction}</div> : null}
       </div>
 
-      <nav className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain px-4 py-4">
+      <nav className="flex-1 space-y-5 px-4 py-4">
         <div>
           <p className="pl-cat-label px-1 text-[10px] font-black uppercase tracking-[0.2em]">
             Workspace

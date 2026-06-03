@@ -49,12 +49,13 @@ export function PlanifyShellSidebar({
 
   return (
     <>
+      {/* Sidebar fixa: h-screen + overflow-y-auto quando a lista cresce */}
       <aside
-        className={`${sidebarClass} hidden h-screen w-[min(280px,28vw)] shrink-0 flex-col overflow-hidden border-r lg:flex`}
+        className={`${sidebarClass} hidden h-screen w-72 shrink-0 flex-col overflow-y-auto overscroll-contain border-r lg:flex`}
       >
         {brandBlock}
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">{children}</div>
-        {footer}
+        <div className="flex flex-1 flex-col">{children}</div>
+        <div className="sticky bottom-0 mt-auto shrink-0">{footer}</div>
       </aside>
 
       <AnimatePresence>
@@ -79,7 +80,7 @@ export function PlanifyShellSidebar({
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
               transition={{ type: "spring", stiffness: 320, damping: 34 }}
-              className={`${sidebarClass} fixed inset-y-0 left-0 z-50 flex h-screen w-[min(300px,88vw)] flex-col overflow-hidden border-r shadow-2xl lg:hidden`}
+              className={`${sidebarClass} fixed inset-y-0 left-0 z-50 flex h-screen w-[min(300px,88vw)] flex-col overflow-y-auto overscroll-contain border-r shadow-2xl lg:hidden`}
             >
               <div
                 className={`flex shrink-0 items-center justify-between border-b ${brandBorder} px-4 py-4`}
@@ -94,10 +95,8 @@ export function PlanifyShellSidebar({
                   <PlanifyIcon name="close" className="h-5 w-5" />
                 </button>
               </div>
-              <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-                {children}
-              </div>
-              {footer}
+              <div className="flex flex-1 flex-col">{children}</div>
+              <div className="sticky bottom-0 mt-auto shrink-0">{footer}</div>
             </motion.aside>
           </>
         ) : null}

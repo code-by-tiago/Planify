@@ -2044,8 +2044,11 @@ html:has(.pl-dashboard-root) body {
 }
 
 .pl-dashboard-root {
-  max-height: 100vh;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
   max-height: 100dvh;
+  overflow: hidden;
 }
 
 .pl-shell-root {

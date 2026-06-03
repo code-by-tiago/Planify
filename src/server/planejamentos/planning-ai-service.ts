@@ -64,7 +64,10 @@ function normalizeSearch(value: unknown): string {
   return normalizeText(value)
     .toLowerCase()
     .normalize("NFD")
-    .replace(/\p{Diacritic}/gu, "");
+    .replace(/\p{Diacritic}/gu, "")
+    .replace(/[_/]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 const SPANISH_EM_PLANNING_SKILLS: PlanningSkill[] = [

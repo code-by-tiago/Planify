@@ -350,7 +350,13 @@ function isEnsinoMedio(etapa: string) {
 }
 
 function needsQuestionQuantity(tipo: MaterialType) {
-  return tipo === "atividade" || tipo === "prova" || tipo === "lista" || tipo === "revisao";
+  return tipo === "atividade" || tipo === "prova" || tipo === "lista" || tipo === "revisao" || tipo === "apostila";
+}
+
+function quantityLabel(tipo: MaterialType) {
+  if (tipo === "apostila") return "Quantidade de exercícios de fixação";
+  if (tipo === "prova") return "Quantidade de questões da prova";
+  return "Quantidade de questões";
 }
 
 function getComponentesDisponiveis(form: FormState) {
@@ -484,7 +490,7 @@ function validateForm(form: FormState): string | null {
   if (isEnsinoMedio(form.etapa) && !form.areaConhecimento) return "Selecione a área do conhecimento.";
   if (!form.componenteCurricular) return "Selecione o componente curricular.";
   if (!form.tema.trim()) return "Informe o tema central.";
-  if (needsQuestionQuantity(form.tipo) && !form.quantidadeQuestoes.trim()) return "Informe a quantidade de questões.";
+  if (needsQuestionQuantity(form.tipo) && !form.quantidadeQuestoes.trim()) return form.tipo === "apostila" ? "Informe a quantidade de exercícios de fixação." : "Informe a quantidade de questões.";
   return null;
 }
 
@@ -1165,8 +1171,9 @@ export function MateriaisClient() {
 
             {needsQuestionQuantity(form.tipo) && (
               <label className="grid gap-2">
-                <span className="text-sm font-bold text-slate-300">Quantidade de questões</span>
-                <input value={form.quantidadeQuestoes} onChange={(event) => updateField("quantidadeQuestoes", event.target.value)} placeholder="Ex.: 10" className="h-14 rounded-2xl border border-white/10 bg-slate-950/50 px-4 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300/50" />
+                <span className="text-sm font-bold text-slate-300">{quantityLabel(form.tipo)}</span>
+                <input value={form.quantidadeQuestoes} onChange={(event) => updateField("quantidadeQuestoes", event.target.value.replace(/[^0-9]/g, ""))} placeholder="Ex.: 10" className="h-14 rounded-2xl border border-white/10 bg-slate-950/50 px-4 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300/50" />
+                <span className="text-xs leading-5 text-slate-500">O Planify vai conferir a entrega: se pedir 10, o material deve sair com 10.</span>
               </label>
             )}
 
@@ -1276,7 +1283,7 @@ export function MateriaisClient() {
           </div>
 
           <div className="mt-6 rounded-2xl border border-cyan-300/20 bg-cyan-300/10 p-4 text-sm leading-7 text-cyan-50/85">
-            <strong className="text-white">Material completo:</strong> o resultado respeita o tipo escolhido e trabalha o tema de forma organizada.
+            <strong className="text-white">Material completo com conferência:</strong> o resultado respeita o tipo escolhido, o tema, o componente curricular e a quantidade solicitada de questões/exercícios.
           </div>
         </div>
 

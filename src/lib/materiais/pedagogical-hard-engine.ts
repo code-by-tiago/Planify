@@ -528,10 +528,68 @@ function sectionsFor(input: MaterialAIInput, profile: DisciplineProfile, conteud
   ];
 
   if (type === "apostila") {
+    const chapterSections = conteudos.slice(0, 5).map((conteudo, index): MaterialAISection => ({
+      titulo: `Capítulo ${index + 1} — ${displayTitle(contentTitle(conteudo))}`,
+      conteudo: [
+        `${profile.abertura}`,
+        `Neste capítulo, o estudante analisa ${contentTitle(conteudo)} dentro do tema ${theme}, relacionando conceitos, exemplos e situações coerentes com ${input.componenteCurricular}.`,
+        "A explicação deve ser lida antes dos exercícios. O professor pode ampliar com imagens, mapa, tabela, experimento, texto curto, problema ou situação do cotidiano conforme o componente curricular.",
+      ].join("\n\n"),
+      itens: [
+        `Conceito-chave: ${contentTitle(conteudo)}.`,
+        "Exemplo contextualizado para discussão em sala.",
+        "Pergunta de retomada para verificar compreensão.",
+        "Registro no caderno com síntese autoral do estudante.",
+      ],
+    }));
+
     return [
-      { titulo: "Explicação didática", conteudo: `${profile.abertura}\n\nConceitos trabalhados: ${conteudos.map(contentTitle).join(", ")}.`, itens: profile.vocabulario.slice(0, 10) },
-      { titulo: "Exemplos orientados", conteudo: `Use exemplos próximos da realidade da turma para mostrar como ${theme} aparece em diferentes situações.`, itens: questions.slice(0, 5).map((q) => q.enunciado.split("\n")[0]) },
-      { titulo: "Exercícios de fixação", conteudo: "Resolva os exercícios com atenção aos comandos e registre as respostas no caderno ou na folha impressa.", itens: questions.map((q) => `Questão ${q.numero}: ${q.tipo}`) },
+      {
+        titulo: "Apresentação da apostila",
+        conteudo: `Esta apostila organiza o estudo de ${displayTitle(theme)} para ${input.anoSerie}, no componente ${input.componenteCurricular}. O material apresenta conceitos, exemplos, vocabulário, leitura orientada, exercícios de fixação e síntese final, com linguagem adequada à turma.`,
+        itens: [
+          "Leia cada capítulo antes de responder às questões.",
+          "Sublinhe palavras importantes e registre dúvidas.",
+          "Use os exemplos para construir respostas completas.",
+          "Confira o gabarito apenas após a resolução.",
+        ],
+      },
+      {
+        titulo: "Objetivos da aprendizagem",
+        conteudo: "Objetivos organizados para guiar o estudo e ajudar o professor a acompanhar a aprendizagem.",
+        itens: profile.objetivos,
+      },
+      ...chapterSections,
+      {
+        titulo: "Box de curiosidades e conexões",
+        conteudo: `Ampliação do tema ${displayTitle(theme)} com conexões, situações reais, perguntas investigativas e exemplos que ajudam a tornar o conteúdo mais significativo para a turma.`,
+        itens: [
+          "Que relação existe entre o tema e a realidade dos estudantes?",
+          "Que exemplo brasileiro ou local pode ajudar a compreender o conteúdo?",
+          "Que imagem, mapa, tabela, texto curto ou situação-problema poderia enriquecer a aula?",
+          "Que cuidado conceitual evita respostas genéricas ou fora do componente curricular?",
+        ],
+      },
+      {
+        titulo: "Vocabulário essencial",
+        conteudo: "Palavras e expressões importantes para compreender a apostila e responder com mais precisão.",
+        itens: Array.from(new Set([...profile.vocabulario, ...conteudos.map(contentTitle)])).slice(0, 14),
+      },
+      {
+        titulo: "Exercícios de fixação",
+        conteudo: "Resolva as questões abaixo depois da leitura dos capítulos. As respostas esperadas e critérios ficam no gabarito do professor.",
+        itens: questions.map((q) => `Questão ${q.numero}: ${q.tipo}`),
+      },
+      {
+        titulo: "Síntese final",
+        conteudo: `Retome ${displayTitle(theme)} relacionando os conceitos estudados, os exemplos analisados e as respostas produzidas. A síntese final ajuda a consolidar a aprendizagem e preparar retomadas posteriores.`,
+        itens: [
+          "Escreva três ideias principais aprendidas.",
+          "Explique um exemplo que ajudou a compreender o tema.",
+          "Registre uma dúvida ou ponto que precisa de retomada.",
+          "Produza uma frase final usando vocabulário do componente curricular.",
+        ],
+      },
     ];
   }
 

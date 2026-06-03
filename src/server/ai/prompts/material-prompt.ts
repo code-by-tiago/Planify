@@ -1,4 +1,5 @@
 import type { MaterialAIInput } from "../../../types/ai";
+import { buildSpecialistPromptBlock } from "../../../lib/materiais/material-specialist-blueprints";
 
 function normalizeConteudos(conteudos: MaterialAIInput["conteudos"]): string[] {
   if (Array.isArray(conteudos)) {
@@ -58,6 +59,7 @@ function materialRulesByType(type: string): string[] {
     return [
       "Entregue uma APOSTILA, não uma atividade solta, não uma prova e não uma sequência de aula.",
       "A apostila deve ter capa textual, apresentação, objetivos, capítulos/unidades, explicações consistentes, exemplos contextualizados, boxes de curiosidade, vocabulário, imagens ou infográficos sugeridos, exercícios de fixação, síntese final, glossário e referências/sugestões de aprofundamento adequadas ao nível escolar.",
+      "Se houver quantidade de questões/exercícios informada, entregue EXATAMENTE essa quantidade no array questoes e no gabarito separado.",
       "Cada seção precisa ensinar o conteúdo antes de pedir exercício. Não comece com questões.",
       "Contextualize o tema ao componente curricular informado. Se o tema for Amazônia em Geografia, trabalhe território, biodiversidade, povos, economia, impactos ambientais, conservação e cidadania; não transforme em atividade de Língua Portuguesa. Se for Ciências, trate ecossistema, biodiversidade, ciclo da água e impactos. Se for História, trate ocupação, povos, conflitos e processos históricos.",
       "Use linguagem de apostila: explicativa, organizada, progressiva e adequada ao ano/série.",
@@ -143,6 +145,7 @@ export function buildMaterialSystemInstruction(): string {
 export function buildMaterialPrompt(input: MaterialAIInput): string {
   const conteudos = normalizeConteudos(input.conteudos);
   const typeRules = materialRulesByType(input.tipo);
+  const specialistBlock = buildSpecialistPromptBlock(input);
 
   return `
 Gere um material didático profissional para o Planify.
@@ -178,6 +181,9 @@ ${input.orientacoes || "Não informado"}
 OBSERVAÇÕES:
 ${input.observacoes || "Não informado"}
 
+CONTRATO DE ESPECIALISTA PLANIFY:
+${specialistBlock}
+
 REGRAS UNIVERSAIS:
 1. O material deve obedecer exatamente ao tipo selecionado.
 2. O conteúdo deve ser profundo, coerente, aplicável, sem repetição e sem encher espaço com frases genéricas.
@@ -192,8 +198,12 @@ REGRAS UNIVERSAIS:
 11. Se o tipo for sequência, organize aulas/momentos, não questões.
 12. Se o tipo for jogo, entregue material visual/prático pronto para uso.
 13. Use linguagem adequada ao ano/série, sem infantilizar turma avançada e sem complexidade excessiva para anos iniciais.
-14. Respeite o componente curricular: Geografia deve ter raciocínio espacial/territorial; Ciências deve ter investigação científica; História deve ter processos históricos; Matemática deve ter resolução e procedimentos; Línguas devem trabalhar linguagem; Ensino Religioso deve tratar valores e diversidade com respeito.
-15. Retorne apenas JSON válido.
+14. CONTRATO DE PRECISÃO: quando houver quantidade informada, o array questoes deve conter exatamente essa quantidade, sem uma a menos, sem uma a mais. Se o professor pedir 10 questões, entregue 10 objetos numerados de 1 a 10 e 10 itens correspondentes no gabarito.
+15. Cada questão deve ter enunciado completo, comando claro, resposta esperada e critério de correção. Provas devem combinar objetivas e discursivas quando fizer sentido.
+16. Não deixe promessa solta no texto: se disser “responda às questões abaixo”, as questões precisam existir logo no bloco próprio.
+17. Respeite o componente curricular: Geografia deve ter raciocínio espacial/territorial; Ciências deve ter investigação científica; História deve ter processos históricos; Matemática deve ter resolução e procedimentos; Línguas devem trabalhar linguagem; Ensino Religioso deve tratar valores e diversidade com respeito.
+18. Retorne apenas JSON válido.
+19. Antes de finalizar, faça uma checagem interna: tipo correto, todos os conteúdos usados, quantidade exata de questões, gabarito correspondente, seções completas e nenhuma promessa sem entrega.
 
 REGRAS ESPECÍFICAS DO TIPO:
 ${typeRules.map((rule) => `- ${rule}`).join("\n")}

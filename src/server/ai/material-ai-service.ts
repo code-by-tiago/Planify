@@ -10,8 +10,9 @@ import type {
   MaterialSuggestedContent,
 } from "../../types/ai";
 import { buildVisualGameMaterial } from "../../lib/materiais/game-builder";
-import { enhanceHardPedagogicalMaterial, shouldUseHardPedagogicalEngine } from "../../lib/materiais/pedagogical-hard-engine";
+import { buildHardPedagogicalMaterial, enhanceHardPedagogicalMaterial, shouldUseHardPedagogicalEngine } from "../../lib/materiais/pedagogical-hard-engine";
 import { enforceMaterialTypeContract } from "../../lib/materiais/material-type-validator";
+import { guardMaterialQuality } from "../../lib/materiais/material-quality-guardian";
 import { generateGeminiJSON } from "./gemini-client";
 import {
   buildMaterialPrompt,
@@ -198,6 +199,13 @@ function mergeGameWithAI(input: MaterialAIInput, aiOutput?: Partial<MaterialAIOu
   };
 }
 
+function buildVerifiedRecoveryMaterial(input: MaterialAIInput): MaterialAIOutput {
+  const deterministic = normalizeCommonOutput(buildHardPedagogicalMaterial(input), input);
+  const enhanced = enhanceHardPedagogicalMaterial(input, deterministic);
+  const contracted = enforceMaterialTypeContract(input, enhanced);
+  return guardMaterialQuality(input, contracted);
+}
+
 export async function generateMaterialWithAI(rawInput: MaterialAIInput): Promise<MaterialAIOutput> {
   const validationError = validateInput(rawInput);
   if (validationError) throw new Error(validationError);
@@ -219,38 +227,48 @@ export async function generateMaterialWithAI(rawInput: MaterialAIInput): Promise
         topP: 0.8,
         maxOutputTokens: 9000,
       });
-      return enforceMaterialTypeContract(input, mergeGameWithAI(input, generated));
+      return guardMaterialQuality(input, enforceMaterialTypeContract(input, mergeGameWithAI(input, generated)));
     } catch {
-      return enforceMaterialTypeContract(input, mergeGameWithAI(
+      return guardMaterialQuality(input, enforceMaterialTypeContract(input, mergeGameWithAI(
         input,
         undefined,
         "O Planify preparou uma versão visual pronta para uso em sala.",
-      ));
+      )));
     }
   }
 
   if (shouldUseHardPedagogicalEngine(input.tipo)) {
+    try {
+      const generated = await generateGeminiJSON<MaterialAIOutput>({
+        systemInstruction: buildMaterialSystemInstruction(),
+        prompt: buildMaterialPrompt(input),
+        temperature: 0.18,
+        topP: 0.78,
+        maxOutputTokens: 18000,
+      });
+
+      const normalized = normalizeCommonOutput(generated, input);
+      const contracted = enforceMaterialTypeContract(input, enhanceHardPedagogicalMaterial(input, normalized));
+      return guardMaterialQuality(input, contracted);
+    } catch {
+      return buildVerifiedRecoveryMaterial(input);
+    }
+  }
+
+  try {
     const generated = await generateGeminiJSON<MaterialAIOutput>({
       systemInstruction: buildMaterialSystemInstruction(),
       prompt: buildMaterialPrompt(input),
-      temperature: 0.28,
-      topP: 0.82,
+      temperature: 0.22,
+      topP: 0.8,
       maxOutputTokens: 14000,
     });
 
-    const normalized = normalizeCommonOutput(generated, input);
-    return enforceMaterialTypeContract(input, enhanceHardPedagogicalMaterial(input, normalized));
+    const contracted = enforceMaterialTypeContract(input, normalizeCommonOutput(generated, input));
+    return guardMaterialQuality(input, contracted);
+  } catch {
+    return buildVerifiedRecoveryMaterial(input);
   }
-
-  const generated = await generateGeminiJSON<MaterialAIOutput>({
-    systemInstruction: buildMaterialSystemInstruction(),
-    prompt: buildMaterialPrompt(input),
-    temperature: 0.35,
-    topP: 0.85,
-    maxOutputTokens: 10000,
-  });
-
-  return enforceMaterialTypeContract(input, normalizeCommonOutput(generated, input));
 }
 
 

@@ -3,7 +3,18 @@
 @tailwind utilities;
 
 :root {
-  color-scheme: dark;
+  color-scheme: light dark;
+
+  /* Planify design tokens */
+  --pl-bg: #f6f7fb;
+  --pl-surface: #ffffff;
+  --pl-border: rgba(15, 23, 42, 0.09);
+  --pl-text: #0f172a;
+  --pl-muted: #64748b;
+  --pl-accent: #0f172a;
+  --pl-radius-card: 2rem;
+  --pl-radius-btn: 0.875rem;
+  --pl-shadow-card: 0 1px 3px rgba(15, 23, 42, 0.06), 0 4px 16px rgba(15, 23, 42, 0.04);
 }
 
 * {
@@ -16,8 +27,8 @@ html {
 
 body {
   margin: 0;
-  background: #020617;
-  color: #f8fafc;
+  background: #f6f7fb;
+  color: #0f172a;
 }
 
 a {
@@ -32,25 +43,25 @@ select {
 }
 
 ::selection {
-  background: rgba(34, 211, 238, 0.28);
-  color: #ffffff;
+  background: rgba(15, 23, 42, 0.14);
+  color: #0f172a;
 }
 
 ::-webkit-scrollbar {
-  width: 10px;
+  width: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #020617;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.35);
+  background: rgba(15, 23, 42, 0.18);
   border-radius: 999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(34, 211, 238, 0.45);
+  background: rgba(15, 23, 42, 0.28);
 }
 
 /* PLANIFY_LANDING_VIDEO_9_20_6_START */

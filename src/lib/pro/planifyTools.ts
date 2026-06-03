@@ -24,7 +24,20 @@ export type PlanifyIconName =
   | "spark"
   | "user"
   | "arrowRight"
-  | "close";
+  | "arrowLeft"
+  | "close"
+  | "menu"
+  | "chevronDown"
+  | "chevronRight"
+  | "checkCircle"
+  | "alertCircle"
+  | "infoCircle"
+  | "download"
+  | "externalLink"
+  | "logout"
+  | "plus"
+  | "trash"
+  | "settings";
 
 export type ToolCategoryId =
   | "todos"

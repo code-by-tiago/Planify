@@ -137,18 +137,19 @@ export default function PremiumAccessGate({
   if (status.loading) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#f6f7fb] p-4">
-        <div className="w-full max-w-md rounded-[2rem] border border-slate-200 bg-white p-7 text-center shadow-xl shadow-slate-200">
+        <div className="w-full max-w-sm rounded-[2rem] border border-slate-200 bg-white p-8 text-center shadow-xl shadow-slate-100">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-950 text-white">
             <PlanifyIcon name="lock" className="h-6 w-6" />
           </div>
-          <h1 className="mt-5 text-2xl font-black text-slate-950">
+          <h2 className="mt-5 text-xl font-black text-slate-950">
             Verificando acesso
-          </h1>
+          </h2>
           <p className="mt-2 text-sm font-semibold text-slate-500">
             {status.message}
           </p>
-          <div className="mt-6 h-2 overflow-hidden rounded-full bg-slate-100">
-            <div className="h-full w-2/3 animate-pulse rounded-full bg-slate-950" />
+          <div className="mt-6 flex items-center justify-center gap-2">
+            <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-slate-200 border-t-slate-950" />
+            <span className="text-xs font-bold text-slate-400">Aguarde</span>
           </div>
         </div>
       </main>

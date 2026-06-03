@@ -70,9 +70,7 @@ export function PremiumRouteGuard() {
 
         const data = (await response.json()) as AccessStatus;
 
-        if (!active) {
-          return;
-        }
+        if (!active) return;
 
         if (!response.ok || !data.authenticated || !data.premium) {
           window.location.href = makeLoginUrl(pathname);
@@ -101,8 +99,11 @@ export function PremiumRouteGuard() {
   }
 
   return (
-    <div className="border-b border-amber-300/20 bg-amber-300/10 px-5 py-3 text-center text-sm font-bold text-amber-100">
-      Validando acesso premium...
+    <div className="flex items-center justify-center gap-3 border-b border-white/10 bg-white/5 px-5 py-3 text-center">
+      <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+      <span className="text-sm font-bold text-slate-300">
+        Validando acesso...
+      </span>
     </div>
   );
 }

@@ -11,6 +11,7 @@ export function buildMaterialContentSuggestionSystemInstruction(): string {
     "Não gere códigos BNCC nesta resposta.",
     "Não use markdown.",
     "Não use bloco de código.",
+    "Use conhecimento educacional amplo, padrões de REA/OER, BNCC, Bloom e acessibilidade como referência de estrutura; não copie textos, questões ou materiais protegidos.",
     "Retorne exclusivamente JSON válido.",
   ].join("\n");
 }
@@ -32,6 +33,8 @@ Observações do professor: ${input.observacoes || "Não informado"}
 
 REGRAS:
 1. Monte de 5 a 8 blocos internos realmente compatíveis com o tema, componente, etapa e ano/série.
+2. Use a web como inspiração de padrões pedagógicos e conhecimento geral, mas gere estrutura original, sem copiar conteúdo protegido.
+3. Priorize fontes e padrões educacionais seguros: BNCC, REA/OER, domínio público, licença aberta, Bloom, acessibilidade e materiais próprios do professor/admin.
 2. Esses blocos NÃO serão cards para o professor escolher e NÃO devem criar materiais separados; eles serão integrados automaticamente em um único material completo.
 3. Não use termos genéricos como apenas "conceito", "exemplo", "leitura" ou "cultura" se eles não estiverem contextualizados.
 4. Cada bloco deve ter título, descrição, palavras-chave, objetivos, dificuldade, tempo estimado e justificativa pedagógica.

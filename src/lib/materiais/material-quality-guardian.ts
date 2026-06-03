@@ -21,6 +21,7 @@ import {
   normalizeInputContents,
   normalizeStringList,
 } from "./material-specialist-blueprints";
+import { buildQuestionQualityChecklist, buildTeacherAnswerExpansion, isWeakTeacherAnswer } from "./material-pedagogical-reference-kernel";
 
 type QualityIssue = {
   code: string;
@@ -203,10 +204,16 @@ function ensureExactQuestions(input: MaterialAIInput, output: MaterialAIOutput, 
   return exact;
 }
 
-function buildGabarito(questions: MaterialAIQuestion[]): string[] {
+function buildGabarito(input: MaterialAIInput, questions: MaterialAIQuestion[]): string[] {
   return questions.map((question) => {
+    const answer = isWeakTeacherAnswer(question.respostaEsperada)
+      ? buildTeacherAnswerExpansion(input, question)
+      : question.respostaEsperada;
     const alternatives = question.alternativas.length ? ` Alternativas: ${question.alternativas.join(" ")}` : "";
-    return `Questão ${question.numero}: ${question.respostaEsperada}${alternatives} Critério: ${question.criterioCorrecao}`;
+    const criteria = question.criterioCorrecao && question.criterioCorrecao.length > 32
+      ? question.criterioCorrecao
+      : "Critério: considerar domínio do conceito, atendimento ao comando, clareza, justificativa e uso correto de exemplos.";
+    return `Questão ${question.numero} — Resposta esperada: ${answer}${alternatives} ${criteria}`;
   });
 }
 
@@ -308,7 +315,7 @@ function ensureContentCoverage(input: MaterialAIInput, sections: MaterialAISecti
   return completed;
 }
 
-function ensureCommonQualityArrays(input: MaterialAIInput, output: MaterialAIOutput): Pick<MaterialAIOutput, "objetivos" | "orientacoesProfessor" | "orientacoesAluno" | "criteriosAvaliacao" | "adaptacoesInclusivas" | "sugestoesUso"> {
+function ensureCommonQualityArrays(input: MaterialAIInput, output: MaterialAIOutput, questions: MaterialAIQuestion[] = []): Pick<MaterialAIOutput, "objetivos" | "orientacoesProfessor" | "orientacoesAluno" | "criteriosAvaliacao" | "adaptacoesInclusivas" | "sugestoesUso"> {
   const blueprint = getMaterialBlueprint(input);
   const theme = String(input.tema || "tema estudado").trim() || "tema estudado";
   const component = String(input.componenteCurricular || "componente curricular").trim() || "componente curricular";
@@ -322,7 +329,9 @@ function ensureCommonQualityArrays(input: MaterialAIInput, output: MaterialAIOut
         "Correção de acordo com o gabarito.",
         "Clareza, organização e coerência nas respostas.",
         "Justificativas compatíveis com o componente curricular quando solicitadas.",
-      ],
+        ...buildQuestionQualityChecklist(input),
+        ...(questions.length ? [`Conferir ${questions.length} questões com numeração correspondente ao gabarito.`] : []),
+      ].slice(0, 8),
       adaptacoesInclusivas: compactFinalNotes(output.adaptacoesInclusivas, 3),
       sugestoesUso: compactFinalNotes(output.sugestoesUso, 2),
     };
@@ -417,7 +426,7 @@ export function guardMaterialQuality(input: MaterialAIInput, output: MaterialAIO
   const questions = ensureExactQuestions(input, withoutWrongBlocks, fallback, issues);
   const sectionsFromBlueprint = ensureBlueprintSections(input, withoutWrongBlocks, fallback, issues);
   const sections = structureSectionsForMaterial(input.tipo, ensureContentCoverage(input, sectionsFromBlueprint, questions, issues), input.tema);
-  const qualityArrays = ensureCommonQualityArrays(input, withoutWrongBlocks);
+  const qualityArrays = ensureCommonQualityArrays(input, withoutWrongBlocks, questions);
   const specialBlocks = ensureSpecialBlocks(input, withoutWrongBlocks);
 
   const title = String(withoutWrongBlocks.titulo || input.titulo || `${input.tipo} — ${input.tema}`).trim();
@@ -442,7 +451,7 @@ export function guardMaterialQuality(input: MaterialAIInput, output: MaterialAIO
     conteudos: normalizeStringList(withoutWrongBlocks.conteudos).length ? normalizeStringList(withoutWrongBlocks.conteudos) : normalizeInputContents(input.conteudos),
     secoes: directProduct ? [] : sections,
     questoes: questions,
-    gabarito: questions.length ? buildGabarito(questions) : normalizeStringList(withoutWrongBlocks.gabarito),
+    gabarito: questions.length ? buildGabarito(input, questions) : normalizeStringList(withoutWrongBlocks.gabarito),
     alertas: [],
   };
 }

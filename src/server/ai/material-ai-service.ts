@@ -13,6 +13,7 @@ import { buildVisualGameMaterial } from "../../lib/materiais/game-builder";
 import { buildHardPedagogicalMaterial, enhanceHardPedagogicalMaterial, shouldUseHardPedagogicalEngine } from "../../lib/materiais/pedagogical-hard-engine";
 import { enforceMaterialTypeContract } from "../../lib/materiais/material-type-validator";
 import { guardMaterialQuality } from "../../lib/materiais/material-quality-guardian";
+import { auditMaterialAgainstKnowledgeEngine } from "../../lib/materiais/material-quality-auditor";
 import { generateGeminiJSON } from "./gemini-client";
 import {
   buildMaterialPrompt,
@@ -199,11 +200,15 @@ function mergeGameWithAI(input: MaterialAIInput, aiOutput?: Partial<MaterialAIOu
   };
 }
 
+function finalizeMaterial(input: MaterialAIInput, output: MaterialAIOutput): MaterialAIOutput {
+  return auditMaterialAgainstKnowledgeEngine(input, guardMaterialQuality(input, output));
+}
+
 function buildVerifiedRecoveryMaterial(input: MaterialAIInput): MaterialAIOutput {
   const deterministic = normalizeCommonOutput(buildHardPedagogicalMaterial(input), input);
   const enhanced = enhanceHardPedagogicalMaterial(input, deterministic);
   const contracted = enforceMaterialTypeContract(input, enhanced);
-  return guardMaterialQuality(input, contracted);
+  return finalizeMaterial(input, contracted);
 }
 
 export async function generateMaterialWithAI(rawInput: MaterialAIInput): Promise<MaterialAIOutput> {
@@ -227,9 +232,9 @@ export async function generateMaterialWithAI(rawInput: MaterialAIInput): Promise
         topP: 0.8,
         maxOutputTokens: 9000,
       });
-      return guardMaterialQuality(input, enforceMaterialTypeContract(input, mergeGameWithAI(input, generated)));
+      return finalizeMaterial(input, enforceMaterialTypeContract(input, mergeGameWithAI(input, generated)));
     } catch {
-      return guardMaterialQuality(input, enforceMaterialTypeContract(input, mergeGameWithAI(
+      return finalizeMaterial(input, enforceMaterialTypeContract(input, mergeGameWithAI(
         input,
         undefined,
         "O Planify preparou uma versão visual pronta para uso em sala.",
@@ -249,7 +254,7 @@ export async function generateMaterialWithAI(rawInput: MaterialAIInput): Promise
 
       const normalized = normalizeCommonOutput(generated, input);
       const contracted = enforceMaterialTypeContract(input, enhanceHardPedagogicalMaterial(input, normalized));
-      return guardMaterialQuality(input, contracted);
+      return finalizeMaterial(input, contracted);
     } catch {
       return buildVerifiedRecoveryMaterial(input);
     }
@@ -265,7 +270,7 @@ export async function generateMaterialWithAI(rawInput: MaterialAIInput): Promise
     });
 
     const contracted = enforceMaterialTypeContract(input, normalizeCommonOutput(generated, input));
-    return guardMaterialQuality(input, contracted);
+    return finalizeMaterial(input, contracted);
   } catch {
     return buildVerifiedRecoveryMaterial(input);
   }

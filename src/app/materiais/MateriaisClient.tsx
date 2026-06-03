@@ -496,24 +496,60 @@ function validateForm(form: FormState): string | null {
 
 const materialProgressSteps = [
   "Lendo o pedido do professor com precisão",
+  "Consultando a base pedagógica curada",
   "Organizando o produto no formato certo",
-  "Criando questões e blocos com estrutura",
   "Separando versão do aluno e gabarito",
-  "Revisando quantidade, clareza e apresentação",
+  "Auditando estrutura, quantidade e qualidade",
 ];
 
 const materialGenerationMessages = [
-  "Estamos lapidando o material para que ele saia pronto para usar em sala.",
+  "Transformando referências pedagógicas confiáveis em um produto original e pronto para sala.",
   "Organizando cada questão como produto final, sem texto corrido e sem promessa vazia.",
   "Separando a versão do aluno do gabarito para facilitar impressão, edição e aplicação.",
-  "Conferindo se o formato escolhido combina com o que será entregue ao professor.",
+  "Conferindo formato, quantidade, tópicos, resposta esperada e critério de correção.",
+  "Aplicando padrões de apostila, prova, atividade, lista, projeto ou sequência conforme o tipo escolhido.",
 ];
+
+const materialQuoteCards = [
+  { author: "Inspiração aristotélica", text: "Excelência é transformar cuidado em hábito e hábito em obra bem-feita." },
+  { author: "Inspiração socrática", text: "Uma boa pergunta acende o pensamento antes de pedir uma resposta." },
+  { author: "Inspiração humanista", text: "Ensinar bem é respeitar o contexto, a inteligência e o tempo de quem aprende." },
+  { author: "Planify", text: "O professor pediu um produto; o Planify entrega material pronto, claro e aplicável." },
+  { author: "Planify Knowledge Engine", text: "Conhecimento amplo só vira excelência quando passa por curadoria, estrutura e validação." },
+  { author: "Planify", text: "Cada questão precisa merecer o tempo do professor e provocar aprendizagem real." },
+];
+
+function MaterialGenerationFloatingCard({ label, messageIndex }: { label: string; messageIndex: number }) {
+  const quote = materialQuoteCards[messageIndex % materialQuoteCards.length];
+
+  return (
+    <div aria-live="polite" className="pointer-events-none fixed left-1/2 top-24 z-[120] w-[min(92vw,560px)] -translate-x-1/2 rounded-[1.75rem] border border-cyan-200 bg-white p-5 text-slate-950 shadow-2xl shadow-cyan-950/30 ring-1 ring-cyan-100">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-[11px] font-black uppercase tracking-[0.24em] text-cyan-700">Planify em criação premium</p>
+          <h3 className="mt-2 text-xl font-black">{label}</h3>
+        </div>
+        <div className="flex gap-1.5 pt-1" aria-hidden="true">
+          <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-cyan-500" />
+          <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-blue-500 [animation-delay:120ms]" />
+          <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-emerald-500 [animation-delay:240ms]" />
+        </div>
+      </div>
+      <div className="mt-3 rounded-2xl border border-cyan-100 bg-cyan-50 p-4">
+        <p className="text-sm font-black leading-6 text-slate-900">“{quote.text}”</p>
+        <p className="mt-2 text-xs font-black uppercase tracking-[0.18em] text-cyan-700">{quote.author}</p>
+      </div>
+      <p className="mt-3 text-xs font-bold leading-5 text-slate-700">Aguarde: estamos consultando a base pedagógica curada e auditando estrutura, quantidade, tópicos, gabarito e apresentação antes de mostrar o produto final.</p>
+    </div>
+  );
+}
 
 function MaterialGenerationPanel({ label, messageIndex }: { label: string; messageIndex: number }) {
   const message = materialGenerationMessages[messageIndex % materialGenerationMessages.length];
+  const quote = materialQuoteCards[messageIndex % materialQuoteCards.length];
 
   return (
-    <div className="rounded-[1.75rem] border border-cyan-200 bg-gradient-to-br from-cyan-50 via-sky-50 to-emerald-50 p-5 shadow-2xl shadow-cyan-500/10">
+    <div className="rounded-[1.75rem] border border-cyan-200 bg-gradient-to-br from-cyan-50 via-white to-emerald-50 p-5 text-slate-950 shadow-2xl shadow-cyan-500/10">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-xs font-black uppercase tracking-[0.25em] text-cyan-700">Preparando material</p>
@@ -526,8 +562,14 @@ function MaterialGenerationPanel({ label, messageIndex }: { label: string; messa
         </div>
       </div>
 
-      <div className="mt-5 rounded-2xl border border-cyan-200 bg-white/80 p-4 text-sm font-bold leading-7 text-slate-800 shadow-sm">
+      <div className="mt-5 rounded-2xl border border-cyan-200 bg-white p-4 text-sm font-bold leading-7 text-slate-800 shadow-sm">
         {message}
+      </div>
+
+      <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+        <p className="text-xs font-black uppercase tracking-[0.2em] text-emerald-700">Frase para a criação</p>
+        <p className="mt-2 text-sm font-bold leading-7 text-slate-800">“{quote.text}”</p>
+        <p className="mt-1 text-xs font-black text-emerald-700">{quote.author}</p>
       </div>
 
       <div className="mt-5 grid gap-3 md:grid-cols-5">
@@ -536,7 +578,7 @@ function MaterialGenerationPanel({ label, messageIndex }: { label: string; messa
             <div className="mb-3 h-1.5 overflow-hidden rounded-full bg-slate-200">
               <span className="block h-full animate-pulse rounded-full bg-cyan-500" style={{ width: `${Math.min(100, 34 + index * 14)}%` }} />
             </div>
-            <p className="text-xs font-black leading-5 text-slate-800">{step}</p>
+            <p className="text-xs font-black leading-5 text-slate-900">{step}</p>
           </div>
         ))}
       </div>
@@ -692,13 +734,64 @@ function splitLetteredItems(value: string) {
   return items.length >= 2 ? { intro, items } : null;
 }
 
+function splitCommandAndItems(value: string) {
+  const text = String(value || "")
+    .replace(/\s+•\s+/g, "\n• ")
+    .replace(/\s+([a-jA-J])\)\s+/g, "\n$1) ")
+    .trim();
+  const colonIndex = text.indexOf(":");
+  if (colonIndex < 18) return null;
+
+  const command = text.slice(0, colonIndex).trim();
+  const rest = text.slice(colonIndex + 1).trim();
+  if (!command || rest.length < 12) return null;
+
+  const lineItems = rest
+    .split(/\r?\n/g)
+    .map((item) => item.trim().replace(/^[-•]\s*/, "").replace(/^[;,.\-–—]+/, "").trim())
+    .filter((item) => item.length >= 4);
+
+  if (lineItems.length >= 2) return { command, items: lineItems };
+
+  const bulletItems = rest
+    .split(/\s*[•]\s*/g)
+    .map((item) => item.trim().replace(/^[;,.\-–—]+/, "").trim())
+    .filter((item) => item.length >= 4);
+
+  if (bulletItems.length >= 2) return { command, items: bulletItems };
+
+  const sentenceItems = rest
+    .split(/(?<=[.!?])\s+(?=[A-ZÁÉÍÓÚÂÊÔÃÕÇ"“])/g)
+    .map((item) => item.trim().replace(/^[;,.\-–—]+/, "").trim())
+    .filter((item) => item.length >= 8 && item.length <= 180);
+
+  if (sentenceItems.length >= 3) return { command, items: sentenceItems };
+
+  const semicolonItems = rest
+    .split(/;|\s{2,}/g)
+    .map((item) => item.trim().replace(/^[;,.\-–—]+/, "").trim())
+    .filter((item) => item.length >= 8 && item.length <= 180);
+
+  return semicolonItems.length >= 3 ? { command, items: semicolonItems } : null;
+}
+
+function getQuestionSubitems(value: string | undefined) {
+  const text = String(value || "").trim();
+  return splitLetteredItems(text)?.items || splitCommandAndItems(text)?.items || [];
+}
+
 function renderQuestionText(value: string | undefined) {
   const text = String(value || "").trim();
   if (!text) return "";
 
   const splitLettered = splitLetteredItems(text);
   if (splitLettered) {
-    return `${splitLettered.intro ? `<p>${escapeHtml(splitLettered.intro)}:</p>` : ""}<ol class="planify-subitems" type="a">${splitLettered.items.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ol>`;
+    return `${splitLettered.intro ? `<p class="planify-question-command"><strong>Comando:</strong> ${escapeHtml(splitLettered.intro)}:</p>` : ""}<ol class="planify-subitems" type="a">${splitLettered.items.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ol>`;
+  }
+
+  const splitCommand = splitCommandAndItems(text);
+  if (splitCommand) {
+    return `<p class="planify-question-command"><strong>Comando:</strong> ${escapeHtml(splitCommand.command)}:</p><ul class="planify-question-items">${splitCommand.items.map((item) => `<li>${escapeHtml(item.replace(/^[-•]\s*/, ""))}</li>`).join("")}</ul>`;
   }
 
   const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
@@ -718,11 +811,21 @@ function renderAlternativesList(items: string[] | undefined) {
 }
 
 
-function renderStudentAnswerSpace() {
-  return `<div style="margin-top:12px;border:1px dashed #cbd5e1;border-radius:12px;padding:12px;background:#f8fafc;color:#64748b;font-size:12px;">
-    Espaço para resposta: ____________________________________________________________________________________<br />
-    _________________________________________________________________________________________________________<br />
-    _________________________________________________________________________________________________________
+function renderStudentAnswerSpace(question?: MaterialQuestion) {
+  const subitems = getQuestionSubitems(question?.enunciado);
+
+  if (subitems.length >= 2) {
+    return `<div class="planify-answer-space">
+      <p><strong>Espaço para resposta:</strong></p>
+      <ol class="planify-answer-grid" type="a">
+        ${subitems.map(() => `<li><span class="planify-answer-line"></span><span class="planify-answer-line short"></span></li>`).join("")}
+      </ol>
+    </div>`;
+  }
+
+  return `<div class="planify-answer-space">
+    <p><strong>Espaço para resposta:</strong></p>
+    ${Array.from({ length: 6 }).map((_, index) => `<span class="planify-answer-line ${index % 3 === 2 ? "short" : ""}"></span>`).join("")}
   </div>`;
 }
 
@@ -739,7 +842,7 @@ function isDirectProductKind(value: unknown) {
 }
 
 function renderQuestionCard(question: MaterialQuestion) {
-  return `<div class="planify-question"><span class="planify-question-type">${escapeHtml(question.tipo || "questão")}</span><h3>Questão ${question.numero}</h3><div class="planify-question-enunciado">${renderQuestionText(question.enunciado)}</div>${renderAlternativesList(question.alternativas)}${renderStudentAnswerSpace()}</div>`;
+  return `<div class="planify-question"><span class="planify-question-type">${escapeHtml(question.tipo || "questão")}</span><h3>Questão ${question.numero}</h3><div class="planify-question-enunciado">${renderQuestionText(question.enunciado)}</div>${renderAlternativesList(question.alternativas)}${renderStudentAnswerSpace(question)}</div>`;
 }
 
 function buildMaterialEditorHtml(material: GeneratedMaterial) {
@@ -760,12 +863,21 @@ function buildMaterialEditorHtml(material: GeneratedMaterial) {
   .planify-box.soft{background:#f8fafc;}
   .planify-section-title{margin:0 0 10px;font-size:20px;color:#0f172a;}
   .planify-question{border:1px solid #cbd5e1;border-radius:16px;padding:16px;margin:16px 0;background:#ffffff;break-inside:avoid;page-break-inside:avoid;}
-  .planify-question h3{margin:0 0 8px;font-size:18px;color:#0f172a;}
+  .planify-question h3{margin:0 0 10px;font-size:20px;color:#0f172a;border-bottom:1px solid #e2e8f0;padding-bottom:8px;}
   .planify-question-enunciado p{margin:6px 0 8px;}
+  .planify-question-command{border-left:4px solid #06b6d4;background:#f0f9ff;padding:10px 12px;border-radius:10px;color:#0f172a;}
+  .planify-question-items{margin:12px 0 0 20px;padding:0;}
+  .planify-question-items li{margin:8px 0;padding-left:4px;}
   .planify-question-steps{margin:10px 0 0 20px;padding:0;}
   .planify-question-steps li{margin:5px 0;}
   .planify-subitems{margin:12px 0 0 24px;padding:0;}
   .planify-subitems li{margin:8px 0;padding-left:4px;}
+  .planify-answer-space{margin-top:14px;border:1px dashed #94a3b8;border-radius:14px;padding:14px;background:#f8fafc;color:#475569;font-size:12px;}
+  .planify-answer-space p{margin:0 0 8px;}
+  .planify-answer-grid{margin:0 0 0 22px;padding:0;}
+  .planify-answer-grid li{margin:10px 0;}
+  .planify-answer-line{display:block;height:1.6em;border-bottom:1px solid #94a3b8;margin:3px 0;}
+  .planify-answer-line.short{width:62%;}
   .planify-alternatives{margin:12px 0 0 22px;padding:0;}
   .planify-alternatives li{margin:6px 0;padding-left:4px;}
   .planify-question-type{display:inline-block;margin-bottom:8px;padding:4px 8px;border-radius:999px;background:#dcfce7;color:#166534;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;}
@@ -1122,6 +1234,9 @@ export function MateriaisClient() {
           <p className="mt-4 text-sm leading-7 text-cyan-100/80">
             Escolha a turma, o componente, o tipo e o tema. O Planify prepara um material pronto para revisar, editar e aplicar.
           </p>
+          <div className="mt-4 rounded-2xl border border-cyan-300/20 bg-slate-950/40 p-4 text-xs font-bold leading-6 text-cyan-50">
+            Motor com base pedagógica curada: BNCC, REA/OER, Bloom, acessibilidade e contratos específicos por tipo de material.
+          </div>
 
           <div className="mt-6 grid gap-3">
             {quickExamples.map((example) => (
@@ -1394,7 +1509,10 @@ export function MateriaisClient() {
         </div>
 
         {isGenerating ? (
-          <MaterialGenerationPanel label={form.tipo === "jogo" ? `Montando ${selectedGameModel?.label || "jogo"}` : `Criando ${typeLabels[form.tipo].toLocaleLowerCase("pt-BR")}`} messageIndex={generationMessageIndex} />
+          <>
+            <MaterialGenerationFloatingCard label={form.tipo === "jogo" ? `Montando ${selectedGameModel?.label || "jogo"}` : `Criando ${typeLabels[form.tipo].toLocaleLowerCase("pt-BR")}`} messageIndex={generationMessageIndex} />
+            <MaterialGenerationPanel label={form.tipo === "jogo" ? `Montando ${selectedGameModel?.label || "jogo"}` : `Criando ${typeLabels[form.tipo].toLocaleLowerCase("pt-BR")}`} messageIndex={generationMessageIndex} />
+          </>
         ) : null}
 
         <div className="rounded-[2rem] border border-white/10 bg-white/[0.06] p-6 shadow-2xl backdrop-blur-2xl">

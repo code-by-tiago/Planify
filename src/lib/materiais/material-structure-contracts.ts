@@ -9,7 +9,8 @@ export function buildMaterialStructureContract(input: MaterialAIInput): string {
     "A estrutura visual do material deve combinar com o tipo solicitado; não entregue tudo como texto corrido.",
     "Não use parágrafos longos para atividades, exercícios, listas, provas ou revisões. Use questões numeradas, tópicos, itens e comandos claros.",
     "Não coloque exercícios escondidos dentro de seções em forma de texto. Quando houver questão, ela deve estar no array questoes.",
-    "Não compacte várias perguntas em uma única questão usando a), b), c), d). Cada pergunta principal deve ser um objeto separado em questoes.",
+    "Não compacte várias perguntas em uma única questão usando a), b), c), d) ou frases soltas em sequência. Cada pergunta principal deve ser objeto separado ou subitem visual claro.",
+    "Quando uma questão usar várias frases para análise, separe comando e frases em tópicos; nunca deixe exemplos colados no título ou em parágrafo corrido.",
     "A versão do aluno deve ser limpa, imprimível e pronta para uso. O gabarito deve ficar separado para o professor.",
     "Cada seção deve ter função real: ensinar, orientar, praticar, revisar, avaliar ou produzir. Nada de seção decorativa.",
   ];
@@ -103,9 +104,56 @@ function splitSentences(value: string): string[] {
     .filter(Boolean);
 }
 
+function splitCommandExamples(value: string): { command: string; items: string[] } | null {
+  const text = String(value || "")
+    .replace(/\s+•\s+/g, "\n• ")
+    .replace(/\s+([a-jA-J])\)\s+/g, "\n$1) ")
+    .trim();
+  const colonIndex = text.indexOf(":");
+  if (colonIndex < 18) return null;
+
+  const command = text.slice(0, colonIndex).trim();
+  const rest = text.slice(colonIndex + 1).trim();
+  if (!command || rest.length < 12) return null;
+
+  const lineItems = rest
+    .split(/\r?\n/g)
+    .map((item) => item.trim().replace(/^[-•]\s*/, "").replace(/^[;,.\-–—]+/, "").trim())
+    .filter((item) => item.length >= 4);
+
+  if (lineItems.length >= 2) return { command, items: lineItems };
+
+  const bulletItems = rest
+    .split(/\s*[•]\s*/g)
+    .map((item) => item.trim().replace(/^[;,.\-–—]+/, "").trim())
+    .filter((item) => item.length >= 4);
+
+  if (bulletItems.length >= 2) return { command, items: bulletItems };
+
+  const sentenceItems = rest
+    .split(/(?<=[.!?])\s+(?=[A-ZÁÉÍÓÚÂÊÔÃÕÇ"“])/g)
+    .map((item) => item.trim().replace(/^[;,.\-–—]+/, "").trim())
+    .filter((item) => item.length >= 8 && item.length <= 180);
+
+  if (sentenceItems.length >= 3) return { command, items: sentenceItems };
+
+  const semicolonItems = rest
+    .split(/;|\s{2,}/g)
+    .map((item) => item.trim().replace(/^[;,.\-–—]+/, "").trim())
+    .filter((item) => item.length >= 8 && item.length <= 180);
+
+  return semicolonItems.length >= 3 ? { command, items: semicolonItems } : null;
+}
+
 export function enforceQuestionBulletStructure(value: unknown): string {
   const cleaned = removeQuestionPreamble(value);
   if (!cleaned) return "Resolva o item com atenção.\n• Registre sua resposta no espaço indicado.\n• Justifique quando o comando solicitar.";
+
+  const split = splitCommandExamples(cleaned);
+  if (split) {
+    return [split.command, ...split.items.slice(0, 8).map((item) => `• ${item.replace(/^[-•]\s*/, "")}`)].join("\n");
+  }
+
   if (/\n\s*[-•]/.test(cleaned) || /^\s*[-•]/m.test(cleaned)) return cleaned;
 
   const sentences = splitSentences(cleaned);
@@ -113,7 +161,7 @@ export function enforceQuestionBulletStructure(value: unknown): string {
 
   const first = sentences.shift() || cleaned;
   const actions = sentences.length ? sentences : ["Registre sua resposta de forma organizada."];
-  return [first, ...actions.slice(0, 4).map((sentence) => `• ${sentence.replace(/^[-•]\s*/, "")}`)].join("\n");
+  return [first, ...actions.slice(0, 5).map((sentence) => `• ${sentence.replace(/^[-•]\s*/, "")}`)].join("\n");
 }
 
 
@@ -156,7 +204,7 @@ export function expandPackedQuestion(question: Partial<MaterialAIQuestion>): Par
   return split.items.map((item, index) => ({
     ...question,
     tipo: question.tipo || "item estruturado",
-    enunciado: `${action}: ${item}`,
+    enunciado: `${action}:\n• ${item}`,
     alternativas: [],
     respostaEsperada: question.respostaEsperada || "Resposta esperada conforme o comando e o conteúdo estudado.",
     criterioCorrecao: question.criterioCorrecao || "Avaliar se o estudante resolveu o item com clareza, coerência e domínio do conteúdo.",

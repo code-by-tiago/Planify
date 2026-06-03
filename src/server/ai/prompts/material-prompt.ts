@@ -1,6 +1,8 @@
 import type { MaterialAIInput } from "../../../types/ai";
 import { buildSpecialistPromptBlock } from "../../../lib/materiais/material-specialist-blueprints";
 import { buildMaterialStructureContract } from "../../../lib/materiais/material-structure-contracts";
+import { buildPedagogicalReferenceKernelPrompt } from "../../../lib/materiais/material-pedagogical-reference-kernel";
+import { buildKnowledgeEnginePrompt } from "../../../lib/materiais/material-knowledge-engine";
 
 function normalizeConteudos(conteudos: MaterialAIInput["conteudos"]): string[] {
   if (Array.isArray(conteudos)) {
@@ -25,6 +27,7 @@ function materialRulesByType(type: string): string[] {
       "Crie questões progressivas, contextualizadas e variadas: identificação, classificação, reescrita, interpretação, associação, produção, justificativa, análise, aplicação e síntese.",
       "Não compacte várias letras a), b), c), d) dentro de uma única questão. Cada pergunta principal deve ser uma questão própria no array questoes.",
       "Inclua enunciados completos, exemplos suficientes, resposta esperada, critério de correção e comandos de aplicação.",
+      "Se a questão pedir classificar, identificar ou analisar várias frases, apresente as frases em tópicos com • e não no mesmo parágrafo do comando.",
       "A versão do aluno deve ficar sem resposta logo abaixo da questão; o gabarito deve ficar separado.",
       "Não preencha jogo, projeto nem roteiro.",
     ];
@@ -137,8 +140,12 @@ export function buildMaterialSystemInstruction(): string {
     "Sua segunda prioridade é entregar o produto pronto, sem preâmbulo, sem justificativa longa e sem explicar o que você vai fazer antes de entregar.",
     "Para atividade, prova, lista, revisão e exercícios, a entrega deve começar pelo material utilizável: VERSÃO DO ALUNO e depois GABARITO DO PROFESSOR.",
     "Atividade, lista, prova e revisão devem ter forma de folha escolar: questões numeradas, comandos diretos, tópicos, alternativas ou espaço de resposta. Não entregue como textão.",
+    "Nunca cole exemplos, frases ou itens de análise no mesmo parágrafo do título da questão. Separe comando e itens em linhas com • quando houver mais de uma frase para analisar.",
+    "Cada gabarito deve trazer resposta esperada real e suficiente; não use gabarito pobre como 'resposta pessoal' sem critérios ou exemplos aceitáveis.",
     "Nunca misture formatos: apostila ensina em capítulos; prova avalia; atividade pratica; lista treina; revisão retoma; sequência organiza aulas; projeto investiga e produz; roteiro orienta estudo; jogo entrega peças ou dinâmica pronta.",
     "O material deve ser adequado à etapa, ao ano/série, ao componente curricular e ao tema.",
+    "Use padrões pedagógicos reais e fontes educacionais confiáveis como referência estrutural, mas produza conteúdo original do Planify, sem copiar textos, questões ou apostilas da web.",
+    "Trate a web como fonte de conhecimento e curadoria, não como banco de cópia; respeite licença, domínio público e autoria.",
     "Não transforme tema de Geografia, Ciências, História, Filosofia, Matemática ou Ensino Religioso em atividade de Língua Portuguesa, salvo se o componente escolhido for Língua Portuguesa, Redação ou Escrita Criativa.",
     "Aprofunde o conteúdo com linguagem escolar, exemplos, contextualização, progressão e aplicabilidade real em sala.",
     "Para temas amplos, delimite em unidades coerentes sem fugir do tema central.",
@@ -159,6 +166,8 @@ export function buildMaterialPrompt(input: MaterialAIInput): string {
   const typeRules = materialRulesByType(input.tipo);
   const specialistBlock = buildSpecialistPromptBlock(input);
   const structureContract = buildMaterialStructureContract(input);
+  const referenceKernel = buildPedagogicalReferenceKernelPrompt(input);
+  const knowledgeEngine = buildKnowledgeEnginePrompt(input);
 
   return `
 Gere um material didático profissional para o Planify.
@@ -200,6 +209,11 @@ ${specialistBlock}
 CONTRATO DE ESTRUTURA VISUAL E PEDAGÓGICA:
 ${structureContract}
 
+BASE PEDAGÓGICA ESPECIALISTA PLANIFY:
+${referenceKernel}
+
+${knowledgeEngine}
+
 REGRAS UNIVERSAIS:
 1. O material deve obedecer exatamente ao tipo selecionado.
 2. O conteúdo deve ser profundo, coerente, aplicável, sem repetição e sem encher espaço com frases genéricas.
@@ -221,6 +235,8 @@ REGRAS UNIVERSAIS:
 18. Respeite o componente curricular: Geografia deve ter raciocínio espacial/territorial; Ciências deve ter investigação científica; História deve ter processos históricos; Matemática deve ter resolução e procedimentos; Línguas devem trabalhar linguagem; Ensino Religioso deve tratar valores e diversidade com respeito.
 19. Retorne apenas JSON válido.
 20. Antes de finalizar, faça uma checagem interna: tipo correto, todos os conteúdos usados, quantidade exata de questões, gabarito correspondente, seções completas e nenhuma promessa sem entrega.
+21. O material deve parecer produto editorial escolar: estrutura limpa, títulos úteis, itens separados, espaços de resposta e gabarito rico; não entregue parágrafos colados nem blocos improvisados.
+22. O material deve ser original. Use padrões pedagógicos reconhecidos como referência, mas não copie textos de fontes externas.
 
 REGRAS ESPECÍFICAS DO TIPO:
 ${typeRules.map((rule) => `- ${rule}`).join("\n")}
@@ -230,9 +246,11 @@ CONTRATO DE ENTREGA DIRETA AO PRODUTO:
 - Para atividade, prova, lista, revisão e exercícios: coloque o material em formato direto, com questões no array questoes e gabarito separado no array gabarito.
 - Atividades, exercícios e listas não podem vir como parágrafo corrido dentro de secoes. Devem vir como itens numerados no array questoes.
 - Não use uma questão com vários itens a), b), c), d) para simular quantidade. Cada pergunta principal deve ser objeto próprio.
+- Quando uma questão pedir análise de várias frases, exemplos, situações ou alternativas curtas, separe assim: primeira linha com o COMANDO; linhas seguintes com "• item 1", "• item 2", "• item 3".
+- Nunca emende exemplos no título ou no comando da questão. O comando deve ficar separado dos itens que o aluno analisará.
 - Quando um enunciado tiver mais de uma ação, organize em tópicos curtos usando linhas com "•".
 - A versão do aluno nunca deve revelar resposta logo abaixo da questão.
-- O gabarito do professor deve ser completo, coerente com as questões finais e separado.
+- O gabarito do professor deve ser completo, coerente com as questões finais e separado. Para cada questão, traga resposta esperada, exemplos aceitáveis quando houver resposta aberta e critério de correção.
 - Se o professor pedir quantidade de questões, isso é contrato: entregar exatamente a quantidade solicitada.
 - Use orientacoesProfessor, orientacoesAluno, sugestoesUso e adaptacoesInclusivas apenas como notas finais curtas, nunca como parte principal antes das questões.
 
@@ -268,9 +286,9 @@ FORMATO JSON EXATO:
     {
       "numero": 1,
       "tipo": "string",
-      "enunciado": "string em formato objetivo; uma pergunta principal por objeto; use linhas com • quando houver mais de uma ação",
+      "enunciado": "string em formato objetivo; uma pergunta principal por objeto; se houver várias frases para análise, use primeira linha como comando e linhas seguintes com • para cada item",
       "alternativas": ["string"],
-      "respostaEsperada": "string",
+      "respostaEsperada": "string com resposta esperada completa, exemplos aceitáveis quando houver resposta aberta e orientação objetiva para correção",
       "criterioCorrecao": "string"
     }
   ],

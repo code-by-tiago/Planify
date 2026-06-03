@@ -17,6 +17,7 @@ import {
   buildGameMaterialFromBlueprint,
   type MaterialGameBlueprint,
 } from "./game-generators/game-engine";
+import { buildDeterministicGameBlueprint } from "./game-generators/game-blueprint-fallback";
 
 
 const GAME_BLUEPRINT_SCHEMA = {
@@ -650,16 +651,33 @@ REGRAS CRÍTICAS:
 }
 
 async function generateGameMaterial(input: MaterialGeneratorRequest, creditCost: number): Promise<PlanifyGeneratedMaterial> {
-  const blueprint = await generateGeminiJSON<MaterialGameBlueprint>({
-    systemInstruction: gameSystemInstruction(),
-    prompt: buildGamePrompt(input, creditCost),
-    temperature: 0.22,
-    topP: 0.82,
-    maxOutputTokens: input.tamanho === "completo" ? 12000 : 9000,
-    responseSchema: GAME_BLUEPRINT_SCHEMA,
-  });
+  try {
+    const blueprint = await generateGeminiJSON<MaterialGameBlueprint>({
+      systemInstruction: gameSystemInstruction(),
+      prompt: buildGamePrompt(input, creditCost),
+      temperature: 0.18,
+      topP: 0.78,
+      maxOutputTokens: input.tamanho === "completo" ? 12000 : 9000,
+      responseSchema: GAME_BLUEPRINT_SCHEMA,
+    });
 
-  return buildGameMaterialFromBlueprint(blueprint, input, creditCost);
+    return buildGameMaterialFromBlueprint(blueprint, input, creditCost);
+  } catch (error) {
+    const fallbackBlueprint = buildDeterministicGameBlueprint(input);
+    const material = buildGameMaterialFromBlueprint(fallbackBlueprint, input, creditCost);
+
+    material.alertas = [
+      ...(material.alertas || []),
+      "O Planify usou o construtor premium seguro de jogos para garantir uma entrega estruturada, imprimível e editável.",
+    ];
+
+    material.sugestoesUsoProfessor = [
+      ...(material.sugestoesUsoProfessor || []),
+      "Revise rapidamente os termos do jogo no editor antes da impressão, especialmente quando o tema for muito específico.",
+    ];
+
+    return material;
+  }
 }
 
 export async function generateMaterial(input: MaterialGeneratorRequest): Promise<{

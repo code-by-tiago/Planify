@@ -89,12 +89,12 @@ const initialForm: FormState = {
   tomLinguagem: "claro, profissional e adequado à turma",
   observacoes: "",
   formatoJogo: "caca_palavras",
-  organizacaoJogo: "grupos",
-  duracaoJogo: "30 a 45 minutos",
-  numeroParticipantes: "Turma inteira organizada em grupos",
-  materiaisJogo: "Cartões impressos, quadro, canetas e folhas de resposta",
-  regrasJogo: "Regras simples, pontuação clara e mediação ativa do professor",
-  produtoFinalJogo: "Registro das respostas, socialização e fechamento pedagógico",
+  organizacaoJogo: "individual",
+  duracaoJogo: "20 a 30 minutos",
+  numeroParticipantes: "Atividade individual, em duplas ou correção coletiva ao final",
+  materiaisJogo: "Folha impressa do caça-palavras, lápis, borracha e gabarito do professor",
+  regrasJogo: "Encontrar as palavras, registrar três conceitos importantes e participar da correção comentada",
+  produtoFinalJogo: "Grade resolvida, palavras localizadas e síntese curta do conteúdo",
   nivelMovimento: "baixo",
 };
 
@@ -217,6 +217,252 @@ const gameMovementOptions = [
   { value: "medio", label: "Movimento moderado" },
   { value: "alto", label: "Mais movimento" },
 ];
+
+type GameFormatProfile = {
+  badge: string;
+  bestFor: string;
+  entrega: string[];
+  organizacao: string;
+  organizacaoPermitida: string[];
+  duracao: string;
+  duracoes: string[];
+  participantes: string;
+  movimento: string;
+  materiais: string;
+  regras: string;
+  produtoFinal: string;
+  itemLabel: string;
+  itemMin: number;
+  itemDefault: number;
+};
+
+const gameFormatProfiles: Record<string, GameFormatProfile> = {
+  caca_palavras: {
+    badge: "Imprimível rápido",
+    bestFor: "Fixação de vocabulário, conceitos e revisão inicial.",
+    entrega: ["Grade do aluno", "Lista de palavras", "Gabarito", "Desafio pós-jogo"],
+    organizacao: "individual",
+    organizacaoPermitida: ["individual", "duplas"],
+    duracao: "20 a 30 minutos",
+    duracoes: ["15 a 20 minutos", "20 a 30 minutos", "30 a 40 minutos"],
+    participantes: "Atividade individual ou em duplas, com correção coletiva ao final",
+    movimento: "baixo",
+    materiais: "Folha impressa do caça-palavras, lápis, borracha e gabarito do professor",
+    regras: "Encontrar as palavras, registrar três conceitos importantes e participar da correção comentada",
+    produtoFinal: "Grade resolvida, palavras localizadas e síntese curta do conteúdo",
+    itemLabel: "palavras",
+    itemMin: 10,
+    itemDefault: 14,
+  },
+  cruzadinha: {
+    badge: "Pistas + gabarito",
+    bestFor: "Revisar conceitos com pistas e respostas curtas.",
+    entrega: ["Grade em branco", "Pistas horizontais/verticais", "Gabarito preenchido", "Correção orientada"],
+    organizacao: "individual",
+    organizacaoPermitida: ["individual", "duplas"],
+    duracao: "25 a 40 minutos",
+    duracoes: ["20 a 30 minutos", "25 a 40 minutos", "40 a 50 minutos"],
+    participantes: "Individual ou duplas para resolver pistas e justificar respostas",
+    movimento: "baixo",
+    materiais: "Cruzadinha impressa, lápis, borracha e gabarito do professor",
+    regras: "Resolver as pistas sem consulta inicial; depois conferir com discussão dos conceitos",
+    produtoFinal: "Cruzadinha preenchida e correção comentada das pistas",
+    itemLabel: "pistas",
+    itemMin: 8,
+    itemDefault: 12,
+  },
+  bingo_pedagogico: {
+    badge: "Cartelas variadas",
+    bestFor: "Revisão ativa com conceitos, definições e participação da turma toda.",
+    entrega: ["Cartelas", "Lista de sorteio", "Definições", "Regras de vitória"],
+    organizacao: "turma_inteira",
+    organizacaoPermitida: ["individual", "duplas", "turma_inteira"],
+    duracao: "30 a 45 minutos",
+    duracoes: ["25 a 35 minutos", "30 a 45 minutos", "45 a 60 minutos"],
+    participantes: "Turma inteira com cartelas individuais ou em duplas",
+    movimento: "baixo",
+    materiais: "Cartelas impressas, lista de sorteio do professor, marcadores e quadro para conferência",
+    regras: "O professor sorteia definições; estudantes marcam o conceito correspondente e justificam vitórias",
+    produtoFinal: "Cartelas marcadas, conceitos revisados e fechamento coletivo",
+    itemLabel: "termos/conceitos",
+    itemMin: 18,
+    itemDefault: 28,
+  },
+  jogo_memoria: {
+    badge: "Cartas recortáveis",
+    bestFor: "Associação entre conceito e definição, imagem, exemplo ou consequência.",
+    entrega: ["Pares recortáveis", "Regras", "Pares corretos", "Variações"],
+    organizacao: "duplas",
+    organizacaoPermitida: ["duplas", "grupos"],
+    duracao: "25 a 35 minutos",
+    duracoes: ["20 a 30 minutos", "25 a 35 minutos", "35 a 50 minutos"],
+    participantes: "Duplas ou grupos pequenos com cartas embaralhadas",
+    movimento: "baixo",
+    materiais: "Cartas impressas e recortadas, envelope para organizar pares e gabarito do professor",
+    regras: "Virar duas cartas por rodada, formar pares corretos e explicar a associação encontrada",
+    produtoFinal: "Pares formados e explicações registradas",
+    itemLabel: "pares",
+    itemMin: 8,
+    itemDefault: 12,
+  },
+  domino_pedagogico: {
+    badge: "Peças encadeadas",
+    bestFor: "Relacionar pergunta-resposta, termo-conceito ou causa-consequência.",
+    entrega: ["Peças do dominó", "Sequência correta", "Regras", "Gabarito"],
+    organizacao: "grupos",
+    organizacaoPermitida: ["duplas", "grupos"],
+    duracao: "30 a 45 minutos",
+    duracoes: ["25 a 35 minutos", "30 a 45 minutos", "45 a 60 minutos"],
+    participantes: "Grupos de 3 a 5 estudantes",
+    movimento: "baixo",
+    materiais: "Peças impressas e recortadas, mesa ou cartolina para montagem e gabarito",
+    regras: "Cada peça deve ser conectada pela relação correta; o grupo precisa justificar a sequência",
+    produtoFinal: "Sequência montada e justificativa das conexões",
+    itemLabel: "peças",
+    itemMin: 10,
+    itemDefault: 16,
+  },
+  trilha_tabuleiro: {
+    badge: "Tabuleiro + desafios",
+    bestFor: "Revisão gamificada por etapas, casas e perguntas progressivas.",
+    entrega: ["Trilha", "Cartas de desafio", "Regras", "Pontuação"],
+    organizacao: "grupos",
+    organizacaoPermitida: ["grupos", "turma_inteira", "estacoes"],
+    duracao: "40 a 60 minutos",
+    duracoes: ["30 a 45 minutos", "40 a 60 minutos", "2 aulas de 50 minutos"],
+    participantes: "Grupos de 4 a 6 estudantes",
+    movimento: "medio",
+    materiais: "Tabuleiro impresso ou desenhado, dado, marcadores, cartas de desafio e gabarito",
+    regras: "Avançar casas ao responder desafios; justificar respostas para validar a pontuação",
+    produtoFinal: "Trilha concluída, respostas registradas e síntese final",
+    itemLabel: "casas/desafios",
+    itemMin: 12,
+    itemDefault: 20,
+  },
+  cartas_desafio: {
+    badge: "Baralho pedagógico",
+    bestFor: "Perguntas rápidas, revisão por rodadas e desafio entre grupos.",
+    entrega: ["Cartas", "Respostas", "Pontuação", "Mediação"],
+    organizacao: "grupos",
+    organizacaoPermitida: ["duplas", "grupos", "turma_inteira"],
+    duracao: "30 a 45 minutos",
+    duracoes: ["20 a 30 minutos", "30 a 45 minutos", "45 a 60 minutos"],
+    participantes: "Grupos ou duplas sorteiam cartas e respondem por rodadas",
+    movimento: "medio",
+    materiais: "Cartas impressas, envelope, quadro de pontuação e gabarito",
+    regras: "Sortear carta, responder, justificar e receber feedback do professor",
+    produtoFinal: "Cartas respondidas e registro dos conceitos-chave",
+    itemLabel: "cartas",
+    itemMin: 10,
+    itemDefault: 18,
+  },
+  quiz_equipes: {
+    badge: "Rodadas competitivas",
+    bestFor: "Avaliação leve e revisão oral com pontuação.",
+    entrega: ["Perguntas", "Gabarito", "Rodadas", "Desempate"],
+    organizacao: "grupos",
+    organizacaoPermitida: ["grupos", "turma_inteira"],
+    duracao: "30 a 45 minutos",
+    duracoes: ["20 a 30 minutos", "30 a 45 minutos", "45 a 60 minutos"],
+    participantes: "Equipes com representante por rodada",
+    movimento: "medio",
+    materiais: "Perguntas projetadas ou impressas, placar e gabarito do professor",
+    regras: "Responder em tempo combinado, justificar quando solicitado e respeitar as rodadas",
+    produtoFinal: "Placar, correção comentada e revisão dos erros mais comuns",
+    itemLabel: "perguntas",
+    itemMin: 10,
+    itemDefault: 18,
+  },
+  roleta_perguntas: {
+    badge: "Categorias por rodada",
+    bestFor: "Revisar diferentes subtemas com sorteio de categorias.",
+    entrega: ["Categorias", "Perguntas", "Regras", "Pontuação"],
+    organizacao: "grupos",
+    organizacaoPermitida: ["grupos", "turma_inteira"],
+    duracao: "30 a 45 minutos",
+    duracoes: ["25 a 35 minutos", "30 a 45 minutos", "45 a 60 minutos"],
+    participantes: "Equipes respondem conforme categoria sorteada",
+    movimento: "medio",
+    materiais: "Roleta física/digital ou sorteio por cartões, perguntas e placar",
+    regras: "Sortear categoria, responder e justificar para validar a pontuação",
+    produtoFinal: "Quadro de categorias revisadas e síntese final",
+    itemLabel: "perguntas/categorias",
+    itemMin: 12,
+    itemDefault: 20,
+  },
+  verdadeiro_falso_grupos: {
+    badge: "Debate com justificativa",
+    bestFor: "Corrigir concepções equivocadas e estimular argumentação.",
+    entrega: ["Afirmações", "Gabarito comentado", "Rodadas", "Debate"],
+    organizacao: "grupos",
+    organizacaoPermitida: ["duplas", "grupos", "turma_inteira"],
+    duracao: "25 a 40 minutos",
+    duracoes: ["20 a 30 minutos", "25 a 40 minutos", "40 a 50 minutos"],
+    participantes: "Grupos avaliam afirmações e defendem justificativas",
+    movimento: "baixo",
+    materiais: "Lista de afirmações, placas V/F opcionais e gabarito comentado",
+    regras: "Marcar verdadeiro ou falso e explicar a justificativa antes da correção",
+    produtoFinal: "Justificativas registradas e correção dos conceitos",
+    itemLabel: "afirmações",
+    itemMin: 12,
+    itemDefault: 18,
+  },
+  jogo_associacao: {
+    badge: "Pares e relações",
+    bestFor: "Relacionar termos, definições, exemplos, causas e consequências.",
+    entrega: ["Cartas", "Pares corretos", "Gabarito", "Variações"],
+    organizacao: "duplas",
+    organizacaoPermitida: ["duplas", "grupos"],
+    duracao: "25 a 40 minutos",
+    duracoes: ["20 a 30 minutos", "25 a 40 minutos", "40 a 50 minutos"],
+    participantes: "Duplas ou grupos pequenos montam associações justificadas",
+    movimento: "baixo",
+    materiais: "Cartas impressas e recortadas, folha de registro e gabarito",
+    regras: "Formar pares/associações e justificar cada relação encontrada",
+    produtoFinal: "Mapa de associações e justificativas",
+    itemLabel: "pares/associações",
+    itemMin: 10,
+    itemDefault: 16,
+  },
+  escape_room_educativo: {
+    badge: "Missão + enigmas",
+    bestFor: "Resolver problemas em sequência com pistas e raciocínio colaborativo.",
+    entrega: ["Missão", "Enigmas", "Pistas", "Solução"],
+    organizacao: "grupos",
+    organizacaoPermitida: ["grupos", "estacoes"],
+    duracao: "50 minutos",
+    duracoes: ["40 a 50 minutos", "50 minutos", "2 aulas de 50 minutos"],
+    participantes: "Grupos resolvem enigmas em sequência",
+    movimento: "medio",
+    materiais: "Cartões de enigmas, envelopes, pistas liberáveis e folha de resposta",
+    regras: "Resolver enigmas em ordem, solicitar pistas com custo de pontuação e registrar soluções",
+    produtoFinal: "Sequência de enigmas resolvida e síntese da missão",
+    itemLabel: "enigmas",
+    itemMin: 5,
+    itemDefault: 7,
+  },
+  dinamica_cooperativa: {
+    badge: "Cooperação guiada",
+    bestFor: "Socialização, construção coletiva e fechamento de conteúdo.",
+    entrega: ["Passo a passo", "Papéis", "Desafios", "Fechamento"],
+    organizacao: "grupos",
+    organizacaoPermitida: ["grupos", "turma_inteira", "estacoes"],
+    duracao: "30 a 45 minutos",
+    duracoes: ["20 a 30 minutos", "30 a 45 minutos", "45 a 60 minutos"],
+    participantes: "Grupos com papéis definidos e produto coletivo",
+    movimento: "medio",
+    materiais: "Cartolina ou folha de registro, cartões de papéis, canetas e quadro",
+    regras: "Cada estudante assume um papel, contribui com uma ideia e participa da socialização",
+    produtoFinal: "Produção coletiva, painel, síntese ou mapa conceitual",
+    itemLabel: "desafios/papéis",
+    itemMin: 8,
+    itemDefault: 12,
+  },
+};
+
+function getGameProfile(format: string): GameFormatProfile {
+  return gameFormatProfiles[format] || gameFormatProfiles.caca_palavras;
+}
 
 function fieldBase() {
   return "w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-900 shadow-sm outline-none transition focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100";
@@ -404,6 +650,10 @@ export function MateriaisClient() {
   const needsQuestions = materialTypeNeedsQuestions(form.tipoMaterial);
   const isGameMaterial = form.tipoMaterial === "jogo";
   const usesQuantityField = needsQuestions || form.tipoMaterial === "apostila" || isGameMaterial;
+  const activeGameProfile = getGameProfile(form.formatoJogo);
+  const allowedGameOrganizations = gameOrganizationOptions.filter((option) =>
+    activeGameProfile.organizacaoPermitida.includes(option.value),
+  );
   const activeGenerationMessage = generationMessages[generationMessageIndex] || generationMessages[0];
 
   useEffect(() => {
@@ -430,17 +680,42 @@ export function MateriaisClient() {
     }));
   }
 
+  function applyGameProfileToState(current: FormState, format: string): FormState {
+    const profile = getGameProfile(format);
+
+    return {
+      ...current,
+      formatoJogo: format,
+      organizacaoJogo: profile.organizacao,
+      duracaoJogo: profile.duracao,
+      numeroParticipantes: profile.participantes,
+      materiaisJogo: profile.materiais,
+      regrasJogo: profile.regras,
+      produtoFinalJogo: profile.produtoFinal,
+      nivelMovimento: profile.movimento,
+      quantidadeQuestoes: String(profile.itemDefault),
+      gerarGabarito: true,
+      gerarVersaoProfessor: true,
+    };
+  }
+
+  function updateGameFormat(value: string) {
+    setForm((current) => applyGameProfileToState(current, value));
+  }
+
   function updateTipoMaterial(value: MaterialGeneratorType) {
     setForm((current) => {
       if (value === "jogo") {
-        return {
-          ...current,
-          tipoMaterial: value,
-          objetivo: current.objetivo || "revisar",
-          quantidadeQuestoes: current.quantidadeQuestoes || "12",
-          recursosDisponiveis: current.recursosDisponiveis || "Cartões impressos, quadro, canetas e folhas de resposta",
-          observacoes: current.observacoes,
-        };
+        return applyGameProfileToState(
+          {
+            ...current,
+            tipoMaterial: value,
+            objetivo: "revisar",
+            recursosDisponiveis: "Materiais simples, imprimíveis e adequados ao formato do jogo",
+            observacoes: current.observacoes,
+          },
+          current.formatoJogo || "caca_palavras",
+        );
       }
 
       return {
@@ -539,6 +814,7 @@ export function MateriaisClient() {
 
       setBnccSuggestions(unique);
       setSelectedBncc([]);
+      window.setTimeout(() => setSelectedBncc([]), 0);
       setStatus({
         type: unique.length ? "success" : "info",
         message: unique.length
@@ -599,11 +875,16 @@ export function MateriaisClient() {
         }),
       });
 
-      const json = (await response.json()) as MaterialGenerationResponse | { success: false; error?: { message?: string; details?: string } };
+      const json = (await response.json().catch(() => null)) as
+        | MaterialGenerationResponse
+        | { success: false; error?: { code?: string; message?: string; details?: string } }
+        | null;
 
-      if (!response.ok || !json.success) {
-        const errorPayload = !json.success ? json.error : null;
-        throw new Error(errorPayload?.message || errorPayload?.details || "Não foi possível gerar o material.");
+      if (!response.ok || !json || !json.success) {
+        const errorPayload = json && !json.success ? json.error : null;
+        const message = errorPayload?.message || "Não foi possível gerar o material.";
+        const details = errorPayload?.details ? ` Detalhe técnico: ${errorPayload.details}` : "";
+        throw new Error(`${message}${details}`);
       }
 
       setMaterial(json.data.material);
@@ -671,6 +952,46 @@ export function MateriaisClient() {
 
   return (
     <main className="space-y-8 text-slate-950">
+      {generating ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm print:hidden">
+          <div className="w-full max-w-3xl overflow-hidden rounded-[2rem] border border-cyan-200 bg-white shadow-2xl shadow-cyan-950/30">
+            <div className="bg-gradient-to-br from-cyan-50 via-white to-emerald-50 p-6 md:p-7">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <p className={labelBase()}>Criação em andamento</p>
+                  <h2 className="mt-2 text-2xl font-black text-slate-950">O Planify está construindo um material confiável.</h2>
+                  <p className="mt-2 text-sm font-bold leading-6 text-slate-600">
+                    A tela vai variar mensagens enquanto o motor organiza estrutura, conteúdo, versão do aluno, gabarito e edição.
+                  </p>
+                </div>
+                <div className="rounded-2xl bg-slate-950 px-4 py-3 text-sm font-black text-white">
+                  {isGameMaterial ? activeGameProfile.badge : getMaterialTypeLabel(form.tipoMaterial)}
+                </div>
+              </div>
+
+              <div className="mt-6 rounded-[1.5rem] border border-cyan-100 bg-white p-5 shadow-inner">
+                <p className="text-xs font-black uppercase tracking-[0.2em] text-cyan-700">Inspiração do momento • {activeGenerationMessage.author}</p>
+                <p className="mt-2 text-base font-black leading-7 text-slate-900">{activeGenerationMessage.message}</p>
+              </div>
+
+              <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                {generationStages.slice(0, 6).map((item, index) => {
+                  const active = index === generationStageIndex % 6;
+                  return (
+                    <div key={item} className={`rounded-2xl border p-4 ${active ? "border-cyan-300 bg-cyan-50" : "border-slate-200 bg-white"}`}>
+                      <div className="h-1.5 overflow-hidden rounded-full bg-slate-100">
+                        <span className={`block h-full rounded-full ${active ? "animate-pulse bg-cyan-500" : "bg-slate-300"}`} style={{ width: active ? "100%" : "38%" }} />
+                      </div>
+                      <p className="mt-3 text-sm font-black text-slate-800">{active ? "● " : "○ "}{item}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       <section className="overflow-hidden rounded-[2rem] border border-cyan-200 bg-gradient-to-br from-slate-900 via-cyan-800 to-blue-950 p-6 text-white shadow-2xl shadow-cyan-950/20 md:p-8">
         <div className="grid gap-8 lg:grid-cols-[1.15fr_0.85fr] lg:items-end">
           <div>
@@ -791,56 +1112,117 @@ export function MateriaisClient() {
               </select>
             </label>
 
-            <label className="space-y-2">
-              <span className={labelBase()}>{isGameMaterial ? "Itens do jogo" : needsQuestions ? "Questões/Exercícios" : "Questões complementares"}</span>
-              <input
-                className={fieldBase()}
-                type="number"
-                min={0}
-                max={60}
-                value={form.quantidadeQuestoes}
-                onChange={(event) => update("quantidadeQuestoes", event.target.value)}
-                disabled={!usesQuantityField}
-              />
-            </label>
+            {!isGameMaterial ? (
+              <label className="space-y-2">
+                <span className={labelBase()}>{needsQuestions ? "Questões/Exercícios" : "Questões complementares"}</span>
+                <input
+                  className={fieldBase()}
+                  type="number"
+                  min={0}
+                  max={60}
+                  value={form.quantidadeQuestoes}
+                  onChange={(event) => update("quantidadeQuestoes", event.target.value)}
+                  disabled={!usesQuantityField}
+                />
+              </label>
+            ) : null}
           </div>
 
           {isGameMaterial ? (
-            <div className="rounded-[1.5rem] border border-emerald-200 bg-emerald-50 p-4 shadow-inner">
-              <div>
-                <p className={labelBase()}>Motor especializado</p>
-                <h3 className="mt-1 text-xl font-black text-slate-950">Jogo pedagógico ou dinâmica</h3>
-                <p className="mt-2 text-sm font-bold leading-6 text-slate-600">
-                  Estes campos ativam o motor premium de jogos. Cruzadinha, caça-palavras, bingo, memória, dominó e trilha são montados como materiais reais, com versão do aluno, gabarito e impressão.
-                </p>
+            <div className="rounded-[1.5rem] border border-emerald-200 bg-gradient-to-br from-emerald-50 via-white to-cyan-50 p-4 shadow-inner md:p-5">
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                <div>
+                  <p className={labelBase()}>Motor premium de jogos</p>
+                  <h3 className="mt-1 text-xl font-black text-slate-950">Escolha o formato real do jogo</h3>
+                  <p className="mt-2 text-sm font-bold leading-6 text-slate-600">
+                    Cada formato ativa campos compatíveis. Caça-palavras não usa a mesma lógica de bingo, cruzadinha, memória, dominó ou trilha.
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-emerald-200 bg-white px-4 py-3 shadow-sm">
+                  <p className="text-xs font-black uppercase tracking-[0.18em] text-emerald-700">Entrega</p>
+                  <p className="mt-1 text-sm font-black text-slate-900">{activeGameProfile.badge}</p>
+                </div>
               </div>
 
-              <div className="mt-4 grid gap-4 md:grid-cols-2">
-                <label className="space-y-2">
-                  <span className={labelBase()}>Formato</span>
-                  <select className={fieldBase()} value={form.formatoJogo} onChange={(event) => update("formatoJogo", event.target.value)}>
-                    {gameFormatOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-                  </select>
-                  <p className="text-xs font-bold leading-5 text-emerald-700">
-                    {gameFormatOptions.find((option) => option.value === form.formatoJogo)?.hint || "Motor especializado de jogos pedagógicos."}
-                  </p>
-                </label>
+              <div className="mt-5 grid gap-3 md:grid-cols-2">
+                {gameFormatOptions.map((option) => {
+                  const selected = form.formatoJogo === option.value;
+                  const profile = getGameProfile(option.value);
 
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => updateGameFormat(option.value)}
+                      className={`rounded-2xl border p-4 text-left transition ${
+                        selected
+                          ? "border-emerald-400 bg-white shadow-lg shadow-emerald-500/10 ring-4 ring-emerald-100"
+                          : "border-slate-200 bg-white/75 hover:border-emerald-200 hover:bg-white"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-black text-slate-950">{option.label}</p>
+                          <p className="mt-1 text-xs font-bold leading-5 text-slate-600">{profile.bestFor}</p>
+                        </div>
+                        <span className={`rounded-full px-3 py-1 text-[11px] font-black ${selected ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-500"}`}>
+                          {selected ? "Ativo" : "Escolher"}
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="mt-5 rounded-[1.25rem] border border-emerald-200 bg-white p-4 shadow-sm">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <p className={labelBase()}>Configuração compatível</p>
+                    <h4 className="mt-1 text-lg font-black text-slate-950">
+                      {gameFormatOptions.find((option) => option.value === form.formatoJogo)?.label || "Jogo pedagógico"}
+                    </h4>
+                    <p className="mt-1 text-sm font-bold leading-6 text-slate-600">{activeGameProfile.bestFor}</p>
+                  </div>
+                  <div className="rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-black text-emerald-800">
+                    {activeGameProfile.itemDefault} {activeGameProfile.itemLabel}
+                  </div>
+                </div>
+
+                <div className="mt-4 grid gap-2 md:grid-cols-2">
+                  {activeGameProfile.entrega.map((item) => (
+                    <div key={item} className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-700">
+                      ✓ {item}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mt-5 grid gap-4 md:grid-cols-2">
                 <label className="space-y-2">
-                  <span className={labelBase()}>Organização da turma</span>
+                  <span className={labelBase()}>Organização compatível</span>
                   <select className={fieldBase()} value={form.organizacaoJogo} onChange={(event) => update("organizacaoJogo", event.target.value)}>
-                    {gameOrganizationOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                    {allowedGameOrganizations.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                   </select>
                 </label>
 
                 <label className="space-y-2">
-                  <span className={labelBase()}>Duração</span>
-                  <input className={fieldBase()} value={form.duracaoJogo} onChange={(event) => update("duracaoJogo", event.target.value)} placeholder="Ex.: 30 a 45 minutos" />
+                  <span className={labelBase()}>Duração sugerida</span>
+                  <select className={fieldBase()} value={form.duracaoJogo} onChange={(event) => update("duracaoJogo", event.target.value)}>
+                    {activeGameProfile.duracoes.map((option) => <option key={option}>{option}</option>)}
+                  </select>
                 </label>
 
                 <label className="space-y-2">
-                  <span className={labelBase()}>Participantes</span>
-                  <input className={fieldBase()} value={form.numeroParticipantes} onChange={(event) => update("numeroParticipantes", event.target.value)} placeholder="Ex.: turma inteira em grupos de 4" />
+                  <span className={labelBase()}>Quantidade de {activeGameProfile.itemLabel}</span>
+                  <input
+                    className={fieldBase()}
+                    type="number"
+                    min={activeGameProfile.itemMin}
+                    max={60}
+                    value={form.quantidadeQuestoes}
+                    onChange={(event) => update("quantidadeQuestoes", event.target.value)}
+                  />
+                  <p className="text-xs font-bold text-slate-500">Mínimo recomendado: {activeGameProfile.itemMin}.</p>
                 </label>
 
                 <label className="space-y-2">
@@ -850,9 +1232,9 @@ export function MateriaisClient() {
                   </select>
                 </label>
 
-                <label className="space-y-2">
-                  <span className={labelBase()}>Produto final</span>
-                  <input className={fieldBase()} value={form.produtoFinalJogo} onChange={(event) => update("produtoFinalJogo", event.target.value)} placeholder="Ex.: socialização, registro, ranking ou mapa conceitual" />
+                <label className="space-y-2 md:col-span-2">
+                  <span className={labelBase()}>Participantes</span>
+                  <input className={fieldBase()} value={form.numeroParticipantes} onChange={(event) => update("numeroParticipantes", event.target.value)} />
                 </label>
 
                 <label className="space-y-2 md:col-span-2">
@@ -861,8 +1243,13 @@ export function MateriaisClient() {
                 </label>
 
                 <label className="space-y-2 md:col-span-2">
-                  <span className={labelBase()}>Regras ou preferência do professor</span>
-                  <textarea className={`${fieldBase()} min-h-24`} value={form.regrasJogo} onChange={(event) => update("regrasJogo", event.target.value)} placeholder="Ex.: evitar competição excessiva, incluir todos, usar pontuação cooperativa..." />
+                  <span className={labelBase()}>Regras compatíveis com o formato</span>
+                  <textarea className={`${fieldBase()} min-h-24`} value={form.regrasJogo} onChange={(event) => update("regrasJogo", event.target.value)} />
+                </label>
+
+                <label className="space-y-2 md:col-span-2">
+                  <span className={labelBase()}>Produto final do jogo</span>
+                  <input className={fieldBase()} value={form.produtoFinalJogo} onChange={(event) => update("produtoFinalJogo", event.target.value)} />
                 </label>
               </div>
             </div>

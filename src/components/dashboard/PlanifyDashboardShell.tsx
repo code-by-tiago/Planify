@@ -45,6 +45,20 @@ export default function PlanifyDashboardShell() {
     [searchParams],
   );
 
+  const setCategory = useCallback(
+    (cat: ToolCategoryId) => {
+      const params = new URLSearchParams();
+      const tema = searchParams.get("tema");
+      if (cat !== "todos") params.set("categoria", cat);
+      if (tema?.trim()) params.set("tema", tema.trim());
+      router.replace(
+        params.toString() ? `/dashboard?${params.toString()}` : "/dashboard",
+        { scroll: false },
+      );
+    },
+    [router, searchParams],
+  );
+
   const selectTool = useCallback(
     (toolId: PlanifyToolId | null) => {
       const params = new URLSearchParams();
@@ -230,7 +244,8 @@ export default function PlanifyDashboardShell() {
           ) : (
             <TeachyStudioHome
               onSelectTool={selectTool}
-              initialCategory={initialCategory}
+              category={initialCategory}
+              onCategoryChange={setCategory}
               initialTopic={initialTopic}
             />
           )}

@@ -1,12 +1,11 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { LumiMascot } from "@/components/pro/LumiMascot";
 import {
-  isToolCategoryId,
   lessonBundleTools,
   teachyFeaturedToolIds,
   teachyWorkflowSteps,
@@ -20,19 +19,24 @@ import {
 
 type TeachyStudioHomeProps = {
   onSelectTool: (toolId: PlanifyToolId) => void;
-  initialCategory?: ToolCategoryId;
+  category: ToolCategoryId;
+  onCategoryChange: (category: ToolCategoryId) => void;
   initialTopic?: string;
 };
 
 export default function TeachyStudioHome({
   onSelectTool,
-  initialCategory = "todos",
+  category,
+  onCategoryChange,
   initialTopic = "",
 }: TeachyStudioHomeProps) {
   const router = useRouter();
   const [topic, setTopic] = useState(initialTopic);
-  const [category, setCategory] = useState<ToolCategoryId>(initialCategory);
   const [gridQuery, setGridQuery] = useState("");
+
+  useEffect(() => {
+    setTopic(initialTopic);
+  }, [initialTopic]);
 
   const filteredTools = useMemo(() => {
     const term = gridQuery.trim().toLowerCase();
@@ -238,7 +242,7 @@ export default function TeachyStudioHome({
                   <button
                     key={cat.id}
                     type="button"
-                    onClick={() => setCategory(cat.id)}
+                    onClick={() => onCategoryChange(cat.id)}
                     className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3.5 py-2 text-xs font-black transition ${
                       active
                         ? "border-indigo-200 bg-indigo-600 text-white shadow-md"

@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 export default function EditorPage() {
   return (
     <PageShell>
-      <div id="editor">
+      <div className="planify-ui3" id="editor">
         <EditorClient />
       </div>
     </PageShell>

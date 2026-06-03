@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { getSupabaseBrowserClient } from "../../lib/supabase/browser-client";
 import {
   MATERIAL_SIZE_OPTIONS,
   MATERIAL_TYPE_OPTIONS,
@@ -44,6 +45,14 @@ type FormState = {
   inclusaoAcessibilidade: string;
   tomLinguagem: string;
   observacoes: string;
+  formatoJogo: string;
+  organizacaoJogo: string;
+  duracaoJogo: string;
+  numeroParticipantes: string;
+  materiaisJogo: string;
+  regrasJogo: string;
+  produtoFinalJogo: string;
+  nivelMovimento: string;
 };
 
 type StatusState = {
@@ -71,7 +80,7 @@ const initialForm: FormState = {
   objetivo: "ensinar",
   tamanho: "medio",
   nivelDificuldade: "intermediario",
-  quantidadeQuestoes: "8",
+  quantidadeQuestoes: "12",
   tiposQuestao: ["discursiva", "multipla_escolha", "analise_contextualizada"],
   gerarGabarito: true,
   gerarVersaoProfessor: true,
@@ -79,6 +88,14 @@ const initialForm: FormState = {
   inclusaoAcessibilidade: "Linguagem clara e instruções objetivas",
   tomLinguagem: "claro, profissional e adequado à turma",
   observacoes: "",
+  formatoJogo: "caca_palavras",
+  organizacaoJogo: "grupos",
+  duracaoJogo: "30 a 45 minutos",
+  numeroParticipantes: "Turma inteira organizada em grupos",
+  materiaisJogo: "Cartões impressos, quadro, canetas e folhas de resposta",
+  regrasJogo: "Regras simples, pontuação clara e mediação ativa do professor",
+  produtoFinalJogo: "Registro das respostas, socialização e fechamento pedagógico",
+  nivelMovimento: "baixo",
 };
 
 const etapaOptions = ["Educação Infantil", "Ensino Fundamental", "Ensino Médio", "EJA"];
@@ -171,6 +188,36 @@ const questionTypeOptions: Array<{ value: MaterialGeneratorQuestionType; label: 
   { value: "analise_contextualizada", label: "Análise contextualizada" },
 ];
 
+const gameFormatOptions = [
+  { value: "caca_palavras", label: "Caça-palavras", hint: "Grade imprimível + lista de palavras + gabarito" },
+  { value: "cruzadinha", label: "Cruzadinha", hint: "Grade, pistas horizontais/verticais e respostas" },
+  { value: "bingo_pedagogico", label: "Bingo pedagógico", hint: "Cartelas, sorteio do professor e conceitos" },
+  { value: "jogo_memoria", label: "Jogo da memória", hint: "Pares recortáveis de conceito e definição" },
+  { value: "domino_pedagogico", label: "Dominó pedagógico", hint: "Peças encadeadas para recortar" },
+  { value: "trilha_tabuleiro", label: "Trilha ou tabuleiro", hint: "Casas, desafios, regras e gabarito" },
+  { value: "cartas_desafio", label: "Cartas de desafio", hint: "Baralho de perguntas/desafios" },
+  { value: "quiz_equipes", label: "Quiz em equipes", hint: "Rodadas, desempate e pontuação" },
+  { value: "roleta_perguntas", label: "Roleta de perguntas", hint: "Categorias e perguntas por rodada" },
+  { value: "verdadeiro_falso_grupos", label: "Verdadeiro ou falso em grupos", hint: "Afirmações com justificativa" },
+  { value: "jogo_associacao", label: "Jogo de associação", hint: "Cartas de pares, causas, exemplos ou conceitos" },
+  { value: "escape_room_educativo", label: "Escape room educativo", hint: "Missão, enigmas, pistas e solução" },
+  { value: "dinamica_cooperativa", label: "Dinâmica cooperativa", hint: "Papéis, cooperação e produto final" },
+];
+
+const gameOrganizationOptions = [
+  { value: "individual", label: "Individual" },
+  { value: "duplas", label: "Duplas" },
+  { value: "grupos", label: "Grupos" },
+  { value: "turma_inteira", label: "Turma inteira" },
+  { value: "estacoes", label: "Estações de aprendizagem" },
+];
+
+const gameMovementOptions = [
+  { value: "baixo", label: "Baixo movimento" },
+  { value: "medio", label: "Movimento moderado" },
+  { value: "alto", label: "Mais movimento" },
+];
+
 function fieldBase() {
   return "w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-900 shadow-sm outline-none transition focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100";
 }
@@ -218,6 +265,109 @@ function sameSkill(a: MaterialGeneratorBNCCSkill, b: MaterialGeneratorBNCCSkill)
   return a.codigo === b.codigo && a.descricao === b.descricao;
 }
 
+const generationMessages = [
+  {
+    author: "Sócrates",
+    message: "Uma boa pergunta abre caminho para uma aula memorável. A IA está organizando o material com clareza e propósito.",
+  },
+  {
+    author: "Aristóteles",
+    message: "Aprender melhora quando existe ordem. O Planify está estruturando objetivos, conteúdo, atividade e avaliação.",
+  },
+  {
+    author: "Paulo Freire",
+    message: "Ensinar ganha força quando conversa com a realidade do estudante. O material está sendo contextualizado para a turma.",
+  },
+  {
+    author: "Maria Montessori",
+    message: "Autonomia também nasce de bons materiais. A IA está preparando instruções claras e uso prático em sala.",
+  },
+  {
+    author: "Anísio Teixeira",
+    message: "Educação de qualidade precisa de organização. O Planify está separando versão do aluno, gabarito e orientações do professor.",
+  },
+  {
+    author: "John Dewey",
+    message: "A aprendizagem se fortalece pela experiência. Estamos criando atividades que levam o estudante a pensar e aplicar.",
+  },
+  {
+    author: "Hannah Arendt",
+    message: "A escola apresenta o mundo às novas gerações. O material está sendo escrito com responsabilidade pedagógica.",
+  },
+  {
+    author: "Jean Piaget",
+    message: "O estudante constrói entendimento por etapas. A IA está ajustando progressão, dificuldade e linguagem.",
+  },
+  {
+    author: "Lev Vygotsky",
+    message: "Aprender é também interagir com boas mediações. O material está ganhando exemplos, comandos e critérios claros.",
+  },
+  {
+    author: "Cora Coralina",
+    message: "O saber fica mais vivo quando nasce simples e profundo. Estamos lapidando o texto para uso real pelo professor.",
+  },
+
+  {
+    author: "Planify Jogos",
+    message: "Cruzadinha, caça-palavras, bingo e dominó precisam de estrutura real. O motor está montando versão do aluno, gabarito e orientação do professor.",
+  },
+  {
+    author: "Planify Jogos",
+    message: "O jogo não será uma atividade disfarçada. Estamos construindo mecânica, regras, itens imprimíveis e fechamento pedagógico.",
+  },
+  {
+    author: "Planify",
+    message: "Apostila vira apostila, prova vira prova, atividade vira atividade. O motor está protegendo o formato escolhido.",
+  },
+  {
+    author: "Planify",
+    message: "A BNCC selecionada pelo professor está sendo respeitada. Nenhuma habilidade será inventada pela IA.",
+  },
+];
+
+const generationStages = [
+  "Lendo suas escolhas",
+  "Organizando a arquitetura do material",
+  "Ajustando linguagem para a turma",
+  "Conferindo BNCC selecionada",
+  "Separando aluno, professor e gabarito",
+  "Montando itens imprimíveis quando for jogo",
+  "Validando regras e fechamento pedagógico",
+  "Preparando HTML editável",
+];
+
+function randomMessageIndex(previous?: number): number {
+  if (generationMessages.length <= 1) return 0;
+
+  let next = Math.floor(Math.random() * generationMessages.length);
+
+  if (typeof previous === "number" && next === previous) {
+    next = (next + 1 + Math.floor(Math.random() * (generationMessages.length - 1))) % generationMessages.length;
+  }
+
+  return next;
+}
+
+async function buildJsonHeaders(): Promise<HeadersInit> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+
+  try {
+    const supabase = getSupabaseBrowserClient();
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+  } catch {
+    // A rota ainda tentará resolver a sessão por cookies.
+  }
+
+  return headers;
+}
+
 function buildFallbackPreview(material: PlanifyGeneratedMaterial): string {
   const sections = (material.secoes || [])
     .map((section) => {
@@ -241,6 +391,8 @@ export function MateriaisClient() {
   const [selectedBncc, setSelectedBncc] = useState<MaterialGeneratorBNCCSkill[]>([]);
   const [material, setMaterial] = useState<PlanifyGeneratedMaterial | null>(null);
   const [creditMessage, setCreditMessage] = useState<string>("");
+  const [generationMessageIndex, setGenerationMessageIndex] = useState(() => randomMessageIndex());
+  const [generationStageIndex, setGenerationStageIndex] = useState(0);
 
   const creditCost = useMemo(
     () => getMaterialCreditCost(form.tipoMaterial, form.tamanho),
@@ -250,12 +402,52 @@ export function MateriaisClient() {
   const availableYears = anoSerieByEtapa[form.etapaEnsino] || anoSerieByEtapa["Ensino Fundamental"];
   const availableComponents = componentesByEtapa[form.etapaEnsino] || componentesByEtapa["Ensino Fundamental"];
   const needsQuestions = materialTypeNeedsQuestions(form.tipoMaterial);
+  const isGameMaterial = form.tipoMaterial === "jogo";
+  const usesQuantityField = needsQuestions || form.tipoMaterial === "apostila" || isGameMaterial;
+  const activeGenerationMessage = generationMessages[generationMessageIndex] || generationMessages[0];
+
+  useEffect(() => {
+    if (!generating) {
+      setGenerationStageIndex(0);
+      return;
+    }
+
+    setGenerationMessageIndex((current) => randomMessageIndex(current));
+    setGenerationStageIndex(0);
+
+    const interval = window.setInterval(() => {
+      setGenerationMessageIndex((current) => randomMessageIndex(current));
+      setGenerationStageIndex((current) => (current + 1) % generationStages.length);
+    }, 3400);
+
+    return () => window.clearInterval(interval);
+  }, [generating]);
 
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((current) => ({
       ...current,
       [key]: value,
     }));
+  }
+
+  function updateTipoMaterial(value: MaterialGeneratorType) {
+    setForm((current) => {
+      if (value === "jogo") {
+        return {
+          ...current,
+          tipoMaterial: value,
+          objetivo: current.objetivo || "revisar",
+          quantidadeQuestoes: current.quantidadeQuestoes || "12",
+          recursosDisponiveis: current.recursosDisponiveis || "Cartões impressos, quadro, canetas e folhas de resposta",
+          observacoes: current.observacoes,
+        };
+      }
+
+      return {
+        ...current,
+        tipoMaterial: value,
+      };
+    });
   }
 
   function updateEtapa(value: string) {
@@ -302,6 +494,8 @@ export function MateriaisClient() {
     if (!form.componenteCurricular) return "Selecione o componente curricular.";
     if (!form.temaCentral.trim()) return "Informe o tema central.";
     if (needsQuestions && !form.quantidadeQuestoes.trim()) return "Informe a quantidade de questões/exercícios.";
+    if (isGameMaterial && !form.formatoJogo.trim()) return "Selecione o formato do jogo ou dinâmica.";
+    if (isGameMaterial && !form.duracaoJogo.trim()) return "Informe a duração do jogo ou dinâmica.";
     return null;
   }
 
@@ -318,9 +512,7 @@ export function MateriaisClient() {
     try {
       const response = await fetch("/api/bncc/sugerir", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: await buildJsonHeaders(),
         body: JSON.stringify({
           etapa: form.etapaEnsino,
           anoSerie: form.anoSerie,
@@ -346,11 +538,11 @@ export function MateriaisClient() {
       );
 
       setBnccSuggestions(unique);
-      setSelectedBncc(unique.slice(0, 3));
+      setSelectedBncc([]);
       setStatus({
         type: unique.length ? "success" : "info",
         message: unique.length
-          ? `Foram encontradas ${unique.length} habilidade(s). Selecione apenas as que deseja usar.`
+          ? `Foram encontradas ${unique.length} habilidade(s). Clique nos cards para selecionar somente as habilidades que deseja usar.`
           : "Nenhuma habilidade foi encontrada para esse recorte. O material será gerado sem inventar BNCC.",
       });
     } catch (error) {
@@ -381,13 +573,25 @@ export function MateriaisClient() {
     try {
       const response = await fetch("/api/materiais/gerar", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: await buildJsonHeaders(),
         body: JSON.stringify({
           ...form,
           quantidadeQuestoes: Number(form.quantidadeQuestoes) || 0,
           habilidadesBncc: selectedBncc,
+          jogoDinamica: isGameMaterial
+            ? {
+                formato: form.formatoJogo,
+                organizacao: form.organizacaoJogo,
+                duracao: form.duracaoJogo,
+                participantes: form.numeroParticipantes,
+                materiais: form.materiaisJogo,
+                regrasDesejadas: form.regrasJogo,
+                produtoFinal: form.produtoFinalJogo,
+                nivelMovimento: form.nivelMovimento,
+                quantidadeItens: Number(form.quantidadeQuestoes) || 12,
+                gerarVersaoImpressao: true,
+              }
+            : null,
           idempotencyKey:
             typeof crypto !== "undefined" && "randomUUID" in crypto
               ? crypto.randomUUID()
@@ -467,14 +671,14 @@ export function MateriaisClient() {
 
   return (
     <main className="space-y-8 text-slate-950">
-      <section className="overflow-hidden rounded-[2rem] border border-cyan-100 bg-gradient-to-br from-slate-950 via-cyan-950 to-slate-900 p-6 text-white shadow-2xl shadow-cyan-950/20 md:p-8">
+      <section className="overflow-hidden rounded-[2rem] border border-cyan-200 bg-gradient-to-br from-slate-900 via-cyan-800 to-blue-950 p-6 text-white shadow-2xl shadow-cyan-950/20 md:p-8">
         <div className="grid gap-8 lg:grid-cols-[1.15fr_0.85fr] lg:items-end">
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.28em] text-cyan-200">Gerador IA de Materiais Didáticos</p>
-            <h1 className="mt-4 max-w-4xl text-3xl font-black tracking-tight md:text-5xl">
+            <p className="text-xs font-black uppercase tracking-[0.28em] text-cyan-100" style={{ color: "#cffafe" }}>Gerador IA de Materiais Didáticos</p>
+            <h1 className="mt-4 max-w-4xl text-3xl font-black tracking-tight md:text-5xl" style={{ color: "#ffffff" }}>
               Materiais prontos para sala, com esforço zero para o professor.
             </h1>
-            <p className="mt-4 max-w-3xl text-sm font-semibold leading-7 text-cyan-50/90 md:text-base">
+            <p className="mt-4 max-w-3xl text-sm font-semibold leading-7 text-cyan-50 md:text-base" style={{ color: "#ecfeff" }}>
               Escolha tipo, turma, componente e tema. O Planify organiza a estrutura, respeita o formato do material, separa versão do aluno e gabarito, abre no editor e permite exportar.
             </p>
           </div>
@@ -518,7 +722,7 @@ export function MateriaisClient() {
               <select
                 className={fieldBase()}
                 value={form.tipoMaterial}
-                onChange={(event) => update("tipoMaterial", event.target.value as MaterialGeneratorType)}
+                onChange={(event) => updateTipoMaterial(event.target.value as MaterialGeneratorType)}
               >
                 {MATERIAL_TYPE_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>{option.label}</option>
@@ -588,7 +792,7 @@ export function MateriaisClient() {
             </label>
 
             <label className="space-y-2">
-              <span className={labelBase()}>{needsQuestions ? "Questões/Exercícios" : "Questões complementares"}</span>
+              <span className={labelBase()}>{isGameMaterial ? "Itens do jogo" : needsQuestions ? "Questões/Exercícios" : "Questões complementares"}</span>
               <input
                 className={fieldBase()}
                 type="number"
@@ -596,10 +800,73 @@ export function MateriaisClient() {
                 max={60}
                 value={form.quantidadeQuestoes}
                 onChange={(event) => update("quantidadeQuestoes", event.target.value)}
-                disabled={!needsQuestions && form.tipoMaterial !== "apostila"}
+                disabled={!usesQuantityField}
               />
             </label>
           </div>
+
+          {isGameMaterial ? (
+            <div className="rounded-[1.5rem] border border-emerald-200 bg-emerald-50 p-4 shadow-inner">
+              <div>
+                <p className={labelBase()}>Motor especializado</p>
+                <h3 className="mt-1 text-xl font-black text-slate-950">Jogo pedagógico ou dinâmica</h3>
+                <p className="mt-2 text-sm font-bold leading-6 text-slate-600">
+                  Estes campos ativam o motor premium de jogos. Cruzadinha, caça-palavras, bingo, memória, dominó e trilha são montados como materiais reais, com versão do aluno, gabarito e impressão.
+                </p>
+              </div>
+
+              <div className="mt-4 grid gap-4 md:grid-cols-2">
+                <label className="space-y-2">
+                  <span className={labelBase()}>Formato</span>
+                  <select className={fieldBase()} value={form.formatoJogo} onChange={(event) => update("formatoJogo", event.target.value)}>
+                    {gameFormatOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                  </select>
+                  <p className="text-xs font-bold leading-5 text-emerald-700">
+                    {gameFormatOptions.find((option) => option.value === form.formatoJogo)?.hint || "Motor especializado de jogos pedagógicos."}
+                  </p>
+                </label>
+
+                <label className="space-y-2">
+                  <span className={labelBase()}>Organização da turma</span>
+                  <select className={fieldBase()} value={form.organizacaoJogo} onChange={(event) => update("organizacaoJogo", event.target.value)}>
+                    {gameOrganizationOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                  </select>
+                </label>
+
+                <label className="space-y-2">
+                  <span className={labelBase()}>Duração</span>
+                  <input className={fieldBase()} value={form.duracaoJogo} onChange={(event) => update("duracaoJogo", event.target.value)} placeholder="Ex.: 30 a 45 minutos" />
+                </label>
+
+                <label className="space-y-2">
+                  <span className={labelBase()}>Participantes</span>
+                  <input className={fieldBase()} value={form.numeroParticipantes} onChange={(event) => update("numeroParticipantes", event.target.value)} placeholder="Ex.: turma inteira em grupos de 4" />
+                </label>
+
+                <label className="space-y-2">
+                  <span className={labelBase()}>Movimento</span>
+                  <select className={fieldBase()} value={form.nivelMovimento} onChange={(event) => update("nivelMovimento", event.target.value)}>
+                    {gameMovementOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                  </select>
+                </label>
+
+                <label className="space-y-2">
+                  <span className={labelBase()}>Produto final</span>
+                  <input className={fieldBase()} value={form.produtoFinalJogo} onChange={(event) => update("produtoFinalJogo", event.target.value)} placeholder="Ex.: socialização, registro, ranking ou mapa conceitual" />
+                </label>
+
+                <label className="space-y-2 md:col-span-2">
+                  <span className={labelBase()}>Materiais do jogo</span>
+                  <input className={fieldBase()} value={form.materiaisJogo} onChange={(event) => update("materiaisJogo", event.target.value)} />
+                </label>
+
+                <label className="space-y-2 md:col-span-2">
+                  <span className={labelBase()}>Regras ou preferência do professor</span>
+                  <textarea className={`${fieldBase()} min-h-24`} value={form.regrasJogo} onChange={(event) => update("regrasJogo", event.target.value)} placeholder="Ex.: evitar competição excessiva, incluir todos, usar pontuação cooperativa..." />
+                </label>
+              </div>
+            </div>
+          ) : null}
 
           <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4">
             <button
@@ -631,24 +898,30 @@ export function MateriaisClient() {
                   </label>
                 </div>
 
-                <div>
-                  <span className={labelBase()}>Tipos de questão</span>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {questionTypeOptions.map((option) => {
-                      const selected = form.tiposQuestao.includes(option.value);
-                      return (
-                        <button
-                          key={option.value}
-                          type="button"
-                          onClick={() => toggleQuestionType(option.value)}
-                          className={`rounded-full border px-3 py-2 text-xs font-black transition ${selected ? "border-cyan-500 bg-cyan-50 text-cyan-800" : "border-slate-200 bg-white text-slate-600 hover:border-cyan-200"}`}
-                        >
-                          {selected ? "✓ " : "+ "}{option.label}
-                        </button>
-                      );
-                    })}
+                {!isGameMaterial ? (
+                  <div>
+                    <span className={labelBase()}>Tipos de questão</span>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {questionTypeOptions.map((option) => {
+                        const selected = form.tiposQuestao.includes(option.value);
+                        return (
+                          <button
+                            key={option.value}
+                            type="button"
+                            onClick={() => toggleQuestionType(option.value)}
+                            className={`rounded-full border px-3 py-2 text-xs font-black transition ${selected ? "border-cyan-500 bg-cyan-50 text-cyan-800" : "border-slate-200 bg-white text-slate-600 hover:border-cyan-200"}`}
+                          >
+                            {selected ? "✓ " : "+ "}{option.label}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="rounded-2xl border border-emerald-200 bg-white p-4 text-sm font-bold leading-6 text-emerald-800">
+                    Para jogos, o Planify usa um motor próprio: caça-palavras gera grade, cruzadinha gera pistas e gabarito, bingo gera cartelas, memória/dominó geram peças recortáveis.
+                  </div>
+                )}
 
                 <div className="grid gap-4 md:grid-cols-2">
                   <label className="flex items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white p-4">
@@ -719,7 +992,7 @@ export function MateriaisClient() {
                           <span className="rounded-full bg-slate-950 px-3 py-1 text-xs font-black text-white">{skill.codigo}</span>
                           <p className="mt-3 text-sm font-bold leading-6 text-slate-800">{skill.descricao}</p>
                         </div>
-                        <span className={`rounded-full px-3 py-1 text-xs font-black ${selected ? "bg-cyan-100 text-cyan-800" : "bg-slate-100 text-slate-500"}`}>{selected ? "Usando" : "Usar"}</span>
+                        <span className={`rounded-full px-3 py-1 text-xs font-black ${selected ? "bg-cyan-100 text-cyan-800" : "bg-slate-100 text-slate-500"}`}>{selected ? "Selecionada" : "Selecionar"}</span>
                       </div>
                     </button>
                   );
@@ -751,18 +1024,62 @@ export function MateriaisClient() {
 
         <div className="space-y-6">
           {generating ? (
-            <div className="rounded-[2rem] border border-cyan-200 bg-white p-6 shadow-xl shadow-cyan-950/10">
-              <p className={labelBase()}>Criação em andamento</p>
-              <h2 className="mt-2 text-2xl font-black">O Planify está montando o material no formato certo.</h2>
-              <div className="mt-6 grid gap-3 md:grid-cols-2">
-                {["Analisando tipo de material", "Separando versão do aluno e professor", "Conferindo BNCC selecionada", "Preparando HTML editável"].map((item, index) => (
-                  <div key={item} className="rounded-2xl border border-cyan-100 bg-cyan-50 p-4">
-                    <div className="h-1.5 overflow-hidden rounded-full bg-white">
-                      <span className="block h-full animate-pulse rounded-full bg-cyan-500" style={{ width: `${45 + index * 12}%` }} />
-                    </div>
-                    <p className="mt-3 text-sm font-black text-slate-800">{item}</p>
+            <div className="overflow-hidden rounded-[2rem] border border-cyan-200 bg-white shadow-xl shadow-cyan-950/10">
+              <div className="bg-gradient-to-br from-cyan-50 via-white to-emerald-50 p-6">
+                <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+                  <div>
+                    <p className={labelBase()}>Criação em andamento</p>
+                    <h2 className="mt-2 text-2xl font-black text-slate-950">O Planify está montando o material no formato certo.</h2>
+                    <p className="mt-2 text-sm font-bold leading-6 text-slate-600">
+                      Aguarde enquanto a IA organiza estrutura, linguagem, atividades e versão editável.
+                    </p>
                   </div>
-                ))}
+
+                  <div className="flex items-center gap-2 rounded-full border border-cyan-100 bg-white px-4 py-3 shadow-sm">
+                    <span className="h-2.5 w-2.5 animate-ping rounded-full bg-cyan-500" />
+                    <span className="text-xs font-black uppercase tracking-[0.18em] text-cyan-700">IA trabalhando</span>
+                  </div>
+                </div>
+
+                <div className="mt-6 rounded-[1.5rem] border border-cyan-100 bg-white p-5 shadow-inner">
+                  <div className="flex items-start gap-4">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-slate-950 text-lg font-black text-white">
+                      ✦
+                    </div>
+                    <div>
+                      <p className="text-xs font-black uppercase tracking-[0.2em] text-cyan-700">Inspiração do momento • {activeGenerationMessage.author}</p>
+                      <p className="mt-2 text-base font-black leading-7 text-slate-900">{activeGenerationMessage.message}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-6 grid gap-3 md:grid-cols-2">
+                  {generationStages.map((item, index) => {
+                    const active = index === generationStageIndex;
+                    const completed = index < generationStageIndex;
+
+                    return (
+                      <div
+                        key={item}
+                        className={`rounded-2xl border p-4 transition ${
+                          active
+                            ? "border-cyan-300 bg-cyan-50 shadow-md shadow-cyan-500/10"
+                            : completed
+                              ? "border-emerald-200 bg-emerald-50"
+                              : "border-slate-200 bg-white"
+                        }`}
+                      >
+                        <div className="h-1.5 overflow-hidden rounded-full bg-white">
+                          <span
+                            className={`block h-full rounded-full ${active ? "animate-pulse bg-cyan-500" : completed ? "bg-emerald-500" : "bg-slate-200"}`}
+                            style={{ width: active || completed ? "100%" : "34%" }}
+                          />
+                        </div>
+                        <p className="mt-3 text-sm font-black text-slate-800">{completed ? "✓ " : active ? "● " : "○ "}{item}</p>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           ) : null}
@@ -810,7 +1127,7 @@ export function MateriaisClient() {
               <p className="text-xs font-black uppercase tracking-[0.22em] text-slate-400">Prévia</p>
               <h2 className="mt-3 text-2xl font-black">Seu material aparecerá aqui</h2>
               <p className="mx-auto mt-3 max-w-xl text-sm font-semibold leading-7 text-slate-500">
-                O novo motor foi separado de Planejamentos para evitar mistura de formatos. Apostila será apostila, prova será prova, atividade será atividade e jogo só será gerado quando for escolhido.
+                O novo motor foi separado de Planejamentos para evitar mistura de formatos. Apostila será apostila, prova será prova, atividade será atividade e jogo só será gerado quando for escolhido — com formato próprio, itens imprimíveis, regras e gabarito.
               </p>
             </div>
           )}

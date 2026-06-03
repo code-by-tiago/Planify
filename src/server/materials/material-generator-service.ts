@@ -1,16 +1,80 @@
 import crypto from "node:crypto";
 import { getMaterialCreditCost, getMaterialTypeLabel } from "../../config/material-credits";
+import { getMaterialGameFormatRule, normalizeGameItemCount } from "../../config/material-game-types";
 import type {
   MaterialGeneratedActivity,
   MaterialGeneratedAnswer,
   MaterialGeneratedQuestion,
   MaterialGeneratedSection,
   MaterialGeneratorBNCCSkill,
+  MaterialGeneratorGameOptions,
   MaterialGeneratorRequest,
   PlanifyGeneratedMaterial,
 } from "../../types/material-generator";
 import { generateGeminiJSON } from "../ai/gemini-client";
 import { buildMaterialHtml, sanitizeMaterialHtml } from "./material-html";
+import {
+  buildGameMaterialFromBlueprint,
+  type MaterialGameBlueprint,
+} from "./game-generators/game-engine";
+
+
+const GAME_BLUEPRINT_SCHEMA = {
+  type: "OBJECT",
+  properties: {
+    titulo: { type: "STRING" },
+    subtitulo: { type: "STRING" },
+    resumo: { type: "STRING" },
+    objetivoPedagogico: { type: "STRING" },
+    contextualizacao: { type: "STRING" },
+    formato: { type: "STRING" },
+    tempoEstimado: { type: "STRING" },
+    organizacao: { type: "STRING" },
+    materiais: { type: "ARRAY", items: { type: "STRING" } },
+    preparacao: { type: "ARRAY", items: { type: "STRING" } },
+    regras: { type: "ARRAY", items: { type: "STRING" } },
+    comoJogar: { type: "ARRAY", items: { type: "STRING" } },
+    pontuacao: { type: "ARRAY", items: { type: "STRING" } },
+    fechamento: { type: "ARRAY", items: { type: "STRING" } },
+    adaptacoesInclusivas: { type: "ARRAY", items: { type: "STRING" } },
+    criteriosAvaliacao: { type: "ARRAY", items: { type: "STRING" } },
+    itens: {
+      type: "ARRAY",
+      items: {
+        type: "OBJECT",
+        properties: {
+          termo: { type: "STRING" },
+          resposta: { type: "STRING" },
+          pista: { type: "STRING" },
+          definicao: { type: "STRING" },
+          pergunta: { type: "STRING" },
+          alternativas: { type: "ARRAY", items: { type: "STRING" } },
+          respostaCorreta: { type: "STRING" },
+          desafio: { type: "STRING" },
+          categoria: { type: "STRING" },
+          justificativa: { type: "STRING" },
+        },
+        required: ["termo", "definicao", "pista", "pergunta", "respostaCorreta", "desafio", "categoria"],
+      },
+    },
+  },
+  required: [
+    "titulo",
+    "resumo",
+    "objetivoPedagogico",
+    "contextualizacao",
+    "formato",
+    "materiais",
+    "preparacao",
+    "regras",
+    "comoJogar",
+    "pontuacao",
+    "fechamento",
+    "adaptacoesInclusivas",
+    "criteriosAvaliacao",
+    "itens",
+  ],
+};
 
 const MATERIAL_RESPONSE_SCHEMA = {
   type: "OBJECT",
@@ -223,6 +287,28 @@ function normalizeSkill(skill: Partial<MaterialGeneratorBNCCSkill>): MaterialGen
   };
 }
 
+function normalizeGameOptions(value: unknown): MaterialGeneratorGameOptions | null {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const input = value as MaterialGeneratorGameOptions;
+  const result: MaterialGeneratorGameOptions = {
+    formato: toText(input.formato),
+    organizacao: toText(input.organizacao),
+    duracao: toText(input.duracao),
+    participantes: toText(input.participantes),
+    materiais: toText(input.materiais),
+    regrasDesejadas: toText(input.regrasDesejadas),
+    produtoFinal: toText(input.produtoFinal),
+    nivelMovimento: toText(input.nivelMovimento),
+    quantidadeItens: Math.max(0, Math.min(60, toNumber(input.quantidadeItens, 0))),
+    gerarVersaoImpressao: input.gerarVersaoImpressao !== false,
+  };
+
+  return Object.values(result).some(Boolean) ? result : null;
+}
+
 export function normalizeMaterialRequest(body: unknown): MaterialGeneratorRequest {
   const input = (body || {}) as Partial<MaterialGeneratorRequest> & Record<string, unknown>;
 
@@ -251,6 +337,7 @@ export function normalizeMaterialRequest(body: unknown): MaterialGeneratorReques
     inclusaoAcessibilidade: toText(input.inclusaoAcessibilidade),
     tomLinguagem: toText(input.tomLinguagem, "claro, profissional e adequado à turma"),
     observacoes: toText(input.observacoes),
+    jogoDinamica: normalizeGameOptions(input.jogoDinamica),
   };
 }
 
@@ -264,6 +351,9 @@ export function validateMaterialRequest(input: MaterialGeneratorRequest): string
   if (!input.temaCentral) errors.push("Informe o tema central.");
   if (input.temaCentral.length > 180) errors.push("O tema central está muito longo.");
   if ((input.quantidadeQuestoes || 0) > 60) errors.push("A quantidade máxima é 60 questões.");
+  if (input.tipoMaterial === "jogo" && !input.jogoDinamica?.formato) {
+    errors.push("Selecione o formato do jogo ou dinâmica.");
+  }
 
   return errors;
 }
@@ -277,6 +367,7 @@ function systemInstruction(): string {
     "Obedeça rigorosamente ao tipo de material solicitado: apostila ensina; prova avalia; atividade pratica; lista treina; resumo sintetiza; sequência didática organiza aulas; projeto investiga e produz; jogo/dinâmica só aparece quando solicitado.",
     "Nunca transforme tema de Geografia, História, Ciências, Matemática, Filosofia, Sociologia ou Ensino Religioso em atividade de Língua Portuguesa, salvo quando o componente escolhido for linguagem ou o professor pedir interdisciplinaridade.",
     "Nunca crie jogo, brincadeira ou dinâmica se o tipoMaterial não for jogo.",
+    "Quando o tipoMaterial for jogo, gere blueprint pedagógico consistente. O motor do Planify transformará esse blueprint em caça-palavras, cruzadinha, bingo, memória, dominó, trilha, cartas, quiz, roleta, associação, escape room ou dinâmica conforme o formato escolhido. Não entregue lista de exercícios disfarçada de jogo.",
     "Não repita parágrafos, comandos, questões, objetivos, habilidades ou seções.",
     "A entrega deve ser pronta para professor usar, editar, imprimir e exportar.",
     "Use linguagem adequada à etapa, ano/série, componente, nível e objetivo.",
@@ -291,6 +382,9 @@ function buildPrompt(input: MaterialGeneratorRequest, creditCost: number): strin
   const bnccText = input.habilidadesBncc?.length
     ? JSON.stringify(input.habilidadesBncc, null, 2)
     : "[]";
+  const gameOptionsText = input.tipoMaterial === "jogo"
+    ? JSON.stringify(input.jogoDinamica || {}, null, 2)
+    : "Não se aplica.";
 
   return `
 Gere um material didático de altíssima qualidade para o Planify.
@@ -321,6 +415,9 @@ Tom de linguagem: ${input.tomLinguagem || "claro, profissional e adequado"}
 Observações do professor: ${input.observacoes || "Nenhuma"}
 Créditos consumidos pelo sistema: ${creditCost}
 
+CONFIGURAÇÃO ESPECIAL PARA JOGO/DINÂMICA:
+${gameOptionsText}
+
 HABILIDADES BNCC OFICIAIS AUTORIZADAS PELO SERVIDOR:
 ${bnccText}
 
@@ -333,12 +430,14 @@ REGRAS DE QUALIDADE:
 6. Para resumo: síntese organizada, conceitos essenciais, exemplos curtos e atividade de checagem.
 7. Para sequência didática: aulas/momentos, tempo, recursos, metodologia, avaliação e evidências.
 8. Para projeto: problema norteador, etapas, produto final, investigação, socialização e avaliação.
-9. Para jogo: objetivo, materiais, preparação, regras, peças/textos/cartas quando cabível, variações e fechamento.
+9. Para jogo/dinâmica: entregar mecânica completa, objetivo pedagógico, materiais, preparação, organização da turma, tempo, passo a passo, regras, rodadas, cartas/desafios prontos para imprimir quando cabível, pontuação ou cooperação, mediação do professor, adaptação inclusiva, variações e fechamento pedagógico.
 10. Nunca inclua placeholders como "insira aqui", "complete depois" ou "a critério do professor".
 11. Nunca mencione bastidores técnicos como prompt, JSON, token, sistema, schema, validação ou fallback.
 12. O campo gabarito deve ficar vazio apenas se gerarGabarito for falso.
 13. O campo atividades deve conter questão real quando o tipo exigir prática ou avaliação.
 14. O campo htmlEditor deve representar todo o material com formatação limpa para editor estilo Word.
+15. Se tipoMaterial for jogo, as seções devem incluir obrigatoriamente: Visão geral, Objetivo pedagógico, Materiais, Preparação, Como jogar, Regras, Cartas/desafios, Pontuação ou cooperação, Papel do professor, Fechamento e avaliação.
+16. Se tipoMaterial não for jogo, não inclua essas seções de jogo/dinâmica.
 `.trim();
 }
 
@@ -475,6 +574,94 @@ export function normalizeGeneratedMaterial(
   return material;
 }
 
+
+function gameSystemInstruction(): string {
+  return [
+    "Você é o Motor Premium de Jogos Pedagógicos do Planify.",
+    "Responda exclusivamente em JSON válido seguindo o schema recebido.",
+    "Sua função é criar um blueprint pedagógico preciso para o servidor montar jogos reais, imprimíveis e confiáveis.",
+    "Não entregue texto genérico. Gere termos, pistas, definições, perguntas, desafios e respostas corretas coerentes com o tema, ano/série, componente curricular e formato escolhido.",
+    "Não invente BNCC. Use apenas as habilidades enviadas pelo servidor como contexto pedagógico.",
+    "Para caça-palavras, gere termos curtos, relevantes e sem frases longas. Cada termo deve ter definição pedagógica.",
+    "Para cruzadinha, gere respostas curtas e pistas claras, sem resposta óbvia no enunciado da pista.",
+    "Para bingo, gere conceitos e definições que possam ser sorteados pelo professor.",
+    "Para memória, dominó e associação, gere pares conceito-definição realmente associáveis.",
+    "Para trilha, cartas, quiz, roleta e escape room, gere desafios progressivos, gabarito e justificativa.",
+    "Não misture componente curricular. Geografia precisa sair como Geografia, Matemática como Matemática, História como História, e assim por diante.",
+    "O material deve ser seguro, aplicável em sala, inclusivo, com regras claras e fechamento pedagógico.",
+  ].join("\n");
+}
+
+function buildGamePrompt(input: MaterialGeneratorRequest, creditCost: number): string {
+  const rule = getMaterialGameFormatRule(input.jogoDinamica?.formato);
+  const targetItems = normalizeGameItemCount(rule.value, input.quantidadeQuestoes || input.jogoDinamica?.quantidadeItens, input.tamanho);
+  const bnccText = input.habilidadesBncc?.length
+    ? JSON.stringify(input.habilidadesBncc, null, 2)
+    : "[]";
+
+  return `
+Crie o blueprint premium de um jogo pedagógico para o Planify.
+
+FORMATO OBRIGATÓRIO:
+${rule.label} (${rule.value})
+
+DESCRIÇÃO DO FORMATO:
+${rule.description}
+
+ENTREGÁVEIS ESPERADOS:
+${rule.teacherDeliverables.join(", ")}
+
+DADOS PEDAGÓGICOS:
+Etapa: ${input.etapaEnsino}
+Ano/Série: ${input.anoSerie}
+Área do conhecimento: ${input.areaConhecimento || "Não informado"}
+Componente curricular: ${input.componenteCurricular}
+Tema central: ${input.temaCentral}
+Objetivo do professor: ${input.objetivo}
+Tamanho: ${input.tamanho}
+Nível de dificuldade: ${input.nivelDificuldade}
+Quantidade mínima de itens no blueprint: ${targetItems}
+Créditos do sistema: ${creditCost}
+
+CONFIGURAÇÃO DO JOGO:
+Organização: ${input.jogoDinamica?.organizacao || "grupos"}
+Duração: ${input.jogoDinamica?.duracao || "30 a 50 minutos"}
+Participantes: ${input.jogoDinamica?.participantes || "turma inteira"}
+Materiais disponíveis: ${input.jogoDinamica?.materiais || input.recursosDisponiveis || "papel, quadro e canetas"}
+Regras/preferências do professor: ${input.jogoDinamica?.regrasDesejadas || "regras claras, participação de todos e mediação do professor"}
+Produto final: ${input.jogoDinamica?.produtoFinal || "registro e socialização"}
+Movimento: ${input.jogoDinamica?.nivelMovimento || "baixo a moderado"}
+Acessibilidade: ${input.inclusaoAcessibilidade || "linguagem clara e instruções objetivas"}
+Observações: ${input.observacoes || "Nenhuma"}
+
+BNCC AUTORIZADA PELO SERVIDOR:
+${bnccText}
+
+REGRAS CRÍTICAS:
+1. Gere no mínimo ${targetItems} itens úteis, variados e não repetidos.
+2. Cada item deve ter termo, definição, pista, pergunta, resposta correta, desafio, categoria e justificativa.
+3. Para cruzadinha e caça-palavras, termo/resposta deve ser curto, sem pontuação e sem frase extensa.
+4. Para bingo, termo deve caber numa cartela e definição deve servir como chamada de sorteio.
+5. Para escape room, cada item deve funcionar como enigma com pista e solução.
+6. Não use placeholders. Não escreva "complete depois".
+7. Não diga que não consegue montar grade, cartela ou jogo. O servidor vai montar isso a partir do blueprint.
+8. Garanta coerência total com ${input.componenteCurricular}, ${input.anoSerie} e ${input.temaCentral}.
+`.trim();
+}
+
+async function generateGameMaterial(input: MaterialGeneratorRequest, creditCost: number): Promise<PlanifyGeneratedMaterial> {
+  const blueprint = await generateGeminiJSON<MaterialGameBlueprint>({
+    systemInstruction: gameSystemInstruction(),
+    prompt: buildGamePrompt(input, creditCost),
+    temperature: 0.22,
+    topP: 0.82,
+    maxOutputTokens: input.tamanho === "completo" ? 12000 : 9000,
+    responseSchema: GAME_BLUEPRINT_SCHEMA,
+  });
+
+  return buildGameMaterialFromBlueprint(blueprint, input, creditCost);
+}
+
 export async function generateMaterial(input: MaterialGeneratorRequest): Promise<{
   material: PlanifyGeneratedMaterial;
   requestHash: string;
@@ -484,6 +671,15 @@ export async function generateMaterial(input: MaterialGeneratorRequest): Promise
   const creditCost = getMaterialCreditCost(input.tipoMaterial, input.tamanho);
   const requestHash = createRequestHash(input);
   const idempotencyKey = input.idempotencyKey || crypto.randomUUID();
+
+  if (input.tipoMaterial === "jogo") {
+    return {
+      material: await generateGameMaterial(input, creditCost),
+      requestHash,
+      idempotencyKey,
+      creditCost,
+    };
+  }
 
   const generated = await generateGeminiJSON<Partial<PlanifyGeneratedMaterial>>({
     systemInstruction: systemInstruction(),

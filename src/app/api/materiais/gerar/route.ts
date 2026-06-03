@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { getMaterialCreditCost } from "../../../../config/material-credits";
+import { createClient as createSupabaseServerClient } from "../../../../lib/supabase/server";
 import {
   generateMaterial,
   getMaterialRequestHash,
@@ -25,6 +26,7 @@ export const dynamic = "force-dynamic";
 
 const PREMIUM_COOKIE_NAME = "planify_access";
 const ADMIN_COOKIE_NAME = "planify_admin_access";
+const OWNER_COOKIE_NAME = "planify_owner_access";
 const GEMINI_MODEL = "gemini-2.5-flash";
 
 function errorResponse(
@@ -46,17 +48,65 @@ function errorResponse(
   );
 }
 
-async function resolveApiAccess(request: NextRequest) {
-  const premiumToken = request.cookies.get(PREMIUM_COOKIE_NAME)?.value || null;
-  const adminToken = request.cookies.get(ADMIN_COOKIE_NAME)?.value || null;
+function isProbablyJwt(value: string | null): boolean {
+  return Boolean(value && value.split(".").length === 3);
+}
 
-  const access = await verifyPremiumAccess(premiumToken);
+function getBearerToken(request: NextRequest): string | null {
+  const authorization = request.headers.get("authorization") || request.headers.get("Authorization") || "";
+  const match = authorization.match(/^Bearer\s+(.+)$/i);
+  return match?.[1]?.trim() || null;
+}
+
+async function getSupabaseSessionToken(): Promise<string | null> {
+  try {
+    const supabase = await createSupabaseServerClient();
+    const { data } = await supabase.auth.getSession();
+    return data.session?.access_token || null;
+  } catch {
+    return null;
+  }
+}
+
+async function resolvePremiumByToken(token: string | null) {
+  if (!isProbablyJwt(token)) {
+    return verifyPremiumAccess(null);
+  }
+
+  return verifyPremiumAccess(token);
+}
+
+async function resolveApiAccess(request: NextRequest) {
+  const bearerToken = getBearerToken(request);
+  const premiumCookie = request.cookies.get(PREMIUM_COOKIE_NAME)?.value || null;
+  const adminToken = request.cookies.get(ADMIN_COOKIE_NAME)?.value || null;
+  const ownerToken = request.cookies.get(OWNER_COOKIE_NAME)?.value || null;
+
+  const supabaseSessionToken = await getSupabaseSessionToken();
+  const premiumToken = isProbablyJwt(bearerToken)
+    ? bearerToken
+    : isProbablyJwt(premiumCookie)
+      ? premiumCookie
+      : supabaseSessionToken;
+
+  const access = await resolvePremiumByToken(premiumToken);
   const adminFromAdminCookie = await resolveAdminAccess(adminToken);
-  const admin = adminFromAdminCookie.isAdmin
+  const adminFromOwnerCookie = adminFromAdminCookie.isAdmin
     ? adminFromAdminCookie
+    : await resolveAdminAccess(ownerToken);
+  const adminFromBearer = adminFromOwnerCookie.isAdmin
+    ? adminFromOwnerCookie
+    : await resolveAdminAccess(bearerToken);
+  const admin = adminFromBearer.isAdmin
+    ? adminFromBearer
     : await resolveAdminAccess(premiumToken);
 
-  const authenticated = Boolean(access.authenticated || admin.authenticated);
+  const authenticated = Boolean(
+    access.authenticated ||
+      admin.authenticated ||
+      isProbablyJwt(ownerToken) ||
+      isProbablyJwt(adminToken),
+  );
   const isAdminBypass = Boolean(admin.isAdmin);
   const premium = Boolean(access.premium || isAdminBypass);
   const userId = access.user?.id || admin.userId || null;

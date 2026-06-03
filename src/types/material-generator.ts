@@ -33,6 +33,19 @@ export type MaterialGeneratorBNCCSkill = {
   conteudo?: string;
 };
 
+export type MaterialGeneratorGameOptions = {
+  formato?: string;
+  organizacao?: string;
+  duracao?: string;
+  participantes?: string;
+  materiais?: string;
+  regrasDesejadas?: string;
+  produtoFinal?: string;
+  nivelMovimento?: string;
+  quantidadeItens?: number;
+  gerarVersaoImpressao?: boolean;
+};
+
 export type MaterialGeneratorRequest = {
   idempotencyKey?: string;
   escola?: string;
@@ -56,6 +69,7 @@ export type MaterialGeneratorRequest = {
   inclusaoAcessibilidade?: string;
   tomLinguagem?: string;
   observacoes?: string;
+  jogoDinamica?: MaterialGeneratorGameOptions | null;
 };
 
 export type MaterialGeneratedBlock = {
@@ -144,6 +158,13 @@ export type PlanifyGeneratedMaterial = {
   questoes: MaterialGeneratedQuestion[];
   sugestoesUso: string[];
   alertas: string[];
+  jogo?: {
+    formato: string;
+    formatoLabel: string;
+    printable: boolean;
+    itemCount: number;
+    deliverables: string[];
+  };
 };
 
 export type MaterialGenerationCreditInfo = {

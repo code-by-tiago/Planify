@@ -75,7 +75,7 @@ export const MATERIAL_CREDIT_RULES: Record<MaterialGeneratorType, MaterialCredit
     completo: 12,
   },
   jogo: {
-    label: "Jogo ou dinâmica",
+    label: "Jogo pedagógico ou dinâmica",
     curto: 6,
     medio: 10,
     completo: 16,

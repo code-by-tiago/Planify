@@ -1,10 +1,14 @@
 "use client";
 
-import { ReactNode, useEffect, useMemo, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import Link from "next/link";
-import { createClient } from "@supabase/supabase-js";
 import { PlanifyBrand } from "@/components/pro/PlanifyBrand";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
+import {
+  buildLoginRedirect,
+  buildPlansRedirect,
+  getCurrentPathWithSearch,
+} from "@/lib/auth/premium-gate";
 
 type GateStatus = {
   loading: boolean;
@@ -34,21 +38,8 @@ export default function PremiumAccessGate({
   const [status, setStatus] = useState<GateStatus>(initialStatus);
   const [redirectPath, setRedirectPath] = useState("/dashboard");
 
-  const supabase = useMemo(() => {
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-    if (!url || !anonKey) {
-      return null;
-    }
-
-    return createClient(url, anonKey);
-  }, []);
-
   useEffect(() => {
-    setRedirectPath(
-      `${window.location.pathname}${window.location.search || ""}`
-    );
+    setRedirectPath(getCurrentPathWithSearch("/dashboard"));
   }, []);
 
   useEffect(() => {
@@ -56,45 +47,15 @@ export default function PremiumAccessGate({
 
     async function loadAccess() {
       try {
-        if (!supabase) {
-          if (!active) return;
-          setStatus({
-            loading: false,
-            authenticated: false,
-            premium: false,
-            email: "",
-            message:
-              "Configuração de acesso indisponível. Verifique as variáveis públicas do Supabase.",
-          });
-          return;
-        }
-
-        const sessionResult = await supabase.auth.getSession();
-        const session = sessionResult.data.session;
-
-        if (!session) {
-          if (!active) return;
-          setStatus({
-            loading: false,
-            authenticated: false,
-            premium: false,
-            email: "",
-            message:
-              "Entre com o e-mail da sua conta Planify para continuar.",
-          });
-          return;
-        }
-
-        const response = await fetch("/api/premium/status", {
+        const response = await fetch("/api/access/status", {
           method: "GET",
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-          },
           cache: "no-store",
+          credentials: "include",
         });
 
         const data = (await response.json().catch(() => null)) as
           | {
+              authenticated?: boolean;
               premium?: boolean;
               email?: string;
               message?: string;
@@ -105,14 +66,16 @@ export default function PremiumAccessGate({
 
         setStatus({
           loading: false,
-          authenticated: true,
+          authenticated: Boolean(data?.authenticated),
           premium: Boolean(data?.premium),
-          email: data?.email || session.user.email || "",
+          email: data?.email || "",
           message:
             data?.message ||
             (data?.premium
               ? "Acesso premium confirmado."
-              : "Este e-mail ainda não possui plano ativo."),
+              : data?.authenticated
+                ? "Este e-mail ainda não possui plano ativo."
+                : "Entre com o e-mail da sua conta Planify para continuar."),
         });
       } catch {
         if (!active) return;
@@ -132,7 +95,7 @@ export default function PremiumAccessGate({
     return () => {
       active = false;
     };
-  }, [supabase]);
+  }, []);
 
   if (status.loading) {
     return (
@@ -185,9 +148,7 @@ export default function PremiumAccessGate({
             </p>
             <div className="mt-7 flex flex-wrap justify-center gap-3">
               <Link
-                href={`/login?premium=required&redirect=${encodeURIComponent(
-                  redirectPath
-                )}`}
+                href={buildLoginRedirect(redirectPath)}
                 className="rounded-2xl bg-slate-950 px-5 py-3 text-sm font-black text-white shadow-lg shadow-slate-200 transition hover:-translate-y-0.5"
               >
                 Entrar
@@ -237,7 +198,7 @@ export default function PremiumAccessGate({
             </p>
             <div className="mt-7 flex flex-wrap justify-center gap-3">
               <Link
-                href="/planos"
+                href={buildPlansRedirect(redirectPath)}
                 className="rounded-2xl bg-slate-950 px-5 py-3 text-sm font-black text-white shadow-lg shadow-slate-200 transition hover:-translate-y-0.5"
               >
                 Ativar plano

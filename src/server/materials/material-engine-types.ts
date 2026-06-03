@@ -1,0 +1,80 @@
+export const MATERIAL_ENGINE_TYPES = [
+  "apostila",
+  "atividade",
+  "prova",
+  "slides",
+  "projeto",
+  "jogo",
+  "sequencia",
+  "resumo",
+  "lista",
+  "plano-aula",
+  "flashcards",
+  "redacao",
+  "mapa-mental",
+] as const;
+
+export type MaterialEngineType = (typeof MATERIAL_ENGINE_TYPES)[number];
+
+export type MaterialEngineRequest = {
+  tipoMaterial: MaterialEngineType;
+  etapa: string;
+  anoSerie: string;
+  componenteCurricular: string;
+  tema: string;
+  objetivo: string;
+  quantidade: number;
+  dificuldade: string;
+  formatoJogo: string | null;
+  incluirGabarito: boolean;
+};
+
+export type MaterialEngineInput = {
+  tipoMaterial?: string;
+  tipo?: string;
+  etapa?: string;
+  anoSerie?: string;
+  componenteCurricular?: string;
+  componente?: string;
+  tema?: string;
+  temaCentral?: string;
+  objetivo?: string;
+  objetivos?: string;
+  quantidade?: string | number;
+  dificuldade?: string;
+  formatoJogo?: string | null;
+  incluirGabarito?: boolean;
+};
+
+export type MaterialEngineResponse = {
+  title: string;
+  subtitle: string;
+  summary: string;
+  sections: Array<{
+    title: string;
+    content: string;
+    bullets: string[];
+  }>;
+  activities: Array<{
+    title: string;
+    instructions: string;
+    items: string[];
+  }>;
+  answerKey: string[];
+  teacherNotes: string[];
+  html?: string;
+  game?: {
+    format: string;
+    rules: string[];
+    components: string[];
+  };
+  slides?: Array<{
+    title: string;
+    bullets: string[];
+    speakerNotes: string;
+  }>;
+  flashcards?: Array<{
+    front: string;
+    back: string;
+  }>;
+};

@@ -107,11 +107,23 @@ export async function GET(request: NextRequest) {
     access.authenticated || admin.authenticated || owner.authenticated || email,
   );
   const premium = Boolean(access.premium || admin.isAdmin || isOwner);
+  const reason = !authenticated
+    ? "not_authenticated"
+    : !premium
+      ? "premium_required"
+      : "ok";
+  const message = !authenticated
+    ? "Faça login para continuar."
+    : !premium
+      ? "Seu login está ativo, mas é necessário plano premium para continuar."
+      : "Acesso premium confirmado.";
 
   return NextResponse.json(
     {
       authenticated,
       premium,
+      reason,
+      message,
       isOwner,
       isAdmin: Boolean(admin.isAdmin || isOwner),
       role: isOwner || admin.isAdmin ? "admin" : access.user?.role || "user",

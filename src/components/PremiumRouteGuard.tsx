@@ -2,6 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
+import {
+  buildLoginRedirect,
+  buildPlansRedirect,
+  getCurrentPathWithSearch,
+} from "@/lib/auth/premium-gate";
 
 type AccessStatus = {
   authenticated: boolean;
@@ -38,16 +43,6 @@ function isProtectedPath(pathname: string) {
   );
 }
 
-function makeLoginUrl(pathname: string) {
-  let current = pathname;
-
-  if (typeof window !== "undefined") {
-    current = `${window.location.pathname}${window.location.search || ""}`;
-  }
-
-  return `/login?premium=required&redirect=${encodeURIComponent(current)}`;
-}
-
 export function PremiumRouteGuard() {
   const pathname = usePathname();
   const [checking, setChecking] = useState(false);
@@ -72,13 +67,21 @@ export function PremiumRouteGuard() {
 
         if (!active) return;
 
-        if (!response.ok || !data.authenticated || !data.premium) {
-          window.location.href = makeLoginUrl(pathname);
+        const currentPath = getCurrentPathWithSearch(pathname);
+
+        if (!response.ok || !data.authenticated) {
+          window.location.href = buildLoginRedirect(currentPath);
+          return;
+        }
+
+        if (!data.premium) {
+          window.location.href = buildPlansRedirect(currentPath);
           return;
         }
       } catch {
         if (active) {
-          window.location.href = makeLoginUrl(pathname);
+          const currentPath = getCurrentPathWithSearch(pathname);
+          window.location.href = buildLoginRedirect(currentPath);
         }
       } finally {
         if (active) {

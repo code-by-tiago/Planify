@@ -1,7 +1,9 @@
 "use client";
 
+import { PlanifyOwlGenerationCoach } from "@/components/pro/PlanifyOwlGenerationCoach";
 import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
 import { PlanifyPageHero } from "@/components/pro/PlanifyPageHero";
+import type { LumiCoachContext } from "@/lib/pro/lumiMotivationalMessages";
 import { useMemo, useState } from "react";
 
 type TipoPlanejamento = "anual" | "trimestral";
@@ -217,30 +219,21 @@ const planningProgressSteps = [
   "Preparando o resultado final",
 ];
 
-function PlanningGenerationPanel({ label }: { label: string }) {
+function PlanningGenerationPanel({
+  label,
+  context,
+}: {
+  label: string;
+  context: LumiCoachContext;
+}) {
   return (
-    <div className="mt-6 rounded-[1.75rem] border border-fuchsia-100/70 bg-gradient-to-br from-violet-50/80 to-rose-50/60 p-5 shadow-sm">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="text-xs font-black uppercase tracking-[0.25em] text-violet-400">Preparando</p>
-          <h3 className="mt-2 text-xl font-black text-violet-950">{label}</h3>
-        </div>
-        <div className="flex gap-2" aria-hidden="true">
-          <span className="h-3 w-3 animate-pulse rounded-full bg-cyan-200" />
-          <span className="h-3 w-3 animate-pulse rounded-full bg-blue-200 [animation-delay:120ms]" />
-          <span className="h-3 w-3 animate-pulse rounded-full bg-emerald-200 [animation-delay:240ms]" />
-        </div>
-      </div>
-      <div className="mt-5 grid gap-3 md:grid-cols-5">
-        {planningProgressSteps.map((step, index) => (
-          <div key={step} className="rounded-2xl border border-violet-100/80 bg-white/80 p-3">
-            <div className="mb-3 h-1.5 overflow-hidden rounded-full bg-white/10">
-              <span className="block h-full animate-pulse rounded-full bg-cyan-200" style={{ width: `${Math.min(100, 32 + index * 15)}%` }} />
-            </div>
-            <p className="text-xs font-bold leading-5 text-violet-600">{step}</p>
-          </div>
-        ))}
-      </div>
+    <div className="mt-6">
+      <PlanifyOwlGenerationCoach
+        active
+        title={label}
+        context={context}
+        progressSteps={planningProgressSteps}
+      />
     </div>
   );
 }
@@ -1170,7 +1163,16 @@ export function PlanejamentosClient() {
 
             {loadingBncc || loadingPlan || loadingDocx ? (
               <PlanningGenerationPanel
-                label={loadingBncc ? "Buscando habilidades compatíveis" : loadingDocx ? "Preparando documento oficial" : "Gerando planejamento"}
+                label={
+                  loadingBncc
+                    ? "Buscando habilidades compatíveis"
+                    : loadingDocx
+                      ? "Preparando documento oficial"
+                      : "Gerando planejamento com IA"
+                }
+                context={
+                  loadingBncc ? "bncc" : loadingDocx ? "docx" : "planejamento"
+                }
               />
             ) : null}
 

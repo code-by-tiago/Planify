@@ -2271,10 +2271,69 @@ html:has(.pl-single-screen) body {
   animation: pl-bob 5s ease-in-out infinite;
 }
 
+/* Coruja interativa durante geração com IA */
+@keyframes pl-owl-pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes pl-owl-bar-slide {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(220%);
+  }
+}
+
+.pl-owl-coach {
+  opacity: 0;
+  transform: translateY(12px);
+  transition:
+    opacity 0.35s ease,
+    transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.pl-owl-coach--visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.pl-owl-coach__mascot {
+  animation: pl-owl-pop-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.pl-owl-coach__bubble {
+  transition: opacity 0.22s ease;
+}
+
+.pl-owl-coach__bubble--visible {
+  opacity: 1;
+}
+
+.pl-owl-coach__bar {
+  width: 42%;
+  animation: pl-owl-bar-slide 1.8s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .pl-fade-rise,
-  .pl-bob {
+  .pl-bob,
+  .pl-owl-coach__mascot,
+  .pl-owl-coach__bar {
     animation: none;
+  }
+
+  .pl-owl-coach {
+    opacity: 1;
+    transform: none;
+    transition: none;
   }
 }
 

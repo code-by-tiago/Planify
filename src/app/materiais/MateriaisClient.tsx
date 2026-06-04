@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
+import { PlanifyOwlGenerationCoach } from "@/components/pro/PlanifyOwlGenerationCoach";
 import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
 import {
   getPlanifyTool,
@@ -720,21 +721,15 @@ td,th{border:1px solid #d1d5db;padding:8px;}
 
         <section className="min-h-0 overflow-y-auto overscroll-contain bg-slate-50 p-5">
           {loading ? (
-            <div className="flex h-full min-h-[280px] items-center justify-center">
-              <div className="w-full max-w-md rounded-[2rem] border border-slate-200 bg-white p-7 text-center shadow-xl">
-                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-br from-indigo-600 to-violet-600 text-white">
-                  <PlanifyIcon name={mode.icon} className="h-7 w-7" />
-                </div>
-                <h3 className="mt-5 text-2xl font-black text-slate-950">
-                  {mode.loadingTitle}
-                </h3>
-                <p className="mt-2 text-sm font-semibold leading-6 text-slate-600">
-                  {mode.loadingDescription}
-                </p>
-                <div className="mt-6 h-2 overflow-hidden rounded-full bg-slate-100">
-                  <div className="h-full w-2/3 animate-pulse rounded-full bg-indigo-600" />
-                </div>
-              </div>
+            <div className="flex h-full min-h-[280px] items-center justify-center p-4">
+              <PlanifyOwlGenerationCoach
+                active
+                title={mode.loadingTitle}
+                description={mode.loadingDescription}
+                context="material"
+                toolId={tipo}
+                className="max-w-lg"
+              />
             </div>
           ) : resultadoHtml ? (
             <div>

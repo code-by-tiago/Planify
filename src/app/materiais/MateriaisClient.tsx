@@ -6,12 +6,29 @@ import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { PlanifyOwlGenerationCoach } from "@/components/pro/PlanifyOwlGenerationCoach";
 import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
 import {
+  DEFAULT_MATERIAL_EDUCATION,
+  EDUCATION_STAGES,
+  educationDefaultsForTool,
+  getAreaOptions,
+  getComponentOptions,
+  getYearOptions,
+  normalizeMaterialEducation,
+  type MaterialEducationFields,
+} from "@/lib/educacao/education-options";
+import {
+  defaultQuantityForTool,
+  getQuantityPresets,
+} from "@/lib/educacao/material-quantity-presets";
+import {
   getPlanifyTool,
   planifyTools,
   toolCategories,
   type PlanifyToolId,
   type ToolCategoryId,
 } from "@/lib/pro/planifyTools";
+
+const SELECT_FIELD_CLASS =
+  "w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-950 outline-none transition focus:border-slate-950 focus:bg-white";
 
 type Dificuldade = "facil" | "media" | "avancada";
 type FormatoJogo =
@@ -180,11 +197,18 @@ export function MateriaisClient({
   const [tipo, setTipo] = useState<PlanifyToolId>(initialTipo ?? "slides");
   const [modalAberto, setModalAberto] = useState(studioMode);
   const [tema, setTema] = useState(initialTema);
-  const [etapa, setEtapa] = useState("Ensino Fundamental");
-  const [anoSerie, setAnoSerie] = useState("");
-  const [componente, setComponente] = useState("");
+  const [etapa, setEtapa] = useState(DEFAULT_MATERIAL_EDUCATION.etapa);
+  const [anoSerie, setAnoSerie] = useState(DEFAULT_MATERIAL_EDUCATION.anoSerie);
+  const [areaConhecimento, setAreaConhecimento] = useState(
+    DEFAULT_MATERIAL_EDUCATION.areaConhecimento,
+  );
+  const [componente, setComponente] = useState(
+    DEFAULT_MATERIAL_EDUCATION.componente,
+  );
   const [objetivo, setObjetivo] = useState("");
-  const [quantidade, setQuantidade] = useState("10");
+  const [quantidade, setQuantidade] = useState(
+    defaultQuantityForTool(initialTipo ?? "slides"),
+  );
   const [dificuldade, setDificuldade] = useState<Dificuldade>("media");
   const [formatoJogo, setFormatoJogo] = useState<FormatoJogo>("caca-palavras");
   const [incluirGabarito, setIncluirGabarito] = useState(true);
@@ -263,13 +287,35 @@ export function MateriaisClient({
   const isJogo = tipo === "jogo";
   const isRedacao = tipo === "redacao";
 
+  const yearOptions = useMemo(() => getYearOptions(etapa), [etapa]);
+  const areaOptions = useMemo(() => getAreaOptions(etapa), [etapa]);
+  const componentOptions = useMemo(
+    () => getComponentOptions(etapa, areaConhecimento),
+    [etapa, areaConhecimento],
+  );
+  const quantityPresets = useMemo(() => getQuantityPresets(tipo), [tipo]);
+
+  function currentEducation(): MaterialEducationFields {
+    return { etapa, anoSerie, areaConhecimento, componente };
+  }
+
+  function applyEducation(patch: Partial<MaterialEducationFields>) {
+    const normalized = normalizeMaterialEducation(currentEducation(), patch);
+    setEtapa(normalized.etapa);
+    setAnoSerie(normalized.anoSerie);
+    setAreaConhecimento(normalized.areaConhecimento);
+    setComponente(normalized.componente);
+  }
+
+  useEffect(() => {
+    setQuantidade(defaultQuantityForTool(tipo));
+    applyEducation(educationDefaultsForTool(tipo, currentEducation()));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- só ao trocar ferramenta
+  }, [tipo]);
+
   const observacoesPlaceholder = isRedacao
     ? "Ex.: dissertação argumentativa, 25–30 linhas, foco em proposta de intervenção..."
     : "Ex.: linguagem simples, foco em argumentação, exemplos do cotidiano...";
-
-  const quantidadePlaceholder = isRedacao
-    ? "Ex.: 3 textos motivadores, 2 atividades de preparação"
-    : "Ex.: 10 questões, 12 slides";
 
   const gabaritoLabel = isRedacao
     ? "Incluir critérios de avaliação e redação modelo"
@@ -300,10 +346,9 @@ export function MateriaisClient({
 
   function limparFormulario() {
     setTema("");
-    setAnoSerie("");
-    setComponente("");
+    applyEducation(educationDefaultsForTool(tipo, DEFAULT_MATERIAL_EDUCATION));
     setObjetivo("");
-    setQuantidade("10");
+    setQuantidade(defaultQuantityForTool(tipo));
     setDificuldade("media");
     setFormatoJogo("caca-palavras");
     setIncluirGabarito(true);
@@ -452,8 +497,18 @@ td,th{border:1px solid #d1d5db;padding:8px;}
         componente,
         tema,
         temaCentral: tema,
-        objetivo,
-        objetivos: objetivo,
+        objetivo: [
+          areaConhecimento ? `Área: ${areaConhecimento}` : "",
+          objetivo,
+        ]
+          .filter(Boolean)
+          .join("\n"),
+        objetivos: [
+          areaConhecimento ? `Área: ${areaConhecimento}` : "",
+          objetivo,
+        ]
+          .filter(Boolean)
+          .join("\n"),
         quantidade,
         dificuldade,
         formatoJogo: isJogo ? formatoJogo : null,
@@ -572,6 +627,82 @@ td,th{border:1px solid #d1d5db;padding:8px;}
           ) : null}
 
           <div className="mt-5 grid gap-4 md:grid-cols-2">
+            <label>
+              <span className="mb-2 block text-sm font-black text-slate-700">
+                Etapa de ensino
+              </span>
+              <select
+                value={etapa}
+                onChange={(event) =>
+                  applyEducation({ etapa: event.target.value })
+                }
+                className={SELECT_FIELD_CLASS}
+              >
+                {EDUCATION_STAGES.map((stage) => (
+                  <option key={stage} value={stage}>
+                    {stage}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label>
+              <span className="mb-2 block text-sm font-black text-slate-700">
+                Ano / série
+              </span>
+              <select
+                value={anoSerie}
+                onChange={(event) =>
+                  applyEducation({ anoSerie: event.target.value })
+                }
+                className={SELECT_FIELD_CLASS}
+              >
+                {yearOptions.map((year) => (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="md:col-span-2">
+              <span className="mb-2 block text-sm font-black text-slate-700">
+                Área do conhecimento
+              </span>
+              <select
+                value={areaConhecimento}
+                onChange={(event) =>
+                  applyEducation({ areaConhecimento: event.target.value })
+                }
+                className={SELECT_FIELD_CLASS}
+              >
+                {areaOptions.map((area) => (
+                  <option key={area} value={area}>
+                    {area}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="md:col-span-2">
+              <span className="mb-2 block text-sm font-black text-slate-700">
+                Disciplina / componente
+              </span>
+              <select
+                value={componente}
+                onChange={(event) =>
+                  applyEducation({ componente: event.target.value })
+                }
+                className={SELECT_FIELD_CLASS}
+              >
+                {componentOptions.map((item) => (
+                  <option key={item} value={item}>
+                    {item}
+                  </option>
+                ))}
+              </select>
+            </label>
+
             <label className="md:col-span-2">
               <span className="mb-2 block text-sm font-black text-slate-700">
                 {mode.primaryFieldLabel}
@@ -579,49 +710,9 @@ td,th{border:1px solid #d1d5db;padding:8px;}
               <input
                 value={tema}
                 onChange={(event) => setTema(event.target.value)}
-                placeholder="Digite ou escolha um assunto..."
+                placeholder="Digite ou escolha um assunto abaixo..."
                 className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-950 outline-none transition focus:border-slate-950 focus:bg-white"
               />
-            </label>
-
-            <label>
-              <span className="mb-2 block text-sm font-black text-slate-700">
-                Disciplina
-              </span>
-              <input
-                value={componente}
-                onChange={(event) => setComponente(event.target.value)}
-                placeholder="Ex.: Língua Portuguesa"
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-950 outline-none transition focus:border-slate-950 focus:bg-white"
-              />
-            </label>
-
-            <label>
-              <span className="mb-2 block text-sm font-black text-slate-700">
-                Ano escolar
-              </span>
-              <input
-                value={anoSerie}
-                onChange={(event) => setAnoSerie(event.target.value)}
-                placeholder="Ex.: 6º ano, 2ª série EM"
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-950 outline-none transition focus:border-slate-950 focus:bg-white"
-              />
-            </label>
-
-            <label>
-              <span className="mb-2 block text-sm font-black text-slate-700">
-                Etapa
-              </span>
-              <select
-                value={etapa}
-                onChange={(event) => setEtapa(event.target.value)}
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-950 outline-none transition focus:border-slate-950 focus:bg-white"
-              >
-                <option>Educação Infantil</option>
-                <option>Ensino Fundamental</option>
-                <option>Ensino Médio</option>
-                <option>EJA</option>
-              </select>
             </label>
 
             <label>
@@ -633,7 +724,7 @@ td,th{border:1px solid #d1d5db;padding:8px;}
                 onChange={(event) =>
                   setDificuldade(event.target.value as Dificuldade)
                 }
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-950 outline-none transition focus:border-slate-950 focus:bg-white"
+                className={SELECT_FIELD_CLASS}
               >
                 <option value="facil">Fácil</option>
                 <option value="media">Média</option>
@@ -651,7 +742,7 @@ td,th{border:1px solid #d1d5db;padding:8px;}
                   onChange={(event) =>
                     setFormatoJogo(event.target.value as FormatoJogo)
                   }
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-950 outline-none transition focus:border-slate-950 focus:bg-white"
+                  className={SELECT_FIELD_CLASS}
                 >
                   {formatoJogos.map((item) => (
                     <option key={item.id} value={item.id}>
@@ -665,12 +756,17 @@ td,th{border:1px solid #d1d5db;padding:8px;}
                 <span className="mb-2 block text-sm font-black text-slate-700">
                   {isRedacao ? "Estrutura da proposta" : "Quantidade"}
                 </span>
-                <input
+                <select
                   value={quantidade}
                   onChange={(event) => setQuantidade(event.target.value)}
-                  placeholder={quantidadePlaceholder}
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-950 outline-none transition focus:border-slate-950 focus:bg-white"
-                />
+                  className={SELECT_FIELD_CLASS}
+                >
+                  {quantityPresets.map((preset) => (
+                    <option key={preset.value} value={preset.value}>
+                      {preset.label}
+                    </option>
+                  ))}
+                </select>
               </label>
             )}
 

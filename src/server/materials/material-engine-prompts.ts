@@ -20,10 +20,12 @@ function specializedRules(request: MaterialEngineRequest): string[] {
   const { quantidade } = request;
 
   if (request.tipoMaterial === "jogo") {
+    const formato = request.formatoJogo || "jogo pedagógico";
     return [
-      `Formato obrigatório do jogo: ${request.formatoJogo || "jogo pedagógico"}.`,
-      "Preencha o objeto 'game' com 'format', 'rules' (passo a passo de aplicação) e 'components' (peças/recursos necessários).",
-      "Inclua regras claras, componentes do jogo e sequência de aplicação em sala.",
+      `Formato obrigatório do jogo: ${formato}.`,
+      "Preencha 'game.format' com o nome do formato e 'game.rules' com passo a passo de aplicação em sala.",
+      "Preencha 'game.components' com materiais, cartas, termos ou peças necessárias ao formato.",
+      "Para caça-palavras, cruzadinha, bingo, memória, dominó, quiz ou cartas: liste termos/perguntas concretos ligados ao tema em 'components'.",
       "Não transformar jogo em lista de exercícios comum.",
     ];
   }
@@ -80,33 +82,41 @@ function specializedRules(request: MaterialEngineRequest): string[] {
 
   if (request.tipoMaterial === "mapa-mental") {
     return [
-      "Preencher o objeto 'mindMap' com 'central' (conceito central) e 'branches' (ramos principais).",
-      "Cada ramo deve ter 'title' e 'items' (subtópicos curtos e hierárquicos).",
-      "Gerar entre 4 e 7 ramos, cada um com 2 a 5 subtópicos.",
+      `Gerar exatamente ${quantidade} ramos no array 'mindMap.branches'.`,
+      "Preencher 'mindMap.central' com o conceito central do tema.",
+      "Cada ramo deve ter 'title' e 'items' (2 a 5 subtópicos hierárquicos e conectados ao central).",
+      "Explicitar relações entre ramos nas 'teacherNotes' (como os conceitos se conectam).",
       "Não escrever parágrafos longos: o mapa mental é hierárquico e sintético.",
     ];
   }
 
   if (request.tipoMaterial === "plano-aula") {
+    const aulas =
+      quantidade <= 1
+        ? "uma aula completa"
+        : `${quantidade} aulas/encontros encadeados`;
     return [
-      "Preencher o objeto 'lessonPlan.steps' com as etapas da aula em ordem cronológica.",
-      "Cada etapa deve ter 'stage' (ex.: Introdução, Desenvolvimento, Prática, Fechamento), 'duration' (tempo estimado), 'description' e 'resources'.",
-      "Incluir objetivos de aprendizagem nas 'sections' e formas de avaliação nas 'teacherNotes'.",
+      `Planejar ${aulas} no objeto 'lessonPlan.steps' e nas 'sections'.`,
+      "Cada etapa em 'lessonPlan.steps' deve ter 'stage', 'duration', 'description' e 'resources'.",
+      "Referenciar competências e habilidades da BNCC quando aplicável ao componente e ano/série.",
+      "Incluir objetivos de aprendizagem nas 'sections' e critérios de avaliação nas 'teacherNotes'.",
     ];
   }
 
   if (request.tipoMaterial === "sequencia") {
     return [
-      "Organizar como sequência didática com aulas/encontros progressivos nas 'sections'.",
-      "Cada seção representa uma aula com objetivos, conteúdos e atividades encadeadas.",
+      `Organizar exatamente ${quantidade} aulas/encontros nas 'sections' (uma seção por encontro).`,
+      "Cada seção: título da aula, objetivos, conteúdos, atividades e avaliação formativa.",
+      "Encadear progressão didática entre as aulas.",
       "Incluir avaliação processual e produto final nas 'teacherNotes'.",
     ];
   }
 
   if (request.tipoMaterial === "projeto") {
     return [
-      "Estruturar como projeto pedagógico: problema norteador, justificativa, etapas de execução e produto final nas 'sections'.",
-      "Detalhar tarefas concretas e papéis dos estudantes nas 'activities'.",
+      `Estruturar o projeto em ${quantidade} etapas/fases nas 'sections' (uma seção por fase).`,
+      "Incluir problema norteador, justificativa, cronograma e produto final.",
+      "Detalhar tarefas e papéis dos estudantes nas 'activities'.",
       "Definir critérios de avaliação do projeto nas 'teacherNotes'.",
     ];
   }
@@ -114,36 +124,37 @@ function specializedRules(request: MaterialEngineRequest): string[] {
   if (request.tipoMaterial === "redacao") {
     return [
       "Gerar proposta de redação para produção textual pelo estudante (não corrigir redação já escrita).",
-      "Incluir tema, gênero textual, comando claro e 2 a 4 textos motivadores nas 'sections'.",
-      "Incluir atividades de preparação: leitura dos motivadores, tese, argumentos e planejamento de parágrafos nas 'activities'.",
-      "Incluir critérios de avaliação e competências (matriz ENEM ou escolar) nas 'teacherNotes'.",
+      `Incluir exatamente ${quantidade} textos motivadores — cada um em uma 'section' com título que identifique o motivador.`,
+      "Incluir tema, gênero textual e comando de produção em 'sections' ou 'summary'.",
+      "Incluir atividades de preparação (tese, argumentos, planejamento) em 'activities'.",
+      "Incluir critérios de avaliação e competências (matriz ENEM ou escolar) em 'teacherNotes'.",
       request.incluirGabarito
         ? "Incluir redação modelo de referência e critérios de nota no 'answerKey'."
-        : "Não incluir redação modelo.",
+        : "Não incluir redação modelo no 'answerKey'.",
     ];
   }
 
   if (request.tipoMaterial === "resumo") {
     return [
-      "Entregar um resumo guiado por seções temáticas, com os pontos-chave em 'bullets'.",
-      "Incluir um quadro de revisão ou perguntas de fixação nas 'activities'.",
+      `Organizar o resumo em ${quantidade} seções temáticas no array 'sections', cada uma com bullets objetivos.`,
+      "Incluir quadro de revisão ou perguntas de fixação nas 'activities'.",
     ];
   }
 
   if (request.tipoMaterial === "atividade") {
     return [
-      `Gerar aproximadamente ${quantidade} itens/exercícios distribuídos nas 'activities'.`,
-      "Cada atividade deve ter instruções claras e itens aplicáveis em sala.",
+      `Gerar exatamente ${quantidade} atividades no array 'activities' (um objeto por atividade).`,
+      "Cada atividade: 'title', 'instructions' claras e 'items' aplicáveis em sala.",
       request.incluirGabarito
-        ? "Consolidar as respostas no array 'answerKey'."
+        ? "Preencher 'answerKey' com a solução de cada item/atividade."
         : "Não incluir gabarito.",
     ];
   }
 
   if (request.tipoMaterial === "apostila") {
     return [
-      "Estruturar por seções progressivas com explicação antes da prática.",
-      "Não iniciar a apostila diretamente com questões.",
+      `Estruturar a apostila em ${quantidade} capítulos/seções progressivas no array 'sections'.`,
+      "Explicar o conteúdo antes da prática em cada seção; não iniciar com questões.",
       "Fechar com atividades de fixação nas 'activities'.",
     ];
   }

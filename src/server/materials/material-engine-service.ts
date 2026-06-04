@@ -1,9 +1,14 @@
+import { buildVisualGameMaterial } from "@/lib/materiais/game-builder";
 import { generateGeminiJSON } from "../ai/gemini-client";
 import { getMaterialEngineSchema } from "./material-engine-schemas";
 import {
   buildMaterialEnginePrompt,
   buildMaterialEngineSystemInstruction,
 } from "./material-engine-prompts";
+import {
+  buildQualityRetryPrompt,
+  getEngineOutputIssues,
+} from "./material-engine-quality";
 import {
   normalizeMaterialEngineRequest,
   validateMaterialEngineRequest,
@@ -69,9 +74,24 @@ function renderActivities(response: MaterialEngineResponse): string {
   `;
 }
 
-function renderExam(response: MaterialEngineResponse): string {
+type RenderContext = {
+  tipo: MaterialEngineType;
+  incluirGabarito: boolean;
+};
+
+function mapGameFormato(formato: string | null): string {
+  const raw = (formato || "caca-palavras").toLowerCase();
+  if (raw === "caca-palavras") return "caca_palavras";
+  if (raw === "trilha") return "trilha";
+  return raw.replace(/-/g, "_");
+}
+
+function renderExam(response: MaterialEngineResponse, ctx?: RenderContext): string {
   const questions = response.exam?.questions ?? [];
   if (!questions.length) return "";
+
+  const tipo = ctx?.tipo ?? "prova";
+  const heading = tipo === "lista" ? "Exercícios" : "Questões";
 
   const body = questions
     .map((question) => {
@@ -91,7 +111,7 @@ function renderExam(response: MaterialEngineResponse): string {
     })
     .join("");
 
-  return `<section><h2>Questões</h2>${body}</section>`;
+  return `<section><h2>${heading}</h2>${body}</section>`;
 }
 
 function renderGame(response: MaterialEngineResponse): string {
@@ -277,21 +297,29 @@ function renderMindMap(response: MaterialEngineResponse): string {
   const mindMap = response.mindMap;
   if (!mindMap || !mindMap.branches.length) return "";
 
-  const branches = mindMap.branches
+  const branchCards = mindMap.branches
     .map(
-      (branch) => `
-        <li>
-          <strong>${escapeHtml(branch.title)}</strong>
+      (branch, index) => `
+        <div class="planify-mindmap-branch" style="flex:1 1 220px;min-width:200px;border:2px solid #6366f1;border-radius:14px;padding:14px;background:#f8fafc;">
+          <p style="margin:0 0 8px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:#4f46e5;">Ramo ${index + 1}</p>
+          <h3 style="margin:0 0 10px;font-size:16px;color:#0f172a;">${escapeHtml(branch.title)}</h3>
           ${asList(branch.items || [])}
-        </li>
+        </div>
       `,
     )
     .join("");
 
   return `
-    <section>
-      <h2>Mapa mental: ${escapeHtml(mindMap.central)}</h2>
-      <ul>${branches}</ul>
+    <section class="planify-mindmap">
+      <h2>Mapa mental</h2>
+      <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:stretch;margin:16px 0;">
+        <div style="flex:1 1 100%;text-align:center;padding:20px;border-radius:16px;background:linear-gradient(135deg,#4f46e5,#6366f1);color:#fff;box-shadow:0 12px 28px -16px #4f46e5;">
+          <p style="margin:0;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;opacity:0.9;">Conceito central</p>
+          <p style="margin:8px 0 0;font-size:22px;font-weight:900;">${escapeHtml(mindMap.central)}</p>
+        </div>
+        ${branchCards}
+      </div>
+      <p style="margin:12px 0 0;font-size:13px;color:#64748b;">Conexões: cada ramo articula subtópicos ao conceito central — use as setas implícitas na discussão em sala.</p>
     </section>
   `;
 }
@@ -315,9 +343,33 @@ function renderLessonPlan(response: MaterialEngineResponse): string {
   return `<section><h2>Etapas da aula</h2>${body}</section>`;
 }
 
-function renderAnswerKey(response: MaterialEngineResponse): string {
-  if (!response.answerKey.length) return "";
-  return `<section><h2>Gabarito</h2>${asList(response.answerKey, true)}</section>`;
+function renderAnswerKey(response: MaterialEngineResponse, ctx?: RenderContext): string {
+  if (!ctx?.incluirGabarito) return "";
+
+  const merged = [...response.answerKey];
+  const label = ctx.tipo === "lista" ? "Exercício" : "Questão";
+
+  for (const question of response.exam?.questions ?? []) {
+    const answer = question.answer?.trim();
+    if (!answer) continue;
+    const entry = `${label} ${question.number}: ${answer}`;
+    const exists = merged.some(
+      (line) =>
+        line.includes(`${label} ${question.number}:`) ||
+        line.includes(`Questão ${question.number}:`) ||
+        line.includes(`Exercício ${question.number}:`),
+    );
+    if (!exists) merged.push(entry);
+  }
+
+  if (!merged.length) return "";
+
+  const title =
+    ctx.tipo === "prova" || ctx.tipo === "lista"
+      ? "Gabarito e critérios de correção"
+      : "Gabarito";
+
+  return `<section><h2>${title}</h2>${asList(merged, true)}</section>`;
 }
 
 function renderTeacherNotes(response: MaterialEngineResponse): string {
@@ -325,7 +377,7 @@ function renderTeacherNotes(response: MaterialEngineResponse): string {
   return `<section><h2>Notas para o professor</h2>${asList(response.teacherNotes)}</section>`;
 }
 
-function renderHtml(response: MaterialEngineResponse): string {
+function renderHtml(response: MaterialEngineResponse, ctx?: RenderContext): string {
   if (response.html && /<[a-z][\s\S]*>/i.test(response.html)) {
     return response.html;
   }
@@ -337,9 +389,9 @@ function renderHtml(response: MaterialEngineResponse): string {
     renderSlides(response),
     renderGame(response),
     renderFlashcards(response),
-    renderExam(response),
+    renderExam(response, ctx),
     renderActivities(response),
-    renderAnswerKey(response),
+    renderAnswerKey(response, ctx),
     renderTeacherNotes(response),
   ]
     .filter(Boolean)
@@ -511,6 +563,42 @@ function normalizeOutput(
   return normalized;
 }
 
+function renderDocumentHtml(
+  request: MaterialEngineRequest,
+  normalized: MaterialEngineResponse,
+): string {
+  const ctx: RenderContext = {
+    tipo: request.tipoMaterial,
+    incluirGabarito: request.incluirGabarito,
+  };
+  const base = renderHtml(normalized, ctx);
+
+  if (request.tipoMaterial !== "jogo") return base;
+
+  try {
+    const visual = buildVisualGameMaterial({
+      titulo: normalized.title,
+      etapa: request.etapa,
+      anoSerie: request.anoSerie,
+      componenteCurricular: request.componenteCurricular,
+      tipo: "jogo",
+      modeloJogo: mapGameFormato(request.formatoJogo),
+      tema: request.tema,
+      objetivos: request.objetivo,
+      conteudos: request.tema,
+      orientacoes: request.objetivo || undefined,
+    });
+    const extra = visual.printHtml || visual.visualHtml || "";
+    if (extra) {
+      return `${base}<div class="planify-jogo-visual">${extra}</div>`;
+    }
+  } catch {
+    // Mantém entrega textual se o builder visual falhar.
+  }
+
+  return base;
+}
+
 function maxOutputTokensFor(type: MaterialEngineType): number {
   if (type === "slides") return 12000;
   if (type === "flashcards" || type === "mapa-mental") return 8000;
@@ -534,49 +622,53 @@ export async function generateMaterialByEngine(input: MaterialEngineInput) {
   const systemInstruction = buildMaterialEngineSystemInstruction(
     request.tipoMaterial,
   );
-  const prompt = buildMaterialEnginePrompt(request);
+  const basePrompt = buildMaterialEnginePrompt(request);
   const maxOutputTokens = maxOutputTokensFor(request.tipoMaterial);
 
-  let generated: Partial<MaterialEngineResponse> | null = null;
+  let activePrompt = basePrompt;
   let lastError: unknown = null;
 
-  for (let attempt = 0; attempt < 2; attempt += 1) {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
     try {
-      generated = await generateGeminiJSON<Partial<MaterialEngineResponse>>({
+      const generated = await generateGeminiJSON<Partial<MaterialEngineResponse>>({
         systemInstruction,
-        prompt,
+        prompt: activePrompt,
         temperature: 0.32,
         topP: 0.86,
         maxOutputTokens,
         responseSchema: schema,
       });
-      break;
+
+      const normalized = normalizeOutput(request, generated);
+      const issues = getEngineOutputIssues(request, normalized);
+
+      if (issues.length && attempt < 2) {
+        activePrompt = `${basePrompt}\n\n${buildQualityRetryPrompt(request, issues)}`;
+        continue;
+      }
+
+      const html = renderDocumentHtml(request, normalized);
+
+      return {
+        ok: true as const,
+        status: 200,
+        data: {
+          tipoMaterial: request.tipoMaterial,
+          html,
+          estrutura: normalized,
+        },
+      };
     } catch (error) {
       lastError = error;
     }
   }
 
-  if (!generated) {
-    return {
-      ok: false as const,
-      status: 502,
-      message:
-        lastError instanceof Error
-          ? lastError.message
-          : "A IA não conseguiu gerar o material. Tente novamente.",
-    };
-  }
-
-  const normalized = normalizeOutput(request, generated);
-  const html = renderHtml(normalized);
-
   return {
-    ok: true as const,
-    status: 200,
-    data: {
-      tipoMaterial: request.tipoMaterial,
-      html,
-      estrutura: normalized,
-    },
+    ok: false as const,
+    status: 502,
+    message:
+      lastError instanceof Error
+        ? lastError.message
+        : "A IA não conseguiu gerar o material. Tente novamente.",
   };
 }

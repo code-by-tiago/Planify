@@ -15,6 +15,7 @@ import {
   normalizeMaterialEducation,
   type MaterialEducationFields,
 } from "@/lib/educacao/education-options";
+import { toolSupportsGabarito } from "@/lib/educacao/material-form-config";
 import {
   defaultQuantityForTool,
   getQuantityPresets,
@@ -37,7 +38,9 @@ type FormatoJogo =
   | "quiz"
   | "bingo"
   | "trilha"
-  | "memoria";
+  | "memoria"
+  | "domino"
+  | "cartas";
 
 type MaterialHistoryItem = {
   id: string;
@@ -57,9 +60,18 @@ const formatoJogos: { id: FormatoJogo; label: string }[] = [
   { id: "cruzadinha", label: "Cruzadinha" },
   { id: "quiz", label: "Quiz" },
   { id: "bingo", label: "Bingo" },
-  { id: "trilha", label: "Trilha" },
+  { id: "trilha", label: "Trilha pedagógica" },
   { id: "memoria", label: "Memória" },
+  { id: "domino", label: "Dominó" },
+  { id: "cartas", label: "Cartas" },
 ];
+
+type ConteudoSugerido = {
+  id: string;
+  titulo: string;
+  descricao: string;
+  objetivos: string[];
+};
 
 const sugestoesTema: Record<PlanifyToolId, string[]> = {
   apostila: ["Amazônia e biodiversidade", "Frações no cotidiano", "Romantismo no Brasil"],
@@ -123,8 +135,26 @@ function extractHtmlFromResponse(data: unknown): string {
   }
 
   const record = data as Record<string, unknown>;
+
+  if (typeof record.html === "string" && record.html.trim()) {
+    return record.html;
+  }
+
+  const aiPayload =
+    record.data && typeof record.data === "object"
+      ? (record.data as Record<string, unknown>)
+      : null;
+
+  if (aiPayload) {
+    for (const field of ["printHtml", "visualHtml", "html"]) {
+      const value = aiPayload[field];
+      if (typeof value === "string" && value.trim()) {
+        return value;
+      }
+    }
+  }
+
   const possibleFields = [
-    "html",
     "conteudoHtml",
     "materialHtml",
     "documentoHtml",
@@ -156,7 +186,7 @@ function extractHtmlFromResponse(data: unknown): string {
 
 function buildTitle(mode: PlanifyToolId, tema: string): string {
   const config = getPlanifyTool(mode);
-  return `${config.shortTitle} â€” ${tema || "Material Planify"}`;
+  return `${config.shortTitle} — ${tema || "Material Planify"}`;
 }
 
 function loadHistory(): MaterialHistoryItem[] {
@@ -206,6 +236,13 @@ export function MateriaisClient({
     DEFAULT_MATERIAL_EDUCATION.componente,
   );
   const [objetivo, setObjetivo] = useState("");
+  const [observacoes, setObservacoes] = useState("");
+  const [alertasGeracao, setAlertasGeracao] = useState<string[]>([]);
+  const [pipelineGeracao, setPipelineGeracao] = useState<string | null>(null);
+  const [conteudosSugeridos, setConteudosSugeridos] = useState<
+    ConteudoSugerido[] | null
+  >(null);
+  const [sugerindoConteudos, setSugerindoConteudos] = useState(false);
   const [quantidade, setQuantidade] = useState(
     defaultQuantityForTool(initialTipo ?? "slides"),
   );
@@ -286,6 +323,7 @@ export function MateriaisClient({
   const mode = useMemo(() => getPlanifyTool(tipo), [tipo]);
   const isJogo = tipo === "jogo";
   const isRedacao = tipo === "redacao";
+  const showGabarito = toolSupportsGabarito(tipo);
 
   const yearOptions = useMemo(() => getYearOptions(etapa), [etapa]);
   const areaOptions = useMemo(() => getAreaOptions(etapa), [etapa]);
@@ -313,9 +351,12 @@ export function MateriaisClient({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- só ao trocar ferramenta
   }, [tipo]);
 
+  const objetivoPlaceholder =
+    "Ex.: desenvolver argumentação, revisar conceitos-chave, trabalhar leitura crítica...";
+
   const observacoesPlaceholder = isRedacao
     ? "Ex.: dissertação argumentativa, 25–30 linhas, foco em proposta de intervenção..."
-    : "Ex.: linguagem simples, foco em argumentação, exemplos do cotidiano...";
+    : "Ex.: linguagem simples, tempo de aula de 50 min, turma com dificuldade em leitura...";
 
   const gabaritoLabel = isRedacao
     ? "Incluir critérios de avaliação e redação modelo"
@@ -341,13 +382,92 @@ export function MateriaisClient({
     setTipo(novoTipo);
     setResultadoHtml("");
     setErro("");
+    setAlertasGeracao([]);
+    setPipelineGeracao(null);
     setModalAberto(true);
+  }
+
+  async function sugerirConteudosComIA() {
+    if (!tema.trim()) {
+      setErro("Informe o tema antes de pedir sugestões de conteúdo.");
+      return;
+    }
+
+    if (!componente.trim() || !anoSerie.trim()) {
+      setErro("Informe disciplina e ano/série para sugerir conteúdos.");
+      return;
+    }
+
+    setSugerindoConteudos(true);
+    setErro("");
+
+    try {
+      const response = await fetch("/api/ai/material/sugerir-conteudos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          etapa,
+          anoSerie,
+          areaConhecimento,
+          componenteCurricular: componente,
+          tema,
+          tipo,
+          modeloJogo: isJogo ? formatoJogo.replace(/-/g, "_") : undefined,
+          quantidade,
+          observacoes: observacoes.trim() || undefined,
+        }),
+      });
+
+      const data = (await response.json().catch(() => null)) as {
+        success?: boolean;
+        data?: {
+          conteudos?: ConteudoSugerido[];
+          alertas?: string[];
+        };
+        error?: { message?: string };
+      };
+
+      if (!response.ok || !data?.success || !data.data?.conteudos?.length) {
+        throw new Error(
+          data?.error?.message || "Não foi possível sugerir conteúdos agora.",
+        );
+      }
+
+      setConteudosSugeridos(data.data.conteudos);
+      if (data.data.alertas?.length) {
+        setAlertasGeracao(data.data.alertas);
+      }
+    } catch (error) {
+      setErro(
+        error instanceof Error
+          ? error.message
+          : "Erro ao sugerir conteúdos com IA.",
+      );
+    } finally {
+      setSugerindoConteudos(false);
+    }
+  }
+
+  function aplicarConteudoSugerido(item: ConteudoSugerido) {
+    setTema(item.titulo);
+    if (item.objetivos?.length) {
+      setObjetivo(item.objetivos.join("\n"));
+    }
+    setObservacoes((prev) =>
+      prev.trim()
+        ? prev
+        : item.descricao,
+    );
   }
 
   function limparFormulario() {
     setTema("");
     applyEducation(educationDefaultsForTool(tipo, DEFAULT_MATERIAL_EDUCATION));
     setObjetivo("");
+    setObservacoes("");
+    setAlertasGeracao([]);
+    setPipelineGeracao(null);
+    setConteudosSugeridos(null);
     setQuantidade(defaultQuantityForTool(tipo));
     setDificuldade("media");
     setFormatoJogo("caca-palavras");
@@ -486,8 +606,17 @@ td,th{border:1px solid #d1d5db;padding:8px;}
 
     setLoading(true);
     setResultadoHtml("");
+    setAlertasGeracao([]);
+    setPipelineGeracao(null);
 
     try {
+      const objetivoComposto = [
+        areaConhecimento ? `Área: ${areaConhecimento}` : "",
+        objetivo.trim(),
+      ]
+        .filter(Boolean)
+        .join("\n");
+
       const payload = {
         tipoMaterial: tipo,
         tipo,
@@ -497,22 +626,14 @@ td,th{border:1px solid #d1d5db;padding:8px;}
         componente,
         tema,
         temaCentral: tema,
-        objetivo: [
-          areaConhecimento ? `Área: ${areaConhecimento}` : "",
-          objetivo,
-        ]
-          .filter(Boolean)
-          .join("\n"),
-        objetivos: [
-          areaConhecimento ? `Área: ${areaConhecimento}` : "",
-          objetivo,
-        ]
-          .filter(Boolean)
-          .join("\n"),
+        objetivo: objetivoComposto,
+        objetivos: objetivoComposto,
+        observacoes: observacoes.trim() || undefined,
         quantidade,
         dificuldade,
         formatoJogo: isJogo ? formatoJogo : null,
-        incluirGabarito,
+        incluirGabarito: showGabarito && incluirGabarito,
+        areaConhecimento,
       };
 
       const response = await fetch("/api/materiais/gerar", {
@@ -542,6 +663,24 @@ td,th{border:1px solid #d1d5db;padding:8px;}
       }
 
       setResultadoHtml(html);
+
+      if (data && typeof data === "object") {
+        const record = data as Record<string, unknown>;
+        const alertas = Array.isArray(record.alertas)
+          ? record.alertas.map((item) => String(item)).filter(Boolean)
+          : [];
+        if (alertas.length) setAlertasGeracao(alertas);
+
+        if (typeof record.pipeline === "string") {
+          const labels: Record<string, string> = {
+            ai: "Motor pedagógico completo",
+            engine: "Motor visual dedicado",
+            "engine-fallback": "Motor auxiliar (fallback)",
+          };
+          setPipelineGeracao(labels[record.pipeline] ?? record.pipeline);
+        }
+      }
+
       salvarHistorico(html);
     } catch (error) {
       const message =
@@ -704,14 +843,59 @@ td,th{border:1px solid #d1d5db;padding:8px;}
             </label>
 
             <label className="md:col-span-2">
-              <span className="mb-2 block text-sm font-black text-slate-700">
-                {mode.primaryFieldLabel}
+              <span className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                <span className="text-sm font-black text-slate-700">
+                  {mode.primaryFieldLabel}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => void sugerirConteudosComIA()}
+                  disabled={sugerindoConteudos || loading}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-black text-indigo-700 transition hover:border-indigo-400 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <PlanifyIcon name="spark" className="h-3.5 w-3.5" />
+                  {sugerindoConteudos ? "Sugerindo..." : "Sugerir conteúdos"}
+                </button>
               </span>
               <input
                 value={tema}
                 onChange={(event) => setTema(event.target.value)}
                 placeholder="Digite ou escolha um assunto abaixo..."
                 className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-950 outline-none transition focus:border-slate-950 focus:bg-white"
+              />
+            </label>
+
+            {conteudosSugeridos && conteudosSugeridos.length > 0 ? (
+              <div className="md:col-span-2 rounded-2xl border border-indigo-100 bg-indigo-50/60 p-4">
+                <p className="text-xs font-black uppercase tracking-wide text-indigo-800">
+                  Sugestões de conteúdo (IA)
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {conteudosSugeridos.map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => aplicarConteudoSugerido(item)}
+                      className="rounded-xl border border-indigo-200 bg-white px-3 py-2 text-left text-xs font-bold text-slate-700 transition hover:border-indigo-500 hover:text-indigo-900"
+                      title={item.descricao}
+                    >
+                      {item.titulo}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            <label className="md:col-span-2">
+              <span className="mb-2 block text-sm font-black text-slate-700">
+                Objetivo pedagógico (opcional)
+              </span>
+              <textarea
+                value={objetivo}
+                onChange={(event) => setObjetivo(event.target.value)}
+                placeholder={objetivoPlaceholder}
+                rows={2}
+                className="w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-950 outline-none transition focus:border-slate-950 focus:bg-white"
               />
             </label>
 
@@ -775,8 +959,8 @@ td,th{border:1px solid #d1d5db;padding:8px;}
                 Observações opcionais
               </span>
               <textarea
-                value={objetivo}
-                onChange={(event) => setObjetivo(event.target.value)}
+                value={observacoes}
+                onChange={(event) => setObservacoes(event.target.value)}
                 placeholder={observacoesPlaceholder}
                 rows={3}
                 className="w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-950 outline-none transition focus:border-slate-950 focus:bg-white"
@@ -798,15 +982,23 @@ td,th{border:1px solid #d1d5db;padding:8px;}
           </div>
 
           <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
-            <label className="flex cursor-pointer items-center gap-3 rounded-2xl bg-slate-50 px-4 py-3 text-sm font-bold text-slate-700">
-              <input
-                type="checkbox"
-                checked={incluirGabarito}
-                onChange={(event) => setIncluirGabarito(event.target.checked)}
-                className="h-4 w-4 accent-slate-950"
-              />
-              {gabaritoLabel}
-            </label>
+            {showGabarito ? (
+              <label className="flex cursor-pointer items-center gap-3 rounded-2xl bg-slate-50 px-4 py-3 text-sm font-bold text-slate-700">
+                <input
+                  type="checkbox"
+                  checked={incluirGabarito}
+                  onChange={(event) =>
+                    setIncluirGabarito(event.target.checked)
+                  }
+                  className="h-4 w-4 accent-slate-950"
+                />
+                {gabaritoLabel}
+              </label>
+            ) : (
+              <span className="text-sm font-semibold text-slate-500">
+                Gabarito não se aplica a esta ferramenta.
+              </span>
+            )}
 
             <button
               type="button"
@@ -854,6 +1046,28 @@ td,th{border:1px solid #d1d5db;padding:8px;}
             </div>
           ) : resultadoHtml ? (
             <div>
+              {(pipelineGeracao || alertasGeracao.length > 0) && (
+                <div className="mb-4 space-y-3">
+                  {pipelineGeracao ? (
+                    <p className="text-xs font-bold text-slate-500">
+                      Entrega:{" "}
+                      <span className="font-black text-indigo-700">
+                        {pipelineGeracao}
+                      </span>
+                    </p>
+                  ) : null}
+                  {alertasGeracao.length > 0 ? (
+                    <aside className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+                      <p className="font-black">Avisos do Planify</p>
+                      <ul className="mt-2 list-disc space-y-1 pl-5 font-semibold">
+                        {alertasGeracao.map((item) => (
+                          <li key={item}>{item}</li>
+                        ))}
+                      </ul>
+                    </aside>
+                  ) : null}
+                </div>
+              )}
               <div className="mb-4 flex flex-wrap justify-end gap-2">
                 <button
                   type="button"

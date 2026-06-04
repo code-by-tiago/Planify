@@ -16,9 +16,9 @@ function toSafeQuantity(value: unknown): number {
 }
 
 function normalizeType(value: unknown): MaterialEngineType {
-  const raw = asText(value, "apostila").toLowerCase() as MaterialEngineType;
+  const raw = asText(value, "").toLowerCase() as MaterialEngineType;
   if (MATERIAL_ENGINE_TYPES.includes(raw)) return raw;
-  return "apostila";
+  return raw;
 }
 
 export function normalizeMaterialEngineRequest(
@@ -50,6 +50,10 @@ export function validateMaterialEngineRequest(
     errors.push("Informe o ano/série para adequar a linguagem.");
   if (!request.componenteCurricular)
     errors.push("Informe o componente curricular.");
+
+  if (!MATERIAL_ENGINE_TYPES.includes(request.tipoMaterial)) {
+    errors.push("Tipo de material inválido. Selecione uma ferramenta do Planify.");
+  }
 
   if (request.tipoMaterial === "jogo" && !request.formatoJogo) {
     errors.push("Selecione o formato do jogo.");

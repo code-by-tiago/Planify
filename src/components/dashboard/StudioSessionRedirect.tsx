@@ -26,7 +26,9 @@ export default function StudioSessionRedirect() {
         };
 
         if (data.authenticated && data.premium) {
-          router.replace("/dashboard");
+          const search =
+            typeof window !== "undefined" ? window.location.search : "";
+          router.replace(search ? `/dashboard${search}` : "/dashboard");
         }
       } catch {
         /* visitante ou erro — permanece na landing */

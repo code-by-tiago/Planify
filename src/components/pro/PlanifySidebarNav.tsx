@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useMemo, type ReactNode, type RefObject } from "react";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { PlanifyNavIcon, studioToolHref } from "@/components/pro/PlanifyNavIcon";
-import { dashboardToolHref } from "@/lib/pro/toolRoutes";
+import { dashboardToolHref, homeToolHref } from "@/lib/pro/toolRoutes";
 import type { DashboardSectionId } from "@/lib/pro/dashboardViews";
 import {
   appNavigation,
@@ -80,7 +80,9 @@ export function PlanifySidebarNav({
   function isToolSelected(toolId: string): boolean {
     if (mode === "studio") return selectedToolId === toolId;
     return (
-      (pathname === "/dashboard" || pathname === "/materiais") &&
+      (pathname === "/" ||
+        pathname === "/dashboard" ||
+        pathname === "/materiais") &&
       activeTipo === toolId
     );
   }
@@ -273,7 +275,7 @@ export function PlanifySidebarNav({
 
                 const href =
                   mode === "public"
-                    ? dashboardToolHref(tool.id)
+                    ? homeToolHref(tool.id)
                     : studioToolHref(tool.id);
 
                 return (

@@ -211,7 +211,10 @@ export default async function PlanosPage({ searchParams }: PlanosPageProps) {
           </div>
         )}
 
-        <div className="mt-12 grid items-stretch gap-6 lg:grid-cols-3">
+        <div
+          id="precos"
+          className="mt-12 grid scroll-mt-28 items-stretch gap-6 lg:grid-cols-3"
+        >
           {billingPlans.map((plan) => (
             <article
               key={plan.key}
@@ -413,28 +416,39 @@ export default async function PlanosPage({ searchParams }: PlanosPageProps) {
         </div>
       </section>
 
-      {/* CTA */}
+      {/* CTA — alinhado à página de planos (sem “grátis” contraditório) */}
       <section className="mx-auto max-w-7xl px-5 pb-16 sm:px-8">
-        <div className="rounded-[2rem] bg-gradient-to-br from-blue-600 to-blue-700 px-8 py-10 text-center text-white sm:px-12">
-          <h2 className="text-2xl font-black sm:text-3xl">
-            Pronto para começar grátis?
-          </h2>
-          <p className="mx-auto mt-3 max-w-lg text-sm font-medium text-blue-100">
-            Crie sua conta, escolha um plano e acesse o Construtor de aula com as
-            13 ferramentas do Planify.
+        <div className="rounded-[2rem] border border-indigo-500/20 bg-gradient-to-br from-indigo-600 via-violet-600 to-indigo-700 px-8 py-10 text-center shadow-lg shadow-indigo-900/15 sm:px-12">
+          <p className="text-[10px] font-black uppercase tracking-[0.22em] text-indigo-200">
+            Próximo passo
           </p>
-          <div className="mt-6 flex flex-wrap justify-center gap-3">
+          <h2 className="mt-2 text-2xl font-black text-white sm:text-3xl">
+            Escolha um plano e entre no painel
+          </h2>
+          <p className="mx-auto mt-3 max-w-xl text-sm font-medium leading-7 text-indigo-100">
+            Os valores estão logo acima. Crie sua conta para assinar com checkout
+            seguro ou entre com o e-mail da assinatura já ativa para usar as 13
+            ferramentas com IA.
+          </p>
+          <div className="mt-7 flex flex-wrap justify-center gap-3">
+            <Link
+              href="#precos"
+              className="inline-flex items-center gap-2 rounded-full bg-white px-7 py-3.5 text-sm font-bold text-indigo-700 shadow-md transition hover:bg-indigo-50"
+            >
+              Ver planos acima
+              <PlanifyIcon name="arrowRight" className="h-4 w-4" />
+            </Link>
             <Link
               href="/login"
-              className="pl-btn-brand inline-flex items-center gap-2 rounded-full px-7 py-3.5 text-sm font-bold text-slate-900"
+              className="inline-flex items-center gap-2 rounded-full border-2 border-white/90 bg-white/10 px-7 py-3.5 text-sm font-bold text-white backdrop-blur-sm transition hover:bg-white/20"
             >
               Criar conta
             </Link>
             <Link
-              href="/dashboard"
-              className="inline-flex items-center gap-2 rounded-full border border-white/30 px-7 py-3.5 text-sm font-bold text-white hover:bg-white/10"
+              href="/login"
+              className="inline-flex items-center gap-2 rounded-full px-7 py-3.5 text-sm font-bold text-indigo-100 underline-offset-4 transition hover:text-white hover:underline"
             >
-              Acessar painel
+              Já sou assinante — Entrar
             </Link>
           </div>
         </div>

@@ -19,6 +19,7 @@ type PlanifyShellSidebarProps = {
   variant?: "default" | "teachy";
   /** Menu lateral sempre visível (painel /dashboard) */
   alwaysVisible?: boolean;
+  showUserFooter?: boolean;
 };
 
 export function PlanifyShellSidebar({
@@ -28,6 +29,7 @@ export function PlanifyShellSidebar({
   lumiHint = "Toque numa ferramenta e crie em segundos.",
   variant = "default",
   alwaysVisible = false,
+  showUserFooter = true,
 }: PlanifyShellSidebarProps) {
   const isTeachy = variant === "teachy";
   const sidebarClass = isTeachy
@@ -36,7 +38,13 @@ export function PlanifyShellSidebar({
   const brandBorder = isTeachy
     ? "border-slate-200/80"
     : "border-rose-100/50";
-  const footer = <PlanifySidebarUser lumiHint={lumiHint} />;
+  const footer = showUserFooter ? (
+    <PlanifySidebarUser lumiHint={lumiHint} />
+  ) : (
+    <div className="border-t border-slate-200/80 px-4 py-3 text-[11px] font-semibold text-slate-500">
+      {lumiHint}
+    </div>
+  );
 
   const brandBlock = (
     <div className={`shrink-0 border-b ${brandBorder} px-4 py-4`}>
@@ -50,11 +58,11 @@ export function PlanifyShellSidebar({
   if (alwaysVisible) {
     return (
       <aside
-        className={`${sidebarClass} flex h-screen w-[min(17rem,32vw)] min-w-[13.5rem] shrink-0 flex-col overflow-y-auto overscroll-contain border-r`}
+        className={`${sidebarClass} flex h-screen w-[min(18rem,34vw)] min-w-[14.5rem] shrink-0 flex-col overflow-hidden border-r`}
       >
         {brandBlock}
-        <div className="flex flex-1 flex-col">{children}</div>
-        <div className="sticky bottom-0 mt-auto shrink-0">{footer}</div>
+        <div className="flex min-h-0 flex-1 flex-col">{children}</div>
+        <div className="shrink-0">{footer}</div>
       </aside>
     );
   }

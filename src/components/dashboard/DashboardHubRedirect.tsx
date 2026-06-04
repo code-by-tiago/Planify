@@ -4,10 +4,6 @@ import { useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { planifyTools } from "@/lib/pro/planifyTools";
 
-const sectionToTool: Record<string, string> = {
-  planejamentos: "plano-aula",
-};
-
 function isValidTipo(value: string | null): boolean {
   return planifyTools.some((tool) => tool.id === value);
 }
@@ -36,8 +32,8 @@ export default function DashboardHubRedirect({
       return;
     }
 
-    if (legacy && sectionToTool[legacy]) {
-      params.set("tipo", sectionToTool[legacy]);
+    if (legacy) {
+      params.set("secao", legacy);
     } else {
       params.delete("tipo");
     }

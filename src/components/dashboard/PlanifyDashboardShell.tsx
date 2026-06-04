@@ -9,7 +9,11 @@ import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { PlanifyShellSidebar } from "@/components/pro/PlanifyShellSidebar";
 import { PlanifySidebarNav } from "@/components/pro/PlanifySidebarNav";
 import { useSidebarSearchShortcut } from "@/hooks/useSidebarSearchShortcut";
-import { isDashboardSection } from "@/lib/pro/dashboardViews";
+import {
+  dashboardSectionLabels,
+  isDashboardSection,
+  type DashboardSectionId,
+} from "@/lib/pro/dashboardViews";
 import {
   getPlanifyTool,
   planifyTools,
@@ -31,11 +35,6 @@ function readTemaParam(searchParams: URLSearchParams): string {
   }
 }
 
-/** Rotas antigas ?secao= → ferramenta equivalente no painel único */
-const sectionToTool: Partial<Record<string, PlanifyToolId>> = {
-  planejamentos: "plano-aula",
-};
-
 export default function PlanifyDashboardShell() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -48,6 +47,12 @@ export default function PlanifyDashboardShell() {
     const tipo = searchParams.get("tipo");
     return isValidToolId(tipo) ? tipo : null;
   }, [searchParams]);
+
+  const selectedSectionId = useMemo(() => {
+    if (selectedToolId) return null;
+    const secao = searchParams.get("secao");
+    return isDashboardSection(secao) ? secao : null;
+  }, [searchParams, selectedToolId]);
 
   const initialTopic = useMemo(
     () => readTemaParam(searchParams),
@@ -64,18 +69,6 @@ export default function PlanifyDashboardShell() {
     [router, searchParams],
   );
 
-  /** Converte ?secao= legado em ?tipo= e remove secao */
-  useEffect(() => {
-    const secao = searchParams.get("secao");
-    if (!secao || !isDashboardSection(secao) || selectedToolId) return;
-
-    const mapped = sectionToTool[secao];
-    replaceDashboardUrl((params) => {
-      params.delete("secao");
-      if (mapped) params.set("tipo", mapped);
-    });
-  }, [searchParams, selectedToolId, replaceDashboardUrl]);
-
   const selectInicio = useCallback(() => {
     replaceDashboardUrl((params) => {
       params.delete("tipo");
@@ -83,15 +76,21 @@ export default function PlanifyDashboardShell() {
     });
   }, [replaceDashboardUrl]);
 
+  const selectSection = useCallback(
+    (sectionId: DashboardSectionId) => {
+      replaceDashboardUrl((params) => {
+        params.delete("tipo");
+        params.set("secao", sectionId);
+      });
+    },
+    [replaceDashboardUrl],
+  );
+
   const selectTool = useCallback(
-    (toolId: PlanifyToolId | null) => {
+    (toolId: PlanifyToolId) => {
       replaceDashboardUrl((params) => {
         params.delete("secao");
-        if (toolId) {
-          params.set("tipo", toolId);
-        } else {
-          params.delete("tipo");
-        }
+        params.set("tipo", toolId);
       });
     },
     [replaceDashboardUrl],
@@ -127,10 +126,17 @@ export default function PlanifyDashboardShell() {
   );
 
   const activeTool = selectedToolId ? getPlanifyTool(selectedToolId) : null;
+  const hasPanel = Boolean(selectedToolId || selectedSectionId);
+
+  const panelTitle = useMemo(() => {
+    if (activeTool) return activeTool.title;
+    if (selectedSectionId) return dashboardSectionLabels[selectedSectionId];
+    return "Início";
+  }, [activeTool, selectedSectionId]);
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape" && selectedToolId) {
+      if (event.key === "Escape" && hasPanel) {
         selectInicio();
         return;
       }
@@ -139,7 +145,7 @@ export default function PlanifyDashboardShell() {
         !event.metaKey &&
         !event.ctrlKey &&
         !event.altKey &&
-        !selectedToolId
+        !hasPanel
       ) {
         const target = event.target;
         if (
@@ -156,18 +162,20 @@ export default function PlanifyDashboardShell() {
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [selectedToolId, selectInicio]);
+  }, [hasPanel, selectInicio]);
 
   return (
     <div className="planify-ui3 pl-dashboard-root pl-app-bg flex h-screen w-screen overflow-hidden text-slate-950">
-      <PlanifyShellSidebar variant="teachy" alwaysVisible lumiHint="Início e ferramentas no painel">
+      <PlanifyShellSidebar variant="teachy" alwaysVisible lumiHint="Menu fixo · clique para abrir à direita">
         <PlanifySidebarNav
           mode="studio"
-          hideToolList
+          toolCardStyle="thin"
           query={query}
           onQueryChange={setQuery}
           selectedToolId={selectedToolId}
-          onSelectTool={selectTool}
+          selectedSectionId={selectedSectionId}
+          onSelectTool={(id) => (id ? selectTool(id) : selectInicio())}
+          onSelectSection={selectSection}
           onSelectInicio={selectInicio}
           pathname="/dashboard"
           searchInputRef={searchRef}
@@ -175,28 +183,25 @@ export default function PlanifyDashboardShell() {
       </PlanifyShellSidebar>
 
       <main className="flex h-screen min-w-0 flex-1 flex-col overflow-hidden bg-slate-50">
-        {selectedToolId ? (
+        {hasPanel ? (
           <header className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-2.5 sm:px-5">
             <div className="flex min-w-0 flex-1 items-center gap-2">
               <button
                 type="button"
                 onClick={selectInicio}
                 className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-600 transition hover:bg-slate-100"
-                aria-label="Voltar às ferramentas"
+                aria-label="Voltar ao início"
               >
                 <PlanifyIcon name="arrowLeft" className="h-5 w-5" />
               </button>
               <div className="min-w-0">
                 <p className="text-[11px] font-bold text-slate-400">
-                  Ferramenta
+                  {selectedToolId ? "Ferramenta IA" : "Página"}
                 </p>
                 <h1 className="truncate text-base font-black text-slate-950">
-                  {activeTool?.title}
+                  {panelTitle}
                 </h1>
               </div>
-            </div>
-            <div className="hidden shrink-0 sm:block">
-              <PlanifyBrand compact />
             </div>
             <Link
               href="/planos"
@@ -220,13 +225,10 @@ export default function PlanifyDashboardShell() {
         <div className="min-h-0 flex-1 overflow-hidden">
           <PlanifyDashboardMain
             toolId={selectedToolId}
-            query={query}
-            onQueryChange={setQuery}
+            sectionId={selectedSectionId}
             initialTopic={initialTopic}
             onTopicChange={setTopic}
-            onSelectTool={(id) => selectTool(id)}
-            onCloseTool={selectInicio}
-            searchInputRef={searchRef}
+            onClosePanel={selectInicio}
           />
         </div>
       </main>

@@ -10,9 +10,13 @@ const ROWS = [
 
 type TeachyLessonPreviewProps = {
   variant?: "default" | "hero";
+  title?: string;
 };
 
-export function TeachyLessonPreview({ variant = "default" }: TeachyLessonPreviewProps) {
+export function TeachyLessonPreview({
+  variant = "default",
+  title = "Ciclo da água — Aula 1",
+}: TeachyLessonPreviewProps) {
   const salaItems = lessonBundleTools.filter((t) => t.tag === "Sala").slice(0, 3);
   const tarefaItems = lessonBundleTools.filter((t) => t.tag === "Tarefa").slice(0, 3);
   const byTag = { Sala: salaItems, Tarefa: tarefaItems };
@@ -30,7 +34,7 @@ export function TeachyLessonPreview({ variant = "default" }: TeachyLessonPreview
       >
         <div className="border-b border-slate-100 px-5 py-4">
           <h2 className="text-base font-black text-slate-950 sm:text-lg">
-            Ciclo da água — Aula 1
+            {title}
           </h2>
         </div>
 

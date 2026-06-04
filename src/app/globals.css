@@ -2165,7 +2165,9 @@ header .planify-brand-logo__icon {
 html:has(.pl-shell-root),
 html:has(.pl-shell-root) body,
 html:has(.pl-dashboard-root),
-html:has(.pl-dashboard-root) body {
+html:has(.pl-dashboard-root) body,
+html:has(.pl-single-screen),
+html:has(.pl-single-screen) body {
   height: 100%;
   overflow: hidden;
 }

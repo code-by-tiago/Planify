@@ -4,16 +4,18 @@ import Link from "next/link";
 import { useMemo, type ReactNode, type RefObject } from "react";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { PlanifyNavIcon, studioToolHref } from "@/components/pro/PlanifyNavIcon";
+import { dashboardToolHref } from "@/lib/pro/toolRoutes";
 import type { DashboardSectionId } from "@/lib/pro/dashboardViews";
 import {
   appNavigation,
+  planifyToolCount,
   planifyTools,
   toolCategories,
   type AppNavItem,
   type PlanifyToolId,
 } from "@/lib/pro/planifyTools";
 
-export type SidebarNavMode = "studio" | "routes";
+export type SidebarNavMode = "studio" | "routes" | "public";
 
 type PlanifySidebarNavProps = {
   mode: SidebarNavMode;
@@ -26,8 +28,7 @@ type PlanifySidebarNavProps = {
   selectedSectionId?: DashboardSectionId | null;
   onSelectSection?: (sectionId: DashboardSectionId) => void;
   onSelectInicio?: () => void;
-  /** Painel Teachy: ferramentas só na grade principal, não na sidebar */
-  hideToolList?: boolean;
+  toolCardStyle?: "default" | "thin";
   pathname?: string;
   activeTipo?: string | null;
   isNavActive?: (href: string) => boolean;
@@ -45,7 +46,7 @@ export function PlanifySidebarNav({
   selectedSectionId = null,
   onSelectSection,
   onSelectInicio,
-  hideToolList = false,
+  toolCardStyle = "thin",
   pathname = "",
   activeTipo = null,
   isNavActive,
@@ -74,6 +75,8 @@ export function PlanifySidebarNav({
     [filteredTools],
   );
 
+  const isThin = toolCardStyle === "thin";
+
   function isToolSelected(toolId: string): boolean {
     if (mode === "studio") return selectedToolId === toolId;
     return (
@@ -91,6 +94,10 @@ export function PlanifySidebarNav({
         return selectedSectionId === item.panel && !selectedToolId;
       }
       return false;
+    }
+
+    if (mode === "public" && item.panel === "inicio") {
+      return pathname === "/";
     }
 
     if (isNavActive) return isNavActive(item.href);
@@ -113,89 +120,133 @@ export function PlanifySidebarNav({
     }
   }
 
+  function toolButtonClass(selected: boolean) {
+    if (isThin) {
+      return `group flex w-full items-center gap-2 rounded-xl border px-2 py-1.5 text-left transition ${
+        selected
+          ? "border-indigo-300 bg-indigo-50 shadow-sm"
+          : "border-slate-200/90 bg-white/90 hover:border-indigo-200 hover:bg-white"
+      }`;
+    }
+    return `pl-tool-item group flex w-full items-center gap-2.5 rounded-2xl border px-2 py-1.5 text-left text-sm font-bold transition ${
+      selected
+        ? "border-fuchsia-200/80 bg-white shadow-[0_6px_20px_-10px_rgba(236,72,153,0.35)]"
+        : "border-transparent text-violet-700/85"
+    }`;
+  }
+
+  const workspaceItems: AppNavItem[] =
+    mode === "public"
+      ? [
+          { label: "Início", href: "/", icon: "home", panel: "inicio" },
+          {
+            label: "Planejamentos",
+            href: "/dashboard?secao=planejamentos",
+            icon: "clipboard",
+            panel: "planejamentos",
+          },
+          {
+            label: "Editor",
+            href: "/dashboard?secao=editor",
+            icon: "editor",
+            panel: "editor",
+          },
+          {
+            label: "Histórico",
+            href: "/dashboard?secao=historico",
+            icon: "history",
+            panel: "historico",
+          },
+          {
+            label: "Biblioteca",
+            href: "/dashboard?secao=biblioteca",
+            icon: "library",
+            panel: "biblioteca",
+          },
+          {
+            label: "Marketplace",
+            href: "/dashboard?secao=marketplace",
+            icon: "market",
+            panel: "marketplace",
+          },
+          { label: "Planos", href: "/planos", icon: "plans", panel: "external" },
+        ]
+      : appNavigation;
+
   return (
     <>
-      {!hideToolList ? (
-        <div className="shrink-0 px-4 pt-4">
-          <div className="relative">
-            <PlanifyIcon
-              name="search"
-              className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-violet-300"
-            />
-            <input
-              ref={searchInputRef}
-              value={query}
-              onChange={(event) => onQueryChange(event.target.value)}
-              placeholder="Buscar ferramenta… ( / )"
-              aria-label="Buscar ferramenta"
-              className="w-full rounded-2xl border border-rose-100/80 bg-white/90 py-2.5 pl-10 pr-3 text-sm font-semibold text-slate-800 outline-none transition placeholder:text-violet-300 focus:border-fuchsia-300 focus:ring-4 focus:ring-fuchsia-100"
-            />
-          </div>
-          {primaryAction ? <div className="mt-3">{primaryAction}</div> : null}
+      <div className="shrink-0 px-3 pt-3">
+        <div className="relative">
+          <PlanifyIcon
+            name="search"
+            className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400"
+          />
+          <input
+            ref={searchInputRef}
+            value={query}
+            onChange={(event) => onQueryChange(event.target.value)}
+            placeholder="Buscar ferramenta…"
+            aria-label="Buscar ferramenta"
+            className="h-9 w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-2 text-xs font-semibold text-slate-800 outline-none placeholder:text-slate-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+          />
         </div>
-      ) : primaryAction ? (
-        <div className="shrink-0 px-4 pt-4">{primaryAction}</div>
-      ) : null}
+        {primaryAction ? <div className="mt-2">{primaryAction}</div> : null}
+      </div>
 
-      <nav className="flex-1 space-y-5 px-4 py-4">
+      <nav className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-3 py-3">
         <div>
-          <p className="pl-cat-label px-1 text-[10px] font-black uppercase tracking-[0.2em]">
-            Workspace
-          </p>
-          <div className="mt-2 space-y-1">
-            {appNavigation.map((item) => {
-              const selected = isWorkspaceSelected(item);
-              const className = `flex w-full items-center gap-3 rounded-2xl px-2.5 py-2 text-left text-sm font-bold transition ${
-                selected
-                  ? "pl-nav-active shadow-md"
-                  : "text-violet-700/90 hover:bg-white/70 hover:text-violet-950"
-              }`;
+            <p className="px-0.5 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+              {mode === "public" ? "Acessar" : "Páginas"}
+            </p>
+            <div className="mt-1.5 space-y-0.5">
+              {workspaceItems.map((item) => {
+                const selected = isWorkspaceSelected(item);
+                const className = `flex w-full items-center gap-2 rounded-xl px-2 py-1.5 text-left text-xs font-bold transition ${
+                  selected
+                    ? "bg-indigo-600 text-white shadow-sm"
+                    : "text-slate-700 hover:bg-white/90"
+                }`;
 
-              if (mode === "studio" && item.panel !== "external") {
+                if (mode === "studio" && item.panel !== "external") {
+                  return (
+                    <button
+                      key={item.href}
+                      type="button"
+                      onClick={() => handleWorkspaceClick(item)}
+                      aria-current={selected ? "page" : undefined}
+                      className={className}
+                    >
+                      <PlanifyNavIcon name={item.icon} />
+                      <span className="truncate">{item.label}</span>
+                    </button>
+                  );
+                }
+
                 return (
-                  <button
+                  <Link
                     key={item.href}
-                    type="button"
-                    onClick={() => handleWorkspaceClick(item)}
+                    href={item.href}
+                    onClick={onActivate}
                     aria-current={selected ? "page" : undefined}
                     className={className}
                   >
                     <PlanifyNavIcon name={item.icon} />
                     <span className="truncate">{item.label}</span>
-                  </button>
+                  </Link>
                 );
-              }
-
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={onActivate}
-                  aria-current={selected ? "page" : undefined}
-                  className={className}
-                >
-                  <PlanifyNavIcon name={item.icon} />
-                  <span className="truncate">{item.label}</span>
-                </Link>
-              );
-            })}
+              })}
+            </div>
           </div>
-        </div>
 
-        {!hideToolList
-          ? groupedTools.map((group) => (
+        {groupedTools.map((group) => (
           <div key={group.category.id}>
-            <p className="pl-cat-label px-1 text-[10px] font-black uppercase tracking-[0.2em]">
+            <p className="px-0.5 text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">
               {group.category.label}
             </p>
-            <div className="mt-2 space-y-0.5">
+            <div className="mt-1 space-y-1">
               {group.tools.map((tool) => {
                 const selected = isToolSelected(tool.id);
-                const className = `pl-tool-item group flex w-full items-center gap-2.5 rounded-2xl border px-2 py-1.5 text-left text-sm font-bold transition ${
-                  selected
-                    ? "border-fuchsia-200/80 bg-white shadow-[0_6px_20px_-10px_rgba(236,72,153,0.35)]"
-                    : "border-transparent text-violet-700/85"
-                }`;
+                const className = toolButtonClass(selected);
 
                 if (mode === "studio" && onSelectTool) {
                   return (
@@ -209,42 +260,47 @@ export function PlanifySidebarNav({
                       aria-current={selected ? "page" : undefined}
                       className={className}
                     >
-                      <ToolIcon tool={tool} />
-                      <span className="min-w-0 truncate">{tool.shortTitle}</span>
+                      <ToolIcon tool={tool} thin={isThin} />
+                      <span
+                        className={`min-w-0 flex-1 truncate ${isThin ? "text-[11px] font-bold text-slate-800" : ""}`}
+                      >
+                        {tool.shortTitle}
+                      </span>
                       {tool.popular ? <PopularBadge /> : null}
                     </button>
                   );
                 }
 
+                const href =
+                  mode === "public"
+                    ? dashboardToolHref(tool.id)
+                    : studioToolHref(tool.id);
+
                 return (
                   <Link
                     key={tool.id}
-                    href={studioToolHref(tool.id)}
+                    href={href}
                     onClick={onActivate}
                     aria-current={selected ? "page" : undefined}
                     className={className}
                   >
-                    <ToolIcon tool={tool} />
-                    <span className="min-w-0 truncate">{tool.shortTitle}</span>
+                    <ToolIcon tool={tool} thin={isThin} />
+                    <span
+                      className={`min-w-0 flex-1 truncate ${isThin ? "text-[11px] font-bold text-slate-800" : ""}`}
+                    >
+                      {tool.shortTitle}
+                    </span>
                     {tool.popular ? <PopularBadge /> : null}
                   </Link>
                 );
               })}
             </div>
           </div>
-            ))
-          : null}
+        ))}
 
-        {!hideToolList && groupedTools.length === 0 ? (
-          <p className="px-1 text-sm font-semibold text-violet-300">
+        {groupedTools.length === 0 ? (
+          <p className="px-0.5 text-xs font-semibold text-slate-400">
             Nenhuma ferramenta encontrada.
-          </p>
-        ) : null}
-
-        {hideToolList ? (
-          <p className="px-1 text-xs font-semibold leading-relaxed text-violet-500/90">
-            As 13 ferramentas com IA estão na grade ao centro — clique em uma para
-            abrir aqui.
           </p>
         ) : null}
       </nav>
@@ -254,22 +310,25 @@ export function PlanifySidebarNav({
 
 function ToolIcon({
   tool,
+  thin,
 }: {
   tool: (typeof planifyTools)[number];
+  thin?: boolean;
 }) {
+  const size = thin ? "h-7 w-7 rounded-lg" : "h-8 w-8 rounded-xl";
   return (
     <span
-      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${tool.accent} text-white shadow-[0_4px_10px_-4px_rgba(139,92,246,0.4)] ring-2 ring-white/70 transition group-hover:scale-105`}
+      className={`flex shrink-0 items-center justify-center bg-gradient-to-br ${tool.accent} text-white shadow-sm ring-1 ring-white/80 transition group-hover:scale-105 ${size}`}
     >
-      <PlanifyIcon name={tool.icon} className="h-4 w-4" />
+      <PlanifyIcon name={tool.icon} className={thin ? "h-3.5 w-3.5" : "h-4 w-4"} />
     </span>
   );
 }
 
 function PopularBadge() {
   return (
-    <span className="ml-auto shrink-0 rounded-full bg-gradient-to-r from-amber-100 to-orange-50 px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wide text-amber-700">
-      ✦
+    <span className="shrink-0 rounded bg-amber-100 px-1 py-0.5 text-[8px] font-black uppercase text-amber-800">
+      ★
     </span>
   );
 }

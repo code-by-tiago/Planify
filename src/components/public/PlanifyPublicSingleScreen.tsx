@@ -19,6 +19,7 @@ export function PlanifyPublicSingleScreen() {
         variant="teachy"
         alwaysVisible
         showUserFooter={false}
+        brandHref="/"
         lumiHint="Clique numa ferramenta para abrir no painel"
       >
         <PlanifySidebarNav

@@ -15,21 +15,24 @@ export function PlanifyBrand({
   dark = false,
   hideTagline = false,
 }: BrandProps) {
+  const mascotSize = compact ? 40 : 52;
+  const boxSize = compact ? "h-11 w-11" : "h-14 w-14";
+
   const content = (
     <div className="flex items-center gap-3">
       <div
-        className={`flex h-12 w-12 items-center justify-center rounded-2xl ${
+        className={`flex ${boxSize} items-center justify-center rounded-2xl ${
           dark
             ? "bg-white/10 ring-1 ring-white/15"
-            : "bg-gradient-to-br from-indigo-50 via-white to-rose-50 ring-1 ring-indigo-100"
+            : "bg-gradient-to-br from-indigo-100 via-white to-violet-50 ring-2 ring-indigo-200/80 shadow-sm"
         }`}
       >
-        <LumiMascot size={38} priority />
+        <LumiMascot size={mascotSize} priority />
       </div>
       {!compact ? (
         <div>
           <p
-            className={`text-lg font-black leading-none tracking-tight ${
+            className={`text-xl font-black leading-none tracking-tight ${
               dark ? "text-white" : "text-slate-950"
             }`}
           >

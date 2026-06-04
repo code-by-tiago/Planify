@@ -20,6 +20,7 @@ type PlanifyShellSidebarProps = {
   /** Menu lateral sempre visível (painel /dashboard) */
   alwaysVisible?: boolean;
   showUserFooter?: boolean;
+  brandHref?: string;
 };
 
 export function PlanifyShellSidebar({
@@ -30,6 +31,7 @@ export function PlanifyShellSidebar({
   variant = "default",
   alwaysVisible = false,
   showUserFooter = true,
+  brandHref = "/dashboard",
 }: PlanifyShellSidebarProps) {
   const isTeachy = variant === "teachy";
   const sidebarClass = isTeachy
@@ -48,9 +50,9 @@ export function PlanifyShellSidebar({
 
   const brandBlock = (
     <div className={`shrink-0 border-b ${brandBorder} px-4 py-4`}>
-      <PlanifyBrand />
+      <PlanifyBrand href={brandHref} />
       <p className="mt-2 text-[11px] font-bold leading-snug text-slate-500">
-        Materiais com IA alinhados à BNCC
+        Coruja Planify · IA alinhada à BNCC
       </p>
     </div>
   );

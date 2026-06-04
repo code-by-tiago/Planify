@@ -13,19 +13,21 @@ const reduceMotion = {
 
 type PlanifyShellSidebarProps = {
   children: ReactNode;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
   lumiHint?: string;
-  /** Sidebar clara no painel principal (/dashboard) */
   variant?: "default" | "teachy";
+  /** Menu lateral sempre visível (painel /dashboard) */
+  alwaysVisible?: boolean;
 };
 
 export function PlanifyShellSidebar({
   children,
-  open,
+  open = false,
   onOpenChange,
   lumiHint = "Toque numa ferramenta e crie em segundos.",
   variant = "default",
+  alwaysVisible = false,
 }: PlanifyShellSidebarProps) {
   const isTeachy = variant === "teachy";
   const sidebarClass = isTeachy
@@ -45,9 +47,20 @@ export function PlanifyShellSidebar({
     </div>
   );
 
+  if (alwaysVisible) {
+    return (
+      <aside
+        className={`${sidebarClass} flex h-screen w-[min(17rem,32vw)] min-w-[13.5rem] shrink-0 flex-col overflow-y-auto overscroll-contain border-r`}
+      >
+        {brandBlock}
+        <div className="flex flex-1 flex-col">{children}</div>
+        <div className="sticky bottom-0 mt-auto shrink-0">{footer}</div>
+      </aside>
+    );
+  }
+
   return (
     <>
-      {/* Sidebar fixa: h-screen + overflow-y-auto quando a lista cresce */}
       <aside
         className={`${sidebarClass} hidden h-screen w-72 shrink-0 flex-col overflow-y-auto overscroll-contain border-r lg:flex`}
       >
@@ -69,7 +82,7 @@ export function PlanifyShellSidebar({
               className={`fixed inset-0 z-40 backdrop-blur-sm lg:hidden ${
                 isTeachy ? "bg-slate-900/30" : "bg-violet-950/40"
               }`}
-              onClick={() => onOpenChange(false)}
+              onClick={() => onOpenChange?.(false)}
               aria-hidden="true"
             />
             <motion.aside
@@ -86,7 +99,7 @@ export function PlanifyShellSidebar({
                 <PlanifyBrand />
                 <button
                   type="button"
-                  onClick={() => onOpenChange(false)}
+                  onClick={() => onOpenChange?.(false)}
                   aria-label="Fechar menu"
                   className="flex h-9 w-9 items-center justify-center rounded-2xl text-violet-400 transition hover:bg-white/80"
                 >

@@ -1,3 +1,4 @@
+import type { DashboardSectionId } from "@/lib/pro/dashboardViews";
 import { dashboardToolHref } from "@/lib/pro/toolRoutes";
 
 export type PlanifyIconName =
@@ -268,14 +269,48 @@ export const planifyTools: PlanifyTool[] = [
   },
 ];
 
-export const appNavigation = [
-  { label: "Início", href: "/dashboard", icon: "home" as const },
-  { label: "Planejamentos", href: "/planejamentos", icon: "clipboard" as const },
-  { label: "Editor", href: "/editor", icon: "editor" as const },
-  { label: "Histórico", href: "/historico", icon: "history" as const },
-  { label: "Biblioteca", href: "/biblioteca", icon: "library" as const },
-  { label: "Marketplace", href: "/marketplace", icon: "market" as const },
-  { label: "Planos", href: "/planos", icon: "plans" as const },
+export type AppNavPanel = "inicio" | DashboardSectionId | "external";
+
+export type AppNavItem = {
+  label: string;
+  href: string;
+  icon: PlanifyIconName;
+  panel: AppNavPanel;
+};
+
+export const appNavigation: AppNavItem[] = [
+  { label: "Início", href: "/dashboard", icon: "home", panel: "inicio" },
+  {
+    label: "Planejamentos",
+    href: "/dashboard?secao=planejamentos",
+    icon: "clipboard",
+    panel: "planejamentos",
+  },
+  {
+    label: "Editor",
+    href: "/dashboard?secao=editor",
+    icon: "editor",
+    panel: "editor",
+  },
+  {
+    label: "Histórico",
+    href: "/dashboard?secao=historico",
+    icon: "history",
+    panel: "historico",
+  },
+  {
+    label: "Biblioteca",
+    href: "/dashboard?secao=biblioteca",
+    icon: "library",
+    panel: "biblioteca",
+  },
+  {
+    label: "Marketplace",
+    href: "/dashboard?secao=marketplace",
+    icon: "market",
+    panel: "marketplace",
+  },
+  { label: "Planos", href: "/planos", icon: "plans", panel: "external" },
 ];
 
 export function getPlanifyTool(id: string | null | undefined) {

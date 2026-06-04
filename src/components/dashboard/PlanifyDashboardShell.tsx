@@ -3,13 +3,17 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { TeachyMateriaisStudio } from "@/components/dashboard/TeachyMateriaisStudio";
-import TeachyStudioHome from "@/components/dashboard/TeachyStudioHome";
+import { PlanifyDashboardMain } from "@/components/dashboard/PlanifyDashboardMain";
 import { PlanifyBrand } from "@/components/pro/PlanifyBrand";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { PlanifyShellSidebar } from "@/components/pro/PlanifyShellSidebar";
 import { PlanifySidebarNav } from "@/components/pro/PlanifySidebarNav";
 import { useSidebarSearchShortcut } from "@/hooks/useSidebarSearchShortcut";
+import {
+  dashboardSectionLabels,
+  isDashboardSection,
+  type DashboardSectionId,
+} from "@/lib/pro/dashboardViews";
 import {
   getPlanifyTool,
   planifyTools,
@@ -20,11 +24,21 @@ function isValidToolId(value: string | null): value is PlanifyToolId {
   return planifyTools.some((tool) => tool.id === value);
 }
 
+function readTemaParam(searchParams: URLSearchParams): string {
+  const fromUrl = searchParams.get("tema")?.trim() ?? "";
+  if (fromUrl) return fromUrl;
+  if (typeof window === "undefined") return "";
+  try {
+    return sessionStorage.getItem("planify-studio-tema")?.trim() ?? "";
+  } catch {
+    return "";
+  }
+}
+
 export default function PlanifyDashboardShell() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [query, setQuery] = useState("");
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
   useSidebarSearchShortcut(searchRef);
 
@@ -33,43 +47,98 @@ export default function PlanifyDashboardShell() {
     return isValidToolId(tipo) ? tipo : null;
   }, [searchParams]);
 
+  const selectedSectionId = useMemo(() => {
+    if (selectedToolId) return null;
+    const secao = searchParams.get("secao");
+    return isDashboardSection(secao) ? secao : null;
+  }, [searchParams, selectedToolId]);
+
   const initialTopic = useMemo(
-    () => searchParams.get("tema")?.trim() ?? "",
+    () => readTemaParam(searchParams),
     [searchParams],
   );
 
-  const selectTool = useCallback(
-    (toolId: PlanifyToolId | null) => {
-      const params = new URLSearchParams();
-      let tema = searchParams.get("tema");
-      if (!tema) {
-        try {
-          tema = sessionStorage.getItem("planify-studio-tema");
-        } catch {
-          /* ignore */
-        }
-      }
-      if (tema?.trim()) params.set("tema", tema.trim());
-
-      if (toolId) {
-        params.set("tipo", toolId);
-        router.replace(`/dashboard?${params.toString()}`, { scroll: false });
-        return;
-      }
-      router.replace(
-        params.toString() ? `/dashboard?${params.toString()}` : "/dashboard",
-        { scroll: false },
-      );
+  const replaceDashboardUrl = useCallback(
+    (mutate: (params: URLSearchParams) => void) => {
+      const params = new URLSearchParams(searchParams.toString());
+      mutate(params);
+      const qs = params.toString();
+      router.replace(qs ? `/dashboard?${qs}` : "/dashboard", { scroll: false });
     },
     [router, searchParams],
   );
 
+  const selectInicio = useCallback(() => {
+    replaceDashboardUrl((params) => {
+      params.delete("tipo");
+      params.delete("secao");
+    });
+  }, [replaceDashboardUrl]);
+
+  const selectSection = useCallback(
+    (sectionId: DashboardSectionId | null) => {
+      replaceDashboardUrl((params) => {
+        params.delete("tipo");
+        if (sectionId) {
+          params.set("secao", sectionId);
+        } else {
+          params.delete("secao");
+        }
+      });
+    },
+    [replaceDashboardUrl],
+  );
+
+  const selectTool = useCallback(
+    (toolId: PlanifyToolId | null) => {
+      replaceDashboardUrl((params) => {
+        params.delete("secao");
+        if (toolId) {
+          params.set("tipo", toolId);
+        } else {
+          params.delete("tipo");
+        }
+      });
+    },
+    [replaceDashboardUrl],
+  );
+
+  const setTopic = useCallback(
+    (topic: string) => {
+      const tema = topic.trim();
+      if (tema) {
+        try {
+          sessionStorage.setItem("planify-studio-tema", tema);
+        } catch {
+          /* ignore */
+        }
+      }
+      replaceDashboardUrl((params) => {
+        if (tema) params.set("tema", tema);
+        else params.delete("tema");
+      });
+    },
+    [replaceDashboardUrl],
+  );
+
   const activeTool = selectedToolId ? getPlanifyTool(selectedToolId) : null;
+
+  const panelTitle = useMemo(() => {
+    if (activeTool) return activeTool.title;
+    if (selectedSectionId) return dashboardSectionLabels[selectedSectionId];
+    return "Início";
+  }, [activeTool, selectedSectionId]);
+
+  const panelSubtitle = useMemo(() => {
+    if (activeTool) return activeTool.shortTitle;
+    if (selectedSectionId) return "Workspace";
+    return "Painel Planify";
+  }, [activeTool, selectedSectionId]);
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape" && selectedToolId) {
-        selectTool(null);
+      if (event.key === "Escape" && (selectedToolId || selectedSectionId)) {
+        selectInicio();
         return;
       }
       if (
@@ -88,146 +157,94 @@ export default function PlanifyDashboardShell() {
           return;
         }
         event.preventDefault();
-        setSidebarOpen(true);
         requestAnimationFrame(() => searchRef.current?.focus());
       }
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [selectedToolId, selectTool]);
-
-  const closeSidebar = useCallback(() => setSidebarOpen(false), []);
+  }, [selectedToolId, selectedSectionId, selectInicio]);
 
   const primaryAction = (
-    <Link
-      href={
-        initialTopic
-          ? `/planejamentos?tema=${encodeURIComponent(initialTopic)}`
-          : "/planejamentos"
-      }
-      onClick={closeSidebar}
+    <button
+      type="button"
+      onClick={() => selectSection("planejamentos")}
       className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-3 text-sm font-black text-white transition hover:opacity-95"
     >
       <PlanifyIcon name="layers" className="h-4 w-4" />
       Construtor de aula
-    </Link>
+    </button>
   );
 
   return (
-    /* Container pai: flex lado a lado, 100% da tela, sem scroll da página */
     <div className="planify-ui3 pl-dashboard-root pl-app-bg flex h-screen w-screen overflow-hidden text-slate-950">
-      <PlanifyShellSidebar
-        open={sidebarOpen}
-        onOpenChange={setSidebarOpen}
-        variant="teachy"
-        lumiHint="Ferramentas na barra lateral · / para buscar"
-      >
+      <PlanifyShellSidebar variant="teachy" alwaysVisible lumiHint="Menu fixo · / para buscar">
         <PlanifySidebarNav
           mode="studio"
           query={query}
           onQueryChange={setQuery}
           primaryAction={primaryAction}
           selectedToolId={selectedToolId}
+          selectedSectionId={selectedSectionId}
           onSelectTool={selectTool}
-          onActivate={closeSidebar}
+          onSelectSection={selectSection}
+          onSelectInicio={selectInicio}
           pathname="/dashboard"
           searchInputRef={searchRef}
         />
       </PlanifyShellSidebar>
 
-      {/* Área principal: flex-1, h-screen, overflow-hidden */}
       <main className="flex h-screen min-w-0 flex-1 flex-col overflow-hidden bg-[#f8f5ff]/80">
-        {selectedToolId ? (
-          <header className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-2.5 sm:px-5">
-            <div className="flex min-w-0 flex-1 items-center gap-3">
+        <header className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-2.5 sm:px-5">
+          <div className="min-w-0 flex-1">
+            <nav
+              aria-label="Localização"
+              className="mb-0.5 flex flex-wrap items-center gap-1 text-[11px] font-bold text-slate-400"
+            >
               <button
                 type="button"
-                onClick={() => setSidebarOpen(true)}
-                aria-label="Abrir menu de ferramentas"
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-600 transition hover:bg-slate-100 lg:hidden"
+                onClick={selectInicio}
+                className="transition hover:text-indigo-600"
               >
-                <PlanifyIcon name="menu" className="h-5 w-5" />
+                Início
               </button>
-
-              <div className="min-w-0 flex-1">
-                <nav
-                  aria-label="Localização"
-                  className="mb-0.5 flex flex-wrap items-center gap-1 text-[11px] font-bold text-slate-400"
-                >
-                  <button
-                    type="button"
-                    onClick={() => selectTool(null)}
-                    className="transition hover:text-blue-600"
-                  >
-                    Início
-                  </button>
+              {(selectedToolId || selectedSectionId) && (
+                <>
                   <PlanifyIcon
                     name="chevronRight"
                     className="h-3 w-3 shrink-0 opacity-60"
                   />
-                  <span className="text-blue-600">
-                    {activeTool?.shortTitle}
-                  </span>
-                </nav>
-                <h1 className="truncate text-base font-black text-slate-950">
-                  {activeTool?.title}
-                </h1>
-              </div>
+                  <span className="text-indigo-600">{panelSubtitle}</span>
+                </>
+              )}
+            </nav>
+            <h1 className="truncate text-base font-black text-slate-950 sm:text-lg">
+              {panelTitle}
+            </h1>
+          </div>
 
-              <div className="hidden shrink-0 sm:block">
-                <PlanifyBrand compact />
-              </div>
-            </div>
-
-            <div className="flex shrink-0 items-center gap-2">
-              <Link
-                href="/historico"
-                className="hidden rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-black text-slate-600 transition hover:border-blue-200 sm:inline-flex"
-              >
-                Histórico
-              </Link>
-              <Link
-                href="/planos"
-                className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-black text-white transition hover:bg-blue-700"
-              >
-                Planos
-              </Link>
-            </div>
-          </header>
-        ) : (
-          <div className="flex shrink-0 items-center justify-between gap-2 border-b border-slate-200/80 bg-white/90 px-4 py-2 sm:px-5 lg:hidden">
-            <button
-              type="button"
-              onClick={() => setSidebarOpen(true)}
-              aria-label="Abrir menu"
-              className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100"
-            >
-              <PlanifyIcon name="menu" className="h-5 w-5" />
-            </button>
+          <div className="hidden shrink-0 sm:block">
             <PlanifyBrand compact />
+          </div>
+
+          <div className="flex shrink-0 items-center gap-2">
             <Link
               href="/planos"
-              className="rounded-lg bg-blue-600 px-2.5 py-1.5 text-[10px] font-black text-white"
+              className="rounded-lg bg-gradient-to-r from-indigo-600 to-violet-600 px-3 py-1.5 text-xs font-black text-white transition hover:opacity-95"
             >
               Planos
             </Link>
           </div>
-        )}
+        </header>
 
-        {/* Quadrante: home estilo Teachy ou ferramenta in-panel */}
         <div className="min-h-0 flex-1 overflow-hidden">
-          {selectedToolId ? (
-            <TeachyMateriaisStudio
-              toolId={selectedToolId}
-              temaFromUrl={initialTopic}
-              onClose={() => selectTool(null)}
-            />
-          ) : (
-            <TeachyStudioHome
-              onSelectTool={selectTool}
-              initialTopic={initialTopic}
-            />
-          )}
+          <PlanifyDashboardMain
+            toolId={selectedToolId}
+            sectionId={selectedSectionId}
+            initialTopic={initialTopic}
+            onTopicChange={setTopic}
+            onOpenSection={selectSection}
+            onCloseTool={selectInicio}
+          />
         </div>
       </main>
     </div>

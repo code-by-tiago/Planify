@@ -4,10 +4,12 @@ import Link from "next/link";
 import { useMemo, type ReactNode, type RefObject } from "react";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { PlanifyNavIcon, studioToolHref } from "@/components/pro/PlanifyNavIcon";
+import type { DashboardSectionId } from "@/lib/pro/dashboardViews";
 import {
   appNavigation,
   planifyTools,
   toolCategories,
+  type AppNavItem,
   type PlanifyToolId,
 } from "@/lib/pro/planifyTools";
 
@@ -19,10 +21,11 @@ type PlanifySidebarNavProps = {
   onQueryChange: (value: string) => void;
   primaryAction?: ReactNode;
   onActivate?: () => void;
-  /** Modo studio: ferramenta ativa no painel */
   selectedToolId?: PlanifyToolId | null;
   onSelectTool?: (toolId: PlanifyToolId | null) => void;
-  /** Modo routes: destaque por pathname */
+  selectedSectionId?: DashboardSectionId | null;
+  onSelectSection?: (sectionId: DashboardSectionId) => void;
+  onSelectInicio?: () => void;
   pathname?: string;
   activeTipo?: string | null;
   isNavActive?: (href: string) => boolean;
@@ -37,6 +40,9 @@ export function PlanifySidebarNav({
   onActivate,
   selectedToolId = null,
   onSelectTool,
+  selectedSectionId = null,
+  onSelectSection,
+  onSelectInicio,
   pathname = "",
   activeTipo = null,
   isNavActive,
@@ -73,14 +79,35 @@ export function PlanifySidebarNav({
     );
   }
 
-  function navSelected(href: string): boolean {
-    if (isNavActive) return isNavActive(href);
-    if (href === "/dashboard") {
-      return mode === "studio"
-        ? pathname === "/dashboard" && !selectedToolId
-        : pathname === "/dashboard";
+  function isWorkspaceSelected(item: AppNavItem): boolean {
+    if (mode === "studio") {
+      if (item.panel === "inicio") {
+        return !selectedToolId && !selectedSectionId;
+      }
+      if (item.panel !== "external") {
+        return selectedSectionId === item.panel && !selectedToolId;
+      }
+      return false;
     }
-    return pathname === href || pathname.startsWith(`${href}/`);
+
+    if (isNavActive) return isNavActive(item.href);
+    if (item.href === "/dashboard") return pathname === "/dashboard";
+    return pathname === item.href || pathname.startsWith(`${item.href}/`);
+  }
+
+  function handleWorkspaceClick(item: AppNavItem) {
+    onActivate?.();
+    if (mode !== "studio") return;
+
+    if (item.panel === "inicio") {
+      onSelectInicio?.();
+      onSelectTool?.(null);
+      return;
+    }
+
+    if (item.panel !== "external") {
+      onSelectSection?.(item.panel);
+    }
   }
 
   return (
@@ -110,24 +137,21 @@ export function PlanifySidebarNav({
           </p>
           <div className="mt-2 space-y-1">
             {appNavigation.map((item) => {
-              const selected = navSelected(item.href);
-              const isStudioHome = item.href === "/dashboard" && mode === "studio";
+              const selected = isWorkspaceSelected(item);
+              const className = `flex w-full items-center gap-3 rounded-2xl px-2.5 py-2 text-left text-sm font-bold transition ${
+                selected
+                  ? "pl-nav-active shadow-md"
+                  : "text-violet-700/90 hover:bg-white/70 hover:text-violet-950"
+              }`;
 
-              if (isStudioHome && onSelectTool) {
+              if (mode === "studio" && item.panel !== "external") {
                 return (
                   <button
                     key={item.href}
                     type="button"
-                    onClick={() => {
-                      onSelectTool(null);
-                      onActivate?.();
-                    }}
+                    onClick={() => handleWorkspaceClick(item)}
                     aria-current={selected ? "page" : undefined}
-                    className={`flex w-full items-center gap-3 rounded-2xl px-2.5 py-2 text-left text-sm font-bold transition ${
-                      selected
-                        ? "pl-nav-active shadow-md"
-                        : "text-violet-700/90 hover:bg-white/70 hover:text-violet-950"
-                    }`}
+                    className={className}
                   >
                     <PlanifyNavIcon name={item.icon} />
                     <span className="truncate">{item.label}</span>
@@ -141,11 +165,7 @@ export function PlanifySidebarNav({
                   href={item.href}
                   onClick={onActivate}
                   aria-current={selected ? "page" : undefined}
-                  className={`flex items-center gap-3 rounded-2xl px-2.5 py-2 text-sm font-bold transition ${
-                    selected
-                      ? "pl-nav-active shadow-md"
-                      : "text-violet-700/90 hover:bg-white/70 hover:text-violet-950"
-                  }`}
+                  className={className}
                 >
                   <PlanifyNavIcon name={item.icon} />
                   <span className="truncate">{item.label}</span>

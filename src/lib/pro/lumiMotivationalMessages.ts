@@ -85,8 +85,8 @@ const toolMessages: Partial<Record<PlanifyToolId, string[]>> = {
     "Cartões de estudo quase prontos.",
   ],
   redacao: [
-    "Rubrica e devolutiva para orientar reescrita.",
-    "Feedback construtivo em construção.",
+    "Montando tema, motivadores e comando para sua turma escrever.",
+    "Proposta de redação completa quase pronta.",
   ],
 };
 

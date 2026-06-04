@@ -243,15 +243,17 @@ export const planifyTools: PlanifyTool[] = [
   },
   {
     id: "redacao",
-    title: "Corretor de Redação",
+    title: "Gerador de Redação",
     shortTitle: "Redação",
-    description: "Gere rubrica, devolutiva e orientação de reescrita.",
-    category: "correcao",
+    description:
+      "Monte proposta completa com tema, textos motivadores, comando e critérios de avaliação.",
+    category: "avaliacoes",
     href: dashboardToolHref("redacao"),
     icon: "pen",
-    primaryFieldLabel: "Tema ou proposta da redação",
-    loadingTitle: "Preparando correção orientada",
-    loadingDescription: "Organizando critérios, devolutiva e melhorias.",
+    primaryFieldLabel: "Tema da redação",
+    loadingTitle: "Gerando proposta de redação",
+    loadingDescription:
+      "Organizando tema, motivadores, comando e critérios para a turma escrever.",
     accent: "from-rose-300 via-pink-300 to-red-300",
   },
   {

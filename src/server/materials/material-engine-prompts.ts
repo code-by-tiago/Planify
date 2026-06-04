@@ -12,7 +12,7 @@ const typeLabels: Record<MaterialEngineType, string> = {
   lista: "lista de exercícios",
   "plano-aula": "plano de aula",
   flashcards: "flashcards",
-  redacao: "orientação de redação",
+  redacao: "proposta de redação",
   "mapa-mental": "mapa mental textual",
 };
 
@@ -113,10 +113,12 @@ function specializedRules(request: MaterialEngineRequest): string[] {
 
   if (request.tipoMaterial === "redacao") {
     return [
-      "Entregar uma proposta de redação completa: tema, gênero textual, comando claro e textos motivadores nas 'sections'.",
-      "Incluir critérios de correção e competências avaliadas nas 'teacherNotes'.",
+      "Gerar proposta de redação para produção textual pelo estudante (não corrigir redação já escrita).",
+      "Incluir tema, gênero textual, comando claro e 2 a 4 textos motivadores nas 'sections'.",
+      "Incluir atividades de preparação: leitura dos motivadores, tese, argumentos e planejamento de parágrafos nas 'activities'.",
+      "Incluir critérios de avaliação e competências (matriz ENEM ou escolar) nas 'teacherNotes'.",
       request.incluirGabarito
-        ? "Incluir uma redação modelo ou critérios de nota no 'answerKey'."
+        ? "Incluir redação modelo de referência e critérios de nota no 'answerKey'."
         : "Não incluir redação modelo.",
     ];
   }

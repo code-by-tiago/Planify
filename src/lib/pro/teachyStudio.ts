@@ -39,7 +39,7 @@ export const teachyWorkflowSteps = [
   {
     step: "4",
     title: "Corrigir com IA",
-    description: "Redação, listas e provas com devolutiva orientada.",
+    description: "Propostas de redação, listas e provas com critérios claros.",
     icon: "pen" as const,
   },
 ];

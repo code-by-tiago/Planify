@@ -36,28 +36,32 @@ type MaterialHistoryItem = {
 const HISTORY_KEY = "planify-historico-materiais";
 
 const formatoJogos: { id: FormatoJogo; label: string }[] = [
-  { id: "caca-palavras", label: "CaÃ§a-palavras" },
+  { id: "caca-palavras", label: "Caça-palavras" },
   { id: "cruzadinha", label: "Cruzadinha" },
   { id: "quiz", label: "Quiz" },
   { id: "bingo", label: "Bingo" },
   { id: "trilha", label: "Trilha" },
-  { id: "memoria", label: "MemÃ³ria" },
+  { id: "memoria", label: "Memória" },
 ];
 
 const sugestoesTema: Record<PlanifyToolId, string[]> = {
-  apostila: ["AmazÃ´nia e biodiversidade", "FraÃ§Ãµes no cotidiano", "Romantismo no Brasil"],
-  atividade: ["InterpretaÃ§Ã£o de texto", "Sistema solar", "Porcentagem"],
-  prova: ["RevoluÃ§Ã£o Industrial", "EquaÃ§Ãµes do 1Âº grau", "Ecologia"],
-  slides: ["Estados fÃ­sicos da matÃ©ria", "Verbos", "Brasil RepÃºblica"],
-  projeto: ["Feira de ciÃªncias", "ConsciÃªncia negra", "EducaÃ§Ã£o financeira"],
+  apostila: ["Amazônia e biodiversidade", "Frações no cotidiano", "Romantismo no Brasil"],
+  atividade: ["Interpretação de texto", "Sistema solar", "Porcentagem"],
+  prova: ["Revolução Industrial", "Equações do 1º grau", "Ecologia"],
+  slides: ["Estados físicos da matéria", "Verbos", "Brasil República"],
+  projeto: ["Feira de ciências", "Consciência negra", "Educação financeira"],
   jogo: ["Biomas brasileiros", "Tabuada", "Classes gramaticais"],
-  sequencia: ["Leitura e produÃ§Ã£o textual", "Geometria plana", "Ãgua e sociedade"],
-  resumo: ["Ciclo da Ã¡gua", "FotossÃ­ntese", "MÃ©dia, moda e mediana"],
-  lista: ["FunÃ§Ãµes do 1Âº grau", "Sistema digestÃ³rio", "Crase"],
-  "plano-aula": ["AmazÃ´nia", "Porcentagem", "GÃªneros textuais"],
-  flashcards: ["RevoluÃ§Ã£o Francesa", "Ecossistemas", "Classes de palavras"],
-  redacao: ["Meio ambiente", "Tecnologia na educaÃ§Ã£o", "Cidadania digital"],
-  "mapa-mental": ["FotossÃ­ntese", "Brasil ColÃ´nia", "Figuras de linguagem"],
+  sequencia: ["Leitura e produção textual", "Geometria plana", "Água e sociedade"],
+  resumo: ["Ciclo da água", "Fotossíntese", "Média, moda e mediana"],
+  lista: ["Funções do 1º grau", "Sistema digestório", "Crase"],
+  "plano-aula": ["Amazônia", "Porcentagem", "Gêneros textuais"],
+  flashcards: ["Revolução Francesa", "Ecossistemas", "Classes de palavras"],
+  redacao: [
+    "Desafios da mobilidade urbana",
+    "Tecnologia na educação",
+    "Cidadania digital e democracia",
+  ],
+  "mapa-mental": ["Fotossíntese", "Brasil Colônia", "Figuras de linguagem"],
 };
 
 function escapeHtml(value: string): string {
@@ -82,7 +86,7 @@ function textToHtml(value: string): string {
     .filter(Boolean);
 
   if (lines.length === 0) {
-    return "<p>Material gerado sem conteÃºdo textual.</p>";
+    return "<p>Material gerado sem conteúdo textual.</p>";
   }
 
   return lines
@@ -257,6 +261,19 @@ export function MateriaisClient({
 
   const mode = useMemo(() => getPlanifyTool(tipo), [tipo]);
   const isJogo = tipo === "jogo";
+  const isRedacao = tipo === "redacao";
+
+  const observacoesPlaceholder = isRedacao
+    ? "Ex.: dissertação argumentativa, 25–30 linhas, foco em proposta de intervenção..."
+    : "Ex.: linguagem simples, foco em argumentação, exemplos do cotidiano...";
+
+  const quantidadePlaceholder = isRedacao
+    ? "Ex.: 3 textos motivadores, 2 atividades de preparação"
+    : "Ex.: 10 questões, 12 slides";
+
+  const gabaritoLabel = isRedacao
+    ? "Incluir critérios de avaliação e redação modelo"
+    : "Incluir gabarito/solução";
 
   const ferramentasFiltradas = useMemo(() => {
     const term = busca.trim().toLowerCase();
@@ -413,7 +430,7 @@ td,th{border:1px solid #d1d5db;padding:8px;}
     }
 
     if (!anoSerie.trim()) {
-      setErro("Informe o ano/sÃ©rie para adequar a linguagem.");
+      setErro("Informe o ano/série para adequar a linguagem.");
       return;
     }
 
@@ -457,7 +474,7 @@ td,th{border:1px solid #d1d5db;padding:8px;}
         const message =
           data && typeof data === "object" && "message" in data
             ? String((data as { message?: unknown }).message)
-            : "NÃ£o foi possÃ­vel gerar o material.";
+            : "Não foi possível gerar o material.";
         throw new Error(message);
       }
 
@@ -465,7 +482,7 @@ td,th{border:1px solid #d1d5db;padding:8px;}
 
       if (!html) {
         throw new Error(
-          "A API respondeu, mas nÃ£o retornou conteÃºdo em um formato reconhecido."
+          "A API respondeu, mas não retornou conteúdo em um formato reconhecido."
         );
       }
 
@@ -520,12 +537,12 @@ td,th{border:1px solid #d1d5db;padding:8px;}
         <button
           type="button"
           onClick={fecharPainel}
-          aria-label={studioMode ? "Voltar ao inÃ­cio" : "Voltar ao catÃ¡logo"}
+          aria-label={studioMode ? "Voltar ao início" : "Voltar ao catálogo"}
           className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-black text-slate-600 transition hover:border-indigo-300 hover:text-slate-950"
         >
           <PlanifyIcon name="arrowLeft" className="h-4 w-4" />
           <span className="hidden sm:inline">
-            {studioMode ? "InÃ­cio" : "CatÃ¡logo"}
+            {studioMode ? "Início" : "Catálogo"}
           </span>
         </button>
       </div>
@@ -545,6 +562,14 @@ td,th{border:1px solid #d1d5db;padding:8px;}
           <p className="mt-1 text-sm font-semibold text-slate-500">
             {mode.description}
           </p>
+
+          {isRedacao ? (
+            <p className="mt-3 rounded-2xl border border-indigo-100 bg-indigo-50 px-4 py-3 text-sm font-semibold leading-6 text-indigo-900">
+              Gera a proposta completa (tema, textos motivadores, comando e critérios)
+              para a turma produzir a redação — não corrige textos já escritos pelos
+              alunos.
+            </p>
+          ) : null}
 
           <div className="mt-5 grid gap-4 md:grid-cols-2">
             <label className="md:col-span-2">
@@ -566,7 +591,7 @@ td,th{border:1px solid #d1d5db;padding:8px;}
               <input
                 value={componente}
                 onChange={(event) => setComponente(event.target.value)}
-                placeholder="Ex.: LÃ­ngua Portuguesa"
+                placeholder="Ex.: Língua Portuguesa"
                 className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-950 outline-none transition focus:border-slate-950 focus:bg-white"
               />
             </label>
@@ -578,7 +603,7 @@ td,th{border:1px solid #d1d5db;padding:8px;}
               <input
                 value={anoSerie}
                 onChange={(event) => setAnoSerie(event.target.value)}
-                placeholder="Ex.: 6Âº ano, 2Âª sÃ©rie EM"
+                placeholder="Ex.: 6º ano, 2ª série EM"
                 className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-950 outline-none transition focus:border-slate-950 focus:bg-white"
               />
             </label>
@@ -592,9 +617,9 @@ td,th{border:1px solid #d1d5db;padding:8px;}
                 onChange={(event) => setEtapa(event.target.value)}
                 className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-950 outline-none transition focus:border-slate-950 focus:bg-white"
               >
-                <option>EducaÃ§Ã£o Infantil</option>
+                <option>Educação Infantil</option>
                 <option>Ensino Fundamental</option>
-                <option>Ensino MÃ©dio</option>
+                <option>Ensino Médio</option>
                 <option>EJA</option>
               </select>
             </label>
@@ -610,9 +635,9 @@ td,th{border:1px solid #d1d5db;padding:8px;}
                 }
                 className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-950 outline-none transition focus:border-slate-950 focus:bg-white"
               >
-                <option value="facil">FÃ¡cil</option>
-                <option value="media">MÃ©dia</option>
-                <option value="avancada">AvanÃ§ada</option>
+                <option value="facil">Fácil</option>
+                <option value="media">Média</option>
+                <option value="avancada">Avançada</option>
               </select>
             </label>
 
@@ -638,12 +663,12 @@ td,th{border:1px solid #d1d5db;padding:8px;}
             ) : (
               <label>
                 <span className="mb-2 block text-sm font-black text-slate-700">
-                  Quantidade
+                  {isRedacao ? "Estrutura da proposta" : "Quantidade"}
                 </span>
                 <input
                   value={quantidade}
                   onChange={(event) => setQuantidade(event.target.value)}
-                  placeholder="Ex.: 10 questÃµes, 12 slides"
+                  placeholder={quantidadePlaceholder}
                   className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-950 outline-none transition focus:border-slate-950 focus:bg-white"
                 />
               </label>
@@ -651,12 +676,12 @@ td,th{border:1px solid #d1d5db;padding:8px;}
 
             <label className="md:col-span-2">
               <span className="mb-2 block text-sm font-black text-slate-700">
-                ObservaÃ§Ãµes opcionais
+                Observações opcionais
               </span>
               <textarea
                 value={objetivo}
                 onChange={(event) => setObjetivo(event.target.value)}
-                placeholder="Ex.: linguagem simples, foco em revisÃ£o, exemplos do cotidiano..."
+                placeholder={observacoesPlaceholder}
                 rows={3}
                 className="w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-950 outline-none transition focus:border-slate-950 focus:bg-white"
               />
@@ -684,7 +709,7 @@ td,th{border:1px solid #d1d5db;padding:8px;}
                 onChange={(event) => setIncluirGabarito(event.target.checked)}
                 className="h-4 w-4 accent-slate-950"
               />
-              Incluir gabarito/soluÃ§Ã£o
+              {gabaritoLabel}
             </label>
 
             <button
@@ -797,10 +822,10 @@ td,th{border:1px solid #d1d5db;padding:8px;}
   return (
     <PlanifyWorkspacePane>
     <div>
-      {/* â”€â”€ CatÃ¡logo (visÃ­vel quando painel fechado) â”€â”€ */}
+      {/* Catálogo (visível quando painel fechado) */}
       {!modalAberto ? (
         <>
-        {/* CatÃ¡logo + busca + categorias */}
+        {/* Catálogo + busca + categorias */}
         <section className="pl-section-hero overflow-hidden rounded-[1.85rem] border border-fuchsia-100/70 p-5 shadow-[0_8px_32px_-16px_rgba(236,72,153,0.12)] sm:p-6">
           <div className="grid gap-4 lg:grid-cols-[1fr_360px] lg:items-center">
             <div>
@@ -812,7 +837,7 @@ td,th{border:1px solid #d1d5db;padding:8px;}
                 Escolha uma ferramenta e gere o material em segundos.
               </h1>
               <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-violet-500/90">
-                CatÃ¡logo organizado por categoria. Clique na ferramenta para abrir o painel de criaÃ§Ã£o com IA.
+                Catálogo organizado por categoria. Clique na ferramenta para abrir o painel de criação com IA.
               </p>
             </div>
 
@@ -899,7 +924,7 @@ td,th{border:1px solid #d1d5db;padding:8px;}
           </section>
         )}
 
-        {/* Materiais recentes (histÃ³rico) */}
+        {/* Materiais recentes (histórico) */}
         {historico.length > 0 ? (
           <section className="mt-5 rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -916,7 +941,7 @@ td,th{border:1px solid #d1d5db;padding:8px;}
                   href="/historico"
                   className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 transition hover:border-slate-950"
                 >
-                  Ver histÃ³rico
+                  Ver histórico
                 </Link>
                 <button
                   type="button"

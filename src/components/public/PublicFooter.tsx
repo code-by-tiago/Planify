@@ -5,7 +5,7 @@ import { planifyTools, toolCategories } from "@/lib/pro/planifyTools";
 const solutionLinks = [
   { href: "/dashboard", label: "Painel Planify" },
   { href: "/planejamentos", label: "Planejamentos BNCC" },
-  { href: "/dashboard?tipo=redacao", label: "Correção de redação" },
+  { href: "/dashboard?tipo=redacao", label: "Gerador de redação" },
   { href: "/biblioteca", label: "Biblioteca" },
 ];
 

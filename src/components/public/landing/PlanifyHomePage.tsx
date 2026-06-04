@@ -2,7 +2,6 @@ import Link from "next/link";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { PlanifyCard, PlanifyCardHeader, PlanifyStatCard } from "@/components/ui/PlanifyCard";
 import { LandingFaq } from "@/components/public/landing/LandingFaq";
-import { TeachyLessonPreview } from "@/components/public/landing/TeachyLessonPreview";
 import {
   appNavigation,
   planifyTools,
@@ -60,31 +59,27 @@ export function PlanifyHomePage() {
         id="inicio"
         className="scroll-mt-28 border-b border-indigo-100/60 pl-app-bg"
       >
-        <div className="mx-auto grid max-w-7xl items-center gap-12 px-5 py-14 sm:px-8 lg:grid-cols-2 lg:py-20">
-          <div>
-            <p className="text-xs font-black uppercase tracking-[0.2em] text-indigo-600">
-              Planify · IA pedagógica
-            </p>
-            <h1 className="mt-4 text-4xl font-black leading-[1.06] tracking-tight text-slate-950 sm:text-5xl">
-              Materiais de aula com IA,{" "}
-              <span className="pl-gradient-text">alinhados à BNCC.</span>
-            </h1>
-            <p className="mt-6 text-lg font-semibold leading-8 text-slate-600">
-              Um painel único para planejar, gerar, editar e exportar — com as
-              mesmas cores, organização e ferramentas que você usa logado na
-              plataforma.
-            </p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Link href="/dashboard" className="pl-btn-brand">
-                Acessar o painel
-                <PlanifyIcon name="arrowRight" className="h-4 w-4" />
-              </Link>
-              <Link href="/login" className="pl-btn-secondary">
-                Entrar
-              </Link>
-            </div>
+        <div className="mx-auto max-w-3xl px-5 py-14 text-center sm:px-8 lg:py-20">
+          <p className="text-xs font-black uppercase tracking-[0.2em] text-indigo-600">
+            Planify · IA pedagógica
+          </p>
+          <h1 className="mt-4 text-4xl font-black leading-[1.06] tracking-tight text-slate-950 sm:text-5xl">
+            Materiais de aula com IA,{" "}
+            <span className="pl-gradient-text">alinhados à BNCC.</span>
+          </h1>
+          <p className="mt-6 text-lg font-semibold leading-8 text-slate-600">
+            Um painel único para planejar, gerar, editar e exportar — foco na
+            qualidade do material, sem distrações na interface.
+          </p>
+          <div className="mt-8 flex flex-wrap justify-center gap-3">
+            <Link href="/dashboard" className="pl-btn-brand">
+              Acessar o painel
+              <PlanifyIcon name="arrowRight" className="h-4 w-4" />
+            </Link>
+            <Link href="/login" className="pl-btn-secondary">
+              Entrar
+            </Link>
           </div>
-          <TeachyLessonPreview variant="hero" />
         </div>
 
         <div className="mx-auto grid max-w-7xl gap-4 px-5 pb-14 sm:grid-cols-2 sm:px-8 lg:grid-cols-4">

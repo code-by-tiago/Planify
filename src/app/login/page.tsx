@@ -3,11 +3,13 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { createClient } from "@supabase/supabase-js";
 import { PublicHeader } from "@/components/public/PublicHeader";
 import { PublicFooter } from "@/components/public/PublicFooter";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
-import { TeachyLessonPreview } from "@/components/public/landing/TeachyLessonPreview";
+import {
+  signInAndSyncPremiumAccess,
+  signUpAndGoToPlans,
+} from "@/lib/auth/session-client";
 
 type Mode = "login" | "signup";
 
@@ -16,6 +18,22 @@ const benefits = [
   "Construtor de aula completo em um fluxo",
   "Editor integrado, histórico e DOCX oficial",
 ];
+
+function cleanRedirect(value: string | null): string {
+  if (!value || !value.startsWith("/") || value.startsWith("//")) {
+    return "/dashboard";
+  }
+
+  if (value === "/login" || value === "/sair") {
+    return "/dashboard";
+  }
+
+  return value;
+}
+
+function forceNavigate(path: string) {
+  window.location.href = path;
+}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -27,37 +45,22 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
-  const supabase = useMemo(() => {
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-    if (!url || !anonKey) {
-      return null;
-    }
-
-    return createClient(url, anonKey);
-  }, []);
-
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const redirectParam = params.get("redirect");
-    const premium = params.get("premium");
-
-    if (redirectParam) {
-      setRedirect(redirectParam);
-    }
-
-    setPremiumRequired(premium === "required");
+    setRedirect(cleanRedirect(params.get("redirect")));
+    setPremiumRequired(params.get("premium") === "required");
   }, []);
+
+  const loginHint = useMemo(() => {
+    if (premiumRequired) {
+      return "Plano ativo necessário para a área solicitada.";
+    }
+    return null;
+  }, [premiumRequired]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setMessage("");
-
-    if (!supabase) {
-      setMessage("Supabase não está configurado no frontend.");
-      return;
-    }
 
     if (!email.trim() || !senha.trim()) {
       setMessage("Informe e-mail e senha.");
@@ -67,40 +70,58 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      if (mode === "login") {
-        const { error } = await supabase.auth.signInWithPassword({
+      if (mode === "signup") {
+        const result = await signUpAndGoToPlans({
           email: email.trim(),
           password: senha,
         });
 
-        if (error) {
-          throw error;
+        if (!result.success) {
+          setMessage(result.message);
+          return;
         }
 
-        router.push(redirect || "/dashboard");
-        router.refresh();
+        setMessage(result.message);
+        window.setTimeout(() => {
+          forceNavigate(result.redirectTo || "/planos?cadastro=ok");
+        }, 500);
         return;
       }
 
-      const { error } = await supabase.auth.signUp({
+      const result = await signInAndSyncPremiumAccess({
         email: email.trim(),
         password: senha,
+        redirectTo: redirect,
+        requirePremium: false,
       });
 
-      if (error) {
-        throw error;
+      if (!result.success) {
+        setMessage(result.message);
+        return;
       }
 
-      setMessage(
-        "Conta criada. Se o Supabase exigir confirmação, verifique seu e-mail antes de entrar.",
-      );
-      setMode("login");
+      if (!result.premium) {
+        setMessage(
+          result.message ||
+            "Sua conta existe, mas ainda não possui plano ativo. Administradores e proprietários entram automaticamente.",
+        );
+        window.setTimeout(() => {
+          forceNavigate(result.redirectTo || "/planos?premium=required");
+        }, 600);
+        return;
+      }
+
+      setMessage("Login validado. Entrando...");
+      router.refresh();
+      window.setTimeout(() => {
+        forceNavigate(result.redirectTo || "/dashboard");
+      }, 350);
     } catch (error) {
-      const text =
+      setMessage(
         error instanceof Error
           ? error.message
-          : "Não foi possível concluir o acesso.";
-      setMessage(text);
+          : "Não foi possível concluir o acesso.",
+      );
     } finally {
       setLoading(false);
     }
@@ -112,7 +133,6 @@ export default function LoginPage() {
 
       <section className="mx-auto w-full max-w-7xl flex-1 px-5 py-10 sm:px-8 lg:py-14">
         <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-16">
-          {/* Coluna visual — estilo Teachy */}
           <div>
             <h1 className="text-3xl font-black leading-tight tracking-tight text-slate-950 sm:text-4xl lg:text-[2.75rem]">
               {mode === "login" ? (
@@ -129,7 +149,8 @@ export default function LoginPage() {
             </h1>
             <p className="mt-4 max-w-lg text-base font-medium leading-7 text-slate-600">
               Use o e-mail da sua assinatura para liberar o painel, os geradores
-              com IA e a exportação em DOCX oficial.
+              com IA e a exportação em DOCX oficial. Contas de administrador e
+              proprietário têm acesso liberado após o login.
             </p>
 
             <ul className="mt-6 grid gap-2.5 sm:max-w-md">
@@ -146,13 +167,8 @@ export default function LoginPage() {
                 </li>
               ))}
             </ul>
-
-            <div className="mt-8 hidden lg:block">
-              <TeachyLessonPreview />
-            </div>
           </div>
 
-          {/* Formulário */}
           <div className="rounded-3xl border border-slate-200/90 bg-white p-6 shadow-lg shadow-slate-200/40 sm:p-8">
             <p className="text-xs font-black uppercase tracking-[0.2em] text-indigo-600">
               Acesso Planify
@@ -166,7 +182,7 @@ export default function LoginPage() {
                 : "Cadastre-se e escolha um plano para liberar o premium."}
             </p>
 
-            {premiumRequired ? (
+            {loginHint ? (
               <div className="mt-5 flex gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">
                 <PlanifyIcon
                   name="alertCircle"
@@ -177,7 +193,8 @@ export default function LoginPage() {
                     Plano ativo necessário
                   </p>
                   <p className="mt-1 text-sm font-medium leading-6 text-amber-700">
-                    Entre com um e-mail que possua assinatura ativa ou{" "}
+                    Entre com um e-mail que possua assinatura ativa, permissão
+                    de administrador ou{" "}
                     <Link
                       href="/planos"
                       className="font-bold text-amber-900 underline"

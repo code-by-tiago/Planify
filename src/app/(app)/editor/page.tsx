@@ -14,7 +14,7 @@ export default function EditorPage() {
           </main>
         }
       >
-        <DashboardHubRedirect section="editor" />
+        <DashboardHubRedirect legacy="editor" />
       </Suspense>
     </PremiumAccessGate>
   );

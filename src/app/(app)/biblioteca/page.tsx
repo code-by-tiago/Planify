@@ -14,7 +14,7 @@ export default function BibliotecaPage() {
           </main>
         }
       >
-        <DashboardHubRedirect section="biblioteca" />
+        <DashboardHubRedirect legacy="biblioteca" />
       </Suspense>
     </PremiumAccessGate>
   );

@@ -14,7 +14,7 @@ export default function HistoricoPage() {
           </main>
         }
       >
-        <DashboardHubRedirect section="historico" />
+        <DashboardHubRedirect legacy="historico" />
       </Suspense>
     </PremiumAccessGate>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { PlanifyDashboardMain } from "@/components/dashboard/PlanifyDashboardMain";
@@ -9,11 +9,7 @@ import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { PlanifyShellSidebar } from "@/components/pro/PlanifyShellSidebar";
 import { PlanifySidebarNav } from "@/components/pro/PlanifySidebarNav";
 import { useSidebarSearchShortcut } from "@/hooks/useSidebarSearchShortcut";
-import {
-  dashboardSectionLabels,
-  isDashboardSection,
-  type DashboardSectionId,
-} from "@/lib/pro/dashboardViews";
+import { isDashboardSection } from "@/lib/pro/dashboardViews";
 import {
   getPlanifyTool,
   planifyTools,
@@ -35,23 +31,23 @@ function readTemaParam(searchParams: URLSearchParams): string {
   }
 }
 
+/** Rotas antigas ?secao= → ferramenta equivalente no painel único */
+const sectionToTool: Partial<Record<string, PlanifyToolId>> = {
+  planejamentos: "plano-aula",
+};
+
 export default function PlanifyDashboardShell() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [query, setQuery] = useState("");
   const searchRef = useRef<HTMLInputElement>(null);
   useSidebarSearchShortcut(searchRef);
+
+  const query = searchParams.get("q") ?? "";
 
   const selectedToolId = useMemo(() => {
     const tipo = searchParams.get("tipo");
     return isValidToolId(tipo) ? tipo : null;
   }, [searchParams]);
-
-  const selectedSectionId = useMemo(() => {
-    if (selectedToolId) return null;
-    const secao = searchParams.get("secao");
-    return isDashboardSection(secao) ? secao : null;
-  }, [searchParams, selectedToolId]);
 
   const initialTopic = useMemo(
     () => readTemaParam(searchParams),
@@ -68,26 +64,24 @@ export default function PlanifyDashboardShell() {
     [router, searchParams],
   );
 
+  /** Converte ?secao= legado em ?tipo= e remove secao */
+  useEffect(() => {
+    const secao = searchParams.get("secao");
+    if (!secao || !isDashboardSection(secao) || selectedToolId) return;
+
+    const mapped = sectionToTool[secao];
+    replaceDashboardUrl((params) => {
+      params.delete("secao");
+      if (mapped) params.set("tipo", mapped);
+    });
+  }, [searchParams, selectedToolId, replaceDashboardUrl]);
+
   const selectInicio = useCallback(() => {
     replaceDashboardUrl((params) => {
       params.delete("tipo");
       params.delete("secao");
     });
   }, [replaceDashboardUrl]);
-
-  const selectSection = useCallback(
-    (sectionId: DashboardSectionId | null) => {
-      replaceDashboardUrl((params) => {
-        params.delete("tipo");
-        if (sectionId) {
-          params.set("secao", sectionId);
-        } else {
-          params.delete("secao");
-        }
-      });
-    },
-    [replaceDashboardUrl],
-  );
 
   const selectTool = useCallback(
     (toolId: PlanifyToolId | null) => {
@@ -98,6 +92,17 @@ export default function PlanifyDashboardShell() {
         } else {
           params.delete("tipo");
         }
+      });
+    },
+    [replaceDashboardUrl],
+  );
+
+  const setQuery = useCallback(
+    (value: string) => {
+      replaceDashboardUrl((params) => {
+        const term = value.trim();
+        if (term) params.set("q", term);
+        else params.delete("q");
       });
     },
     [replaceDashboardUrl],
@@ -123,21 +128,9 @@ export default function PlanifyDashboardShell() {
 
   const activeTool = selectedToolId ? getPlanifyTool(selectedToolId) : null;
 
-  const panelTitle = useMemo(() => {
-    if (activeTool) return activeTool.title;
-    if (selectedSectionId) return dashboardSectionLabels[selectedSectionId];
-    return "Início";
-  }, [activeTool, selectedSectionId]);
-
-  const panelSubtitle = useMemo(() => {
-    if (activeTool) return activeTool.shortTitle;
-    if (selectedSectionId) return "Workspace";
-    return "Painel Planify";
-  }, [activeTool, selectedSectionId]);
-
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape" && (selectedToolId || selectedSectionId)) {
+      if (event.key === "Escape" && selectedToolId) {
         selectInicio();
         return;
       }
@@ -145,7 +138,8 @@ export default function PlanifyDashboardShell() {
         event.key === "/" &&
         !event.metaKey &&
         !event.ctrlKey &&
-        !event.altKey
+        !event.altKey &&
+        !selectedToolId
       ) {
         const target = event.target;
         if (
@@ -162,88 +156,77 @@ export default function PlanifyDashboardShell() {
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [selectedToolId, selectedSectionId, selectInicio]);
-
-  const primaryAction = (
-    <button
-      type="button"
-      onClick={() => selectSection("planejamentos")}
-      className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-3 text-sm font-black text-white transition hover:opacity-95"
-    >
-      <PlanifyIcon name="layers" className="h-4 w-4" />
-      Construtor de aula
-    </button>
-  );
+  }, [selectedToolId, selectInicio]);
 
   return (
     <div className="planify-ui3 pl-dashboard-root pl-app-bg flex h-screen w-screen overflow-hidden text-slate-950">
-      <PlanifyShellSidebar variant="teachy" alwaysVisible lumiHint="Menu fixo · / para buscar">
+      <PlanifyShellSidebar variant="teachy" alwaysVisible lumiHint="Início e ferramentas no painel">
         <PlanifySidebarNav
           mode="studio"
+          hideToolList
           query={query}
           onQueryChange={setQuery}
-          primaryAction={primaryAction}
           selectedToolId={selectedToolId}
-          selectedSectionId={selectedSectionId}
           onSelectTool={selectTool}
-          onSelectSection={selectSection}
           onSelectInicio={selectInicio}
           pathname="/dashboard"
           searchInputRef={searchRef}
         />
       </PlanifyShellSidebar>
 
-      <main className="flex h-screen min-w-0 flex-1 flex-col overflow-hidden bg-[#f8f5ff]/80">
-        <header className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-2.5 sm:px-5">
-          <div className="min-w-0 flex-1">
-            <nav
-              aria-label="Localização"
-              className="mb-0.5 flex flex-wrap items-center gap-1 text-[11px] font-bold text-slate-400"
-            >
+      <main className="flex h-screen min-w-0 flex-1 flex-col overflow-hidden bg-slate-50">
+        {selectedToolId ? (
+          <header className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-2.5 sm:px-5">
+            <div className="flex min-w-0 flex-1 items-center gap-2">
               <button
                 type="button"
                 onClick={selectInicio}
-                className="transition hover:text-indigo-600"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-600 transition hover:bg-slate-100"
+                aria-label="Voltar às ferramentas"
               >
-                Início
+                <PlanifyIcon name="arrowLeft" className="h-5 w-5" />
               </button>
-              {(selectedToolId || selectedSectionId) && (
-                <>
-                  <PlanifyIcon
-                    name="chevronRight"
-                    className="h-3 w-3 shrink-0 opacity-60"
-                  />
-                  <span className="text-indigo-600">{panelSubtitle}</span>
-                </>
-              )}
-            </nav>
-            <h1 className="truncate text-base font-black text-slate-950 sm:text-lg">
-              {panelTitle}
-            </h1>
-          </div>
-
-          <div className="hidden shrink-0 sm:block">
-            <PlanifyBrand compact />
-          </div>
-
-          <div className="flex shrink-0 items-center gap-2">
+              <div className="min-w-0">
+                <p className="text-[11px] font-bold text-slate-400">
+                  Ferramenta
+                </p>
+                <h1 className="truncate text-base font-black text-slate-950">
+                  {activeTool?.title}
+                </h1>
+              </div>
+            </div>
+            <div className="hidden shrink-0 sm:block">
+              <PlanifyBrand compact />
+            </div>
             <Link
               href="/planos"
-              className="rounded-lg bg-gradient-to-r from-indigo-600 to-violet-600 px-3 py-1.5 text-xs font-black text-white transition hover:opacity-95"
+              className="shrink-0 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-black text-white hover:bg-indigo-700"
             >
               Planos
             </Link>
-          </div>
-        </header>
+          </header>
+        ) : (
+          <header className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-2 sm:px-5">
+            <PlanifyBrand compact />
+            <Link
+              href="/planos"
+              className="shrink-0 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-black text-white hover:bg-indigo-700"
+            >
+              Planos
+            </Link>
+          </header>
+        )}
 
         <div className="min-h-0 flex-1 overflow-hidden">
           <PlanifyDashboardMain
             toolId={selectedToolId}
-            sectionId={selectedSectionId}
+            query={query}
+            onQueryChange={setQuery}
             initialTopic={initialTopic}
             onTopicChange={setTopic}
-            onOpenSection={selectSection}
+            onSelectTool={(id) => selectTool(id)}
             onCloseTool={selectInicio}
+            searchInputRef={searchRef}
           />
         </div>
       </main>

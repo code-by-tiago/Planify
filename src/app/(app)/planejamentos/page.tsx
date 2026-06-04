@@ -14,7 +14,7 @@ export default function PlanejamentosPage() {
           </main>
         }
       >
-        <DashboardHubRedirect section="planejamentos" />
+        <DashboardHubRedirect legacy="planejamentos" />
       </Suspense>
     </PremiumAccessGate>
   );

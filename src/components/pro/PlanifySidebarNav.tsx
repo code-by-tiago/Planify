@@ -26,6 +26,8 @@ type PlanifySidebarNavProps = {
   selectedSectionId?: DashboardSectionId | null;
   onSelectSection?: (sectionId: DashboardSectionId) => void;
   onSelectInicio?: () => void;
+  /** Painel Teachy: ferramentas só na grade principal, não na sidebar */
+  hideToolList?: boolean;
   pathname?: string;
   activeTipo?: string | null;
   isNavActive?: (href: string) => boolean;
@@ -43,6 +45,7 @@ export function PlanifySidebarNav({
   selectedSectionId = null,
   onSelectSection,
   onSelectInicio,
+  hideToolList = false,
   pathname = "",
   activeTipo = null,
   isNavActive,
@@ -112,23 +115,27 @@ export function PlanifySidebarNav({
 
   return (
     <>
-      <div className="shrink-0 px-4 pt-4">
-        <div className="relative">
-          <PlanifyIcon
-            name="search"
-            className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-violet-300"
-          />
-          <input
-            ref={searchInputRef}
-            value={query}
-            onChange={(event) => onQueryChange(event.target.value)}
-            placeholder="Buscar ferramenta… ( / )"
-            aria-label="Buscar ferramenta"
-            className="w-full rounded-2xl border border-rose-100/80 bg-white/90 py-2.5 pl-10 pr-3 text-sm font-semibold text-slate-800 outline-none transition placeholder:text-violet-300 focus:border-fuchsia-300 focus:ring-4 focus:ring-fuchsia-100"
-          />
+      {!hideToolList ? (
+        <div className="shrink-0 px-4 pt-4">
+          <div className="relative">
+            <PlanifyIcon
+              name="search"
+              className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-violet-300"
+            />
+            <input
+              ref={searchInputRef}
+              value={query}
+              onChange={(event) => onQueryChange(event.target.value)}
+              placeholder="Buscar ferramenta… ( / )"
+              aria-label="Buscar ferramenta"
+              className="w-full rounded-2xl border border-rose-100/80 bg-white/90 py-2.5 pl-10 pr-3 text-sm font-semibold text-slate-800 outline-none transition placeholder:text-violet-300 focus:border-fuchsia-300 focus:ring-4 focus:ring-fuchsia-100"
+            />
+          </div>
+          {primaryAction ? <div className="mt-3">{primaryAction}</div> : null}
         </div>
-        {primaryAction ? <div className="mt-3">{primaryAction}</div> : null}
-      </div>
+      ) : primaryAction ? (
+        <div className="shrink-0 px-4 pt-4">{primaryAction}</div>
+      ) : null}
 
       <nav className="flex-1 space-y-5 px-4 py-4">
         <div>
@@ -175,7 +182,8 @@ export function PlanifySidebarNav({
           </div>
         </div>
 
-        {groupedTools.map((group) => (
+        {!hideToolList
+          ? groupedTools.map((group) => (
           <div key={group.category.id}>
             <p className="pl-cat-label px-1 text-[10px] font-black uppercase tracking-[0.2em]">
               {group.category.label}
@@ -224,11 +232,19 @@ export function PlanifySidebarNav({
               })}
             </div>
           </div>
-        ))}
+            ))
+          : null}
 
-        {groupedTools.length === 0 ? (
+        {!hideToolList && groupedTools.length === 0 ? (
           <p className="px-1 text-sm font-semibold text-violet-300">
             Nenhuma ferramenta encontrada.
+          </p>
+        ) : null}
+
+        {hideToolList ? (
+          <p className="px-1 text-xs font-semibold leading-relaxed text-violet-500/90">
+            As 13 ferramentas com IA estão na grade ao centro — clique em uma para
+            abrir aqui.
           </p>
         ) : null}
       </nav>

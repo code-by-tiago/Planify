@@ -2,27 +2,49 @@
 
 import { useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import type { DashboardSectionId } from "@/lib/pro/dashboardViews";
+import { planifyTools } from "@/lib/pro/planifyTools";
+
+const sectionToTool: Record<string, string> = {
+  planejamentos: "plano-aula",
+};
+
+function isValidTipo(value: string | null): boolean {
+  return planifyTools.some((tool) => tool.id === value);
+}
 
 type DashboardHubRedirectProps = {
-  section: DashboardSectionId;
+  /** Rota legada → abre ferramenta ou painel */
+  legacy?: "planejamentos" | "editor" | "historico" | "biblioteca" | "marketplace" | "materiais";
 };
 
 /**
- * Redireciona rotas legadas (/planejamentos, /editor, …) para o painel único.
+ * Redireciona rotas legadas para o painel único (/dashboard).
  */
 export default function DashboardHubRedirect({
-  section,
+  legacy,
 }: DashboardHubRedirectProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
   useEffect(() => {
     const params = new URLSearchParams(searchParams.toString());
-    params.delete("tipo");
-    params.set("secao", section);
-    router.replace(`/dashboard?${params.toString()}`, { scroll: false });
-  }, [router, searchParams, section]);
+    params.delete("secao");
+
+    const tipoFromUrl = params.get("tipo");
+    if (isValidTipo(tipoFromUrl) && tipoFromUrl) {
+      router.replace(`/dashboard?${params.toString()}`, { scroll: false });
+      return;
+    }
+
+    if (legacy && sectionToTool[legacy]) {
+      params.set("tipo", sectionToTool[legacy]);
+    } else {
+      params.delete("tipo");
+    }
+
+    const qs = params.toString();
+    router.replace(qs ? `/dashboard?${qs}` : "/dashboard", { scroll: false });
+  }, [router, searchParams, legacy]);
 
   return (
     <main className="planify-ui3 flex h-full min-h-[280px] flex-1 items-center justify-center p-6">

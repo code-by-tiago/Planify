@@ -14,7 +14,7 @@ export default function MarketplacePage() {
           </main>
         }
       >
-        <DashboardHubRedirect section="marketplace" />
+        <DashboardHubRedirect legacy="marketplace" />
       </Suspense>
     </PremiumAccessGate>
   );

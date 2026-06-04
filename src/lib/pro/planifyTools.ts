@@ -280,36 +280,6 @@ export type AppNavItem = {
 
 export const appNavigation: AppNavItem[] = [
   { label: "Início", href: "/dashboard", icon: "home", panel: "inicio" },
-  {
-    label: "Planejamentos",
-    href: "/dashboard?secao=planejamentos",
-    icon: "clipboard",
-    panel: "planejamentos",
-  },
-  {
-    label: "Editor",
-    href: "/dashboard?secao=editor",
-    icon: "editor",
-    panel: "editor",
-  },
-  {
-    label: "Histórico",
-    href: "/dashboard?secao=historico",
-    icon: "history",
-    panel: "historico",
-  },
-  {
-    label: "Biblioteca",
-    href: "/dashboard?secao=biblioteca",
-    icon: "library",
-    panel: "biblioteca",
-  },
-  {
-    label: "Marketplace",
-    href: "/dashboard?secao=marketplace",
-    icon: "market",
-    panel: "marketplace",
-  },
   { label: "Planos", href: "/planos", icon: "plans", panel: "external" },
 ];
 

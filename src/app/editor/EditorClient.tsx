@@ -427,8 +427,20 @@ export function EditorClient() {
   const [selectedImageName, setSelectedImageName] = useState("");
   const [selectedImageWidth, setSelectedImageWidth] = useState(60);
   const [documentSource, setDocumentSource] = useState<StoredEditorDocument | null>(null);
+  const [originHint, setOriginHint] = useState<string | null>(null);
 
   const lastSavedLabel = useMemo(() => nowLabel(), []);
+
+  useEffect(() => {
+    const from = new URLSearchParams(window.location.search).get("from");
+    if (from === "materiais") {
+      setOriginHint(
+        "Material didático recebido do gerador — ajuste o texto, complemente e exporte em DOCX quando estiver pronto.",
+      );
+    } else if (from === "planejamentos") {
+      setOriginHint("Planejamento recebido — revise a formatação antes de exportar.");
+    }
+  }, []);
 
   useEffect(() => {
     const initial = loadInitialDocument();
@@ -1165,6 +1177,11 @@ export function EditorClient() {
         />
       }
     >
+      {originHint ? (
+        <div className="mb-4 rounded-2xl border border-violet-200 bg-violet-50 px-4 py-3 text-sm font-semibold text-violet-900">
+          {originHint}
+        </div>
+      ) : null}
       <div className="grid gap-6 xl:grid-cols-[280px_1fr]">
         <aside className="space-y-5">
           <div className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">

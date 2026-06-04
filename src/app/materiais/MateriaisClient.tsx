@@ -21,6 +21,16 @@ import {
   getQuantityPresets,
 } from "@/lib/educacao/material-quantity-presets";
 import {
+  clearMaterialHistory,
+  loadMaterialHistoryPreview,
+  openMaterialInEditor,
+  persistGeneratedMaterial,
+  readAutoOpenEditorPreference,
+  writeAutoOpenEditorPreference,
+  type MaterialEditorMeta,
+  type MaterialHistoryPreview,
+} from "@/lib/materiais/material-editor-flow";
+import {
   getPlanifyTool,
   planifyTools,
   toolCategories,
@@ -41,19 +51,6 @@ type FormatoJogo =
   | "memoria"
   | "domino"
   | "cartas";
-
-type MaterialHistoryItem = {
-  id: string;
-  titulo: string;
-  tipo: PlanifyToolId;
-  tema: string;
-  componente: string;
-  anoSerie: string;
-  html: string;
-  createdAt: string;
-};
-
-const HISTORY_KEY = "planify-historico-materiais";
 
 const formatoJogos: { id: FormatoJogo; label: string }[] = [
   { id: "caca-palavras", label: "Caça-palavras" },
@@ -189,15 +186,6 @@ function buildTitle(mode: PlanifyToolId, tema: string): string {
   return `${config.shortTitle} — ${tema || "Material Planify"}`;
 }
 
-function loadHistory(): MaterialHistoryItem[] {
-  try {
-    const raw = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]") as unknown;
-    return Array.isArray(raw) ? (raw as MaterialHistoryItem[]) : [];
-  } catch {
-    return [];
-  }
-}
-
 function formatDate(value: string): string {
   try {
     return new Date(value).toLocaleDateString("pt-BR", {
@@ -253,13 +241,16 @@ export function MateriaisClient({
   const [erro, setErro] = useState("");
   const [loading, setLoading] = useState(false);
   const [busca, setBusca] = useState("");
-  const [historico, setHistorico] = useState<MaterialHistoryItem[]>([]);
+  const [historico, setHistorico] = useState<MaterialHistoryPreview[]>([]);
+  const [abrirEditorAutomatico, setAbrirEditorAutomatico] = useState(true);
+  const [materialSalvo, setMaterialSalvo] = useState(false);
 
   useEffect(() => {
     if (studioMode && initialTipo) {
       setTipo(initialTipo);
       setModalAberto(true);
-      setHistorico(loadHistory());
+      setHistorico(loadMaterialHistoryPreview());
+      setAbrirEditorAutomatico(readAutoOpenEditorPreference());
       return;
     }
 
@@ -276,7 +267,8 @@ export function MateriaisClient({
       setCategoria(categoriaUrl as ToolCategoryId);
     }
 
-    setHistorico(loadHistory());
+    setHistorico(loadMaterialHistoryPreview());
+    setAbrirEditorAutomatico(readAutoOpenEditorPreference());
   }, [studioMode, initialTipo]);
 
   useEffect(() => {
@@ -476,55 +468,48 @@ export function MateriaisClient({
     setErro("");
   }
 
-  function salvarHistorico(html: string) {
-    const item: MaterialHistoryItem = {
-      id: `${Date.now()}`,
-      titulo: buildTitle(tipo, tema),
-      tipo,
+  function buildMaterialMeta(pipeline?: string | null): MaterialEditorMeta {
+    return {
+      toolId: tipo,
       tema,
       componente,
       anoSerie,
-      html,
-      createdAt: new Date().toISOString(),
+      etapa,
+      areaConhecimento,
+      pipeline: pipeline ?? pipelineGeracao,
     };
-
-    const keys = [
-      "planify-historico-materiais",
-      "planify_historico_materiais",
-      "planifyHistoricoMateriais",
-    ];
-
-    keys.forEach((key) => {
-      try {
-        const current = JSON.parse(localStorage.getItem(key) || "[]") as unknown;
-        const list = Array.isArray(current) ? current : [];
-        localStorage.setItem(key, JSON.stringify([item, ...list].slice(0, 50)));
-      } catch {
-        localStorage.setItem(key, JSON.stringify([item]));
-      }
-    });
-
-    setHistorico(loadHistory());
   }
 
   function limparHistorico() {
-    const keys = [
-      "planify-historico-materiais",
-      "planify_historico_materiais",
-      "planifyHistoricoMateriais",
-    ];
-    keys.forEach((key) => localStorage.removeItem(key));
+    clearMaterialHistory();
     setHistorico([]);
   }
 
-  function reabrirHistorico(item: MaterialHistoryItem) {
+  function reabrirHistorico(item: MaterialHistoryPreview) {
     setTipo(item.tipo);
     setTema(item.tema);
     setComponente(item.componente);
     setAnoSerie(item.anoSerie);
     setResultadoHtml(item.html);
     setErro("");
+    setMaterialSalvo(true);
     setModalAberto(true);
+  }
+
+  function abrirHistoricoNoEditor(item: MaterialHistoryPreview) {
+    openMaterialInEditor(
+      item.html,
+      item.titulo,
+      {
+        toolId: item.tipo,
+        tema: item.tema,
+        componente: item.componente,
+        anoSerie: item.anoSerie,
+        etapa,
+        areaConhecimento,
+      },
+      { from: "materiais" },
+    );
   }
 
   function abrirNoEditor() {
@@ -533,24 +518,12 @@ export function MateriaisClient({
       return;
     }
 
-    const documento = {
-      titulo: buildTitle(tipo, tema),
-      tipo: "material-didatico",
-      subtipo: tipo,
-      tema,
-      componente,
-      anoSerie,
-      html: resultadoHtml,
-      conteudoHtml: resultadoHtml,
-      origem: "materiais",
-      createdAt: new Date().toISOString(),
-    };
-
-    localStorage.setItem("planify-editor-document", JSON.stringify(documento));
-    localStorage.setItem("planifyEditorDocument", JSON.stringify(documento));
-    localStorage.setItem("documentoEditor", JSON.stringify(documento));
-    localStorage.setItem("editorContent", resultadoHtml);
-    window.location.href = "/editor";
+    openMaterialInEditor(
+      resultadoHtml,
+      buildTitle(tipo, tema),
+      buildMaterialMeta(),
+      { from: "materiais" },
+    );
   }
 
   function baixarWord() {
@@ -558,6 +531,13 @@ export function MateriaisClient({
       setErro("Gere um material antes de baixar.");
       return;
     }
+
+    persistGeneratedMaterial(
+      resultadoHtml,
+      buildTitle(tipo, tema),
+      buildMaterialMeta(),
+    );
+    setHistorico(loadMaterialHistoryPreview());
 
     const titulo = buildTitle(tipo, tema).replace(/[\\/:*?"<>|]/g, "-");
     const html = `<!doctype html>
@@ -608,6 +588,7 @@ td,th{border:1px solid #d1d5db;padding:8px;}
     setResultadoHtml("");
     setAlertasGeracao([]);
     setPipelineGeracao(null);
+    setMaterialSalvo(false);
 
     try {
       const objetivoComposto = [
@@ -662,7 +643,7 @@ td,th{border:1px solid #d1d5db;padding:8px;}
         );
       }
 
-      setResultadoHtml(html);
+      let pipelineLabel: string | null = null;
 
       if (data && typeof data === "object") {
         const record = data as Record<string, unknown>;
@@ -677,11 +658,24 @@ td,th{border:1px solid #d1d5db;padding:8px;}
             engine: "Motor visual dedicado",
             "engine-fallback": "Motor auxiliar (fallback)",
           };
-          setPipelineGeracao(labels[record.pipeline] ?? record.pipeline);
+          pipelineLabel = labels[record.pipeline] ?? record.pipeline;
+          setPipelineGeracao(pipelineLabel);
         }
       }
 
-      salvarHistorico(html);
+      const titulo = buildTitle(tipo, tema);
+      persistGeneratedMaterial(html, titulo, buildMaterialMeta(pipelineLabel));
+      setHistorico(loadMaterialHistoryPreview());
+      setMaterialSalvo(true);
+
+      if (abrirEditorAutomatico) {
+        openMaterialInEditor(html, titulo, buildMaterialMeta(pipelineLabel), {
+          from: "materiais",
+        });
+        return;
+      }
+
+      setResultadoHtml(html);
     } catch (error) {
       const message =
         error instanceof Error
@@ -981,32 +975,48 @@ td,th{border:1px solid #d1d5db;padding:8px;}
             ))}
           </div>
 
-          <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
-            {showGabarito ? (
-              <label className="flex cursor-pointer items-center gap-3 rounded-2xl bg-slate-50 px-4 py-3 text-sm font-bold text-slate-700">
-                <input
-                  type="checkbox"
-                  checked={incluirGabarito}
-                  onChange={(event) =>
-                    setIncluirGabarito(event.target.checked)
-                  }
-                  className="h-4 w-4 accent-slate-950"
-                />
-                {gabaritoLabel}
-              </label>
-            ) : (
-              <span className="text-sm font-semibold text-slate-500">
-                Gabarito não se aplica a esta ferramenta.
-              </span>
-            )}
+          <div className="mt-5 flex flex-col gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              {showGabarito ? (
+                <label className="flex cursor-pointer items-center gap-3 rounded-2xl bg-slate-50 px-4 py-3 text-sm font-bold text-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={incluirGabarito}
+                    onChange={(event) =>
+                      setIncluirGabarito(event.target.checked)
+                    }
+                    className="h-4 w-4 accent-slate-950"
+                  />
+                  {gabaritoLabel}
+                </label>
+              ) : (
+                <span className="text-sm font-semibold text-slate-500">
+                  Gabarito não se aplica a esta ferramenta.
+                </span>
+              )}
 
-            <button
-              type="button"
-              onClick={limparFormulario}
-              className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-700 transition hover:border-slate-950"
-            >
-              Limpar
-            </button>
+              <button
+                type="button"
+                onClick={limparFormulario}
+                className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-700 transition hover:border-slate-950"
+              >
+                Limpar
+              </button>
+            </div>
+
+            <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-indigo-100 bg-indigo-50/70 px-4 py-3 text-sm font-bold text-indigo-900">
+              <input
+                type="checkbox"
+                checked={abrirEditorAutomatico}
+                onChange={(event) => {
+                  const next = event.target.checked;
+                  setAbrirEditorAutomatico(next);
+                  writeAutoOpenEditorPreference(next);
+                }}
+                className="h-4 w-4 accent-indigo-700"
+              />
+              Abrir no editor automaticamente após gerar (recomendado para revisar e complementar)
+            </label>
           </div>
 
           {erro ? (
@@ -1068,7 +1078,24 @@ td,th{border:1px solid #d1d5db;padding:8px;}
                   ) : null}
                 </div>
               )}
+              {materialSalvo ? (
+                <aside className="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+                  <p className="font-black">Salvo no histórico do Planify</p>
+                  <p className="mt-1 font-semibold">
+                    Revise e complemente no editor antes de exportar. Todas as 13
+                    ferramentas seguem o mesmo fluxo.
+                  </p>
+                </aside>
+              ) : null}
               <div className="mb-4 flex flex-wrap justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={abrirNoEditor}
+                  className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-2.5 text-sm font-black text-white shadow-sm transition hover:-translate-y-0.5 hover:opacity-95"
+                >
+                  <PlanifyIcon name="editor" className="h-4 w-4" />
+                  Editar no editor
+                </button>
                 <button
                   type="button"
                   onClick={() => void executarGeracao()}
@@ -1080,20 +1107,19 @@ td,th{border:1px solid #d1d5db;padding:8px;}
                 </button>
                 <button
                   type="button"
-                  onClick={abrirNoEditor}
-                  className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 transition hover:border-slate-950"
-                >
-                  <PlanifyIcon name="editor" className="h-4 w-4" />
-                  Abrir no Editor
-                </button>
-                <button
-                  type="button"
                   onClick={baixarWord}
-                  className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-2 text-sm font-black text-white transition hover:-translate-y-0.5 hover:opacity-95"
+                  className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 transition hover:border-slate-950"
                 >
                   <PlanifyIcon name="download" className="h-4 w-4" />
                   Baixar .doc
                 </button>
+                <Link
+                  href="/historico"
+                  className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 transition hover:border-slate-950"
+                >
+                  <PlanifyIcon name="history" className="h-4 w-4" />
+                  Histórico
+                </Link>
               </div>
               <article
                 className="rounded-3xl border border-slate-200 bg-white p-6 text-sm leading-7 text-slate-800 shadow-sm [&_h1]:text-3xl [&_h1]:font-black [&_h2]:mt-6 [&_h2]:text-xl [&_h2]:font-black [&_h3]:mt-4 [&_h3]:font-black [&_li]:ml-5 [&_ol]:list-decimal [&_p]:my-3 [&_table]:w-full [&_table]:border-collapse [&_td]:border [&_td]:border-slate-200 [&_td]:p-2 [&_th]:border [&_th]:border-slate-200 [&_th]:p-2 [&_ul]:list-disc"
@@ -1243,7 +1269,7 @@ td,th{border:1px solid #d1d5db;padding:8px;}
                   Materiais recentes
                 </h2>
                 <p className="text-sm font-semibold text-slate-500">
-                  Reabra um material gerado recentemente neste dispositivo.
+                  Sincronizado com o histórico global — abra no editor para editar.
                 </p>
               </div>
               <div className="flex items-center gap-2">
@@ -1267,26 +1293,38 @@ td,th{border:1px solid #d1d5db;padding:8px;}
               {historico.slice(0, 6).map((item) => {
                 const itemTool = getPlanifyTool(item.tipo);
                 return (
-                  <button
+                  <div
                     key={item.id}
-                    type="button"
-                    onClick={() => reabrirHistorico(item)}
-                    className="group flex items-start gap-3 rounded-[1.4rem] border border-slate-200 bg-slate-50 p-4 text-left transition hover:-translate-y-0.5 hover:border-slate-950 hover:bg-white hover:shadow-lg"
+                    className="group flex items-start gap-3 rounded-[1.4rem] border border-slate-200 bg-slate-50 p-4 transition hover:-translate-y-0.5 hover:border-slate-950 hover:bg-white hover:shadow-lg"
                   >
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white text-slate-700 shadow-sm transition group-hover:bg-indigo-600 group-hover:text-white">
-                      <PlanifyIcon name={itemTool.icon} className="h-5 w-5" />
-                    </span>
-                    <span className="min-w-0">
-                      <span className="block truncate text-sm font-black text-slate-950">
-                        {item.tema || itemTool.shortTitle}
+                    <button
+                      type="button"
+                      onClick={() => reabrirHistorico(item)}
+                      className="flex min-w-0 flex-1 items-start gap-3 text-left"
+                    >
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white text-slate-700 shadow-sm transition group-hover:bg-indigo-600 group-hover:text-white">
+                        <PlanifyIcon name={itemTool.icon} className="h-5 w-5" />
                       </span>
-                      <span className="mt-0.5 block truncate text-xs font-semibold text-slate-500">
-                        {itemTool.shortTitle}
-                        {item.componente ? ` â€¢ ${item.componente}` : ""}
-                        {item.createdAt ? ` â€¢ ${formatDate(item.createdAt)}` : ""}
+                      <span className="min-w-0">
+                        <span className="block truncate text-sm font-black text-slate-950">
+                          {item.tema || itemTool.shortTitle}
+                        </span>
+                        <span className="mt-0.5 block truncate text-xs font-semibold text-slate-500">
+                          {itemTool.shortTitle}
+                          {item.componente ? ` · ${item.componente}` : ""}
+                          {item.createdAt ? ` · ${formatDate(item.createdAt)}` : ""}
+                        </span>
                       </span>
-                    </span>
-                  </button>
+                    </button>
+                    <button
+                      type="button"
+                      title="Abrir no editor"
+                      onClick={() => abrirHistoricoNoEditor(item)}
+                      className="shrink-0 rounded-xl border border-slate-200 bg-white p-2 text-slate-600 transition hover:border-indigo-500 hover:text-indigo-700"
+                    >
+                      <PlanifyIcon name="editor" className="h-4 w-4" />
+                    </button>
+                  </div>
                 );
               })}
             </div>

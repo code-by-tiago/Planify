@@ -45,7 +45,7 @@ export function PublicHeader({ active }: PublicHeaderProps) {
   return (
     <header className="planify-ui3-header sticky top-0 z-50 border-b border-indigo-100/80 bg-white/90 backdrop-blur-md">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-5 py-3 sm:px-8">
-        <PlanifyBrand href="/" hideTagline />
+        <PlanifyBrand href="/dashboard" hideTagline />
 
         <nav className="hidden items-center gap-0.5 lg:flex">
           {navLinks.map((item) => (
@@ -85,7 +85,7 @@ export function PublicHeader({ active }: PublicHeaderProps) {
               className="absolute right-0 top-0 flex h-full w-[86%] max-w-sm flex-col bg-white p-5 shadow-2xl"
             >
               <div className="flex items-center justify-between">
-                <PlanifyBrand href="/" />
+                <PlanifyBrand href="/dashboard" />
                 <button type="button" onClick={() => setOpen(false)} aria-label="Fechar" className="flex h-10 w-10 items-center justify-center rounded-full border border-indigo-100">
                   <PlanifyIcon name="close" className="h-5 w-5" />
                 </button>

@@ -37,10 +37,10 @@ export default function NotFound() {
               Planejamentos
             </Link>
             <Link
-              href="/"
+              href="/planos"
               className="inline-flex justify-center rounded-full border border-slate-200 px-6 py-3 text-sm font-bold text-slate-600 hover:text-indigo-700"
             >
-              Página inicial
+              Ver planos
             </Link>
           </div>
         </div>

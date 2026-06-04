@@ -5,9 +5,9 @@ export function dashboardToolHref(toolId: PlanifyToolId | string) {
   return `/dashboard?tipo=${toolId}`;
 }
 
-/** Landing pública — abre a ferramenta no painel direito sem sair da home */
+/** @deprecated Use dashboardToolHref — a raiz redireciona para /dashboard */
 export function homeToolHref(toolId: PlanifyToolId | string) {
-  return `/?tipo=${toolId}`;
+  return dashboardToolHref(toolId);
 }
 
 export function dashboardWithTopicHref(toolId: PlanifyToolId | string, tema: string) {

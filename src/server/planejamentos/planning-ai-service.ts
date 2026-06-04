@@ -1,3 +1,10 @@
+import { generateGeminiJSON } from "../ai/gemini-client";
+import {
+  buildPlanningQualityRetryNote,
+  getPlanningOutputIssues,
+} from "./planning-quality";
+import { splitPlanningConteudos } from "./planning-validation";
+
 type UnknownRecord = Record<string, unknown>;
 
 export type PlanningSkill = {
@@ -165,19 +172,7 @@ REGRAS ESPECÍFICAS PARA LÍNGUA ESPANHOLA NO ENSINO MÉDIO:
 `.trim();
 }
 
-function splitConteudos(value: unknown): string[] {
-  if (Array.isArray(value)) {
-    return value
-      .flatMap((item) => splitConteudos(item))
-      .map((item) => item.trim())
-      .filter(Boolean);
-  }
-
-  return normalizeText(value)
-    .split(/\r?\n|;/)
-    .map((item) => item.trim())
-    .filter(Boolean);
-}
+const splitConteudos = splitPlanningConteudos;
 
 
 function expandConteudosForAnnualStandard(conteudos: string[], tipo: "anual" | "trimestral"): string[] {
@@ -232,9 +227,25 @@ function getTrimestre(payload: PlanningAiPayload): number {
   return Math.min(Math.max(parsed, 1), 3);
 }
 
+function buildSelectedSkillsIndex(skills: PlanningSkill[]): Map<string, PlanningSkill> {
+  const index = new Map<string, PlanningSkill>();
+
+  for (const skill of skills) {
+    const codigo = normalizeText(skill.codigo).toUpperCase();
+
+    if (!codigo || codigo === "BNCC") {
+      continue;
+    }
+
+    index.set(codigo, skill);
+  }
+
+  return index;
+}
+
 function normalizeSkill(skill: unknown): PlanningSkill {
   const record = (skill || {}) as UnknownRecord;
-  const codigo = normalizeText(record.codigo || record["código"] || record.code || "BNCC");
+  const codigo = normalizeText(record.codigo || record["código"] || record.code);
   const descricao = normalizeText(
     record.descricao || record["descrição"] || record.description || record.texto || record.label,
   )
@@ -287,16 +298,53 @@ function skillsForContent(
 
   const chosen = (byContent.length > 0 ? byContent : skills).slice(0, 3);
 
-  return chosen.length > 0
-    ? chosen
-    : [
-        {
-          codigo: "BNCC",
-          descricao:
-            "Habilidade a ser confirmada pelo professor conforme conteúdo, etapa e componente.",
-          conteudo: content,
-        },
-      ];
+  if (chosen.length > 0) {
+    return chosen.map((skill) => ({ ...skill, conteudo: content }));
+  }
+
+  if (skills.length > 0) {
+    return [{ ...skills[0], conteudo: content }];
+  }
+
+  return [];
+}
+
+function resolveMatrixSkills(
+  conteudo: string,
+  aiSkills: unknown,
+  selectedSkills: PlanningSkill[],
+  payload?: PlanningAiPayload,
+): PlanningSkill[] {
+  if (selectedSkills.length === 0) {
+    return skillsForContent(conteudo, [], payload);
+  }
+
+  const index = buildSelectedSkillsIndex(selectedSkills);
+  const fromAi = Array.isArray(aiSkills)
+    ? aiSkills
+        .map(normalizeSkill)
+        .filter((skill) => index.has(skill.codigo.toUpperCase()))
+        .map((skill) => ({
+          ...index.get(skill.codigo.toUpperCase())!,
+          ...skill,
+          conteudo,
+        }))
+    : [];
+
+  if (fromAi.length > 0) {
+    return fromAi.slice(0, 3);
+  }
+
+  const heuristic = skillsForContent(conteudo, selectedSkills, payload).filter(
+    (skill) => index.has(skill.codigo.toUpperCase()),
+  );
+
+  if (heuristic.length > 0) {
+    return heuristic.slice(0, 3);
+  }
+
+  const fallback = selectedSkills[0];
+  return fallback ? [{ ...fallback, conteudo }] : [];
 }
 
 function fallbackPlanning(payload: PlanningAiPayload, warning?: string): PlanningAiResult {
@@ -421,12 +469,12 @@ function sanitizeAiResult(value: unknown, payload: PlanningAiPayload): PlanningA
       trimestre,
       aulaInicio: indexDentroTrimestre * 10 + 1,
       aulaFim: (indexDentroTrimestre + 1) * 10,
-      habilidades:
-        selectedSkills.length > 0
-          ? skillsForContent(conteudo, selectedSkills, payload)
-          : Array.isArray(itemRecord.habilidades)
-            ? itemRecord.habilidades.map(normalizeSkill).slice(0, 3)
-            : skillsForContent(conteudo, selectedSkills, payload),
+      habilidades: resolveMatrixSkills(
+        conteudo,
+        itemRecord.habilidades,
+        selectedSkills,
+        payload,
+      ),
       objetivos:
         normalizeText(itemRecord.objetivos || itemRecord.objetivo) ||
         `Desenvolver aprendizagens relacionadas a ${conteudo}.`,
@@ -463,22 +511,23 @@ function sanitizeAiResult(value: unknown, payload: PlanningAiPayload): PlanningA
   };
 }
 
-export async function generatePlanningWithAI(
+const PLANNING_SYSTEM_INSTRUCTION = `
+Você é uma IA especialista em planejamento pedagógico brasileiro.
+Responda somente com JSON válido, sem markdown nem texto fora do objeto.
+Use exclusivamente habilidades BNCC que o professor selecionou — nunca invente códigos genéricos.
+`.trim();
+
+function buildPlanningPrompt(
   payload: PlanningAiPayload,
-): Promise<PlanningAiResult> {
-  const key = process.env.GEMINI_API_KEY;
-
-  if (!key) {
-    return fallbackPlanning(payload, "Chave de IA não configurada. Foi usado modo seguro.");
-  }
-
+  extraNote?: string,
+): string {
   const tipo = getTipo(payload);
   const conteudos = splitConteudos(payload.conteudos);
   const selectedSkills = Array.isArray(payload.habilidadesSelecionadas)
     ? payload.habilidadesSelecionadas.map(normalizeSkill)
     : [];
 
-  const prompt = `
+  return `
 Você é uma IA especialista em planejamento pedagógico brasileiro.
 
 Gere SOMENTE JSON válido, sem markdown.
@@ -537,23 +586,36 @@ Formato:
     ]
   }
 }
-`;
+${extraNote ? `\n\n${extraNote}` : ""}
+`.trim();
+}
+
+async function requestPlanningJson(
+  payload: PlanningAiPayload,
+  extraNote?: string,
+): Promise<unknown> {
+  const prompt = buildPlanningPrompt(payload, extraNote);
 
   try {
+    return await generateGeminiJSON<unknown>({
+      systemInstruction: PLANNING_SYSTEM_INSTRUCTION,
+      prompt,
+      temperature: 0.25,
+    });
+  } catch {
+    const key = process.env.GEMINI_API_KEY;
+
+    if (!key) {
+      throw new Error("Chave de IA não configurada.");
+    }
+
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(key)}`,
       {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          contents: [
-            {
-              role: "user",
-              parts: [{ text: prompt }],
-            },
-          ],
+          contents: [{ role: "user", parts: [{ text: prompt }] }],
           generationConfig: {
             temperature: 0.25,
             responseMimeType: "application/json",
@@ -564,19 +626,63 @@ Formato:
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => "");
-      return fallbackPlanning(
-        payload,
-        `A IA não respondeu corretamente. Foi usado modo seguro. Detalhe: ${errorText.slice(0, 180)}`,
-      );
+      throw new Error(errorText.slice(0, 180) || "Resposta inválida da IA.");
     }
 
     const data = await response.json();
     const text = normalizeText(
-      data?.candidates?.[0]?.content?.parts?.map((part: UnknownRecord) => part.text).join("\n"),
+      data?.candidates?.[0]?.content?.parts
+        ?.map((part: UnknownRecord) => part.text)
+        .join("\n"),
     );
 
-    const json = extractJsonFromText(text);
-    return sanitizeAiResult(json, payload);
+    return extractJsonFromText(text);
+  }
+}
+
+export async function generatePlanningWithAI(
+  payload: PlanningAiPayload,
+): Promise<PlanningAiResult> {
+  if (!process.env.GEMINI_API_KEY) {
+    return fallbackPlanning(payload, "Chave de IA não configurada. Foi usado modo seguro.");
+  }
+
+  try {
+    let json = await requestPlanningJson(payload);
+    let result = sanitizeAiResult(json, payload);
+    let issues = getPlanningOutputIssues(payload, result.planejamento.conteudos);
+
+    if (issues.length > 0) {
+      try {
+        const retryJson = await requestPlanningJson(
+          payload,
+          buildPlanningQualityRetryNote(issues),
+        );
+        const retryResult = sanitizeAiResult(retryJson, payload);
+        const retryIssues = getPlanningOutputIssues(
+          payload,
+          retryResult.planejamento.conteudos,
+        );
+
+        if (retryIssues.length < issues.length || retryIssues.length === 0) {
+          result = retryResult;
+          issues = retryIssues;
+        }
+      } catch {
+        // Mantém o primeiro resultado se a retentativa falhar.
+      }
+    }
+
+    if (issues.length > 0) {
+      return {
+        ...result,
+        warning:
+          "A matriz foi gerada, mas alguns campos podem precisar de revisão: " +
+          issues.join(" "),
+      };
+    }
+
+    return result;
   } catch (error) {
     return fallbackPlanning(
       payload,

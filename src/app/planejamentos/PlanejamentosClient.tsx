@@ -4,7 +4,13 @@ import { PlanifyOwlGenerationCoach } from "@/components/pro/PlanifyOwlGeneration
 import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
 import { PlanifyPageHero } from "@/components/pro/PlanifyPageHero";
 import type { LumiCoachContext } from "@/lib/pro/lumiMotivationalMessages";
-import { useMemo, useState } from "react";
+import {
+  openPlanningInEditor,
+  persistPlanningInEditor,
+  readAutoOpenPlanningEditorPreference,
+  writeAutoOpenPlanningEditorPreference,
+} from "@/lib/planejamentos/planning-editor-flow";
+import { useEffect, useMemo, useState } from "react";
 
 type TipoPlanejamento = "anual" | "trimestral";
 type DocxDownloadMode = "anual" | "trimestral";
@@ -578,6 +584,11 @@ export function PlanejamentosClient() {
   const [loadingPlan, setLoadingPlan] = useState(false);
   const [loadingDocx, setLoadingDocx] = useState(false);
   const [error, setError] = useState("");
+  const [abrirEditorAutomatico, setAbrirEditorAutomatico] = useState(true);
+
+  useEffect(() => {
+    setAbrirEditorAutomatico(readAutoOpenPlanningEditorPreference());
+  }, []);
 
   const conteudos = useMemo(() => splitConteudos(form.conteudos), [form.conteudos]);
 
@@ -667,6 +678,17 @@ export function PlanejamentosClient() {
     setSelectedSkills((current) =>
       current.filter((skill) => !group.habilidades.some((item) => item.id === skill.id)),
     );
+  }
+
+  function buildPlanningEditorMeta() {
+    return {
+      etapa: form.etapa,
+      anoSerie: form.anoSerie,
+      componente: form.componenteCurricular,
+      tipoPlanejamento: form.tipoPlanejamento,
+      escola: form.escola,
+      professor: form.professor,
+    };
   }
 
   function buildBasePayload() {
@@ -762,13 +784,26 @@ export function PlanejamentosClient() {
         throw new Error(data?.error?.message || "Não foi possível gerar o planejamento com IA.");
       }
 
-      setGeneratedPlanning(data.planejamento);
-      saveAnnualMatrixSnapshot(form, data.planejamento);
+      const planning = data.planejamento as GeneratedPlanning;
+      setGeneratedPlanning(planning);
+      saveAnnualMatrixSnapshot(form, planning);
       setUsedAI(Boolean(data.usedAI));
+
+      const html = buildOfficialEditorHtml(form, planning);
+      const titulo = planning.titulo || "Planejamento";
+      const meta = buildPlanningEditorMeta();
+
+      persistPlanningInEditor(html, titulo, meta, planning);
+
+      if (abrirEditorAutomatico) {
+        openPlanningInEditor(html, titulo, meta, planning);
+        return;
+      }
+
       setStatus(
         data.usedAI
-          ? "Matriz pedagógica gerada com IA. Agora baixe o DOCX oficial."
-          : "Matriz criada em modo seguro. Agora baixe o DOCX oficial.",
+          ? "Matriz gerada e salva no histórico. Baixe o DOCX ou edite no editor."
+          : "Matriz em modo seguro salva no histórico. Baixe o DOCX ou edite no editor.",
       );
 
       if (data.warning) {
@@ -901,22 +936,12 @@ export function PlanejamentosClient() {
     }
 
     const html = buildOfficialEditorHtml(form, generatedPlanning);
-    const documentData = {
-      type: "planejamento",
-      title: generatedPlanning.titulo || "Planejamento",
+    openPlanningInEditor(
       html,
-      content: html,
-      payload: { ...buildBasePayload(), matrizPlanejamento: generatedPlanning },
-      updatedAt: new Date().toISOString(),
-    };
-
-    localStorage.setItem("planify_editor_document", JSON.stringify(documentData));
-    localStorage.setItem("planify_current_document", JSON.stringify(documentData));
-    localStorage.setItem("planify_editor_content", html);
-    localStorage.setItem("editorContent", html);
-    localStorage.setItem("documentoEditor", html);
-
-    window.location.href = "/editor?from=planejamentos";
+      generatedPlanning.titulo || "Planejamento",
+      buildPlanningEditorMeta(),
+      generatedPlanning,
+    );
   }
 
   return (
@@ -1146,6 +1171,22 @@ export function PlanejamentosClient() {
               </div>
             ) : null}
 
+            <label className="mt-6 flex cursor-pointer items-center gap-3 rounded-2xl border border-violet-100/80 bg-violet-50/40 px-5 py-3">
+              <input
+                type="checkbox"
+                checked={abrirEditorAutomatico}
+                onChange={(event) => {
+                  const enabled = event.target.checked;
+                  setAbrirEditorAutomatico(enabled);
+                  writeAutoOpenPlanningEditorPreference(enabled);
+                }}
+                className="h-4 w-4 rounded border-violet-300 text-violet-600 focus:ring-violet-400"
+              />
+              <span className="text-sm font-semibold text-violet-800">
+                Abrir no editor automaticamente após gerar (salva também no histórico)
+              </span>
+            </label>
+
             <div className="mt-7 grid gap-3 xl:grid-cols-4">
               <button type="button" onClick={suggestBncc} disabled={loadingBncc} className="rounded-2xl bg-white px-6 py-4 text-sm font-black text-slate-950 transition hover:-translate-y-1 hover:bg-cyan-100 disabled:cursor-not-allowed disabled:opacity-60">
                 {loadingBncc ? "Sugerindo BNCC..." : "1. Sugerir BNCC"}
@@ -1153,11 +1194,11 @@ export function PlanejamentosClient() {
               <button type="button" onClick={generatePlanning} disabled={loadingPlan} className="rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-6 py-4 text-sm font-black text-white transition hover:-translate-y-1 hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60">
                 {loadingPlan ? "Gerando com IA..." : "2. Gerar planejamento com IA"}
               </button>
+              <button type="button" onClick={sendToEditor} disabled={!generatedPlanning} className="rounded-2xl border-2 border-violet-300 bg-violet-100/80 px-6 py-4 text-sm font-black text-violet-900 transition hover:-translate-y-1 hover:bg-violet-200/80 disabled:cursor-not-allowed disabled:opacity-50">
+                Editar no editor
+              </button>
               <button type="button" onClick={downloadDocx} disabled={loadingDocx || !generatedPlanning} className="rounded-2xl border border-emerald-300/30 bg-emerald-300/10 px-6 py-4 text-sm font-black text-emerald-100 transition hover:-translate-y-1 hover:bg-emerald-300/20 disabled:cursor-not-allowed disabled:opacity-50">
                 {loadingDocx ? "Preenchendo DOCX..." : "3. Baixar DOCX atual"}
-              </button>
-              <button type="button" onClick={sendToEditor} disabled={!generatedPlanning} className="rounded-2xl border border-violet-100 bg-violet-50/60 px-6 py-4 text-sm font-black text-violet-800 transition hover:-translate-y-1 hover:bg-violet-100/80 disabled:cursor-not-allowed disabled:opacity-50">
-                Enviar ao Editor
               </button>
             </div>
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { GoogleClassroomPanel } from "@/components/google/GoogleClassroomPanel";
 import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
 import { PlanifyPageHero } from "@/components/pro/PlanifyPageHero";
 import {
@@ -1247,6 +1248,14 @@ export function EditorClient() {
               >
                 Baixar HTML
               </button>
+            </div>
+
+            <div className="mt-6">
+              <GoogleClassroomPanel
+                title={title}
+                getHtml={getEditorHtml}
+                onStatus={setStatus}
+              />
             </div>
 
             <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm leading-7 text-slate-600">

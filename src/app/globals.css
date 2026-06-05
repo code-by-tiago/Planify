@@ -2115,6 +2115,32 @@ header .planify-brand-logo__icon {
   background: #fff;
 }
 
+/* Fundo sólido na landing Teachy — evita gradiente .planify-public vazar em camadas semi-transparentes */
+.planify-teachy-landing.planify-public {
+  background: #ffffff;
+}
+
+/* Mobile: reduz glitches de composição GPU (backdrop-blur, blur decorativo, máscaras) */
+@media (max-width: 1023px) {
+  .planify-teachy-landing .planify-ui3-header,
+  .planify-public.planify-teachy-landing .planify-ui3-header {
+    background: #ffffff !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+
+  .planify-teachy-landing .pl-teachy-hero-blob {
+    transform: none;
+    opacity: 0.8;
+  }
+
+  .planify-teachy-landing .pl-teachy-testimonials,
+  .planify-teachy-landing .pl-marquee {
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+}
+
 /* Cartão de vidro claro para mockups de produto */
 .planify-ui3 .pl-glass {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.78));

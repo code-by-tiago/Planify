@@ -22,7 +22,7 @@ export function TeachyLessonPreview() {
         aria-hidden
       />
 
-      <div className="relative rounded-3xl border border-white/60 bg-white/95 p-4 shadow-2xl shadow-blue-200/40 backdrop-blur-sm sm:p-5">
+      <div className="relative rounded-3xl border border-white/60 bg-white p-4 shadow-2xl shadow-blue-200/40 max-lg:backdrop-blur-none sm:bg-white/95 sm:backdrop-blur-sm sm:p-5">
         <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-3">
           <div>
             <p className="text-[10px] font-black uppercase tracking-[0.18em] text-blue-600">

@@ -43,7 +43,7 @@ export function PublicHeader({ active }: PublicHeaderProps) {
   }
 
   return (
-    <header className="planify-ui3-header sticky top-0 z-50 border-b border-indigo-100/80 bg-white/90 backdrop-blur-md">
+    <header className="planify-ui3-header sticky top-0 z-50 border-b border-indigo-100/80 bg-white max-lg:backdrop-blur-none lg:bg-white/90 lg:backdrop-blur-md">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-5 py-3 sm:px-8">
         <PlanifyBrand href="/" hideTagline />
 
@@ -83,7 +83,10 @@ export function PublicHeader({ active }: PublicHeaderProps) {
       <AnimatePresence>
         {open ? (
           <motion.div className="fixed inset-0 z-[60] lg:hidden" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <div className="absolute inset-0 bg-violet-950/30 backdrop-blur-sm" onClick={() => setOpen(false)} />
+            <div
+              className="absolute inset-0 bg-violet-950/40 max-lg:backdrop-blur-none lg:bg-violet-950/30 lg:backdrop-blur-sm"
+              onClick={() => setOpen(false)}
+            />
             <motion.aside
               initial={reduce ? { opacity: 0 } : { x: "100%" }}
               animate={reduce ? { opacity: 1 } : { x: 0 }}

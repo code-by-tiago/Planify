@@ -7,11 +7,11 @@ export function TeachyMaterialPreview() {
   return (
     <div className="relative mx-auto w-full max-w-sm">
       <div
-        className="pointer-events-none absolute -right-6 -top-4 h-24 w-24 rounded-full bg-amber-200/60 blur-2xl"
+        className="pointer-events-none absolute -right-6 -top-4 hidden h-24 w-24 rounded-full bg-amber-200/60 blur-2xl sm:block"
         aria-hidden
       />
       <div
-        className="pointer-events-none absolute -left-4 bottom-8 h-20 w-20 rounded-full bg-emerald-200/50 blur-2xl"
+        className="pointer-events-none absolute -left-4 bottom-8 hidden h-20 w-20 rounded-full bg-emerald-200/50 blur-2xl sm:block"
         aria-hidden
       />
 

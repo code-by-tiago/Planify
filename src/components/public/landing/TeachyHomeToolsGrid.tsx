@@ -5,7 +5,7 @@ import { landingPlanejamentoTools } from "@/lib/pro/teachyLanding";
 
 export function TeachyHomeToolsGrid() {
   return (
-    <section id="ferramentas" className="bg-slate-50/80 py-16 sm:py-20">
+    <section id="ferramentas" className="isolate overflow-hidden bg-slate-50 py-16 sm:py-20">
       <div className="mx-auto max-w-7xl px-5 sm:px-8">
         <div className="text-center">
           <p className="text-xs font-black uppercase tracking-[0.2em] text-blue-600">
@@ -25,10 +25,10 @@ export function TeachyHomeToolsGrid() {
             <Link
               key={tool.id}
               href={tool.href}
-              className="group flex flex-col items-center rounded-2xl border border-blue-200/80 bg-blue-50/40 p-4 text-center transition hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-md"
+              className="group flex flex-col items-center rounded-2xl border border-blue-200/80 bg-blue-50 p-4 text-center transition max-lg:hover:translate-y-0 max-lg:hover:shadow-none hover:border-blue-300 motion-safe:hover:-translate-y-0.5 motion-safe:hover:shadow-md"
             >
               <span
-                className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br ${tool.accent} text-white shadow-sm transition group-hover:scale-105`}
+                className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br ${tool.accent} text-white shadow-sm transition max-lg:group-hover:scale-100 motion-safe:group-hover:scale-105`}
               >
                 <PlanifyIcon name={tool.icon} className="h-5 w-5" />
               </span>
@@ -41,10 +41,10 @@ export function TeachyHomeToolsGrid() {
             <Link
               key={tool.id}
               href={tool.href}
-              className="group flex flex-col items-center rounded-2xl border border-slate-200/80 bg-white p-4 text-center transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md"
+              className="group flex flex-col items-center rounded-2xl border border-slate-200/80 bg-white p-4 text-center transition max-lg:hover:translate-y-0 max-lg:hover:shadow-none hover:border-blue-200 motion-safe:hover:-translate-y-0.5 motion-safe:hover:shadow-md"
             >
               <span
-                className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br ${tool.accent} text-white shadow-sm transition group-hover:scale-105`}
+                className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br ${tool.accent} text-white shadow-sm transition max-lg:group-hover:scale-100 motion-safe:group-hover:scale-105`}
               >
                 <PlanifyIcon name={tool.icon} className="h-5 w-5" />
               </span>

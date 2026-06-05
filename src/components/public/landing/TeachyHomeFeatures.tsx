@@ -4,7 +4,7 @@ import { teachyHomeFeatures } from "@/lib/pro/teachyLanding";
 
 function FeatureVisual({ icon }: { icon: (typeof teachyHomeFeatures)[0]["icon"] }) {
   return (
-    <div className="relative mx-auto w-full max-w-md">
+    <div className="relative mx-auto w-full max-w-md overflow-hidden">
       <div
         className="absolute -inset-4 rounded-[2.5rem] bg-gradient-to-br from-blue-100/80 via-indigo-50 to-emerald-50"
         aria-hidden

@@ -1,6 +1,7 @@
 "use client";
 
 import { GoogleClassroomPanel } from "@/components/google/GoogleClassroomPanel";
+import { MarketplacePublishButton } from "@/components/marketplace/MarketplacePublishButton";
 import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
 import { PlanifyPageHero } from "@/components/pro/PlanifyPageHero";
 import {
@@ -409,7 +410,12 @@ function closestEditableBlock(node: Node | null, editor: HTMLElement | null) {
   return null;
 }
 
-export function EditorClient() {
+type EditorClientProps = {
+  /** Painel do dashboard: sem hero grande; layout ocupa 100% da altura */
+  embedded?: boolean;
+};
+
+export function EditorClient({ embedded = false }: EditorClientProps) {
   const editorRef = useRef<HTMLDivElement | null>(null);
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const selectedImageRef = useRef<HTMLImageElement | null>(null);
@@ -508,6 +514,24 @@ export function EditorClient() {
     document.execCommand(command, false, value);
     updateWordCount();
     persistCurrentDocument("Alteração aplicada.");
+  }
+
+  function insertHyperlink() {
+    const url = window.prompt("URL do link:", "https://");
+
+    if (!url?.trim()) {
+      return;
+    }
+
+    exec("createLink", url.trim());
+  }
+
+  function undoEdit() {
+    exec("undo");
+  }
+
+  function redoEdit() {
+    exec("redo");
   }
 
   function getSelectionBlock() {
@@ -1167,24 +1191,33 @@ export function EditorClient() {
     persistCurrentDocument("Imagem removida.");
   }
 
-  return (
-    <PlanifyWorkspacePane
-      header={
-        <PlanifyPageHero
-          badge="Editor"
-          icon="editor"
-          title="Finalize, formate e exporte"
-          description="Documentos pedagógicos com tabelas, imagens e versões salvas no navegador."
-        />
-      }
-    >
+  const main = (
+    <>
       {originHint ? (
-        <div className="mb-4 rounded-2xl border border-violet-200 bg-violet-50 px-4 py-3 text-sm font-semibold text-violet-900">
+        <div
+          className={
+            embedded
+              ? "shrink-0 border-b border-violet-100 bg-violet-50/90 px-3 py-2 text-xs font-semibold text-violet-900"
+              : "mb-4 rounded-2xl border border-violet-200 bg-violet-50 px-4 py-3 text-sm font-semibold text-violet-900"
+          }
+        >
           {originHint}
         </div>
       ) : null}
-      <div className="grid gap-6 xl:grid-cols-[280px_1fr]">
-        <aside className="space-y-5">
+      <div
+        className={
+          embedded
+            ? "grid h-full min-h-0 flex-1 gap-3 overflow-hidden xl:grid-cols-[220px_minmax(0,1fr)]"
+            : "grid gap-6 xl:grid-cols-[280px_1fr]"
+        }
+      >
+        <aside
+          className={
+            embedded
+              ? "min-h-0 space-y-3 overflow-y-auto overscroll-contain pr-1"
+              : "space-y-5"
+          }
+        >
           <div className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
             <p className="text-sm font-black uppercase tracking-[0.24em] text-indigo-700">
               Documento
@@ -1248,6 +1281,12 @@ export function EditorClient() {
               >
                 Baixar HTML
               </button>
+
+              <MarketplacePublishButton
+                title={title}
+                getHtml={getEditorHtml}
+                className="w-full rounded-2xl border border-fuchsia-200 bg-fuchsia-50 px-5 py-3 text-sm font-black text-fuchsia-800 transition hover:bg-fuchsia-100"
+              />
             </div>
 
             <div className="mt-6">
@@ -1307,8 +1346,18 @@ export function EditorClient() {
           </div>
         </aside>
 
-        <div className="space-y-5">
-          <div className="relative rounded-[2rem] border border-slate-200 bg-white p-4 shadow-sm">
+        <div
+          className={
+            embedded
+              ? "flex min-h-0 min-w-0 flex-1 flex-col gap-3 overflow-hidden"
+              : "space-y-5"
+          }
+        >
+          <div
+            className={`relative shrink-0 rounded-[2rem] border border-slate-200 bg-white p-4 shadow-sm ${
+              embedded ? "max-h-[42vh] overflow-y-auto overscroll-contain" : ""
+            }`}
+          >
             <input
               ref={imageInputRef}
               type="file"
@@ -1367,6 +1416,23 @@ export function EditorClient() {
                 ))}
               </select>
 
+              <button
+                type="button"
+                onClick={undoEdit}
+                aria-label="Desfazer"
+                className="h-10 min-w-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-black text-slate-700 transition hover:border-slate-950"
+              >
+                ↶
+              </button>
+              <button
+                type="button"
+                onClick={redoEdit}
+                aria-label="Refazer"
+                className="h-10 min-w-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-black text-slate-700 transition hover:border-slate-950"
+              >
+                ↷
+              </button>
+
               {[
                 ["B", "bold", "Negrito"],
                 ["I", "italic", "Itálico"],
@@ -1383,6 +1449,29 @@ export function EditorClient() {
                   {label}
                 </button>
               ))}
+
+              <button
+                type="button"
+                onClick={insertHyperlink}
+                className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-black text-slate-700 transition hover:border-slate-950"
+              >
+                Link
+              </button>
+
+              <button
+                type="button"
+                onClick={() => exec("outdent")}
+                className="h-10 min-w-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-black text-slate-700"
+              >
+                ⇤
+              </button>
+              <button
+                type="button"
+                onClick={() => exec("indent")}
+                className="h-10 min-w-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-black text-slate-700"
+              >
+                ⇥
+              </button>
 
               <div className="h-8 w-px bg-slate-200" />
 
@@ -1645,7 +1734,11 @@ export function EditorClient() {
             </div>
           </div>
 
-          <div className="rounded-[2rem] border border-slate-200 bg-white p-3 shadow-sm">
+          <div
+            className={`min-h-0 flex-1 rounded-[2rem] border border-slate-200 bg-white p-3 shadow-sm ${
+              embedded ? "overflow-y-auto overscroll-contain" : ""
+            }`}
+          >
             <div className="rounded-[1.5rem] bg-slate-100 p-3 sm:p-6">
               <div
                 ref={editorRef}
@@ -1664,7 +1757,10 @@ export function EditorClient() {
           </div>
         </div>
       </div>
+    </>
+  );
 
+  const editorStyles = (
       <style jsx global>{`
         .planify-editor-page {
           font-family: "Times New Roman", Times, serif;
@@ -1791,6 +1887,30 @@ export function EditorClient() {
           }
         }
       `}</style>
+  );
+
+  if (embedded) {
+    return (
+      <div className="planify-editor-embedded flex h-full min-h-0 w-full flex-col overflow-hidden bg-slate-50">
+        {main}
+        {editorStyles}
+      </div>
+    );
+  }
+
+  return (
+    <PlanifyWorkspacePane
+      header={
+        <PlanifyPageHero
+          badge="Editor"
+          icon="editor"
+          title="Finalize, formate e exporte"
+          description="Documentos pedagógicos com tabelas, imagens e versões salvas no navegador."
+        />
+      }
+    >
+      {main}
+      {editorStyles}
     </PlanifyWorkspacePane>
   );
 }

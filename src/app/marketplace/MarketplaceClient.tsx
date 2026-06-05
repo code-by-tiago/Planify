@@ -1,5 +1,6 @@
 "use client";
 
+import { MarketplaceComments } from "@/components/marketplace/MarketplaceComments";
 import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
 import { PlanifyPageHero } from "@/components/pro/PlanifyPageHero";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
@@ -670,6 +671,8 @@ export function MarketplaceClient() {
                 Remover meu material
               </button>
             </div>
+
+            <MarketplaceComments materialId={selected.id} />
           </div>
         ) : null}
       </div>

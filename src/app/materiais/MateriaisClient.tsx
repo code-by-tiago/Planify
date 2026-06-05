@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { MarketplacePublishButton } from "@/components/marketplace/MarketplacePublishButton";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { PlanifyOwlGenerationCoach } from "@/components/pro/PlanifyOwlGenerationCoach";
 import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
@@ -1096,6 +1097,17 @@ td,th{border:1px solid #d1d5db;padding:8px;}
                   <PlanifyIcon name="editor" className="h-4 w-4" />
                   Editar no editor
                 </button>
+                <MarketplacePublishButton
+                  title={buildTitle(tipo, tema)}
+                  getHtml={() => resultadoHtml}
+                  tipoMaterial={mode.title}
+                  tema={tema}
+                  componente={componente}
+                  etapa={etapa}
+                  anoSerie={anoSerie}
+                  disabled={!resultadoHtml}
+                  className="inline-flex items-center gap-2 rounded-2xl border border-fuchsia-200 bg-fuchsia-50 px-4 py-2.5 text-sm font-black text-fuchsia-800 transition hover:bg-fuchsia-100"
+                />
                 <button
                   type="button"
                   onClick={() => void executarGeracao()}

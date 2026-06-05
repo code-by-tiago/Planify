@@ -89,7 +89,7 @@ export function PlanifyDashboardMain({
   if (sectionId === "editor") {
     return (
       <SectionPanel>
-        <EditorClient />
+        <EditorClient embedded />
       </SectionPanel>
     );
   }

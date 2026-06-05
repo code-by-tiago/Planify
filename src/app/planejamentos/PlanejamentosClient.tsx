@@ -1,5 +1,6 @@
 "use client";
 
+import { MarketplacePublishButton } from "@/components/marketplace/MarketplacePublishButton";
 import { PlanifyOwlGenerationCoach } from "@/components/pro/PlanifyOwlGenerationCoach";
 import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
 import { PlanifyPageHero } from "@/components/pro/PlanifyPageHero";
@@ -1215,6 +1216,20 @@ export function PlanejamentosClient() {
                   loadingBncc ? "bncc" : loadingDocx ? "docx" : "planejamento"
                 }
               />
+            ) : null}
+
+            {generatedPlanning ? (
+              <div className="mt-6 flex flex-wrap items-center gap-3">
+                <MarketplacePublishButton
+                  title={generatedPlanning.titulo || "Planejamento"}
+                  getHtml={() => buildOfficialEditorHtml(form, generatedPlanning)}
+                  tipoMaterial="Planejamento"
+                  tema={form.componenteCurricular}
+                  componente={form.componenteCurricular}
+                  etapa={form.etapa}
+                  anoSerie={form.anoSerie}
+                />
+              </div>
             ) : null}
 
             {generatedPlanning && form.tipoPlanejamento === "anual" ? (

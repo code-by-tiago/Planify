@@ -37,12 +37,34 @@ export function PlanifyShellSidebar({
 
   useEffect(() => {
     if (alwaysVisible || !open) return;
+
+    const mq = window.matchMedia("(min-width: 1024px)");
+    if (mq.matches) return;
+
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = prev;
     };
   }, [open, alwaysVisible]);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1024px)");
+    const onResize = () => {
+      if (mq.matches && open) {
+        onOpenChange?.(false);
+      }
+    };
+
+    mq.addEventListener("change", onResize);
+    window.addEventListener("resize", onResize);
+    onResize();
+
+    return () => {
+      mq.removeEventListener("change", onResize);
+      window.removeEventListener("resize", onResize);
+    };
+  }, [open, onOpenChange]);
   const sidebarClass = isTeachy
     ? "pl-sidebar pl-sidebar-teachy"
     : "pl-sidebar";
@@ -72,8 +94,10 @@ export function PlanifyShellSidebar({
         className={`${sidebarClass} flex h-screen w-[min(18rem,34vw)] min-w-[14.5rem] shrink-0 flex-col overflow-hidden border-r`}
       >
         {brandBlock}
-        <div className="flex min-h-0 flex-1 flex-col">{children}</div>
-        <div className="shrink-0">{footer}</div>
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+          {children}
+        </div>
+        <div className="shrink-0 border-t border-slate-200/60 bg-inherit">{footer}</div>
       </aside>
     );
   }
@@ -81,11 +105,13 @@ export function PlanifyShellSidebar({
   return (
     <>
       <aside
-        className={`${sidebarClass} hidden h-full min-h-0 w-72 shrink-0 flex-col overflow-y-auto overscroll-contain border-r lg:flex`}
+        className={`${sidebarClass} hidden h-full min-h-0 w-72 shrink-0 flex-col overflow-hidden border-r lg:flex`}
       >
         {brandBlock}
-        <div className="flex flex-1 flex-col">{children}</div>
-        <div className="sticky bottom-0 mt-auto shrink-0">{footer}</div>
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+          {children}
+        </div>
+        <div className="shrink-0 border-t border-slate-200/60 bg-inherit">{footer}</div>
       </aside>
 
       <AnimatePresence>

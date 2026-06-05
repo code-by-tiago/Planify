@@ -1,6 +1,10 @@
 import chromium from "@sparticuz/chromium-min";
 import puppeteer from "puppeteer-core";
 
+const CHROMIUM_PACK_URL =
+  process.env.CHROMIUM_PACK_URL ||
+  "https://github.com/Sparticuz/chromium/releases/download/v149.0.0/chromium-v149.0.0-pack.x64.tar";
+
 const PDF_ARGS = [
   "--no-sandbox",
   "--disable-setuid-sandbox",
@@ -42,10 +46,16 @@ async function launchBrowser() {
     });
   }
 
-  return puppeteer.launch({
+  const executablePath = await chromium.executablePath(CHROMIUM_PACK_URL);
+  const args = await puppeteer.defaultArgs({
     args: [...chromium.args, ...PDF_ARGS],
-    executablePath: await chromium.executablePath(),
-    headless: true,
+    headless: "shell",
+  });
+
+  return puppeteer.launch({
+    args,
+    executablePath,
+    headless: "shell",
   });
 }
 

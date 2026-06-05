@@ -1,5 +1,5 @@
 import { wrapAsPlanifyExportHtml } from "../../lib/editor/editor-print-html";
-import { buildHtmlAltChunkDocx } from "../docx/simple-docx-builder";
+import { buildNativeHtmlDocx } from "../docx/simple-docx-builder";
 import { extractBodyHtml } from "../editor/html-inner-text";
 import { prepareHtmlForExport } from "../editor/prepare-export-html";
 import { renderHtmlToPdfBuffer } from "../pdf/html-to-pdf";
@@ -43,6 +43,13 @@ export async function exportEditorHtmlDocument(params: {
   format: EditorHtmlExportFormat;
 }): Promise<{ buffer: Buffer; contentType: string; filename: string }> {
   const title = String(params.title || "Documento Planify").trim() || "Documento Planify";
+  const body = resolveEditorHtmlBody(params.html);
+  const hasText = body.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().length > 0;
+
+  if (!hasText) {
+    throw new Error("O documento está vazio. Adicione conteúdo antes de exportar.");
+  }
+
   const exportHtml = buildEditorExportDocumentHtml(title, params.html);
   const filename = cleanFilename(title);
 
@@ -55,10 +62,13 @@ export async function exportEditorHtmlDocument(params: {
   }
 
   if (params.format === "docx") {
+    const body = resolveEditorHtmlBody(params.html);
+    const preparedBody = prepareHtmlForExport(body);
+
     return {
-      buffer: buildHtmlAltChunkDocx({
+      buffer: buildNativeHtmlDocx({
         title,
-        htmlDocument: exportHtml,
+        htmlBody: preparedBody,
       }),
       contentType:
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document",

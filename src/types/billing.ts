@@ -97,6 +97,26 @@ export function getBillingPlan(key: string | null | undefined): BillingPlan | nu
   return billingPlans.find((plan) => plan.key === normalizedKey) || null;
 }
 
+/** Mapeia price_id do Stripe (env) para a chave interna do plano. */
+export function resolvePlanKeyFromPriceId(
+  priceId: string | null | undefined,
+): BillingPlanKey | null {
+  if (!priceId) {
+    return null;
+  }
+
+  for (const plan of billingPlans) {
+    for (const envKey of plan.envPriceKeys) {
+      const configured = process.env[envKey];
+      if (configured && configured === priceId) {
+        return plan.key;
+      }
+    }
+  }
+
+  return null;
+}
+
 export function normalizeBillingPlanKey(
   key: string | null | undefined,
 ): BillingPlanKey | null {

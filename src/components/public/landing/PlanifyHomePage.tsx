@@ -28,7 +28,12 @@ const faqItems = [
   {
     question: "Como exporto os materiais?",
     answer:
-      "Em DOCX oficial, pelo editor integrado. Tudo também fica no histórico para reaproveitar.",
+      "Em DOCX oficial pelo editor — ou publique direto na turma do Google Classroom com um clique, após conectar sua conta Google.",
+  },
+  {
+    question: "O Planify envia para o Google Classroom?",
+    answer:
+      "Sim. No editor, conecte o Google, escolha a turma e o Planify gera o DOCX, salva no Drive e cria a atividade na turma — diferencial para quem já usa Classroom no dia a dia.",
   },
   {
     question: "Como começo?",
@@ -40,8 +45,8 @@ const faqItems = [
 const stats = [
   { label: "Ferramentas IA", value: "13", icon: "spark" as const },
   { label: "Alinhamento", value: "BNCC", icon: "checkCircle" as const },
+  { label: "Google Classroom", value: "1 clique", icon: "externalLink" as const },
   { label: "Exportação", value: "DOCX", icon: "download" as const },
-  { label: "Fluxo único", value: "1 painel", icon: "layers" as const },
 ];
 
 export function PlanifyHomePage() {
@@ -68,8 +73,9 @@ export function PlanifyHomePage() {
             <span className="pl-gradient-text">alinhados à BNCC.</span>
           </h1>
           <p className="mt-6 text-lg font-semibold leading-8 text-slate-600">
-            Um painel único para planejar, gerar, editar e exportar — foco na
-            qualidade do material, sem distrações na interface.
+            Um painel único para planejar, gerar, editar e exportar — com ponte
+            direta para o <strong className="text-slate-800">Google Classroom</strong>{" "}
+            e comunidade de materiais entre professoras.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Link href="/dashboard" className="pl-btn-brand">
@@ -91,6 +97,88 @@ export function PlanifyHomePage() {
               icon={<PlanifyIcon name={s.icon} className="h-5 w-5" />}
             />
           ))}
+        </div>
+      </section>
+
+      {/* Diferencial: Google Classroom */}
+      <section
+        id="classroom"
+        className="scroll-mt-28 border-b border-sky-100/80 bg-gradient-to-br from-sky-50/90 via-white to-indigo-50/40 py-12 sm:py-16"
+      >
+        <div className="mx-auto max-w-7xl px-5 sm:px-8">
+          <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+            <div>
+              <span className="pl-badge-indigo">
+                <PlanifyIcon name="externalLink" className="h-3.5 w-3.5" />
+                Diferencial Planify
+              </span>
+              <h2 className="mt-4 text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">
+                Do editor à turma no Google Classroom — sem retrabalho
+              </h2>
+              <p className="mt-4 text-sm font-semibold leading-7 text-slate-600 sm:text-base">
+                Gere ou refine o material no Planify, conecte sua conta Google e publique na
+                turma escolhida. O sistema cria o DOCX, envia ao Drive e abre a atividade no
+                Classroom — o fluxo que escolas que já usam Google pedem.
+              </p>
+              <ul className="mt-5 space-y-2 text-sm font-semibold text-slate-700">
+                <li className="flex items-start gap-2">
+                  <PlanifyIcon name="checkCircle" className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                  Conexão segura OAuth (só com sua autorização)
+                </li>
+                <li className="flex items-start gap-2">
+                  <PlanifyIcon name="checkCircle" className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                  Escolha a turma e envie em um clique a partir do editor
+                </li>
+                <li className="flex items-start gap-2">
+                  <PlanifyIcon name="checkCircle" className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                  Compartilhe também no Marketplace da comunidade Planify
+                </li>
+              </ul>
+              <div className="mt-6 flex flex-wrap gap-3">
+                <Link href="/dashboard?secao=editor" className="pl-btn-brand text-sm">
+                  Abrir o editor
+                  <PlanifyIcon name="arrowRight" className="h-4 w-4" />
+                </Link>
+                <Link href="/login" className="pl-btn-secondary text-sm">
+                  Conectar e testar
+                </Link>
+              </div>
+            </div>
+
+            <PlanifyCard className="border-sky-100 bg-white/90">
+              <div className="flex items-center gap-3">
+                <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-500 to-indigo-600 text-white shadow-md">
+                  <PlanifyIcon name="editor" className="h-5 w-5" />
+                </span>
+                <div>
+                  <p className="text-xs font-black uppercase tracking-wide text-sky-700">
+                    Fluxo no editor
+                  </p>
+                  <p className="text-sm font-black text-slate-950">3 passos</p>
+                </div>
+              </div>
+              <ol className="mt-5 space-y-4 text-sm font-semibold text-slate-600">
+                <li className="flex gap-3">
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-sky-100 text-xs font-black text-sky-800">
+                    1
+                  </span>
+                  Finalize o documento (IA, ABNT, imagens)
+                </li>
+                <li className="flex gap-3">
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-sky-100 text-xs font-black text-sky-800">
+                    2
+                  </span>
+                  Clique em <strong className="text-slate-800">Classroom</strong> e escolha a turma
+                </li>
+                <li className="flex gap-3">
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-xs font-black text-emerald-800">
+                    3
+                  </span>
+                  Material no Drive + atividade publicada na turma
+                </li>
+              </ol>
+            </PlanifyCard>
+          </div>
         </div>
       </section>
 

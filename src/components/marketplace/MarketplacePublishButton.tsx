@@ -14,6 +14,10 @@ export type MarketplacePublishButtonProps = {
   anoSerie?: string;
   disabled?: boolean;
   className?: string;
+  /** Texto do botão (padrão: frase completa) */
+  label?: string;
+  /** Modal de sucesso inline mais discreto */
+  compact?: boolean;
 };
 
 export function MarketplacePublishButton({
@@ -26,6 +30,8 @@ export function MarketplacePublishButton({
   anoSerie,
   disabled,
   className = "",
+  label = "Compartilhar no Marketplace",
+  compact = false,
 }: MarketplacePublishButtonProps) {
   const [open, setOpen] = useState(false);
   const [description, setDescription] = useState("");
@@ -75,16 +81,25 @@ export function MarketplacePublishButton({
           "rounded-2xl border border-fuchsia-200 bg-fuchsia-50 px-5 py-3 text-sm font-black text-fuchsia-800 transition hover:bg-fuchsia-100 disabled:opacity-50"
         }
       >
-        Compartilhar no Marketplace
+        {label}
       </button>
 
-      {successId ? (
+      {successId && !compact ? (
         <p className="mt-2 text-xs font-semibold text-emerald-700">
           Publicado!{" "}
           <Link href="/dashboard?secao=marketplace" className="underline">
             Ver na comunidade
           </Link>
         </p>
+      ) : null}
+
+      {successId && compact ? (
+        <span className="text-[11px] font-bold text-emerald-700">
+          ✓ Publicado{" "}
+          <Link href="/dashboard?secao=marketplace" className="underline">
+            ver
+          </Link>
+        </span>
       ) : null}
 
       {open ? (

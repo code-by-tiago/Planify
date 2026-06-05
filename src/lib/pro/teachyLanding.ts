@@ -28,12 +28,12 @@ export const teachyHomeFeatures: {
     imageSide: "left",
   },
   {
-    title: "Organize e reaproveite",
+    title: "Publique na turma do Classroom",
     description:
-      "Histórico, editor integrado e biblioteca premium para reabrir, adaptar e exportar em DOCX oficial quando precisar.",
-    cta: "Experimente agora",
-    href: "/historico",
-    icon: "history",
+      "No editor, conecte o Google e envie o material à turma — DOCX no Drive e atividade criada automaticamente. Também compartilhe com outras professoras no Marketplace.",
+    cta: "Abrir editor",
+    href: "/dashboard?secao=editor",
+    icon: "externalLink",
     imageSide: "right",
   },
   {
@@ -95,9 +95,9 @@ export const teachyTrustSchools = [
 
 export const teachyPartnerLabels = [
   "BNCC",
+  "Google Classroom",
   "DOCX oficial",
   "13 ferramentas IA",
-  "Construtor de aula",
+  "Marketplace",
   "Editor integrado",
-  "Planejamentos",
 ];

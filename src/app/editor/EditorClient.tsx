@@ -1,7 +1,6 @@
 "use client";
 
-import { GoogleClassroomPanel } from "@/components/google/GoogleClassroomPanel";
-import { MarketplacePublishButton } from "@/components/marketplace/MarketplacePublishButton";
+import { EditorShareBar } from "@/components/editor/EditorShareBar";
 import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
 import { PlanifyPageHero } from "@/components/pro/PlanifyPageHero";
 import {
@@ -435,8 +434,23 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
   const [selectedImageWidth, setSelectedImageWidth] = useState(60);
   const [documentSource, setDocumentSource] = useState<StoredEditorDocument | null>(null);
   const [originHint, setOriginHint] = useState<string | null>(null);
+  const [showVersionsPanel, setShowVersionsPanel] = useState(false);
+  const [showFormatTools, setShowFormatTools] = useState(!embedded);
+  const [showAdvancedTools, setShowAdvancedTools] = useState(false);
 
   const lastSavedLabel = useMemo(() => nowLabel(), []);
+
+  const toolBtnClass = embedded
+    ? "h-8 min-w-8 rounded-lg border border-slate-200 bg-white px-2 text-xs font-black text-slate-700 transition hover:border-slate-950"
+    : "h-10 min-w-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-black text-slate-700 transition hover:border-slate-950";
+
+  const toolSelectClass = embedded
+    ? "h-8 rounded-lg border border-slate-200 bg-slate-50 px-2 text-xs font-bold text-slate-950 outline-none focus:border-slate-950"
+    : "h-10 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-bold text-slate-950 outline-none focus:border-slate-950";
+
+  const actionBtnClass = embedded
+    ? "rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-black text-slate-700 transition hover:border-slate-950"
+    : "rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-700 transition hover:border-slate-950";
 
   useEffect(() => {
     const from = new URLSearchParams(window.location.search).get("from");
@@ -1204,158 +1218,247 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
           {originHint}
         </div>
       ) : null}
+
+      <div
+        className={`shrink-0 border-b border-slate-200 bg-white ${
+          embedded ? "px-3 py-2" : "mb-4 rounded-2xl border px-4 py-3 shadow-sm"
+        }`}
+      >
+        <div className="flex flex-wrap items-center gap-2">
+          {embedded ? (
+            <input
+              value={title}
+              onChange={(event) => setTitle(event.target.value)}
+              onBlur={() => persistCurrentDocument("Título salvo.")}
+              aria-label="Título do documento"
+              className="h-8 min-w-[140px] flex-1 rounded-lg border border-slate-200 bg-slate-50 px-3 text-xs font-bold text-slate-950 outline-none focus:border-indigo-400 focus:bg-white"
+            />
+          ) : null}
+
+          <button
+            type="button"
+            onClick={saveVersion}
+            className={
+              embedded
+                ? "rounded-lg bg-gradient-to-r from-indigo-600 to-violet-600 px-3 py-1.5 text-xs font-black text-white"
+                : "rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-2 text-sm font-black text-white"
+            }
+          >
+            Salvar
+          </button>
+
+          <button type="button" onClick={newDocument} className={actionBtnClass}>
+            Novo
+          </button>
+
+          <button type="button" onClick={downloadDocxReal} className={actionBtnClass}>
+            DOCX
+          </button>
+
+          <button type="button" onClick={printDocument} className={actionBtnClass}>
+            PDF
+          </button>
+
+          {embedded ? (
+            <>
+              <button
+                type="button"
+                onClick={() => setShowVersionsPanel((value) => !value)}
+                className={`${actionBtnClass} ${
+                  showVersionsPanel ? "border-indigo-300 bg-indigo-50 text-indigo-800" : ""
+                }`}
+              >
+                Versões
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowFormatTools((value) => !value)}
+                className={`${actionBtnClass} ${
+                  showFormatTools ? "border-indigo-300 bg-indigo-50 text-indigo-800" : ""
+                }`}
+              >
+                Formatação
+              </button>
+            </>
+          ) : null}
+
+          <EditorShareBar
+            title={title}
+            getHtml={getEditorHtml}
+            onStatus={setStatus}
+          />
+
+          <span className="ml-auto text-[11px] font-bold text-slate-500">
+            {wordCount} pal.
+          </span>
+        </div>
+        <p className={`truncate text-slate-500 ${embedded ? "mt-1 text-[11px]" : "mt-2 text-xs"}`}>
+          {status}
+        </p>
+      </div>
+
       <div
         className={
           embedded
-            ? "grid h-full min-h-0 flex-1 gap-3 overflow-hidden xl:grid-cols-[220px_minmax(0,1fr)]"
+            ? "flex h-full min-h-0 flex-1 overflow-hidden"
             : "grid gap-6 xl:grid-cols-[280px_1fr]"
         }
       >
-        <aside
-          className={
-            embedded
-              ? "min-h-0 space-y-3 overflow-y-auto overscroll-contain pr-1"
-              : "space-y-5"
-          }
-        >
-          <div className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
-            <p className="text-sm font-black uppercase tracking-[0.24em] text-indigo-700">
-              Documento
+        {!embedded ? (
+          <aside className="space-y-5">
+            <div className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
+              <p className="text-sm font-black uppercase tracking-[0.24em] text-indigo-700">
+                Documento
+              </p>
+
+              <label className="mt-4 grid gap-2">
+                <span className="text-sm font-bold text-slate-700">Título</span>
+                <input
+                  value={title}
+                  onChange={(event) => setTitle(event.target.value)}
+                  onBlur={() => persistCurrentDocument("Título salvo.")}
+                  className="h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-bold text-slate-950 outline-none transition focus:border-slate-950 focus:bg-white"
+                />
+              </label>
+
+              <div className="mt-5 grid gap-3">
+                <button
+                  type="button"
+                  onClick={saveVersion}
+                  className="rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-3 text-sm font-black text-white transition hover:opacity-95"
+                >
+                  Salvar versão
+                </button>
+
+                <button type="button" onClick={newDocument} className={actionBtnClass}>
+                  Novo documento
+                </button>
+
+                <button
+                  type="button"
+                  onClick={applyAbntToDocument}
+                  className="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-3 text-sm font-black text-emerald-700 transition"
+                >
+                  Aplicar padrão ABNT
+                </button>
+
+                <button
+                  type="button"
+                  onClick={printDocument}
+                  className="rounded-2xl border border-indigo-200 bg-indigo-50 px-5 py-3 text-sm font-black text-indigo-700 transition"
+                >
+                  Imprimir / PDF limpo
+                </button>
+
+                <button
+                  type="button"
+                  onClick={downloadDocxReal}
+                  className="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-3 text-sm font-black text-emerald-700 transition"
+                >
+                  Baixar DOCX real
+                </button>
+
+                <button type="button" onClick={downloadHtml} className={actionBtnClass}>
+                  Baixar HTML
+                </button>
+              </div>
+
+              <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm leading-7 text-slate-600">
+                <p>{status}</p>
+                <p className="mt-2 font-black text-slate-950">{wordCount} palavra(s)</p>
+              </div>
+            </div>
+
+            <div className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
+              <p className="text-sm font-black uppercase tracking-[0.24em] text-indigo-700">
+                Versões salvas
+              </p>
+
+              <div className="mt-4 grid gap-3">
+                {savedDocuments.length > 0 ? (
+                  savedDocuments.map((item) => (
+                    <div
+                      key={item.id}
+                      className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => loadVersion(item)}
+                        className="text-left text-sm font-black text-slate-950 hover:text-indigo-700"
+                      >
+                        {item.title}
+                      </button>
+                      <p className="mt-1 text-xs text-slate-500">
+                        {new Intl.DateTimeFormat("pt-BR", {
+                          dateStyle: "short",
+                          timeStyle: "short",
+                        }).format(new Date(item.updatedAt))}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => removeVersion(item.id)}
+                        className="mt-3 text-xs font-black text-rose-700 hover:text-rose-800"
+                      >
+                        Remover
+                      </button>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm leading-7 text-slate-600">
+                    Nenhuma versão salva ainda.
+                  </p>
+                )}
+              </div>
+            </div>
+          </aside>
+        ) : null}
+
+        {embedded && showVersionsPanel ? (
+          <aside className="w-52 shrink-0 overflow-y-auto overscroll-contain border-r border-slate-200 bg-slate-50/80 p-3">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-700">
+              Versões
             </p>
-
-            <label className="mt-4 grid gap-2">
-              <span className="text-sm font-bold text-slate-700">Título</span>
-              <input
-                value={title}
-                onChange={(event) => setTitle(event.target.value)}
-                onBlur={() => persistCurrentDocument("Título salvo.")}
-                className="h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-bold text-slate-950 outline-none transition focus:border-slate-950 focus:bg-white"
-              />
-            </label>
-
-            <div className="mt-5 grid gap-3">
-              <button
-                type="button"
-                onClick={saveVersion}
-                className="rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-3 text-sm font-black text-white transition hover:opacity-95"
-              >
-                Salvar versão
-              </button>
-
-              <button
-                type="button"
-                onClick={newDocument}
-                className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-700 transition hover:border-slate-950"
-              >
-                Novo documento
-              </button>
-
-              <button
-                type="button"
-                onClick={applyAbntToDocument}
-                className="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-3 text-sm font-black text-emerald-700 transition"
-              >
-                Aplicar padrão ABNT
-              </button>
-
-              <button
-                type="button"
-                onClick={printDocument}
-                className="rounded-2xl border border-indigo-200 bg-indigo-50 px-5 py-3 text-sm font-black text-indigo-700 transition"
-              >
-                Imprimir / PDF limpo
-              </button>
-
-              <button
-                type="button"
-                onClick={downloadDocxReal}
-                className="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-3 text-sm font-black text-emerald-700 transition"
-              >
-                Baixar DOCX real
-              </button>
-
-              <button
-                type="button"
-                onClick={downloadHtml}
-                className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-700 transition hover:border-slate-950"
-              >
-                Baixar HTML
-              </button>
-
-              <MarketplacePublishButton
-                title={title}
-                getHtml={getEditorHtml}
-                className="w-full rounded-2xl border border-fuchsia-200 bg-fuchsia-50 px-5 py-3 text-sm font-black text-fuchsia-800 transition hover:bg-fuchsia-100"
-              />
-            </div>
-
-            <div className="mt-6">
-              <GoogleClassroomPanel
-                title={title}
-                getHtml={getEditorHtml}
-                onStatus={setStatus}
-              />
-            </div>
-
-            <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm leading-7 text-slate-600">
-              <p>{status}</p>
-              <p className="mt-2 font-black text-slate-950">{wordCount} palavra(s)</p>
-            </div>
-          </div>
-
-          <div className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
-            <p className="text-sm font-black uppercase tracking-[0.24em] text-indigo-700">
-              Versões salvas
-            </p>
-
-            <div className="mt-4 grid gap-3">
+            <div className="mt-3 grid gap-2">
               {savedDocuments.length > 0 ? (
                 savedDocuments.map((item) => (
                   <div
                     key={item.id}
-                    className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
+                    className="rounded-xl border border-slate-200 bg-white p-2.5"
                   >
                     <button
                       type="button"
                       onClick={() => loadVersion(item)}
-                      className="text-left text-sm font-black text-slate-950 hover:text-indigo-700"
+                      className="text-left text-xs font-black text-slate-950 hover:text-indigo-700"
                     >
                       {item.title}
                     </button>
-                    <p className="mt-1 text-xs text-slate-500">
-                      {new Intl.DateTimeFormat("pt-BR", {
-                        dateStyle: "short",
-                        timeStyle: "short",
-                      }).format(new Date(item.updatedAt))}
-                    </p>
                     <button
                       type="button"
                       onClick={() => removeVersion(item.id)}
-                      className="mt-3 text-xs font-black text-rose-700 hover:text-rose-800"
+                      className="mt-2 text-[10px] font-black text-rose-700"
                     >
                       Remover
                     </button>
                   </div>
                 ))
               ) : (
-                <p className="text-sm leading-7 text-slate-600">
-                  Nenhuma versão salva ainda.
-                </p>
+                <p className="text-xs text-slate-500">Nenhuma versão salva.</p>
               )}
             </div>
-          </div>
-        </aside>
+          </aside>
+        ) : null}
 
         <div
           className={
             embedded
-              ? "flex min-h-0 min-w-0 flex-1 flex-col gap-3 overflow-hidden"
+              ? "flex min-h-0 min-w-0 flex-1 flex-col gap-2 overflow-hidden"
               : "space-y-5"
           }
         >
+          {(!embedded || showFormatTools) && (
           <div
-            className={`relative shrink-0 rounded-[2rem] border border-slate-200 bg-white p-4 shadow-sm ${
-              embedded ? "max-h-[42vh] overflow-y-auto overscroll-contain" : ""
+            className={`relative shrink-0 rounded-[2rem] border border-slate-200 bg-white shadow-sm ${
+              embedded ? "overflow-x-auto overscroll-contain p-2" : "p-4"
             }`}
           >
             <input
@@ -1366,11 +1469,11 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
               onChange={handleImageSelected}
             />
 
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-1.5">
               <select
                 value={selectedBlock}
                 onChange={(event) => handleBlockChange(event.target.value)}
-                className="h-10 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-bold text-slate-950 outline-none focus:border-slate-950"
+                className={toolSelectClass}
               >
                 <option value="p">Parágrafo</option>
                 <option value="h1">Título 1</option>
@@ -1383,7 +1486,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
               <select
                 value={fontFamily}
                 onChange={(event) => applyFontFamily(event.target.value)}
-                className="h-10 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-bold text-slate-950 outline-none focus:border-slate-950"
+                className={toolSelectClass}
               >
                 {fontOptions.map((font) => (
                   <option key={font} value={font}>
@@ -1395,7 +1498,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
               <select
                 value={fontSizePt}
                 onChange={(event) => applyFontSize(event.target.value)}
-                className="h-10 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-bold text-slate-950 outline-none focus:border-slate-950"
+                className={toolSelectClass}
               >
                 {fontSizeOptions.map((item) => (
                   <option key={item.value} value={item.value}>
@@ -1407,7 +1510,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
               <select
                 value={lineHeight}
                 onChange={(event) => applyLineHeight(event.target.value)}
-                className="h-10 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-bold text-slate-950 outline-none focus:border-slate-950"
+                className={toolSelectClass}
               >
                 {lineHeightOptions.map((item) => (
                   <option key={item.value} value={item.value}>
@@ -1420,7 +1523,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
                 type="button"
                 onClick={undoEdit}
                 aria-label="Desfazer"
-                className="h-10 min-w-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-black text-slate-700 transition hover:border-slate-950"
+                className={toolBtnClass}
               >
                 ↶
               </button>
@@ -1428,7 +1531,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
                 type="button"
                 onClick={redoEdit}
                 aria-label="Refazer"
-                className="h-10 min-w-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-black text-slate-700 transition hover:border-slate-950"
+                className={toolBtnClass}
               >
                 ↷
               </button>
@@ -1444,32 +1547,20 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
                   type="button"
                   onClick={() => exec(command)}
                   aria-label={aria}
-                  className="h-10 min-w-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-black text-slate-700 transition hover:border-slate-950 hover:text-slate-950"
+                  className={`${toolBtnClass} hover:text-slate-950`}
                 >
                   {label}
                 </button>
               ))}
 
-              <button
-                type="button"
-                onClick={insertHyperlink}
-                className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-black text-slate-700 transition hover:border-slate-950"
-              >
+              <button type="button" onClick={insertHyperlink} className={toolBtnClass}>
                 Link
               </button>
 
-              <button
-                type="button"
-                onClick={() => exec("outdent")}
-                className="h-10 min-w-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-black text-slate-700"
-              >
+              <button type="button" onClick={() => exec("outdent")} className={toolBtnClass}>
                 ⇤
               </button>
-              <button
-                type="button"
-                onClick={() => exec("indent")}
-                className="h-10 min-w-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-black text-slate-700"
-              >
+              <button type="button" onClick={() => exec("indent")} className={toolBtnClass}>
                 ⇥
               </button>
 
@@ -1488,13 +1579,17 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
                   type="button"
                   onClick={() => exec(command)}
                   aria-label={aria}
-                  className="h-10 min-w-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-black text-slate-700 transition hover:border-slate-950 hover:text-slate-950"
+                  className={`${toolBtnClass} hover:text-slate-950`}
                 >
                   {label}
                 </button>
               ))}
 
-              <label className="flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-xs font-black text-slate-700">
+              <label
+                className={`flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 font-black text-slate-700 ${
+                  embedded ? "h-8 text-[10px]" : "h-10 text-xs"
+                }`}
+              >
                 Cor
                 <input
                   type="color"
@@ -1503,7 +1598,11 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
                 />
               </label>
 
-              <label className="flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-xs font-black text-slate-700">
+              <label
+                className={`flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 font-black text-slate-700 ${
+                  embedded ? "h-8 text-[10px]" : "h-10 text-xs"
+                }`}
+              >
                 Fundo
                 <input
                   type="color"
@@ -1512,48 +1611,43 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
                 />
               </label>
 
-              <button
-                type="button"
-                onClick={insertTable}
-                className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-black text-slate-700 transition hover:border-slate-950 hover:text-slate-950"
-              >
+              <button type="button" onClick={insertTable} className={toolBtnClass}>
                 Tabela
               </button>
 
-              <button
-                type="button"
-                onClick={triggerImagePicker}
-                className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-black text-slate-700 transition hover:border-slate-950 hover:text-slate-950"
-              >
+              <button type="button" onClick={triggerImagePicker} className={toolBtnClass}>
                 Imagem
               </button>
 
-              <button
-                type="button"
-                onClick={insertDivider}
-                className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-black text-slate-700 transition hover:border-slate-950 hover:text-slate-950"
-              >
+              <button type="button" onClick={insertDivider} className={toolBtnClass}>
                 Linha
               </button>
 
-              <button
-                type="button"
-                onClick={insertPageBreak}
-                className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-black text-slate-700 transition hover:border-slate-950 hover:text-slate-950"
-              >
+              <button type="button" onClick={insertPageBreak} className={toolBtnClass}>
                 Quebra
               </button>
 
               <button
                 type="button"
                 onClick={clearFormatting}
-                className="h-10 rounded-xl border border-amber-200 bg-amber-50 px-3 text-sm font-black text-amber-700 transition"
+                className={`${toolBtnClass} border-amber-200 bg-amber-50 text-amber-700`}
               >
                 Limpar
               </button>
+
+              <button
+                type="button"
+                onClick={() => setShowAdvancedTools((value) => !value)}
+                className={`${toolBtnClass} ${
+                  showAdvancedTools ? "border-indigo-300 bg-indigo-50 text-indigo-800" : ""
+                }`}
+              >
+                ABNT+
+              </button>
             </div>
 
-            <div className="mt-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-3">
+            {showAdvancedTools ? (
+            <div className={`rounded-2xl border border-emerald-200 bg-emerald-50 ${embedded ? "mt-2 p-2" : "mt-3 p-3"}`}>
               <div className="flex flex-wrap items-center gap-2">
                 <span className="mr-1 text-xs font-black uppercase tracking-[0.18em] text-emerald-700">
                   ABNT
@@ -1634,8 +1728,10 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
                 </label>
               </div>
             </div>
+            ) : null}
 
-            <div className="mt-3 rounded-2xl border border-indigo-200 bg-indigo-50 p-3">
+            {showAdvancedTools ? (
+            <div className={`rounded-2xl border border-indigo-200 bg-indigo-50 ${embedded ? "mt-2 p-2" : "mt-3 p-3"}`}>
               <div className="flex flex-wrap items-center gap-2">
                 <span className="mr-1 text-xs font-black uppercase tracking-[0.18em] text-indigo-700">
                   Imagem
@@ -1732,11 +1828,13 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
                 </button>
               </div>
             </div>
+            ) : null}
           </div>
+          )}
 
           <div
-            className={`min-h-0 flex-1 rounded-[2rem] border border-slate-200 bg-white p-3 shadow-sm ${
-              embedded ? "overflow-y-auto overscroll-contain" : ""
+            className={`min-h-0 flex-1 rounded-[2rem] border border-slate-200 bg-white shadow-sm ${
+              embedded ? "overflow-y-auto overscroll-contain p-2" : "p-3"
             }`}
           >
             <div className="rounded-[1.5rem] bg-slate-100 p-3 sm:p-6">

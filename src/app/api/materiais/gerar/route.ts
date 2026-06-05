@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
   let chargedCost = 0;
 
   if (user) {
-    const spend = await spendCredits(user.id, tipo);
+    const spend = await spendCredits(user.id, tipo, user.email);
 
     if (spend.status === "insufficient") {
       return NextResponse.json(

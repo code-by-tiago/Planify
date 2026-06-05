@@ -207,6 +207,7 @@ function getPriceId(subscription: StripeSubscription): string | null {
 
 function getPlanKey(subscription: StripeSubscription): string | null {
   return (
+    subscription.metadata?.ui_plan_key ||
     subscription.metadata?.plan_key ||
     subscription.metadata?.plan ||
     subscription.metadata?.tipo ||

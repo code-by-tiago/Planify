@@ -6,6 +6,8 @@ import type { MaterialEngineResponse } from "../../../../../server/materials/mat
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+// Baixar as imagens e montar o PPTX pode levar tempo em decks grandes.
+export const maxDuration = 300;
 
 export async function POST(request: NextRequest) {
   const config = getGoogleConfigStatus();

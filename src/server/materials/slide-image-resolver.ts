@@ -1,7 +1,12 @@
 /**
- * Resolve imagens reais para slides (Wikimedia Commons + Unsplash opcional).
- * Nunca retorna placeholder de "sugestão de imagem" — só URL utilizável ou null.
+ * Resolve imagens para slides. Prioridade:
+ *   1) Ilustração gerada por IA (Gemini) — sempre condiz com o conteúdo.
+ *   2) Foto de stock relevante (Wikimedia/Openverse/Unsplash), com filtro.
+ *   3) Nenhuma imagem (o design do tema preenche o espaço).
+ * Nunca retorna placeholder de "sugestão de imagem" nem foto sem relação.
  */
+
+import { generateSlideIllustration } from "./slide-image-generator";
 
 const WIKIMEDIA_API = "https://commons.wikimedia.org/w/api.php";
 const USER_AGENT = "Planify/1.0 (educational slides; contact: planify-app)";
@@ -37,6 +42,18 @@ function cleanWords(value: string): string[] {
     .replace(/[^\w\s-]/g, " ")
     .split(/\s+/)
     .filter((word) => word.length > 2 && !STOPWORDS.has(word));
+}
+
+/**
+ * Aceita o resultado só se o título/descrição compartilhar pelo menos uma
+ * palavra significativa com a consulta. Evita devolver fotos aleatórias
+ * (ex.: "SPACE" ou uma refeição) sem relação com o conteúdo do slide.
+ */
+function isRelevantResult(text: string, query: string): boolean {
+  const queryWords = cleanWords(query).filter((word) => word.length >= 4);
+  if (!queryWords.length) return false;
+  const haystack = ` ${cleanWords(text).join(" ")} `;
+  return queryWords.some((word) => haystack.includes(` ${word} `) || haystack.includes(word));
 }
 
 /**
@@ -115,6 +132,7 @@ async function searchWikimedia(query: string): Promise<{ url: string; alt: strin
     const url = info?.thumburl || info?.url;
     if (url && isSafeImageUrl(url)) {
       const alt = (page.title || query).replace(/^File:/i, "").replace(/\.[^.]+$/, "");
+      if (!isRelevantResult(alt, query)) continue;
       return { url, alt };
     }
   }
@@ -154,7 +172,7 @@ async function searchOpenverse(
     for (const hit of data.results ?? []) {
       // O thumbnail fica em api.openverse.org (host estável e seguro).
       const url = hit.thumbnail || hit.url;
-      if (url && isSafeImageUrl(url)) {
+      if (url && isSafeImageUrl(url) && isRelevantResult(hit.title || "", query)) {
         return { url, alt: hit.title || query };
       }
     }
@@ -191,13 +209,15 @@ async function searchUnsplash(query: string): Promise<{ url: string; alt: string
     }>;
   };
 
-  const hit = data.results?.find((item) => item.urls?.regular);
-  if (!hit?.urls?.regular || !isSafeImageUrl(hit.urls.regular)) return null;
+  for (const item of data.results ?? []) {
+    const url = item.urls?.regular;
+    if (!url || !isSafeImageUrl(url)) continue;
+    const description = item.alt_description || item.description || "";
+    if (!isRelevantResult(description, query)) continue;
+    return { url, alt: description || query };
+  }
 
-  return {
-    url: hit.urls.regular,
-    alt: hit.alt_description || hit.description || query,
-  };
+  return null;
 }
 
 export async function resolveSlideImage(input: {
@@ -228,43 +248,100 @@ export async function resolveSlideImage(input: {
   return null;
 }
 
+type EnrichableSlide = {
+  imagePrompt?: string;
+  imageUrl?: string;
+  imageAlt?: string;
+  layout?: string;
+  title?: string;
+};
+
+/** Teto de imagens geradas por IA por apresentação (controla custo/latência). */
+const MAX_AI_IMAGES = 16;
+/** Quantas gerações de imagem correm em paralelo. */
+const IMAGE_CONCURRENCY = 4;
+
 async function resolveForSlide(
-  slide: {
-    imagePrompt?: string;
-    imageUrl?: string;
-    imageAlt?: string;
-    title?: string;
-  },
-  context: { tema: string; componente: string },
+  slide: EnrichableSlide,
+  context: { tema: string },
+  allowAi: () => boolean,
 ): Promise<void> {
   if (slide.imageUrl?.trim()) return;
+  if (slide.layout === "fechamento") return;
 
-  // Só busca com base no imagePrompt concreto do slide (ou no título como
-  // apoio). Sem fallback genérico de tema+componente, que trazia imagens
-  // aleatórias e sem relação com o conteúdo.
+  // O imagePrompt concreto do slide (ou o título como apoio) é a base. Sem
+  // fallback genérico de tema+componente, que trazia imagens sem relação.
   const prompt = slide.imagePrompt?.trim() || slide.title?.trim();
   if (!prompt) return;
 
-  const resolved = await resolveSlideImage({
-    imagePrompt: prompt,
-    tema: context.tema,
-  });
+  // 1) Ilustração gerada por IA — sempre condiz com o conteúdo do slide.
+  if (allowAi()) {
+    try {
+      const generated = await generateSlideIllustration({
+        imagePrompt: prompt,
+        tema: context.tema,
+      });
+      if (generated) {
+        slide.imageUrl = generated.url;
+        slide.imageAlt = generated.alt;
+        return;
+      }
+    } catch {
+      // segue para o fallback de foto de stock
+    }
+  }
 
-  if (resolved) {
-    slide.imageUrl = resolved.url;
-    slide.imageAlt = resolved.alt;
+  // 2) Foto de stock relevante (com filtro). 3) Nenhuma imagem.
+  try {
+    const resolved = await resolveSlideImage({ imagePrompt: prompt, tema: context.tema });
+    if (resolved) {
+      slide.imageUrl = resolved.url;
+      slide.imageAlt = resolved.alt;
+    }
+  } catch {
+    // mantém o slide sem imagem — o design preenche o espaço
   }
 }
 
+async function runWithConcurrency<T>(
+  items: T[],
+  limit: number,
+  worker: (item: T) => Promise<void>,
+): Promise<void> {
+  const queue = [...items];
+  const runners = Array.from(
+    { length: Math.min(limit, queue.length) },
+    async () => {
+      for (let item = queue.shift(); item !== undefined; item = queue.shift()) {
+        await worker(item);
+      }
+    },
+  );
+  await Promise.all(runners);
+}
+
+/**
+ * A geração de imagem por IA (Gemini) exige faturação ativa na conta — o free
+ * tier tem limite 0. Fica atrás de uma flag para não desperdiçar chamadas 429
+ * enquanto a faturação não está habilitada. Ative com SLIDE_AI_IMAGES=1.
+ */
+function aiImagesEnabled(): boolean {
+  const flag = String(process.env.SLIDE_AI_IMAGES || "").toLowerCase();
+  return flag === "1" || flag === "true" || flag === "on";
+}
+
 export async function enrichSlidesWithImages(
-  slides: Array<{
-    imagePrompt?: string;
-    imageUrl?: string;
-    imageAlt?: string;
-    layout?: string;
-    title?: string;
-  }>,
+  slides: EnrichableSlide[],
   context: { tema: string; componente: string },
 ): Promise<void> {
-  await Promise.all(slides.map((slide) => resolveForSlide(slide, context)));
+  let aiBudget = aiImagesEnabled() ? MAX_AI_IMAGES : 0;
+  const allowAi = () => {
+    if (aiBudget <= 0) return false;
+    aiBudget -= 1;
+    return true;
+  };
+
+  await runWithConcurrency(slides, IMAGE_CONCURRENCY, (slide) =>
+    resolveForSlide(slide, { tema: context.tema }, allowAi),
+  );
 }

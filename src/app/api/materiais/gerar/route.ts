@@ -4,6 +4,8 @@ import type { MaterialEngineInput } from "../../../../server/materials/material-
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+// Gerar slides pode incluir várias ilustrações por IA — concede mais tempo.
+export const maxDuration = 300;
 
 export async function POST(request: NextRequest) {
   try {

@@ -1,13 +1,3 @@
-/**
- * Cliente de IA do Planify — uso exclusivo do servidor.
- *
- * - Lê GEMINI_API_KEY somente aqui. Nunca exposta ao frontend.
- * - Gemini 2.5 Flash é o modelo padrão para a maioria das ferramentas.
- * - Gemini 2.5 Pro fica preparado para tarefas avançadas via tier "advanced".
- * - A interface do professor nunca exibe nomes de modelos ou referências à IA subjacente.
- */
-
-import type { AIModelTier } from "../../lib/ai/aiConfig";
 import type { GeminiGenerateJSONOptions } from "../../types/ai";
 
 type GeminiPart = {
@@ -28,58 +18,21 @@ type GeminiResponse = {
   };
 };
 
-// ---------------------------------------------------------------------------
-// Resolução segura de credenciais — somente no servidor
-// ---------------------------------------------------------------------------
-
-function getAIApiKey(): string {
+function getGeminiApiKey(): string {
   const apiKey = process.env.GEMINI_API_KEY;
 
   if (!apiKey) {
-    throw new Error(
-      "GEMINI_API_KEY não configurada no servidor. " +
-        "Adicione a variável ao .env.local.",
-    );
+    throw new Error("GEMINI_API_KEY não configurada no servidor.");
   }
 
   return apiKey;
 }
 
-/**
- * Resolve o nome do modelo a partir do tier solicitado.
- *
- * Cadeia de fallback (retrocompatibilidade preservada):
- *   tier "advanced" → GEMINI_MODEL_ADVANCED → "gemini-2.5-pro"
- *   tier "default"  → GEMINI_MODEL_DEFAULT  → GEMINI_MODEL (legado) → "gemini-2.5-flash"
- *   model literal   → valor passado diretamente (uso legado)
- */
-function resolveModel(
-  tier?: AIModelTier,
-  legacyModel?: string,
-): string {
-  if (tier === "advanced") {
-    return (
-      process.env.GEMINI_MODEL_ADVANCED ??
-      "gemini-2.5-pro"
-    );
-  }
-
-  if (legacyModel) {
-    return legacyModel;
-  }
-
-  return (
-    process.env.GEMINI_MODEL_DEFAULT ??
-    process.env.GEMINI_MODEL ??
-    "gemini-2.5-flash"
-  );
+function getGeminiModel(model?: string): string {
+  return model || process.env.GEMINI_MODEL || "gemini-2.5-flash";
 }
 
-// ---------------------------------------------------------------------------
-// Utilitários internos
-// ---------------------------------------------------------------------------
-
-function extractTextFromResponse(response: GeminiResponse): string {
+function extractTextFromGeminiResponse(response: GeminiResponse): string {
   const parts = response.candidates?.[0]?.content?.parts ?? [];
   const text = parts
     .map((part) => part.text ?? "")
@@ -87,13 +40,13 @@ function extractTextFromResponse(response: GeminiResponse): string {
     .trim();
 
   if (!text) {
-    throw new Error("A IA não retornou conteúdo textual.");
+    throw new Error("A Gemini não retornou conteúdo textual.");
   }
 
   return text;
 }
 
-function stripJsonFence(text: string): string {
+function cleanJsonText(text: string): string {
   const trimmed = text.trim();
 
   if (trimmed.startsWith("```json")) {
@@ -107,32 +60,34 @@ function stripJsonFence(text: string): string {
   return trimmed;
 }
 
-// ---------------------------------------------------------------------------
-// Chamadas à API
-// ---------------------------------------------------------------------------
-
-/**
- * Gera uma resposta JSON estruturada via IA.
- * Usar para materiais com schema definido (planejamentos, materiais avançados).
- */
 export async function generateGeminiJSON<T>(
   options: GeminiGenerateJSONOptions,
 ): Promise<T> {
-  const apiKey = getAIApiKey();
-  const model = resolveModel(options.tier, options.model);
+  const apiKey = getGeminiApiKey();
+  const model = getGeminiModel(options.model);
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
   const response = await fetch(endpoint, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+    },
     body: JSON.stringify({
       systemInstruction: {
-        parts: [{ text: options.systemInstruction }],
+        parts: [
+          {
+            text: options.systemInstruction,
+          },
+        ],
       },
       contents: [
         {
           role: "user",
-          parts: [{ text: options.prompt }],
+          parts: [
+            {
+              text: options.prompt,
+            },
+          ],
         },
       ],
       generationConfig: {
@@ -140,9 +95,7 @@ export async function generateGeminiJSON<T>(
         topP: options.topP ?? 0.8,
         maxOutputTokens: options.maxOutputTokens ?? 8192,
         responseMimeType: "application/json",
-        ...(options.responseSchema
-          ? { responseSchema: options.responseSchema }
-          : {}),
+        ...(options.responseSchema ? { responseSchema: options.responseSchema } : {}),
       },
     }),
   });
@@ -151,67 +104,17 @@ export async function generateGeminiJSON<T>(
 
   if (!response.ok || json.error) {
     throw new Error(
-      json.error?.message ??
-        `Erro ao chamar a IA. Status HTTP: ${response.status}`,
+      json.error?.message ||
+        `Erro ao chamar Gemini. Status HTTP: ${response.status}`,
     );
   }
 
-  const text = extractTextFromResponse(json);
-  const cleaned = stripJsonFence(text);
+  const text = extractTextFromGeminiResponse(json);
+  const cleaned = cleanJsonText(text);
 
   try {
     return JSON.parse(cleaned) as T;
   } catch {
-    throw new Error("A IA retornou um JSON inválido.");
+    throw new Error("A Gemini retornou um JSON inválido.");
   }
-}
-
-/**
- * Gera conteúdo em texto livre (HTML, Markdown, etc.) via IA.
- * Usar para materiais didáticos com saída em HTML estruturado.
- */
-export async function generateGeminiText(options: {
-  systemInstruction: string;
-  prompt: string;
-  temperature?: number;
-  topP?: number;
-  maxOutputTokens?: number;
-  tier?: AIModelTier;
-  model?: string;
-}): Promise<string> {
-  const apiKey = getAIApiKey();
-  const model = resolveModel(options.tier, options.model);
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-
-  const response = await fetch(endpoint, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      systemInstruction: {
-        parts: [{ text: options.systemInstruction }],
-      },
-      contents: [
-        {
-          role: "user",
-          parts: [{ text: options.prompt }],
-        },
-      ],
-      generationConfig: {
-        temperature: options.temperature ?? 0.5,
-        topP: options.topP ?? 0.9,
-        maxOutputTokens: options.maxOutputTokens ?? 8192,
-      },
-    }),
-  });
-
-  const json = (await response.json()) as GeminiResponse;
-
-  if (!response.ok || json.error) {
-    throw new Error(
-      json.error?.message ??
-        `Erro ao chamar a IA. Status HTTP: ${response.status}`,
-    );
-  }
-
-  return extractTextFromResponse(json);
 }

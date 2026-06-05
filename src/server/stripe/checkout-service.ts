@@ -4,7 +4,6 @@ import { stripeApiRequest } from "./stripe-api";
 
 type CheckoutParams = {
   planKey: BillingPlanKey;
-  customerEmail?: string | null;
 };
 
 type StripeCheckoutSessionResponse = {
@@ -83,7 +82,7 @@ export async function createStripeCheckoutSession(
     throw new Error("Plano inválido.");
   }
 
-  const formEntries: Record<string, string> = {
+  const form = buildStripeForm({
     mode: "subscription",
     "line_items[0][price]": priceId,
     "line_items[0][quantity]": "1",
@@ -99,14 +98,7 @@ export async function createStripeCheckoutSession(
     "subscription_data[metadata][credits_per_cycle]": String(plan.creditsPerCycle),
     allow_promotion_codes: "true",
     billing_address_collection: "auto",
-  };
-
-  const email = params.customerEmail?.trim();
-  if (email && email.includes("@")) {
-    formEntries.customer_email = email;
-  }
-
-  const form = buildStripeForm(formEntries);
+  });
 
   const json = await stripeApiRequest<StripeCheckoutSessionResponse>(
     "/checkout/sessions",

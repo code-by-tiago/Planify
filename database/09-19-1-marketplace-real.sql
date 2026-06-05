@@ -110,7 +110,6 @@ values (
     'image/jpeg',
     'image/webp',
     'text/plain',
-    'text/html',
     'application/zip',
     'application/x-zip-compressed'
   ]

@@ -14,28 +14,32 @@ export function AdminAccessGate({
   const loginHref = `/login?mode=admin&redirect=${encodeURIComponent(redirectTo)}`;
 
   return (
-    <section className="mx-auto flex min-h-[50vh] max-w-4xl items-center justify-center px-5 py-12 sm:px-8">
-      <div className="w-full rounded-[1.75rem] border border-slate-200 bg-white p-8 text-center shadow-sm">
-        <p className="text-xs font-black uppercase tracking-[0.2em] text-indigo-600">
-          Admin Planify
+    <section className="mx-auto flex min-h-[calc(100vh-220px)] max-w-4xl items-center justify-center px-5 py-12 sm:px-8">
+      <div className="w-full rounded-[2.25rem] border border-white/10 bg-white/[0.06] p-8 text-center shadow-2xl backdrop-blur-2xl">
+        <p className="text-sm font-black uppercase tracking-[0.28em] text-cyan-300">
+          Admin
         </p>
 
         {!authenticated ? (
           <>
-            <h1 className="mt-4 text-3xl font-black text-slate-950">Acesso restrito</h1>
-            <p className="mx-auto mt-3 max-w-xl text-sm font-medium leading-7 text-slate-600">
+            <h1 className="mt-4 text-4xl font-black text-white">
+              Acesso restrito
+            </h1>
+            <p className="mx-auto mt-4 max-w-xl text-sm leading-7 text-slate-400">
               Entre com a conta do administrador para continuar.
             </p>
+
             <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
               <Link
                 href={loginHref}
-                className="inline-flex justify-center rounded-full bg-gradient-to-r from-indigo-600 to-violet-600 px-6 py-3 text-sm font-bold text-white hover:opacity-95"
+                className="rounded-2xl bg-white px-6 py-4 text-center text-sm font-black text-slate-950 transition hover:-translate-y-1 hover:bg-cyan-100"
               >
-                Entrar como admin
+                Entrar como Admin
               </Link>
+
               <Link
                 href="/"
-                className="inline-flex justify-center rounded-full border border-slate-200 px-6 py-3 text-sm font-bold text-slate-700 hover:border-indigo-200"
+                className="rounded-2xl border border-white/10 bg-white/5 px-6 py-4 text-center text-sm font-black text-white transition hover:-translate-y-1 hover:bg-white/10"
               >
                 Início
               </Link>
@@ -43,22 +47,26 @@ export function AdminAccessGate({
           </>
         ) : (
           <>
-            <h1 className="mt-4 text-3xl font-black text-slate-950">Sem permissão</h1>
-            <p className="mx-auto mt-3 max-w-xl text-sm font-medium leading-7 text-slate-600">
+            <h1 className="mt-4 text-4xl font-black text-white">
+              Sem permissão
+            </h1>
+            <p className="mx-auto mt-4 max-w-xl text-sm leading-7 text-slate-400">
               {email
                 ? `A conta ${email} não é administradora.`
                 : "A conta logada não é administradora."}
             </p>
+
             <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
               <Link
                 href="/sair"
-                className="inline-flex justify-center rounded-full bg-gradient-to-r from-indigo-600 to-violet-600 px-6 py-3 text-sm font-bold text-white"
+                className="rounded-2xl bg-white px-6 py-4 text-center text-sm font-black text-slate-950 transition hover:-translate-y-1 hover:bg-cyan-100"
               >
                 Trocar conta
               </Link>
+
               <Link
                 href="/"
-                className="inline-flex justify-center rounded-full border border-slate-200 px-6 py-3 text-sm font-bold text-slate-700"
+                className="rounded-2xl border border-white/10 bg-white/5 px-6 py-4 text-center text-sm font-black text-white transition hover:-translate-y-1 hover:bg-white/10"
               >
                 Início
               </Link>

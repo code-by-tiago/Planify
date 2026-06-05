@@ -43,7 +43,6 @@ REGRAS:
 7. Para Língua Espanhola, inclua vocabulário, comunicação, leitura, diálogos, cultura hispânica, países hispânicos e diversidade linguística quando fizer sentido.
 8. Para jogos, recomende os modelos mais adequados ao tema e diga o motivo.
 9. Para apostilas, pense em unidades explicativas: contextualização, conceitos, exemplos, vocabulário, box de curiosidade, imagens/infográficos sugeridos, exercícios de fixação, síntese e glossário.
-9b. Para slides, sugira blocos em ordem de aula (contextualização → objetivos → conceitos em progressão → exemplo → checagem → síntese), permitindo que o professor selecione vários para compor uma apresentação sequencial.
 10. Para atividades, provas, listas e revisões, pense em exercícios originais: complete, classifique, relacione, reescreva, interprete, justifique, resolva, produza, compare, analise e aplique.
 11. Se o tema for Amazônia, respeite o componente: em Geografia trabalhe território, biodiversidade, povos, economia, impactos ambientais, conservação e cidadania; em Ciências trabalhe ecossistema, biodiversidade, água, clima e impactos; em História trabalhe povos, ocupação, conflitos, políticas e memória.
 12. Se o componente for Redação, inclua tese, argumentos, repertório, coesão, parágrafo, conclusão, proposta de intervenção e reescrita.

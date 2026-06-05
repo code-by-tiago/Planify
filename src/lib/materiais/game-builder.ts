@@ -7,8 +7,7 @@ export type PremiumGameModel =
   | "memoria"
   | "domino"
   | "quiz"
-  | "cartas"
-  | "trilha";
+  | "cartas";
 
 type WordPlacement = {
   word: string;
@@ -77,7 +76,6 @@ const GAME_LABELS: Record<PremiumGameModel, string> = {
   domino: "Dominó pedagógico",
   quiz: "Quiz com gabarito",
   cartas: "Cartas recortáveis",
-  trilha: "Trilha pedagógica",
 };
 
 const DEFAULT_SEEDS: GameSeedTerm[] = [
@@ -221,8 +219,7 @@ function normalizeModel(value: unknown): PremiumGameModel {
     model === "memoria" ||
     model === "domino" ||
     model === "quiz" ||
-    model === "cartas" ||
-    model === "trilha"
+    model === "cartas"
   ) {
     return model;
   }
@@ -903,48 +900,6 @@ export function buildVisualGameMaterial(input: MaterialAIInput, aiOutput?: Mater
       dataSection("Cartas do baralho", "Itens gerados:", cards.map((card) => `${card.title}: ${card.body}`)),
     ];
     gabarito = source.slice(0, 16).map((seed, index) => `Carta ${index + 1}: resposta deve relacionar ${seed.label} ao tema ${tema}. Pista base: ${seed.clue}`);
-  }
-
-  if (model === "trilha") {
-    const steps = seeds.slice(0, 20);
-    const cells = steps.map((seed, index) => {
-      const challenge = index % 5 === 4;
-      const bg = challenge ? "#fffbeb" : index === 0 ? "#ecfdf5" : "#eef2ff";
-      const border = index === 0 ? "#059669" : challenge ? "#d97706" : "#6366f1";
-      return `
-        <div style="border:2px solid ${border};border-radius:12px;background:${bg};padding:10px;min-height:88px;display:flex;flex-direction:column;justify-content:space-between;">
-          <span style="font-size:11px;font-weight:800;color:${border};">Casa ${index + 1}${index === 0 ? " · INÍCIO" : challenge ? " · DESAFIO" : ""}</span>
-          <strong style="font-size:13px;line-height:1.35;color:#0f172a;">${escapeHtml(seed.label)}</strong>
-          <span style="font-size:11px;line-height:1.4;color:#475569;">${escapeHtml(seed.clue)}</span>
-        </div>`;
-    });
-
-    visualHtml = `
-      <section style="font-family:Arial, sans-serif;color:#111827;">
-        <h2>Trilha pedagógica — tabuleiro imprimível</h2>
-        <p>Imprima o tabuleiro. Cada equipe lança um dado, avança e responde à casa. Casas de desafio (⭐) valem ponto extra com justificativa.</p>
-        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:16px 0;">${cells.join("")}</div>
-        <h3>Regras rápidas</h3>
-        <ol>
-          <li>Forme equipes e escolha um peão por grupo.</li>
-          <li>Na casa, responda com base no conceito indicado.</li>
-          <li>Acerto: permanece; erro: volta uma casa (ajuste conforme a turma).</li>
-          <li>Desafio: resposta completa com exemplo ganha +1 ponto.</li>
-          <li>Primeira equipe a cruzar a casa 20 vence.</li>
-        </ol>
-        <h3>Folha de pontuação</h3>
-        <table style="border-collapse:collapse;width:100%;"><tr><th style="border:1px solid #111827;padding:8px;">Equipe</th><th style="border:1px solid #111827;padding:8px;">Pontos</th><th style="border:1px solid #111827;padding:8px;">Observações</th></tr>${[1, 2, 3, 4].map((row) => `<tr><td style="border:1px solid #111827;padding:10px;">Equipe ${row}</td><td style="border:1px solid #111827;padding:10px;"></td><td style="border:1px solid #111827;padding:10px;"></td></tr>`).join("")}</table>
-        <h2>Gabarito do professor</h2>
-        <ol>${steps.map((seed, index) => `<li><strong>Casa ${index + 1}:</strong> ${escapeHtml(seed.label)} — resposta esperada relacionada a: ${escapeHtml(seed.clue)}</li>`).join("")}</ol>
-      </section>`;
-    sections = [
-      dataSection("Tabuleiro da trilha", "Grade 5×4 com casas numeradas, início, desafios e pistas."),
-      dataSection("Casas do tabuleiro", "Conceitos por casa:", steps.map((seed, index) => `Casa ${index + 1}: ${seed.label}`)),
-    ];
-    gabarito = steps.map(
-      (seed, index) =>
-        `Casa ${index + 1}: ${seed.label}. Esperado: relacionar ao tema ${tema} usando ${seed.clue}`,
-    );
   }
 
   return commonOutput(input, label, visualHtml.trim(), sections, gabarito);

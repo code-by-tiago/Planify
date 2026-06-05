@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { suggestBnccByConteudos } from "../../../../server/bncc/bncc-suggestion-engine";
-import { validateBnccSuggestionPayload } from "../../../../server/planejamentos/planning-validation";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -8,19 +7,6 @@ export const dynamic = "force-dynamic";
 export async function POST(request: NextRequest) {
   try {
     const payload = await request.json();
-    const validationError = validateBnccSuggestionPayload(payload);
-
-    if (validationError) {
-      return NextResponse.json(
-        {
-          success: false,
-          ok: false,
-          error: { message: validationError },
-        },
-        { status: 400 },
-      );
-    }
-
     const result = suggestBnccByConteudos(payload || {});
 
     return NextResponse.json({

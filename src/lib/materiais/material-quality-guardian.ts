@@ -380,12 +380,8 @@ function removeWrongBlocks(input: MaterialAIInput, output: MaterialAIOutput): Ma
     jogo: kind === "jogo" ? output.jogo : undefined,
     projeto: kind === "projeto" ? output.projeto : undefined,
     roteiro: kind === "roteiro" ? output.roteiro : undefined,
-    questoes: ["projeto", "sequencia", "roteiro", "jogo", "plano-aula", "redacao", "resumo"].includes(kind)
-      ? []
-      : output.questoes,
-    gabarito: ["projeto", "sequencia", "roteiro", "jogo", "plano-aula", "resumo"].includes(kind)
-      ? []
-      : output.gabarito,
+    questoes: ["projeto", "sequencia", "roteiro", "jogo"].includes(kind) ? [] : output.questoes,
+    gabarito: ["projeto", "sequencia", "roteiro", "jogo"].includes(kind) ? [] : output.gabarito,
     alertas: [],
   };
 }

@@ -44,12 +44,15 @@ const MarketplaceClient = dynamic(
 );
 
 import type { ReactNode } from "react";
+import { PlanifyWorkspaceProvider } from "@/components/pro/planify-workspace-context";
 
 function SectionPanel({ children }: { children: ReactNode }) {
   return (
-    <div className="flex h-full min-h-0 w-full flex-col overflow-hidden bg-white">
-      <div className="min-h-0 flex-1 overflow-hidden">{children}</div>
-    </div>
+    <PlanifyWorkspaceProvider embeddedInDashboard>
+      <div className="flex h-full min-h-0 w-full flex-col overflow-hidden bg-white">
+        <div className="min-h-0 flex-1 overflow-hidden">{children}</div>
+      </div>
+    </PlanifyWorkspaceProvider>
   );
 }
 

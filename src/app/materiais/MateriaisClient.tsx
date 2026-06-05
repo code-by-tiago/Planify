@@ -743,6 +743,7 @@ td,th{border:1px solid #d1d5db;padding:8px;}
       >
         <form
           onSubmit={gerarMaterial}
+          data-planify-scroll={studioMode ? "" : undefined}
           className="min-h-0 overflow-y-auto overscroll-contain border-r border-slate-100 p-5"
         >
           <h2 className="text-2xl font-black tracking-tight text-slate-950">
@@ -1043,7 +1044,10 @@ td,th{border:1px solid #d1d5db;padding:8px;}
           </button>
         </form>
 
-        <section className="min-h-0 overflow-y-auto overscroll-contain bg-slate-50 p-5">
+        <section
+          data-planify-scroll={studioMode ? "" : undefined}
+          className="min-h-0 overflow-y-auto overscroll-contain bg-slate-50 p-5"
+        >
           {loading ? (
             <div className="flex h-full min-h-[280px] items-center justify-center p-4">
               <PlanifyOwlGenerationCoach

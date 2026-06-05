@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { MateriaisClient } from "@/app/materiais/MateriaisClient";
 import { TeachyToolToolbar } from "@/components/dashboard/TeachyToolToolbar";
+import { PlanifyWorkspaceProvider } from "@/components/pro/planify-workspace-context";
+import { useScrollCollapse } from "@/hooks/useScrollCollapse";
 import type { PlanifyToolId } from "@/lib/pro/planifyTools";
 
 const TEMA_KEY = "planify-studio-tema";
@@ -39,18 +41,29 @@ export function TeachyMateriaisStudio({
     );
   }
 
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const toolbarCollapsed = useScrollCollapse(scrollRef, 24);
+
   return (
-    <div className="flex h-full min-h-0 w-full flex-col overflow-hidden bg-white">
-      <TeachyToolToolbar onApplyHint={handleHint} />
-      <div className="min-h-0 flex-1 overflow-hidden">
-        <MateriaisClient
-          key={`${toolId}-${initialTema}`}
-          studioMode
-          initialTipo={toolId}
-          initialTema={initialTema}
-          onStudioClose={onClose}
+    <PlanifyWorkspaceProvider embeddedInDashboard>
+      <div
+        ref={scrollRef}
+        className="flex h-full min-h-0 w-full flex-col overflow-hidden bg-white"
+      >
+        <TeachyToolToolbar
+          collapsed={toolbarCollapsed}
+          onApplyHint={handleHint}
         />
+        <div className="min-h-0 flex-1 overflow-hidden">
+          <MateriaisClient
+            key={`${toolId}-${initialTema}`}
+            studioMode
+            initialTipo={toolId}
+            initialTema={initialTema}
+            onStudioClose={onClose}
+          />
+        </div>
       </div>
-    </div>
+    </PlanifyWorkspaceProvider>
   );
 }

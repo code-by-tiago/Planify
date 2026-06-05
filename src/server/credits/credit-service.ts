@@ -13,7 +13,6 @@
 import { getBillingPlan } from "@/types/billing";
 import { getSupabaseAdminClient } from "../supabase/admin-client";
 import type { MaterialEngineType } from "../materials/material-engine-types";
-import { syncCreditWalletFromSubscription } from "./credit-subscription-sync";
 
 /**
  * O client admin é tipado a partir do schema gerado, que ainda não inclui as
@@ -111,11 +110,8 @@ export async function getCreditWallet(
 export async function spendCredits(
   userId: string,
   tipo: string,
-  email?: string | null,
 ): Promise<SpendResult> {
   const cost = getCreditCost(tipo);
-
-  await syncCreditWalletFromSubscription({ userId, email });
 
   const wallet = await getCreditWallet(userId);
   if (!wallet) return { status: "skipped" };

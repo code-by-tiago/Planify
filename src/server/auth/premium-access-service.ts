@@ -1,7 +1,3 @@
-import {
-  getBillingPlan,
-  normalizeBillingPlanKey,
-} from "@/types/billing";
 import { getSupabaseAdminClient } from "../supabase/admin-client";
 
 type PremiumAccessUser = {
@@ -32,23 +28,7 @@ type ProfileRow = {
   role?: string | null;
   is_admin?: boolean | null;
   email?: string | null;
-  plan?: string | null;
 };
-
-function ownerEmails(): string[] {
-  return [
-    process.env.PLANIFY_ADMIN_EMAIL,
-    process.env.ADMIN_EMAIL,
-    process.env.NEXT_PUBLIC_ADMIN_EMAIL,
-    process.env.PLANIFY_OWNER_EMAIL,
-    process.env.OWNER_EMAIL,
-    "ts162351@gmail.com",
-  ]
-    .join(",")
-    .split(",")
-    .map((email) => email.trim().toLowerCase())
-    .filter(Boolean);
-}
 
 type SubscriptionRow = {
   id: string;
@@ -80,7 +60,7 @@ async function getProfile(userId: string): Promise<ProfileRow | null> {
 
   const { data, error } = await supabase
     .from("profiles")
-    .select("role,is_admin,email,plan")
+    .select("role,is_admin,email")
     .eq("id", userId)
     .maybeSingle();
 
@@ -93,16 +73,12 @@ async function getProfile(userId: string): Promise<ProfileRow | null> {
 
 async function getBestSubscription(
   userId: string,
-  email: string | null,
 ): Promise<SubscriptionRow | null> {
   const supabase = getSupabaseAdminClient();
 
-  const select =
-    "id,status,plan_id,plan_key,price_id,current_period_end,updated_at";
-
-  const { data: byUser, error: byUserError } = await (supabase as any)
+  const { data, error } = await (supabase as any)
     .from("subscriptions")
-    .select(select)
+    .select("id,status,plan_id,plan_key,price_id,current_period_end,updated_at")
     .eq("user_id", userId)
     .in("status", ["active", "trialing", "past_due", "incomplete", "canceled"])
     .order("current_period_end", {
@@ -112,40 +88,11 @@ async function getBestSubscription(
     .limit(1)
     .maybeSingle();
 
-  if (!byUserError && byUser) {
-    return byUser as SubscriptionRow;
-  }
-
-  const normalizedEmail = String(email || "")
-    .trim()
-    .toLowerCase();
-
-  if (!normalizedEmail) {
+  if (error) {
     return null;
   }
 
-  const { data: byEmail, error: byEmailError } = await (supabase as any)
-    .from("subscriptions")
-    .select(select)
-    .eq("stripe_customer_email", normalizedEmail)
-    .in("status", ["active", "trialing", "past_due", "incomplete", "canceled"])
-    .order("current_period_end", {
-      ascending: false,
-      nullsFirst: false,
-    })
-    .limit(1)
-    .maybeSingle();
-
-  if (byEmailError) {
-    return null;
-  }
-
-  return (byEmail as SubscriptionRow | null) ?? null;
-}
-
-function hasProfilePlanAccess(plan: string | null | undefined): boolean {
-  const normalized = normalizeBillingPlanKey(plan);
-  return Boolean(normalized && getBillingPlan(normalized));
+  return data as SubscriptionRow | null;
 }
 
 function toSubscriptionResult(
@@ -194,16 +141,11 @@ export async function verifyPremiumAccess(
 
   const profile = await getProfile(data.user.id);
   const role = profile?.role || "teacher";
-  const email = String(data.user.email || profile?.email || "")
-    .trim()
-    .toLowerCase();
-  const isOwner = Boolean(email && ownerEmails().includes(email));
-  const isAdmin =
-    Boolean(profile?.is_admin) || role === "admin" || isOwner;
+  const isAdmin = Boolean(profile?.is_admin) || role === "admin";
 
   const user: PremiumAccessUser = {
     id: data.user.id,
-    email: email || null,
+    email: data.user.email || profile?.email || null,
     role: isAdmin ? "admin" : role,
     isAdmin,
   };
@@ -218,14 +160,12 @@ export async function verifyPremiumAccess(
     };
   }
 
-  const subscription = await getBestSubscription(data.user.id, user.email);
+  const subscription = await getBestSubscription(data.user.id);
   const subscriptionResult = toSubscriptionResult(subscription);
   const status = subscription?.status || "";
-  const subscriptionPremium =
+  const isPremium =
     PREMIUM_STATUSES.has(status) &&
     isFutureOrEmpty(subscription?.current_period_end);
-  const profilePlanPremium = hasProfilePlanAccess(profile?.plan);
-  const isPremium = subscriptionPremium || profilePlanPremium;
 
   if (!isPremium) {
     return {

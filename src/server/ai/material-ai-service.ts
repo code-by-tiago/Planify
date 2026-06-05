@@ -16,7 +16,7 @@ import { guardMaterialQuality } from "../../lib/materiais/material-quality-guard
 import { auditMaterialAgainstKnowledgeEngine } from "../../lib/materiais/material-quality-auditor";
 import { generateGeminiJSON } from "./gemini-client";
 import {
-  buildMaterialPrompt,
+  buildMaterialDynamicPrompt,
   buildMaterialSystemInstruction,
 } from "./prompts/material-prompt";
 import {
@@ -248,7 +248,8 @@ export async function generateMaterialWithAI(rawInput: MaterialAIInput): Promise
     try {
       const generated = await generateGeminiJSON<MaterialAIOutput>({
         systemInstruction: buildMaterialSystemInstruction(),
-        prompt: buildMaterialPrompt(input),
+        prompt: buildMaterialDynamicPrompt(input),
+        cacheProfile: "material-json",
         temperature: 0.2,
         topP: 0.8,
         maxOutputTokens: 9000,
@@ -267,7 +268,8 @@ export async function generateMaterialWithAI(rawInput: MaterialAIInput): Promise
     try {
       const generated = await generateGeminiJSON<MaterialAIOutput>({
         systemInstruction: buildMaterialSystemInstruction(),
-        prompt: buildMaterialPrompt(input),
+        prompt: buildMaterialDynamicPrompt(input),
+        cacheProfile: "material-json",
         temperature: 0.18,
         topP: 0.78,
         maxOutputTokens: 18000,
@@ -284,7 +286,8 @@ export async function generateMaterialWithAI(rawInput: MaterialAIInput): Promise
   try {
     const generated = await generateGeminiJSON<MaterialAIOutput>({
       systemInstruction: buildMaterialSystemInstruction(),
-      prompt: buildMaterialPrompt(input),
+      prompt: buildMaterialDynamicPrompt(input),
+      cacheProfile: "material-json",
       temperature: 0.22,
       topP: 0.8,
       maxOutputTokens: 14000,
@@ -473,7 +476,10 @@ function normalizeSuggestionOutput(output: Partial<MaterialContentSuggestionOutp
     areaConhecimento: output.areaConhecimento || fallback.areaConhecimento,
     componenteCurricular: output.componenteCurricular || fallback.componenteCurricular,
     resumoPedagogico: output.resumoPedagogico || fallback.resumoPedagogico,
-    conteudos: conteudos.length >= 4 ? conteudos.slice(0, 8) : fallback.conteudos,
+    conteudos:
+      conteudos.length > 0
+        ? conteudos.slice(0, 8)
+        : fallback.conteudos,
     objetivosGerais: uniq(Array.isArray(output.objetivosGerais) ? output.objetivosGerais.map(String) : fallback.objetivosGerais),
     palavrasChaveGerais: uniq(Array.isArray(output.palavrasChaveGerais) ? output.palavrasChaveGerais.map(String) : fallback.palavrasChaveGerais),
     materiaisRecomendados: Array.isArray(output.materiaisRecomendados) && output.materiaisRecomendados.length ? output.materiaisRecomendados : fallback.materiaisRecomendados,
@@ -514,11 +520,21 @@ export async function suggestMaterialContents(rawInput: MaterialContentSuggestio
       maxOutputTokens: 6500,
     });
 
-    return normalizeSuggestionOutput(generated, fallback);
-  } catch {
-    return {
-      ...fallback,
-      alertas: [],
-    };
+    const normalized = normalizeSuggestionOutput(generated, fallback);
+
+    if (!normalized.conteudos.length) {
+      throw new Error("A IA não retornou conteúdos utilizáveis para este tema.");
+    }
+
+    return normalized;
+  } catch (error) {
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Erro desconhecido ao sugerir conteúdos com IA.";
+
+    console.error("[suggestMaterialContents] Falha na IA:", message);
+
+    throw new Error(message);
   }
 }

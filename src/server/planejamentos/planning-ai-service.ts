@@ -600,6 +600,7 @@ async function requestPlanningJson(
     return await generateGeminiJSON<unknown>({
       systemInstruction: PLANNING_SYSTEM_INSTRUCTION,
       prompt,
+      cacheProfile: "planning-matrix",
       temperature: 0.25,
     });
   } catch {

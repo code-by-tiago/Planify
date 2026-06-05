@@ -44,7 +44,11 @@ export async function POST(request: NextRequest) {
       return errorResponse("invalid_request", message, 400);
     }
 
-    return errorResponse("gemini_error", "Não foi possível sugerir conteúdos agora.", 502, message);
+    if (/GEMINI_API_KEY|API key|chave/i.test(message)) {
+      return errorResponse("gemini_config", message, 503, message);
+    }
+
+    return errorResponse("gemini_error", message, 502, message);
   }
 }
 

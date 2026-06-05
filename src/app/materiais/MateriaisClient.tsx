@@ -476,12 +476,14 @@ export function MateriaisClient({
           conteudos?: ConteudoSugerido[];
           alertas?: string[];
         };
-        error?: { message?: string };
+        error?: { message?: string; details?: string };
       };
 
       if (!response.ok || !data?.success || !data.data?.conteudos?.length) {
         throw new Error(
-          data?.error?.message || "Não foi possível sugerir conteúdos agora.",
+          data?.error?.details ||
+            data?.error?.message ||
+            "Não foi possível sugerir conteúdos agora.",
         );
       }
 

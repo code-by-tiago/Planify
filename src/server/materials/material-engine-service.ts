@@ -801,6 +801,7 @@ export async function generateMaterialByEngine(input: MaterialEngineInput) {
       const generated = await generateGeminiJSON<Partial<MaterialEngineResponse>>({
         systemInstruction,
         prompt: activePrompt,
+        cacheProfile: `material-engine:${request.tipoMaterial}`,
         temperature: 0.32,
         topP: 0.86,
         maxOutputTokens,

@@ -177,6 +177,55 @@ function specializedRules(request: MaterialEngineRequest): string[] {
   ];
 }
 
+export function buildMaterialEngineStaticRules(type: MaterialEngineType): string {
+  const request = {
+    tipoMaterial: type,
+    quantidade: 0,
+    incluirGabarito: true,
+    formatoJogo: "jogo pedagógico",
+    designSlides: undefined,
+    modeloSlides: undefined,
+  } as MaterialEngineRequest;
+
+  const rules = specializedRules(request)
+    .map((rule) =>
+      rule
+        .replace(/exatamente 0 /gi, "exatamente N ")
+        .replace(/exatamente 0/gi, "exatamente N")
+        .replace(/0 capítulos/gi, "N capítulos")
+        .replace(/0 aulas/gi, "N aulas")
+        .replace(/0 etapas/gi, "N etapas")
+        .replace(/0 flashcards/gi, "N flashcards")
+        .replace(/0 ramos/gi, "N ramos")
+        .replace(/0 seções/gi, "N seções")
+        .replace(/0 exercícios/gi, "N exercícios")
+        .replace(/0 questões/gi, "N questões")
+        .replace(/0 atividades/gi, "N atividades")
+        .replace(/0 textos motivadores/gi, "N textos motivadores")
+        .replace(/Planejar 0 aulas/gi, "Planejar N aulas")
+        .replace(/Organizar exatamente 0 aulas/gi, "Organizar exatamente N aulas")
+        .replace(/Estruturar o projeto em 0 etapas/gi, "Estruturar o projeto em N etapas")
+        .replace(/Gerar exatamente 0 /gi, "Gerar exatamente N "),
+    )
+    .map((rule) => `- ${rule}`)
+    .join("\n");
+
+  return `
+PLANIFY — MOTOR DE MATERIAIS (${typeLabels[type]})
+Use a quantidade informada na solicitação dinâmica no lugar de N.
+
+REGRAS ESPECIALIZADAS EM CACHE:
+${rules}
+
+REGRAS GERAIS:
+- Adequar linguagem ao ano/série.
+- Entregar conteúdo coeso, sem repetição e sem preenchimento artificial.
+- Entregar pronto para edição no editor do Planify.
+- NÃO preencha o campo "html" — o Planify monta o HTML visual automaticamente.
+- Entregar somente JSON no schema.
+`.trim();
+}
+
 export function buildMaterialEngineSystemInstruction(type: MaterialEngineType): string {
   return [
     "Você é a IA pedagógica do Planify.",

@@ -270,4 +270,9 @@ export type GeminiGenerateJSONOptions = {
    */
   model?: string;
   responseSchema?: unknown;
+  /**
+   * Perfil de contexto estático para cache explícito do Gemini.
+   * Reduz custo reutilizando system instruction e regras pedagógicas.
+   */
+  cacheProfile?: import("../server/ai/gemini-static-context").GeminiCacheProfile;
 };

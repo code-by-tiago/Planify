@@ -6,7 +6,7 @@ import type {
 } from "../../types/ai";
 import { generateGeminiJSON } from "./gemini-client";
 import {
-  buildPlanejamentoPrompt,
+  buildPlanejamentoDynamicPrompt,
   buildPlanejamentoSystemInstruction,
 } from "./prompts/planejamento-prompt";
 
@@ -251,7 +251,8 @@ export async function generatePlanejamentoWithAI(
 
   const generated = await generateGeminiJSON<PlanejamentoAIOutput>({
     systemInstruction: buildPlanejamentoSystemInstruction(),
-    prompt: buildPlanejamentoPrompt(input),
+    prompt: buildPlanejamentoDynamicPrompt(input),
+    cacheProfile: "planejamento-json",
     temperature: 0.15,
     topP: 0.7,
     maxOutputTokens: 8192,

@@ -38,7 +38,7 @@ export function buildPlanejamentoSystemInstruction(): string {
   ].join("\n");
 }
 
-export function buildPlanejamentoPrompt(input: PlanejamentoAIInput): string {
+export function buildPlanejamentoDynamicPrompt(input: PlanejamentoAIInput): string {
   const conteudos = normalizeConteudos(input.conteudos);
   const skills = input.habilidadesSelecionadas;
 
@@ -66,6 +66,12 @@ ${input.observacoes || "Não informado"}
 
 HABILIDADES BNCC OFICIAIS SELECIONADAS PELO PROFESSOR:
 ${formatSkills(skills)}
+`.trim();
+}
+
+export function buildPlanejamentoPrompt(input: PlanejamentoAIInput): string {
+  return `
+${buildPlanejamentoDynamicPrompt(input)}
 
 REGRAS OBRIGATÓRIAS:
 1. Não invente nenhuma habilidade BNCC.

@@ -15,6 +15,21 @@ function normalizeConteudos(conteudos: MaterialAIInput["conteudos"]): string[] {
     .filter(Boolean);
 }
 
+const MATERIAL_TYPE_KEYS = [
+  "atividade",
+  "prova",
+  "lista",
+  "revisao",
+  "apostila",
+  "sequencia",
+  "jogo",
+  "projeto",
+  "roteiro",
+  "plano-aula",
+  "redacao",
+  "resumo",
+] as const;
+
 function materialRulesByType(type: string): string[] {
   const normalizedType = String(type || "").trim().toLowerCase();
 
@@ -163,6 +178,176 @@ function materialRulesByType(type: string): string[] {
   ];
 }
 
+export function buildMaterialTypeRulesCatalog(): string {
+  return MATERIAL_TYPE_KEYS.map((type) => {
+    const rules = materialRulesByType(type);
+    return `TIPO: ${type}\n${rules.map((rule) => `- ${rule}`).join("\n")}`;
+  }).join("\n\n");
+}
+
+export function buildMaterialUniversalRulesBlock(): string {
+  return `
+REGRAS UNIVERSAIS:
+1. O material deve obedecer exatamente ao tipo selecionado.
+2. O conteúdo deve ser profundo, coerente, aplicável, sem repetição e sem encher espaço com frases genéricas.
+3. Nunca crie material raso com apenas comandos soltos.
+4. Nunca copie a mesma pergunta com pequenas mudanças.
+5. Integre todos os conteúdos selecionados em um único material coerente.
+6. Se o professor informou contexto da turma, recursos, finalidade, critérios ou observações, use isso para personalizar o material.
+7. Se o tipo for apostila, explique antes de exercitar e organize em capítulos/unidades.
+8. Se o tipo for prova, avalie sem virar apostila.
+9. Se o tipo for atividade, proponha prática orientada sem virar prova formal.
+10. Se o tipo for projeto, use etapas de investigação e produto final, não lista de exercícios.
+11. Se o tipo for sequência, organize aulas/momentos, não questões.
+12. Se o tipo for jogo, entregue material visual/prático pronto para uso.
+13. Use linguagem adequada ao ano/série, sem infantilizar turma avançada e sem complexidade excessiva para anos iniciais.
+14. CONTRATO DE PRECISÃO: quando houver quantidade informada, o array questoes deve conter exatamente essa quantidade, sem uma a menos, sem uma a mais. Se o professor pedir 10 questões, entregue 10 objetos numerados de 1 a 10 e 10 itens correspondentes no gabarito.
+15. Cada questão deve ter enunciado completo, comando claro, resposta esperada e critério de correção. Provas devem combinar objetivas e discursivas quando fizer sentido.
+16. Não compacte várias perguntas em uma só questão com a), b), c), d). Se existirem 10 itens pedidos, crie 10 objetos em questoes.
+17. Não deixe promessa solta no texto: se disser “responda às questões abaixo”, as questões precisam existir logo no bloco próprio.
+18. Respeite o componente curricular: Geografia deve ter raciocínio espacial/territorial; Ciências deve ter investigação científica; História deve ter processos históricos; Matemática deve ter resolução e procedimentos; Línguas devem trabalhar linguagem; Ensino Religioso deve tratar valores e diversidade com respeito.
+19. Retorne apenas JSON válido.
+20. Antes de finalizar, faça uma checagem interna: tipo correto, todos os conteúdos usados, quantidade exata de questões, gabarito correspondente, seções completas e nenhuma promessa sem entrega.
+21. O material deve parecer produto editorial escolar: estrutura limpa, títulos úteis, itens separados, espaços de resposta e gabarito rico; não entregue parágrafos colados nem blocos improvisados.
+22. O material deve ser original. Use padrões pedagógicos reconhecidos como referência, mas não copie textos de fontes externas.
+
+CONTRATO DE ENTREGA DIRETA AO PRODUTO:
+- Não escreva frases de abertura como "Este material foi elaborado", "A seguir", "Apresento", "Objetivo deste material" ou justificativas pedagógicas antes do produto.
+- Para atividade, prova, lista, revisão e exercícios: coloque o material em formato direto, com questões no array questoes e gabarito separado no array gabarito.
+- Atividades, exercícios e listas não podem vir como parágrafo corrido dentro de secoes. Devem vir como itens numerados no array questoes.
+- Não use uma questão com vários itens a), b), c), d) para simular quantidade. Cada pergunta principal deve ser objeto próprio.
+- Quando uma questão pedir análise de várias frases, exemplos, situações ou alternativas curtas, separe assim: primeira linha com o COMANDO; linhas seguintes com "• item 1", "• item 2", "• item 3".
+- Nunca emende exemplos no título ou no comando da questão. O comando deve ficar separado dos itens que o aluno analisará.
+- Quando um enunciado tiver mais de uma ação, organize em tópicos curtos usando linhas com "•".
+- A versão do aluno nunca deve revelar resposta logo abaixo da questão.
+- O gabarito do professor deve ser completo, coerente com as questões finais e separado. Para cada questão, traga resposta esperada, exemplos aceitáveis quando houver resposta aberta e critério de correção.
+- Se o professor pedir quantidade de questões, isso é contrato: entregar exatamente a quantidade solicitada.
+- Use orientacoesProfessor, orientacoesAluno, sugestoesUso e adaptacoesInclusivas apenas como notas finais curtas, nunca como parte principal antes das questões.
+`.trim();
+}
+
+export function buildMaterialJsonSchemaContract(): string {
+  return `
+FORMATO JSON EXATO:
+{
+  "titulo": "string",
+  "subtitulo": "string",
+  "tipo": "string",
+  "resumo": "string",
+  "dadosGerais": {
+    "escola": "string",
+    "professor": "string",
+    "etapa": "string",
+    "anoSerie": "string",
+    "areaConhecimento": "string",
+    "componenteCurricular": "string",
+    "tema": "string",
+    "duracao": "string"
+  },
+  "objetivos": ["string"],
+  "conteudos": ["string"],
+  "orientacoesProfessor": ["string"],
+  "orientacoesAluno": ["string"],
+  "introducao": "string",
+  "secoes": [
+    {
+      "titulo": "string",
+      "conteudo": "string",
+      "itens": ["string"]
+    }
+  ],
+  "questoes": [
+    {
+      "numero": 1,
+      "tipo": "string",
+      "enunciado": "string em formato objetivo; uma pergunta principal por objeto; se houver várias frases para análise, use primeira linha como comando e linhas seguintes com • para cada item",
+      "alternativas": ["string"],
+      "respostaEsperada": "string com resposta esperada completa, exemplos aceitáveis quando houver resposta aberta e orientação objetiva para correção",
+      "criterioCorrecao": "string"
+    }
+  ],
+  "jogo": null,
+  "projeto": null,
+  "roteiro": null,
+  "criteriosAvaliacao": ["string"],
+  "gabarito": ["string"],
+  "adaptacoesInclusivas": ["string"],
+  "sugestoesUso": ["string"],
+  "alertas": [],
+  "jogoVisualSeed": {
+    "termos": [
+      {
+        "termo": "string",
+        "resposta": "PALAVRASEMACENTOSEMESPACOS",
+        "pista": "string sem entregar a resposta",
+        "categoria": "string"
+      }
+    ]
+  }
+}
+`.trim();
+}
+
+export function buildMaterialDynamicPrompt(input: MaterialAIInput): string {
+  const conteudos = normalizeConteudos(input.conteudos);
+  const typeRules = materialRulesByType(input.tipo);
+  const specialistBlock = buildSpecialistPromptBlock(input);
+  const structureContract = buildMaterialStructureContract(input);
+  const referenceKernel = buildPedagogicalReferenceKernelPrompt(input);
+  const knowledgeEngine = buildKnowledgeEnginePrompt(input);
+
+  return `
+Gere um material didático profissional para o Planify.
+
+TIPO ATIVO (aplique o catálogo em cache): ${input.tipo}
+
+DADOS DO PROFESSOR E DA TURMA:
+Título: ${input.titulo || "Não informado"}
+Escola: ${input.escola || "Não informado"}
+Professor: ${input.professor || "Não informado"}
+Etapa: ${input.etapa}
+Ano/Série: ${input.anoSerie}
+Área do conhecimento: ${input.areaConhecimento || "Não informado"}
+Componente curricular: ${input.componenteCurricular}
+Tipo de material: ${input.tipo}
+Modelo de jogo, se houver: ${input.modeloJogo || "Não se aplica"}
+Tema central: ${input.tema}
+Quantidade de questões: ${input.quantidadeQuestoes || "Não se aplica ou não informado"}
+Duração/tempo estimado: ${input.duracao || "Não informado"}
+Finalidade de uso: ${input.finalidade || "Não informado"}
+Nível de aprofundamento: ${input.nivelAprofundamento || "Completo"}
+Contexto da turma/dificuldades: ${input.contextoTurma || "Não informado"}
+Recursos disponíveis: ${input.recursosDisponiveis || "Não informado"}
+Critérios personalizados de avaliação: ${input.criteriosAvaliacaoPersonalizados || "Não informado"}
+
+CONTEÚDOS SELECIONADOS:
+${conteudos.length ? conteudos.map((conteudo) => `- ${conteudo}`).join("\n") : "- Use o tema central para organizar os conteúdos essenciais."}
+
+OBJETIVOS INFORMADOS PELO PROFESSOR:
+${input.objetivos || "Não informado"}
+
+ORIENTAÇÕES DO PROFESSOR:
+${input.orientacoes || "Não informado"}
+
+OBSERVAÇÕES:
+${input.observacoes || "Não informado"}
+
+CONTRATO DE ESPECIALISTA PLANIFY:
+${specialistBlock}
+
+CONTRATO DE ESTRUTURA VISUAL E PEDAGÓGICA:
+${structureContract}
+
+BASE PEDAGÓGICA ESPECIALISTA PLANIFY:
+${referenceKernel}
+
+${knowledgeEngine}
+
+REGRAS ESPECÍFICAS DO TIPO ATIVO:
+${typeRules.map((rule) => `- ${rule}`).join("\n")}
+`.trim();
+}
+
 export function buildMaterialSystemInstruction(): string {
   return [
     "Você é uma IA pedagógica especialista em materiais didáticos brasileiros para professores da Educação Básica.",
@@ -245,102 +430,11 @@ ${referenceKernel}
 
 ${knowledgeEngine}
 
-REGRAS UNIVERSAIS:
-1. O material deve obedecer exatamente ao tipo selecionado.
-2. O conteúdo deve ser profundo, coerente, aplicável, sem repetição e sem encher espaço com frases genéricas.
-3. Nunca crie material raso com apenas comandos soltos.
-4. Nunca copie a mesma pergunta com pequenas mudanças.
-5. Integre todos os conteúdos selecionados em um único material coerente.
-6. Se o professor informou contexto da turma, recursos, finalidade, critérios ou observações, use isso para personalizar o material.
-7. Se o tipo for apostila, explique antes de exercitar e organize em capítulos/unidades.
-8. Se o tipo for prova, avalie sem virar apostila.
-9. Se o tipo for atividade, proponha prática orientada sem virar prova formal.
-10. Se o tipo for projeto, use etapas de investigação e produto final, não lista de exercícios.
-11. Se o tipo for sequência, organize aulas/momentos, não questões.
-12. Se o tipo for jogo, entregue material visual/prático pronto para uso.
-13. Use linguagem adequada ao ano/série, sem infantilizar turma avançada e sem complexidade excessiva para anos iniciais.
-14. CONTRATO DE PRECISÃO: quando houver quantidade informada, o array questoes deve conter exatamente essa quantidade, sem uma a menos, sem uma a mais. Se o professor pedir 10 questões, entregue 10 objetos numerados de 1 a 10 e 10 itens correspondentes no gabarito.
-15. Cada questão deve ter enunciado completo, comando claro, resposta esperada e critério de correção. Provas devem combinar objetivas e discursivas quando fizer sentido.
-16. Não compacte várias perguntas em uma só questão com a), b), c), d). Se existirem 10 itens pedidos, crie 10 objetos em questoes.
-17. Não deixe promessa solta no texto: se disser “responda às questões abaixo”, as questões precisam existir logo no bloco próprio.
-18. Respeite o componente curricular: Geografia deve ter raciocínio espacial/territorial; Ciências deve ter investigação científica; História deve ter processos históricos; Matemática deve ter resolução e procedimentos; Línguas devem trabalhar linguagem; Ensino Religioso deve tratar valores e diversidade com respeito.
-19. Retorne apenas JSON válido.
-20. Antes de finalizar, faça uma checagem interna: tipo correto, todos os conteúdos usados, quantidade exata de questões, gabarito correspondente, seções completas e nenhuma promessa sem entrega.
-21. O material deve parecer produto editorial escolar: estrutura limpa, títulos úteis, itens separados, espaços de resposta e gabarito rico; não entregue parágrafos colados nem blocos improvisados.
-22. O material deve ser original. Use padrões pedagógicos reconhecidos como referência, mas não copie textos de fontes externas.
+${buildMaterialUniversalRulesBlock()}
 
 REGRAS ESPECÍFICAS DO TIPO:
 ${typeRules.map((rule) => `- ${rule}`).join("\n")}
 
-CONTRATO DE ENTREGA DIRETA AO PRODUTO:
-- Não escreva frases de abertura como "Este material foi elaborado", "A seguir", "Apresento", "Objetivo deste material" ou justificativas pedagógicas antes do produto.
-- Para atividade, prova, lista, revisão e exercícios: coloque o material em formato direto, com questões no array questoes e gabarito separado no array gabarito.
-- Atividades, exercícios e listas não podem vir como parágrafo corrido dentro de secoes. Devem vir como itens numerados no array questoes.
-- Não use uma questão com vários itens a), b), c), d) para simular quantidade. Cada pergunta principal deve ser objeto próprio.
-- Quando uma questão pedir análise de várias frases, exemplos, situações ou alternativas curtas, separe assim: primeira linha com o COMANDO; linhas seguintes com "• item 1", "• item 2", "• item 3".
-- Nunca emende exemplos no título ou no comando da questão. O comando deve ficar separado dos itens que o aluno analisará.
-- Quando um enunciado tiver mais de uma ação, organize em tópicos curtos usando linhas com "•".
-- A versão do aluno nunca deve revelar resposta logo abaixo da questão.
-- O gabarito do professor deve ser completo, coerente com as questões finais e separado. Para cada questão, traga resposta esperada, exemplos aceitáveis quando houver resposta aberta e critério de correção.
-- Se o professor pedir quantidade de questões, isso é contrato: entregar exatamente a quantidade solicitada.
-- Use orientacoesProfessor, orientacoesAluno, sugestoesUso e adaptacoesInclusivas apenas como notas finais curtas, nunca como parte principal antes das questões.
-
-FORMATO JSON EXATO:
-{
-  "titulo": "string",
-  "subtitulo": "string",
-  "tipo": "string",
-  "resumo": "string",
-  "dadosGerais": {
-    "escola": "string",
-    "professor": "string",
-    "etapa": "string",
-    "anoSerie": "string",
-    "areaConhecimento": "string",
-    "componenteCurricular": "string",
-    "tema": "string",
-    "duracao": "string"
-  },
-  "objetivos": ["string"],
-  "conteudos": ["string"],
-  "orientacoesProfessor": ["string"],
-  "orientacoesAluno": ["string"],
-  "introducao": "string",
-  "secoes": [
-    {
-      "titulo": "string",
-      "conteudo": "string",
-      "itens": ["string"]
-    }
-  ],
-  "questoes": [
-    {
-      "numero": 1,
-      "tipo": "string",
-      "enunciado": "string em formato objetivo; uma pergunta principal por objeto; se houver várias frases para análise, use primeira linha como comando e linhas seguintes com • para cada item",
-      "alternativas": ["string"],
-      "respostaEsperada": "string com resposta esperada completa, exemplos aceitáveis quando houver resposta aberta e orientação objetiva para correção",
-      "criterioCorrecao": "string"
-    }
-  ],
-  "jogo": null,
-  "projeto": null,
-  "roteiro": null,
-  "criteriosAvaliacao": ["string"],
-  "gabarito": ["string"],
-  "adaptacoesInclusivas": ["string"],
-  "sugestoesUso": ["string"],
-  "alertas": [],
-  "jogoVisualSeed": {
-    "termos": [
-      {
-        "termo": "string",
-        "resposta": "PALAVRASEMACENTOSEMESPACOS",
-        "pista": "string sem entregar a resposta",
-        "categoria": "string"
-      }
-    ]
-  }
-}
+${buildMaterialJsonSchemaContract()}
 `.trim();
 }

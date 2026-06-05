@@ -9,6 +9,11 @@
 
 import type { AIModelTier } from "../../lib/ai/aiConfig";
 import type { GeminiGenerateJSONOptions } from "../../types/ai";
+import { resolveGeminiCachedContentName } from "./gemini-context-cache";
+import {
+  resolveGeminiCacheBundle,
+  type GeminiCacheProfile,
+} from "./gemini-static-context";
 
 type GeminiPart = {
   text?: string;
@@ -33,12 +38,18 @@ type GeminiResponse = {
 // ---------------------------------------------------------------------------
 
 function getAIApiKey(): string {
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY?.trim();
 
   if (!apiKey) {
     throw new Error(
       "GEMINI_API_KEY não configurada no servidor. " +
         "Adicione a variável ao .env.local.",
+    );
+  }
+
+  if (!apiKey.startsWith("AIza")) {
+    console.warn(
+      "[gemini] GEMINI_API_KEY não usa o prefixo AIza do Google AI Studio. Se a IA falhar, gere uma chave em https://aistudio.google.com/apikey",
     );
   }
 
@@ -135,6 +146,10 @@ export function humanizeGeminiError(message: string): string {
     return "Chave GEMINI_API_KEY ausente ou inválida no servidor.";
   }
 
+  if (/API key not valid|API_KEY_INVALID|invalid api key|permission denied|unauthorized/i.test(message)) {
+    return "Chave GEMINI_API_KEY rejeitada pelo Google. Gere uma nova em Google AI Studio (https://aistudio.google.com/apikey), confira a faturação do projeto e redeploy na Vercel.";
+  }
+
   return message;
 }
 
@@ -192,6 +207,91 @@ function stripJsonFence(text: string): string {
  * Gera uma resposta JSON estruturada via IA.
  * Usar para materiais com schema definido (planejamentos, materiais avançados).
  */
+async function buildGenerateBody(
+  options: {
+    systemInstruction: string;
+    prompt: string;
+    temperature?: number;
+    topP?: number;
+    maxOutputTokens?: number;
+    responseSchema?: unknown;
+    responseMimeType?: string;
+    cacheProfile?: GeminiCacheProfile;
+    tier?: AIModelTier;
+    model?: string;
+  },
+  model: string,
+): Promise<Record<string, unknown>> {
+  const generationConfig: Record<string, unknown> = {
+    temperature: options.temperature ?? 0.2,
+    topP: options.topP ?? 0.8,
+    maxOutputTokens: options.maxOutputTokens ?? 8192,
+  };
+
+  if (options.responseMimeType) {
+    generationConfig.responseMimeType = options.responseMimeType;
+  }
+
+  if (options.responseSchema) {
+    generationConfig.responseSchema = options.responseSchema;
+  }
+
+  if (options.cacheProfile) {
+    const bundle = resolveGeminiCacheBundle(options.cacheProfile);
+
+    if (bundle) {
+      const cachedContent = await resolveGeminiCachedContentName(
+        options.cacheProfile,
+        model,
+        bundle,
+      );
+
+      if (cachedContent) {
+        return {
+          cachedContent,
+          contents: [
+            {
+              role: "user",
+              parts: [{ text: options.prompt }],
+            },
+          ],
+          generationConfig,
+        };
+      }
+
+      const mergedPrompt = bundle.staticContext
+        ? `${bundle.staticContext}\n\n${options.prompt}`
+        : options.prompt;
+
+      return {
+        systemInstruction: {
+          parts: [{ text: bundle.systemInstruction }],
+        },
+        contents: [
+          {
+            role: "user",
+            parts: [{ text: mergedPrompt }],
+          },
+        ],
+        generationConfig,
+      };
+    }
+  }
+
+  return {
+    systemInstruction: {
+      parts: [{ text: options.systemInstruction }],
+    },
+    contents: [
+      {
+        role: "user",
+        parts: [{ text: options.prompt }],
+      },
+    ],
+    generationConfig,
+  };
+}
+
 async function callGeminiGenerateContent(
   apiKey: string,
   model: string,
@@ -216,31 +316,17 @@ export async function generateGeminiJSON<T>(
   const apiKey = getAIApiKey();
   const models = resolveModelCandidates(options.tier, options.model);
 
-  const body = {
-    systemInstruction: {
-      parts: [{ text: options.systemInstruction }],
-    },
-    contents: [
-      {
-        role: "user",
-        parts: [{ text: options.prompt }],
-      },
-    ],
-    generationConfig: {
-      temperature: options.temperature ?? 0.2,
-      topP: options.topP ?? 0.8,
-      maxOutputTokens: options.maxOutputTokens ?? 8192,
-      responseMimeType: "application/json",
-      ...(options.responseSchema
-        ? { responseSchema: options.responseSchema }
-        : {}),
-    },
-  };
-
   let lastError = "Erro ao chamar a IA.";
 
   for (const model of models) {
     for (let attempt = 0; attempt < 2; attempt += 1) {
+      const body = await buildGenerateBody(
+        {
+          ...options,
+          responseMimeType: "application/json",
+        },
+        model,
+      );
       const json = await callGeminiGenerateContent(apiKey, model, body);
 
       if (json.httpStatus >= 200 && json.httpStatus < 300 && !json.error) {
@@ -286,31 +372,23 @@ export async function generateGeminiText(options: {
   maxOutputTokens?: number;
   tier?: AIModelTier;
   model?: string;
+  cacheProfile?: GeminiCacheProfile;
 }): Promise<string> {
   const apiKey = getAIApiKey();
   const models = resolveModelCandidates(options.tier, options.model);
-
-  const body = {
-    systemInstruction: {
-      parts: [{ text: options.systemInstruction }],
-    },
-    contents: [
-      {
-        role: "user",
-        parts: [{ text: options.prompt }],
-      },
-    ],
-    generationConfig: {
-      temperature: options.temperature ?? 0.5,
-      topP: options.topP ?? 0.9,
-      maxOutputTokens: options.maxOutputTokens ?? 8192,
-    },
-  };
 
   let lastError = "Erro ao chamar a IA.";
 
   for (const model of models) {
     for (let attempt = 0; attempt < 2; attempt += 1) {
+      const body = await buildGenerateBody(
+        {
+          ...options,
+          temperature: options.temperature ?? 0.5,
+          topP: options.topP ?? 0.9,
+        },
+        model,
+      );
       const json = await callGeminiGenerateContent(apiKey, model, body);
 
       if (json.httpStatus >= 200 && json.httpStatus < 300 && !json.error) {

@@ -17,21 +17,53 @@ const ACCENT_HEX: Record<string, string> = {
 async function fetchImageDataUrl(url: string): Promise<string | null> {
   try {
     const response = await fetch(url, {
-      headers: { "User-Agent": "Planify/1.0" },
+      headers: { "User-Agent": "Planify/1.0 (educational slides)" },
       signal: AbortSignal.timeout(12000),
     });
     if (!response.ok) return null;
 
     const contentType = response.headers.get("content-type") || "image/jpeg";
     const buffer = Buffer.from(await response.arrayBuffer());
-    if (buffer.length < 200 || buffer.length > 4_000_000) return null;
+    if (buffer.length < 200 || buffer.length > 8_000_000) return null;
 
     const base64 = buffer.toString("base64");
-    const mime = contentType.split(";")[0].trim();
-    return `image/${mime.includes("png") ? "png" : mime.includes("webp") ? "webp" : "jpeg"};base64,${base64}`;
+    const mime = contentType.split(";")[0].trim().toLowerCase();
+    const ext = mime.includes("png")
+      ? "png"
+      : mime.includes("webp")
+        ? "webp"
+        : mime.includes("gif")
+          ? "gif"
+          : "jpeg";
+
+    // PptxGenJS exige data URL completo (com prefixo "data:").
+    return `data:image/${ext};base64,${base64}`;
   } catch {
     return null;
   }
+}
+
+/** Pré-carrega todas as imagens em paralelo (mais rápido e evita timeouts em série). */
+async function preloadImages(
+  slides: SlideItem[],
+): Promise<Map<string, string>> {
+  const urls = [
+    ...new Set(
+      slides
+        .map((slide) => slide.imageUrl?.trim())
+        .filter((url): url is string => Boolean(url)),
+    ),
+  ];
+
+  const entries = await Promise.all(
+    urls.map(async (url) => [url, await fetchImageDataUrl(url)] as const),
+  );
+
+  const map = new Map<string, string>();
+  for (const [url, data] of entries) {
+    if (data) map.set(url, data);
+  }
+  return map;
 }
 
 export async function buildSlidesPptxBuffer(input: {
@@ -40,6 +72,8 @@ export async function buildSlidesPptxBuffer(input: {
 }): Promise<Buffer> {
   const ordered = orderSlidesPedagogically([...input.slides]);
   assignSlideSequenceLabels(ordered);
+
+  const imageMap = await preloadImages(ordered);
 
   const pptx = new PptxGenJS();
   pptx.layout = "LAYOUT_WIDE";
@@ -95,12 +129,19 @@ export async function buildSlidesPptxBuffer(input: {
         color: "FFFFFF",
       });
 
-      if (slide.imageUrl) {
-        const data = await fetchImageDataUrl(slide.imageUrl);
-        if (data) {
-          pptxSlide.addImage({ data, x: 7.8, y: 1.5, w: 4.5, h: 3.2, sizing: { type: "cover", w: 4.5, h: 3.2 } });
-        }
+      const coverData = slide.imageUrl ? imageMap.get(slide.imageUrl) : null;
+      if (coverData) {
+        pptxSlide.addImage({
+          data: coverData,
+          x: 7.7,
+          y: 1.4,
+          w: 4.7,
+          h: 3.6,
+          sizing: { type: "cover", w: 4.7, h: 3.6 },
+        });
       }
+
+      if (slide.speakerNotes?.trim()) pptxSlide.addNotes(slide.speakerNotes);
       continue;
     }
 
@@ -114,6 +155,15 @@ export async function buildSlidesPptxBuffer(input: {
       layout === "fechamento"
         ? "Fechamento"
         : `${contentCounter} / ${contentTotal}`;
+
+    pptxSlide.addShape(pptx.ShapeType.rect, {
+      x: 0,
+      y: 0,
+      w: 0.16,
+      h: 7.5,
+      fill: { color: accent },
+      line: { type: "none" },
+    });
 
     pptxSlide.addText(headerLabel, {
       x: 0.45,
@@ -145,20 +195,30 @@ export async function buildSlidesPptxBuffer(input: {
     });
 
     const bullets = (slide.bullets || []).filter((item) => item.trim());
-    const hasImage = Boolean(slide.imageUrl?.trim());
-    const textWidth = hasImage && layout !== "destaque" ? 5.8 : 11.5;
+    const imageData = slide.imageUrl ? imageMap.get(slide.imageUrl) : null;
+    const hasImage = Boolean(imageData);
+    const textWidth = hasImage && layout !== "destaque" ? 5.9 : 11.8;
 
     if (bullets.length) {
-      pptxSlide.addText(bullets.join("\n"), {
-        x: 0.55,
-        y: 1.55,
-        w: textWidth,
-        h: 4.2,
-        fontSize: 14,
-        color: "334155",
-        valign: "top",
-        bullet: true,
-      });
+      pptxSlide.addText(
+        bullets.map((text) => ({
+          text,
+          options: {
+            bullet: { indent: 18, characterCode: "2022" },
+            paraSpaceAfter: 8,
+          },
+        })),
+        {
+          x: 0.55,
+          y: 1.55,
+          w: textWidth,
+          h: 4.2,
+          fontSize: 15,
+          color: "334155",
+          valign: "top",
+          lineSpacingMultiple: 1.15,
+        },
+      );
     }
 
     if (slide.callout?.text) {
@@ -181,22 +241,19 @@ export async function buildSlidesPptxBuffer(input: {
       });
     }
 
-    if (hasImage && slide.imageUrl) {
-      const data = await fetchImageDataUrl(slide.imageUrl);
-      if (data) {
-        const imageX = layout === "destaque" ? 3.5 : 6.6;
-        const imageY = layout === "destaque" ? 2.8 : 1.55;
-        const imageW = layout === "destaque" ? 6 : 5.5;
-        const imageH = layout === "destaque" ? 3 : 3.8;
-        pptxSlide.addImage({
-          data,
-          x: imageX,
-          y: imageY,
-          w: imageW,
-          h: imageH,
-          sizing: { type: "cover", w: imageW, h: imageH },
-        });
-      }
+    if (hasImage && imageData) {
+      const imageX = layout === "destaque" ? 3.5 : 6.7;
+      const imageY = layout === "destaque" ? 2.8 : 1.55;
+      const imageW = layout === "destaque" ? 6 : 5.6;
+      const imageH = layout === "destaque" ? 3 : 3.9;
+      pptxSlide.addImage({
+        data: imageData,
+        x: imageX,
+        y: imageY,
+        w: imageW,
+        h: imageH,
+        sizing: { type: "cover", w: imageW, h: imageH },
+      });
     }
 
     if (slide.speakerNotes?.trim()) {

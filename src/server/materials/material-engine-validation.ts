@@ -37,6 +37,7 @@ export function normalizeMaterialEngineRequest(
     dificuldade: asText(payload.dificuldade, "media"),
     formatoJogo: asText(payload.formatoJogo, "") || null,
     incluirGabarito: payload.incluirGabarito !== false,
+    modeloSlides: asText(payload.modeloSlides, "") || undefined,
   };
 }
 

@@ -37,7 +37,9 @@ function isSafeImageUrl(url: string): boolean {
     return (
       host.endsWith("wikimedia.org") ||
       host.endsWith("wikipedia.org") ||
-      host === "images.unsplash.com"
+      host === "images.unsplash.com" ||
+      host === "api.openverse.org" ||
+      host.endsWith(".openverse.org")
     );
   } catch {
     return false;
@@ -83,6 +85,49 @@ async function searchWikimedia(query: string): Promise<{ url: string; alt: strin
       const alt = (page.title || query).replace(/^File:/i, "").replace(/\.[^.]+$/, "");
       return { url, alt };
     }
+  }
+
+  return null;
+}
+
+async function searchOpenverse(
+  query: string,
+): Promise<{ url: string; alt: string } | null> {
+  const params = new URLSearchParams({
+    q: query,
+    page_size: "4",
+    license_type: "all",
+    mature: "false",
+  });
+
+  try {
+    const response = await fetch(
+      `https://api.openverse.org/v1/images/?${params}`,
+      {
+        headers: { "User-Agent": USER_AGENT, Accept: "application/json" },
+        signal: AbortSignal.timeout(8000),
+      },
+    );
+
+    if (!response.ok) return null;
+
+    const data = (await response.json()) as {
+      results?: Array<{
+        title?: string;
+        thumbnail?: string;
+        url?: string;
+      }>;
+    };
+
+    for (const hit of data.results ?? []) {
+      // O thumbnail fica em api.openverse.org (host estável e seguro).
+      const url = hit.thumbnail || hit.url;
+      if (url && isSafeImageUrl(url)) {
+        return { url, alt: hit.title || query };
+      }
+    }
+  } catch {
+    return null;
   }
 
   return null;
@@ -136,6 +181,11 @@ export async function resolveSlideImage(input: {
   for (const query of queries) {
     const wiki = await searchWikimedia(query);
     if (wiki) return wiki;
+  }
+
+  for (const query of queries) {
+    const openverse = await searchOpenverse(query);
+    if (openverse) return openverse;
   }
 
   for (const query of queries) {

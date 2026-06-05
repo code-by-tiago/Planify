@@ -33,6 +33,9 @@ function specializedRules(request: MaterialEngineRequest): string[] {
   if (request.tipoMaterial === "slides") {
     return [
       `Gerar exatamente ${quantidade} slides no array 'slides'.`,
+      ...(request.modeloSlides
+        ? [`MODELO ESCOLHIDO PELO PROFESSOR: ${request.modeloSlides}`]
+        : []),
       "SEQUÊNCIA DE ENSINO (obrigatório): o array 'slides' deve seguir a ordem real de uma aula — capa → contextualização/objetivos → desenvolvimento em blocos lógicos → exemplo ou aplicação → checagem de aprendizagem → síntese/fechamento.",
       "Cada slide de conteúdo deve ter 'sequenceStep' (inteiro crescente: 1, 2, 3…) refletindo a ordem pedagógica e 'sequenceLabel' em português (ex.: 'Objetivos', 'Conceito-chave', 'Exemplo prático', 'Checagem').",
       "O primeiro slide é a capa (layout 'capa', sequenceStep 0) e o último é o fechamento (layout 'fechamento').",

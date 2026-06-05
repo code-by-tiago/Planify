@@ -134,7 +134,7 @@ export type GoogleSlidesExportResult = {
 
 export async function exportToGoogleSlides(params: {
   title: string;
-  html: string;
+  html?: string;
   slides?: Array<{
     title: string;
     bullets: string[];

@@ -23,7 +23,8 @@ export type PlanifySlideExportPayload = {
 
 type GoogleSlidesExportButtonProps = {
   title: string;
-  html: string;
+  html?: string;
+  getHtml?: () => string;
   slides?: PlanifySlideExportPayload[];
   returnTo?: string;
   className?: string;
@@ -32,6 +33,7 @@ type GoogleSlidesExportButtonProps = {
 export function GoogleSlidesExportButton({
   title,
   html,
+  getHtml,
   slides,
   returnTo = "/dashboard?tipo=slides",
   className = "",
@@ -74,7 +76,7 @@ export function GoogleSlidesExportButton({
     try {
       const result = await exportToGoogleSlides({
         title,
-        html,
+        html: getHtml ? getHtml() : html,
         slides,
       });
       window.open(result.presentationUrl, "_blank", "noopener,noreferrer");

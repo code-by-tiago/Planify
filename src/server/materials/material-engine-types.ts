@@ -49,6 +49,7 @@ export type MaterialEngineRequest = {
   dificuldade: string;
   formatoJogo: string | null;
   incluirGabarito: boolean;
+  modeloSlides?: string;
 };
 
 export type MaterialEngineInput = {
@@ -68,6 +69,7 @@ export type MaterialEngineInput = {
   incluirGabarito?: boolean;
   areaConhecimento?: string;
   observacoes?: string;
+  modeloSlides?: string;
 };
 
 export type ExamQuestion = {

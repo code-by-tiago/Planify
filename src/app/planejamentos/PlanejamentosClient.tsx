@@ -12,6 +12,12 @@ import {
   writeAutoOpenPlanningEditorPreference,
 } from "@/lib/planejamentos/planning-editor-flow";
 import { readPlanejamentoPrefill } from "@/lib/planejamentos/planejamento-prefill";
+import { downloadPlanejamentoOficialDocx } from "@/lib/planejamentos/download-planejamento-oficial";
+import { planifyAuthenticatedFetch } from "@/lib/auth/authenticated-fetch";
+import {
+  readDownloadBlob,
+  triggerBrowserDownload,
+} from "@/lib/downloads/trigger-browser-download";
 import { useEffect, useMemo, useState } from "react";
 
 type TipoPlanejamento = "anual" | "trimestral";
@@ -857,35 +863,20 @@ export function PlanejamentosClient() {
     );
 
     try {
-      const response = await fetch("/api/planejamentos/docx-oficial", {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...buildBasePayload(),
-          tipoPlanejamento: mode,
-          trimestre: trimester ? String(trimester) : form.trimestre,
-          matrizPlanejamento: generatedPlanning,
-        }),
-      });
-
-      if (!response.ok) {
-        const data = await response.json().catch(() => null);
-        throw new Error(data?.error?.message || "Não foi possível gerar o DOCX oficial.");
-      }
-
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      const anchor = window.document.createElement("a");
       const filename =
         mode === "trimestral"
           ? `planejamento-trimestral-${trimester}-${form.componenteCurricular}-${form.anoSerie}`
           : `planejamento-anual-${form.componenteCurricular}-${form.anoSerie}`;
 
-      anchor.href = url;
-      anchor.download = `${safeFilename(filename)}.docx`;
-      anchor.click();
-      URL.revokeObjectURL(url);
+      await downloadPlanejamentoOficialDocx(
+        {
+          ...buildBasePayload(),
+          tipoPlanejamento: mode,
+          trimestre: trimester ? String(trimester) : form.trimestre,
+          matrizPlanejamento: generatedPlanning,
+        },
+        filename,
+      );
 
       setStatus(
         mode === "trimestral"
@@ -921,10 +912,8 @@ export function PlanejamentosClient() {
     setStatus("Gerando pacote com anual + trimestrais...");
 
     try {
-      const response = await fetch("/api/planejamentos/docx-pacote", {
+      const response = await planifyAuthenticatedFetch("/api/planejamentos/docx-pacote", {
         method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...buildBasePayload(),
           tipoPlanejamento: "anual",
@@ -937,14 +926,11 @@ export function PlanejamentosClient() {
         throw new Error(data?.error?.message || "Não foi possível gerar o pacote DOCX.");
       }
 
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      const anchor = window.document.createElement("a");
-
-      anchor.href = url;
-      anchor.download = `${safeFilename(`planify-anual-trimestrais-${form.componenteCurricular}-${form.anoSerie}`)}.zip`;
-      anchor.click();
-      URL.revokeObjectURL(url);
+      const blob = await readDownloadBlob(response);
+      triggerBrowserDownload(
+        blob,
+        `${safeFilename(`planify-anual-trimestrais-${form.componenteCurricular}-${form.anoSerie}`)}.zip`,
+      );
 
       setStatus("Pacote anual + trimestrais baixado com sucesso.");
     } catch (err) {

@@ -5,6 +5,7 @@ import {
   formatDisplayNameFromEmail,
   formatPlanLabel,
 } from "@/lib/auth/format-plan-label";
+import { ensurePremiumSessionCookies } from "@/lib/auth/session-client";
 
 export type PlanifySession = {
   loading: boolean;
@@ -36,6 +37,8 @@ export function usePlanifySession() {
 
     async function load() {
       try {
+        await ensurePremiumSessionCookies();
+
         const response = await fetch("/api/access/status", {
           cache: "no-store",
           credentials: "include",

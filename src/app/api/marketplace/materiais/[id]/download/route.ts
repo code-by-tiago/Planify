@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getRequestAccessToken } from "../../../../../../server/auth/api-access";
 import { verifyPremiumAccess } from "../../../../../../server/auth/premium-access-service";
 import { resolveAdminAccess } from "../../../../../../server/auth/admin-access";
 import { getSupabaseAdminClient } from "../../../../../../server/supabase/admin-client";
@@ -13,7 +14,6 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 const BUCKET_NAME = "marketplace-materiais";
-const PREMIUM_COOKIE_NAME = "planify_access";
 const ADMIN_COOKIE_NAME = "planify_admin_access";
 
 type MarketplaceRow = {
@@ -26,17 +26,6 @@ type MarketplaceRow = {
   is_published: boolean | null;
   downloads_count: number | null;
 };
-
-function getAccessToken(request: NextRequest): string | null {
-  const header = request.headers.get("authorization") || "";
-  const match = header.match(/^Bearer\s+(.+)$/i);
-
-  return (
-    match?.[1]?.trim() ||
-    request.cookies.get(PREMIUM_COOKIE_NAME)?.value ||
-    null
-  );
-}
 
 function jsonError(message: string, status = 400) {
   return NextResponse.json({ success: false, error: { message } }, { status });
@@ -52,7 +41,7 @@ export async function GET(
     return jsonError("Material não informado.", 400);
   }
 
-  const accessToken = getAccessToken(request);
+  const accessToken = getRequestAccessToken(request);
   const adminToken = request.cookies.get(ADMIN_COOKIE_NAME)?.value || null;
   const premium = await verifyPremiumAccess(accessToken);
   const admin = await resolveAdminAccess(adminToken);

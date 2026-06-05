@@ -1,43 +1,23 @@
-import { getCurrentAccessToken } from "@/lib/auth/session-client";
+import { planifyAuthenticatedFetch } from "@/lib/auth/authenticated-fetch";
+import {
+  filenameFromContentDisposition,
+  readDownloadBlob,
+  triggerBrowserDownload,
+} from "@/lib/downloads/trigger-browser-download";
 
 export type MarketplaceDownloadFormat = "docx" | "pdf" | "html";
-
-function filenameFromContentDisposition(header: string | null): string | null {
-  if (!header) {
-    return null;
-  }
-
-  const utfMatch = header.match(/filename\*=UTF-8''([^;]+)/i);
-  if (utfMatch?.[1]) {
-    try {
-      return decodeURIComponent(utfMatch[1]);
-    } catch {
-      return utfMatch[1];
-    }
-  }
-
-  const asciiMatch = header.match(/filename="([^"]+)"/i);
-  return asciiMatch?.[1] || null;
-}
 
 export async function downloadMarketplaceMaterial(params: {
   id: string;
   format?: MarketplaceDownloadFormat;
   fallbackFileName?: string;
 }): Promise<void> {
-  const token = await getCurrentAccessToken();
-  const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
   const format = params.format || "docx";
   const query = new URLSearchParams({ format });
 
-  const response = await fetch(
+  const response = await planifyAuthenticatedFetch(
     `/api/marketplace/materiais/${params.id}/download?${query.toString()}`,
-    {
-      method: "GET",
-      credentials: "include",
-      cache: "no-store",
-      headers,
-    },
+    { method: "GET" },
   );
 
   if (!response.ok) {
@@ -47,19 +27,12 @@ export async function downloadMarketplaceMaterial(params: {
     );
   }
 
-  const blob = await response.blob();
+  const blob = await readDownloadBlob(response);
   const filename =
+    response.headers.get("X-Planify-Filename") ||
     filenameFromContentDisposition(response.headers.get("Content-Disposition")) ||
     params.fallbackFileName ||
     `material-planify.${format}`;
 
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = filename;
-  anchor.rel = "noopener";
-  document.body.appendChild(anchor);
-  anchor.click();
-  anchor.remove();
-  URL.revokeObjectURL(url);
+  triggerBrowserDownload(blob, filename);
 }

@@ -1,3 +1,10 @@
+import { planifyAuthenticatedFetch } from "@/lib/auth/authenticated-fetch";
+import {
+  filenameFromContentDisposition,
+  readDownloadBlob,
+  triggerBrowserDownload,
+} from "@/lib/downloads/trigger-browser-download";
+
 type PlanejamentoPayload = Record<string, unknown>;
 
 function safeFileName(value: string) {
@@ -16,12 +23,8 @@ export async function downloadPlanejamentoOficialDocx(
   payload: PlanejamentoPayload,
   fallbackFilename = "planejamento-planify",
 ) {
-  const response = await fetch("/api/planejamentos/docx-oficial", {
+  const response = await planifyAuthenticatedFetch("/api/planejamentos/docx-oficial", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    credentials: "include",
     body: JSON.stringify(payload),
   });
 
@@ -35,13 +38,11 @@ export async function downloadPlanejamentoOficialDocx(
     );
   }
 
-  const blob = await response.blob();
-  const url = URL.createObjectURL(blob);
-  const anchor = window.document.createElement("a");
+  const blob = await readDownloadBlob(response);
+  const filename =
+    response.headers.get("X-Planify-Filename") ||
+    filenameFromContentDisposition(response.headers.get("Content-Disposition")) ||
+    `${safeFileName(fallbackFilename)}.docx`;
 
-  anchor.href = url;
-  anchor.download = `${safeFileName(fallbackFilename)}.docx`;
-  anchor.click();
-
-  URL.revokeObjectURL(url);
+  triggerBrowserDownload(blob, filename);
 }

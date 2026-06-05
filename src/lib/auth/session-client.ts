@@ -249,3 +249,18 @@ export async function getCurrentAccessToken(): Promise<string | null> {
 
   return data.session?.access_token || null;
 }
+
+/** Renova cookies httpOnly quando o Supabase ainda tem sessão ativa. */
+export async function ensurePremiumSessionCookies(): Promise<void> {
+  const token = await getCurrentAccessToken();
+  if (!token) {
+    return;
+  }
+
+  try {
+    await syncPremiumAccessCookie(token);
+    await createOwnerSession(token);
+  } catch {
+    // Mantém fluxo mesmo se a sincronização falhar — Bearer cobre downloads.
+  }
+}

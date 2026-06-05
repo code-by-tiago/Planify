@@ -27,6 +27,7 @@ export async function syncPremiumAccessCookie(
 ): Promise<AccessCookieResponse> {
   const response = await fetch("/api/auth/access-cookie", {
     method: "POST",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${accessToken}`,
@@ -39,5 +40,6 @@ export async function syncPremiumAccessCookie(
 export async function clearPremiumAccessCookie(): Promise<void> {
   await fetch("/api/auth/access-cookie", {
     method: "DELETE",
+    credentials: "include",
   });
 }

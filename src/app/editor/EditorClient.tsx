@@ -2,6 +2,7 @@
 
 import { EditorShareBar } from "@/components/editor/EditorShareBar";
 import { downloadEditorExport } from "@/lib/downloads/editor-export-client";
+import { downloadPlanejamentoOficialDocx } from "@/lib/planejamentos/download-planejamento-oficial";
 import {
   syncOpenDocumentToHistory,
   type EditorStoredPayload,
@@ -1150,22 +1151,10 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
         "matrizPlanejamento" in source.payload;
 
       if (isOfficialPlanning) {
-        const response = await fetch("/api/planejamentos/docx-oficial", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(source.payload),
-        });
-
-        if (!response.ok) {
-          const data = await response.json().catch(() => null);
-          throw new Error(data?.error?.message || "Não foi possível gerar o DOCX oficial.");
-        }
-
-        const blob = await response.blob();
-        const fallback = `${sanitizeFilename(title)}.docx`;
-        const filename = filenameFromResponse(response, fallback);
-
-        downloadExistingBlob(filename, blob);
+        await downloadPlanejamentoOficialDocx(
+          source.payload as Record<string, unknown>,
+          sanitizeFilename(title),
+        );
         setStatus("DOCX oficial baixado a partir da matriz do planejamento.");
         return;
       }

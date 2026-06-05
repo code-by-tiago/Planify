@@ -38,6 +38,7 @@ export function normalizeMaterialEngineRequest(
     formatoJogo: asText(payload.formatoJogo, "") || null,
     incluirGabarito: payload.incluirGabarito !== false,
     modeloSlides: asText(payload.modeloSlides, "") || undefined,
+    designSlides: asText(payload.designSlides, "") || undefined,
   };
 }
 

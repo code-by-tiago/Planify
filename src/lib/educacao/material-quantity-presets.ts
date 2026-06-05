@@ -31,6 +31,10 @@ export const QUANTITY_PRESETS_BY_TOOL: Partial<
     { value: "8", label: "8 slides" },
     { value: "10", label: "10 slides" },
     { value: "12", label: "12 slides" },
+    { value: "15", label: "15 slides" },
+    { value: "20", label: "20 slides" },
+    { value: "25", label: "25 slides" },
+    { value: "30", label: "30 slides" },
   ],
   flashcards: [
     { value: "10", label: "10 cartões" },

@@ -23,6 +23,7 @@ import {
   type SlideAccent,
   type SlideLayout,
 } from "./material-engine-types";
+import { resolveSlideTheme, type SlideTheme } from "./slide-design-themes";
 import { enrichSlidesWithImages } from "./slide-image-resolver";
 import {
   assignSlideSequenceLabels,
@@ -132,78 +133,119 @@ function renderGame(response: MaterialEngineResponse): string {
   `;
 }
 
-type SlideAccentTheme = {
-  base: string;
-  strong: string;
-  soft: string;
-  ink: string;
-};
-
-const SLIDE_ACCENT_THEMES: Record<string, SlideAccentTheme> = {
-  indigo: { base: "#6366f1", strong: "#4f46e5", soft: "#eef2ff", ink: "#3730a3" },
-  violet: { base: "#8b5cf6", strong: "#7c3aed", soft: "#f5f3ff", ink: "#5b21b6" },
-  coral: { base: "#fb7185", strong: "#f43f5e", soft: "#fff1f2", ink: "#9f1239" },
-  amber: { base: "#f59e0b", strong: "#d97706", soft: "#fffbeb", ink: "#92400e" },
-  emerald: { base: "#10b981", strong: "#059669", soft: "#ecfdf5", ink: "#065f46" },
-  sky: { base: "#0ea5e9", strong: "#0284c7", soft: "#f0f9ff", ink: "#075985" },
-  rose: { base: "#f43f5e", strong: "#e11d48", soft: "#fff1f2", ink: "#9f1239" },
-};
-
-const SLIDE_ACCENT_ROTATION = ["indigo", "violet", "sky", "emerald", "amber", "coral"];
-
 const SLIDE_PICTURE_SVG =
   '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="m21 16-5-5L5 20"/></svg>';
 
-function slideBulletsHtml(bullets: string[], color: string): string {
+/** Hex bare ("0F172A") → cor CSS ("#0F172A"). */
+function h(hex: string): string {
+  return `#${hex}`;
+}
+
+function fontStack(name: string): string {
+  if (name === "Georgia") return "Georgia, 'Times New Roman', serif";
+  if (name === "Trebuchet MS") return "'Trebuchet MS', 'Segoe UI', sans-serif";
+  if (name === "Calibri") return "Calibri, 'Segoe UI', system-ui, sans-serif";
+  return "Arial, Helvetica, sans-serif";
+}
+
+/** Decoração visual posicionada (clipada pelo card via overflow:hidden). */
+function decorationHtml(theme: SlideTheme, ctx: "cover" | "content"): string {
+  const onCover = ctx === "cover";
+  const soft = onCover ? "rgba(255,255,255,0.14)" : theme.accentSoftCss;
+
+  switch (theme.decoration) {
+    case "blob":
+      return `<div style="position:absolute;top:-70px;right:-50px;width:220px;height:220px;border-radius:50%;background:${soft};pointer-events:none;"></div>
+        <div style="position:absolute;bottom:-80px;left:-60px;width:190px;height:190px;border-radius:50%;background:${soft};pointer-events:none;"></div>`;
+    case "corner":
+      return `<div style="position:absolute;top:0;right:0;width:0;height:0;border-top:96px solid ${onCover ? "rgba(255,255,255,0.16)" : theme.accentSoftCss};border-left:96px solid transparent;pointer-events:none;"></div>`;
+    case "dots":
+      return `<div style="position:absolute;inset:0;background-image:radial-gradient(${onCover ? "rgba(255,255,255,0.18)" : "rgba(15,23,42,0.06)"} 1.5px,transparent 1.6px);background-size:18px 18px;pointer-events:none;"></div>`;
+    case "chalk":
+      return `<div style="position:absolute;inset:10px;border:1.5px dashed ${onCover ? "rgba(248,250,252,0.35)" : `${h(theme.accentHex)}55`};border-radius:14px;pointer-events:none;"></div>`;
+    case "line":
+      return `<div style="position:absolute;top:0;left:0;height:6px;width:100%;background:${h(theme.accentHex)};pointer-events:none;"></div>`;
+    default:
+      return "";
+  }
+}
+
+function slideHeaderHtml(theme: SlideTheme, tag: string, position: string): string {
+  const label = `font-size:12px;font-weight:800;letter-spacing:0.08em;`;
+  const pos = `font-size:12px;font-weight:700;color:${h(theme.mutedInk)};`;
+
+  switch (theme.headerKind) {
+    case "ribbon":
+      return `<div style="display:flex;align-items:center;justify-content:space-between;margin:-22px -26px 16px;padding:11px 26px;background:${h(theme.accentHex)};color:#ffffff;">
+          <span style="${label}">${tag}</span><span style="${label}opacity:0.85;">${position}</span>
+        </div>`;
+    case "block":
+      return `<div style="display:flex;align-items:center;justify-content:space-between;margin:0 0 14px;">
+          <span style="${label}display:inline-block;background:${h(theme.accentHex)};color:#ffffff;padding:5px 12px;border-radius:8px;">${tag}</span>
+          <span style="${pos}">${position}</span>
+        </div>`;
+    case "underline":
+      return `<div style="display:flex;align-items:flex-end;justify-content:space-between;margin:0 0 14px;border-bottom:2px solid ${h(theme.accentHex)};padding-bottom:8px;">
+          <span style="${label}color:${h(theme.accentHex)};">${tag}</span><span style="${pos}">${position}</span>
+        </div>`;
+    case "chalk":
+      return `<div style="display:flex;align-items:center;justify-content:space-between;margin:0 0 14px;">
+          <span style="${label}color:${h(theme.accentHex)};border-bottom:2px dashed ${h(theme.accentHex)};padding-bottom:4px;">${tag}</span>
+          <span style="${pos}">${position}</span>
+        </div>`;
+    default:
+      return `<div style="display:flex;align-items:center;justify-content:space-between;margin:0 0 14px;">
+          <span style="${label}color:${h(theme.accentHex)};">${tag}</span><span style="${pos}">${position}</span>
+        </div>`;
+  }
+}
+
+function slideBulletsHtml(bullets: string[], theme: SlideTheme): string {
   const clean = bullets.filter((item) => item.trim());
   if (!clean.length) return "";
-  return `<ul style="margin:0;padding-left:20px;list-style:disc;">${clean
+  return `<ul style="margin:0;padding:0;list-style:none;">${clean
     .map(
       (item) =>
-        `<li style="margin:7px 0;font-size:15px;line-height:1.55;color:#334155;"><span style="color:${color};">●</span>&nbsp;<span style="color:#1e293b;">${escapeHtml(item)}</span></li>`,
+        `<li style="display:flex;gap:9px;margin:9px 0;font-family:${fontStack(theme.fontBody)};font-size:15px;line-height:1.55;color:${h(theme.bodyInk)};"><span style="color:${h(theme.accentHex)};font-weight:900;line-height:1.4;">▪</span><span>${escapeHtml(item)}</span></li>`,
     )
     .join("")}</ul>`;
 }
 
 function slideFigureHtml(
-  slide: {
-    imageUrl?: string;
-    imageAlt?: string;
-    imagePrompt?: string;
-  },
-  theme: SlideAccentTheme,
+  slide: { imageUrl?: string; imageAlt?: string; imagePrompt?: string },
+  theme: SlideTheme,
 ): string {
   if (slide.imageUrl?.trim()) {
     const alt = escapeHtml(slide.imageAlt || slide.imagePrompt || "Ilustração do slide");
-    return `<figure class="planify-slide-figure" data-planify-slide-image="true" style="margin:0;border-radius:14px;overflow:hidden;border:1px solid ${theme.base}33;background:${theme.soft};">
+    return `<figure class="planify-slide-figure" data-planify-slide-image="true" style="margin:0;border-radius:14px;overflow:hidden;border:${theme.cardBorderCss};background:${theme.accentSoftCss};">
       <img src="${escapeHtml(slide.imageUrl)}" alt="${alt}" class="planify-slide-image" data-planify-image="true" style="display:block;width:100%;max-height:280px;object-fit:cover;cursor:pointer;" />
     </figure>`;
   }
 
   if (!slide.imagePrompt?.trim()) return "";
 
-  return `<figure class="planify-slide-figure planify-slide-figure--pending" data-planify-slide-image="true" style="margin:0;border-radius:14px;overflow:hidden;border:1px dashed ${theme.base};background:${theme.soft};padding:14px;text-align:center;">
-      <span style="display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;border-radius:10px;background:#ffffff;color:${theme.strong};">${SLIDE_PICTURE_SVG}</span>
-      <p style="margin:8px 0 0;font-size:11px;font-weight:700;color:${theme.ink};">Imagem não encontrada — clique em Imagem no editor para substituir</p>
+  return `<figure class="planify-slide-figure planify-slide-figure--pending" data-planify-slide-image="true" style="margin:0;border-radius:14px;overflow:hidden;border:1px dashed ${h(theme.accentHex)};background:${theme.accentSoftCss};padding:14px;text-align:center;">
+      <span style="display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;border-radius:10px;background:${theme.cardBgCss};color:${h(theme.accentHex)};">${SLIDE_PICTURE_SVG}</span>
+      <p style="margin:8px 0 0;font-size:11px;font-weight:700;color:${h(theme.mutedInk)};">Clique em Imagem no editor para adicionar uma ilustração</p>
     </figure>`;
 }
 
 function slideCalloutHtml(
   callout: { title?: string; text?: string } | undefined,
-  theme: SlideAccentTheme,
+  theme: SlideTheme,
 ): string {
   if (!callout || !callout.text) return "";
-  return `<div style="margin-top:14px;border-left:4px solid ${theme.base};background:${theme.soft};border-radius:0 12px 12px 0;padding:12px 16px;">
-      ${callout.title ? `<p style="margin:0 0 4px;font-size:13px;font-weight:800;color:${theme.ink};">★ ${escapeHtml(callout.title)}</p>` : ""}
-      <p style="margin:0;font-size:14px;line-height:1.55;color:#334155;">${escapeHtml(callout.text)}</p>
+  return `<div style="margin-top:14px;border-left:4px solid ${h(theme.accentHex)};background:${theme.accentSoftCss};border-radius:0 12px 12px 0;padding:12px 16px;">
+      ${callout.title ? `<p style="margin:0 0 4px;font-family:${fontStack(theme.fontHeading)};font-size:13px;font-weight:800;color:${h(theme.accentHex)};">★ ${escapeHtml(callout.title)}</p>` : ""}
+      <p style="margin:0;font-family:${fontStack(theme.fontBody)};font-size:14px;line-height:1.55;color:${h(theme.bodyInk)};">${escapeHtml(callout.text)}</p>
     </div>`;
 }
 
-function slideNotesHtml(notes: string, theme: SlideAccentTheme): string {
+function slideNotesHtml(notes: string, theme: SlideTheme): string {
   if (!notes) return "";
-  return `<div style="margin-top:14px;padding:11px 14px;background:#f8fafc;border-left:3px solid ${theme.base};border-radius:8px;">
-      <span style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:${theme.ink};margin-bottom:4px;">Notas do professor</span>
-      <span style="font-size:13px;line-height:1.55;color:#475569;">${escapeHtml(notes)}</span>
+  return `<div style="margin-top:14px;padding:11px 14px;background:${theme.accentSoftCss};border-left:3px solid ${h(theme.accentHex)};border-radius:8px;">
+      <span style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:${h(theme.accentHex)};margin-bottom:4px;">Notas do professor</span>
+      <span style="font-family:${fontStack(theme.fontBody)};font-size:13px;line-height:1.55;color:${h(theme.mutedInk)};">${escapeHtml(notes)}</span>
     </div>`;
 }
 
@@ -211,6 +253,7 @@ function renderSlides(response: MaterialEngineResponse): string {
   const rawSlides = response.slides ?? [];
   if (!rawSlides.length) return "";
 
+  const theme = resolveSlideTheme(response.slideTheme);
   const slides = orderSlidesPedagogically([...rawSlides]);
   assignSlideSequenceLabels(slides);
 
@@ -220,17 +263,16 @@ function renderSlides(response: MaterialEngineResponse): string {
   ).length;
   let contentCounter = 0;
 
+  const cardShadow = theme.dark
+    ? "0 18px 40px -20px rgba(0,0,0,0.6)"
+    : "0 12px 32px -20px rgba(15,23,42,0.45)";
+
   const body = slides
     .map((slide, index) => {
       const isFirst = index === 0;
       const isLast = index === total - 1;
-
       const layout =
         slide.layout ?? (isFirst ? "capa" : isLast ? "fechamento" : "conteudo");
-      const accentName =
-        slide.accentColor ?? SLIDE_ACCENT_ROTATION[index % SLIDE_ACCENT_ROTATION.length];
-      const theme = SLIDE_ACCENT_THEMES[accentName] ?? SLIDE_ACCENT_THEMES.indigo;
-
       const bullets = (slide.bullets || []).filter((item) => item.trim());
 
       let tag = "CONTEÚDO";
@@ -243,34 +285,33 @@ function renderSlides(response: MaterialEngineResponse): string {
         positionLabel = "Síntese";
       } else {
         contentCounter += 1;
-        const step = slide.sequenceStep ?? contentCounter;
         const label = slide.sequenceLabel || `Etapa ${contentCounter}`;
-        tag = `${label.toUpperCase()}`;
+        tag = label.toUpperCase();
         positionLabel = `${contentCounter} / ${contentTotal}`;
       }
 
-      // Capa: bloco com gradiente da cor de destaque.
       if (layout === "capa") {
         return `
-          <div class="planify-slide" style="margin:0 0 22px;border-radius:18px;overflow:hidden;background:linear-gradient(135deg,${theme.strong},${theme.base});color:#ffffff;box-shadow:0 18px 40px -22px ${theme.base};">
-            <div style="padding:34px 30px;">
-              <span style="display:inline-block;font-size:11px;font-weight:800;letter-spacing:0.16em;text-transform:uppercase;background:rgba(255,255,255,0.2);padding:5px 12px;border-radius:999px;">Planify · Apresentação</span>
-              <h3 style="margin:16px 0 0;font-size:30px;font-weight:900;line-height:1.18;">${escapeHtml(slide.title)}</h3>
-              ${slide.subtitle ? `<p style="margin:12px 0 0;font-size:17px;font-weight:500;line-height:1.5;color:rgba(255,255,255,0.92);">${escapeHtml(slide.subtitle)}</p>` : ""}
-              <p style="margin:20px 0 0;font-size:12px;font-weight:700;color:rgba(255,255,255,0.85);">${total} slides</p>
+          <div class="planify-slide" style="position:relative;overflow:hidden;margin:0 0 22px;border-radius:18px;background:${theme.coverBgCss};color:${h(theme.coverInk)};box-shadow:0 18px 44px -22px rgba(15,23,42,0.6);">
+            ${decorationHtml(theme, "cover")}
+            <div style="position:relative;padding:42px 36px;">
+              <span style="display:inline-block;font-size:11px;font-weight:800;letter-spacing:0.16em;text-transform:uppercase;background:${theme.coverBadgeBg};color:${h(theme.coverBadgeInk)};padding:6px 13px;border-radius:999px;">Planify · Apresentação</span>
+              <h3 style="margin:18px 0 0;font-family:${fontStack(theme.fontHeading)};font-size:32px;font-weight:900;line-height:1.16;color:${h(theme.coverInk)};">${escapeHtml(slide.title)}</h3>
+              ${slide.subtitle ? `<p style="margin:14px 0 0;font-family:${fontStack(theme.fontBody)};font-size:17px;font-weight:500;line-height:1.5;color:${h(theme.coverMutedInk)};">${escapeHtml(slide.subtitle)}</p>` : ""}
+              <p style="margin:22px 0 0;font-size:12px;font-weight:700;letter-spacing:0.08em;color:${h(theme.coverMutedInk)};">${total} SLIDES</p>
             </div>
           </div>
         `;
       }
 
-      const header = `<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 20px;background:${theme.soft};color:${theme.ink};border-bottom:1px solid ${theme.base}33;">
-          <span style="font-size:12px;font-weight:800;letter-spacing:0.06em;">${tag}</span>
-          <span style="font-size:12px;font-weight:700;opacity:0.8;">${positionLabel || `${index + 1} / ${total}`}</span>
-        </div>`;
+      const header = slideHeaderHtml(theme, tag, positionLabel || `${index + 1} / ${total}`);
+      const accentBorder =
+        theme.headerKind === "bar"
+          ? `border-left:5px solid ${h(theme.accentHex)};padding-left:12px;`
+          : "";
+      const titleHtml = `<h3 style="margin:0 0 14px;font-family:${fontStack(theme.fontHeading)};font-size:22px;font-weight:800;color:${h(theme.titleInk)};line-height:1.25;${accentBorder}">${escapeHtml(slide.title)}</h3>`;
 
-      const titleHtml = `<h3 style="margin:0 0 14px;font-size:21px;font-weight:800;color:#0f172a;line-height:1.25;border-left:5px solid ${theme.base};padding-left:12px;">${escapeHtml(slide.title)}</h3>`;
-
-      const bulletsHtml = slideBulletsHtml(bullets, theme.base);
+      const bulletsHtml = slideBulletsHtml(bullets, theme);
       const figureHtml = slideFigureHtml(slide, theme);
       const calloutHtml = slideCalloutHtml(slide.callout, theme);
       const notesHtml = slideNotesHtml(slide.speakerNotes, theme);
@@ -287,30 +328,36 @@ function renderSlides(response: MaterialEngineResponse): string {
           ${notesHtml}`;
       } else if (layout === "destaque") {
         const bigCallout = slide.callout?.text
-          ? `<div style="margin:0 0 14px;text-align:center;background:${theme.soft};border:1px solid ${theme.base}33;border-radius:14px;padding:22px;">
-               ${slide.callout.title ? `<p style="margin:0 0 8px;font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:${theme.ink};">${escapeHtml(slide.callout.title)}</p>` : ""}
-               <p style="margin:0;font-size:20px;font-weight:700;line-height:1.4;color:#0f172a;">${escapeHtml(slide.callout.text)}</p>
+          ? `<div style="margin:0 0 14px;text-align:center;background:${theme.accentSoftCss};border:${theme.cardBorderCss};border-radius:14px;padding:22px;">
+               ${slide.callout.title ? `<p style="margin:0 0 8px;font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:${h(theme.accentHex)};">${escapeHtml(slide.callout.title)}</p>` : ""}
+               <p style="margin:0;font-family:${fontStack(theme.fontHeading)};font-size:20px;font-weight:700;line-height:1.4;color:${h(theme.titleInk)};">${escapeHtml(slide.callout.text)}</p>
              </div>`
           : "";
         inner = `${titleHtml}${bigCallout}${bulletsHtml}${figureHtml ? `<div style="margin-top:14px;">${figureHtml}</div>` : ""}${notesHtml}`;
       } else if (layout === "fechamento") {
         inner = `${titleHtml}
-          ${slide.subtitle ? `<p style="margin:0 0 12px;font-size:15px;font-weight:600;color:${theme.ink};">${escapeHtml(slide.subtitle)}</p>` : ""}
+          ${slide.subtitle ? `<p style="margin:0 0 12px;font-family:${fontStack(theme.fontBody)};font-size:15px;font-weight:600;color:${h(theme.accentHex)};">${escapeHtml(slide.subtitle)}</p>` : ""}
           ${bulletsHtml}${calloutHtml}${notesHtml}`;
       } else {
         inner = `${titleHtml}${bulletsHtml}${figureHtml ? `<div style="margin-top:14px;">${figureHtml}</div>` : ""}${calloutHtml}${notesHtml}`;
       }
 
+      const leftBar =
+        theme.headerKind === "bar"
+          ? `<div style="position:absolute;top:0;left:0;width:6px;height:100%;background:${h(theme.accentHex)};pointer-events:none;"></div>`
+          : "";
+
       return `
-        <div class="planify-slide" style="margin:0 0 22px;border:1px solid #e8e6f5;border-radius:18px;overflow:hidden;background:#ffffff;box-shadow:0 10px 30px -20px rgba(79,70,229,0.45);">
-          ${header}
-          <div style="padding:20px 24px 24px;">${inner}</div>
+        <div class="planify-slide" style="position:relative;overflow:hidden;margin:0 0 22px;border:${theme.cardBorderCss};border-radius:18px;background:${theme.cardBgCss};box-shadow:${cardShadow};">
+          ${decorationHtml(theme, "content")}
+          ${leftBar}
+          <div style="position:relative;padding:24px 26px 26px;">${header}${inner}</div>
         </div>
       `;
     })
     .join("");
 
-  return `<section><h2>Apresentação · ${total} slides</h2>${body}</section>`;
+  return `<section data-planify-slide-theme="${theme.id}"><h2>Apresentação · ${total} slides</h2>${body}</section>`;
 }
 
 function renderFlashcards(response: MaterialEngineResponse): string {
@@ -648,7 +695,7 @@ function renderDocumentHtml(
 }
 
 function maxOutputTokensFor(type: MaterialEngineType): number {
-  if (type === "slides") return 12000;
+  if (type === "slides") return 24000;
   if (type === "flashcards" || type === "mapa-mental") return 8000;
   if (type === "prova" || type === "lista" || type === "apostila") return 16000;
   return 12000;
@@ -690,6 +737,7 @@ export async function generateMaterialByEngine(input: MaterialEngineInput) {
       const normalized = normalizeOutput(request, generated);
 
       if (request.tipoMaterial === "slides" && normalized.slides?.length) {
+        normalized.slideTheme = resolveSlideTheme(request.designSlides).id;
         normalized.slides = orderSlidesPedagogically(normalized.slides);
         assignSlideSequenceLabels(normalized.slides);
         await enrichSlidesWithImages(normalized.slides, {

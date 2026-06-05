@@ -147,6 +147,7 @@ export async function exportToGoogleSlides(params: {
     sequenceStep?: number;
     sequenceLabel?: string;
   }>;
+  theme?: string;
 }): Promise<GoogleSlidesExportResult> {
   const response = await fetch("/api/google/slides/export", {
     method: "POST",

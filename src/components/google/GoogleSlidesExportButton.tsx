@@ -26,6 +26,7 @@ type GoogleSlidesExportButtonProps = {
   html?: string;
   getHtml?: () => string;
   slides?: PlanifySlideExportPayload[];
+  theme?: string;
   returnTo?: string;
   className?: string;
 };
@@ -35,6 +36,7 @@ export function GoogleSlidesExportButton({
   html,
   getHtml,
   slides,
+  theme,
   returnTo = "/dashboard?tipo=slides",
   className = "",
 }: GoogleSlidesExportButtonProps) {
@@ -78,6 +80,7 @@ export function GoogleSlidesExportButton({
         title,
         html: getHtml ? getHtml() : html,
         slides,
+        theme,
       });
       window.open(result.presentationUrl, "_blank", "noopener,noreferrer");
     } catch (err) {

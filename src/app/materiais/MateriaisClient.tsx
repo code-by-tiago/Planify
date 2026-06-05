@@ -5,6 +5,7 @@ import Link from "next/link";
 import { GoogleSlidesExportButton } from "@/components/google/GoogleSlidesExportButton";
 import { MarketplacePublishButton } from "@/components/marketplace/MarketplacePublishButton";
 import type { MaterialEngineResponse } from "@/server/materials/material-engine-types";
+import { SLIDE_THEME_OPTIONS } from "@/server/materials/slide-design-themes";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { PlanifyOwlGenerationCoach } from "@/components/pro/PlanifyOwlGenerationCoach";
 import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
@@ -93,57 +94,6 @@ const sugestoesTema: Record<PlanifyToolId, string[]> = {
   "mapa-mental": ["Fotossíntese", "Brasil Colônia", "Figuras de linguagem"],
 };
 
-type SlideModelo = {
-  id: string;
-  label: string;
-  descricao: string;
-  diretriz: string;
-};
-
-const MODELOS_SLIDES: SlideModelo[] = [
-  {
-    id: "aula-expositiva",
-    label: "Aula expositiva",
-    descricao: "Capa → objetivos → conceitos → exemplo → checagem → síntese",
-    diretriz:
-      "Estruture como aula expositiva clássica: capa, objetivos, explicação progressiva dos conceitos, exemplo aplicado, pergunta de checagem e síntese. Bullets objetivos e imagem real por slide de conteúdo.",
-  },
-  {
-    id: "storytelling",
-    label: "Storytelling",
-    descricao: "Narrativa com gancho, conflito e resolução",
-    diretriz:
-      "Use storytelling: abra com um gancho/pergunta instigante, conduza uma narrativa com situação-problema, desenvolvimento e desfecho. Cada slide avança a história; use imagens reais que reforcem a narrativa e callouts de destaque.",
-  },
-  {
-    id: "visual-imagens",
-    label: "Visual (imagens)",
-    descricao: "Pouco texto, muita imagem e layout duas colunas",
-    diretriz:
-      "Modelo altamente visual: no máximo 3 bullets curtos por slide, priorize layout 'duasColunas' e 'destaque', e garanta imagem real relevante em TODOS os slides de conteúdo. imagePrompt específico e concreto.",
-  },
-  {
-    id: "estudo-dirigido",
-    label: "Estudo dirigido",
-    descricao: "Perguntas-guia e atividades passo a passo",
-    diretriz:
-      "Modelo de estudo dirigido: cada slide de conteúdo traz uma pergunta-guia no título e bullets que conduzem o raciocínio do aluno, com um callout de 'atividade' ou 'reflexão'. Inclua imagem de apoio quando fizer sentido.",
-  },
-  {
-    id: "mapa-conceitual",
-    label: "Mapa conceitual",
-    descricao: "Conceito-chave por slide e conexões",
-    diretriz:
-      "Organize por conceitos-chave: cada slide central traz um conceito e seus desdobramentos em bullets, com callouts conectando ideias. Use accentColor variado e imagens que representem cada conceito.",
-  },
-  {
-    id: "debate",
-    label: "Problematização / debate",
-    descricao: "Tese, argumentos, contrapontos e conclusão",
-    diretriz:
-      "Modelo de problematização: apresente uma questão polêmica, depois slides com argumentos a favor, contrapontos e evidências, terminando com conclusão aberta para debate. Use callouts para destacar posições e imagens contextuais.",
-  },
-];
 
 function escapeHtml(value: string): string {
   return value
@@ -291,7 +241,7 @@ export function MateriaisClient({
   const [temasRapidosSelecionados, setTemasRapidosSelecionados] = useState<
     string[]
   >([]);
-  const [modeloSlides, setModeloSlides] = useState<string>("aula-expositiva");
+  const [designSlides, setDesignSlides] = useState<string>("moderno");
   const [sugerindoConteudos, setSugerindoConteudos] = useState(false);
   const [quantidade, setQuantidade] = useState(
     defaultQuantityForTool(initialTipo ?? "slides"),
@@ -721,10 +671,7 @@ td,th{border:1px solid #d1d5db;padding:8px;}
         formatoJogo: isJogo ? formatoJogo : null,
         incluirGabarito: showGabarito && incluirGabarito,
         areaConhecimento,
-        modeloSlides:
-          tipo === "slides"
-            ? MODELOS_SLIDES.find((m) => m.id === modeloSlides)?.diretriz
-            : undefined,
+        designSlides: tipo === "slides" ? designSlides : undefined,
       };
 
       const response = await fetch("/api/materiais/gerar", {
@@ -1107,40 +1054,53 @@ td,th{border:1px solid #d1d5db;padding:8px;}
           </div>
 
           {tipo === "slides" ? (
-            <div className="mt-4 rounded-2xl border border-sky-100 bg-sky-50/60 p-4">
+            <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="text-xs font-black uppercase tracking-wide text-sky-800">
-                  Modelo da apresentação
+                <p className="text-xs font-black uppercase tracking-wide text-slate-800">
+                  Design da apresentação
                 </p>
-                <p className="text-[11px] font-semibold text-sky-700">
-                  Define a estrutura pedagógica e o estilo visual dos slides
+                <p className="text-[11px] font-semibold text-slate-500">
+                  Escolha o layout e o estilo visual dos slides
                 </p>
               </div>
-              <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                {MODELOS_SLIDES.map((modelo) => {
-                  const selected = modeloSlides === modelo.id;
+              <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {SLIDE_THEME_OPTIONS.map((tema) => {
+                  const selected = designSlides === tema.id;
                   return (
                     <button
-                      key={modelo.id}
+                      key={tema.id}
                       type="button"
-                      onClick={() => setModeloSlides(modelo.id)}
+                      onClick={() => setDesignSlides(tema.id)}
                       aria-pressed={selected}
-                      className={`rounded-xl border px-3 py-2.5 text-left transition ${
+                      className={`overflow-hidden rounded-2xl border text-left transition ${
                         selected
-                          ? "border-sky-600 bg-sky-600 text-white shadow-sm"
-                          : "border-sky-200 bg-white text-slate-700 hover:border-sky-500"
+                          ? "border-indigo-600 ring-2 ring-indigo-200"
+                          : "border-slate-200 hover:border-indigo-400"
                       }`}
                     >
-                      <span className="block text-xs font-black">
-                        {selected ? "✓ " : ""}
-                        {modelo.label}
-                      </span>
                       <span
-                        className={`mt-0.5 block text-[11px] font-semibold leading-4 ${
-                          selected ? "text-sky-50" : "text-slate-500"
-                        }`}
+                        className="flex h-16 items-end gap-1 p-2"
+                        style={{
+                          background: `linear-gradient(135deg, ${tema.preview[0]}, ${tema.preview[1]})`,
+                        }}
                       >
-                        {modelo.descricao}
+                        <span
+                          className="h-2 w-10 rounded-full"
+                          style={{ background: tema.preview[2] }}
+                        />
+                        <span
+                          className="h-2 w-6 rounded-full"
+                          style={{ background: "rgba(255,255,255,0.7)" }}
+                        />
+                      </span>
+                      <span className="block bg-white px-3 py-2">
+                        <span className="flex items-center gap-1 text-xs font-black text-slate-800">
+                          {selected ? "✓ " : ""}
+                          {tema.label}
+                        </span>
+                        <span className="mt-0.5 block text-[11px] font-semibold leading-4 text-slate-500">
+                          {tema.descricao}
+                        </span>
                       </span>
                     </button>
                   );
@@ -1310,6 +1270,7 @@ td,th{border:1px solid #d1d5db;padding:8px;}
                       title={buildTitle(tipo, tema)}
                       html={resultadoHtml}
                       slides={resultadoEstrutura?.slides}
+                      theme={resultadoEstrutura?.slideTheme || designSlides}
                       returnTo="/dashboard?tipo=slides"
                       className="inline-flex items-center gap-2 rounded-2xl bg-emerald-600 px-4 py-2.5 text-sm font-black text-white shadow-sm transition hover:bg-emerald-700 disabled:opacity-60"
                     />

@@ -50,6 +50,7 @@ export type MaterialEngineRequest = {
   formatoJogo: string | null;
   incluirGabarito: boolean;
   modeloSlides?: string;
+  designSlides?: string;
 };
 
 export type MaterialEngineInput = {
@@ -70,6 +71,7 @@ export type MaterialEngineInput = {
   areaConhecimento?: string;
   observacoes?: string;
   modeloSlides?: string;
+  designSlides?: string;
 };
 
 export type ExamQuestion = {
@@ -109,6 +111,8 @@ export type MaterialEngineResponse = {
   answerKey: string[];
   teacherNotes: string[];
   html?: string;
+  /** Tema visual escolhido para a apresentação (aplicado no render e na exportação). */
+  slideTheme?: string;
   game?: {
     format: string;
     rules: string[];

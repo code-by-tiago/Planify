@@ -6,27 +6,59 @@
 const WIKIMEDIA_API = "https://commons.wikimedia.org/w/api.php";
 const USER_AGENT = "Planify/1.0 (educational slides; contact: planify-app)";
 
-function normalizeSearchTerms(
-  imagePrompt: string,
-  tema: string,
-  componente: string,
-): string[] {
-  const raw = `${imagePrompt} ${tema} ${componente}`
+const STOPWORDS = new Set([
+  "conceito",
+  "conceitos",
+  "aprendizado",
+  "aprendizagem",
+  "educacao",
+  "educacional",
+  "ensino",
+  "aula",
+  "estudo",
+  "exemplo",
+  "imagem",
+  "ilustracao",
+  "slide",
+  "tema",
+  "sobre",
+  "para",
+  "como",
+  "the",
+  "and",
+  "with",
+]);
+
+function cleanWords(value: string): string[] {
+  return value
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^\w\s-]/g, " ")
     .split(/\s+/)
-    .filter((word) => word.length > 3);
+    .filter((word) => word.length > 2 && !STOPWORDS.has(word));
+}
 
-  const unique = [...new Set(raw)].slice(0, 6);
-  if (!unique.length) return [tema.slice(0, 40) || "education"];
+/**
+ * Gera consultas priorizando o imagePrompt concreto do slide. O tema entra
+ * apenas como fallback leve — nunca diluído com componente/"educação", para
+ * não trazer imagens aleatórias e sem relação com o conteúdo.
+ */
+function normalizeSearchTerms(imagePrompt: string, tema: string): string[] {
+  const promptWords = cleanWords(imagePrompt);
+  const queries: string[] = [];
 
-  return [
-    unique.join(" "),
-    unique.slice(0, 3).join(" "),
-    unique.slice(0, 2).join(" "),
-  ];
+  if (promptWords.length) {
+    queries.push(promptWords.slice(0, 4).join(" "));
+    if (promptWords.length > 2) queries.push(promptWords.slice(0, 2).join(" "));
+  }
+
+  const temaWords = cleanWords(tema);
+  if (temaWords.length) {
+    queries.push(temaWords.slice(0, 3).join(" "));
+  }
+
+  return [...new Set(queries.filter(Boolean))];
 }
 
 function isSafeImageUrl(url: string): boolean {
@@ -171,12 +203,12 @@ async function searchUnsplash(query: string): Promise<{ url: string; alt: string
 export async function resolveSlideImage(input: {
   imagePrompt: string;
   tema: string;
-  componente: string;
 }): Promise<{ url: string; alt: string } | null> {
   const prompt = input.imagePrompt.trim();
   if (!prompt) return null;
 
-  const queries = normalizeSearchTerms(prompt, input.tema, input.componente);
+  const queries = normalizeSearchTerms(prompt, input.tema);
+  if (!queries.length) return null;
 
   for (const query of queries) {
     const wiki = await searchWikimedia(query);
@@ -207,24 +239,16 @@ async function resolveForSlide(
 ): Promise<void> {
   if (slide.imageUrl?.trim()) return;
 
-  const prompt =
-    slide.imagePrompt?.trim() ||
-    slide.title?.trim() ||
-    context.tema;
+  // Só busca com base no imagePrompt concreto do slide (ou no título como
+  // apoio). Sem fallback genérico de tema+componente, que trazia imagens
+  // aleatórias e sem relação com o conteúdo.
+  const prompt = slide.imagePrompt?.trim() || slide.title?.trim();
+  if (!prompt) return;
 
-  let resolved = await resolveSlideImage({
+  const resolved = await resolveSlideImage({
     imagePrompt: prompt,
     tema: context.tema,
-    componente: context.componente,
   });
-
-  if (!resolved && slide.imagePrompt?.trim()) {
-    resolved = await resolveSlideImage({
-      imagePrompt: `${context.tema} ${context.componente} educação`,
-      tema: context.tema,
-      componente: context.componente,
-    });
-  }
 
   if (resolved) {
     slide.imageUrl = resolved.url;

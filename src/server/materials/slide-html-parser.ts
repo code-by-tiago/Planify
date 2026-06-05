@@ -144,6 +144,14 @@ function extractSlideBlocks(html: string): string[] {
   return blocks;
 }
 
+/** Lê o tema de design embutido no HTML (data-planify-slide-theme). */
+export function extractSlideThemeFromHtml(html: string): string | undefined {
+  const match = String(html || "").match(
+    /data-planify-slide-theme=["']([a-z]+)["']/i,
+  );
+  return match ? match[1].toLowerCase() : undefined;
+}
+
 /** Extrai slides do HTML gerado pelo Planify (fallback quando não há JSON estrutura). */
 export function parseSlidesFromPlanifyHtml(html: string): SlideItem[] {
   const source = String(html || "");

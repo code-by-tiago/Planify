@@ -1,5 +1,8 @@
 import type { MaterialEngineResponse } from "../materials/material-engine-types";
-import { parseSlidesFromPlanifyHtml } from "../materials/slide-html-parser";
+import {
+  extractSlideThemeFromHtml,
+  parseSlidesFromPlanifyHtml,
+} from "../materials/slide-html-parser";
 import { buildSlidesPptxBuffer } from "../materials/slide-pptx-builder";
 import { uploadPptxAsGooglePresentation } from "./google-drive";
 import { getValidGoogleAccessToken } from "./google-token-store";
@@ -20,6 +23,7 @@ export type GoogleSlidesExportInput = {
   title: string;
   html?: string;
   slides?: MaterialEngineResponse["slides"];
+  theme?: string;
 };
 
 export type GoogleSlidesExportResult = {
@@ -52,7 +56,11 @@ export async function exportSlidesToGooglePresentations(
     );
   }
 
-  const pptxBuffer = await buildSlidesPptxBuffer({ title, slides });
+  const themeId =
+    input.theme?.trim() ||
+    (input.html ? extractSlideThemeFromHtml(input.html) : undefined);
+
+  const pptxBuffer = await buildSlidesPptxBuffer({ title, slides, themeId });
   const filename = `${safeFilename(title)}.pptx`;
 
   const drive = await uploadPptxAsGooglePresentation({

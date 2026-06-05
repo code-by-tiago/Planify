@@ -39,6 +39,7 @@ export async function POST(request: NextRequest) {
     title?: string;
     html?: string;
     slides?: MaterialEngineResponse["slides"];
+    theme?: string;
   };
 
   const title = String(body.title || "").trim();
@@ -62,6 +63,7 @@ export async function POST(request: NextRequest) {
       title,
       html: body.html,
       slides: body.slides,
+      theme: typeof body.theme === "string" ? body.theme : undefined,
     });
 
     return NextResponse.json({ success: true, data: result });

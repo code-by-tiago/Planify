@@ -17,10 +17,10 @@ export function TeachyHomeBnccSection() {
               personalizados para seus alunos — sem prompt complexo.
             </p>
             <Link
-              href="/dashboard"
+              href="/planos"
               className="pl-teachy-cta mt-8 inline-flex items-center gap-2 rounded-full px-8 py-4 text-base font-bold text-slate-900"
             >
-              Comece a criar materiais
+              Ver planos
               <PlanifyIcon name="arrowRight" className="h-4 w-4" />
             </Link>
           </div>

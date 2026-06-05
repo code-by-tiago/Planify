@@ -56,11 +56,17 @@ export function PublicHeader({ active }: PublicHeaderProps) {
         </nav>
 
         <div className="hidden items-center gap-2 sm:flex">
-          <Link href="/login" className="pl-btn-secondary !px-5 !py-2.5 text-sm">
+          <Link
+            href="/login"
+            className="rounded-full px-5 py-2.5 text-sm font-bold text-slate-800 transition hover:bg-slate-50"
+          >
             Entrar
           </Link>
-          <Link href="/dashboard" className="pl-btn-brand !px-5 !py-2.5 text-sm">
-            Acessar painel
+          <Link
+            href="/planos"
+            className="pl-teachy-cta rounded-full px-5 py-2.5 text-sm font-bold text-slate-900"
+          >
+            Ver planos
           </Link>
         </div>
 
@@ -98,8 +104,20 @@ export function PublicHeader({ active }: PublicHeaderProps) {
                 ))}
               </nav>
               <div className="mt-auto grid gap-3 pt-6">
-                <Link href="/login" onClick={() => setOpen(false)} className="pl-btn-secondary text-center">Entrar</Link>
-                <Link href="/dashboard" onClick={() => setOpen(false)} className="pl-btn-brand text-center">Acessar painel</Link>
+                <Link
+                  href="/login"
+                  onClick={() => setOpen(false)}
+                  className="rounded-full border border-slate-200 py-3 text-center text-sm font-bold text-slate-800"
+                >
+                  Entrar
+                </Link>
+                <Link
+                  href="/planos"
+                  onClick={() => setOpen(false)}
+                  className="pl-teachy-cta rounded-full py-3 text-center text-sm font-bold text-slate-900"
+                >
+                  Ver planos
+                </Link>
               </div>
             </motion.aside>
           </motion.div>

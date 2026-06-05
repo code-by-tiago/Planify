@@ -40,10 +40,10 @@ export function TeachyHomeToolsGrid() {
 
         <div className="mt-8 flex justify-center">
           <Link
-            href="/dashboard"
+            href="/planos"
             className="pl-teachy-cta inline-flex items-center gap-2 rounded-full px-8 py-3.5 text-sm font-bold text-slate-900"
           >
-            Abrir todas no painel
+            Ver planos
             <PlanifyIcon name="arrowRight" className="h-4 w-4" />
           </Link>
         </div>

@@ -35,7 +35,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   }
 
   return (
-    <main className="planify-ui3 planify-public flex min-h-screen flex-col">
+    <main className="planify-ui3 planify-public planify-teachy-landing flex min-h-screen flex-col bg-white">
       <PublicHeader active="home" />
       <PlanifyHomePage />
       <PublicFooter />

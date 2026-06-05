@@ -30,10 +30,6 @@ export function TeachyHomeTestimonials() {
           ))}
         </div>
       </div>
-
-      <p className="mt-10 text-center text-sm font-semibold text-slate-500">
-        Usado por professores em escolas de todo o Brasil
-      </p>
     </section>
   );
 }

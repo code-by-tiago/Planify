@@ -13,8 +13,8 @@ export const teachyHomeFeatures: {
     title: "Crie o material perfeito",
     description:
       "O primeiro rascunho pronto em segundos. Adicione seu toque e refine em minutos com IA — slides, listas, planos e resumos alinhados à BNCC.",
-    cta: "Experimente agora",
-    href: "/dashboard",
+    cta: "Ver planos",
+    href: "/planos",
     icon: "spark",
     imageSide: "right",
   },
@@ -22,8 +22,8 @@ export const teachyHomeFeatures: {
     title: "Crie uma aula inteira baseada nisso",
     description:
       "Transforme seu tema em uma aula completa com plano, slides, atividades e avaliação — tudo coeso no Construtor de aula.",
-    cta: "Experimente agora",
-    href: "/planejamentos",
+    cta: "Ver planos",
+    href: "/planos",
     icon: "layers",
     imageSide: "left",
   },
@@ -37,46 +37,79 @@ export const teachyHomeFeatures: {
     imageSide: "right",
   },
   {
-    title: "Corrija automaticamente",
+    title: "Monte propostas de redação",
     description:
-      "Recupere seus fins de semana. Use o corretor de redação com devolutiva orientada e critérios pedagógicos claros.",
-    cta: "Experimente agora",
-    href: "/materiais?tipo=redacao",
+      "Gere tema, textos motivadores, comando e critérios de avaliação alinhados à matriz ENEM ou escolar — pronto para aplicar na turma.",
+    cta: "Gerar redação",
+    href: "/dashboard?tipo=redacao",
     icon: "pen",
     imageSide: "left",
   },
 ];
 
-export const teachyLandingTestimonials = [
+export type LandingTestimonial = {
+  name: string;
+  quote: string;
+  role: string;
+  school: string;
+  initials: string;
+  accent: string;
+};
+
+export const teachyLandingTestimonials: LandingTestimonial[] = [
   {
     name: "Luciano Legi",
+    role: "Professor de História",
+    school: "Ensino Médio · SP",
+    initials: "LL",
+    accent: "from-indigo-500 to-violet-600",
     quote:
       "Com o Planify, melhorei minha qualidade de vida porque agora não passo horas fazendo listas, provas e planejamentos. Tudo que preciso é descrever o tema e pronto.",
   },
   {
     name: "Ana Paula Germano",
+    role: "Professora de Português",
+    school: "Rede pública · MG",
+    initials: "AP",
+    accent: "from-sky-500 to-indigo-600",
     quote:
       "Antes eu estava exausta e cheguei a pensar em desistir. Hoje tenho tempo para minha família e materiais alinhados à BNCC em minutos.",
   },
   {
-    name: "Luiza",
+    name: "Luiza M.",
+    role: "Coordenadora pedagógica",
+    school: "Ensino Fundamental · RJ",
+    initials: "LM",
+    accent: "from-fuchsia-500 to-rose-500",
     quote:
       "Não consigo mais viver sem a plataforma. Espalhei a novidade para todos os colegas — virou parte da rotina da escola.",
   },
   {
-    name: "Pepsy Penom Audu",
-    quote:
-      "A plataforma torna o aprendizado mágico. Criei aulas práticas envolventes que encantam meus alunos.",
-  },
-  {
     name: "Rafael Lima",
+    role: "Professor de Matemática",
+    school: "Colégio particular · PR",
+    initials: "RL",
+    accent: "from-emerald-500 to-teal-600",
     quote:
       "As provas saem com gabarito e no padrão da escola. O editor me deixa ajustar tudo antes de exportar em DOCX.",
   },
   {
-    name: "Nokulunga Mdladla",
+    name: "Pepsy Penom Audu",
+    role: "Professora de Ciências",
+    school: "Ensino Fundamental II",
+    initials: "PP",
+    accent: "from-amber-500 to-orange-500",
     quote:
-      "Otimizei meu planejamento, criei palavras cruzadas envolventes e gerei atividades para meus alunos com facilidade.",
+      "A plataforma torna o aprendizado mágico. Criei aulas práticas envolventes que encantam meus alunos.",
+  },
+  {
+    name: "Nokulunga Mdladla",
+    role: "Professora de Geografia",
+    school: "Ensino Médio",
+    initials: "NM",
+    accent: "from-cyan-500 to-blue-600",
+    quote:
+      "Otimizei meu planejamento, criei atividades envolventes e gerei materiais para meus alunos com facilidade.",
   },
 ];
 
@@ -96,6 +129,7 @@ export const teachyTrustSchools = [
 export const teachyPartnerLabels = [
   "BNCC",
   "Google Classroom",
+  "Google Slides",
   "DOCX oficial",
   "13 ferramentas IA",
   "Marketplace",

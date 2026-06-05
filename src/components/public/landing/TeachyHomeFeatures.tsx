@@ -33,7 +33,7 @@ function FeatureVisual({ icon }: { icon: (typeof teachyHomeFeatures)[0]["icon"] 
 
 export function TeachyHomeFeatures() {
   return (
-    <section className="bg-white py-8 sm:py-12">
+    <section id="como-funciona" className="scroll-mt-28 bg-white py-8 sm:py-12">
       <div className="mx-auto max-w-7xl px-5 sm:px-8">
         <div className="max-w-3xl">
           <h2 className="text-3xl font-black leading-tight tracking-tight text-slate-950 sm:text-4xl lg:text-5xl">

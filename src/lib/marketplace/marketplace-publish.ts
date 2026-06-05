@@ -64,10 +64,11 @@ export async function publishHtmlToMarketplace(
     .slice(0, 60);
 
   // text/plain: o bucket Supabase marketplace-materiais não lista text/html.
+  const documentHtml = wrapHtmlDocument(title, input.html);
   const file = new File(
-    [wrapHtmlDocument(title, input.html)],
+    [documentHtml],
     `${safeName || "material-planify"}.html`,
-    { type: "text/plain;charset=utf-8" },
+    { type: "text/html;charset=utf-8" },
   );
 
   const body = new FormData();

@@ -3,6 +3,7 @@
 import { MarketplaceComments } from "@/components/marketplace/MarketplaceComments";
 import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
 import { PlanifyPageHero } from "@/components/pro/PlanifyPageHero";
+import { downloadMarketplaceMaterial } from "@/lib/marketplace/marketplace-download-client";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 
 type MarketplaceItem = {
@@ -147,6 +148,7 @@ export function MarketplaceClient() {
   const [status, setStatus] = useState("Carregando Marketplace...");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   const availableYears = anoSerieOptions[form.etapa] || ["Geral"];
 
@@ -316,6 +318,37 @@ export function MarketplaceClient() {
       setStatus("Falha ao remover.");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleDownload(item: MarketplaceItem) {
+    setDownloadingId(item.id);
+    setError("");
+
+    try {
+      await downloadMarketplaceMaterial({
+        id: item.id,
+        fallbackFileName: item.fileName || `${item.title}.html`,
+      });
+
+      setItems((current) =>
+        current.map((candidate) =>
+          candidate.id === item.id
+            ? { ...candidate, downloadsCount: candidate.downloadsCount + 1 }
+            : candidate,
+        ),
+      );
+      setSelected((current) =>
+        current?.id === item.id
+          ? { ...current, downloadsCount: current.downloadsCount + 1 }
+          : current,
+      );
+      setStatus("Download iniciado.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao baixar material.");
+      setStatus("Falha no download.");
+    } finally {
+      setDownloadingId(null);
     }
   }
 
@@ -647,15 +680,15 @@ export function MarketplaceClient() {
             </div>
 
             <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-              {selected.signedUrl ? (
-                <a
-                  href={selected.signedUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="rounded-2xl bg-gradient-to-r from-blue-600 to-slate-600 px-6 py-4 text-center text-sm font-black text-white transition hover:-translate-y-1 hover:opacity-95"
+              {selected.fileName || selected.signedUrl ? (
+                <button
+                  type="button"
+                  onClick={() => handleDownload(selected)}
+                  disabled={Boolean(downloadingId)}
+                  className="rounded-2xl bg-gradient-to-r from-blue-600 to-slate-600 px-6 py-4 text-center text-sm font-black text-white transition hover:-translate-y-1 hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  Baixar material
-                </a>
+                  {downloadingId === selected.id ? "Baixando..." : "Baixar material"}
+                </button>
               ) : (
                 <span className="rounded-2xl border border-amber-200 bg-amber-50 px-6 py-4 text-center text-sm font-black text-amber-700">
                   Anexo indisponível

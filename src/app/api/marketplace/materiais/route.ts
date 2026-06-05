@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyPremiumAccess } from "../../../../server/auth/premium-access-service";
 import { resolveAdminAccess } from "../../../../server/auth/admin-access";
 import { getSupabaseAdminClient } from "../../../../server/supabase/admin-client";
+import { resolveMarketplaceStoredMime } from "../../../../server/marketplace/marketplace-download";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -418,7 +419,7 @@ export async function POST(request: NextRequest) {
     tags,
     file_name: fileValue.name || originalName,
     file_path: storagePath,
-    file_mime: uploadContentType,
+    file_mime: resolveMarketplaceStoredMime(fileValue),
     file_size: fileValue.size,
     is_published: isPublished,
     downloads_count: 0,

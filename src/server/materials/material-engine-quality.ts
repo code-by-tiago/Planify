@@ -30,6 +30,26 @@ export function getEngineOutputIssues(
   if (tipo === "slides") {
     const issue = countIssues("slides", q, output.slides?.length ?? 0);
     if (issue) issues.push(issue);
+
+    const slides = output.slides ?? [];
+    const contentSlides = slides.filter(
+      (s) => s.layout !== "capa" && s.layout !== "fechamento",
+    );
+    const withoutPrompt = contentSlides.filter((s) => !s.imagePrompt?.trim()).length;
+    if (contentSlides.length > 0 && withoutPrompt > contentSlides.length * 0.4) {
+      issues.push(
+        "Slides: preencha 'imagePrompt' em todos os slides de conteúdo para imagens reais.",
+      );
+    }
+    const withoutSequence = contentSlides.filter((s) => !s.sequenceStep).length;
+    if (contentSlides.length > 2 && withoutSequence > contentSlides.length * 0.5) {
+      issues.push(
+        "Slides: defina 'sequenceStep' e 'sequenceLabel' em ordem pedagógica crescente.",
+      );
+    }
+    if (slides[0]?.layout && slides[0].layout !== "capa") {
+      issues.push("Slides: o primeiro slide deve ter layout 'capa'.");
+    }
   }
 
   if (tipo === "flashcards") {

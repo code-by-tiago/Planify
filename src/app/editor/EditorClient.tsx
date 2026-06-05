@@ -750,6 +750,9 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
       }
 
       node.dataset.planifyImage = "true";
+      if (node.classList.contains("planify-slide-image")) {
+        node.title = "Clique para ajustar; use Remover ou troque por Imagem no menu";
+      }
       node.style.maxWidth = "100%";
       node.style.height = "auto";
       node.style.cursor = "pointer";
@@ -1192,7 +1195,8 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
       return;
     }
 
-    const figure = image.closest("figure");
+    const figure =
+      image.closest("figure.planify-slide-figure") || image.closest("figure");
 
     if (figure) {
       figure.remove();

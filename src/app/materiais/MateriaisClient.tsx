@@ -231,6 +231,12 @@ export function MateriaisClient({
   const [conteudosSugeridos, setConteudosSugeridos] = useState<
     ConteudoSugerido[] | null
   >(null);
+  const [conteudosSelecionadosIds, setConteudosSelecionadosIds] = useState<
+    string[]
+  >([]);
+  const [temasRapidosSelecionados, setTemasRapidosSelecionados] = useState<
+    string[]
+  >([]);
   const [sugerindoConteudos, setSugerindoConteudos] = useState(false);
   const [quantidade, setQuantidade] = useState(
     defaultQuantityForTool(initialTipo ?? "slides"),
@@ -427,6 +433,7 @@ export function MateriaisClient({
       }
 
       setConteudosSugeridos(data.data.conteudos);
+      setConteudosSelecionadosIds([]);
       if (data.data.alertas?.length) {
         setAlertasGeracao(data.data.alertas);
       }
@@ -441,16 +448,52 @@ export function MateriaisClient({
     }
   }
 
-  function aplicarConteudoSugerido(item: ConteudoSugerido) {
-    setTema(item.titulo);
-    if (item.objetivos?.length) {
-      setObjetivo(item.objetivos.join("\n"));
-    }
-    setObservacoes((prev) =>
-      prev.trim()
-        ? prev
-        : item.descricao,
+  function toggleConteudoSugerido(id: string) {
+    setConteudosSelecionadosIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
     );
+  }
+
+  function aplicarConteudosSelecionados() {
+    const items =
+      conteudosSugeridos?.filter((item) =>
+        conteudosSelecionadosIds.includes(item.id),
+      ) ?? [];
+
+    if (!items.length) return;
+
+    setTema(items.map((item) => item.titulo).join(" · "));
+
+    const objetivos = items.flatMap((item) => item.objetivos || []);
+    if (objetivos.length) {
+      setObjetivo(objetivos.join("\n"));
+    }
+
+    const blocoObservacoes = items
+      .map((item) => `${item.titulo}: ${item.descricao}`)
+      .join("\n\n");
+
+    setObservacoes((prev) =>
+      prev.trim() ? `${prev.trim()}\n\n${blocoObservacoes}` : blocoObservacoes,
+    );
+  }
+
+  function toggleTemaRapido(item: string) {
+    setTemasRapidosSelecionados((prev) => {
+      const next = prev.includes(item)
+        ? prev.filter((value) => value !== item)
+        : [...prev, item];
+
+      if (tipo === "slides" && next.length > 0) {
+        setTema(next.join(" · "));
+      } else if (next.length === 1) {
+        setTema(next[0]);
+      } else if (next.length === 0) {
+        setTema("");
+      }
+
+      return next;
+    });
   }
 
   function limparFormulario() {
@@ -461,6 +504,8 @@ export function MateriaisClient({
     setAlertasGeracao([]);
     setPipelineGeracao(null);
     setConteudosSugeridos(null);
+    setConteudosSelecionadosIds([]);
+    setTemasRapidosSelecionados([]);
     setQuantidade(defaultQuantityForTool(tipo));
     setDificuldade("media");
     setFormatoJogo("caca-palavras");
@@ -863,22 +908,48 @@ td,th{border:1px solid #d1d5db;padding:8px;}
 
             {conteudosSugeridos && conteudosSugeridos.length > 0 ? (
               <div className="md:col-span-2 rounded-2xl border border-indigo-100 bg-indigo-50/60 p-4">
-                <p className="text-xs font-black uppercase tracking-wide text-indigo-800">
-                  Sugestões de conteúdo (IA)
-                </p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {conteudosSugeridos.map((item) => (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => aplicarConteudoSugerido(item)}
-                      className="rounded-xl border border-indigo-200 bg-white px-3 py-2 text-left text-xs font-bold text-slate-700 transition hover:border-indigo-500 hover:text-indigo-900"
-                      title={item.descricao}
-                    >
-                      {item.titulo}
-                    </button>
-                  ))}
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-xs font-black uppercase tracking-wide text-indigo-800">
+                    Sugestões de conteúdo (IA)
+                  </p>
+                  <p className="text-[11px] font-semibold text-indigo-700">
+                    {tipo === "slides"
+                      ? "Selecione vários tópicos para compor a sequência da aula"
+                      : "Clique para marcar um ou mais conteúdos"}
+                  </p>
                 </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {conteudosSugeridos.map((item) => {
+                    const selected = conteudosSelecionadosIds.includes(item.id);
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => toggleConteudoSugerido(item.id)}
+                        className={`rounded-xl border px-3 py-2 text-left text-xs font-bold transition ${
+                          selected
+                            ? "border-indigo-600 bg-indigo-600 text-white shadow-sm"
+                            : "border-indigo-200 bg-white text-slate-700 hover:border-indigo-500 hover:text-indigo-900"
+                        }`}
+                        title={item.descricao}
+                        aria-pressed={selected}
+                      >
+                        {selected ? "✓ " : ""}
+                        {item.titulo}
+                      </button>
+                    );
+                  })}
+                </div>
+                {conteudosSelecionadosIds.length > 0 ? (
+                  <button
+                    type="button"
+                    onClick={aplicarConteudosSelecionados}
+                    className="mt-3 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-black text-white hover:bg-indigo-700"
+                  >
+                    Aplicar {conteudosSelecionadosIds.length} selecionado
+                    {conteudosSelecionadosIds.length > 1 ? "s" : ""} ao tema
+                  </button>
+                ) : null}
               </div>
             ) : null}
 
@@ -965,17 +1036,36 @@ td,th{border:1px solid #d1d5db;padding:8px;}
           </div>
 
           <div className="mt-4 flex flex-wrap gap-2">
-            {(sugestoesTema[tipo] || []).map((item) => (
-              <button
-                key={item}
-                type="button"
-                onClick={() => setTema(item)}
-                className="rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-600 transition hover:border-slate-950 hover:text-slate-950"
-              >
-                {item}
-              </button>
-            ))}
+            {(sugestoesTema[tipo] || []).map((item) => {
+              const selected = temasRapidosSelecionados.includes(item);
+              return (
+                <button
+                  key={item}
+                  type="button"
+                  onClick={() =>
+                    tipo === "slides"
+                      ? toggleTemaRapido(item)
+                      : setTema(item)
+                  }
+                  className={`rounded-full border px-3 py-2 text-xs font-black transition ${
+                    selected
+                      ? "border-indigo-600 bg-indigo-600 text-white"
+                      : "border-slate-200 bg-white text-slate-600 hover:border-slate-950 hover:text-slate-950"
+                  }`}
+                  aria-pressed={tipo === "slides" ? selected : undefined}
+                >
+                  {tipo === "slides" && selected ? "✓ " : ""}
+                  {item}
+                </button>
+              );
+            })}
           </div>
+          {tipo === "slides" && temasRapidosSelecionados.length > 1 ? (
+            <p className="mt-2 text-[11px] font-semibold text-indigo-700">
+              {temasRapidosSelecionados.length} assuntos combinados no tema — a IA
+              montará a sequência pedagógica dos slides.
+            </p>
+          ) : null}
 
           <div className="mt-5 flex flex-col gap-3">
             <div className="flex flex-wrap items-center justify-between gap-3">

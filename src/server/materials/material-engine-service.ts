@@ -23,6 +23,11 @@ import {
   type SlideAccent,
   type SlideLayout,
 } from "./material-engine-types";
+import { enrichSlidesWithImages } from "./slide-image-resolver";
+import {
+  assignSlideSequenceLabels,
+  orderSlidesPedagogically,
+} from "./slide-pedagogy";
 
 function escapeHtml(value: string): string {
   return value
@@ -160,13 +165,27 @@ function slideBulletsHtml(bullets: string[], color: string): string {
     .join("")}</ul>`;
 }
 
-function slideFigureHtml(imagePrompt: string | undefined, theme: SlideAccentTheme): string {
-  if (!imagePrompt) return "";
-  return `<div style="border:1.5px dashed ${theme.base};border-radius:14px;background:${theme.soft};padding:16px;text-align:center;">
-      <span style="display:inline-flex;align-items:center;justify-content:center;width:46px;height:46px;border-radius:12px;background:#ffffff;color:${theme.strong};box-shadow:0 4px 10px rgba(15,23,42,0.08);">${SLIDE_PICTURE_SVG}</span>
-      <p style="margin:10px 0 0;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:${theme.ink};">Sugestão de imagem</p>
-      <p style="margin:4px 0 0;font-size:13px;line-height:1.5;color:#475569;">${escapeHtml(imagePrompt)}</p>
-    </div>`;
+function slideFigureHtml(
+  slide: {
+    imageUrl?: string;
+    imageAlt?: string;
+    imagePrompt?: string;
+  },
+  theme: SlideAccentTheme,
+): string {
+  if (slide.imageUrl?.trim()) {
+    const alt = escapeHtml(slide.imageAlt || slide.imagePrompt || "Ilustração do slide");
+    return `<figure class="planify-slide-figure" data-planify-slide-image="true" style="margin:0;border-radius:14px;overflow:hidden;border:1px solid ${theme.base}33;background:${theme.soft};">
+      <img src="${escapeHtml(slide.imageUrl)}" alt="${alt}" class="planify-slide-image" data-planify-image="true" style="display:block;width:100%;max-height:280px;object-fit:cover;cursor:pointer;" />
+    </figure>`;
+  }
+
+  if (!slide.imagePrompt?.trim()) return "";
+
+  return `<figure class="planify-slide-figure planify-slide-figure--pending" data-planify-slide-image="true" style="margin:0;border-radius:14px;overflow:hidden;border:1px dashed ${theme.base};background:${theme.soft};padding:14px;text-align:center;">
+      <span style="display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;border-radius:10px;background:#ffffff;color:${theme.strong};">${SLIDE_PICTURE_SVG}</span>
+      <p style="margin:8px 0 0;font-size:11px;font-weight:700;color:${theme.ink};">Imagem não encontrada — clique em Imagem no editor para substituir</p>
+    </figure>`;
 }
 
 function slideCalloutHtml(
@@ -189,14 +208,20 @@ function slideNotesHtml(notes: string, theme: SlideAccentTheme): string {
 }
 
 function renderSlides(response: MaterialEngineResponse): string {
-  const slides = response.slides ?? [];
-  if (!slides.length) return "";
+  const rawSlides = response.slides ?? [];
+  if (!rawSlides.length) return "";
+
+  const slides = orderSlidesPedagogically([...rawSlides]);
+  assignSlideSequenceLabels(slides);
 
   const total = slides.length;
+  const contentTotal = slides.filter(
+    (s) => s.layout !== "capa" && s.layout !== "fechamento",
+  ).length;
+  let contentCounter = 0;
 
   const body = slides
     .map((slide, index) => {
-      const number = index + 1;
       const isFirst = index === 0;
       const isLast = index === total - 1;
 
@@ -207,8 +232,22 @@ function renderSlides(response: MaterialEngineResponse): string {
       const theme = SLIDE_ACCENT_THEMES[accentName] ?? SLIDE_ACCENT_THEMES.indigo;
 
       const bullets = (slide.bullets || []).filter((item) => item.trim());
-      const tag =
-        layout === "capa" ? "CAPA" : layout === "fechamento" ? "FECHAMENTO" : `SLIDE ${number}`;
+
+      let tag = "CONTEÚDO";
+      let positionLabel = "";
+
+      if (layout === "capa") {
+        tag = "CAPA";
+      } else if (layout === "fechamento") {
+        tag = "FECHAMENTO";
+        positionLabel = "Síntese";
+      } else {
+        contentCounter += 1;
+        const step = slide.sequenceStep ?? contentCounter;
+        const label = slide.sequenceLabel || `Etapa ${contentCounter}`;
+        tag = `${label.toUpperCase()}`;
+        positionLabel = `${contentCounter} / ${contentTotal}`;
+      }
 
       // Capa: bloco com gradiente da cor de destaque.
       if (layout === "capa") {
@@ -226,13 +265,13 @@ function renderSlides(response: MaterialEngineResponse): string {
 
       const header = `<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 20px;background:${theme.soft};color:${theme.ink};border-bottom:1px solid ${theme.base}33;">
           <span style="font-size:12px;font-weight:800;letter-spacing:0.06em;">${tag}</span>
-          <span style="font-size:12px;font-weight:700;opacity:0.8;">${number} / ${total}</span>
+          <span style="font-size:12px;font-weight:700;opacity:0.8;">${positionLabel || `${index + 1} / ${total}`}</span>
         </div>`;
 
       const titleHtml = `<h3 style="margin:0 0 14px;font-size:21px;font-weight:800;color:#0f172a;line-height:1.25;border-left:5px solid ${theme.base};padding-left:12px;">${escapeHtml(slide.title)}</h3>`;
 
       const bulletsHtml = slideBulletsHtml(bullets, theme.base);
-      const figureHtml = slideFigureHtml(slide.imagePrompt, theme);
+      const figureHtml = slideFigureHtml(slide, theme);
       const calloutHtml = slideCalloutHtml(slide.callout, theme);
       const notesHtml = slideNotesHtml(slide.speakerNotes, theme);
 
@@ -491,6 +530,15 @@ function normalizeOutput(
             imagePrompt: slide?.imagePrompt
               ? String(slide.imagePrompt)
               : undefined,
+            imageUrl: slide?.imageUrl ? String(slide.imageUrl) : undefined,
+            imageAlt: slide?.imageAlt ? String(slide.imageAlt) : undefined,
+            sequenceStep:
+              typeof slide?.sequenceStep === "number"
+                ? slide.sequenceStep
+                : undefined,
+            sequenceLabel: slide?.sequenceLabel
+              ? String(slide.sequenceLabel)
+              : undefined,
             accentColor,
             iconHint: slide?.iconHint ? String(slide.iconHint) : undefined,
             callout,
@@ -640,6 +688,16 @@ export async function generateMaterialByEngine(input: MaterialEngineInput) {
       });
 
       const normalized = normalizeOutput(request, generated);
+
+      if (request.tipoMaterial === "slides" && normalized.slides?.length) {
+        normalized.slides = orderSlidesPedagogically(normalized.slides);
+        assignSlideSequenceLabels(normalized.slides);
+        await enrichSlidesWithImages(normalized.slides, {
+          tema: request.tema,
+          componente: request.componenteCurricular,
+        });
+      }
+
       const issues = getEngineOutputIssues(request, normalized);
 
       if (issues.length && attempt < 2) {

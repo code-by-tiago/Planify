@@ -119,7 +119,15 @@ export type MaterialEngineResponse = {
     /** Campos visuais opcionais (V2) — retrocompatíveis com slides antigos. */
     layout?: SlideLayout;
     subtitle?: string;
+    /** Termos de busca para imagem real (não exibido ao professor). */
     imagePrompt?: string;
+    /** URL resolvida no servidor (Wikimedia/Unsplash). */
+    imageUrl?: string;
+    imageAlt?: string;
+    /** Ordem pedagógica do slide na sequência de ensino (1, 2, 3…). */
+    sequenceStep?: number;
+    /** Rótulo da etapa (ex.: "Objetivos", "Desenvolvimento 2"). */
+    sequenceLabel?: string;
     accentColor?: SlideAccent;
     iconHint?: string;
     callout?: {

@@ -70,6 +70,8 @@ const SLIDES_SCHEMA = {
           },
           subtitle: { type: "STRING" },
           imagePrompt: { type: "STRING" },
+          sequenceStep: { type: "INTEGER" },
+          sequenceLabel: { type: "STRING" },
           accentColor: {
             type: "STRING",
             enum: ["indigo", "violet", "coral", "amber", "emerald", "sky", "rose"],

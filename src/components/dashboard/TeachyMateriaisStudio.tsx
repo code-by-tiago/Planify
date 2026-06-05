@@ -13,6 +13,7 @@ type TeachyMateriaisStudioProps = {
   toolId: PlanifyToolId;
   temaFromUrl?: string;
   onClose: () => void;
+  onSelectTool?: (toolId: PlanifyToolId) => void;
 };
 
 function readStoredTema(): string {
@@ -30,15 +31,24 @@ export function TeachyMateriaisStudio({
   toolId,
   temaFromUrl = "",
   onClose,
+  onSelectTool,
 }: TeachyMateriaisStudioProps) {
   const [initialTema] = useState(
     () => temaFromUrl.trim() || readStoredTema(),
   );
 
-  function handleHint(snippet: string) {
+  function handleHint(snippet: string, _actionId: string) {
     window.dispatchEvent(
       new CustomEvent("planify-objetivo-hint", { detail: snippet }),
     );
+  }
+
+  function handleOpenRelatedTool(nextToolId: PlanifyToolId) {
+    if (onSelectTool) {
+      onSelectTool(nextToolId);
+      return;
+    }
+    onClose();
   }
 
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -61,6 +71,7 @@ export function TeachyMateriaisStudio({
             initialTipo={toolId}
             initialTema={initialTema}
             onStudioClose={onClose}
+            onOpenRelatedTool={handleOpenRelatedTool}
           />
         </div>
       </div>

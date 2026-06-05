@@ -81,6 +81,7 @@ export function PlanifyDashboardMain({
         toolId={toolId}
         temaFromUrl={initialTopic}
         onClose={onClosePanel}
+        onSelectTool={onSelectTool}
       />
     );
   }

@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { GoogleSlidesExportButton } from "@/components/google/GoogleSlidesExportButton";
+import { MaterialGenerationSummaryPanel } from "@/components/materiais/MaterialGenerationSummary";
 import { MarketplacePublishButton } from "@/components/marketplace/MarketplacePublishButton";
 import type { MaterialEngineResponse } from "@/server/materials/material-engine-types";
 import { SLIDE_THEME_OPTIONS } from "@/server/materials/slide-design-themes";
@@ -35,6 +36,7 @@ import {
   type MaterialEditorMeta,
   type MaterialHistoryPreview,
 } from "@/lib/materiais/material-editor-flow";
+import { buildMaterialGenerationSummary } from "@/lib/materiais/material-generation-summary";
 import {
   getPlanifyTool,
   planifyTools,
@@ -42,6 +44,7 @@ import {
   type PlanifyToolId,
   type ToolCategoryId,
 } from "@/lib/pro/planifyTools";
+import { lessonBundleFollowUp } from "@/lib/pro/teachyStudio";
 
 const SELECT_FIELD_CLASS =
   "w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-950 outline-none transition focus:border-slate-950 focus:bg-white";
@@ -209,6 +212,7 @@ type MateriaisClientProps = {
   initialTipo?: PlanifyToolId;
   initialTema?: string;
   onStudioClose?: () => void;
+  onOpenRelatedTool?: (toolId: PlanifyToolId) => void;
 };
 
 export function MateriaisClient({
@@ -216,6 +220,7 @@ export function MateriaisClient({
   initialTipo,
   initialTema = "",
   onStudioClose,
+  onOpenRelatedTool,
 }: MateriaisClientProps = {}) {
   const [categoria, setCategoria] = useState<ToolCategoryId>("todos");
   const [tipo, setTipo] = useState<PlanifyToolId>(initialTipo ?? "slides");
@@ -259,6 +264,7 @@ export function MateriaisClient({
   const [historico, setHistorico] = useState<MaterialHistoryPreview[]>([]);
   const [abrirEditorAutomatico, setAbrirEditorAutomatico] = useState(true);
   const [materialSalvo, setMaterialSalvo] = useState(false);
+  const [hintFeedback, setHintFeedback] = useState("");
 
   useEffect(() => {
     if (studioMode && initialTipo) {
@@ -304,8 +310,19 @@ export function MateriaisClient({
     function onObjetivoHint(event: Event) {
       const snippet = (event as CustomEvent<string>).detail;
       if (!snippet || typeof snippet !== "string") return;
-      setObjetivo((prev) =>
-        prev.trim() ? `${prev.trim()}\n${snippet}` : snippet,
+      setObjetivo((prev) => {
+        const lines = prev
+          .split("\n")
+          .map((line) => line.trim())
+          .filter(Boolean);
+        const hasSnippet = lines.some((line) => line === snippet.trim());
+        const next = hasSnippet
+          ? lines.filter((line) => line !== snippet.trim())
+          : [...lines, snippet.trim()];
+        return next.join("\n");
+      });
+      setHintFeedback(
+        "Personalização aplicada — clique em Criar para gerar com esse ajuste.",
       );
     }
 
@@ -327,7 +344,33 @@ export function MateriaisClient({
       window.removeEventListener("planify-objetivo-hint", onObjetivoHint);
   }, [studioMode]);
 
+  useEffect(() => {
+    if (!studioMode || typeof window === "undefined") return;
+    window.dispatchEvent(
+      new CustomEvent("planify-objetivo-updated", { detail: objetivo }),
+    );
+  }, [objetivo, studioMode]);
+
   const mode = useMemo(() => getPlanifyTool(tipo), [tipo]);
+  const generationSummary = useMemo(
+    () =>
+      resultadoHtml
+        ? buildMaterialGenerationSummary({
+            tipo,
+            html: resultadoHtml,
+            estrutura: resultadoEstrutura,
+            designSlides: tipo === "slides" ? designSlides : undefined,
+            incluirGabarito,
+          })
+        : null,
+    [
+      resultadoHtml,
+      resultadoEstrutura,
+      tipo,
+      designSlides,
+      incluirGabarito,
+    ],
+  );
   const isJogo = tipo === "jogo";
   const isRedacao = tipo === "redacao";
   const showGabarito = toolSupportsGabarito(tipo);
@@ -576,6 +619,27 @@ export function MateriaisClient({
     );
   }
 
+  function abrirFerramentaRelacionada(toolId: PlanifyToolId) {
+    try {
+      if (tema.trim()) {
+        sessionStorage.setItem("planify-studio-tema", tema.trim());
+      }
+      sessionStorage.setItem(
+        "planify-studio-objetivo-hint",
+        "Manter o mesmo tema e a continuidade pedagógica da aula já iniciada.",
+      );
+    } catch {
+      /* ignore */
+    }
+
+    if (onOpenRelatedTool) {
+      onOpenRelatedTool(toolId);
+      return;
+    }
+
+    window.location.href = `/dashboard?tipo=${encodeURIComponent(toolId)}`;
+  }
+
   function abrirNoEditor() {
     if (!resultadoHtml) {
       setErro("Gere um material antes de abrir no editor.");
@@ -654,6 +718,7 @@ td,th{border:1px solid #d1d5db;padding:8px;}
     setAlertasGeracao([]);
     setPipelineGeracao(null);
     setMaterialSalvo(false);
+    setHintFeedback("");
 
     try {
       const objetivoComposto = [
@@ -1003,6 +1068,11 @@ td,th{border:1px solid #d1d5db;padding:8px;}
                 rows={2}
                 className="w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-950 outline-none transition focus:border-slate-950 focus:bg-white"
               />
+              {hintFeedback ? (
+                <p className="mt-2 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-900">
+                  {hintFeedback}
+                </p>
+              ) : null}
             </label>
 
             <label>
@@ -1246,6 +1316,9 @@ td,th{border:1px solid #d1d5db;padding:8px;}
             </div>
           ) : resultadoHtml ? (
             <div>
+              {generationSummary ? (
+                <MaterialGenerationSummaryPanel summary={generationSummary} />
+              ) : null}
               {(pipelineGeracao || alertasGeracao.length > 0) && (
                 <div className="mb-4 space-y-3">
                   {pipelineGeracao ? (
@@ -1275,6 +1348,28 @@ td,th{border:1px solid #d1d5db;padding:8px;}
                     Revise e complemente no editor antes de exportar. Todas as 13
                     ferramentas seguem o mesmo fluxo.
                   </p>
+                </aside>
+              ) : null}
+              {tipo === "slides" && studioMode ? (
+                <aside className="mb-4 rounded-2xl border border-violet-200 bg-violet-50/80 px-4 py-3">
+                  <p className="text-sm font-black text-violet-900">
+                    Complete sua aula
+                  </p>
+                  <p className="mt-1 text-xs font-semibold text-violet-800/90">
+                    Mesmo tema — abra a próxima ferramenta do pacote:
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {lessonBundleFollowUp.map((item) => (
+                      <button
+                        key={item.toolId}
+                        type="button"
+                        onClick={() => abrirFerramentaRelacionada(item.toolId)}
+                        className="rounded-full border border-violet-200 bg-white px-3 py-1.5 text-xs font-bold text-violet-900 transition hover:border-violet-400 hover:bg-violet-100"
+                      >
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
                 </aside>
               ) : null}
               {tipo === "slides" ? (

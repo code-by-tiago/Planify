@@ -6,6 +6,7 @@ import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import type { DashboardSectionId } from "@/lib/pro/dashboardViews";
 import { writePlanejamentoPrefill } from "@/lib/planejamentos/planejamento-prefill";
 import {
+  lessonBundleObjetivoHint,
   lessonBundleTools,
   teachyFeaturedToolIds,
 } from "@/lib/pro/teachyStudio";
@@ -112,10 +113,15 @@ export default function TeachyStudioHome({
       return;
     }
     applyTopic();
-    openPlanejamento("anual");
+    try {
+      sessionStorage.setItem(OBJETIVO_HINT_KEY, lessonBundleObjetivoHint);
+    } catch {
+      /* ignore */
+    }
+    onSelectTool("slides");
   }
 
-  function applyHintFromHome(snippet: string) {
+  function applyHintFromHome(snippet: string, _actionId?: string) {
     try {
       sessionStorage.setItem(OBJETIVO_HINT_KEY, snippet);
     } catch {

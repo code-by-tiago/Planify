@@ -9,6 +9,7 @@ import {
   type ClassroomCourseOption,
   type GoogleIntegrationStatus,
 } from "@/lib/google/google-api-client";
+import { notifyGoogleStatusChanged } from "@/lib/google/google-status-events";
 import { useCallback, useEffect, useState } from "react";
 
 type GoogleClassroomPanelProps = {
@@ -55,6 +56,8 @@ export function GoogleClassroomPanel({
         setCourses([]);
         setCourseId("");
       }
+
+      notifyGoogleStatusChanged();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao carregar integração Google.");
     } finally {

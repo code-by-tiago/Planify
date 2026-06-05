@@ -2,15 +2,13 @@ import { getCurrentAccessToken } from "@/lib/auth/session-client";
 
 async function authHeaders(): Promise<HeadersInit> {
   const token = await getCurrentAccessToken();
+  const headers: HeadersInit = { "Content-Type": "application/json" };
 
-  if (!token) {
-    throw new Error("Faça login no Planify para usar o Google Classroom.");
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
   }
 
-  return {
-    "Content-Type": "application/json",
-    Authorization: `Bearer ${token}`,
-  };
+  return headers;
 }
 
 export type GoogleIntegrationStatus = {
@@ -42,22 +40,34 @@ export async function fetchGoogleStatus(): Promise<GoogleIntegrationStatus> {
   };
 }
 
+export function buildGoogleOAuthStartUrl(returnTo = "/editor"): string {
+  const params = new URLSearchParams({ returnTo });
+  return `/api/google/oauth/start?${params.toString()}`;
+}
+
 export async function startGoogleOAuth(returnTo = "/editor"): Promise<void> {
-  const headers = await authHeaders();
   const response = await fetch("/api/google/oauth/start", {
     method: "POST",
-    headers,
+    headers: await authHeaders(),
     credentials: "include",
     body: JSON.stringify({ returnTo }),
   });
 
   const data = await response.json().catch(() => null);
 
-  if (!response.ok || !data?.url) {
-    throw new Error(data?.error?.message || "Não foi possível iniciar conexão Google.");
+  if (response.ok && data?.url) {
+    window.location.href = data.url;
+    return;
   }
 
-  window.location.href = data.url;
+  // Fallback: redirecionamento GET com cookie de sessão (proprietário / premium).
+  if (response.status === 401) {
+    throw new Error(
+      data?.error?.message || "Faça login no Planify para conectar o Google.",
+    );
+  }
+
+  window.location.href = buildGoogleOAuthStartUrl(returnTo);
 }
 
 export async function disconnectGoogle(): Promise<void> {

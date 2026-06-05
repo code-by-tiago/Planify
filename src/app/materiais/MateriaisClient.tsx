@@ -6,6 +6,7 @@ import { GoogleSlidesExportButton } from "@/components/google/GoogleSlidesExport
 import { MarketplacePublishButton } from "@/components/marketplace/MarketplacePublishButton";
 import type { MaterialEngineResponse } from "@/server/materials/material-engine-types";
 import { SLIDE_THEME_OPTIONS } from "@/server/materials/slide-design-themes";
+import { CreditsBalancePill } from "@/components/credits/CreditsBalancePill";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { PlanifyOwlGenerationCoach } from "@/components/pro/PlanifyOwlGenerationCoach";
 import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
@@ -676,6 +677,7 @@ td,th{border:1px solid #d1d5db;padding:8px;}
 
       const response = await fetch("/api/materiais/gerar", {
         method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
@@ -705,6 +707,11 @@ td,th{border:1px solid #d1d5db;padding:8px;}
         throw new Error(
           "A API respondeu, mas não retornou conteúdo em um formato reconhecido."
         );
+      }
+
+      // Atualiza o saldo de créditos exibido (a geração pode ter debitado).
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("planify:credits-changed"));
       }
 
       let pipelineLabel: string | null = null;
@@ -809,9 +816,12 @@ td,th{border:1px solid #d1d5db;padding:8px;}
           data-planify-scroll={studioMode ? "" : undefined}
           className="min-h-0 overflow-y-auto overscroll-contain border-r border-slate-100 p-5"
         >
-          <h2 className="text-2xl font-black tracking-tight text-slate-950">
-            {mode.title}
-          </h2>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <h2 className="text-2xl font-black tracking-tight text-slate-950">
+              {mode.title}
+            </h2>
+            <CreditsBalancePill />
+          </div>
           <p className="mt-1 text-sm font-semibold text-slate-500">
             {mode.description}
           </p>

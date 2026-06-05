@@ -360,23 +360,49 @@ function renderSlides(response: MaterialEngineResponse): string {
   return `<section data-planify-slide-theme="${theme.id}"><h2>Apresentação · ${total} slides</h2>${body}</section>`;
 }
 
+const FLASHCARD_PALETTE = [
+  { strong: "#4f46e5", base: "#6366f1", soft: "#eef2ff", ink: "#3730a3" },
+  { strong: "#0284c7", base: "#0ea5e9", soft: "#f0f9ff", ink: "#075985" },
+  { strong: "#059669", base: "#10b981", soft: "#ecfdf5", ink: "#065f46" },
+  { strong: "#d97706", base: "#f59e0b", soft: "#fffbeb", ink: "#92400e" },
+  { strong: "#e11d48", base: "#f43f5e", soft: "#fff1f2", ink: "#9f1239" },
+  { strong: "#7c3aed", base: "#8b5cf6", soft: "#f5f3ff", ink: "#5b21b6" },
+];
+
 function renderFlashcards(response: MaterialEngineResponse): string {
-  const flashcards = response.flashcards ?? [];
+  const flashcards = (response.flashcards ?? []).filter(
+    (card) => card.front?.trim() || card.back?.trim(),
+  );
   if (!flashcards.length) return "";
 
   const body = flashcards
-    .map(
-      (card, index) => `
-        <article class="planify-flashcard">
-          <p><strong>Card ${index + 1}</strong></p>
-          <p><strong>Frente:</strong> ${escapeHtml(card.front)}</p>
-          <p><strong>Verso:</strong> ${escapeHtml(card.back)}</p>
+    .map((card, index) => {
+      const c = FLASHCARD_PALETTE[index % FLASHCARD_PALETTE.length];
+      return `
+        <article class="planify-flashcard" style="display:flex;flex-direction:column;flex:1 1 260px;min-width:240px;max-width:340px;border:1px solid ${c.base}33;border-radius:16px;overflow:hidden;background:#ffffff;box-shadow:0 10px 26px -18px ${c.base};">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:linear-gradient(135deg,${c.strong},${c.base});color:#ffffff;">
+            <span style="font-size:11px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;">Pergunta</span>
+            <span style="display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:24px;padding:0 7px;border-radius:999px;background:rgba(255,255,255,0.22);font-size:12px;font-weight:800;">${index + 1}</span>
+          </div>
+          <div style="padding:16px;font-size:15px;font-weight:800;line-height:1.45;color:#0f172a;">${escapeHtml(card.front)}</div>
+          <div style="display:flex;align-items:center;gap:8px;padding:0 16px;">
+            <span style="height:1px;flex:1;background:${c.base}33;"></span>
+            <span style="font-size:10px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:${c.ink};">Resposta</span>
+            <span style="height:1px;flex:1;background:${c.base}33;"></span>
+          </div>
+          <div style="padding:12px 16px 18px;font-size:14px;line-height:1.55;color:#475569;background:${c.soft};flex:1;">${escapeHtml(card.back)}</div>
         </article>
-      `,
-    )
+      `;
+    })
     .join("");
 
-  return `<section><h2>Flashcards</h2>${body}</section>`;
+  return `
+    <section class="planify-flashcards">
+      <h2>Flashcards</h2>
+      <p style="margin:0 0 14px;font-size:13px;color:#64748b;">${flashcards.length} cartões — pergunta em destaque e resposta abaixo. Imprima e recorte para estudo ou revisão em sala.</p>
+      <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:stretch;">${body}</div>
+    </section>
+  `;
 }
 
 function renderMindMap(response: MaterialEngineResponse): string {
@@ -384,28 +410,41 @@ function renderMindMap(response: MaterialEngineResponse): string {
   if (!mindMap || !mindMap.branches.length) return "";
 
   const branchCards = mindMap.branches
-    .map(
-      (branch, index) => `
-        <div class="planify-mindmap-branch" style="flex:1 1 220px;min-width:200px;border:2px solid #6366f1;border-radius:14px;padding:14px;background:#f8fafc;">
-          <p style="margin:0 0 8px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:#4f46e5;">Ramo ${index + 1}</p>
-          <h3 style="margin:0 0 10px;font-size:16px;color:#0f172a;">${escapeHtml(branch.title)}</h3>
-          ${asList(branch.items || [])}
+    .map((branch, index) => {
+      const c = FLASHCARD_PALETTE[index % FLASHCARD_PALETTE.length];
+      const items = (branch.items || []).filter((item) => item.trim());
+      const chips = items
+        .map(
+          (item) =>
+            `<span style="display:inline-block;margin:3px 4px 0 0;padding:5px 11px;border-radius:999px;background:${c.soft};border:1px solid ${c.base}33;font-size:12px;font-weight:600;color:${c.ink};">${escapeHtml(item)}</span>`,
+        )
+        .join("");
+      return `
+        <div class="planify-mindmap-branch" style="position:relative;flex:1 1 240px;min-width:220px;border:1px solid ${c.base}33;border-top:4px solid ${c.base};border-radius:14px;padding:14px 16px;background:#ffffff;box-shadow:0 10px 26px -20px ${c.base};">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+            <span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:999px;background:${c.strong};color:#fff;font-size:12px;font-weight:800;">${index + 1}</span>
+            <h3 style="margin:0;font-size:15px;font-weight:800;color:#0f172a;line-height:1.25;">${escapeHtml(branch.title)}</h3>
+          </div>
+          <div>${chips}</div>
         </div>
-      `,
-    )
+      `;
+    })
     .join("");
 
   return `
     <section class="planify-mindmap">
       <h2>Mapa mental</h2>
-      <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:stretch;margin:16px 0;">
-        <div style="flex:1 1 100%;text-align:center;padding:20px;border-radius:16px;background:linear-gradient(135deg,#4f46e5,#6366f1);color:#fff;box-shadow:0 12px 28px -16px #4f46e5;">
-          <p style="margin:0;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;opacity:0.9;">Conceito central</p>
-          <p style="margin:8px 0 0;font-size:22px;font-weight:900;">${escapeHtml(mindMap.central)}</p>
+      <div style="margin:16px 0;">
+        <div style="max-width:520px;margin:0 auto;text-align:center;padding:22px;border-radius:18px;background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;box-shadow:0 16px 36px -20px #4f46e5;">
+          <p style="margin:0;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;opacity:0.9;">Conceito central</p>
+          <p style="margin:8px 0 0;font-size:24px;font-weight:900;line-height:1.2;">${escapeHtml(mindMap.central)}</p>
         </div>
-        ${branchCards}
+        <div style="display:flex;justify-content:center;margin:6px 0;"><span style="width:2px;height:22px;background:#c7d2fe;"></span></div>
+        <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:stretch;justify-content:center;">
+          ${branchCards}
+        </div>
       </div>
-      <p style="margin:12px 0 0;font-size:13px;color:#64748b;">Conexões: cada ramo articula subtópicos ao conceito central — use as setas implícitas na discussão em sala.</p>
+      <p style="margin:12px 0 0;font-size:13px;color:#64748b;">Cada ramo articula subtópicos ao conceito central — conduza a discussão partindo do centro para as ramificações.</p>
     </section>
   `;
 }

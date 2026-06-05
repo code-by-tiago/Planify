@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 
 type ContactType = "suporte" | "assinatura" | "erro" | "sugestao" | "parceria" | "pedagogico";
 
@@ -24,90 +25,33 @@ const initialForm: FormState = {
 };
 
 const contactTypes: Array<{ value: ContactType; label: string; description: string }> = [
-  {
-    value: "suporte",
-    label: "Suporte geral",
-    description: "Dúvidas de uso, acesso ou navegação.",
-  },
-  {
-    value: "assinatura",
-    label: "Assinatura e pagamento",
-    description: "Planos, Stripe, acesso premium e renovação.",
-  },
-  {
-    value: "erro",
-    label: "Relatar erro",
-    description: "Problemas em página, build, login ou funcionalidade.",
-  },
-  {
-    value: "sugestao",
-    label: "Sugestão",
-    description: "Ideias para melhorar o Planify.",
-  },
-  {
-    value: "parceria",
-    label: "Parceria",
-    description: "Escolas, secretarias, projetos e instituições.",
-  },
-  {
-    value: "pedagogico",
-    label: "Suporte pedagógico",
-    description: "Planejamentos, BNCC, materiais e documentos.",
-  },
+  { value: "suporte", label: "Suporte geral", description: "Dúvidas de uso, acesso ou navegação." },
+  { value: "assinatura", label: "Assinatura e pagamento", description: "Planos, Stripe, acesso premium e renovação." },
+  { value: "erro", label: "Relatar erro", description: "Problemas em página, login ou funcionalidade." },
+  { value: "sugestao", label: "Sugestão", description: "Ideias para melhorar o Planify." },
+  { value: "parceria", label: "Parceria", description: "Escolas, secretarias e instituições." },
+  { value: "pedagogico", label: "Suporte pedagógico", description: "Planejamentos, BNCC, materiais e documentos." },
 ];
 
 const helpCards = [
-  {
-    title: "Acesso premium",
-    description: "Criar conta não libera automaticamente. O dashboard é liberado após plano ativo.",
-    href: "/planos",
-    label: "Ver planos",
-  },
-  {
-    title: "Planejamentos",
-    description: "Use a BNCC oficial, selecione habilidades e gere a prévia estruturada.",
-    href: "/planejamentos",
-    label: "Abrir planejamentos",
-  },
-  {
-    title: "Marketplace",
-    description: "Área de troca de materiais entre professores, com publicação e anexos preparados.",
-    href: "/marketplace",
-    label: "Abrir marketplace",
-  },
-  {
-    title: "Biblioteca Premium",
-    description: "Materiais oficiais e curados pela curadoria Planify do Planify.",
-    href: "/biblioteca",
-    label: "Abrir biblioteca",
-  },
+  { title: "Acesso premium", description: "O dashboard premium exige plano ativo.", href: "/planos", label: "Ver planos" },
+  { title: "Planejamentos", description: "BNCC oficial, habilidades e prévia estruturada.", href: "/planejamentos", label: "Abrir planejamentos" },
+  { title: "Marketplace", description: "Troca de materiais entre professores.", href: "/marketplace", label: "Abrir marketplace" },
+  { title: "Biblioteca", description: "Materiais curados pela curadoria Planify.", href: "/biblioteca", label: "Abrir biblioteca" },
 ];
 
 const supportFlow = [
-  {
-    step: "1",
-    title: "Descreva a solicitação",
-    description: "Escolha o tipo e escreva a mensagem com clareza.",
-  },
-  {
-    step: "2",
-    title: "Equipe analisa",
-    description: "O atendimento será direcionado conforme o assunto.",
-  },
-  {
-    step: "3",
-    title: "Retorno organizado",
-    description: "A resposta será feita pelo canal informado pelo usuário.",
-  },
+  { step: "1", title: "Descreva a solicitação", description: "Escolha o tipo e escreva com clareza." },
+  { step: "2", title: "Equipe analisa", description: "Direcionamento conforme o assunto." },
+  { step: "3", title: "Retorno organizado", description: "Resposta pelo canal informado." },
 ];
 
 function getTypeLabel(type: ContactType): string {
   return contactTypes.find((item) => item.value === type)?.label ?? "Suporte";
 }
 
-function countCharacters(value: string): number {
-  return value.trim().length;
-}
+const inputClass =
+  "w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm font-semibold text-slate-950 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100";
 
 export function ContatoClient() {
   const [form, setForm] = useState<FormState>(initialForm);
@@ -118,13 +62,10 @@ export function ContatoClient() {
   } | null>(null);
 
   const selectedType = contactTypes.find((item) => item.value === form.tipo);
-  const characterCount = useMemo(() => countCharacters(form.mensagem), [form.mensagem]);
+  const characterCount = useMemo(() => form.mensagem.trim().length, [form.mensagem]);
 
   function updateField<K extends keyof FormState>(key: K, value: FormState[K]) {
-    setForm((current) => ({
-      ...current,
-      [key]: value,
-    }));
+    setForm((current) => ({ ...current, [key]: value }));
     setSubmitted(false);
   }
 
@@ -135,38 +76,20 @@ export function ContatoClient() {
   }
 
   function validateForm(): string | null {
-    if (!form.nome.trim()) {
-      return "Informe seu nome.";
-    }
-
-    if (!form.email.trim() || !form.email.includes("@")) {
-      return "Informe um e-mail válido.";
-    }
-
-    if (!form.assunto.trim()) {
-      return "Informe o assunto da solicitação.";
-    }
-
-    if (form.mensagem.trim().length < 20) {
-      return "Escreva uma mensagem com pelo menos 20 caracteres.";
-    }
-
+    if (!form.nome.trim()) return "Informe seu nome.";
+    if (!form.email.trim() || !form.email.includes("@")) return "Informe um e-mail válido.";
+    if (!form.assunto.trim()) return "Informe o assunto da solicitação.";
+    if (form.mensagem.trim().length < 20) return "Escreva uma mensagem com pelo menos 20 caracteres.";
     return null;
   }
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-
     const error = validateForm();
-
     if (error) {
-      setStatus({
-        type: "warning",
-        message: error,
-      });
+      setStatus({ type: "warning", message: error });
       return;
     }
-
     setSubmitted(true);
     setStatus({
       type: "success",
@@ -174,67 +97,50 @@ export function ContatoClient() {
     });
   }
 
-  function getStatusClass() {
-    if (!status) {
-      return "";
-    }
-
-    if (status.type === "success") {
-      return "border-emerald-300/30 bg-emerald-300/10 text-emerald-100";
-    }
-
-    if (status.type === "warning") {
-      return "border-amber-300/30 bg-amber-300/10 text-amber-100";
-    }
-
-    return "border-cyan-300/30 bg-cyan-300/10 text-cyan-100";
+  function statusClass() {
+    if (!status) return "";
+    if (status.type === "success") return "border-emerald-200 bg-emerald-50 text-emerald-800";
+    if (status.type === "warning") return "border-amber-200 bg-amber-50 text-amber-800";
+    return "border-blue-200 bg-blue-50 text-blue-800";
   }
 
   return (
-    <section className="mx-auto max-w-7xl px-5 pb-24 sm:px-8">
-      <div className="grid gap-6 xl:grid-cols-[0.78fr_1.22fr]">
-        <aside className="grid gap-6 xl:sticky xl:top-28 xl:h-fit">
-          <div className="rounded-[2rem] border border-cyan-300/20 bg-cyan-300/10 p-6 shadow-2xl shadow-cyan-500/10 backdrop-blur-2xl">
-            <p className="text-sm font-black uppercase tracking-[0.25em] text-cyan-300">
-              Suporte
+    <section className="mx-auto max-w-7xl px-5 pb-20 sm:px-8">
+      <div className="grid gap-8 xl:grid-cols-[0.85fr_1.15fr]">
+        <aside className="grid gap-6 xl:sticky xl:top-24 xl:h-fit">
+          <div className="rounded-3xl border border-slate-200 bg-slate-50/80 p-6">
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-blue-600">
+              Como funciona
             </p>
-            <h2 className="mt-3 text-3xl font-black text-white">
-              Atendimento organizado.
-            </h2>
-            <p className="mt-4 text-sm leading-7 text-cyan-100/85">
-              Esta área será conectada depois ao fluxo real de atendimento, e-mail ou banco de solicitações.
-            </p>
-
-            <div className="mt-6 grid gap-3">
+            <div className="mt-5 grid gap-3">
               {supportFlow.map((item) => (
-                <div key={item.step} className="flex gap-3 rounded-2xl border border-white/10 bg-slate-950/45 p-4">
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-xs font-black text-slate-950">
+                <div key={item.step} className="flex gap-3 rounded-2xl border border-white bg-white p-4 shadow-sm">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-xs font-black text-white">
                     {item.step}
                   </span>
                   <div>
-                    <p className="text-sm font-black text-white">{item.title}</p>
-                    <p className="mt-1 text-xs leading-5 text-slate-300">{item.description}</p>
+                    <p className="text-sm font-black text-slate-950">{item.title}</p>
+                    <p className="mt-1 text-xs leading-5 text-slate-500">{item.description}</p>
                   </div>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="rounded-[2rem] border border-white/10 bg-white/[0.06] p-6 shadow-2xl backdrop-blur-2xl">
-            <p className="text-sm font-black uppercase tracking-[0.25em] text-cyan-300">
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-blue-600">
               Ajuda rápida
             </p>
-
-            <div className="mt-6 grid gap-3">
+            <div className="mt-4 grid gap-2">
               {helpCards.map((card) => (
                 <Link
                   key={card.href}
                   href={card.href}
-                  className="rounded-2xl border border-white/10 bg-slate-950/50 p-4 transition hover:-translate-y-1 hover:border-cyan-300/40 hover:bg-cyan-300/10"
+                  className="rounded-2xl border border-slate-100 bg-slate-50/50 p-4 transition hover:border-blue-200 hover:bg-blue-50/50"
                 >
-                  <p className="text-sm font-black text-white">{card.title}</p>
-                  <p className="mt-2 text-xs leading-5 text-slate-400">{card.description}</p>
-                  <p className="mt-3 text-xs font-black text-cyan-200">{card.label} →</p>
+                  <p className="text-sm font-black text-slate-950">{card.title}</p>
+                  <p className="mt-1 text-xs leading-5 text-slate-500">{card.description}</p>
+                  <p className="mt-2 text-xs font-bold text-blue-600">{card.label} →</p>
                 </Link>
               ))}
             </div>
@@ -242,187 +148,148 @@ export function ContatoClient() {
         </aside>
 
         <div className="grid gap-6">
-          <div className="rounded-[2rem] border border-white/10 bg-white/[0.06] p-6 shadow-2xl backdrop-blur-2xl">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <p className="text-sm font-black uppercase tracking-[0.25em] text-cyan-300">
+                <p className="text-xs font-black uppercase tracking-[0.2em] text-blue-600">
                   Solicitação
                 </p>
-                <h2 className="mt-3 text-3xl font-black text-white">
-                  Envie sua mensagem
-                </h2>
-                <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-400">
-                  Escolha o tipo de atendimento e descreva o que precisa com detalhes.
-                </p>
+                <h2 className="mt-2 text-2xl font-black text-slate-950">Envie sua mensagem</h2>
               </div>
-
               <button
                 type="button"
                 onClick={clearForm}
-                className="rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-black text-white transition hover:-translate-y-1 hover:border-rose-300/40 hover:bg-rose-300/10"
+                className="rounded-full border border-slate-200 px-5 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-50"
               >
                 Limpar
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="mt-8 grid gap-5">
-              <div className="grid gap-5 md:grid-cols-2">
+            <form onSubmit={handleSubmit} className="mt-6 grid gap-4">
+              <div className="grid gap-4 md:grid-cols-2">
                 <label className="grid gap-2">
-                  <span className="text-sm font-bold text-slate-300">Nome</span>
+                  <span className="text-sm font-bold text-slate-700">Nome</span>
                   <input
                     value={form.nome}
-                    onChange={(event) => updateField("nome", event.target.value)}
+                    onChange={(e) => updateField("nome", e.target.value)}
                     placeholder="Seu nome"
-                    className="h-14 rounded-2xl border border-white/10 bg-slate-950/50 px-4 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300/50"
+                    className={inputClass}
                   />
                 </label>
-
                 <label className="grid gap-2">
-                  <span className="text-sm font-bold text-slate-300">E-mail</span>
+                  <span className="text-sm font-bold text-slate-700">E-mail</span>
                   <input
-                    value={form.email}
-                    onChange={(event) => updateField("email", event.target.value)}
-                    placeholder="seu@email.com"
                     type="email"
-                    className="h-14 rounded-2xl border border-white/10 bg-slate-950/50 px-4 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300/50"
+                    value={form.email}
+                    onChange={(e) => updateField("email", e.target.value)}
+                    placeholder="seu@email.com"
+                    className={inputClass}
                   />
                 </label>
-
                 <label className="grid gap-2">
-                  <span className="text-sm font-bold text-slate-300">Perfil</span>
+                  <span className="text-sm font-bold text-slate-700">Perfil</span>
                   <select
                     value={form.perfil}
-                    onChange={(event) => updateField("perfil", event.target.value)}
-                    className="h-14 rounded-2xl border border-white/10 bg-slate-950/50 px-4 text-sm text-white outline-none transition focus:border-cyan-300/50"
+                    onChange={(e) => updateField("perfil", e.target.value)}
+                    className={inputClass}
                   >
-                    {["Professor", "Coordenador", "Escola", "Administrador", "Parceiro"].map((option) => (
-                      <option key={option} value={option} className="bg-slate-950">
-                        {option}
-                      </option>
+                    {["Professor", "Coordenador", "Escola", "Administrador", "Parceiro"].map((o) => (
+                      <option key={o} value={o}>{o}</option>
                     ))}
                   </select>
                 </label>
-
                 <label className="grid gap-2">
-                  <span className="text-sm font-bold text-slate-300">Tipo de solicitação</span>
+                  <span className="text-sm font-bold text-slate-700">Tipo</span>
                   <select
                     value={form.tipo}
-                    onChange={(event) => updateField("tipo", event.target.value as ContactType)}
-                    className="h-14 rounded-2xl border border-white/10 bg-slate-950/50 px-4 text-sm text-white outline-none transition focus:border-cyan-300/50"
+                    onChange={(e) => updateField("tipo", e.target.value as ContactType)}
+                    className={inputClass}
                   >
-                    {contactTypes.map((option) => (
-                      <option key={option.value} value={option.value} className="bg-slate-950">
-                        {option.label}
-                      </option>
+                    {contactTypes.map((o) => (
+                      <option key={o.value} value={o.value}>{o.label}</option>
                     ))}
                   </select>
                 </label>
-
                 <label className="grid gap-2 md:col-span-2">
-                  <span className="text-sm font-bold text-slate-300">Assunto</span>
+                  <span className="text-sm font-bold text-slate-700">Assunto</span>
                   <input
                     value={form.assunto}
-                    onChange={(event) => updateField("assunto", event.target.value)}
+                    onChange={(e) => updateField("assunto", e.target.value)}
                     placeholder="Ex.: Dúvida sobre acesso premium"
-                    className="h-14 rounded-2xl border border-white/10 bg-slate-950/50 px-4 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300/50"
+                    className={inputClass}
                   />
                 </label>
-
                 <label className="grid gap-2 md:col-span-2">
-                  <span className="text-sm font-bold text-slate-300">Mensagem</span>
+                  <span className="text-sm font-bold text-slate-700">Mensagem</span>
                   <textarea
                     value={form.mensagem}
-                    onChange={(event) => updateField("mensagem", event.target.value)}
-                    rows={8}
+                    onChange={(e) => updateField("mensagem", e.target.value)}
+                    rows={7}
                     placeholder="Descreva sua solicitação com detalhes."
-                    className="rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-4 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300/50"
+                    className={inputClass}
                   />
-                  <span className="text-xs font-bold text-slate-500">
+                  <span className="text-xs font-semibold text-slate-400">
                     {characterCount} caracteres
                   </span>
                 </label>
               </div>
 
-              <div className="rounded-2xl border border-cyan-300/20 bg-cyan-300/10 p-4">
-                <p className="text-sm font-black text-cyan-100">{selectedType?.label}</p>
-                <p className="mt-1 text-xs leading-5 text-cyan-100/80">{selectedType?.description}</p>
+              <div className="rounded-2xl border border-blue-100 bg-blue-50/80 p-4">
+                <p className="text-sm font-black text-blue-900">{selectedType?.label}</p>
+                <p className="mt-1 text-xs text-blue-800/80">{selectedType?.description}</p>
               </div>
 
               <div className="flex flex-col gap-3 sm:flex-row">
                 <button
                   type="submit"
-                  className="rounded-2xl bg-white px-5 py-4 text-sm font-black text-slate-950 shadow-2xl shadow-white/10 transition hover:-translate-y-1 hover:bg-cyan-100"
+                  className="pl-btn-brand rounded-full px-6 py-3.5 text-sm font-bold text-slate-900"
                 >
                   Enviar solicitação
                 </button>
-
                 <Link
                   href="/dashboard"
-                  className="rounded-2xl border border-white/10 bg-white/5 px-5 py-4 text-center text-sm font-black text-white transition hover:-translate-y-1 hover:bg-white/10"
+                  className="rounded-full border border-slate-200 px-6 py-3.5 text-center text-sm font-bold text-slate-700 hover:border-blue-200"
                 >
-                  Voltar ao dashboard
+                  Voltar ao painel
                 </Link>
               </div>
             </form>
 
-            {status && (
-              <div className={`mt-6 rounded-2xl border p-4 text-sm font-bold ${getStatusClass()}`}>
+            {status ? (
+              <div className={`mt-5 rounded-2xl border p-4 text-sm font-semibold ${statusClass()}`}>
                 {status.message}
               </div>
-            )}
+            ) : null}
           </div>
 
-          <div className="rounded-[2rem] border border-white/10 bg-white/[0.06] p-6 shadow-2xl backdrop-blur-2xl">
-            <p className="text-sm font-black uppercase tracking-[0.25em] text-cyan-300">
-              Prévia
-            </p>
-            <h2 className="mt-3 text-3xl font-black text-white">Resumo da solicitação</h2>
-
-            <div className="mt-7 rounded-[1.5rem] border border-white/10 bg-slate-950/50 p-6">
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-blue-600">Prévia</p>
+            <h2 className="mt-2 text-xl font-black text-slate-950">Resumo da solicitação</h2>
+            <div className="mt-5 rounded-2xl border border-slate-100 bg-slate-50 p-5">
               {!submitted ? (
-                <div>
-                  <p className="text-sm font-black text-white">Aguardando envio</p>
-                  <p className="mt-2 text-sm leading-6 text-slate-400">
-                    Após preencher e enviar, o resumo aparecerá aqui.
-                  </p>
-                </div>
+                <p className="text-sm text-slate-500">
+                  Após preencher e enviar, o resumo aparecerá aqui.
+                </p>
               ) : (
-                <div className="grid gap-5">
+                <div className="grid gap-4">
                   <div className="flex flex-wrap gap-2">
-                    <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-slate-950">
+                    <span className="rounded-full bg-blue-600 px-3 py-1 text-xs font-black text-white">
                       {getTypeLabel(form.tipo)}
                     </span>
-                    <span className="rounded-full bg-cyan-300/10 px-3 py-1 text-xs font-black text-cyan-200">
+                    <span className="rounded-full bg-slate-200 px-3 py-1 text-xs font-black text-slate-700">
                       {form.perfil}
                     </span>
                   </div>
-
                   <div>
-                    <h3 className="text-2xl font-black text-white">{form.assunto}</h3>
-                    <p className="mt-2 text-sm text-slate-400">
-                      {form.nome} • {form.email}
+                    <h3 className="text-lg font-black text-slate-950">{form.assunto}</h3>
+                    <p className="mt-1 text-sm text-slate-500">
+                      {form.nome} · {form.email}
                     </p>
                   </div>
-
-                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
-                    <p className="text-sm leading-7 text-slate-300">{form.mensagem}</p>
-                  </div>
+                  <p className="text-sm leading-7 text-slate-600">{form.mensagem}</p>
                 </div>
               )}
             </div>
-          </div>
-
-          <div className="grid gap-5 md:grid-cols-3">
-            {[
-              ["Assinatura", "Dúvidas sobre plano, pagamento e acesso premium."],
-              ["Funcionalidade", "Sugestões para planejamentos, materiais e editor."],
-              ["Parceria", "Contato para escolas, projetos e instituições."],
-            ].map(([title, description]) => (
-              <div key={title} className="rounded-[2rem] border border-white/10 bg-white/[0.06] p-6 shadow-2xl backdrop-blur-2xl">
-                <p className="text-lg font-black text-white">{title}</p>
-                <p className="mt-3 text-sm leading-6 text-slate-400">{description}</p>
-              </div>
-            ))}
           </div>
         </div>
       </div>

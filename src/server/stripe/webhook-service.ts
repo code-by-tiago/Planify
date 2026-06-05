@@ -1,6 +1,41 @@
 import crypto from "node:crypto";
 import { getSupabaseAdminClient } from "../supabase/admin-client";
+import { getCreditWallet, grantPlanCredits } from "../credits/credit-service";
 import { stripeApiRequest } from "./stripe-api";
+
+const ACTIVE_SUBSCRIPTION_STATUSES = new Set(["active", "trialing"]);
+
+/**
+ * Concede/renova créditos do ciclo. Em eventos de criação concede sempre; em
+ * atualizações só concede se o período de cobrança mudou (renovação) — evita
+ * resetar o saldo a meio do ciclo num `customer.subscription.updated`.
+ */
+async function maybeGrantCredits(params: {
+  subscription: StripeSubscription;
+  userId: string | null;
+  eventType: string;
+}): Promise<void> {
+  const { subscription, userId, eventType } = params;
+  if (!userId) return;
+  if (!ACTIVE_SUBSCRIPTION_STATUSES.has(subscription.status || "")) return;
+
+  const planKey = getPlanKey(subscription);
+  const cycleStart = unixToISOString(subscription.current_period_start);
+  const cycleEnd = unixToISOString(subscription.current_period_end);
+
+  const isCreation =
+    eventType === "checkout.session.completed" ||
+    eventType === "customer.subscription.created";
+
+  if (!isCreation) {
+    const wallet = await getCreditWallet(userId);
+    const sameCycle =
+      wallet && cycleStart && wallet.cycleStartsAt === cycleStart;
+    if (wallet && sameCycle) return; // já concedido neste ciclo
+  }
+
+  await grantPlanCredits({ userId, planKey, cycleStart, cycleEnd });
+}
 
 type StripeWebhookEvent<T = Record<string, unknown>> = {
   id: string;
@@ -326,6 +361,8 @@ async function handleCheckoutCompleted(
     eventType,
   });
 
+  await maybeGrantCredits({ subscription, userId: user?.id || null, eventType });
+
   return {
     handled: true,
     reason: user ? "subscription_linked_to_user" : "subscription_saved_without_user",
@@ -348,6 +385,8 @@ async function handleSubscriptionEvent(
     email,
     eventType,
   });
+
+  await maybeGrantCredits({ subscription, userId: user?.id || null, eventType });
 
   return {
     handled: true,

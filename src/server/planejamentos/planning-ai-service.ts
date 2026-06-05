@@ -596,49 +596,12 @@ async function requestPlanningJson(
 ): Promise<unknown> {
   const prompt = buildPlanningPrompt(payload, extraNote);
 
-  try {
-    return await generateGeminiJSON<unknown>({
-      systemInstruction: PLANNING_SYSTEM_INSTRUCTION,
-      prompt,
-      cacheProfile: "planning-matrix",
-      temperature: 0.25,
-    });
-  } catch {
-    const key = process.env.GEMINI_API_KEY;
-
-    if (!key) {
-      throw new Error("Chave de IA não configurada.");
-    }
-
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(key)}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ role: "user", parts: [{ text: prompt }] }],
-          generationConfig: {
-            temperature: 0.25,
-            responseMimeType: "application/json",
-          },
-        }),
-      },
-    );
-
-    if (!response.ok) {
-      const errorText = await response.text().catch(() => "");
-      throw new Error(errorText.slice(0, 180) || "Resposta inválida da IA.");
-    }
-
-    const data = await response.json();
-    const text = normalizeText(
-      data?.candidates?.[0]?.content?.parts
-        ?.map((part: UnknownRecord) => part.text)
-        .join("\n"),
-    );
-
-    return extractJsonFromText(text);
-  }
+  return generateGeminiJSON<unknown>({
+    systemInstruction: PLANNING_SYSTEM_INSTRUCTION,
+    prompt,
+    cacheProfile: "planning-matrix",
+    temperature: 0.25,
+  });
 }
 
 export async function generatePlanningWithAI(

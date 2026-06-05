@@ -10,51 +10,17 @@
 import type { AIModelTier } from "../../lib/ai/aiConfig";
 import type { GeminiGenerateJSONOptions } from "../../types/ai";
 import { resolveGeminiCachedContentName } from "./gemini-context-cache";
+import { getGeminiSdk } from "./gemini-sdk";
 import {
   resolveGeminiCacheBundle,
   type GeminiCacheProfile,
 } from "./gemini-static-context";
 
-type GeminiPart = {
-  text?: string;
+type GeminiCallResult = {
+  text: string;
+  httpStatus: number;
+  error?: { message: string };
 };
-
-type GeminiResponse = {
-  candidates?: Array<{
-    content?: {
-      parts?: GeminiPart[];
-    };
-    finishReason?: string;
-  }>;
-  error?: {
-    message?: string;
-    code?: number;
-    status?: string;
-  };
-};
-
-// ---------------------------------------------------------------------------
-// Resolução segura de credenciais — somente no servidor
-// ---------------------------------------------------------------------------
-
-function getAIApiKey(): string {
-  const apiKey = process.env.GEMINI_API_KEY?.trim();
-
-  if (!apiKey) {
-    throw new Error(
-      "GEMINI_API_KEY não configurada no servidor. " +
-        "Adicione a variável ao .env.local.",
-    );
-  }
-
-  if (!apiKey.startsWith("AIza")) {
-    console.warn(
-      "[gemini] GEMINI_API_KEY não usa o prefixo AIza do Google AI Studio. Se a IA falhar, gere uma chave em https://aistudio.google.com/apikey",
-    );
-  }
-
-  return apiKey;
-}
 
 /** Modelos 1.5 foram descontinuados no free tier — normaliza para 2.5. */
 const LEGACY_MODEL_MAP: Record<string, string> = {
@@ -146,8 +112,14 @@ export function humanizeGeminiError(message: string): string {
     return "Chave GEMINI_API_KEY ausente ou inválida no servidor.";
   }
 
-  if (/API key not valid|API_KEY_INVALID|invalid api key|permission denied|unauthorized/i.test(message)) {
-    return "Chave GEMINI_API_KEY rejeitada pelo Google. Gere uma nova em Google AI Studio (https://aistudio.google.com/apikey), confira a faturação do projeto e redeploy na Vercel.";
+  if (
+    /API key not valid|API_KEY_INVALID|invalid api key|permission denied|unauthorized|invalid authentication credentials|ACCESS_TOKEN_TYPE_UNSUPPORTED/i.test(
+      message,
+    )
+  ) {
+    return (
+      "Chave GEMINI_API_KEY rejeitada pelo Google. No AI Studio, use o botão Copiar na chave (formato AQ. ou AIza), cole sem espaços na Vercel, confira restrições da chave e faça redeploy."
+    );
   }
 
   return message;
@@ -171,20 +143,6 @@ function sleep(ms: number): Promise<void> {
 // Utilitários internos
 // ---------------------------------------------------------------------------
 
-function extractTextFromResponse(response: GeminiResponse): string {
-  const parts = response.candidates?.[0]?.content?.parts ?? [];
-  const text = parts
-    .map((part) => part.text ?? "")
-    .join("")
-    .trim();
-
-  if (!text) {
-    throw new Error("A IA não retornou conteúdo textual.");
-  }
-
-  return text;
-}
-
 function stripJsonFence(text: string): string {
   const trimmed = text.trim();
 
@@ -207,7 +165,12 @@ function stripJsonFence(text: string): string {
  * Gera uma resposta JSON estruturada via IA.
  * Usar para materiais com schema definido (planejamentos, materiais avançados).
  */
-async function buildGenerateBody(
+type GenerateContentPlan = {
+  contents: string;
+  config: Record<string, unknown>;
+};
+
+async function buildGeneratePlan(
   options: {
     systemInstruction: string;
     prompt: string;
@@ -221,19 +184,19 @@ async function buildGenerateBody(
     model?: string;
   },
   model: string,
-): Promise<Record<string, unknown>> {
-  const generationConfig: Record<string, unknown> = {
+): Promise<GenerateContentPlan> {
+  const config: Record<string, unknown> = {
     temperature: options.temperature ?? 0.2,
     topP: options.topP ?? 0.8,
     maxOutputTokens: options.maxOutputTokens ?? 8192,
   };
 
   if (options.responseMimeType) {
-    generationConfig.responseMimeType = options.responseMimeType;
+    config.responseMimeType = options.responseMimeType;
   }
 
   if (options.responseSchema) {
-    generationConfig.responseSchema = options.responseSchema;
+    config.responseSchema = options.responseSchema;
   }
 
   if (options.cacheProfile) {
@@ -248,14 +211,11 @@ async function buildGenerateBody(
 
       if (cachedContent) {
         return {
-          cachedContent,
-          contents: [
-            {
-              role: "user",
-              parts: [{ text: options.prompt }],
-            },
-          ],
-          generationConfig,
+          contents: options.prompt,
+          config: {
+            ...config,
+            cachedContent,
+          },
         };
       }
 
@@ -264,74 +224,84 @@ async function buildGenerateBody(
         : options.prompt;
 
       return {
-        systemInstruction: {
-          parts: [{ text: bundle.systemInstruction }],
+        contents: mergedPrompt,
+        config: {
+          ...config,
+          systemInstruction: bundle.systemInstruction,
         },
-        contents: [
-          {
-            role: "user",
-            parts: [{ text: mergedPrompt }],
-          },
-        ],
-        generationConfig,
       };
     }
   }
 
   return {
-    systemInstruction: {
-      parts: [{ text: options.systemInstruction }],
+    contents: options.prompt,
+    config: {
+      ...config,
+      systemInstruction: options.systemInstruction,
     },
-    contents: [
-      {
-        role: "user",
-        parts: [{ text: options.prompt }],
-      },
-    ],
-    generationConfig,
   };
 }
 
 async function callGeminiGenerateContent(
-  apiKey: string,
   model: string,
-  body: Record<string, unknown>,
-): Promise<GeminiResponse & { httpStatus: number }> {
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+  plan: GenerateContentPlan,
+): Promise<GeminiCallResult> {
+  try {
+    const response = await getGeminiSdk().models.generateContent({
+      model,
+      contents: plan.contents,
+      config: plan.config,
+    });
 
-  const response = await fetch(endpoint, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
+    const text = response.text?.trim() ?? "";
 
-  const json = (await response.json()) as GeminiResponse;
+    if (!text) {
+      return {
+        text: "",
+        httpStatus: 502,
+        error: { message: "A IA não retornou conteúdo textual." },
+      };
+    }
 
-  return { ...json, httpStatus: response.status };
+    return { text, httpStatus: 200 };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Erro ao chamar a IA.";
+    const status =
+      typeof error === "object" &&
+      error !== null &&
+      "status" in error &&
+      typeof (error as { status?: unknown }).status === "number"
+        ? Number((error as { status: number }).status)
+        : 500;
+
+    return {
+      text: "",
+      httpStatus: status,
+      error: { message },
+    };
+  }
 }
 
 export async function generateGeminiJSON<T>(
   options: GeminiGenerateJSONOptions,
 ): Promise<T> {
-  const apiKey = getAIApiKey();
   const models = resolveModelCandidates(options.tier, options.model);
 
   let lastError = "Erro ao chamar a IA.";
 
   for (const model of models) {
     for (let attempt = 0; attempt < 2; attempt += 1) {
-      const body = await buildGenerateBody(
+      const plan = await buildGeneratePlan(
         {
           ...options,
           responseMimeType: "application/json",
         },
         model,
       );
-      const json = await callGeminiGenerateContent(apiKey, model, body);
+      const json = await callGeminiGenerateContent(model, plan);
 
       if (json.httpStatus >= 200 && json.httpStatus < 300 && !json.error) {
-        const text = extractTextFromResponse(json);
-        const cleaned = stripJsonFence(text);
+        const cleaned = stripJsonFence(json.text);
 
         try {
           return JSON.parse(cleaned) as T;
@@ -374,14 +344,13 @@ export async function generateGeminiText(options: {
   model?: string;
   cacheProfile?: GeminiCacheProfile;
 }): Promise<string> {
-  const apiKey = getAIApiKey();
   const models = resolveModelCandidates(options.tier, options.model);
 
   let lastError = "Erro ao chamar a IA.";
 
   for (const model of models) {
     for (let attempt = 0; attempt < 2; attempt += 1) {
-      const body = await buildGenerateBody(
+      const plan = await buildGeneratePlan(
         {
           ...options,
           temperature: options.temperature ?? 0.5,
@@ -389,10 +358,10 @@ export async function generateGeminiText(options: {
         },
         model,
       );
-      const json = await callGeminiGenerateContent(apiKey, model, body);
+      const json = await callGeminiGenerateContent(model, plan);
 
       if (json.httpStatus >= 200 && json.httpStatus < 300 && !json.error) {
-        return extractTextFromResponse(json);
+        return json.text;
       }
 
       const message =

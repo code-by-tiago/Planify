@@ -1,3 +1,5 @@
+import { getGeminiApiKey, getGeminiSdk } from "./gemini-sdk";
+
 type GeminiCacheRecord = {
   name: string;
   model: string;
@@ -10,16 +12,6 @@ type GeminiCacheBundle = {
 };
 
 const cacheStore = new Map<string, GeminiCacheRecord>();
-
-function getAIApiKey(): string {
-  const apiKey = process.env.GEMINI_API_KEY;
-
-  if (!apiKey) {
-    throw new Error("GEMINI_API_KEY não configurada no servidor.");
-  }
-
-  return apiKey;
-}
 
 export function isGeminiContextCacheEnabled(): boolean {
   const flag = String(process.env.GEMINI_CONTEXT_CACHE ?? "1").trim().toLowerCase();
@@ -36,48 +28,34 @@ function buildStoreKey(profile: string, model: string): string {
 }
 
 async function createCachedContent(
-  apiKey: string,
   model: string,
   profile: string,
   bundle: GeminiCacheBundle,
 ): Promise<string | null> {
-  const body: Record<string, unknown> = {
-    model: `models/${model}`,
-    displayName: `planify-${profile}`.slice(0, 120),
-    systemInstruction: {
-      parts: [{ text: bundle.systemInstruction }],
-    },
-    ttl: `${cacheTtlSeconds()}s`,
-  };
-
-  if (bundle.staticContext?.trim()) {
-    body.contents = [
-      {
-        role: "user",
-        parts: [{ text: bundle.staticContext.trim() }],
+  try {
+    const created = await getGeminiSdk().caches.create({
+      model: model.startsWith("models/") ? model : `models/${model}`,
+      config: {
+        displayName: `planify-${profile}`.slice(0, 120),
+        ttl: `${cacheTtlSeconds()}s`,
+        systemInstruction: bundle.systemInstruction,
+        ...(bundle.staticContext?.trim()
+          ? {
+              contents: [
+                {
+                  role: "user",
+                  parts: [{ text: bundle.staticContext.trim() }],
+                },
+              ],
+            }
+          : {}),
       },
-    ];
-  }
+    });
 
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/cachedContents?key=${encodeURIComponent(apiKey)}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    },
-  );
-
-  const json = (await response.json()) as {
-    name?: string;
-    error?: { message?: string };
-  };
-
-  if (!response.ok || !json.name) {
+    return created.name ?? null;
+  } catch {
     return null;
   }
-
-  return json.name;
 }
 
 export async function resolveGeminiCachedContentName(
@@ -89,6 +67,8 @@ export async function resolveGeminiCachedContentName(
     return null;
   }
 
+  getGeminiApiKey();
+
   const storeKey = buildStoreKey(profile, model);
   const existing = cacheStore.get(storeKey);
 
@@ -97,8 +77,7 @@ export async function resolveGeminiCachedContentName(
   }
 
   try {
-    const apiKey = getAIApiKey();
-    const name = await createCachedContent(apiKey, model, profile, bundle);
+    const name = await createCachedContent(model, profile, bundle);
 
     if (!name) {
       return null;

@@ -60,13 +60,13 @@ export default async function AdminPage() {
             <Link
               key={card.title}
               href={card.href}
-              className="rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-md"
+              className="rounded-[2rem] border border-white/10 bg-white/[0.06] p-6 transition hover:-translate-y-1 hover:border-cyan-300/30 hover:bg-cyan-300/10"
             >
-              <p className="text-xs font-black uppercase tracking-[0.2em] text-indigo-600">
+              <p className="text-sm font-black uppercase tracking-[0.24em] text-cyan-300">
                 Admin
               </p>
-              <h2 className="mt-3 text-xl font-black text-slate-950">{card.title}</h2>
-              <p className="mt-2 text-sm font-medium leading-7 text-slate-600">{card.text}</p>
+              <h2 className="mt-3 text-2xl font-black text-white">{card.title}</h2>
+              <p className="mt-3 text-sm leading-7 text-slate-400">{card.text}</p>
             </Link>
           ))}
         </section>

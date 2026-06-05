@@ -82,30 +82,6 @@ export function buildMaterialStructureContract(input: MaterialAIInput): string {
     ].join("\n");
   }
 
-  if (kind === "plano-aula") {
-    return [
-      ...universal,
-      `Para plano de aula sobre ${theme}, use etapas cronológicas com tempo, recursos, mediação e avaliação.`,
-      "Referencie BNCC quando aplicável. Não entregue lista de exercícios como estrutura principal.",
-    ].join("\n");
-  }
-
-  if (kind === "redacao") {
-    return [
-      ...universal,
-      "Para redação, entregue proposta com motivadores, comando e critérios — não corrija texto do aluno.",
-      "Separe claramente textos motivadores, preparação e critérios de avaliação.",
-    ].join("\n");
-  }
-
-  if (kind === "resumo") {
-    return [
-      ...universal,
-      `Para resumo sobre ${theme}, use blocos temáticos sintéticos e seção de fixação.`,
-      "Priorize bullets e hierarquia; evite parágrafos extensos.",
-    ].join("\n");
-  }
-
   return universal.join("\n");
 }
 

@@ -40,23 +40,8 @@ function normalizeType(type: string): string {
 }
 
 function normalizeGameModel(model: unknown): string {
-  const value = String(model || "")
-    .trim()
-    .toLowerCase()
-    .replace(/-/g, "_");
-  if (value === "trilha") return "trilha";
-  if (
-    [
-      "caca_palavras",
-      "cruzadinha",
-      "bingo",
-      "memoria",
-      "domino",
-      "quiz",
-      "cartas",
-      "trilha",
-    ].includes(value)
-  ) {
+  const value = String(model || "").trim().toLowerCase();
+  if (["caca_palavras", "cruzadinha", "bingo", "memoria", "domino", "quiz", "cartas"].includes(value)) {
     return value;
   }
   return "caca_palavras";
@@ -100,15 +85,9 @@ function validateInput(input: MaterialAIInput): string | null {
   if (!String(input.componenteCurricular || "").trim()) return "Informe o componente curricular.";
   if (!String(input.tipo || "").trim()) return "Informe o tipo de material.";
   if (!String(input.tema || "").trim()) return "Informe o tema do material.";
-  const conteudos = normalizeConteudos(input.conteudos);
-  if (conteudos.length === 0 && !String(input.tema || "").trim()) {
-    return "Informe ao menos um conteúdo.";
-  }
+  if (normalizeConteudos(input.conteudos).length === 0) return "Informe ao menos um conteúdo.";
   if (needsQuestionQuantity(input.tipo) && !String(input.quantidadeQuestoes || "").trim()) {
     return "Informe a quantidade de questões para atividade ou prova.";
-  }
-  if (isJogo(input.tipo) && !String(input.modeloJogo || "").trim()) {
-    return "Selecione o formato do jogo.";
   }
   return null;
 }

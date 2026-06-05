@@ -12,26 +12,26 @@ export function PageBackNavigation() {
   }
 
   return (
-    <div className="border-b border-indigo-100/60 bg-white/80 backdrop-blur-md">
-      <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-2 px-5 py-3 sm:px-8">
+    <div className="border-b border-white/10 bg-slate-950/70 backdrop-blur-xl">
+      <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-3 px-5 py-3 sm:px-8">
         <BackButton />
 
         <Link
           href="/"
-          className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 transition hover:border-indigo-200 hover:text-indigo-700"
+          className="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-3 text-sm font-black text-slate-200 transition hover:-translate-y-0.5 hover:bg-white hover:text-slate-950"
         >
           Início
         </Link>
 
         <Link
           href="/dashboard"
-          className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-2 text-sm font-bold text-white transition hover:opacity-95"
+          className="inline-flex items-center justify-center rounded-2xl border border-cyan-300/25 bg-cyan-300/10 px-5 py-3 text-sm font-black text-cyan-100 transition hover:-translate-y-0.5 hover:bg-cyan-300/20"
         >
           Painel
         </Link>
 
         {pathname.startsWith("/admin") ? (
-          <span className="rounded-full border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-bold text-amber-800">
+          <span className="rounded-2xl border border-amber-300/25 bg-amber-300/10 px-5 py-3 text-sm font-black text-amber-100">
             Área administrativa
           </span>
         ) : null}

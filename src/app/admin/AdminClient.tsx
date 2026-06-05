@@ -213,18 +213,18 @@ function getStatusClass(status: string) {
     status === "Aprovado" ||
     status === "Configurado"
   ) {
-    return "border-emerald-200 bg-emerald-50 text-emerald-700";
+    return "border-emerald-300/30 bg-emerald-300/10 text-emerald-100";
   }
 
   if (status === "Destacado" || status === "Preparado") {
-    return "border-indigo-200 bg-indigo-50 text-indigo-700";
+    return "border-cyan-300/30 bg-cyan-300/10 text-cyan-100";
   }
 
   if (status === "Pendente" || status === "Sem plano" || status === "Vencida" || status === "Revisar") {
-    return "border-amber-200 bg-amber-50 text-amber-700";
+    return "border-amber-300/30 bg-amber-300/10 text-amber-100";
   }
 
-  return "border-rose-200 bg-rose-50 text-rose-700";
+  return "border-rose-300/30 bg-rose-300/10 text-rose-100";
 }
 
 function isContentTab(tab: AdminTab, area: AdminContent["area"]) {
@@ -314,23 +314,23 @@ export function AdminClient() {
           {metrics.map((metric) => (
             <div
               key={metric.label}
-              className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5"
+              className="rounded-[1.5rem] border border-white/10 bg-slate-950/50 p-5"
             >
               <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-500">
                 {metric.label}
               </p>
-              <p className="mt-3 text-3xl font-black text-slate-950">{metric.value}</p>
-              <p className="mt-2 text-xs font-bold text-indigo-700">{metric.detail}</p>
+              <p className="mt-3 text-3xl font-black text-white">{metric.value}</p>
+              <p className="mt-2 text-xs font-bold text-cyan-200">{metric.detail}</p>
             </div>
           ))}
         </div>
 
         <div className="grid gap-6 lg:grid-cols-2">
-          <div className="rounded-[2rem] border border-slate-200 bg-white p-6">
-            <p className="text-sm font-black uppercase tracking-[0.25em] text-indigo-600">
+          <div className="rounded-[2rem] border border-white/10 bg-white/[0.06] p-6">
+            <p className="text-sm font-black uppercase tracking-[0.25em] text-cyan-300">
               Prioridades
             </p>
-            <h2 className="mt-3 text-xl font-black text-slate-950">Próximas áreas de gestão</h2>
+            <h2 className="mt-3 text-2xl font-black text-white">Próximas áreas de gestão</h2>
 
             <div className="mt-6 grid gap-3">
               {[
@@ -339,30 +339,30 @@ export function AdminClient() {
                 ["Assinaturas", "Acompanhar plano ativo, vencido, pendente e cancelado."],
                 ["Documentos", "Auditar uso, histórico e geração de arquivos."],
               ].map(([title, description]) => (
-                <div key={title} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                  <p className="text-sm font-black text-slate-950">{title}</p>
-                  <p className="mt-2 text-xs leading-5 text-slate-600">{description}</p>
+                <div key={title} className="rounded-2xl border border-white/10 bg-slate-950/50 p-4">
+                  <p className="text-sm font-black text-white">{title}</p>
+                  <p className="mt-2 text-xs leading-5 text-slate-400">{description}</p>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="rounded-[2rem] border border-slate-200 bg-white p-6">
-            <p className="text-sm font-black uppercase tracking-[0.25em] text-indigo-600">
+          <div className="rounded-[2rem] border border-white/10 bg-white/[0.06] p-6">
+            <p className="text-sm font-black uppercase tracking-[0.25em] text-cyan-300">
               Saúde do sistema
             </p>
-            <h2 className="mt-3 text-xl font-black text-slate-950">Integrações</h2>
+            <h2 className="mt-3 text-2xl font-black text-white">Integrações</h2>
 
             <div className="mt-6 grid gap-3">
               {systemChecks.slice(0, 4).map((item) => (
-                <div key={item.name} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <div key={item.name} className="rounded-2xl border border-white/10 bg-slate-950/50 p-4">
                   <div className="flex items-start justify-between gap-3">
-                    <p className="text-sm font-black text-slate-950">{item.name}</p>
+                    <p className="text-sm font-black text-white">{item.name}</p>
                     <span className={`rounded-full border px-3 py-1 text-xs font-black ${getStatusClass(item.status)}`}>
                       {item.status}
                     </span>
                   </div>
-                  <p className="mt-2 text-xs leading-5 text-slate-600">{item.description}</p>
+                  <p className="mt-2 text-xs leading-5 text-slate-400">{item.description}</p>
                 </div>
               ))}
             </div>
@@ -376,27 +376,27 @@ export function AdminClient() {
     return (
       <div className="grid gap-4">
         {filteredUsers.map((user) => (
-          <article key={user.id} className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
+          <article key={user.id} className="rounded-[1.5rem] border border-white/10 bg-slate-950/50 p-5">
             <div className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-start">
               <div>
                 <div className="flex flex-wrap gap-2">
                   <span className={`rounded-full border px-3 py-1 text-xs font-black ${getStatusClass(user.status)}`}>
                     {user.status}
                   </span>
-                  <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-black text-slate-600">
+                  <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-black text-slate-300">
                     {user.plan}
                   </span>
                 </div>
 
-                <h3 className="mt-4 text-xl font-black text-slate-950">{user.name}</h3>
-                <p className="mt-1 text-sm text-slate-600">{user.email}</p>
+                <h3 className="mt-4 text-xl font-black text-white">{user.name}</h3>
+                <p className="mt-1 text-sm text-slate-400">{user.email}</p>
 
-                <div className="mt-4 grid gap-3 text-sm text-slate-600 sm:grid-cols-2">
+                <div className="mt-4 grid gap-3 text-sm text-slate-400 sm:grid-cols-2">
                   <p>
-                    <span className="font-black text-slate-950">Documentos:</span> {user.documents}
+                    <span className="font-black text-white">Documentos:</span> {user.documents}
                   </p>
                   <p>
-                    <span className="font-black text-slate-950">Entrada:</span> {user.joinedAt}
+                    <span className="font-black text-white">Entrada:</span> {user.joinedAt}
                   </p>
                 </div>
               </div>
@@ -405,14 +405,14 @@ export function AdminClient() {
                 <button
                   type="button"
                   onClick={() => handlePreparedAction("Gestão de usuário", user.name)}
-                  className="rounded-2xl bg-white px-5 py-3 text-sm font-black text-slate-950 transition hover:-translate-y-1 hover:opacity-95"
+                  className="rounded-2xl bg-white px-5 py-3 text-sm font-black text-slate-950 transition hover:-translate-y-1 hover:bg-cyan-100"
                 >
                   Gerenciar
                 </button>
                 <button
                   type="button"
                   onClick={() => handlePreparedAction("Bloqueio/reativação", user.name)}
-                  className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-700 transition hover:-translate-y-1 hover:border-indigo-300"
+                  className="rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-black text-white transition hover:-translate-y-1 hover:bg-white/10"
                 >
                   Status
                 </button>
@@ -428,30 +428,30 @@ export function AdminClient() {
     return (
       <div className="grid gap-4">
         {filteredSubscriptions.map((subscription) => (
-          <article key={subscription.id} className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
+          <article key={subscription.id} className="rounded-[1.5rem] border border-white/10 bg-slate-950/50 p-5">
             <div className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-start">
               <div>
                 <div className="flex flex-wrap gap-2">
                   <span className={`rounded-full border px-3 py-1 text-xs font-black ${getStatusClass(subscription.status)}`}>
                     {subscription.status}
                   </span>
-                  <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-black text-slate-600">
+                  <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-black text-slate-300">
                     {subscription.value}
                   </span>
                 </div>
 
-                <h3 className="mt-4 text-xl font-black text-slate-950">{subscription.customer}</h3>
-                <p className="mt-1 text-sm text-slate-600">{subscription.plan}</p>
+                <h3 className="mt-4 text-xl font-black text-white">{subscription.customer}</h3>
+                <p className="mt-1 text-sm text-slate-400">{subscription.plan}</p>
 
-                <p className="mt-4 text-sm text-slate-600">
-                  <span className="font-black text-slate-950">Renovação:</span> {subscription.renewal}
+                <p className="mt-4 text-sm text-slate-400">
+                  <span className="font-black text-white">Renovação:</span> {subscription.renewal}
                 </p>
               </div>
 
               <button
                 type="button"
                 onClick={() => handlePreparedAction("Consulta Stripe", subscription.customer)}
-                className="rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-3 text-sm font-black text-white transition hover:-translate-y-1 hover:opacity-95 lg:w-44"
+                className="rounded-2xl bg-white px-5 py-3 text-sm font-black text-slate-950 transition hover:-translate-y-1 hover:bg-cyan-100 lg:w-44"
               >
                 Ver Stripe
               </button>
@@ -466,13 +466,13 @@ export function AdminClient() {
     return (
       <div className="grid gap-6">
         {selectedContent && (
-          <div className="rounded-[2rem] border border-indigo-200 bg-indigo-50/80 p-6">
+          <div className="rounded-[2rem] border border-cyan-300/20 bg-cyan-300/10 p-6">
             <div className="grid gap-5 lg:grid-cols-[1fr_auto] lg:items-start">
               <div>
-                <p className="text-sm font-black uppercase tracking-[0.25em] text-indigo-600">
+                <p className="text-sm font-black uppercase tracking-[0.25em] text-cyan-300">
                   Selecionado
                 </p>
-                <h2 className="mt-3 text-xl font-black text-slate-950">{selectedContent.title}</h2>
+                <h2 className="mt-3 text-2xl font-black text-white">{selectedContent.title}</h2>
                 <div className="mt-4 flex flex-wrap gap-2">
                   <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-slate-950">
                     {selectedContent.area}
@@ -480,7 +480,7 @@ export function AdminClient() {
                   <span className={`rounded-full border px-3 py-1 text-xs font-black ${getStatusClass(selectedContent.status)}`}>
                     {selectedContent.status}
                   </span>
-                  <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-black text-slate-600">
+                  <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-black text-cyan-100">
                     {selectedContent.category}
                   </span>
                 </div>
@@ -490,14 +490,14 @@ export function AdminClient() {
                 <button
                   type="button"
                   onClick={() => handlePreparedAction("Aprovação", selectedContent.title)}
-                  className="rounded-2xl bg-white px-5 py-3 text-sm font-black text-slate-950 transition hover:-translate-y-1 hover:opacity-95"
+                  className="rounded-2xl bg-white px-5 py-3 text-sm font-black text-slate-950 transition hover:-translate-y-1 hover:bg-cyan-100"
                 >
                   Aprovar
                 </button>
                 <button
                   type="button"
                   onClick={() => handlePreparedAction("Destaque", selectedContent.title)}
-                  className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-700 transition hover:-translate-y-1 hover:border-indigo-300"
+                  className="rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-black text-white transition hover:-translate-y-1 hover:bg-white/10"
                 >
                   Destacar
                 </button>
@@ -512,8 +512,8 @@ export function AdminClient() {
               key={content.id}
               className={`rounded-[1.5rem] border p-5 transition hover:-translate-y-1 ${
                 selectedContent?.id === content.id
-                  ? "border-indigo-400 bg-indigo-50"
-                  : "border-slate-200 bg-white hover:border-indigo-300"
+                  ? "border-cyan-300/40 bg-cyan-300/10"
+                  : "border-white/10 bg-slate-950/50 hover:border-cyan-300/30"
               }`}
             >
               <div className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-start">
@@ -525,13 +525,13 @@ export function AdminClient() {
                     <span className={`rounded-full border px-3 py-1 text-xs font-black ${getStatusClass(content.status)}`}>
                       {content.status}
                     </span>
-                    <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-black text-slate-600">
+                    <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-black text-slate-300">
                       {content.category}
                     </span>
                   </div>
 
-                  <h3 className="mt-4 text-xl font-black text-slate-950">{content.title}</h3>
-                  <p className="mt-2 text-sm text-slate-600">
+                  <h3 className="mt-4 text-xl font-black text-white">{content.title}</h3>
+                  <p className="mt-2 text-sm text-slate-400">
                     Dono: {content.owner} • Downloads: {content.downloads}
                   </p>
                 </button>
@@ -540,14 +540,14 @@ export function AdminClient() {
                   <button
                     type="button"
                     onClick={() => handlePreparedAction("Moderação", content.title)}
-                    className="rounded-2xl bg-white px-5 py-3 text-sm font-black text-slate-950 transition hover:-translate-y-1 hover:opacity-95"
+                    className="rounded-2xl bg-white px-5 py-3 text-sm font-black text-slate-950 transition hover:-translate-y-1 hover:bg-cyan-100"
                   >
                     Moderar
                   </button>
                   <button
                     type="button"
                     onClick={() => handlePreparedAction("Remoção", content.title)}
-                    className="rounded-2xl border border-rose-200 bg-rose-50 px-5 py-3 text-sm font-black text-rose-700 transition hover:-translate-y-1"
+                    className="rounded-2xl border border-rose-300/30 bg-rose-300/10 px-5 py-3 text-sm font-black text-rose-100 transition hover:-translate-y-1 hover:bg-rose-300/20"
                   >
                     Remover
                   </button>
@@ -564,11 +564,11 @@ export function AdminClient() {
     return (
       <div className="grid gap-4">
         {systemChecks.map((item) => (
-          <article key={item.name} className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
+          <article key={item.name} className="rounded-[1.5rem] border border-white/10 bg-slate-950/50 p-5">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
-                <h3 className="text-xl font-black text-slate-950">{item.name}</h3>
-                <p className="mt-2 text-sm leading-6 text-slate-600">{item.description}</p>
+                <h3 className="text-xl font-black text-white">{item.name}</h3>
+                <p className="mt-2 text-sm leading-6 text-slate-400">{item.description}</p>
               </div>
 
               <span className={`rounded-full border px-3 py-1 text-xs font-black ${getStatusClass(item.status)}`}>
@@ -605,34 +605,34 @@ export function AdminClient() {
     <section className="mx-auto max-w-7xl px-5 pb-24 sm:px-8">
       <div className="grid gap-6 xl:grid-cols-[0.78fr_1.22fr]">
         <aside className="grid gap-6 xl:sticky xl:top-28 xl:h-fit">
-          <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
-            <p className="text-sm font-black uppercase tracking-[0.25em] text-indigo-700">
+          <div className="rounded-[2rem] border border-cyan-300/20 bg-cyan-300/10 p-6 shadow-2xl shadow-cyan-500/10 backdrop-blur-2xl">
+            <p className="text-sm font-black uppercase tracking-[0.25em] text-cyan-300">
               Dono do SaaS
             </p>
-            <h2 className="mt-3 text-3xl font-black text-slate-950">
+            <h2 className="mt-3 text-3xl font-black text-white">
               Controle geral do Planify.
             </h2>
-            <p className="mt-4 text-sm leading-7 text-slate-600">
+            <p className="mt-4 text-sm leading-7 text-cyan-100/85">
               Esta área concentra a gestão visual de usuários, assinaturas, materiais, biblioteca, marketplace e documentos.
             </p>
 
             <div className="mt-6 flex flex-col gap-3">
               <Link
                 href="/dashboard"
-                className="rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-4 text-center text-sm font-black text-white transition hover:-translate-y-1 hover:opacity-95"
+                className="rounded-2xl bg-white px-5 py-4 text-center text-sm font-black text-slate-950 transition hover:-translate-y-1 hover:bg-cyan-100"
               >
                 Ir ao dashboard
               </Link>
               <Link
                 href="/contato"
-                className="rounded-2xl border border-slate-200 bg-white px-5 py-4 text-center text-sm font-black text-slate-700 transition hover:-translate-y-1 hover:border-indigo-300"
+                className="rounded-2xl border border-white/10 bg-white/5 px-5 py-4 text-center text-sm font-black text-white transition hover:-translate-y-1 hover:bg-white/10"
               >
                 Ver contato
               </Link>
             </div>
           </div>
 
-          <div className="rounded-[2rem] border border-slate-200 bg-white p-4 shadow-2xl backdrop-blur-2xl">
+          <div className="rounded-[2rem] border border-white/10 bg-white/[0.06] p-4 shadow-2xl backdrop-blur-2xl">
             <div className="grid gap-2">
               {tabs.map((tab) => (
                 <button
@@ -644,8 +644,8 @@ export function AdminClient() {
                   }}
                   className={`rounded-2xl px-4 py-3 text-left text-sm font-black transition ${
                     activeTab === tab.id
-                      ? "bg-gradient-to-r from-indigo-600 to-violet-600 text-white"
-                      : "text-slate-600 hover:bg-indigo-50 hover:text-indigo-900"
+                      ? "bg-white text-slate-950"
+                      : "text-slate-300 hover:bg-white/10 hover:text-white"
                   }`}
                 >
                   {tab.label}
@@ -656,16 +656,16 @@ export function AdminClient() {
         </aside>
 
         <div className="grid gap-6">
-          <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-2xl backdrop-blur-2xl">
+          <div className="rounded-[2rem] border border-white/10 bg-white/[0.06] p-6 shadow-2xl backdrop-blur-2xl">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
               <div>
-                <p className="text-sm font-black uppercase tracking-[0.25em] text-indigo-600">
+                <p className="text-sm font-black uppercase tracking-[0.25em] text-cyan-300">
                   Gestão
                 </p>
-                <h2 className="mt-3 text-3xl font-black text-slate-950">
+                <h2 className="mt-3 text-3xl font-black text-white">
                   {tabs.find((tab) => tab.id === activeTab)?.label}
                 </h2>
-                <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
+                <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-400">
                   Painel visual preparado para receber dados reais do Supabase, Stripe e Storage nas próximas etapas.
                 </p>
               </div>
@@ -674,12 +674,12 @@ export function AdminClient() {
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="Buscar no painel"
-                className="h-14 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-indigo-400 focus:bg-white lg:w-72"
+                className="h-14 rounded-2xl border border-white/10 bg-slate-950/50 px-4 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300/50 lg:w-72"
               />
             </div>
 
             {message && (
-              <div className="mt-6 rounded-2xl border border-indigo-200 bg-indigo-50 p-4 text-sm font-bold text-indigo-800">
+              <div className="mt-6 rounded-2xl border border-cyan-300/30 bg-cyan-300/10 p-4 text-sm font-bold text-cyan-100">
                 {message}
               </div>
             )}

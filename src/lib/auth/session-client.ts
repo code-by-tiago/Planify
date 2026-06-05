@@ -10,8 +10,6 @@ export type LoginResult = {
   redirectTo: string;
   message: string;
   accessToken?: string;
-  /** Conta criada, mas Supabase exige confirmação de e-mail antes do login */
-  needsEmailConfirmation?: boolean;
 };
 
 function timeout(ms: number): Promise<void> {
@@ -168,20 +166,7 @@ export async function signUpAndGoToPlans(params: {
     };
   }
 
-  const hasSession = Boolean(data.session?.access_token);
-
-  if (data.user && !hasSession) {
-    return {
-      success: true,
-      premium: false,
-      needsEmailConfirmation: true,
-      redirectTo: "/login?cadastro=confirmar",
-      message:
-        "Conta criada! Confirme o e-mail que enviamos e depois entre para escolher seu plano.",
-    };
-  }
-
-  if (hasSession && data.session?.access_token) {
+  if (data.session?.access_token) {
     await syncPremiumAccessCookie(data.session.access_token);
     await createOwnerSession(data.session.access_token);
   }
@@ -191,7 +176,7 @@ export async function signUpAndGoToPlans(params: {
     premium: false,
     redirectTo: "/planos?cadastro=ok",
     message:
-      "Conta criada! Na próxima tela, escolha Pro ou Premium para liberar os geradores IA.",
+      "Conta criada. Escolha um plano para liberar o acesso premium ao Planify.",
     accessToken: data.session?.access_token,
   };
 }

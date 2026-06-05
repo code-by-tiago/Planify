@@ -2,11 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import {
-  buildLoginRedirect,
-  buildPlansRedirect,
-  getCurrentPathWithSearch,
-} from "@/lib/auth/premium-gate";
 
 type AccessStatus = {
   authenticated: boolean;
@@ -43,6 +38,16 @@ function isProtectedPath(pathname: string) {
   );
 }
 
+function makeLoginUrl(pathname: string) {
+  let current = pathname;
+
+  if (typeof window !== "undefined") {
+    current = `${window.location.pathname}${window.location.search || ""}`;
+  }
+
+  return `/login?premium=required&redirect=${encodeURIComponent(current)}`;
+}
+
 export function PremiumRouteGuard() {
   const pathname = usePathname();
   const [checking, setChecking] = useState(false);
@@ -65,23 +70,17 @@ export function PremiumRouteGuard() {
 
         const data = (await response.json()) as AccessStatus;
 
-        if (!active) return;
-
-        const currentPath = getCurrentPathWithSearch(pathname);
-
-        if (!response.ok || !data.authenticated) {
-          window.location.href = buildLoginRedirect(currentPath);
+        if (!active) {
           return;
         }
 
-        if (!data.premium) {
-          window.location.href = buildPlansRedirect(currentPath);
+        if (!response.ok || !data.authenticated || !data.premium) {
+          window.location.href = makeLoginUrl(pathname);
           return;
         }
       } catch {
         if (active) {
-          const currentPath = getCurrentPathWithSearch(pathname);
-          window.location.href = buildLoginRedirect(currentPath);
+          window.location.href = makeLoginUrl(pathname);
         }
       } finally {
         if (active) {
@@ -102,11 +101,8 @@ export function PremiumRouteGuard() {
   }
 
   return (
-    <div className="flex items-center justify-center gap-3 border-b border-indigo-100 bg-indigo-50/90 px-5 py-3 text-center">
-      <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-indigo-200 border-t-indigo-600" />
-      <span className="text-sm font-bold text-indigo-800">
-        Validando acesso...
-      </span>
+    <div className="border-b border-amber-300/20 bg-amber-300/10 px-5 py-3 text-center text-sm font-bold text-amber-100">
+      Validando acesso premium...
     </div>
   );
 }

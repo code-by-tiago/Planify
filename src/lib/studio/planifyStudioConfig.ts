@@ -66,7 +66,7 @@ export const studioAreas: StudioArea[] = [
       "Crie materiais com estrutura adequada para cada formato, sem misturar tipos.",
     href: "/materiais",
     icon: "materials",
-    badge: "Planify",
+    badge: "Studio",
     featured: true,
     accent: "from-violet-500 to-fuchsia-400",
   },

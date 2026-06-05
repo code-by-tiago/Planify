@@ -3,7 +3,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyPremiumAccess } from "../../../../server/auth/premium-access-service";
 import { resolveAdminAccess } from "../../../../server/auth/admin-access";
 import { getSupabaseAdminClient } from "../../../../server/supabase/admin-client";
-import type { AccessCookiePayload } from "../../../../types/access";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -23,39 +22,6 @@ function ownerEmails() {
     .split(",")
     .map((email) => email.trim().toLowerCase())
     .filter(Boolean);
-}
-
-function looksLikeJwt(token: string | null) {
-  if (!token) {
-    return false;
-  }
-
-  const parts = token.split(".");
-  return parts.length === 3 && parts.every((part) => part.length > 0);
-}
-
-function parseAccessCookiePayload(
-  raw: string | null,
-): AccessCookiePayload | null {
-  if (!raw || looksLikeJwt(raw)) {
-    return null;
-  }
-
-  try {
-    const decoded = raw.includes("%") ? decodeURIComponent(raw) : raw;
-    const parsed = JSON.parse(decoded) as AccessCookiePayload;
-
-    if (
-      typeof parsed.authenticated === "boolean" &&
-      typeof parsed.premium === "boolean"
-    ) {
-      return parsed;
-    }
-  } catch {
-    return null;
-  }
-
-  return null;
 }
 
 function decodeJwtEmail(token: string | null) {
@@ -121,13 +87,11 @@ export async function GET(request: NextRequest) {
   const adminToken = request.cookies.get(ADMIN_COOKIE_NAME)?.value || null;
   const ownerToken = request.cookies.get(OWNER_COOKIE_NAME)?.value || null;
 
-  const accessCookie = parseAccessCookiePayload(premiumToken);
-  const accessJwtToken = looksLikeJwt(premiumToken) ? premiumToken : null;
-  const access = await verifyPremiumAccess(accessJwtToken);
+  const access = await verifyPremiumAccess(premiumToken);
   const admin = await resolveAdminAccess(adminToken);
-  const owner = await resolveOwnerByToken(ownerToken || accessJwtToken || adminToken);
+  const owner = await resolveOwnerByToken(ownerToken || premiumToken || adminToken);
 
-  const tokenEmail = decodeJwtEmail(accessJwtToken);
+  const tokenEmail = decodeJwtEmail(premiumToken);
   const email = String(
     access.user?.email ||
       owner.email ||
@@ -139,46 +103,19 @@ export async function GET(request: NextRequest) {
     .toLowerCase();
 
   const isOwner = Boolean(owner.isOwner || (email && ownerEmails().includes(email)));
-  const cookieAuthenticated = Boolean(accessCookie?.authenticated);
-  const cookiePremium = Boolean(accessCookie?.premium);
-  const cookieAdmin = accessCookie?.role === "admin";
   const authenticated = Boolean(
-    access.authenticated ||
-      cookieAuthenticated ||
-      admin.authenticated ||
-      owner.authenticated ||
-      email,
+    access.authenticated || admin.authenticated || owner.authenticated || email,
   );
-  const premium = Boolean(
-    access.premium || cookiePremium || admin.isAdmin || isOwner || cookieAdmin,
-  );
-  const reason = !authenticated
-    ? "not_authenticated"
-    : !premium
-      ? "premium_required"
-      : "ok";
-  const message = !authenticated
-    ? "Faça login para continuar."
-    : !premium
-      ? "Seu login está ativo, mas é necessário plano premium para continuar."
-      : "Acesso premium confirmado.";
-
-  const planKey =
-    access.subscription?.planKey ||
-    access.subscription?.planId ||
-    null;
+  const premium = Boolean(access.premium || admin.isAdmin || isOwner);
 
   return NextResponse.json(
     {
       authenticated,
       premium,
-      reason,
-      message,
       isOwner,
-      isAdmin: Boolean(admin.isAdmin || isOwner || cookieAdmin),
+      isAdmin: Boolean(admin.isAdmin || isOwner),
       role: isOwner || admin.isAdmin ? "admin" : access.user?.role || "user",
       email,
-      planKey,
       checkedAt: new Date().toISOString(),
     },
     {

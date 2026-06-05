@@ -43,11 +43,8 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const customerEmail = request.nextUrl.searchParams.get("email");
-
     const session = await createStripeCheckoutSession({
       planKey,
-      customerEmail,
     });
 
     if (!session.url) {
@@ -71,7 +68,6 @@ export async function POST(request: NextRequest) {
     const body = (await request.json().catch(() => ({}))) as {
       plan?: string;
       tipo?: string;
-      email?: string;
     };
 
     const planKey = normalizeBillingPlanKey(body.plan || body.tipo);
@@ -89,12 +85,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const customerEmail =
-      body.email || request.nextUrl.searchParams.get("email");
-
     const session = await createStripeCheckoutSession({
       planKey,
-      customerEmail,
     });
 
     return NextResponse.json(

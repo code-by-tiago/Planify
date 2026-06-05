@@ -224,10 +224,7 @@ function normalizeSearch(value: unknown): string {
   return normalizeText(value)
     .toLowerCase()
     .normalize("NFD")
-    .replace(/\p{Diacritic}/gu, "")
-    .replace(/[_/]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+    .replace(/\p{Diacritic}/gu, "");
 }
 
 function getRecordValue(record: UnknownRecord, keys: string[]): unknown {
@@ -542,59 +539,6 @@ function expandTerms(content: string): string[] {
   return Array.from(terms);
 }
 
-// Série/ano alvo informado pelo professor (1..9 no Fundamental, 1..3 no Médio).
-function getTargetGrade(payload: BnccSuggestionPayload): number | null {
-  const value = normalizeSearch(
-    [getString(payload, ["anoSerie", "serie", "ano"]), getString(payload, ["etapa"])].join(" "),
-  );
-  const direct = value.match(/([1-9])\D{0,3}(?:ano|serie)/);
-
-  if (direct) {
-    return Number(direct[1]);
-  }
-
-  const loose = value.match(/\b([1-9])\b/);
-
-  return loose ? Number(loose[1]) : null;
-}
-
-// Faixa de anos/séries coberta por uma habilidade, a partir do campo ano/série
-// e, como reforço, do próprio código BNCC (ex.: EF35 = 3º ao 5º, EF69 = 6º ao 9º).
-function candidateGradeRange(candidate: SkillCandidate): { min: number; max: number } | null {
-  const text = normalizeSearch(candidate.anoSerie);
-  const range = text.match(/([1-9])\D{0,4}(?:ao|a)\D{0,4}([1-9])/);
-
-  if (range) {
-    const a = Number(range[1]);
-    const b = Number(range[2]);
-
-    return { min: Math.min(a, b), max: Math.max(a, b) };
-  }
-
-  const single = text.match(/([1-9])\D{0,3}(?:ano|serie)/) || text.match(/\b([1-9])\b/);
-
-  if (single) {
-    const grade = Number(single[1]);
-
-    return { min: grade, max: grade };
-  }
-
-  const codeMatch = candidate.codigo.toUpperCase().match(/^EF(\d)(\d)/);
-
-  if (codeMatch) {
-    const a = Number(codeMatch[1]);
-    const b = Number(codeMatch[2]);
-
-    if (a === 0) {
-      return { min: b, max: b };
-    }
-
-    return { min: Math.min(a, b), max: Math.max(a, b) };
-  }
-
-  return null;
-}
-
 function scoreCandidate(
   candidate: SkillCandidate,
   content: string,
@@ -668,64 +612,7 @@ function scoreCandidate(
     score += 14;
   }
 
-  const targetGrade = getTargetGrade(payload);
-  const gradeRange = candidateGradeRange(candidate);
-
-  if (targetGrade && gradeRange) {
-    if (targetGrade >= gradeRange.min && targetGrade <= gradeRange.max) {
-      score += 40;
-    } else {
-      score -= 30;
-    }
-  }
-
   return score;
-}
-
-// Restringe os candidatos ao componente/etapa informados para nunca sugerir
-// habilidades de outra disciplina ou de outro nível escolar.
-function filterByContext(
-  candidates: SkillCandidate[],
-  payload: BnccSuggestionPayload,
-): SkillCandidate[] {
-  let result = candidates;
-
-  const componente = normalizeSearch(
-    getString(payload, ["componenteCurricular", "componente"]),
-  );
-
-  if (componente) {
-    const exact = result.filter(
-      (candidate) => normalizeSearch(candidate.componente) === componente,
-    );
-    const loose = result.filter((candidate) => {
-      const value = normalizeSearch(candidate.componente);
-
-      return value && (value.includes(componente) || componente.includes(value));
-    });
-
-    if (exact.length > 0) {
-      result = exact;
-    } else if (loose.length > 0) {
-      result = loose;
-    }
-  }
-
-  const etapa = normalizeSearch(getString(payload, ["etapa"]));
-
-  if (etapa) {
-    const byEtapa = result.filter((candidate) => {
-      const value = normalizeSearch(candidate.etapa);
-
-      return value && (value.includes(etapa) || etapa.includes(value));
-    });
-
-    if (byEtapa.length > 0) {
-      result = byEtapa;
-    }
-  }
-
-  return result;
 }
 
 
@@ -991,28 +878,24 @@ function chooseForContent(
   payload: BnccSuggestionPayload,
   candidates: SkillCandidate[],
 ): BnccSkillSuggestion[] {
-  const scored = candidates
+  const ranked = candidates
     .map((candidate) => ({
       candidate,
       score: scoreCandidate(candidate, content, payload),
     }))
-    .sort((a, b) => b.score - a.score);
+    .filter((item) => item.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 3);
 
-  const ranked = scored.filter((item) => item.score > 0).slice(0, 3);
-
-  // Mantém-se dentro do componente/etapa já filtrado; só recorre às habilidades
-  // genéricas se não houver nenhum candidato local compatível.
   const chosen =
     ranked.length > 0
       ? ranked
-      : scored.length > 0
-        ? scored.slice(0, 3)
-        : FALLBACK_SKILLS.map((candidate) => ({
-            candidate,
-            score: scoreCandidate(candidate, content, payload),
-          }))
-            .sort((a, b) => b.score - a.score)
-            .slice(0, 3);
+      : FALLBACK_SKILLS.map((candidate) => ({
+          candidate,
+          score: scoreCandidate(candidate, content, payload),
+        }))
+          .sort((a, b) => b.score - a.score)
+          .slice(0, 3);
 
   return chosen.map(({ candidate, score }, index) =>
     buildSuggestionFromCandidate(candidate, content, index, score),
@@ -1046,8 +929,7 @@ export function suggestBnccByConteudos(payload: BnccSuggestionPayload) {
     }
   }
 
-  const baseCandidates = localSkills.length > 0 ? localSkills : FALLBACK_SKILLS;
-  const candidates = filterByContext(baseCandidates, payload);
+  const candidates = localSkills.length > 0 ? localSkills : FALLBACK_SKILLS;
 
   const grouped = conteudos.map((conteudo) => ({
     conteudo,

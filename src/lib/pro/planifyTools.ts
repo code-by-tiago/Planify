@@ -1,6 +1,3 @@
-import type { DashboardSectionId } from "@/lib/pro/dashboardViews";
-import { dashboardToolHref } from "@/lib/pro/toolRoutes";
-
 export type PlanifyIconName =
   | "home"
   | "materials"
@@ -27,20 +24,7 @@ export type PlanifyIconName =
   | "spark"
   | "user"
   | "arrowRight"
-  | "arrowLeft"
-  | "close"
-  | "menu"
-  | "chevronDown"
-  | "chevronRight"
-  | "checkCircle"
-  | "alertCircle"
-  | "infoCircle"
-  | "download"
-  | "externalLink"
-  | "logout"
-  | "plus"
-  | "trash"
-  | "settings";
+  | "close";
 
 export type ToolCategoryId =
   | "todos"
@@ -98,15 +82,15 @@ export const planifyTools: PlanifyTool[] = [
     id: "slides",
     title: "Apresentação de Slides",
     shortTitle: "Slides",
-    description: "Slides em sequência de aula, com imagens reais e roteiro do professor.",
+    description: "Estruture uma aula em slides com roteiro do professor.",
     category: "preparar-aulas",
-    href: dashboardToolHref("slides"),
+    href: "/materiais?tipo=slides",
     icon: "presentation",
     popular: true,
     primaryFieldLabel: "Tema da apresentação",
     loadingTitle: "Criando apresentação",
-    loadingDescription: "Montando sequência pedagógica, imagens e roteiro de fala.",
-    accent: "from-violet-300 via-fuchsia-300 to-pink-300",
+    loadingDescription: "Organizando roteiro, títulos, tópicos e sugestões visuais.",
+    accent: "from-indigo-500 to-blue-500",
   },
   {
     id: "prova",
@@ -114,147 +98,145 @@ export const planifyTools: PlanifyTool[] = [
     shortTitle: "Prova",
     description: "Gere questões objetivas e discursivas com gabarito.",
     category: "avaliacoes",
-    href: dashboardToolHref("prova"),
+    href: "/materiais?tipo=prova",
     icon: "fileText",
     popular: true,
     primaryFieldLabel: "Conteúdo da prova",
     loadingTitle: "Gerando prova",
-    loadingDescription: "Montando questões, gabarito e critérios de correção.",
-    accent: "from-sky-300 via-blue-300 to-indigo-300",
+    loadingDescription: "Montando questões, pontuação e respostas esperadas.",
+    accent: "from-blue-600 to-cyan-500",
   },
   {
     id: "lista",
     title: "Lista de Exercícios",
-    shortTitle: "Lista",
-    description: "Liste exercícios com variedade e progressão.",
+    shortTitle: "Exercícios",
+    description: "Crie listas por assunto, série, dificuldade e gabarito.",
     category: "avaliacoes",
-    href: dashboardToolHref("lista"),
+    href: "/materiais?tipo=lista",
     icon: "listChecks",
     popular: true,
-    primaryFieldLabel: "Conteúdo da lista",
-    loadingTitle: "Gerando lista",
-    loadingDescription: "Criando exercícios alinhados ao tema e à etapa.",
-    accent: "from-cyan-300 via-teal-300 to-emerald-300",
+    primaryFieldLabel: "Assunto da lista",
+    loadingTitle: "Criando lista de exercícios",
+    loadingDescription: "Distribuindo questões e níveis de dificuldade.",
+    accent: "from-sky-600 to-blue-500",
   },
   {
     id: "plano-aula",
     title: "Plano de Aula",
     shortTitle: "Plano de Aula",
-    description: "Planeje objetivos, metodologia e avaliação.",
+    description: "Organize objetivos, metodologia, recursos e avaliação.",
     category: "planejamento",
-    href: dashboardToolHref("plano-aula"),
+    href: "/materiais?tipo=plano-aula",
     icon: "clipboard",
     popular: true,
-    primaryFieldLabel: "Tema do plano",
-    loadingTitle: "Gerando plano de aula",
-    loadingDescription: "Estruturando etapas, recursos e habilidades BNCC.",
-    accent: "from-indigo-300 via-violet-300 to-purple-300",
+    primaryFieldLabel: "Tema da aula",
+    loadingTitle: "Estruturando plano de aula",
+    loadingDescription: "Preparando objetivos, etapas e avaliação.",
+    accent: "from-emerald-600 to-teal-500",
   },
   {
     id: "sequencia",
     title: "Sequência Didática",
     shortTitle: "Sequência",
-    description: "Organize aulas em sequência com progressão.",
+    description: "Distribua conteúdo em aulas com progressão pedagógica.",
     category: "planejamento",
-    href: dashboardToolHref("sequencia"),
+    href: "/materiais?tipo=sequencia",
     icon: "layers",
     primaryFieldLabel: "Tema da sequência",
-    loadingTitle: "Gerando sequência",
-    loadingDescription: "Distribuindo conteúdos e atividades por aula.",
-    accent: "from-blue-300 via-indigo-300 to-violet-300",
+    loadingTitle: "Montando sequência didática",
+    loadingDescription: "Organizando aulas, atividades e avaliação formativa.",
+    accent: "from-teal-600 to-cyan-500",
   },
   {
     id: "apostila",
     title: "Apostila",
     shortTitle: "Apostila",
-    description: "Material de apoio estruturado para os alunos.",
+    description: "Gere explicação, exemplos, atividades e gabarito.",
     category: "preparar-aulas",
-    href: dashboardToolHref("apostila"),
+    href: "/materiais?tipo=apostila",
     icon: "book",
     primaryFieldLabel: "Tema da apostila",
     loadingTitle: "Gerando apostila",
-    loadingDescription: "Organizando capítulos, explicações e exemplos.",
-    accent: "from-amber-300 via-orange-300 to-rose-300",
+    loadingDescription: "Organizando explicações, exemplos e atividades.",
+    accent: "from-blue-700 to-indigo-500",
   },
   {
     id: "atividade",
     title: "Atividade",
     shortTitle: "Atividade",
-    description: "Atividades práticas com instruções claras.",
+    description: "Crie comandos claros para alunos e critérios de avaliação.",
     category: "engajar",
-    href: dashboardToolHref("atividade"),
+    href: "/materiais?tipo=atividade",
     icon: "puzzle",
     primaryFieldLabel: "Tema da atividade",
-    loadingTitle: "Gerando atividade",
-    loadingDescription: "Criando enunciado, passos e critérios.",
-    accent: "from-emerald-300 via-green-300 to-lime-300",
+    loadingTitle: "Criando atividade",
+    loadingDescription: "Montando comandos, etapas e fechamento.",
+    accent: "from-violet-600 to-purple-500",
   },
   {
     id: "jogo",
     title: "Jogo Pedagógico",
     shortTitle: "Jogo",
-    description: "Dinâmicas e jogos para engajar a turma.",
+    description: "Crie caça-palavras, cruzadinha, quiz, bingo ou trilha.",
     category: "engajar",
-    href: dashboardToolHref("jogo"),
-    icon: "cards",
+    href: "/materiais?tipo=jogo",
+    icon: "puzzle",
     primaryFieldLabel: "Tema do jogo",
-    loadingTitle: "Gerando jogo",
-    loadingDescription: "Propondo regras, rodadas e materiais.",
-    accent: "from-pink-300 via-rose-300 to-red-300",
+    loadingTitle: "Criando jogo pedagógico",
+    loadingDescription: "Preparando regras, versão do aluno e solução.",
+    accent: "from-fuchsia-600 to-violet-500",
   },
   {
     id: "projeto",
-    title: "Projeto",
+    title: "Projeto Pedagógico",
     shortTitle: "Projeto",
-    description: "Projeto interdisciplinar com etapas e produtos.",
-    category: "engajar",
-    href: dashboardToolHref("projeto"),
+    description: "Monte projeto com etapas, produto final e rubrica.",
+    category: "planejamento",
+    href: "/materiais?tipo=projeto",
     icon: "project",
     primaryFieldLabel: "Tema do projeto",
-    loadingTitle: "Gerando projeto",
-    loadingDescription: "Definindo desafio, cronograma e avaliação.",
-    accent: "from-fuchsia-300 via-purple-300 to-violet-300",
+    loadingTitle: "Estruturando projeto",
+    loadingDescription: "Criando etapas, cronograma e critérios avaliativos.",
+    accent: "from-amber-600 to-orange-500",
   },
   {
     id: "resumo",
     title: "Resumo",
     shortTitle: "Resumo",
-    description: "Resumo didático do conteúdo para revisão.",
+    description: "Crie síntese, conceitos-chave e perguntas de revisão.",
     category: "preparar-aulas",
-    href: dashboardToolHref("resumo"),
+    href: "/materiais?tipo=resumo",
     icon: "fileText",
     primaryFieldLabel: "Tema do resumo",
-    loadingTitle: "Gerando resumo",
-    loadingDescription: "Sintetizando conceitos essenciais.",
-    accent: "from-slate-300 via-zinc-300 to-stone-300",
+    loadingTitle: "Preparando resumo",
+    loadingDescription: "Selecionando ideias principais e exemplos.",
+    accent: "from-slate-700 to-slate-500",
   },
   {
     id: "flashcards",
     title: "Flashcards",
     shortTitle: "Flashcards",
-    description: "Cartões de estudo para memorização.",
-    category: "preparar-aulas",
-    href: dashboardToolHref("flashcards"),
+    description: "Transforme conteúdo em cartões de revisão.",
+    category: "engajar",
+    href: "/materiais?tipo=flashcards",
     icon: "cards",
     primaryFieldLabel: "Tema dos flashcards",
-    loadingTitle: "Gerando flashcards",
+    loadingTitle: "Criando flashcards",
     loadingDescription: "Separando perguntas e respostas curtas.",
-    accent: "from-lime-300 via-emerald-300 to-teal-300",
+    accent: "from-lime-600 to-emerald-500",
   },
   {
     id: "redacao",
-    title: "Gerador de Redação",
+    title: "Corretor de Redação",
     shortTitle: "Redação",
-    description:
-      "Monte proposta completa com tema, textos motivadores, comando e critérios de avaliação.",
-    category: "avaliacoes",
-    href: dashboardToolHref("redacao"),
+    description: "Gere rubrica, devolutiva e orientação de reescrita.",
+    category: "correcao",
+    href: "/materiais?tipo=redacao",
     icon: "pen",
-    primaryFieldLabel: "Tema da redação",
-    loadingTitle: "Gerando proposta de redação",
-    loadingDescription:
-      "Organizando tema, motivadores, comando e critérios para a turma escrever.",
-    accent: "from-rose-300 via-pink-300 to-red-300",
+    primaryFieldLabel: "Tema ou proposta da redação",
+    loadingTitle: "Preparando correção orientada",
+    loadingDescription: "Organizando critérios, devolutiva e melhorias.",
+    accent: "from-rose-600 to-red-500",
   },
   {
     id: "mapa-mental",
@@ -262,62 +244,26 @@ export const planifyTools: PlanifyTool[] = [
     shortTitle: "Mapa Mental",
     description: "Organize tema central, ramos e conexões.",
     category: "preparar-aulas",
-    href: dashboardToolHref("mapa-mental"),
+    href: "/materiais?tipo=mapa-mental",
     icon: "brain",
     primaryFieldLabel: "Tema do mapa mental",
     loadingTitle: "Criando mapa mental",
     loadingDescription: "Relacionando conceitos e tópicos essenciais.",
-    accent: "from-purple-300 via-fuchsia-300 to-indigo-300",
+    accent: "from-purple-600 to-indigo-500",
   },
 ];
 
-export type AppNavPanel = "inicio" | DashboardSectionId | "external";
-
-export type AppNavItem = {
-  label: string;
-  href: string;
-  icon: PlanifyIconName;
-  panel: AppNavPanel;
-};
-
-/** Páginas do workspace + links externos (abrem no painel central) */
-export const appNavigation: AppNavItem[] = [
-  { label: "Início", href: "/dashboard", icon: "home", panel: "inicio" },
-  {
-    label: "Planejamentos",
-    href: "/dashboard?secao=planejamentos",
-    icon: "clipboard",
-    panel: "planejamentos",
-  },
-  {
-    label: "Editor",
-    href: "/dashboard?secao=editor",
-    icon: "editor",
-    panel: "editor",
-  },
-  {
-    label: "Histórico",
-    href: "/dashboard?secao=historico",
-    icon: "history",
-    panel: "historico",
-  },
-  {
-    label: "Biblioteca",
-    href: "/dashboard?secao=biblioteca",
-    icon: "library",
-    panel: "biblioteca",
-  },
-  {
-    label: "Marketplace",
-    href: "/dashboard?secao=marketplace",
-    icon: "market",
-    panel: "marketplace",
-  },
-  { label: "Planos", href: "/planos", icon: "plans", panel: "external" },
+export const appNavigation = [
+  { label: "Início", href: "/dashboard", icon: "home" as const },
+  { label: "Materiais", href: "/materiais", icon: "materials" as const },
+  { label: "Planejamentos", href: "/planejamentos", icon: "clipboard" as const },
+  { label: "Editor", href: "/editor", icon: "editor" as const },
+  { label: "Histórico", href: "/historico", icon: "history" as const },
+  { label: "Biblioteca", href: "/biblioteca", icon: "library" as const },
+  { label: "Marketplace", href: "/marketplace", icon: "market" as const },
+  { label: "Planos", href: "/planos", icon: "plans" as const },
 ];
 
 export function getPlanifyTool(id: string | null | undefined) {
   return planifyTools.find((tool) => tool.id === id) ?? planifyTools[0];
 }
-
-export const planifyToolCount = planifyTools.length;

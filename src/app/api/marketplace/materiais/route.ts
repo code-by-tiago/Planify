@@ -124,45 +124,17 @@ async function resolveOwnerByToken(token: string | null) {
   }
 }
 
-/** Cookie ou Authorization Bearer (sessão Supabase no editor). */
-function getAccessToken(request: NextRequest): string | null {
-  const header = request.headers.get("authorization") || "";
-  const match = header.match(/^Bearer\s+(.+)$/i);
-
-  return (
-    match?.[1]?.trim() ||
-    request.cookies.get(PREMIUM_COOKIE_NAME)?.value ||
-    null
-  );
-}
-
-/** O bucket marketplace-materiais não aceita text/html; normalizamos no upload. */
-function resolveUploadContentType(file: File): string {
-  const name = (file.name || "").toLowerCase();
-  const type = (file.type || "").toLowerCase();
-
-  if (
-    type.includes("text/html") ||
-    name.endsWith(".html") ||
-    name.endsWith(".htm")
-  ) {
-    return "text/plain";
-  }
-
-  return file.type || "application/octet-stream";
-}
-
 async function resolveMarketplaceAccess(request: NextRequest) {
-  const accessToken = getAccessToken(request);
+  const premiumToken = request.cookies.get(PREMIUM_COOKIE_NAME)?.value || null;
   const adminToken = request.cookies.get(ADMIN_COOKIE_NAME)?.value || null;
   const ownerToken = request.cookies.get(OWNER_COOKIE_NAME)?.value || null;
 
-  const premium = await verifyPremiumAccess(accessToken);
+  const premium = await verifyPremiumAccess(premiumToken);
   const admin = await resolveAdminAccess(adminToken);
-  const owner = await resolveOwnerByToken(ownerToken || accessToken || adminToken);
+  const owner = await resolveOwnerByToken(ownerToken || premiumToken || adminToken);
 
-  const tokenEmail = decodeJwtEmail(accessToken);
-  const tokenUserId = decodeJwtUserId(accessToken);
+  const tokenEmail = decodeJwtEmail(premiumToken);
+  const tokenUserId = decodeJwtUserId(premiumToken);
 
   const email = String(
     premium.user?.email ||
@@ -336,14 +308,6 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  if (!access.userId) {
-    return jsonError(
-      "Não foi possível identificar sua conta. Saia e entre novamente, depois tente publicar.",
-      401,
-      "user_missing",
-    );
-  }
-
   const formData = await request.formData();
 
   const title = normalizeText(formData.get("title"));
@@ -384,13 +348,11 @@ export async function POST(request: NextRequest) {
   const arrayBuffer = await fileValue.arrayBuffer();
   const uploadBody = new Uint8Array(arrayBuffer);
 
-  const uploadContentType = resolveUploadContentType(fileValue);
-
   const uploadResult = await (supabase.storage.from(BUCKET_NAME) as any).upload(
     storagePath,
     uploadBody,
     {
-      contentType: uploadContentType,
+      contentType: fileValue.type || "application/octet-stream",
       upsert: false,
     },
   );
@@ -418,7 +380,7 @@ export async function POST(request: NextRequest) {
     tags,
     file_name: fileValue.name || originalName,
     file_path: storagePath,
-    file_mime: uploadContentType,
+    file_mime: fileValue.type || "application/octet-stream",
     file_size: fileValue.size,
     is_published: isPublished,
     downloads_count: 0,

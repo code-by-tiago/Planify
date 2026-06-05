@@ -1,14 +1,8 @@
-"use client";
-
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { useSidebarSearchShortcut } from "@/hooks/useSidebarSearchShortcut";
-import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { LandingHomeLink } from "@/components/public/LandingHomeLink";
+import { ReactNode } from "react";
 import { PlanifyBrand } from "@/components/pro/PlanifyBrand";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
-import { PlanifyShellSidebar } from "@/components/pro/PlanifyShellSidebar";
-import { PlanifySidebarNav } from "@/components/pro/PlanifySidebarNav";
+import { appNavigation } from "@/lib/pro/planifyTools";
 
 type FrameProps = {
   children: ReactNode;
@@ -16,142 +10,84 @@ type FrameProps = {
   title?: string;
   subtitle?: string;
   action?: ReactNode;
-  compact?: boolean;
 };
 
 export default function PlanifyAppFrame({
   children,
-  active,
-  title = "Planify",
+  active = "",
+  title = "Planify Studio",
   subtitle = "Central de criação pedagógica",
   action,
-  compact = false,
 }: FrameProps) {
-  const pathname = usePathname();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [query, setQuery] = useState("");
-  const [activeTipo, setActiveTipo] = useState<string | null>(null);
-  const searchRef = useRef<HTMLInputElement>(null);
-  useSidebarSearchShortcut(searchRef);
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      setActiveTipo(new URLSearchParams(window.location.search).get("tipo"));
-    }
-  }, [pathname]);
-
-  function isNavActive(href: string): boolean {
-    if (active) return active === href;
-    if (href === "/dashboard") {
-      return pathname === "/dashboard";
-    }
-    return pathname === href || pathname.startsWith(href + "/");
-  }
-
-  const pageMeta = useMemo(() => {
-    if (pathname === "/dashboard") {
-      return { title: "Planify", subtitle: "Sua central de criação" };
-    }
-    if (pathname.startsWith("/materiais")) {
-      return { title: "Materiais", subtitle: "Ferramentas com IA" };
-    }
-    if (pathname.startsWith("/planejamentos")) {
-      return { title: "Planejamentos", subtitle: "BNCC + DOCX oficial" };
-    }
-    if (pathname.startsWith("/editor")) {
-      return { title: "Editor", subtitle: "Finalize e exporte" };
-    }
-    if (pathname.startsWith("/historico")) {
-      return { title: "Histórico", subtitle: "Tudo que você criou" };
-    }
-    if (pathname.startsWith("/biblioteca")) {
-      return { title: "Biblioteca", subtitle: "Seus materiais salvos" };
-    }
-    if (pathname.startsWith("/marketplace")) {
-      return { title: "Marketplace", subtitle: "Recursos da comunidade" };
-    }
-    return { title, subtitle };
-  }, [pathname, title, subtitle]);
-
-  const closeSidebar = () => setSidebarOpen(false);
-
-  const primaryAction = (
-    <Link
-      href="/dashboard"
-      onClick={closeSidebar}
-      className="pl-teachy-cta w-full justify-center rounded-full py-3 font-bold text-slate-900"
-    >
-      <PlanifyIcon name="spark" className="h-4 w-4" />
-      Início
-    </Link>
-  );
-
   return (
-    <main className="planify-ui3 planify-teachy-app pl-shell-root pl-teachy-shell pl-app-bg flex h-screen w-screen overflow-hidden text-slate-950">
-      <PlanifyShellSidebar
-        variant="teachy"
-        brandHref="/"
-        open={sidebarOpen}
-        onOpenChange={setSidebarOpen}
-      >
-        <PlanifySidebarNav
-          mode="routes"
-          query={query}
-          onQueryChange={setQuery}
-          primaryAction={primaryAction}
-          onActivate={closeSidebar}
-          pathname={pathname}
-          activeTipo={activeTipo}
-          isNavActive={isNavActive}
-          searchInputRef={searchRef}
-        />
-      </PlanifyShellSidebar>
+    <main className="min-h-screen bg-[#f6f7fb] text-slate-950">
+      <div className="grid min-h-screen lg:grid-cols-[248px_1fr]">
+        <aside className="hidden border-r border-slate-200 bg-white px-4 py-5 lg:block">
+          <PlanifyBrand />
 
-      <section className="flex h-screen min-w-0 flex-1 flex-col overflow-hidden bg-white">
-        <header className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-200/90 bg-white px-4 py-3 sm:px-5">
-          <div className="flex min-w-0 items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setSidebarOpen(true)}
-              aria-label="Abrir menu"
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-slate-600 transition hover:bg-slate-100 lg:hidden"
-            >
-              <PlanifyIcon name="menu" className="h-5 w-5" />
-            </button>
-            {!compact ? (
-              <div className="min-w-0 hidden sm:block">
-                <h1 className="truncate text-lg font-black tracking-tight text-slate-950">
-                  {pageMeta.title}
-                </h1>
-                <p className="truncate text-xs font-semibold text-slate-500">
-                  {pageMeta.subtitle}
-                </p>
-              </div>
-            ) : (
-              <div className="min-w-0 lg:hidden">
-                <PlanifyBrand compact href="/" />
-              </div>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            {action}
-            <LandingHomeLink compact />
-            <Link
-              href="/planos"
-              className="pl-teachy-cta rounded-full px-4 py-2 text-xs font-black text-slate-900"
-            >
-              Planos
-            </Link>
-          </div>
-        </header>
+          <nav className="mt-7 space-y-1">
+            {appNavigation.map((item) => {
+              const selected = active === item.href || active === item.label;
 
-        <div
-          key={pathname}
-          className="pl-main-pane pl-fade-rise min-h-0 flex-1 overflow-x-hidden overflow-y-auto"
-        >
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-black transition ${
+                    selected
+                      ? "bg-slate-950 text-white shadow-lg shadow-slate-200"
+                      : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"
+                  }`}
+                >
+                  <PlanifyIcon name={item.icon} className="h-5 w-5" />
+                  {item.label}
+                </Link>
+              );
+            })}
+          </nav>
+
+          <div className="mt-7 rounded-3xl border border-slate-200 bg-slate-50 p-4">
+            <p className="text-sm font-black text-slate-950">
+              Ambiente premium
+            </p>
+            <p className="mt-1 text-xs font-semibold leading-5 text-slate-500">
+              Ferramentas organizadas para reduzir rolagem e acelerar a criação.
+            </p>
+          </div>
+        </aside>
+
+        <section className="min-w-0">
+          <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/90 px-4 py-3 backdrop-blur sm:px-6">
+            <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="lg:hidden">
+                  <PlanifyBrand compact />
+                </div>
+                <div>
+                  <h1 className="text-xl font-black tracking-tight text-slate-950 sm:text-2xl">
+                    {title}
+                  </h1>
+                  <p className="text-sm font-semibold text-slate-500">
+                    {subtitle}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {action}
+                <Link
+                  href="/planos"
+                  className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 transition hover:border-slate-950"
+                >
+                  Planos
+                </Link>
+              </div>
+            </div>
+          </header>
+
           {children}
-        </div>
-      </section>
+        </section>
+      </div>
     </main>
   );
 }

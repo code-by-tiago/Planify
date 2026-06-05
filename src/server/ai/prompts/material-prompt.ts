@@ -93,7 +93,7 @@ function materialRulesByType(type: string): string[] {
   if (normalizedType === "jogo") {
     return [
       "Entregue um jogo pedagógico real, imprimível, editável e aplicável em sala de aula.",
-      "Use exatamente o modelo de jogo solicitado: caça-palavras, cruzadinha, bingo, memória, dominó, quiz, cartas ou trilha pedagógica.",
+      "Use exatamente o modelo de jogo solicitado: caça-palavras, cruzadinha, bingo, memória, dominó, quiz ou cartas.",
       "Inclua nome do jogo, objetivo, materiais, preparação, regras, modo de jogar, variações e fechamento pedagógico.",
       "Inclua material pronto para impressão: grades, cartelas, cartas, peças, pistas, perguntas, comandos ou banco de palavras conforme o modelo solicitado.",
       "Preencha jogoVisualSeed.termos com termos específicos do tema; cada termo deve ter resposta sem espaços e sem acentos, pista contextual e categoria.",
@@ -121,37 +121,6 @@ function materialRulesByType(type: string): string[] {
       "Preencha roteiro com antes do estudo, durante o estudo, depois do estudo e autoavaliação.",
       "Inclua leitura guiada, perguntas orientadoras, tarefas de registro, revisão e checagem de aprendizagem.",
       "Use linguagem direta para o aluno.",
-      "Não preencha jogo nem projeto.",
-    ];
-  }
-
-  if (normalizedType === "plano-aula" || normalizedType === "plano aula") {
-    return [
-      "Entregue plano de aula completo, não lista de exercícios.",
-      "Organize etapas cronológicas com tempo estimado, recursos e ações do professor e dos estudantes.",
-      "Referencie competências e habilidades da BNCC quando coerentes com componente e ano/série.",
-      "Inclua objetivos, avaliação formativa e adaptações.",
-      "Não preencha jogo, projeto nem bloco principal de questões.",
-    ];
-  }
-
-  if (normalizedType === "redacao") {
-    return [
-      "Entregue proposta de redação para produção textual (não corrija redação já escrita).",
-      "Inclua tema, gênero textual, comando e textos motivadores na quantidade solicitada.",
-      "Cada motivador deve estar em seção própria com título que identifique o texto.",
-      "Inclua critérios de avaliação e competências em criteriosAvaliacao.",
-      "Se o professor pediu gabarito, inclua redação modelo no array gabarito; caso contrário, omita modelo.",
-      "Não preencha questoes como lista de exercícios.",
-    ];
-  }
-
-  if (normalizedType === "resumo") {
-    return [
-      "Entregue resumo guiado por seções temáticas com bullets objetivos.",
-      "Organize a quantidade de blocos/seções solicitada pelo professor.",
-      "Inclua revisão, fixação ou perguntas de checagem ao final.",
-      "Não transformar em apostila longa nem em prova.",
       "Não preencha jogo nem projeto.",
     ];
   }

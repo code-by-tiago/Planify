@@ -321,13 +321,22 @@ async function runWithConcurrency<T>(
 }
 
 /**
- * A geração de imagem por IA (Gemini) exige faturação ativa na conta — o free
- * tier tem limite 0. Fica atrás de uma flag para não desperdiçar chamadas 429
- * enquanto a faturação não está habilitada. Ative com SLIDE_AI_IMAGES=1.
+ * Imagens de slides por Gemini exigem faturação ativa na API.
+ * Com GEMINI_API_KEY configurada, fica ligado por padrão.
+ * Desligue com SLIDE_AI_IMAGES=0 se quiser só Wikimedia/stock.
  */
 function aiImagesEnabled(): boolean {
   const flag = String(process.env.SLIDE_AI_IMAGES || "").toLowerCase();
-  return flag === "1" || flag === "true" || flag === "on";
+
+  if (flag === "0" || flag === "false" || flag === "off") {
+    return false;
+  }
+
+  if (flag === "1" || flag === "true" || flag === "on") {
+    return true;
+  }
+
+  return Boolean(process.env.GEMINI_API_KEY?.trim());
 }
 
 export async function enrichSlidesWithImages(

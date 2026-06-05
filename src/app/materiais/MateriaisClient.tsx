@@ -44,6 +44,7 @@ import {
   type PlanifyToolId,
   type ToolCategoryId,
 } from "@/lib/pro/planifyTools";
+import { downloadEditorExport } from "@/lib/downloads/editor-export-client";
 import { lessonBundleFollowUp } from "@/lib/pro/teachyStudio";
 
 const SELECT_FIELD_CLASS =
@@ -654,7 +655,7 @@ export function MateriaisClient({
     );
   }
 
-  function baixarWord() {
+  async function baixarWord() {
     if (!resultadoHtml) {
       setErro("Gere um material antes de baixar.");
       return;
@@ -667,31 +668,22 @@ export function MateriaisClient({
     );
     setHistorico(loadMaterialHistoryPreview());
 
-    const titulo = buildTitle(tipo, tema).replace(/[\\/:*?"<>|]/g, "-");
-    const html = `<!doctype html>
-<html lang="pt-BR">
-<head>
-<meta charset="utf-8" />
-<title>${escapeHtml(titulo)}</title>
-<style>
-body{font-family:Arial,sans-serif;line-height:1.45;color:#111827;padding:32px;}
-h1,h2,h3{color:#0f172a;}
-table{border-collapse:collapse;width:100%;}
-td,th{border:1px solid #d1d5db;padding:8px;}
-</style>
-</head>
-<body>${resultadoHtml}</body>
-</html>`;
+    const titulo = buildTitle(tipo, tema);
 
-    const blob = new Blob([html], {
-      type: "application/msword;charset=utf-8",
-    });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = `${titulo}.doc`;
-    anchor.click();
-    URL.revokeObjectURL(url);
+    try {
+      await downloadEditorExport({
+        title: titulo,
+        html: resultadoHtml,
+        format: "docx",
+        fallbackFileName: `${titulo.replace(/[\\/:*?"<>|]/g, "-")}.docx`,
+      });
+    } catch (error) {
+      setErro(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível baixar o DOCX do material.",
+      );
+    }
   }
 
   async function executarGeracao() {
@@ -1425,11 +1417,11 @@ td,th{border:1px solid #d1d5db;padding:8px;}
                 </button>
                 <button
                   type="button"
-                  onClick={baixarWord}
+                  onClick={() => void baixarWord()}
                   className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 transition hover:border-slate-950"
                 >
                   <PlanifyIcon name="download" className="h-4 w-4" />
-                  Baixar .doc
+                  Baixar DOCX
                 </button>
                 <Link
                   href="/historico"

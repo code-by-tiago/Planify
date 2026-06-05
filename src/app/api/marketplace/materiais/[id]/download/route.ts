@@ -4,12 +4,13 @@ import { resolveAdminAccess } from "../../../../../../server/auth/admin-access";
 import { getSupabaseAdminClient } from "../../../../../../server/supabase/admin-client";
 import {
   buildContentDispositionAttachment,
-  buildMarketplaceDownloadFilename,
-  resolveMarketplaceDownloadMime,
+  parseMarketplaceExportFormat,
 } from "../../../../../../server/marketplace/marketplace-download";
+import { buildMarketplaceExportBuffer } from "../../../../../../server/marketplace/marketplace-export";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 const BUCKET_NAME = "marketplace-materiais";
 const PREMIUM_COOKIE_NAME = "planify_access";
@@ -107,8 +108,27 @@ export async function GET(
     );
   }
 
-  const filename = buildMarketplaceDownloadFilename(row.file_name, row.title);
-  const contentType = resolveMarketplaceDownloadMime(row);
+  const format = parseMarketplaceExportFormat(
+    request.nextUrl.searchParams.get("format"),
+  );
+  const storedBuffer = Buffer.from(await fileData.arrayBuffer());
+
+  let exported: Awaited<ReturnType<typeof buildMarketplaceExportBuffer>>;
+
+  try {
+    exported = await buildMarketplaceExportBuffer({
+      format,
+      row,
+      storedBuffer,
+    });
+  } catch (error) {
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Não foi possível gerar o arquivo solicitado.";
+
+    return jsonError(message, 500);
+  }
 
   await table
     .update({
@@ -117,13 +137,13 @@ export async function GET(
     })
     .eq("id", id);
 
-  const buffer = Buffer.from(await fileData.arrayBuffer());
-
-  return new NextResponse(buffer, {
+  return new NextResponse(new Uint8Array(exported.buffer), {
     status: 200,
     headers: {
-      "Content-Type": contentType,
-      "Content-Disposition": buildContentDispositionAttachment(filename),
+      "Content-Type": exported.contentType,
+      "Content-Disposition": buildContentDispositionAttachment(
+        exported.filename,
+      ),
       "Cache-Control": "private, no-store",
       "X-Content-Type-Options": "nosniff",
     },

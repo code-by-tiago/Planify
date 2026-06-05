@@ -1,6 +1,4 @@
-import { getCurrentAccessToken } from "@/lib/auth/session-client";
-
-export type MarketplaceDownloadFormat = "docx" | "pdf" | "html";
+export type EditorExportFormat = "docx" | "pdf" | "html";
 
 function filenameFromContentDisposition(header: string | null): string | null {
   if (!header) {
@@ -20,38 +18,37 @@ function filenameFromContentDisposition(header: string | null): string | null {
   return asciiMatch?.[1] || null;
 }
 
-export async function downloadMarketplaceMaterial(params: {
-  id: string;
-  format?: MarketplaceDownloadFormat;
+export async function downloadEditorExport(params: {
+  title: string;
+  html: string;
+  format: EditorExportFormat;
   fallbackFileName?: string;
 }): Promise<void> {
-  const token = await getCurrentAccessToken();
-  const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
-  const format = params.format || "docx";
-  const query = new URLSearchParams({ format });
-
-  const response = await fetch(
-    `/api/marketplace/materiais/${params.id}/download?${query.toString()}`,
-    {
-      method: "GET",
-      credentials: "include",
-      cache: "no-store",
-      headers,
-    },
-  );
+  const response = await fetch("/api/documentos/export", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    cache: "no-store",
+    body: JSON.stringify({
+      title: params.title,
+      html: params.html,
+      format: params.format,
+    }),
+  });
 
   if (!response.ok) {
     const data = await response.json().catch(() => null);
     throw new Error(
-      data?.error?.message || "Não foi possível baixar o material.",
+      data?.error?.message || "Não foi possível exportar o documento.",
     );
   }
 
   const blob = await response.blob();
   const filename =
+    response.headers.get("X-Planify-Filename") ||
     filenameFromContentDisposition(response.headers.get("Content-Disposition")) ||
     params.fallbackFileName ||
-    `material-planify.${format}`;
+    `documento-planify.${params.format}`;
 
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");

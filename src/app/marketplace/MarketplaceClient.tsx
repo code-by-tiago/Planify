@@ -3,7 +3,10 @@
 import { MarketplaceComments } from "@/components/marketplace/MarketplaceComments";
 import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
 import { PlanifyPageHero } from "@/components/pro/PlanifyPageHero";
-import { downloadMarketplaceMaterial } from "@/lib/marketplace/marketplace-download-client";
+import {
+  downloadMarketplaceMaterial,
+  type MarketplaceDownloadFormat,
+} from "@/lib/marketplace/marketplace-download-client";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 
 type MarketplaceItem = {
@@ -148,7 +151,7 @@ export function MarketplaceClient() {
   const [status, setStatus] = useState("Carregando Marketplace...");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [downloadingKey, setDownloadingKey] = useState<string | null>(null);
 
   const availableYears = anoSerieOptions[form.etapa] || ["Geral"];
 
@@ -321,14 +324,19 @@ export function MarketplaceClient() {
     }
   }
 
-  async function handleDownload(item: MarketplaceItem) {
-    setDownloadingId(item.id);
+  async function handleDownload(
+    item: MarketplaceItem,
+    format: MarketplaceDownloadFormat,
+  ) {
+    const downloadKey = `${item.id}:${format}`;
+    setDownloadingKey(downloadKey);
     setError("");
 
     try {
       await downloadMarketplaceMaterial({
         id: item.id,
-        fallbackFileName: item.fileName || `${item.title}.html`,
+        format,
+        fallbackFileName: item.fileName || `${item.title}.${format}`,
       });
 
       setItems((current) =>
@@ -343,12 +351,12 @@ export function MarketplaceClient() {
           ? { ...current, downloadsCount: current.downloadsCount + 1 }
           : current,
       );
-      setStatus("Download iniciado.");
+      setStatus(`Download ${format.toUpperCase()} iniciado.`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao baixar material.");
       setStatus("Falha no download.");
     } finally {
-      setDownloadingId(null);
+      setDownloadingKey(null);
     }
   }
 
@@ -679,16 +687,30 @@ export function MarketplaceClient() {
               ))}
             </div>
 
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
               {selected.fileName || selected.signedUrl ? (
-                <button
-                  type="button"
-                  onClick={() => handleDownload(selected)}
-                  disabled={Boolean(downloadingId)}
-                  className="rounded-2xl bg-gradient-to-r from-blue-600 to-slate-600 px-6 py-4 text-center text-sm font-black text-white transition hover:-translate-y-1 hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {downloadingId === selected.id ? "Baixando..." : "Baixar material"}
-                </button>
+                <>
+                  <button
+                    type="button"
+                    onClick={() => handleDownload(selected, "docx")}
+                    disabled={Boolean(downloadingKey)}
+                    className="rounded-2xl bg-gradient-to-r from-blue-600 to-slate-600 px-6 py-4 text-center text-sm font-black text-white transition hover:-translate-y-1 hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {downloadingKey === `${selected.id}:docx`
+                      ? "Gerando DOCX..."
+                      : "Baixar DOCX"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDownload(selected, "pdf")}
+                    disabled={Boolean(downloadingKey)}
+                    className="rounded-2xl border border-slate-300 bg-white px-6 py-4 text-center text-sm font-black text-slate-900 transition hover:-translate-y-1 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {downloadingKey === `${selected.id}:pdf`
+                      ? "Gerando PDF..."
+                      : "Baixar PDF"}
+                  </button>
+                </>
               ) : (
                 <span className="rounded-2xl border border-amber-200 bg-amber-50 px-6 py-4 text-center text-sm font-black text-amber-700">
                   Anexo indisponível

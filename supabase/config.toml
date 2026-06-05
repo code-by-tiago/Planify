@@ -1,0 +1,10 @@
+# Auth URLs for production (iaplanify.com.br)
+# Apply with: npx supabase config push --project-ref zvhdqdtrhmvdadbbucey
+
+[auth]
+site_url = "https://iaplanify.com.br"
+additional_redirect_urls = [
+  "https://iaplanify.com.br/**",
+  "https://www.iaplanify.com.br/**",
+  "http://localhost:3000/**",
+]

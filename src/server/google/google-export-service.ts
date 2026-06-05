@@ -1,5 +1,5 @@
-import { normalizeDocxPayload } from "../docx/document-normalizer";
-import { buildSimpleDocx } from "../docx/simple-docx-builder";
+import { buildEditorExportDocumentHtml } from "../export/editor-html-export-service";
+import { buildHtmlAltChunkDocx } from "../docx/simple-docx-builder";
 import { publishDriveFileToClassroom } from "./google-classroom";
 import { uploadBufferToGoogleDrive } from "./google-drive";
 import { getValidGoogleAccessToken } from "./google-token-store";
@@ -14,31 +14,6 @@ function safeFilename(value: string): string {
     .slice(0, 80);
 
   return cleaned || "material-planify";
-}
-
-function htmlToPlainSections(html: string): Array<{ title: string; content: string }> {
-  const text = String(html || "")
-    .replace(/<br\s*\/?>/gi, "\n")
-    .replace(/<\/p>/gi, "\n\n")
-    .replace(/<[^>]+>/g, " ")
-    .replace(/\s+\n/g, "\n")
-    .replace(/\n{3,}/g, "\n\n")
-    .trim();
-
-  if (!text) {
-    return [{ title: "Conteúdo", content: "Documento sem conteúdo." }];
-  }
-
-  const chunks = text.split(/\n{2,}/).map((item) => item.trim()).filter(Boolean);
-
-  if (chunks.length <= 1) {
-    return [{ title: "Conteúdo", content: text }];
-  }
-
-  return chunks.map((chunk, index) => ({
-    title: `Seção ${index + 1}`,
-    content: chunk,
-  }));
 }
 
 export type GoogleClassroomExportInput = {
@@ -73,18 +48,15 @@ export async function exportMaterialToGoogle(
   let buffer = input.docxBuffer;
 
   if (!buffer) {
-    const spec = normalizeDocxPayload({
-      kind: "generic",
-      document: {
-        title,
-        subtitle: "Enviado pelo Planify",
-        badge: "Planify",
-        sections: htmlToPlainSections(String(input.html || "")),
-        filename: safeFilename(input.filename || title),
-      },
-    });
+    const exportHtml = buildEditorExportDocumentHtml(
+      title,
+      String(input.html || ""),
+    );
 
-    buffer = Buffer.from(buildSimpleDocx(spec));
+    buffer = buildHtmlAltChunkDocx({
+      title,
+      htmlDocument: exportHtml,
+    });
   }
 
   const filename = `${safeFilename(input.filename || title)}.docx`;

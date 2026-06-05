@@ -400,6 +400,80 @@ function appPropsXml() {
 </Properties>`;
 }
 
+function altChunkContentTypesXml() {
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Default Extension="htm" ContentType="text/html"/>
+  <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
+  <Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>
+  <Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/>
+</Types>`;
+}
+
+function altChunkDocumentXml() {
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document
+  xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+  xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <w:body>
+    <w:altChunk r:id="rId1"/>
+    <w:sectPr>
+      <w:pgSz w:w="11906" w:h="16838"/>
+      <w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0"/>
+      <w:cols w:space="720"/>
+      <w:docGrid w:linePitch="360"/>
+    </w:sectPr>
+  </w:body>
+</w:document>`;
+}
+
+function altChunkDocumentRelsXml() {
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/aFChunk" Target="afchunk.htm"/>
+</Relationships>`;
+}
+
+export function buildHtmlAltChunkDocx(params: {
+  title: string;
+  htmlDocument: string;
+}): Buffer {
+  const title = cleanText(params.title) || "Documento Planify";
+
+  return buildZip([
+    {
+      path: "[Content_Types].xml",
+      content: altChunkContentTypesXml(),
+    },
+    {
+      path: "_rels/.rels",
+      content: rootRelsXml(),
+    },
+    {
+      path: "word/document.xml",
+      content: altChunkDocumentXml(),
+    },
+    {
+      path: "word/_rels/document.xml.rels",
+      content: altChunkDocumentRelsXml(),
+    },
+    {
+      path: "word/afchunk.htm",
+      content: params.htmlDocument,
+    },
+    {
+      path: "docProps/core.xml",
+      content: corePropsXml(title),
+    },
+    {
+      path: "docProps/app.xml",
+      content: appPropsXml(),
+    },
+  ]);
+}
+
 export function buildSimpleDocx(spec: DocxDocumentSpec): Buffer {
   const title = cleanText(spec.title) || "Documento Planify";
 

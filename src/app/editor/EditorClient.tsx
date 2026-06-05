@@ -1,10 +1,12 @@
 "use client";
 
 import { EditorShareBar } from "@/components/editor/EditorShareBar";
+import { downloadEditorExport } from "@/lib/downloads/editor-export-client";
 import {
   syncOpenDocumentToHistory,
   type EditorStoredPayload,
 } from "@/lib/editor/editor-storage";
+import { wrapAsCleanPrintHtml } from "@/lib/editor/editor-print-html";
 import { isSlideDeckHtml } from "@/lib/slides/slide-deck-utils";
 import type { MaterialEditorMeta } from "@/lib/materiais/material-editor-flow";
 import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
@@ -127,11 +129,6 @@ function sanitizeFilename(value: string) {
   );
 }
 
-function downloadBlob(filename: string, mimeType: string, content: BlobPart) {
-  const blob = new Blob([content], { type: mimeType });
-  downloadExistingBlob(filename, blob);
-}
-
 function downloadExistingBlob(filename: string, blob: Blob) {
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
@@ -145,54 +142,6 @@ function downloadExistingBlob(filename: string, blob: Blob) {
   window.setTimeout(() => URL.revokeObjectURL(url), 500);
 }
 
-function escapeHtml(value: string) {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
-
-function wrapAsCleanPrintHtml(title: string, body: string) {
-  const safeTitle = escapeHtml(title || "Documento Planify");
-
-  return `<!doctype html>
-<html lang="pt-BR">
-<head>
-  <meta charset="utf-8" />
-  <title>${safeTitle}</title>
-  <style>
-    @page { size: A4 portrait; margin: 1.2cm; }
-    html, body { background: #ffffff; color: #0f172a; margin: 0; }
-    body { font-family: "Times New Roman", Times, serif; font-size: 12pt; line-height: 1.5; }
-    .planify-print-document { width: 100%; max-width: 18.6cm; margin: 0 auto; }
-    h1, h2, h3 { color: #0f172a; line-height: 1.2; page-break-after: avoid; }
-    p { margin: 0 0 0.65rem; }
-    table { width: 100%; border-collapse: collapse; margin: 0.8rem 0; page-break-inside: avoid; }
-    td, th { border: 1px solid #cbd5e1; padding: 0.45rem; vertical-align: top; }
-    figure, img, table, blockquote, .planify-game-card, .planify-game-board, .planify-bingo-card, .planify-memory-card, .planify-domino-piece { break-inside: avoid; page-break-inside: avoid; }
-    img { max-width: 100%; height: auto; }
-    .page-break { break-after: page; page-break-after: always; border: 0; }
-    [contenteditable], button, input, select, textarea { outline: 0 !important; }
-    @media print {
-      html, body { width: 210mm; min-height: 297mm; }
-      .planify-print-document { max-width: none; }
-    }
-  </style>
-</head>
-<body>
-  <main class="planify-print-document">
-    ${body}
-  </main>
-  <script>
-    window.addEventListener("load", function () {
-      window.setTimeout(function () { window.print(); }, 250);
-    });
-  </script>
-</body>
-</html>`;
-}
 
 function filenameFromResponse(response: Response, fallback: string) {
   const custom = response.headers.get("X-Planify-Filename");
@@ -212,98 +161,6 @@ function filenameFromResponse(response: Response, fallback: string) {
   } catch {
     return fallback.toLowerCase().endsWith(".docx") ? fallback : `${fallback}.docx`;
   }
-}
-
-function wrapAsFullHtml(title: string, body: string) {
-  return `<!doctype html>
-<html lang="pt-BR">
-<head>
-  <meta charset="utf-8" />
-  <title>${title}</title>
-  <style>
-    body {
-      font-family: "Times New Roman", Times, serif;
-      font-size: 12pt;
-      color: #0f172a;
-      line-height: 1.5;
-      margin: 3cm 2cm 2cm 3cm;
-      text-align: justify;
-    }
-
-    h1, h2, h3 {
-      color: #0f172a;
-      line-height: 1.2;
-      font-weight: 700;
-      text-align: left;
-    }
-
-    h1 {
-      font-size: 14pt;
-      text-transform: uppercase;
-      text-align: center;
-      margin: 0 0 24pt;
-    }
-
-    h2 {
-      font-size: 13pt;
-      margin: 18pt 0 12pt;
-    }
-
-    h3 {
-      font-size: 12pt;
-      margin: 14pt 0 8pt;
-    }
-
-    p {
-      margin: 0 0 10pt;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin: 16px 0;
-      text-align: left;
-    }
-
-    td, th {
-      border: 1px solid #cbd5e1;
-      padding: 8px;
-      vertical-align: top;
-    }
-
-    img {
-      max-width: 100%;
-      height: auto;
-    }
-
-    figure {
-      break-inside: avoid;
-    }
-
-    blockquote {
-      margin: 12pt 0 12pt 4cm;
-      font-size: 10pt;
-      line-height: 1;
-      text-align: justify;
-    }
-
-    .page-break {
-      page-break-after: always;
-      border: 0;
-      border-top: 2px dashed #94a3b8;
-      margin: 32px 0;
-    }
-
-    @page {
-      size: A4;
-      margin: 3cm 2cm 2cm 3cm;
-    }
-  </style>
-</head>
-<body>
-${body}
-</body>
-</html>`;
 }
 
 function loadSavedDocuments(): SavedDocument[] {
@@ -971,7 +828,9 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
   function printDocument() {
     persistCurrentDocument("Documento preparado para impressão limpa.");
 
-    const cleanPrintHtml = wrapAsCleanPrintHtml(title, getEditorHtml());
+    const cleanPrintHtml = wrapAsCleanPrintHtml(title, getEditorHtml(), {
+      autoPrint: true,
+    });
     const printWindow = window.open("", "_blank", "width=1024,height=720");
 
     if (!printWindow) {
@@ -987,29 +846,24 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
     setStatus("PDF/impressão limpa preparado em uma nova janela.");
   }
 
-  function downloadHtml() {
-    const html = wrapAsFullHtml(title, getEditorHtml());
-    const filename = `${sanitizeFilename(title)}.html`;
+  async function downloadHtml() {
+    setStatus("Gerando HTML...");
 
-    downloadBlob(filename, "text/html;charset=utf-8", html);
-    setStatus("HTML baixado.");
-  }
-
-  function editorSectionsFromHtml(html: string) {
-    const parser = new DOMParser();
-    const document = parser.parseFromString(html, "text/html");
-    const content = document.body.innerText.replace(/\n{3,}/g, "\n\n").trim();
-
-    return [
-      {
-        title: "Conteúdo editado",
-        content: content || "Documento sem conteúdo.",
-      },
-    ];
+    try {
+      await downloadEditorExport({
+        title: title.trim() || "Documento Planify",
+        html: getEditorHtml(),
+        format: "html",
+        fallbackFileName: `${sanitizeFilename(title)}.html`,
+      });
+      setStatus("HTML baixado.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Erro ao baixar HTML.");
+    }
   }
 
   async function downloadDocxReal() {
-    setStatus("Gerando DOCX real...");
+    setStatus("Gerando DOCX...");
 
     try {
       const source = documentSource;
@@ -1019,44 +873,52 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
         typeof source.payload === "object" &&
         "matrizPlanejamento" in source.payload;
 
-      const response = isOfficialPlanning
-        ? await fetch("/api/planejamentos/docx-oficial", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(source.payload),
-          })
-        : await fetch("/api/documentos/docx", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              kind: "generic",
-              document: {
-                title: title.trim() || "Documento Planify",
-                subtitle: "Documento editado no Editor Planify",
-                badge: "Planify",
-                sections: editorSectionsFromHtml(getEditorHtml()),
-                filename: sanitizeFilename(title),
-              },
-            }),
-          });
+      if (isOfficialPlanning) {
+        const response = await fetch("/api/planejamentos/docx-oficial", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(source.payload),
+        });
 
-      if (!response.ok) {
-        const data = await response.json().catch(() => null);
-        throw new Error(data?.error?.message || "Não foi possível gerar o DOCX real.");
+        if (!response.ok) {
+          const data = await response.json().catch(() => null);
+          throw new Error(data?.error?.message || "Não foi possível gerar o DOCX oficial.");
+        }
+
+        const blob = await response.blob();
+        const fallback = `${sanitizeFilename(title)}.docx`;
+        const filename = filenameFromResponse(response, fallback);
+
+        downloadExistingBlob(filename, blob);
+        setStatus("DOCX oficial baixado a partir da matriz do planejamento.");
+        return;
       }
 
-      const blob = await response.blob();
-      const fallback = `${sanitizeFilename(title)}.docx`;
-      const filename = filenameFromResponse(response, fallback);
-
-      downloadExistingBlob(filename, blob);
-      setStatus(
-        isOfficialPlanning
-          ? "DOCX oficial baixado a partir da matriz do planejamento."
-          : "DOCX real baixado.",
-      );
+      await downloadEditorExport({
+        title: title.trim() || "Documento Planify",
+        html: getEditorHtml(),
+        format: "docx",
+        fallbackFileName: `${sanitizeFilename(title)}.docx`,
+      });
+      setStatus("DOCX baixado com o layout do editor.");
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Erro ao baixar DOCX real.");
+      setStatus(error instanceof Error ? error.message : "Erro ao baixar DOCX.");
+    }
+  }
+
+  async function downloadPdfReal() {
+    setStatus("Gerando PDF...");
+
+    try {
+      await downloadEditorExport({
+        title: title.trim() || "Documento Planify",
+        html: getEditorHtml(),
+        format: "pdf",
+        fallbackFileName: `${sanitizeFilename(title)}.pdf`,
+      });
+      setStatus("PDF baixado com o layout do editor.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Erro ao baixar PDF.");
     }
   }
 
@@ -1291,7 +1153,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
             DOCX
           </button>
 
-          <button type="button" onClick={printDocument} className={actionBtnClass}>
+          <button type="button" onClick={downloadPdfReal} className={actionBtnClass}>
             PDF
           </button>
 
@@ -1394,7 +1256,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
                   onClick={downloadDocxReal}
                   className="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-3 text-sm font-black text-emerald-700 transition"
                 >
-                  Baixar DOCX real
+                  Baixar DOCX
                 </button>
 
                 <button type="button" onClick={downloadHtml} className={actionBtnClass}>

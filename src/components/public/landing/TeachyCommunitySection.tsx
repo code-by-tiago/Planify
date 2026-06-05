@@ -12,7 +12,7 @@ const sampleMaterials = [
 
 export function TeachyCommunitySection() {
   return (
-    <section className="bg-white py-16 sm:py-20">
+    <section className="relative isolate overflow-hidden bg-white py-16 sm:py-20">
       <div className="mx-auto max-w-7xl px-5 sm:px-8">
         <div className="mx-auto max-w-3xl text-center">
           <h2 className="text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">

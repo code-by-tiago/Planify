@@ -4,7 +4,7 @@ import { TeachyMaterialPreview } from "@/components/public/landing/TeachyMateria
 
 export function TeachyHomeBnccSection() {
   return (
-    <section className="pl-teachy-band-wrap relative bg-white pb-0 pt-4">
+    <section className="pl-teachy-band-wrap relative isolate overflow-hidden bg-white pb-0 pt-4">
       <div className="pl-teachy-band mx-auto max-w-[calc(100%-2rem)] sm:max-w-7xl">
         <div className="mx-auto grid max-w-7xl items-center gap-12 px-5 py-14 sm:px-8 lg:grid-cols-2 lg:py-20">
           <div>

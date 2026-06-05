@@ -2129,15 +2129,38 @@ header .planify-brand-logo__icon {
     backdrop-filter: none !important;
   }
 
-  .planify-teachy-landing .pl-teachy-hero-blob {
-    transform: none;
-    opacity: 0.8;
+  .planify-teachy-landing section {
+    isolation: isolate;
+  }
+
+  .planify-teachy-landing .pl-teachy-hero-blob,
+  .planify-teachy-landing .pl-feature-visual-glow {
+    display: none !important;
   }
 
   .planify-teachy-landing .pl-teachy-testimonials,
   .planify-teachy-landing .pl-marquee {
     -webkit-mask-image: none;
     mask-image: none;
+  }
+
+  /* Evita faixas fantasma ao rolar (Chrome/Safari Android) */
+  .planify-teachy-landing #ferramentas {
+    background-color: #f8fafc !important;
+    contain: layout style;
+  }
+
+  .planify-teachy-landing .planify-landing-tools-grid > a {
+    transform: none !important;
+    -webkit-transform: none !important;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    will-change: auto;
+  }
+
+  .planify-teachy-landing [class*="backdrop-blur"] {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
   }
 }
 

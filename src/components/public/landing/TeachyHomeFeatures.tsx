@@ -4,12 +4,12 @@ import { teachyHomeFeatures } from "@/lib/pro/teachyLanding";
 
 function FeatureVisual({ icon }: { icon: (typeof teachyHomeFeatures)[0]["icon"] }) {
   return (
-    <div className="relative mx-auto w-full max-w-md overflow-hidden">
+    <div className="relative isolate mx-auto w-full max-w-md overflow-hidden">
       <div
-        className="absolute -inset-4 rounded-[2.5rem] bg-gradient-to-br from-blue-100/80 via-indigo-50 to-emerald-50"
+        className="pl-feature-visual-glow absolute -inset-4 hidden rounded-[2.5rem] bg-gradient-to-br from-blue-100 via-indigo-50 to-emerald-50 sm:block"
         aria-hidden
       />
-      <div className="relative overflow-hidden rounded-3xl border border-slate-200/80 bg-white p-6 shadow-lg">
+      <div className="relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 shadow-lg">
         <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-md">
           <PlanifyIcon name={icon} className="h-7 w-7" />
         </span>
@@ -33,7 +33,7 @@ function FeatureVisual({ icon }: { icon: (typeof teachyHomeFeatures)[0]["icon"] 
 
 export function TeachyHomeFeatures() {
   return (
-    <section id="como-funciona" className="scroll-mt-28 bg-white py-8 sm:py-12">
+    <section id="como-funciona" className="relative isolate scroll-mt-28 overflow-hidden bg-white py-8 sm:py-12">
       <div className="mx-auto max-w-7xl px-5 sm:px-8">
         <div className="max-w-3xl">
           <h2 className="text-3xl font-black leading-tight tracking-tight text-slate-950 sm:text-4xl lg:text-5xl">

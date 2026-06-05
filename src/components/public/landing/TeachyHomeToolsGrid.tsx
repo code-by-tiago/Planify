@@ -5,7 +5,10 @@ import { landingPlanejamentoTools } from "@/lib/pro/teachyLanding";
 
 export function TeachyHomeToolsGrid() {
   return (
-    <section id="ferramentas" className="isolate overflow-hidden bg-slate-50 py-16 sm:py-20">
+    <section
+      id="ferramentas"
+      className="relative isolate z-[1] overflow-hidden bg-slate-50 py-16 sm:py-20"
+    >
       <div className="mx-auto max-w-7xl px-5 sm:px-8">
         <div className="text-center">
           <p className="text-xs font-black uppercase tracking-[0.2em] text-blue-600">
@@ -20,7 +23,7 @@ export function TeachyHomeToolsGrid() {
           </p>
         </div>
 
-        <div className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+        <div className="planify-landing-tools-grid mt-10 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
           {landingPlanejamentoTools.map((tool) => (
             <Link
               key={tool.id}

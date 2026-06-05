@@ -32,6 +32,66 @@ export function createEditorDocument(params: {
   };
 }
 
+export type EditorStoredPayload = {
+  source?: EditorDocumentSource;
+  subtitle?: string;
+  raw?: unknown;
+  id?: string;
+};
+
+function inferEditorSource(
+  type: string | undefined,
+  payload?: EditorStoredPayload,
+  existing?: EditorDocument | null,
+): EditorDocumentSource {
+  if (payload?.source) {
+    return payload.source;
+  }
+
+  if (existing?.source) {
+    return existing.source;
+  }
+
+  const normalizedType = String(type || "").toLowerCase();
+
+  if (normalizedType.startsWith("material:") || normalizedType.includes("material")) {
+    return "material";
+  }
+
+  if (normalizedType.includes("planejamento")) {
+    return "planejamento";
+  }
+
+  return "manual";
+}
+
+export function syncOpenDocumentToHistory(params: {
+  title: string;
+  content: string;
+  type?: string;
+  payload?: EditorStoredPayload;
+}): EditorDocument {
+  const existing = loadEditorDocument();
+  const payload = params.payload;
+  const id = String(payload?.id || existing?.id || "").trim() || createId();
+  const type = params.type || existing?.type || "editor";
+
+  const document: EditorDocument = {
+    id,
+    source: inferEditorSource(type, payload, existing),
+    title: params.title.trim() || existing?.title || "Documento Planify",
+    subtitle: payload?.subtitle || existing?.subtitle,
+    type,
+    content: params.content,
+    raw: payload?.raw ?? existing?.raw,
+    createdAt: existing?.createdAt || new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+
+  saveEditorDocument(document);
+  return document;
+}
+
 export function saveEditorDocument(document: EditorDocument): void {
   if (typeof window === "undefined") {
     return;
@@ -74,21 +134,28 @@ export function loadEditorDocument(): EditorDocument | null {
   }
 
   try {
-    const parsed = JSON.parse(raw) as EditorDocument & { html?: string; payload?: { source?: EditorDocumentSource; raw?: unknown } };
+    const parsed = JSON.parse(raw) as EditorDocument & {
+      html?: string;
+      payload?: EditorStoredPayload;
+    };
 
     if (parsed.content && parsed.source) {
       return parsed;
     }
 
+    const payload = parsed.payload;
+    const type = parsed.type || "documento";
+    const content = parsed.html || parsed.content || "";
+
     return {
-      id: createId(),
-      source: parsed.payload?.source || "material",
+      id: String(payload?.id || "").trim() || createId(),
+      source: inferEditorSource(type, payload),
       title: parsed.title || "Documento Planify",
-      subtitle: undefined,
-      type: parsed.type || "documento",
-      content: parsed.html || parsed.content || "",
-      raw: parsed.payload?.raw,
-      createdAt: new Date().toISOString(),
+      subtitle: payload?.subtitle,
+      type,
+      content,
+      raw: payload?.raw,
+      createdAt: parsed.updatedAt || new Date().toISOString(),
       updatedAt: parsed.updatedAt || new Date().toISOString(),
     };
   } catch {

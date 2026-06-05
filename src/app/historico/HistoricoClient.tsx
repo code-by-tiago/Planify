@@ -123,7 +123,7 @@ export function HistoricoClient() {
   }, []);
 
   useEffect(() => {
-    function handleFocus() {
+    function handleRefresh() {
       const loaded = refreshHistoryState();
       setItems(loaded);
       setSelectedItem((current) =>
@@ -131,8 +131,12 @@ export function HistoricoClient() {
       );
     }
 
-    window.addEventListener("focus", handleFocus);
-    return () => window.removeEventListener("focus", handleFocus);
+    window.addEventListener("focus", handleRefresh);
+    window.addEventListener("planify:history-changed", handleRefresh);
+    return () => {
+      window.removeEventListener("focus", handleRefresh);
+      window.removeEventListener("planify:history-changed", handleRefresh);
+    };
   }, []);
 
   const typeOptions = useMemo(() => getHistoryTypeOptions(items), [items]);

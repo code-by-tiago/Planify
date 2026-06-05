@@ -1,6 +1,10 @@
 "use client";
 
 import { EditorShareBar } from "@/components/editor/EditorShareBar";
+import {
+  syncOpenDocumentToHistory,
+  type EditorStoredPayload,
+} from "@/lib/editor/editor-storage";
 import { isSlideDeckHtml } from "@/lib/slides/slide-deck-utils";
 import type { MaterialEditorMeta } from "@/lib/materiais/material-editor-flow";
 import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
@@ -801,22 +805,31 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
 
     const html = getEditorHtml();
     const currentTitle = title.trim() || getDocumentTitleFromHtml(html);
-
     const source = documentSource;
+    const payload = source?.payload as EditorStoredPayload | undefined;
 
-    window.localStorage.setItem(
-      STORAGE_DOCUMENT_KEY,
-      JSON.stringify({
-        type: source?.type || "editor",
-        title: currentTitle,
-        html,
-        content: html,
-        payload: source?.payload,
-        updatedAt: new Date().toISOString(),
-      }),
-    );
+    const saved = syncOpenDocumentToHistory({
+      title: currentTitle,
+      content: html,
+      type: source?.type || "editor",
+      payload,
+    });
 
-    window.localStorage.setItem(STORAGE_CONTENT_KEY, html);
+    setDocumentSource({
+      type: saved.type,
+      title: saved.title,
+      html: saved.content,
+      content: saved.content,
+      payload: {
+        source: saved.source,
+        subtitle: saved.subtitle,
+        raw: saved.raw,
+        id: saved.id,
+      },
+      updatedAt: saved.updatedAt,
+    });
+
+    window.dispatchEvent(new Event("planify:history-changed"));
     setStatus(`${message} ${nowLabel()}`);
   }
 

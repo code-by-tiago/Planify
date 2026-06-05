@@ -208,7 +208,7 @@ export default function TeachyStudioHome({
                         key={item.id}
                         type="button"
                         onClick={() => openTool(item.id)}
-                        className="group flex min-w-[140px] max-w-[200px] flex-1 flex-col rounded-xl border border-slate-100 bg-slate-50/80 p-3 text-left transition hover:border-blue-200 hover:bg-white hover:shadow-md"
+                        className="group flex w-full min-w-0 flex-col rounded-xl border border-slate-100 bg-slate-50/80 p-3 text-left transition hover:border-blue-200 hover:bg-white hover:shadow-md sm:min-w-[140px] sm:max-w-[200px] sm:flex-1"
                       >
                         <span className="flex items-center gap-2">
                           <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-100 text-blue-600">
@@ -350,7 +350,7 @@ export default function TeachyStudioHome({
               })}
             </div>
 
-            <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
+            <div className="mt-4 grid grid-cols-1 gap-2 min-[420px]:grid-cols-2 sm:grid-cols-3 md:grid-cols-4">
               {filteredTools.map((tool) => (
                 <button
                   key={tool.id}

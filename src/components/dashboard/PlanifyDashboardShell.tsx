@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { PlanifyDashboardMain } from "@/components/dashboard/PlanifyDashboardMain";
@@ -41,7 +41,10 @@ export default function PlanifyDashboardShell() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const searchRef = useRef<HTMLInputElement>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   useSidebarSearchShortcut(searchRef);
+
+  const closeSidebar = () => setSidebarOpen(false);
 
   const query = searchParams.get("q") ?? "";
 
@@ -170,9 +173,10 @@ export default function PlanifyDashboardShell() {
     <div className="planify-ui3 planify-teachy-app pl-teachy-shell pl-dashboard-root pl-app-bg flex h-screen w-screen overflow-hidden text-slate-950">
       <PlanifyShellSidebar
         variant="teachy"
-        alwaysVisible
         brandHref="/"
-        lumiHint="Menu fixo · clique para abrir à direita"
+        lumiHint="Toque numa ferramenta e crie em segundos."
+        open={sidebarOpen}
+        onOpenChange={setSidebarOpen}
       >
         <PlanifySidebarNav
           mode="studio"
@@ -184,6 +188,7 @@ export default function PlanifyDashboardShell() {
           onSelectTool={(id) => (id ? selectTool(id) : selectInicio())}
           onSelectSection={selectSection}
           onSelectInicio={selectInicio}
+          onActivate={closeSidebar}
           pathname="/dashboard"
           searchInputRef={searchRef}
         />
@@ -191,8 +196,16 @@ export default function PlanifyDashboardShell() {
 
       <main className="pl-teachy-main flex h-screen min-w-0 flex-1 flex-col overflow-hidden bg-white">
         {hasPanel ? (
-          <header className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-200/90 bg-white px-4 py-2.5 sm:px-5">
+          <header className="flex shrink-0 items-center justify-between gap-2 border-b border-slate-200/90 bg-white px-3 py-2.5 sm:gap-3 sm:px-5">
             <div className="flex min-w-0 flex-1 items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setSidebarOpen(true)}
+                aria-label="Abrir menu"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-slate-600 transition hover:bg-slate-100 lg:hidden"
+              >
+                <PlanifyIcon name="menu" className="h-5 w-5" />
+              </button>
               <button
                 type="button"
                 onClick={selectInicio}
@@ -210,26 +223,40 @@ export default function PlanifyDashboardShell() {
                 </h1>
               </div>
             </div>
-            <div className="flex shrink-0 items-center gap-2">
-              <LandingHomeLink compact />
+            <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+              <span className="hidden sm:inline-flex">
+                <LandingHomeLink compact />
+              </span>
               <CreditsBalancePill />
               <Link
                 href="/planos"
-                className="pl-teachy-cta rounded-full px-4 py-1.5 text-xs font-black text-slate-900"
+                className="pl-teachy-cta rounded-full px-3 py-1.5 text-xs font-black text-slate-900 sm:px-4"
               >
                 Planos
               </Link>
             </div>
           </header>
         ) : (
-          <header className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-200/90 bg-white px-4 py-2 sm:px-5">
-            <PlanifyBrand compact href="/" />
-            <div className="flex items-center gap-2">
-              <LandingHomeLink compact />
+          <header className="flex shrink-0 items-center justify-between gap-2 border-b border-slate-200/90 bg-white px-3 py-2 sm:gap-3 sm:px-5">
+            <div className="flex min-w-0 items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setSidebarOpen(true)}
+                aria-label="Abrir menu"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-slate-600 transition hover:bg-slate-100 lg:hidden"
+              >
+                <PlanifyIcon name="menu" className="h-5 w-5" />
+              </button>
+              <PlanifyBrand compact href="/" />
+            </div>
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <span className="hidden sm:inline-flex">
+                <LandingHomeLink compact />
+              </span>
               <CreditsBalancePill />
               <Link
                 href="/planos"
-                className="pl-teachy-cta rounded-full px-4 py-1.5 text-xs font-black text-slate-900"
+                className="pl-teachy-cta rounded-full px-3 py-1.5 text-xs font-black text-slate-900 sm:px-4"
               >
                 Planos
               </Link>

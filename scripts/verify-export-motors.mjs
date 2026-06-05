@@ -10,7 +10,14 @@ const outputDir = join(root, ".tmp-export-verify");
 
 mkdirSync(outputDir, { recursive: true });
 
-async function loadTsModule(relativePath) {
+const moduleCache = new Map();
+
+function loadTsModule(relativePath) {
+  const normalized = relativePath.replace(/\\/g, "/");
+  if (moduleCache.has(normalized)) {
+    return moduleCache.get(normalized);
+  }
+
   const ts = require("typescript");
   const sourcePath = join(root, relativePath);
   const source = readFileSync(sourcePath, "utf8");
@@ -24,8 +31,37 @@ async function loadTsModule(relativePath) {
   }).outputText;
 
   const module = { exports: {} };
-  const evaluator = new Function("exports", "require", "module", "__dirname", "__filename", transpiled);
-  evaluator(module.exports, require, module, dirname(sourcePath), sourcePath);
+  const localRequire = (specifier) => {
+    if (specifier.startsWith(".")) {
+      const resolved = join(dirname(sourcePath), specifier);
+      const candidates = [
+        `${resolved}.ts`,
+        `${resolved}.js`,
+        join(resolved, "index.ts"),
+        join(resolved, "index.js"),
+      ];
+
+      for (const candidate of candidates) {
+        if (candidate.endsWith(".ts")) {
+          const rel = candidate.slice(root.length + 1).replace(/\\/g, "/");
+          return loadTsModule(rel);
+        }
+      }
+    }
+
+    return require(specifier);
+  };
+
+  const evaluator = new Function(
+    "exports",
+    "require",
+    "module",
+    "__dirname",
+    "__filename",
+    transpiled,
+  );
+  evaluator(module.exports, localRequire, module, dirname(sourcePath), sourcePath);
+  moduleCache.set(normalized, module.exports);
   return module.exports;
 }
 
@@ -44,8 +80,24 @@ const sampleHtml = `
 </article>
 `.trim();
 
-const docxModule = await loadTsModule("src/server/docx/simple-docx-builder.ts");
-const exportModule = await loadTsModule("src/server/export/editor-html-export-service.ts");
+const flashcardHtml = `
+<article class="planify-doc">
+  <h1>Aprofundando o Conhecimento para o Ensino Médio</h1>
+  <p>Classes de palavras em português.</p>
+  <div class="planify-flashcard">
+    <strong>PERGUNTA 1</strong>
+    <p>O que é um substantivo?</p>
+    <p>Palavra que nomeia seres, objetos, lugares ou ideias.</p>
+  </div>
+  <div class="planify-flashcard">
+    <strong>PERGUNTA 2</strong>
+    <p>O que é um adjetivo?</p>
+    <p>Palavra que qualifica ou caracteriza o substantivo.</p>
+  </div>
+</article>
+`.trim();
+
+const exportModule = loadTsModule("src/server/export/editor-html-export-service.ts");
 
 const exported = await exportModule.exportEditorHtmlDocument({
   title: "Revisão de Frações",
@@ -68,10 +120,29 @@ assert.match(exportHtml, /<table>/);
 assert.match(exportHtml, /Revisão de Frações/);
 assert.match(exportHtml, /planify-export-document/);
 
+const flashcardExport = await exportModule.exportEditorHtmlDocument({
+  title: "Flashcards — Classes de palavras",
+  html: flashcardHtml,
+  format: "docx",
+});
+
+assert.ok(flashcardExport.buffer.byteLength > 1000, "Flashcard DOCX should not be empty");
+
+const nativeModule = loadTsModule("src/server/docx/html-to-native-docx.ts");
+const flashcardXml = nativeModule.buildNativeDocumentBodyXml(
+  "Flashcards — Classes de palavras",
+  flashcardHtml,
+);
+assert.match(flashcardXml, /PERGUNTA 1/);
+assert.match(flashcardXml, /substantivo/i);
+assert.match(flashcardXml, /<w:t[^>]*>[^<]+<\/w:t>/);
+
 writeFileSync(join(outputDir, "sample.docx"), exported.buffer);
+writeFileSync(join(outputDir, "flashcards.docx"), flashcardExport.buffer);
 writeFileSync(join(outputDir, "sample.html"), exportHtml, "utf8");
 
 console.log("Export motors verified:");
 console.log(`- DOCX bytes: ${exported.buffer.byteLength}`);
+console.log(`- Flashcard DOCX bytes: ${flashcardExport.buffer.byteLength}`);
 console.log(`- HTML bytes: ${Buffer.byteLength(exportHtml, "utf8")}`);
 console.log(`- Artifacts: ${outputDir}`);

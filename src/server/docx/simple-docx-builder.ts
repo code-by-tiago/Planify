@@ -1,3 +1,5 @@
+import { buildNativeDocumentBodyXml } from "./html-to-native-docx";
+
 type Primitive = string | number | boolean | null | undefined;
 
 export type DocxSection = {
@@ -436,6 +438,45 @@ function altChunkDocumentRelsXml() {
 </Relationships>`;
 }
 
+export function buildNativeHtmlDocx(params: {
+  title: string;
+  htmlBody: string;
+}): Buffer {
+  const title = cleanText(params.title) || "Documento Planify";
+
+  return buildZip([
+    {
+      path: "[Content_Types].xml",
+      content: contentTypesXml(),
+    },
+    {
+      path: "_rels/.rels",
+      content: rootRelsXml(),
+    },
+    {
+      path: "word/document.xml",
+      content: buildNativeDocumentBodyXml(title, params.htmlBody),
+    },
+    {
+      path: "word/_rels/document.xml.rels",
+      content: documentRelsXml(),
+    },
+    {
+      path: "word/styles.xml",
+      content: stylesXml(),
+    },
+    {
+      path: "docProps/core.xml",
+      content: corePropsXml(title),
+    },
+    {
+      path: "docProps/app.xml",
+      content: appPropsXml(),
+    },
+  ]);
+}
+
+/** @deprecated altChunk abre em branco no Word com HTML complexo — use buildNativeHtmlDocx */
 export function buildHtmlAltChunkDocx(params: {
   title: string;
   htmlDocument: string;

@@ -50,5 +50,20 @@ export async function readDownloadBlob(response: Response): Promise<Blob> {
     throw new Error("O arquivo gerado está vazio. Tente novamente.");
   }
 
+  if (contentType.includes("pdf")) {
+    const header = await blob.slice(0, 4).text();
+    if (!header.startsWith("%PDF")) {
+      throw new Error("O PDF gerado é inválido. Tente novamente em alguns segundos.");
+    }
+  }
+
+  if (contentType.includes("wordprocessingml") || contentType.includes("msword")) {
+    const header = await blob.slice(0, 2).arrayBuffer();
+    const bytes = new Uint8Array(header);
+    if (bytes[0] !== 0x50 || bytes[1] !== 0x4b) {
+      throw new Error("O DOCX gerado é inválido. Tente novamente.");
+    }
+  }
+
   return blob;
 }

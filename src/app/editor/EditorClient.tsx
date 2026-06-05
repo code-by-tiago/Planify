@@ -1140,6 +1140,14 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
   }
 
   async function downloadDocxReal() {
+    const html = getEditorHtml();
+    const hasText = html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+
+    if (!hasText) {
+      setStatus("Adicione conteúdo ao documento antes de exportar o DOCX.");
+      return;
+    }
+
     setStatus("Gerando DOCX...");
 
     try {
@@ -1172,7 +1180,15 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
   }
 
   async function downloadPdfReal() {
-    setStatus("Gerando PDF...");
+    const html = getEditorHtml();
+    const hasText = html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+
+    if (!hasText) {
+      setStatus("Adicione conteúdo ao documento antes de exportar o PDF.");
+      return;
+    }
+
+    setStatus("Gerando PDF... (pode levar até 1 minuto)");
 
     try {
       await downloadEditorExport({

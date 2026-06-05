@@ -7,6 +7,10 @@ import {
   type EditorStoredPayload,
 } from "@/lib/editor/editor-storage";
 import { wrapAsCleanPrintHtml } from "@/lib/editor/editor-print-html";
+import {
+  getClosestTable,
+  getClosestTableCell,
+} from "@/lib/editor/editor-selection-utils";
 import { isSlideDeckHtml } from "@/lib/slides/slide-deck-utils";
 import type { MaterialEditorMeta } from "@/lib/materiais/material-editor-flow";
 import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
@@ -281,6 +285,11 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
   const editorRef = useRef<HTMLDivElement | null>(null);
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const selectedImageRef = useRef<HTMLImageElement | null>(null);
+  const selectedTableRef = useRef<HTMLTableElement | null>(null);
+  const undoStackRef = useRef<string[]>([]);
+  const redoStackRef = useRef<string[]>([]);
+  const isApplyingUndoRef = useRef(false);
+  const undoInputTimerRef = useRef<number | null>(null);
   const [title, setTitle] = useState("Documento Planify");
   const [status, setStatus] = useState("Editor pronto.");
   const [savedDocuments, setSavedDocuments] = useState<SavedDocument[]>([]);
@@ -300,6 +309,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
   const [showVersionsPanel, setShowVersionsPanel] = useState(false);
   const [showFormatTools, setShowFormatTools] = useState(!embedded);
   const [showAdvancedTools, setShowAdvancedTools] = useState(false);
+  const [isTableActive, setIsTableActive] = useState(false);
   const [isSlideDeck, setIsSlideDeck] = useState(false);
   const [slideTheme, setSlideTheme] = useState<string | null>(null);
 
@@ -331,6 +341,20 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
     : "rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-700 transition hover:border-slate-950";
 
   useEffect(() => {
+    const media = window.matchMedia("(max-width: 1023px)");
+    const syncMobileToolbar = () => {
+      if (embedded && media.matches) {
+        setShowFormatTools(true);
+      }
+    };
+
+    syncMobileToolbar();
+    media.addEventListener("change", syncMobileToolbar);
+
+    return () => media.removeEventListener("change", syncMobileToolbar);
+  }, [embedded]);
+
+  useEffect(() => {
     const from = new URLSearchParams(window.location.search).get("from");
     if (from === "materiais") {
       setOriginHint(
@@ -353,6 +377,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
       prepareImagesInsideEditor();
       updateWordCount();
       syncSlideDeckFlags(initial.html, initial.storedDocument);
+      seedUndoStack(initial.html);
     }
 
     setIsLoaded(true);
@@ -383,13 +408,53 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
 
   function setEditorHtml(html: string) {
     clearSelectedImage();
+    clearSelectedTable();
 
     if (editorRef.current) {
       editorRef.current.innerHTML = html;
       prepareImagesInsideEditor();
       updateWordCount();
+      seedUndoStack(html);
       persistCurrentDocument("Documento carregado.");
     }
+  }
+
+  function seedUndoStack(html?: string) {
+    const snapshot = html ?? getEditorHtml();
+    undoStackRef.current = [snapshot];
+    redoStackRef.current = [];
+  }
+
+  function pushUndoSnapshot() {
+    if (isApplyingUndoRef.current) {
+      return;
+    }
+
+    const html = getEditorHtml();
+    const stack = undoStackRef.current;
+
+    if (stack[stack.length - 1] === html) {
+      return;
+    }
+
+    stack.push(html);
+
+    if (stack.length > 60) {
+      stack.shift();
+    }
+
+    redoStackRef.current = [];
+  }
+
+  function scheduleUndoSnapshot() {
+    if (undoInputTimerRef.current) {
+      window.clearTimeout(undoInputTimerRef.current);
+    }
+
+    undoInputTimerRef.current = window.setTimeout(() => {
+      pushUndoSnapshot();
+      undoInputTimerRef.current = null;
+    }, 400);
   }
 
   function updateWordCount() {
@@ -404,6 +469,10 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
   }
 
   function exec(command: string, value?: string) {
+    if (command !== "undo" && command !== "redo") {
+      pushUndoSnapshot();
+    }
+
     focusEditor();
     document.execCommand(command, false, value);
     updateWordCount();
@@ -421,11 +490,61 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
   }
 
   function undoEdit() {
+    focusEditor();
+    const stack = undoStackRef.current;
+
+    if (stack.length > 1) {
+      const current = stack.pop()!;
+
+      redoStackRef.current.push(current);
+      const previous = stack[stack.length - 1];
+
+      isApplyingUndoRef.current = true;
+
+      if (editorRef.current) {
+        editorRef.current.innerHTML = previous;
+        prepareImagesInsideEditor();
+        updateWordCount();
+        clearSelectedImage();
+        clearSelectedTable();
+      }
+
+      isApplyingUndoRef.current = false;
+      persistCurrentDocument("Desfeito.");
+      setStatus("Desfeito.");
+      return;
+    }
+
     exec("undo");
+    setStatus("Desfeito.");
   }
 
   function redoEdit() {
+    focusEditor();
+    const redo = redoStackRef.current;
+
+    if (redo.length > 0) {
+      const next = redo.pop()!;
+
+      undoStackRef.current.push(next);
+      isApplyingUndoRef.current = true;
+
+      if (editorRef.current) {
+        editorRef.current.innerHTML = next;
+        prepareImagesInsideEditor();
+        updateWordCount();
+        clearSelectedImage();
+        clearSelectedTable();
+      }
+
+      isApplyingUndoRef.current = false;
+      persistCurrentDocument("Refeito.");
+      setStatus("Refeito.");
+      return;
+    }
+
     exec("redo");
+    setStatus("Refeito.");
   }
 
   function getSelectionBlock() {
@@ -754,6 +873,167 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
     html += "</tbody></table><p><br></p>";
 
     exec("insertHTML", html);
+    setStatus("Tabela inserida. Toque nela para editar ou excluir.");
+  }
+
+  function clearTableOutline(table: HTMLTableElement | null) {
+    if (!table) {
+      return;
+    }
+
+    table.style.outline = "";
+    table.style.outlineOffset = "";
+  }
+
+  function selectTable(table: HTMLTableElement) {
+    if (selectedTableRef.current && selectedTableRef.current !== table) {
+      clearTableOutline(selectedTableRef.current);
+    }
+
+    selectedTableRef.current = table;
+    table.style.outline = "3px solid #22d3ee";
+    table.style.outlineOffset = "4px";
+    setIsTableActive(true);
+    setStatus("Tabela selecionada. Use os controles para editar ou excluir.");
+  }
+
+  function clearSelectedTable() {
+    clearTableOutline(selectedTableRef.current);
+    selectedTableRef.current = null;
+    setIsTableActive(false);
+  }
+
+  function getCurrentTable() {
+    const editor = editorRef.current;
+    const selection = window.getSelection();
+
+    if (!editor || !selection?.anchorNode) {
+      return selectedTableRef.current;
+    }
+
+    return (
+      getClosestTable(selection.anchorNode, editor) || selectedTableRef.current
+    );
+  }
+
+  function getCurrentTableCell() {
+    const editor = editorRef.current;
+    const selection = window.getSelection();
+
+    if (!editor || !selection?.anchorNode) {
+      return null;
+    }
+
+    return getClosestTableCell(selection.anchorNode, editor);
+  }
+
+  function removeCurrentTable(skipConfirm = false) {
+    const table = getCurrentTable();
+
+    if (!table) {
+      setStatus("Toque dentro da tabela para selecioná-la.");
+      return;
+    }
+
+    if (!skipConfirm && !window.confirm("Excluir esta tabela inteira?")) {
+      return;
+    }
+
+    pushUndoSnapshot();
+    table.remove();
+    clearSelectedTable();
+    persistCurrentDocument("Tabela removida.");
+    setStatus("Tabela removida.");
+  }
+
+  function removeTableRow() {
+    const cell = getCurrentTableCell();
+    const table = getCurrentTable();
+
+    if (!cell || !table) {
+      setStatus("Posicione o cursor dentro da tabela.");
+      return;
+    }
+
+    const row = cell.closest("tr");
+
+    if (!row) {
+      return;
+    }
+
+    pushUndoSnapshot();
+
+    if (table.rows.length <= 1) {
+      table.remove();
+      clearSelectedTable();
+    } else {
+      row.remove();
+    }
+
+    persistCurrentDocument("Linha removida.");
+    setStatus("Linha removida.");
+  }
+
+  function removeTableColumn() {
+    const cell = getCurrentTableCell();
+    const table = getCurrentTable();
+
+    if (!cell || !table) {
+      setStatus("Posicione o cursor dentro da tabela.");
+      return;
+    }
+
+    const colIndex = cell.cellIndex;
+
+    pushUndoSnapshot();
+
+    if (table.rows[0]?.cells.length <= 1) {
+      table.remove();
+      clearSelectedTable();
+    } else {
+      Array.from(table.rows).forEach((row) => {
+        row.cells[colIndex]?.remove();
+      });
+    }
+
+    persistCurrentDocument("Coluna removida.");
+    setStatus("Coluna removida.");
+  }
+
+  function deleteSelectionOrBlock() {
+    focusEditor();
+    const selection = window.getSelection();
+
+    if (selection && !selection.isCollapsed) {
+      pushUndoSnapshot();
+      document.execCommand("delete", false);
+      updateWordCount();
+      persistCurrentDocument("Seleção removida.");
+      setStatus("Seleção removida.");
+      return;
+    }
+
+    const table = getCurrentTable();
+
+    if (table) {
+      removeCurrentTable(true);
+      return;
+    }
+
+    const block = getSelectionBlock();
+
+    if (block) {
+      pushUndoSnapshot();
+      block.remove();
+      updateWordCount();
+      persistCurrentDocument("Bloco removido.");
+      setStatus("Bloco removido.");
+      return;
+    }
+
+    document.execCommand("delete", false);
+    updateWordCount();
+    persistCurrentDocument("Conteúdo removido.");
   }
 
   function insertPageBreak() {
@@ -959,14 +1239,27 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
 
   function handleEditorClick(event: ReactMouseEvent<HTMLDivElement>) {
     const target = event.target;
+    const editor = editorRef.current;
 
     if (target instanceof HTMLImageElement) {
       selectImage(target);
+      clearSelectedTable();
       return;
+    }
+
+    if (editor && target instanceof HTMLElement) {
+      const table = getClosestTable(target, editor);
+
+      if (table) {
+        selectTable(table);
+        clearSelectedImage();
+        return;
+      }
     }
 
     if (!(target instanceof HTMLInputElement)) {
       clearSelectedImage();
+      clearSelectedTable();
     }
   }
 
@@ -1356,6 +1649,93 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
               : "space-y-5"
           }
         >
+          <div className="sticky top-0 z-20 flex shrink-0 flex-wrap items-center gap-1.5 rounded-2xl border border-slate-200 bg-white/95 p-2 shadow-sm backdrop-blur lg:hidden">
+            <button
+              type="button"
+              onClick={undoEdit}
+              className="h-9 rounded-xl border border-slate-200 bg-white px-3 text-xs font-black text-slate-800"
+            >
+              ↶ Desfazer
+            </button>
+            <button
+              type="button"
+              onClick={redoEdit}
+              className="h-9 rounded-xl border border-slate-200 bg-white px-3 text-xs font-black text-slate-800"
+            >
+              ↷ Refazer
+            </button>
+            <button
+              type="button"
+              onClick={deleteSelectionOrBlock}
+              className="h-9 rounded-xl border border-rose-200 bg-rose-50 px-3 text-xs font-black text-rose-700"
+            >
+              Excluir
+            </button>
+            <button
+              type="button"
+              onClick={insertTable}
+              className="h-9 rounded-xl border border-slate-200 bg-white px-3 text-xs font-black text-slate-800"
+            >
+              Tabela
+            </button>
+            {isTableActive ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => removeCurrentTable(true)}
+                  className="h-9 rounded-xl border border-rose-200 bg-rose-50 px-3 text-xs font-black text-rose-700"
+                >
+                  ⊟ Tabela
+                </button>
+                <button
+                  type="button"
+                  onClick={removeTableRow}
+                  className="h-9 rounded-xl border border-cyan-200 bg-cyan-50 px-3 text-xs font-black text-cyan-800"
+                >
+                  − Linha
+                </button>
+                <button
+                  type="button"
+                  onClick={removeTableColumn}
+                  className="h-9 rounded-xl border border-cyan-200 bg-cyan-50 px-3 text-xs font-black text-cyan-800"
+                >
+                  − Col.
+                </button>
+              </>
+            ) : null}
+          </div>
+
+          {isTableActive ? (
+            <div className="hidden shrink-0 rounded-2xl border border-cyan-200 bg-cyan-50 p-2 lg:block">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="mr-1 text-xs font-black uppercase tracking-[0.16em] text-cyan-800">
+                  Tabela
+                </span>
+                <button
+                  type="button"
+                  onClick={() => removeCurrentTable(true)}
+                  className="h-9 rounded-xl border border-rose-200 bg-rose-50 px-3 text-xs font-black text-rose-700"
+                >
+                  Excluir tabela
+                </button>
+                <button
+                  type="button"
+                  onClick={removeTableRow}
+                  className="h-9 rounded-xl border border-cyan-200 bg-white px-3 text-xs font-black text-cyan-800"
+                >
+                  Remover linha
+                </button>
+                <button
+                  type="button"
+                  onClick={removeTableColumn}
+                  className="h-9 rounded-xl border border-cyan-200 bg-white px-3 text-xs font-black text-cyan-800"
+                >
+                  Remover coluna
+                </button>
+              </div>
+            </div>
+          ) : null}
+
           {(!embedded || showFormatTools) && (
           <div
             className={`relative shrink-0 rounded-[2rem] border border-slate-200 bg-white shadow-sm ${
@@ -1424,6 +1804,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
                 type="button"
                 onClick={undoEdit}
                 aria-label="Desfazer"
+                title="Desfazer"
                 className={toolBtnClass}
               >
                 ↶
@@ -1432,9 +1813,19 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
                 type="button"
                 onClick={redoEdit}
                 aria-label="Refazer"
+                title="Refazer"
                 className={toolBtnClass}
               >
                 ↷
+              </button>
+              <button
+                type="button"
+                onClick={deleteSelectionOrBlock}
+                aria-label="Excluir seleção"
+                title="Excluir"
+                className={`${toolBtnClass} border-rose-200 bg-rose-50 text-rose-700`}
+              >
+                🗑
               </button>
 
               {[
@@ -1515,6 +1906,24 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
               <button type="button" onClick={insertTable} className={toolBtnClass}>
                 Tabela
               </button>
+
+              {isTableActive ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => removeCurrentTable(true)}
+                    className={`${toolBtnClass} border-rose-200 bg-rose-50 text-rose-700`}
+                  >
+                    ⊟ Tabela
+                  </button>
+                  <button type="button" onClick={removeTableRow} className={toolBtnClass}>
+                    − Linha
+                  </button>
+                  <button type="button" onClick={removeTableColumn} className={toolBtnClass}>
+                    − Col.
+                  </button>
+                </>
+              ) : null}
 
               <button type="button" onClick={triggerImagePicker} className={toolBtnClass}>
                 Imagem
@@ -1735,10 +2144,10 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
 
           <div
             className={`min-h-0 flex-1 rounded-[2rem] border border-slate-200 bg-white shadow-sm ${
-              embedded ? "overflow-y-auto overscroll-contain p-2" : "p-3"
+              embedded ? "overflow-y-auto overscroll-contain p-1 sm:p-2" : "p-2 sm:p-3"
             }`}
           >
-            <div className="rounded-[1.5rem] bg-slate-100 p-3 sm:p-6">
+            <div className="rounded-[1.5rem] bg-slate-100 p-2 sm:p-6">
               <div
                 ref={editorRef}
                 contentEditable
@@ -1747,10 +2156,11 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
                 onInput={() => {
                   prepareImagesInsideEditor();
                   updateWordCount();
+                  scheduleUndoSnapshot();
                   persistCurrentDocument("Editando...");
                 }}
                 onBlur={() => persistCurrentDocument("Documento salvo.")}
-                className="planify-editor-page mx-auto min-h-[29.7cm] w-full max-w-[21cm] rounded-sm bg-white px-[2cm] py-[2cm] text-slate-950 shadow-2xl outline-none sm:px-[2cm] sm:py-[2cm]"
+                className="planify-editor-page mx-auto min-h-[50vh] w-full max-w-[21cm] rounded-sm bg-white px-4 py-5 text-slate-950 shadow-lg outline-none sm:min-h-[29.7cm] sm:px-8 sm:py-10 md:px-[2cm] md:py-[2cm] md:shadow-2xl"
               />
             </div>
           </div>
@@ -1842,6 +2252,54 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
           border: 0;
           border-top: 2px dashed #94a3b8;
           margin: 2rem 0;
+        }
+
+        @media (max-width: 640px) {
+          .planify-editor-page.planify-abnt-page {
+            padding: 1rem !important;
+          }
+
+          .planify-editor-page .planify-flashcards {
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 12px !important;
+          }
+
+          .planify-editor-page .planify-flashcard {
+            flex: none !important;
+            min-width: 0 !important;
+            max-width: 100% !important;
+            width: 100% !important;
+          }
+
+          .planify-editor-page .planify-slide-deck {
+            display: block !important;
+          }
+
+          .planify-editor-page .planify-slide {
+            margin-bottom: 14px !important;
+            border-radius: 14px !important;
+          }
+
+          .planify-editor-page .planify-slide figure img,
+          .planify-editor-page .planify-slide-image {
+            max-height: 180px !important;
+            object-fit: cover;
+          }
+
+          .planify-editor-page table {
+            display: block;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            max-width: 100%;
+          }
+
+          .planify-editor-page td,
+          .planify-editor-page th {
+            min-width: 72px;
+            font-size: 0.85rem;
+            padding: 0.4rem;
+          }
         }
 
         @page {

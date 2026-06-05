@@ -357,7 +357,18 @@ function renderSlides(response: MaterialEngineResponse): string {
     })
     .join("");
 
-  return `<section data-planify-slide-theme="${theme.id}"><h2>Apresentação · ${total} slides</h2>${body}</section>`;
+  return `
+    <section
+      class="planify-slide-deck"
+      data-planify-slide-theme="${theme.id}"
+      style="background:${theme.pageBgCss};padding:12px 8px 4px;border-radius:16px;"
+    >
+      <p style="margin:0 0 14px;font-size:12px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:${h(theme.accentHex)};">
+        Apresentação · ${total} slides · Tema ${escapeHtml(theme.label)}
+      </p>
+      ${body}
+    </section>
+  `.trim();
 }
 
 const FLASHCARD_PALETTE = [

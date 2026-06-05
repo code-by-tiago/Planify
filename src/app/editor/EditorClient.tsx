@@ -1,6 +1,8 @@
 "use client";
 
 import { EditorShareBar } from "@/components/editor/EditorShareBar";
+import { isSlideDeckHtml } from "@/lib/slides/slide-deck-utils";
+import type { MaterialEditorMeta } from "@/lib/materiais/material-editor-flow";
 import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
 import { PlanifyPageHero } from "@/components/pro/PlanifyPageHero";
 import {
@@ -437,8 +439,23 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
   const [showVersionsPanel, setShowVersionsPanel] = useState(false);
   const [showFormatTools, setShowFormatTools] = useState(!embedded);
   const [showAdvancedTools, setShowAdvancedTools] = useState(false);
+  const [isSlideDeck, setIsSlideDeck] = useState(false);
+  const [slideTheme, setSlideTheme] = useState<string | null>(null);
 
   const lastSavedLabel = useMemo(() => nowLabel(), []);
+
+  function syncSlideDeckFlags(html: string, stored?: StoredEditorDocument | null) {
+    const raw = stored?.payload as { raw?: MaterialEditorMeta } | undefined;
+    const meta = raw?.raw;
+    const type = String(stored?.type || meta?.toolId || "");
+    const deck =
+      type.includes("slides") ||
+      meta?.toolId === "slides" ||
+      isSlideDeckHtml(html);
+    setIsSlideDeck(deck);
+    const fromHtml = html.match(/data-planify-slide-theme=["']([a-z]+)["']/i)?.[1];
+    setSlideTheme(meta?.slideTheme || meta?.designSlides || fromHtml || null);
+  }
 
   const toolBtnClass = embedded
     ? "h-8 min-w-8 rounded-lg border border-slate-200 bg-white px-2 text-xs font-black text-slate-700 transition hover:border-slate-950"
@@ -474,6 +491,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
       editorRef.current.innerHTML = initial.html;
       prepareImagesInsideEditor();
       updateWordCount();
+      syncSlideDeckFlags(initial.html, initial.storedDocument);
     }
 
     setIsLoaded(true);
@@ -521,6 +539,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
       .filter(Boolean);
 
     setWordCount(words.length);
+    syncSlideDeckFlags(getEditorHtml(), documentSource);
   }
 
   function exec(command: string, value?: string) {
@@ -1290,6 +1309,9 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
             title={title}
             getHtml={getEditorHtml}
             onStatus={setStatus}
+            documentType={documentSource?.type}
+            isSlideDeck={isSlideDeck}
+            slideTheme={slideTheme}
           />
 
           <span className="ml-auto text-[11px] font-bold text-slate-500">

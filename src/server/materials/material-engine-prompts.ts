@@ -1,4 +1,5 @@
 import type { MaterialEngineRequest, MaterialEngineType } from "./material-engine-types";
+import { resolveSlideTheme } from "./slide-design-themes";
 
 const typeLabels: Record<MaterialEngineType, string> = {
   apostila: "apostila didática",
@@ -31,8 +32,10 @@ function specializedRules(request: MaterialEngineRequest): string[] {
   }
 
   if (request.tipoMaterial === "slides") {
+    const theme = resolveSlideTheme(request.designSlides);
     return [
       `Gerar exatamente ${quantidade} slides no array 'slides'.`,
+      `TEMA VISUAL OBRIGATÓRIO (aplicado na renderização): ${theme.label} (${theme.id}) — ${theme.descricao}.`,
       ...(request.modeloSlides
         ? [`MODELO ESCOLHIDO PELO PROFESSOR: ${request.modeloSlides}`]
         : []),
@@ -205,6 +208,7 @@ DADOS DA SOLICITAÇÃO:
 - Quantidade desejada: ${request.quantidade}
 - Dificuldade: ${request.dificuldade}
 - Incluir gabarito: ${request.incluirGabarito ? "sim" : "não"}
+${request.tipoMaterial === "slides" ? `- Design da apresentação: ${resolveSlideTheme(request.designSlides).label} (${resolveSlideTheme(request.designSlides).id})` : ""}
 
 REGRAS ESPECIALIZADAS:
 ${rules}

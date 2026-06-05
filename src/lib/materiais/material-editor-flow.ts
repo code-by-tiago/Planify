@@ -28,6 +28,8 @@ export type MaterialEditorMeta = {
   etapa?: string;
   areaConhecimento?: string;
   pipeline?: string | null;
+  slideTheme?: string | null;
+  designSlides?: string | null;
 };
 
 export type MaterialHistoryPreview = {

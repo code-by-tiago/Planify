@@ -524,7 +524,11 @@ export function MateriaisClient({
     setErro("");
   }
 
-  function buildMaterialMeta(pipeline?: string | null): MaterialEditorMeta {
+  function buildMaterialMeta(
+    pipeline?: string | null,
+    estrutura?: MaterialEngineResponse | null,
+  ): MaterialEditorMeta {
+    const resolvedEstrutura = estrutura ?? resultadoEstrutura;
     return {
       toolId: tipo,
       tema,
@@ -533,6 +537,10 @@ export function MateriaisClient({
       etapa,
       areaConhecimento,
       pipeline: pipeline ?? pipelineGeracao,
+      slideTheme:
+        resolvedEstrutura?.slideTheme ||
+        (tipo === "slides" ? designSlides : null),
+      designSlides: tipo === "slides" ? designSlides : null,
     };
   }
 
@@ -696,9 +704,11 @@ td,th{border:1px solid #d1d5db;padding:8px;}
 
       const html = extractHtmlFromResponse(data);
 
+      let estruturaGerada: MaterialEngineResponse | null = null;
       if (data && typeof data === "object" && "estrutura" in data) {
-        const estrutura = (data as { estrutura?: MaterialEngineResponse }).estrutura;
-        setResultadoEstrutura(estrutura ?? null);
+        estruturaGerada =
+          (data as { estrutura?: MaterialEngineResponse }).estrutura ?? null;
+        setResultadoEstrutura(estruturaGerada);
       } else {
         setResultadoEstrutura(null);
       }
@@ -735,12 +745,13 @@ td,th{border:1px solid #d1d5db;padding:8px;}
       }
 
       const titulo = buildTitle(tipo, tema);
-      persistGeneratedMaterial(html, titulo, buildMaterialMeta(pipelineLabel));
+      const meta = buildMaterialMeta(pipelineLabel, estruturaGerada);
+      persistGeneratedMaterial(html, titulo, meta);
       setHistorico(loadMaterialHistoryPreview());
       setMaterialSalvo(true);
 
       if (abrirEditorAutomatico) {
-        openMaterialInEditor(html, titulo, buildMaterialMeta(pipelineLabel), {
+        openMaterialInEditor(html, titulo, meta, {
           from: "materiais",
         });
         return;
@@ -1070,7 +1081,7 @@ td,th{border:1px solid #d1d5db;padding:8px;}
                   Design da apresentação
                 </p>
                 <p className="text-[11px] font-semibold text-slate-500">
-                  Escolha o layout e o estilo visual dos slides
+                  O tema é aplicado ao gerar — altere e clique em Gerar novamente
                 </p>
               </div>
               <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">

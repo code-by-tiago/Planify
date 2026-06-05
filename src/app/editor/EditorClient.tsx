@@ -1215,8 +1215,8 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
         <div
           className={
             embedded
-              ? "shrink-0 border-b border-violet-100 bg-violet-50/90 px-3 py-2 text-xs font-semibold text-violet-900"
-              : "mb-4 rounded-2xl border border-violet-200 bg-violet-50 px-4 py-3 text-sm font-semibold text-violet-900"
+              ? "shrink-0 border-b border-slate-100 bg-slate-50/90 px-3 py-2 text-xs font-semibold text-slate-900"
+              : "mb-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-900"
           }
         >
           {originHint}
@@ -1235,7 +1235,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
               onChange={(event) => setTitle(event.target.value)}
               onBlur={() => persistCurrentDocument("Título salvo.")}
               aria-label="Título do documento"
-              className="h-8 min-w-[140px] flex-1 rounded-lg border border-slate-200 bg-slate-50 px-3 text-xs font-bold text-slate-950 outline-none focus:border-indigo-400 focus:bg-white"
+              className="h-8 min-w-[140px] flex-1 rounded-lg border border-slate-200 bg-slate-50 px-3 text-xs font-bold text-slate-950 outline-none focus:border-blue-400 focus:bg-white"
             />
           ) : null}
 
@@ -1244,8 +1244,8 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
             onClick={saveVersion}
             className={
               embedded
-                ? "rounded-lg bg-gradient-to-r from-indigo-600 to-violet-600 px-3 py-1.5 text-xs font-black text-white"
-                : "rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-2 text-sm font-black text-white"
+                ? "rounded-lg bg-gradient-to-r from-blue-600 to-slate-600 px-3 py-1.5 text-xs font-black text-white"
+                : "rounded-xl bg-gradient-to-r from-blue-600 to-slate-600 px-4 py-2 text-sm font-black text-white"
             }
           >
             Salvar
@@ -1269,7 +1269,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
                 type="button"
                 onClick={() => setShowVersionsPanel((value) => !value)}
                 className={`${actionBtnClass} ${
-                  showVersionsPanel ? "border-indigo-300 bg-indigo-50 text-indigo-800" : ""
+                  showVersionsPanel ? "border-blue-300 bg-blue-50 text-blue-800" : ""
                 }`}
               >
                 Versões
@@ -1278,7 +1278,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
                 type="button"
                 onClick={() => setShowFormatTools((value) => !value)}
                 className={`${actionBtnClass} ${
-                  showFormatTools ? "border-indigo-300 bg-indigo-50 text-indigo-800" : ""
+                  showFormatTools ? "border-blue-300 bg-blue-50 text-blue-800" : ""
                 }`}
               >
                 Formatação
@@ -1311,7 +1311,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
         {!embedded ? (
           <aside className="space-y-5">
             <div className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
-              <p className="text-sm font-black uppercase tracking-[0.24em] text-indigo-700">
+              <p className="text-sm font-black uppercase tracking-[0.24em] text-blue-700">
                 Documento
               </p>
 
@@ -1329,7 +1329,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
                 <button
                   type="button"
                   onClick={saveVersion}
-                  className="rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-3 text-sm font-black text-white transition hover:opacity-95"
+                  className="rounded-2xl bg-gradient-to-r from-blue-600 to-slate-600 px-5 py-3 text-sm font-black text-white transition hover:opacity-95"
                 >
                   Salvar versão
                 </button>
@@ -1349,7 +1349,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
                 <button
                   type="button"
                   onClick={printDocument}
-                  className="rounded-2xl border border-indigo-200 bg-indigo-50 px-5 py-3 text-sm font-black text-indigo-700 transition"
+                  className="rounded-2xl border border-blue-200 bg-blue-50 px-5 py-3 text-sm font-black text-blue-700 transition"
                 >
                   Imprimir / PDF limpo
                 </button>
@@ -1374,7 +1374,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
             </div>
 
             <div className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
-              <p className="text-sm font-black uppercase tracking-[0.24em] text-indigo-700">
+              <p className="text-sm font-black uppercase tracking-[0.24em] text-blue-700">
                 Versões salvas
               </p>
 
@@ -1388,7 +1388,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
                       <button
                         type="button"
                         onClick={() => loadVersion(item)}
-                        className="text-left text-sm font-black text-slate-950 hover:text-indigo-700"
+                        className="text-left text-sm font-black text-slate-950 hover:text-blue-700"
                       >
                         {item.title}
                       </button>
@@ -1419,7 +1419,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
 
         {embedded && showVersionsPanel ? (
           <aside className="w-52 shrink-0 overflow-y-auto overscroll-contain border-r border-slate-200 bg-slate-50/80 p-3">
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-700">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-700">
               Versões
             </p>
             <div className="mt-3 grid gap-2">
@@ -1432,7 +1432,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
                     <button
                       type="button"
                       onClick={() => loadVersion(item)}
-                      className="text-left text-xs font-black text-slate-950 hover:text-indigo-700"
+                      className="text-left text-xs font-black text-slate-950 hover:text-blue-700"
                     >
                       {item.title}
                     </button>
@@ -1643,7 +1643,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
                 type="button"
                 onClick={() => setShowAdvancedTools((value) => !value)}
                 className={`${toolBtnClass} ${
-                  showAdvancedTools ? "border-indigo-300 bg-indigo-50 text-indigo-800" : ""
+                  showAdvancedTools ? "border-blue-300 bg-blue-50 text-blue-800" : ""
                 }`}
               >
                 ABNT+
@@ -1735,14 +1735,14 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
             ) : null}
 
             {showAdvancedTools ? (
-            <div className={`rounded-2xl border border-indigo-200 bg-indigo-50 ${embedded ? "mt-2 p-2" : "mt-3 p-3"}`}>
+            <div className={`rounded-2xl border border-blue-200 bg-blue-50 ${embedded ? "mt-2 p-2" : "mt-3 p-3"}`}>
               <div className="flex flex-wrap items-center gap-2">
-                <span className="mr-1 text-xs font-black uppercase tracking-[0.18em] text-indigo-700">
+                <span className="mr-1 text-xs font-black uppercase tracking-[0.18em] text-blue-700">
                   Imagem
                 </span>
 
                 {selectedImageName ? (
-                  <span className="max-w-56 truncate rounded-xl bg-white px-3 py-2 text-xs font-bold text-indigo-700 border border-cyan-200">
+                  <span className="max-w-56 truncate rounded-xl bg-white px-3 py-2 text-xs font-bold text-blue-700 border border-cyan-200">
                     {selectedImageName}
                   </span>
                 ) : (
@@ -1756,13 +1756,13 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
                     key={size}
                     type="button"
                     onClick={() => applyImageWidth(size)}
-                    className="h-9 rounded-xl border border-cyan-200 bg-white px-3 text-xs font-black text-indigo-700 transition"
+                    className="h-9 rounded-xl border border-cyan-200 bg-white px-3 text-xs font-black text-blue-700 transition"
                   >
                     {size}%
                   </button>
                 ))}
 
-                <label className="flex h-9 items-center gap-2 rounded-xl border border-cyan-200 bg-white px-3 text-xs font-black text-indigo-700">
+                <label className="flex h-9 items-center gap-2 rounded-xl border border-cyan-200 bg-white px-3 text-xs font-black text-blue-700">
                   Largura
                   <input
                     type="number"
@@ -1778,7 +1778,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
                 <button
                   type="button"
                   onClick={() => alignSelectedImage("left")}
-                  className="h-9 rounded-xl border border-cyan-200 bg-white px-3 text-xs font-black text-indigo-700 transition"
+                  className="h-9 rounded-xl border border-cyan-200 bg-white px-3 text-xs font-black text-blue-700 transition"
                 >
                   Esq.
                 </button>
@@ -1786,7 +1786,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
                 <button
                   type="button"
                   onClick={() => alignSelectedImage("center")}
-                  className="h-9 rounded-xl border border-cyan-200 bg-white px-3 text-xs font-black text-indigo-700 transition"
+                  className="h-9 rounded-xl border border-cyan-200 bg-white px-3 text-xs font-black text-blue-700 transition"
                 >
                   Centro
                 </button>
@@ -1794,7 +1794,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
                 <button
                   type="button"
                   onClick={() => alignSelectedImage("right")}
-                  className="h-9 rounded-xl border border-cyan-200 bg-white px-3 text-xs font-black text-indigo-700 transition"
+                  className="h-9 rounded-xl border border-cyan-200 bg-white px-3 text-xs font-black text-blue-700 transition"
                 >
                   Dir.
                 </button>
@@ -1802,7 +1802,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
                 <button
                   type="button"
                   onClick={() => floatSelectedImage("left")}
-                  className="h-9 rounded-xl border border-cyan-200 bg-white px-3 text-xs font-black text-indigo-700 transition"
+                  className="h-9 rounded-xl border border-cyan-200 bg-white px-3 text-xs font-black text-blue-700 transition"
                 >
                   Texto à direita
                 </button>
@@ -1810,7 +1810,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
                 <button
                   type="button"
                   onClick={() => floatSelectedImage("right")}
-                  className="h-9 rounded-xl border border-cyan-200 bg-white px-3 text-xs font-black text-indigo-700 transition"
+                  className="h-9 rounded-xl border border-cyan-200 bg-white px-3 text-xs font-black text-blue-700 transition"
                 >
                   Texto à esquerda
                 </button>
@@ -1818,7 +1818,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
                 <button
                   type="button"
                   onClick={clearImageFloat}
-                  className="h-9 rounded-xl border border-cyan-200 bg-white px-3 text-xs font-black text-indigo-700 transition"
+                  className="h-9 rounded-xl border border-cyan-200 bg-white px-3 text-xs font-black text-blue-700 transition"
                 >
                   Normal
                 </button>

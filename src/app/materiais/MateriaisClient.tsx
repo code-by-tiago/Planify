@@ -773,7 +773,7 @@ td,th{border:1px solid #d1d5db;padding:8px;}
 
   const painelCriacao = modalAberto ? (
     <div
-      className={`flex h-full min-h-0 flex-col overflow-hidden rounded-[2rem] border border-indigo-100/80 bg-white shadow-[0_8px_40px_-16px_rgba(99,102,241,0.2)] ${
+      className={`flex h-full min-h-0 flex-col overflow-hidden rounded-[2rem] border border-blue-100/80 bg-white shadow-[0_8px_40px_-16px_rgba(37,99,235,0.15)] ${
         studioMode ? "rounded-none border-0 shadow-none" : ""
       }`}
     >
@@ -797,7 +797,7 @@ td,th{border:1px solid #d1d5db;padding:8px;}
           type="button"
           onClick={fecharPainel}
           aria-label={studioMode ? "Voltar ao início" : "Voltar ao catálogo"}
-          className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-black text-slate-600 transition hover:border-indigo-300 hover:text-slate-950"
+          className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-black text-slate-600 transition hover:border-blue-300 hover:text-slate-950"
         >
           <PlanifyIcon name="arrowLeft" className="h-4 w-4" />
           <span className="hidden sm:inline">
@@ -827,7 +827,7 @@ td,th{border:1px solid #d1d5db;padding:8px;}
           </p>
 
           {isRedacao ? (
-            <p className="mt-3 rounded-2xl border border-indigo-100 bg-indigo-50 px-4 py-3 text-sm font-semibold leading-6 text-indigo-900">
+            <p className="mt-3 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-semibold leading-6 text-blue-900">
               Gera a proposta completa (tema, textos motivadores, comando e critérios)
               para a turma produzir a redação — não corrige textos já escritos pelos
               alunos.
@@ -920,7 +920,7 @@ td,th{border:1px solid #d1d5db;padding:8px;}
                   type="button"
                   onClick={() => void sugerirConteudosComIA()}
                   disabled={sugerindoConteudos || loading}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-black text-indigo-700 transition hover:border-indigo-400 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-black text-blue-700 transition hover:border-blue-400 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <PlanifyIcon name="spark" className="h-3.5 w-3.5" />
                   {sugerindoConteudos ? "Sugerindo..." : "Sugerir conteúdos"}
@@ -935,12 +935,12 @@ td,th{border:1px solid #d1d5db;padding:8px;}
             </label>
 
             {conteudosSugeridos && conteudosSugeridos.length > 0 ? (
-              <div className="md:col-span-2 rounded-2xl border border-indigo-100 bg-indigo-50/60 p-4">
+              <div className="md:col-span-2 rounded-2xl border border-blue-100 bg-blue-50/60 p-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="text-xs font-black uppercase tracking-wide text-indigo-800">
+                  <p className="text-xs font-black uppercase tracking-wide text-blue-800">
                     Sugestões de conteúdo (IA)
                   </p>
-                  <p className="text-[11px] font-semibold text-indigo-700">
+                  <p className="text-[11px] font-semibold text-blue-700">
                     {tipo === "slides"
                       ? "Selecione vários tópicos para compor a sequência da aula"
                       : "Clique para marcar um ou mais conteúdos"}
@@ -956,8 +956,8 @@ td,th{border:1px solid #d1d5db;padding:8px;}
                         onClick={() => toggleConteudoSugerido(item.id)}
                         className={`rounded-xl border px-3 py-2 text-left text-xs font-bold transition ${
                           selected
-                            ? "border-indigo-600 bg-indigo-600 text-white shadow-sm"
-                            : "border-indigo-200 bg-white text-slate-700 hover:border-indigo-500 hover:text-indigo-900"
+                            ? "border-blue-600 bg-blue-600 text-white shadow-sm"
+                            : "border-blue-200 bg-white text-slate-700 hover:border-blue-500 hover:text-blue-900"
                         }`}
                         title={item.descricao}
                         aria-pressed={selected}
@@ -972,7 +972,7 @@ td,th{border:1px solid #d1d5db;padding:8px;}
                   <button
                     type="button"
                     onClick={aplicarConteudosSelecionados}
-                    className="mt-3 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-black text-white hover:bg-indigo-700"
+                    className="mt-3 rounded-xl bg-blue-600 px-4 py-2 text-xs font-black text-white hover:bg-blue-700"
                   >
                     Aplicar {conteudosSelecionadosIds.length} selecionado
                     {conteudosSelecionadosIds.length > 1 ? "s" : ""} ao tema
@@ -1084,8 +1084,8 @@ td,th{border:1px solid #d1d5db;padding:8px;}
                       aria-pressed={selected}
                       className={`overflow-hidden rounded-2xl border text-left transition ${
                         selected
-                          ? "border-indigo-600 ring-2 ring-indigo-200"
-                          : "border-slate-200 hover:border-indigo-400"
+                          ? "border-blue-600 ring-2 ring-blue-200"
+                          : "border-slate-200 hover:border-blue-400"
                       }`}
                     >
                       <span
@@ -1133,7 +1133,7 @@ td,th{border:1px solid #d1d5db;padding:8px;}
                   }
                   className={`rounded-full border px-3 py-2 text-xs font-black transition ${
                     selected
-                      ? "border-indigo-600 bg-indigo-600 text-white"
+                      ? "border-blue-600 bg-blue-600 text-white"
                       : "border-slate-200 bg-white text-slate-600 hover:border-slate-950 hover:text-slate-950"
                   }`}
                   aria-pressed={tipo === "slides" ? selected : undefined}
@@ -1145,7 +1145,7 @@ td,th{border:1px solid #d1d5db;padding:8px;}
             })}
           </div>
           {tipo === "slides" && temasRapidosSelecionados.length > 1 ? (
-            <p className="mt-2 text-[11px] font-semibold text-indigo-700">
+            <p className="mt-2 text-[11px] font-semibold text-blue-700">
               {temasRapidosSelecionados.length} assuntos combinados no tema — a IA
               montará a sequência pedagógica dos slides.
             </p>
@@ -1180,7 +1180,7 @@ td,th{border:1px solid #d1d5db;padding:8px;}
               </button>
             </div>
 
-            <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-indigo-100 bg-indigo-50/70 px-4 py-3 text-sm font-bold text-indigo-900">
+            <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-blue-100 bg-blue-50/70 px-4 py-3 text-sm font-bold text-blue-900">
               <input
                 type="checkbox"
                 checked={abrirEditorAutomatico}
@@ -1189,7 +1189,7 @@ td,th{border:1px solid #d1d5db;padding:8px;}
                   setAbrirEditorAutomatico(next);
                   writeAutoOpenEditorPreference(next);
                 }}
-                className="h-4 w-4 accent-indigo-700"
+                className="h-4 w-4 accent-blue-700"
               />
               Abrir no editor automaticamente após gerar (recomendado para revisar e complementar)
             </label>
@@ -1205,7 +1205,7 @@ td,th{border:1px solid #d1d5db;padding:8px;}
           <button
             type="submit"
             disabled={loading}
-            className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-indigo-600 via-violet-600 to-rose-500 px-6 py-4 text-sm font-black text-white shadow-[0_8px_24px_-10px_rgba(99,102,241,0.6)] transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
+            className="pl-teachy-generate-btn mt-5 flex w-full items-center justify-center gap-2 px-6 py-4 text-sm disabled:cursor-not-allowed"
           >
             {loading ? (
               "Gerando..."
@@ -1240,7 +1240,7 @@ td,th{border:1px solid #d1d5db;padding:8px;}
                   {pipelineGeracao ? (
                     <p className="text-xs font-bold text-slate-500">
                       Entrega:{" "}
-                      <span className="font-black text-indigo-700">
+                      <span className="font-black text-blue-700">
                         {pipelineGeracao}
                       </span>
                     </p>
@@ -1291,7 +1291,7 @@ td,th{border:1px solid #d1d5db;padding:8px;}
                 <button
                   type="button"
                   onClick={abrirNoEditor}
-                  className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-2.5 text-sm font-black text-white shadow-sm transition hover:-translate-y-0.5 hover:opacity-95"
+                  className="inline-flex items-center gap-2 rounded-full bg-blue-600 px-4 py-2.5 text-sm font-black text-white shadow-sm transition hover:bg-blue-700"
                 >
                   <PlanifyIcon name="editor" className="h-4 w-4" />
                   Editar no editor
@@ -1305,7 +1305,7 @@ td,th{border:1px solid #d1d5db;padding:8px;}
                   etapa={etapa}
                   anoSerie={anoSerie}
                   disabled={!resultadoHtml}
-                  className="inline-flex items-center gap-2 rounded-2xl border border-fuchsia-200 bg-fuchsia-50 px-4 py-2.5 text-sm font-black text-fuchsia-800 transition hover:bg-fuchsia-100"
+                  className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm font-black text-blue-800 transition hover:bg-blue-100"
                 />
                 <button
                   type="button"
@@ -1373,17 +1373,17 @@ td,th{border:1px solid #d1d5db;padding:8px;}
       {!modalAberto ? (
         <>
         {/* Catálogo + busca + categorias */}
-        <section className="pl-section-hero overflow-hidden rounded-[1.85rem] border border-fuchsia-100/70 p-5 shadow-[0_8px_32px_-16px_rgba(236,72,153,0.12)] sm:p-6">
+        <section className="pl-section-hero overflow-hidden rounded-[1.85rem] border border-slate-200/90 p-5 shadow-sm sm:p-6">
           <div className="grid gap-4 lg:grid-cols-[1fr_360px] lg:items-center">
             <div>
               <span className="pl-badge-indigo">
                 <PlanifyIcon name="spark" className="h-3.5 w-3.5" />
                 Criar com IA
               </span>
-              <h1 className="mt-4 text-2xl font-black tracking-tight text-violet-950 sm:text-3xl">
+              <h1 className="mt-4 text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">
                 Escolha uma ferramenta e gere o material em segundos.
               </h1>
-              <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-violet-500/90">
+              <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-slate-600">
                 Catálogo organizado por categoria. Clique na ferramenta para abrir o painel de criação com IA.
               </p>
             </div>
@@ -1391,14 +1391,14 @@ td,th{border:1px solid #d1d5db;padding:8px;}
             <div className="relative">
               <PlanifyIcon
                 name="search"
-                className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-fuchsia-300"
+                className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-300"
               />
               <input
                 value={busca}
                 onChange={(event) => setBusca(event.target.value)}
                 placeholder="Buscar ferramenta..."
                 aria-label="Buscar ferramenta"
-                className="w-full rounded-2xl border border-rose-100/90 bg-white/95 py-4 pl-12 pr-4 text-sm font-semibold text-violet-950 outline-none transition focus:border-fuchsia-300 focus:bg-white focus:ring-4 focus:ring-fuchsia-100/80"
+                className="w-full rounded-2xl border border-slate-200 bg-white py-4 pl-12 pr-4 text-sm font-semibold text-slate-950 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
               />
             </div>
           </div>
@@ -1412,10 +1412,10 @@ td,th{border:1px solid #d1d5db;padding:8px;}
                   key={item.id}
                   type="button"
                   onClick={() => setCategoria(item.id)}
-                  className={`flex shrink-0 items-center gap-2 rounded-2xl border px-4 py-2 text-sm font-black transition ${
+                  className={`flex shrink-0 items-center gap-2 rounded-full border px-4 py-2 text-sm font-black transition ${
                     active
-                      ? "border-fuchsia-200 bg-gradient-to-r from-violet-500 via-fuchsia-500 to-rose-400 text-white shadow-[0_4px_14px_-4px_rgba(192,38,211,0.45)]"
-                      : "border-violet-100 bg-white text-violet-600 hover:border-fuchsia-200 hover:text-violet-950"
+                      ? "border-blue-200 bg-blue-600 text-white shadow-sm"
+                      : "border-slate-200 bg-white text-slate-600 hover:border-blue-200 hover:text-slate-950"
                   }`}
                 >
                   <PlanifyIcon name={item.icon} className="h-4 w-4" />
@@ -1434,7 +1434,7 @@ td,th{border:1px solid #d1d5db;padding:8px;}
                 key={item.id}
                 type="button"
                 onClick={() => selecionarFerramenta(item.id)}
-                className="group relative min-h-[156px] rounded-[1.5rem] border border-violet-50/90 bg-white/90 p-4 text-left shadow-sm transition hover:-translate-y-1 hover:border-fuchsia-200 hover:shadow-[0_16px_36px_-14px_rgba(167,139,250,0.35)]"
+                className="group relative min-h-[156px] rounded-[1.5rem] border border-slate-200/90 bg-white p-4 text-left shadow-sm transition hover:-translate-y-1 hover:border-blue-200 hover:shadow-md"
               >
                 {item.popular ? (
                   <span className="absolute right-3 top-3 rounded-full bg-amber-50 px-2 py-1 text-[10px] font-black uppercase tracking-wide text-amber-700">
@@ -1444,10 +1444,10 @@ td,th{border:1px solid #d1d5db;padding:8px;}
                 <div className={`flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br ${item.accent} text-white shadow-sm transition group-hover:scale-110`}>
                   <PlanifyIcon name={item.icon} className="h-5 w-5" />
                 </div>
-                <h3 className="mt-4 text-sm font-black leading-tight text-violet-950">
+                <h3 className="mt-4 text-sm font-black leading-tight text-slate-950">
                   {item.title}
                 </h3>
-                <p className="mt-1 line-clamp-3 text-xs font-semibold leading-5 text-violet-400">
+                <p className="mt-1 line-clamp-3 text-xs font-semibold leading-5 text-slate-500">
                   {item.description}
                 </p>
               </button>
@@ -1513,7 +1513,7 @@ td,th{border:1px solid #d1d5db;padding:8px;}
                       onClick={() => reabrirHistorico(item)}
                       className="flex min-w-0 flex-1 items-start gap-3 text-left"
                     >
-                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white text-slate-700 shadow-sm transition group-hover:bg-indigo-600 group-hover:text-white">
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white text-slate-700 shadow-sm transition group-hover:bg-blue-600 group-hover:text-white">
                         <PlanifyIcon name={itemTool.icon} className="h-5 w-5" />
                       </span>
                       <span className="min-w-0">
@@ -1531,7 +1531,7 @@ td,th{border:1px solid #d1d5db;padding:8px;}
                       type="button"
                       title="Abrir no editor"
                       onClick={() => abrirHistoricoNoEditor(item)}
-                      className="shrink-0 rounded-xl border border-slate-200 bg-white p-2 text-slate-600 transition hover:border-indigo-500 hover:text-indigo-700"
+                      className="shrink-0 rounded-xl border border-slate-200 bg-white p-2 text-slate-600 transition hover:border-blue-500 hover:text-blue-700"
                     >
                       <PlanifyIcon name="editor" className="h-4 w-4" />
                     </button>

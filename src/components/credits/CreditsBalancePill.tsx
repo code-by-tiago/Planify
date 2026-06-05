@@ -49,7 +49,7 @@ export function CreditsBalancePill() {
 
   const tone = low
     ? "border-rose-200 bg-rose-50 text-rose-700"
-    : "border-indigo-200 bg-indigo-50 text-indigo-700";
+    : "border-blue-200 bg-blue-50 text-blue-700";
 
   return (
     <div

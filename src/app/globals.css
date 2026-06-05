@@ -1987,8 +1987,9 @@ header .planify-brand-logo__icon {
   border-color: rgba(79, 70, 229, 0.1) !important;
 }
 
-/* Legado Teachy — mantido para páginas antigas se necessário */
-.planify-teachy-landing .pl-teachy-gradient-text {
+/* Teachy — landing pública + app interno (mesmos tokens) */
+.planify-teachy-landing .pl-teachy-gradient-text,
+.planify-teachy-app .pl-teachy-gradient-text {
   background: linear-gradient(90deg, #2563eb 0%, #0ea5e9 50%, #10b981 100%);
   -webkit-background-clip: text;
   background-clip: text;
@@ -1996,9 +1997,58 @@ header .planify-brand-logo__icon {
   color: transparent;
 }
 
-.planify-teachy-landing .pl-teachy-cta {
+.planify-teachy-landing .pl-teachy-cta,
+.planify-teachy-app .pl-teachy-cta {
   background: #ffd15c;
   box-shadow: 0 1px 0 rgba(0, 0, 0, 0.06);
+}
+
+.planify-teachy-app.pl-app-bg {
+  background:
+    radial-gradient(50% 40% at 100% 0%, rgba(232, 236, 255, 0.85), transparent 55%),
+    linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+}
+
+.planify-teachy-app .pl-teachy-generate-btn {
+  background: #ffd15c;
+  color: #0f172a;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.06);
+  border-radius: 9999px;
+  font-weight: 800;
+  transition: filter 0.15s ease, transform 0.15s ease;
+}
+
+.planify-teachy-app .pl-teachy-generate-btn:hover:not(:disabled) {
+  filter: brightness(0.97);
+}
+
+.planify-teachy-app .pl-teachy-generate-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.planify-teachy-app .pl-badge-indigo {
+  border-color: rgba(37, 99, 235, 0.22);
+  background: rgba(37, 99, 235, 0.08);
+  color: #2563eb;
+}
+
+.planify-teachy-app .pl-section-hero {
+  background:
+    radial-gradient(55% 55% at 10% 0%, rgba(37, 99, 235, 0.08), transparent 60%),
+    radial-gradient(45% 50% at 95% 5%, rgba(232, 236, 255, 0.95), transparent 55%),
+    #f8fafc;
+  border-color: rgba(226, 232, 240, 0.9) !important;
+}
+
+.planify-teachy-app .pl-btn-primary {
+  background: linear-gradient(120deg, #2563eb, #3b82f6 55%, #60a5fa);
+  border-radius: 9999px;
+  box-shadow: 0 4px 14px -6px rgba(37, 99, 235, 0.45);
+}
+
+.planify-teachy-app .pl-btn-primary:hover {
+  box-shadow: 0 10px 24px -10px rgba(37, 99, 235, 0.5);
 }
 
 .planify-teachy-landing .pl-teachy-band-wrap {

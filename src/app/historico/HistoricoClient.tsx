@@ -54,7 +54,7 @@ function statusClass(type: StatusState["type"]) {
     return "border-amber-200 bg-amber-50 text-amber-700";
   }
 
-  return "border-indigo-200 bg-indigo-50 text-indigo-700";
+  return "border-blue-200 bg-blue-50 text-blue-700";
 }
 
 function formatDate(value: string): string {
@@ -84,11 +84,11 @@ function historyItemToEditorDocument(item: HistoryItem): EditorDocument {
 
 function getSourceBadgeClass(source: string): string {
   if (source === "planejamento") {
-    return "border-indigo-200 bg-indigo-50 text-indigo-700";
+    return "border-blue-200 bg-blue-50 text-blue-700";
   }
 
   if (source === "material") {
-    return "border-violet-200 bg-violet-50 text-violet-700";
+    return "border-slate-200 bg-slate-50 text-slate-700";
   }
 
   if (source === "manual") {
@@ -182,14 +182,14 @@ export function HistoricoClient() {
     >
       <div className="grid gap-6 xl:grid-cols-[0.78fr_1.22fr]">
         <aside className="grid gap-6 xl:sticky xl:top-5 xl:h-fit">
-          <div className="rounded-[1.85rem] border border-violet-100/70 bg-white/95 p-6 shadow-sm">
-            <p className="text-[10px] font-black uppercase tracking-[0.25em] text-fuchsia-600">
+          <div className="rounded-[1.85rem] border border-slate-100/70 bg-white/95 p-6 shadow-sm">
+            <p className="text-[10px] font-black uppercase tracking-[0.25em] text-blue-600">
               Resumo
             </p>
-            <h2 className="mt-3 text-2xl font-black tracking-tight text-violet-950">
+            <h2 className="mt-3 text-2xl font-black tracking-tight text-slate-950">
               Documentos recentes
             </h2>
-            <p className="mt-4 text-sm leading-7 text-violet-500/90">
+            <p className="mt-4 text-sm leading-7 text-slate-500/90">
               Enquanto o Supabase não é conectado, o Planify organiza os itens no navegador para validar o fluxo completo.
             </p>
 
@@ -211,7 +211,7 @@ export function HistoricoClient() {
           </div>
 
           <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
-            <p className="text-sm font-black uppercase tracking-[0.25em] text-indigo-700">
+            <p className="text-sm font-black uppercase tracking-[0.25em] text-blue-700">
               Ações
             </p>
 
@@ -219,7 +219,7 @@ export function HistoricoClient() {
               <button
                 type="button"
                 onClick={reloadHistory}
-                className="rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-4 text-sm font-black text-white transition hover:-translate-y-1 hover:opacity-95"
+                className="rounded-2xl bg-gradient-to-r from-blue-600 to-slate-600 px-5 py-4 text-sm font-black text-white transition hover:-translate-y-1 hover:opacity-95"
               >
                 Recarregar histórico
               </button>
@@ -253,7 +253,7 @@ export function HistoricoClient() {
           <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
               <div>
-                <p className="text-sm font-black uppercase tracking-[0.25em] text-indigo-700">
+                <p className="text-sm font-black uppercase tracking-[0.25em] text-blue-700">
                   Filtros
                 </p>
                 <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-950">
@@ -261,7 +261,7 @@ export function HistoricoClient() {
                 </h2>
               </div>
 
-              <span className="rounded-full border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-black text-indigo-700">
+              <span className="rounded-full border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-black text-blue-700">
                 {filteredItems.length} resultado(s)
               </span>
             </div>
@@ -343,7 +343,7 @@ export function HistoricoClient() {
                           {item.title}
                         </h3>
                         {item.subtitle && (
-                          <p className="mt-1 text-sm font-bold text-indigo-700">
+                          <p className="mt-1 text-sm font-bold text-blue-700">
                             {item.subtitle}
                           </p>
                         )}
@@ -359,7 +359,7 @@ export function HistoricoClient() {
                         <button
                           type="button"
                           onClick={() => openInEditor(item)}
-                          className="rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-2 text-xs font-black text-white transition hover:opacity-95"
+                          className="rounded-xl bg-gradient-to-r from-blue-600 to-slate-600 px-4 py-2 text-xs font-black text-white transition hover:opacity-95"
                         >
                           Editor
                         </button>
@@ -377,7 +377,7 @@ export function HistoricoClient() {
                 ))
               ) : (
                 <div className="rounded-[2rem] border border-slate-200 bg-white p-8 text-center shadow-sm">
-                  <p className="text-sm font-black uppercase tracking-[0.25em] text-indigo-700">
+                  <p className="text-sm font-black uppercase tracking-[0.25em] text-blue-700">
                     Vazio
                   </p>
                   <h3 className="mt-3 text-2xl font-black text-slate-950">
@@ -393,14 +393,14 @@ export function HistoricoClient() {
             <aside className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm lg:sticky lg:top-28 lg:h-fit">
               {selectedItem ? (
                 <>
-                  <p className="text-sm font-black uppercase tracking-[0.25em] text-indigo-700">
+                  <p className="text-sm font-black uppercase tracking-[0.25em] text-blue-700">
                     Detalhes
                   </p>
                   <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-950">
                     {selectedItem.title}
                   </h2>
                   {selectedItem.subtitle && (
-                    <p className="mt-2 text-sm font-bold text-indigo-700">
+                    <p className="mt-2 text-sm font-bold text-blue-700">
                       {selectedItem.subtitle}
                     </p>
                   )}
@@ -444,7 +444,7 @@ export function HistoricoClient() {
                     <button
                       type="button"
                       onClick={() => openInEditor(selectedItem)}
-                      className="rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-4 text-sm font-black text-white transition hover:-translate-y-1 hover:opacity-95"
+                      className="rounded-2xl bg-gradient-to-r from-blue-600 to-slate-600 px-5 py-4 text-sm font-black text-white transition hover:-translate-y-1 hover:opacity-95"
                     >
                       Abrir no Editor
                     </button>
@@ -460,7 +460,7 @@ export function HistoricoClient() {
                 </>
               ) : (
                 <div className="py-12 text-center">
-                  <p className="text-sm font-black uppercase tracking-[0.25em] text-indigo-700">
+                  <p className="text-sm font-black uppercase tracking-[0.25em] text-blue-700">
                     Selecione
                   </p>
                   <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-950">

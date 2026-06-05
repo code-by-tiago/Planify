@@ -182,14 +182,14 @@ export function BibliotecaClient() {
     >
     <div className="grid gap-6 lg:grid-cols-[0.78fr_1.22fr]">
       <aside className="space-y-6">
-        <div className="rounded-[1.85rem] border border-violet-100/70 bg-white/95 p-6 shadow-sm">
-          <p className="text-[10px] font-black uppercase tracking-[0.28em] text-fuchsia-600">
+        <div className="rounded-[1.85rem] border border-slate-100/70 bg-white/95 p-6 shadow-sm">
+          <p className="text-[10px] font-black uppercase tracking-[0.28em] text-blue-600">
             Filtros
           </p>
-          <h2 className="mt-3 text-2xl font-black tracking-tight text-violet-950">
+          <h2 className="mt-3 text-2xl font-black tracking-tight text-slate-950">
             Encontre o material ideal
           </h2>
-          <p className="mt-4 text-sm leading-7 text-violet-500/90">
+          <p className="mt-4 text-sm leading-7 text-slate-500/90">
             Aqui aparecem apenas materiais pedagógicos reais disponíveis na Biblioteca Premium.
           </p>
 
@@ -203,7 +203,7 @@ export function BibliotecaClient() {
               <div className="mt-3 flex flex-col gap-2 sm:flex-row">
                 <a
                   href="/login?redirect=/biblioteca&premium=required"
-                  className="rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-3 text-center text-sm font-black text-white hover:opacity-95"
+                  className="rounded-xl bg-gradient-to-r from-blue-600 to-slate-600 px-4 py-3 text-center text-sm font-black text-white hover:opacity-95"
                 >
                   Fazer login
                 </a>
@@ -235,7 +235,7 @@ export function BibliotecaClient() {
         </div>
 
         <div className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-sm font-black uppercase tracking-[0.25em] text-indigo-700">
+          <p className="text-sm font-black uppercase tracking-[0.25em] text-blue-700">
             Filtros
           </p>
 
@@ -274,7 +274,7 @@ export function BibliotecaClient() {
             <button
               type="button"
               onClick={loadPremiumMaterials}
-              className="rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-3 text-sm font-black text-white transition hover:opacity-95"
+              className="rounded-2xl bg-gradient-to-r from-blue-600 to-slate-600 px-5 py-3 text-sm font-black text-white transition hover:opacity-95"
             >
               Atualizar biblioteca
             </button>
@@ -286,7 +286,7 @@ export function BibliotecaClient() {
         <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <p className="text-sm font-black uppercase tracking-[0.28em] text-indigo-700">
+              <p className="text-sm font-black uppercase tracking-[0.28em] text-blue-700">
                 Materiais oficiais
               </p>
               <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-950">
@@ -300,7 +300,7 @@ export function BibliotecaClient() {
 
           <div className="mt-6 grid gap-4">
             {loading ? (
-              <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-6 text-sm leading-7 text-indigo-700">
+              <div className="rounded-2xl border border-blue-200 bg-blue-50 p-6 text-sm leading-7 text-blue-700">
                 Carregando materiais reais da Biblioteca Premium...
               </div>
             ) : filteredItems.length > 0 ? (
@@ -322,7 +322,7 @@ export function BibliotecaClient() {
                         {item.description}
                       </p>
                     </div>
-                    <span className="rounded-full border border-indigo-200 bg-indigo-50 px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-indigo-700">
+                    <span className="rounded-full border border-blue-200 bg-blue-50 px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-blue-700">
                       {item.tipoMaterial || item.categoria}
                     </span>
                   </div>
@@ -354,7 +354,7 @@ export function BibliotecaClient() {
 
         {selected ? (
           <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
-            <p className="text-sm font-black uppercase tracking-[0.25em] text-indigo-700">
+            <p className="text-sm font-black uppercase tracking-[0.25em] text-blue-700">
               Visualização
             </p>
             <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-950">{selected.title}</h2>
@@ -385,7 +385,7 @@ export function BibliotecaClient() {
               <button
                 type="button"
                 onClick={() => openInEditor(selected)}
-                className="rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-6 py-4 text-sm font-black text-white transition hover:-translate-y-1 hover:opacity-95"
+                className="rounded-2xl bg-gradient-to-r from-blue-600 to-slate-600 px-6 py-4 text-sm font-black text-white transition hover:-translate-y-1 hover:opacity-95"
               >
                 Abrir no Editor
               </button>

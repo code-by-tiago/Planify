@@ -1,9 +1,10 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import { TeachyToolToolbar } from "@/components/dashboard/TeachyToolToolbar";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
+import type { DashboardSectionId } from "@/lib/pro/dashboardViews";
+import { writePlanejamentoPrefill } from "@/lib/planejamentos/planejamento-prefill";
 import {
   lessonBundleTools,
   teachyFeaturedToolIds,
@@ -19,7 +20,9 @@ const OBJETIVO_HINT_KEY = "planify-studio-objetivo-hint";
 
 type TeachyStudioHomeProps = {
   onSelectTool: (toolId: PlanifyToolId) => void;
+  onSelectSection?: (sectionId: DashboardSectionId) => void;
   initialTopic?: string;
+  onTopicChange?: (topic: string) => void;
 };
 
 function bundleByTag() {
@@ -34,18 +37,19 @@ function bundleByTag() {
 
 export default function TeachyStudioHome({
   onSelectTool,
+  onSelectSection,
   initialTopic = "",
+  onTopicChange,
 }: TeachyStudioHomeProps) {
-  const router = useRouter();
   const [topic, setTopic] = useState(initialTopic);
   const [editingTheme, setEditingTheme] = useState(!initialTopic.trim());
   const [category, setCategory] = useState<ToolCategoryId>("todos");
   const [toolSearch, setToolSearch] = useState("");
 
   useEffect(() => {
+    if (editingTheme) return;
     setTopic(initialTopic);
-    if (initialTopic.trim()) setEditingTheme(false);
-  }, [initialTopic]);
+  }, [initialTopic, editingTheme]);
 
   const displayTopic = topic.trim() || "Sua aula";
   const lessonTitle = `${displayTopic} — Aula 1`;
@@ -78,11 +82,26 @@ export default function TeachyStudioHome({
     } catch {
       /* ignore */
     }
+    onTopicChange?.(tema);
+  }
+
+  function applyTopic() {
+    setEditingTheme(false);
+    persistTopicForTool();
   }
 
   function openTool(toolId: PlanifyToolId) {
     persistTopicForTool();
     onSelectTool(toolId);
+  }
+
+  function openPlanejamento(tipo: "anual" | "trimestral") {
+    persistTopicForTool();
+    writePlanejamentoPrefill({
+      tipo,
+      conteudos: topic.trim() || undefined,
+    });
+    onSelectSection?.("planejamentos");
   }
 
   function handleBuildLesson(event: FormEvent) {
@@ -92,7 +111,8 @@ export default function TeachyStudioHome({
       setEditingTheme(true);
       return;
     }
-    router.push(`/planejamentos?${new URLSearchParams({ tema }).toString()}`);
+    applyTopic();
+    openPlanejamento("anual");
   }
 
   function applyHintFromHome(snippet: string) {
@@ -106,7 +126,7 @@ export default function TeachyStudioHome({
   }
 
   return (
-    <div className="pl-teachy-board flex h-full min-h-0 w-full flex-col overflow-hidden bg-transparent">
+    <div className="pl-teachy-board pl-teachy-home flex h-full min-h-0 w-full flex-col overflow-hidden bg-[#f8fafc]">
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
         <div className="mx-auto w-full max-w-5xl px-4 py-5 sm:px-6 sm:py-6">
           {/* Bloco 1 — Construtor de aula (estrutura Teachy) */}
@@ -145,7 +165,7 @@ export default function TeachyStudioHome({
                   <div className="mt-3 flex flex-wrap gap-2">
                     <button
                       type="button"
-                      onClick={() => setEditingTheme(false)}
+                      onClick={applyTopic}
                       className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-black text-slate-600 hover:bg-slate-50"
                     >
                       Aplicar
@@ -207,6 +227,58 @@ export default function TeachyStudioHome({
             {/* Personalizar com IA (mesmos chips do painel de ferramenta) */}
             <div className="border-t border-slate-100">
               <TeachyToolToolbar onApplyHint={applyHintFromHome} />
+            </div>
+          </section>
+
+          {/* Planejamento BNCC — anual e trimestral */}
+          <section className="mt-5 overflow-hidden rounded-2xl border border-blue-200/60 bg-gradient-to-br from-[#e8ecff] via-white to-white p-4 shadow-sm sm:p-5">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+              <div className="max-w-xl">
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600">
+                  Planejamento BNCC · DOCX oficial
+                </p>
+                <h2 className="mt-2 text-lg font-black text-slate-950 sm:text-xl">
+                  Matriz anual ou trimestral em poucos minutos
+                </h2>
+                <p className="mt-2 text-sm font-semibold leading-6 text-slate-600">
+                  A IA sugere habilidades BNCC, monta objetivos, metodologia e
+                  avaliação — você baixa o modelo oficial da escola já
+                  preenchido. Gere o anual primeiro; os trimestrais saem
+                  coerentes com a mesma matriz.
+                </p>
+              </div>
+              <div className="grid w-full max-w-md gap-2 sm:grid-cols-2">
+                <button
+                  type="button"
+                  onClick={() => openPlanejamento("anual")}
+                  className="flex flex-col items-start rounded-2xl border border-blue-200 bg-white p-4 text-left shadow-sm transition hover:border-blue-400 hover:shadow-md"
+                >
+                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-white">
+                    <PlanifyIcon name="clipboard" className="h-5 w-5" />
+                  </span>
+                  <span className="mt-3 text-sm font-black text-slate-950">
+                    Planejamento Anual
+                  </span>
+                  <span className="mt-1 text-xs font-semibold text-slate-500">
+                    Matriz completa do ano · DOCX oficial
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => openPlanejamento("trimestral")}
+                  className="flex flex-col items-start rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:border-blue-300 hover:shadow-md"
+                >
+                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100 text-blue-700">
+                    <PlanifyIcon name="calendar" className="h-5 w-5" />
+                  </span>
+                  <span className="mt-3 text-sm font-black text-slate-950">
+                    Planejamento Trimestral
+                  </span>
+                  <span className="mt-1 text-xs font-semibold text-slate-500">
+                    1º, 2º ou 3º trimestre · alinhado ao anual
+                  </span>
+                </button>
+              </div>
             </div>
           </section>
 

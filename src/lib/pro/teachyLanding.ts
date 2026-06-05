@@ -126,6 +126,30 @@ export const teachyTrustSchools = [
   "Rede privada",
 ];
 
+/** Cards de planejamento na grade pública (#ferramentas) */
+export const landingPlanejamentoTools: {
+  id: string;
+  shortTitle: string;
+  href: string;
+  icon: PlanifyIconName;
+  accent: string;
+}[] = [
+  {
+    id: "planejamento-anual",
+    shortTitle: "Plano Anual",
+    href: "/dashboard?secao=planejamentos&matriz=anual",
+    icon: "clipboard",
+    accent: "from-blue-500 to-blue-600",
+  },
+  {
+    id: "planejamento-trimestral",
+    shortTitle: "Plano Trimestral",
+    href: "/dashboard?secao=planejamentos&matriz=trimestral",
+    icon: "calendar",
+    accent: "from-sky-500 to-blue-500",
+  },
+];
+
 export const teachyPartnerLabels = [
   "BNCC",
   "Google Classroom",

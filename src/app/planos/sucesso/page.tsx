@@ -1,13 +1,13 @@
-import Link from "next/link";
 import { PublicHeader } from "@/components/public/PublicHeader";
 import { PublicFooter } from "@/components/public/PublicFooter";
+import { PlanosSucessoActions } from "@/components/planos/PlanosSucessoActions";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 
 export const dynamic = "force-dynamic";
 
 export default function PlanosSucessoPage() {
   return (
-    <main className="planify-ui3 planify-public flex min-h-screen flex-col">
+    <main className="planify-ui3 planify-public planify-teachy-landing flex min-h-screen flex-col bg-white">
       <PublicHeader active="planos" />
 
       <section className="mx-auto flex max-w-2xl flex-1 flex-col items-center justify-center px-5 py-16 text-center sm:px-8">
@@ -25,25 +25,12 @@ export default function PlanosSucessoPage() {
         </h1>
 
         <p className="mt-5 text-base font-medium leading-7 text-slate-600">
-          Se o webhook do Stripe estiver configurado, seu acesso premium será
-          liberado automaticamente. Em ambiente local, valide o webhook antes de
-          testar com usuários comuns.
+          Assim que o pagamento for confirmado, seu plano é vinculado ao e-mail
+          da conta e o acesso premium é liberado automaticamente.
         </p>
 
-        <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
-          <Link
-            href="/login"
-            className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-indigo-600 to-violet-600 px-7 py-3.5 text-sm font-bold text-white hover:opacity-95"
-          >
-            Fazer login
-          </Link>
-          <Link
-            href="/dashboard"
-            className="pl-btn-brand inline-flex items-center justify-center gap-2 rounded-full px-7 py-3.5 text-sm font-bold text-slate-900"
-          >
-            Ir ao painel
-            <PlanifyIcon name="arrowRight" className="h-4 w-4" />
-          </Link>
+        <div className="mt-8 w-full">
+          <PlanosSucessoActions />
         </div>
       </section>
 

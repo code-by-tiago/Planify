@@ -10,7 +10,7 @@ type BrandProps = {
 };
 
 export function PlanifyBrand({
-  href = "/dashboard",
+  href = "/",
   compact = false,
   dark = false,
   hideTagline = false,

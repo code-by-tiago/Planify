@@ -126,8 +126,8 @@ export function PlanifySidebarNav({
     if (isThin) {
       return `group flex w-full items-center gap-2 rounded-xl border px-2 py-1.5 text-left transition ${
         selected
-          ? "border-indigo-300 bg-indigo-50 shadow-sm"
-          : "border-slate-200/90 bg-white/90 hover:border-indigo-200 hover:bg-white"
+          ? "border-blue-300 bg-blue-50 shadow-sm"
+          : "border-slate-200/90 bg-white/90 hover:border-blue-200 hover:bg-white"
       }`;
     }
     return `pl-tool-item group flex w-full items-center gap-2.5 rounded-2xl border px-2 py-1.5 text-left text-sm font-bold transition ${
@@ -189,13 +189,26 @@ export function PlanifySidebarNav({
             onChange={(event) => onQueryChange(event.target.value)}
             placeholder="Buscar ferramenta…"
             aria-label="Buscar ferramenta"
-            className="h-9 w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-2 text-xs font-semibold text-slate-800 outline-none placeholder:text-slate-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+            className="h-9 w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-2 text-xs font-semibold text-slate-800 outline-none placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
           />
         </div>
         {primaryAction ? <div className="mt-2">{primaryAction}</div> : null}
       </div>
 
       <nav className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-3 py-3">
+        {mode !== "public" ? (
+          <div>
+            <Link
+              href="/"
+              onClick={onActivate}
+              className="flex w-full items-center gap-2 rounded-xl border border-slate-200/90 bg-white px-2 py-2 text-left text-xs font-bold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50"
+            >
+              <PlanifyNavIcon name="externalLink" />
+              <span className="truncate">Página inicial do site</span>
+            </Link>
+          </div>
+        ) : null}
+
         <div>
             <p className="px-0.5 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
               {mode === "public" ? "Acessar" : "Páginas"}
@@ -205,8 +218,8 @@ export function PlanifySidebarNav({
                 const selected = isWorkspaceSelected(item);
                 const className = `flex w-full items-center gap-2 rounded-xl px-2 py-1.5 text-left text-xs font-bold transition ${
                   selected
-                    ? "bg-indigo-600 text-white shadow-sm"
-                    : "text-slate-700 hover:bg-white/90"
+                    ? "bg-blue-600 text-white shadow-sm"
+                    : "text-slate-700 hover:bg-slate-50"
                 }`;
 
                 if (mode === "studio" && item.panel !== "external") {

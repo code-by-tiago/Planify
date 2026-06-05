@@ -1,15 +1,15 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import TeachyStudioHome from "@/components/dashboard/TeachyStudioHome";
 import { TeachyMateriaisStudio } from "@/components/dashboard/TeachyMateriaisStudio";
-import { PlanifyDashboardWelcome } from "@/components/dashboard/PlanifyDashboardWelcome";
 import type { DashboardSectionId } from "@/lib/pro/dashboardViews";
 import type { PlanifyToolId } from "@/lib/pro/planifyTools";
 
 function PanelLoading() {
   return (
     <div className="flex h-full min-h-[200px] items-center justify-center bg-white">
-      <p className="text-sm font-bold text-indigo-600">Carregando…</p>
+      <p className="text-sm font-bold text-blue-600">Carregando…</p>
     </div>
   );
 }
@@ -61,6 +61,8 @@ type PlanifyDashboardMainProps = {
   sectionId: DashboardSectionId | null;
   initialTopic: string;
   onTopicChange: (topic: string) => void;
+  onSelectTool: (toolId: PlanifyToolId) => void;
+  onSelectSection: (sectionId: DashboardSectionId) => void;
   onClosePanel: () => void;
 };
 
@@ -69,6 +71,8 @@ export function PlanifyDashboardMain({
   sectionId,
   initialTopic,
   onTopicChange,
+  onSelectTool,
+  onSelectSection,
   onClosePanel,
 }: PlanifyDashboardMainProps) {
   if (toolId) {
@@ -122,8 +126,10 @@ export function PlanifyDashboardMain({
   }
 
   return (
-    <PlanifyDashboardWelcome
-      topic={initialTopic}
+    <TeachyStudioHome
+      onSelectTool={onSelectTool}
+      onSelectSection={onSelectSection}
+      initialTopic={initialTopic}
       onTopicChange={onTopicChange}
     />
   );

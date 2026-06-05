@@ -36,9 +36,9 @@ export function TeachyToolToolbar({
             type="button"
             title={action.hint}
             onClick={() => onApplyHint(action.objetivoSnippet)}
-            className="flex shrink-0 items-center gap-1.5 rounded-full border border-white bg-white px-3 py-1.5 text-xs font-bold text-slate-700 shadow-sm transition hover:border-indigo-200 hover:text-indigo-700 hover:shadow-md"
+            className="flex shrink-0 items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 shadow-sm transition hover:border-blue-200 hover:text-blue-700 hover:shadow-md"
           >
-            <PlanifyIcon name="spark" className="h-3.5 w-3.5 text-indigo-500" />
+            <PlanifyIcon name="spark" className="h-3.5 w-3.5 text-blue-500" />
             {action.label}
           </button>
         ))}

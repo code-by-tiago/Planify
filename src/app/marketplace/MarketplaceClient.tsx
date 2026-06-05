@@ -338,16 +338,16 @@ export function MarketplaceClient() {
     >
     <div className="grid gap-6 lg:grid-cols-[0.82fr_1.18fr]">
       <aside className="space-y-6">
-        <div className="rounded-[1.85rem] border border-violet-100/70 bg-white/95 p-6 shadow-sm">
+        <div className="rounded-[1.85rem] border border-slate-100/70 bg-white/95 p-6 shadow-sm">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.28em] text-fuchsia-600">
+              <p className="text-[10px] font-black uppercase tracking-[0.28em] text-blue-600">
                 Publicar
               </p>
-              <h2 className="mt-3 text-2xl font-black tracking-tight text-violet-950">
+              <h2 className="mt-3 text-2xl font-black tracking-tight text-slate-950">
                 Novo material
               </h2>
-              <p className="mt-3 text-sm leading-7 text-violet-500/90">
+              <p className="mt-3 text-sm leading-7 text-slate-500/90">
                 Envie um material pedagógico para outros professores premium baixarem.
               </p>
             </div>
@@ -458,14 +458,14 @@ export function MarketplaceClient() {
             />
 
             <label className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-5 text-sm font-bold text-slate-700">
-              <span className="block text-xs font-black uppercase tracking-[0.2em] text-indigo-700">
+              <span className="block text-xs font-black uppercase tracking-[0.2em] text-blue-700">
                 Arquivo
               </span>
               <input
                 type="file"
                 accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.png,.jpg,.jpeg,.webp,.txt,.zip"
                 onChange={(event) => setFile(event.target.files?.[0] || null)}
-                className="mt-3 block w-full text-sm text-slate-700 file:mr-4 file:rounded-xl file:border-0 file:bg-gradient-to-r file:from-indigo-600 file:to-violet-600 file:px-4 file:py-2 file:text-sm file:font-black file:text-white"
+                className="mt-3 block w-full text-sm text-slate-700 file:mr-4 file:rounded-xl file:border-0 file:bg-gradient-to-r file:from-blue-600 file:to-slate-600 file:px-4 file:py-2 file:text-sm file:font-black file:text-white"
                 required
               />
               {file ? (
@@ -492,7 +492,7 @@ export function MarketplaceClient() {
             <button
               type="submit"
               disabled={loading}
-              className="rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-6 py-4 text-sm font-black text-white transition hover:-translate-y-1 hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-2xl bg-gradient-to-r from-blue-600 to-slate-600 px-6 py-4 text-sm font-black text-white transition hover:-translate-y-1 hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {loading ? "Publicando..." : "Publicar no Marketplace"}
             </button>
@@ -500,7 +500,7 @@ export function MarketplaceClient() {
         </div>
 
         <div className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-sm font-black uppercase tracking-[0.25em] text-indigo-700">
+          <p className="text-sm font-black uppercase tracking-[0.25em] text-blue-700">
             Filtros
           </p>
 
@@ -536,7 +536,7 @@ export function MarketplaceClient() {
             <button
               type="button"
               onClick={() => loadItems(mineOnly)}
-              className="rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-3 text-sm font-black text-white transition hover:opacity-95"
+              className="rounded-2xl bg-gradient-to-r from-blue-600 to-slate-600 px-5 py-3 text-sm font-black text-white transition hover:opacity-95"
             >
               Atualizar
             </button>
@@ -550,7 +550,7 @@ export function MarketplaceClient() {
 
       <div className="space-y-6">
         <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
-          <p className="text-sm font-black uppercase tracking-[0.28em] text-indigo-700">
+          <p className="text-sm font-black uppercase tracking-[0.28em] text-blue-700">
             Materiais compartilhados
           </p>
           <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-950">
@@ -562,7 +562,7 @@ export function MarketplaceClient() {
 
           <div className="mt-6 grid gap-4">
             {loading ? (
-              <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-6 text-sm leading-7 text-indigo-700">
+              <div className="rounded-2xl border border-blue-200 bg-blue-50 p-6 text-sm leading-7 text-blue-700">
                 Carregando Marketplace...
               </div>
             ) : filteredItems.length > 0 ? (
@@ -584,7 +584,7 @@ export function MarketplaceClient() {
                         {item.description}
                       </p>
                     </div>
-                    <span className="rounded-full border border-indigo-200 bg-indigo-50 px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-indigo-700">
+                    <span className="rounded-full border border-blue-200 bg-blue-50 px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-blue-700">
                       {item.tipoMaterial}
                     </span>
                   </div>
@@ -617,7 +617,7 @@ export function MarketplaceClient() {
 
         {selected ? (
           <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
-            <p className="text-sm font-black uppercase tracking-[0.25em] text-indigo-700">
+            <p className="text-sm font-black uppercase tracking-[0.25em] text-blue-700">
               Detalhes
             </p>
             <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-950">{selected.title}</h2>
@@ -652,7 +652,7 @@ export function MarketplaceClient() {
                   href={selected.signedUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-6 py-4 text-center text-sm font-black text-white transition hover:-translate-y-1 hover:opacity-95"
+                  className="rounded-2xl bg-gradient-to-r from-blue-600 to-slate-600 px-6 py-4 text-center text-sm font-black text-white transition hover:-translate-y-1 hover:opacity-95"
                 >
                   Baixar material
                 </a>

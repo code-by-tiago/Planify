@@ -31,7 +31,7 @@ export function PlanifyShellSidebar({
   variant = "default",
   alwaysVisible = false,
   showUserFooter = true,
-  brandHref = "/dashboard",
+  brandHref = "/",
 }: PlanifyShellSidebarProps) {
   const isTeachy = variant === "teachy";
   const sidebarClass = isTeachy
@@ -106,7 +106,7 @@ export function PlanifyShellSidebar({
               <div
                 className={`flex shrink-0 items-center justify-between border-b ${brandBorder} px-4 py-4`}
               >
-                <PlanifyBrand />
+                <PlanifyBrand href={brandHref} />
                 <button
                   type="button"
                   onClick={() => onOpenChange?.(false)}

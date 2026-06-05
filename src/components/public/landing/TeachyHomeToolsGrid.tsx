@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { planifyTools } from "@/lib/pro/planifyTools";
+import { landingPlanejamentoTools } from "@/lib/pro/teachyLanding";
 
 export function TeachyHomeToolsGrid() {
   return (
@@ -11,15 +12,31 @@ export function TeachyHomeToolsGrid() {
             Ferramentas com IA
           </p>
           <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
-            13 geradores pedagógicos do Planify
+            13 geradores + planejamentos BNCC
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-base font-medium text-slate-600">
-            Mesma lógica das plataformas líderes: escolha a ferramenta, descreva
-            o contexto e receba material pronto para revisar e exportar.
+            Materiais com IA, matriz anual ou trimestral e DOCX oficial — escolha
+            a ferramenta, descreva o contexto e revise antes de exportar.
           </p>
         </div>
 
         <div className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+          {landingPlanejamentoTools.map((tool) => (
+            <Link
+              key={tool.id}
+              href={tool.href}
+              className="group flex flex-col items-center rounded-2xl border border-blue-200/80 bg-blue-50/40 p-4 text-center transition hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-md"
+            >
+              <span
+                className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br ${tool.accent} text-white shadow-sm transition group-hover:scale-105`}
+              >
+                <PlanifyIcon name={tool.icon} className="h-5 w-5" />
+              </span>
+              <span className="mt-3 line-clamp-2 text-xs font-black leading-snug text-slate-900">
+                {tool.shortTitle}
+              </span>
+            </Link>
+          ))}
           {planifyTools.map((tool) => (
             <Link
               key={tool.id}

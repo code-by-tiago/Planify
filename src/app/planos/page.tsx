@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { PublicHeader } from "@/components/public/PublicHeader";
 import { PublicFooter } from "@/components/public/PublicFooter";
+import { PlanCheckoutLink } from "@/components/planos/PlanCheckoutLink";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { LandingFaq } from "@/components/public/landing/LandingFaq";
 import { billingPlans } from "../../types/billing";
@@ -31,7 +32,7 @@ function getAlert(params: Awaited<NonNullable<PlanosPageProps["searchParams"]>>)
       type: "success",
       title: "Conta criada",
       message:
-        "Agora escolha um plano para liberar o acesso premium ao Planify.",
+        "Conta pronta! Escolha Pro ou Premium abaixo para iniciar o checkout e liberar os geradores IA.",
     };
   }
 
@@ -165,7 +166,7 @@ export default async function PlanosPage({ searchParams }: PlanosPageProps) {
   const alert = getAlert(params);
 
   return (
-    <main className="planify-ui3 planify-public min-h-screen overflow-x-clip">
+    <main className="planify-ui3 planify-public planify-teachy-landing min-h-screen overflow-x-clip bg-white">
       <PublicHeader active="planos" />
 
       {/* Hero */}
@@ -271,18 +272,17 @@ export default async function PlanosPage({ searchParams }: PlanosPageProps) {
               </ul>
 
               <div className="mt-auto pt-8">
-                <Link
-                  href={`/api/stripe/checkout?plan=${plan.key}`}
-                  prefetch={false}
+                <PlanCheckoutLink
+                  planKey={plan.key}
                   className={`flex w-full items-center justify-center gap-2 rounded-full px-6 py-3.5 text-sm font-bold transition ${
                     plan.highlighted
-                      ? "pl-btn-brand text-slate-900 hover:brightness-95"
+                      ? "pl-teachy-cta text-slate-900 hover:brightness-95"
                       : "border border-slate-200 bg-white text-slate-900 hover:border-blue-300 hover:text-blue-700"
                   }`}
                 >
                   {plan.ctaLabel}
                   <PlanifyIcon name="arrowRight" className="h-4 w-4" />
-                </Link>
+                </PlanCheckoutLink>
               </div>
             </article>
           ))}

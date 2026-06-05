@@ -49,6 +49,13 @@ export default function LoginPage() {
     const params = new URLSearchParams(window.location.search);
     setRedirect(cleanRedirect(params.get("redirect")));
     setPremiumRequired(params.get("premium") === "required");
+
+    if (params.get("cadastro") === "confirmar") {
+      setMode("login");
+      setMessage(
+        "Confirme o e-mail que enviamos e depois entre com sua senha para escolher um plano.",
+      );
+    }
   }, []);
 
   const loginHint = useMemo(() => {
@@ -82,9 +89,15 @@ export default function LoginPage() {
         }
 
         setMessage(result.message);
+
+        if (result.needsEmailConfirmation) {
+          setMode("login");
+          return;
+        }
+
         window.setTimeout(() => {
           forceNavigate(result.redirectTo || "/planos?cadastro=ok");
-        }, 500);
+        }, 700);
         return;
       }
 
@@ -142,15 +155,25 @@ export default function LoginPage() {
                 </>
               ) : (
                 <>
-                  Comece grátis e crie materiais{" "}
-                  <span className="pl-gradient-text">em minutos.</span>
+                  Crie sua conta e escolha um{" "}
+                  <span className="pl-gradient-text">plano Planify.</span>
                 </>
               )}
             </h1>
             <p className="mt-4 max-w-lg text-base font-medium leading-7 text-slate-600">
-              Use o e-mail da sua assinatura para liberar o painel, os geradores
-              com IA e a exportação em DOCX oficial. Contas de administrador e
-              proprietário têm acesso liberado após o login.
+              {mode === "login" ? (
+                <>
+                  Use o e-mail da sua assinatura para liberar o painel, os
+                  geradores com IA e a exportação em DOCX oficial. Contas de
+                  administrador e proprietário têm acesso liberado após o login.
+                </>
+              ) : (
+                <>
+                  O cadastro é gratuito; o acesso aos geradores premium exige
+                  um plano ativo (Pro ou Premium). Após criar a conta, você
+                  escolhe o plano e libera créditos claros por ciclo.
+                </>
+              )}
             </p>
 
             <ul className="mt-6 grid gap-2.5 sm:max-w-md">
@@ -179,7 +202,7 @@ export default function LoginPage() {
             <p className="mt-2 text-sm font-medium text-slate-500">
               {mode === "login"
                 ? "Acesse o painel e continue de onde parou."
-                : "Cadastre-se e escolha um plano para liberar o premium."}
+                : "Cadastro gratuito · plano necessário para usar os geradores IA."}
             </p>
 
             {loginHint ? (
@@ -282,7 +305,7 @@ export default function LoginPage() {
                   ? "Aguarde..."
                   : mode === "login"
                     ? "Entrar"
-                    : "Criar conta"}
+                    : "Criar conta e ver planos"}
               </button>
             </form>
 

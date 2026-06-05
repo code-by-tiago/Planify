@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { PlanifyDashboardMain } from "@/components/dashboard/PlanifyDashboardMain";
+import { CreditsBalancePill } from "@/components/credits/CreditsBalancePill";
+import { LandingHomeLink } from "@/components/public/LandingHomeLink";
 import { PlanifyBrand } from "@/components/pro/PlanifyBrand";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { PlanifyShellSidebar } from "@/components/pro/PlanifyShellSidebar";
@@ -165,8 +167,13 @@ export default function PlanifyDashboardShell() {
   }, [hasPanel, selectInicio]);
 
   return (
-    <div className="planify-ui3 pl-dashboard-root pl-app-bg flex h-screen w-screen overflow-hidden text-slate-950">
-      <PlanifyShellSidebar variant="teachy" alwaysVisible lumiHint="Menu fixo · clique para abrir à direita">
+    <div className="planify-ui3 planify-teachy-app pl-teachy-shell pl-dashboard-root pl-app-bg flex h-screen w-screen overflow-hidden text-slate-950">
+      <PlanifyShellSidebar
+        variant="teachy"
+        alwaysVisible
+        brandHref="/"
+        lumiHint="Menu fixo · clique para abrir à direita"
+      >
         <PlanifySidebarNav
           mode="studio"
           toolCardStyle="thin"
@@ -182,43 +189,51 @@ export default function PlanifyDashboardShell() {
         />
       </PlanifyShellSidebar>
 
-      <main className="flex h-screen min-w-0 flex-1 flex-col overflow-hidden bg-slate-50">
+      <main className="pl-teachy-main flex h-screen min-w-0 flex-1 flex-col overflow-hidden bg-white">
         {hasPanel ? (
-          <header className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-2.5 sm:px-5">
+          <header className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-200/90 bg-white px-4 py-2.5 sm:px-5">
             <div className="flex min-w-0 flex-1 items-center gap-2">
               <button
                 type="button"
                 onClick={selectInicio}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-600 transition hover:bg-slate-100"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-slate-600 transition hover:bg-slate-100"
                 aria-label="Voltar ao início"
               >
                 <PlanifyIcon name="arrowLeft" className="h-5 w-5" />
               </button>
               <div className="min-w-0">
-                <p className="text-[11px] font-bold text-slate-400">
-                  {selectedToolId ? "Ferramenta IA" : "Página"}
+                <p className="text-[10px] font-black uppercase tracking-[0.14em] text-blue-600">
+                  {selectedToolId ? "Ferramenta IA · BNCC" : "Página"}
                 </p>
                 <h1 className="truncate text-base font-black text-slate-950">
                   {panelTitle}
                 </h1>
               </div>
             </div>
-            <Link
-              href="/planos"
-              className="shrink-0 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-black text-white hover:bg-indigo-700"
-            >
-              Planos
-            </Link>
+            <div className="flex shrink-0 items-center gap-2">
+              <LandingHomeLink compact />
+              <CreditsBalancePill />
+              <Link
+                href="/planos"
+                className="pl-teachy-cta rounded-full px-4 py-1.5 text-xs font-black text-slate-900"
+              >
+                Planos
+              </Link>
+            </div>
           </header>
         ) : (
-          <header className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-2 sm:px-5">
-            <PlanifyBrand compact />
-            <Link
-              href="/planos"
-              className="shrink-0 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-black text-white hover:bg-indigo-700"
-            >
-              Planos
-            </Link>
+          <header className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-200/90 bg-white px-4 py-2 sm:px-5">
+            <PlanifyBrand compact href="/" />
+            <div className="flex items-center gap-2">
+              <LandingHomeLink compact />
+              <CreditsBalancePill />
+              <Link
+                href="/planos"
+                className="pl-teachy-cta rounded-full px-4 py-1.5 text-xs font-black text-slate-900"
+              >
+                Planos
+              </Link>
+            </div>
           </header>
         )}
 
@@ -228,6 +243,8 @@ export default function PlanifyDashboardShell() {
             sectionId={selectedSectionId}
             initialTopic={initialTopic}
             onTopicChange={setTopic}
+            onSelectTool={selectTool}
+            onSelectSection={selectSection}
             onClosePanel={selectInicio}
           />
         </div>

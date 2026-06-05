@@ -14,8 +14,8 @@ export default function DashboardPage() {
     <PremiumAccessGate featureName="o Planify">
       <Suspense
         fallback={
-          <div className="planify-ui3 pl-dashboard-root flex h-screen w-screen items-center justify-center overflow-hidden bg-slate-100">
-            <p className="text-sm font-bold text-indigo-600">
+          <div className="planify-ui3 planify-teachy-app pl-dashboard-root flex h-screen w-screen items-center justify-center overflow-hidden bg-white">
+            <p className="text-sm font-bold text-blue-600">
               Carregando painel…
             </p>
           </div>

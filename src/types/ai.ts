@@ -258,6 +258,16 @@ export type GeminiGenerateJSONOptions = {
   temperature?: number;
   topP?: number;
   maxOutputTokens?: number;
+  /**
+   * Tier de modelo: "default" (Flash) ou "advanced" (Pro).
+   * Tem precedência sobre `model` quando definido.
+   * Seleção ocorre exclusivamente no servidor.
+   */
+  tier?: import("../lib/ai/aiConfig").AIModelTier;
+  /**
+   * Nome de modelo literal. Mantido para retrocompatibilidade.
+   * Prefira usar `tier` em código novo.
+   */
   model?: string;
   responseSchema?: unknown;
 };

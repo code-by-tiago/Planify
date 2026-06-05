@@ -1,0 +1,59 @@
+import { LandingFaq } from "@/components/public/landing/LandingFaq";
+import { TeachyCommunitySection } from "@/components/public/landing/TeachyCommunitySection";
+import { TeachyFinalCta } from "@/components/public/landing/TeachyFinalCta";
+import { TeachyHomeBnccSection } from "@/components/public/landing/TeachyHomeBnccSection";
+import { TeachyHomeFeatures } from "@/components/public/landing/TeachyHomeFeatures";
+import { TeachyHomeHero } from "@/components/public/landing/TeachyHomeHero";
+import { TeachyHomeTestimonials } from "@/components/public/landing/TeachyHomeTestimonials";
+import { TeachyHomeToolsGrid } from "@/components/public/landing/TeachyHomeToolsGrid";
+import { TeachyPartnersBar } from "@/components/public/landing/TeachyPartnersBar";
+
+const faqItems = [
+  {
+    question: "Preciso saber usar inteligência artificial?",
+    answer:
+      "Não. Descreva o tema, etapa e componente em português — o Planify estrutura o material pedagógico para você revisar.",
+  },
+  {
+    question: "Os materiais seguem a BNCC?",
+    answer:
+      "Sim. Habilidades e competências são sugeridas conforme etapa, ano/série e componente curricular.",
+  },
+  {
+    question: "O Planify envia para o Google Classroom?",
+    answer:
+      "Sim. No editor, conecte o Google, escolha a turma e o Planify gera o DOCX, salva no Drive e cria a atividade na turma.",
+  },
+  {
+    question: "Como começo?",
+    answer:
+      "Crie sua conta, escolha um plano e libere os geradores premium com créditos claros por ciclo.",
+  },
+];
+
+/** Landing pública espelhando a estrutura Teachy /professores */
+export function PlanifyHomePage() {
+  return (
+    <>
+      <TeachyHomeHero />
+      <TeachyHomeBnccSection />
+      <TeachyHomeFeatures />
+      <TeachyHomeToolsGrid />
+      <TeachyCommunitySection />
+      <TeachyHomeTestimonials />
+      <TeachyPartnersBar />
+      <TeachyFinalCta />
+
+      <section id="faq" className="scroll-mt-28 border-t border-slate-100 bg-white py-16 sm:pb-20">
+        <div className="mx-auto max-w-3xl px-5 sm:px-8">
+          <h2 className="text-center text-2xl font-black text-slate-950">
+            Perguntas frequentes
+          </h2>
+          <div className="mt-8">
+            <LandingFaq items={faqItems} />
+          </div>
+        </div>
+      </section>
+    </>
+  );
+}

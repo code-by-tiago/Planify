@@ -20,24 +20,30 @@ export function PageHero({
   secondaryHref,
 }: PageHeroProps) {
   return (
-    <section className="mx-auto max-w-7xl px-5 py-10 sm:px-8 lg:py-12">
-      <div className="max-w-4xl">
-        <div className="mb-5 inline-flex rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-sm font-black text-cyan-200 shadow-2xl shadow-cyan-500/10">
+    <section className="border-b border-indigo-100/60 bg-white/60 px-5 py-10 sm:px-8 lg:py-12">
+      <div className="mx-auto max-w-4xl">
+        <p className="inline-flex rounded-full border border-indigo-100 bg-indigo-50 px-4 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-indigo-600">
           {eyebrow}
-        </div>
+        </p>
 
-        <h1 className="text-4xl font-black leading-[1.05] tracking-tight text-white sm:text-5xl lg:text-6xl">
+        <h1 className="mt-5 text-3xl font-black leading-[1.08] tracking-tight text-slate-950 sm:text-4xl lg:text-5xl">
           {title}
         </h1>
 
-        <p className="mt-5 max-w-3xl text-base leading-8 text-slate-300 sm:text-lg">
+        <p className="mt-4 max-w-3xl text-base font-medium leading-8 text-slate-600 sm:text-lg">
           {description}
         </p>
 
         {(primaryLabel || secondaryLabel) && (
-          <div className="mt-7 flex flex-col gap-4 sm:flex-row">
-            {primaryLabel && primaryHref && <ButtonLink href={primaryHref}>{primaryLabel}</ButtonLink>}
-            {secondaryLabel && secondaryHref && <ButtonLink href={secondaryHref} variant="secondary">{secondaryLabel}</ButtonLink>}
+          <div className="mt-7 flex flex-col gap-3 sm:flex-row">
+            {primaryLabel && primaryHref ? (
+              <ButtonLink href={primaryHref}>{primaryLabel}</ButtonLink>
+            ) : null}
+            {secondaryLabel && secondaryHref ? (
+              <ButtonLink href={secondaryHref} variant="secondary">
+                {secondaryLabel}
+              </ButtonLink>
+            ) : null}
           </div>
         )}
       </div>

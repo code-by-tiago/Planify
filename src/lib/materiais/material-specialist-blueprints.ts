@@ -9,7 +9,10 @@ export type MaterialBlueprintKind =
   | "sequencia"
   | "jogo"
   | "projeto"
-  | "roteiro";
+  | "roteiro"
+  | "plano-aula"
+  | "redacao"
+  | "resumo";
 
 type RequiredSection = {
   key: string;
@@ -61,6 +64,9 @@ export function normalizeInputContents(conteudos: MaterialAIInput["conteudos"]):
 
 export function canonicalMaterialType(type: unknown): MaterialBlueprintKind {
   const normalized = normalizeForPedagogy(type);
+  if (normalized.includes("plano") && normalized.includes("aula")) return "plano-aula";
+  if (normalized.includes("redacao")) return "redacao";
+  if (normalized.includes("resumo")) return "resumo";
   if (normalized.includes("apostila")) return "apostila";
   if (normalized.includes("prova") || normalized.includes("avaliacao") || normalized.includes("avaliativo")) return "prova";
   if (normalized.includes("lista")) return "lista";
@@ -416,6 +422,85 @@ export function getMaterialBlueprint(input: MaterialAIInput): MaterialSpecialist
     };
   }
 
+  if (kind === "plano-aula") {
+    return {
+      kind,
+      specialistName: "Especialista Planify em Planos de Aula",
+      qualityMission: `Planejar ${input.quantidadeQuestoes || "1"} aula(s) completas, com BNCC, etapas, recursos e avaliação formativa sobre ${theme}.`,
+      defaultQuestionCount: null,
+      allowsQuestions: false,
+      minSections: 4,
+      exactQuestionContract: false,
+      structureRules: [
+        "Organizar aulas com objetivos, tempo, recursos, ação do professor e dos estudantes.",
+        "Referenciar competências e habilidades da BNCC quando coerentes com componente e ano/série.",
+        "Não transformar plano de aula em lista de exercícios.",
+        ...componentLens,
+      ],
+      forbiddenRules: [...commonForbidden, "Não entregar apenas texto genérico sem etapas cronológicas."],
+      questionStrategy: [],
+      requiredSections: [
+        section("Identificação e objetivos", ["objetivo", "bncc"], "Contextualizar a aula e explicitar o que os estudantes devem aprender.", contentsAsItems),
+        section("Desenvolvimento da aula", ["desenvolvimento", "etapa"], "Organizar momentos: introdução, desenvolvimento, prática e fechamento.", []),
+        section("Recursos e avaliação", ["recurso", "avaliacao"], "Materiais, estratégias de mediação e evidências de aprendizagem.", []),
+        section("Adaptações e extensões", ["adaptacao", "extensao"], "Sugestões de diferenciação e continuidade do estudo.", []),
+      ],
+    };
+  }
+
+  if (kind === "redacao") {
+    const motivadores = Number(String(input.quantidadeQuestoes || "3").replace(/\D/g, "")) || 3;
+    return {
+      kind,
+      specialistName: "Especialista Planify em Produção Textual",
+      qualityMission: `Gerar proposta de redação com ${motivadores} textos motivadores, comando claro e critérios de avaliação sobre ${theme}.`,
+      defaultQuestionCount: null,
+      allowsQuestions: false,
+      minSections: 4,
+      exactQuestionContract: false,
+      structureRules: [
+        "Entregar proposta para o estudante produzir texto (não corrigir redação já escrita).",
+        `Incluir exatamente ${motivadores} textos motivadores distintos.`,
+        "Incluir tema, gênero textual, comando e critérios (ENEM ou escolar).",
+        ...componentLens,
+      ],
+      forbiddenRules: [...commonForbidden, "Não entregar lista de exercícios no lugar da proposta de redação."],
+      questionStrategy: [],
+      requiredSections: [
+        section("Tema e comando", ["tema", "comando"], "Definir o que o estudante deve produzir e em quantas linhas, se aplicável.", []),
+        section("Textos motivadores", ["motivador"], `Apresentar ${motivadores} textos motivadores variados (notícia, gráfico descrito, citação, charge textual etc.).`, []),
+        section("Preparação para escrita", ["planejamento", "tese"], "Orientar leitura, tese, argumentos e organização de parágrafos.", []),
+        section("Critérios de avaliação", ["criterio", "competencia"], "Competências, rubrica ou matriz de correção para o professor.", []),
+      ],
+    };
+  }
+
+  if (kind === "resumo") {
+    return {
+      kind,
+      specialistName: "Especialista Planify em Resumos Guiados",
+      qualityMission: `Organizar resumo em ${input.quantidadeQuestoes || "4"} blocos temáticos com síntese e fixação sobre ${theme}.`,
+      defaultQuestionCount: null,
+      allowsQuestions: false,
+      minSections: 4,
+      exactQuestionContract: false,
+      structureRules: [
+        "Entregar resumo por seções com bullets objetivos, não parágrafos longos.",
+        "Incluir quadro de revisão ou perguntas de fixação ao final.",
+        "Não transformar resumo em apostila completa.",
+        ...componentLens,
+      ],
+      forbiddenRules: [...commonForbidden, "Não usar texto genérico sem organização temática."],
+      questionStrategy: [],
+      requiredSections: [
+        section("Panorama do tema", ["panorama", "introducao"], `Situar ${theme} e seus conceitos centrais.`, contentsAsItems),
+        section("Ideias-chave", ["ideia", "conceito"], "Organizar os pontos essenciais em tópicos hierárquicos.", []),
+        section("Conexões e aplicações", ["conexao", "aplicacao"], "Relacionar conceitos e exemplos do cotidiano ou da disciplina.", []),
+        section("Revisão e fixação", ["revisao", "fixacao"], "Perguntas rápidas, mapa textual ou checklist de estudo.", []),
+      ],
+    };
+  }
+
   return {
     kind: "atividade",
     specialistName: "Especialista Planify em Atividades Didáticas",
@@ -609,6 +694,9 @@ export function buildCompletionQuestion(input: MaterialAIInput, index: number): 
     projeto: `Registro do projeto: explique como "${content}" contribui para investigar o problema norteador sobre ${theme}.`,
     roteiro: `Registro de estudo: anote o que compreendeu sobre "${content}" e como esse conteúdo se relaciona ao tema ${theme}.`,
     jogo: `Rodada de retomada: explique o termo "${content}" e relacione-o ao tema ${theme}.`,
+    "plano-aula": `Planejamento: descreva como o conteúdo "${content}" será trabalhado na aula sobre ${theme}, com evidência de aprendizagem.`,
+    redacao: `Preparação textual: identifique como "${content}" pode fundamentar argumentos na redação sobre ${theme}.`,
+    resumo: `Síntese: resuma em tópicos o papel de "${content}" no tema ${theme} e cite um exemplo.`,
   };
 
   return {

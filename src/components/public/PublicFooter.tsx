@@ -16,6 +16,11 @@ const resourceLinks = [
   { href: "/login", label: "Entrar" },
 ];
 
+const legalLinks = [
+  { href: "/privacidade", label: "Privacidade" },
+  { href: "/termos", label: "Termos de uso" },
+];
+
 export function PublicFooter() {
   const year = new Date().getFullYear();
   const popularTools = planifyTools.filter((t) => t.popular);
@@ -82,8 +87,19 @@ export function PublicFooter() {
           </div>
         </div>
 
-        <div className="mt-12 flex flex-col items-center justify-between gap-3 border-t border-indigo-50 pt-6 text-center sm:flex-row sm:text-left">
+        <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-indigo-50 pt-6 text-center sm:flex-row sm:text-left">
           <p className="text-xs font-medium text-slate-400">© {year} Planify</p>
+          <nav className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
+            {legalLinks.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="text-xs font-semibold text-slate-500 hover:text-indigo-700"
+              >
+                {item.label}
+              </Link>
+            ))}
+          </nav>
           <p className="text-xs font-medium text-slate-400">Educação básica · BNCC · Brasil</p>
         </div>
       </div>

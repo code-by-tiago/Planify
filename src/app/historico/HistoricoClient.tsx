@@ -8,6 +8,11 @@ import { useRouter } from "next/navigation";
 import type { EditorDocument } from "../../types/editor";
 import type { HistoryFilter, HistoryItem } from "../../types/history";
 import {
+  buildHistoryContentPreview,
+  isHistoryHtmlContent,
+  resolveHistoryTypeLabel,
+} from "../../lib/history/history-preview";
+import {
   clearHistoryItems,
   filterHistoryItems,
   getHistoryTypeOptions,
@@ -15,6 +20,7 @@ import {
   removeHistoryItem,
 } from "../../lib/history/history-storage";
 import { saveEditorDocument } from "../../lib/editor/editor-storage";
+import { migrateLegacyMaterialHistoryOnce } from "../../lib/materiais/material-editor-flow";
 
 type StatusState = {
   type: "info" | "success" | "warning";
@@ -78,8 +84,13 @@ function historyItemToEditorDocument(item: HistoryItem): EditorDocument {
     content: item.content,
     raw: item.raw,
     createdAt: item.createdAt,
-    updatedAt: new Date().toISOString(),
+    updatedAt: item.updatedAt,
   };
+}
+
+function refreshHistoryState(): HistoryItem[] {
+  migrateLegacyMaterialHistoryOnce();
+  return loadHistoryItems();
 }
 
 function getSourceBadgeClass(source: string): string {
@@ -106,9 +117,22 @@ export function HistoricoClient() {
   const [status, setStatus] = useState<StatusState | null>(null);
 
   useEffect(() => {
-    const loaded = loadHistoryItems();
+    const loaded = refreshHistoryState();
     setItems(loaded);
     setSelectedItem(loaded[0] ?? null);
+  }, []);
+
+  useEffect(() => {
+    function handleFocus() {
+      const loaded = refreshHistoryState();
+      setItems(loaded);
+      setSelectedItem((current) =>
+        current ? loaded.find((item) => item.id === current.id) ?? loaded[0] ?? null : loaded[0] ?? null,
+      );
+    }
+
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
   }, []);
 
   const typeOptions = useMemo(() => getHistoryTypeOptions(items), [items]);
@@ -160,7 +184,7 @@ export function HistoricoClient() {
   }
 
   function reloadHistory() {
-    const loaded = loadHistoryItems();
+    const loaded = refreshHistoryState();
     setItems(loaded);
     setSelectedItem(loaded[0] ?? null);
     setStatus({
@@ -190,7 +214,7 @@ export function HistoricoClient() {
               Documentos recentes
             </h2>
             <p className="mt-4 text-sm leading-7 text-slate-500/90">
-              Enquanto o Supabase não é conectado, o Planify organiza os itens no navegador para validar o fluxo completo.
+              Cada material e planejamento é salvo com o conteúdo completo no seu navegador. Abra no editor para editar ou exportar fielmente.
             </p>
 
             <div className="mt-6 grid gap-3">
@@ -348,7 +372,7 @@ export function HistoricoClient() {
                           </p>
                         )}
                         <p className="mt-3 line-clamp-3 text-sm leading-6 text-slate-600">
-                          {item.contentPreview}
+                          {buildHistoryContentPreview(item.content)}
                         </p>
                         <p className="mt-3 text-xs font-bold text-slate-500">
                           Atualizado em {formatDate(item.updatedAt)}
@@ -420,7 +444,7 @@ export function HistoricoClient() {
                         Tipo
                       </p>
                       <p className="mt-2 text-sm font-black text-slate-950">
-                        {selectedItem.type}
+                        {resolveHistoryTypeLabel(selectedItem.type)}
                       </p>
                     </div>
 
@@ -434,11 +458,22 @@ export function HistoricoClient() {
                     </div>
                   </div>
 
-                  <div className="mt-6 max-h-[420px] overflow-auto rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                    <pre className="whitespace-pre-wrap text-xs leading-6 text-slate-700">
-                      {selectedItem.content}
-                    </pre>
+                  <div className="mt-6 max-h-[480px] overflow-auto rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                    {isHistoryHtmlContent(selectedItem.content) ? (
+                      <article
+                        className="planify-history-preview text-sm leading-7 text-slate-800 [&_.planify-flashcards]:flex [&_.planify-flashcards]:flex-wrap [&_.planify-flashcards]:gap-4 [&_h1]:text-2xl [&_h1]:font-black [&_h2]:mt-4 [&_h2]:text-lg [&_h2]:font-black [&_h3]:mt-3 [&_h3]:font-black [&_li]:ml-5 [&_ol]:list-decimal [&_p]:my-2 [&_table]:w-full [&_table]:border-collapse [&_td]:border [&_td]:border-slate-200 [&_td]:p-2 [&_th]:border [&_th]:border-slate-200 [&_th]:p-2 [&_ul]:list-disc"
+                        dangerouslySetInnerHTML={{ __html: selectedItem.content }}
+                      />
+                    ) : (
+                      <p className="whitespace-pre-wrap text-sm leading-7 text-slate-700">
+                        {selectedItem.content}
+                      </p>
+                    )}
                   </div>
+
+                  <p className="mt-3 text-xs leading-5 text-slate-500">
+                    Pré-visualização do conteúdo salvo. Use &quot;Abrir no Editor&quot; para ver e exportar o arquivo completo.
+                  </p>
 
                   <div className="mt-6 grid gap-3 sm:grid-cols-2">
                     <button

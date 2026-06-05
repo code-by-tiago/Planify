@@ -1,3 +1,4 @@
+import { buildHistoryContentPreview } from "../lib/history/history-preview";
 import type { EditorDocument, EditorDocumentSource } from "./editor";
 
 export type HistoryItemStatus = "rascunho" | "pronto" | "arquivado";
@@ -31,7 +32,7 @@ export function editorDocumentToHistoryItem(document: EditorDocument): HistoryIt
     source: document.source,
     type: document.type,
     status: "rascunho",
-    contentPreview: document.content.slice(0, 260),
+    contentPreview: buildHistoryContentPreview(document.content),
     content: document.content,
     raw: document.raw,
     createdAt: document.createdAt,

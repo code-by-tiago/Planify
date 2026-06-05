@@ -1,3 +1,7 @@
+import {
+  buildHistoryContentPreview,
+  historyItemNeedsPreviewNormalize,
+} from "./history-preview";
 import type { EditorDocument } from "../../types/editor";
 import type { HistoryFilter, HistoryItem } from "../../types/history";
 import { editorDocumentToHistoryItem } from "../../types/history";
@@ -48,12 +52,37 @@ export function getHistorySupabaseSync(): boolean {
   return shouldSyncSupabase();
 }
 
+function normalizeHistoryItem(item: HistoryItem): HistoryItem {
+  const content = String(item.content || "");
+  const createdAt = item.createdAt || item.updatedAt || new Date().toISOString();
+  const updatedAt = item.updatedAt || createdAt;
+
+  return {
+    ...item,
+    content,
+    contentPreview: buildHistoryContentPreview(content),
+    createdAt,
+    updatedAt,
+  };
+}
+
 export function loadHistoryItems(): HistoryItem[] {
   if (!canUseStorage()) {
     return [];
   }
 
-  return safeParseHistory(window.localStorage.getItem(HISTORY_KEY));
+  const parsed = safeParseHistory(window.localStorage.getItem(HISTORY_KEY));
+  const normalized = parsed.map(normalizeHistoryItem);
+  const shouldPersist = parsed.some((item, index) =>
+    historyItemNeedsPreviewNormalize(item) ||
+    item.contentPreview !== normalized[index]?.contentPreview,
+  );
+
+  if (shouldPersist) {
+    saveHistoryItems(normalized);
+  }
+
+  return normalized;
 }
 
 export function saveHistoryItems(items: HistoryItem[]): void {
@@ -75,7 +104,7 @@ export function upsertHistoryItem(item: HistoryItem): HistoryItem[] {
   const next = [
     {
       ...item,
-      contentPreview: item.content.slice(0, 260),
+      contentPreview: buildHistoryContentPreview(item.content),
       updatedAt: item.updatedAt || new Date().toISOString(),
     },
     ...withoutCurrent,

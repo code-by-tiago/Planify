@@ -217,6 +217,7 @@ REGRAS GERAIS:
 - Adequar linguagem ao ano/série.
 - Entregar conteúdo coeso, sem repetição e sem preenchimento artificial.
 - Entregar pronto para edição no editor do Planify.
+- NÃO preencha o campo "html" — o Planify monta o HTML visual automaticamente.
 - Entregar somente JSON no schema.
 `.trim();
 }

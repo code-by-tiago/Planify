@@ -23,6 +23,7 @@ import {
   type SlideAccent,
   type SlideLayout,
 } from "./material-engine-types";
+import { usesPlanifyMaterialEngine } from "./planify-material-routing";
 import { resolveSlideTheme, type SlideTheme } from "./slide-design-themes";
 import { enrichSlidesWithImages } from "./slide-image-resolver";
 import {
@@ -514,31 +515,49 @@ function renderTeacherNotes(response: MaterialEngineResponse): string {
 }
 
 function renderHtml(response: MaterialEngineResponse, ctx?: RenderContext): string {
-  if (response.html && /<[a-z][\s\S]*>/i.test(response.html)) {
+  const tipo = ctx?.tipo;
+  const usesEngineRenderer = tipo ? usesPlanifyMaterialEngine(tipo) : false;
+
+  // A IA às vezes preenche `html` cru — isso ignorava temas e layouts dedicados.
+  if (
+    !usesEngineRenderer &&
+    response.html &&
+    /<[a-z][\s\S]*>/i.test(response.html)
+  ) {
     return response.html;
   }
 
-  const blocks = [
-    renderSections(response),
-    renderLessonPlan(response),
-    renderMindMap(response),
-    renderSlides(response),
-    renderGame(response),
-    renderFlashcards(response),
-    renderExam(response, ctx),
-    renderActivities(response),
-    renderAnswerKey(response, ctx),
-    renderTeacherNotes(response),
-  ]
-    .filter(Boolean)
-    .join("");
+  const blocks =
+    tipo === "slides"
+      ? [
+          renderSlides(response),
+          renderTeacherNotes(response),
+        ]
+      : tipo === "flashcards"
+        ? [renderFlashcards(response), renderTeacherNotes(response)]
+        : tipo === "mapa-mental"
+          ? [renderMindMap(response), renderTeacherNotes(response)]
+          : [
+              renderSections(response),
+              renderLessonPlan(response),
+              renderMindMap(response),
+              renderSlides(response),
+              renderGame(response),
+              renderFlashcards(response),
+              renderExam(response, ctx),
+              renderActivities(response),
+              renderAnswerKey(response, ctx),
+              renderTeacherNotes(response),
+            ];
+
+  const joined = blocks.filter(Boolean).join("");
 
   return `
     <article class="planify-doc">
       <h1>${escapeHtml(response.title)}</h1>
       ${response.subtitle ? `<p class="planify-doc-subtitle">${escapeHtml(response.subtitle)}</p>` : ""}
       ${response.summary ? `<p>${escapeHtml(response.summary)}</p>` : ""}
-      ${blocks}
+      ${joined}
     </article>
   `.trim();
 }
@@ -692,7 +711,11 @@ function normalizeOutput(
             : [],
         }
       : undefined,
-    html: typeof response.html === "string" ? response.html : undefined,
+    html:
+      usesPlanifyMaterialEngine(request.tipoMaterial) ||
+      typeof response.html !== "string"
+        ? undefined
+        : response.html,
   };
 
   if (!request.incluirGabarito) {

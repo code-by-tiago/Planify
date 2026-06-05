@@ -1,10 +1,14 @@
 "use client";
 
-import { ReactNode, useEffect, useMemo, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import Link from "next/link";
-import { createClient } from "@supabase/supabase-js";
 import { PlanifyBrand } from "@/components/pro/PlanifyBrand";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
+import {
+  buildLoginRedirect,
+  buildPlansRedirect,
+  getCurrentPathWithSearch,
+} from "@/lib/auth/premium-gate";
 
 type GateStatus = {
   loading: boolean;
@@ -34,21 +38,8 @@ export default function PremiumAccessGate({
   const [status, setStatus] = useState<GateStatus>(initialStatus);
   const [redirectPath, setRedirectPath] = useState("/dashboard");
 
-  const supabase = useMemo(() => {
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-    if (!url || !anonKey) {
-      return null;
-    }
-
-    return createClient(url, anonKey);
-  }, []);
-
   useEffect(() => {
-    setRedirectPath(
-      `${window.location.pathname}${window.location.search || ""}`
-    );
+    setRedirectPath(getCurrentPathWithSearch("/dashboard"));
   }, []);
 
   useEffect(() => {
@@ -56,45 +47,15 @@ export default function PremiumAccessGate({
 
     async function loadAccess() {
       try {
-        if (!supabase) {
-          if (!active) return;
-          setStatus({
-            loading: false,
-            authenticated: false,
-            premium: false,
-            email: "",
-            message:
-              "Configuração de acesso indisponível. Verifique as variáveis públicas do Supabase.",
-          });
-          return;
-        }
-
-        const sessionResult = await supabase.auth.getSession();
-        const session = sessionResult.data.session;
-
-        if (!session) {
-          if (!active) return;
-          setStatus({
-            loading: false,
-            authenticated: false,
-            premium: false,
-            email: "",
-            message:
-              "Entre com o e-mail da sua conta Planify para continuar.",
-          });
-          return;
-        }
-
-        const response = await fetch("/api/premium/status", {
+        const response = await fetch("/api/access/status", {
           method: "GET",
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-          },
           cache: "no-store",
+          credentials: "include",
         });
 
         const data = (await response.json().catch(() => null)) as
           | {
+              authenticated?: boolean;
               premium?: boolean;
               email?: string;
               message?: string;
@@ -105,14 +66,16 @@ export default function PremiumAccessGate({
 
         setStatus({
           loading: false,
-          authenticated: true,
+          authenticated: Boolean(data?.authenticated),
           premium: Boolean(data?.premium),
-          email: data?.email || session.user.email || "",
+          email: data?.email || "",
           message:
             data?.message ||
             (data?.premium
               ? "Acesso premium confirmado."
-              : "Este e-mail ainda não possui plano ativo."),
+              : data?.authenticated
+                ? "Este e-mail ainda não possui plano ativo."
+                : "Entre com o e-mail da sua conta Planify para continuar."),
         });
       } catch {
         if (!active) return;
@@ -132,23 +95,24 @@ export default function PremiumAccessGate({
     return () => {
       active = false;
     };
-  }, [supabase]);
+  }, []);
 
   if (status.loading) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-[#f6f7fb] p-4">
-        <div className="w-full max-w-md rounded-[2rem] border border-slate-200 bg-white p-7 text-center shadow-xl shadow-slate-200">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-950 text-white">
+      <main className="flex h-full min-h-[280px] flex-1 items-center justify-center p-4">
+        <div className="planify-ui3 planify-teachy-app w-full max-w-sm rounded-[2rem] border border-slate-200 bg-white p-8 text-center shadow-lg">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-blue-500 text-white">
             <PlanifyIcon name="lock" className="h-6 w-6" />
           </div>
-          <h1 className="mt-5 text-2xl font-black text-slate-950">
+          <h2 className="mt-5 text-xl font-black text-slate-950">
             Verificando acesso
-          </h1>
+          </h2>
           <p className="mt-2 text-sm font-semibold text-slate-500">
             {status.message}
           </p>
-          <div className="mt-6 h-2 overflow-hidden rounded-full bg-slate-100">
-            <div className="h-full w-2/3 animate-pulse rounded-full bg-slate-950" />
+          <div className="mt-6 flex items-center justify-center gap-2">
+            <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-slate-200 border-t-slate-950" />
+            <span className="text-xs font-bold text-slate-400">Aguarde</span>
           </div>
         </div>
       </main>
@@ -157,22 +121,10 @@ export default function PremiumAccessGate({
 
   if (!status.authenticated) {
     return (
-      <main className="min-h-screen bg-[#f6f7fb] text-slate-950">
-        <header className="border-b border-slate-200 bg-white px-5 py-4">
-          <div className="mx-auto flex max-w-6xl items-center justify-between">
-            <PlanifyBrand href="/" />
-            <Link
-              href="/planos"
-              className="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-black text-slate-700 transition hover:border-slate-950"
-            >
-              Planos
-            </Link>
-          </div>
-        </header>
-
-        <section className="flex min-h-[calc(100vh-80px)] items-center justify-center p-4">
-          <div className="w-full max-w-xl rounded-[2rem] border border-slate-200 bg-white p-8 text-center shadow-xl shadow-slate-200">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-slate-950 text-white">
+      <main className="planify-ui3 planify-teachy-app flex h-full min-h-0 flex-1 flex-col overflow-hidden">
+        <section className="flex min-h-0 flex-1 items-center justify-center p-4">
+          <div className="w-full max-w-xl rounded-[2rem] border border-slate-200 bg-white p-8 text-center shadow-lg">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-br from-blue-600 to-blue-500 text-white">
               <PlanifyIcon name="lock" className="h-7 w-7" />
             </div>
             <h1 className="mt-6 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
@@ -184,16 +136,14 @@ export default function PremiumAccessGate({
             </p>
             <div className="mt-7 flex flex-wrap justify-center gap-3">
               <Link
-                href={`/login?premium=required&redirect=${encodeURIComponent(
-                  redirectPath
-                )}`}
-                className="rounded-2xl bg-slate-950 px-5 py-3 text-sm font-black text-white shadow-lg shadow-slate-200 transition hover:-translate-y-0.5"
+                href={buildLoginRedirect(redirectPath)}
+                className="rounded-full bg-blue-600 px-6 py-3 text-sm font-black text-white transition hover:bg-blue-700"
               >
                 Entrar
               </Link>
               <Link
                 href="/planos"
-                className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-700 transition hover:border-slate-950"
+                className="pl-teachy-cta rounded-full px-6 py-3 text-sm font-black text-slate-900"
               >
                 Ver planos
               </Link>
@@ -206,21 +156,9 @@ export default function PremiumAccessGate({
 
   if (!status.premium) {
     return (
-      <main className="min-h-screen bg-[#f6f7fb] text-slate-950">
-        <header className="border-b border-slate-200 bg-white px-5 py-4">
-          <div className="mx-auto flex max-w-6xl items-center justify-between">
-            <PlanifyBrand href="/dashboard" />
-            <Link
-              href="/dashboard"
-              className="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-black text-slate-700 transition hover:border-slate-950"
-            >
-              Voltar ao painel
-            </Link>
-          </div>
-        </header>
-
-        <section className="flex min-h-[calc(100vh-80px)] items-center justify-center p-4">
-          <div className="w-full max-w-xl rounded-[2rem] border border-slate-200 bg-white p-8 text-center shadow-xl shadow-slate-200">
+      <main className="planify-ui3 planify-teachy-app flex h-full min-h-0 flex-1 flex-col overflow-hidden">
+        <section className="flex min-h-0 flex-1 items-center justify-center p-4">
+          <div className="w-full max-w-xl rounded-[2rem] border border-slate-200 bg-white p-8 text-center shadow-lg">
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-blue-50 text-blue-700">
               <PlanifyIcon name="plans" className="h-7 w-7" />
             </div>
@@ -231,19 +169,19 @@ export default function PremiumAccessGate({
               O e-mail <strong>{status.email}</strong> está logado, mas ainda
               não possui plano ativo para acessar {featureName}.
             </p>
-            <p className="mx-auto mt-2 max-w-md text-xs font-semibold text-slate-400">
+            <p className="mx-auto mt-2 max-w-md text-xs font-semibold text-slate-500">
               {status.message}
             </p>
             <div className="mt-7 flex flex-wrap justify-center gap-3">
               <Link
-                href="/planos"
-                className="rounded-2xl bg-slate-950 px-5 py-3 text-sm font-black text-white shadow-lg shadow-slate-200 transition hover:-translate-y-0.5"
+                href={buildPlansRedirect(redirectPath)}
+                className="pl-teachy-cta rounded-full px-6 py-3 text-sm font-black text-slate-900"
               >
                 Ativar plano
               </Link>
               <Link
                 href="/dashboard"
-                className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-700 transition hover:border-slate-950"
+                className="rounded-full border border-slate-200 bg-white px-6 py-3 text-sm font-black text-slate-800 transition hover:bg-slate-50"
               >
                 Voltar ao painel
               </Link>

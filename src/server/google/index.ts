@@ -1,6 +1,10 @@
+export { GOOGLE_OAUTH_SCOPES, getGoogleConfigStatus } from "./google-config";
+export { exportMaterialToGoogle } from "./google-export-service";
+export { exportSlidesToGooglePresentations } from "./google-slides-export-service";
+
 export const googleServerModule = {
   name: "google",
-  status: "prepared",
+  status: "active",
   requiredEnv: [
     "GOOGLE_CLIENT_ID",
     "GOOGLE_CLIENT_SECRET",
@@ -8,6 +12,8 @@ export const googleServerModule = {
   ],
   scopes: [
     "https://www.googleapis.com/auth/drive.file",
+    "https://www.googleapis.com/auth/classroom.courses.readonly",
     "https://www.googleapis.com/auth/classroom.coursework.me",
   ],
+  docs: "docs/google/CONFIGURAR-GOOGLE-CLOUD.md",
 } as const;

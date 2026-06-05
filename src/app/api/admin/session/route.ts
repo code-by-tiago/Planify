@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { verifyPremiumAccess } from "../../../../server/auth/premium-access-service";
 import { getSupabaseAdminClient } from "../../../../server/supabase/admin-client";
 
 export const runtime = "nodejs";
@@ -53,8 +54,11 @@ export async function POST(request: NextRequest) {
     }
 
     const email = data.user.email.trim().toLowerCase();
+    const premiumAccess = await verifyPremiumAccess(accessToken);
+    const isOwnerEmail = ownerEmails().includes(email);
+    const isProfileAdmin = Boolean(premiumAccess.user?.isAdmin);
 
-    if (!ownerEmails().includes(email)) {
+    if (!isOwnerEmail && !isProfileAdmin) {
       return jsonError(
         "Login realizado, mas esta conta não possui permissão de administrador.",
         403,

@@ -3,6 +3,8 @@ export const envKeys = {
   supabaseAnonKey: "NEXT_PUBLIC_SUPABASE_ANON_KEY",
   supabaseServiceRoleKey: "SUPABASE_SERVICE_ROLE_KEY",
   geminiApiKey: "GEMINI_API_KEY",
+  geminiModelDefault: "GEMINI_MODEL_DEFAULT",
+  geminiModelAdvanced: "GEMINI_MODEL_ADVANCED",
   stripeSecretKey: "STRIPE_SECRET_KEY",
   stripePublishableKey: "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY",
   stripeWebhookSecret: "STRIPE_WEBHOOK_SECRET",

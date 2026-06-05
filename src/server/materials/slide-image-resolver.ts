@@ -146,32 +146,51 @@ export async function resolveSlideImage(input: {
   return null;
 }
 
+async function resolveForSlide(
+  slide: {
+    imagePrompt?: string;
+    imageUrl?: string;
+    imageAlt?: string;
+    title?: string;
+  },
+  context: { tema: string; componente: string },
+): Promise<void> {
+  if (slide.imageUrl?.trim()) return;
+
+  const prompt =
+    slide.imagePrompt?.trim() ||
+    slide.title?.trim() ||
+    context.tema;
+
+  let resolved = await resolveSlideImage({
+    imagePrompt: prompt,
+    tema: context.tema,
+    componente: context.componente,
+  });
+
+  if (!resolved && slide.imagePrompt?.trim()) {
+    resolved = await resolveSlideImage({
+      imagePrompt: `${context.tema} ${context.componente} educação`,
+      tema: context.tema,
+      componente: context.componente,
+    });
+  }
+
+  if (resolved) {
+    slide.imageUrl = resolved.url;
+    slide.imageAlt = resolved.alt;
+  }
+}
+
 export async function enrichSlidesWithImages(
   slides: Array<{
     imagePrompt?: string;
     imageUrl?: string;
     imageAlt?: string;
     layout?: string;
+    title?: string;
   }>,
   context: { tema: string; componente: string },
 ): Promise<void> {
-  const tasks = slides.map(async (slide) => {
-    const layout = slide.layout;
-    if (layout === "capa" || layout === "fechamento") return;
-    if (slide.imageUrl?.trim()) return;
-    if (!slide.imagePrompt?.trim()) return;
-
-    const resolved = await resolveSlideImage({
-      imagePrompt: slide.imagePrompt,
-      tema: context.tema,
-      componente: context.componente,
-    });
-
-    if (resolved) {
-      slide.imageUrl = resolved.url;
-      slide.imageAlt = resolved.alt;
-    }
-  });
-
-  await Promise.all(tasks);
+  await Promise.all(slides.map((slide) => resolveForSlide(slide, context)));
 }

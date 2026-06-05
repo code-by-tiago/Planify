@@ -1,5 +1,6 @@
 export { GOOGLE_OAUTH_SCOPES, getGoogleConfigStatus } from "./google-config";
 export { exportMaterialToGoogle } from "./google-export-service";
+export { exportSlidesToGooglePresentations } from "./google-slides-export-service";
 
 export const googleServerModule = {
   name: "google",

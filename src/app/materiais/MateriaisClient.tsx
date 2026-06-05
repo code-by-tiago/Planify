@@ -2,7 +2,9 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { GoogleSlidesExportButton } from "@/components/google/GoogleSlidesExportButton";
 import { MarketplacePublishButton } from "@/components/marketplace/MarketplacePublishButton";
+import type { MaterialEngineResponse } from "@/server/materials/material-engine-types";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { PlanifyOwlGenerationCoach } from "@/components/pro/PlanifyOwlGenerationCoach";
 import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
@@ -245,6 +247,8 @@ export function MateriaisClient({
   const [formatoJogo, setFormatoJogo] = useState<FormatoJogo>("caca-palavras");
   const [incluirGabarito, setIncluirGabarito] = useState(true);
   const [resultadoHtml, setResultadoHtml] = useState("");
+  const [resultadoEstrutura, setResultadoEstrutura] =
+    useState<MaterialEngineResponse | null>(null);
   const [erro, setErro] = useState("");
   const [loading, setLoading] = useState(false);
   const [busca, setBusca] = useState("");
@@ -380,6 +384,7 @@ export function MateriaisClient({
   function selecionarFerramenta(novoTipo: PlanifyToolId) {
     setTipo(novoTipo);
     setResultadoHtml("");
+    setResultadoEstrutura(null);
     setErro("");
     setAlertasGeracao([]);
     setPipelineGeracao(null);
@@ -511,6 +516,7 @@ export function MateriaisClient({
     setFormatoJogo("caca-palavras");
     setIncluirGabarito(true);
     setResultadoHtml("");
+    setResultadoEstrutura(null);
     setErro("");
   }
 
@@ -632,6 +638,7 @@ td,th{border:1px solid #d1d5db;padding:8px;}
 
     setLoading(true);
     setResultadoHtml("");
+    setResultadoEstrutura(null);
     setAlertasGeracao([]);
     setPipelineGeracao(null);
     setMaterialSalvo(false);
@@ -682,6 +689,13 @@ td,th{border:1px solid #d1d5db;padding:8px;}
       }
 
       const html = extractHtmlFromResponse(data);
+
+      if (data && typeof data === "object" && "estrutura" in data) {
+        const estrutura = (data as { estrutura?: MaterialEngineResponse }).estrutura;
+        setResultadoEstrutura(estrutura ?? null);
+      } else {
+        setResultadoEstrutura(null);
+      }
 
       if (!html) {
         throw new Error(
@@ -1180,6 +1194,26 @@ td,th{border:1px solid #d1d5db;padding:8px;}
                     Revise e complemente no editor antes de exportar. Todas as 13
                     ferramentas seguem o mesmo fluxo.
                   </p>
+                </aside>
+              ) : null}
+              {tipo === "slides" ? (
+                <aside className="mb-4 rounded-2xl border border-sky-200 bg-gradient-to-r from-sky-50 to-emerald-50/80 px-4 py-3">
+                  <p className="text-sm font-black text-sky-900">
+                    Abrir no Google Apresentações
+                  </p>
+                  <p className="mt-1 text-xs font-semibold leading-5 text-sky-800/90">
+                    O Planify converte seus slides (com imagens e sequência pedagógica) em
+                    apresentação nativa na sua conta Google.
+                  </p>
+                  <div className="mt-3">
+                    <GoogleSlidesExportButton
+                      title={buildTitle(tipo, tema)}
+                      html={resultadoHtml}
+                      slides={resultadoEstrutura?.slides}
+                      returnTo="/dashboard?tipo=slides"
+                      className="inline-flex items-center gap-2 rounded-2xl bg-emerald-600 px-4 py-2.5 text-sm font-black text-white shadow-sm transition hover:bg-emerald-700 disabled:opacity-60"
+                    />
+                  </div>
                 </aside>
               ) : null}
               <div className="mb-4 flex flex-wrap justify-end gap-2">

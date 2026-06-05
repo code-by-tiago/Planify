@@ -124,3 +124,44 @@ export async function exportToGoogleClassroom(params: {
 
   return data.data as ClassroomExportResult;
 }
+
+export type GoogleSlidesExportResult = {
+  drive: { fileId: string; name: string; webViewLink: string | null };
+  presentationUrl: string;
+  googleEmail: string | null;
+  slideCount: number;
+};
+
+export async function exportToGoogleSlides(params: {
+  title: string;
+  html: string;
+  slides?: Array<{
+    title: string;
+    bullets: string[];
+    speakerNotes: string;
+    layout?: string;
+    subtitle?: string;
+    imagePrompt?: string;
+    imageUrl?: string;
+    imageAlt?: string;
+    sequenceStep?: number;
+    sequenceLabel?: string;
+  }>;
+}): Promise<GoogleSlidesExportResult> {
+  const response = await fetch("/api/google/slides/export", {
+    method: "POST",
+    headers: await authHeaders(),
+    credentials: "include",
+    body: JSON.stringify(params),
+  });
+
+  const data = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new Error(
+      data?.error?.message || "Não foi possível abrir no Google Apresentações.",
+    );
+  }
+
+  return data.data as GoogleSlidesExportResult;
+}

@@ -86,9 +86,11 @@ export async function listHistoryItemsFromDB(params: {
     .order("updated_at", { ascending: false })
     .limit(limit);
 
-  if (params.userId) {
-    query = query.eq("user_id", params.userId);
+  if (!params.userId) {
+    return [];
   }
+
+  query = query.eq("user_id", params.userId);
 
   const { data, error } = await query;
 
@@ -105,11 +107,15 @@ export async function deleteHistoryItemFromDB(params: {
 }): Promise<void> {
   const supabase = getSupabaseAdminClient();
 
-  let query = (supabase as any).from(TABLE_NAME).delete().eq("id", params.id);
-
-  if (params.userId) {
-    query = query.eq("user_id", params.userId);
+  if (!params.userId) {
+    throw new Error("Usuário não autenticado.");
   }
+
+  const query = (supabase as any)
+    .from(TABLE_NAME)
+    .delete()
+    .eq("id", params.id)
+    .eq("user_id", params.userId);
 
   const { error } = await query;
 
@@ -123,11 +129,14 @@ export async function clearHistoryItemsFromDB(params: {
 }): Promise<void> {
   const supabase = getSupabaseAdminClient();
 
-  let query = (supabase as any).from(TABLE_NAME).delete().neq("id", "");
-
-  if (params.userId) {
-    query = query.eq("user_id", params.userId);
+  if (!params.userId) {
+    throw new Error("Usuário não autenticado.");
   }
+
+  const query = (supabase as any)
+    .from(TABLE_NAME)
+    .delete()
+    .eq("user_id", params.userId);
 
   const { error } = await query;
 

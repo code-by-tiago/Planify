@@ -2,28 +2,14 @@ import { Buffer } from "node:buffer";
 import { NextRequest, NextResponse } from "next/server";
 import { verifyPremiumAccess } from "../../../../server/auth/premium-access-service";
 import { resolveAdminAccess } from "../../../../server/auth/admin-access";
+import { getOwnerEmails, isOwnerEmail } from "../../../../server/auth/owner-emails";
 import { getSupabaseAdminClient } from "../../../../server/supabase/admin-client";
-import type { AccessCookiePayload } from "../../../../types/access";
-
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const PREMIUM_COOKIE_NAME = "planify_access";
 const ADMIN_COOKIE_NAME = "planify_admin_access";
 const OWNER_COOKIE_NAME = "planify_owner_access";
-
-function ownerEmails() {
-  return [
-    process.env.PLANIFY_ADMIN_EMAIL,
-    process.env.ADMIN_EMAIL,
-    process.env.NEXT_PUBLIC_ADMIN_EMAIL,
-    "ts162351@gmail.com",
-  ]
-    .join(",")
-    .split(",")
-    .map((email) => email.trim().toLowerCase())
-    .filter(Boolean);
-}
 
 function looksLikeJwt(token: string | null) {
   if (!token) {
@@ -32,30 +18,6 @@ function looksLikeJwt(token: string | null) {
 
   const parts = token.split(".");
   return parts.length === 3 && parts.every((part) => part.length > 0);
-}
-
-function parseAccessCookiePayload(
-  raw: string | null,
-): AccessCookiePayload | null {
-  if (!raw || looksLikeJwt(raw)) {
-    return null;
-  }
-
-  try {
-    const decoded = raw.includes("%") ? decodeURIComponent(raw) : raw;
-    const parsed = JSON.parse(decoded) as AccessCookiePayload;
-
-    if (
-      typeof parsed.authenticated === "boolean" &&
-      typeof parsed.premium === "boolean"
-    ) {
-      return parsed;
-    }
-  } catch {
-    return null;
-  }
-
-  return null;
 }
 
 function decodeJwtEmail(token: string | null) {
@@ -89,7 +51,7 @@ async function resolveOwnerByToken(token: string | null) {
 
   const jwtEmail = decodeJwtEmail(token);
 
-  if (jwtEmail && ownerEmails().includes(jwtEmail)) {
+  if (isOwnerEmail(jwtEmail)) {
     return {
       authenticated: true,
       isOwner: true,
@@ -104,7 +66,7 @@ async function resolveOwnerByToken(token: string | null) {
 
     return {
       authenticated: Boolean(email),
-      isOwner: Boolean(email && ownerEmails().includes(email)),
+      isOwner: isOwnerEmail(email),
       email,
     };
   } catch {
@@ -117,12 +79,16 @@ async function resolveOwnerByToken(token: string | null) {
 }
 
 export async function GET(request: NextRequest) {
+  const sessionToken = request.cookies.get("planify_session")?.value || null;
   const premiumToken = request.cookies.get(PREMIUM_COOKIE_NAME)?.value || null;
   const adminToken = request.cookies.get(ADMIN_COOKIE_NAME)?.value || null;
   const ownerToken = request.cookies.get(OWNER_COOKIE_NAME)?.value || null;
 
-  const accessCookie = parseAccessCookiePayload(premiumToken);
-  const accessJwtToken = looksLikeJwt(premiumToken) ? premiumToken : null;
+  const accessJwtToken =
+    (sessionToken && looksLikeJwt(sessionToken) ? sessionToken : null) ||
+    (looksLikeJwt(premiumToken) ? premiumToken : null) ||
+    (looksLikeJwt(ownerToken) ? ownerToken : null) ||
+    (looksLikeJwt(adminToken) ? adminToken : null);
   const access = await verifyPremiumAccess(accessJwtToken);
   const admin = await resolveAdminAccess(adminToken);
   const owner = await resolveOwnerByToken(ownerToken || accessJwtToken || adminToken);
@@ -138,20 +104,11 @@ export async function GET(request: NextRequest) {
     .trim()
     .toLowerCase();
 
-  const isOwner = Boolean(owner.isOwner || (email && ownerEmails().includes(email)));
-  const cookieAuthenticated = Boolean(accessCookie?.authenticated);
-  const cookiePremium = Boolean(accessCookie?.premium);
-  const cookieAdmin = accessCookie?.role === "admin";
+  const isOwner = Boolean(owner.isOwner || isOwnerEmail(email));
   const authenticated = Boolean(
-    access.authenticated ||
-      cookieAuthenticated ||
-      admin.authenticated ||
-      owner.authenticated ||
-      email,
+    access.authenticated || admin.authenticated || owner.authenticated,
   );
-  const premium = Boolean(
-    access.premium || cookiePremium || admin.isAdmin || isOwner || cookieAdmin,
-  );
+  const premium = Boolean(access.premium || admin.isAdmin || isOwner);
   const reason = !authenticated
     ? "not_authenticated"
     : !premium
@@ -175,7 +132,7 @@ export async function GET(request: NextRequest) {
       reason,
       message,
       isOwner,
-      isAdmin: Boolean(admin.isAdmin || isOwner || cookieAdmin),
+      isAdmin: Boolean(admin.isAdmin || isOwner),
       role: isOwner || admin.isAdmin ? "admin" : access.user?.role || "user",
       email,
       planKey,

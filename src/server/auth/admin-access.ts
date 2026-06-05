@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { verifyPremiumAccess } from "./premium-access-service";
+import { getOwnerEmails } from "./owner-emails";
 import { getSupabaseAdminClient } from "../supabase/admin-client";
 
 const PREMIUM_COOKIE_NAME = "planify_access";
@@ -22,19 +23,6 @@ type TokenProfile = {
   userId: string | null;
   source: string;
 };
-
-function ownerEmails() {
-  return [
-    process.env.PLANIFY_ADMIN_EMAIL,
-    process.env.ADMIN_EMAIL,
-    process.env.NEXT_PUBLIC_ADMIN_EMAIL,
-    "ts162351@gmail.com",
-  ]
-    .join(",")
-    .split(",")
-    .map((email) => email.trim().toLowerCase())
-    .filter(Boolean);
-}
 
 function ownerUserIds() {
   return [process.env.PLANIFY_ADMIN_USER_ID, process.env.ADMIN_USER_ID]
@@ -143,7 +131,7 @@ async function getTokenProfile(token: string | null): Promise<TokenProfile> {
 function detectAdmin(access: any, profile: TokenProfile) {
   const email = getEmailFromAccess(access) || profile.email;
   const userId = getUserIdFromAccess(access) || profile.userId || "";
-  const emails = ownerEmails();
+  const emails = getOwnerEmails();
   const ids = ownerUserIds();
 
   return Boolean(
@@ -235,7 +223,7 @@ export async function requireAdminApi(request: NextRequest) {
             message:
               "Este usuário está logado, mas não é o administrador do Planify.",
             detectedEmail: admin.email,
-            adminEmailConfigured: ownerEmails()[0] || "ts162351@gmail.com",
+            adminEmailConfigured: getOwnerEmails()[0] || "",
             source: admin.source,
           },
         },

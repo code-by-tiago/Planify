@@ -456,6 +456,7 @@ export function MateriaisClient({
     try {
       const response = await fetch("/api/ai/material/sugerir-conteudos", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           etapa,

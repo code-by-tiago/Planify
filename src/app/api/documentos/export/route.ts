@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireApiPremiumAccess } from "../../../../server/auth/api-access";
 import {
   exportEditorHtmlDocument,
   type EditorHtmlExportFormat,
@@ -21,6 +22,9 @@ function parseFormat(value: unknown): EditorHtmlExportFormat {
 }
 
 export async function POST(request: NextRequest) {
+  const auth = await requireApiPremiumAccess(request);
+  if (!auth.ok) return auth.response;
+
   try {
     const body = await request.json();
     const title = String(body?.title || "Documento Planify").trim();

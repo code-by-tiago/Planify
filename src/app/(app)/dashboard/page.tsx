@@ -3,6 +3,8 @@ import PremiumAccessGate from "@/components/premium/PremiumAccessGate";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Painel | Planify",
   description:
@@ -14,7 +16,7 @@ export default function DashboardPage() {
     <PremiumAccessGate featureName="o Planify">
       <Suspense
         fallback={
-          <div className="planify-ui3 planify-teachy-app pl-dashboard-root flex h-screen w-screen items-center justify-center overflow-hidden bg-white">
+          <div className="planify-ui3 planify-teachy-app pl-dashboard-root flex h-[100dvh] w-full max-w-[100vw] items-center justify-center overflow-hidden bg-white">
             <p className="text-sm font-bold text-blue-600">
               Carregando painel…
             </p>

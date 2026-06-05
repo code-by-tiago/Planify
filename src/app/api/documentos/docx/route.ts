@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireApiPremiumAccess } from "../../../../server/auth/api-access";
 import { normalizeDocxPayload } from "../../../../server/docx/document-normalizer";
 import { buildSimpleDocx } from "../../../../server/docx/simple-docx-builder";
 
@@ -18,6 +19,9 @@ function safeFilename(value: string | undefined) {
 }
 
 export async function POST(request: NextRequest) {
+  const auth = await requireApiPremiumAccess(request);
+  if (!auth.ok) return auth.response;
+
   try {
     const body = await request.json();
     const spec = normalizeDocxPayload(body);

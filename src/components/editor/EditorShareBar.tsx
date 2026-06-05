@@ -73,7 +73,7 @@ export function EditorShareBar({
   }, [getHtml, documentType, isSlideDeckProp, slideThemeProp]);
 
   return (
-    <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2 border-t border-slate-100 pt-2 sm:border-t-0 sm:pt-0">
+    <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5 sm:gap-2">
       <MarketplacePublishButton
         title={title}
         getHtml={getHtml}

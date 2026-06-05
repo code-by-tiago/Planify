@@ -170,7 +170,7 @@ export default function PlanifyDashboardShell() {
   }, [hasPanel, selectInicio]);
 
   return (
-    <div className="planify-ui3 planify-teachy-app pl-teachy-shell pl-dashboard-root pl-app-bg flex h-screen w-screen overflow-hidden text-slate-950">
+    <div className="planify-ui3 planify-teachy-app pl-teachy-shell pl-dashboard-root pl-app-bg flex h-[100dvh] w-full max-w-[100vw] overflow-hidden text-slate-950">
       <PlanifyShellSidebar
         variant="teachy"
         brandHref="/"
@@ -194,9 +194,9 @@ export default function PlanifyDashboardShell() {
         />
       </PlanifyShellSidebar>
 
-      <main className="pl-teachy-main flex h-screen min-w-0 flex-1 flex-col overflow-hidden bg-white">
+      <main className="pl-teachy-main flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-white">
         {hasPanel ? (
-          <header className="flex shrink-0 items-center justify-between gap-2 border-b border-slate-200/90 bg-white px-3 py-2.5 sm:gap-3 sm:px-5">
+          <header className="flex shrink-0 items-center justify-between gap-2 border-b border-slate-200/90 bg-white px-3 py-2.5 pt-[max(0.625rem,env(safe-area-inset-top))] sm:gap-3 sm:px-5">
             <div className="flex min-w-0 flex-1 items-center gap-2">
               <button
                 type="button"
@@ -237,7 +237,7 @@ export default function PlanifyDashboardShell() {
             </div>
           </header>
         ) : (
-          <header className="flex shrink-0 items-center justify-between gap-2 border-b border-slate-200/90 bg-white px-3 py-2 sm:gap-3 sm:px-5">
+          <header className="flex shrink-0 items-center justify-between gap-2 border-b border-slate-200/90 bg-white px-3 py-2 pt-[max(0.5rem,env(safe-area-inset-top))] sm:gap-3 sm:px-5">
             <div className="flex min-w-0 items-center gap-2">
               <button
                 type="button"

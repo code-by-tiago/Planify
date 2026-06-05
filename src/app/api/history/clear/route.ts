@@ -1,18 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireApiAuthenticated } from "../../../../server/auth/api-access";
 import { clearHistoryItemsFromDB } from "../../../../server/history/history-db-service";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
-function getUserIdFromRequest(request: NextRequest): string | null {
-  const userId = request.headers.get("x-planify-user-id");
-
-  if (!userId || userId === "local") {
-    return null;
-  }
-
-  return userId;
-}
 
 function errorResponse(message: string, status = 500, details?: string) {
   return NextResponse.json(
@@ -29,11 +20,12 @@ function errorResponse(message: string, status = 500, details?: string) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const userId = getUserIdFromRequest(request);
+    const auth = await requireApiAuthenticated(request);
+    if (!auth.ok) return auth.response;
 
-    await clearHistoryItemsFromDB({
-      userId,
-    });
+    const userId = auth.access.user!.id;
+
+    await clearHistoryItemsFromDB({ userId });
 
     return NextResponse.json(
       {

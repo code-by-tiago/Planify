@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { HistoryItem } from "../../../types/history";
+import { requireApiAuthenticated } from "../../../server/auth/api-access";
 import {
   listHistoryItemsFromDB,
   saveHistoryItemToDB,
@@ -7,16 +8,6 @@ import {
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
-function getUserIdFromRequest(request: NextRequest): string | null {
-  const userId = request.headers.get("x-planify-user-id");
-
-  if (!userId || userId === "local") {
-    return null;
-  }
-
-  return userId;
-}
 
 function errorResponse(message: string, status = 500, details?: string) {
   return NextResponse.json(
@@ -33,7 +24,10 @@ function errorResponse(message: string, status = 500, details?: string) {
 
 export async function GET(request: NextRequest) {
   try {
-    const userId = getUserIdFromRequest(request);
+    const auth = await requireApiAuthenticated(request);
+    if (!auth.ok) return auth.response;
+
+    const userId = auth.access.user!.id;
     const limitParam = request.nextUrl.searchParams.get("limit");
     const limit = limitParam ? Number(limitParam) : 50;
 
@@ -47,7 +41,7 @@ export async function GET(request: NextRequest) {
         success: true,
         data: {
           items,
-          mode: userId ? "user" : "admin-local",
+          mode: "user",
         },
       },
       { status: 200 },
@@ -66,7 +60,10 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const userId = getUserIdFromRequest(request);
+    const auth = await requireApiAuthenticated(request);
+    if (!auth.ok) return auth.response;
+
+    const userId = auth.access.user!.id;
     const body = (await request.json()) as { item?: HistoryItem };
 
     if (!body.item) {
@@ -83,7 +80,7 @@ export async function POST(request: NextRequest) {
         success: true,
         data: {
           item: saved,
-          mode: userId ? "user" : "admin-local",
+          mode: "user",
         },
       },
       { status: 200 },

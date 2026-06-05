@@ -6,6 +6,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const COOKIE_NAME = "planify_access";
+const SESSION_COOKIE_NAME = "planify_session";
 const MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
 
 type CookieRole = AccessCookiePayload["role"];
@@ -58,13 +59,19 @@ export async function POST(request: NextRequest) {
     { status: access.authenticated ? 200 : 401 },
   );
 
-  response.cookies.set(COOKIE_NAME, encodeCookie(payload), {
+  const cookieOptions = {
     httpOnly: true,
-    sameSite: "lax",
+    sameSite: "lax" as const,
     secure: process.env.NODE_ENV === "production",
     maxAge: MAX_AGE_SECONDS,
     path: "/",
-  });
+  };
+
+  response.cookies.set(COOKIE_NAME, encodeCookie(payload), cookieOptions);
+
+  if (token) {
+    response.cookies.set(SESSION_COOKIE_NAME, token, cookieOptions);
+  }
 
   return response;
 }
@@ -78,13 +85,16 @@ export async function DELETE() {
     { status: 200 },
   );
 
-  response.cookies.set(COOKIE_NAME, "", {
+  const clearOptions = {
     httpOnly: true,
-    sameSite: "lax",
+    sameSite: "lax" as const,
     secure: process.env.NODE_ENV === "production",
     maxAge: 0,
     path: "/",
-  });
+  };
+
+  response.cookies.set(COOKIE_NAME, "", clearOptions);
+  response.cookies.set(SESSION_COOKIE_NAME, "", clearOptions);
 
   return response;
 }

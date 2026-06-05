@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireApiPremiumAccess } from "../../../../server/auth/api-access";
 import { suggestBnccByConteudos } from "../../../../server/bncc/bncc-suggestion-engine";
 import { validateBnccSuggestionPayload } from "../../../../server/planejamentos/planning-validation";
 
@@ -6,6 +7,9 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
+  const auth = await requireApiPremiumAccess(request);
+  if (!auth.ok) return auth.response;
+
   try {
     const payload = await request.json();
     const validationError = validateBnccSuggestionPayload(payload);

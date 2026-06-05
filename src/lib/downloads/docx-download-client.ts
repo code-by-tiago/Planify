@@ -22,6 +22,7 @@ export async function downloadDocxDocument(
     headers: {
       "Content-Type": "application/json",
     },
+    credentials: "include",
     body: JSON.stringify({
       kind,
       document: payload,

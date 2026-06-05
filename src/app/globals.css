@@ -103,39 +103,39 @@ body {
   color: var(--pl-text) !important;
 }
 
-/* Mantém páginas internas mais claras sem mexer em lógica */
-body [class*="bg-slate-950"],
-body [class*="bg-slate-900"],
-body [class*="bg-slate-800"],
-body [class*="bg-black"] {
+/* Overrides visuais restritos à landing — não afetam dashboard/ferramentas */
+.planify-landing [class*="bg-slate-950"],
+.planify-landing [class*="bg-slate-900"],
+.planify-landing [class*="bg-slate-800"],
+.planify-landing [class*="bg-black"] {
   background-color: rgba(255,255,255,0.94) !important;
   color: var(--pl-text) !important;
 }
 
-body [class*="text-white"] {
+.planify-landing [class*="text-white"] {
   color: var(--pl-text) !important;
 }
 
-body [class*="text-slate-100"],
-body [class*="text-slate-200"],
-body [class*="text-slate-300"] {
+.planify-landing [class*="text-slate-100"],
+.planify-landing [class*="text-slate-200"],
+.planify-landing [class*="text-slate-300"] {
   color: #344054 !important;
 }
 
-body [class*="text-slate-400"],
-body [class*="text-slate-500"] {
+.planify-landing [class*="text-slate-400"],
+.planify-landing [class*="text-slate-500"] {
   color: var(--pl-muted) !important;
 }
 
-body [class*="border-white/"],
-body [class*="border-slate-"],
-body [class*="border-cyan-300/"] {
+.planify-landing [class*="border-white/"],
+.planify-landing [class*="border-slate-"],
+.planify-landing [class*="border-cyan-300/"] {
   border-color: var(--pl-line) !important;
 }
 
-body input,
-body textarea,
-body select {
+.planify-landing input,
+.planify-landing textarea,
+.planify-landing select {
   background: #ffffff !important;
   color: var(--pl-text) !important;
   border-color: var(--pl-line) !important;
@@ -2249,11 +2249,24 @@ html:has(.pl-single-screen) body {
 }
 
 .pl-dashboard-root {
-  width: 100vw;
+  width: 100%;
+  max-width: 100vw;
   height: 100vh;
   height: 100dvh;
   max-height: 100dvh;
   overflow: hidden;
+}
+
+.pl-teachy-main {
+  min-height: 0;
+  min-width: 0;
+  -webkit-overflow-scrolling: touch;
+}
+
+.pl-teachy-main > .min-h-0 {
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
 }
 
 .pl-shell-root {
@@ -2612,3 +2625,34 @@ html:has(.pl-single-screen) body {
 }
 
 /* PLANIFY_UI3_APP_V2_END */
+
+/* Editor embutido no dashboard — mobile enxuto */
+.planify-editor-embedded .planify-editor-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+}
+
+.planify-editor-embedded .planify-editor-page {
+  padding-left: max(1rem, env(safe-area-inset-left));
+  padding-right: max(1rem, env(safe-area-inset-right));
+}
+
+@media (max-width: 640px) {
+  .planify-editor-embedded .planify-editor-toolbar input[aria-label="Título do documento"] {
+    font-size: 0.8rem;
+  }
+
+  .planify-editor-embedded .planify-editor-format-panel {
+    border-radius: 1rem;
+  }
+
+  .planify-materiais-studio .pl-teachy-generate-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .planify-historico-page .xl\:sticky {
+    position: static;
+  }
+}

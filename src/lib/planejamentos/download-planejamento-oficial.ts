@@ -21,6 +21,7 @@ export async function downloadPlanejamentoOficialDocx(
     headers: {
       "Content-Type": "application/json",
     },
+    credentials: "include",
     body: JSON.stringify(payload),
   });
 

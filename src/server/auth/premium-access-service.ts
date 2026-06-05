@@ -3,6 +3,7 @@ import {
   normalizeBillingPlanKey,
 } from "@/types/billing";
 import { getSupabaseAdminClient } from "../supabase/admin-client";
+import { isOwnerEmail } from "./owner-emails";
 
 type PremiumAccessUser = {
   id: string;
@@ -34,21 +35,6 @@ type ProfileRow = {
   email?: string | null;
   plan?: string | null;
 };
-
-function ownerEmails(): string[] {
-  return [
-    process.env.PLANIFY_ADMIN_EMAIL,
-    process.env.ADMIN_EMAIL,
-    process.env.NEXT_PUBLIC_ADMIN_EMAIL,
-    process.env.PLANIFY_OWNER_EMAIL,
-    process.env.OWNER_EMAIL,
-    "ts162351@gmail.com",
-  ]
-    .join(",")
-    .split(",")
-    .map((email) => email.trim().toLowerCase())
-    .filter(Boolean);
-}
 
 type SubscriptionRow = {
   id: string;
@@ -197,7 +183,7 @@ export async function verifyPremiumAccess(
   const email = String(data.user.email || profile?.email || "")
     .trim()
     .toLowerCase();
-  const isOwner = Boolean(email && ownerEmails().includes(email));
+  const isOwner = isOwnerEmail(email);
   const isAdmin =
     Boolean(profile?.is_admin) || role === "admin" || isOwner;
 

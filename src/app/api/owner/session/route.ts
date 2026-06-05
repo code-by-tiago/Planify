@@ -1,23 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { isOwnerEmail } from "../../../../server/auth/owner-emails";
 import { getSupabaseAdminClient } from "../../../../server/supabase/admin-client";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const OWNER_COOKIE_NAME = "planify_owner_access";
-
-function ownerEmails() {
-  return [
-    process.env.PLANIFY_ADMIN_EMAIL,
-    process.env.ADMIN_EMAIL,
-    process.env.NEXT_PUBLIC_ADMIN_EMAIL,
-    "ts162351@gmail.com",
-  ]
-    .join(",")
-    .split(",")
-    .map((email) => email.trim().toLowerCase())
-    .filter(Boolean);
-}
 
 function jsonError(message: string, status = 400, code = "error") {
   return NextResponse.json(
@@ -54,7 +42,7 @@ export async function POST(request: NextRequest) {
 
     const email = data.user.email.trim().toLowerCase();
 
-    if (!ownerEmails().includes(email)) {
+    if (!isOwnerEmail(email)) {
       return jsonError(
         "Esta conta não é o proprietário do Planify.",
         403,

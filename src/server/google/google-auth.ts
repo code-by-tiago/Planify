@@ -75,11 +75,12 @@ function getBearerToken(request: NextRequest): string | null {
 export async function resolvePlanifyUserFromRequest(
   request: NextRequest,
 ): Promise<PlanifyGoogleUser | null> {
-  const premiumToken =
-    request.cookies.get("planify_access")?.value ||
+  const token =
+    getBearerToken(request) ||
+    request.cookies.get("planify_session")?.value ||
     request.cookies.get("planify_owner_access")?.value ||
+    request.cookies.get("planify_admin_access")?.value ||
     null;
-  const token = getBearerToken(request) || premiumToken;
 
   if (!token) {
     return null;

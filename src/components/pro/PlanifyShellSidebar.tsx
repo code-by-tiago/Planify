@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import { PlanifyBrand } from "@/components/pro/PlanifyBrand";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { PlanifySidebarUser } from "@/components/pro/PlanifySidebarUser";
@@ -34,6 +34,15 @@ export function PlanifyShellSidebar({
   brandHref = "/",
 }: PlanifyShellSidebarProps) {
   const isTeachy = variant === "teachy";
+
+  useEffect(() => {
+    if (alwaysVisible || !open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [open, alwaysVisible]);
   const sidebarClass = isTeachy
     ? "pl-sidebar pl-sidebar-teachy"
     : "pl-sidebar";
@@ -72,7 +81,7 @@ export function PlanifyShellSidebar({
   return (
     <>
       <aside
-        className={`${sidebarClass} hidden h-screen w-72 shrink-0 flex-col overflow-y-auto overscroll-contain border-r lg:flex`}
+        className={`${sidebarClass} hidden h-full min-h-0 w-72 shrink-0 flex-col overflow-y-auto overscroll-contain border-r lg:flex`}
       >
         {brandBlock}
         <div className="flex flex-1 flex-col">{children}</div>
@@ -101,7 +110,7 @@ export function PlanifyShellSidebar({
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
               transition={{ type: "spring", stiffness: 320, damping: 34 }}
-              className={`${sidebarClass} fixed inset-y-0 left-0 z-50 flex h-screen w-[min(300px,88vw)] flex-col overflow-y-auto overscroll-contain border-r shadow-2xl lg:hidden`}
+              className={`${sidebarClass} fixed inset-y-0 left-0 z-50 flex h-[100dvh] w-[min(300px,88vw)] max-w-[88vw] flex-col overflow-y-auto overscroll-contain border-r shadow-2xl pb-[env(safe-area-inset-bottom)] lg:hidden`}
             >
               <div
                 className={`flex shrink-0 items-center justify-between border-b ${brandBorder} px-4 py-4`}

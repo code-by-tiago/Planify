@@ -12,6 +12,7 @@ export async function requestMaterialAI(
     headers: {
       "Content-Type": "application/json",
     },
+    credentials: "include",
     body: JSON.stringify(input),
   });
 

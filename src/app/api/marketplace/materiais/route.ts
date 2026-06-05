@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { verifyPremiumAccess } from "../../../../server/auth/premium-access-service";
 import { resolveAdminAccess } from "../../../../server/auth/admin-access";
+import { isOwnerEmail } from "../../../../server/auth/owner-emails";
 import { getSupabaseAdminClient } from "../../../../server/supabase/admin-client";
 import { resolveMarketplaceStoredMime } from "../../../../server/marketplace/marketplace-download";
 
@@ -36,19 +37,6 @@ type MarketplaceRow = {
   created_at: string | null;
   updated_at: string | null;
 };
-
-function ownerEmails() {
-  return [
-    process.env.PLANIFY_ADMIN_EMAIL,
-    process.env.ADMIN_EMAIL,
-    process.env.NEXT_PUBLIC_ADMIN_EMAIL,
-    "ts162351@gmail.com",
-  ]
-    .join(",")
-    .split(",")
-    .map((email) => email.trim().toLowerCase())
-    .filter(Boolean);
-}
 
 function decodeJwtPayload(token: string | null): any | null {
   if (!token || !token.includes(".")) {
@@ -94,7 +82,7 @@ async function resolveOwnerByToken(token: string | null) {
   const jwtEmail = decodeJwtEmail(token);
   const jwtUserId = decodeJwtUserId(token);
 
-  if (jwtEmail && ownerEmails().includes(jwtEmail)) {
+  if (isOwnerEmail(jwtEmail)) {
     return {
       authenticated: true,
       isOwner: true,
@@ -111,7 +99,7 @@ async function resolveOwnerByToken(token: string | null) {
 
     return {
       authenticated: Boolean(email || userId),
-      isOwner: Boolean(email && ownerEmails().includes(email)),
+      isOwner: isOwnerEmail(email),
       email,
       userId,
     };
@@ -132,6 +120,7 @@ function getAccessToken(request: NextRequest): string | null {
 
   return (
     match?.[1]?.trim() ||
+    request.cookies.get("planify_session")?.value ||
     request.cookies.get(PREMIUM_COOKIE_NAME)?.value ||
     null
   );
@@ -183,7 +172,7 @@ async function resolveMarketplaceAccess(request: NextRequest) {
       "",
   ).trim();
 
-  const isOwner = Boolean(owner.isOwner || (email && ownerEmails().includes(email)));
+  const isOwner = Boolean(owner.isOwner || isOwnerEmail(email));
   const authenticated = Boolean(
     premium.authenticated || admin.authenticated || owner.authenticated || email || userId,
   );

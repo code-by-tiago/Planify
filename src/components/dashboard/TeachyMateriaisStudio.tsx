@@ -58,13 +58,13 @@ export function TeachyMateriaisStudio({
     <PlanifyWorkspaceProvider embeddedInDashboard>
       <div
         ref={scrollRef}
-        className="flex h-full min-h-0 w-full flex-col overflow-hidden bg-white"
+        className="planify-materiais-studio flex h-full min-h-0 w-full flex-col overflow-hidden bg-white"
       >
         <TeachyToolToolbar
           collapsed={toolbarCollapsed}
           onApplyHint={handleHint}
         />
-        <div className="min-h-0 flex-1 overflow-hidden">
+        <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain">
           <MateriaisClient
             key={`${toolId}-${initialTema}`}
             studioMode

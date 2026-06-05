@@ -1,24 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyPremiumAccess } from "../../../../server/auth/premium-access-service";
+import { isOwnerEmail } from "../../../../server/auth/owner-emails";
 import { getSupabaseAdminClient } from "../../../../server/supabase/admin-client";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const ADMIN_COOKIE_NAME = "planify_admin_access";
-
-function ownerEmails() {
-  return [
-    process.env.PLANIFY_ADMIN_EMAIL,
-    process.env.ADMIN_EMAIL,
-    process.env.NEXT_PUBLIC_ADMIN_EMAIL,
-    "ts162351@gmail.com",
-  ]
-    .join(",")
-    .split(",")
-    .map((email) => email.trim().toLowerCase())
-    .filter(Boolean);
-}
 
 function jsonError(message: string, status = 400, code = "error") {
   return NextResponse.json(
@@ -55,10 +43,10 @@ export async function POST(request: NextRequest) {
 
     const email = data.user.email.trim().toLowerCase();
     const premiumAccess = await verifyPremiumAccess(accessToken);
-    const isOwnerEmail = ownerEmails().includes(email);
+    const isOwnerAccount = isOwnerEmail(email);
     const isProfileAdmin = Boolean(premiumAccess.user?.isAdmin);
 
-    if (!isOwnerEmail && !isProfileAdmin) {
+    if (!isOwnerAccount && !isProfileAdmin) {
       return jsonError(
         "Login realizado, mas esta conta não possui permissão de administrador.",
         403,

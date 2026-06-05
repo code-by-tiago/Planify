@@ -753,6 +753,7 @@ export function PlanejamentosClient() {
     try {
       const response = await fetch("/api/bncc/sugerir", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(buildBasePayload()),
       });
@@ -796,6 +797,7 @@ export function PlanejamentosClient() {
     try {
       const response = await fetch("/api/planejamentos/gerar-ia", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(buildBasePayload()),
       });
@@ -857,6 +859,7 @@ export function PlanejamentosClient() {
     try {
       const response = await fetch("/api/planejamentos/docx-oficial", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...buildBasePayload(),
@@ -920,6 +923,7 @@ export function PlanejamentosClient() {
     try {
       const response = await fetch("/api/planejamentos/docx-pacote", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...buildBasePayload(),

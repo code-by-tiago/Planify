@@ -2,6 +2,7 @@ import { Buffer } from "node:buffer";
 import { NextRequest, NextResponse } from "next/server";
 import { verifyPremiumAccess } from "../../../../server/auth/premium-access-service";
 import { resolveAdminAccess } from "../../../../server/auth/admin-access";
+import { isOwnerEmail } from "../../../../server/auth/owner-emails";
 import { getSupabaseAdminClient } from "../../../../server/supabase/admin-client";
 
 export const runtime = "nodejs";
@@ -38,19 +39,6 @@ type LibraryMaterialRow = {
   updated_at: string | null;
 };
 
-function ownerEmails() {
-  return [
-    process.env.PLANIFY_ADMIN_EMAIL,
-    process.env.ADMIN_EMAIL,
-    process.env.NEXT_PUBLIC_ADMIN_EMAIL,
-    "ts162351@gmail.com",
-  ]
-    .join(",")
-    .split(",")
-    .map((email) => email.trim().toLowerCase())
-    .filter(Boolean);
-}
-
 function decodeJwtEmail(token: string | null) {
   if (!token || !token.includes(".")) {
     return "";
@@ -82,7 +70,7 @@ async function resolveOwnerByToken(token: string | null) {
 
   const jwtEmail = decodeJwtEmail(token);
 
-  if (jwtEmail && ownerEmails().includes(jwtEmail)) {
+  if (isOwnerEmail(jwtEmail)) {
     return {
       authenticated: true,
       isOwner: true,
@@ -97,7 +85,7 @@ async function resolveOwnerByToken(token: string | null) {
 
     return {
       authenticated: Boolean(email),
-      isOwner: Boolean(email && ownerEmails().includes(email)),
+      isOwner: isOwnerEmail(email),
       email,
     };
   } catch {
@@ -181,7 +169,7 @@ async function resolvePremiumOrOwnerAccess(request: NextRequest) {
     .trim()
     .toLowerCase();
 
-  const isOwner = Boolean(owner.isOwner || (email && ownerEmails().includes(email)));
+  const isOwner = Boolean(owner.isOwner || isOwnerEmail(email));
 
   return {
     authenticated: Boolean(access.authenticated || admin.authenticated || owner.authenticated || email),

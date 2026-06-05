@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireApiPremiumAccess } from "../../../../server/auth/api-access";
 import type { AIResponse, MaterialAIInput, MaterialAIOutput } from "../../../../types/ai";
 import { generateMaterialWithAI } from "../../../../server/ai/material-ai-service";
 
@@ -25,6 +26,9 @@ function errorResponse(
 }
 
 export async function POST(request: NextRequest) {
+  const auth = await requireApiPremiumAccess(request);
+  if (!auth.ok) return auth.response;
+
   try {
     const body = (await request.json()) as MaterialAIInput;
 

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireApiPremiumAccess } from "../../../../server/auth/api-access";
 import {
   buildOfficialPlanningDocx,
   getOfficialPlanningFilename,
@@ -171,6 +172,9 @@ function createDocument(
 }
 
 export async function POST(request: NextRequest) {
+  const auth = await requireApiPremiumAccess(request);
+  if (!auth.ok) return auth.response;
+
   try {
     const payload = (await request.json()) as OfficialPlanningPayload;
 

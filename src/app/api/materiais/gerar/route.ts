@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireApiPremiumAccess } from "../../../../server/auth/api-access";
 import { generatePlanifyMaterial } from "../../../../server/materials/material-generation-orchestrator";
 import type { MaterialEngineInput } from "../../../../server/materials/material-engine-types";
-import { resolvePlanifyUserFromRequest } from "../../../../server/google/google-auth";
 import {
   getCreditCost,
   refundCredits,
@@ -14,6 +14,9 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
 export async function POST(request: NextRequest) {
+  const auth = await requireApiPremiumAccess(request);
+  if (!auth.ok) return auth.response;
+
   const payload = (await request.json().catch(() => null)) as
     | MaterialEngineInput
     | null;
@@ -27,11 +30,10 @@ export async function POST(request: NextRequest) {
 
   const tipo = String(payload.tipoMaterial || payload.tipo || "");
 
-  // Cobrança de créditos (falha aberta: só bloqueia quem tem carteira sem saldo).
-  const user = await resolvePlanifyUserFromRequest(request);
+  const user = auth.access.user;
   let chargedCost = 0;
 
-  if (user) {
+  if (user?.id) {
     const spend = await spendCredits(user.id, tipo, user.email);
 
     if (spend.status === "insufficient") {
@@ -58,7 +60,7 @@ export async function POST(request: NextRequest) {
 
     if (!result.ok) {
       // Não consumiu de fato — devolve os créditos debitados.
-      if (user && chargedCost > 0) {
+      if (user?.id && chargedCost > 0) {
         await refundCredits(user.id, chargedCost, tipo);
       }
 
@@ -78,7 +80,7 @@ export async function POST(request: NextRequest) {
       creditCost: chargedCost || getCreditCost(tipo),
     });
   } catch (error) {
-    if (user && chargedCost > 0) {
+    if (user?.id && chargedCost > 0) {
       await refundCredits(user.id, chargedCost, tipo);
     }
 

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireApiAuthenticated } from "../../../../server/auth/api-access";
 import { deleteHistoryItemFromDB } from "../../../../server/history/history-db-service";
 
 export const runtime = "nodejs";
@@ -9,16 +10,6 @@ type RouteParams = {
     id: string;
   }>;
 };
-
-function getUserIdFromRequest(request: NextRequest): string | null {
-  const userId = request.headers.get("x-planify-user-id");
-
-  if (!userId || userId === "local") {
-    return null;
-  }
-
-  return userId;
-}
 
 function errorResponse(message: string, status = 500, details?: string) {
   return NextResponse.json(
@@ -35,17 +26,17 @@ function errorResponse(message: string, status = 500, details?: string) {
 
 export async function DELETE(request: NextRequest, context: RouteParams) {
   try {
+    const auth = await requireApiAuthenticated(request);
+    if (!auth.ok) return auth.response;
+
     const { id } = await context.params;
-    const userId = getUserIdFromRequest(request);
+    const userId = auth.access.user!.id;
 
     if (!id) {
       return errorResponse("ID do item não informado.", 400);
     }
 
-    await deleteHistoryItemFromDB({
-      id,
-      userId,
-    });
+    await deleteHistoryItemFromDB({ id, userId });
 
     return NextResponse.json(
       {

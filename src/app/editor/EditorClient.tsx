@@ -308,6 +308,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
   const [originHint, setOriginHint] = useState<string | null>(null);
   const [showVersionsPanel, setShowVersionsPanel] = useState(false);
   const [showFormatTools, setShowFormatTools] = useState(!embedded);
+  const [showMobileActions, setShowMobileActions] = useState(false);
   const [showAdvancedTools, setShowAdvancedTools] = useState(false);
   const [isTableActive, setIsTableActive] = useState(false);
   const [isSlideDeck, setIsSlideDeck] = useState(false);
@@ -341,17 +342,12 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
     : "rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-700 transition hover:border-slate-950";
 
   useEffect(() => {
-    const media = window.matchMedia("(max-width: 1023px)");
-    const syncMobileToolbar = () => {
-      if (embedded && media.matches) {
-        setShowFormatTools(true);
-      }
-    };
-
-    syncMobileToolbar();
-    media.addEventListener("change", syncMobileToolbar);
-
-    return () => media.removeEventListener("change", syncMobileToolbar);
+    if (!embedded) return;
+    const mq = window.matchMedia("(min-width: 1024px)");
+    const sync = () => setShowFormatTools(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
   }, [embedded]);
 
   useEffect(() => {
@@ -1411,84 +1407,131 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
       ) : null}
 
       <div
-        className={`shrink-0 border-b border-slate-200 bg-white ${
+        className={`planify-editor-toolbar shrink-0 border-b border-slate-200 bg-white ${
           embedded ? "px-3 py-2" : "mb-4 rounded-2xl border px-4 py-3 shadow-sm"
         }`}
       >
-        <div className="flex flex-wrap items-center gap-2">
-          {embedded ? (
-            <input
-              value={title}
-              onChange={(event) => setTitle(event.target.value)}
-              onBlur={() => persistCurrentDocument("Título salvo.")}
-              aria-label="Título do documento"
-              className="h-8 min-w-[140px] flex-1 rounded-lg border border-slate-200 bg-slate-50 px-3 text-xs font-bold text-slate-950 outline-none focus:border-blue-400 focus:bg-white"
-            />
-          ) : null}
-
-          <button
-            type="button"
-            onClick={saveVersion}
-            className={
-              embedded
-                ? "rounded-lg bg-gradient-to-r from-blue-600 to-slate-600 px-3 py-1.5 text-xs font-black text-white"
-                : "rounded-xl bg-gradient-to-r from-blue-600 to-slate-600 px-4 py-2 text-sm font-black text-white"
-            }
-          >
-            Salvar
-          </button>
-
-          <button type="button" onClick={newDocument} className={actionBtnClass}>
-            Novo
-          </button>
-
-          <button type="button" onClick={downloadDocxReal} className={actionBtnClass}>
-            DOCX
-          </button>
-
-          <button type="button" onClick={downloadPdfReal} className={actionBtnClass}>
-            PDF
-          </button>
-
-          {embedded ? (
-            <>
+        {embedded ? (
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-1.5">
+              <input
+                value={title}
+                onChange={(event) => setTitle(event.target.value)}
+                onBlur={() => persistCurrentDocument("Título salvo.")}
+                aria-label="Título do documento"
+                className="h-9 min-w-0 flex-1 rounded-lg border border-slate-200 bg-slate-50 px-3 text-xs font-bold text-slate-950 outline-none focus:border-blue-400 focus:bg-white"
+              />
               <button
                 type="button"
-                onClick={() => setShowVersionsPanel((value) => !value)}
-                className={`${actionBtnClass} ${
-                  showVersionsPanel ? "border-blue-300 bg-blue-50 text-blue-800" : ""
-                }`}
+                onClick={saveVersion}
+                className="shrink-0 rounded-lg bg-gradient-to-r from-blue-600 to-slate-600 px-3 py-2 text-xs font-black text-white"
               >
-                Versões
+                Salvar
               </button>
               <button
                 type="button"
-                onClick={() => setShowFormatTools((value) => !value)}
-                className={`${actionBtnClass} ${
-                  showFormatTools ? "border-blue-300 bg-blue-50 text-blue-800" : ""
+                onClick={downloadDocxReal}
+                className="shrink-0 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-2 text-xs font-black text-emerald-800"
+              >
+                DOCX
+              </button>
+              <button
+                type="button"
+                onClick={downloadPdfReal}
+                className="shrink-0 rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-xs font-black text-slate-700"
+              >
+                PDF
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowMobileActions((value) => !value)}
+                aria-label="Mais ações"
+                aria-expanded={showMobileActions}
+                className={`shrink-0 rounded-lg border px-2.5 py-2 text-xs font-black ${
+                  showMobileActions
+                    ? "border-blue-300 bg-blue-50 text-blue-800"
+                    : "border-slate-200 bg-white text-slate-700"
                 }`}
               >
-                Formatação
+                ⋯
               </button>
-            </>
-          ) : null}
+            </div>
 
-          <EditorShareBar
-            title={title}
-            getHtml={getEditorHtml}
-            onStatus={setStatus}
-            documentType={documentSource?.type}
-            isSlideDeck={isSlideDeck}
-            slideTheme={slideTheme}
-          />
+            {showMobileActions ? (
+              <div className="flex flex-wrap gap-1.5">
+                <button type="button" onClick={newDocument} className={actionBtnClass}>
+                  Novo
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowVersionsPanel((value) => !value)}
+                  className={`${actionBtnClass} ${
+                    showVersionsPanel ? "border-blue-300 bg-blue-50 text-blue-800" : ""
+                  }`}
+                >
+                  Versões
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowFormatTools((value) => !value)}
+                  className={`${actionBtnClass} ${
+                    showFormatTools ? "border-blue-300 bg-blue-50 text-blue-800" : ""
+                  }`}
+                >
+                  Formatação
+                </button>
+              </div>
+            ) : null}
 
-          <span className="ml-auto text-[11px] font-bold text-slate-500">
-            {wordCount} pal.
-          </span>
-        </div>
-        <p className={`truncate text-slate-500 ${embedded ? "mt-1 text-[11px]" : "mt-2 text-xs"}`}>
-          {status}
-        </p>
+            <div className="flex items-center justify-between gap-2">
+              <EditorShareBar
+                title={title}
+                getHtml={getEditorHtml}
+                onStatus={setStatus}
+                documentType={documentSource?.type}
+                isSlideDeck={isSlideDeck}
+                slideTheme={slideTheme}
+              />
+              <span className="shrink-0 text-[11px] font-bold text-slate-500">
+                {wordCount} pal.
+              </span>
+            </div>
+            <p className="truncate text-[11px] text-slate-500">{status}</p>
+          </div>
+        ) : (
+          <>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={saveVersion}
+                className="rounded-xl bg-gradient-to-r from-blue-600 to-slate-600 px-4 py-2 text-sm font-black text-white"
+              >
+                Salvar
+              </button>
+              <button type="button" onClick={newDocument} className={actionBtnClass}>
+                Novo
+              </button>
+              <button type="button" onClick={downloadDocxReal} className={actionBtnClass}>
+                DOCX
+              </button>
+              <button type="button" onClick={downloadPdfReal} className={actionBtnClass}>
+                PDF
+              </button>
+              <EditorShareBar
+                title={title}
+                getHtml={getEditorHtml}
+                onStatus={setStatus}
+                documentType={documentSource?.type}
+                isSlideDeck={isSlideDeck}
+                slideTheme={slideTheme}
+              />
+              <span className="ml-auto text-[11px] font-bold text-slate-500">
+                {wordCount} pal.
+              </span>
+            </div>
+            <p className="mt-2 truncate text-xs text-slate-500">{status}</p>
+          </>
+        )}
       </div>
 
       <div
@@ -1649,61 +1692,47 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
               : "space-y-5"
           }
         >
-          <div className="sticky top-0 z-20 flex shrink-0 flex-wrap items-center gap-1.5 rounded-2xl border border-slate-200 bg-white/95 p-2 shadow-sm backdrop-blur lg:hidden">
-            <button
-              type="button"
-              onClick={undoEdit}
-              className="h-9 rounded-xl border border-slate-200 bg-white px-3 text-xs font-black text-slate-800"
-            >
-              ↶ Desfazer
-            </button>
-            <button
-              type="button"
-              onClick={redoEdit}
-              className="h-9 rounded-xl border border-slate-200 bg-white px-3 text-xs font-black text-slate-800"
-            >
-              ↷ Refazer
-            </button>
-            <button
-              type="button"
-              onClick={deleteSelectionOrBlock}
-              className="h-9 rounded-xl border border-rose-200 bg-rose-50 px-3 text-xs font-black text-rose-700"
-            >
-              Excluir
-            </button>
-            <button
-              type="button"
-              onClick={insertTable}
-              className="h-9 rounded-xl border border-slate-200 bg-white px-3 text-xs font-black text-slate-800"
-            >
-              Tabela
-            </button>
-            {isTableActive ? (
-              <>
-                <button
-                  type="button"
-                  onClick={() => removeCurrentTable(true)}
-                  className="h-9 rounded-xl border border-rose-200 bg-rose-50 px-3 text-xs font-black text-rose-700"
-                >
-                  ⊟ Tabela
-                </button>
-                <button
-                  type="button"
-                  onClick={removeTableRow}
-                  className="h-9 rounded-xl border border-cyan-200 bg-cyan-50 px-3 text-xs font-black text-cyan-800"
-                >
-                  − Linha
-                </button>
-                <button
-                  type="button"
-                  onClick={removeTableColumn}
-                  className="h-9 rounded-xl border border-cyan-200 bg-cyan-50 px-3 text-xs font-black text-cyan-800"
-                >
-                  − Col.
-                </button>
-              </>
-            ) : null}
-          </div>
+          {embedded && !showFormatTools ? (
+            <div className="sticky top-0 z-20 flex shrink-0 items-center gap-1 overflow-x-auto overscroll-contain rounded-xl border border-slate-200 bg-white/95 p-1.5 shadow-sm backdrop-blur lg:hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <button type="button" onClick={undoEdit} className={toolBtnClass} aria-label="Desfazer">
+                ↶
+              </button>
+              <button type="button" onClick={redoEdit} className={toolBtnClass} aria-label="Refazer">
+                ↷
+              </button>
+              <button
+                type="button"
+                onClick={() => exec("bold")}
+                className={toolBtnClass}
+                aria-label="Negrito"
+              >
+                B
+              </button>
+              <button
+                type="button"
+                onClick={() => exec("italic")}
+                className={toolBtnClass}
+                aria-label="Itálico"
+              >
+                I
+              </button>
+              <button
+                type="button"
+                onClick={deleteSelectionOrBlock}
+                className={`${toolBtnClass} border-rose-200 bg-rose-50 text-rose-700`}
+                aria-label="Excluir"
+              >
+                🗑
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowFormatTools(true)}
+                className={`${toolBtnClass} border-blue-200 bg-blue-50 text-blue-800`}
+              >
+                Aa+
+              </button>
+            </div>
+          ) : null}
 
           {isTableActive ? (
             <div className="hidden shrink-0 rounded-2xl border border-cyan-200 bg-cyan-50 p-2 lg:block">
@@ -1738,10 +1767,26 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
 
           {(!embedded || showFormatTools) && (
           <div
-            className={`relative shrink-0 rounded-[2rem] border border-slate-200 bg-white shadow-sm ${
-              embedded ? "overflow-x-auto overscroll-contain p-2" : "p-4"
+            className={`planify-editor-format-panel relative shrink-0 rounded-[2rem] border border-slate-200 bg-white shadow-sm ${
+              embedded
+                ? "max-lg:max-h-[min(38dvh,280px)] max-lg:overflow-y-auto max-lg:overscroll-contain overflow-x-auto overscroll-contain p-2"
+                : "p-4"
             }`}
           >
+            {embedded && showFormatTools ? (
+              <div className="mb-2 flex items-center justify-between gap-2 border-b border-slate-100 pb-2 lg:hidden">
+                <span className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+                  Formatação
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setShowFormatTools(false)}
+                  className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-[10px] font-black text-slate-700"
+                >
+                  Fechar
+                </button>
+              </div>
+            ) : null}
             <input
               ref={imageInputRef}
               type="file"

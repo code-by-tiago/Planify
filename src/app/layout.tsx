@@ -1,9 +1,51 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
+import { getSiteUrl } from "@/lib/seo/site-url";
 import "./globals.css";
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#2563eb",
+};
+
+const siteUrl = getSiteUrl();
+
 export const metadata: Metadata = {
-  title: "Planify | Plataforma Educacional",
-  description: "Plataforma educacional premium para planejamentos, materiais didáticos, editor, biblioteca e marketplace pedagógico.",
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: "Planify | Plataforma Educacional",
+    template: "%s | Planify",
+  },
+  description:
+    "Plataforma educacional premium para planejamentos BNCC, materiais com IA, editor, biblioteca e marketplace pedagógico.",
+  keywords: [
+    "Planify",
+    "BNCC",
+    "professor",
+    "materiais didáticos",
+    "planejamento escolar",
+    "IA educação",
+  ],
+  openGraph: {
+    type: "website",
+    locale: "pt_BR",
+    url: siteUrl,
+    siteName: "Planify",
+    title: "Planify | Assistente de IA para professores",
+    description:
+      "Crie slides, provas, planejamentos e materiais alinhados à BNCC com exportação DOCX e Google Classroom.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Planify | Assistente de IA para professores",
+    description:
+      "Materiais pedagógicos com IA alinhados à BNCC — planejamentos, editor e exportação DOCX.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
   verification: {
     google: "MvgDB8L5EBhazEZWiIHAGPz5qUWn6Hk06ssd0zoPJIA",
   },

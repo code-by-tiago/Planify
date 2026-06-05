@@ -1,5 +1,5 @@
 import { buildVisualGameMaterial } from "@/lib/materiais/game-builder";
-import { generateGeminiJSON } from "../ai/gemini-client";
+import { generateGeminiJSON, isGeminiQuotaError } from "../ai/gemini-client";
 import { getMaterialEngineSchema } from "./material-engine-schemas";
 import {
   buildMaterialEnginePrompt,
@@ -839,6 +839,11 @@ export async function generateMaterialByEngine(input: MaterialEngineInput) {
       };
     } catch (error) {
       lastError = error;
+      const message =
+        error instanceof Error ? error.message : "Erro ao gerar material.";
+      if (isGeminiQuotaError(message)) {
+        break;
+      }
     }
   }
 

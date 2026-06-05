@@ -45,6 +45,29 @@ function getAIApiKey(): string {
   return apiKey;
 }
 
+/** Modelos 1.5 foram descontinuados no free tier — normaliza para 2.5. */
+const LEGACY_MODEL_MAP: Record<string, string> = {
+  "gemini-1.5-flash": "gemini-2.5-flash",
+  "gemini-1.5-flash-8b": "gemini-2.5-flash",
+  "gemini-1.5-pro": "gemini-2.5-pro",
+  "gemini-1.5-pro-latest": "gemini-2.5-pro",
+};
+
+const DEFAULT_MODEL_FALLBACKS = [
+  "gemini-2.5-flash",
+  "gemini-2.0-flash",
+] as const;
+
+const ADVANCED_MODEL_FALLBACKS = [
+  "gemini-2.5-pro",
+  "gemini-2.5-flash",
+] as const;
+
+function normalizeModelName(model: string): string {
+  const trimmed = model.trim();
+  return LEGACY_MODEL_MAP[trimmed] ?? trimmed;
+}
+
 /**
  * Resolve o nome do modelo a partir do tier solicitado.
  *
@@ -58,21 +81,75 @@ function resolveModel(
   legacyModel?: string,
 ): string {
   if (tier === "advanced") {
-    return (
-      process.env.GEMINI_MODEL_ADVANCED ??
-      "gemini-2.5-pro"
+    return normalizeModelName(
+      process.env.GEMINI_MODEL_ADVANCED ?? "gemini-2.5-pro",
     );
   }
 
   if (legacyModel) {
-    return legacyModel;
+    return normalizeModelName(legacyModel);
   }
 
-  return (
+  const fromEnv =
     process.env.GEMINI_MODEL_DEFAULT ??
     process.env.GEMINI_MODEL ??
-    "gemini-2.5-flash"
+    "gemini-2.5-flash";
+
+  return normalizeModelName(fromEnv);
+}
+
+function resolveModelCandidates(
+  tier?: AIModelTier,
+  legacyModel?: string,
+): string[] {
+  const primary = resolveModel(tier, legacyModel);
+  const pool =
+    tier === "advanced"
+      ? [...ADVANCED_MODEL_FALLBACKS]
+      : [...DEFAULT_MODEL_FALLBACKS];
+
+  return [...new Set([primary, ...pool])];
+}
+
+export function isGeminiQuotaError(message: string, status = 0): boolean {
+  return (
+    status === 429 ||
+    /quota exceeded|rate limit|resource exhausted|too many requests/i.test(
+      message,
+    )
   );
+}
+
+export function humanizeGeminiError(message: string): string {
+  if (isGeminiQuotaError(message)) {
+    const retry = message.match(/retry in ([\d.]+)s/i);
+    const wait = retry ? ` Aguarde cerca de ${Math.ceil(parseFloat(retry[1]))} segundos` : "";
+
+    return (
+      `Limite de uso da IA atingido neste minuto.${wait} e tente de novo. ` +
+      "Se o problema continuar, habilite faturação no Google AI Studio ou use uma chave com cota maior."
+    );
+  }
+
+  if (/GEMINI_API_KEY/i.test(message)) {
+    return "Chave GEMINI_API_KEY ausente ou inválida no servidor.";
+  }
+
+  return message;
+}
+
+function parseRetryDelayMs(message: string): number {
+  const match = message.match(/retry in ([\d.]+)s/i);
+  if (match) {
+    return Math.ceil(parseFloat(match[1]) * 1000) + 800;
+  }
+  return 4000;
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -115,55 +192,86 @@ function stripJsonFence(text: string): string {
  * Gera uma resposta JSON estruturada via IA.
  * Usar para materiais com schema definido (planejamentos, materiais avançados).
  */
-export async function generateGeminiJSON<T>(
-  options: GeminiGenerateJSONOptions,
-): Promise<T> {
-  const apiKey = getAIApiKey();
-  const model = resolveModel(options.tier, options.model);
+async function callGeminiGenerateContent(
+  apiKey: string,
+  model: string,
+  body: Record<string, unknown>,
+): Promise<GeminiResponse & { httpStatus: number }> {
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
   const response = await fetch(endpoint, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      systemInstruction: {
-        parts: [{ text: options.systemInstruction }],
-      },
-      contents: [
-        {
-          role: "user",
-          parts: [{ text: options.prompt }],
-        },
-      ],
-      generationConfig: {
-        temperature: options.temperature ?? 0.2,
-        topP: options.topP ?? 0.8,
-        maxOutputTokens: options.maxOutputTokens ?? 8192,
-        responseMimeType: "application/json",
-        ...(options.responseSchema
-          ? { responseSchema: options.responseSchema }
-          : {}),
-      },
-    }),
+    body: JSON.stringify(body),
   });
 
   const json = (await response.json()) as GeminiResponse;
 
-  if (!response.ok || json.error) {
-    throw new Error(
-      json.error?.message ??
-        `Erro ao chamar a IA. Status HTTP: ${response.status}`,
-    );
+  return { ...json, httpStatus: response.status };
+}
+
+export async function generateGeminiJSON<T>(
+  options: GeminiGenerateJSONOptions,
+): Promise<T> {
+  const apiKey = getAIApiKey();
+  const models = resolveModelCandidates(options.tier, options.model);
+
+  const body = {
+    systemInstruction: {
+      parts: [{ text: options.systemInstruction }],
+    },
+    contents: [
+      {
+        role: "user",
+        parts: [{ text: options.prompt }],
+      },
+    ],
+    generationConfig: {
+      temperature: options.temperature ?? 0.2,
+      topP: options.topP ?? 0.8,
+      maxOutputTokens: options.maxOutputTokens ?? 8192,
+      responseMimeType: "application/json",
+      ...(options.responseSchema
+        ? { responseSchema: options.responseSchema }
+        : {}),
+    },
+  };
+
+  let lastError = "Erro ao chamar a IA.";
+
+  for (const model of models) {
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      const json = await callGeminiGenerateContent(apiKey, model, body);
+
+      if (json.httpStatus >= 200 && json.httpStatus < 300 && !json.error) {
+        const text = extractTextFromResponse(json);
+        const cleaned = stripJsonFence(text);
+
+        try {
+          return JSON.parse(cleaned) as T;
+        } catch {
+          throw new Error("A IA retornou um JSON inválido.");
+        }
+      }
+
+      const message =
+        json.error?.message ??
+        `Erro ao chamar a IA. Status HTTP: ${json.httpStatus}`;
+
+      lastError = message;
+
+      if (!isGeminiQuotaError(message, json.httpStatus)) {
+        break;
+      }
+
+      if (attempt === 0) {
+        await sleep(parseRetryDelayMs(message));
+        continue;
+      }
+    }
   }
 
-  const text = extractTextFromResponse(json);
-  const cleaned = stripJsonFence(text);
-
-  try {
-    return JSON.parse(cleaned) as T;
-  } catch {
-    throw new Error("A IA retornou um JSON inválido.");
-  }
+  throw new Error(humanizeGeminiError(lastError));
 }
 
 /**
@@ -180,38 +288,51 @@ export async function generateGeminiText(options: {
   model?: string;
 }): Promise<string> {
   const apiKey = getAIApiKey();
-  const model = resolveModel(options.tier, options.model);
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+  const models = resolveModelCandidates(options.tier, options.model);
 
-  const response = await fetch(endpoint, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      systemInstruction: {
-        parts: [{ text: options.systemInstruction }],
+  const body = {
+    systemInstruction: {
+      parts: [{ text: options.systemInstruction }],
+    },
+    contents: [
+      {
+        role: "user",
+        parts: [{ text: options.prompt }],
       },
-      contents: [
-        {
-          role: "user",
-          parts: [{ text: options.prompt }],
-        },
-      ],
-      generationConfig: {
-        temperature: options.temperature ?? 0.5,
-        topP: options.topP ?? 0.9,
-        maxOutputTokens: options.maxOutputTokens ?? 8192,
-      },
-    }),
-  });
+    ],
+    generationConfig: {
+      temperature: options.temperature ?? 0.5,
+      topP: options.topP ?? 0.9,
+      maxOutputTokens: options.maxOutputTokens ?? 8192,
+    },
+  };
 
-  const json = (await response.json()) as GeminiResponse;
+  let lastError = "Erro ao chamar a IA.";
 
-  if (!response.ok || json.error) {
-    throw new Error(
-      json.error?.message ??
-        `Erro ao chamar a IA. Status HTTP: ${response.status}`,
-    );
+  for (const model of models) {
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      const json = await callGeminiGenerateContent(apiKey, model, body);
+
+      if (json.httpStatus >= 200 && json.httpStatus < 300 && !json.error) {
+        return extractTextFromResponse(json);
+      }
+
+      const message =
+        json.error?.message ??
+        `Erro ao chamar a IA. Status HTTP: ${json.httpStatus}`;
+
+      lastError = message;
+
+      if (!isGeminiQuotaError(message, json.httpStatus)) {
+        break;
+      }
+
+      if (attempt === 0) {
+        await sleep(parseRetryDelayMs(message));
+        continue;
+      }
+    }
   }
 
-  return extractTextFromResponse(json);
+  throw new Error(humanizeGeminiError(lastError));
 }

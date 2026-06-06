@@ -88,6 +88,11 @@ const toolMessages: Partial<Record<PlanifyToolId, string[]>> = {
     "Montando tema, motivadores e comando para sua turma escrever.",
     "Proposta de redação completa quase pronta.",
   ],
+  inclusao: [
+    "Adaptando com foco em inclusão e acessibilidade.",
+    "Técnicas de mediação alinhadas à necessidade informada.",
+    "Material inclusivo saindo com cuidado pedagógico.",
+  ],
 };
 
 function uniqueMessages(items: string[]): string[] {

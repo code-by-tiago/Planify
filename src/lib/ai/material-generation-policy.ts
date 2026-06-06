@@ -17,10 +17,14 @@ export const DEEP_GENERATION_TYPES: MaterialEngineType[] = [
 /** Planejamento anual/trimestral — geração profunda (Pro), conta na cota diária. */
 export const PLANNING_DEEP_GENERATION_TYPE = "planejamento";
 
+/** Adaptação curricular inclusiva — geração profunda (Pro), conta na cota diária. */
+export const INCLUSAO_DEEP_GENERATION_TYPE = "inclusao";
+
 const DEEP_PLANNING_TYPES = new Set([
   PLANNING_DEEP_GENERATION_TYPE,
   "planejamento-anual",
   "planejamento-trimestral",
+  INCLUSAO_DEEP_GENERATION_TYPE,
 ]);
 
 /** Materiais leves (Flash) — não consomem cota diária profunda. */

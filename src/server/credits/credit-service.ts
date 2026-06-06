@@ -49,7 +49,7 @@ export type CreditWallet = {
  * Custo em créditos por tipo de material.
  * Materiais profundos (Gemini Pro) custam mais — alinhado ao custo de API.
  */
-const CREDIT_COST: Partial<Record<MaterialEngineType, number>> = {
+const CREDIT_COST: Partial<Record<MaterialEngineType, number>> & Record<string, number> = {
   prova: 10,
   apostila: 10,
   slides: 10,
@@ -63,6 +63,7 @@ const CREDIT_COST: Partial<Record<MaterialEngineType, number>> = {
   flashcards: 1,
   "mapa-mental": 1,
   jogo: 1,
+  inclusao: 6,
 };
 
 export function getCreditCost(tipo: string): number {

@@ -2,6 +2,7 @@ export const protectedRoutes = [
   "/dashboard",
   "/planejamentos",
   "/materiais",
+  "/inclusao",
   "/editor",
   "/historico",
   "/biblioteca",

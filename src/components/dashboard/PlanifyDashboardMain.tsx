@@ -17,6 +17,12 @@ function PanelLoading() {
   );
 }
 
+const InclusaoClient = dynamic(
+  () =>
+    import("@/app/inclusao/InclusaoClient").then((m) => m.InclusaoClient),
+  { ssr: false, loading: PanelLoading },
+);
+
 const PlanejamentosClient = dynamic(
   () =>
     import("@/app/planejamentos/PlanejamentosClient").then(
@@ -79,6 +85,18 @@ export function PlanifyDashboardMain({
   onClosePanel,
 }: PlanifyDashboardMainProps) {
   if (toolId) {
+    if (toolId === "inclusao") {
+      return (
+        <PlanifyWorkspaceProvider embeddedInDashboard>
+          <div className="planify-hud planify-materiais-studio flex h-full min-h-0 w-full flex-col overflow-hidden bg-[var(--planify-canvas)]">
+            <div className="min-h-0 flex-1 overflow-hidden">
+              <InclusaoClient studioMode onStudioClose={onClosePanel} />
+            </div>
+          </div>
+        </PlanifyWorkspaceProvider>
+      );
+    }
+
     return (
       <TeachyMateriaisStudio
         toolId={toolId}

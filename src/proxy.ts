@@ -62,6 +62,8 @@ export const config = {
     "/planejamentos/:path*",
     "/materiais",
     "/materiais/:path*",
+    "/inclusao",
+    "/inclusao/:path*",
     "/editor",
     "/editor/:path*",
     "/historico",

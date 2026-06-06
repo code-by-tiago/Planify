@@ -63,7 +63,8 @@ export type PlanifyToolId =
   | "resumo"
   | "flashcards"
   | "redacao"
-  | "mapa-mental";
+  | "mapa-mental"
+  | "inclusao";
 
 export type PlanifyTool = {
   id: PlanifyToolId;
@@ -268,6 +269,22 @@ export const planifyTools: PlanifyTool[] = [
     loadingTitle: "Criando mapa mental",
     loadingDescription: "Relacionando conceitos e tópicos essenciais.",
     accent: "from-purple-300 via-fuchsia-300 to-indigo-300",
+  },
+  {
+    id: "inclusao",
+    title: "Adaptação Curricular — Inclusão",
+    shortTitle: "Inclusão",
+    description:
+      "Adapte atividades, trilhas paralelas, relatórios e mediação para educação inclusiva.",
+    category: "preparar-aulas",
+    href: dashboardToolHref("inclusao"),
+    icon: "spark",
+    popular: true,
+    primaryFieldLabel: "Conteúdo ou observações",
+    loadingTitle: "Gerando adaptação inclusiva",
+    loadingDescription:
+      "Aplicando técnicas de psicopedagogia e inclusão escolar ao seu material.",
+    accent: "from-teal-300 via-cyan-300 to-sky-300",
   },
 ];
 

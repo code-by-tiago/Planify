@@ -118,6 +118,11 @@ const sugestoesTema: Record<PlanifyToolId, string[]> = {
     "Cidadania digital e democracia",
   ],
   "mapa-mental": ["Fotossíntese", "Brasil Colônia", "Figuras de linguagem"],
+  inclusao: [
+    "Atividade sobre frações adaptada para TDAH",
+    "Relatório de progresso — participação em grupo",
+    "Trilhas paralelas sobre sistema solar",
+  ],
 };
 
 

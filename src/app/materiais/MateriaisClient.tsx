@@ -18,9 +18,21 @@ import type {
 import { SLIDE_THEME_OPTIONS } from "@/server/materials/slide-design-themes";
 import { CreditsBalancePill } from "@/components/credits/CreditsBalancePill";
 import { DailyGenerationsBar } from "@/components/credits/DailyGenerationsBar";
+import { MaterialToolPageShell } from "@/components/pro/MaterialToolPageShell";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { PlanifyOwlGenerationCoach } from "@/components/pro/PlanifyOwlGenerationCoach";
+import { PlanifyOwlMark } from "@/components/pro/PlanifyOwlMark";
+import { PlanifyPageHero } from "@/components/pro/PlanifyPageHero";
 import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
+import {
+  HUD_CHIP_ACTIVE,
+  HUD_CHIP_INACTIVE,
+  HUD_FIELD_CLASS,
+  HUD_FILTER_CHIP_ACTIVE,
+  HUD_FILTER_CHIP_INACTIVE,
+  HUD_SECTION_LABEL,
+  HUD_TEXTAREA_CLASS,
+} from "@/lib/pro/hud-form-styles";
 import {
   DEFAULT_MATERIAL_EDUCATION,
   EDUCATION_STAGES,
@@ -57,8 +69,7 @@ import {
 import { downloadEditorExport } from "@/lib/downloads/editor-export-client";
 import { lessonBundleFollowUp } from "@/lib/pro/teachyStudio";
 
-const SELECT_FIELD_CLASS =
-  "w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-950 outline-none transition focus:border-slate-950 focus:bg-white";
+const SELECT_FIELD_CLASS = HUD_FIELD_CLASS;
 
 type Dificuldade = "facil" | "media" | "avancada";
 type FormatoJogo =
@@ -952,66 +963,39 @@ export function MateriaisClient({
   }
 
   const painelCriacao = modalAberto ? (
-    <div
-      className={`flex h-full min-h-0 flex-col overflow-hidden rounded-[2rem] border border-blue-100/80 bg-white shadow-[0_8px_40px_-16px_rgba(37,99,235,0.15)] ${
-        studioMode ? "rounded-none border-0 shadow-none" : ""
-      }`}
-    >
-      <div className="flex shrink-0 items-center justify-between gap-4 border-b border-slate-100 px-5 py-4">
-        <div className="flex items-center gap-3">
-          <div
-            className={`flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${mode.accent} text-white`}
-          >
-            <PlanifyIcon name={mode.icon} className="h-5 w-5" />
-          </div>
-          <div>
-            <p className="text-sm font-black leading-none text-slate-950">
-              {mode.title}
-            </p>
-            <p className="mt-0.5 text-xs font-semibold text-slate-500">
-              {mode.description}
-            </p>
-          </div>
-        </div>
-        <button
-          type="button"
-          onClick={fecharPainel}
-          aria-label={studioMode ? "Voltar ao início" : "Voltar ao catálogo"}
-          className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-black text-slate-600 transition hover:border-blue-300 hover:text-slate-950"
-        >
-          <PlanifyIcon name="arrowLeft" className="h-4 w-4" />
-          <span className="hidden sm:inline">
-            {studioMode ? "Início" : "Catálogo"}
-          </span>
-        </button>
-      </div>
-
-      <div
-        className={`grid min-h-0 flex-1 lg:grid-cols-[0.9fr_1.1fr] ${
-          studioMode ? "min-h-0" : "min-h-[600px] lg:min-h-[680px]"
-        }`}
-      >
-        <form
-          onSubmit={gerarMaterial}
-          data-planify-scroll={studioMode ? "" : undefined}
-          className="min-h-0 overflow-y-auto overscroll-contain border-r border-slate-100 p-5"
-        >
+    <MaterialToolPageShell
+      tool={mode}
+      studioMode={studioMode}
+      onBack={fecharPainel}
+      backLabel={studioMode ? "Início" : "Catálogo"}
+      formScrollAttr={studioMode}
+      previewScrollAttr={studioMode}
+      form={
+        <form onSubmit={gerarMaterial} className="space-y-1">
           <div className="flex flex-wrap items-start justify-between gap-3">
-            <h2 className="text-2xl font-black tracking-tight text-slate-950">
-              {mode.title}
-            </h2>
+            {studioMode ? (
+              <p className="text-[10px] font-bold uppercase tracking-wide text-cyan-600">
+                Configurar geração
+              </p>
+            ) : (
+              <h2 className="text-2xl font-extrabold tracking-tight text-slate-950">
+                {mode.title}
+              </h2>
+            )}
             <CreditsBalancePill />
           </div>
-          <p className="mt-1 text-sm font-semibold text-slate-500">
-            {mode.description}
-          </p>
+          {!studioMode ? (
+            <p className="mt-1 text-sm font-semibold text-slate-500">
+              {mode.description}
+            </p>
+          ) : null}
 
           <div className="mt-4">
             <DailyGenerationsBar tipoMaterial={tipo} />
           </div>
 
           {isRedacao ? (
-            <p className="mt-3 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-semibold leading-6 text-blue-900">
+            <p className="mt-3 rounded-xl border border-cyan-400/20 bg-cyan-50/60 px-4 py-3 text-sm font-semibold leading-6 text-cyan-900">
               Gera a proposta completa (tema, textos motivadores, comando e critérios)
               para a turma produzir a redação — não corrige textos já escritos pelos
               alunos.
@@ -1020,7 +1004,7 @@ export function MateriaisClient({
 
           <div className="mt-5 grid gap-4 md:grid-cols-2">
             <label>
-              <span className="mb-2 block text-sm font-black text-slate-700">
+              <span className={HUD_SECTION_LABEL}>
                 Etapa de ensino
               </span>
               <select
@@ -1039,7 +1023,7 @@ export function MateriaisClient({
             </label>
 
             <label>
-              <span className="mb-2 block text-sm font-black text-slate-700">
+              <span className={HUD_SECTION_LABEL}>
                 Ano / série
               </span>
               <select
@@ -1058,7 +1042,7 @@ export function MateriaisClient({
             </label>
 
             <label className="md:col-span-2">
-              <span className="mb-2 block text-sm font-black text-slate-700">
+              <span className={HUD_SECTION_LABEL}>
                 Área do conhecimento
               </span>
               <select
@@ -1077,7 +1061,7 @@ export function MateriaisClient({
             </label>
 
             <label className="md:col-span-2">
-              <span className="mb-2 block text-sm font-black text-slate-700">
+              <span className={HUD_SECTION_LABEL}>
                 Disciplina / componente
               </span>
               <select
@@ -1104,7 +1088,7 @@ export function MateriaisClient({
                   type="button"
                   onClick={() => void sugerirConteudosComIA()}
                   disabled={sugerindoConteudos || loading}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-black text-blue-700 transition hover:border-blue-400 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-cyan-400/25 bg-cyan-50 px-3 py-1.5 text-xs font-bold text-cyan-800 transition hover:border-cyan-400/50 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <PlanifyIcon name="spark" className="h-3.5 w-3.5" />
                   {sugerindoConteudos ? "Sugerindo..." : "Sugerir conteúdos"}
@@ -1114,17 +1098,17 @@ export function MateriaisClient({
                 value={tema}
                 onChange={(event) => setTema(event.target.value)}
                 placeholder="Digite ou escolha um assunto abaixo..."
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-950 outline-none transition focus:border-slate-950 focus:bg-white"
+                className={HUD_FIELD_CLASS}
               />
             </label>
 
             {conteudosSugeridos && conteudosSugeridos.length > 0 ? (
-              <div className="md:col-span-2 rounded-2xl border border-blue-100 bg-blue-50/60 p-4">
+              <div className="md:col-span-2 rounded-xl border border-cyan-400/20 bg-cyan-50/50 p-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="text-xs font-black uppercase tracking-wide text-blue-800">
+                  <p className="text-xs font-bold uppercase tracking-wide text-cyan-800">
                     Sugestões de conteúdo (IA)
                   </p>
-                  <p className="text-[11px] font-semibold text-blue-700">
+                  <p className="text-[11px] font-semibold text-cyan-700">
                     {tipo === "slides"
                       ? "Selecione vários tópicos para compor a sequência da aula"
                       : "Clique para marcar um ou mais conteúdos"}
@@ -1140,8 +1124,8 @@ export function MateriaisClient({
                         onClick={() => toggleConteudoSugerido(item.id)}
                         className={`rounded-xl border px-3 py-2 text-left text-xs font-bold transition ${
                           selected
-                            ? "border-blue-600 bg-blue-600 text-white shadow-sm"
-                            : "border-blue-200 bg-white text-slate-700 hover:border-blue-500 hover:text-blue-900"
+                            ? "border-cyan-600 bg-cyan-600 text-white shadow-sm"
+                            : "border-cyan-400/25 bg-white text-slate-700 hover:border-cyan-500 hover:text-cyan-900"
                         }`}
                         title={item.descricao}
                         aria-pressed={selected}
@@ -1166,7 +1150,7 @@ export function MateriaisClient({
             ) : null}
 
             <label className="md:col-span-2">
-              <span className="mb-2 block text-sm font-black text-slate-700">
+              <span className={HUD_SECTION_LABEL}>
                 Objetivo pedagógico (opcional)
               </span>
               <textarea
@@ -1174,7 +1158,7 @@ export function MateriaisClient({
                 onChange={(event) => setObjetivo(event.target.value)}
                 placeholder={objetivoPlaceholder}
                 rows={2}
-                className="w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-950 outline-none transition focus:border-slate-950 focus:bg-white"
+                className={HUD_TEXTAREA_CLASS}
               />
               {hintFeedback ? (
                 <p className="mt-2 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-900">
@@ -1184,7 +1168,7 @@ export function MateriaisClient({
             </label>
 
             <label>
-              <span className="mb-2 block text-sm font-black text-slate-700">
+              <span className={HUD_SECTION_LABEL}>
                 Dificuldade
               </span>
               <select
@@ -1202,7 +1186,7 @@ export function MateriaisClient({
 
             {isJogo ? (
               <label>
-                <span className="mb-2 block text-sm font-black text-slate-700">
+                <span className={HUD_SECTION_LABEL}>
                   Tipo de jogo
                 </span>
                 <select
@@ -1221,7 +1205,7 @@ export function MateriaisClient({
               </label>
             ) : (
               <label>
-                <span className="mb-2 block text-sm font-black text-slate-700">
+                <span className={HUD_SECTION_LABEL}>
                   {isRedacao ? "Estrutura da proposta" : "Quantidade"}
                 </span>
                 <select
@@ -1239,7 +1223,7 @@ export function MateriaisClient({
             )}
 
             <label className="md:col-span-2">
-              <span className="mb-2 block text-sm font-black text-slate-700">
+              <span className={HUD_SECTION_LABEL}>
                 Observações opcionais
               </span>
               <textarea
@@ -1247,15 +1231,15 @@ export function MateriaisClient({
                 onChange={(event) => setObservacoes(event.target.value)}
                 placeholder={observacoesPlaceholder}
                 rows={3}
-                className="w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-950 outline-none transition focus:border-slate-950 focus:bg-white"
+                className={HUD_TEXTAREA_CLASS}
               />
             </label>
           </div>
 
           {tipo === "slides" ? (
-            <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+            <div className="mt-4 rounded-xl border border-cyan-400/20 bg-cyan-50/40 p-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="text-xs font-black uppercase tracking-wide text-slate-800">
+                <p className="text-xs font-bold uppercase tracking-wide text-slate-800">
                   Design da apresentação
                 </p>
                 <p className="text-[11px] font-semibold text-slate-500">
@@ -1271,10 +1255,10 @@ export function MateriaisClient({
                       type="button"
                       onClick={() => setDesignSlides(tema.id)}
                       aria-pressed={selected}
-                      className={`overflow-hidden rounded-2xl border text-left transition ${
+                      className={`overflow-hidden rounded-xl border text-left transition ${
                         selected
-                          ? "border-blue-600 ring-2 ring-blue-200"
-                          : "border-slate-200 hover:border-blue-400"
+                          ? "border-cyan-500 ring-2 ring-cyan-200"
+                          : "border-cyan-400/20 hover:border-cyan-400/50"
                       }`}
                     >
                       <span
@@ -1320,10 +1304,8 @@ export function MateriaisClient({
                       ? toggleTemaRapido(item)
                       : setTema(item)
                   }
-                  className={`rounded-full border px-3 py-2 text-xs font-black transition ${
-                    selected
-                      ? "border-blue-600 bg-blue-600 text-white"
-                      : "border-slate-200 bg-white text-slate-600 hover:border-slate-950 hover:text-slate-950"
+                  className={`rounded-full border px-3 py-2 text-xs font-bold transition ${
+                    selected ? HUD_CHIP_ACTIVE : HUD_CHIP_INACTIVE
                   }`}
                   aria-pressed={tipo === "slides" ? selected : undefined}
                 >
@@ -1334,7 +1316,7 @@ export function MateriaisClient({
             })}
           </div>
           {tipo === "slides" && temasRapidosSelecionados.length > 1 ? (
-            <p className="mt-2 text-[11px] font-semibold text-blue-700">
+            <p className="mt-2 text-[11px] font-semibold text-cyan-700">
               {temasRapidosSelecionados.length} assuntos combinados no tema — a IA
               montará a sequência pedagógica dos slides.
             </p>
@@ -1343,7 +1325,7 @@ export function MateriaisClient({
           <div className="mt-5 flex flex-col gap-3">
             <div className="flex flex-wrap items-center justify-between gap-3">
               {showGabarito ? (
-                <label className="flex cursor-pointer items-center gap-3 rounded-2xl bg-slate-50 px-4 py-3 text-sm font-bold text-slate-700">
+                <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-cyan-400/15 bg-white/80 px-4 py-3 text-sm font-bold text-slate-700">
                   <input
                     type="checkbox"
                     checked={incluirGabarito}
@@ -1363,13 +1345,13 @@ export function MateriaisClient({
               <button
                 type="button"
                 onClick={limparFormulario}
-                className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-700 transition hover:border-slate-950"
+                className="pl-hud-btn-secondary rounded-xl px-4 py-3 text-sm font-semibold"
               >
                 Limpar
               </button>
             </div>
 
-            <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-blue-100 bg-blue-50/70 px-4 py-3 text-sm font-bold text-blue-900">
+            <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-cyan-400/20 bg-cyan-50/50 px-4 py-3 text-sm font-bold text-cyan-900">
               <input
                 type="checkbox"
                 checked={abrirEditorAutomatico}
@@ -1378,7 +1360,7 @@ export function MateriaisClient({
                   setAbrirEditorAutomatico(next);
                   writeAutoOpenEditorPreference(next);
                 }}
-                className="h-4 w-4 accent-blue-700"
+                className="h-4 w-4 accent-cyan-600"
               />
               Abrir no editor automaticamente após gerar (recomendado para revisar e complementar)
             </label>
@@ -1406,13 +1388,11 @@ export function MateriaisClient({
             )}
           </button>
         </form>
-
-        <section
-          data-planify-scroll={studioMode ? "" : undefined}
-          className="min-h-0 overflow-y-auto overscroll-contain bg-slate-50 p-5"
-        >
+      }
+      preview={
+        <>
           {loading ? (
-            <div className="flex h-full min-h-[280px] items-center justify-center p-4">
+            <div className="flex h-full min-h-[280px] items-center justify-center p-2">
               <PlanifyOwlGenerationCoach
                 active
                 title={mode.loadingTitle}
@@ -1442,7 +1422,7 @@ export function MateriaisClient({
                   {pipelineGeracao ? (
                     <p className="text-xs font-bold text-slate-500">
                       Entrega:{" "}
-                      <span className="font-black text-blue-700">
+                      <span className="font-bold text-cyan-700">
                         {pipelineGeracao}
                       </span>
                     </p>
@@ -1469,7 +1449,7 @@ export function MateriaisClient({
                 </aside>
               ) : null}
               {tipo === "slides" && studioMode ? (
-                <aside className="mb-4 rounded-2xl border border-violet-200 bg-violet-50/80 px-4 py-3">
+                <aside className="mb-4 rounded-xl border border-violet-200/80 bg-violet-50/60 p-4">
                   <p className="text-sm font-black text-violet-900">
                     Complete sua aula
                   </p>
@@ -1491,11 +1471,11 @@ export function MateriaisClient({
                 </aside>
               ) : null}
               {tipo === "slides" ? (
-                <aside className="mb-4 rounded-2xl border border-sky-200 bg-gradient-to-r from-sky-50 to-emerald-50/80 px-4 py-3">
-                  <p className="text-sm font-black text-sky-900">
+                <aside className="mb-4 rounded-xl border border-cyan-400/20 bg-gradient-to-r from-cyan-50/80 to-emerald-50/60 px-4 py-3">
+                  <p className="text-sm font-bold text-cyan-900">
                     Abrir no Google Apresentações
                   </p>
-                  <p className="mt-1 text-xs font-semibold leading-5 text-sky-800/90">
+                  <p className="mt-1 text-xs font-semibold leading-5 text-cyan-800/90">
                     O Planify converte seus slides (com imagens e sequência pedagógica) em
                     apresentação nativa na sua conta Google.
                   </p>
@@ -1516,7 +1496,7 @@ export function MateriaisClient({
                 <button
                   type="button"
                   onClick={abrirNoEditor}
-                  className="inline-flex items-center gap-2 rounded-full bg-blue-600 px-4 py-2.5 text-sm font-black text-white shadow-sm transition hover:bg-blue-700"
+                  className="pl-hud-btn inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold"
                 >
                   <PlanifyIcon name="editor" className="h-4 w-4" />
                   Editar no editor
@@ -1530,13 +1510,13 @@ export function MateriaisClient({
                   etapa={etapa}
                   anoSerie={anoSerie}
                   disabled={!resultadoHtml}
-                  className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm font-black text-blue-800 transition hover:bg-blue-100"
+                  className="pl-hud-btn-secondary inline-flex items-center gap-2 rounded-xl border border-cyan-400/25 bg-cyan-50 px-4 py-2.5 text-sm font-bold text-cyan-900 transition hover:bg-cyan-100"
                 />
                 <button
                   type="button"
                   onClick={() => void executarGeracao()}
                   disabled={loading}
-                  className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 transition hover:border-slate-950 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="pl-hud-btn-secondary inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <PlanifyIcon name="spark" className="h-4 w-4" />
                   Regenerar
@@ -1544,14 +1524,14 @@ export function MateriaisClient({
                 <button
                   type="button"
                   onClick={() => void baixarWord()}
-                  className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 transition hover:border-slate-950"
+                  className="pl-hud-btn-secondary inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold"
                 >
                   <PlanifyIcon name="download" className="h-4 w-4" />
                   Baixar DOCX
                 </button>
                 <Link
                   href="/historico"
-                  className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 transition hover:border-slate-950"
+                  className="pl-hud-btn-secondary inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold"
                 >
                   <PlanifyIcon name="history" className="h-4 w-4" />
                   Histórico
@@ -1560,24 +1540,23 @@ export function MateriaisClient({
               <MaterialDocumentPreview html={resultadoHtml} />
             </div>
           ) : (
-            <div className="flex h-full min-h-[280px] items-center justify-center">
-              <div className="max-w-md text-center">
-                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-white text-slate-700 shadow-sm">
-                  <PlanifyIcon name={mode.icon} className="h-7 w-7" />
-                </div>
-                <h3 className="mt-5 text-2xl font-black text-slate-950">
-                  Pronto para criar
-                </h3>
-                <p className="mt-2 text-sm font-semibold leading-6 text-slate-500">
-                  Preencha disciplina, ano escolar e assunto. O resultado aparece
-                  aqui e pode ir direto para o Editor.
-                </p>
-              </div>
+            <div className="flex h-full min-h-[280px] flex-col items-center justify-center px-4 py-8 text-center">
+              <PlanifyOwlMark size={72} glow />
+              <p className="mt-4 text-[10px] font-bold uppercase tracking-wide text-cyan-600">
+                Pré-visualização
+              </p>
+              <h3 className="mt-2 text-xl font-extrabold text-slate-950">
+                Pronto para criar
+              </h3>
+              <p className="mt-2 max-w-sm text-sm font-semibold leading-6 text-slate-500">
+                Preencha disciplina, ano escolar e assunto. O resultado aparece
+                aqui e pode ir direto para o Editor.
+              </p>
             </div>
           )}
-        </section>
-      </div>
-    </div>
+        </>
+      }
+    />
   ) : null;
 
   if (studioMode) {
@@ -1589,20 +1568,29 @@ export function MateriaisClient({
   }
 
   return (
-    <PlanifyWorkspacePane>
-    <div>
+    <PlanifyWorkspacePane
+      header={
+        <PlanifyPageHero
+          badge="Materiais IA"
+          icon="materials"
+          title="Escolha uma ferramenta e gere o material"
+          description="Catálogo organizado por categoria — clique na ferramenta para abrir o painel de criação com IA."
+        />
+      }
+    >
+    <div className="planify-hud pl-hud-hub mx-auto max-w-6xl space-y-5">
       {/* Catálogo (visível quando painel fechado) */}
       {!modalAberto ? (
         <>
         {/* Catálogo + busca + categorias */}
-        <section className="pl-section-hero overflow-hidden rounded-[1.85rem] border border-slate-200/90 p-5 shadow-sm sm:p-6">
+        <section className="pl-hud-glass rounded-2xl p-5 sm:p-6">
           <div className="grid gap-4 lg:grid-cols-[1fr_360px] lg:items-center">
             <div>
               <span className="pl-hud-badge">
                 <PlanifyIcon name="spark" className="h-3.5 w-3.5" />
                 Criar com IA
               </span>
-              <h1 className="mt-4 text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">
+              <h1 className="mt-3 text-2xl font-extrabold tracking-tight text-slate-950 sm:text-3xl">
                 Escolha uma ferramenta e gere o material em segundos.
               </h1>
               <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-slate-600">
@@ -1613,14 +1601,14 @@ export function MateriaisClient({
             <div className="relative">
               <PlanifyIcon
                 name="search"
-                className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-300"
+                className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400"
               />
               <input
                 value={busca}
                 onChange={(event) => setBusca(event.target.value)}
                 placeholder="Buscar ferramenta..."
                 aria-label="Buscar ferramenta"
-                className="w-full rounded-2xl border border-slate-200 bg-white py-4 pl-12 pr-4 text-sm font-semibold text-slate-950 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                className={`${HUD_FIELD_CLASS} py-3.5 pl-12 pr-4`}
               />
             </div>
           </div>
@@ -1634,11 +1622,9 @@ export function MateriaisClient({
                   key={item.id}
                   type="button"
                   onClick={() => setCategoria(item.id)}
-                  className={`flex shrink-0 items-center gap-2 rounded-full border px-4 py-2 text-sm font-black transition ${
-                    active
-                      ? "border-blue-200 bg-blue-600 text-white shadow-sm"
-                      : "border-slate-200 bg-white text-slate-600 hover:border-blue-200 hover:text-slate-950"
-                  }`}
+                  className={
+                    active ? HUD_FILTER_CHIP_ACTIVE : HUD_FILTER_CHIP_INACTIVE
+                  }
                 >
                   <PlanifyIcon name={item.icon} className="h-4 w-4" />
                   {item.label}
@@ -1650,13 +1636,13 @@ export function MateriaisClient({
 
         {/* Cards de ferramentas */}
         {ferramentasFiltradas.length > 0 ? (
-          <section className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+          <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
             {ferramentasFiltradas.map((item) => (
               <button
                 key={item.id}
                 type="button"
                 onClick={() => selecionarFerramenta(item.id)}
-                className="group relative min-h-[156px] rounded-[1.5rem] border border-slate-200/90 bg-white p-4 text-left shadow-sm transition hover:-translate-y-1 hover:border-blue-200 hover:shadow-md"
+                className="pl-hud-hub-app group relative min-h-[156px] p-4 text-left transition hover:-translate-y-0.5"
               >
                 {item.popular ? (
                   <span className="absolute right-3 top-3 rounded-full bg-amber-50 px-2 py-1 text-[10px] font-black uppercase tracking-wide text-amber-700">
@@ -1666,7 +1652,7 @@ export function MateriaisClient({
                 <div className={`flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br ${item.accent} text-white shadow-sm transition group-hover:scale-110`}>
                   <PlanifyIcon name={item.icon} className="h-5 w-5" />
                 </div>
-                <h3 className="mt-4 text-sm font-black leading-tight text-slate-950">
+                <h3 className="mt-4 text-sm font-extrabold leading-tight text-slate-950">
                   {item.title}
                 </h3>
                 <p className="mt-1 line-clamp-3 text-xs font-semibold leading-5 text-slate-500">
@@ -1676,8 +1662,9 @@ export function MateriaisClient({
             ))}
           </section>
         ) : (
-          <section className="mt-5 rounded-[1.5rem] border border-dashed border-slate-200 bg-white p-8 text-center shadow-sm">
-            <p className="text-sm font-bold text-slate-600">
+          <section className="pl-hud-glass flex flex-col items-center rounded-2xl px-6 py-10 text-center">
+            <PlanifyOwlMark size={64} glow />
+            <p className="mt-4 text-sm font-bold text-slate-600">
               Nenhuma ferramenta encontrada para essa busca ou categoria.
             </p>
             <button
@@ -1686,7 +1673,7 @@ export function MateriaisClient({
                 setBusca("");
                 setCategoria("todos");
               }}
-              className="mt-3 inline-flex rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 transition hover:border-slate-950"
+              className="pl-hud-btn-secondary mt-4 rounded-xl px-4 py-2 text-sm font-semibold"
             >
               Limpar filtros
             </button>
@@ -1695,10 +1682,10 @@ export function MateriaisClient({
 
         {/* Materiais recentes (histórico) */}
         {historico.length > 0 ? (
-          <section className="mt-5 rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+          <section className="pl-hud-glass rounded-2xl p-5 sm:p-6">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <h2 className="text-lg font-black tracking-tight text-slate-950">
+                <h2 className="text-lg font-extrabold tracking-tight text-slate-950">
                   Materiais recentes
                 </h2>
                 <p className="text-sm font-semibold text-slate-500">
@@ -1708,14 +1695,14 @@ export function MateriaisClient({
               <div className="flex items-center gap-2">
                 <Link
                   href="/historico"
-                  className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 transition hover:border-slate-950"
+                  className="pl-hud-btn-secondary rounded-xl px-4 py-2 text-sm font-semibold"
                 >
                   Ver histórico
                 </Link>
                 <button
                   type="button"
                   onClick={limparHistorico}
-                  className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-500 transition hover:border-rose-300 hover:text-rose-600"
+                  className="pl-hud-btn-secondary rounded-xl px-4 py-2 text-sm font-semibold text-rose-600 hover:border-rose-300"
                 >
                   Limpar
                 </button>
@@ -1728,18 +1715,18 @@ export function MateriaisClient({
                 return (
                   <div
                     key={item.id}
-                    className="group flex items-start gap-3 rounded-[1.4rem] border border-slate-200 bg-slate-50 p-4 transition hover:-translate-y-0.5 hover:border-slate-950 hover:bg-white hover:shadow-lg"
+                    className="group flex items-start gap-3 rounded-xl border border-cyan-400/15 bg-white/70 p-4 transition hover:-translate-y-0.5 hover:border-cyan-400/35 hover:shadow-md"
                   >
                     <button
                       type="button"
                       onClick={() => reabrirHistorico(item)}
                       className="flex min-w-0 flex-1 items-start gap-3 text-left"
                     >
-                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white text-slate-700 shadow-sm transition group-hover:bg-blue-600 group-hover:text-white">
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500/90 to-cyan-700 text-white shadow-sm transition group-hover:scale-105">
                         <PlanifyIcon name={itemTool.icon} className="h-5 w-5" />
                       </span>
                       <span className="min-w-0">
-                        <span className="block truncate text-sm font-black text-slate-950">
+                        <span className="block truncate text-sm font-extrabold text-slate-950">
                           {item.tema || itemTool.shortTitle}
                         </span>
                         <span className="mt-0.5 block truncate text-xs font-semibold text-slate-500">
@@ -1753,7 +1740,7 @@ export function MateriaisClient({
                       type="button"
                       title="Abrir no editor"
                       onClick={() => abrirHistoricoNoEditor(item)}
-                      className="shrink-0 rounded-xl border border-slate-200 bg-white p-2 text-slate-600 transition hover:border-blue-500 hover:text-blue-700"
+                      className="shrink-0 rounded-lg border border-cyan-400/20 bg-white p-2 text-cyan-700 transition hover:border-cyan-400/50 hover:bg-cyan-50"
                     >
                       <PlanifyIcon name="editor" className="h-4 w-4" />
                     </button>

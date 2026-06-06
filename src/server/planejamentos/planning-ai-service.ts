@@ -2,6 +2,7 @@ import { getModelTierForPlanning } from "@/lib/ai/material-generation-policy";
 import { generateGeminiJSON } from "../ai/gemini-client";
 import {
   buildPlanningQualityRetryNote,
+  computePlanningQualityScore,
   getPlanningOutputIssues,
 } from "./planning-quality";
 import { splitPlanningConteudos } from "./planning-validation";
@@ -52,6 +53,8 @@ export type PlanningAiResult = {
   success: true;
   usedAI: boolean;
   warning?: string;
+  qualityScore?: number;
+  qualityIssues?: string[];
   planejamento: {
     tipoPlanejamento: string;
     titulo: string;
@@ -636,15 +639,22 @@ export async function generatePlanningWithAI(
     );
 
     if (!issues.length) {
-      return result;
+      return {
+        ...result,
+        qualityScore: computePlanningQualityScore([]),
+        qualityIssues: [],
+      };
     }
 
     if (attempt === PLANNING_MAX_ATTEMPTS - 1) {
+      const warning =
+        "Passo crítico: a matriz foi gerada, mas ainda há pendências de qualidade. Revise antes de aplicar: " +
+        issues.slice(0, 6).join(" ");
       return {
         ...result,
-        warning:
-          "A matriz foi gerada, mas recomendamos revisar antes de aplicar: " +
-          issues.slice(0, 6).join(" "),
+        warning,
+        qualityScore: computePlanningQualityScore(issues, warning),
+        qualityIssues: issues,
       };
     }
 

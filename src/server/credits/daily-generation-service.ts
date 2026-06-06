@@ -1,3 +1,14 @@
+/**
+ * Cota diária de gerações profundas (Gemini Pro).
+ *
+ * Contrato Supabase (aplicar antes de produção):
+ * `supabase/migrations/20260606_daily_deep_generations.sql`
+ * - Tabela: daily_deep_generations (user_id, usage_date, count)
+ * - RPCs: planify_get_deep_generation_usage(p_user)
+ *          planify_consume_deep_generation(p_user, p_daily_limit) → -1 se limite
+ *          planify_refund_deep_generation(p_user)
+ * - Data: planify_brazil_today() em America/Sao_Paulo
+ */
 import {
   getDailyDeepGenerationLimit,
   isDeepGenerationType,

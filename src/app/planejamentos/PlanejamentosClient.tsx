@@ -1,6 +1,7 @@
 "use client";
 
 import { DailyGenerationsBar } from "@/components/credits/DailyGenerationsBar";
+import { MaterialQualityScoreBar } from "@/components/materiais/MaterialQualityScoreBar";
 import { PLANNING_DEEP_GENERATION_TYPE } from "@/lib/ai/material-generation-policy";
 import { MarketplacePublishButton } from "@/components/marketplace/MarketplacePublishButton";
 import { PlanifyOwlGenerationCoach } from "@/components/pro/PlanifyOwlGenerationCoach";
@@ -589,6 +590,8 @@ export function PlanejamentosClient() {
   const [selectedSkills, setSelectedSkills] = useState<BnccSkill[]>([]);
   const [generatedPlanning, setGeneratedPlanning] = useState<GeneratedPlanning | null>(null);
   const [usedAI, setUsedAI] = useState<boolean | null>(null);
+  const [qualityScore, setQualityScore] = useState<number | null>(null);
+  const [qualityIssues, setQualityIssues] = useState<string[]>([]);
   const [status, setStatus] = useState("Aguardando");
   const [loadingBncc, setLoadingBncc] = useState(false);
   const [loadingPlan, setLoadingPlan] = useState(false);
@@ -829,6 +832,18 @@ export function PlanejamentosClient() {
       setGeneratedPlanning(planning);
       saveAnnualMatrixSnapshot(form, planning);
       setUsedAI(Boolean(data.usedAI));
+      if (typeof data.qualityScore === "number") {
+        setQualityScore(data.qualityScore);
+      } else {
+        setQualityScore(null);
+      }
+      if (Array.isArray(data.qualityIssues)) {
+        setQualityIssues(
+          data.qualityIssues.map((item: unknown) => String(item)).filter(Boolean),
+        );
+      } else {
+        setQualityIssues([]);
+      }
 
       const html = buildOfficialEditorHtml(form, planning);
       const titulo = planning.titulo || "Planejamento";
@@ -1444,6 +1459,13 @@ export function PlanejamentosClient() {
 
             {generatedPlanning ? (
               <div className="mt-7 rounded-[1.75rem] border border-emerald-200/80 bg-emerald-50/80 p-5">
+                {typeof qualityScore === "number" ? (
+                  <MaterialQualityScoreBar
+                    score={qualityScore}
+                    issues={qualityIssues}
+                    compact
+                  />
+                ) : null}
                 <p className="text-[10px] font-black uppercase tracking-[0.28em] text-emerald-600">Matriz gerada</p>
                 <h3 className="mt-3 text-2xl font-black text-slate-950">{generatedPlanning.titulo}</h3>
                 <p className="mt-3 text-sm leading-7 text-emerald-700/90">{generatedPlanning.resumo}</p>

@@ -41,6 +41,22 @@ function isMathComponent(component: string): boolean {
   );
 }
 
+function isScienceComponent(component: string): boolean {
+  const c = norm(component);
+  return (
+    c.includes("ciencias") ||
+    c.includes("biologia") ||
+    c.includes("fisica") ||
+    c.includes("quimica") ||
+    c.includes("natureza")
+  );
+}
+
+function isHistoryComponent(component: string): boolean {
+  const c = norm(component);
+  return c.includes("historia");
+}
+
 const TOPIC_SEEDS: TopicSeed[] = [
   {
     id: "lp-crase",
@@ -248,6 +264,200 @@ const TOPIC_SEEDS: TopicSeed[] = [
     goldenExamples: [
       "Um produto de R$ 80 teve 15% de desconto. Qual o preço final?",
       "Em uma turma de 40 alunos, 25% faltaram. Quantos compareceram?",
+    ],
+  },
+  {
+    id: "lp-regencia",
+    match: (tema, component) =>
+      isPortugueseComponent(component) &&
+      temaIncludes(tema, "regencia", "regência", "regencial"),
+    specialistLabel: "Língua Portuguesa — regência verbal e nominal",
+    mustCover: [
+      "Regência verbal: verbos que exigem preposição (aspirar a, assistir a, obedecer a)",
+      "Regência nominal: substantivos/adjetivos + preposição (favorável a, necessário a)",
+      "Casos de crase ligados à regência (à escola vs a escola)",
+      "Pronome relativo cujo/cuja e concordância",
+    ],
+    questionTypes: [
+      "Completar frases com preposição correta",
+      "Múltipla escolha justificando regência",
+      "Reescrita corrigindo regência",
+      "Identificar erro de regência em parágrafo",
+    ],
+    vocabulary: ["regência verbal", "regência nominal", "preposição exigida", "transitividade"],
+    commonErrors: [
+      "Omitir preposição exigida (obedecer professor)",
+      "Usar preposição onde o verbo é direto",
+      "Confundir regência de verbos parecidos (assistir ver vs assistir a)",
+    ],
+    goldenExamples: [
+      "Aspiro ___ cargo de diretor. (a — regência verbal)",
+      "Ela obedece ___ regras da escola. (às — regência + crase)",
+      "Preciso ___ ajuda para concluir. (de — regência nominal)",
+    ],
+  },
+  {
+    id: "lp-coesao",
+    match: (tema, component) =>
+      isPortugueseComponent(component) &&
+      temaIncludes(tema, "coesao", "coesão", "conectivo", "conectores", "ligacao", "ligação"),
+    specialistLabel: "Língua Portuguesa — coesão e conectivos",
+    mustCover: [
+      "Conectivos de adição, oposição, causa, consequência e conclusão",
+      "Retomada por pronomes e sinônimos",
+      "Substituição lexical e referência",
+      "Parágrafo coeso com encadeamento lógico",
+    ],
+    questionTypes: [
+      "Inserir conectivo adequado em lacunas",
+      "Reorganizar períodos para melhor coesão",
+      "Identificar recurso coesivo em trecho",
+      "Produção curta com conectivos variados",
+    ],
+    vocabulary: ["conectivo", "coesão referencial", "coesão sequencial", "retomada", "substituição"],
+    commonErrors: [
+      "Repetir o mesmo conectivo (mas, mas, mas)",
+      "Conectivo incoerente com relação lógica",
+      "Pronome sem referente claro",
+    ],
+    goldenExamples: [
+      "Choveu muito; ___, a aula foi cancelada. (portanto — conclusão)",
+      "Estudou bastante; ___, não foi bem na prova. (contudo — oposição)",
+    ],
+  },
+  {
+    id: "mat-funcoes",
+    match: (tema, component) =>
+      isMathComponent(component) &&
+      temaIncludes(tema, "funcao", "função", "funcoes", "funções", "1o grau", "1º grau", "afim"),
+    specialistLabel: "Matemática — funções do 1º grau",
+    mustCover: [
+      "Lei de formação y = ax + b e significado de a e b",
+      "Gráfico cartesiano e taxa de variação",
+      "Zeros da função e interpretação contextual",
+      "Crescimento/decrescimento e problemas reais",
+    ],
+    questionTypes: [
+      "Construir lei a partir de tabela ou gráfico",
+      "Interpretar gráfico (celular, tarifa, consumo)",
+      "Calcular valor de x ou f(x)",
+      "Comparar funções em contexto",
+    ],
+    vocabulary: ["coeficiente angular", "coeficiente linear", "domínio", "contradomínio", "taxa de variação"],
+    commonErrors: [
+      "Confundir intercepto com inclinação",
+      "Ler gráfico invertendo eixos",
+      "Ignorar unidade no contexto",
+    ],
+    goldenExamples: [
+      "Taxi cobra R$ 5 + R$ 2/km. Qual a lei? y = 2x + 5",
+      "Para qual x temos f(x) = 0 em f(x) = 3x - 12? (x = 4)",
+    ],
+  },
+  {
+    id: "mat-geometria",
+    match: (tema, component) =>
+      isMathComponent(component) &&
+      temaIncludes(
+        tema,
+        "geometria",
+        "triangulo",
+        "triângulo",
+        "area",
+        "área",
+        "perimetro",
+        "perímetro",
+        "angulo",
+        "ângulo",
+      ),
+    specialistLabel: "Matemática — geometria plana",
+    mustCover: [
+      "Classificação de triângulos e propriedades",
+      "Cálculo de perímetro e área (triângulo, retângulo, círculo conforme ano)",
+      "Teorema de Pitágoras quando aplicável",
+      "Problemas com figuras e medidas reais",
+    ],
+    questionTypes: [
+      "Calcular área/perímetro com dados do enunciado",
+      "Aplicar Pitágoras em situação contextualizada",
+      "Identificar propriedade geométrica",
+      "Desenho descrito + cálculo",
+    ],
+    vocabulary: ["vértice", "base", "altura", "hipotenusa", "cateto", "π"],
+    commonErrors: [
+      "Confundir fórmulas de área",
+      "Usar Pitágoras em triângulo não retângulo",
+      "Esquecer unidade de medida",
+    ],
+    goldenExamples: [
+      "Triângulo retângulo: catetos 3 cm e 4 cm → hipotenusa 5 cm",
+      "Retângulo 6 m × 4 m → área 24 m²",
+    ],
+  },
+  {
+    id: "ciencias-fotossintese",
+    match: (tema, component) =>
+      isScienceComponent(component) &&
+      temaIncludes(tema, "fotossintese", "fotossíntese", "clorofila", "cloroplasto"),
+    specialistLabel: "Ciências — fotossíntese",
+    mustCover: [
+      "Cloroplastos e clorofila como local e pigmento",
+      "Reagentes e produtos (CO₂, H₂O, luz → glicose, O₂)",
+      "Papel das plantas na cadeia alimentar e no oxigênio",
+      "Fatores que influenciam a fotossíntese (luz, água, CO₂)",
+    ],
+    questionTypes: [
+      "Esquema ou fluxo de reagentes/produtos",
+      "Interpretação de experimento (luz/sombra)",
+      "Relação com respiração celular",
+      "Problemas ecológicos (desmatamento, queimadas)",
+    ],
+    vocabulary: ["cloroplasto", "clorofila", "glicose", "fotossíntese", "estômato", "CO₂"],
+    commonErrors: [
+      "Confundir fotossíntese com respiração",
+      "Achar que planta só produz O₂ à noite",
+      "Ignorar necessidade de luz",
+    ],
+    goldenExamples: [
+      "6CO₂ + 6H₂O + luz → C₆H₁₂O₆ + 6O₂ (simplificado para o ano/série)",
+      "Planta em armário escuro: por que amarela e para de crescer?",
+    ],
+  },
+  {
+    id: "historia-revolucao-industrial",
+    match: (tema, component) =>
+      isHistoryComponent(component) &&
+      temaIncludes(
+        tema,
+        "revolucao industrial",
+        "revolução industrial",
+        "industrializacao",
+        "industrialização",
+        "maquina a vapor",
+        "máquina a vapor",
+      ),
+    specialistLabel: "História — Revolução Industrial",
+    mustCover: [
+      "Contexto inglês (séc. XVIII) e inovações tecnológicas",
+      "Máquina a vapor, fábricas e urbanização",
+      "Impactos sociais: trabalho fabril, proletariado, condições de vida",
+      "Expansão para Europa e transformações econômicas",
+    ],
+    questionTypes: [
+      "Linha do tempo ou sequência de eventos",
+      "Análise de fonte (gravura, texto, dado)",
+      "Causa e consequência",
+      "Comparação antes/depois da industrialização",
+    ],
+    vocabulary: ["industrialização", "proletariado", "burguesia", "urbanização", "maquinofatura"],
+    commonErrors: [
+      "Confundir Revolução Industrial com Revolução Francesa",
+      "Generalizar impactos sem período ou lugar",
+      "Ignorar dimensão social além da tecnológica",
+    ],
+    goldenExamples: [
+      "Como a máquina a vapor transformou transporte e produção têxtil?",
+      "Por que cidades cresceram rapidamente nas regiões industrializadas?",
     ],
   },
 ];

@@ -2,6 +2,7 @@ import {
   isGenericEducationalText,
   themeReferencedInText,
 } from "@/lib/materiais/material-semantic-quality";
+import { computeQualityScore } from "@/lib/materiais/material-quality-score";
 import type { PlanningAiPayload, PlanningMatrixItem } from "./planning-ai-service";
 import { splitPlanningConteudos } from "./planning-validation";
 
@@ -170,4 +171,11 @@ export function buildPlanningQualityRetryNote(issues: string[]): string {
     "Evite metodologias copiadas iguais em todas as linhas.",
     "Cada linha deve refletir o conteúdo específico informado pelo professor.",
   ].join("\n");
+}
+
+export function computePlanningQualityScore(
+  issues: string[],
+  warning?: string,
+): number {
+  return computeQualityScore(issues, warning ? [warning] : []);
 }

@@ -139,12 +139,19 @@ export async function generatePlanifyMaterial(input: MaterialEngineInput) {
   try {
     const output = await generateWithAIQualityLoop(request, input, aiInput);
     const postIssues = getAIOutputIssues(request, output);
+    const criticalTypes = new Set(["prova", "lista", "apostila"]);
     const warn =
       postIssues.length > 0
-        ? [
-            "Alguns critérios de qualidade ainda precisam de revisão antes de aplicar em sala.",
-            ...postIssues.slice(0, 8),
-          ]
+        ? criticalTypes.has(request.tipoMaterial)
+          ? [
+              "Passo crítico: a IA não resolveu todos os critérios após 3 tentativas.",
+              "Regenere o material ou use Elevar qualidade antes de imprimir ou aplicar em sala.",
+              ...postIssues.slice(0, 8),
+            ]
+          : [
+              "Alguns critérios de qualidade ainda precisam de revisão antes de aplicar em sala.",
+              ...postIssues.slice(0, 8),
+            ]
         : [];
 
     return successFromAI(request, output, "ai", warn, postIssues);

@@ -44,6 +44,33 @@ import {
   orderSlidesPedagogically,
 } from "./slide-pedagogy";
 
+const CRITICAL_QUALITY_TYPES = new Set<MaterialEngineType>([
+  "prova",
+  "lista",
+  "apostila",
+]);
+
+function buildDeliveryAlertas(
+  request: MaterialEngineRequest,
+  issues: string[],
+  isFinalAttempt: boolean,
+): string[] | undefined {
+  if (!issues.length) return undefined;
+
+  if (CRITICAL_QUALITY_TYPES.has(request.tipoMaterial) && isFinalAttempt) {
+    return [
+      "Passo crítico: a IA não resolveu todos os critérios após 3 tentativas.",
+      "Regenere o material ou use Elevar qualidade antes de imprimir ou aplicar em sala.",
+      ...issues.slice(0, 8),
+    ];
+  }
+
+  return [
+    "Revise o material antes de aplicar em sala — alguns critérios de qualidade ainda precisam de ajuste.",
+    ...issues.slice(0, 8),
+  ];
+}
+
 function escapeHtml(value: string): string {
   return value
     .replace(/&/g, "&amp;")
@@ -867,13 +894,8 @@ export async function generateMaterialByEngine(input: MaterialEngineInput) {
       }
 
       const html = renderDocumentHtml(request, normalized);
-      const alertas =
-        issues.length > 0
-          ? [
-              "Revise o material antes de aplicar em sala — alguns critérios de qualidade ainda precisam de ajuste.",
-              ...issues.slice(0, 8),
-            ]
-          : undefined;
+      const isFinalAttempt = attempt >= 2;
+      const alertas = buildDeliveryAlertas(request, issues, isFinalAttempt);
       const qualityScore = computeQualityScore(issues, alertas ?? []);
 
       return {

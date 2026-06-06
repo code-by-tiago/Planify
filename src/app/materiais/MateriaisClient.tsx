@@ -8,6 +8,7 @@ import { MarketplacePublishButton } from "@/components/marketplace/MarketplacePu
 import type { MaterialEngineResponse } from "@/server/materials/material-engine-types";
 import { SLIDE_THEME_OPTIONS } from "@/server/materials/slide-design-themes";
 import { CreditsBalancePill } from "@/components/credits/CreditsBalancePill";
+import { DailyGenerationsBar } from "@/components/credits/DailyGenerationsBar";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { PlanifyOwlGenerationCoach } from "@/components/pro/PlanifyOwlGenerationCoach";
 import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
@@ -755,10 +756,16 @@ export function MateriaisClient({
       const data = (await response.json().catch(() => null)) as unknown;
 
       if (!response.ok) {
-        const message =
-          data && typeof data === "object" && "message" in data
-            ? String((data as { message?: unknown }).message)
-            : "Não foi possível gerar o material.";
+        const record =
+          data && typeof data === "object"
+            ? (data as { message?: unknown; code?: unknown })
+            : null;
+        const message = record?.message
+          ? String(record.message)
+          : "Não foi possível gerar o material.";
+        if (record?.code === "daily_limit_reached") {
+          window.dispatchEvent(new Event("planify:credits-changed"));
+        }
         throw new Error(message);
       }
 
@@ -896,6 +903,10 @@ export function MateriaisClient({
           <p className="mt-1 text-sm font-semibold text-slate-500">
             {mode.description}
           </p>
+
+          <div className="mt-4">
+            <DailyGenerationsBar tipoMaterial={tipo} />
+          </div>
 
           {isRedacao ? (
             <p className="mt-3 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-semibold leading-6 text-blue-900">

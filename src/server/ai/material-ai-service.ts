@@ -14,6 +14,7 @@ import { buildHardPedagogicalMaterial, enhanceHardPedagogicalMaterial, shouldUse
 import { enforceMaterialTypeContract } from "../../lib/materiais/material-type-validator";
 import { guardMaterialQuality } from "../../lib/materiais/material-quality-guardian";
 import { auditMaterialAgainstKnowledgeEngine } from "../../lib/materiais/material-quality-auditor";
+import { getModelTierForMaterialType } from "@/lib/ai/material-generation-policy";
 import { generateGeminiJSON } from "./gemini-client";
 import {
   buildMaterialDynamicPrompt,
@@ -270,6 +271,7 @@ export async function generateMaterialWithAI(rawInput: MaterialAIInput): Promise
         systemInstruction: buildMaterialSystemInstruction(),
         prompt: buildMaterialDynamicPrompt(input),
         cacheProfile: "material-json",
+        tier: getModelTierForMaterialType(input.tipo),
         temperature: 0.18,
         topP: 0.78,
         maxOutputTokens: 18000,
@@ -288,6 +290,7 @@ export async function generateMaterialWithAI(rawInput: MaterialAIInput): Promise
       systemInstruction: buildMaterialSystemInstruction(),
       prompt: buildMaterialDynamicPrompt(input),
       cacheProfile: "material-json",
+      tier: getModelTierForMaterialType(input.tipo),
       temperature: 0.22,
       topP: 0.8,
       maxOutputTokens: 14000,

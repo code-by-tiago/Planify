@@ -45,17 +45,20 @@ export type CreditWallet = {
   cycleEndsAt: string | null;
 };
 
-/** Custo em créditos por tipo de material (padrão = 1). */
+/**
+ * Custo em créditos por tipo de material.
+ * Materiais profundos (Gemini Pro) custam mais — alinhado ao custo de API.
+ */
 const CREDIT_COST: Partial<Record<MaterialEngineType, number>> = {
-  slides: 3,
-  apostila: 3,
-  prova: 2,
-  lista: 2,
-  projeto: 2,
-  sequencia: 2,
-  "plano-aula": 2,
-  redacao: 2,
-  atividade: 1,
+  prova: 10,
+  apostila: 10,
+  slides: 10,
+  "plano-aula": 10,
+  redacao: 10,
+  lista: 6,
+  sequencia: 6,
+  projeto: 6,
+  atividade: 3,
   resumo: 1,
   flashcards: 1,
   "mapa-mental": 1,

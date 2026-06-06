@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireApiPremiumAccess } from "../../../../server/auth/api-access";
 import { generatePlanifyMaterial } from "../../../../server/materials/material-generation-orchestrator";
 import type { MaterialEngineInput } from "../../../../server/materials/material-engine-types";
+import { isDeepGenerationType } from "@/lib/ai/material-generation-policy";
+import {
+  consumeDeepGeneration,
+  refundDeepGeneration,
+} from "../../../../server/credits/daily-generation-service";
 import {
   getCreditCost,
   refundCredits,
@@ -32,11 +37,42 @@ export async function POST(request: NextRequest) {
 
   const user = auth.access.user;
   let chargedCost = 0;
+  let chargedDeepDaily = false;
+
+  if (user?.id && isDeepGenerationType(tipo)) {
+    const daily = await consumeDeepGeneration({
+      userId: user.id,
+      tipo,
+      email: user.email,
+    });
+
+    if (daily.status === "limit_reached") {
+      return NextResponse.json(
+        {
+          ok: false,
+          code: "daily_limit_reached",
+          message:
+            `Você usou suas ${daily.limit} gerações profundas de hoje. A cota reinicia à meia-noite (horário de Brasília). Faça upgrade para Premium e tenha até 5 por dia — ou gere flashcards e resumos, que não contam na cota.`,
+          used: daily.used,
+          limit: daily.limit,
+        },
+        { status: 429 },
+      );
+    }
+
+    if (daily.status === "ok") {
+      chargedDeepDaily = true;
+    }
+  }
 
   if (user?.id) {
     const spend = await spendCredits(user.id, tipo, user.email);
 
     if (spend.status === "insufficient") {
+      if (chargedDeepDaily) {
+        await refundDeepGeneration(user.id);
+      }
+
       return NextResponse.json(
         {
           ok: false,
@@ -59,7 +95,9 @@ export async function POST(request: NextRequest) {
     const result = await generatePlanifyMaterial(payload);
 
     if (!result.ok) {
-      // Não consumiu de fato — devolve os créditos debitados.
+      if (user?.id && chargedDeepDaily) {
+        await refundDeepGeneration(user.id);
+      }
       if (user?.id && chargedCost > 0) {
         await refundCredits(user.id, chargedCost, tipo);
       }
@@ -80,6 +118,9 @@ export async function POST(request: NextRequest) {
       creditCost: chargedCost || getCreditCost(tipo),
     });
   } catch (error) {
+    if (user?.id && chargedDeepDaily) {
+      await refundDeepGeneration(user.id);
+    }
     if (user?.id && chargedCost > 0) {
       await refundCredits(user.id, chargedCost, tipo);
     }

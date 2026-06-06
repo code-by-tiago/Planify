@@ -102,8 +102,16 @@ const comparisonRows: {
   values: Record<string, string | boolean>;
 }[] = [
   {
-    label: "Créditos por ciclo",
-    values: { monthly: "350 / mês", premium: "800 / mês", yearly: "4.500 / ano" },
+    label: "Gerações profundas por dia",
+    values: { monthly: "3 / dia", premium: "5 / dia", yearly: "3 / dia" },
+  },
+  {
+    label: "Materiais completos por ciclo",
+    values: {
+      monthly: "~35 / mês",
+      premium: "~80 / mês",
+      yearly: "~450 / ano",
+    },
   },
   {
     label: "Geradores com IA (planejamentos e materiais)",
@@ -122,8 +130,8 @@ const comparisonRows: {
     values: { monthly: true, premium: true, yearly: true },
   },
   {
-    label: "Volume de apostilas, provas e listas",
-    values: { monthly: "Padrão", premium: "Ampliado", yearly: "Padrão" },
+    label: "IA avançada (materiais profundos)",
+    values: { monthly: true, premium: true, yearly: true },
   },
   {
     label: "Melhor custo-benefício",
@@ -133,14 +141,19 @@ const comparisonRows: {
 
 const planFaq = [
   {
+    question: "Por que existe limite diário de gerações?",
+    answer:
+      "Provas, apostilas, planos de aula e materiais extensos usam a IA mais avançada do mercado para entregar profundidade pedagógica e menos erros. Cada geração exige processamento intenso — preferimos 3 materiais excelentes por dia a dezenas de rascunhos rasos. A cota reinicia à meia-noite (horário de Brasília).",
+  },
+  {
     question: "Como funcionam os créditos?",
     answer:
-      "Cada geração com IA consome créditos do seu ciclo. Você acompanha o saldo direto no painel e ele é renovado a cada ciclo do plano (mensal ou anual).",
+      "Materiais completos (provas, apostilas, slides) consomem mais créditos que flashcards e resumos. Você acompanha o saldo no painel; ele renova a cada ciclo do plano. O limite diário e os créditos trabalham juntos para garantir qualidade e sustentabilidade.",
   },
   {
     question: "Qual a diferença entre Pro e Premium?",
     answer:
-      "O Premium oferece mais créditos por mês (800 contra 350), ideal para quem cria apostilas, provas e materiais extensos com alta frequência. Os recursos da plataforma são os mesmos.",
+      "O Premium oferece até 5 gerações profundas por dia (contra 3 no Pro) e cerca de 80 materiais completos por mês (contra ~35). Ideal para quem cria apostilas, provas e listas com alta frequência.",
   },
   {
     question: "Posso trocar de plano depois?",
@@ -180,8 +193,8 @@ export default async function PlanosPage({ searchParams }: PlanosPageProps) {
             <span className="pl-gradient-text">sem limites manuais.</span>
           </h1>
           <p className="mt-5 max-w-2xl text-lg font-medium leading-8 text-slate-600">
-            Mesma proposta das plataformas pedagógicas modernas: IA, BNCC e
-            ferramentas em um só lugar — com créditos claros e checkout seguro.
+            Materiais profundos com IA avançada — qualidade de preparação manual,
+            em minutos. Créditos claros, limite diário previsível e checkout seguro.
           </p>
 
           <ul className="mt-6 flex flex-wrap gap-2">

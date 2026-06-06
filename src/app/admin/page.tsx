@@ -1,23 +1,22 @@
 import Link from "next/link";
-import { getAdminPageAccess } from "../../server/auth/admin-access";
-import { AdminAccessGate } from "../../components/AdminAccessGate";
+import { getOwnerPageAccess } from "../../server/auth/owner-access";
+import { OwnerAccessGate } from "../../components/OwnerAccessGate";
 import { AdminSecurityBar } from "../../components/AdminSecurityBar";
 import { AdminTabSessionGuard } from "../../components/AdminTabSessionGuard";
 import { PageShell } from "../../components/PageShell";
-import { PageHero } from "../../components/PageHero";
-import { AdminClient } from "./AdminClient";
+import { AdminControleClient } from "./AdminControleClient";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminPage() {
-  const admin = await getAdminPageAccess();
+  const owner = await getOwnerPageAccess();
 
-  if (!admin.authenticated || !admin.isAdmin) {
+  if (!owner.authenticated || !owner.isOwner) {
     return (
       <PageShell>
-        <AdminAccessGate
-          authenticated={admin.authenticated}
-          email={admin.email}
+        <OwnerAccessGate
+          authenticated={owner.authenticated}
+          email={owner.email}
           redirectTo="/admin"
         />
       </PageShell>
@@ -26,53 +25,35 @@ export default async function AdminPage() {
 
   return (
     <PageShell>
-      <AdminTabSessionGuard>
-        <AdminSecurityBar />
+      <div className="planify-hud min-h-0 flex-1 overflow-y-auto bg-[var(--planify-canvas)]">
+        <AdminTabSessionGuard>
+          <AdminSecurityBar />
 
-        <PageHero
-          eyebrow="Admin Planify"
-          title="Central privada do dono do site."
-          description="Painel administrativo para gestão do Planify."
-          primaryLabel="Gerir Biblioteca"
-          primaryHref="/admin/biblioteca"
-          secondaryLabel="Dashboard"
-          secondaryHref="/dashboard"
-        />
+          <section className="mx-auto max-w-7xl px-5 pb-4 pt-6 sm:px-8">
+            <p className="pl-hud-badge inline-flex">Proprietário · Controle</p>
+            <h1 className="mt-4 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
+              Central de administração
+            </h1>
+            <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600">
+              Visão completa do Planify — usuários, gerações, créditos, integrações
+              e ferramentas de curadoria.
+            </p>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <Link href="/admin/biblioteca" className="pl-hud-btn rounded-full px-5 py-2.5 text-sm font-bold">
+                Biblioteca Premium
+              </Link>
+              <Link
+                href="/dashboard"
+                className="pl-hud-btn-secondary rounded-full px-5 py-2.5 text-sm font-bold"
+              >
+                Ir ao painel
+              </Link>
+            </div>
+          </section>
 
-        <section className="mx-auto grid max-w-7xl gap-5 px-5 pb-8 sm:px-8 lg:grid-cols-3">
-          {[
-            {
-              title: "Biblioteca Premium",
-              text: "Cadastrar materiais oficiais, anexos e metadados pedagógicos.",
-              href: "/admin/biblioteca",
-            },
-            {
-              title: "Assinaturas",
-              text: "Conferir pagamentos, planos e acesso premium.",
-              href: "/planos",
-            },
-            {
-              title: "Auditoria",
-              text: "Conferir estrutura, build e segurança antes do deploy.",
-              href: "/admin",
-            },
-          ].map((card) => (
-            <Link
-              key={card.title}
-              href={card.href}
-              className="rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-md"
-            >
-              <p className="text-xs font-black uppercase tracking-[0.2em] text-indigo-600">
-                Admin
-              </p>
-              <h2 className="mt-3 text-xl font-black text-slate-950">{card.title}</h2>
-              <p className="mt-2 text-sm font-medium leading-7 text-slate-600">{card.text}</p>
-            </Link>
-          ))}
-        </section>
-
-        <AdminClient />
-      </AdminTabSessionGuard>
+          <AdminControleClient />
+        </AdminTabSessionGuard>
+      </div>
     </PageShell>
   );
 }

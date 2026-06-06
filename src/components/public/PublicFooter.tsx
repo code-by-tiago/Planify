@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { OwnerFooterLink } from "@/components/OwnerFooterLink";
 import { PlanifyBrand } from "@/components/pro/PlanifyBrand";
 import { planifyTools, toolCategories } from "@/lib/pro/planifyTools";
 
@@ -95,6 +96,7 @@ export function PublicFooter() {
                 {item.label}
               </Link>
             ))}
+            <OwnerFooterLink />
           </nav>
           <p className="text-xs font-medium text-slate-600">Educação básica · BNCC · Brasil</p>
         </div>

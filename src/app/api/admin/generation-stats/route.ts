@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdminApi } from "../../../../server/auth/admin-access";
+import { requireOwnerApi } from "../../../../server/auth/owner-access";
 import {
   fetchGenerationStats,
   type GenerationStatsWindow,
@@ -13,8 +13,8 @@ function parseWindow(value: string | null): GenerationStatsWindow {
 }
 
 export async function GET(request: NextRequest) {
-  const admin = await requireAdminApi(request);
-  if (!admin.ok) return admin.response;
+  const gate = await requireOwnerApi(request);
+  if (!gate.ok) return gate.response;
 
   const window = parseWindow(request.nextUrl.searchParams.get("window"));
   const stats = await fetchGenerationStats(window);

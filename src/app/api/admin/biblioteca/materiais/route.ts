@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdminApi } from "../../../../../server/auth/admin-access";
+import { requireOwnerApi } from "../../../../../server/auth/owner-access";
 import { getSupabaseAdminClient } from "../../../../../server/supabase/admin-client";
 
 export const runtime = "nodejs";
@@ -121,10 +121,10 @@ async function withSignedUrl(row: LibraryMaterialRow) {
 }
 
 export async function GET(request: NextRequest) {
-  const admin = await requireAdminApi(request);
+  const gate = await requireOwnerApi(request);
 
-  if (!admin.ok) {
-    return admin.response;
+  if (!gate.ok) {
+    return gate.response;
   }
 
   const supabase = getSupabaseAdminClient();
@@ -149,10 +149,10 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const admin = await requireAdminApi(request);
+  const gate = await requireOwnerApi(request);
 
-  if (!admin.ok) {
-    return admin.response;
+  if (!gate.ok) {
+    return gate.response;
   }
 
   const formData = await request.formData();
@@ -240,7 +240,7 @@ export async function POST(request: NextRequest) {
     file_mime: fileValue.type || "application/octet-stream",
     file_size: fileValue.size,
     is_published: isPublished,
-    created_by: admin.admin.userId,
+    created_by: gate.owner.userId,
     updated_at: new Date().toISOString(),
   };
 
@@ -264,10 +264,10 @@ export async function POST(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
-  const admin = await requireAdminApi(request);
+  const gate = await requireOwnerApi(request);
 
-  if (!admin.ok) {
-    return admin.response;
+  if (!gate.ok) {
+    return gate.response;
   }
 
   const id = request.nextUrl.searchParams.get("id");

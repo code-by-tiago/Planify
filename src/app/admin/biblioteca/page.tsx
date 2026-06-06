@@ -1,5 +1,5 @@
-import { getAdminPageAccess } from "../../../server/auth/admin-access";
-import { AdminAccessGate } from "../../../components/AdminAccessGate";
+import { getOwnerPageAccess } from "../../../server/auth/owner-access";
+import { OwnerAccessGate } from "../../../components/OwnerAccessGate";
 import { AdminSecurityBar } from "../../../components/AdminSecurityBar";
 import { AdminTabSessionGuard } from "../../../components/AdminTabSessionGuard";
 import { PageShell } from "../../../components/PageShell";
@@ -9,14 +9,14 @@ import { AdminBibliotecaClient } from "./AdminBibliotecaClient";
 export const dynamic = "force-dynamic";
 
 export default async function AdminBibliotecaPage() {
-  const admin = await getAdminPageAccess();
+  const owner = await getOwnerPageAccess();
 
-  if (!admin.authenticated || !admin.isAdmin) {
+  if (!owner.authenticated || !owner.isOwner) {
     return (
       <PageShell>
-        <AdminAccessGate
-          authenticated={admin.authenticated}
-          email={admin.email}
+        <OwnerAccessGate
+          authenticated={owner.authenticated}
+          email={owner.email}
           redirectTo="/admin/biblioteca"
         />
       </PageShell>
@@ -25,21 +25,23 @@ export default async function AdminBibliotecaPage() {
 
   return (
     <PageShell>
-      <AdminTabSessionGuard>
-        <AdminSecurityBar />
+      <div className="planify-hud min-h-0 flex-1 overflow-y-auto bg-[var(--planify-canvas)]">
+        <AdminTabSessionGuard>
+          <AdminSecurityBar />
 
-        <PageHero
-          eyebrow="Admin Biblioteca"
-          title="Cadastre materiais oficiais para a Biblioteca Premium."
-          description="Área privada do administrador para publicar materiais reais no acervo premium."
-          primaryLabel="Voltar ao Admin"
-          primaryHref="/admin"
-          secondaryLabel="Ver Biblioteca Premium"
-          secondaryHref="/biblioteca"
-        />
+          <PageHero
+            eyebrow="Proprietário · Biblioteca"
+            title="Cadastre materiais oficiais para a Biblioteca Premium."
+            description="Área privada do proprietário para publicar materiais reais no acervo premium."
+            primaryLabel="Voltar ao controle"
+            primaryHref="/admin"
+            secondaryLabel="Ver Biblioteca Premium"
+            secondaryHref="/biblioteca"
+          />
 
-        <AdminBibliotecaClient />
-      </AdminTabSessionGuard>
+          <AdminBibliotecaClient />
+        </AdminTabSessionGuard>
+      </div>
     </PageShell>
   );
 }

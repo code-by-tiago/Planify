@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyPremiumAccess } from "../../../../server/auth/premium-access-service";
 import { isOwnerEmail } from "../../../../server/auth/owner-emails";
 import { getSupabaseAdminClient } from "../../../../server/supabase/admin-client";
-
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
@@ -42,21 +40,20 @@ export async function POST(request: NextRequest) {
     }
 
     const email = data.user.email.trim().toLowerCase();
-    const premiumAccess = await verifyPremiumAccess(accessToken);
     const isOwnerAccount = isOwnerEmail(email);
-    const isProfileAdmin = Boolean(premiumAccess.user?.isAdmin);
 
-    if (!isOwnerAccount && !isProfileAdmin) {
+    if (!isOwnerAccount) {
       return jsonError(
-        "Login realizado, mas esta conta não possui permissão de administrador.",
+        "Esta conta não é o proprietário do Planify.",
         403,
-        "not_admin",
+        "not_owner",
       );
     }
 
     const response = NextResponse.json({
       success: true,
       authenticated: true,
+      isOwner: true,
       isAdmin: true,
       email,
     });

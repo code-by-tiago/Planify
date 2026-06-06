@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { OwnerFooterLink } from "@/components/OwnerFooterLink";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { usePlanifySession } from "@/hooks/usePlanifySession";
 
@@ -71,6 +72,9 @@ export function PlanifySidebarUser({
       <p className="px-1 text-[10px] font-semibold text-slate-400">
         {lumiHint}
       </p>
+      <div className="px-1 text-center">
+        <OwnerFooterLink />
+      </div>
     </div>
   );
 }

@@ -46,6 +46,11 @@ export function getModelTierForMaterialType(tipo: string): AIModelTier {
   return isDeepGenerationType(tipo) ? "advanced" : "default";
 }
 
+/** Planejamento anual/trimestral — produto principal do Planify, sempre Pro. */
+export function getModelTierForPlanning(): AIModelTier {
+  return "advanced";
+}
+
 export function getDailyDeepGenerationLimit(
   planKey: string | null | undefined,
 ): number {

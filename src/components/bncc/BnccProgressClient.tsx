@@ -49,7 +49,7 @@ export function BnccProgressClient({ embedded = false }: BnccProgressClientProps
     setError("");
 
     const params = new URLSearchParams();
-    if (classId) params.set("classId", classId);
+    if (classId) params.set("classFilter", classId);
     if (discipline) params.set("discipline", discipline);
 
     try {

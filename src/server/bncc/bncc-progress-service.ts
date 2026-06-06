@@ -22,8 +22,57 @@ type GeneratedMaterialRow = {
   bncc_skill_codes: string[];
   created_at: string;
   class_id: string | null;
+  class_name: string | null;
+  discipline: string | null;
   user_id: string;
 };
+
+const PERSONAL_CLASS_PREFIX = "cn:";
+
+export function encodePersonalClassFilter(className: string): string {
+  return `${PERSONAL_CLASS_PREFIX}${className}`;
+}
+
+export function decodePersonalClassFilter(
+  value: string | null | undefined,
+): { classId: string | null; className: string | null } {
+  const raw = String(value || "").trim();
+  if (!raw) {
+    return { classId: null, className: null };
+  }
+  if (raw.startsWith(PERSONAL_CLASS_PREFIX)) {
+    return {
+      classId: null,
+      className: raw.slice(PERSONAL_CLASS_PREFIX.length).trim() || null,
+    };
+  }
+  return { classId: raw, className: null };
+}
+
+function debugProgressLog(
+  message: string,
+  data: Record<string, unknown>,
+  hypothesisId: string,
+): void {
+  // #region agent log
+  fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Debug-Session-Id": "920c67",
+    },
+    body: JSON.stringify({
+      sessionId: "920c67",
+      runId: "bncc-progress",
+      hypothesisId,
+      location: "bncc-progress-service.ts",
+      message,
+      data,
+      timestamp: Date.now(),
+    }),
+  }).catch(() => {});
+  // #endregion
+}
 
 type SchoolClassRow = {
   id: string;
@@ -90,23 +139,79 @@ async function fetchCatalogSkills(filters: {
   return (data || []) as BnccSkillRow[];
 }
 
+async function fetchCatalogSkillsByCodes(
+  codes: string[],
+): Promise<BnccSkillRow[]> {
+  const normalized = Array.from(
+    new Set(codes.map((code) => String(code).trim().toUpperCase()).filter(Boolean)),
+  );
+
+  if (normalized.length === 0) {
+    return [];
+  }
+
+  const supabase = getSupabaseAdminClient();
+  const { data, error } = await supabase
+    .from("bncc_skills")
+    .select("code,description,subject,grade,education_stage")
+    .eq("is_active", true)
+    .in("code", normalized)
+    .order("code", { ascending: true });
+
+  if (error) {
+    const message = error.message || "";
+    if (
+      message.includes("bncc_skills") ||
+      message.includes("schema cache") ||
+      error.code === "42P01"
+    ) {
+      return [];
+    }
+    throw new Error(message);
+  }
+
+  return (data || []) as BnccSkillRow[];
+}
+
+function mergeCatalogSkills(...groups: BnccSkillRow[][]): BnccSkillRow[] {
+  const byCode = new Map<string, BnccSkillRow>();
+  for (const group of groups) {
+    for (const skill of group) {
+      byCode.set(skill.code.toUpperCase(), skill);
+    }
+  }
+  return Array.from(byCode.values()).sort((a, b) =>
+    a.code.localeCompare(b.code),
+  );
+}
+
 async function fetchUserMaterials(
   userId: string,
-  filters: { classId?: string | null; schoolId?: string | null },
+  filters: {
+    classId?: string | null;
+    className?: string | null;
+    discipline?: string | null;
+  },
 ): Promise<GeneratedMaterialRow[]> {
   const supabase = getSupabaseAdminClient();
   let query = supabase
     .from("generated_materials")
-    .select("id,title,bncc_skill_codes,created_at,class_id,user_id")
+    .select(
+      "id,title,bncc_skill_codes,created_at,class_id,class_name,discipline,user_id",
+    )
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
 
-  if (filters.schoolId) {
-    query = query.eq("school_id", filters.schoolId);
-  }
-
   if (filters.classId) {
     query = query.eq("class_id", filters.classId);
+  }
+
+  if (filters.className) {
+    query = query.eq("class_name", filters.className);
+  }
+
+  if (filters.discipline) {
+    query = query.ilike("discipline", `%${filters.discipline}%`);
   }
 
   const { data, error } = await query;
@@ -116,6 +221,52 @@ async function fetchUserMaterials(
   }
 
   return (data || []) as GeneratedMaterialRow[];
+}
+
+async function fetchDistinctClassNames(userId: string): Promise<string[]> {
+  const supabase = getSupabaseAdminClient();
+  const { data, error } = await supabase
+    .from("generated_materials")
+    .select("class_name")
+    .eq("user_id", userId)
+    .not("class_name", "is", null);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  const names = new Set<string>();
+  for (const row of data || []) {
+    const name = String(
+      (row as { class_name?: string | null }).class_name || "",
+    ).trim();
+    if (name) names.add(name);
+  }
+
+  return Array.from(names).sort((a, b) => a.localeCompare(b, "pt-BR"));
+}
+
+async function fetchDistinctDisciplines(userId: string): Promise<string[]> {
+  const supabase = getSupabaseAdminClient();
+  const { data, error } = await supabase
+    .from("generated_materials")
+    .select("discipline")
+    .eq("user_id", userId)
+    .not("discipline", "is", null);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  const values = new Set<string>();
+  for (const row of data || []) {
+    const value = String(
+      (row as { discipline?: string | null }).discipline || "",
+    ).trim();
+    if (value) values.add(value);
+  }
+
+  return Array.from(values).sort((a, b) => a.localeCompare(b, "pt-BR"));
 }
 
 async function fetchSchoolMaterials(
@@ -192,47 +343,102 @@ function buildCoverage(
 
 export async function getTeacherBnccProgress(
   userId: string,
-  filters: { classId?: string | null; discipline?: string | null } = {},
+  filters: {
+    classFilter?: string | null;
+    discipline?: string | null;
+  } = {},
 ): Promise<BnccProgressResponse> {
   const context = await getUserSchoolContext(userId);
-  const classes = (context.classes || []) as SchoolClassRow[];
+  const schoolClasses = (context.classes || []) as SchoolClassRow[];
 
-  const selectedClass = filters.classId
-    ? classes.find((row) => row.id === filters.classId) || null
+  const classFilter = decodePersonalClassFilter(filters.classFilter);
+
+  const selectedSchoolClass = classFilter.classId
+    ? schoolClasses.find((row) => row.id === classFilter.classId) || null
     : null;
 
-  const grade = selectedClass?.grade_level || null;
-  const year = selectedClass?.year ?? new Date().getFullYear();
+  const selectedPersonalClassName = classFilter.className;
+
+  const grade = selectedSchoolClass?.grade_level || null;
+  const year = selectedSchoolClass?.year ?? new Date().getFullYear();
   const discipline =
     filters.discipline?.trim() ||
-    selectedClass?.discipline?.trim() ||
+    selectedSchoolClass?.discipline?.trim() ||
     null;
 
-  const catalog = await fetchCatalogSkills({ grade, discipline });
   const materials = await fetchUserMaterials(userId, {
-    classId: filters.classId || null,
-    schoolId: context.school?.id || null,
+    classId: classFilter.classId,
+    className: classFilter.className,
+    discipline: filters.discipline?.trim() || null,
   });
+
+  const materialCodes = materials.flatMap(
+    (material) => material.bncc_skill_codes || [],
+  );
+
+  const catalog = mergeCatalogSkills(
+    await fetchCatalogSkills({ grade, discipline }),
+    await fetchCatalogSkillsByCodes(materialCodes),
+  );
 
   const { covered, pending, coveragePercent } = buildCoverage(
     catalog,
     materials,
   );
 
+  const [personalClassNames, materialDisciplines] = await Promise.all([
+    fetchDistinctClassNames(userId),
+    fetchDistinctDisciplines(userId),
+  ]);
+
+  const schoolClassNames = new Set(
+    schoolClasses.map((row) => row.name.trim().toLowerCase()),
+  );
+
+  const classOptions = [
+    ...schoolClasses.map((row) => ({
+      id: row.id,
+      name: row.name,
+      gradeLevel: row.grade_level,
+      discipline: row.discipline,
+      year: row.year,
+    })),
+    ...personalClassNames
+      .filter((name) => !schoolClassNames.has(name.trim().toLowerCase()))
+      .map((name) => ({
+        id: encodePersonalClassFilter(name),
+        name,
+        gradeLevel: null as string | null,
+        discipline: null as string | null,
+        year: null as number | null,
+      })),
+  ];
+
   const disciplineSet = new Set<string>();
-  for (const cls of classes) {
+  for (const cls of schoolClasses) {
     if (cls.discipline?.trim()) disciplineSet.add(cls.discipline.trim());
   }
-  for (const material of materials) {
-    void material;
-  }
-
-  const disciplinesFromCatalog = new Set(
-    catalog.map((skill) => skill.subject).filter(Boolean) as string[],
-  );
-  for (const value of disciplinesFromCatalog) {
+  for (const value of materialDisciplines) {
     disciplineSet.add(value);
   }
+  for (const skill of catalog) {
+    if (skill.subject?.trim()) disciplineSet.add(skill.subject.trim());
+  }
+
+  debugProgressLog(
+    "progress loaded",
+    {
+      materialCount: materials.length,
+      codesInMaterials: materials.reduce(
+        (sum, row) => sum + (row.bncc_skill_codes?.length || 0),
+        0,
+      ),
+      classOptions: classOptions.length,
+      personalClassNames: personalClassNames.length,
+      coveragePercent,
+    },
+    "C",
+  );
 
   return {
     coveragePercent,
@@ -241,18 +447,14 @@ export async function getTeacherBnccProgress(
     pendingCount: pending.length,
     covered,
     pending,
-    classes: classes.map((row) => ({
-      id: row.id,
-      name: row.name,
-      gradeLevel: row.grade_level,
-      discipline: row.discipline,
-      year: row.year,
-    })),
+    classes: classOptions,
     disciplines: Array.from(disciplineSet).sort((a, b) =>
       a.localeCompare(b, "pt-BR"),
     ),
     filters: {
-      classId: filters.classId || null,
+      classFilter: filters.classFilter || null,
+      classId: classFilter.classId,
+      className: classFilter.className,
       discipline,
       grade,
       year,

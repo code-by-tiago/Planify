@@ -7,6 +7,31 @@ import { upsertTeacherClass } from "../schools/teacher-classes-service";
 
 const PREVIEW_MAX_LENGTH = 2000;
 
+function debugPersistLog(
+  message: string,
+  data: Record<string, unknown>,
+  hypothesisId: string,
+): void {
+  // #region agent log
+  fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Debug-Session-Id": "920c67",
+    },
+    body: JSON.stringify({
+      sessionId: "920c67",
+      runId: "bncc-persist",
+      hypothesisId,
+      location: "persist-generated-material.ts",
+      message,
+      data,
+      timestamp: Date.now(),
+    }),
+  }).catch(() => {});
+  // #endregion
+}
+
 function buildPreview(...parts: Array<string | null | undefined>): string {
   const text = parts
     .map((part) => String(part || "").replace(/\s+/g, " ").trim())
@@ -69,11 +94,23 @@ export async function persistGeneratedMaterial(
       .single();
 
     if (error) {
+      debugPersistLog("insert failed", { error: error.message }, "A");
       console.warn("planify:persist-generated-material failed", error.message);
       return null;
     }
 
-    return (data as { id?: string } | null)?.id || null;
+    const id = (data as { id?: string } | null)?.id || null;
+    debugPersistLog(
+      "insert ok",
+      {
+        id,
+        codesCount: input.bnccSkillCodes.length,
+        className: input.className,
+        discipline: input.discipline,
+      },
+      "A",
+    );
+    return id;
   } catch (error) {
     const message = error instanceof Error ? error.message : "unknown";
     console.warn("planify:persist-generated-material failed", message);
@@ -91,6 +128,10 @@ async function persistGenerationRecord(
   params: PersistGenerationParams,
 ): Promise<void> {
   try {
+    const htmlContent =
+      params.contentHtml ||
+      (typeof params.result?.html === "string" ? params.result.html : null);
+
     const extracted = extractBnccCodesFromPayload({
       habilidadesSelecionadas: params.payload?.habilidadesSelecionadas,
       conteudos:
@@ -99,10 +140,25 @@ async function persistGenerationRecord(
           ?.conteudos,
       estrutura: params.result?.estrutura ?? params.result,
       planejamento: params.result?.planejamento ?? params.result,
-      contentHtml: params.contentHtml,
-      contentPreview: params.contentPreview,
+      contentHtml: htmlContent,
+      contentPreview:
+        params.contentPreview ||
+        (typeof params.result?.markdown === "string"
+          ? params.result.markdown
+          : null),
       raw: params.result ?? params.payload,
     });
+
+    debugPersistLog(
+      "bncc extraction",
+      {
+        surface: params.surface,
+        tipo: params.tipo,
+        codes: extracted.codes,
+        htmlLen: htmlContent ? htmlContent.length : 0,
+      },
+      "B",
+    );
 
     const schoolId =
       params.schoolId ||

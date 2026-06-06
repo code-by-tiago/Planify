@@ -28,7 +28,9 @@ export type BnccProgressResponse = {
   }>;
   disciplines: string[];
   filters: {
+    classFilter: string | null;
     classId: string | null;
+    className: string | null;
     discipline: string | null;
     grade: string | null;
     year: number | null;

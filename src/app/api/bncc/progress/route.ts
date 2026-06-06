@@ -43,12 +43,15 @@ export async function GET(request: NextRequest) {
   }
 
   const { searchParams } = new URL(request.url);
-  const classId = searchParams.get("classId") || undefined;
+  const classFilter =
+    searchParams.get("classFilter") ||
+    searchParams.get("classId") ||
+    undefined;
   const discipline = searchParams.get("discipline") || undefined;
 
   try {
     const progress = await getTeacherBnccProgress(userId, {
-      classId,
+      classFilter,
       discipline,
     });
 

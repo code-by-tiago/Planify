@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { useSidebarSearchShortcut } from "@/hooks/useSidebarSearchShortcut";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { LandingHomeLink } from "@/components/public/LandingHomeLink";
@@ -29,10 +28,7 @@ export default function PlanifyAppFrame({
 }: FrameProps) {
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [query, setQuery] = useState("");
   const [activeTipo, setActiveTipo] = useState<string | null>(null);
-  const searchRef = useRef<HTMLInputElement>(null);
-  useSidebarSearchShortcut(searchRef);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -62,7 +58,7 @@ export default function PlanifyAppFrame({
       return { title: "Editor", subtitle: "Finalize e exporte" };
     }
     if (pathname.startsWith("/historico")) {
-      return { title: "Histórico", subtitle: "Tudo que você criou" };
+      return { title: "Meus materiais", subtitle: "Tudo que você gerou" };
     }
     if (pathname.startsWith("/biblioteca")) {
       return { title: "Biblioteca", subtitle: "Seus materiais salvos" };
@@ -96,14 +92,11 @@ export default function PlanifyAppFrame({
       >
         <PlanifySidebarNav
           mode="routes"
-          query={query}
-          onQueryChange={setQuery}
           primaryAction={primaryAction}
           onActivate={closeSidebar}
           pathname={pathname}
           activeTipo={activeTipo}
           isNavActive={isNavActive}
-          searchInputRef={searchRef}
         />
       </PlanifyShellSidebar>
 

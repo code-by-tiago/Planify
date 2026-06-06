@@ -415,6 +415,21 @@ body {
   background: rgba(0, 212, 255, 0.06);
 }
 
+.planify-hud.pl-hud-shell .pl-sidebar nav button:not([class*="from-cyan"]),
+.planify-hud.pl-hud-shell .pl-sidebar nav a {
+  color: #cbd5e1;
+}
+
+.planify-hud.pl-hud-shell .pl-sidebar nav button:not([class*="from-cyan"]):hover,
+.planify-hud.pl-hud-shell .pl-sidebar nav a:not([class*="from-cyan"]):hover {
+  color: #f8fafc;
+  background: rgba(0, 212, 255, 0.06);
+}
+
+.planify-hud.pl-hud-shell .pl-sidebar nav span {
+  color: inherit;
+}
+
 /* ─── Inputs focus ─── */
 .planify-hud input:focus,
 .planify-hud textarea:focus,

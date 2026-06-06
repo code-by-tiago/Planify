@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { PlanifyDashboardMain } from "@/components/dashboard/PlanifyDashboardMain";
@@ -11,7 +11,6 @@ import { PlanifyBrand } from "@/components/pro/PlanifyBrand";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { PlanifyShellSidebar } from "@/components/pro/PlanifyShellSidebar";
 import { PlanifySidebarNav } from "@/components/pro/PlanifySidebarNav";
-import { useSidebarSearchShortcut } from "@/hooks/useSidebarSearchShortcut";
 import {
   dashboardSectionLabels,
   isDashboardSection,
@@ -41,13 +40,9 @@ function readTemaParam(searchParams: URLSearchParams): string {
 export default function PlanifyDashboardShell() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const searchRef = useRef<HTMLInputElement>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  useSidebarSearchShortcut(searchRef);
 
   const closeSidebar = () => setSidebarOpen(false);
-
-  const query = searchParams.get("q") ?? "";
 
   const selectedToolId = useMemo(() => {
     const tipo = searchParams.get("tipo");
@@ -102,17 +97,6 @@ export default function PlanifyDashboardShell() {
     [replaceDashboardUrl],
   );
 
-  const setQuery = useCallback(
-    (value: string) => {
-      replaceDashboardUrl((params) => {
-        const term = value.trim();
-        if (term) params.set("q", term);
-        else params.delete("q");
-      });
-    },
-    [replaceDashboardUrl],
-  );
-
   const setTopic = useCallback(
     (topic: string) => {
       const tema = topic.trim();
@@ -144,31 +128,25 @@ export default function PlanifyDashboardShell() {
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape" && hasPanel) {
         selectInicio();
-        return;
-      }
-      if (
-        event.key === "/" &&
-        !event.metaKey &&
-        !event.ctrlKey &&
-        !event.altKey &&
-        !hasPanel
-      ) {
-        const target = event.target;
-        if (
-          target instanceof HTMLElement &&
-          (target.tagName === "INPUT" ||
-            target.tagName === "TEXTAREA" ||
-            target.isContentEditable)
-        ) {
-          return;
-        }
-        event.preventDefault();
-        requestAnimationFrame(() => searchRef.current?.focus());
       }
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [hasPanel, selectInicio]);
+
+  const primaryAction = (
+    <button
+      type="button"
+      onClick={() => {
+        selectInicio();
+        closeSidebar();
+      }}
+      className="pl-hud-btn flex w-full items-center justify-center gap-2 rounded-xl py-3 text-xs font-semibold"
+    >
+      <PlanifyIcon name="home" className="h-4 w-4" />
+      Início
+    </button>
+  );
 
   return (
     <div className="planify-hud planify-ui3 planify-hud-app pl-hud-shell pl-dashboard-root pl-app-bg flex h-[100dvh] w-full max-w-[100vw] overflow-hidden text-slate-950">
@@ -181,17 +159,12 @@ export default function PlanifyDashboardShell() {
       >
         <PlanifySidebarNav
           mode="studio"
-          toolCardStyle="thin"
-          query={query}
-          onQueryChange={setQuery}
+          primaryAction={primaryAction}
           selectedToolId={selectedToolId}
           selectedSectionId={selectedSectionId}
-          onSelectTool={(id) => (id ? selectTool(id) : selectInicio())}
           onSelectSection={selectSection}
-          onSelectInicio={selectInicio}
           onActivate={closeSidebar}
           pathname="/dashboard"
-          searchInputRef={searchRef}
         />
       </PlanifyShellSidebar>
 

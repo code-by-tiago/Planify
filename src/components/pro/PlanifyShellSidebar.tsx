@@ -91,10 +91,10 @@ export function PlanifyShellSidebar({
   if (alwaysVisible) {
     return (
       <aside
-        className={`${sidebarClass} flex h-screen w-[min(18rem,34vw)] min-w-[14.5rem] shrink-0 flex-col overflow-hidden border-r`}
+        className={`${sidebarClass} flex h-screen w-[min(18rem,34vw)] min-w-[14.5rem] shrink-0 flex-col border-r`}
       >
         {brandBlock}
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain">
           {children}
         </div>
         <div className="shrink-0 border-t border-slate-200/60 bg-inherit">{footer}</div>
@@ -105,10 +105,10 @@ export function PlanifyShellSidebar({
   return (
     <>
       <aside
-        className={`${sidebarClass} hidden h-full min-h-0 w-72 shrink-0 flex-col overflow-hidden border-r lg:flex`}
+        className={`${sidebarClass} hidden h-full min-h-0 w-72 shrink-0 flex-col border-r lg:flex`}
       >
         {brandBlock}
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain">
           {children}
         </div>
         <div className="shrink-0 border-t border-slate-200/60 bg-inherit">{footer}</div>
@@ -136,7 +136,7 @@ export function PlanifyShellSidebar({
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
               transition={{ type: "spring", stiffness: 320, damping: 34 }}
-              className={`${sidebarClass} fixed inset-y-0 left-0 z-50 flex h-[100dvh] w-[min(300px,88vw)] max-w-[88vw] flex-col overflow-y-auto overscroll-contain border-r shadow-2xl pb-[env(safe-area-inset-bottom)] lg:hidden`}
+              className={`${sidebarClass} fixed inset-y-0 left-0 z-50 flex h-[100dvh] w-[min(300px,88vw)] max-w-[88vw] flex-col border-r shadow-2xl pb-[env(safe-area-inset-bottom)] lg:hidden`}
             >
               <div
                 className={`flex shrink-0 items-center justify-between border-b ${brandBorder} px-4 py-4`}
@@ -151,8 +151,10 @@ export function PlanifyShellSidebar({
                   <PlanifyIcon name="close" className="h-5 w-5" />
                 </button>
               </div>
-              <div className="flex flex-1 flex-col">{children}</div>
-              <div className="sticky bottom-0 mt-auto shrink-0">{footer}</div>
+              <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain">
+                {children}
+              </div>
+              <div className="shrink-0 border-t border-slate-200/60">{footer}</div>
             </motion.aside>
           </>
         ) : null}

@@ -18,7 +18,7 @@ export function isDashboardSection(
 export const dashboardSectionLabels: Record<DashboardSectionId, string> = {
   planejamentos: "Planejamentos",
   editor: "Editor",
-  historico: "Histórico",
+  historico: "Meus materiais",
   biblioteca: "Biblioteca",
   marketplace: "Marketplace",
 };

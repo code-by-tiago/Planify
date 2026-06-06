@@ -7,7 +7,7 @@ import { Suspense } from "react";
 
 export default function HistoricoPage() {
   return (
-    <PremiumAccessGate featureName="o Histórico">
+    <PremiumAccessGate featureName="Meus materiais">
       <Suspense fallback={<PlanifyHubPageFallback />}>
         <DashboardHubRedirect legacy="historico" />
       </Suspense>

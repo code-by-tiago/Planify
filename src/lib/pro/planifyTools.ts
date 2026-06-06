@@ -280,27 +280,8 @@ export type AppNavItem = {
   panel: AppNavPanel;
 };
 
-/** Páginas do workspace + links externos (abrem no painel central) */
-export const appNavigation: AppNavItem[] = [
-  { label: "Início", href: "/dashboard", icon: "home", panel: "inicio" },
-  {
-    label: "Planejamentos",
-    href: "/dashboard?secao=planejamentos",
-    icon: "clipboard",
-    panel: "planejamentos",
-  },
-  {
-    label: "Editor",
-    href: "/dashboard?secao=editor",
-    icon: "editor",
-    panel: "editor",
-  },
-  {
-    label: "Histórico",
-    href: "/dashboard?secao=historico",
-    icon: "history",
-    panel: "historico",
-  },
+/** Navegação lateral — apenas páginas (sem ferramentas IA) */
+export const sidebarNavigation: AppNavItem[] = [
   {
     label: "Biblioteca",
     href: "/dashboard?secao=biblioteca",
@@ -313,8 +294,17 @@ export const appNavigation: AppNavItem[] = [
     icon: "market",
     panel: "marketplace",
   },
+  {
+    label: "MEUS MATERIAIS",
+    href: "/dashboard?secao=historico",
+    icon: "history",
+    panel: "historico",
+  },
   { label: "Planos", href: "/planos", icon: "plans", panel: "external" },
 ];
+
+/** @deprecated Use sidebarNavigation for sidebar; kept for legacy references */
+export const appNavigation: AppNavItem[] = sidebarNavigation;
 
 export function getPlanifyTool(id: string | null | undefined) {
   return planifyTools.find((tool) => tool.id === id) ?? planifyTools[0];

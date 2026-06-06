@@ -12,7 +12,7 @@ const links: {
   { id: "inicio", label: "Início", icon: "home" },
   { id: "planejamentos", label: "Planejamentos", icon: "clipboard" },
   { id: "editor", label: "Editor", icon: "editor" },
-  { id: "historico", label: "Histórico", icon: "history" },
+  { id: "historico", label: "Meus materiais", icon: "history" },
   { id: "biblioteca", label: "Biblioteca", icon: "library" },
   { id: "marketplace", label: "Marketplace", icon: "market" },
 ];

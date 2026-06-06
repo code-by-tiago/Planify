@@ -23,9 +23,9 @@ export function PlanifyNavIcon({
   const tone = navIconTone[name] ?? "from-indigo-400 to-violet-500";
   return (
     <span
-      className={`pl-sidebar-nav-icon flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br ${tone} text-white shadow-sm ring-1 ring-white/60 ${className}`.trim()}
+      className={`pl-sidebar-nav-icon flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br ${tone} shadow-sm ring-1 ring-cyan-300/30 ${className}`.trim()}
     >
-      <PlanifyIcon name={name} className="h-3.5 w-3.5" />
+      <PlanifyIcon name={name} className="h-3.5 w-3.5 text-white" />
     </span>
   );
 }

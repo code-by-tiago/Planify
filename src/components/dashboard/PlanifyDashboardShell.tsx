@@ -120,8 +120,19 @@ export default function PlanifyDashboardShell() {
 
   const panelTitle = useMemo(() => {
     if (activeTool) return activeTool.title;
+    if (selectedSectionId === "planejamentos") {
+      return "BNCC → IA → DOCX oficial";
+    }
     if (selectedSectionId) return dashboardSectionLabels[selectedSectionId];
     return "Início";
+  }, [activeTool, selectedSectionId]);
+
+  const panelSubtitle = useMemo(() => {
+    if (activeTool) return activeTool.description;
+    if (selectedSectionId === "planejamentos") {
+      return "Sugira habilidades por conteúdo, gere a matriz pedagógica com IA e baixe o modelo oficial preenchido.";
+    }
+    return null;
   }, [activeTool, selectedSectionId]);
 
   useEffect(() => {
@@ -196,6 +207,11 @@ export default function PlanifyDashboardShell() {
                   <h1 className="truncate text-base font-extrabold text-slate-950">
                     {panelTitle}
                   </h1>
+                  {panelSubtitle ? (
+                    <p className="hidden truncate text-xs font-medium text-slate-500 sm:block">
+                      {panelSubtitle}
+                    </p>
+                  ) : null}
                 </div>
               </div>
               <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">

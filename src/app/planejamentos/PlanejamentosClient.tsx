@@ -7,6 +7,7 @@ import { MarketplacePublishButton } from "@/components/marketplace/MarketplacePu
 import { PlanifyOwlGenerationCoach } from "@/components/pro/PlanifyOwlGenerationCoach";
 import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
 import { PlanifyPageHero } from "@/components/pro/PlanifyPageHero";
+import { usePlanifyWorkspace } from "@/components/pro/planify-workspace-context";
 import { HUD_FIELD_CLASS, HUD_TEXTAREA_CLASS } from "@/lib/pro/hud-form-styles";
 import type { LumiCoachContext } from "@/lib/pro/lumiMotivationalMessages";
 import {
@@ -365,6 +366,7 @@ function saveAnnualMatrixSnapshot(form: FormState, planning: GeneratedPlanning) 
 }
 
 export function PlanejamentosClient() {
+  const { embeddedInDashboard } = usePlanifyWorkspace();
   const [form, setForm] = useState<FormState>(initialForm);
   const [groups, setGroups] = useState<BnccGroup[]>([]);
   const [selectedSkills, setSelectedSkills] = useState<BnccSkill[]>([]);
@@ -869,14 +871,16 @@ export function PlanejamentosClient() {
   return (
     <PlanifyWorkspacePane>
       <div className="planify-hud pl-hud-hub mx-auto max-w-7xl space-y-5">
-        <div className="pl-hud-page-hero overflow-hidden rounded-2xl border border-cyan-400/15">
-          <PlanifyPageHero
-            badge="Planejamentos"
-            icon="clipboard"
-            title="BNCC → IA → DOCX oficial"
-            description="Sugira habilidades por conteúdo, gere a matriz pedagógica com IA e baixe o modelo oficial preenchido."
-          />
-        </div>
+        {!embeddedInDashboard ? (
+          <div className="pl-hud-page-hero overflow-hidden rounded-2xl border border-cyan-400/15">
+            <PlanifyPageHero
+              badge="Planejamentos"
+              icon="clipboard"
+              title="BNCC → IA → DOCX oficial"
+              description="Sugira habilidades por conteúdo, gere a matriz pedagógica com IA e baixe o modelo oficial preenchido."
+            />
+          </div>
+        ) : null}
       <section className="grid gap-5 lg:grid-cols-[0.78fr_1.22fr]">
         <aside className="space-y-6">
           <div className="pl-hud-glass rounded-2xl p-5 sm:p-6">

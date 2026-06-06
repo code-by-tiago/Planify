@@ -153,7 +153,7 @@ const planFaq = [
   {
     question: "Qual a diferença entre Pro e Premium?",
     answer:
-      "O Premium oferece até 5 gerações profundas por dia (contra 3 no Pro) e cerca de 80 materiais completos por mês (contra ~35). Ideal para quem cria apostilas, provas e listas com alta frequência.",
+      "O Premium oferece até 5 gerações profundas por dia (contra 3 no Pro) — materiais e planejamentos anuais/trimestrais — e cerca de 80 materiais completos por mês (contra ~35). Ideal para quem cria apostilas, provas, listas e planejamentos com alta frequência.",
   },
   {
     question: "Posso trocar de plano depois?",

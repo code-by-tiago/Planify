@@ -101,16 +101,20 @@ export function DailyGenerationsBar({
 
       {!compact ? (
         <p className="mt-2 text-[11px] font-semibold leading-5 text-slate-600">
-          Usamos IA avançada para materiais profundos e sem erros — cada geração
-          exige processamento intenso. Por isso priorizamos{" "}
-          <strong>qualidade, não quantidade</strong>.
+          Usamos IA avançada para materiais profundos, planejamentos anuais e
+          trimestrais — cada geração exige processamento intenso. Por isso
+          priorizamos <strong>qualidade, não quantidade</strong>.
           {applies ? (
             <>
               {" "}
               Este tipo conta na cota diária. Flashcards e resumos não contam.
             </>
           ) : (
-            <> Flashcards, resumos e jogos não consomem esta cota.</>
+            <>
+              {" "}
+              Provas, apostilas, listas e planejamentos contam na cota; flashcards,
+              resumos e jogos não.
+            </>
           )}
         </p>
       ) : null}

@@ -1,3 +1,4 @@
+import { resolveDisciplineTopicGuidance } from "@/lib/materiais/discipline-topic-seeds";
 import type { MaterialEngineRequest, MaterialEngineType } from "./material-engine-types";
 import { resolveSlideTheme } from "./slide-design-themes";
 
@@ -240,10 +241,24 @@ export function buildMaterialEngineSystemInstruction(type: MaterialEngineType): 
   ].join("\n");
 }
 
-export function buildMaterialEnginePrompt(request: MaterialEngineRequest): string {
+export function buildMaterialEnginePrompt(
+  request: MaterialEngineRequest,
+  extraBlocks = "",
+): string {
   const rules = specializedRules(request)
     .map((rule) => `- ${rule}`)
     .join("\n");
+
+  const discipline = resolveDisciplineTopicGuidance({
+    tema: request.tema,
+    componenteCurricular: request.componenteCurricular,
+  });
+
+  const disciplineBlock = discipline?.promptBlock
+    ? `\n\n${discipline.promptBlock}`
+    : "";
+
+  const extra = extraBlocks.trim() ? `\n\n${extraBlocks.trim()}` : "";
 
   return `
 Gere material pedagógico para o Planify com qualidade profissional.
@@ -271,6 +286,6 @@ REGRAS GERAIS:
 - Entregar conteúdo coeso, sem repetição e sem preenchimento artificial.
 - Entregar pronto para edição no editor do Planify.
 - NÃO preencha o campo "html" — o Planify monta o HTML visual automaticamente.
-- Entregar somente JSON no schema.
+- Entregar somente JSON no schema.${disciplineBlock}${extra}
 `.trim();
 }

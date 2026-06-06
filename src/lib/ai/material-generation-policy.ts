@@ -14,6 +14,15 @@ export const DEEP_GENERATION_TYPES: MaterialEngineType[] = [
   "lista",
 ];
 
+/** Planejamento anual/trimestral — geração profunda (Pro), conta na cota diária. */
+export const PLANNING_DEEP_GENERATION_TYPE = "planejamento";
+
+const DEEP_PLANNING_TYPES = new Set([
+  PLANNING_DEEP_GENERATION_TYPE,
+  "planejamento-anual",
+  "planejamento-trimestral",
+]);
+
 /** Materiais leves (Flash) — não consomem cota diária profunda. */
 export const LIGHT_GENERATION_TYPES: MaterialEngineType[] = [
   "flashcards",
@@ -39,6 +48,7 @@ export function isDeepGenerationType(tipo: string): boolean {
   const key = normalizeMaterialTypeKey(tipo);
   if (LIGHT_SET.has(key)) return false;
   if (DEEP_SET.has(key)) return true;
+  if (DEEP_PLANNING_TYPES.has(key)) return true;
   return false;
 }
 

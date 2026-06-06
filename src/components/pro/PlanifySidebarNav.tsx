@@ -65,7 +65,7 @@ export function PlanifySidebarNav({
   }
 
   function navButtonClass(selected: boolean) {
-    return `pl-sidebar-nav-item flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left transition ${
+    return `pl-sidebar-nav-item flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition ${
       selected
         ? "bg-gradient-to-r from-cyan-500 to-blue-600 shadow-[0_0_16px_rgba(0,212,255,0.25)]"
         : "hover:bg-white/5"

@@ -295,7 +295,7 @@ export const sidebarNavigation: AppNavItem[] = [
     panel: "marketplace",
   },
   {
-    label: "MEUS MATERIAIS",
+    label: "Meus materiais",
     href: "/dashboard?secao=historico",
     icon: "history",
     panel: "historico",

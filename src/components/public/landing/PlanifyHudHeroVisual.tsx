@@ -2,10 +2,10 @@ import { PlanifyOwlMark } from "@/components/pro/PlanifyOwlMark";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 
 const nodes = [
-  { id: "science", icon: "layers" as const, label: "STEM", x: 12, y: 18 },
-  { id: "literacy", icon: "book" as const, label: "Leitura", x: 82, y: 14 },
-  { id: "digital", icon: "presentation" as const, label: "Digital", x: 88, y: 62 },
-  { id: "writing", icon: "pen" as const, label: "Escrita", x: 10, y: 68 },
+  { id: "science", icon: "layers" as const, x: 12, y: 18 },
+  { id: "literacy", icon: "book" as const, x: 82, y: 14 },
+  { id: "digital", icon: "presentation" as const, x: 88, y: 62 },
+  { id: "writing", icon: "pen" as const, x: 10, y: 68 },
 ];
 
 /** HUD AR overlay — owl central + ícones conectados por circuitos */
@@ -31,9 +31,9 @@ export function PlanifyHudHeroVisual() {
         <circle cx="50" cy="50" r="28" fill="none" stroke="rgba(0,212,255,0.35)" strokeWidth="0.8" strokeDasharray="4 3" />
       </svg>
 
-      <div className="absolute left-1/2 top-1/2 z-10 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center">
-        <PlanifyOwlMark size={140} glow priority />
-        <span className="mt-3 rounded-full border border-cyan-400/30 bg-white/80 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-700 backdrop-blur-sm">
+      <div className="absolute left-1/2 top-[46%] z-10 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center">
+        <PlanifyOwlMark size={172} glow hero priority />
+        <span className="mt-4 rounded-full border border-cyan-400/30 bg-white/85 px-3.5 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-700 backdrop-blur-sm shadow-[0_0_12px_rgba(0,212,255,0.15)]">
           IA · BNCC
         </span>
       </div>
@@ -41,7 +41,7 @@ export function PlanifyHudHeroVisual() {
       {nodes.map((node) => (
         <div
           key={node.id}
-          className="pl-hud-node absolute flex flex-col items-center gap-1 p-2.5"
+          className="pl-hud-node absolute flex items-center justify-center"
           style={{
             left: `${node.x}%`,
             top: `${node.y}%`,

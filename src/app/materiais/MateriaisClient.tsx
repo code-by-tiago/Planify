@@ -1598,7 +1598,7 @@ export function MateriaisClient({
         <section className="pl-section-hero overflow-hidden rounded-[1.85rem] border border-slate-200/90 p-5 shadow-sm sm:p-6">
           <div className="grid gap-4 lg:grid-cols-[1fr_360px] lg:items-center">
             <div>
-              <span className="pl-badge-indigo">
+              <span className="pl-hud-badge">
                 <PlanifyIcon name="spark" className="h-3.5 w-3.5" />
                 Criar com IA
               </span>

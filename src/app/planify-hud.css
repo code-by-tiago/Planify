@@ -185,11 +185,23 @@ body {
   box-shadow: var(--planify-cyan-glow);
 }
 
-.pl-hud-owl-ring img {
-  border-radius: 9999px;
-  object-fit: cover;
+.pl-hud-owl-ring img,
+.pl-hud-owl-image {
+  object-fit: contain;
+  background: rgba(255, 255, 255, 0.96);
   position: relative;
   z-index: 1;
+  width: calc(100% - 12px);
+  height: calc(100% - 12px);
+}
+
+.pl-hud-owl-ring--hero::before {
+  inset: -8px;
+  border-width: 2.5px;
+}
+
+.pl-hud-owl-ring--hero {
+  box-shadow: var(--planify-cyan-glow);
 }
 
 @keyframes pl-hud-ring-spin {

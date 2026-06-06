@@ -43,7 +43,7 @@ function PublicScreenContent() {
   return (
     <div className="planify-ui3 planify-public pl-single-screen flex h-screen w-screen overflow-hidden bg-[#f8f5ff] text-slate-950">
       <PlanifyShellSidebar
-        variant="teachy"
+        variant="hud"
         alwaysVisible
         showUserFooter={false}
         brandHref="/"

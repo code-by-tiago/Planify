@@ -172,7 +172,7 @@ export default function PlanifyDashboardShell() {
   return (
     <div className="planify-hud planify-ui3 planify-hud-app pl-hud-shell pl-dashboard-root pl-app-bg flex h-[100dvh] w-full max-w-[100vw] overflow-hidden text-slate-950">
       <PlanifyShellSidebar
-        variant="teachy"
+        variant="hud"
         brandHref="/"
         lumiHint="Toque numa ferramenta e crie em segundos."
         open={sidebarOpen}

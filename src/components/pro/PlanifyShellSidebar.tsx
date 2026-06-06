@@ -16,7 +16,7 @@ type PlanifyShellSidebarProps = {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   lumiHint?: string;
-  variant?: "default" | "teachy";
+  variant?: "default" | "hud";
   /** Menu lateral sempre visível (painel /dashboard) */
   alwaysVisible?: boolean;
   showUserFooter?: boolean;
@@ -33,7 +33,7 @@ export function PlanifyShellSidebar({
   showUserFooter = true,
   brandHref = "/",
 }: PlanifyShellSidebarProps) {
-  const isTeachy = variant === "teachy";
+  const isHud = variant === "hud";
 
   useEffect(() => {
     if (alwaysVisible || !open) return;
@@ -65,10 +65,10 @@ export function PlanifyShellSidebar({
       window.removeEventListener("resize", onResize);
     };
   }, [open, onOpenChange]);
-  const sidebarClass = isTeachy
+  const sidebarClass = isHud
     ? "pl-sidebar pl-sidebar-hud"
     : "pl-sidebar";
-  const brandBorder = isTeachy
+  const brandBorder = isHud
     ? "border-slate-200/80"
     : "border-rose-100/50";
   const footer = showUserFooter ? (
@@ -81,8 +81,8 @@ export function PlanifyShellSidebar({
 
   const brandBlock = (
     <div className={`shrink-0 border-b ${brandBorder} px-4 py-4`}>
-      <PlanifyBrand href={brandHref} dark={isTeachy} />
-      <p className={`mt-2 text-[11px] font-bold leading-snug ${isTeachy ? "text-slate-500" : "text-slate-500"}`}>
+      <PlanifyBrand href={brandHref} dark={isHud} />
+      <p className={`mt-2 text-[11px] font-bold leading-snug ${isHud ? "text-slate-500" : "text-slate-500"}`}>
         Coruja Planify · IA alinhada à BNCC
       </p>
     </div>
@@ -125,7 +125,7 @@ export function PlanifyShellSidebar({
               exit="hidden"
               transition={{ duration: 0.2 }}
               className={`fixed inset-0 z-40 backdrop-blur-sm lg:hidden ${
-                isTeachy ? "bg-slate-950/50" : "bg-slate-950/40"
+                isHud ? "bg-slate-950/50" : "bg-slate-950/40"
               }`}
               onClick={() => onOpenChange?.(false)}
               aria-hidden="true"

@@ -14,11 +14,11 @@ export function PlanifyBrand({
   dark = false,
   hideTagline = false,
 }: BrandProps) {
-  const owlSize = compact ? 36 : 44;
+  const owlSize = compact ? 40 : 52;
 
   const content = (
-    <div className="flex items-center gap-3">
-      <PlanifyOwlMark size={owlSize} glow={!dark} priority />
+    <div className="flex items-center gap-2.5">
+      <PlanifyOwlMark size={owlSize} glow={!dark} />
       {!compact ? (
         <div>
           <p

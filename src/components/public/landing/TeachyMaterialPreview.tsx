@@ -15,15 +15,15 @@ export function TeachyMaterialPreview() {
         aria-hidden
       />
 
-      <div className="relative overflow-hidden rounded-3xl border border-white/60 bg-white p-4 shadow-lg">
-        <div className="rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 p-4 text-white shadow-md">
-          <p className="text-[10px] font-black uppercase tracking-wider text-blue-100">
+      <div className="pl-hud-glass relative overflow-hidden rounded-3xl p-4">
+        <div className="rounded-2xl bg-gradient-to-br from-cyan-500 via-cyan-600 to-cyan-800 p-4 text-white shadow-[0_0_24px_rgba(0,212,255,0.25)]">
+          <p className="text-[10px] font-black uppercase tracking-wider text-cyan-100">
             Apresentação em slides
           </p>
           <p className="mt-2 text-base font-black leading-tight">
             Energia Potencial Elástica
           </p>
-          <div className="mt-4 flex h-16 items-center justify-center rounded-xl bg-white/15">
+          <div className="mt-4 flex h-16 items-center justify-center rounded-xl border border-white/15 bg-white/10">
             <PlanifyIcon name="presentation" className="h-8 w-8 text-white/90" />
           </div>
         </div>
@@ -31,7 +31,7 @@ export function TeachyMaterialPreview() {
           {["Plano", "Lista", "Quiz"].map((chip) => (
             <span
               key={chip}
-              className="rounded-full border border-blue-100 bg-blue-50 px-2.5 py-1 text-[10px] font-black text-blue-700"
+              className="rounded-full border border-cyan-400/20 bg-cyan-50/80 px-2.5 py-1 text-[10px] font-black text-cyan-700"
             >
               {chip}
             </span>

@@ -11,7 +11,7 @@ export function TeachyHomeToolsGrid() {
     >
       <div className="mx-auto max-w-7xl px-5 sm:px-8">
         <div className="text-center">
-          <p className="text-xs font-black uppercase tracking-[0.2em] text-blue-600">
+          <p className="text-xs font-black uppercase tracking-[0.2em] text-cyan-600">
             Ferramentas com IA
           </p>
           <h2 className="pl-display mt-3 text-3xl font-extrabold tracking-tight text-slate-950 sm:text-4xl">

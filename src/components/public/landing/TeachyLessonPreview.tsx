@@ -7,7 +7,7 @@ import { lessonBundleTools, teachyQuickActions } from "@/lib/pro/teachyStudio";
 const LESSON_TOPIC = "Ciclo da água";
 
 /** Mock visual HUD — pacote de aula (sem lógica de geração) */
-export function TeachyLessonPreview() {
+export function TeachyLessonPreview({ showCta = true }: { showCta?: boolean }) {
   const byTag = new Map<string, typeof lessonBundleTools>();
   for (const item of lessonBundleTools) {
     const list = byTag.get(item.tag) ?? [];
@@ -73,13 +73,15 @@ export function TeachyLessonPreview() {
           ))}
         </div>
 
-        <Link
-          href="/planos"
-          className="pl-hud-btn mt-4 flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold"
-        >
-          Ver planos
-          <PlanifyIcon name="arrowRight" className="h-4 w-4" />
-        </Link>
+        {showCta ? (
+          <Link
+            href="/planos"
+            className="pl-hud-btn mt-4 flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold"
+          >
+            Ver planos
+            <PlanifyIcon name="arrowRight" className="h-4 w-4" />
+          </Link>
+        ) : null}
       </div>
     </div>
   );

@@ -508,6 +508,35 @@ body .planify-hud.pl-hud-shell .pl-sidebar nav .pl-sidebar-nav-icon svg {
   background: radial-gradient(circle, rgba(0, 212, 255, 0.12), transparent 70%) !important;
 }
 
+/* ─── Features section (como funciona) ─── */
+.planify-hud .pl-hud-features {
+  background:
+    radial-gradient(ellipse 70% 50% at 10% 20%, rgba(0, 212, 255, 0.05), transparent 55%),
+    radial-gradient(ellipse 60% 40% at 90% 80%, rgba(8, 145, 178, 0.04), transparent 50%),
+    var(--planify-surface);
+}
+
+.planify-hud .pl-hud-feature-row {
+  border: 1px solid transparent;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.planify-hud .pl-hud-feature-row--alt {
+  background:
+    linear-gradient(135deg, rgba(0, 212, 255, 0.04) 0%, rgba(255, 255, 255, 0.6) 100%);
+  border-color: var(--planify-glass-border);
+  box-shadow: 0 2px 20px rgba(0, 212, 255, 0.06);
+}
+
+.planify-hud .pl-hud-feature-row:hover {
+  border-color: rgba(0, 212, 255, 0.22);
+  box-shadow: 0 4px 28px rgba(0, 212, 255, 0.1);
+}
+
+.planify-hud .pl-hud-feature-step {
+  box-shadow: 0 0 12px rgba(0, 212, 255, 0.08);
+}
+
 /* Preserve white text on dark surfaces */
 .planify-hud .pl-hud-glass-band h2,
 .planify-hud .pl-hud-cta-band h2.text-white,

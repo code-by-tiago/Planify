@@ -75,7 +75,16 @@ async function fetchCatalogSkills(filters: {
   const { data, error } = await query.order("code", { ascending: true });
 
   if (error) {
-    throw new Error(error.message);
+    const message = error.message || "";
+    if (
+      message.includes("bncc_skills") ||
+      message.includes("schema cache") ||
+      error.code === "42P01"
+    ) {
+      console.warn("planify:bncc_skills unavailable, returning empty catalog", message);
+      return [];
+    }
+    throw new Error(message);
   }
 
   return (data || []) as BnccSkillRow[];

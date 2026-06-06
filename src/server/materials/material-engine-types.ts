@@ -77,6 +77,9 @@ export type MaterialEngineInput = {
   designSlides?: string;
   elevarQualidade?: boolean;
   problemasQualidade?: string[];
+  classId?: string | null;
+  discipline?: string | null;
+  disciplina?: string | null;
 };
 
 export type ExamQuestion = {

@@ -37,6 +37,9 @@ export type PlanningAiPayload = {
   habilidadesSelecionadas?: PlanningSkill[];
   elevarQualidade?: boolean;
   problemasQualidade?: string[];
+  classId?: string | null;
+  discipline?: string | null;
+  disciplina?: string | null;
 };
 
 export type PlanningMatrixItem = {

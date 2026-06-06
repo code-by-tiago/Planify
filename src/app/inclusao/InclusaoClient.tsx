@@ -26,6 +26,8 @@ import {
   requestInclusaoGeneration,
 } from "@/lib/inclusao/inclusao-client";
 import { getPlanifyTool } from "@/lib/pro/planifyTools";
+import { useSchoolClasses } from "@/hooks/useSchoolClasses";
+import { SchoolClassDisciplineFields } from "@/components/school/SchoolClassDisciplineFields";
 import {
   HUD_CHIP_INACTIVE,
   HUD_FIELD_CLASS,
@@ -72,6 +74,7 @@ export function InclusaoClient({
   studioMode = false,
   onStudioClose,
 }: InclusaoClientProps = {}) {
+  const school = useSchoolClasses();
   const [modo, setModo] = useState<InclusaoModeId>("adaptacao");
   const [necessidade, setNecessidade] = useState<InclusaoNeedId>("tea");
   const [etapaEnsino, setEtapaEnsino] =
@@ -99,6 +102,12 @@ export function InclusaoClient({
       return;
     }
 
+    const schoolError = school.validate();
+    if (schoolError) {
+      setErro(schoolError);
+      return;
+    }
+
     setLoading(true);
     setResultadoHtml("");
     setResultadoMarkdown("");
@@ -110,6 +119,9 @@ export function InclusaoClient({
         etapaEnsino,
         conteudo: trimmed,
         observacoes: observacoes.trim() || undefined,
+        classId: school.generationFields.classId,
+        discipline: school.generationFields.discipline || undefined,
+        disciplina: school.generationFields.discipline || undefined,
       });
 
       setResultadoMarkdown(result.markdown);
@@ -286,6 +298,8 @@ export function InclusaoClient({
               />
             </div>
           ) : null}
+
+          <SchoolClassDisciplineFields school={school} />
 
           <DailyGenerationsBar tipoMaterial={INCLUSAO_GENERATION_TYPE} compact />
 

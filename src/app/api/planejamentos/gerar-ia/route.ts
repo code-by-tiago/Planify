@@ -101,6 +101,9 @@ export async function POST(request: NextRequest) {
         userId: user.id,
         surface: "planning",
         tipo: String(payload.tipoPlanejamento || PLANNING_DEEP_GENERATION_TYPE),
+        classId: payload.classId || null,
+        discipline:
+          payload.discipline?.trim() || payload.disciplina?.trim() || null,
         pipeline: result.usedAI ? "planning-ai" : "planning-fallback",
         qualityScore:
           typeof result.qualityScore === "number" ? result.qualityScore : null,

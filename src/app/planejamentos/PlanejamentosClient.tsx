@@ -6,6 +6,8 @@ import { PLANNING_DEEP_GENERATION_TYPE } from "@/lib/ai/material-generation-poli
 import { MarketplacePublishButton } from "@/components/marketplace/MarketplacePublishButton";
 import { PlanifyOwlGenerationCoach } from "@/components/pro/PlanifyOwlGenerationCoach";
 import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
+import { useSchoolClasses } from "@/hooks/useSchoolClasses";
+import { SchoolClassDisciplineFields } from "@/components/school/SchoolClassDisciplineFields";
 import { PlanifyPageHero } from "@/components/pro/PlanifyPageHero";
 import { usePlanifyWorkspace } from "@/components/pro/planify-workspace-context";
 import { HUD_FIELD_CLASS, HUD_TEXTAREA_CLASS } from "@/lib/pro/hud-form-styles";
@@ -367,6 +369,7 @@ function saveAnnualMatrixSnapshot(form: FormState, planning: GeneratedPlanning) 
 
 export function PlanejamentosClient() {
   const { embeddedInDashboard } = usePlanifyWorkspace();
+  const school = useSchoolClasses();
   const [form, setForm] = useState<FormState>(initialForm);
   const [groups, setGroups] = useState<BnccGroup[]>([]);
   const [selectedSkills, setSelectedSkills] = useState<BnccSkill[]>([]);
@@ -540,6 +543,9 @@ export function PlanejamentosClient() {
         componente: skill.componente || form.componenteCurricular,
         conteudo: skill.conteudo,
       })),
+      classId: school.generationFields.classId,
+      discipline: school.generationFields.discipline || undefined,
+      disciplina: school.generationFields.discipline || undefined,
     };
   }
 
@@ -633,6 +639,12 @@ export function PlanejamentosClient() {
 
     if (selectedSkills.length === 0) {
       setError("Sugira e selecione pelo menos uma habilidade BNCC antes de gerar o planejamento.");
+      return;
+    }
+
+    const schoolError = school.validate();
+    if (schoolError) {
+      setError(schoolError);
       return;
     }
 
@@ -1171,6 +1183,10 @@ export function PlanejamentosClient() {
 
             <div className="mt-6">
               <DailyGenerationsBar tipoMaterial={PLANNING_DEEP_GENERATION_TYPE} />
+            </div>
+
+            <div className="mt-6">
+              <SchoolClassDisciplineFields school={school} />
             </div>
 
             <div className="mt-7 grid gap-3 xl:grid-cols-4">

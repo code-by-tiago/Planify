@@ -68,6 +68,8 @@ import {
 } from "@/lib/pro/planifyTools";
 import { downloadEditorExport } from "@/lib/downloads/editor-export-client";
 import { lessonBundleFollowUp } from "@/lib/pro/teachyStudio";
+import { useSchoolClasses } from "@/hooks/useSchoolClasses";
+import { SchoolClassDisciplineFields } from "@/components/school/SchoolClassDisciplineFields";
 
 const SELECT_FIELD_CLASS = HUD_FIELD_CLASS;
 
@@ -249,6 +251,7 @@ export function MateriaisClient({
   onStudioClose,
   onOpenRelatedTool,
 }: MateriaisClientProps = {}) {
+  const school = useSchoolClasses();
   const [categoria, setCategoria] = useState<ToolCategoryId>("todos");
   const [tipo, setTipo] = useState<PlanifyToolId>(initialTipo ?? "slides");
   const [modalAberto, setModalAberto] = useState(studioMode);
@@ -633,6 +636,9 @@ export function MateriaisClient({
       incluirGabarito: showGabarito && incluirGabarito,
       areaConhecimento,
       designSlides: tipo === "slides" ? designSlides : undefined,
+      classId: school.generationFields.classId,
+      discipline: school.generationFields.discipline || undefined,
+      disciplina: school.generationFields.discipline || undefined,
       ...overrides,
     };
   }
@@ -774,6 +780,12 @@ export function MateriaisClient({
 
     if (!componente.trim()) {
       setErro("Informe o componente curricular.");
+      return;
+    }
+
+    const schoolError = school.validate();
+    if (schoolError) {
+      setErro(schoolError);
       return;
     }
 
@@ -1339,6 +1351,10 @@ export function MateriaisClient({
               montará a sequência pedagógica dos slides.
             </p>
           ) : null}
+
+          <div className="mt-5">
+            <SchoolClassDisciplineFields school={school} />
+          </div>
 
           <div className="mt-5 flex flex-col gap-3">
             <div className="flex flex-wrap items-center justify-between gap-3">

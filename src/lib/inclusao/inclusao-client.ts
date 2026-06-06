@@ -11,6 +11,9 @@ export type InclusaoGenerationPayload = {
   etapaEnsino: InclusaoEducationLevel;
   conteudo: string;
   observacoes?: string;
+  classId?: string | null;
+  discipline?: string | null;
+  disciplina?: string | null;
 };
 
 export type InclusaoGenerationResult = {

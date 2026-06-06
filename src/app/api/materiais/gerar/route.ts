@@ -137,6 +137,9 @@ export async function POST(request: NextRequest) {
         userId: user.id,
         surface: "material",
         tipo: String(result.data.tipoMaterial || tipo),
+        classId: payload.classId || null,
+        discipline:
+          payload.discipline?.trim() || payload.disciplina?.trim() || null,
         contentHtml: result.data.html,
         pipeline,
         qualityScore: typeof qualityScore === "number" ? qualityScore : null,

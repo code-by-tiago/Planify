@@ -639,12 +639,45 @@ export type Database = {
           updated_at?: string;
         }
       >;
+      school_invites: TableDefinition<
+        {
+          id: string;
+          school_id: string;
+          email: string;
+          status: Database["public"]["Enums"]["school_invite_status"];
+          invited_by: string | null;
+          accepted_user_id: string | null;
+          created_at: string;
+          updated_at: string;
+        },
+        {
+          id?: string;
+          school_id: string;
+          email: string;
+          status?: Database["public"]["Enums"]["school_invite_status"];
+          invited_by?: string | null;
+          accepted_user_id?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        },
+        {
+          id?: string;
+          school_id?: string;
+          email?: string;
+          status?: Database["public"]["Enums"]["school_invite_status"];
+          invited_by?: string | null;
+          accepted_user_id?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        }
+      >;
       generated_materials: TableDefinition<
         {
           id: string;
           user_id: string;
           school_id: string | null;
           class_id: string | null;
+          discipline: string | null;
           tipo: string;
           title: string;
           bncc_skill_codes: string[];
@@ -662,6 +695,7 @@ export type Database = {
           user_id: string;
           school_id?: string | null;
           class_id?: string | null;
+          discipline?: string | null;
           tipo?: string;
           title?: string;
           bncc_skill_codes?: string[];
@@ -679,6 +713,7 @@ export type Database = {
           user_id?: string;
           school_id?: string | null;
           class_id?: string | null;
+          discipline?: string | null;
           tipo?: string;
           title?: string;
           bncc_skill_codes?: string[];
@@ -745,6 +780,7 @@ export type Database = {
         | "duplicated";
       school_membership_role: "director" | "teacher" | "coordinator";
       school_membership_status: "active" | "inactive";
+      school_invite_status: "pending" | "accepted" | "revoked";
       generated_material_surface: "material" | "planning" | "inclusao";
     };
     CompositeTypes: Record<string, never>;

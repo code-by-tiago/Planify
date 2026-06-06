@@ -10,12 +10,19 @@ type DirectorPanelClientProps = {
   embedded?: boolean;
 };
 
+type DirectorTabId = "overview" | "teachers";
+
 export function DirectorPanelClient({ embedded = false }: DirectorPanelClientProps) {
   const access = usePlanifyAccess();
   const [dashboard, setDashboard] = useState<SchoolDashboardResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [expandedClassId, setExpandedClassId] = useState<string | null>(null);
+  const [tab, setTab] = useState<DirectorTabId>("overview");
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteLoading, setInviteLoading] = useState(false);
+  const [inviteMessage, setInviteMessage] = useState("");
+  const [inviteError, setInviteError] = useState("");
 
   const loadDashboard = useCallback(async () => {
     if (!access.canViewDirectorPanel || !access.schoolId) {
@@ -56,6 +63,51 @@ export function DirectorPanelClient({ embedded = false }: DirectorPanelClientPro
     if (access.loading) return;
     void loadDashboard();
   }, [access.loading, loadDashboard]);
+
+  async function inviteTeacher() {
+    if (!access.schoolId) return;
+
+    const email = inviteEmail.trim().toLowerCase();
+    if (!email || !email.includes("@")) {
+      setInviteError("Informe um e-mail válido.");
+      return;
+    }
+
+    setInviteLoading(true);
+    setInviteError("");
+    setInviteMessage("");
+
+    try {
+      const response = await fetch(`/api/schools/${access.schoolId}/invites`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const data = (await response.json()) as {
+        success?: boolean;
+        result?: { status?: string; message?: string };
+        error?: { message?: string };
+      };
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error?.message || "Não foi possível adicionar o professor.");
+      }
+
+      setInviteMessage(
+        data.result?.message ||
+          (data.result?.status === "accepted"
+            ? "Professor vinculado à escola com sucesso."
+            : "Convite registrado. O professor será vinculado ao criar conta com este e-mail."),
+      );
+      setInviteEmail("");
+      void loadDashboard();
+    } catch (err) {
+      setInviteError(err instanceof Error ? err.message : "Erro ao convidar professor.");
+    } finally {
+      setInviteLoading(false);
+    }
+  }
 
   if (access.loading) {
     return (
@@ -104,18 +156,84 @@ export function DirectorPanelClient({ embedded = false }: DirectorPanelClientPro
         embedded ? "" : "planify-hud planify-ui3 planify-hud-app bg-[var(--planify-canvas)]"
       }`}
     >
-      <header className="shrink-0 border-b border-cyan-400/15 bg-white/85 px-4 py-4 backdrop-blur-sm sm:px-6">
-        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-600">
-          Gestão escolar
-        </p>
-        <h1 className="text-2xl font-black text-slate-950">Painel do Gestor</h1>
-        <p className="mt-1 text-sm font-semibold text-slate-600">
-          {dashboard?.schoolName || "Sua escola"} — visão geral de BNCC e produção docente.
-        </p>
-      </header>
+      {!embedded ? (
+        <header className="shrink-0 border-b border-cyan-400/15 bg-white/85 px-4 py-4 backdrop-blur-sm sm:px-6">
+          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-600">
+            Gestão escolar
+          </p>
+          <h1 className="text-2xl font-black text-slate-950">Painel do Gestor</h1>
+          <p className="mt-1 text-sm font-semibold text-slate-600">
+            {dashboard?.schoolName || "Sua escola"} — visão geral de BNCC e produção docente.
+          </p>
+        </header>
+      ) : null}
 
       <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">
-        {loading ? (
+        <div className="mb-4 flex gap-2 border-b border-slate-200">
+          <button
+            type="button"
+            onClick={() => setTab("overview")}
+            className={`rounded-t-xl px-4 py-2 text-sm font-black transition ${
+              tab === "overview"
+                ? "bg-white text-cyan-700 shadow-sm"
+                : "text-slate-500 hover:text-slate-800"
+            }`}
+          >
+            Visão geral
+          </button>
+          <button
+            type="button"
+            onClick={() => setTab("teachers")}
+            className={`rounded-t-xl px-4 py-2 text-sm font-black transition ${
+              tab === "teachers"
+                ? "bg-white text-cyan-700 shadow-sm"
+                : "text-slate-500 hover:text-slate-800"
+            }`}
+          >
+            Gerenciar Professores
+          </button>
+        </div>
+
+        {tab === "teachers" ? (
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <h2 className="text-sm font-black text-slate-950">Adicionar professor</h2>
+            <p className="mt-1 text-sm font-semibold text-slate-500">
+              Se o e-mail já tiver conta Planify, o professor é vinculado imediatamente à escola.
+              Caso contrário, o convite fica pendente até o cadastro.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-3">
+              <input
+                type="email"
+                value={inviteEmail}
+                onChange={(event) => setInviteEmail(event.target.value)}
+                placeholder="professor@escola.edu.br"
+                className="min-w-[240px] flex-1 rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-800"
+              />
+              <button
+                type="button"
+                onClick={() => void inviteTeacher()}
+                disabled={inviteLoading}
+                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 px-5 py-2.5 text-sm font-black text-white shadow-sm disabled:opacity-60"
+              >
+                <PlanifyIcon name="user" className="h-4 w-4" />
+                {inviteLoading ? "Adicionando…" : "Adicionar Professor"}
+              </button>
+            </div>
+            {inviteError ? (
+              <p className="mt-3 text-sm font-semibold text-rose-600">{inviteError}</p>
+            ) : null}
+            {inviteMessage ? (
+              <p className="mt-3 text-sm font-semibold text-emerald-700">{inviteMessage}</p>
+            ) : null}
+            <p className="mt-4 text-xs font-semibold text-slate-400">
+              O acesso Pro escolar vem da associação ativa em{" "}
+              <code className="rounded bg-slate-100 px-1">school_memberships</code> — a
+              assinatura individual do professor permanece separada.
+            </p>
+          </div>
+        ) : null}
+
+        {tab !== "overview" ? null : loading ? (
           <div className="flex min-h-[240px] items-center justify-center">
             <span className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-cyan-200 border-t-cyan-600" />
           </div>
@@ -123,7 +241,7 @@ export function DirectorPanelClient({ embedded = false }: DirectorPanelClientPro
           <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm font-semibold text-rose-700">
             {error}
           </div>
-        ) : (
+        ) : tab === "overview" ? (
           <>
             <div className="grid gap-4 sm:grid-cols-3">
               <div className="rounded-2xl border border-cyan-200 bg-white p-5 shadow-sm">
@@ -210,7 +328,7 @@ export function DirectorPanelClient({ embedded = false }: DirectorPanelClientPro
               )}
             </div>
           </>
-        )}
+        ) : null}
       </div>
     </div>
   );

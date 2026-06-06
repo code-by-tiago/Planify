@@ -131,6 +131,9 @@ export async function POST(request: NextRequest) {
         userId: user.id,
         surface: "inclusao",
         tipo: `${tipo}:${payload.modo}`,
+        classId: payload.classId || null,
+        discipline:
+          payload.discipline?.trim() || payload.disciplina?.trim() || null,
         title: String(payload.conteudo || "Adaptação inclusiva").slice(0, 120),
         contentHtml: result.html,
         contentPreview: result.markdown,

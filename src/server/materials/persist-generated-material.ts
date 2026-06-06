@@ -30,6 +30,7 @@ export type PersistGenerationParams = {
   qualityScore?: number | null;
   schoolId?: string | null;
   classId?: string | null;
+  discipline?: string | null;
   payload?: Record<string, unknown> | null;
   result?: Record<string, unknown> | null;
 };
@@ -44,6 +45,7 @@ export async function persistGeneratedMaterial(
       user_id: input.userId,
       school_id: input.schoolId || null,
       class_id: input.classId || null,
+      discipline: input.discipline?.trim() || null,
       tipo: String(input.tipo || "").slice(0, 120),
       title: String(input.title || "Sem título").slice(0, 500),
       bncc_skill_codes: input.bnccSkillCodes,
@@ -103,6 +105,11 @@ async function persistGenerationRecord(
       params.schoolId ||
       (params.userId ? await getPrimarySchoolIdForUser(params.userId) : null);
 
+    const discipline =
+      params.discipline?.trim() ||
+      String(params.payload?.discipline || params.payload?.disciplina || "").trim() ||
+      null;
+
     const estrutura = (params.result?.estrutura ||
       params.result) as Record<string, unknown> | undefined;
 
@@ -130,6 +137,7 @@ async function persistGenerationRecord(
       userId: params.userId,
       schoolId,
       classId: params.classId || null,
+      discipline,
       tipo: params.tipo,
       title: title || params.tipo,
       bnccSkillCodes: extracted.codes,

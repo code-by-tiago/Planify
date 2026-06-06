@@ -1,9 +1,39 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { OwnerFooterLink } from "@/components/OwnerFooterLink";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { usePlanifySession } from "@/hooks/usePlanifySession";
+
+function SidebarUserAvatar({
+  avatarUrl,
+  displayName,
+}: {
+  avatarUrl: string | null;
+  displayName: string;
+}) {
+  const [imageFailed, setImageFailed] = useState(false);
+  const initial = displayName.charAt(0).toUpperCase() || "P";
+
+  if (avatarUrl && !imageFailed) {
+    return (
+      <img
+        src={avatarUrl}
+        alt=""
+        referrerPolicy="no-referrer"
+        className="h-10 w-10 shrink-0 rounded-xl object-cover shadow-sm ring-1 ring-slate-200/80"
+        onError={() => setImageFailed(true)}
+      />
+    );
+  }
+
+  return (
+    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-blue-500 text-sm font-black text-white shadow-sm">
+      {initial}
+    </span>
+  );
+}
 
 type PlanifySidebarUserProps = {
   lumiHint?: string;
@@ -48,9 +78,10 @@ export function PlanifySidebarUser({
   return (
     <div className="shrink-0 space-y-2 border-t border-slate-200/80 px-4 py-3">
       <div className="flex items-center gap-3 rounded-2xl border border-slate-200/90 bg-white p-3 shadow-sm">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-blue-500 text-sm font-black text-white shadow-sm">
-          {session.displayName.charAt(0).toUpperCase()}
-        </span>
+        <SidebarUserAvatar
+          avatarUrl={session.avatarUrl}
+          displayName={session.displayName}
+        />
         <div className="min-w-0 flex-1">
           <p className="truncate text-xs font-black text-slate-950">
             {session.displayName}

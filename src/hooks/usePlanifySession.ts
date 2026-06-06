@@ -13,6 +13,7 @@ export type PlanifySession = {
   premium: boolean;
   email: string;
   displayName: string;
+  avatarUrl: string | null;
   planLabel: string;
   isAdmin: boolean;
   isOwner: boolean;
@@ -24,6 +25,7 @@ const initial: PlanifySession = {
   premium: false,
   email: "",
   displayName: "",
+  avatarUrl: null,
   planLabel: "",
   isAdmin: false,
   isOwner: false,
@@ -47,6 +49,7 @@ export function usePlanifySession() {
           authenticated?: boolean;
           premium?: boolean;
           email?: string;
+          avatarUrl?: string | null;
           isAdmin?: boolean;
           isOwner?: boolean;
           planKey?: string | null;
@@ -55,6 +58,11 @@ export function usePlanifySession() {
         if (!active) return;
 
         const email = data?.email || "";
+        const avatarUrl =
+          typeof data?.avatarUrl === "string" && data.avatarUrl.trim()
+            ? data.avatarUrl.trim()
+            : null;
+
         setSession({
           loading: false,
           authenticated: Boolean(data?.authenticated),
@@ -63,6 +71,7 @@ export function usePlanifySession() {
           displayName: email
             ? formatDisplayNameFromEmail(email)
             : "Professora",
+          avatarUrl,
           planLabel: formatPlanLabel(data?.planKey, {
             isAdmin: data?.isAdmin,
             isOwner: data?.isOwner,

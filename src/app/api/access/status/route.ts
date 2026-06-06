@@ -4,6 +4,7 @@ import { getRequestAccessToken } from "../../../../server/auth/api-access";
 import { verifyPremiumAccess } from "../../../../server/auth/premium-access-service";
 import { resolveAdminAccess } from "../../../../server/auth/admin-access";
 import { isOwnerEmail } from "../../../../server/auth/owner-emails";
+import { resolveUserAvatarFromToken } from "../../../../server/auth/user-avatar";
 import { getSupabaseAdminClient } from "../../../../server/supabase/admin-client";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -127,6 +128,10 @@ export async function GET(request: NextRequest) {
     access.subscription?.planId ||
     null;
 
+  const avatarUrl = authenticated
+    ? await resolveUserAvatarFromToken(accessJwtToken)
+    : null;
+
   return NextResponse.json(
     {
       authenticated,
@@ -137,6 +142,7 @@ export async function GET(request: NextRequest) {
       isAdmin: Boolean(admin.isAdmin || isOwner),
       role: isOwner || admin.isAdmin ? "admin" : access.user?.role || "user",
       email,
+      avatarUrl,
       planKey,
       checkedAt: new Date().toISOString(),
     },

@@ -19,6 +19,8 @@ export type InclusaoAiPayload = {
   conteudo: string;
   observacoes?: string;
   classId?: string | null;
+  className?: string | null;
+  turma?: string | null;
   discipline?: string | null;
   disciplina?: string | null;
 };
@@ -63,6 +65,7 @@ export async function generateInclusaoWithAI(
     educationLevel: payload.etapaEnsino,
     content: payload.conteudo,
     observacoes: payload.observacoes,
+    turma: payload.turma || payload.className || undefined,
   });
 
   const tier = getModelTierForMaterialType(INCLUSAO_GENERATION_TYPE);

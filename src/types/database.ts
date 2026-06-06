@@ -581,6 +581,29 @@ export type Database = {
           updated_at?: string;
         }
       >;
+      teacher_classes: TableDefinition<
+        {
+          id: string;
+          user_id: string;
+          name: string;
+          created_at: string;
+          updated_at: string;
+        },
+        {
+          id?: string;
+          user_id: string;
+          name: string;
+          created_at?: string;
+          updated_at?: string;
+        },
+        {
+          id?: string;
+          user_id?: string;
+          name?: string;
+          created_at?: string;
+          updated_at?: string;
+        }
+      >;
       school_classes: TableDefinition<
         {
           id: string;
@@ -677,6 +700,7 @@ export type Database = {
           user_id: string;
           school_id: string | null;
           class_id: string | null;
+          class_name: string | null;
           discipline: string | null;
           tipo: string;
           title: string;
@@ -695,6 +719,7 @@ export type Database = {
           user_id: string;
           school_id?: string | null;
           class_id?: string | null;
+          class_name?: string | null;
           discipline?: string | null;
           tipo?: string;
           title?: string;
@@ -713,6 +738,7 @@ export type Database = {
           user_id?: string;
           school_id?: string | null;
           class_id?: string | null;
+          class_name?: string | null;
           discipline?: string | null;
           tipo?: string;
           title?: string;

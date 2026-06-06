@@ -102,6 +102,7 @@ export async function POST(request: NextRequest) {
         surface: "planning",
         tipo: String(payload.tipoPlanejamento || PLANNING_DEEP_GENERATION_TYPE),
         classId: payload.classId || null,
+        className: payload.className?.trim() || payload.turma?.trim() || null,
         discipline:
           payload.discipline?.trim() || payload.disciplina?.trim() || null,
         pipeline: result.usedAI ? "planning-ai" : "planning-fallback",

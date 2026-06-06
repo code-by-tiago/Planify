@@ -3,6 +3,7 @@ import type { PersistGeneratedMaterialInput } from "@/types/generated-material";
 import { extractBnccCodesFromPayload } from "../bncc/extract-bncc-codes";
 import { getSupabaseAdminClient } from "../supabase/admin-client";
 import { getPrimarySchoolIdForUser } from "../schools/school-access";
+import { upsertTeacherClass } from "../schools/teacher-classes-service";
 
 const PREVIEW_MAX_LENGTH = 2000;
 
@@ -30,6 +31,7 @@ export type PersistGenerationParams = {
   qualityScore?: number | null;
   schoolId?: string | null;
   classId?: string | null;
+  className?: string | null;
   discipline?: string | null;
   payload?: Record<string, unknown> | null;
   result?: Record<string, unknown> | null;
@@ -45,6 +47,7 @@ export async function persistGeneratedMaterial(
       user_id: input.userId,
       school_id: input.schoolId || null,
       class_id: input.classId || null,
+      class_name: input.className?.trim() || null,
       discipline: input.discipline?.trim() || null,
       tipo: String(input.tipo || "").slice(0, 120),
       title: String(input.title || "Sem título").slice(0, 500),
@@ -105,6 +108,15 @@ async function persistGenerationRecord(
       params.schoolId ||
       (params.userId ? await getPrimarySchoolIdForUser(params.userId) : null);
 
+    const className =
+      params.className?.trim() ||
+      String(params.payload?.className || params.payload?.turma || "").trim() ||
+      null;
+
+    if (params.userId && className && !schoolId && !params.classId) {
+      await upsertTeacherClass(params.userId, className).catch(() => null);
+    }
+
     const discipline =
       params.discipline?.trim() ||
       String(params.payload?.discipline || params.payload?.disciplina || "").trim() ||
@@ -137,6 +149,7 @@ async function persistGenerationRecord(
       userId: params.userId,
       schoolId,
       classId: params.classId || null,
+      className,
       discipline,
       tipo: params.tipo,
       title: title || params.tipo,

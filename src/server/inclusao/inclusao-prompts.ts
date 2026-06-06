@@ -89,6 +89,7 @@ export function buildInclusaoPrompt(params: {
   educationLevel: InclusaoEducationLevel;
   content: string;
   observacoes?: string;
+  turma?: string;
 }): string {
   const needLabel = getInclusaoNeedLabel(params.need);
   const modeLabel = getInclusaoModeLabel(params.mode);
@@ -105,12 +106,16 @@ export function buildInclusaoPrompt(params: {
     ? `\nObservações adicionais do professor:\n${params.observacoes.trim()}`
     : "";
 
+  const turmaBlock = params.turma?.trim()
+    ? `\nTurma: ${params.turma.trim()}`
+    : "";
+
   return `${modeInstructions(params.mode)}
 
 Necessidade educacional: ${needLabel}
 Técnicas prioritárias para esta necessidade: ${techniques}
 Etapa de ensino: ${params.educationLevel}
-Ferramenta: ${modeLabel}
+Ferramenta: ${modeLabel}${turmaBlock}
 
 ${contentBlock}${extras}
 

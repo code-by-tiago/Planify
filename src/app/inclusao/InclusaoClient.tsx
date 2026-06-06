@@ -27,7 +27,7 @@ import {
 } from "@/lib/inclusao/inclusao-client";
 import { getPlanifyTool } from "@/lib/pro/planifyTools";
 import { useSchoolClasses } from "@/hooks/useSchoolClasses";
-import { TurmaSelect } from "@/components/school/TurmaSelect";
+import { TurmaCombobox } from "@/components/school/TurmaCombobox";
 import {
   HUD_CHIP_INACTIVE,
   HUD_FIELD_CLASS,
@@ -107,13 +107,18 @@ export function InclusaoClient({
     setResultadoMarkdown("");
 
     try {
+      const turma = school.turmaPayload;
+      if (turma.className) {
+        void school.rememberPersonalClass(turma.className);
+      }
+
       const result = await requestInclusaoGeneration({
         modo,
         necessidade,
         etapaEnsino,
         conteudo: trimmed,
         observacoes: observacoes.trim() || undefined,
-        classId: school.classId,
+        ...turma,
         discipline: school.selectedClass?.discipline?.trim() || undefined,
         disciplina: school.selectedClass?.discipline?.trim() || undefined,
       });
@@ -293,7 +298,7 @@ export function InclusaoClient({
             </div>
           ) : null}
 
-          <TurmaSelect school={school} />
+          <TurmaCombobox school={school} listId="inclusao-turma-suggestions" />
 
           <DailyGenerationsBar tipoMaterial={INCLUSAO_GENERATION_TYPE} compact />
 

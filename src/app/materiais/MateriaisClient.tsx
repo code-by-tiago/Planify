@@ -69,7 +69,7 @@ import {
 import { downloadEditorExport } from "@/lib/downloads/editor-export-client";
 import { lessonBundleFollowUp } from "@/lib/pro/teachyStudio";
 import { useSchoolClasses } from "@/hooks/useSchoolClasses";
-import { TurmaSelect } from "@/components/school/TurmaSelect";
+import { TurmaCombobox } from "@/components/school/TurmaCombobox";
 
 const SELECT_FIELD_CLASS = HUD_FIELD_CLASS;
 
@@ -636,7 +636,7 @@ export function MateriaisClient({
       incluirGabarito: showGabarito && incluirGabarito,
       areaConhecimento,
       designSlides: tipo === "slides" ? designSlides : undefined,
-      classId: school.classId,
+      ...school.turmaPayload,
       discipline: componente.trim() || undefined,
       disciplina: componente.trim() || undefined,
       ...overrides,
@@ -794,6 +794,11 @@ export function MateriaisClient({
     setHintFeedback("");
 
     try {
+      const turma = school.turmaPayload;
+      if (turma.className) {
+        void school.rememberPersonalClass(turma.className);
+      }
+
       const payload = buildGenerationPayload();
       setLastGenerationPayload(payload);
 
@@ -1090,7 +1095,7 @@ export function MateriaisClient({
               </select>
             </label>
 
-            <TurmaSelect school={school} className="md:col-span-2" />
+            <TurmaCombobox school={school} className="md:col-span-2" listId="materiais-turma-suggestions" />
 
             <label className="md:col-span-2">
               <span className="mb-2 flex flex-wrap items-center justify-between gap-2">

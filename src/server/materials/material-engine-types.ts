@@ -78,6 +78,8 @@ export type MaterialEngineInput = {
   elevarQualidade?: boolean;
   problemasQualidade?: string[];
   classId?: string | null;
+  className?: string | null;
+  turma?: string | null;
   discipline?: string | null;
   disciplina?: string | null;
 };

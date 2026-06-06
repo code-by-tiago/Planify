@@ -7,7 +7,7 @@ import { MarketplacePublishButton } from "@/components/marketplace/MarketplacePu
 import { PlanifyOwlGenerationCoach } from "@/components/pro/PlanifyOwlGenerationCoach";
 import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
 import { useSchoolClasses } from "@/hooks/useSchoolClasses";
-import { TurmaSelect } from "@/components/school/TurmaSelect";
+import { TurmaCombobox } from "@/components/school/TurmaCombobox";
 import { PlanifyPageHero } from "@/components/pro/PlanifyPageHero";
 import { usePlanifyWorkspace } from "@/components/pro/planify-workspace-context";
 import { HUD_FIELD_CLASS, HUD_TEXTAREA_CLASS } from "@/lib/pro/hud-form-styles";
@@ -543,7 +543,7 @@ export function PlanejamentosClient() {
         componente: skill.componente || form.componenteCurricular,
         conteudo: skill.conteudo,
       })),
-      classId: school.classId,
+      ...school.turmaPayload,
       discipline: form.componenteCurricular.trim() || undefined,
       disciplina: form.componenteCurricular.trim() || undefined,
     };
@@ -646,6 +646,11 @@ export function PlanejamentosClient() {
     setStatus("Gerando matriz pedagógica com IA...");
 
     try {
+      const turma = school.turmaPayload;
+      if (turma.className) {
+        void school.rememberPersonalClass(turma.className);
+      }
+
       const payload = buildBasePayload();
       const data = await requestPlanningGeneration(payload);
 
@@ -1112,7 +1117,7 @@ export function PlanejamentosClient() {
                   ))}
                 </select>
               </label>
-              <TurmaSelect school={school} className="grid gap-2 md:col-span-2" />
+              <TurmaCombobox school={school} className="grid gap-2 md:col-span-2" listId="planejamentos-turma-suggestions" />
               <label className="grid gap-2">
                 <span className="text-sm font-bold text-slate-500">Carga horária</span>
                 <input value={form.cargaHoraria} onChange={(event) => updateField("cargaHoraria", event.target.value)} placeholder="Ex.: 80 períodos" className={HUD_FIELD_CLASS} />

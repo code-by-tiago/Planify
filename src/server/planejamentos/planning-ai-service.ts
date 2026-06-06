@@ -38,6 +38,8 @@ export type PlanningAiPayload = {
   elevarQualidade?: boolean;
   problemasQualidade?: string[];
   classId?: string | null;
+  className?: string | null;
+  turma?: string | null;
   discipline?: string | null;
   disciplina?: string | null;
 };
@@ -560,6 +562,7 @@ Dados:
 - Componente: ${normalizeText(payload.componenteCurricular)}
 - Carga horária: ${normalizeText(payload.cargaHoraria)}
 - Trimestre: ${normalizeText(payload.trimestre)}
+- Turma: ${normalizeText(payload.turma || payload.className) || "Não informada"}
 - Conteúdos, um por linha:
 ${conteudos.map((item, index) => `${index + 1}. ${item}`).join("\n")}
 

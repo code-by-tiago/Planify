@@ -51,6 +51,9 @@ function buildObservacoes(
   const parts = [
     elevateNote,
     typeof payload.observacoes === "string" ? payload.observacoes.trim() : "",
+    payload.turma || payload.className
+      ? `Turma: ${String(payload.turma || payload.className).trim()}.`
+      : "",
     `Quantidade solicitada: ${request.quantidade}.`,
     `Dificuldade: ${request.dificuldade}.`,
     request.incluirGabarito
@@ -108,6 +111,12 @@ export function engineRequestToMaterialAI(
     conteudos,
     orientacoes: buildObjetivos(request, payload),
     observacoes: buildObservacoes(request, payload),
+    contextoTurma:
+      typeof payload.turma === "string"
+        ? payload.turma.trim()
+        : typeof payload.className === "string"
+          ? payload.className.trim()
+          : undefined,
     criteriosAvaliacaoPersonalizados: request.incluirGabarito
       ? "Incluir critérios de avaliação detalhados e gabarito comentado."
       : "Sem gabarito na versão do aluno.",

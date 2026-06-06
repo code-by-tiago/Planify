@@ -6,6 +6,7 @@ export type PersistGeneratedMaterialInput = {
   userId: string;
   schoolId?: string | null;
   classId?: string | null;
+  className?: string | null;
   discipline?: string | null;
   tipo: string;
   title: string;

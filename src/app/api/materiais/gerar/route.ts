@@ -138,6 +138,7 @@ export async function POST(request: NextRequest) {
         surface: "material",
         tipo: String(result.data.tipoMaterial || tipo),
         classId: payload.classId || null,
+        className: payload.className?.trim() || payload.turma?.trim() || null,
         discipline:
           payload.discipline?.trim() || payload.disciplina?.trim() || null,
         contentHtml: result.data.html,

@@ -41,11 +41,9 @@ as $$
     select 1
     from public.profiles p
     where p.id = auth.uid()
-      and p.status = 'active'
       and (
-        p.role in ('owner', 'admin')
-        or p.is_admin = true
-        or p.is_owner = true
+        p.is_admin = true
+        or p.role in ('owner', 'admin')
       )
   );
 $$;
@@ -60,12 +58,9 @@ as $$
   select exists (
     select 1
     from public.subscriptions s
-    join public.plans p on p.id = s.plan_id
     where s.user_id = target_user_id
-      and s.status = 'active'
+      and s.status in ('active', 'trialing')
       and coalesce(s.current_period_end, now() + interval '1 day') > now()
-      and p.is_active = true
-      and p.price_in_cents > 0
   );
 $$;
 

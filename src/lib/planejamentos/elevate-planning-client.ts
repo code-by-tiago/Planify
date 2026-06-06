@@ -1,0 +1,50 @@
+import type {
+  PlanningAiPayload,
+  PlanningAiResult,
+} from "@/server/planejamentos/planning-ai-service";
+
+export type PlanningGenerationApiResult = PlanningAiResult & {
+  success?: boolean;
+  code?: string;
+  error?: { message?: string };
+};
+
+export async function requestPlanningGeneration(
+  payload: PlanningAiPayload,
+): Promise<PlanningGenerationApiResult> {
+  const response = await fetch("/api/planejamentos/gerar-ia", {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  const data = (await response.json().catch(() => null)) as PlanningGenerationApiResult | null;
+
+  if (!response.ok || !data?.success || !data?.planejamento) {
+    const message = data?.error?.message || "Não foi possível gerar o planejamento.";
+    const error = new Error(message) as Error & { code?: string };
+    if (data?.code) error.code = data.code;
+    if (
+      !data?.code &&
+      response.status === 429 &&
+      message.includes("gerações profundas")
+    ) {
+      error.code = "daily_limit_reached";
+    }
+    throw error;
+  }
+
+  return data;
+}
+
+export function buildElevatePlanningPayload(
+  base: PlanningAiPayload,
+  problemas: string[],
+): PlanningAiPayload {
+  return {
+    ...base,
+    elevarQualidade: true,
+    problemasQualidade: problemas,
+  };
+}

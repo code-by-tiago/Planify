@@ -15,6 +15,15 @@ import {
 import { isSlideDeckHtml } from "@/lib/slides/slide-deck-utils";
 import { MaterialQualityScoreBar } from "@/components/materiais/MaterialQualityScoreBar";
 import {
+  buildElevatePlanningPayload,
+  requestPlanningGeneration,
+} from "@/lib/planejamentos/elevate-planning-client";
+import {
+  buildPlanningEditorHtml,
+  planningPayloadToHtmlContext,
+} from "@/lib/planejamentos/planning-editor-html";
+import type { PlanningEditorMeta } from "@/lib/planejamentos/planning-editor-flow";
+import {
   buildElevatePayload,
   requestMaterialGeneration,
 } from "@/lib/materiais/elevate-material-client";
@@ -328,10 +337,37 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
     return raw?.raw ?? null;
   }, [documentSource]);
 
+  const planningMeta = useMemo((): PlanningEditorMeta | null => {
+    const raw = documentSource?.payload as
+      | { raw?: PlanningEditorMeta & { matrizPlanejamento?: unknown } }
+      | undefined;
+    const meta = raw?.raw;
+    if (!meta?.tipoPlanejamento && !meta?.componente) return null;
+    if (String(documentSource?.type || "").includes("material")) return null;
+    return meta;
+  }, [documentSource]);
+
   const canElevateMaterial = Boolean(
     materialMeta?.generationPayload &&
       String(documentSource?.type || "").includes("material"),
   );
+
+  const canElevatePlanning = Boolean(
+    planningMeta?.generationPayload &&
+      String(documentSource?.type || "").includes("planejamento"),
+  );
+
+  const canElevateDocument = canElevateMaterial || canElevatePlanning;
+
+  const documentQualityScore =
+    typeof materialMeta?.qualityScore === "number"
+      ? materialMeta.qualityScore
+      : typeof planningMeta?.qualityScore === "number"
+        ? planningMeta.qualityScore
+        : null;
+
+  const documentQualityIssues =
+    materialMeta?.qualityIssues ?? planningMeta?.qualityIssues ?? [];
 
   function syncSlideDeckFlags(html: string, stored?: StoredEditorDocument | null) {
     const raw = stored?.payload as { raw?: MaterialEditorMeta } | undefined;
@@ -870,6 +906,106 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
     } finally {
       setElevatingQuality(false);
     }
+  }
+
+  async function elevarQualidadePlanejamentoNoEditor() {
+    const base = planningMeta?.generationPayload;
+    if (!base) {
+      setStatus("Abra um planejamento gerado pelo Planify para elevar a qualidade.");
+      return;
+    }
+
+    setElevatingQuality(true);
+    setStatus("Regenerando matriz com foco em qualidade...");
+
+    try {
+      const problemas = [
+        ...(planningMeta?.qualityIssues ?? []),
+        ...(typeof planningMeta?.qualityScore === "number" && planningMeta.qualityScore < 90
+          ? ["Elevar especificidade da matriz, metodologias e avaliações por conteúdo."]
+          : []),
+      ];
+      const payload = buildElevatePlanningPayload(base, problemas);
+      const data = await requestPlanningGeneration(payload);
+      const planning = data.planejamento;
+      const html = buildPlanningEditorHtml(planningPayloadToHtmlContext(payload), planning);
+
+      if (editorRef.current) {
+        editorRef.current.innerHTML = html;
+        prepareImagesInsideEditor();
+        updateWordCount();
+        syncSlideDeckFlags(html, documentSource);
+        seedUndoStack(html);
+      }
+
+      const nextMeta: PlanningEditorMeta = {
+        ...(planningMeta ?? {
+          etapa: "",
+          anoSerie: "",
+          componente: "",
+          tipoPlanejamento: "anual",
+        }),
+        qualityScore:
+          typeof data.qualityScore === "number" ? data.qualityScore : null,
+        qualityIssues: Array.isArray(data.qualityIssues)
+          ? data.qualityIssues.map((item) => String(item)).filter(Boolean)
+          : [],
+        generationPayload: payload,
+      };
+
+      const source = documentSource;
+      const saved = syncOpenDocumentToHistory({
+        title: planning.titulo || title.trim() || "Planejamento",
+        content: html,
+        type: source?.type || `planejamento:${payload.tipoPlanejamento || "anual"}`,
+        payload: {
+          source: "planejamento",
+          raw: { ...nextMeta, matrizPlanejamento: planning },
+          id: (source?.payload as { id?: string } | undefined)?.id,
+        },
+      });
+
+      setDocumentSource({
+        type: saved.type,
+        title: saved.title,
+        html: saved.content,
+        content: saved.content,
+        payload: {
+          source: saved.source,
+          subtitle: saved.subtitle,
+          raw: { ...nextMeta, matrizPlanejamento: planning },
+          id: saved.id,
+        },
+        updatedAt: saved.updatedAt,
+      });
+
+      setTitle(saved.title);
+      window.dispatchEvent(new Event("planify:credits-changed"));
+      setStatus("Qualidade elevada — revise o planejamento antes de exportar.");
+    } catch (error) {
+      const code =
+        error instanceof Error && "code" in error
+          ? String((error as Error & { code?: string }).code || "")
+          : "";
+      if (code === "daily_limit_reached") {
+        window.dispatchEvent(new Event("planify:credits-changed"));
+      }
+      setStatus(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível elevar a qualidade do planejamento.",
+      );
+    } finally {
+      setElevatingQuality(false);
+    }
+  }
+
+  function elevarQualidadeDocumentoNoEditor() {
+    if (canElevatePlanning) {
+      void elevarQualidadePlanejamentoNoEditor();
+      return;
+    }
+    void elevarQualidadeNoEditor();
   }
 
   function persistCurrentDocument(message = "Documento salvo.") {
@@ -1625,10 +1761,10 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
               <button type="button" onClick={downloadPdfReal} className={actionBtnClass}>
                 PDF
               </button>
-              {canElevateMaterial ? (
+              {canElevateDocument ? (
                 <button
                   type="button"
-                  onClick={() => void elevarQualidadeNoEditor()}
+                  onClick={() => void elevarQualidadeDocumentoNoEditor()}
                   disabled={elevatingQuality}
                   className="rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-black text-indigo-800 transition hover:bg-indigo-100 disabled:cursor-not-allowed disabled:opacity-60"
                 >
@@ -1717,10 +1853,10 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
                   Baixar HTML
                 </button>
 
-                {canElevateMaterial ? (
+                {canElevateDocument ? (
                   <button
                     type="button"
-                    onClick={() => void elevarQualidadeNoEditor()}
+                    onClick={() => void elevarQualidadeDocumentoNoEditor()}
                     disabled={elevatingQuality}
                     className="rounded-2xl border border-indigo-200 bg-indigo-50 px-5 py-3 text-sm font-black text-indigo-800 transition hover:bg-indigo-100 disabled:cursor-not-allowed disabled:opacity-60"
                   >
@@ -1729,14 +1865,14 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
                 ) : null}
               </div>
 
-              {typeof materialMeta?.qualityScore === "number" ? (
+              {typeof documentQualityScore === "number" ? (
                 <div className="mt-5">
                   <MaterialQualityScoreBar
-                    score={materialMeta.qualityScore}
-                    issues={materialMeta.qualityIssues ?? []}
+                    score={documentQualityScore}
+                    issues={documentQualityIssues}
                     onElevate={
-                      canElevateMaterial
-                        ? () => void elevarQualidadeNoEditor()
+                      canElevateDocument
+                        ? () => void elevarQualidadeDocumentoNoEditor()
                         : undefined
                     }
                     elevating={elevatingQuality}

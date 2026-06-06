@@ -2,6 +2,8 @@ import {
   createEditorDocument,
   saveEditorDocument,
 } from "@/lib/editor/editor-storage";
+import type { PlanningAiPayload } from "@/server/planejamentos/planning-ai-service";
+
 export const AUTO_PLANNING_EDITOR_PREF_KEY = "planify:planejamentos:auto-editor";
 
 export type PlanningEditorMeta = {
@@ -11,6 +13,9 @@ export type PlanningEditorMeta = {
   tipoPlanejamento: string;
   escola?: string;
   professor?: string;
+  generationPayload?: PlanningAiPayload | null;
+  qualityScore?: number | null;
+  qualityIssues?: string[];
 };
 
 export function readAutoOpenPlanningEditorPreference(): boolean {

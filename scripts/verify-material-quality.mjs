@@ -202,9 +202,28 @@ function testDailyQuotaMigrationContract() {
   }
 }
 
+function testSeedPromptBlocks() {
+  const regencia = resolveDisciplineTopicGuidance({
+    tema: "Regência do verbo transitivo",
+    componenteCurricular: "Língua Portuguesa",
+  });
+  assert.ok(regencia);
+  assert.equal(regencia.seedId, "lp-regencia");
+  assert.match(regencia.promptBlock, /regência/i);
+
+  const fotossintese = resolveDisciplineTopicGuidance({
+    tema: "Processo de fotossíntese nas plantas",
+    componenteCurricular: "Ciências",
+  });
+  assert.ok(fotossintese);
+  assert.equal(fotossintese.seedId, "ciencias-fotossintese");
+  assert.match(fotossintese.promptBlock, /fotossíntese|clorof/i);
+}
+
 function main() {
   testCraseSeed();
   testExpandedSeeds();
+  testSeedPromptBlocks();
   testQualityScore();
   testPlanningQuality();
   testDailyQuotaMigrationContract();

@@ -1,4 +1,5 @@
 import { getModelTierForPlanning } from "@/lib/ai/material-generation-policy";
+import { buildElevateQualityObservacoes } from "@/lib/materiais/material-quality-score";
 import { generateGeminiJSON } from "../ai/gemini-client";
 import {
   buildPlanningQualityRetryNote,
@@ -34,6 +35,8 @@ export type PlanningAiPayload = {
   objetivos?: string;
   observacoes?: string;
   habilidadesSelecionadas?: PlanningSkill[];
+  elevarQualidade?: boolean;
+  problemasQualidade?: string[];
 };
 
 export type PlanningMatrixItem = {
@@ -536,6 +539,11 @@ function buildPlanningPrompt(
     ? payload.habilidadesSelecionadas.map(normalizeSkill)
     : [];
 
+  const elevateBlock =
+    payload.elevarQualidade || payload.problemasQualidade?.length
+      ? `\n\n${buildElevateQualityObservacoes(payload.problemasQualidade ?? [])}`
+      : "";
+
   return `
 Você é uma IA especialista em planejamento pedagógico brasileiro.
 
@@ -597,7 +605,7 @@ Formato:
     ]
   }
 }
-${extraNote ? `\n\n${extraNote}` : ""}
+${elevateBlock}${extraNote ? `\n\n${extraNote}` : ""}
 `.trim();
 }
 

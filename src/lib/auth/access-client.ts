@@ -43,3 +43,33 @@ export async function clearPremiumAccessCookie(): Promise<void> {
     credentials: "include",
   });
 }
+
+export type PlanifyAccessStatus = {
+  authenticated: boolean;
+  premium: boolean;
+  email?: string;
+  message?: string;
+};
+
+export async function fetchPlanifyAccessStatus(
+  accessToken?: string | null,
+): Promise<PlanifyAccessStatus> {
+  const headers: HeadersInit = accessToken
+    ? { Authorization: `Bearer ${accessToken}` }
+    : {};
+
+  const response = await fetch("/api/access/status", {
+    cache: "no-store",
+    credentials: "include",
+    headers,
+  });
+
+  const data = (await response.json().catch(() => null)) as PlanifyAccessStatus | null;
+
+  return {
+    authenticated: Boolean(data?.authenticated),
+    premium: Boolean(data?.premium),
+    email: data?.email,
+    message: data?.message,
+  };
+}

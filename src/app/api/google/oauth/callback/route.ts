@@ -44,6 +44,31 @@ export async function GET(request: NextRequest) {
   const stateRaw = request.nextUrl.searchParams.get("state");
   const state = stateRaw ? verifyGoogleOAuthState(stateRaw) : null;
 
+  // #region agent log
+  fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Debug-Session-Id": "920c67",
+    },
+    body: JSON.stringify({
+      sessionId: "920c67",
+      runId: "google-oauth-pre-fix",
+      hypothesisId: "B",
+      location: "oauth/callback/route.ts:GET",
+      message: "oauth callback received",
+      data: {
+        hasCode: Boolean(code),
+        hasStateRaw: Boolean(stateRaw),
+        stateValid: Boolean(state),
+        returnTo: state?.returnTo || null,
+        oauthError: error || null,
+      },
+      timestamp: Date.now(),
+    }),
+  }).catch(() => {});
+  // #endregion
+
   if (!code || !state) {
     return redirectWith(request, "/editor", {
       google_error: "Resposta OAuth inválida. Tente conectar de novo.",
@@ -54,14 +79,38 @@ export async function GET(request: NextRequest) {
     const tokens = await exchangeGoogleAuthCode(code);
     await saveGoogleTokensForUser(state.userId, tokens);
 
-    return redirectWith(request, state.returnTo || "/editor", {
+    // #region agent log
+    fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Debug-Session-Id": "920c67",
+      },
+      body: JSON.stringify({
+        sessionId: "920c67",
+        runId: "google-oauth-pre-fix",
+        hypothesisId: "D",
+        location: "oauth/callback/route.ts:success",
+        message: "oauth success redirect",
+        data: {
+          returnTo: state.returnTo || "/editor",
+          userId: state.userId,
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
+
+    return redirectWith(request, "/google/retorno", {
+      returnTo: state.returnTo || "/dashboard?secao=editor",
       google: "connected",
     });
   } catch (err) {
     const message =
       err instanceof Error ? err.message : "Erro ao conectar conta Google.";
 
-    return redirectWith(request, state.returnTo || "/editor", {
+    return redirectWith(request, "/google/retorno", {
+      returnTo: state.returnTo || "/dashboard?secao=editor",
       google_error: message,
     });
   }

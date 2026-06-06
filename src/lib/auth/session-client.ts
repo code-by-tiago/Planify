@@ -251,16 +251,22 @@ export async function getCurrentAccessToken(): Promise<string | null> {
 }
 
 /** Renova cookies httpOnly quando o Supabase ainda tem sessão ativa. */
-export async function ensurePremiumSessionCookies(): Promise<void> {
-  const token = await getCurrentAccessToken();
+export async function ensurePremiumSessionCookies(): Promise<boolean> {
+  const supabase = getSupabaseBrowserClient();
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+
   if (!token) {
-    return;
+    return false;
   }
 
   try {
-    await syncPremiumAccessCookie(token);
+    const cookieResult = await syncPremiumAccessCookie(token);
     await createOwnerSession(token);
+    return Boolean(
+      cookieResult?.access?.authenticated || cookieResult?.success,
+    );
   } catch {
-    // Mantém fluxo mesmo se a sincronização falhar — Bearer cobre downloads.
+    return false;
   }
 }

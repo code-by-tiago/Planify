@@ -7,6 +7,11 @@ import {
   buildPlansRedirect,
   getCurrentPathWithSearch,
 } from "@/lib/auth/premium-gate";
+import { fetchPlanifyAccessStatus } from "@/lib/auth/access-client";
+import {
+  ensurePremiumSessionCookies,
+  getCurrentAccessToken,
+} from "@/lib/auth/session-client";
 
 type AccessStatus = {
   authenticated: boolean;
@@ -58,18 +63,64 @@ export function PremiumRouteGuard() {
       setChecking(true);
 
       try {
-        const response = await fetch("/api/access/status", {
-          cache: "no-store",
-          credentials: "include",
-        });
-
-        const data = (await response.json()) as AccessStatus;
+        const supabaseToken = await getCurrentAccessToken();
+        await ensurePremiumSessionCookies();
+        const data = (await fetchPlanifyAccessStatus(
+          supabaseToken,
+        )) as AccessStatus;
 
         if (!active) return;
 
         const currentPath = getCurrentPathWithSearch(pathname);
 
-        if (!response.ok || !data.authenticated) {
+        // #region agent log
+        fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Debug-Session-Id": "920c67",
+          },
+          body: JSON.stringify({
+            sessionId: "920c67",
+            runId: "google-oauth-post-fix-v2",
+            hypothesisId: "A",
+            location: "PremiumRouteGuard.tsx:checkAccess",
+            message: "access status after OAuth return",
+            data: {
+              pathname,
+              currentPath,
+              authenticated: Boolean(data.authenticated),
+              premium: Boolean(data.premium),
+              hasSupabaseToken: Boolean(supabaseToken),
+              search: typeof window !== "undefined" ? window.location.search : "",
+            },
+            timestamp: Date.now(),
+          }),
+        }).catch(() => {});
+        // #endregion
+
+        if (!data.authenticated) {
+          // #region agent log
+          fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-Debug-Session-Id": "920c67",
+            },
+            body: JSON.stringify({
+              sessionId: "920c67",
+              runId: "google-oauth-post-fix-v2",
+              hypothesisId: "A",
+              location: "PremiumRouteGuard.tsx:redirectLogin",
+              message: "redirecting to site login",
+              data: {
+                currentPath,
+                hasSupabaseToken: Boolean(supabaseToken),
+              },
+              timestamp: Date.now(),
+            }),
+          }).catch(() => {});
+          // #endregion
           window.location.href = buildLoginRedirect(currentPath);
           return;
         }

@@ -9,6 +9,11 @@ import {
   buildPlansRedirect,
   getCurrentPathWithSearch,
 } from "@/lib/auth/premium-gate";
+import { fetchPlanifyAccessStatus } from "@/lib/auth/access-client";
+import {
+  ensurePremiumSessionCookies,
+  getCurrentAccessToken,
+} from "@/lib/auth/session-client";
 
 type GateStatus = {
   loading: boolean;
@@ -47,33 +52,22 @@ export default function PremiumAccessGate({
 
     async function loadAccess() {
       try {
-        const response = await fetch("/api/access/status", {
-          method: "GET",
-          cache: "no-store",
-          credentials: "include",
-        });
-
-        const data = (await response.json().catch(() => null)) as
-          | {
-              authenticated?: boolean;
-              premium?: boolean;
-              email?: string;
-              message?: string;
-            }
-          | null;
+        const token = await getCurrentAccessToken();
+        await ensurePremiumSessionCookies();
+        const data = await fetchPlanifyAccessStatus(token);
 
         if (!active) return;
 
         setStatus({
           loading: false,
-          authenticated: Boolean(data?.authenticated),
-          premium: Boolean(data?.premium),
-          email: data?.email || "",
+          authenticated: Boolean(data.authenticated),
+          premium: Boolean(data.premium),
+          email: data.email || "",
           message:
-            data?.message ||
-            (data?.premium
+            data.message ||
+            (data.premium
               ? "Acesso premium confirmado."
-              : data?.authenticated
+              : data.authenticated
                 ? "Este e-mail ainda não possui plano ativo."
                 : "Entre com o e-mail da sua conta Planify para continuar."),
         });

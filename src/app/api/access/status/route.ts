@@ -1,8 +1,9 @@
 import { Buffer } from "node:buffer";
 import { NextRequest, NextResponse } from "next/server";
+import { getRequestAccessToken } from "../../../../server/auth/api-access";
 import { verifyPremiumAccess } from "../../../../server/auth/premium-access-service";
 import { resolveAdminAccess } from "../../../../server/auth/admin-access";
-import { getOwnerEmails, isOwnerEmail } from "../../../../server/auth/owner-emails";
+import { isOwnerEmail } from "../../../../server/auth/owner-emails";
 import { getSupabaseAdminClient } from "../../../../server/supabase/admin-client";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -79,14 +80,15 @@ async function resolveOwnerByToken(token: string | null) {
 }
 
 export async function GET(request: NextRequest) {
+  const bearerToken = getRequestAccessToken(request);
   const sessionToken = request.cookies.get("planify_session")?.value || null;
   const premiumToken = request.cookies.get(PREMIUM_COOKIE_NAME)?.value || null;
   const adminToken = request.cookies.get(ADMIN_COOKIE_NAME)?.value || null;
   const ownerToken = request.cookies.get(OWNER_COOKIE_NAME)?.value || null;
 
   const accessJwtToken =
+    (bearerToken && looksLikeJwt(bearerToken) ? bearerToken : null) ||
     (sessionToken && looksLikeJwt(sessionToken) ? sessionToken : null) ||
-    (looksLikeJwt(premiumToken) ? premiumToken : null) ||
     (looksLikeJwt(ownerToken) ? ownerToken : null) ||
     (looksLikeJwt(adminToken) ? adminToken : null);
   const access = await verifyPremiumAccess(accessJwtToken);

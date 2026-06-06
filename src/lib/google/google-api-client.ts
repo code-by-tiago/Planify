@@ -55,6 +55,30 @@ export async function startGoogleOAuth(returnTo = "/editor"): Promise<void> {
 
   const data = await response.json().catch(() => null);
 
+  // #region agent log
+  fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Debug-Session-Id": "920c67",
+    },
+    body: JSON.stringify({
+      sessionId: "920c67",
+      runId: "google-oauth-pre-fix",
+      hypothesisId: "E",
+      location: "google-api-client.ts:startGoogleOAuth",
+      message: "oauth start client response",
+      data: {
+        returnTo,
+        status: response.status,
+        ok: response.ok,
+        hasUrl: Boolean(data?.url),
+      },
+      timestamp: Date.now(),
+    }),
+  }).catch(() => {});
+  // #endregion
+
   if (response.ok && data?.url) {
     window.location.href = data.url;
     return;

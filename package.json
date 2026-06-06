@@ -7,7 +7,8 @@
     "build": "next build --webpack",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "verify:material-quality": "node scripts/verify-material-quality.mjs"
+    "verify:material-quality": "node scripts/verify-material-quality.mjs",
+    "bncc:import": "node scripts/bncc/import-bncc-skills.mjs"
   },
   "dependencies": {
     "@google/genai": "^2.8.0",

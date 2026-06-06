@@ -1,5 +1,4 @@
-import fs from "node:fs";
-import path from "node:path";
+import { readBNCCSkills } from "./bncc-service";
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -422,70 +421,39 @@ function normalizeCandidate(value: unknown, source: "local" | "fallback"): Skill
   };
 }
 
-function getJsonFiles(dir: string): string[] {
-  if (!fs.existsSync(dir)) {
-    return [];
-  }
+let cachedCatalogSkills: SkillCandidate[] | null = null;
 
-  const entries = fs.readdirSync(dir, { withFileTypes: true });
-  const files: string[] = [];
-
-  for (const entry of entries) {
-    const full = path.join(dir, entry.name);
-
-    if (entry.isDirectory()) {
-      files.push(...getJsonFiles(full));
-      continue;
-    }
-
-    if (entry.isFile() && entry.name.toLowerCase().endsWith(".json")) {
-      files.push(full);
-    }
-  }
-
-  return files;
+function bnccSkillToCandidate(skill: {
+  codigo: string;
+  descricao: string;
+  etapa?: string;
+  ano?: string;
+  serie?: string;
+  areaConhecimento?: string;
+  componente?: string;
+}): SkillCandidate {
+  return {
+    codigo: skill.codigo,
+    descricao: skill.descricao,
+    etapa: skill.etapa,
+    anoSerie: skill.ano || skill.serie,
+    area: skill.areaConhecimento,
+    componente: skill.componente,
+    rawText: [skill.codigo, skill.descricao, skill.componente, skill.areaConhecimento]
+      .filter(Boolean)
+      .join(" "),
+    source: "local",
+  };
 }
 
-let cachedLocalSkills: SkillCandidate[] | null = null;
-
-function loadLocalSkills(): SkillCandidate[] {
-  if (cachedLocalSkills) {
-    return cachedLocalSkills;
+async function loadCatalogSkills(): Promise<SkillCandidate[]> {
+  if (cachedCatalogSkills) {
+    return cachedCatalogSkills;
   }
 
-  const bnccDir = path.join(process.cwd(), "data", "bncc");
-  const jsonFiles = getJsonFiles(bnccDir).slice(0, 30);
-  const skills: SkillCandidate[] = [];
-
-  for (const file of jsonFiles) {
-    try {
-      const json = JSON.parse(fs.readFileSync(file, "utf8"));
-      const flattened = flatten(json);
-
-      for (const item of flattened) {
-        const skill = normalizeCandidate(item, "local");
-
-        if (skill) {
-          skills.push(skill);
-        }
-      }
-    } catch {
-      // Ignora JSON inválido sem travar a sugestão.
-    }
-  }
-
-  const unique = new Map<string, SkillCandidate>();
-
-  for (const skill of skills) {
-    const key = `${skill.codigo}-${skill.descricao}`;
-
-    if (!unique.has(key)) {
-      unique.set(key, skill);
-    }
-  }
-
-  cachedLocalSkills = Array.from(unique.values());
-  return cachedLocalSkills;
+  const skills = await readBNCCSkills();
+  cachedCatalogSkills = skills.map(bnccSkillToCandidate);
+  return cachedCatalogSkills;
 }
 
 function expandTerms(content: string): string[] {
@@ -1019,7 +987,7 @@ function chooseForContent(
   );
 }
 
-export function suggestBnccByConteudos(payload: BnccSuggestionPayload) {
+export async function suggestBnccByConteudos(payload: BnccSuggestionPayload) {
   const conteudos = extractConteudosFromPayload(payload);
 
   if (conteudos.length === 0) {
@@ -1032,7 +1000,7 @@ export function suggestBnccByConteudos(payload: BnccSuggestionPayload) {
     };
   }
 
-  const localSkills = loadLocalSkills();
+  const localSkills = await loadCatalogSkills();
 
   if (isSpanishComponent(payload) && isHighSchoolPayload(payload)) {
     return buildSpanishHighSchoolResponse(payload, conteudos);

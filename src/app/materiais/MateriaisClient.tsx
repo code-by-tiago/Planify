@@ -35,14 +35,10 @@ import {
 } from "@/lib/pro/hud-form-styles";
 import {
   DEFAULT_MATERIAL_EDUCATION,
-  EDUCATION_STAGES,
   educationDefaultsForTool,
-  getAreaOptions,
-  getComponentOptions,
-  getYearOptions,
-  normalizeMaterialEducation,
   type MaterialEducationFields,
 } from "@/lib/educacao/education-options";
+import { useBnccEducationOptions } from "@/hooks/useBnccEducationOptions";
 import { toolSupportsGabarito } from "@/lib/educacao/material-form-config";
 import {
   defaultQuantityForTool,
@@ -410,29 +406,36 @@ export function MateriaisClient({
   const isRedacao = tipo === "redacao";
   const showGabarito = toolSupportsGabarito(tipo);
 
-  const yearOptions = useMemo(() => getYearOptions(etapa), [etapa]);
-  const areaOptions = useMemo(() => getAreaOptions(etapa), [etapa]);
-  const componentOptions = useMemo(
-    () => getComponentOptions(etapa, areaConhecimento),
-    [etapa, areaConhecimento],
+  const educationFields = useMemo(
+    () => ({ etapa, anoSerie, areaConhecimento, componente }),
+    [etapa, anoSerie, areaConhecimento, componente],
   );
+
+  const {
+    stageOptions,
+    yearOptions,
+    areaOptions,
+    componentOptions,
+    applyEducation,
+  } = useBnccEducationOptions(educationFields, (next) => {
+    setEtapa(next.etapa);
+    setAnoSerie(next.anoSerie);
+    setAreaConhecimento(next.areaConhecimento);
+    setComponente(next.componente);
+  });
+
   const quantityPresets = useMemo(() => getQuantityPresets(tipo), [tipo]);
-
-  function currentEducation(): MaterialEducationFields {
-    return { etapa, anoSerie, areaConhecimento, componente };
-  }
-
-  function applyEducation(patch: Partial<MaterialEducationFields>) {
-    const normalized = normalizeMaterialEducation(currentEducation(), patch);
-    setEtapa(normalized.etapa);
-    setAnoSerie(normalized.anoSerie);
-    setAreaConhecimento(normalized.areaConhecimento);
-    setComponente(normalized.componente);
-  }
 
   useEffect(() => {
     setQuantidade(defaultQuantityForTool(tipo));
-    applyEducation(educationDefaultsForTool(tipo, currentEducation()));
+    applyEducation(
+      educationDefaultsForTool(tipo, {
+        etapa,
+        anoSerie,
+        areaConhecimento,
+        componente,
+      }),
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps -- só ao trocar ferramenta
   }, [tipo]);
 
@@ -1030,7 +1033,7 @@ export function MateriaisClient({
                 }
                 className={SELECT_FIELD_CLASS}
               >
-                {EDUCATION_STAGES.map((stage) => (
+                {stageOptions.map((stage) => (
                   <option key={stage} value={stage}>
                     {stage}
                   </option>

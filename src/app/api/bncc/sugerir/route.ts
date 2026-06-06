@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const result = suggestBnccByConteudos(payload || {});
+    const result = await suggestBnccByConteudos(payload || {});
 
     return NextResponse.json({
       success: true,

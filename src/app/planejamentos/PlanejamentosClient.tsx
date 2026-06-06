@@ -32,7 +32,9 @@ import {
   readDownloadBlob,
   triggerBrowserDownload,
 } from "@/lib/downloads/trigger-browser-download";
-import { useEffect, useMemo, useState } from "react";
+import { useBnccEducationOptions } from "@/hooks/useBnccEducationOptions";
+import type { MaterialEducationFields } from "@/lib/educacao/education-options";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 type TipoPlanejamento = "anual" | "trimestral";
 type DocxDownloadMode = "anual" | "trimestral";
@@ -414,11 +416,42 @@ export function PlanejamentosClient() {
 
   const conteudos = useMemo(() => splitConteudos(form.conteudos), [form.conteudos]);
 
-  const yearOptions = useMemo(() => getYearOptions(form.etapa), [form.etapa]);
-  const areaOptions = useMemo(() => getAreaOptions(form.etapa), [form.etapa]);
-  const componentOptions = useMemo(
-    () => getComponentOptions(form.etapa, form.areaConhecimento),
-    [form.etapa, form.areaConhecimento],
+  const educationFields = useMemo(
+    (): MaterialEducationFields => ({
+      etapa: form.etapa,
+      anoSerie: form.anoSerie,
+      areaConhecimento: form.areaConhecimento,
+      componente: form.componenteCurricular,
+    }),
+    [form.etapa, form.anoSerie, form.areaConhecimento, form.componenteCurricular],
+  );
+
+  const {
+    stageOptions,
+    yearOptions,
+    areaOptions,
+    componentOptions,
+    applyEducation: applyBnccEducation,
+  } = useBnccEducationOptions(educationFields, (next) => {
+    setForm((current) => ({
+      ...current,
+      etapa: next.etapa,
+      anoSerie: next.anoSerie,
+      areaConhecimento: next.areaConhecimento,
+      componenteCurricular: next.componente,
+    }));
+  });
+
+  const applyEducationFields = useCallback(
+    (patch: Partial<MaterialEducationFields>) => {
+      applyBnccEducation(patch);
+      setGroups([]);
+      setSelectedSkills([]);
+      invalidateGenerated();
+      setStatus("Aguardando nova sugestão");
+      setError("");
+    },
+    [applyBnccEducation],
   );
 
   const stats = useMemo(
@@ -1087,15 +1120,27 @@ export function PlanejamentosClient() {
               </label>
               <label className="grid gap-2">
                 <span className="text-sm font-bold text-slate-500">Etapa</span>
-                <select value={form.etapa} onChange={(event) => updateField("etapa", event.target.value)} className={HUD_FIELD_CLASS}>
-                  {Object.keys(EDUCATION_OPTIONS).map((stage) => (
+                <select
+                  value={form.etapa}
+                  onChange={(event) =>
+                    applyEducationFields({ etapa: event.target.value })
+                  }
+                  className={HUD_FIELD_CLASS}
+                >
+                  {stageOptions.map((stage) => (
                     <option key={stage} value={stage}>{stage}</option>
                   ))}
                 </select>
               </label>
               <label className="grid gap-2">
                 <span className="text-sm font-bold text-slate-500">Ano/Série</span>
-                <select value={form.anoSerie} onChange={(event) => updateField("anoSerie", event.target.value)} className={HUD_FIELD_CLASS}>
+                <select
+                  value={form.anoSerie}
+                  onChange={(event) =>
+                    applyEducationFields({ anoSerie: event.target.value })
+                  }
+                  className={HUD_FIELD_CLASS}
+                >
                   {yearOptions.map((year) => (
                     <option key={year} value={year}>{year}</option>
                   ))}
@@ -1103,7 +1148,13 @@ export function PlanejamentosClient() {
               </label>
               <label className="grid gap-2">
                 <span className="text-sm font-bold text-slate-500">Área do conhecimento</span>
-                <select value={form.areaConhecimento} onChange={(event) => updateField("areaConhecimento", event.target.value)} className={HUD_FIELD_CLASS}>
+                <select
+                  value={form.areaConhecimento}
+                  onChange={(event) =>
+                    applyEducationFields({ areaConhecimento: event.target.value })
+                  }
+                  className={HUD_FIELD_CLASS}
+                >
                   {areaOptions.map((area) => (
                     <option key={area} value={area}>{area}</option>
                   ))}
@@ -1111,7 +1162,13 @@ export function PlanejamentosClient() {
               </label>
               <label className="grid gap-2">
                 <span className="text-sm font-bold text-slate-500">Componente curricular</span>
-                <select value={form.componenteCurricular} onChange={(event) => updateField("componenteCurricular", event.target.value)} className={HUD_FIELD_CLASS}>
+                <select
+                  value={form.componenteCurricular}
+                  onChange={(event) =>
+                    applyEducationFields({ componente: event.target.value })
+                  }
+                  className={HUD_FIELD_CLASS}
+                >
                   {componentOptions.map((component) => (
                     <option key={component} value={component}>{component}</option>
                   ))}

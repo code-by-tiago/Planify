@@ -1,24 +1,19 @@
 import "server-only";
 
-import { promises as fs } from "fs";
-import path from "path";
 import type {
   BNCCSkill,
   BNCCStage,
   BNCCSuggestionRequest,
   BNCCSuggestionResponse,
 } from "../../types/bncc";
-
-export const BNCC_PROCESSED_FILE_PATH = path.join(
-  process.cwd(),
-  "data",
-  "bncc",
-  "processado",
-  "bncc-habilidades.json",
-);
+import {
+  countBnccSkillsInDb,
+  fetchBnccSkillsFromDb,
+  getCachedBnccSkills,
+} from "./bncc-catalog-service";
 
 export const BNCC_NOT_INSTALLED_MESSAGE =
-  "Nenhuma base BNCC oficial foi instalada ainda. Coloque o arquivo processado em data/bncc/processado/bncc-habilidades.json.";
+  "Nenhuma base BNCC foi encontrada no Supabase. Execute o import para public.bncc_skills.";
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -292,30 +287,23 @@ function extractArrayFromJson(json: unknown): unknown[] {
 
 export async function hasInstalledBNCCBase(): Promise<boolean> {
   try {
-    await fs.access(BNCC_PROCESSED_FILE_PATH);
-    return true;
+    const count = await countBnccSkillsInDb();
+    return count > 0;
   } catch {
     return false;
   }
 }
 
-export async function readBNCCSkills(): Promise<BNCCSkill[]> {
-  const installed = await hasInstalledBNCCBase();
-
-  if (!installed) {
-    return [];
-  }
-
+export async function readBNCCSkills(filters?: {
+  stage?: string | null;
+  grade?: string | null;
+  subject?: string | null;
+}): Promise<BNCCSkill[]> {
   try {
-    const fileContent = await fs.readFile(BNCC_PROCESSED_FILE_PATH, "utf-8");
-    const parsed = JSON.parse(fileContent) as unknown;
-    const items = extractArrayFromJson(parsed);
-
-    return removeDuplicateSkills(
-      items
-        .map((item, index) => normalizeSkill(item, index))
-        .filter((item): item is BNCCSkill => item !== null),
-    );
+    if (filters?.stage || filters?.grade || filters?.subject) {
+      return removeDuplicateSkills(await fetchBnccSkillsFromDb(filters));
+    }
+    return removeDuplicateSkills(await getCachedBnccSkills());
   } catch {
     return [];
   }

@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const payload = await request.json();
-    const result = suggestBnccByConteudos(payload || {});
+    const result = await suggestBnccByConteudos(payload || {});
 
     return NextResponse.json({
       success: true,

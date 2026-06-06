@@ -180,12 +180,37 @@ function testPlanningQuality() {
   assert.equal(computePlanningQualityScore([]), 100);
 }
 
+function testDailyQuotaMigrationContract() {
+  const migrationPath = join(
+    root,
+    "supabase/migrations/20260606_daily_deep_generations.sql",
+  );
+  const servicePath = join(root, "src/server/credits/daily-generation-service.ts");
+  const migration = readFileSync(migrationPath, "utf8");
+  const service = readFileSync(servicePath, "utf8");
+
+  assert.match(migration, /daily_deep_generations/);
+  assert.match(migration, /planify_brazil_today/);
+
+  for (const rpc of [
+    "planify_get_deep_generation_usage",
+    "planify_consume_deep_generation",
+    "planify_refund_deep_generation",
+  ]) {
+    assert.match(migration, new RegExp(rpc));
+    assert.match(service, new RegExp(`"${rpc}"`));
+  }
+}
+
 function main() {
   testCraseSeed();
   testExpandedSeeds();
   testQualityScore();
   testPlanningQuality();
-  console.log("verify-material-quality: OK (seeds + quality score smoke tests passed)");
+  testDailyQuotaMigrationContract();
+  console.log(
+    "verify-material-quality: OK (seeds, quality score, planning, migration contract)",
+  );
 }
 
 main();

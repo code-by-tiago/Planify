@@ -5,6 +5,7 @@ import Link from "next/link";
 import { GoogleSlidesExportButton } from "@/components/google/GoogleSlidesExportButton";
 import { MaterialGenerationSummaryPanel } from "@/components/materiais/MaterialGenerationSummary";
 import { MaterialQualityScoreBar } from "@/components/materiais/MaterialQualityScoreBar";
+import { MaterialDocumentPreview } from "@/components/materiais/MaterialDocumentPreview";
 import {
   buildElevatePayload,
   requestMaterialGeneration,
@@ -1556,10 +1557,7 @@ export function MateriaisClient({
                   Histórico
                 </Link>
               </div>
-              <article
-                className="rounded-3xl border border-slate-200 bg-white p-6 text-sm leading-7 text-slate-800 shadow-sm [&_h1]:text-3xl [&_h1]:font-black [&_h2]:mt-6 [&_h2]:text-xl [&_h2]:font-black [&_h3]:mt-4 [&_h3]:font-black [&_li]:ml-5 [&_ol]:list-decimal [&_p]:my-3 [&_table]:w-full [&_table]:border-collapse [&_td]:border [&_td]:border-slate-200 [&_td]:p-2 [&_th]:border [&_th]:border-slate-200 [&_th]:p-2 [&_ul]:list-disc"
-                dangerouslySetInnerHTML={{ __html: resultadoHtml }}
-              />
+              <MaterialDocumentPreview html={resultadoHtml} />
             </div>
           ) : (
             <div className="flex h-full min-h-[280px] items-center justify-center">

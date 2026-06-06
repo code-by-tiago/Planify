@@ -1,3 +1,4 @@
+import { getModelTierForPlanning } from "@/lib/ai/material-generation-policy";
 import { generateGeminiJSON } from "../ai/gemini-client";
 import {
   buildPlanningQualityRetryNote,
@@ -440,7 +441,9 @@ function sanitizeAiResult(value: unknown, payload: PlanningAiPayload): PlanningA
       : [];
 
   if (rawItems.length === 0) {
-    return fallbackPlanning(payload, "A IA respondeu sem matriz de conteúdos. Foi usado modo seguro.");
+    throw new Error(
+      "A IA não retornou a matriz de conteúdos. Tente gerar novamente em alguns segundos.",
+    );
   }
 
   const tipo = getTipo(payload);
@@ -511,10 +514,13 @@ function sanitizeAiResult(value: unknown, payload: PlanningAiPayload): PlanningA
   };
 }
 
+const PLANNING_MAX_ATTEMPTS = 3;
+
 const PLANNING_SYSTEM_INSTRUCTION = `
-Você é uma IA especialista em planejamento pedagógico brasileiro.
+Você é a IA principal de planejamento pedagógico do Planify — referência em planejamento anual e trimestral alinhado à BNCC.
 Responda somente com JSON válido, sem markdown nem texto fora do objeto.
 Use exclusivamente habilidades BNCC que o professor selecionou — nunca invente códigos genéricos.
+Entregue matriz completa, específica e pronta para o professor usar — não rascunho genérico.
 `.trim();
 
 function buildPlanningPrompt(
@@ -560,7 +566,9 @@ Regras obrigatórias:
 9. Cada conteúdo deve ocupar 10 períodos.
 10. Gere objetivos/expectativas de aprendizagem, metodologia, recursos, avaliação e evidências.
 11. Preencha projetos interdisciplinares, temas integradores e instrumentos de avaliação de forma coerente quando estes campos existirem no DOCX.
-12. Não use texto genérico vazio.
+12. Não use texto genérico vazio nem repita a mesma metodologia em todas as linhas.
+13. Cada linha deve citar estratégias, recursos e avaliação coerentes com o conteúdo daquela linha.
+14. Objetivos devem ser mensuráveis e ligados ao componente curricular e à etapa informados.
 
 Formato:
 {
@@ -600,7 +608,10 @@ async function requestPlanningJson(
     systemInstruction: PLANNING_SYSTEM_INSTRUCTION,
     prompt,
     cacheProfile: "planning-matrix",
-    temperature: 0.25,
+    tier: getModelTierForPlanning(),
+    temperature: 0.18,
+    topP: 0.78,
+    maxOutputTokens: 24000,
   });
 }
 
@@ -611,48 +622,34 @@ export async function generatePlanningWithAI(
     return fallbackPlanning(payload, "Chave de IA não configurada. Foi usado modo seguro.");
   }
 
-  try {
-    let json = await requestPlanningJson(payload);
-    let result = sanitizeAiResult(json, payload);
-    let issues = getPlanningOutputIssues(payload, result.planejamento.conteudos);
+  let retryNote = "";
 
-    if (issues.length > 0) {
-      try {
-        const retryJson = await requestPlanningJson(
-          payload,
-          buildPlanningQualityRetryNote(issues),
-        );
-        const retryResult = sanitizeAiResult(retryJson, payload);
-        const retryIssues = getPlanningOutputIssues(
-          payload,
-          retryResult.planejamento.conteudos,
-        );
+  for (let attempt = 0; attempt < PLANNING_MAX_ATTEMPTS; attempt += 1) {
+    const json = await requestPlanningJson(
+      payload,
+      retryNote || undefined,
+    );
+    const result = sanitizeAiResult(json, payload);
+    const issues = getPlanningOutputIssues(
+      payload,
+      result.planejamento.conteudos,
+    );
 
-        if (retryIssues.length < issues.length || retryIssues.length === 0) {
-          result = retryResult;
-          issues = retryIssues;
-        }
-      } catch {
-        // Mantém o primeiro resultado se a retentativa falhar.
-      }
+    if (!issues.length) {
+      return result;
     }
 
-    if (issues.length > 0) {
+    if (attempt === PLANNING_MAX_ATTEMPTS - 1) {
       return {
         ...result,
         warning:
-          "A matriz foi gerada, mas alguns campos podem precisar de revisão: " +
-          issues.join(" "),
+          "A matriz foi gerada, mas recomendamos revisar antes de aplicar: " +
+          issues.slice(0, 6).join(" "),
       };
     }
 
-    return result;
-  } catch (error) {
-    return fallbackPlanning(
-      payload,
-      error instanceof Error
-        ? `Erro na geração por IA. Foi usado modo seguro. Detalhe: ${error.message}`
-        : "Erro na geração por IA. Foi usado modo seguro.",
-    );
+    retryNote = buildPlanningQualityRetryNote(issues);
   }
+
+  throw new Error("Não foi possível gerar o planejamento com a qualidade esperada.");
 }

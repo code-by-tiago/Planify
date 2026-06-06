@@ -253,9 +253,10 @@ export async function generatePlanejamentoWithAI(
     systemInstruction: buildPlanejamentoSystemInstruction(),
     prompt: buildPlanejamentoDynamicPrompt(input),
     cacheProfile: "planejamento-json",
+    tier: "advanced",
     temperature: 0.15,
     topP: 0.7,
-    maxOutputTokens: 8192,
+    maxOutputTokens: 18000,
   });
 
   const normalized = normalizeOutput(generated, input, selectedSkills);

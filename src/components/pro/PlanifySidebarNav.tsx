@@ -65,10 +65,10 @@ export function PlanifySidebarNav({
   }
 
   function navButtonClass(selected: boolean) {
-    return `flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-xs font-semibold transition ${
+    return `pl-sidebar-nav-item flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left transition ${
       selected
-        ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-[0_0_16px_rgba(0,212,255,0.25)]"
-        : "text-slate-300 hover:bg-white/5 hover:text-white"
+        ? "bg-gradient-to-r from-cyan-500 to-blue-600 shadow-[0_0_16px_rgba(0,212,255,0.25)]"
+        : "hover:bg-white/5"
     }`;
   }
 
@@ -98,8 +98,8 @@ export function PlanifySidebarNav({
                 aria-current={selected ? "page" : undefined}
                 className={className}
               >
-                <PlanifyNavIcon name={item.icon} />
-                <span className="min-w-0 flex-1">{item.label}</span>
+                <PlanifyNavIcon name={item.icon} className="pl-sidebar-nav-icon" />
+                <span className="pl-sidebar-nav-label">{item.label}</span>
               </button>
             );
           }
@@ -112,8 +112,8 @@ export function PlanifySidebarNav({
               aria-current={selected ? "page" : undefined}
               className={className}
             >
-              <PlanifyNavIcon name={item.icon} />
-              <span className="min-w-0 flex-1">{item.label}</span>
+              <PlanifyNavIcon name={item.icon} className="pl-sidebar-nav-icon" />
+              <span className="pl-sidebar-nav-label">{item.label}</span>
             </Link>
           );
         })}

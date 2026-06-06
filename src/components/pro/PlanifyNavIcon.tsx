@@ -13,11 +13,17 @@ const navIconTone: Record<string, string> = {
   plans: "from-violet-500 to-indigo-600",
 };
 
-export function PlanifyNavIcon({ name }: { name: PlanifyIconName }) {
+export function PlanifyNavIcon({
+  name,
+  className = "",
+}: {
+  name: PlanifyIconName;
+  className?: string;
+}) {
   const tone = navIconTone[name] ?? "from-indigo-400 to-violet-500";
   return (
     <span
-      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${tone} text-white shadow-[0_4px_12px_-4px_rgba(139,92,246,0.45)] ring-2 ring-white/80`}
+      className={`pl-sidebar-nav-icon flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${tone} text-white shadow-[0_4px_12px_-4px_rgba(139,92,246,0.45)] ring-2 ring-white/80 ${className}`.trim()}
     >
       <PlanifyIcon name={name} className="h-4 w-4" />
     </span>

@@ -16,6 +16,8 @@
   --planify-cyan-glow-soft: 0 0 12px rgba(0, 212, 255, 0.35);
   --planify-hud-line: rgba(0, 212, 255, 0.45);
   --planify-hud-line-faint: rgba(0, 212, 255, 0.18);
+  --planify-hud-sidebar-text: #f1f5f9;
+  --planify-hud-sidebar-text-muted: #cbd5e1;
   --planify-glass-bg: rgba(255, 255, 255, 0.72);
   --planify-glass-border: rgba(0, 212, 255, 0.28);
   --planify-glass-blur: blur(16px);
@@ -426,8 +428,37 @@ body {
   background: rgba(0, 212, 255, 0.06);
 }
 
-.planify-hud.pl-hud-shell .pl-sidebar nav span {
-  color: inherit;
+/* Sidebar nav labels — override body 9.20.8 slate/text globals */
+body .planify-hud.pl-hud-shell .pl-sidebar .pl-sidebar-nav-item {
+  color: var(--planify-hud-sidebar-text-muted) !important;
+}
+
+body .planify-hud.pl-hud-shell .pl-sidebar .pl-sidebar-nav-item:hover {
+  color: var(--planify-hud-sidebar-text) !important;
+}
+
+body .planify-hud.pl-hud-shell .pl-sidebar .pl-sidebar-nav-item[class*="from-cyan"] {
+  color: #ffffff !important;
+}
+
+body .planify-hud.pl-hud-shell .pl-sidebar .pl-sidebar-nav-label {
+  display: block;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: visible;
+  white-space: normal;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--planify-hud-sidebar-text) !important;
+}
+
+body .planify-hud.pl-hud-shell .pl-sidebar .pl-sidebar-nav-item[class*="from-cyan"] .pl-sidebar-nav-label {
+  color: #ffffff !important;
+}
+
+body .planify-hud.pl-hud-shell .pl-sidebar .pl-sidebar-nav-icon {
+  flex-shrink: 0;
 }
 
 /* ─── Inputs focus ─── */

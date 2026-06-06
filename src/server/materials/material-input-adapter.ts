@@ -1,4 +1,5 @@
 import type { MaterialAIInput } from "@/types/ai";
+import { buildElevateQualityObservacoes } from "@/lib/materiais/material-quality-score";
 import type {
   MaterialEngineInput,
   MaterialEngineRequest,
@@ -42,7 +43,13 @@ function buildObservacoes(
   request: MaterialEngineRequest,
   payload: MaterialEngineInput,
 ): string {
+  const elevateNote =
+    request.elevarQualidade || request.problemasQualidade?.length
+      ? buildElevateQualityObservacoes(request.problemasQualidade ?? [])
+      : "";
+
   const parts = [
+    elevateNote,
     typeof payload.observacoes === "string" ? payload.observacoes.trim() : "",
     `Quantidade solicitada: ${request.quantidade}.`,
     `Dificuldade: ${request.dificuldade}.`,
@@ -51,7 +58,7 @@ function buildObservacoes(
       : "Não incluir gabarito, respostas esperadas nem redação modelo.",
   ];
 
-  return parts.filter(Boolean).join("\n");
+  return parts.filter(Boolean).join("\n\n");
 }
 
 function buildObjetivos(

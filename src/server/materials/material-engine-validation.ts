@@ -39,6 +39,11 @@ export function normalizeMaterialEngineRequest(
     incluirGabarito: payload.incluirGabarito !== false,
     modeloSlides: asText(payload.modeloSlides, "") || undefined,
     designSlides: asText(payload.designSlides, "") || undefined,
+    observacoes: asText(payload.observacoes, "") || undefined,
+    elevarQualidade: payload.elevarQualidade === true,
+    problemasQualidade: Array.isArray(payload.problemasQualidade)
+      ? payload.problemasQualidade.map((item) => String(item).trim()).filter(Boolean)
+      : undefined,
   };
 }
 

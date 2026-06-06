@@ -165,6 +165,66 @@ const TOPIC_SEEDS: TopicSeed[] = [
     ],
   },
   {
+    id: "lp-concordancia",
+    match: (tema, component) =>
+      isPortugueseComponent(component) &&
+      temaIncludes(
+        tema,
+        "concordancia",
+        "concordância",
+        "verbal",
+        "nominal",
+      ),
+    specialistLabel: "Língua Portuguesa — concordância verbal e nominal",
+    mustCover: [
+      "Concordância do verbo com o sujeito em número e pessoa",
+      "Concordância do adjetivo, artigo e pronome com o núcleo",
+      "Casos de sujeito composto e coletivo",
+      "Concordância com porcentagens e expressões partitivas",
+    ],
+    questionTypes: [
+      "Correção de frases com erro de concordância",
+      "Múltipla escolha identificando a forma correta",
+      "Reescrita mantendo sentido e corrigindo concordância",
+    ],
+    vocabulary: ["sujeito", "predicado", "núcleo", "modificador", "coletivo", "partitivo"],
+    commonErrors: [
+      "Verbo no singular com sujeito composto sem nuance de ação individual",
+      "Adjetivo concordando com termo errado",
+    ],
+    goldenExamples: [
+      "Fazem dois anos que não viajo. (verbo com sujeito ‘dois anos’)",
+      "A maioria dos alunos compareceu. (sentido partitivo ou coletivo)",
+    ],
+  },
+  {
+    id: "mat-equacoes",
+    match: (tema, component) =>
+      isMathComponent(component) &&
+      temaIncludes(tema, "equacao", "equação", "equacoes", "equações", "1o grau", "1º grau"),
+    specialistLabel: "Matemática — equações do 1º grau",
+    mustCover: [
+      "Princípio da equivalência nas transformações",
+      "Isolamento da incógnita com desenvolvimento",
+      "Problemas contextualizados traduzidos em equação",
+      "Verificação da solução no contexto",
+    ],
+    questionTypes: [
+      "Resolver e verificar equações",
+      "Montar equação a partir de enunciado",
+      "Interpretar solução impossível ou infinita quando cabível",
+    ],
+    vocabulary: ["incógnita", "membro", "transposição", "verificação", "raiz"],
+    commonErrors: [
+      "Trocar sinal apenas de um membro",
+      "Ignorar unidade de medida no problema",
+    ],
+    goldenExamples: [
+      "2x + 5 = 17 → x = 6",
+      "O dobro de um número somado a 8 é 26. Qual é o número?",
+    ],
+  },
+  {
     id: "mat-porcentagem",
     match: (tema, component) =>
       isMathComponent(component) &&

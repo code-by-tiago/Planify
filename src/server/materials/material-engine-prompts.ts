@@ -1,3 +1,4 @@
+import { buildElevateQualityObservacoes } from "@/lib/materiais/material-quality-score";
 import { resolveDisciplineTopicGuidance } from "@/lib/materiais/discipline-topic-seeds";
 import type { MaterialEngineRequest, MaterialEngineType } from "./material-engine-types";
 import { resolveSlideTheme } from "./slide-design-themes";
@@ -260,6 +261,15 @@ export function buildMaterialEnginePrompt(
 
   const extra = extraBlocks.trim() ? `\n\n${extraBlocks.trim()}` : "";
 
+  const elevateBlock =
+    request.elevarQualidade || request.problemasQualidade?.length
+      ? `\n\n${buildElevateQualityObservacoes(request.problemasQualidade ?? [])}`
+      : "";
+
+  const observacoesBlock = request.observacoes?.trim()
+    ? `\n\nOBSERVAÇÕES DO PROFESSOR:\n${request.observacoes.trim()}`
+    : "";
+
   return `
 Gere material pedagógico para o Planify com qualidade profissional.
 
@@ -286,6 +296,6 @@ REGRAS GERAIS:
 - Entregar conteúdo coeso, sem repetição e sem preenchimento artificial.
 - Entregar pronto para edição no editor do Planify.
 - NÃO preencha o campo "html" — o Planify monta o HTML visual automaticamente.
-- Entregar somente JSON no schema.${disciplineBlock}${extra}
+- Entregar somente JSON no schema.${disciplineBlock}${extra}${elevateBlock}${observacoesBlock}
 `.trim();
 }

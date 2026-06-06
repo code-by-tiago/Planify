@@ -13,6 +13,11 @@ import {
   getClosestTableCell,
 } from "@/lib/editor/editor-selection-utils";
 import { isSlideDeckHtml } from "@/lib/slides/slide-deck-utils";
+import { MaterialQualityScoreBar } from "@/components/materiais/MaterialQualityScoreBar";
+import {
+  buildElevatePayload,
+  requestMaterialGeneration,
+} from "@/lib/materiais/elevate-material-client";
 import type { MaterialEditorMeta } from "@/lib/materiais/material-editor-flow";
 import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
 import { PlanifyPageHero } from "@/components/pro/PlanifyPageHero";
@@ -314,8 +319,19 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
   const [isTableActive, setIsTableActive] = useState(false);
   const [isSlideDeck, setIsSlideDeck] = useState(false);
   const [slideTheme, setSlideTheme] = useState<string | null>(null);
+  const [elevatingQuality, setElevatingQuality] = useState(false);
 
   const lastSavedLabel = useMemo(() => nowLabel(), []);
+
+  const materialMeta = useMemo((): MaterialEditorMeta | null => {
+    const raw = documentSource?.payload as { raw?: MaterialEditorMeta } | undefined;
+    return raw?.raw ?? null;
+  }, [documentSource]);
+
+  const canElevateMaterial = Boolean(
+    materialMeta?.generationPayload &&
+      String(documentSource?.type || "").includes("material"),
+  );
 
   function syncSlideDeckFlags(html: string, stored?: StoredEditorDocument | null) {
     const raw = stored?.payload as { raw?: MaterialEditorMeta } | undefined;
@@ -767,6 +783,93 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
         }
       }
     });
+  }
+
+  async function elevarQualidadeNoEditor() {
+    const base = materialMeta?.generationPayload;
+    if (!base) {
+      setStatus("Abra um material gerado pelo Planify para elevar a qualidade.");
+      return;
+    }
+
+    setElevatingQuality(true);
+    setStatus("Regenerando material com foco em qualidade...");
+
+    try {
+      const problemas = [
+        ...(materialMeta?.qualityIssues ?? []),
+        ...(typeof materialMeta?.qualityScore === "number" &&
+        materialMeta.qualityScore < 90
+          ? ["Elevar especificidade dos enunciados e do gabarito."]
+          : []),
+      ];
+      const payload = buildElevatePayload(base, problemas);
+      const data = await requestMaterialGeneration(payload);
+
+      if (!data.html) {
+        throw new Error("A regeneração não retornou conteúdo.");
+      }
+
+      if (editorRef.current) {
+        editorRef.current.innerHTML = data.html;
+        prepareImagesInsideEditor();
+        updateWordCount();
+        syncSlideDeckFlags(data.html, documentSource);
+        seedUndoStack(data.html);
+      }
+
+      const nextMeta: MaterialEditorMeta = {
+        ...(materialMeta ?? {
+          toolId: "prova",
+          tema: title,
+          componente: "",
+          anoSerie: "",
+        }),
+        qualityScore:
+          typeof data.qualityScore === "number" ? data.qualityScore : null,
+        qualityIssues: Array.isArray(data.qualityIssues)
+          ? data.qualityIssues.map((item) => String(item)).filter(Boolean)
+          : [],
+        generationPayload: payload,
+      };
+
+      const source = documentSource;
+      const saved = syncOpenDocumentToHistory({
+        title: title.trim() || getDocumentTitleFromHtml(data.html),
+        content: data.html,
+        type: source?.type || `material:${nextMeta.toolId}`,
+        payload: {
+          source: "material",
+          raw: nextMeta,
+          id: (source?.payload as { id?: string } | undefined)?.id,
+        },
+      });
+
+      setDocumentSource({
+        type: saved.type,
+        title: saved.title,
+        html: saved.content,
+        content: saved.content,
+        payload: {
+          source: saved.source,
+          subtitle: saved.subtitle,
+          raw: nextMeta,
+          id: saved.id,
+        },
+        updatedAt: saved.updatedAt,
+      });
+
+      window.dispatchEvent(new Event("planify:credits-changed"));
+      setStatus("Qualidade elevada — revise o material antes de exportar.");
+    } catch (error) {
+      setStatus(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível elevar a qualidade.",
+      );
+    } finally {
+      setElevatingQuality(false);
+    }
   }
 
   function persistCurrentDocument(message = "Documento salvo.") {
@@ -1522,6 +1625,16 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
               <button type="button" onClick={downloadPdfReal} className={actionBtnClass}>
                 PDF
               </button>
+              {canElevateMaterial ? (
+                <button
+                  type="button"
+                  onClick={() => void elevarQualidadeNoEditor()}
+                  disabled={elevatingQuality}
+                  className="rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-black text-indigo-800 transition hover:bg-indigo-100 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {elevatingQuality ? "Elevando..." : "Elevar qualidade"}
+                </button>
+              ) : null}
               <EditorShareBar
                 title={title}
                 getHtml={getEditorHtml}
@@ -1603,7 +1716,34 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
                 <button type="button" onClick={downloadHtml} className={actionBtnClass}>
                   Baixar HTML
                 </button>
+
+                {canElevateMaterial ? (
+                  <button
+                    type="button"
+                    onClick={() => void elevarQualidadeNoEditor()}
+                    disabled={elevatingQuality}
+                    className="rounded-2xl border border-indigo-200 bg-indigo-50 px-5 py-3 text-sm font-black text-indigo-800 transition hover:bg-indigo-100 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {elevatingQuality ? "Elevando qualidade..." : "Elevar qualidade"}
+                  </button>
+                ) : null}
               </div>
+
+              {typeof materialMeta?.qualityScore === "number" ? (
+                <div className="mt-5">
+                  <MaterialQualityScoreBar
+                    score={materialMeta.qualityScore}
+                    issues={materialMeta.qualityIssues ?? []}
+                    onElevate={
+                      canElevateMaterial
+                        ? () => void elevarQualidadeNoEditor()
+                        : undefined
+                    }
+                    elevating={elevatingQuality}
+                    compact
+                  />
+                </div>
+              ) : null}
 
               <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm leading-7 text-slate-600">
                 <p>{status}</p>

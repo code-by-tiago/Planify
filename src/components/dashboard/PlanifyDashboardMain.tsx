@@ -8,8 +8,11 @@ import type { PlanifyToolId } from "@/lib/pro/planifyTools";
 
 function PanelLoading() {
   return (
-    <div className="flex h-full min-h-[200px] items-center justify-center bg-white">
-      <p className="text-sm font-bold text-blue-600">Carregando…</p>
+    <div className="planify-hud flex h-full min-h-[200px] items-center justify-center bg-[var(--planify-canvas)]">
+      <div className="flex flex-col items-center gap-3">
+        <span className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-cyan-200 border-t-cyan-500" />
+        <p className="text-sm font-semibold text-cyan-700">Carregando…</p>
+      </div>
     </div>
   );
 }
@@ -49,7 +52,7 @@ import { PlanifyWorkspaceProvider } from "@/components/pro/planify-workspace-con
 function SectionPanel({ children }: { children: ReactNode }) {
   return (
     <PlanifyWorkspaceProvider embeddedInDashboard>
-      <div className="flex h-full min-h-0 w-full flex-col overflow-hidden bg-white">
+      <div className="pl-hud-board flex h-full min-h-0 w-full flex-col overflow-hidden bg-[var(--planify-canvas)]">
         <div className="min-h-0 flex-1 overflow-hidden">{children}</div>
       </div>
     </PlanifyWorkspaceProvider>

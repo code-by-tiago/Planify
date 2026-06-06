@@ -126,14 +126,14 @@ export function PlanifySidebarNav({
     if (isThin) {
       return `group flex w-full items-center gap-2 rounded-xl border px-2 py-1.5 text-left transition ${
         selected
-          ? "border-blue-300 bg-blue-50 shadow-sm"
-          : "border-slate-200/90 bg-white/90 hover:border-blue-200 hover:bg-white"
+          ? "border-cyan-400/40 bg-cyan-500/10 shadow-[0_0_12px_rgba(0,212,255,0.12)]"
+          : "border-slate-200/80 bg-white/60 hover:border-cyan-400/25 hover:bg-white"
       }`;
     }
-    return `pl-tool-item group flex w-full items-center gap-2.5 rounded-2xl border px-2 py-1.5 text-left text-sm font-bold transition ${
+    return `pl-tool-item group flex w-full items-center gap-2.5 rounded-xl border px-2 py-1.5 text-left text-sm font-semibold transition ${
       selected
-        ? "border-fuchsia-200/80 bg-white shadow-[0_6px_20px_-10px_rgba(236,72,153,0.35)]"
-        : "border-transparent text-violet-700/85"
+        ? "border-cyan-400/35 bg-cyan-50 shadow-sm"
+        : "border-transparent text-slate-700 hover:bg-slate-50"
     }`;
   }
 
@@ -189,7 +189,7 @@ export function PlanifySidebarNav({
             onChange={(event) => onQueryChange(event.target.value)}
             placeholder="Buscar ferramenta…"
             aria-label="Buscar ferramenta"
-            className="h-9 w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-2 text-xs font-semibold text-slate-800 outline-none placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+            className="h-9 w-full rounded-xl border border-cyan-400/15 bg-white/90 py-2 pl-9 pr-2 text-xs font-semibold text-slate-800 outline-none placeholder:text-slate-400 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
           />
         </div>
         {primaryAction ? <div className="mt-2">{primaryAction}</div> : null}
@@ -201,7 +201,7 @@ export function PlanifySidebarNav({
             <Link
               href="/"
               onClick={onActivate}
-              className="flex w-full items-center gap-2 rounded-xl border border-slate-200/90 bg-white px-2 py-2 text-left text-xs font-bold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50"
+              className="flex w-full items-center gap-2 rounded-xl border border-cyan-400/15 bg-white/60 px-2 py-2 text-left text-xs font-semibold text-slate-700 transition hover:border-cyan-400/30 hover:bg-cyan-50/50"
             >
               <PlanifyNavIcon name="externalLink" />
               <span className="truncate">Página inicial do site</span>
@@ -210,16 +210,16 @@ export function PlanifySidebarNav({
         ) : null}
 
         <div>
-            <p className="px-0.5 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+            <p className="px-0.5 text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-600/80">
               {mode === "public" ? "Acessar" : "Páginas"}
             </p>
             <div className="mt-1.5 space-y-0.5">
               {workspaceItems.map((item) => {
                 const selected = isWorkspaceSelected(item);
-                const className = `flex w-full items-center gap-2 rounded-xl px-2 py-1.5 text-left text-xs font-bold transition ${
+                const className = `flex w-full items-center gap-2 rounded-xl px-2 py-1.5 text-left text-xs font-semibold transition ${
                   selected
-                    ? "bg-blue-600 text-white shadow-sm"
-                    : "text-slate-700 hover:bg-slate-50"
+                    ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-[0_0_16px_rgba(0,212,255,0.25)]"
+                    : "text-slate-300 hover:bg-white/5 hover:text-white"
                 }`;
 
                 if (mode === "studio" && item.panel !== "external") {
@@ -255,7 +255,7 @@ export function PlanifySidebarNav({
 
         {groupedTools.map((group) => (
           <div key={group.category.id}>
-            <p className="px-0.5 text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">
+            <p className="px-0.5 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
               {group.category.label}
             </p>
             <div className="mt-1 space-y-1">

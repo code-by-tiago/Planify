@@ -485,4 +485,39 @@ body {
   color: #67e8f9 !important;
 }
 
+/* ─── Hub (social dashboard home) ─── */
+.planify-hud .pl-hud-hub {
+  background: var(--planify-canvas);
+}
+
+.planify-hud .pl-hud-hub-welcome {
+  border: 1px solid var(--planify-glass-border);
+  background: var(--planify-glass-bg);
+  backdrop-filter: var(--planify-glass-blur);
+  -webkit-backdrop-filter: var(--planify-glass-blur);
+  box-shadow: 0 4px 24px rgba(0, 212, 255, 0.08);
+}
+
+.planify-hud .pl-hud-hub-app {
+  border: 1px solid rgba(0, 212, 255, 0.2);
+  background: rgba(255, 255, 255, 0.85);
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+}
+
+.planify-hud .pl-hud-hub-app:hover {
+  border-color: rgba(0, 212, 255, 0.45);
+  box-shadow: var(--planify-cyan-glow-soft);
+  transform: translateY(-1px);
+}
+
+.planify-hud .pl-hud-hub-bento-lg {
+  grid-column: span 2;
+}
+
+@media (max-width: 639px) {
+  .planify-hud .pl-hud-hub-bento-lg {
+    grid-column: span 1;
+  }
+}
+
 /* PLANIFY_HUD_V2_END */

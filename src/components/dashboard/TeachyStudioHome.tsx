@@ -1,8 +1,12 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { PlanifyHubRecentStrip } from "@/components/dashboard/PlanifyHubRecentStrip";
+import { PlanifyHubStatsRow } from "@/components/dashboard/PlanifyHubStatsRow";
 import { TeachyToolToolbar } from "@/components/dashboard/TeachyToolToolbar";
+import { PlanifyOwlMark } from "@/components/pro/PlanifyOwlMark";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
+import { usePlanifySession } from "@/hooks/usePlanifySession";
 import type { DashboardSectionId } from "@/lib/pro/dashboardViews";
 import { writePlanejamentoPrefill } from "@/lib/planejamentos/planejamento-prefill";
 import {
@@ -12,6 +16,7 @@ import {
 } from "@/lib/pro/teachyStudio";
 import {
   planifyTools,
+  planifyToolCount,
   toolCategories,
   type PlanifyToolId,
   type ToolCategoryId,
@@ -25,6 +30,50 @@ type TeachyStudioHomeProps = {
   initialTopic?: string;
   onTopicChange?: (topic: string) => void;
 };
+
+const workspaceApps: {
+  section: DashboardSectionId;
+  title: string;
+  description: string;
+  icon: "clipboard" | "editor" | "history" | "library" | "market";
+  accent: string;
+}[] = [
+  {
+    section: "planejamentos",
+    title: "Planejamentos",
+    description: "Matriz BNCC anual ou trimestral · DOCX oficial",
+    icon: "clipboard",
+    accent: "from-cyan-500 to-blue-600",
+  },
+  {
+    section: "editor",
+    title: "Editor",
+    description: "Revise, exporte DOCX e publique no Classroom",
+    icon: "editor",
+    accent: "from-sky-500 to-cyan-600",
+  },
+  {
+    section: "historico",
+    title: "Histórico",
+    description: "Tudo que você gerou — retome em um clique",
+    icon: "history",
+    accent: "from-slate-600 to-slate-800",
+  },
+  {
+    section: "biblioteca",
+    title: "Biblioteca",
+    description: "Materiais salvos e organizados por você",
+    icon: "library",
+    accent: "from-teal-500 to-cyan-600",
+  },
+  {
+    section: "marketplace",
+    title: "Marketplace",
+    description: "Recursos da comunidade pedagógica",
+    icon: "market",
+    accent: "from-blue-500 to-indigo-600",
+  },
+];
 
 function bundleByTag() {
   const map = new Map<string, typeof lessonBundleTools>();
@@ -42,18 +91,14 @@ export default function TeachyStudioHome({
   initialTopic = "",
   onTopicChange,
 }: TeachyStudioHomeProps) {
+  const session = usePlanifySession();
   const [topic, setTopic] = useState(initialTopic);
-  const [editingTheme, setEditingTheme] = useState(!initialTopic.trim());
   const [category, setCategory] = useState<ToolCategoryId>("todos");
   const [toolSearch, setToolSearch] = useState("");
 
   useEffect(() => {
-    if (editingTheme) return;
     setTopic(initialTopic);
-  }, [initialTopic, editingTheme]);
-
-  const displayTopic = topic.trim() || "Sua aula";
-  const lessonTitle = `${displayTopic} — Aula 1`;
+  }, [initialTopic]);
 
   const filteredTools = useMemo(() => {
     const term = toolSearch.trim().toLowerCase();
@@ -86,14 +131,14 @@ export default function TeachyStudioHome({
     onTopicChange?.(tema);
   }
 
-  function applyTopic() {
-    setEditingTheme(false);
-    persistTopicForTool();
-  }
-
   function openTool(toolId: PlanifyToolId) {
     persistTopicForTool();
     onSelectTool(toolId);
+  }
+
+  function openSection(sectionId: DashboardSectionId) {
+    persistTopicForTool();
+    onSelectSection?.(sectionId);
   }
 
   function openPlanejamento(tipo: "anual" | "trimestral") {
@@ -108,11 +153,8 @@ export default function TeachyStudioHome({
   function handleBuildLesson(event: FormEvent) {
     event.preventDefault();
     const tema = topic.trim();
-    if (!tema) {
-      setEditingTheme(true);
-      return;
-    }
-    applyTopic();
+    if (!tema) return;
+    persistTopicForTool();
     try {
       sessionStorage.setItem(OBJETIVO_HINT_KEY, lessonBundleObjetivoHint);
     } catch {
@@ -121,7 +163,7 @@ export default function TeachyStudioHome({
     onSelectTool("slides");
   }
 
-  function applyHintFromHome(snippet: string, _actionId?: string) {
+  function applyHintFromHome(snippet: string) {
     try {
       sessionStorage.setItem(OBJETIVO_HINT_KEY, snippet);
     } catch {
@@ -131,172 +173,169 @@ export default function TeachyStudioHome({
     onSelectTool("slides");
   }
 
+  const greeting = session.loading
+    ? "Olá, professor"
+    : `Olá, ${session.displayName}`;
+
   return (
-    <div className="pl-hud-board pl-hud-home flex h-full min-h-0 w-full flex-col overflow-hidden bg-[#f4f8fc]">
+    <div className="pl-hud-hub pl-hud-board pl-hud-home flex h-full min-h-0 w-full flex-col overflow-hidden">
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-        <div className="mx-auto w-full max-w-5xl px-4 py-5 sm:px-6 sm:py-6">
-          {/* Bloco 1 — Construtor de aula (estrutura Teachy) */}
-          <section className="rounded-2xl border border-slate-200/90 bg-white shadow-sm">
-            <div className="border-b border-slate-100 px-4 py-4 sm:px-5">
-              <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="mx-auto w-full max-w-6xl px-4 py-5 sm:px-6 sm:py-8">
+          {/* Welcome — social profile card */}
+          <section className="pl-hud-glass relative overflow-hidden rounded-2xl p-5 sm:p-6">
+            <div className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-cyan-400/10 blur-3xl" />
+            <div className="relative flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+              <div className="flex min-w-0 items-start gap-4">
+                <PlanifyOwlMark size={72} glow hero />
                 <div className="min-w-0">
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600">
-                    Assistente IA · BNCC
+                  <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-600">
+                    Sua rede pedagógica
                   </p>
-                  <h1 className="mt-1 truncate text-lg font-black text-slate-950 sm:text-xl">
-                    {lessonTitle}
+                  <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-slate-950 sm:text-3xl">
+                    {greeting}
                   </h1>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setEditingTheme((v) => !v)}
-                  className="shrink-0 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-black text-slate-600 transition hover:border-blue-200 hover:text-blue-700"
-                >
-                  {editingTheme ? "Fechar tema" : "Alterar tema"}
-                </button>
-              </div>
-
-              {editingTheme ? (
-                <form onSubmit={handleBuildLesson} className="mt-4">
-                  <label className="text-xs font-black uppercase tracking-wide text-slate-500">
-                    Tema
-                  </label>
-                  <input
-                    value={topic}
-                    onChange={(e) => setTopic(e.target.value)}
-                    placeholder="Ex.: Ciclo da água, Frações, Revolução Industrial…"
-                    className="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-900 outline-none focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100"
-                    autoFocus
-                  />
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      onClick={applyTopic}
-                      className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-black text-slate-600 hover:bg-slate-50"
-                    >
-                      Aplicar
-                    </button>
-                    <button
-                      type="submit"
-                      className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-xs font-black text-white hover:bg-blue-700"
-                    >
-                      <PlanifyIcon name="layers" className="h-3.5 w-3.5" />
-                      Montar aula completa
-                    </button>
-                  </div>
-                </form>
-              ) : (
-                <p className="mt-2 text-sm font-semibold text-slate-500">
-                  Tema:{" "}
-                  <span className="font-black text-slate-800">
-                    {topic.trim() || "defina um tema para sugerir materiais"}
-                  </span>
-                </p>
-              )}
-            </div>
-
-            {/* Pacote de materiais por contexto (Sala, Tarefa, etc.) */}
-            <div className="space-y-4 px-4 py-4 sm:px-5">
-              {bundleByTag().map(([tag, items]) => (
-                <div key={tag}>
-                  <p className="mb-2 text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">
-                    {tag}
+                  <p className="mt-2 max-w-lg text-sm font-medium leading-6 text-slate-600">
+                    {session.planLabel
+                      ? `Plano ${session.planLabel} · `
+                      : ""}
+                    Acesse ferramentas, planejamentos e materiais num só lugar —
+                    como o seu hub profissional.
                   </p>
-                  <div className="flex flex-wrap gap-2">
-                    {items.map((item) => (
-                      <button
-                        key={item.id}
-                        type="button"
-                        onClick={() => openTool(item.id)}
-                        className="group flex w-full min-w-0 flex-col rounded-xl border border-slate-100 bg-slate-50/80 p-3 text-left transition hover:border-blue-200 hover:bg-white hover:shadow-md sm:min-w-[140px] sm:max-w-[200px] sm:flex-1"
-                      >
-                        <span className="flex items-center gap-2">
-                          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-100 text-blue-600">
-                            <PlanifyIcon name={item.icon} className="h-4 w-4" />
-                          </span>
-                          <span className="text-[10px] font-black uppercase text-blue-600">
-                            {item.label}
-                          </span>
-                        </span>
-                        <span className="mt-2 line-clamp-2 text-xs font-bold leading-snug text-slate-800">
-                          {topic.trim()
-                            ? `${topic.trim()} · ${item.label}`
-                            : item.label}
-                        </span>
-                      </button>
-                    ))}
+                  <div className="mt-4">
+                    <PlanifyHubStatsRow />
                   </div>
                 </div>
+              </div>
+              <form
+                onSubmit={handleBuildLesson}
+                className="w-full shrink-0 sm:max-w-xs"
+              >
+                <label className="text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                  Tema da aula
+                </label>
+                <input
+                  value={topic}
+                  onChange={(e) => setTopic(e.target.value)}
+                  placeholder="Ex.: Frações, Biomas…"
+                  className="mt-1.5 w-full rounded-xl border border-cyan-400/20 bg-white/80 px-3 py-2.5 text-sm font-semibold text-slate-900 outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+                />
+                <button
+                  type="submit"
+                  className="pl-hud-btn mt-2 flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-xs font-semibold"
+                >
+                  <PlanifyIcon name="layers" className="h-3.5 w-3.5" />
+                  Montar aula completa
+                </button>
+              </form>
+            </div>
+          </section>
+
+          {/* Workspace apps bento */}
+          <section className="mt-5">
+            <h2 className="text-sm font-extrabold text-slate-950">
+              Seus espaços
+            </h2>
+            <p className="text-xs font-medium text-slate-500">
+              Navegue como num app — tudo a um toque
+            </p>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <button
+                type="button"
+                onClick={() => openTool("slides")}
+                className="pl-hud-glass group flex flex-col rounded-2xl p-4 text-left transition hover:border-cyan-400/40 hover:shadow-[0_0_24px_rgba(0,212,255,0.12)] sm:col-span-2 lg:col-span-1 lg:row-span-2"
+              >
+                <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 text-white shadow-sm">
+                  <PlanifyIcon name="materials" className="h-5 w-5" />
+                </span>
+                <span className="mt-4 text-lg font-extrabold text-slate-950">
+                  Materiais com IA
+                </span>
+                <span className="mt-1 text-sm font-medium text-slate-600">
+                  {planifyToolCount} geradores alinhados à BNCC — slides, provas,
+                  jogos e mais.
+                </span>
+                <span className="mt-auto pt-4 text-xs font-semibold text-cyan-700 group-hover:underline">
+                  Explorar ferramentas →
+                </span>
+              </button>
+
+              {workspaceApps.map((app) => (
+                <button
+                  key={app.section}
+                  type="button"
+                  onClick={() => openSection(app.section)}
+                  className="pl-hud-glass group flex flex-col rounded-2xl p-4 text-left transition hover:border-cyan-400/40 hover:shadow-[0_0_20px_rgba(0,212,255,0.1)]"
+                >
+                  <span
+                    className={`flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${app.accent} text-white shadow-sm`}
+                  >
+                    <PlanifyIcon name={app.icon} className="h-5 w-5" />
+                  </span>
+                  <span className="mt-3 text-sm font-extrabold text-slate-950">
+                    {app.title}
+                  </span>
+                  <span className="mt-1 text-xs font-medium leading-5 text-slate-500">
+                    {app.description}
+                  </span>
+                </button>
               ))}
             </div>
-
-            {/* Personalizar com IA (mesmos chips do painel de ferramenta) */}
-            <div className="border-t border-slate-100">
-              <TeachyToolToolbar onApplyHint={applyHintFromHome} />
-            </div>
           </section>
 
-          {/* Planejamento BNCC — anual e trimestral */}
-          <section className="mt-5 overflow-hidden rounded-2xl border border-blue-200/60 bg-gradient-to-br from-[#e8ecff] via-white to-white p-4 shadow-sm sm:p-5">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-              <div className="max-w-xl">
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600">
-                  Planejamento BNCC · DOCX oficial
-                </p>
-                <h2 className="mt-2 text-lg font-black text-slate-950 sm:text-xl">
-                  Matriz anual ou trimestral em poucos minutos
-                </h2>
-                <p className="mt-2 text-sm font-semibold leading-6 text-slate-600">
-                  A IA sugere habilidades BNCC, monta objetivos, metodologia e
-                  avaliação — você baixa o modelo oficial da escola já
-                  preenchido. Gere o anual primeiro; os trimestrais saem
-                  coerentes com a mesma matriz.
-                </p>
-              </div>
-              <div className="grid w-full max-w-md gap-2 sm:grid-cols-2">
-                <button
-                  type="button"
-                  onClick={() => openPlanejamento("anual")}
-                  className="flex flex-col items-start rounded-2xl border border-blue-200 bg-white p-4 text-left shadow-sm transition hover:border-blue-400 hover:shadow-md"
-                >
-                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-white">
-                    <PlanifyIcon name="clipboard" className="h-5 w-5" />
-                  </span>
-                  <span className="mt-3 text-sm font-black text-slate-950">
-                    Planejamento Anual
-                  </span>
-                  <span className="mt-1 text-xs font-semibold text-slate-500">
-                    Matriz completa do ano · DOCX oficial
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => openPlanejamento("trimestral")}
-                  className="flex flex-col items-start rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:border-blue-300 hover:shadow-md"
-                >
-                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100 text-blue-700">
-                    <PlanifyIcon name="calendar" className="h-5 w-5" />
-                  </span>
-                  <span className="mt-3 text-sm font-black text-slate-950">
-                    Planejamento Trimestral
-                  </span>
-                  <span className="mt-1 text-xs font-semibold text-slate-500">
-                    1º, 2º ou 3º trimestre · alinhado ao anual
-                  </span>
-                </button>
-              </div>
-            </div>
+          {/* Recent activity */}
+          <div className="mt-5">
+            <PlanifyHubRecentStrip
+              onOpenHistorico={() => openSection("historico")}
+            />
+          </div>
+
+          {/* Quick planejamento */}
+          <section className="mt-5 grid gap-3 sm:grid-cols-2">
+            <button
+              type="button"
+              onClick={() => openPlanejamento("anual")}
+              className="pl-hud-glass flex items-center gap-3 rounded-2xl p-4 text-left transition hover:border-cyan-400/35"
+            >
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-600 text-white">
+                <PlanifyIcon name="clipboard" className="h-5 w-5" />
+              </span>
+              <span>
+                <span className="block text-sm font-extrabold text-slate-950">
+                  Planejamento Anual
+                </span>
+                <span className="text-xs font-medium text-slate-500">
+                  Matriz BNCC · DOCX oficial
+                </span>
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => openPlanejamento("trimestral")}
+              className="pl-hud-glass flex items-center gap-3 rounded-2xl p-4 text-left transition hover:border-cyan-400/35"
+            >
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-100 text-cyan-700">
+                <PlanifyIcon name="calendar" className="h-5 w-5" />
+              </span>
+              <span>
+                <span className="block text-sm font-extrabold text-slate-950">
+                  Planejamento Trimestral
+                </span>
+                <span className="text-xs font-medium text-slate-500">
+                  1º, 2º ou 3º trimestre
+                </span>
+              </span>
+            </button>
           </section>
 
-          {/* Bloco 2 — Grade de ferramentas (estilo repositório Teachy) */}
-          <section className="mt-5 rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm sm:p-5">
+          {/* Tool apps grid */}
+          <section className="mt-5 pl-hud-glass rounded-2xl p-4 sm:p-5">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <h2 className="text-base font-black text-slate-950">
-                  Ferramentas com IA
+                <h2 className="text-sm font-extrabold text-slate-950">
+                  Ferramentas · apps
                 </h2>
-                <p className="text-xs font-semibold text-slate-500">
-                  Materiais alinhados à BNCC — sem prompt complexo
+                <p className="text-xs font-medium text-slate-500">
+                  Escolha um gerador e comece em segundos
                 </p>
               </div>
               <div className="relative w-full sm:max-w-xs">
@@ -308,19 +347,19 @@ export default function TeachyStudioHome({
                   value={toolSearch}
                   onChange={(e) => setToolSearch(e.target.value)}
                   placeholder="Buscar ferramenta…"
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-3 text-sm font-semibold outline-none focus:border-blue-300 focus:bg-white"
+                  className="w-full rounded-xl border border-cyan-400/15 bg-white/80 py-2.5 pl-9 pr-3 text-sm font-semibold outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
                 />
               </div>
             </div>
 
             {!toolSearch.trim() ? (
-              <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
+              <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
                 {quickTools.map((tool) => (
                   <button
                     key={tool.id}
                     type="button"
                     onClick={() => openTool(tool.id)}
-                    className="flex shrink-0 items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-2 text-xs font-black text-blue-800 transition hover:bg-blue-100"
+                    className="flex shrink-0 items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-50/60 px-3 py-1.5 text-xs font-semibold text-cyan-900 transition hover:bg-cyan-50"
                   >
                     <PlanifyIcon name={tool.icon} className="h-3.5 w-3.5" />
                     {tool.shortTitle}
@@ -329,7 +368,7 @@ export default function TeachyStudioHome({
               </div>
             ) : null}
 
-            <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
+            <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
               {toolCategories.map((cat) => {
                 const active = category === cat.id;
                 return (
@@ -337,10 +376,10 @@ export default function TeachyStudioHome({
                     key={cat.id}
                     type="button"
                     onClick={() => setCategory(cat.id)}
-                    className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-black transition ${
+                    className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
                       active
-                        ? "border-blue-200 bg-blue-600 text-white"
-                        : "border-slate-200 bg-white text-slate-600 hover:border-blue-200"
+                        ? "border-cyan-400/40 bg-cyan-600 text-white shadow-sm"
+                        : "border-slate-200/80 bg-white/80 text-slate-600 hover:border-cyan-300"
                     }`}
                   >
                     <PlanifyIcon name={cat.icon} className="h-3.5 w-3.5" />
@@ -350,26 +389,21 @@ export default function TeachyStudioHome({
               })}
             </div>
 
-            <div className="mt-4 grid grid-cols-1 gap-2 min-[420px]:grid-cols-2 sm:grid-cols-3 md:grid-cols-4">
+            <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
               {filteredTools.map((tool) => (
                 <button
                   key={tool.id}
                   type="button"
                   onClick={() => openTool(tool.id)}
-                  className="flex items-center gap-2.5 rounded-xl border border-slate-100 bg-slate-50/60 p-2.5 text-left transition hover:border-blue-200 hover:bg-white hover:shadow-sm"
+                  className="flex flex-col items-center rounded-xl border border-cyan-400/10 bg-white/70 p-3 text-center transition hover:border-cyan-400/30 hover:shadow-[0_0_12px_rgba(0,212,255,0.08)]"
                 >
                   <span
-                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br ${tool.accent} text-white`}
+                    className={`flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${tool.accent} text-white shadow-sm`}
                   >
                     <PlanifyIcon name={tool.icon} className="h-4 w-4" />
                   </span>
-                  <span className="min-w-0">
-                    <span className="block truncate text-xs font-black text-slate-900">
-                      {tool.shortTitle}
-                    </span>
-                    <span className="block truncate text-[10px] font-semibold text-slate-500">
-                      {tool.description}
-                    </span>
+                  <span className="mt-2 line-clamp-2 text-[11px] font-bold leading-snug text-slate-900">
+                    {tool.shortTitle}
                   </span>
                 </button>
               ))}
@@ -381,6 +415,39 @@ export default function TeachyStudioHome({
               </p>
             ) : null}
           </section>
+
+          {/* Pacote rápido por contexto */}
+          {topic.trim() ? (
+            <section className="mt-5 pl-hud-glass rounded-2xl p-4 sm:p-5">
+              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-cyan-600">
+                Sugestões para &ldquo;{topic.trim()}&rdquo;
+              </p>
+              <div className="mt-3 space-y-3">
+                {bundleByTag().slice(0, 2).map(([tag, items]) => (
+                  <div key={tag}>
+                    <p className="mb-1.5 text-[10px] font-bold uppercase text-slate-400">
+                      {tag}
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {items.slice(0, 3).map((item) => (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => openTool(item.id)}
+                          className="rounded-lg border border-cyan-400/15 bg-white/80 px-3 py-2 text-xs font-semibold text-slate-700 hover:border-cyan-400/30"
+                        >
+                          {item.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-4 border-t border-cyan-400/10 pt-3">
+                <TeachyToolToolbar onApplyHint={applyHintFromHome} />
+              </div>
+            </section>
+          ) : null}
         </div>
       </div>
     </div>

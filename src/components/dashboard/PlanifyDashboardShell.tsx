@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { PlanifyDashboardMain } from "@/components/dashboard/PlanifyDashboardMain";
+import { PlanifyQuickNav } from "@/components/dashboard/PlanifyQuickNav";
 import { CreditsBalancePill } from "@/components/credits/CreditsBalancePill";
 import { LandingHomeLink } from "@/components/public/LandingHomeLink";
 import { PlanifyBrand } from "@/components/pro/PlanifyBrand";
@@ -196,58 +197,71 @@ export default function PlanifyDashboardShell() {
 
       <main className="pl-hud-main flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-white">
         {hasPanel ? (
-          <header className="flex shrink-0 items-center justify-between gap-2 border-b border-slate-200/90 bg-white px-3 py-2.5 pt-[max(0.625rem,env(safe-area-inset-top))] sm:gap-3 sm:px-5">
-            <div className="flex min-w-0 flex-1 items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setSidebarOpen(true)}
-                aria-label="Abrir menu"
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-slate-600 transition hover:bg-slate-100 lg:hidden"
-              >
-                <PlanifyIcon name="menu" className="h-5 w-5" />
-              </button>
-              <button
-                type="button"
-                onClick={selectInicio}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-slate-600 transition hover:bg-slate-100"
-                aria-label="Voltar ao início"
-              >
-                <PlanifyIcon name="arrowLeft" className="h-5 w-5" />
-              </button>
-              <div className="min-w-0">
-                <p className="text-[10px] font-black uppercase tracking-[0.14em] text-blue-600">
-                  {selectedToolId ? "Ferramenta IA · BNCC" : "Página"}
-                </p>
-                <h1 className="truncate text-base font-black text-slate-950">
-                  {panelTitle}
-                </h1>
+          <header className="flex shrink-0 flex-col gap-2 border-b border-cyan-400/15 bg-white/95 px-3 py-2.5 pt-[max(0.625rem,env(safe-area-inset-top))] sm:px-5">
+            <div className="flex items-center justify-between gap-2 sm:gap-3">
+              <div className="flex min-w-0 flex-1 items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSidebarOpen(true)}
+                  aria-label="Abrir menu"
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-slate-600 transition hover:bg-slate-50 lg:hidden"
+                >
+                  <PlanifyIcon name="menu" className="h-5 w-5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={selectInicio}
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-slate-600 transition hover:bg-slate-50"
+                  aria-label="Voltar ao início"
+                >
+                  <PlanifyIcon name="arrowLeft" className="h-5 w-5" />
+                </button>
+                <div className="min-w-0">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-cyan-600">
+                    {selectedToolId ? "Ferramenta IA · BNCC" : "Espaço de trabalho"}
+                  </p>
+                  <h1 className="truncate text-base font-extrabold text-slate-950">
+                    {panelTitle}
+                  </h1>
+                </div>
+              </div>
+              <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+                <span className="hidden sm:inline-flex">
+                  <LandingHomeLink compact />
+                </span>
+                <CreditsBalancePill />
+                <Link
+                  href="/planos"
+                  className="pl-hud-btn rounded-xl px-3 py-1.5 text-xs font-semibold sm:px-4"
+                >
+                  Planos
+                </Link>
               </div>
             </div>
-            <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-              <span className="hidden sm:inline-flex">
-                <LandingHomeLink compact />
-              </span>
-              <CreditsBalancePill />
-              <Link
-                href="/planos"
-                className="pl-hud-btn rounded-full px-3 py-1.5 text-xs font-black text-slate-900 sm:px-4"
-              >
-                Planos
-              </Link>
-            </div>
+            <PlanifyQuickNav
+              activeTool={Boolean(selectedToolId)}
+              activeSection={selectedSectionId}
+              onSelectInicio={selectInicio}
+              onSelectSection={selectSection}
+            />
           </header>
         ) : (
-          <header className="flex shrink-0 items-center justify-between gap-2 border-b border-slate-200/90 bg-white px-3 py-2 pt-[max(0.5rem,env(safe-area-inset-top))] sm:gap-3 sm:px-5">
+          <header className="flex shrink-0 items-center justify-between gap-2 border-b border-cyan-400/15 bg-white/95 px-3 py-2 pt-[max(0.5rem,env(safe-area-inset-top))] sm:gap-3 sm:px-5">
             <div className="flex min-w-0 items-center gap-2">
               <button
                 type="button"
                 onClick={() => setSidebarOpen(true)}
                 aria-label="Abrir menu"
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-slate-600 transition hover:bg-slate-100 lg:hidden"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-slate-600 transition hover:bg-slate-50 lg:hidden"
               >
                 <PlanifyIcon name="menu" className="h-5 w-5" />
               </button>
-              <PlanifyBrand compact href="/" />
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-cyan-600">
+                  Sua rede pedagógica
+                </p>
+                <PlanifyBrand compact href="/" />
+              </div>
             </div>
             <div className="flex items-center gap-1.5 sm:gap-2">
               <span className="hidden sm:inline-flex">
@@ -256,7 +270,7 @@ export default function PlanifyDashboardShell() {
               <CreditsBalancePill />
               <Link
                 href="/planos"
-                className="pl-hud-btn rounded-full px-3 py-1.5 text-xs font-black text-slate-900 sm:px-4"
+                className="pl-hud-btn rounded-xl px-3 py-1.5 text-xs font-semibold sm:px-4"
               >
                 Planos
               </Link>

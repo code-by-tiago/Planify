@@ -1,19 +1,14 @@
 export const dynamic = "force-dynamic";
 
 import DashboardHubRedirect from "@/components/dashboard/DashboardHubRedirect";
+import { PlanifyHubPageFallback } from "@/components/dashboard/PlanifyToolRedirectShell";
 import PremiumAccessGate from "@/components/premium/PremiumAccessGate";
 import { Suspense } from "react";
 
 export default function MarketplacePage() {
   return (
     <PremiumAccessGate featureName="o Marketplace">
-      <Suspense
-        fallback={
-          <main className="flex h-full min-h-[200px] flex-1 items-center justify-center">
-            <p className="text-sm font-bold text-indigo-600">Carregando…</p>
-          </main>
-        }
-      >
+      <Suspense fallback={<PlanifyHubPageFallback />}>
         <DashboardHubRedirect legacy="marketplace" />
       </Suspense>
     </PremiumAccessGate>

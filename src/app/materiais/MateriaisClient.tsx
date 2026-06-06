@@ -1246,7 +1246,7 @@ export function MateriaisClient({
                   O tema é aplicado ao gerar — altere e clique em Gerar novamente
                 </p>
               </div>
-              <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="mt-3 grid max-h-[28rem] gap-2.5 overflow-y-auto pr-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {SLIDE_THEME_OPTIONS.map((tema) => {
                   const selected = designSlides === tema.id;
                   return (
@@ -1262,19 +1262,32 @@ export function MateriaisClient({
                       }`}
                     >
                       <span
-                        className="flex h-16 items-end gap-1 p-2"
+                        className="relative flex h-14 items-end gap-1.5 p-2"
                         style={{
-                          background: `linear-gradient(135deg, ${tema.preview[0]}, ${tema.preview[1]})`,
+                          background: `linear-gradient(135deg, ${tema.preview[0]}, ${tema.preview[1]}, ${tema.preview[2]})`,
                         }}
                       >
                         <span
-                          className="h-2 w-10 rounded-full"
-                          style={{ background: tema.preview[2] }}
+                          className="h-2 w-10 rounded-full shadow-sm"
+                          style={{
+                            background: tema.dark
+                              ? "rgba(255,255,255,0.85)"
+                              : tema.preview[2],
+                          }}
                         />
                         <span
                           className="h-2 w-6 rounded-full"
-                          style={{ background: "rgba(255,255,255,0.7)" }}
+                          style={{
+                            background: tema.dark
+                              ? tema.preview[1]
+                              : "rgba(255,255,255,0.65)",
+                          }}
                         />
+                        {tema.dark ? (
+                          <span className="absolute right-2 top-2 rounded-full bg-black/30 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white/90">
+                            Escuro
+                          </span>
+                        ) : null}
                       </span>
                       <span className="block bg-white px-3 py-2">
                         <span className="flex items-center gap-1 text-xs font-black text-slate-800">

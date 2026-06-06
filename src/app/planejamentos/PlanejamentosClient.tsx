@@ -1,5 +1,7 @@
 "use client";
 
+import { DailyGenerationsBar } from "@/components/credits/DailyGenerationsBar";
+import { PLANNING_DEEP_GENERATION_TYPE } from "@/lib/ai/material-generation-policy";
 import { MarketplacePublishButton } from "@/components/marketplace/MarketplacePublishButton";
 import { PlanifyOwlGenerationCoach } from "@/components/pro/PlanifyOwlGenerationCoach";
 import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
@@ -811,8 +813,17 @@ export function PlanejamentosClient() {
       const data = await response.json().catch(() => null);
 
       if (!response.ok || !data?.success || !data?.planejamento) {
+        const code =
+          data && typeof data === "object" && "code" in data
+            ? String((data as { code?: unknown }).code || "")
+            : "";
+        if (code === "daily_limit_reached") {
+          window.dispatchEvent(new Event("planify:credits-changed"));
+        }
         throw new Error(data?.error?.message || "Não foi possível gerar o planejamento com IA.");
       }
+
+      window.dispatchEvent(new Event("planify:credits-changed"));
 
       const planning = data.planejamento as GeneratedPlanning;
       setGeneratedPlanning(planning);
@@ -1254,6 +1265,10 @@ export function PlanejamentosClient() {
                 Abrir no editor automaticamente após gerar (salva também no histórico)
               </span>
             </label>
+
+            <div className="mt-6">
+              <DailyGenerationsBar tipoMaterial={PLANNING_DEEP_GENERATION_TYPE} />
+            </div>
 
             <div className="mt-7 grid gap-3 xl:grid-cols-4">
               <button type="button" onClick={suggestBncc} disabled={loadingBncc} className="rounded-2xl bg-white px-6 py-4 text-sm font-black text-slate-950 transition hover:-translate-y-1 hover:bg-cyan-100 disabled:cursor-not-allowed disabled:opacity-60">

@@ -19,6 +19,10 @@ import {
   getEngineOutputIssues,
 } from "./material-engine-quality";
 import {
+  buildPedagogicalOutlinePromptBlock,
+  usesPedagogicalOutline,
+} from "./material-pedagogical-outline";
+import {
   normalizeMaterialEngineRequest,
   validateMaterialEngineRequest,
 } from "./material-engine-validation";
@@ -811,7 +815,18 @@ export async function generateMaterialByEngine(input: MaterialEngineInput) {
   const systemInstruction = buildMaterialEngineSystemInstruction(
     request.tipoMaterial,
   );
-  const basePrompt = buildMaterialEnginePrompt(request);
+  const modelTier = getModelTierForMaterialType(request.tipoMaterial);
+  let outlineBlock = "";
+
+  if (modelTier === "advanced" && usesPedagogicalOutline(request.tipoMaterial)) {
+    try {
+      outlineBlock = await buildPedagogicalOutlinePromptBlock(request);
+    } catch {
+      outlineBlock = "";
+    }
+  }
+
+  const basePrompt = buildMaterialEnginePrompt(request, outlineBlock);
   const maxOutputTokens = maxOutputTokensFor(request.tipoMaterial);
 
   let activePrompt = basePrompt;

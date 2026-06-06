@@ -30,7 +30,7 @@ export const billingPlans: BillingPlan[] = [
     envPriceKeys: ["STRIPE_PRICE_PRO_MONTHLY", "STRIPE_PRICE_PRO_MENSAL"],
     ctaLabel: "Assinar Pro mensal",
     features: [
-      "Até 3 gerações profundas por dia (IA avançada)",
+      "Até 3 gerações profundas por dia (materiais + planejamentos)",
       "~35 materiais completos por mês (provas, apostilas, planos)",
       "Gerador IA de planejamentos",
       "Editor, histórico e exportação DOCX/PDF",
@@ -52,7 +52,7 @@ export const billingPlans: BillingPlan[] = [
     badgeLabel: "Mais completo",
     highlighted: true,
     features: [
-      "Até 5 gerações profundas por dia (IA avançada)",
+      "Até 5 gerações profundas por dia (materiais + planejamentos)",
       "~80 materiais completos por mês",
       "Ideal para apostilas, provas e listas em volume",
       "Gerador IA de planejamentos",
@@ -74,7 +74,7 @@ export const billingPlans: BillingPlan[] = [
     ctaLabel: "Assinar anual",
     badgeLabel: "Melhor anual",
     features: [
-      "Até 3 gerações profundas por dia",
+      "Até 3 gerações profundas por dia (materiais + planejamentos)",
       "~450 materiais completos no ano letivo",
       "Melhor custo-benefício do Planify",
       "Gerador IA de planejamentos",

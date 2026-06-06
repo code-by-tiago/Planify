@@ -18,7 +18,7 @@ export function TeachyHomeTestimonials() {
           {items.map((item, index) => (
             <figure
               key={`${item.name}-${index}`}
-              className="w-[min(100%,320px)] shrink-0 rounded-3xl border border-slate-100 bg-white p-6 shadow-sm sm:w-[340px]"
+              className="w-[min(100%,320px)] shrink-0 rounded-2xl border border-slate-200/90 bg-white p-6 shadow-sm sm:w-[340px]"
             >
               <blockquote className="text-sm font-medium leading-7 text-slate-600">
                 “{item.quote}”

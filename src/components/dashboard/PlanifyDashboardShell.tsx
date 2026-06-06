@@ -170,7 +170,7 @@ export default function PlanifyDashboardShell() {
   }, [hasPanel, selectInicio]);
 
   return (
-    <div className="planify-ui3 planify-teachy-app pl-teachy-shell pl-dashboard-root pl-app-bg flex h-[100dvh] w-full max-w-[100vw] overflow-hidden text-slate-950">
+    <div className="planify-institutional planify-ui3 planify-teachy-app pl-teachy-shell pl-dashboard-root pl-app-bg flex h-[100dvh] w-full max-w-[100vw] overflow-hidden text-slate-950">
       <PlanifyShellSidebar
         variant="teachy"
         brandHref="/"

@@ -22,14 +22,14 @@ export function PlanifyPageHero({
 
   return (
     <div
-      className={`relative shrink-0 overflow-hidden border-b border-rose-100/60 bg-gradient-to-r from-white via-rose-50/40 to-violet-50/50 transition-[padding,box-shadow] duration-200 ${
+      className={`pl-page-hero relative shrink-0 overflow-hidden border-b border-slate-200/80 bg-white transition-[padding,box-shadow] duration-200 ${
         collapsed
           ? "px-4 py-2 shadow-sm sm:px-5"
           : "px-4 py-4 sm:px-6 sm:py-5"
       }`}
     >
       <div
-        className={`pointer-events-none absolute -right-6 -top-8 h-32 w-32 rounded-full bg-fuchsia-200/35 blur-3xl transition-opacity duration-200 ${
+        className={`pointer-events-none absolute -right-8 -top-10 h-28 w-28 rounded-full bg-blue-500/5 blur-3xl transition-opacity duration-200 ${
           collapsed ? "opacity-0" : "opacity-100"
         }`}
         aria-hidden
@@ -45,7 +45,7 @@ export function PlanifyPageHero({
             {badge}
           </span>
           <h1
-            className={`font-black tracking-tight text-violet-950 transition-[margin,font-size] duration-200 ${
+            className={`font-extrabold tracking-tight text-slate-950 transition-[margin,font-size] duration-200 ${
               collapsed
                 ? "mt-1 truncate text-sm sm:text-base"
                 : "mt-2 text-xl sm:text-2xl"
@@ -54,7 +54,7 @@ export function PlanifyPageHero({
             {title}
           </h1>
           <p
-            className={`overflow-hidden font-semibold leading-relaxed text-violet-500/95 transition-[max-height,opacity,margin] duration-200 ${
+            className={`overflow-hidden font-medium leading-relaxed text-slate-500 transition-[max-height,opacity,margin] duration-200 ${
               collapsed
                 ? "mt-0 max-h-0 opacity-0"
                 : "mt-1.5 max-h-24 text-sm opacity-100"

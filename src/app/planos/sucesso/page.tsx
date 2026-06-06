@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 export default function PlanosSucessoPage() {
   return (
-    <main className="planify-ui3 planify-public planify-teachy-landing flex min-h-screen flex-col bg-white">
+    <main className="planify-institutional planify-ui3 planify-public planify-teachy-landing flex min-h-screen flex-col bg-white">
       <PublicHeader active="planos" />
 
       <section className="mx-auto flex max-w-2xl flex-1 flex-col items-center justify-center px-5 py-16 text-center sm:px-8">

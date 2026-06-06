@@ -179,16 +179,16 @@ export default async function PlanosPage({ searchParams }: PlanosPageProps) {
   const alert = getAlert(params);
 
   return (
-    <main className="planify-ui3 planify-public planify-teachy-landing min-h-screen overflow-x-clip bg-white">
+    <main className="planify-institutional planify-ui3 planify-public planify-teachy-landing min-h-screen overflow-x-clip bg-white">
       <PublicHeader active="planos" />
 
       {/* Hero */}
       <section className="mx-auto max-w-7xl px-5 py-14 sm:px-8 lg:py-20">
         <div className="max-w-3xl">
-          <p className="text-xs font-black uppercase tracking-[0.2em] text-indigo-600">
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">
             Planos Planify
           </p>
-          <h1 className="mt-4 text-4xl font-black leading-[1.06] tracking-tight text-slate-950 sm:text-5xl">
+          <h1 className="pl-display mt-4 text-4xl font-extrabold leading-[1.06] tracking-tight text-slate-950 sm:text-5xl">
             Libere o Planify e crie materiais{" "}
             <span className="pl-gradient-text">sem limites manuais.</span>
           </h1>
@@ -232,18 +232,18 @@ export default async function PlanosPage({ searchParams }: PlanosPageProps) {
           {billingPlans.map((plan) => (
             <article
               key={plan.key}
-              className={`relative flex h-full flex-col rounded-3xl border p-7 transition hover:shadow-lg ${
+              className={`relative flex h-full flex-col rounded-2xl border p-7 transition hover:shadow-md ${
                 plan.highlighted
-                      ? "border-indigo-300 bg-white shadow-md ring-2 ring-indigo-500/30 lg:scale-[1.02]"
+                  ? "pl-plan-card-highlight border-blue-300 bg-white shadow-md ring-2 ring-blue-500/20 lg:scale-[1.02]"
                   : "border-slate-200 bg-white shadow-sm"
               }`}
             >
               {plan.badgeLabel && (
                 <span
-                  className={`absolute right-6 top-6 rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] ${
+                  className={`absolute right-6 top-6 rounded-lg px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] ${
                     plan.highlighted
-                      ? "bg-indigo-600 text-white"
-                      : "bg-indigo-50 text-indigo-700"
+                      ? "bg-blue-600 text-white"
+                      : "bg-blue-50 text-blue-700"
                   }`}
                 >
                   {plan.badgeLabel}
@@ -287,9 +287,9 @@ export default async function PlanosPage({ searchParams }: PlanosPageProps) {
               <div className="mt-auto pt-8">
                 <PlanCheckoutLink
                   planKey={plan.key}
-                  className={`flex w-full items-center justify-center gap-2 rounded-full px-6 py-3.5 text-sm font-bold transition ${
+                  className={`flex w-full items-center justify-center gap-2 rounded-xl px-6 py-3.5 text-sm font-semibold transition ${
                     plan.highlighted
-                      ? "pl-teachy-cta text-slate-900 hover:brightness-95"
+                      ? "pl-teachy-cta"
                       : "border border-slate-200 bg-white text-slate-900 hover:border-blue-300 hover:text-blue-700"
                   }`}
                 >
@@ -317,9 +317,9 @@ export default async function PlanosPage({ searchParams }: PlanosPageProps) {
       </section>
 
       {/* Comparativo — faixa lavanda */}
-      <section className="border-y border-indigo-100/50 pl-app-bg py-14 sm:py-16">
+      <section className="border-y border-slate-200/80 bg-slate-50 py-14 sm:py-16">
         <div className="mx-auto max-w-7xl px-5 sm:px-8">
-          <h2 className="text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
+          <h2 className="pl-display text-3xl font-extrabold tracking-tight text-slate-950 sm:text-4xl">
             Compare os planos{" "}
             <span className="pl-gradient-text">lado a lado.</span>
           </h2>
@@ -328,7 +328,7 @@ export default async function PlanosPage({ searchParams }: PlanosPageProps) {
             assinatura ativa.
           </p>
 
-          <div className="mt-8 overflow-hidden rounded-3xl border border-white/60 bg-white shadow-sm">
+          <div className="mt-8 overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
             <div className="overflow-x-auto">
               <table className="w-full min-w-[640px] border-collapse text-left">
                 <thead>
@@ -403,7 +403,7 @@ export default async function PlanosPage({ searchParams }: PlanosPageProps) {
           {guarantees.map((item) => (
             <div
               key={item.title}
-              className="flex h-full items-start gap-3 rounded-3xl border border-slate-100 bg-white p-5 shadow-sm"
+              className="flex h-full items-start gap-3 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm"
             >
               <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
                 <PlanifyIcon name={item.icon} className="h-5 w-5" />
@@ -431,14 +431,14 @@ export default async function PlanosPage({ searchParams }: PlanosPageProps) {
 
       {/* CTA — alinhado à página de planos (sem “grátis” contraditório) */}
       <section className="mx-auto max-w-7xl px-5 pb-16 sm:px-8">
-        <div className="rounded-[2rem] border border-indigo-500/20 bg-gradient-to-br from-indigo-600 via-violet-600 to-indigo-700 px-8 py-10 text-center shadow-lg shadow-indigo-900/15 sm:px-12">
-          <p className="text-[10px] font-black uppercase tracking-[0.22em] text-indigo-200">
+        <div className="pl-inst-cta-band rounded-2xl px-8 py-10 text-center sm:px-12">
+          <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-blue-200/90">
             Próximo passo
           </p>
-          <h2 className="mt-2 text-2xl font-black text-white sm:text-3xl">
+          <h2 className="mt-2 text-2xl font-extrabold text-white sm:text-3xl">
             Escolha um plano e entre no painel
           </h2>
-          <p className="mx-auto mt-3 max-w-xl text-sm font-medium leading-7 text-indigo-100">
+          <p className="mx-auto mt-3 max-w-xl text-sm font-medium leading-7 text-slate-300">
             Os valores estão logo acima. Crie sua conta para assinar com checkout
             seguro ou entre com o e-mail da assinatura já ativa para usar as 13
             ferramentas com IA.
@@ -446,20 +446,20 @@ export default async function PlanosPage({ searchParams }: PlanosPageProps) {
           <div className="mt-7 flex flex-wrap justify-center gap-3">
             <Link
               href="#precos"
-              className="inline-flex items-center gap-2 rounded-full bg-white px-7 py-3.5 text-sm font-bold text-indigo-700 shadow-md transition hover:bg-indigo-50"
+              className="pl-teachy-cta inline-flex items-center gap-2 rounded-xl px-7 py-3.5 text-sm font-semibold"
             >
               Ver planos acima
               <PlanifyIcon name="arrowRight" className="h-4 w-4" />
             </Link>
             <Link
               href="/login"
-              className="inline-flex items-center gap-2 rounded-full border-2 border-white/90 bg-white/10 px-7 py-3.5 text-sm font-bold text-white backdrop-blur-sm transition hover:bg-white/20"
+              className="pl-inst-btn-ghost inline-flex items-center gap-2 rounded-xl px-7 py-3.5 text-sm font-semibold transition"
             >
               Criar conta
             </Link>
             <Link
               href="/login"
-              className="inline-flex items-center gap-2 rounded-full px-7 py-3.5 text-sm font-bold text-indigo-100 underline-offset-4 transition hover:text-white hover:underline"
+              className="inline-flex items-center gap-2 rounded-xl px-7 py-3.5 text-sm font-semibold text-slate-300 underline-offset-4 transition hover:text-white hover:underline"
             >
               Já sou assinante — Entrar
             </Link>

@@ -44,9 +44,9 @@ export function PlanifyHomePage() {
       <TeachyPartnersBar />
       <TeachyFinalCta />
 
-      <section id="faq" className="scroll-mt-28 border-t border-slate-100 bg-white py-16 sm:pb-20">
+      <section id="faq" className="scroll-mt-28 border-t border-slate-200/80 bg-white py-16 sm:pb-20">
         <div className="mx-auto max-w-3xl px-5 sm:px-8">
-          <h2 className="text-center text-2xl font-black text-slate-950">
+          <h2 className="pl-display text-center text-2xl font-extrabold text-slate-950">
             Perguntas frequentes
           </h2>
           <div className="mt-8">

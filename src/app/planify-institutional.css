@@ -1,0 +1,373 @@
+/* PLANIFY_INSTITUTIONAL_V1 — unified design system (navy / slate / electric blue) */
+
+:root {
+  --planify-navy: #0b1220;
+  --planify-slate-950: #0f172a;
+  --planify-slate-900: #1e293b;
+  --planify-slate-600: #475569;
+  --planify-slate-500: #64748b;
+  --planify-slate-200: #e2e8f0;
+  --planify-slate-100: #f1f5f9;
+  --planify-surface: #ffffff;
+  --planify-canvas: #f8fafc;
+  --planify-border: rgba(15, 23, 42, 0.08);
+  --planify-border-strong: rgba(15, 23, 42, 0.12);
+  --planify-accent: #2563eb;
+  --planify-accent-hover: #1d4ed8;
+  --planify-accent-cyan: #0891b2;
+  --planify-accent-gradient: linear-gradient(135deg, #2563eb 0%, #0891b2 100%);
+  --planify-text-gradient: linear-gradient(120deg, #2563eb 0%, #0ea5e9 55%, #0891b2 100%);
+  --planify-radius: 12px;
+  --planify-radius-lg: 16px;
+  --planify-radius-xl: 20px;
+  --planify-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --planify-shadow-md: 0 4px 16px rgba(15, 23, 42, 0.06);
+  --planify-shadow-accent: 0 4px 20px rgba(37, 99, 235, 0.22);
+  --planify-font-display: var(--font-display, ui-sans-serif, system-ui, sans-serif);
+  --planify-font-ui: var(--font-inter, ui-sans-serif, system-ui, sans-serif);
+}
+
+/* Neutralize 9.20.8 lavender body chaos — site-wide institutional canvas */
+body {
+  background: var(--planify-canvas) !important;
+  color: var(--planify-slate-950) !important;
+  font-family: var(--planify-font-ui);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Institutional scope */
+.planify-institutional {
+  color: var(--planify-slate-950);
+}
+
+.planify-institutional h1,
+.planify-institutional h2,
+.planify-institutional h3,
+.planify-institutional .pl-display {
+  font-family: var(--planify-font-display);
+  letter-spacing: -0.025em;
+}
+
+/* Public pages — clean white, no lavender wash */
+.planify-institutional.planify-public {
+  background: var(--planify-surface) !important;
+  color: var(--planify-slate-950);
+}
+
+.planify-institutional.planify-public .planify-ui3-header {
+  background: rgba(255, 255, 255, 0.88) !important;
+  border-color: var(--planify-border) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+/* Preserve intentional white text on accent surfaces */
+.planify-institutional .pl-teachy-cta,
+.planify-institutional .pl-btn-brand,
+.planify-institutional .pl-btn-primary,
+.planify-institutional .pl-teachy-generate-btn,
+.planify-institutional .pl-nav-active,
+.planify-institutional .pl-inst-btn-primary,
+.planify-institutional button.pl-inst-btn-primary {
+  color: #ffffff !important;
+}
+
+.planify-institutional .pl-teachy-cta svg,
+.planify-institutional .pl-btn-brand svg,
+.planify-institutional .pl-inst-btn-primary svg {
+  color: #ffffff !important;
+}
+
+/* CTAs — electric blue gradient (replaces yellow Teachy) */
+.planify-institutional .pl-teachy-cta,
+.planify-institutional .pl-inst-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: var(--planify-accent-gradient) !important;
+  color: #ffffff !important;
+  border: none;
+  box-shadow: var(--planify-shadow-accent);
+  transition: filter 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.planify-institutional .pl-teachy-cta:hover,
+.planify-institutional .pl-inst-btn-primary:hover {
+  filter: brightness(1.05);
+  transform: translateY(-1px);
+}
+
+.planify-institutional .pl-teachy-generate-btn {
+  background: var(--planify-accent-gradient) !important;
+  color: #ffffff !important;
+  box-shadow: var(--planify-shadow-accent);
+}
+
+.planify-institutional .pl-teachy-generate-btn:hover:not(:disabled) {
+  filter: brightness(1.05);
+}
+
+/* Gradient text — single accent family */
+.planify-institutional .pl-teachy-gradient-text,
+.planify-institutional .pl-gradient-text {
+  background: var(--planify-text-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+/* App shell — calm institutional canvas */
+.planify-institutional.planify-teachy-app.pl-app-bg {
+  background: var(--planify-canvas) !important;
+}
+
+.planify-institutional .pl-section-hero {
+  background: var(--planify-surface) !important;
+  border-color: var(--planify-border) !important;
+}
+
+.planify-institutional .pl-badge-indigo {
+  background: rgba(37, 99, 235, 0.08) !important;
+  color: var(--planify-accent) !important;
+  border: 1px solid rgba(37, 99, 235, 0.14);
+}
+
+/* Landing hero grid texture */
+.planify-institutional .pl-inst-hero {
+  position: relative;
+  isolation: isolate;
+}
+
+.planify-institutional .pl-inst-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(to right, rgba(15, 23, 42, 0.035) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(15, 23, 42, 0.035) 1px, transparent 1px);
+  background-size: 64px 64px;
+  -webkit-mask-image: radial-gradient(85% 70% at 50% 30%, #000 40%, transparent 100%);
+  mask-image: radial-gradient(85% 70% at 50% 30%, #000 40%, transparent 100%);
+  z-index: 0;
+}
+
+.planify-institutional .pl-inst-hero > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Glass cards */
+.planify-institutional .pl-glass-card {
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid var(--planify-border);
+  border-radius: var(--planify-radius-lg);
+  box-shadow: var(--planify-shadow-sm);
+}
+
+/* BNCC band — navy glass instead of purple wash */
+.planify-institutional .pl-teachy-band-wrap {
+  background: var(--planify-surface);
+}
+
+.planify-institutional .pl-teachy-band {
+  background: linear-gradient(145deg, #0b1220 0%, #1e293b 100%) !important;
+  border-radius: var(--planify-radius-xl);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: var(--planify-shadow-md);
+}
+
+.planify-institutional .pl-teachy-band h2,
+.planify-institutional .pl-teachy-band p {
+  color: #f8fafc !important;
+}
+
+.planify-institutional .pl-teachy-band .pl-teachy-gradient-text {
+  background: linear-gradient(120deg, #60a5fa 0%, #22d3ee 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Tools bento grid */
+.planify-institutional .planify-landing-tools-grid > a {
+  border-radius: var(--planify-radius-lg) !important;
+  border-color: var(--planify-border) !important;
+  background: var(--planify-surface) !important;
+  box-shadow: var(--planify-shadow-sm);
+}
+
+.planify-institutional .planify-landing-tools-grid > a:hover {
+  border-color: rgba(37, 99, 235, 0.25) !important;
+  box-shadow: var(--planify-shadow-md);
+}
+
+/* Testimonials strip */
+.planify-institutional .pl-teachy-testimonials {
+  background: var(--planify-canvas);
+  border-block: 1px solid var(--planify-border);
+}
+
+.planify-institutional .pl-teachy-testimonials__track figure {
+  border-radius: var(--planify-radius-lg) !important;
+  border-color: var(--planify-border) !important;
+  box-shadow: var(--planify-shadow-sm) !important;
+}
+
+/* Partners / social proof */
+.planify-institutional .pl-teachy-partners {
+  background: var(--planify-surface);
+  border-top: 1px solid var(--planify-border);
+}
+
+/* Final CTA band */
+.planify-institutional .pl-inst-cta-band {
+  background: linear-gradient(145deg, #0b1220 0%, #1e3a5f 100%);
+  border-radius: var(--planify-radius-xl);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.planify-institutional .pl-inst-cta-band h2,
+.planify-institutional .pl-inst-cta-band p {
+  color: #f1f5f9 !important;
+}
+
+.planify-institutional .pl-inst-cta-band h2.text-white,
+.planify-institutional .pl-inst-cta-band [class*="text-white"] {
+  color: #ffffff !important;
+}
+
+.planify-institutional .pl-inst-cta-band .pl-teachy-cta {
+  background: #ffffff !important;
+  color: var(--planify-slate-950) !important;
+  box-shadow: none;
+}
+
+.planify-institutional .pl-inst-cta-band .pl-teachy-cta svg {
+  color: var(--planify-slate-950) !important;
+}
+
+.planify-institutional .pl-inst-cta-band .pl-inst-btn-ghost {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #f8fafc !important;
+  background: transparent;
+}
+
+.planify-institutional .pl-inst-cta-band .pl-inst-btn-ghost:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* Dark footer — immune to 9.20.8 bg-slate overrides */
+.pl-footer-dark {
+  background: var(--planify-navy) !important;
+  color: #cbd5e1 !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.pl-footer-dark,
+.pl-footer-dark p,
+.pl-footer-dark a,
+.pl-footer-dark span,
+.pl-footer-dark h2,
+.pl-footer-dark h3 {
+  color: inherit;
+}
+
+.pl-footer-dark .pl-footer-muted {
+  color: #94a3b8 !important;
+}
+
+.pl-footer-dark .pl-footer-heading {
+  color: #64748b !important;
+}
+
+.pl-footer-dark a:hover {
+  color: #ffffff !important;
+}
+
+.pl-footer-dark .pl-footer-accent {
+  color: #60a5fa !important;
+}
+
+.pl-footer-dark .pl-footer-accent:hover {
+  color: #93c5fd !important;
+}
+
+/* Page hero — institutional (replaces rose/violet) */
+.planify-institutional .pl-page-hero {
+  background: var(--planify-surface) !important;
+  border-color: var(--planify-border) !important;
+}
+
+.planify-institutional .pl-page-hero h1 {
+  color: var(--planify-slate-950) !important;
+}
+
+.planify-institutional .pl-page-hero p {
+  color: var(--planify-slate-500) !important;
+}
+
+/* Sidebar — refined institutional */
+.planify-institutional.pl-teachy-shell .pl-sidebar,
+.planify-institutional .pl-sidebar-teachy {
+  background: var(--planify-surface) !important;
+  border-color: var(--planify-border-strong) !important;
+}
+
+.planify-institutional.pl-teachy-shell .pl-nav-active {
+  background: var(--planify-accent-gradient) !important;
+  box-shadow: var(--planify-shadow-accent);
+}
+
+/* Public brand button secondary */
+.planify-institutional .pl-btn-brand {
+  background: var(--planify-accent-gradient) !important;
+  box-shadow: var(--planify-shadow-accent);
+}
+
+.planify-institutional .pl-btn-secondary {
+  color: var(--planify-slate-900) !important;
+  border-color: var(--planify-border-strong) !important;
+}
+
+.planify-institutional .pl-btn-secondary:hover {
+  background: var(--planify-slate-100) !important;
+  border-color: rgba(37, 99, 235, 0.2) !important;
+}
+
+/* Login submit — consistent primary */
+.planify-institutional button[class*="from-indigo-600"] {
+  background: var(--planify-accent-gradient) !important;
+  color: #ffffff !important;
+}
+
+/* Feature visual glow — subtle blue only */
+.planify-institutional .pl-feature-visual-glow {
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.08), rgba(8, 145, 178, 0.06)) !important;
+}
+
+/* Plan cards on /planos */
+.planify-institutional .pl-plan-card-highlight {
+  border-color: rgba(37, 99, 235, 0.35) !important;
+  box-shadow: 0 8px 32px rgba(37, 99, 235, 0.12) !important;
+}
+
+@media (max-width: 1023px) {
+  .planify-institutional.planify-teachy-landing .planify-ui3-header {
+    background: rgba(255, 255, 255, 0.96) !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .planify-institutional .pl-teachy-cta:hover,
+  .planify-institutional .pl-inst-btn-primary:hover {
+    transform: none;
+  }
+}
+
+/* PLANIFY_INSTITUTIONAL_V1_END */

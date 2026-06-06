@@ -141,13 +141,13 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="planify-ui3 planify-public flex min-h-screen flex-col">
+    <main className="planify-institutional planify-ui3 planify-public planify-teachy-landing flex min-h-screen flex-col">
       <PublicHeader />
 
       <section className="mx-auto w-full max-w-7xl flex-1 px-5 py-10 sm:px-8 lg:py-14">
         <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-16">
           <div>
-            <h1 className="text-3xl font-black leading-tight tracking-tight text-slate-950 sm:text-4xl lg:text-[2.75rem]">
+            <h1 className="pl-display text-3xl font-extrabold leading-tight tracking-tight text-slate-950 sm:text-4xl lg:text-[2.75rem]">
               {mode === "login" ? (
                 <>
                   Bem-vindo de volta,{" "}
@@ -192,8 +192,8 @@ export default function LoginPage() {
             </ul>
           </div>
 
-          <div className="rounded-3xl border border-slate-200/90 bg-white p-6 shadow-lg shadow-slate-200/40 sm:p-8">
-            <p className="text-xs font-black uppercase tracking-[0.2em] text-indigo-600">
+          <div className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-md sm:p-8">
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">
               Acesso Planify
             </p>
             <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">
@@ -295,10 +295,10 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className={`w-full rounded-full px-5 py-3.5 text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                className={`w-full rounded-xl px-5 py-3.5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${
                   mode === "signup"
                     ? "pl-btn-brand w-full justify-center"
-                    : "bg-gradient-to-r from-indigo-600 to-violet-600 text-white hover:opacity-95"
+                    : "pl-inst-btn-primary bg-gradient-to-r from-blue-600 to-cyan-600 text-white hover:opacity-95"
                 }`}
               >
                 {loading

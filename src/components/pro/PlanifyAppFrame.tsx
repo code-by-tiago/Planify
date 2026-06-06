@@ -79,7 +79,7 @@ export default function PlanifyAppFrame({
     <Link
       href="/dashboard"
       onClick={closeSidebar}
-      className="pl-teachy-cta w-full justify-center rounded-full py-3 font-bold text-slate-900"
+      className="pl-teachy-cta w-full justify-center rounded-xl py-3 font-semibold"
     >
       <PlanifyIcon name="spark" className="h-4 w-4" />
       Início
@@ -87,7 +87,7 @@ export default function PlanifyAppFrame({
   );
 
   return (
-    <main className="planify-ui3 planify-teachy-app pl-shell-root pl-teachy-shell pl-app-bg flex h-[100dvh] w-full max-w-[100vw] overflow-hidden text-slate-950">
+    <main className="planify-institutional planify-ui3 planify-teachy-app pl-shell-root pl-teachy-shell pl-app-bg flex h-[100dvh] w-full max-w-[100vw] overflow-hidden text-slate-950">
       <PlanifyShellSidebar
         variant="teachy"
         brandHref="/"
@@ -108,7 +108,7 @@ export default function PlanifyAppFrame({
       </PlanifyShellSidebar>
 
       <section className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-white">
-        <header className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-200/90 bg-white px-4 py-3 sm:px-5">
+        <header className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-200/80 bg-white px-4 py-3 sm:px-5">
           <div className="flex min-w-0 items-center gap-3">
             <button
               type="button"
@@ -138,7 +138,7 @@ export default function PlanifyAppFrame({
             <LandingHomeLink compact />
             <Link
               href="/planos"
-              className="pl-teachy-cta rounded-full px-4 py-2 text-xs font-black text-slate-900"
+              className="pl-teachy-cta rounded-xl px-4 py-2 text-xs font-semibold"
             >
               Planos
             </Link>

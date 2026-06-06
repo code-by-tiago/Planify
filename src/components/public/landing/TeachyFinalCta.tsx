@@ -3,26 +3,26 @@ import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 
 export function TeachyFinalCta() {
   return (
-    <section id="planos" className="scroll-mt-28 bg-white py-16 sm:py-24">
-      <div className="mx-auto max-w-3xl px-5 text-center sm:px-8">
-        <h2 className="text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
+    <section id="planos" className="scroll-mt-28 bg-slate-50 py-16 sm:py-24">
+      <div className="pl-inst-cta-band mx-auto max-w-5xl px-6 py-14 text-center sm:px-10 sm:py-16">
+        <h2 className="pl-display text-3xl font-extrabold tracking-tight sm:text-4xl">
           Pronta para usar o Planify na sua rotina?
         </h2>
-        <p className="mt-4 text-lg font-medium leading-8 text-slate-600">
+        <p className="mx-auto mt-4 max-w-2xl text-lg font-medium leading-8 opacity-90">
           Escolha um plano, libere os geradores premium e continue no mesmo
           painel que você viu aqui.
         </p>
         <div className="mt-8 flex flex-wrap justify-center gap-3">
           <Link
             href="/planos"
-            className="pl-teachy-cta inline-flex items-center gap-2 rounded-full px-8 py-4 text-base font-bold text-slate-900"
+            className="pl-teachy-cta inline-flex items-center gap-2 rounded-xl px-8 py-4 text-base font-semibold"
           >
             Ver planos
             <PlanifyIcon name="arrowRight" className="h-4 w-4" />
           </Link>
           <Link
             href="/login"
-            className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-8 py-4 text-base font-bold text-slate-800 shadow-sm transition hover:bg-slate-50"
+            className="pl-inst-btn-ghost inline-flex items-center gap-2 rounded-xl px-8 py-4 text-base font-semibold transition"
           >
             Entrar
           </Link>

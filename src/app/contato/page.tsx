@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 export default function ContatoPage() {
   return (
-    <main className="planify-ui3 planify-public flex min-h-screen flex-col">
+    <main className="planify-institutional planify-ui3 planify-public flex min-h-screen flex-col">
       <PublicHeader active="contato" />
 
       <section className="mx-auto w-full max-w-7xl px-5 py-12 sm:px-8 lg:py-16">

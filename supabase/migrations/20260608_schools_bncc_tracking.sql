@@ -89,6 +89,40 @@ create table if not exists public.generated_materials (
   created_at timestamptz not null default now()
 );
 
+-- Legacy installs already have generated_materials (credit-tracking schema) without BNCC/school columns.
+alter table public.generated_materials
+  add column if not exists school_id uuid references public.schools (id) on delete set null;
+
+alter table public.generated_materials
+  add column if not exists class_id uuid references public.school_classes (id) on delete set null;
+
+alter table public.generated_materials
+  add column if not exists tipo text not null default '';
+
+alter table public.generated_materials
+  add column if not exists bncc_skill_codes text[] not null default '{}';
+
+alter table public.generated_materials
+  add column if not exists bncc_skills jsonb not null default '[]'::jsonb;
+
+alter table public.generated_materials
+  add column if not exists content_preview text not null default '';
+
+alter table public.generated_materials
+  add column if not exists content_html text;
+
+alter table public.generated_materials
+  add column if not exists raw jsonb not null default '{}'::jsonb;
+
+alter table public.generated_materials
+  add column if not exists pipeline text;
+
+alter table public.generated_materials
+  add column if not exists quality_score numeric;
+
+alter table public.generated_materials
+  add column if not exists surface public.generated_material_surface not null default 'material';
+
 create index if not exists generated_materials_user_id_idx
   on public.generated_materials (user_id, created_at desc);
 
@@ -223,6 +257,7 @@ create policy school_memberships_update_director
   with check (public.is_school_director(school_id));
 
 -- generated_materials: teachers own; directors read school materials
+drop policy if exists "generated_materials_select_own" on public.generated_materials;
 drop policy if exists generated_materials_select_own on public.generated_materials;
 create policy generated_materials_select_own
   on public.generated_materials for select

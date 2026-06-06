@@ -7,7 +7,7 @@ import { MarketplacePublishButton } from "@/components/marketplace/MarketplacePu
 import { PlanifyOwlGenerationCoach } from "@/components/pro/PlanifyOwlGenerationCoach";
 import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
 import { useSchoolClasses } from "@/hooks/useSchoolClasses";
-import { SchoolClassDisciplineFields } from "@/components/school/SchoolClassDisciplineFields";
+import { TurmaSelect } from "@/components/school/TurmaSelect";
 import { PlanifyPageHero } from "@/components/pro/PlanifyPageHero";
 import { usePlanifyWorkspace } from "@/components/pro/planify-workspace-context";
 import { HUD_FIELD_CLASS, HUD_TEXTAREA_CLASS } from "@/lib/pro/hud-form-styles";
@@ -543,9 +543,9 @@ export function PlanejamentosClient() {
         componente: skill.componente || form.componenteCurricular,
         conteudo: skill.conteudo,
       })),
-      classId: school.generationFields.classId,
-      discipline: school.generationFields.discipline || undefined,
-      disciplina: school.generationFields.discipline || undefined,
+      classId: school.classId,
+      discipline: form.componenteCurricular.trim() || undefined,
+      disciplina: form.componenteCurricular.trim() || undefined,
     };
   }
 
@@ -639,12 +639,6 @@ export function PlanejamentosClient() {
 
     if (selectedSkills.length === 0) {
       setError("Sugira e selecione pelo menos uma habilidade BNCC antes de gerar o planejamento.");
-      return;
-    }
-
-    const schoolError = school.validate();
-    if (schoolError) {
-      setError(schoolError);
       return;
     }
 
@@ -1118,6 +1112,7 @@ export function PlanejamentosClient() {
                   ))}
                 </select>
               </label>
+              <TurmaSelect school={school} className="grid gap-2 md:col-span-2" />
               <label className="grid gap-2">
                 <span className="text-sm font-bold text-slate-500">Carga horária</span>
                 <input value={form.cargaHoraria} onChange={(event) => updateField("cargaHoraria", event.target.value)} placeholder="Ex.: 80 períodos" className={HUD_FIELD_CLASS} />
@@ -1183,10 +1178,6 @@ export function PlanejamentosClient() {
 
             <div className="mt-6">
               <DailyGenerationsBar tipoMaterial={PLANNING_DEEP_GENERATION_TYPE} />
-            </div>
-
-            <div className="mt-6">
-              <SchoolClassDisciplineFields school={school} />
             </div>
 
             <div className="mt-7 grid gap-3 xl:grid-cols-4">

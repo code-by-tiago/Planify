@@ -69,7 +69,7 @@ import {
 import { downloadEditorExport } from "@/lib/downloads/editor-export-client";
 import { lessonBundleFollowUp } from "@/lib/pro/teachyStudio";
 import { useSchoolClasses } from "@/hooks/useSchoolClasses";
-import { SchoolClassDisciplineFields } from "@/components/school/SchoolClassDisciplineFields";
+import { TurmaSelect } from "@/components/school/TurmaSelect";
 
 const SELECT_FIELD_CLASS = HUD_FIELD_CLASS;
 
@@ -636,9 +636,9 @@ export function MateriaisClient({
       incluirGabarito: showGabarito && incluirGabarito,
       areaConhecimento,
       designSlides: tipo === "slides" ? designSlides : undefined,
-      classId: school.generationFields.classId,
-      discipline: school.generationFields.discipline || undefined,
-      disciplina: school.generationFields.discipline || undefined,
+      classId: school.classId,
+      discipline: componente.trim() || undefined,
+      disciplina: componente.trim() || undefined,
       ...overrides,
     };
   }
@@ -780,12 +780,6 @@ export function MateriaisClient({
 
     if (!componente.trim()) {
       setErro("Informe o componente curricular.");
-      return;
-    }
-
-    const schoolError = school.validate();
-    if (schoolError) {
-      setErro(schoolError);
       return;
     }
 
@@ -1096,6 +1090,8 @@ export function MateriaisClient({
               </select>
             </label>
 
+            <TurmaSelect school={school} className="md:col-span-2" />
+
             <label className="md:col-span-2">
               <span className="mb-2 flex flex-wrap items-center justify-between gap-2">
                 <span className="text-sm font-black text-slate-700">
@@ -1351,10 +1347,6 @@ export function MateriaisClient({
               montará a sequência pedagógica dos slides.
             </p>
           ) : null}
-
-          <div className="mt-5">
-            <SchoolClassDisciplineFields school={school} />
-          </div>
 
           <div className="mt-5 flex flex-col gap-3">
             <div className="flex flex-wrap items-center justify-between gap-3">

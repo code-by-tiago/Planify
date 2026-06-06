@@ -27,7 +27,7 @@ import {
 } from "@/lib/inclusao/inclusao-client";
 import { getPlanifyTool } from "@/lib/pro/planifyTools";
 import { useSchoolClasses } from "@/hooks/useSchoolClasses";
-import { SchoolClassDisciplineFields } from "@/components/school/SchoolClassDisciplineFields";
+import { TurmaSelect } from "@/components/school/TurmaSelect";
 import {
   HUD_CHIP_INACTIVE,
   HUD_FIELD_CLASS,
@@ -102,12 +102,6 @@ export function InclusaoClient({
       return;
     }
 
-    const schoolError = school.validate();
-    if (schoolError) {
-      setErro(schoolError);
-      return;
-    }
-
     setLoading(true);
     setResultadoHtml("");
     setResultadoMarkdown("");
@@ -119,9 +113,9 @@ export function InclusaoClient({
         etapaEnsino,
         conteudo: trimmed,
         observacoes: observacoes.trim() || undefined,
-        classId: school.generationFields.classId,
-        discipline: school.generationFields.discipline || undefined,
-        disciplina: school.generationFields.discipline || undefined,
+        classId: school.classId,
+        discipline: school.selectedClass?.discipline?.trim() || undefined,
+        disciplina: school.selectedClass?.discipline?.trim() || undefined,
       });
 
       setResultadoMarkdown(result.markdown);
@@ -299,7 +293,7 @@ export function InclusaoClient({
             </div>
           ) : null}
 
-          <SchoolClassDisciplineFields school={school} />
+          <TurmaSelect school={school} />
 
           <DailyGenerationsBar tipoMaterial={INCLUSAO_GENERATION_TYPE} compact />
 

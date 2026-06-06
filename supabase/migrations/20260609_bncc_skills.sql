@@ -1,6 +1,94 @@
 -- Planify — BNCC skills catalog, school invites, and discipline on generated_materials.
 -- Full BNCC import is a separate data pipeline; this seeds a minimal sample for dev/demo.
 
+-- ─── Dependency functions (idempotent; safe after partial failure or without 20260608) ───
+
+create or replace function public.set_updated_at()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$;
+
+create or replace function public.is_school_director(p_school_id uuid)
+returns boolean
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select exists (
+    select 1
+    from public.school_memberships sm
+    where sm.school_id = p_school_id
+      and sm.user_id = auth.uid()
+      and sm.role = 'director'
+      and sm.status = 'active'
+  );
+$$;
+
+create or replace function public.is_admin()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public, auth
+as $$
+  select exists (
+    select 1
+    from public.profiles p
+    where p.id = auth.uid()
+      and p.status = 'active'
+      and (
+        p.role in ('owner', 'admin')
+        or p.is_admin = true
+        or p.is_owner = true
+      )
+  );
+$$;
+
+create or replace function public.has_active_subscription(target_user_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public, auth
+as $$
+  select exists (
+    select 1
+    from public.subscriptions s
+    join public.plans p on p.id = s.plan_id
+    where s.user_id = target_user_id
+      and s.status = 'active'
+      and coalesce(s.current_period_end, now() + interval '1 day') > now()
+      and p.is_active = true
+      and p.price_in_cents > 0
+  );
+$$;
+
+create or replace function public.has_active_subscription()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public, auth
+as $$
+  select public.has_active_subscription(auth.uid());
+$$;
+
+create or replace function public.can_access_app()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public, auth
+as $$
+  select public.is_admin() or public.has_active_subscription();
+$$;
+
 -- ─── BNCC skills catalog ─────────────────────────────────────────────────────
 
 create table if not exists public.bncc_skills (

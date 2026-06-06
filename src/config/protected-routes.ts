@@ -10,6 +10,13 @@ export const protectedRoutes = [
   "/admin",
 ];
 
+/** Authenticated routes that allow free tier (paywall handled in-page) */
+export const authOnlyRoutes = [
+  "/progresso-bncc",
+  "/bncc",
+  "/diretor",
+];
+
 export const adminRoutes = ["/admin"];
 
 export const publicRoutes = [
@@ -29,6 +36,12 @@ export function isProtectedRoute(pathname: string): boolean {
 
 export function isAdminRoute(pathname: string): boolean {
   return adminRoutes.some((route) => {
+    return pathname === route || pathname.startsWith(`${route}/`);
+  });
+}
+
+export function isAuthOnlyRoute(pathname: string): boolean {
+  return authOnlyRoutes.some((route) => {
     return pathname === route || pathname.startsWith(`${route}/`);
   });
 }

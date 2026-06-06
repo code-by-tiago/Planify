@@ -5,7 +5,7 @@ import type { ReactNode, RefObject } from "react";
 import { PlanifyNavIcon } from "@/components/pro/PlanifyNavIcon";
 import type { DashboardSectionId } from "@/lib/pro/dashboardViews";
 import {
-  sidebarNavigation,
+  filterSidebarNavigation,
   type AppNavItem,
   type PlanifyToolId,
 } from "@/lib/pro/planifyTools";
@@ -29,6 +29,9 @@ type PlanifySidebarNavProps = {
   onQueryChange?: (value: string) => void;
   searchInputRef?: RefObject<HTMLInputElement | null>;
   toolCardStyle?: "default" | "thin";
+  canViewBnccProgress?: boolean;
+  canViewDirectorPanel?: boolean;
+  isManagerView?: boolean;
 };
 
 export function PlanifySidebarNav({
@@ -40,8 +43,15 @@ export function PlanifySidebarNav({
   onSelectSection,
   pathname = "",
   isNavActive,
+  canViewBnccProgress = false,
+  canViewDirectorPanel = false,
+  isManagerView = false,
 }: PlanifySidebarNavProps) {
-  const navItems: AppNavItem[] = sidebarNavigation;
+  const navItems: AppNavItem[] = filterSidebarNavigation({
+    canViewBnccProgress,
+    canViewDirectorPanel,
+    isManagerView,
+  });
 
   function isWorkspaceSelected(item: AppNavItem): boolean {
     if (mode === "studio") {

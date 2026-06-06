@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { isProtectedRoute } from "./config/protected-routes";
+import { isAuthOnlyRoute, isProtectedRoute } from "./config/protected-routes";
 import {
   getRequestAccessToken,
   isJwtNotExpired,
@@ -31,7 +31,10 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  if (!isProtectedRoute(pathname)) {
+  const authOnly = isAuthOnlyRoute(pathname);
+  const premiumProtected = isProtectedRoute(pathname);
+
+  if (!authOnly && !premiumProtected) {
     return NextResponse.next();
   }
 
@@ -45,6 +48,10 @@ export async function proxy(request: NextRequest) {
 
   if (!access.authenticated) {
     return redirectToLogin(request);
+  }
+
+  if (authOnly) {
+    return NextResponse.next();
   }
 
   if (!access.premium) {
@@ -72,5 +79,11 @@ export const config = {
     "/biblioteca/:path*",
     "/marketplace",
     "/marketplace/:path*",
+    "/progresso-bncc",
+    "/progresso-bncc/:path*",
+    "/bncc",
+    "/bncc/:path*",
+    "/diretor",
+    "/diretor/:path*",
   ],
 };

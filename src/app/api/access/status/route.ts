@@ -6,6 +6,8 @@ import { resolveAdminAccess } from "../../../../server/auth/admin-access";
 import { isOwnerEmail } from "../../../../server/auth/owner-emails";
 import { resolveUserAvatarFromToken } from "../../../../server/auth/user-avatar";
 import { getSupabaseAdminClient } from "../../../../server/supabase/admin-client";
+import { buildPlanifyAccessContext } from "@/lib/bncc/access";
+import { resolveUserAccessProfile } from "../../../../server/auth/user-access-profile";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
@@ -128,6 +130,24 @@ export async function GET(request: NextRequest) {
     access.subscription?.planId ||
     null;
 
+  const userId = access.user?.id || null;
+  const accessProfile = userId
+    ? await resolveUserAccessProfile(userId)
+    : {
+        profileRole: access.user?.role || "teacher",
+        schoolId: null as string | null,
+        schoolMembershipRole: null,
+      };
+
+  const accessContext = buildPlanifyAccessContext({
+    premium,
+    planKey,
+    isAdmin: Boolean(admin.isAdmin || isOwner),
+    profileRole: accessProfile.profileRole,
+    schoolId: accessProfile.schoolId,
+    schoolMembershipRole: accessProfile.schoolMembershipRole,
+  });
+
   const avatarUrl = authenticated
     ? await resolveUserAvatarFromToken(accessJwtToken)
     : null;
@@ -140,10 +160,20 @@ export async function GET(request: NextRequest) {
       message,
       isOwner,
       isAdmin: Boolean(admin.isAdmin || isOwner),
-      role: isOwner || admin.isAdmin ? "admin" : access.user?.role || "user",
+      role: isOwner || admin.isAdmin ? "admin" : accessProfile.profileRole || access.user?.role || "teacher",
       email,
       avatarUrl,
       planKey,
+      tier: accessContext.tier,
+      profileRole: accessContext.profileRole,
+      schoolId: accessContext.schoolId,
+      schoolMembershipRole: accessContext.schoolMembershipRole,
+      hasSchoolMembership: accessContext.hasSchoolMembership,
+      isSchoolManager: accessContext.isSchoolManager,
+      isDirector: accessContext.isDirector,
+      isManagerView: accessContext.isManagerView,
+      canViewBnccProgress: accessContext.canViewBnccProgress,
+      canViewDirectorPanel: accessContext.canViewDirectorPanel,
       checkedAt: new Date().toISOString(),
     },
     {

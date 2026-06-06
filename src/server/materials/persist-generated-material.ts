@@ -94,6 +94,8 @@ async function persistGenerationRecord(
           ?.conteudos,
       estrutura: params.result?.estrutura ?? params.result,
       planejamento: params.result?.planejamento ?? params.result,
+      contentHtml: params.contentHtml,
+      contentPreview: params.contentPreview,
       raw: params.result ?? params.payload,
     });
 

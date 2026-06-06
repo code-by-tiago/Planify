@@ -295,10 +295,31 @@ export type AppNavItem = {
   href: string;
   icon: PlanifyIconName;
   panel: AppNavPanel;
+  /** Visible only when user can view BNCC progress (pro or school member) */
+  requiresBnccAccess?: boolean;
+  /** Visible only for school_manager or director */
+  requiresDirectorAccess?: boolean;
+  /** Hidden for manager-view users (they see director panel instead) */
+  hideForManagerView?: boolean;
 };
 
 /** Navegação lateral — apenas páginas (sem ferramentas IA) */
 export const sidebarNavigation: AppNavItem[] = [
+  {
+    label: "Painel do Gestor",
+    href: "/dashboard?secao=diretor",
+    icon: "clipboard",
+    panel: "diretor",
+    requiresDirectorAccess: true,
+  },
+  {
+    label: "Progresso BNCC",
+    href: "/dashboard?secao=bncc",
+    icon: "listChecks",
+    panel: "bncc",
+    requiresBnccAccess: true,
+    hideForManagerView: true,
+  },
   {
     label: "Biblioteca",
     href: "/dashboard?secao=biblioteca",
@@ -325,6 +346,25 @@ export const appNavigation: AppNavItem[] = sidebarNavigation;
 
 export function getPlanifyTool(id: string | null | undefined) {
   return planifyTools.find((tool) => tool.id === id) ?? planifyTools[0];
+}
+
+export function filterSidebarNavigation(input: {
+  canViewBnccProgress?: boolean;
+  canViewDirectorPanel?: boolean;
+  isManagerView?: boolean;
+}): AppNavItem[] {
+  return sidebarNavigation.filter((item) => {
+    if (item.requiresDirectorAccess && !input.canViewDirectorPanel) {
+      return false;
+    }
+    if (item.requiresBnccAccess && !input.canViewBnccProgress) {
+      return false;
+    }
+    if (item.hideForManagerView && input.isManagerView) {
+      return false;
+    }
+    return true;
+  });
 }
 
 export const planifyToolCount = planifyTools.length;

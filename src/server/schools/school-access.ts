@@ -34,6 +34,25 @@ export async function isSchoolDirector(
   return membership?.role === "director";
 }
 
+export async function isSchoolManagerProfile(userId: string): Promise<boolean> {
+  const supabase = getSupabaseAdminClient();
+  const { data } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", userId)
+    .maybeSingle();
+
+  return (data as { role?: string | null } | null)?.role === "school_manager";
+}
+
+export async function canAccessSchoolDashboard(
+  userId: string,
+  schoolId: string,
+): Promise<boolean> {
+  if (await isSchoolManagerProfile(userId)) return true;
+  return isSchoolDirector(userId, schoolId);
+}
+
 export async function requireSchoolDirector(
   userId: string,
   schoolId: string,
@@ -44,6 +63,22 @@ export async function requireSchoolDirector(
     return {
       ok: false,
       message: "Acesso restrito a diretores da escola.",
+    };
+  }
+
+  return { ok: true };
+}
+
+export async function requireSchoolDashboardAccess(
+  userId: string,
+  schoolId: string,
+): Promise<{ ok: true } | { ok: false; message: string }> {
+  const allowed = await canAccessSchoolDashboard(userId, schoolId);
+
+  if (!allowed) {
+    return {
+      ok: false,
+      message: "Acesso restrito a gestores e diretores da escola.",
     };
   }
 

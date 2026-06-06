@@ -21,6 +21,7 @@ import {
   planifyTools,
   type PlanifyToolId,
 } from "@/lib/pro/planifyTools";
+import { usePlanifyAccess } from "@/hooks/usePlanifyAccess";
 
 function isValidToolId(value: string | null): value is PlanifyToolId {
   return planifyTools.some((tool) => tool.id === value);
@@ -40,6 +41,7 @@ function readTemaParam(searchParams: URLSearchParams): string {
 export default function PlanifyDashboardShell() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const access = usePlanifyAccess();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const closeSidebar = () => setSidebarOpen(false);
@@ -176,6 +178,9 @@ export default function PlanifyDashboardShell() {
           onSelectSection={selectSection}
           onActivate={closeSidebar}
           pathname="/dashboard"
+          canViewBnccProgress={access.canViewBnccProgress}
+          canViewDirectorPanel={access.canViewDirectorPanel}
+          isManagerView={access.isManagerView}
         />
       </PlanifyShellSidebar>
 

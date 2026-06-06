@@ -4,6 +4,8 @@ export const dashboardSections = [
   "historico",
   "biblioteca",
   "marketplace",
+  "bncc",
+  "diretor",
 ] as const;
 
 export type DashboardSectionId = (typeof dashboardSections)[number];
@@ -21,4 +23,6 @@ export const dashboardSectionLabels: Record<DashboardSectionId, string> = {
   historico: "Meus materiais",
   biblioteca: "Biblioteca",
   marketplace: "Comunidade",
+  bncc: "Progresso BNCC",
+  diretor: "Painel do Gestor",
 };

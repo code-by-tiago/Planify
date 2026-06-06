@@ -52,6 +52,22 @@ const MarketplaceClient = dynamic(
   { ssr: false, loading: PanelLoading },
 );
 
+const BnccProgressClient = dynamic(
+  () =>
+    import("@/components/bncc/BnccProgressClient").then(
+      (m) => m.BnccProgressClient,
+    ),
+  { ssr: false, loading: PanelLoading },
+);
+
+const DirectorPanelClient = dynamic(
+  () =>
+    import("@/components/bncc/DirectorPanelClient").then(
+      (m) => m.DirectorPanelClient,
+    ),
+  { ssr: false, loading: PanelLoading },
+);
+
 import type { ReactNode } from "react";
 import { PlanifyWorkspaceProvider } from "@/components/pro/planify-workspace-context";
 
@@ -143,6 +159,22 @@ export function PlanifyDashboardMain({
     return (
       <SectionPanel>
         <MarketplaceClient />
+      </SectionPanel>
+    );
+  }
+
+  if (sectionId === "bncc") {
+    return (
+      <SectionPanel>
+        <BnccProgressClient embedded />
+      </SectionPanel>
+    );
+  }
+
+  if (sectionId === "diretor") {
+    return (
+      <SectionPanel>
+        <DirectorPanelClient embedded />
       </SectionPanel>
     );
   }

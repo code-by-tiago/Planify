@@ -105,10 +105,8 @@ function walkUnknown(value: unknown, codes: Set<string>, depth = 0): void {
   }
 
   if (typeof value === "object") {
-    for (const [key, nested] of Object.entries(value as Record<string, unknown>)) {
-      if (/habilidade|bncc|codigo|code/i.test(key)) {
-        walkUnknown(nested, codes, depth + 1);
-      }
+    for (const [, nested] of Object.entries(value as Record<string, unknown>)) {
+      walkUnknown(nested, codes, depth + 1);
     }
   }
 }
@@ -118,12 +116,20 @@ export function extractBnccCodesFromPayload(payload: {
   conteudos?: unknown;
   estrutura?: unknown;
   planejamento?: unknown;
+  contentHtml?: unknown;
+  contentPreview?: unknown;
   raw?: unknown;
 }): ExtractBnccCodesResult {
   const codes = new Set<string>();
   const skills = new Map<string, ExtractedBnccSkill>();
 
   collectFromSkillsArray(payload.habilidadesSelecionadas, codes, skills);
+
+  for (const textSource of [payload.contentHtml, payload.contentPreview]) {
+    if (typeof textSource === "string" && textSource.trim()) {
+      collectCodesFromText(textSource, codes);
+    }
+  }
 
   const conteudos = payload.conteudos;
   if (Array.isArray(conteudos)) {

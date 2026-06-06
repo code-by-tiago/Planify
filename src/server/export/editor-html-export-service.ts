@@ -1,3 +1,4 @@
+import { MAX_EXPORT_FILE_BYTES } from "@/lib/ai/material-generation-policy";
 import { wrapAsPlanifyExportHtml } from "../../lib/editor/editor-print-html";
 import { buildNativeHtmlDocx } from "../docx/simple-docx-builder";
 import { extractBodyHtml } from "../editor/html-inner-text";
@@ -54,8 +55,14 @@ export async function exportEditorHtmlDocument(params: {
   const filename = cleanFilename(title);
 
   if (params.format === "html") {
+    const buffer = Buffer.from(exportHtml, "utf-8");
+    if (buffer.byteLength > MAX_EXPORT_FILE_BYTES) {
+      throw new Error(
+        "O documento é muito grande para exportar (máximo 15 MB). Reduza imagens ou divida o material.",
+      );
+    }
     return {
-      buffer: Buffer.from(exportHtml, "utf-8"),
+      buffer,
       contentType: "text/html; charset=utf-8",
       filename: `${filename}.html`,
     };
@@ -65,19 +72,32 @@ export async function exportEditorHtmlDocument(params: {
     const body = resolveEditorHtmlBody(params.html);
     const preparedBody = prepareHtmlForExport(body);
 
+    const buffer = buildNativeHtmlDocx({
+      title,
+      htmlBody: preparedBody,
+    });
+    if (buffer.byteLength > MAX_EXPORT_FILE_BYTES) {
+      throw new Error(
+        "O documento é muito grande para exportar em DOCX (máximo 15 MB). Reduza imagens ou divida o material.",
+      );
+    }
     return {
-      buffer: buildNativeHtmlDocx({
-        title,
-        htmlBody: preparedBody,
-      }),
+      buffer,
       contentType:
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
       filename: `${filename}.docx`,
     };
   }
 
+  const pdfBuffer = await renderHtmlToPdfBuffer(exportHtml);
+  if (pdfBuffer.byteLength > MAX_EXPORT_FILE_BYTES) {
+    throw new Error(
+      "O documento é muito grande para exportar em PDF (máximo 15 MB). Reduza imagens ou divida o material.",
+    );
+  }
+
   return {
-    buffer: await renderHtmlToPdfBuffer(exportHtml),
+    buffer: pdfBuffer,
     contentType: "application/pdf",
     filename: `${filename}.pdf`,
   };

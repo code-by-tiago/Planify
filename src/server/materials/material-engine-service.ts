@@ -1,4 +1,5 @@
 import { buildVisualGameMaterial } from "@/lib/materiais/game-builder";
+import { getModelTierForMaterialType } from "@/lib/ai/material-generation-policy";
 import { generateGeminiJSON, isGeminiQuotaError } from "../ai/gemini-client";
 import { getMaterialEngineSchema } from "./material-engine-schemas";
 import {
@@ -798,12 +799,14 @@ export async function generateMaterialByEngine(input: MaterialEngineInput) {
 
   for (let attempt = 0; attempt < 3; attempt += 1) {
     try {
+      const modelTier = getModelTierForMaterialType(request.tipoMaterial);
       const generated = await generateGeminiJSON<Partial<MaterialEngineResponse>>({
         systemInstruction,
         prompt: activePrompt,
         cacheProfile: `material-engine:${request.tipoMaterial}`,
-        temperature: 0.32,
-        topP: 0.86,
+        tier: modelTier,
+        temperature: modelTier === "advanced" ? 0.22 : 0.32,
+        topP: modelTier === "advanced" ? 0.82 : 0.86,
         maxOutputTokens,
         responseSchema: schema,
       });

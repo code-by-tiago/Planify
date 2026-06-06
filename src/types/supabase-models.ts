@@ -39,3 +39,19 @@ export type MarketplaceItemUpdate = TablesUpdate<"marketplace_items">;
 export type LibraryItemRow = Tables<"library_items">;
 export type LibraryItemInsert = TablesInsert<"library_items">;
 export type LibraryItemUpdate = TablesUpdate<"library_items">;
+
+export type SchoolRow = Tables<"schools">;
+export type SchoolInsert = TablesInsert<"schools">;
+export type SchoolUpdate = TablesUpdate<"schools">;
+
+export type SchoolClassRow = Tables<"school_classes">;
+export type SchoolClassInsert = TablesInsert<"school_classes">;
+export type SchoolClassUpdate = TablesUpdate<"school_classes">;
+
+export type SchoolMembershipRow = Tables<"school_memberships">;
+export type SchoolMembershipInsert = TablesInsert<"school_memberships">;
+export type SchoolMembershipUpdate = TablesUpdate<"school_memberships">;
+
+export type GeneratedMaterialRow = Tables<"generated_materials">;
+export type GeneratedMaterialInsert = TablesInsert<"generated_materials">;
+export type GeneratedMaterialUpdate = TablesUpdate<"generated_materials">;

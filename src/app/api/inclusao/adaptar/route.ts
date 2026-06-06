@@ -16,6 +16,7 @@ import {
   type InclusaoAiPayload,
 } from "@/server/inclusao/inclusao-ai-service";
 import { logGenerationComplete, bucketQualityScore } from "@/server/telemetry/generation-telemetry";
+import { persistGeneratedMaterialBestEffort } from "@/server/materials/persist-generated-material";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -124,6 +125,24 @@ export async function POST(request: NextRequest) {
       usedAI: result.usedAI,
       dailyQuotaConsumed: chargedDeepDaily && result.usedAI,
     });
+
+    if (user?.id) {
+      persistGeneratedMaterialBestEffort({
+        userId: user.id,
+        surface: "inclusao",
+        tipo: `${tipo}:${payload.modo}`,
+        title: String(payload.conteudo || "Adaptação inclusiva").slice(0, 120),
+        contentHtml: result.html,
+        contentPreview: result.markdown,
+        pipeline: result.usedAI ? "inclusao-ai" : "inclusao-fallback",
+        payload: payload as unknown as Record<string, unknown>,
+        result: {
+          markdown: result.markdown,
+          html: result.html,
+          usedAI: result.usedAI,
+        },
+      });
+    }
 
     return NextResponse.json({
       ok: true,

@@ -98,7 +98,7 @@ export async function listHistoryItemsFromDB(params: {
     throw new Error(error.message);
   }
 
-  return ((data || []) as HistoryDBRow[]).map(rowToHistoryItem);
+  return ((data || []) as unknown as HistoryDBRow[]).map(rowToHistoryItem);
 }
 
 export async function deleteHistoryItemFromDB(params: {

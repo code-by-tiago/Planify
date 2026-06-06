@@ -14,6 +14,7 @@ import {
   bucketQualityScore,
   logGenerationComplete,
 } from "../../../../server/telemetry/generation-telemetry";
+import { persistGeneratedMaterialBestEffort } from "../../../../server/materials/persist-generated-material";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -93,6 +94,19 @@ export async function POST(request: NextRequest) {
 
     if (!result.usedAI && user?.id && chargedDeepDaily) {
       await refundDeepGeneration(user.id);
+    }
+
+    if (user?.id && result.success) {
+      persistGeneratedMaterialBestEffort({
+        userId: user.id,
+        surface: "planning",
+        tipo: String(payload.tipoPlanejamento || PLANNING_DEEP_GENERATION_TYPE),
+        pipeline: result.usedAI ? "planning-ai" : "planning-fallback",
+        qualityScore:
+          typeof result.qualityScore === "number" ? result.qualityScore : null,
+        payload: payload as Record<string, unknown>,
+        result: result as unknown as Record<string, unknown>,
+      });
     }
 
     return NextResponse.json(result);

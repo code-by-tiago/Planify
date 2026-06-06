@@ -16,6 +16,7 @@ import {
   bucketQualityScore,
   logGenerationComplete,
 } from "../../../../server/telemetry/generation-telemetry";
+import { persistGeneratedMaterialBestEffort } from "../../../../server/materials/persist-generated-material";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -43,7 +44,9 @@ export async function POST(request: NextRequest) {
   let chargedCost = 0;
   let chargedDeepDaily = false;
 
-  if (user?.id && isDeepGenerationType(tipo)) {
+  const deepType = isDeepGenerationType(tipo);
+
+  if (user?.id && deepType) {
     const daily = await consumeDeepGeneration({
       userId: user.id,
       tipo,
@@ -128,6 +131,25 @@ export async function POST(request: NextRequest) {
       usedAI: pipeline !== "engine-fallback",
       dailyQuotaConsumed: chargedDeepDaily,
     });
+
+    if (user?.id) {
+      persistGeneratedMaterialBestEffort({
+        userId: user.id,
+        surface: "material",
+        tipo: String(result.data.tipoMaterial || tipo),
+        contentHtml: result.data.html,
+        pipeline,
+        qualityScore: typeof qualityScore === "number" ? qualityScore : null,
+        payload: payload as Record<string, unknown>,
+        result: {
+          tipoMaterial: result.data.tipoMaterial,
+          estrutura: result.data.estrutura,
+          html: result.data.html,
+          pipeline,
+          qualityScore,
+        },
+      });
+    }
 
     return NextResponse.json({
       ok: true,

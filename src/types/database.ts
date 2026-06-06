@@ -10,6 +10,7 @@ type TableDefinition<Row, Insert, Update> = {
   Row: Row;
   Insert: Insert;
   Update: Update;
+  Relationships: [];
 };
 
 export type Database = {
@@ -545,6 +546,152 @@ export type Database = {
           updated_at?: string;
         }
       >;
+      schools: TableDefinition<
+        {
+          id: string;
+          name: string;
+          slug: string | null;
+          city: string | null;
+          state: string | null;
+          director_user_id: string | null;
+          metadata: Json;
+          created_at: string;
+          updated_at: string;
+        },
+        {
+          id?: string;
+          name: string;
+          slug?: string | null;
+          city?: string | null;
+          state?: string | null;
+          director_user_id?: string | null;
+          metadata?: Json;
+          created_at?: string;
+          updated_at?: string;
+        },
+        {
+          id?: string;
+          name?: string;
+          slug?: string | null;
+          city?: string | null;
+          state?: string | null;
+          director_user_id?: string | null;
+          metadata?: Json;
+          created_at?: string;
+          updated_at?: string;
+        }
+      >;
+      school_classes: TableDefinition<
+        {
+          id: string;
+          school_id: string;
+          name: string;
+          grade_level: string | null;
+          year: number | null;
+          discipline: string | null;
+          created_at: string;
+        },
+        {
+          id?: string;
+          school_id: string;
+          name: string;
+          grade_level?: string | null;
+          year?: number | null;
+          discipline?: string | null;
+          created_at?: string;
+        },
+        {
+          id?: string;
+          school_id?: string;
+          name?: string;
+          grade_level?: string | null;
+          year?: number | null;
+          discipline?: string | null;
+          created_at?: string;
+        }
+      >;
+      school_memberships: TableDefinition<
+        {
+          id: string;
+          school_id: string;
+          user_id: string;
+          role: Database["public"]["Enums"]["school_membership_role"];
+          status: Database["public"]["Enums"]["school_membership_status"];
+          created_at: string;
+          updated_at: string;
+        },
+        {
+          id?: string;
+          school_id: string;
+          user_id: string;
+          role?: Database["public"]["Enums"]["school_membership_role"];
+          status?: Database["public"]["Enums"]["school_membership_status"];
+          created_at?: string;
+          updated_at?: string;
+        },
+        {
+          id?: string;
+          school_id?: string;
+          user_id?: string;
+          role?: Database["public"]["Enums"]["school_membership_role"];
+          status?: Database["public"]["Enums"]["school_membership_status"];
+          created_at?: string;
+          updated_at?: string;
+        }
+      >;
+      generated_materials: TableDefinition<
+        {
+          id: string;
+          user_id: string;
+          school_id: string | null;
+          class_id: string | null;
+          tipo: string;
+          title: string;
+          bncc_skill_codes: string[];
+          bncc_skills: Json;
+          content_preview: string;
+          content_html: string | null;
+          raw: Json;
+          pipeline: string | null;
+          quality_score: number | null;
+          surface: Database["public"]["Enums"]["generated_material_surface"];
+          created_at: string;
+        },
+        {
+          id?: string;
+          user_id: string;
+          school_id?: string | null;
+          class_id?: string | null;
+          tipo?: string;
+          title?: string;
+          bncc_skill_codes?: string[];
+          bncc_skills?: Json;
+          content_preview?: string;
+          content_html?: string | null;
+          raw?: Json;
+          pipeline?: string | null;
+          quality_score?: number | null;
+          surface?: Database["public"]["Enums"]["generated_material_surface"];
+          created_at?: string;
+        },
+        {
+          id?: string;
+          user_id?: string;
+          school_id?: string | null;
+          class_id?: string | null;
+          tipo?: string;
+          title?: string;
+          bncc_skill_codes?: string[];
+          bncc_skills?: Json;
+          content_preview?: string;
+          content_html?: string | null;
+          raw?: Json;
+          pipeline?: string | null;
+          quality_score?: number | null;
+          surface?: Database["public"]["Enums"]["generated_material_surface"];
+          created_at?: string;
+        }
+      >;
     };
     Views: Record<string, never>;
     Functions: {
@@ -596,6 +743,9 @@ export type Database = {
         | "downloaded"
         | "archived"
         | "duplicated";
+      school_membership_role: "director" | "teacher" | "coordinator";
+      school_membership_status: "active" | "inactive";
+      generated_material_surface: "material" | "planning" | "inclusao";
     };
     CompositeTypes: Record<string, never>;
   };

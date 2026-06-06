@@ -9,3 +9,5 @@ export type * from "./history";
 export type * from "./database";
 export type * from "./supabase-models";
 export type * from "./billing";
+export type * from "./school";
+export type * from "./generated-material";

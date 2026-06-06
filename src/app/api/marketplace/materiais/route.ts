@@ -265,12 +265,12 @@ export async function GET(request: NextRequest) {
   const access = await resolveMarketplaceAccess(request);
 
   if (!access.authenticated) {
-    return jsonError("Faça login para acessar o Marketplace.", 401, "not_authenticated");
+    return jsonError("Faça login para acessar a Comunidade.", 401, "not_authenticated");
   }
 
   if (!access.premium) {
     return jsonError(
-      "O Marketplace é liberado apenas para usuários com plano ativo.",
+      "A Comunidade é liberada apenas para usuários com plano ativo.",
       403,
       "premium_required",
     );
@@ -294,7 +294,7 @@ export async function GET(request: NextRequest) {
 
   if (error) {
     return jsonError(
-      `Erro ao carregar Marketplace: ${error.message}`,
+      `Erro ao carregar Comunidade: ${error.message}`,
       500,
       "database_error",
     );
@@ -315,12 +315,12 @@ export async function POST(request: NextRequest) {
   const access = await resolveMarketplaceAccess(request);
 
   if (!access.authenticated) {
-    return jsonError("Faça login para publicar no Marketplace.", 401, "not_authenticated");
+    return jsonError("Faça login para publicar na Comunidade.", 401, "not_authenticated");
   }
 
   if (!access.premium) {
     return jsonError(
-      "A publicação no Marketplace exige plano ativo.",
+      "A publicação na Comunidade exige plano ativo.",
       403,
       "premium_required",
     );

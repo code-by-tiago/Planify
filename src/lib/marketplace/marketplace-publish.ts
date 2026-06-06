@@ -95,7 +95,7 @@ export async function publishHtmlToMarketplace(
   const data = await response.json().catch(() => null);
 
   if (!response.ok) {
-    throw new Error(data?.error?.message || "Não foi possível publicar no Marketplace.");
+    throw new Error(data?.error?.message || "Não foi possível publicar na Comunidade.");
   }
 
   return {

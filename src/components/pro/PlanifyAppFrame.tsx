@@ -64,7 +64,7 @@ export default function PlanifyAppFrame({
       return { title: "Biblioteca", subtitle: "Seus materiais salvos" };
     }
     if (pathname.startsWith("/marketplace")) {
-      return { title: "Marketplace", subtitle: "Recursos da comunidade" };
+      return { title: "Comunidade", subtitle: "Materiais compartilhados por professores" };
     }
     return { title, subtitle };
   }, [pathname, title, subtitle]);

@@ -106,7 +106,7 @@ export const studioAreas: StudioArea[] = [
   },
   {
     slug: "marketplace",
-    title: "Marketplace",
+    title: "Comunidade",
     shortTitle: "Trocas",
     subtitle: "Comunidade docente",
     description:

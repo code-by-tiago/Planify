@@ -7,7 +7,7 @@ import { Suspense } from "react";
 
 export default function MarketplacePage() {
   return (
-    <PremiumAccessGate featureName="o Marketplace">
+    <PremiumAccessGate featureName="a Comunidade">
       <Suspense fallback={<PlanifyHubPageFallback />}>
         <DashboardHubRedirect legacy="marketplace" />
       </Suspense>

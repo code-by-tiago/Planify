@@ -3,6 +3,8 @@
 import { MarketplaceComments } from "@/components/marketplace/MarketplaceComments";
 import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
 import { PlanifyPageHero } from "@/components/pro/PlanifyPageHero";
+import { PlanifyOwlMark } from "@/components/pro/PlanifyOwlMark";
+import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import {
   downloadMarketplaceMaterial,
   type MarketplaceDownloadFormat,
@@ -94,6 +96,9 @@ const tipoMaterialOptions = [
   "Outro",
 ];
 
+const hudInput =
+  "h-11 w-full rounded-xl border border-cyan-400/20 bg-white/90 px-3 text-sm font-semibold text-slate-900 outline-none placeholder:text-slate-400 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100";
+
 function createInitialForm(): FormState {
   return {
     title: "",
@@ -118,17 +123,14 @@ function normalize(value: string) {
 
 function formatBytes(value: number) {
   if (!value) return "0 KB";
-
   if (value < 1024 * 1024) {
     return `${Math.max(1, Math.round(value / 1024))} KB`;
   }
-
   return `${(value / 1024 / 1024).toFixed(1)} MB`;
 }
 
 function formatDate(value: string | null) {
   if (!value) return "";
-
   try {
     return new Intl.DateTimeFormat("pt-BR", {
       day: "2-digit",
@@ -140,6 +142,57 @@ function formatDate(value: string | null) {
   }
 }
 
+function MaterialDownloadButtons({
+  item,
+  downloadingKey,
+  onDownload,
+  compact,
+}: {
+  item: MarketplaceItem;
+  downloadingKey: string | null;
+  onDownload: (item: MarketplaceItem, format: MarketplaceDownloadFormat) => void;
+  compact?: boolean;
+}) {
+  if (!item.fileName && !item.signedUrl) {
+    return (
+      <span className="text-[11px] font-semibold text-amber-700">
+        Anexo indisponível
+      </span>
+    );
+  }
+
+  const btnClass = compact
+    ? "flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-[11px] font-bold"
+    : "flex flex-1 items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-xs font-bold";
+
+  return (
+    <div
+      className="flex gap-2"
+      onClick={(event) => event.stopPropagation()}
+      onKeyDown={(event) => event.stopPropagation()}
+    >
+      <button
+        type="button"
+        disabled={Boolean(downloadingKey)}
+        onClick={() => onDownload(item, "docx")}
+        className={`${btnClass} pl-hud-btn disabled:opacity-60`}
+      >
+        <PlanifyIcon name="download" className="h-3.5 w-3.5" />
+        {downloadingKey === `${item.id}:docx` ? "DOCX…" : "Baixar DOCX"}
+      </button>
+      <button
+        type="button"
+        disabled={Boolean(downloadingKey)}
+        onClick={() => onDownload(item, "pdf")}
+        className={`${btnClass} pl-hud-btn-secondary disabled:opacity-60`}
+      >
+        <PlanifyIcon name="download" className="h-3.5 w-3.5" />
+        {downloadingKey === `${item.id}:pdf` ? "PDF…" : "Baixar PDF"}
+      </button>
+    </div>
+  );
+}
+
 export function MarketplaceClient() {
   const [form, setForm] = useState<FormState>(() => createInitialForm());
   const [file, setFile] = useState<File | null>(null);
@@ -148,10 +201,11 @@ export function MarketplaceClient() {
   const [query, setQuery] = useState("");
   const [etapaFilter, setEtapaFilter] = useState("Todas");
   const [mineOnly, setMineOnly] = useState(false);
-  const [status, setStatus] = useState("Carregando Marketplace...");
+  const [status, setStatus] = useState("Carregando Comunidade...");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [downloadingKey, setDownloadingKey] = useState<string | null>(null);
+  const [publishOpen, setPublishOpen] = useState(false);
 
   const availableYears = anoSerieOptions[form.etapa] || ["Geral"];
 
@@ -163,16 +217,12 @@ export function MarketplaceClient() {
     try {
       const response = await fetch(
         `/api/marketplace/materiais${nextMineOnly ? "?mine=true" : ""}`,
-        {
-          cache: "no-store",
-          credentials: "include",
-        },
+        { cache: "no-store", credentials: "include" },
       );
-
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data?.error?.message || "Não foi possível carregar o Marketplace.");
+        throw new Error(data?.error?.message || "Não foi possível carregar a Comunidade.");
       }
 
       const remoteItems = Array.isArray(data.items) ? data.items : [];
@@ -181,13 +231,13 @@ export function MarketplaceClient() {
       setStatus(
         nextMineOnly
           ? `${remoteItems.length} material(is) publicado(s) por você.`
-          : `${remoteItems.length} material(is) disponível(is) no Marketplace.`,
+          : `${remoteItems.length} material(is) na Comunidade.`,
       );
     } catch (err) {
       setItems([]);
       setSelected(null);
-      setError(err instanceof Error ? err.message : "Erro ao carregar Marketplace.");
-      setStatus("Marketplace indisponível no momento.");
+      setError(err instanceof Error ? err.message : "Erro ao carregar Comunidade.");
+      setStatus("Comunidade indisponível no momento.");
     } finally {
       setLoading(false);
     }
@@ -200,32 +250,24 @@ export function MarketplaceClient() {
 
   const filteredItems = useMemo(() => {
     const search = normalize(query);
-
     return items.filter((item) => {
       const matchSearch =
         !search ||
         normalize(
           `${item.title} ${item.description} ${item.etapa} ${item.anoSerie} ${item.componente} ${item.tipoMaterial} ${item.tema} ${item.authorName} ${item.tags.join(" ")}`,
         ).includes(search);
-
       const matchEtapa = etapaFilter === "Todas" || item.etapa === etapaFilter;
-
       return matchSearch && matchEtapa;
     });
   }, [items, query, etapaFilter]);
 
   function updateForm<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((current) => {
-      const next = {
-        ...current,
-        [key]: value,
-      };
-
+      const next = { ...current, [key]: value };
       if (key === "etapa") {
         const years = anoSerieOptions[String(value)] || ["Geral"];
         next.anoSerie = years[0];
       }
-
       return next;
     });
   }
@@ -242,16 +284,15 @@ export function MarketplaceClient() {
     setError("");
 
     if (!file) {
-      setError("Anexe um arquivo para compartilhar no Marketplace.");
+      setError("Anexe um arquivo para compartilhar na Comunidade.");
       return;
     }
 
     setLoading(true);
-    setStatus("Publicando material no Marketplace...");
+    setStatus("Publicando material na Comunidade...");
 
     try {
       const body = new FormData();
-
       body.set("title", form.title);
       body.set("description", form.description);
       body.set("etapa", form.etapa);
@@ -270,7 +311,6 @@ export function MarketplaceClient() {
         credentials: "include",
         cache: "no-store",
       });
-
       const data = await response.json();
 
       if (!response.ok) {
@@ -282,7 +322,8 @@ export function MarketplaceClient() {
       setFile(null);
       setItems((current) => [newItem, ...current]);
       setSelected(newItem);
-      setStatus("Material publicado no Marketplace com sucesso.");
+      setPublishOpen(false);
+      setStatus("Material publicado na Comunidade com sucesso.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao publicar material.");
       setStatus("Falha ao publicar.");
@@ -292,8 +333,7 @@ export function MarketplaceClient() {
   }
 
   async function removeItem(item: MarketplaceItem) {
-    const confirmed = window.confirm(`Remover "${item.title}" do Marketplace?`);
-
+    const confirmed = window.confirm(`Remover "${item.title}" da Comunidade?`);
     if (!confirmed) return;
 
     setLoading(true);
@@ -306,7 +346,6 @@ export function MarketplaceClient() {
         credentials: "include",
         cache: "no-store",
       });
-
       const data = await response.json();
 
       if (!response.ok) {
@@ -370,66 +409,57 @@ export function MarketplaceClient() {
     <PlanifyWorkspacePane
       header={
         <PlanifyPageHero
-          badge="Marketplace"
+          badge="Comunidade"
           icon="market"
-          title="Compartilhe com a comunidade"
-          description="Publique materiais pedagógicos para outras professoras premium."
+          title="Materiais compartilhados por professores"
+          description="Baixe DOCX ou PDF com um clique — publique o que você cria e reutilize modelos alinhados à BNCC."
+          action={
+            <button
+              type="button"
+              onClick={() => setPublishOpen((open) => !open)}
+              className="pl-hud-btn rounded-xl px-4 py-2 text-xs font-semibold"
+            >
+              {publishOpen ? "Fechar publicação" : "Publicar material"}
+            </button>
+          }
         />
       }
     >
-    <div className="grid gap-6 lg:grid-cols-[0.82fr_1.18fr]">
-      <aside className="space-y-6">
-        <div className="rounded-[1.85rem] border border-slate-100/70 bg-white/95 p-6 shadow-sm">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.28em] text-blue-600">
-                Publicar
-              </p>
-              <h2 className="mt-3 text-2xl font-black tracking-tight text-slate-950">
-                Novo material
-              </h2>
-              <p className="mt-3 text-sm leading-7 text-slate-500/90">
-                Envie um material pedagógico para outros professores premium baixarem.
-              </p>
-            </div>
+      <div className="planify-hud pl-hud-hub mx-auto max-w-6xl space-y-5 px-4 py-5 sm:px-6">
+        {publishOpen ? (
+          <section className="pl-hud-glass rounded-2xl p-5 sm:p-6">
+            <h2 className="text-lg font-extrabold text-slate-950">
+              Publicar na Comunidade
+            </h2>
+            <p className="mt-1 text-sm text-slate-600">
+              Envie um material para outros professores premium baixarem.
+            </p>
 
-            <button
-              type="button"
-              onClick={resetForm}
-              className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-700 transition hover:border-slate-950"
-            >
-              Limpar
-            </button>
-          </div>
+            {error ? (
+              <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm font-semibold text-amber-800">
+                {error}
+              </div>
+            ) : null}
 
-          {error ? (
-            <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-7 text-amber-700">
-              {error}
-            </div>
-          ) : null}
-
-          <form onSubmit={handleSubmit} className="mt-6 grid gap-4">
-            <input
-              value={form.title}
-              onChange={(event) => updateForm("title", event.target.value)}
-              placeholder="Título do material"
-              className="h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-950 outline-none placeholder:text-slate-400 focus:border-slate-950 focus:bg-white"
-              required
-            />
-
-            <textarea
-              value={form.description}
-              onChange={(event) => updateForm("description", event.target.value)}
-              placeholder="Descrição breve do material e como usar em aula."
-              className="min-h-24 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-950 outline-none placeholder:text-slate-400 focus:border-slate-950 focus:bg-white"
-              required
-            />
-
-            <div className="grid gap-3 sm:grid-cols-2">
+            <form onSubmit={handleSubmit} className="mt-5 grid gap-3 sm:grid-cols-2">
+              <input
+                value={form.title}
+                onChange={(event) => updateForm("title", event.target.value)}
+                placeholder="Título do material"
+                className={`${hudInput} sm:col-span-2`}
+                required
+              />
+              <textarea
+                value={form.description}
+                onChange={(event) => updateForm("description", event.target.value)}
+                placeholder="Descrição breve do material e como usar em aula."
+                className={`${hudInput} min-h-24 py-3 sm:col-span-2`}
+                required
+              />
               <select
                 value={form.etapa}
                 onChange={(event) => updateForm("etapa", event.target.value)}
-                className="h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-950 outline-none focus:border-slate-950 focus:bg-white"
+                className={hudInput}
               >
                 {etapaOptions.map((item) => (
                   <option key={item} value={item}>
@@ -437,11 +467,10 @@ export function MarketplaceClient() {
                   </option>
                 ))}
               </select>
-
               <select
                 value={form.anoSerie}
                 onChange={(event) => updateForm("anoSerie", event.target.value)}
-                className="h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-950 outline-none focus:border-slate-950 focus:bg-white"
+                className={hudInput}
               >
                 {availableYears.map((item) => (
                   <option key={item} value={item}>
@@ -449,13 +478,10 @@ export function MarketplaceClient() {
                   </option>
                 ))}
               </select>
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-2">
               <select
                 value={form.componente}
                 onChange={(event) => updateForm("componente", event.target.value)}
-                className="h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-950 outline-none focus:border-slate-950 focus:bg-white"
+                className={hudInput}
               >
                 {componenteOptions.map((item) => (
                   <option key={item} value={item}>
@@ -463,11 +489,10 @@ export function MarketplaceClient() {
                   </option>
                 ))}
               </select>
-
               <select
                 value={form.tipoMaterial}
                 onChange={(event) => updateForm("tipoMaterial", event.target.value)}
-                className="h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-950 outline-none focus:border-slate-950 focus:bg-white"
+                className={hudInput}
               >
                 {tipoMaterialOptions.map((item) => (
                   <option key={item} value={item}>
@@ -475,263 +500,265 @@ export function MarketplaceClient() {
                   </option>
                 ))}
               </select>
-            </div>
-
-            <input
-              value={form.tema}
-              onChange={(event) => updateForm("tema", event.target.value)}
-              placeholder="Tema/conteúdo"
-              className="h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-950 outline-none placeholder:text-slate-400 focus:border-slate-950 focus:bg-white"
-            />
-
-            <input
-              value={form.authorName}
-              onChange={(event) => updateForm("authorName", event.target.value)}
-              placeholder="Nome do autor/professor"
-              className="h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-950 outline-none placeholder:text-slate-400 focus:border-slate-950 focus:bg-white"
-            />
-
-            <input
-              value={form.tags}
-              onChange={(event) => updateForm("tags", event.target.value)}
-              placeholder="Tags opcionais separadas por vírgula"
-              className="h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-950 outline-none placeholder:text-slate-400 focus:border-slate-950 focus:bg-white"
-            />
-
-            <label className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-5 text-sm font-bold text-slate-700">
-              <span className="block text-xs font-black uppercase tracking-[0.2em] text-blue-700">
-                Arquivo
-              </span>
               <input
-                type="file"
-                accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.png,.jpg,.jpeg,.webp,.txt,.zip"
-                onChange={(event) => setFile(event.target.files?.[0] || null)}
-                className="mt-3 block w-full text-sm text-slate-700 file:mr-4 file:rounded-xl file:border-0 file:bg-gradient-to-r file:from-blue-600 file:to-slate-600 file:px-4 file:py-2 file:text-sm file:font-black file:text-white"
-                required
+                value={form.tema}
+                onChange={(event) => updateForm("tema", event.target.value)}
+                placeholder="Tema/conteúdo"
+                className={hudInput}
               />
-              {file ? (
-                <span className="mt-3 block text-slate-600">
-                  {file.name} — {formatBytes(file.size)}
-                </span>
-              ) : (
-                <span className="mt-3 block text-slate-500">
-                  DOCX, PDF, PPTX, XLSX, imagem, TXT ou ZIP.
-                </span>
-              )}
-            </label>
-
-            <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-bold text-slate-700">
               <input
-                type="checkbox"
-                checked={form.isPublished}
-                onChange={(event) => updateForm("isPublished", event.target.checked)}
-                className="h-5 w-5 accent-slate-950"
+                value={form.authorName}
+                onChange={(event) => updateForm("authorName", event.target.value)}
+                placeholder="Nome do autor"
+                className={hudInput}
               />
-              Publicar imediatamente
+              <input
+                value={form.tags}
+                onChange={(event) => updateForm("tags", event.target.value)}
+                placeholder="Tags (vírgula)"
+                className={`${hudInput} sm:col-span-2`}
+              />
+              <label className="rounded-xl border border-dashed border-cyan-400/25 bg-white/60 p-4 sm:col-span-2">
+                <span className="text-xs font-bold uppercase tracking-wide text-cyan-700">
+                  Arquivo
+                </span>
+                <input
+                  type="file"
+                  accept=".pdf,.doc,.docx,.ppt,.pptx,.html,.htm,.txt,.zip"
+                  onChange={(event) => setFile(event.target.files?.[0] || null)}
+                  className="mt-2 block w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-cyan-600 file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-white"
+                  required
+                />
+                {file ? (
+                  <span className="mt-2 block text-xs text-slate-600">
+                    {file.name} — {formatBytes(file.size)}
+                  </span>
+                ) : (
+                  <span className="mt-2 block text-xs text-slate-500">
+                    HTML, DOCX ou PDF recomendados para DOCX/PDF automáticos.
+                  </span>
+                )}
+              </label>
+              <label className="flex items-center gap-2 text-sm font-semibold text-slate-700 sm:col-span-2">
+                <input
+                  type="checkbox"
+                  checked={form.isPublished}
+                  onChange={(event) => updateForm("isPublished", event.target.checked)}
+                  className="h-4 w-4 accent-cyan-600"
+                />
+                Publicar imediatamente
+              </label>
+              <div className="flex flex-wrap gap-2 sm:col-span-2">
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="pl-hud-btn rounded-xl px-5 py-2.5 text-sm font-semibold disabled:opacity-60"
+                >
+                  {loading ? "Publicando..." : "Publicar na Comunidade"}
+                </button>
+                <button
+                  type="button"
+                  onClick={resetForm}
+                  className="pl-hud-btn-secondary rounded-xl px-5 py-2.5 text-sm font-semibold"
+                >
+                  Limpar
+                </button>
+              </div>
+            </form>
+          </section>
+        ) : null}
+
+        <section className="pl-hud-glass rounded-2xl p-4 sm:p-5">
+          <div className="grid gap-3 md:grid-cols-[1fr_auto_auto_auto] md:items-end">
+            <label className="grid gap-1.5">
+              <span className="text-xs font-semibold text-slate-600">Buscar</span>
+              <div className="relative">
+                <PlanifyIcon
+                  name="search"
+                  className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+                />
+                <input
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder="Tema, professor, componente..."
+                  className={`${hudInput} pl-9`}
+                />
+              </div>
             </label>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="rounded-2xl bg-gradient-to-r from-blue-600 to-slate-600 px-6 py-4 text-sm font-black text-white transition hover:-translate-y-1 hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {loading ? "Publicando..." : "Publicar no Marketplace"}
-            </button>
-          </form>
-        </div>
-
-        <div className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-sm font-black uppercase tracking-[0.25em] text-blue-700">
-            Filtros
-          </p>
-
-          <div className="mt-4 grid gap-3">
-            <input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Buscar por tema, professor, componente..."
-              className="h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-950 outline-none placeholder:text-slate-400 focus:border-slate-950 focus:bg-white"
-            />
-
-            <select
-              value={etapaFilter}
-              onChange={(event) => setEtapaFilter(event.target.value)}
-              className="h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-950 outline-none focus:border-slate-950 focus:bg-white"
-            >
-              <option value="Todas">Todas as etapas</option>
-              {etapaOptions.map((item) => (
-                <option key={item} value={item}>
-                  {item}
-                </option>
-              ))}
-            </select>
-
+            <label className="grid gap-1.5">
+              <span className="text-xs font-semibold text-slate-600">Etapa</span>
+              <select
+                value={etapaFilter}
+                onChange={(event) => setEtapaFilter(event.target.value)}
+                className={hudInput}
+              >
+                <option value="Todas">Todas</option>
+                {etapaOptions.map((item) => (
+                  <option key={item} value={item}>
+                    {item}
+                  </option>
+                ))}
+              </select>
+            </label>
             <button
               type="button"
               onClick={toggleMineOnly}
-              className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-700 transition hover:border-slate-950"
+              className="pl-hud-btn-secondary h-11 rounded-xl px-4 text-xs font-semibold"
             >
-              {mineOnly ? "Ver todos publicados" : "Ver meus materiais"}
+              {mineOnly ? "Ver todos" : "Meus materiais"}
             </button>
-
             <button
               type="button"
               onClick={() => loadItems(mineOnly)}
-              className="rounded-2xl bg-gradient-to-r from-blue-600 to-slate-600 px-5 py-3 text-sm font-black text-white transition hover:opacity-95"
+              className="pl-hud-btn h-11 rounded-xl px-4 text-xs font-semibold"
             >
               Atualizar
             </button>
           </div>
+          <p className="mt-3 text-xs font-medium text-slate-500">{status}</p>
+        </section>
 
-          <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm leading-7 text-slate-600">
-            {status}
+        {loading && items.length === 0 ? (
+          <div className="pl-hud-glass flex items-center justify-center rounded-2xl p-12">
+            <span className="text-sm font-semibold text-cyan-700">
+              Carregando Comunidade...
+            </span>
           </div>
-        </div>
-      </aside>
-
-      <div className="space-y-6">
-        <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
-          <p className="text-sm font-black uppercase tracking-[0.28em] text-blue-700">
-            Materiais compartilhados
-          </p>
-          <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-950">
-            Troca entre professores
-          </h2>
-          <p className="mt-3 text-sm leading-7 text-slate-600">
-            Materiais reais publicados por professores premium.
-          </p>
-
-          <div className="mt-6 grid gap-4">
-            {loading ? (
-              <div className="rounded-2xl border border-blue-200 bg-blue-50 p-6 text-sm leading-7 text-blue-700">
-                Carregando Marketplace...
-              </div>
-            ) : filteredItems.length > 0 ? (
-              filteredItems.map((item) => (
-                <button
+        ) : filteredItems.length > 0 ? (
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {filteredItems.map((item) => {
+              const isSelected = selected?.id === item.id;
+              return (
+                <article
                   key={item.id}
-                  type="button"
-                  onClick={() => setSelected(item)}
-                  className={`rounded-[1.5rem] border p-5 text-left transition hover:-translate-y-1 ${
-                    selected?.id === item.id
-                      ? "border-slate-950 bg-slate-50"
-                      : "border-slate-200 bg-white hover:border-slate-950"
+                  className={`pl-hud-hub-app flex min-h-[16rem] flex-col rounded-2xl p-4 transition ${
+                    isSelected
+                      ? "border-cyan-400/50 shadow-[0_0_20px_rgba(0,212,255,0.15)]"
+                      : ""
                   }`}
                 >
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                    <div>
-                      <h3 className="text-xl font-black text-slate-950">{item.title}</h3>
-                      <p className="mt-2 text-sm leading-7 text-slate-600">
-                        {item.description}
-                      </p>
-                    </div>
-                    <span className="rounded-full border border-blue-200 bg-blue-50 px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-blue-700">
+                  <button
+                    type="button"
+                    onClick={() => setSelected(item)}
+                    className="flex flex-1 flex-col text-left"
+                  >
+                    <span className="inline-flex w-fit rounded-full border border-cyan-400/20 bg-cyan-50 px-2.5 py-0.5 text-[10px] font-bold uppercase text-cyan-800">
                       {item.tipoMaterial}
                     </span>
+                    <h3 className="mt-3 line-clamp-2 text-base font-extrabold leading-snug text-slate-950">
+                      {item.title}
+                    </h3>
+                    <p className="mt-2 line-clamp-2 text-xs leading-5 text-slate-600">
+                      {item.description}
+                    </p>
+                    <div className="mt-auto space-y-1 pt-3 text-[11px] font-medium text-slate-500">
+                      <p className="font-semibold text-slate-700">{item.authorName}</p>
+                      <p>
+                        {item.componente} · {item.etapa} · {item.anoSerie}
+                      </p>
+                      <p>
+                        {formatBytes(item.fileSize)}
+                        {item.downloadsCount > 0
+                          ? ` · ${item.downloadsCount} download(s)`
+                          : ""}
+                      </p>
+                    </div>
+                  </button>
+                  <div className="mt-3 border-t border-cyan-400/10 pt-3">
+                    <MaterialDownloadButtons
+                      item={item}
+                      downloadingKey={downloadingKey}
+                      onDownload={handleDownload}
+                      compact
+                    />
                   </div>
-
-                  <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold text-slate-600">
-                    <span>{item.etapa}</span>
-                    <span>• {item.anoSerie}</span>
-                    <span>• {item.componente}</span>
-                    {item.tema ? <span>• {item.tema}</span> : null}
-                    <span>• {item.authorName}</span>
-                    <span>• {formatBytes(item.fileSize)}</span>
-                  </div>
-                </button>
-              ))
-            ) : (
-              <div className="rounded-[1.75rem] border border-amber-200 bg-amber-50 p-7">
-                <p className="text-sm font-black uppercase tracking-[0.24em] text-amber-700">
-                  Marketplace vazio
-                </p>
-                <h3 className="mt-3 text-2xl font-black text-slate-950">
-                  Nenhum material compartilhado ainda.
-                </h3>
-                <p className="mt-3 text-sm leading-7 text-amber-700">
-                  Publique o primeiro material para iniciar a troca entre professores.
-                </p>
-              </div>
-            )}
+                </article>
+              );
+            })}
           </div>
-        </div>
+        ) : (
+          <section className="pl-hud-glass flex flex-col items-center rounded-2xl px-6 py-12 text-center">
+            <PlanifyOwlMark size={80} glow />
+            <p className="mt-4 text-xs font-bold uppercase tracking-wide text-cyan-600">
+              Comunidade vazia
+            </p>
+            <h3 className="mt-2 text-xl font-extrabold text-slate-950">
+              Nenhum material compartilhado ainda
+            </h3>
+            <p className="mt-2 max-w-md text-sm text-slate-600">
+              Seja o primeiro a publicar — ou ajuste os filtros de busca.
+            </p>
+            <button
+              type="button"
+              onClick={() => setPublishOpen(true)}
+              className="pl-hud-btn mt-6 rounded-xl px-6 py-2.5 text-sm font-semibold"
+            >
+              Publicar material
+            </button>
+          </section>
+        )}
 
         {selected ? (
-          <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
-            <p className="text-sm font-black uppercase tracking-[0.25em] text-blue-700">
+          <section className="pl-hud-glass rounded-2xl p-5 sm:p-6">
+            <p className="text-[10px] font-bold uppercase tracking-wide text-cyan-600">
               Detalhes
             </p>
-            <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-950">{selected.title}</h2>
-            <p className="mt-4 text-sm leading-7 text-slate-600">
+            <h2 className="mt-2 text-2xl font-extrabold text-slate-950">
+              {selected.title}
+            </h2>
+            <p className="mt-3 text-sm leading-7 text-slate-600">
               {selected.description}
             </p>
 
-            <div className="mt-6 grid gap-3 sm:grid-cols-3">
+            <div className="mt-5 grid gap-2 sm:grid-cols-3">
               {[
                 ["Autor", selected.authorName],
-                ["Etapa", selected.etapa],
-                ["Ano/Série", selected.anoSerie],
                 ["Componente", selected.componente],
+                ["Etapa", `${selected.etapa} · ${selected.anoSerie}`],
                 ["Tipo", selected.tipoMaterial],
                 ["Tema", selected.tema || "—"],
-                ["Arquivo", selected.fileName || "—"],
-                ["Tamanho", formatBytes(selected.fileSize)],
-                ["Publicado em", formatDate(selected.createdAt) || "—"],
+                ["Publicado", formatDate(selected.createdAt) || "—"],
               ].map(([label, value]) => (
-                <div key={label} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                  <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-500">
+                <div
+                  key={label}
+                  className="rounded-xl border border-cyan-400/15 bg-white/70 px-3 py-2.5"
+                >
+                  <p className="text-[10px] font-bold uppercase text-slate-500">
                     {label}
                   </p>
-                  <p className="mt-2 text-sm font-bold text-slate-950">{value}</p>
+                  <p className="mt-1 text-sm font-semibold text-slate-900">{value}</p>
                 </div>
               ))}
             </div>
 
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-              {selected.fileName || selected.signedUrl ? (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => handleDownload(selected, "docx")}
-                    disabled={Boolean(downloadingKey)}
-                    className="rounded-2xl bg-gradient-to-r from-blue-600 to-slate-600 px-6 py-4 text-center text-sm font-black text-white transition hover:-translate-y-1 hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {downloadingKey === `${selected.id}:docx`
-                      ? "Gerando DOCX..."
-                      : "Baixar DOCX"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleDownload(selected, "pdf")}
-                    disabled={Boolean(downloadingKey)}
-                    className="rounded-2xl border border-slate-300 bg-white px-6 py-4 text-center text-sm font-black text-slate-900 transition hover:-translate-y-1 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {downloadingKey === `${selected.id}:pdf`
-                      ? "Gerando PDF..."
-                      : "Baixar PDF"}
-                  </button>
-                </>
-              ) : (
-                <span className="rounded-2xl border border-amber-200 bg-amber-50 px-6 py-4 text-center text-sm font-black text-amber-700">
-                  Anexo indisponível
-                </span>
-              )}
-
+            <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+              <MaterialDownloadButtons
+                item={selected}
+                downloadingKey={downloadingKey}
+                onDownload={handleDownload}
+              />
               <button
                 type="button"
                 onClick={() => removeItem(selected)}
                 disabled={loading}
-                className="rounded-2xl border border-rose-200 bg-rose-50 px-6 py-4 text-sm font-black text-rose-700 transition hover:-translate-y-1 disabled:opacity-60"
+                className="rounded-xl border border-rose-200 bg-rose-50 px-5 py-2.5 text-sm font-semibold text-rose-700 disabled:opacity-60"
               >
                 Remover meu material
               </button>
             </div>
 
-            <MarketplaceComments materialId={selected.id} />
+            <div className="mt-6 border-t border-cyan-400/10 pt-5">
+              <MarketplaceComments materialId={selected.id} />
+            </div>
+          </section>
+        ) : null}
+
+        {error && !publishOpen ? (
+          <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm font-semibold text-rose-800">
+            {error}
           </div>
         ) : null}
       </div>
-    </div>
     </PlanifyWorkspacePane>
   );
 }

@@ -46,7 +46,7 @@ export const plans: Plan[] = [
       { id: "planning", label: "Planejamentos", included: true },
       { id: "materials", label: "Materiais didáticos", included: true },
       { id: "library", label: "Biblioteca Premium", included: true },
-      { id: "marketplace", label: "Marketplace", included: true },
+      { id: "marketplace", label: "Comunidade", included: true },
     ],
     isPopular: false,
     isActive: true,

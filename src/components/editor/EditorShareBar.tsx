@@ -77,7 +77,7 @@ export function EditorShareBar({
       <MarketplacePublishButton
         title={title}
         getHtml={getHtml}
-        label="Marketplace"
+        label="Comunidade"
         compact
         className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-fuchsia-200 bg-fuchsia-50 px-3 py-2 text-xs font-black text-fuchsia-800 transition hover:bg-fuchsia-100"
       />

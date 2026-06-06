@@ -26,7 +26,7 @@ export function TeachyCommunitySection() {
             href="/dashboard?secao=marketplace"
             className="pl-hud-btn mt-8 inline-flex items-center gap-2 rounded-xl px-8 py-3.5 text-sm font-semibold"
           >
-            Abrir Marketplace
+            Abrir Comunidade
             <PlanifyIcon name="arrowRight" className="h-4 w-4" />
           </Link>
         </div>

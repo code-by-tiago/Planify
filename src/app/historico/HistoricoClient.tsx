@@ -42,7 +42,7 @@ const sourceLabels: Record<string, string> = {
   manual: "Editor manual",
   historico: "Meus materiais",
   biblioteca: "Biblioteca",
-  marketplace: "Marketplace",
+  marketplace: "Comunidade",
 };
 
 function statusClass(type: StatusState["type"]) {

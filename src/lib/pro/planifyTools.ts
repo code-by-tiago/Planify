@@ -289,7 +289,7 @@ export const sidebarNavigation: AppNavItem[] = [
     panel: "biblioteca",
   },
   {
-    label: "Marketplace",
+    label: "Comunidade",
     href: "/dashboard?secao=marketplace",
     icon: "market",
     panel: "marketplace",

@@ -31,6 +31,32 @@ export function isMarketplaceHtmlSource(meta: MarketplaceFileMeta): boolean {
   );
 }
 
+export function resolveMarketplaceStoredKind(
+  meta: MarketplaceFileMeta,
+): "html" | "pdf" | "docx" | "binary" {
+  if (isMarketplaceHtmlSource(meta)) {
+    return "html";
+  }
+
+  const name = String(meta.file_name || "").toLowerCase();
+  const mime = String(meta.file_mime || "").toLowerCase();
+
+  if (name.endsWith(".pdf") || mime.includes("pdf")) {
+    return "pdf";
+  }
+
+  if (
+    name.endsWith(".docx") ||
+    name.endsWith(".doc") ||
+    mime.includes("wordprocessingml") ||
+    mime.includes("msword")
+  ) {
+    return "docx";
+  }
+
+  return "binary";
+}
+
 export function resolveMarketplaceDownloadMime(meta: MarketplaceFileMeta): string {
   const name = String(meta.file_name || "").toLowerCase();
   const mime = String(meta.file_mime || "").toLowerCase();

@@ -133,6 +133,7 @@ export async function GET(
       "Content-Disposition": buildContentDispositionAttachment(
         exported.filename,
       ),
+      "X-Planify-Filename": exported.filename,
       "Cache-Control": "private, no-store",
       "X-Content-Type-Options": "nosniff",
     },

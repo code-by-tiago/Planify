@@ -30,7 +30,7 @@ export function MarketplacePublishButton({
   anoSerie,
   disabled,
   className = "",
-  label = "Compartilhar no Marketplace",
+  label = "Compartilhar na Comunidade",
   compact = false,
 }: MarketplacePublishButtonProps) {
   const [open, setOpen] = useState(false);
@@ -116,7 +116,7 @@ export function MarketplacePublishButton({
               Publicar para outras professoras
             </h3>
             <p className="mt-2 text-sm leading-6 text-slate-600">
-              O material ficará visível no Marketplace. Outros professores poderão baixar e
+              O material ficará visível na Comunidade. Outros professores poderão baixar e
               comentar.
             </p>
 

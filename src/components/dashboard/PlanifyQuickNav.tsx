@@ -14,7 +14,7 @@ const links: {
   { id: "editor", label: "Editor", icon: "editor" },
   { id: "historico", label: "Meus materiais", icon: "history" },
   { id: "biblioteca", label: "Biblioteca", icon: "library" },
-  { id: "marketplace", label: "Marketplace", icon: "market" },
+  { id: "marketplace", label: "Comunidade", icon: "market" },
 ];
 
 type PlanifyQuickNavProps = {

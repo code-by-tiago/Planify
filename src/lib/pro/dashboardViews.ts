@@ -20,5 +20,5 @@ export const dashboardSectionLabels: Record<DashboardSectionId, string> = {
   editor: "Editor",
   historico: "Meus materiais",
   biblioteca: "Biblioteca",
-  marketplace: "Marketplace",
+  marketplace: "Comunidade",
 };

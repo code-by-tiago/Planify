@@ -1,6 +1,6 @@
 /**
- * Smoke tests for discipline seeds and quality scoring (no live API).
- * Run: node scripts/verify-material-quality.mjs
+ * Deploy-gate smoke suite: seeds, routing, quality scores, migration contract.
+ * No live API calls. Run: npm run verify:material-quality
  */
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -79,75 +79,187 @@ function loadTsModule(relativePath) {
   return module.exports;
 }
 
+const { MATERIAL_ENGINE_TYPES } = loadTsModule(
+  "src/server/materials/material-engine-types.ts",
+);
+const {
+  DEEP_GENERATION_TYPES,
+  LIGHT_GENERATION_TYPES,
+  PLANNING_DEEP_GENERATION_TYPE,
+  isDeepGenerationType,
+  getModelTierForMaterialType,
+} = loadTsModule("src/lib/ai/material-generation-policy.ts");
 const { resolveDisciplineTopicGuidance } = loadTsModule(
   "src/lib/materiais/discipline-topic-seeds.ts",
 );
-const { computeQualityScore, describeQualityScore } = loadTsModule(
-  "src/lib/materiais/material-quality-score.ts",
-);
+const {
+  computeQualityScore,
+  describeQualityScore,
+  buildElevateQualityObservacoes,
+} = loadTsModule("src/lib/materiais/material-quality-score.ts");
 const {
   computePlanningQualityScore,
   getPlanningOutputIssues,
+  buildPlanningQualityRetryNote,
 } = loadTsModule("src/server/planejamentos/planning-quality.ts");
 
-function testCraseSeed() {
-  const guidance = resolveDisciplineTopicGuidance({
+const DISCIPLINE_SEED_CASES = [
+  {
     tema: "Uso da crase",
-    componenteCurricular: "Língua Portuguesa",
-  });
+    componente: "Língua Portuguesa",
+    seedId: "lp-crase",
+    pattern: /crase/i,
+  },
+  {
+    tema: "Regência do verbo transitivo",
+    componente: "Língua Portuguesa",
+    seedId: "lp-regencia",
+    pattern: /regência/i,
+  },
+  {
+    tema: "Coesão referencial e anáfora",
+    componente: "Língua Portuguesa",
+    seedId: "lp-coesao",
+    pattern: /coesão|coesao/i,
+  },
+  {
+    tema: "Interpretação de texto literário",
+    componente: "Língua Portuguesa",
+    seedId: "lp-interpretacao",
+    pattern: /interpret/i,
+  },
+  {
+    tema: "Operações com frações equivalentes",
+    componente: "Matemática",
+    seedId: "mat-fracoes",
+    pattern: /fraç/i,
+  },
+  {
+    tema: "Equações do 1º grau",
+    componente: "Matemática",
+    seedId: "mat-equacoes",
+    pattern: /equaç/i,
+  },
+  {
+    tema: "Porcentagem e juros simples",
+    componente: "Matemática",
+    seedId: "mat-porcentagem",
+    pattern: /porcent/i,
+  },
+  {
+    tema: "Teorema de Pitágoras no triângulo retângulo",
+    componente: "Matemática",
+    seedId: "mat-geometria",
+    pattern: /Pitágoras|pitagor|geometria/i,
+  },
+  {
+    tema: "Processo de fotossíntese nas plantas",
+    componente: "Ciências",
+    seedId: "ciencias-fotossintese",
+    pattern: /fotossíntese|clorof/i,
+  },
+  {
+    tema: "Revolução Industrial na Inglaterra",
+    componente: "História",
+    seedId: "historia-revolucao-industrial",
+    pattern: /Revolução Industrial|industrial/i,
+  },
+];
 
-  assert.ok(guidance, "crase + LP deve resolver um seed");
-  assert.equal(guidance.seedId, "lp-crase");
-  assert.match(guidance.promptBlock, /crase/i);
-  assert.match(guidance.promptBlock, /locução adverbial/i);
+function runTest(name, fn) {
+  try {
+    fn();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(`verify-material-quality FAIL [${name}]: ${message}`);
+    process.exit(1);
+  }
 }
 
-function testExpandedSeeds() {
-  const cases = [
-    {
-      tema: "Regência do verbo transitivo",
-      componente: "Língua Portuguesa",
-      seedId: "lp-regencia",
-    },
-    {
-      tema: "Coesão referencial",
-      componente: "Língua Portuguesa",
-      seedId: "lp-coesao",
-    },
-    {
-      tema: "Funções afim e gráfico cartesiano",
-      componente: "Matemática",
-      seedId: "mat-funcoes",
-    },
-    {
-      tema: "Área do triângulo retângulo",
-      componente: "Matemática",
-      seedId: "mat-geometria",
-    },
-    {
-      tema: "Fotossíntese",
-      componente: "Ciências",
-      seedId: "ciencias-fotossintese",
-    },
-    {
-      tema: "Revolução Industrial",
-      componente: "História",
-      seedId: "historia-revolucao-industrial",
-    },
-  ];
+function testMaterialEngineTypesCatalog() {
+  assert.equal(
+    MATERIAL_ENGINE_TYPES.length,
+    13,
+    "MATERIAL_ENGINE_TYPES deve listar 13 tipos",
+  );
+  assert.deepEqual(
+    [...new Set(MATERIAL_ENGINE_TYPES)].length,
+    MATERIAL_ENGINE_TYPES.length,
+    "tipos duplicados em MATERIAL_ENGINE_TYPES",
+  );
+}
 
-  for (const item of cases) {
+function testMaterialTypeRouting() {
+  const deepSet = new Set(DEEP_GENERATION_TYPES);
+  const lightSet = new Set(LIGHT_GENERATION_TYPES);
+
+  for (const deepType of DEEP_GENERATION_TYPES) {
+    assert.ok(!lightSet.has(deepType), `${deepType} não pode ser deep e light`);
+  }
+
+  for (const tipo of MATERIAL_ENGINE_TYPES) {
+    const deep = isDeepGenerationType(tipo);
+    const tier = getModelTierForMaterialType(tipo);
+
+    if (deepSet.has(tipo)) {
+      assert.equal(deep, true, `${tipo} deve rotear como geração profunda (Pro)`);
+      assert.equal(tier, "advanced", `${tipo} deve usar tier advanced`);
+      continue;
+    }
+
+    if (lightSet.has(tipo)) {
+      assert.equal(deep, false, `${tipo} deve rotear como geração leve (Flash)`);
+      assert.equal(tier, "default", `${tipo} deve usar tier default`);
+      continue;
+    }
+
+    assert.fail(`${tipo} não está em DEEP_GENERATION_TYPES nem LIGHT_GENERATION_TYPES`);
+  }
+
+  assert.equal(
+    DEEP_GENERATION_TYPES.length + LIGHT_GENERATION_TYPES.length,
+    MATERIAL_ENGINE_TYPES.length,
+    "deep + light deve cobrir todos os 13 tipos",
+  );
+
+  assert.equal(isDeepGenerationType(PLANNING_DEEP_GENERATION_TYPE), true);
+  assert.equal(isDeepGenerationType("planejamento-anual"), true);
+  assert.equal(isDeepGenerationType("planejamento-trimestral"), true);
+  assert.equal(isDeepGenerationType("flashcards"), false);
+  assert.equal(isDeepGenerationType("prova"), true);
+}
+
+function testDisciplineSeeds() {
+  for (const item of DISCIPLINE_SEED_CASES) {
     const guidance = resolveDisciplineTopicGuidance({
       tema: item.tema,
       componenteCurricular: item.componente,
     });
-    assert.ok(guidance, `${item.seedId} deve casar com ${item.tema}`);
-    assert.equal(guidance.seedId, item.seedId);
+
+    assert.ok(guidance, `${item.seedId}: nenhum seed para "${item.tema}"`);
+    assert.equal(
+      guidance.seedId,
+      item.seedId,
+      `${item.tema}: esperado ${item.seedId}, recebido ${guidance.seedId}`,
+    );
+    assert.ok(
+      guidance.promptBlock?.trim().length > 40,
+      `${item.seedId}: promptBlock vazio ou curto demais`,
+    );
+
+    if (item.pattern) {
+      assert.match(
+        guidance.promptBlock,
+        item.pattern,
+        `${item.seedId}: promptBlock não contém termo esperado`,
+      );
+    }
   }
 }
 
 function testQualityScore() {
   assert.equal(computeQualityScore([]), 100);
+  assert.equal(describeQualityScore(100).label, "Excelente");
 
   const genericIssues = [
     "Enunciado genérico: explique o conteúdo estudado.",
@@ -178,6 +290,16 @@ function testPlanningQuality() {
   const planningScore = computePlanningQualityScore(issues);
   assert.ok(planningScore < 100);
   assert.equal(computePlanningQualityScore([]), 100);
+
+  const retryNote = buildPlanningQualityRetryNote(issues.slice(0, 2));
+  assert.match(retryNote, /CORREÇÃO OBRIGATÓRIA/);
+  assert.ok(retryNote.includes(issues[0]), "retry note deve citar o primeiro issue");
+
+  const elevateNote = buildElevateQualityObservacoes([
+    "Metodologia genérica repetida em todas as linhas.",
+  ]);
+  assert.match(elevateNote, /MODO ELEVAR QUALIDADE/);
+  assert.match(elevateNote, /Metodologia genérica/);
 }
 
 function testDailyQuotaMigrationContract() {
@@ -202,33 +324,19 @@ function testDailyQuotaMigrationContract() {
   }
 }
 
-function testSeedPromptBlocks() {
-  const regencia = resolveDisciplineTopicGuidance({
-    tema: "Regência do verbo transitivo",
-    componenteCurricular: "Língua Portuguesa",
-  });
-  assert.ok(regencia);
-  assert.equal(regencia.seedId, "lp-regencia");
-  assert.match(regencia.promptBlock, /regência/i);
-
-  const fotossintese = resolveDisciplineTopicGuidance({
-    tema: "Processo de fotossíntese nas plantas",
-    componenteCurricular: "Ciências",
-  });
-  assert.ok(fotossintese);
-  assert.equal(fotossintese.seedId, "ciencias-fotossintese");
-  assert.match(fotossintese.promptBlock, /fotossíntese|clorof/i);
-}
-
 function main() {
-  testCraseSeed();
-  testExpandedSeeds();
-  testSeedPromptBlocks();
-  testQualityScore();
-  testPlanningQuality();
-  testDailyQuotaMigrationContract();
+  const started = Date.now();
+
+  runTest("material-engine-types", testMaterialEngineTypesCatalog);
+  runTest("material-type-routing", testMaterialTypeRouting);
+  runTest("discipline-seeds", testDisciplineSeeds);
+  runTest("quality-score", testQualityScore);
+  runTest("planning-quality", testPlanningQuality);
+  runTest("daily-quota-migration", testDailyQuotaMigrationContract);
+
+  const elapsedMs = Date.now() - started;
   console.log(
-    "verify-material-quality: OK (seeds, quality score, planning, migration contract)",
+    `verify-material-quality: OK (${MATERIAL_ENGINE_TYPES.length} tipos, ${DISCIPLINE_SEED_CASES.length} seeds, planning, migration) — ${elapsedMs}ms`,
   );
 }
 

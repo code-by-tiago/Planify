@@ -369,6 +369,8 @@ const TOPIC_SEEDS: TopicSeed[] = [
         "perímetro",
         "angulo",
         "ângulo",
+        "pitagoras",
+        "pitágoras",
       ),
     specialistLabel: "Matemática — geometria plana",
     mustCover: [

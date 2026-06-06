@@ -9,6 +9,11 @@ import {
 } from "../../../../server/credits/daily-generation-service";
 import { generatePlanningWithAI } from "../../../../server/planejamentos/planning-ai-service";
 import { validatePlanningPayload } from "../../../../server/planejamentos/planning-validation";
+import type { PlanningAiPayload } from "../../../../server/planejamentos/planning-ai-service";
+import {
+  bucketQualityScore,
+  logGenerationComplete,
+} from "../../../../server/telemetry/generation-telemetry";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -55,7 +60,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const payload = await request.json();
+    const payload = (await request.json()) as PlanningAiPayload;
     const validationError = validatePlanningPayload(payload);
 
     if (validationError) {
@@ -73,6 +78,18 @@ export async function POST(request: NextRequest) {
     }
 
     const result = await generatePlanningWithAI(payload);
+
+    const dailyQuotaConsumed = chargedDeepDaily && result.usedAI;
+
+    logGenerationComplete({
+      surface: "planning",
+      tipo: String(payload.tipoPlanejamento || PLANNING_DEEP_GENERATION_TYPE),
+      pipeline: result.usedAI ? "planning-ai" : "planning-fallback",
+      qualityScoreBucket: bucketQualityScore(result.qualityScore),
+      elevarQualidade: payload.elevarQualidade === true,
+      usedAI: result.usedAI,
+      dailyQuotaConsumed,
+    });
 
     if (!result.usedAI && user?.id && chargedDeepDaily) {
       await refundDeepGeneration(user.id);

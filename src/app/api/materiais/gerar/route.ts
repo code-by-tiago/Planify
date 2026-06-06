@@ -12,6 +12,10 @@ import {
   refundCredits,
   spendCredits,
 } from "../../../../server/credits/credit-service";
+import {
+  bucketQualityScore,
+  logGenerationComplete,
+} from "../../../../server/telemetry/generation-telemetry";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -108,15 +112,31 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const pipeline =
+      "pipeline" in result.data ? String(result.data.pipeline) : "engine";
+    const qualityScore =
+      "qualityScore" in result.data ? result.data.qualityScore : undefined;
+
+    logGenerationComplete({
+      surface: "material",
+      tipo: String(result.data.tipoMaterial || tipo),
+      pipeline,
+      qualityScoreBucket: bucketQualityScore(
+        typeof qualityScore === "number" ? qualityScore : undefined,
+      ),
+      elevarQualidade: payload.elevarQualidade === true,
+      usedAI: pipeline !== "engine-fallback",
+      dailyQuotaConsumed: chargedDeepDaily,
+    });
+
     return NextResponse.json({
       ok: true,
       html: result.data.html,
       tipoMaterial: result.data.tipoMaterial,
       estrutura: result.data.estrutura,
       alertas: "alertas" in result.data ? result.data.alertas : [],
-      pipeline: "pipeline" in result.data ? result.data.pipeline : "engine",
-      qualityScore:
-        "qualityScore" in result.data ? result.data.qualityScore : undefined,
+      pipeline,
+      qualityScore,
       qualityIssues:
         "qualityIssues" in result.data ? result.data.qualityIssues : [],
       creditCost: chargedCost || getCreditCost(tipo),

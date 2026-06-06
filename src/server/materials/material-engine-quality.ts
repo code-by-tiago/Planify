@@ -1,3 +1,8 @@
+import {
+  collectQuestionSemanticIssues,
+  collectSectionSemanticIssues,
+  isGenericEducationalText,
+} from "@/lib/materiais/material-semantic-quality";
 import type {
   MaterialEngineRequest,
   MaterialEngineResponse,
@@ -70,6 +75,21 @@ export function getEngineOutputIssues(
         );
       }
     }
+
+    let flagged = 0;
+    for (const question of output.exam?.questions ?? []) {
+      for (const semantic of collectQuestionSemanticIssues({
+        statement: question.statement,
+        answer: question.answer,
+        options: question.options,
+        tema: request.tema,
+      }).slice(0, 2)) {
+        issues.push(`Questão ${question.number}: ${semantic}`);
+        flagged += 1;
+        if (flagged >= 6) break;
+      }
+      if (flagged >= 6) break;
+    }
   }
 
   if (tipo === "mapa-mental") {
@@ -94,6 +114,22 @@ export function getEngineOutputIssues(
     const sections = output.sections?.length ?? 0;
     const issue = countIssues("seções", q, sections);
     if (issue) issues.push(issue);
+
+    for (const section of (output.sections ?? []).slice(0, 6)) {
+      for (const semantic of collectSectionSemanticIssues({
+        title: section.title,
+        content: [section.content, ...(section.bullets ?? [])].join(" "),
+        tema: request.tema,
+      }).slice(0, 1)) {
+        issues.push(`${section.title}: ${semantic}`);
+      }
+    }
+  }
+
+  if (["prova", "lista", "apostila"].includes(tipo)) {
+    if (isGenericEducationalText(output.summary)) {
+      issues.push("Resumo inicial genérico — use síntese específica do tema.");
+    }
   }
 
   if (tipo === "atividade") {
@@ -149,5 +185,7 @@ export function buildQualityRetryPrompt(
     `Tipo: ${request.tipoMaterial}`,
     `Quantidade obrigatória: ${request.quantidade}`,
     `Incluir gabarito: ${request.incluirGabarito ? "sim" : "não"}`,
+    `Tema obrigatório: "${request.tema}".`,
+    "Reescreva com enunciados contextualizados, alternativas distintas e gabarito comentado.",
   ].join("\n");
 }

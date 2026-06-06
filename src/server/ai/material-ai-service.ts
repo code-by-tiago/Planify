@@ -280,8 +280,12 @@ export async function generateMaterialWithAI(rawInput: MaterialAIInput): Promise
       const normalized = normalizeCommonOutput(generated, input);
       const contracted = enforceMaterialTypeContract(input, enhanceHardPedagogicalMaterial(input, normalized));
       return finalizeMaterial(input, contracted);
-    } catch {
-      return buildVerifiedRecoveryMaterial(input);
+    } catch (error) {
+      throw new Error(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível gerar o material pedagógico com IA.",
+      );
     }
   }
 
@@ -298,8 +302,12 @@ export async function generateMaterialWithAI(rawInput: MaterialAIInput): Promise
 
     const contracted = enforceMaterialTypeContract(input, normalizeCommonOutput(generated, input));
     return finalizeMaterial(input, contracted);
-  } catch {
-    return buildVerifiedRecoveryMaterial(input);
+  } catch (error) {
+    throw new Error(
+      error instanceof Error
+        ? error.message
+        : "Não foi possível gerar o material com IA.",
+    );
   }
 }
 

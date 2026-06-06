@@ -71,11 +71,13 @@ function specializedRules(request: MaterialEngineRequest): string[] {
   if (request.tipoMaterial === "prova") {
     return [
       `Gerar exatamente ${quantidade} questões no array 'exam.questions'.`,
+      `TEMA OBRIGATÓRIO: cada enunciado deve trabalhar explicitamente "${request.tema}" com situações, frases ou contextos reais.`,
       "Numerar as questões em ordem ('number' começando em 1).",
       "Variar os tipos de questão (multipla-escolha, verdadeiro-falso, dissertativa, completar) quando fizer sentido.",
-      "Para questões de multipla-escolha, preencher 'options' com 4 a 5 alternativas; para os demais tipos, 'options' pode ficar vazio.",
+      "Proibir enunciados genéricos ('explique o conteúdo estudado', 'identifique o conceito').",
+      "Para questões de multipla-escolha, preencher 'options' com 4 a 5 alternativas distintas; para os demais tipos, 'options' pode ficar vazio.",
       request.incluirGabarito
-        ? "Preencher 'answer' de cada questão com a resposta correta e também consolidar o gabarito no array 'answerKey'."
+        ? "Preencher 'answer' de cada questão com a resposta correta comentada e também consolidar o gabarito no array 'answerKey'."
         : "Deixar 'answer' vazio e não preencher 'answerKey' (o professor não quer gabarito).",
       "Equilibrar a dificuldade das questões conforme o nível solicitado.",
     ];
@@ -84,8 +86,10 @@ function specializedRules(request: MaterialEngineRequest): string[] {
   if (request.tipoMaterial === "lista") {
     return [
       `Gerar exatamente ${quantidade} exercícios no array 'exam.questions'.`,
+      `TEMA OBRIGATÓRIO: cada exercício deve aplicar "${request.tema}" com exemplos concretos.`,
       "Numerar os exercícios em ordem ('number' começando em 1).",
-      "Priorizar exercícios práticos e progressivos sobre o tema.",
+      "Priorizar exercícios práticos e progressivos (básico → intermediário → desafio).",
+      "Proibir comandos genéricos sem contexto do tema.",
       request.incluirGabarito
         ? "Preencher 'answer' de cada exercício e consolidar o gabarito no array 'answerKey'."
         : "Deixar 'answer' vazio e não preencher 'answerKey'.",

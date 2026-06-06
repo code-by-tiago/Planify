@@ -1,3 +1,7 @@
+import {
+  renderQuestionCard,
+  wrapProfessionalDocument,
+} from "@/lib/materiais/material-document-layout";
 import type { MaterialAIOutput } from "@/types/ai";
 import type { MaterialEngineRequest } from "./material-engine-types";
 
@@ -26,7 +30,7 @@ function renderSections(output: MaterialAIOutput): string {
           : "";
 
       return `
-        <section>
+        <section class="planify-doc-section">
           <h2>${escapeHtml(section.titulo)}</h2>
           ${section.conteudo ? `<p>${escapeHtml(section.conteudo)}</p>` : ""}
           ${asList(section.itens)}
@@ -37,7 +41,7 @@ function renderSections(output: MaterialAIOutput): string {
     .join("");
 }
 
-function renderQuestions(output: MaterialAIOutput, incluirGabarito: boolean): string {
+function renderQuestions(output: MaterialAIOutput): string {
   if (!output.questoes.length) return "";
 
   const heading =
@@ -48,24 +52,16 @@ function renderQuestions(output: MaterialAIOutput, incluirGabarito: boolean): st
         : "Atividades e questões";
 
   const body = output.questoes
-    .map((question) => {
-      const options =
-        question.alternativas.length > 0
-          ? `<ol type="a">${question.alternativas
-              .map((option) => `<li>${escapeHtml(option)}</li>`)
-              .join("")}</ol>`
-          : "";
-
-      return `
-        <article class="planify-questao">
-          <p><strong>${question.numero}.</strong> ${escapeHtml(question.enunciado)}</p>
-          ${options}
-        </article>
-      `;
-    })
+    .map((question) =>
+      renderQuestionCard({
+        number: question.numero,
+        statement: question.enunciado,
+        options: question.alternativas,
+      }),
+    )
     .join("");
 
-  return `<section><h2>${heading}</h2>${body}</section>`;
+  return `<section class="planify-questoes-block"><h2>${heading}</h2>${body}</section>`;
 }
 
 function renderGabarito(output: MaterialAIOutput, incluirGabarito: boolean): string {
@@ -88,7 +84,7 @@ function renderGabarito(output: MaterialAIOutput, incluirGabarito: boolean): str
 
   if (!lines.length) return "";
 
-  return `<section><h2>Gabarito e critérios de correção</h2>${asList(lines, true)}</section>`;
+  return `<section class="planify-gabarito-block page-break"><h2>Gabarito e critérios de correção</h2>${asList(lines, true)}</section>`;
 }
 
 function renderGame(output: MaterialAIOutput): string {
@@ -191,7 +187,7 @@ export function renderMaterialAIOutputToHtml(
     renderProjeto(output),
     renderRoteiro(output),
     renderGame(output),
-    renderQuestions(output, incluirGabarito),
+    renderQuestions(output),
     renderGabarito(output, incluirGabarito),
     renderCriteriaAndNotes(output),
     renderAlerts(output),
@@ -199,14 +195,17 @@ export function renderMaterialAIOutputToHtml(
     .filter(Boolean)
     .join("");
 
-  const doc = `
-    <article class="planify-doc planify-doc-ai">
-      <h1>${escapeHtml(output.titulo)}</h1>
-      ${output.subtitulo ? `<p class="planify-doc-subtitle">${escapeHtml(output.subtitulo)}</p>` : ""}
-      ${output.resumo ? `<p class="planify-doc-summary">${escapeHtml(output.resumo)}</p>` : ""}
-      ${blocks}
-    </article>
-  `.trim();
+  const doc = wrapProfessionalDocument(
+    {
+      title: output.titulo,
+      subtitle: output.subtitulo,
+      summary: output.resumo,
+      tipo: output.tipo || request.tipoMaterial,
+      tema: request.tema,
+      request,
+    },
+    blocks,
+  );
 
   if (visualBlock) {
     return `${doc}<div class="planify-visual-bundle">${visualBlock}</div>`;

@@ -26,8 +26,103 @@ export const PLANIFY_EXPORT_CSS = `
     margin: 0 auto;
   }
   .planify-doc,
-  .planify-doc-ai {
+  .planify-doc-ai,
+  .planify-doc-professional {
     width: 100%;
+  }
+  .planify-doc-header {
+    border: 1px solid #cbd5e1;
+    border-radius: 12px;
+    padding: 0.75rem 0.9rem;
+    margin: 0 0 1rem;
+    background: #f8fafc;
+  }
+  .planify-doc-kicker {
+    margin: 0 0 0.55rem;
+    font-size: 10pt;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #4338ca;
+  }
+  .planify-doc-meta {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 10.5pt;
+  }
+  .planify-doc-meta th,
+  .planify-doc-meta td {
+    border: 1px solid #cbd5e1;
+    padding: 0.35rem 0.5rem;
+    text-align: left;
+    vertical-align: top;
+  }
+  .planify-doc-meta th {
+    width: 24%;
+    background: #e2e8f0;
+    font-weight: 700;
+  }
+  .planify-doc-title {
+    text-align: center;
+    margin-top: 0.2rem;
+  }
+  .planify-doc-instructions {
+    border-left: 4px solid #4338ca;
+    padding: 0.35rem 0 0.35rem 0.85rem;
+    margin: 0 0 1rem;
+    background: #eef2ff;
+  }
+  .planify-questao-card {
+    border: 1px solid #cbd5e1;
+    border-radius: 12px;
+    padding: 0.75rem 0.9rem;
+    margin: 0 0 0.85rem;
+    background: #ffffff;
+  }
+  .planify-questao-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.45rem;
+  }
+  .planify-questao-number {
+    font-size: 10.5pt;
+    font-weight: 800;
+    color: #312e81;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .planify-questao-type {
+    font-size: 9pt;
+    font-weight: 700;
+    color: #475569;
+    text-transform: uppercase;
+  }
+  .planify-questao-statement {
+    margin: 0 0 0.55rem;
+    font-weight: 600;
+  }
+  .planify-questao-options {
+    margin: 0 0 0.35rem 1.1rem;
+  }
+  .planify-answer-lines span {
+    display: block;
+    border-bottom: 1px solid #94a3b8;
+    height: 1.35rem;
+    margin-bottom: 0.45rem;
+  }
+  .planify-gabarito-block {
+    margin-top: 1.2rem;
+    padding-top: 0.6rem;
+    border-top: 2px dashed #cbd5e1;
+  }
+  .planify-alertas {
+    border: 1px solid #fcd34d;
+    background: #fffbeb;
+    border-radius: 10px;
+    padding: 0.65rem 0.85rem;
+    margin-top: 1rem;
   }
   h1, h2, h3, h4 {
     color: #0f172a;

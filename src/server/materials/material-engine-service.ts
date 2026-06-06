@@ -1,6 +1,14 @@
 import { buildVisualGameMaterial } from "@/lib/materiais/game-builder";
 import { getModelTierForMaterialType } from "@/lib/ai/material-generation-policy";
+import {
+  renderQuestionCard,
+  wrapProfessionalDocument,
+} from "@/lib/materiais/material-document-layout";
 import { generateGeminiJSON, isGeminiQuotaError } from "../ai/gemini-client";
+import {
+  usesDedicatedEngineRenderer,
+  usesPlanifyMaterialEngine,
+} from "./planify-material-routing";
 import { getMaterialEngineSchema } from "./material-engine-schemas";
 import {
   buildMaterialEnginePrompt,
@@ -24,7 +32,6 @@ import {
   type SlideAccent,
   type SlideLayout,
 } from "./material-engine-types";
-import { usesPlanifyMaterialEngine } from "./planify-material-routing";
 import { resolveSlideTheme, type SlideTheme } from "./slide-design-themes";
 import { enrichSlidesWithImages } from "./slide-image-resolver";
 import {
@@ -85,6 +92,8 @@ function renderActivities(response: MaterialEngineResponse): string {
 type RenderContext = {
   tipo: MaterialEngineType;
   incluirGabarito: boolean;
+  tema?: string;
+  request?: MaterialEngineRequest;
 };
 
 function mapGameFormato(formato: string | null): string {
@@ -102,24 +111,17 @@ function renderExam(response: MaterialEngineResponse, ctx?: RenderContext): stri
   const heading = tipo === "lista" ? "Exercícios" : "Questões";
 
   const body = questions
-    .map((question) => {
-      const options =
-        question.options && question.options.length
-          ? `<ol type="a">${question.options
-              .map((option) => `<li>${escapeHtml(option)}</li>`)
-              .join("")}</ol>`
-          : "";
-
-      return `
-        <article class="planify-questao">
-          <p><strong>${question.number}.</strong> ${escapeHtml(question.statement)}</p>
-          ${options}
-        </article>
-      `;
-    })
+    .map((question) =>
+      renderQuestionCard({
+        number: question.number,
+        statement: question.statement,
+        options: question.options,
+        questionType: question.type,
+      }),
+    )
     .join("");
 
-  return `<section><h2>${heading}</h2>${body}</section>`;
+  return `<section class="planify-questoes-block"><h2>${heading}</h2>${body}</section>`;
 }
 
 function renderGame(response: MaterialEngineResponse): string {
@@ -517,11 +519,13 @@ function renderTeacherNotes(response: MaterialEngineResponse): string {
 
 function renderHtml(response: MaterialEngineResponse, ctx?: RenderContext): string {
   const tipo = ctx?.tipo;
-  const usesEngineRenderer = tipo ? usesPlanifyMaterialEngine(tipo) : false;
+  const dedicatedRenderer = tipo ? usesDedicatedEngineRenderer(tipo) : false;
 
-  // A IA às vezes preenche `html` cru — isso ignorava temas e layouts dedicados.
+  // A IA às vezes preenche `html` cru — só aceitar em tipos leves fora do render dedicado.
   if (
-    !usesEngineRenderer &&
+    !dedicatedRenderer &&
+    tipo &&
+    !usesPlanifyMaterialEngine(tipo) &&
     response.html &&
     /<[a-z][\s\S]*>/i.test(response.html)
   ) {
@@ -553,14 +557,28 @@ function renderHtml(response: MaterialEngineResponse, ctx?: RenderContext): stri
 
   const joined = blocks.filter(Boolean).join("");
 
-  return `
-    <article class="planify-doc">
-      <h1>${escapeHtml(response.title)}</h1>
-      ${response.subtitle ? `<p class="planify-doc-subtitle">${escapeHtml(response.subtitle)}</p>` : ""}
-      ${response.summary ? `<p>${escapeHtml(response.summary)}</p>` : ""}
-      ${joined}
-    </article>
-  `.trim();
+  if (tipo === "slides" || tipo === "flashcards" || tipo === "mapa-mental") {
+    return `
+      <article class="planify-doc planify-doc-visual">
+        <h1>${escapeHtml(response.title)}</h1>
+        ${response.subtitle ? `<p class="planify-doc-subtitle">${escapeHtml(response.subtitle)}</p>` : ""}
+        ${response.summary ? `<p class="planify-doc-summary">${escapeHtml(response.summary)}</p>` : ""}
+        ${joined}
+      </article>
+    `.trim();
+  }
+
+  return wrapProfessionalDocument(
+    {
+      title: response.title,
+      subtitle: response.subtitle,
+      summary: response.summary,
+      tipo: tipo || "material",
+      tema: ctx?.tema || response.title,
+      request: ctx?.request,
+    },
+    joined,
+  );
 }
 
 function normalizeOutput(
@@ -739,6 +757,8 @@ function renderDocumentHtml(
   const ctx: RenderContext = {
     tipo: request.tipoMaterial,
     incluirGabarito: request.incluirGabarito,
+    tema: request.tema,
+    request,
   };
   const base = renderHtml(normalized, ctx);
 
@@ -831,6 +851,13 @@ export async function generateMaterialByEngine(input: MaterialEngineInput) {
       }
 
       const html = renderDocumentHtml(request, normalized);
+      const alertas =
+        issues.length > 0
+          ? [
+              "Revise o material antes de aplicar em sala — alguns critérios de qualidade ainda precisam de ajuste.",
+              ...issues.slice(0, 8),
+            ]
+          : undefined;
 
       return {
         ok: true as const,
@@ -839,6 +866,7 @@ export async function generateMaterialByEngine(input: MaterialEngineInput) {
           tipoMaterial: request.tipoMaterial,
           html,
           estrutura: normalized,
+          ...(alertas ? { alertas } : {}),
         },
       };
     } catch (error) {

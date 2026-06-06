@@ -14,7 +14,7 @@ import {
   validateMaterialEngineRequest,
 } from "./material-engine-validation";
 
-const AI_MAX_ATTEMPTS = 2;
+const AI_MAX_ATTEMPTS = 3;
 
 function isClientValidationError(message: string): boolean {
   return (
@@ -126,8 +126,8 @@ export async function generatePlanifyMaterial(input: MaterialEngineInput) {
     const warn =
       postIssues.length > 0
         ? [
-            "Alguns critérios de qualidade não foram totalmente atendidos; revise antes de aplicar em sala.",
-            ...postIssues,
+            "Alguns critérios de qualidade ainda precisam de revisão antes de aplicar em sala.",
+            ...postIssues.slice(0, 8),
           ]
         : [];
 

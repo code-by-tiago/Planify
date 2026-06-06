@@ -257,7 +257,14 @@ export function enforceMaterialTypeContract(input: MaterialAIInput, output: Mate
   });
 
   if (hasForbiddenTerms(publicText(normalized)) || isWrongType(normalized, type)) {
-    return rebuildByType(input, type, output);
+    const rebuilt = rebuildByType(input, type, output);
+    return scrubOutput({
+      ...rebuilt,
+      alertas: [
+        ...(rebuilt.alertas ?? []),
+        "A validação detectou formato inadequado. Regenerar o material costuma entregar conteúdo mais específico e completo.",
+      ],
+    });
   }
 
   return normalized;

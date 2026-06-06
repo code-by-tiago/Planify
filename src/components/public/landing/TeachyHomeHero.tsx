@@ -8,7 +8,7 @@ export function TeachyHomeHero() {
       <div className="mx-auto grid max-w-7xl items-center gap-10 px-5 pb-12 sm:px-8 lg:grid-cols-2 lg:gap-12 lg:pb-20">
         <div className="max-w-xl">
           <p className="inline-flex items-center gap-2 rounded-full border border-cyan-400/25 bg-white/70 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-cyan-700 backdrop-blur-sm">
-            EdTech HUD · BNCC
+            BNCC
           </p>
           <h1 className="pl-hud-display mt-5 text-[2.35rem] font-extrabold leading-[1.05] tracking-tight text-slate-950 sm:text-5xl lg:text-[3.25rem]">
             Assistente de IA para{" "}

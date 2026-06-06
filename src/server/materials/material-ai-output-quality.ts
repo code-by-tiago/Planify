@@ -1,7 +1,13 @@
+import {
+  collectQuestionSemanticIssues,
+  collectSectionSemanticIssues,
+  isGenericEducationalText,
+} from "@/lib/materiais/material-semantic-quality";
 import type { MaterialAIOutput } from "@/types/ai";
 import type { MaterialEngineRequest } from "./material-engine-types";
 
 const COUNT_TOLERANCE = 1;
+const MAX_SEMANTIC_ISSUES_PER_ITEM = 2;
 
 function countIssues(
   label: string,
@@ -17,6 +23,30 @@ function countIssues(
   return null;
 }
 
+function appendQuestionSemantics(
+  issues: string[],
+  request: MaterialEngineRequest,
+  output: MaterialAIOutput,
+): void {
+  const tema = request.tema;
+  let flagged = 0;
+
+  for (const question of output.questoes) {
+    const semantic = collectQuestionSemanticIssues({
+      statement: question.enunciado,
+      answer: question.respostaEsperada,
+      options: question.alternativas,
+      tema,
+    });
+
+    for (const item of semantic.slice(0, MAX_SEMANTIC_ISSUES_PER_ITEM)) {
+      issues.push(`Questão ${question.numero}: ${item}`);
+      flagged += 1;
+      if (flagged >= 6) return;
+    }
+  }
+}
+
 export function getAIOutputIssues(
   request: MaterialEngineRequest,
   output: MaterialAIOutput,
@@ -25,7 +55,7 @@ export function getAIOutputIssues(
   const q = request.quantidade;
   const tipo = request.tipoMaterial;
 
-  if (tipo === "prova" || tipo === "lista" || tipo === "atividade") {
+  if (["prova", "lista", "atividade", "revisao"].includes(tipo)) {
     const issue = countIssues(
       tipo === "lista" ? "exercícios" : tipo === "prova" ? "questões" : "itens",
       q,
@@ -43,6 +73,8 @@ export function getAIOutputIssues(
         );
       }
     }
+
+    appendQuestionSemantics(issues, request, output);
   }
 
   if (tipo === "apostila") {
@@ -50,6 +82,16 @@ export function getAIOutputIssues(
       issues.push(
         `Apostila: organize pelo menos ${Math.min(q, 4)} seções/capítulos (recebido ${output.secoes.length}).`,
       );
+    }
+
+    for (const section of output.secoes.slice(0, 6)) {
+      for (const item of collectSectionSemanticIssues({
+        title: section.titulo,
+        content: section.conteudo || section.itens.join(" "),
+        tema: request.tema,
+      }).slice(0, 1)) {
+        issues.push(`Apostila — ${section.titulo}: ${item}`);
+      }
     }
   }
 
@@ -103,6 +145,16 @@ export function getAIOutputIssues(
     }
   }
 
+  if (
+    ["prova", "lista", "atividade", "apostila"].includes(tipo) &&
+    (isGenericEducationalText(output.introducao) ||
+      isGenericEducationalText(output.resumo))
+  ) {
+    issues.push(
+      "Evite introdução/resumo genérico; comece com produto pronto para sala.",
+    );
+  }
+
   return issues;
 }
 
@@ -111,10 +163,12 @@ export function buildAIQualityRetryObservacoes(
   issues: string[],
 ): string {
   return [
-    "CORREÇÃO OBRIGATÓRIA — a entrega anterior não cumpriu o contrato:",
+    "CORREÇÃO OBRIGATÓRIA — a entrega anterior não cumpriu o contrato pedagógico:",
     ...issues.map((item) => `- ${item}`),
+    `Tema obrigatório em cada questão/seção: "${request.tema}".`,
     `Tipo: ${request.tipoMaterial}`,
     `Quantidade: ${request.quantidade}`,
     `Gabarito: ${request.incluirGabarito ? "sim" : "não"}`,
+    "Reescreva com enunciados específicos, exemplos reais e gabarito comentado.",
   ].join("\n");
 }

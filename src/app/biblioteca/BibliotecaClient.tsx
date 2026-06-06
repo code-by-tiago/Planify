@@ -2,6 +2,12 @@
 
 import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
 import { PlanifyPageHero } from "@/components/pro/PlanifyPageHero";
+import { PlanifyOwlMark } from "@/components/pro/PlanifyOwlMark";
+import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
+import {
+  downloadBibliotecaMaterial,
+  type BibliotecaDownloadFormat,
+} from "@/lib/biblioteca/biblioteca-download-client";
 import { useEffect, useMemo, useState } from "react";
 
 type BibliotecaItem = {
@@ -44,6 +50,9 @@ const tipoOptions = [
   "Outro",
 ];
 
+const hudInput =
+  "h-11 w-full rounded-xl border border-cyan-400/20 bg-white/90 px-3 text-sm font-semibold text-slate-900 outline-none placeholder:text-slate-400 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100";
+
 function normalize(value: string) {
   return value
     .toLowerCase()
@@ -53,11 +62,9 @@ function normalize(value: string) {
 
 function formatBytes(value: number | undefined) {
   if (!value) return "";
-
   if (value < 1024 * 1024) {
     return `${Math.max(1, Math.round(value / 1024))} KB`;
   }
-
   return `${(value / 1024 / 1024).toFixed(1)} MB`;
 }
 
@@ -92,56 +99,113 @@ function openInEditor(item: BibliotecaItem) {
   window.location.href = "/editor?from=biblioteca";
 }
 
+function MaterialActions({
+  item,
+  downloadingKey,
+  onDownload,
+  compact,
+}: {
+  item: BibliotecaItem;
+  downloadingKey: string | null;
+  onDownload: (item: BibliotecaItem, format: BibliotecaDownloadFormat) => void;
+  compact?: boolean;
+}) {
+  const btnClass = compact
+    ? "flex flex-1 items-center justify-center gap-1 rounded-lg px-2 py-2 text-[10px] font-bold"
+    : "flex flex-1 items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-xs font-bold";
+
+  const hasFile = Boolean(item.fileName || item.signedUrl);
+
+  return (
+    <div
+      className="flex flex-col gap-2"
+      onClick={(event) => event.stopPropagation()}
+      onKeyDown={(event) => event.stopPropagation()}
+    >
+      {hasFile ? (
+        <div className="flex gap-2">
+          <button
+            type="button"
+            disabled={Boolean(downloadingKey)}
+            onClick={() => onDownload(item, "docx")}
+            className={`${btnClass} pl-hud-btn disabled:opacity-60`}
+          >
+            <PlanifyIcon name="download" className="h-3.5 w-3.5" />
+            {downloadingKey === `${item.id}:docx` ? "DOCX…" : "Baixar DOCX"}
+          </button>
+          <button
+            type="button"
+            disabled={Boolean(downloadingKey)}
+            onClick={() => onDownload(item, "pdf")}
+            className={`${btnClass} pl-hud-btn-secondary disabled:opacity-60`}
+          >
+            <PlanifyIcon name="download" className="h-3.5 w-3.5" />
+            {downloadingKey === `${item.id}:pdf` ? "PDF…" : "Baixar PDF"}
+          </button>
+        </div>
+      ) : (
+        <span className="text-[11px] font-semibold text-amber-700">
+          Anexo indisponível
+        </span>
+      )}
+      <button
+        type="button"
+        onClick={() => openInEditor(item)}
+        className={`${btnClass} w-full border border-cyan-400/25 bg-white/80 text-cyan-800 hover:bg-cyan-50`}
+      >
+        <PlanifyIcon name="editor" className="h-3.5 w-3.5" />
+        Abrir no editor
+      </button>
+    </div>
+  );
+}
+
 export function BibliotecaClient() {
   const [query, setQuery] = useState("");
   const [etapa, setEtapa] = useState("Todas");
   const [tipo, setTipo] = useState("Todos");
   const [items, setItems] = useState<BibliotecaItem[]>([]);
   const [selected, setSelected] = useState<BibliotecaItem | null>(null);
-  const [status, setStatus] = useState("Carregando Biblioteca Premium...");
+  const [status, setStatus] = useState("Carregando Biblioteca...");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [downloadingKey, setDownloadingKey] = useState<string | null>(null);
 
   async function loadPremiumMaterials() {
     setLoading(true);
     setError("");
-    setStatus("Carregando materiais selecionados para professores...");
+    setStatus("Carregando materiais curados...");
 
     try {
       const response = await fetch("/api/biblioteca/materiais", {
         cache: "no-store",
         credentials: "include",
       });
-
       const data = await response.json();
 
       if (!response.ok) {
         setItems([]);
         setSelected(null);
-        setError(data?.error?.message || "A Biblioteca Premium exige login com plano ativo.");
+        setError(data?.error?.message || "A Biblioteca exige login com plano ativo.");
         setStatus("Acesso premium necessário.");
         return;
       }
 
       const remoteItems = Array.isArray(data.items) ? data.items : [];
-
       setItems(remoteItems);
       setSelected(remoteItems[0] || null);
-
-      if (remoteItems.length > 0) {
-        setStatus(`${remoteItems.length} material(is) premium disponível(is).`);
-      } else {
-        setStatus("Nenhum material real foi cadastrado ainda.");
-      }
+      setStatus(
+        remoteItems.length > 0
+          ? `${remoteItems.length} material(is) curado(s) pelo Planify.`
+          : "Nenhum material cadastrado ainda.",
+      );
     } catch (err) {
       setItems([]);
       setSelected(null);
       setError(
-        err instanceof Error
-          ? err.message
-          : "Erro ao carregar a Biblioteca Premium.",
+        err instanceof Error ? err.message : "Erro ao carregar a Biblioteca.",
       );
-      setStatus("Biblioteca Premium indisponível no momento.");
+      setStatus("Biblioteca indisponível no momento.");
     } finally {
       setLoading(false);
     }
@@ -153,21 +217,42 @@ export function BibliotecaClient() {
 
   const filteredItems = useMemo(() => {
     const search = normalize(query);
-
     return items.filter((item) => {
       const matchSearch =
         !search ||
         normalize(
           `${item.title} ${item.description} ${item.etapa} ${item.anoSerie || ""} ${item.componente} ${item.tipoMaterial || ""} ${item.categoria} ${item.tema || ""} ${item.tags.join(" ")}`,
         ).includes(search);
-
       const matchEtapa = etapa === "Todas" || item.etapa === etapa;
       const itemType = item.tipoMaterial || item.categoria;
-      const matchTipo = tipo === "Todos" || itemType === tipo || item.categoria === tipo;
-
+      const matchTipo =
+        tipo === "Todos" || itemType === tipo || item.categoria === tipo;
       return matchSearch && matchEtapa && matchTipo;
     });
   }, [items, query, etapa, tipo]);
+
+  async function handleDownload(
+    item: BibliotecaItem,
+    format: BibliotecaDownloadFormat,
+  ) {
+    const downloadKey = `${item.id}:${format}`;
+    setDownloadingKey(downloadKey);
+    setError("");
+
+    try {
+      await downloadBibliotecaMaterial({
+        id: item.id,
+        format,
+        fallbackFileName: item.fileName || `${item.title}.${format}`,
+      });
+      setStatus(`Download ${format.toUpperCase()} iniciado.`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao baixar material.");
+      setStatus("Falha no download.");
+    } finally {
+      setDownloadingKey(null);
+    }
+  }
 
   return (
     <PlanifyWorkspacePane
@@ -175,243 +260,197 @@ export function BibliotecaClient() {
         <PlanifyPageHero
           badge="Biblioteca"
           icon="library"
-          title="Acervo oficial do Planify"
-          description="Materiais pedagógicos premium prontos para usar na sua turma."
+          title="Materiais curados pelo Planify"
+          description="Recursos pedagógicos selecionados pela equipe — baixe DOCX/PDF ou abra no editor para personalizar."
         />
       }
     >
-    <div className="grid gap-6 lg:grid-cols-[0.78fr_1.22fr]">
-      <aside className="space-y-6">
-        <div className="rounded-[1.85rem] border border-slate-100/70 bg-white/95 p-6 shadow-sm">
-          <p className="text-[10px] font-black uppercase tracking-[0.28em] text-blue-600">
-            Filtros
-          </p>
-          <h2 className="mt-3 text-2xl font-black tracking-tight text-slate-950">
-            Encontre o material ideal
-          </h2>
-          <p className="mt-4 text-sm leading-7 text-slate-500/90">
-            Aqui aparecem apenas materiais pedagógicos reais disponíveis na Biblioteca Premium.
-          </p>
-
-          <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm leading-7 text-slate-600">
-            {status}
-          </div>
-
-          {error ? (
-            <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-7 text-amber-700">
-              {error}
-              <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-                <a
-                  href="/login?redirect=/biblioteca&premium=required"
-                  className="rounded-xl bg-gradient-to-r from-blue-600 to-slate-600 px-4 py-3 text-center text-sm font-black text-white hover:opacity-95"
-                >
-                  Fazer login
-                </a>
-                <a
-                  href="/planos"
-                  className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-center text-sm font-black text-slate-700"
-                >
-                  Ver planos
-                </a>
+      <div className="planify-hud pl-hud-hub mx-auto max-w-6xl space-y-5 px-4 py-5 sm:px-6">
+        <section className="pl-hud-glass rounded-2xl p-4 sm:p-5">
+          <div className="grid gap-3 md:grid-cols-[1fr_auto_auto_auto] md:items-end">
+            <label className="grid gap-1.5">
+              <span className="text-xs font-semibold text-slate-600">Buscar</span>
+              <div className="relative">
+                <PlanifyIcon
+                  name="search"
+                  className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+                />
+                <input
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder="Tema, componente, série..."
+                  className={`${hudInput} pl-9`}
+                />
               </div>
-            </div>
-          ) : null}
-
-          <div className="mt-6 grid gap-3">
-            {[
-              ["Materiais reais", String(items.length)],
-              ["Filtrados", String(filteredItems.length)],
-              ["Fonte", "Admin"],
-              ["Acesso", "Premium"],
-            ].map(([label, value]) => (
-              <div key={label} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-500">
-                  {label}
-                </p>
-                <p className="mt-2 text-2xl font-black text-slate-950">{value}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-sm font-black uppercase tracking-[0.25em] text-blue-700">
-            Filtros
-          </p>
-
-          <div className="mt-4 grid gap-3">
-            <input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Buscar por tema, componente, série ou tag"
-              className="h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-950 outline-none placeholder:text-slate-400 focus:border-slate-950 focus:bg-white"
-            />
-
-            <select
-              value={etapa}
-              onChange={(event) => setEtapa(event.target.value)}
-              className="h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-950 outline-none focus:border-slate-950 focus:bg-white"
-            >
-              {etapaOptions.map((item) => (
-                <option key={item} value={item}>
-                  {item}
-                </option>
-              ))}
-            </select>
-
-            <select
-              value={tipo}
-              onChange={(event) => setTipo(event.target.value)}
-              className="h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-950 outline-none focus:border-slate-950 focus:bg-white"
-            >
-              {tipoOptions.map((item) => (
-                <option key={item} value={item}>
-                  {item}
-                </option>
-              ))}
-            </select>
-
+            </label>
+            <label className="grid gap-1.5">
+              <span className="text-xs font-semibold text-slate-600">Etapa</span>
+              <select
+                value={etapa}
+                onChange={(event) => setEtapa(event.target.value)}
+                className={hudInput}
+              >
+                {etapaOptions.map((item) => (
+                  <option key={item} value={item}>
+                    {item}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="grid gap-1.5">
+              <span className="text-xs font-semibold text-slate-600">Tipo</span>
+              <select
+                value={tipo}
+                onChange={(event) => setTipo(event.target.value)}
+                className={hudInput}
+              >
+                {tipoOptions.map((item) => (
+                  <option key={item} value={item}>
+                    {item}
+                  </option>
+                ))}
+              </select>
+            </label>
             <button
               type="button"
               onClick={loadPremiumMaterials}
-              className="rounded-2xl bg-gradient-to-r from-blue-600 to-slate-600 px-5 py-3 text-sm font-black text-white transition hover:opacity-95"
+              className="pl-hud-btn h-11 rounded-xl px-4 text-xs font-semibold"
             >
-              Atualizar biblioteca
+              Atualizar
             </button>
           </div>
-        </div>
-      </aside>
+          <p className="mt-3 text-xs font-medium text-slate-500">{status}</p>
+        </section>
 
-      <div className="space-y-6">
-        <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="text-sm font-black uppercase tracking-[0.28em] text-blue-700">
-                Materiais oficiais
-              </p>
-              <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-950">
-                Recursos enviados pela curadoria Planify
-              </h2>
-              <p className="mt-3 text-sm leading-7 text-slate-600">
-                Materiais cadastrados em /admin/biblioteca aparecem aqui para usuários premium.
-              </p>
+        {error ? (
+          <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-800">
+            {error}
+            <div className="mt-3 flex flex-wrap gap-2">
+              <a href="/login?redirect=/biblioteca&premium=required" className="pl-hud-btn rounded-lg px-4 py-2 text-xs">
+                Fazer login
+              </a>
+              <a href="/planos" className="pl-hud-btn-secondary rounded-lg px-4 py-2 text-xs">
+                Ver planos
+              </a>
             </div>
           </div>
+        ) : null}
 
-          <div className="mt-6 grid gap-4">
-            {loading ? (
-              <div className="rounded-2xl border border-blue-200 bg-blue-50 p-6 text-sm leading-7 text-blue-700">
-                Carregando materiais reais da Biblioteca Premium...
-              </div>
-            ) : filteredItems.length > 0 ? (
-              filteredItems.map((item) => (
-                <button
+        {loading && items.length === 0 ? (
+          <div className="pl-hud-glass flex items-center justify-center rounded-2xl p-12">
+            <span className="text-sm font-semibold text-cyan-700">
+              Carregando Biblioteca...
+            </span>
+          </div>
+        ) : filteredItems.length > 0 ? (
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {filteredItems.map((item) => {
+              const isSelected = selected?.id === item.id;
+              return (
+                <article
                   key={item.id}
-                  type="button"
-                  onClick={() => setSelected(item)}
-                  className={`rounded-[1.5rem] border p-5 text-left transition hover:-translate-y-1 ${
-                    selected?.id === item.id
-                      ? "border-slate-950 bg-slate-50"
-                      : "border-slate-200 bg-white hover:border-slate-950"
+                  className={`pl-hud-hub-app flex min-h-[17rem] flex-col rounded-2xl p-4 transition ${
+                    isSelected
+                      ? "border-cyan-400/50 shadow-[0_0_20px_rgba(0,212,255,0.15)]"
+                      : ""
                   }`}
                 >
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                    <div>
-                      <h3 className="text-xl font-black text-slate-950">{item.title}</h3>
-                      <p className="mt-2 text-sm leading-7 text-slate-600">
-                        {item.description}
-                      </p>
-                    </div>
-                    <span className="rounded-full border border-blue-200 bg-blue-50 px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-blue-700">
+                  <button
+                    type="button"
+                    onClick={() => setSelected(item)}
+                    className="flex flex-1 flex-col text-left"
+                  >
+                    <span className="inline-flex w-fit rounded-full border border-cyan-400/20 bg-cyan-50 px-2.5 py-0.5 text-[10px] font-bold uppercase text-cyan-800">
                       {item.tipoMaterial || item.categoria}
                     </span>
+                    <h3 className="mt-3 line-clamp-2 text-base font-extrabold leading-snug text-slate-950">
+                      {item.title}
+                    </h3>
+                    <p className="mt-2 line-clamp-2 text-xs leading-5 text-slate-600">
+                      {item.description}
+                    </p>
+                    <div className="mt-auto space-y-1 pt-3 text-[11px] font-medium text-slate-500">
+                      <p>
+                        {item.componente} · {item.etapa}
+                        {item.anoSerie ? ` · ${item.anoSerie}` : ""}
+                      </p>
+                      {item.tema ? <p>{item.tema}</p> : null}
+                      {item.fileSize ? <p>{formatBytes(item.fileSize)}</p> : null}
+                    </div>
+                  </button>
+                  <div className="mt-3 border-t border-cyan-400/10 pt-3">
+                    <MaterialActions
+                      item={item}
+                      downloadingKey={downloadingKey}
+                      onDownload={handleDownload}
+                      compact
+                    />
                   </div>
-
-                  <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold text-slate-600">
-                    <span>{item.etapa}</span>
-                    {item.anoSerie ? <span>• {item.anoSerie}</span> : null}
-                    <span>• {item.componente}</span>
-                    {item.tema ? <span>• {item.tema}</span> : null}
-                    {item.fileSize ? <span>• {formatBytes(item.fileSize)}</span> : null}
-                  </div>
-                </button>
-              ))
-            ) : (
-              <div className="rounded-[1.75rem] border border-amber-200 bg-amber-50 p-7">
-                <p className="text-sm font-black uppercase tracking-[0.24em] text-amber-700">
-                  Biblioteca vazia
-                </p>
-                <h3 className="mt-3 text-2xl font-black text-slate-950">
-                  Nenhum material real foi cadastrado ainda.
-                </h3>
-                <p className="mt-3 text-sm leading-7 text-amber-700">
-                  Assim que o administrador publicar materiais, eles aparecerão aqui.
-                </p>
-              </div>
-            )}
+                </article>
+              );
+            })}
           </div>
-        </div>
+        ) : (
+          <section className="pl-hud-glass flex flex-col items-center rounded-2xl px-6 py-12 text-center">
+            <PlanifyOwlMark size={80} glow />
+            <p className="mt-4 text-xs font-bold uppercase tracking-wide text-cyan-600">
+              Biblioteca vazia
+            </p>
+            <h3 className="mt-2 text-xl font-extrabold text-slate-950">
+              Nenhum material curado ainda
+            </h3>
+            <p className="mt-2 max-w-md text-sm text-slate-600">
+              Assim que a equipe Planify publicar materiais, eles aparecerão aqui
+              para download e edição.
+            </p>
+          </section>
+        )}
 
         {selected ? (
-          <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
-            <p className="text-sm font-black uppercase tracking-[0.25em] text-blue-700">
-              Visualização
+          <section className="pl-hud-glass rounded-2xl p-5 sm:p-6">
+            <p className="text-[10px] font-bold uppercase tracking-wide text-cyan-600">
+              Detalhes
             </p>
-            <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-950">{selected.title}</h2>
-            <p className="mt-4 text-sm leading-7 text-slate-600">
+            <h2 className="mt-2 text-2xl font-extrabold text-slate-950">
+              {selected.title}
+            </h2>
+            <p className="mt-3 text-sm leading-7 text-slate-600">
               {selected.description}
             </p>
 
-            <div className="mt-6 grid gap-3 sm:grid-cols-3">
+            <div className="mt-5 grid gap-2 sm:grid-cols-3">
               {[
                 ["Etapa", selected.etapa],
                 ["Ano/Série", selected.anoSerie || "Geral"],
                 ["Componente", selected.componente],
                 ["Tipo", selected.tipoMaterial || selected.categoria],
                 ["Tema", selected.tema || "—"],
-                ["Arquivo", selected.fileName || "—"],
-                ["Tamanho", formatBytes(selected.fileSize) || "—"],
+                ["Finalidade", selected.finalidade || "—"],
               ].map(([label, value]) => (
-                <div key={label} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                  <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-500">
+                <div
+                  key={label}
+                  className="rounded-xl border border-cyan-400/15 bg-white/70 px-3 py-2.5"
+                >
+                  <p className="text-[10px] font-bold uppercase text-slate-500">
                     {label}
                   </p>
-                  <p className="mt-2 text-sm font-bold text-slate-950">{value}</p>
+                  <p className="mt-1 text-sm font-semibold text-slate-900">{value}</p>
                 </div>
               ))}
             </div>
 
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-              <button
-                type="button"
-                onClick={() => openInEditor(selected)}
-                className="rounded-2xl bg-gradient-to-r from-blue-600 to-slate-600 px-6 py-4 text-sm font-black text-white transition hover:-translate-y-1 hover:opacity-95"
-              >
-                Abrir no Editor
-              </button>
-
-              {selected.signedUrl ? (
-                <a
-                  href={selected.signedUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="rounded-2xl border border-slate-200 bg-white px-6 py-4 text-center text-sm font-black text-slate-700 transition hover:-translate-y-1 hover:border-slate-950"
-                >
-                  Baixar anexo
-                </a>
-              ) : (
-                <span className="rounded-2xl border border-amber-200 bg-amber-50 px-6 py-4 text-center text-sm font-black text-amber-700">
-                  Anexo indisponível
-                </span>
-              )}
+            <div className="mt-5 max-w-xl">
+              <MaterialActions
+                item={selected}
+                downloadingKey={downloadingKey}
+                onDownload={handleDownload}
+              />
             </div>
-          </div>
+          </section>
         ) : null}
       </div>
-    </div>
     </PlanifyWorkspacePane>
   );
 }
 
 export default BibliotecaClient;
-

@@ -66,7 +66,7 @@ export function PlanosSucessoActions() {
       <div className="flex flex-col justify-center gap-3 sm:flex-row">
         <Link
           href="/dashboard"
-          className="pl-teachy-cta inline-flex items-center justify-center gap-2 rounded-full px-7 py-3.5 text-sm font-bold text-slate-900"
+          className="pl-hud-btn inline-flex items-center justify-center gap-2 rounded-full px-7 py-3.5 text-sm font-bold text-slate-900"
         >
           Ir ao painel
           <PlanifyIcon name="arrowRight" className="h-4 w-4" />
@@ -92,7 +92,7 @@ export function PlanosSucessoActions() {
         <div className="flex flex-col justify-center gap-3 sm:flex-row">
           <Link
             href="/dashboard"
-            className="pl-teachy-cta inline-flex items-center justify-center gap-2 rounded-full px-7 py-3.5 text-sm font-bold text-slate-900"
+            className="pl-hud-btn inline-flex items-center justify-center gap-2 rounded-full px-7 py-3.5 text-sm font-bold text-slate-900"
           >
             Tentar abrir o painel
           </Link>

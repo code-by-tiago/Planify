@@ -179,7 +179,7 @@ export default async function PlanosPage({ searchParams }: PlanosPageProps) {
   const alert = getAlert(params);
 
   return (
-    <main className="planify-institutional planify-ui3 planify-public planify-teachy-landing min-h-screen overflow-x-clip bg-white">
+    <main className="planify-hud planify-ui3 planify-public planify-hud-landing min-h-screen overflow-x-clip bg-white">
       <PublicHeader active="planos" />
 
       {/* Hero */}
@@ -190,7 +190,7 @@ export default async function PlanosPage({ searchParams }: PlanosPageProps) {
           </p>
           <h1 className="pl-display mt-4 text-4xl font-extrabold leading-[1.06] tracking-tight text-slate-950 sm:text-5xl">
             Libere o Planify e crie materiais{" "}
-            <span className="pl-gradient-text">sem limites manuais.</span>
+            <span className="pl-hud-gradient-text">sem limites manuais.</span>
           </h1>
           <p className="mt-5 max-w-2xl text-lg font-medium leading-8 text-slate-600">
             Materiais profundos com IA avançada — qualidade de preparação manual,
@@ -234,7 +234,7 @@ export default async function PlanosPage({ searchParams }: PlanosPageProps) {
               key={plan.key}
               className={`relative flex h-full flex-col rounded-2xl border p-7 transition hover:shadow-md ${
                 plan.highlighted
-                  ? "pl-plan-card-highlight border-blue-300 bg-white shadow-md ring-2 ring-blue-500/20 lg:scale-[1.02]"
+                  ? "pl-hud-plan-highlight border-blue-300 bg-white shadow-md ring-2 ring-blue-500/20 lg:scale-[1.02]"
                   : "border-slate-200 bg-white shadow-sm"
               }`}
             >
@@ -289,7 +289,7 @@ export default async function PlanosPage({ searchParams }: PlanosPageProps) {
                   planKey={plan.key}
                   className={`flex w-full items-center justify-center gap-2 rounded-xl px-6 py-3.5 text-sm font-semibold transition ${
                     plan.highlighted
-                      ? "pl-teachy-cta"
+                      ? "pl-hud-btn"
                       : "border border-slate-200 bg-white text-slate-900 hover:border-blue-300 hover:text-blue-700"
                   }`}
                 >
@@ -321,7 +321,7 @@ export default async function PlanosPage({ searchParams }: PlanosPageProps) {
         <div className="mx-auto max-w-7xl px-5 sm:px-8">
           <h2 className="pl-display text-3xl font-extrabold tracking-tight text-slate-950 sm:text-4xl">
             Compare os planos{" "}
-            <span className="pl-gradient-text">lado a lado.</span>
+            <span className="pl-hud-gradient-text">lado a lado.</span>
           </h2>
           <p className="mt-3 max-w-xl text-base font-medium text-slate-600">
             Créditos, geradores, editor e biblioteca — tudo incluído em cada
@@ -431,7 +431,7 @@ export default async function PlanosPage({ searchParams }: PlanosPageProps) {
 
       {/* CTA — alinhado à página de planos (sem “grátis” contraditório) */}
       <section className="mx-auto max-w-7xl px-5 pb-16 sm:px-8">
-        <div className="pl-inst-cta-band rounded-2xl px-8 py-10 text-center sm:px-12">
+        <div className="pl-hud-cta-band rounded-2xl px-8 py-10 text-center sm:px-12">
           <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-blue-200/90">
             Próximo passo
           </p>
@@ -446,14 +446,14 @@ export default async function PlanosPage({ searchParams }: PlanosPageProps) {
           <div className="mt-7 flex flex-wrap justify-center gap-3">
             <Link
               href="#precos"
-              className="pl-teachy-cta inline-flex items-center gap-2 rounded-xl px-7 py-3.5 text-sm font-semibold"
+              className="pl-hud-btn inline-flex items-center gap-2 rounded-xl px-7 py-3.5 text-sm font-semibold"
             >
               Ver planos acima
               <PlanifyIcon name="arrowRight" className="h-4 w-4" />
             </Link>
             <Link
               href="/login"
-              className="pl-inst-btn-ghost inline-flex items-center gap-2 rounded-xl px-7 py-3.5 text-sm font-semibold transition"
+              className="pl-hud-btn-ghost inline-flex items-center gap-2 rounded-xl px-7 py-3.5 text-sm font-semibold transition"
             >
               Criar conta
             </Link>

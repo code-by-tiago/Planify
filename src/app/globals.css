@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-@import "./planify-institutional.css";
+@import "./planify-hud.css";
 
 :root {
   color-scheme: light dark;
@@ -2672,7 +2672,7 @@ html:has(.pl-single-screen) body {
     border-radius: 1rem;
   }
 
-  .planify-materiais-studio .pl-teachy-generate-btn {
+  .planify-materiais-studio .pl-hud-btn-generate {
     width: 100%;
     justify-content: center;
   }

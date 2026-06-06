@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 export default function PlanosSucessoPage() {
   return (
-    <main className="planify-institutional planify-ui3 planify-public planify-teachy-landing flex min-h-screen flex-col bg-white">
+    <main className="planify-hud planify-ui3 planify-public planify-hud-landing flex min-h-screen flex-col bg-white">
       <PublicHeader active="planos" />
 
       <section className="mx-auto flex max-w-2xl flex-1 flex-col items-center justify-center px-5 py-16 text-center sm:px-8">
@@ -21,7 +21,7 @@ export default function PlanosSucessoPage() {
 
         <h1 className="mt-4 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
           Pagamento processado com{" "}
-          <span className="pl-gradient-text">sucesso.</span>
+          <span className="pl-hud-gradient-text">sucesso.</span>
         </h1>
 
         <p className="mt-5 text-base font-medium leading-7 text-slate-600">

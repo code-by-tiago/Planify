@@ -19,13 +19,17 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#0b1220",
+  themeColor: "#00d4ff",
 };
 
 const siteUrl = getSiteUrl();
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
+  icons: {
+    icon: "/brand/planify-owl-graduate.png",
+    apple: "/brand/planify-owl-graduate.png",
+  },
   title: {
     default: "Planify | Plataforma Educacional",
     template: "%s | Planify",

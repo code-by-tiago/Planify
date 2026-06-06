@@ -79,7 +79,7 @@ export default function PlanifyAppFrame({
     <Link
       href="/dashboard"
       onClick={closeSidebar}
-      className="pl-teachy-cta w-full justify-center rounded-xl py-3 font-semibold"
+      className="pl-hud-btn w-full justify-center rounded-xl py-3 font-semibold"
     >
       <PlanifyIcon name="spark" className="h-4 w-4" />
       Início
@@ -87,7 +87,7 @@ export default function PlanifyAppFrame({
   );
 
   return (
-    <main className="planify-institutional planify-ui3 planify-teachy-app pl-shell-root pl-teachy-shell pl-app-bg flex h-[100dvh] w-full max-w-[100vw] overflow-hidden text-slate-950">
+    <main className="planify-hud planify-ui3 planify-hud-app pl-shell-root pl-hud-shell pl-app-bg flex h-[100dvh] w-full max-w-[100vw] overflow-hidden text-slate-950">
       <PlanifyShellSidebar
         variant="teachy"
         brandHref="/"
@@ -138,7 +138,7 @@ export default function PlanifyAppFrame({
             <LandingHomeLink compact />
             <Link
               href="/planos"
-              className="pl-teachy-cta rounded-xl px-4 py-2 text-xs font-semibold"
+              className="pl-hud-btn rounded-xl px-4 py-2 text-xs font-semibold"
             >
               Planos
             </Link>

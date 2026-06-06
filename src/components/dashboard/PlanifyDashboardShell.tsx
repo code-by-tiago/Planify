@@ -170,7 +170,7 @@ export default function PlanifyDashboardShell() {
   }, [hasPanel, selectInicio]);
 
   return (
-    <div className="planify-institutional planify-ui3 planify-teachy-app pl-teachy-shell pl-dashboard-root pl-app-bg flex h-[100dvh] w-full max-w-[100vw] overflow-hidden text-slate-950">
+    <div className="planify-hud planify-ui3 planify-hud-app pl-hud-shell pl-dashboard-root pl-app-bg flex h-[100dvh] w-full max-w-[100vw] overflow-hidden text-slate-950">
       <PlanifyShellSidebar
         variant="teachy"
         brandHref="/"
@@ -194,7 +194,7 @@ export default function PlanifyDashboardShell() {
         />
       </PlanifyShellSidebar>
 
-      <main className="pl-teachy-main flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-white">
+      <main className="pl-hud-main flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-white">
         {hasPanel ? (
           <header className="flex shrink-0 items-center justify-between gap-2 border-b border-slate-200/90 bg-white px-3 py-2.5 pt-[max(0.625rem,env(safe-area-inset-top))] sm:gap-3 sm:px-5">
             <div className="flex min-w-0 flex-1 items-center gap-2">
@@ -230,7 +230,7 @@ export default function PlanifyDashboardShell() {
               <CreditsBalancePill />
               <Link
                 href="/planos"
-                className="pl-teachy-cta rounded-full px-3 py-1.5 text-xs font-black text-slate-900 sm:px-4"
+                className="pl-hud-btn rounded-full px-3 py-1.5 text-xs font-black text-slate-900 sm:px-4"
               >
                 Planos
               </Link>
@@ -256,7 +256,7 @@ export default function PlanifyDashboardShell() {
               <CreditsBalancePill />
               <Link
                 href="/planos"
-                className="pl-teachy-cta rounded-full px-3 py-1.5 text-xs font-black text-slate-900 sm:px-4"
+                className="pl-hud-btn rounded-full px-3 py-1.5 text-xs font-black text-slate-900 sm:px-4"
               >
                 Planos
               </Link>

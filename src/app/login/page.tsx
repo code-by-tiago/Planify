@@ -141,7 +141,7 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="planify-institutional planify-ui3 planify-public planify-teachy-landing flex min-h-screen flex-col">
+    <main className="planify-hud planify-ui3 planify-public planify-hud-landing flex min-h-screen flex-col">
       <PublicHeader />
 
       <section className="mx-auto w-full max-w-7xl flex-1 px-5 py-10 sm:px-8 lg:py-14">
@@ -151,12 +151,12 @@ export default function LoginPage() {
               {mode === "login" ? (
                 <>
                   Bem-vindo de volta,{" "}
-                  <span className="pl-gradient-text">professor.</span>
+                  <span className="pl-hud-gradient-text">professor.</span>
                 </>
               ) : (
                 <>
                   Crie sua conta e escolha um{" "}
-                  <span className="pl-gradient-text">plano Planify.</span>
+                  <span className="pl-hud-gradient-text">plano Planify.</span>
                 </>
               )}
             </h1>
@@ -298,7 +298,7 @@ export default function LoginPage() {
                 className={`w-full rounded-xl px-5 py-3.5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${
                   mode === "signup"
                     ? "pl-btn-brand w-full justify-center"
-                    : "pl-inst-btn-primary bg-gradient-to-r from-blue-600 to-cyan-600 text-white hover:opacity-95"
+                    : "pl-hud-btn bg-gradient-to-r from-blue-600 to-cyan-600 text-white hover:opacity-95"
                 }`}
               >
                 {loading

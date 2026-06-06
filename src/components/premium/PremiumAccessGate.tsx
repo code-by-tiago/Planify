@@ -100,7 +100,7 @@ export default function PremiumAccessGate({
   if (status.loading) {
     return (
       <main className="flex h-full min-h-[280px] flex-1 items-center justify-center p-4">
-        <div className="planify-ui3 planify-teachy-app w-full max-w-sm rounded-[2rem] border border-slate-200 bg-white p-8 text-center shadow-lg">
+        <div className="planify-hud planify-ui3 planify-hud-app w-full max-w-sm rounded-2xl border border-cyan-400/20 bg-white/90 p-8 text-center shadow-lg backdrop-blur-sm">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-blue-500 text-white">
             <PlanifyIcon name="lock" className="h-6 w-6" />
           </div>
@@ -121,9 +121,9 @@ export default function PremiumAccessGate({
 
   if (!status.authenticated) {
     return (
-      <main className="planify-ui3 planify-teachy-app flex h-full min-h-0 flex-1 flex-col overflow-hidden">
+      <main className="planify-hud planify-ui3 planify-hud-app flex h-full min-h-0 flex-1 flex-col overflow-hidden">
         <section className="flex min-h-0 flex-1 items-center justify-center p-4">
-          <div className="w-full max-w-xl rounded-[2rem] border border-slate-200 bg-white p-8 text-center shadow-lg">
+          <div className="w-full max-w-xl rounded-2xl border border-cyan-400/20 bg-white/90 p-8 text-center shadow-lg backdrop-blur-sm">
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-br from-blue-600 to-blue-500 text-white">
               <PlanifyIcon name="lock" className="h-7 w-7" />
             </div>
@@ -137,13 +137,13 @@ export default function PremiumAccessGate({
             <div className="mt-7 flex flex-wrap justify-center gap-3">
               <Link
                 href={buildLoginRedirect(redirectPath)}
-                className="rounded-full bg-blue-600 px-6 py-3 text-sm font-black text-white transition hover:bg-blue-700"
+                className="pl-hud-btn rounded-xl px-6 py-3 text-sm font-semibold"
               >
                 Entrar
               </Link>
               <Link
                 href="/planos"
-                className="pl-teachy-cta rounded-full px-6 py-3 text-sm font-black text-slate-900"
+                className="pl-hud-btn rounded-full px-6 py-3 text-sm font-black text-slate-900"
               >
                 Ver planos
               </Link>
@@ -156,9 +156,9 @@ export default function PremiumAccessGate({
 
   if (!status.premium) {
     return (
-      <main className="planify-ui3 planify-teachy-app flex h-full min-h-0 flex-1 flex-col overflow-hidden">
+      <main className="planify-hud planify-ui3 planify-hud-app flex h-full min-h-0 flex-1 flex-col overflow-hidden">
         <section className="flex min-h-0 flex-1 items-center justify-center p-4">
-          <div className="w-full max-w-xl rounded-[2rem] border border-slate-200 bg-white p-8 text-center shadow-lg">
+          <div className="w-full max-w-xl rounded-2xl border border-cyan-400/20 bg-white/90 p-8 text-center shadow-lg backdrop-blur-sm">
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-blue-50 text-blue-700">
               <PlanifyIcon name="plans" className="h-7 w-7" />
             </div>
@@ -175,7 +175,7 @@ export default function PremiumAccessGate({
             <div className="mt-7 flex flex-wrap justify-center gap-3">
               <Link
                 href={buildPlansRedirect(redirectPath)}
-                className="pl-teachy-cta rounded-full px-6 py-3 text-sm font-black text-slate-900"
+                className="pl-hud-btn rounded-full px-6 py-3 text-sm font-black text-slate-900"
               >
                 Ativar plano
               </Link>

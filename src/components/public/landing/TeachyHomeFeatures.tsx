@@ -6,10 +6,10 @@ function FeatureVisual({ icon }: { icon: (typeof teachyHomeFeatures)[0]["icon"] 
   return (
     <div className="relative isolate mx-auto w-full max-w-md overflow-hidden">
       <div
-        className="pl-feature-visual-glow absolute -inset-4 hidden rounded-[2.5rem] bg-gradient-to-br from-blue-100 via-indigo-50 to-emerald-50 sm:block"
+        className="pl-hud-feature-glow absolute -inset-4 hidden rounded-[2rem] sm:block"
         aria-hidden
       />
-      <div className="relative overflow-hidden rounded-2xl border border-slate-200/90 bg-white p-6 shadow-md">
+      <div className="relative overflow-hidden rounded-2xl border border-cyan-400/20 bg-white/80 p-6 shadow-md backdrop-blur-sm">
         <span className="flex h-14 w-14 items-center justify-center rounded-xl bg-blue-600 text-white shadow-sm">
           <PlanifyIcon name={icon} className="h-7 w-7" />
         </span>
@@ -38,7 +38,7 @@ export function TeachyHomeFeatures() {
         <div className="max-w-3xl">
           <h2 className="pl-display text-3xl font-extrabold leading-tight tracking-tight text-slate-950 sm:text-4xl lg:text-5xl">
             Do planejamento ao feedback,{" "}
-            <span className="pl-teachy-gradient-text">tudo em um só lugar.</span>
+            <span className="pl-hud-gradient-text">tudo em um só lugar.</span>
           </h2>
           <p className="mt-5 text-lg font-medium leading-8 text-slate-600">
             Pare de ensinar da forma antiga. Eleve a qualidade das suas aulas
@@ -68,7 +68,7 @@ export function TeachyHomeFeatures() {
                   </p>
                   <Link
                     href={feature.href}
-                    className="pl-teachy-cta mt-6 inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold"
+                    className="pl-hud-btn mt-6 inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold"
                   >
                     {feature.cta}
                   </Link>

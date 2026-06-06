@@ -1172,7 +1172,7 @@ export function PlanejamentosClient() {
               <button type="button" onClick={suggestBncc} disabled={loadingBncc} className="rounded-2xl bg-white px-6 py-4 text-sm font-black text-slate-950 transition hover:-translate-y-1 hover:bg-cyan-100 disabled:cursor-not-allowed disabled:opacity-60">
                 {loadingBncc ? "Sugerindo BNCC..." : "1. Sugerir BNCC"}
               </button>
-              <button type="button" onClick={generatePlanning} disabled={loadingPlan} className="pl-teachy-generate-btn rounded-full px-6 py-4 text-sm transition disabled:cursor-not-allowed">
+              <button type="button" onClick={generatePlanning} disabled={loadingPlan} className="pl-hud-btn-generate rounded-full px-6 py-4 text-sm transition disabled:cursor-not-allowed">
                 {loadingPlan ? "Gerando com IA..." : "2. Gerar planejamento com IA"}
               </button>
               <button type="button" onClick={sendToEditor} disabled={!generatedPlanning} className="rounded-full border-2 border-slate-200 bg-white px-6 py-4 text-sm font-black text-slate-800 transition hover:border-blue-200 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50">

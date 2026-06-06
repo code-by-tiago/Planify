@@ -13,8 +13,8 @@ export function TeachyHomeTestimonials() {
         </h2>
       </div>
 
-      <div className="pl-teachy-testimonials mt-10">
-        <div className="pl-teachy-testimonials__track gap-4">
+      <div className="pl-hud-testimonials mt-10">
+        <div className="pl-hud-testimonials__track gap-4">
           {items.map((item, index) => (
             <figure
               key={`${item.name}-${index}`}

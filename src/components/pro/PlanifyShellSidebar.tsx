@@ -66,7 +66,7 @@ export function PlanifyShellSidebar({
     };
   }, [open, onOpenChange]);
   const sidebarClass = isTeachy
-    ? "pl-sidebar pl-sidebar-teachy"
+    ? "pl-sidebar pl-sidebar-hud"
     : "pl-sidebar";
   const brandBorder = isTeachy
     ? "border-slate-200/80"
@@ -81,8 +81,8 @@ export function PlanifyShellSidebar({
 
   const brandBlock = (
     <div className={`shrink-0 border-b ${brandBorder} px-4 py-4`}>
-      <PlanifyBrand href={brandHref} />
-      <p className="mt-2 text-[11px] font-bold leading-snug text-slate-500">
+      <PlanifyBrand href={brandHref} dark={isTeachy} />
+      <p className={`mt-2 text-[11px] font-bold leading-snug ${isTeachy ? "text-slate-500" : "text-slate-500"}`}>
         Coruja Planify · IA alinhada à BNCC
       </p>
     </div>
@@ -125,7 +125,7 @@ export function PlanifyShellSidebar({
               exit="hidden"
               transition={{ duration: 0.2 }}
               className={`fixed inset-0 z-40 backdrop-blur-sm lg:hidden ${
-                isTeachy ? "bg-slate-900/30" : "bg-violet-950/40"
+                isTeachy ? "bg-slate-950/50" : "bg-slate-950/40"
               }`}
               onClick={() => onOpenChange?.(false)}
               aria-hidden="true"
@@ -146,7 +146,7 @@ export function PlanifyShellSidebar({
                   type="button"
                   onClick={() => onOpenChange?.(false)}
                   aria-label="Fechar menu"
-                  className="flex h-9 w-9 items-center justify-center rounded-2xl text-violet-400 transition hover:bg-white/80"
+                  className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-400 transition hover:bg-white/10"
                 >
                   <PlanifyIcon name="close" className="h-5 w-5" />
                 </button>

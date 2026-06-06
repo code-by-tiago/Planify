@@ -1394,7 +1394,7 @@ export function MateriaisClient({
           <button
             type="submit"
             disabled={loading}
-            className="pl-teachy-generate-btn mt-5 flex w-full items-center justify-center gap-2 px-6 py-4 text-sm disabled:cursor-not-allowed"
+            className="pl-hud-btn-generate mt-5 flex w-full items-center justify-center gap-2 px-6 py-4 text-sm disabled:cursor-not-allowed"
           >
             {loading ? (
               "Gerando..."

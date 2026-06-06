@@ -4,7 +4,7 @@ export function TeachyPartnersBar() {
   const items = [...teachyTrustSchools, ...teachyTrustSchools];
 
   return (
-    <section className="pl-teachy-partners py-8">
+    <section className="pl-hud-partners py-8">
       <p className="text-center text-sm font-semibold text-slate-500">
         Usado por professoras em escolas de todo o Brasil
       </p>

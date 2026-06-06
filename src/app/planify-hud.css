@@ -1,0 +1,476 @@
+/* PLANIFY_HUD_V2 — EdTech AR overlay · cyan glow · glass HUD */
+
+:root {
+  --planify-navy: #071018;
+  --planify-navy-soft: #0c1824;
+  --planify-slate-950: #0f172a;
+  --planify-slate-600: #475569;
+  --planify-slate-500: #64748b;
+  --planify-slate-200: #e2e8f0;
+  --planify-surface: #ffffff;
+  --planify-canvas: #f4f8fc;
+  --planify-cyan: #00d4ff;
+  --planify-cyan-bright: #22d3ee;
+  --planify-cyan-deep: #0891b2;
+  --planify-cyan-glow: 0 0 20px rgba(0, 212, 255, 0.55), 0 0 40px rgba(0, 212, 255, 0.2);
+  --planify-cyan-glow-soft: 0 0 12px rgba(0, 212, 255, 0.35);
+  --planify-hud-line: rgba(0, 212, 255, 0.45);
+  --planify-hud-line-faint: rgba(0, 212, 255, 0.18);
+  --planify-glass-bg: rgba(255, 255, 255, 0.72);
+  --planify-glass-border: rgba(0, 212, 255, 0.28);
+  --planify-glass-blur: blur(16px);
+  --planify-accent-gradient: linear-gradient(135deg, #00d4ff 0%, #0891b2 100%);
+  --planify-text-gradient: linear-gradient(120deg, #00d4ff 0%, #22d3ee 50%, #0891b2 100%);
+  --planify-radius: 12px;
+  --planify-radius-lg: 16px;
+  --planify-radius-xl: 20px;
+  --planify-font-display: var(--font-display, ui-sans-serif, system-ui, sans-serif);
+  --planify-font-ui: var(--font-inter, ui-sans-serif, system-ui, sans-serif);
+}
+
+body {
+  background: var(--planify-canvas) !important;
+  color: var(--planify-slate-950) !important;
+  font-family: var(--planify-font-ui);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ─── Scope ─── */
+.planify-hud {
+  color: var(--planify-slate-950);
+}
+
+.planify-hud h1,
+.planify-hud h2,
+.planify-hud h3,
+.planify-hud .pl-hud-display {
+  font-family: var(--planify-font-display);
+  letter-spacing: -0.025em;
+}
+
+.planify-hud.planify-public {
+  background: var(--planify-surface) !important;
+}
+
+.planify-hud.planify-public .planify-ui3-header {
+  background: rgba(255, 255, 255, 0.82) !important;
+  border-color: var(--planify-glass-border) !important;
+  backdrop-filter: var(--planify-glass-blur);
+  -webkit-backdrop-filter: var(--planify-glass-blur);
+  box-shadow: 0 1px 0 rgba(0, 212, 255, 0.08);
+}
+
+/* ─── HUD grid background ─── */
+.planify-hud-app.pl-app-bg,
+.planify-hud-app.pl-hud-shell {
+  background:
+    linear-gradient(to right, var(--planify-hud-line-faint) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--planify-hud-line-faint) 1px, transparent 1px),
+    var(--planify-canvas) !important;
+  background-size: 48px 48px, 48px 48px, auto !important;
+}
+
+/* ─── Buttons ─── */
+.planify-hud .pl-hud-btn,
+.planify-hud .pl-hud-btn-generate,
+.planify-hud .pl-btn-brand,
+.planify-hud .pl-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: var(--planify-accent-gradient) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(0, 212, 255, 0.35);
+  box-shadow: var(--planify-cyan-glow);
+  transition: filter 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.planify-hud .pl-hud-btn svg,
+.planify-hud .pl-hud-btn-generate svg,
+.planify-hud .pl-btn-brand svg {
+  color: #ffffff !important;
+}
+
+.planify-hud .pl-hud-btn:hover,
+.planify-hud .pl-hud-btn-generate:hover:not(:disabled),
+.planify-hud .pl-btn-brand:hover {
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+  box-shadow: 0 0 28px rgba(0, 212, 255, 0.65), 0 0 56px rgba(0, 212, 255, 0.25);
+}
+
+.planify-hud .pl-hud-btn-generate:disabled {
+  opacity: 0.55;
+  filter: none;
+  transform: none;
+}
+
+.planify-hud .pl-hud-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid var(--planify-glass-border);
+  background: var(--planify-glass-bg);
+  backdrop-filter: var(--planify-glass-blur);
+  color: var(--planify-slate-950);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.planify-hud .pl-hud-btn-secondary:hover {
+  border-color: rgba(0, 212, 255, 0.5);
+  box-shadow: var(--planify-cyan-glow-soft);
+}
+
+.planify-hud .pl-hud-btn-ghost {
+  border: 1px solid rgba(0, 212, 255, 0.35);
+  color: #e0f7ff !important;
+  background: rgba(0, 212, 255, 0.06);
+  backdrop-filter: blur(8px);
+}
+
+.planify-hud .pl-hud-btn-ghost:hover {
+  background: rgba(0, 212, 255, 0.12);
+  box-shadow: var(--planify-cyan-glow-soft);
+}
+
+/* ─── Gradient text ─── */
+.planify-hud .pl-hud-gradient-text {
+  background: var(--planify-text-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+/* ─── Glass cards ─── */
+.planify-hud .pl-hud-glass {
+  background: var(--planify-glass-bg);
+  backdrop-filter: var(--planify-glass-blur);
+  -webkit-backdrop-filter: var(--planify-glass-blur);
+  border: 1px solid var(--planify-glass-border);
+  border-radius: var(--planify-radius-lg);
+  box-shadow: 0 4px 24px rgba(0, 212, 255, 0.08);
+}
+
+/* ─── Owl ring (reference HUD circle) ─── */
+.pl-hud-owl-ring {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  padding: 3px;
+}
+
+.pl-hud-owl-ring::before {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: inherit;
+  border: 2px dashed rgba(0, 212, 255, 0.55);
+  box-shadow: var(--planify-cyan-glow-soft);
+  animation: pl-hud-ring-spin 48s linear infinite;
+}
+
+.pl-hud-owl-ring::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  border: 1px solid rgba(0, 212, 255, 0.35);
+}
+
+.pl-hud-owl-ring--glow {
+  box-shadow: var(--planify-cyan-glow);
+}
+
+.pl-hud-owl-ring img {
+  border-radius: 9999px;
+  object-fit: cover;
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes pl-hud-ring-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ─── Hero ─── */
+.planify-hud .pl-hud-hero {
+  position: relative;
+  isolation: isolate;
+  background:
+    radial-gradient(ellipse 80% 60% at 70% 40%, rgba(0, 212, 255, 0.08), transparent 60%),
+    radial-gradient(ellipse 60% 50% at 20% 80%, rgba(8, 145, 178, 0.06), transparent 55%),
+    linear-gradient(180deg, #ffffff 0%, #f0f9ff 100%);
+}
+
+.planify-hud .pl-hud-hero-photo {
+  position: absolute;
+  inset: 0;
+  opacity: 0.35;
+  background:
+    url("https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=1600&q=80")
+    center/cover no-repeat;
+  -webkit-mask-image: radial-gradient(90% 80% at 65% 45%, #000 30%, transparent 85%);
+  mask-image: radial-gradient(90% 80% at 65% 45%, #000 30%, transparent 85%);
+  pointer-events: none;
+}
+
+.planify-hud .pl-hud-circuit line,
+.planify-hud .pl-hud-circuit path {
+  stroke: var(--planify-hud-line);
+  stroke-width: 1.5;
+  fill: none;
+  filter: drop-shadow(0 0 4px rgba(0, 212, 255, 0.6));
+}
+
+.planify-hud .pl-hud-node {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  border: 1px solid var(--planify-glass-border);
+  background: var(--planify-glass-bg);
+  backdrop-filter: blur(12px);
+  box-shadow: var(--planify-cyan-glow-soft);
+  color: var(--planify-cyan-deep);
+}
+
+/* ─── BNCC band ─── */
+.planify-hud .pl-hud-band-wrap {
+  background: var(--planify-canvas);
+}
+
+.planify-hud .pl-hud-glass-band {
+  background:
+    linear-gradient(145deg, rgba(7, 16, 24, 0.94) 0%, rgba(12, 24, 36, 0.92) 100%) !important;
+  border-radius: var(--planify-radius-xl);
+  border: 1px solid rgba(0, 212, 255, 0.22);
+  box-shadow: var(--planify-cyan-glow-soft), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.planify-hud .pl-hud-glass-band h2,
+.planify-hud .pl-hud-glass-band p {
+  color: #e0f7ff !important;
+}
+
+.planify-hud .pl-hud-glass-band .pl-hud-gradient-text {
+  background: linear-gradient(120deg, #67e8f9 0%, #00d4ff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* ─── Tools bento ─── */
+.planify-hud .planify-landing-tools-grid > a {
+  border-radius: var(--planify-radius-lg) !important;
+  border-color: var(--planify-glass-border) !important;
+  background: var(--planify-glass-bg) !important;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 2px 12px rgba(0, 212, 255, 0.06);
+}
+
+.planify-hud .planify-landing-tools-grid > a:hover {
+  border-color: rgba(0, 212, 255, 0.45) !important;
+  box-shadow: var(--planify-cyan-glow-soft);
+}
+
+/* ─── Testimonials ─── */
+.planify-hud .pl-hud-testimonials {
+  background: var(--planify-canvas);
+  border-block: 1px solid var(--planify-glass-border);
+}
+
+.planify-hud .pl-hud-testimonials__track figure {
+  border-radius: var(--planify-radius-lg) !important;
+  border-color: var(--planify-glass-border) !important;
+  background: var(--planify-glass-bg) !important;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 2px 16px rgba(0, 212, 255, 0.06) !important;
+}
+
+@keyframes pl-hud-marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.planify-hud .pl-hud-testimonials__track {
+  display: flex;
+  width: max-content;
+  animation: pl-hud-marquee 48s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .planify-hud .pl-hud-testimonials__track {
+    animation: none;
+  }
+  .pl-hud-owl-ring::before {
+    animation: none;
+  }
+}
+
+/* ─── Partners ─── */
+.planify-hud .pl-hud-partners {
+  background: var(--planify-surface);
+  border-top: 1px solid var(--planify-glass-border);
+}
+
+/* ─── CTA band ─── */
+.planify-hud .pl-hud-cta-band {
+  background:
+    linear-gradient(145deg, #071018 0%, #0c2a3a 50%, #071018 100%);
+  border-radius: var(--planify-radius-xl);
+  border: 1px solid rgba(0, 212, 255, 0.25);
+  box-shadow: var(--planify-cyan-glow-soft), inset 0 0 60px rgba(0, 212, 255, 0.06);
+}
+
+.planify-hud .pl-hud-cta-band h2,
+.planify-hud .pl-hud-cta-band p {
+  color: #e0f7ff !important;
+}
+
+.planify-hud .pl-hud-cta-band .pl-hud-btn {
+  background: #ffffff !important;
+  color: var(--planify-navy) !important;
+  border-color: transparent;
+  box-shadow: var(--planify-cyan-glow);
+}
+
+.planify-hud .pl-hud-cta-band .pl-hud-btn svg {
+  color: var(--planify-navy) !important;
+}
+
+/* ─── Footer ─── */
+.pl-hud-footer {
+  background: var(--planify-navy) !important;
+  color: #94a3b8 !important;
+  border-top: 1px solid rgba(0, 212, 255, 0.15) !important;
+  box-shadow: inset 0 1px 0 rgba(0, 212, 255, 0.08);
+}
+
+.pl-hud-footer a:hover {
+  color: var(--planify-cyan-bright) !important;
+}
+
+.pl-hud-footer .pl-hud-footer-accent {
+  color: var(--planify-cyan) !important;
+}
+
+/* ─── Page hero ─── */
+.planify-hud .pl-hud-page-hero {
+  background: var(--planify-glass-bg) !important;
+  backdrop-filter: blur(12px);
+  border-color: var(--planify-glass-border) !important;
+}
+
+.planify-hud .pl-hud-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 9999px;
+  padding: 0.25rem 0.65rem;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  background: rgba(0, 212, 255, 0.1) !important;
+  color: var(--planify-cyan-deep) !important;
+  border: 1px solid rgba(0, 212, 255, 0.25);
+}
+
+/* ─── Sidebar ─── */
+.planify-hud.pl-hud-shell .pl-sidebar,
+.planify-hud .pl-sidebar-hud {
+  background: rgba(7, 16, 24, 0.97) !important;
+  border-color: rgba(0, 212, 255, 0.12) !important;
+  color: #e2e8f0;
+}
+
+.planify-hud.pl-hud-shell .pl-nav-active {
+  background: var(--planify-accent-gradient) !important;
+  box-shadow: var(--planify-cyan-glow);
+  color: #fff !important;
+}
+
+.planify-hud.pl-hud-shell .pl-sidebar a:not(.pl-nav-active) {
+  color: #94a3b8;
+}
+
+.planify-hud.pl-hud-shell .pl-sidebar a:not(.pl-nav-active):hover {
+  color: var(--planify-cyan-bright);
+  background: rgba(0, 212, 255, 0.06);
+}
+
+/* ─── Inputs focus ─── */
+.planify-hud input:focus,
+.planify-hud textarea:focus,
+.planify-hud select:focus {
+  border-color: rgba(0, 212, 255, 0.55) !important;
+  box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.15) !important;
+  outline: none;
+}
+
+/* ─── Plan cards ─── */
+.planify-hud .pl-hud-plan-highlight {
+  border-color: rgba(0, 212, 255, 0.4) !important;
+  box-shadow: var(--planify-cyan-glow-soft), 0 8px 32px rgba(0, 212, 255, 0.12) !important;
+}
+
+/* ─── Feature glow ─── */
+.planify-hud .pl-hud-feature-glow {
+  background: radial-gradient(circle, rgba(0, 212, 255, 0.12), transparent 70%) !important;
+}
+
+/* Preserve white text on dark surfaces */
+.planify-hud .pl-hud-glass-band h2,
+.planify-hud .pl-hud-cta-band h2.text-white,
+.planify-hud .pl-hud-cta-band [class*="text-white"],
+.planify-hud .pl-hud-btn,
+.planify-hud .pl-hud-btn-generate,
+.planify-hud .pl-nav-active {
+  color: inherit;
+}
+
+.planify-hud .pl-hud-btn,
+.planify-hud .pl-hud-btn-generate,
+.planify-hud .pl-nav-active {
+  color: #ffffff !important;
+}
+
+@media (max-width: 1023px) {
+  .planify-hud.planify-hud-landing .planify-ui3-header {
+    background: rgba(255, 255, 255, 0.94) !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .planify-hud .pl-hud-btn:hover,
+  .planify-hud .pl-hud-btn-generate:hover:not(:disabled) {
+    transform: none;
+  }
+}
+
+.planify-hud .pl-hud-main {
+  scrollbar-gutter: stable;
+}
+
+.planify-hud .pl-hud-main > .min-h-0 {
+  min-height: 0;
+}
+
+.planify-hud .pl-hud-board {
+  scrollbar-gutter: stable;
+}
+
+.planify-hud.pl-hud-shell .pl-sidebar .pl-hud-owl-ring + div p:first-child,
+.planify-hud.pl-hud-shell .pl-sidebar a .pl-hud-owl-ring ~ div p {
+  color: #f8fafc !important;
+}
+
+.planify-hud.pl-hud-shell .pl-sidebar a .pl-hud-owl-ring ~ div p:last-child {
+  color: #67e8f9 !important;
+}
+
+/* PLANIFY_HUD_V2_END */

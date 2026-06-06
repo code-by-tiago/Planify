@@ -28,7 +28,7 @@ export function TeachyHomeToolsGrid() {
             <Link
               key={tool.id}
               href={tool.href}
-              className="group flex flex-col items-center rounded-2xl border border-slate-200/90 bg-white p-4 text-center shadow-sm transition hover:border-blue-200/80 motion-safe:hover:-translate-y-0.5 motion-safe:hover:shadow-md"
+              className="pl-hud-glass group flex flex-col items-center rounded-2xl p-4 text-center transition hover:border-cyan-400/40 motion-safe:hover:-translate-y-0.5 motion-safe:hover:shadow-[0_0_20px_rgba(0,212,255,0.15)]"
             >
               <span
                 className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br ${tool.accent} text-white shadow-sm transition max-lg:group-hover:scale-100 motion-safe:group-hover:scale-105`}
@@ -44,7 +44,7 @@ export function TeachyHomeToolsGrid() {
             <Link
               key={tool.id}
               href={tool.href}
-              className="group flex flex-col items-center rounded-2xl border border-slate-200/90 bg-white p-4 text-center shadow-sm transition hover:border-blue-200/80 motion-safe:hover:-translate-y-0.5 motion-safe:hover:shadow-md"
+              className="pl-hud-glass group flex flex-col items-center rounded-2xl p-4 text-center transition hover:border-cyan-400/40 motion-safe:hover:-translate-y-0.5 motion-safe:hover:shadow-[0_0_20px_rgba(0,212,255,0.15)]"
             >
               <span
                 className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br ${tool.accent} text-white shadow-sm transition max-lg:group-hover:scale-100 motion-safe:group-hover:scale-105`}
@@ -61,7 +61,7 @@ export function TeachyHomeToolsGrid() {
         <div className="mt-8 flex justify-center">
           <Link
             href="/planos"
-            className="pl-teachy-cta inline-flex items-center gap-2 rounded-xl px-8 py-3.5 text-sm font-semibold"
+            className="pl-hud-btn inline-flex items-center gap-2 rounded-xl px-8 py-3.5 text-sm font-semibold"
           >
             Ver planos
             <PlanifyIcon name="arrowRight" className="h-4 w-4" />

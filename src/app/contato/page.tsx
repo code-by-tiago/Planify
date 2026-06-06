@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 export default function ContatoPage() {
   return (
-    <main className="planify-institutional planify-ui3 planify-public flex min-h-screen flex-col">
+    <main className="planify-hud planify-ui3 planify-public flex min-h-screen flex-col">
       <PublicHeader active="contato" />
 
       <section className="mx-auto w-full max-w-7xl px-5 py-12 sm:px-8 lg:py-16">
@@ -18,7 +18,7 @@ export default function ContatoPage() {
           </p>
           <h1 className="mt-4 text-4xl font-black leading-tight tracking-tight text-slate-950 sm:text-5xl">
             Atendimento para{" "}
-            <span className="pl-gradient-text">professores.</span>
+            <span className="pl-hud-gradient-text">professores.</span>
           </h1>
           <p className="mt-5 text-lg font-medium leading-8 text-slate-600">
             Dúvidas sobre assinatura, acesso, erros, sugestões, parcerias ou

@@ -132,7 +132,7 @@ export default function TeachyStudioHome({
   }
 
   return (
-    <div className="pl-teachy-board pl-teachy-home flex h-full min-h-0 w-full flex-col overflow-hidden bg-[#f8fafc]">
+    <div className="pl-hud-board pl-hud-home flex h-full min-h-0 w-full flex-col overflow-hidden bg-[#f4f8fc]">
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
         <div className="mx-auto w-full max-w-5xl px-4 py-5 sm:px-6 sm:py-6">
           {/* Bloco 1 — Construtor de aula (estrutura Teachy) */}

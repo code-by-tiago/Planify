@@ -37,13 +37,13 @@ export function PublicHeader({ active }: PublicHeaderProps) {
     const isActive = active === key;
     return `rounded-xl px-3.5 py-2 text-sm font-semibold transition ${
       isActive
-        ? "bg-blue-50 text-blue-700"
+        ? "bg-cyan-50 text-cyan-700 ring-1 ring-cyan-400/20"
         : "text-slate-600 hover:bg-slate-50 hover:text-slate-950"
     }`;
   }
 
   return (
-    <header className="planify-ui3-header sticky top-0 z-50 border-b border-slate-200/80 bg-white/90 backdrop-blur-md">
+    <header className="planify-ui3-header sticky top-0 z-50 border-b border-cyan-400/15 bg-white/85 backdrop-blur-md">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-5 py-3 sm:px-8">
         <PlanifyBrand href="/" hideTagline />
 
@@ -56,26 +56,15 @@ export function PublicHeader({ active }: PublicHeaderProps) {
         </nav>
 
         <div className="hidden items-center gap-2 sm:flex">
-          <Link
-            href="/login"
-            className="rounded-xl px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-          >
+          <Link href="/login" className="rounded-xl px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
             Entrar
           </Link>
-          <Link
-            href="/planos"
-            className="pl-teachy-cta rounded-xl px-5 py-2.5 text-sm font-semibold"
-          >
+          <Link href="/planos" className="pl-hud-btn rounded-xl px-5 py-2.5 text-sm font-semibold">
             Ver planos
           </Link>
         </div>
 
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          aria-label="Abrir menu"
-          className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-700 lg:hidden"
-        >
+        <button type="button" onClick={() => setOpen(true)} aria-label="Abrir menu" className="flex h-10 w-10 items-center justify-center rounded-xl border border-cyan-400/20 text-slate-700 lg:hidden">
           <PlanifyIcon name="menu" className="h-5 w-5" />
         </button>
       </div>
@@ -83,10 +72,7 @@ export function PublicHeader({ active }: PublicHeaderProps) {
       <AnimatePresence>
         {open ? (
           <motion.div className="fixed inset-0 z-[60] lg:hidden" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <div
-              className="absolute inset-0 bg-slate-950/40 backdrop-blur-sm"
-              onClick={() => setOpen(false)}
-            />
+            <div className="absolute inset-0 bg-slate-950/50 backdrop-blur-sm" onClick={() => setOpen(false)} />
             <motion.aside
               initial={reduce ? { opacity: 0 } : { x: "100%" }}
               animate={reduce ? { opacity: 1 } : { x: 0 }}
@@ -101,24 +87,16 @@ export function PublicHeader({ active }: PublicHeaderProps) {
               </div>
               <nav className="mt-8 grid gap-2">
                 {navLinks.map((item) => (
-                  <Link key={item.href} href={item.href} onClick={() => setOpen(false)} className={`rounded-xl px-4 py-3.5 text-base font-semibold ${active === item.key ? "bg-blue-50 text-blue-700" : "text-slate-700"}`}>
+                  <Link key={item.href} href={item.href} onClick={() => setOpen(false)} className={`rounded-xl px-4 py-3.5 text-base font-semibold ${active === item.key ? "bg-cyan-50 text-cyan-700" : "text-slate-700"}`}>
                     {item.label}
                   </Link>
                 ))}
               </nav>
               <div className="mt-auto grid gap-3 pt-6">
-                <Link
-                  href="/login"
-                  onClick={() => setOpen(false)}
-                  className="rounded-xl border border-slate-200 py-3 text-center text-sm font-semibold text-slate-800"
-                >
+                <Link href="/login" onClick={() => setOpen(false)} className="rounded-xl border border-slate-200 py-3 text-center text-sm font-semibold text-slate-800">
                   Entrar
                 </Link>
-                <Link
-                  href="/planos"
-                  onClick={() => setOpen(false)}
-                  className="pl-teachy-cta rounded-xl py-3 text-center text-sm font-semibold"
-                >
+                <Link href="/planos" onClick={() => setOpen(false)} className="pl-hud-btn rounded-xl py-3 text-center text-sm font-semibold">
                   Ver planos
                 </Link>
               </div>

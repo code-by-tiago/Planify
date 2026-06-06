@@ -24,7 +24,7 @@ export function TeachyCommunitySection() {
           </p>
           <Link
             href="/dashboard?secao=marketplace"
-            className="pl-teachy-cta mt-8 inline-flex items-center gap-2 rounded-xl px-8 py-3.5 text-sm font-semibold"
+            className="pl-hud-btn mt-8 inline-flex items-center gap-2 rounded-xl px-8 py-3.5 text-sm font-semibold"
           >
             Abrir Marketplace
             <PlanifyIcon name="arrowRight" className="h-4 w-4" />
@@ -35,7 +35,7 @@ export function TeachyCommunitySection() {
           {sampleMaterials.map((item) => (
             <div
               key={item.title}
-              className="rounded-2xl border border-slate-200/90 bg-slate-50/50 p-4 transition hover:border-blue-200 hover:bg-white hover:shadow-md"
+              className="pl-hud-glass rounded-2xl p-4 transition hover:border-cyan-400/30 hover:shadow-[0_0_16px_rgba(0,212,255,0.12)]"
             >
               <span
                 className={`inline-block rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase ${item.color}`}

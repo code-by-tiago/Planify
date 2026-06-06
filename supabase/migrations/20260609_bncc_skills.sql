@@ -30,23 +30,9 @@ as $$
   );
 $$;
 
-create or replace function public.is_admin()
-returns boolean
-language sql
-stable
-security definer
-set search_path = public, auth
-as $$
-  select exists (
-    select 1
-    from public.profiles p
-    where p.id = auth.uid()
-      and (
-        p.is_admin = true
-        or p.role in ('owner', 'admin')
-      )
-  );
-$$;
+-- Prod already defines is_admin(uuid default auth.uid()) in database/09-8-admin-owner-safe.sql.
+-- Do NOT create a zero-arg overload — it makes is_admin() ambiguous in PostgreSQL.
+drop function if exists public.is_admin();
 
 create or replace function public.has_active_subscription(target_user_id uuid)
 returns boolean
@@ -81,7 +67,7 @@ stable
 security definer
 set search_path = public, auth
 as $$
-  select public.is_admin() or public.has_active_subscription();
+  select public.is_admin(auth.uid()) or public.has_active_subscription();
 $$;
 
 -- ─── BNCC skills catalog ─────────────────────────────────────────────────────
@@ -126,8 +112,8 @@ drop policy if exists bncc_skills_admin_all on public.bncc_skills;
 create policy bncc_skills_admin_all
   on public.bncc_skills for all
   to authenticated
-  using (public.is_admin())
-  with check (public.is_admin());
+  using (public.is_admin(auth.uid()))
+  with check (public.is_admin(auth.uid()));
 
 -- Minimal sample skills (EF09HI01 style). Idempotent via ON CONFLICT.
 insert into public.bncc_skills (

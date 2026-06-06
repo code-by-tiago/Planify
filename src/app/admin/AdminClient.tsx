@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { AdminQualidadePanel } from "./AdminQualidadePanel";
 
 type AdminTab =
   | "visao-geral"
+  | "qualidade-ia"
   | "usuarios"
   | "assinaturas"
   | "biblioteca"
@@ -53,6 +55,7 @@ type SystemCheck = {
 
 const tabs: Array<{ id: AdminTab; label: string }> = [
   { id: "visao-geral", label: "Visão geral" },
+  { id: "qualidade-ia", label: "Qualidade IA" },
   { id: "usuarios", label: "Usuários" },
   { id: "assinaturas", label: "Assinaturas" },
   { id: "biblioteca", label: "Biblioteca" },
@@ -584,6 +587,10 @@ export function AdminClient() {
   function renderCurrentTab() {
     if (activeTab === "visao-geral") {
       return renderOverview();
+    }
+
+    if (activeTab === "qualidade-ia") {
+      return <AdminQualidadePanel />;
     }
 
     if (activeTab === "usuarios") {

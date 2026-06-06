@@ -324,6 +324,21 @@ function testDailyQuotaMigrationContract() {
   }
 }
 
+function testGenerationEventsMigrationContract() {
+  const migrationPath = join(
+    root,
+    "supabase/migrations/20260607_generation_events.sql",
+  );
+  const telemetryPath = join(root, "src/server/telemetry/generation-telemetry.ts");
+  const migration = readFileSync(migrationPath, "utf8");
+  const telemetry = readFileSync(telemetryPath, "utf8");
+
+  assert.match(migration, /generation_events/);
+  assert.match(migration, /quality_score_bucket/);
+  assert.match(telemetry, /generation_events/);
+  assert.match(telemetry, /elevar_qualidade/);
+}
+
 function main() {
   const started = Date.now();
 
@@ -333,6 +348,7 @@ function main() {
   runTest("quality-score", testQualityScore);
   runTest("planning-quality", testPlanningQuality);
   runTest("daily-quota-migration", testDailyQuotaMigrationContract);
+  runTest("generation-events-migration", testGenerationEventsMigrationContract);
 
   const elapsedMs = Date.now() - started;
   console.log(

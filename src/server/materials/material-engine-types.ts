@@ -51,6 +51,9 @@ export type MaterialEngineRequest = {
   incluirGabarito: boolean;
   modeloSlides?: string;
   designSlides?: string;
+  observacoes?: string;
+  elevarQualidade?: boolean;
+  problemasQualidade?: string[];
 };
 
 export type MaterialEngineInput = {
@@ -72,6 +75,8 @@ export type MaterialEngineInput = {
   observacoes?: string;
   modeloSlides?: string;
   designSlides?: string;
+  elevarQualidade?: boolean;
+  problemasQualidade?: string[];
 };
 
 export type ExamQuestion = {

@@ -1,3 +1,4 @@
+import { computeQualityScore } from "@/lib/materiais/material-quality-score";
 import { generateMaterialWithAI } from "../ai/material-ai-service";
 import type { MaterialAIInput, MaterialAIOutput } from "@/types/ai";
 import { generateMaterialByEngine } from "./material-engine-service";
@@ -59,12 +60,14 @@ function successFromAI(
   output: MaterialAIOutput,
   pipeline: "ai" | "engine-fallback",
   extraAlertas: string[] = [],
+  qualityIssues: string[] = [],
 ) {
   const html = renderMaterialAIOutputToHtml(output, request);
   const alertas = [
     ...(output.alertas ?? []),
     ...extraAlertas,
   ].filter(Boolean);
+  const qualityScore = computeQualityScore(qualityIssues, alertas);
 
   return {
     ok: true as const,
@@ -75,6 +78,8 @@ function successFromAI(
       estrutura: output,
       alertas,
       pipeline,
+      qualityScore,
+      qualityIssues,
     },
   };
 }
@@ -89,15 +94,26 @@ async function fallbackToEngine(
     return engineResult;
   }
 
+  const fallbackIssues =
+    "qualityIssues" in engineResult.data
+      ? (engineResult.data.qualityIssues as string[])
+      : [];
+  const fallbackAlertas = [
+    `O motor pedagógico auxiliar assumiu a entrega: ${reason}`,
+  ];
+
   return {
     ok: true as const,
     status: 200,
     data: {
       ...engineResult.data,
-      alertas: [
-        `O motor pedagógico auxiliar assumiu a entrega: ${reason}`,
-      ],
+      alertas: fallbackAlertas,
       pipeline: "engine-fallback" as const,
+      qualityScore:
+        "qualityScore" in engineResult.data
+          ? engineResult.data.qualityScore
+          : computeQualityScore(fallbackIssues, fallbackAlertas),
+      qualityIssues: fallbackIssues,
     },
   };
 }
@@ -131,7 +147,7 @@ export async function generatePlanifyMaterial(input: MaterialEngineInput) {
           ]
         : [];
 
-    return successFromAI(request, output, "ai", warn);
+    return successFromAI(request, output, "ai", warn, postIssues);
   } catch (error) {
     const message =
       error instanceof Error

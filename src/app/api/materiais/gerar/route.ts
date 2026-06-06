@@ -115,6 +115,10 @@ export async function POST(request: NextRequest) {
       estrutura: result.data.estrutura,
       alertas: "alertas" in result.data ? result.data.alertas : [],
       pipeline: "pipeline" in result.data ? result.data.pipeline : "engine",
+      qualityScore:
+        "qualityScore" in result.data ? result.data.qualityScore : undefined,
+      qualityIssues:
+        "qualityIssues" in result.data ? result.data.qualityIssues : [],
       creditCost: chargedCost || getCreditCost(tipo),
     });
   } catch (error) {

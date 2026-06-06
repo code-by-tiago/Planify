@@ -1,5 +1,6 @@
 import { buildVisualGameMaterial } from "@/lib/materiais/game-builder";
 import { getModelTierForMaterialType } from "@/lib/ai/material-generation-policy";
+import { computeQualityScore } from "@/lib/materiais/material-quality-score";
 import {
   renderQuestionCard,
   wrapProfessionalDocument,
@@ -873,6 +874,7 @@ export async function generateMaterialByEngine(input: MaterialEngineInput) {
               ...issues.slice(0, 8),
             ]
           : undefined;
+      const qualityScore = computeQualityScore(issues, alertas ?? []);
 
       return {
         ok: true as const,
@@ -881,6 +883,8 @@ export async function generateMaterialByEngine(input: MaterialEngineInput) {
           tipoMaterial: request.tipoMaterial,
           html,
           estrutura: normalized,
+          qualityScore,
+          qualityIssues: issues,
           ...(alertas ? { alertas } : {}),
         },
       };

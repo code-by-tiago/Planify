@@ -7,6 +7,7 @@ import {
   saveHistoryItems,
   upsertHistoryItem,
 } from "@/lib/history/history-storage";
+import type { MaterialEngineInput } from "@/server/materials/material-engine-types";
 import type { PlanifyToolId } from "@/lib/pro/planifyTools";
 import { planifyTools } from "@/lib/pro/planifyTools";
 import type { HistoryItem } from "@/types/history";
@@ -30,6 +31,9 @@ export type MaterialEditorMeta = {
   pipeline?: string | null;
   slideTheme?: string | null;
   designSlides?: string | null;
+  qualityScore?: number | null;
+  qualityIssues?: string[];
+  generationPayload?: MaterialEngineInput | null;
 };
 
 export type MaterialHistoryPreview = {

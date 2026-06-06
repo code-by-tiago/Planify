@@ -4,8 +4,16 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { GoogleSlidesExportButton } from "@/components/google/GoogleSlidesExportButton";
 import { MaterialGenerationSummaryPanel } from "@/components/materiais/MaterialGenerationSummary";
+import { MaterialQualityScoreBar } from "@/components/materiais/MaterialQualityScoreBar";
+import {
+  buildElevatePayload,
+  requestMaterialGeneration,
+} from "@/lib/materiais/elevate-material-client";
 import { MarketplacePublishButton } from "@/components/marketplace/MarketplacePublishButton";
-import type { MaterialEngineResponse } from "@/server/materials/material-engine-types";
+import type {
+  MaterialEngineInput,
+  MaterialEngineResponse,
+} from "@/server/materials/material-engine-types";
 import { SLIDE_THEME_OPTIONS } from "@/server/materials/slide-design-themes";
 import { CreditsBalancePill } from "@/components/credits/CreditsBalancePill";
 import { DailyGenerationsBar } from "@/components/credits/DailyGenerationsBar";
@@ -240,6 +248,11 @@ export function MateriaisClient({
   const [observacoes, setObservacoes] = useState("");
   const [alertasGeracao, setAlertasGeracao] = useState<string[]>([]);
   const [pipelineGeracao, setPipelineGeracao] = useState<string | null>(null);
+  const [qualityScore, setQualityScore] = useState<number | null>(null);
+  const [qualityIssues, setQualityIssues] = useState<string[]>([]);
+  const [lastGenerationPayload, setLastGenerationPayload] =
+    useState<MaterialEngineInput | null>(null);
+  const [elevatingQuality, setElevatingQuality] = useState(false);
   const [conteudosSugeridos, setConteudosSugeridos] = useState<
     ConteudoSugerido[] | null
   >(null);
@@ -560,6 +573,9 @@ export function MateriaisClient({
     setObservacoes("");
     setAlertasGeracao([]);
     setPipelineGeracao(null);
+    setQualityScore(null);
+    setQualityIssues([]);
+    setLastGenerationPayload(null);
     setConteudosSugeridos(null);
     setConteudosSelecionadosIds([]);
     setTemasRapidosSelecionados([]);
@@ -572,9 +588,42 @@ export function MateriaisClient({
     setErro("");
   }
 
+  function buildGenerationPayload(
+    overrides: Partial<MaterialEngineInput> = {},
+  ): MaterialEngineInput {
+    const objetivoComposto = [
+      areaConhecimento ? `Área: ${areaConhecimento}` : "",
+      objetivo.trim(),
+    ]
+      .filter(Boolean)
+      .join("\n");
+
+    return {
+      tipoMaterial: tipo,
+      tipo,
+      etapa,
+      anoSerie,
+      componenteCurricular: componente,
+      componente,
+      tema,
+      temaCentral: tema,
+      objetivo: objetivoComposto,
+      objetivos: objetivoComposto,
+      observacoes: observacoes.trim() || undefined,
+      quantidade,
+      dificuldade,
+      formatoJogo: isJogo ? formatoJogo : null,
+      incluirGabarito: showGabarito && incluirGabarito,
+      areaConhecimento,
+      designSlides: tipo === "slides" ? designSlides : undefined,
+      ...overrides,
+    };
+  }
+
   function buildMaterialMeta(
     pipeline?: string | null,
     estrutura?: MaterialEngineResponse | null,
+    extras?: Partial<MaterialEditorMeta>,
   ): MaterialEditorMeta {
     const resolvedEstrutura = estrutura ?? resultadoEstrutura;
     return {
@@ -589,6 +638,9 @@ export function MateriaisClient({
         resolvedEstrutura?.slideTheme ||
         (tipo === "slides" ? designSlides : null),
       designSlides: tipo === "slides" ? designSlides : null,
+      qualityScore: extras?.qualityScore ?? qualityScore,
+      qualityIssues: extras?.qualityIssues ?? qualityIssues,
+      generationPayload: extras?.generationPayload ?? lastGenerationPayload,
     };
   }
 
@@ -713,60 +765,28 @@ export function MateriaisClient({
     setResultadoEstrutura(null);
     setAlertasGeracao([]);
     setPipelineGeracao(null);
+    setQualityScore(null);
+    setQualityIssues([]);
     setMaterialSalvo(false);
     setHintFeedback("");
 
     try {
-      const objetivoComposto = [
-        areaConhecimento ? `Área: ${areaConhecimento}` : "",
-        objetivo.trim(),
-      ]
-        .filter(Boolean)
-        .join("\n");
+      const payload = buildGenerationPayload();
+      setLastGenerationPayload(payload);
 
-      const payload = {
-        tipoMaterial: tipo,
-        tipo,
-        etapa,
-        anoSerie,
-        componenteCurricular: componente,
-        componente,
-        tema,
-        temaCentral: tema,
-        objetivo: objetivoComposto,
-        objetivos: objetivoComposto,
-        observacoes: observacoes.trim() || undefined,
-        quantidade,
-        dificuldade,
-        formatoJogo: isJogo ? formatoJogo : null,
-        incluirGabarito: showGabarito && incluirGabarito,
-        areaConhecimento,
-        designSlides: tipo === "slides" ? designSlides : undefined,
-      };
-
-      const response = await fetch("/api/materiais/gerar", {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-
-      const data = (await response.json().catch(() => null)) as unknown;
-
-      if (!response.ok) {
-        const record =
-          data && typeof data === "object"
-            ? (data as { message?: unknown; code?: unknown })
-            : null;
-        const message = record?.message
-          ? String(record.message)
-          : "Não foi possível gerar o material.";
-        if (record?.code === "daily_limit_reached") {
+      let data: Record<string, unknown>;
+      try {
+        const result = await requestMaterialGeneration(payload);
+        data = result as Record<string, unknown>;
+      } catch (error) {
+        const code =
+          error && typeof error === "object" && "code" in error
+            ? String((error as { code?: unknown }).code || "")
+            : "";
+        if (code === "daily_limit_reached") {
           window.dispatchEvent(new Event("planify:credits-changed"));
         }
-        throw new Error(message);
+        throw error;
       }
 
       const html = extractHtmlFromResponse(data);
@@ -809,10 +829,30 @@ export function MateriaisClient({
           pipelineLabel = labels[record.pipeline] ?? record.pipeline;
           setPipelineGeracao(pipelineLabel);
         }
+
+        if (typeof record.qualityScore === "number") {
+          setQualityScore(record.qualityScore);
+        }
+        if (Array.isArray(record.qualityIssues)) {
+          setQualityIssues(
+            record.qualityIssues.map((item) => String(item)).filter(Boolean),
+          );
+        }
       }
 
       const titulo = buildTitle(tipo, tema);
-      const meta = buildMaterialMeta(pipelineLabel, estruturaGerada);
+      const record =
+        data && typeof data === "object" ? (data as Record<string, unknown>) : {};
+      const scoreValue =
+        typeof record.qualityScore === "number" ? record.qualityScore : null;
+      const issuesValue = Array.isArray(record.qualityIssues)
+        ? record.qualityIssues.map((item) => String(item)).filter(Boolean)
+        : [];
+      const meta = buildMaterialMeta(pipelineLabel, estruturaGerada, {
+        qualityScore: scoreValue,
+        qualityIssues: issuesValue,
+        generationPayload: payload,
+      });
       persistGeneratedMaterial(html, titulo, meta);
       setHistorico(loadMaterialHistoryPreview());
       setMaterialSalvo(true);
@@ -833,6 +873,67 @@ export function MateriaisClient({
       setErro(message);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function elevarQualidadeMaterial() {
+    if (!lastGenerationPayload) {
+      setErro("Gere o material uma vez antes de elevar a qualidade.");
+      return;
+    }
+
+    setElevatingQuality(true);
+    setErro("");
+
+    try {
+      const problemas = [...qualityIssues, ...alertasGeracao].filter(Boolean);
+      const payload = buildElevatePayload(lastGenerationPayload, problemas);
+      const data = await requestMaterialGeneration(payload);
+      const html = extractHtmlFromResponse(data);
+
+      if (!html) {
+        throw new Error("A regeneração não retornou conteúdo.");
+      }
+
+      window.dispatchEvent(new Event("planify:credits-changed"));
+
+      const alertas = Array.isArray(data.alertas)
+        ? data.alertas.map((item) => String(item)).filter(Boolean)
+        : [];
+      setAlertasGeracao(alertas);
+      if (typeof data.qualityScore === "number") setQualityScore(data.qualityScore);
+      if (Array.isArray(data.qualityIssues)) {
+        setQualityIssues(
+          data.qualityIssues.map((item) => String(item)).filter(Boolean),
+        );
+      }
+      setLastGenerationPayload(payload);
+
+      const titulo = buildTitle(tipo, tema);
+      const meta = buildMaterialMeta(
+        pipelineGeracao,
+        (data.estrutura as MaterialEngineResponse | undefined) ?? null,
+        {
+          qualityScore:
+            typeof data.qualityScore === "number" ? data.qualityScore : null,
+          qualityIssues: Array.isArray(data.qualityIssues)
+            ? data.qualityIssues.map((item) => String(item)).filter(Boolean)
+            : [],
+          generationPayload: payload,
+        },
+      );
+      persistGeneratedMaterial(html, titulo, meta);
+      setResultadoHtml(html);
+      setMaterialSalvo(true);
+      setHistorico(loadMaterialHistoryPreview());
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Não foi possível elevar a qualidade do material.";
+      setErro(message);
+    } finally {
+      setElevatingQuality(false);
     }
   }
 
@@ -1324,6 +1425,16 @@ export function MateriaisClient({
             <div>
               {generationSummary ? (
                 <MaterialGenerationSummaryPanel summary={generationSummary} />
+              ) : null}
+              {typeof qualityScore === "number" ? (
+                <MaterialQualityScoreBar
+                  score={qualityScore}
+                  issues={qualityIssues}
+                  onElevate={
+                    lastGenerationPayload ? () => void elevarQualidadeMaterial() : undefined
+                  }
+                  elevating={elevatingQuality}
+                />
               ) : null}
               {(pipelineGeracao || alertasGeracao.length > 0) && (
                 <div className="mb-4 space-y-3">

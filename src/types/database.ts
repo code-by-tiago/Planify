@@ -29,6 +29,7 @@ export type Database = {
           school_name: string | null;
           phone: string | null;
           stripe_customer_id: string | null;
+          plan: string | null;
           last_login_at: string | null;
           created_at: string;
           updated_at: string;
@@ -45,6 +46,7 @@ export type Database = {
           school_name?: string | null;
           phone?: string | null;
           stripe_customer_id?: string | null;
+          plan?: string | null;
           last_login_at?: string | null;
           created_at?: string;
           updated_at?: string;
@@ -61,6 +63,7 @@ export type Database = {
           school_name?: string | null;
           phone?: string | null;
           stripe_customer_id?: string | null;
+          plan?: string | null;
           last_login_at?: string | null;
           created_at?: string;
           updated_at?: string;

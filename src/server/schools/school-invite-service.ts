@@ -65,6 +65,24 @@ export async function inviteTeacherToSchool(
   }
 
   const supabase = getSupabaseAdminClient();
+
+  const { data: existingInvite } = await supabase
+    .from("school_invites")
+    .select("id,status")
+    .eq("school_id", schoolId)
+    .ilike("email", normalized)
+    .maybeSingle();
+
+  const existing = existingInvite as { id?: string; status?: string } | null;
+
+  if (existing?.status === "pending") {
+    throw new Error("Já existe um convite pendente para este e-mail nesta escola.");
+  }
+
+  if (existing?.status === "accepted") {
+    throw new Error("Este professor já foi vinculado à escola.");
+  }
+
   const pendingRow: TablesInsert<"school_invites"> = {
     school_id: schoolId,
     email: normalized,

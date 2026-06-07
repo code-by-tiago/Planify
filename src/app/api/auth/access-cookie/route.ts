@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { AccessCookiePayload } from "../../../../types/access";
 import { verifyPremiumAccess } from "../../../../server/auth/premium-access-service";
+import { acceptPendingSchoolInvites } from "../../../../server/schools/accept-pending-school-invites";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -41,7 +42,22 @@ function encodeCookie(payload: AccessCookiePayload): string {
 
 export async function POST(request: NextRequest) {
   const token = getBearerToken(request);
-  const access = await verifyPremiumAccess(token);
+  let access = await verifyPremiumAccess(token);
+
+  if (access.authenticated && access.user?.id && access.user.email) {
+    try {
+      const inviteResult = await acceptPendingSchoolInvites(
+        access.user.id,
+        access.user.email,
+      );
+
+      if (inviteResult.acceptedCount > 0 || inviteResult.proGranted) {
+        access = await verifyPremiumAccess(token);
+      }
+    } catch {
+      // Não bloqueia login se a sincronização de convite falhar.
+    }
+  }
 
   const payload: AccessCookiePayload = {
     authenticated: access.authenticated,

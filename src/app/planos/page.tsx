@@ -5,6 +5,7 @@ import { PlanCheckoutLink } from "@/components/planos/PlanCheckoutLink";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { LandingFaq } from "@/components/public/landing/LandingFaq";
 import { billingPlans } from "../../types/billing";
+import { landingPublicToolCount } from "@/lib/pro/teachyLanding";
 
 export const dynamic = "force-dynamic";
 
@@ -168,7 +169,7 @@ const planFaq = [
 ];
 
 const includedFeatures = [
-  "13 ferramentas com IA",
+  `${landingPublicToolCount} ferramentas com IA`,
   "Construtor de aula e planejamentos BNCC",
   "Editor, histórico e biblioteca premium",
   "Exportação em DOCX oficial",
@@ -440,8 +441,8 @@ export default async function PlanosPage({ searchParams }: PlanosPageProps) {
           </h2>
           <p className="mx-auto mt-3 max-w-xl text-sm font-medium leading-7 text-slate-300">
             Os valores estão logo acima. Crie sua conta para assinar com checkout
-            seguro ou entre com o e-mail da assinatura já ativa para usar as 13
-            ferramentas com IA.
+            seguro ou entre com o e-mail da assinatura já ativa para usar as{" "}
+            {landingPublicToolCount} ferramentas com IA.
           </p>
           <div className="mt-7 flex flex-wrap justify-center gap-3">
             <Link

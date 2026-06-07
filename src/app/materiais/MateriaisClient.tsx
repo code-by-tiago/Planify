@@ -57,6 +57,7 @@ import {
 import { buildMaterialGenerationSummary } from "@/lib/materiais/material-generation-summary";
 import {
   getPlanifyTool,
+  planifyToolCount,
   planifyTools,
   toolCategories,
   type PlanifyToolId,
@@ -71,6 +72,7 @@ import {
   groupBnccSkillsFromResponse,
   mapSelectedBnccSkillsToPayload,
   splitTopicLines,
+  validateSelectedBnccSkillsForStage,
   type BnccSkillGroup,
   type BnccSkillOption,
 } from "@/lib/bncc/bncc-suggestion-ui";
@@ -934,6 +936,16 @@ export function MateriaisClient({
       return;
     }
 
+    const bnccValidationError = validateSelectedBnccSkillsForStage(
+      selectedBnccSkills,
+      etapa,
+      anoSerie,
+    );
+    if (bnccValidationError) {
+      setErro(bnccValidationError);
+      return;
+    }
+
     setLoading(true);
     setResultadoHtml("");
     setResultadoEstrutura(null);
@@ -948,7 +960,7 @@ export function MateriaisClient({
     try {
       const turma = school.turmaPayload;
       if (turma.className) {
-        void school.rememberPersonalClass(turma.className);
+        await school.rememberPersonalClass(turma.className);
       }
 
       const payload = {
@@ -1001,6 +1013,13 @@ export function MateriaisClient({
         const alertas = Array.isArray(record.alertas)
           ? record.alertas.map((item) => String(item)).filter(Boolean)
           : [];
+        const persistWarning =
+          typeof record.persistWarning === "string"
+            ? record.persistWarning.trim()
+            : "";
+        if (persistWarning && !alertas.includes(persistWarning)) {
+          alertas.push(persistWarning);
+        }
         if (alertas.length) setAlertasGeracao(alertas);
 
         if (typeof record.pipeline === "string") {
@@ -1031,14 +1050,19 @@ export function MateriaisClient({
       const issuesValue = Array.isArray(record.qualityIssues)
         ? record.qualityIssues.map((item) => String(item)).filter(Boolean)
         : [];
+      const serverMaterialId =
+        typeof record.materialId === "string" && record.materialId.trim()
+          ? record.materialId.trim()
+          : undefined;
       const meta = buildMaterialMeta(pipelineLabel, estruturaGerada, {
         qualityScore: scoreValue,
         qualityIssues: issuesValue,
         generationPayload: payload,
+        serverMaterialId,
       });
       setBnccRegistroFeedback({
         count: selectedBnccSkills.length,
-        inferred: selectedBnccSkills.length === 0,
+        inferred: false,
       });
 
       if (abrirEditorAutomatico) {
@@ -1089,6 +1113,11 @@ export function MateriaisClient({
       const alertas = Array.isArray(data.alertas)
         ? data.alertas.map((item) => String(item)).filter(Boolean)
         : [];
+      const persistWarning =
+        typeof data.persistWarning === "string" ? data.persistWarning.trim() : "";
+      if (persistWarning && !alertas.includes(persistWarning)) {
+        alertas.push(persistWarning);
+      }
       setAlertasGeracao(alertas);
       if (typeof data.qualityScore === "number") setQualityScore(data.qualityScore);
       if (Array.isArray(data.qualityIssues)) {
@@ -1109,6 +1138,10 @@ export function MateriaisClient({
             ? data.qualityIssues.map((item) => String(item)).filter(Boolean)
             : [],
           generationPayload: payload,
+          serverMaterialId:
+            typeof data.materialId === "string" && data.materialId.trim()
+              ? data.materialId.trim()
+              : undefined,
         },
       );
       persistGeneratedMaterial(html, titulo, meta);
@@ -1589,37 +1622,20 @@ export function MateriaisClient({
 
           {selectedBnccSkills.length === 0 && tema.trim() ? (
             <p className="mt-4 rounded-xl border border-amber-200/80 bg-amber-50/80 px-4 py-3 text-xs font-semibold leading-5 text-amber-900">
-              Dica: selecione habilidades BNCC acima para registrar o material com
-              precisão no Progresso BNCC. Sem seleção, o sistema estima pelo tema ao
-              salvar.
+              Selecione pelo menos uma habilidade BNCC antes de gerar. Use o botão
+              &quot;Sugerir habilidades BNCC&quot; acima.
             </p>
           ) : null}
 
           {bnccRegistroFeedback ? (
-            <div
-              className={`mt-4 rounded-2xl border px-4 py-3 text-sm font-semibold leading-6 ${
-                bnccRegistroFeedback.inferred
-                  ? "border-amber-200 bg-amber-50 text-amber-900"
-                  : "border-emerald-200 bg-emerald-50 text-emerald-900"
-              }`}
-            >
-              {bnccRegistroFeedback.inferred ? (
-                <>
-                  Material gerado. As habilidades BNCC serão estimadas automaticamente
-                  pelo tema — para maior precisão, selecione habilidades antes da
-                  próxima geração.
-                </>
-              ) : (
-                <>
-                  <strong className="font-black">
-                    {bnccRegistroFeedback.count} habilidade
-                    {bnccRegistroFeedback.count === 1 ? "" : "s"} BNCC
-                  </strong>{" "}
-                  registrada
-                  {bnccRegistroFeedback.count === 1 ? "" : "s"} no Progresso BNCC
-                  deste material.
-                </>
-              )}
+            <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold leading-6 text-emerald-900">
+              <strong className="font-black">
+                {bnccRegistroFeedback.count} habilidade
+                {bnccRegistroFeedback.count === 1 ? "" : "s"} BNCC
+              </strong>{" "}
+              registrada
+              {bnccRegistroFeedback.count === 1 ? "" : "s"} no Progresso BNCC
+              deste material.
             </div>
           ) : null}
 
@@ -1700,8 +1716,8 @@ export function MateriaisClient({
                 <aside className="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
                   <p className="font-black">Salvo no histórico do Planify</p>
                   <p className="mt-1 font-semibold">
-                    Revise e complemente no editor antes de exportar. Todas as 13
-                    ferramentas seguem o mesmo fluxo.
+                    Revise e complemente no editor antes de exportar. Todas as{" "}
+                    {planifyToolCount} ferramentas seguem o mesmo fluxo.
                   </p>
                 </aside>
               ) : null}

@@ -1,3 +1,8 @@
+import {
+  bnccCodeMatchesStage,
+  resolveBnccStageFromFields,
+} from "./bncc-stage-filter";
+
 export type BnccSkillOption = {
   id: string;
   codigo: string;
@@ -106,4 +111,31 @@ export function mapSelectedBnccSkillsToPayload(
     componente: skill.componente || defaults.componente,
     conteudo: skill.conteudo,
   }));
+}
+
+export function validateSelectedBnccSkillsForStage(
+  skills: BnccSkillOption[],
+  etapa: string,
+  anoSerie: string,
+): string | null {
+  if (skills.length === 0) {
+    return "Selecione pelo menos uma habilidade BNCC antes de gerar. Use o botão \"Sugerir habilidades BNCC\" acima.";
+  }
+
+  const stage = resolveBnccStageFromFields(etapa, anoSerie);
+
+  for (const skill of skills) {
+    const codigo = String(skill.codigo || "").trim();
+    const descricao = String(skill.descricao || "").trim();
+
+    if (!codigo || !descricao) {
+      return "Todas as habilidades selecionadas precisam ter código e descrição.";
+    }
+
+    if (stage && !bnccCodeMatchesStage(codigo.toUpperCase(), stage)) {
+      return `A habilidade ${codigo} não pertence à etapa informada (${etapa}).`;
+    }
+  }
+
+  return null;
 }

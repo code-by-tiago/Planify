@@ -2,6 +2,7 @@ import Link from "next/link";
 import { OwnerFooterLink } from "@/components/OwnerFooterLink";
 import { PlanifyBrand } from "@/components/pro/PlanifyBrand";
 import { planifyTools, toolCategories } from "@/lib/pro/planifyTools";
+import { landingPublicToolCount } from "@/lib/pro/teachyLanding";
 
 const solutionLinks = [
   { href: "/dashboard", label: "Painel Planify" },
@@ -37,7 +38,7 @@ export function PublicFooter() {
           <div>
             <PlanifyBrand href="/" dark />
             <p className="mt-4 text-sm font-medium leading-7 text-slate-500">
-              13 ferramentas com IA, planejamentos, editor, histórico e DOCX
+              {landingPublicToolCount} ferramentas com IA, planejamentos, editor, histórico e DOCX
               oficial — tudo no mesmo painel.
             </p>
           </div>

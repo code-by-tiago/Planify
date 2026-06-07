@@ -5,7 +5,10 @@ import { filterExtractedBnccByStage } from "../bncc/bncc-stage-filter";
 import {
   resolveSchoolYear,
 } from "../bncc/discipline-catalog";
-import { suggestBnccByConteudos } from "../bncc/bncc-suggestion-engine";
+import {
+  extractConteudosFromPayload,
+  suggestBnccByConteudos,
+} from "../bncc/bncc-suggestion-engine";
 import { getSupabaseAdminClient } from "../supabase/admin-client";
 import { getPrimarySchoolIdForUser } from "../schools/school-access";
 import { upsertTeacherClass } from "../schools/teacher-classes-service";
@@ -65,13 +68,23 @@ async function inferBnccCodesWhenEmpty(
   }
 
   try {
+    const conteudoLines = extractConteudosFromPayload({
+      conteudos: payload?.conteudos as string | string[] | undefined,
+      tema: String(payload?.tema || "").trim() || undefined,
+      temaCentral: String(payload?.temaCentral || "").trim() || undefined,
+    });
+    const conteudosPayload =
+      conteudoLines.length > 1
+        ? conteudoLines
+        : conteudoLines[0] || tema;
+
     const suggestion = await suggestBnccByConteudos({
       etapa: String(payload?.etapa || "").trim() || undefined,
       anoSerie: String(payload?.anoSerie || payload?.serie || "").trim() || undefined,
       areaConhecimento: String(payload?.areaConhecimento || "").trim() || undefined,
       componenteCurricular: componente,
       tema,
-      conteudos: tema,
+      conteudos: conteudosPayload,
     });
 
     const etapa = String(payload?.etapa || "").trim();

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { TeachyMaterialPreview } from "@/components/public/landing/TeachyMaterialPreview";
+import { landingGeneratorCount } from "@/lib/pro/teachyLanding";
 
 export function TeachyHomeBnccSection() {
   return (
@@ -13,7 +14,7 @@ export function TeachyHomeBnccSection() {
               <span className="pl-hud-gradient-text">instantaneamente.</span>
             </h2>
             <p className="mt-5 max-w-lg text-lg font-medium leading-8 text-slate-600">
-              Aproveite 13 ferramentas com IA que geram materiais
+              Aproveite {landingGeneratorCount} ferramentas com IA que geram materiais
               personalizados para seus alunos — sem prompt complexo.
             </p>
             <Link

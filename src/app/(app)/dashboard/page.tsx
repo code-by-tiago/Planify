@@ -2,13 +2,14 @@ import PlanifyDashboardShell from "@/components/dashboard/PlanifyDashboardShell"
 import PremiumAccessGate from "@/components/premium/PremiumAccessGate";
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { landingPublicToolCount } from "@/lib/pro/teachyLanding";
 
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Painel | Planify",
   description:
-    "Painel Planify — materiais com IA, planejamentos BNCC e 13 ferramentas para professoras.",
+    `Painel Planify — materiais com IA, planejamentos BNCC e ${landingPublicToolCount} ferramentas para professoras.`,
 };
 
 export default function DashboardPage() {

@@ -1,7 +1,10 @@
 import Link from "next/link";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { planifyTools } from "@/lib/pro/planifyTools";
-import { landingPlanejamentoTools } from "@/lib/pro/teachyLanding";
+import {
+  landingGeneratorCount,
+  landingPlanejamentoTools,
+} from "@/lib/pro/teachyLanding";
 
 export function TeachyHomeToolsGrid() {
   return (
@@ -15,7 +18,7 @@ export function TeachyHomeToolsGrid() {
             Ferramentas com IA
           </p>
           <h2 className="pl-display mt-3 text-3xl font-extrabold tracking-tight text-slate-950 sm:text-4xl">
-            13 geradores + planejamentos BNCC
+            {landingGeneratorCount} geradores + planejamentos BNCC
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-base font-medium text-slate-600">
             Materiais com IA, matriz anual ou trimestral e DOCX oficial — escolha

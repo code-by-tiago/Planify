@@ -35,6 +35,7 @@ import {
 import { useBnccEducationOptions } from "@/hooks/useBnccEducationOptions";
 import type { MaterialEducationFields } from "@/lib/educacao/education-options";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { splitTopicLines } from "@/lib/bncc/split-topic-lines";
 
 type TipoPlanejamento = "anual" | "trimestral";
 type DocxDownloadMode = "anual" | "trimestral";
@@ -234,13 +235,6 @@ const exemplos = {
   },
 };
 
-function splitConteudos(text: string) {
-  return text
-    .split(/\r?\n|;/)
-    .map((item) => item.trim())
-    .filter(Boolean);
-}
-
 const planningProgressSteps = [
   "Lendo os dados informados",
   "Organizando conteúdos e habilidades",
@@ -414,7 +408,7 @@ export function PlanejamentosClient() {
     });
   }, []);
 
-  const conteudos = useMemo(() => splitConteudos(form.conteudos), [form.conteudos]);
+  const conteudos = useMemo(() => splitTopicLines(form.conteudos), [form.conteudos]);
 
   const educationFields = useMemo(
     (): MaterialEducationFields => ({
@@ -625,6 +619,8 @@ export function PlanejamentosClient() {
     qualityScore?: number;
     qualityIssues?: string[];
     warning?: string;
+    persistWarning?: string | null;
+    alertas?: string[];
   }) {
     if (typeof data.qualityScore === "number") {
       setQualityScore(data.qualityScore);
@@ -636,8 +632,24 @@ export function PlanejamentosClient() {
       ? data.qualityIssues.map((item) => String(item)).filter(Boolean)
       : [];
 
+    const alertas = Array.isArray(data.alertas)
+      ? data.alertas.map((item) => String(item)).filter(Boolean)
+      : [];
+
+    for (const item of alertas) {
+      if (!issues.includes(item)) {
+        issues.push(item);
+      }
+    }
+
     if (data.warning && !issues.includes(data.warning)) {
       issues.unshift(data.warning);
+    }
+
+    const persistWarning =
+      typeof data.persistWarning === "string" ? data.persistWarning.trim() : "";
+    if (persistWarning && !issues.includes(persistWarning)) {
+      issues.unshift(persistWarning);
     }
 
     setQualityIssues(issues);
@@ -647,7 +659,11 @@ export function PlanejamentosClient() {
   function persistGeneratedPlanning(
     planning: GeneratedPlanning,
     payload: PlanningAiPayload,
-    quality: { qualityScore?: number; qualityIssues?: string[] },
+    quality: {
+      qualityScore?: number;
+      qualityIssues?: string[];
+      serverMaterialId?: string;
+    },
   ) {
     const html = buildPlanningEditorHtml(form, planning);
     const titulo = planning.titulo || "Planejamento";
@@ -656,6 +672,7 @@ export function PlanejamentosClient() {
       qualityScore:
         typeof quality.qualityScore === "number" ? quality.qualityScore : null,
       qualityIssues: quality.qualityIssues ?? [],
+      serverMaterialId: quality.serverMaterialId,
     });
 
     persistPlanningInEditor(html, titulo, meta, planning);
@@ -681,7 +698,7 @@ export function PlanejamentosClient() {
     try {
       const turma = school.turmaPayload;
       if (turma.className) {
-        void school.rememberPersonalClass(turma.className);
+        await school.rememberPersonalClass(turma.className);
       }
 
       const payload = {
@@ -691,6 +708,11 @@ export function PlanejamentosClient() {
       const data = await requestPlanningGeneration(payload);
 
       window.dispatchEvent(new Event("planify:credits-changed"));
+
+      const serverMaterialId =
+        typeof data.materialId === "string" && data.materialId.trim()
+          ? data.materialId.trim()
+          : undefined;
 
       const planning = data.planejamento as GeneratedPlanning;
       setGeneratedPlanning(planning);
@@ -710,6 +732,7 @@ export function PlanejamentosClient() {
             qualityScore:
               typeof data.qualityScore === "number" ? data.qualityScore : null,
             qualityIssues: issues,
+            serverMaterialId,
           }),
           planning,
         );
@@ -719,6 +742,7 @@ export function PlanejamentosClient() {
       persistGeneratedPlanning(planning, payload, {
         qualityScore: data.qualityScore,
         qualityIssues: issues,
+        serverMaterialId,
       });
 
       setStatus(
@@ -766,6 +790,11 @@ export function PlanejamentosClient() {
 
       window.dispatchEvent(new Event("planify:credits-changed"));
 
+      const serverMaterialId =
+        typeof data.materialId === "string" && data.materialId.trim()
+          ? data.materialId.trim()
+          : undefined;
+
       const planning = data.planejamento as GeneratedPlanning;
       setGeneratedPlanning(planning);
       saveAnnualMatrixSnapshot(form, planning);
@@ -776,6 +805,7 @@ export function PlanejamentosClient() {
       persistGeneratedPlanning(planning, payload, {
         qualityScore: data.qualityScore,
         qualityIssues: issues,
+        serverMaterialId,
       });
 
       setStatus(

@@ -10,11 +10,12 @@ import {
   signInAndSyncPremiumAccess,
   signUpAndGoToPlans,
 } from "@/lib/auth/session-client";
+import { landingPublicToolCount } from "@/lib/pro/teachyLanding";
 
 type Mode = "login" | "signup";
 
 const benefits = [
-  "13 ferramentas com IA alinhadas à BNCC",
+  `${landingPublicToolCount} ferramentas com IA alinhadas à BNCC`,
   "Construtor de aula completo em um fluxo",
   "Editor integrado, histórico e DOCX oficial",
 ];

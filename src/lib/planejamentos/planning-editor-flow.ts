@@ -16,6 +16,7 @@ export type PlanningEditorMeta = {
   generationPayload?: PlanningAiPayload | null;
   qualityScore?: number | null;
   qualityIssues?: string[];
+  serverMaterialId?: string | null;
 };
 
 export function readAutoOpenPlanningEditorPreference(): boolean {

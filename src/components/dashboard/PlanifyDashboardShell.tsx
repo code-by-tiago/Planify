@@ -22,6 +22,7 @@ import {
   type PlanifyToolId,
 } from "@/lib/pro/planifyTools";
 import { usePlanifyAccess } from "@/hooks/usePlanifyAccess";
+import { setHistorySupabaseSync } from "@/lib/history/history-storage";
 
 function isValidToolId(value: string | null): value is PlanifyToolId {
   return planifyTools.some((tool) => tool.id === value);
@@ -43,6 +44,12 @@ export default function PlanifyDashboardShell() {
   const searchParams = useSearchParams();
   const access = usePlanifyAccess();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    if (!access.loading && access.authenticated) {
+      setHistorySupabaseSync(true);
+    }
+  }, [access.authenticated, access.loading]);
 
   const closeSidebar = () => setSidebarOpen(false);
 

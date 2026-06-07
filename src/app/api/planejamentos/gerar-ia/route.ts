@@ -110,8 +110,9 @@ export async function POST(request: NextRequest) {
       await refundDeepGeneration(user.id);
     }
 
+    let materialId: string | null = null;
     if (user?.id && result.success) {
-      await persistGeneratedMaterialBestEffort({
+      materialId = await persistGeneratedMaterialBestEffort({
         userId: user.id,
         surface: "planning",
         tipo: String(payload.tipoPlanejamento || PLANNING_DEEP_GENERATION_TYPE),
@@ -130,7 +131,24 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    return NextResponse.json(result);
+    const persistWarning =
+      user?.id && result.success && !materialId
+        ? "O planejamento foi gerado, mas não foi possível registrá-lo no Progresso BNCC. Tente gerar novamente em instantes."
+        : null;
+
+    const resultRecord = result as Record<string, unknown>;
+    const existingAlertas = Array.isArray(resultRecord.alertas)
+      ? resultRecord.alertas.map((item) => String(item)).filter(Boolean)
+      : [];
+
+    return NextResponse.json({
+      ...result,
+      materialId,
+      persistWarning,
+      alertas: persistWarning
+        ? [...existingAlertas, persistWarning]
+        : existingAlertas,
+    });
   } catch (error) {
     if (user?.id && chargedDeepDaily) {
       await refundDeepGeneration(user.id);

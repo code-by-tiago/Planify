@@ -2,8 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-@import "./planify-hud.css";
-
 :root {
   color-scheme: light dark;
 

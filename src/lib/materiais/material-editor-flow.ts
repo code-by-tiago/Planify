@@ -34,6 +34,7 @@ export type MaterialEditorMeta = {
   qualityScore?: number | null;
   qualityIssues?: string[];
   generationPayload?: MaterialEngineInput | null;
+  serverMaterialId?: string | null;
 };
 
 export type MaterialHistoryPreview = {

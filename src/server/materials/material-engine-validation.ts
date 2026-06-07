@@ -1,4 +1,8 @@
 import {
+  bnccCodeMatchesStage,
+  resolveBnccStageFromFields,
+} from "@/lib/bncc/bncc-stage-filter";
+import {
   MATERIAL_ENGINE_TYPES,
   type MaterialEngineInput,
   type MaterialEngineRequest,
@@ -90,6 +94,35 @@ export function validateMaterialEngineRequest(
 
   if (request.tipoMaterial === "jogo" && !request.formatoJogo) {
     errors.push("Selecione o formato do jogo.");
+  }
+
+  const skills = request.habilidadesSelecionadas ?? [];
+
+  if (skills.length === 0) {
+    errors.push(
+      "Selecione pelo menos uma habilidade BNCC antes de gerar o material.",
+    );
+  } else {
+    const stage = resolveBnccStageFromFields(request.etapa, request.anoSerie);
+
+    for (const skill of skills) {
+      const codigo = String(skill.codigo || "").trim();
+      const descricao = String(skill.descricao || "").trim();
+
+      if (!codigo || !descricao) {
+        errors.push(
+          "Todas as habilidades selecionadas precisam ter código e descrição.",
+        );
+        break;
+      }
+
+      if (stage && !bnccCodeMatchesStage(codigo.toUpperCase(), stage)) {
+        errors.push(
+          `A habilidade ${codigo} não pertence à etapa informada (${request.etapa}).`,
+        );
+        break;
+      }
+    }
   }
 
   return errors;

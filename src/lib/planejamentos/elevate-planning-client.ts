@@ -7,6 +7,9 @@ export type PlanningGenerationApiResult = PlanningAiResult & {
   success?: boolean;
   code?: string;
   error?: { message?: string };
+  materialId?: string | null;
+  persistWarning?: string | null;
+  alertas?: string[];
 };
 
 export async function requestPlanningGeneration(

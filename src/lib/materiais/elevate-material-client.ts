@@ -10,6 +10,8 @@ export type MaterialGenerationApiResult = {
   qualityIssues?: string[];
   message?: string;
   code?: string;
+  materialId?: string | null;
+  persistWarning?: string | null;
 };
 
 export async function requestMaterialGeneration(

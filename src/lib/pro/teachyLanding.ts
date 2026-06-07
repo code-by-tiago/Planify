@@ -1,4 +1,5 @@
 import type { PlanifyIconName } from "@/lib/pro/planifyTools";
+import { planifyToolCount } from "@/lib/pro/planifyTools";
 
 /** Fluxo principal da landing Teachy (professores) — textos adaptados ao Planify */
 export const teachyHomeFeatures: {
@@ -150,12 +151,19 @@ export const landingPlanejamentoTools: {
   },
 ];
 
+/** Geradores de material na grade pública (sem contar planejamentos). */
+export const landingGeneratorCount = planifyToolCount;
+
+/** Total de cards na landing (#ferramentas): geradores + plano anual/trimestral. */
+export const landingPublicToolCount =
+  planifyToolCount + landingPlanejamentoTools.length;
+
 export const teachyPartnerLabels = [
   "BNCC",
   "Google Classroom",
   "Google Slides",
   "DOCX oficial",
-  "13 ferramentas IA",
+  `${landingGeneratorCount} ferramentas IA`,
   "Marketplace",
   "Editor integrado",
 ];

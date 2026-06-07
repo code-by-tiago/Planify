@@ -17,6 +17,10 @@ import {
   logGenerationComplete,
 } from "../../../../server/telemetry/generation-telemetry";
 import { persistGeneratedMaterialBestEffort } from "../../../../server/materials/persist-generated-material";
+import {
+  normalizeMaterialEngineRequest,
+  validateMaterialEngineRequest,
+} from "../../../../server/materials/material-engine-validation";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -34,6 +38,15 @@ export async function POST(request: NextRequest) {
   if (!payload) {
     return NextResponse.json(
       { ok: false, message: "Requisição inválida." },
+      { status: 400 },
+    );
+  }
+
+  const normalizedRequest = normalizeMaterialEngineRequest(payload);
+  const validationErrors = validateMaterialEngineRequest(normalizedRequest);
+  if (validationErrors.length > 0) {
+    return NextResponse.json(
+      { ok: false, message: validationErrors[0] },
       { status: 400 },
     );
   }
@@ -132,8 +145,9 @@ export async function POST(request: NextRequest) {
       dailyQuotaConsumed: chargedDeepDaily,
     });
 
+    let materialId: string | null = null;
     if (user?.id) {
-      await persistGeneratedMaterialBestEffort({
+      materialId = await persistGeneratedMaterialBestEffort({
         userId: user.id,
         surface: "material",
         tipo: String(result.data.tipoMaterial || tipo),
@@ -153,17 +167,28 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    const baseAlertas =
+      "alertas" in result.data && Array.isArray(result.data.alertas)
+        ? result.data.alertas.map((item) => String(item)).filter(Boolean)
+        : [];
+    const persistWarning =
+      user?.id && !materialId
+        ? "O material foi gerado, mas não foi possível registrá-lo no Progresso BNCC. Tente gerar novamente em instantes."
+        : null;
+
     return NextResponse.json({
       ok: true,
       html: result.data.html,
       tipoMaterial: result.data.tipoMaterial,
       estrutura: result.data.estrutura,
-      alertas: "alertas" in result.data ? result.data.alertas : [],
+      alertas: persistWarning ? [...baseAlertas, persistWarning] : baseAlertas,
       pipeline,
       qualityScore,
       qualityIssues:
         "qualityIssues" in result.data ? result.data.qualityIssues : [],
       creditCost: chargedCost || getCreditCost(tipo),
+      materialId,
+      persistWarning,
     });
   } catch (error) {
     if (user?.id && chargedDeepDaily) {

@@ -10,13 +10,13 @@ export function InclusionFocusSection() {
   return (
     <section
       id="inclusao"
-      className="relative isolate scroll-mt-28 overflow-hidden py-16 sm:py-20"
+      className="relative isolate scroll-mt-28 overflow-hidden bg-[var(--planify-canvas)] py-16 sm:py-20"
       aria-labelledby="inclusion-focus-heading"
     >
       <div className="mx-auto max-w-7xl px-5 sm:px-8">
         <Reveal
-          from="left"
-          className="pl-hud-feature-row pl-hud-feature-row--alt grid items-center gap-10 rounded-3xl p-6 sm:p-8 lg:grid-cols-2 lg:gap-16 lg:p-10"
+          from="right"
+          className="pl-hud-feature-row pl-hud-feature-row--alt grid items-center gap-10 rounded-3xl bg-white p-6 sm:p-8 lg:grid-cols-2 lg:gap-16 lg:p-10"
         >
           <div className="lg:order-1">
             <span className="pl-hud-feature-step inline-flex items-center gap-2 rounded-full border border-cyan-400/25 bg-white/80 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-cyan-700 backdrop-blur-sm">

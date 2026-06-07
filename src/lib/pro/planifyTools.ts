@@ -399,7 +399,7 @@ export function filterSidebarNavigation(input: {
     if (item.requiresBnccAccess && !input.canViewBnccProgress) {
       return false;
     }
-    if (!input.isManagerView && item.hideForManagerView) {
+    if (input.isManagerView && item.hideForManagerView) {
       return false;
     }
     return true;

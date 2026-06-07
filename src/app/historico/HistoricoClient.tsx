@@ -328,7 +328,7 @@ export function HistoricoClient() {
                   key={item.id}
                   className={`group flex aspect-square flex-col rounded-2xl border p-3 transition ${
                     selected
-                      ? "border-cyan-400 bg-cyan-50/50 shadow-[0_0_16px_rgba(0,212,255,0.12)]"
+                      ? "border-cyan-400 bg-cyan-50/50 shadow-sm"
                       : "border-slate-200 bg-white hover:border-cyan-300 hover:shadow-sm"
                   }`}
                 >

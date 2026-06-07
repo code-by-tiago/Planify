@@ -39,7 +39,7 @@ export function TeachyCommunitySection() {
             {sampleMaterials.map((item) => (
               <div
                 key={item.title}
-                className="rounded-2xl border border-cyan-400/15 bg-white/5 p-4 backdrop-blur-sm transition hover:border-cyan-400/30 hover:bg-white/8 hover:shadow-[0_0_16px_rgba(0,212,255,0.12)]"
+                className="rounded-2xl border border-cyan-400/15 bg-white/5 p-4 backdrop-blur-sm transition hover:border-cyan-400/30 hover:bg-white/8 hover:shadow-md"
               >
                 <span
                   className={`inline-block rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase ${item.color}`}

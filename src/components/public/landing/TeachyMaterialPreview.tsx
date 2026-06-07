@@ -16,7 +16,7 @@ export function TeachyMaterialPreview() {
       />
 
       <div className="pl-hud-glass relative overflow-hidden rounded-3xl p-4">
-        <div className="rounded-2xl bg-gradient-to-br from-cyan-500 via-cyan-600 to-cyan-800 p-4 text-white shadow-[0_0_24px_rgba(0,212,255,0.25)]">
+        <div className="rounded-2xl bg-gradient-to-br from-cyan-500 via-cyan-600 to-cyan-800 p-4 text-white shadow-sm">
           <p className="text-[10px] font-black uppercase tracking-wider text-cyan-100">
             Apresentação em slides
           </p>

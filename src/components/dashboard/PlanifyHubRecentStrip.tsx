@@ -100,7 +100,7 @@ export function PlanifyHubRecentStrip({ onOpenHistorico }: PlanifyHubRecentStrip
             <button
               type="button"
               onClick={onOpenHistorico}
-              className="flex w-full items-start gap-3 rounded-xl border border-cyan-400/15 bg-white/70 p-3 text-left transition hover:border-cyan-400/35 hover:shadow-[0_0_16px_rgba(0,212,255,0.1)]"
+              className="flex w-full items-start gap-3 rounded-xl border border-cyan-400/15 bg-white/70 p-3 text-left transition hover:border-cyan-400/35 hover:shadow-md"
             >
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-cyan-50 text-cyan-600">
                 <PlanifyIcon name="fileText" className="h-4 w-4" />

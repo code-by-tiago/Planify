@@ -633,7 +633,7 @@ export function MarketplaceClient() {
                   key={item.id}
                   className={`pl-hud-hub-app flex min-h-[16rem] flex-col rounded-2xl p-4 transition ${
                     isSelected
-                      ? "border-cyan-400/50 shadow-[0_0_20px_rgba(0,212,255,0.15)]"
+                      ? "border-cyan-400/50 shadow-sm"
                       : ""
                   }`}
                 >

@@ -33,7 +33,7 @@ export function PlanifyHudHeroVisual() {
 
       <div className="absolute left-1/2 top-[46%] z-10 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center">
         <PlanifyOwlMark size={172} glow hero priority />
-        <span className="mt-4 rounded-full border border-cyan-400/30 bg-white/85 px-3.5 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-700 backdrop-blur-sm shadow-[0_0_12px_rgba(0,212,255,0.15)]">
+        <span className="mt-4 rounded-full border border-cyan-400/30 bg-white/85 px-3.5 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-700 backdrop-blur-sm shadow-sm">
           IA · BNCC
         </span>
       </div>

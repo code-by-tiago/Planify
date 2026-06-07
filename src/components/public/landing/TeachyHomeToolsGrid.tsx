@@ -49,7 +49,7 @@ export function TeachyHomeToolsGrid() {
                 className="pl-hud-landing-tool-featured group flex flex-col rounded-2xl p-5 transition motion-safe:hover:-translate-y-0.5"
               >
                 <span
-                  className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br ${tool.accent} text-white shadow-[0_0_20px_rgba(0,212,255,0.2)] transition motion-safe:group-hover:scale-105`}
+                  className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br ${tool.accent} text-white shadow-sm transition motion-safe:group-hover:scale-105`}
                 >
                   <PlanifyIcon name={tool.icon} className="h-5 w-5" />
                 </span>
@@ -77,7 +77,7 @@ export function TeachyHomeToolsGrid() {
               <Link
                 key={tool.id}
                 href={tool.href}
-                className="pl-hud-glass group flex flex-col items-center rounded-2xl p-4 text-center transition hover:border-cyan-400/40 motion-safe:hover:-translate-y-0.5 motion-safe:hover:shadow-[0_0_20px_rgba(0,212,255,0.15)]"
+                className="pl-hud-glass group flex flex-col items-center rounded-2xl p-4 text-center transition hover:border-cyan-400/40 motion-safe:hover:-translate-y-0.5 motion-safe:hover:shadow-md"
               >
                 <span
                   className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br ${tool.accent} text-white shadow-sm transition max-lg:group-hover:scale-100 motion-safe:group-hover:scale-105`}
@@ -93,7 +93,7 @@ export function TeachyHomeToolsGrid() {
               <Link
                 key={tool.id}
                 href={tool.href}
-                className="pl-hud-glass group flex flex-col items-center rounded-2xl p-4 text-center transition hover:border-cyan-400/40 motion-safe:hover:-translate-y-0.5 motion-safe:hover:shadow-[0_0_20px_rgba(0,212,255,0.15)]"
+                className="pl-hud-glass group flex flex-col items-center rounded-2xl p-4 text-center transition hover:border-cyan-400/40 motion-safe:hover:-translate-y-0.5 motion-safe:hover:shadow-md"
               >
                 <span
                   className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br ${tool.accent} text-white shadow-sm transition max-lg:group-hover:scale-100 motion-safe:group-hover:scale-105`}

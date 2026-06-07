@@ -51,7 +51,7 @@ function MaterialFeaturePreview() {
               Revolução Industrial
             </p>
           </div>
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-400 to-cyan-600 text-white shadow-[0_0_16px_rgba(0,212,255,0.35)]">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-400 to-cyan-600 text-white shadow-sm">
             <PlanifyIcon name="spark" className="h-5 w-5" />
           </span>
         </div>
@@ -149,7 +149,7 @@ function ClassroomFeaturePreview() {
               key={course.name}
               className={`flex items-center gap-3 rounded-xl border px-3 py-2.5 transition ${
                 course.active
-                  ? "border-cyan-400/40 bg-cyan-50/60 shadow-[0_0_12px_rgba(0,212,255,0.12)]"
+                  ? "border-cyan-400/40 bg-cyan-50/60 shadow-sm"
                   : "border-cyan-400/10 bg-white/50"
               }`}
             >

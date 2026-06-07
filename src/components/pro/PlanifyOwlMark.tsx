@@ -11,7 +11,7 @@ type PlanifyOwlMarkProps = {
 /** Cute intellectual owl — glasses, book, graduation cap · HUD ring */
 export function PlanifyOwlMark({
   size = 48,
-  glow = true,
+  glow = false,
   hero = false,
   className = "",
   priority = false,

@@ -34,7 +34,7 @@ export function MaterialToolPageShell({
       className={`planify-hud flex h-full min-h-0 flex-col overflow-hidden ${
         studioMode
           ? ""
-          : "rounded-[2rem] border border-cyan-400/20 bg-white shadow-[0_8px_40px_-16px_rgba(0,212,255,0.12)]"
+          : "rounded-[2rem] border border-slate-200 bg-white shadow-sm"
       }`}
     >
       {!studioMode && onBack ? (

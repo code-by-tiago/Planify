@@ -15,6 +15,7 @@ export const authOnlyRoutes = [
   "/progresso-bncc",
   "/bncc",
   "/diretor",
+  "/gestor",
 ];
 
 export const adminRoutes = ["/admin"];

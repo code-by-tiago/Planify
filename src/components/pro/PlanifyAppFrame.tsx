@@ -8,6 +8,7 @@ import { PlanifyBrand } from "@/components/pro/PlanifyBrand";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { PlanifyShellSidebar } from "@/components/pro/PlanifyShellSidebar";
 import { PlanifySidebarNav } from "@/components/pro/PlanifySidebarNav";
+import { usePlanifyAccess } from "@/hooks/usePlanifyAccess";
 
 type FrameProps = {
   children: ReactNode;
@@ -27,6 +28,7 @@ export default function PlanifyAppFrame({
   compact = false,
 }: FrameProps) {
   const pathname = usePathname();
+  const access = usePlanifyAccess();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeTipo, setActiveTipo] = useState<string | null>(null);
 
@@ -66,6 +68,9 @@ export default function PlanifyAppFrame({
     if (pathname.startsWith("/marketplace")) {
       return { title: "Comunidade", subtitle: "Materiais compartilhados por professores" };
     }
+    if (pathname.startsWith("/diretor") || pathname.startsWith("/gestor")) {
+      return { title: "Painel do Gestor", subtitle: "Turmas, professores e BNCC" };
+    }
     return { title, subtitle };
   }, [pathname, title, subtitle]);
 
@@ -97,6 +102,9 @@ export default function PlanifyAppFrame({
           pathname={pathname}
           activeTipo={activeTipo}
           isNavActive={isNavActive}
+          canViewBnccProgress={access.canViewBnccProgress}
+          canViewDirectorPanel={access.canViewDirectorPanel}
+          isManagerView={access.isManagerView}
         />
       </PlanifyShellSidebar>
 

@@ -85,5 +85,7 @@ export const config = {
     "/bncc/:path*",
     "/diretor",
     "/diretor/:path*",
+    "/gestor",
+    "/gestor/:path*",
   ],
 };

@@ -107,3 +107,33 @@ export async function inviteTeacherToSchool(
     inviteId: (data as { id?: string } | null)?.id,
   };
 }
+
+export type SchoolPendingInviteRow = {
+  id: string;
+  email: string;
+  status: string;
+  createdAt: string;
+};
+
+export async function listSchoolPendingInvites(
+  schoolId: string,
+): Promise<SchoolPendingInviteRow[]> {
+  const supabase = getSupabaseAdminClient();
+  const { data, error } = await supabase
+    .from("school_invites")
+    .select("id,email,status,created_at")
+    .eq("school_id", schoolId)
+    .eq("status", "pending")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    throw new Error(error.message || "Não foi possível listar convites.");
+  }
+
+  return (data || []).map((row) => ({
+    id: String((row as { id: string }).id),
+    email: String((row as { email: string }).email),
+    status: String((row as { status: string }).status),
+    createdAt: String((row as { created_at: string }).created_at),
+  }));
+}

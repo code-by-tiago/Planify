@@ -52,59 +52,11 @@ export function useBnccEducationOptions(
       } | null;
 
       if (!response.ok || !data?.success || !data.options?.totalSkills) {
-        // #region agent log
-        fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "920c67" },
-          body: JSON.stringify({
-            sessionId: "920c67",
-            runId: "pre-fix",
-            hypothesisId: "E",
-            location: "useBnccEducationOptions.ts:load:fallback",
-            message: "catalog API failed or empty — using fallback",
-            data: {
-              ok: response.ok,
-              success: data?.success,
-              totalSkills: data?.options?.totalSkills ?? 0,
-              etapa: fields.etapa,
-              anoSerie: fields.anoSerie,
-            },
-            timestamp: Date.now(),
-          }),
-        }).catch(() => {});
-        // #endregion
         setCatalog(EMPTY_OPTIONS);
         setUsingFallback(true);
         return;
       }
 
-      // #region agent log
-      fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "920c67" },
-        body: JSON.stringify({
-          sessionId: "920c67",
-            runId: "post-fix",
-            hypothesisId: "A,B,C,D",
-            location: "useBnccEducationOptions.ts:load:success",
-          message: "catalog API response",
-          data: {
-            etapa: fields.etapa,
-            anoSerie: fields.anoSerie,
-            areaConhecimento: fields.areaConhecimento,
-            stagesCount: data.options.stages.length,
-            stages: data.options.stages,
-            gradesCount: data.options.grades.length,
-            gradesSample: data.options.grades.slice(0, 15),
-            subjectsCount: data.options.subjects.length,
-            subjectsSample: data.options.subjects.slice(0, 20),
-            areasCount: data.options.knowledgeAreas.length,
-            areasSample: data.options.knowledgeAreas.slice(0, 10),
-          },
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {});
-      // #endregion
       setCatalog(data.options);
       setUsingFallback(false);
     } catch {
@@ -155,7 +107,6 @@ export function useBnccEducationOptions(
   const applyEducation = useCallback(
     (patch: Partial<MaterialEducationFields>) => {
       const next = normalizeMaterialEducation(fields, patch);
-      const componentBefore = fields.componente;
 
       if (!usingFallback) {
         if (catalog.grades.length > 0 && !catalog.grades.includes(next.anoSerie)) {
@@ -167,40 +118,13 @@ export function useBnccEducationOptions(
           !catalog.knowledgeAreas.includes(next.areaConhecimento)
         ) {
           next.areaConhecimento = catalog.knowledgeAreas[0] || next.areaConhecimento;
-          const components = getComponentOptions(next.etapa, next.areaConhecimento);
-          next.componente = components[0] || next.componente;
+          next.componente = catalog.subjects[0] || next.componente;
         }
 
         if (catalog.subjects.length > 0 && !catalog.subjects.includes(next.componente)) {
           next.componente = catalog.subjects[0] || next.componente;
         }
       }
-
-      // #region agent log
-      fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "920c67" },
-        body: JSON.stringify({
-          sessionId: "920c67",
-          runId: "post-fix",
-          hypothesisId: "B,E",
-          location: "useBnccEducationOptions.ts:applyEducation",
-          message: "education field patch applied",
-          data: {
-            patch,
-            componentBefore,
-            componentAfter: next.componente,
-            areaConhecimento: next.areaConhecimento,
-            catalogSubjectsCount: catalog.subjects.length,
-            catalogHasInfantilSubject: catalog.subjects.some((s) =>
-              s.includes("eu, o outro"),
-            ),
-            areaInCatalog: catalog.knowledgeAreas.includes(next.areaConhecimento),
-          },
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {});
-      // #endregion
 
       onChange(next);
     },

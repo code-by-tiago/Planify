@@ -49,24 +49,6 @@ export default function GoogleOAuthReturnPage() {
 
       if (!token) {
         const loginUrl = `/login?redirect=${encodeURIComponent(destination)}`;
-        // #region agent log
-        fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Debug-Session-Id": "920c67",
-          },
-          body: JSON.stringify({
-            sessionId: "920c67",
-            runId: "google-oauth-post-fix-v2",
-            hypothesisId: "A",
-            location: "google/retorno/page.tsx",
-            message: "no supabase token — login redirect",
-            data: { returnTo },
-            timestamp: Date.now(),
-          }),
-        }).catch(() => {});
-        // #endregion
         if (active) window.location.replace(loginUrl);
         return;
       }
@@ -83,31 +65,6 @@ export default function GoogleOAuthReturnPage() {
       }
 
       const bearerStatus = await fetchPlanifyAccessStatus(token);
-
-      // #region agent log
-      fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Debug-Session-Id": "920c67",
-        },
-        body: JSON.stringify({
-          sessionId: "920c67",
-          runId: "google-oauth-post-fix-v2",
-          hypothesisId: "A",
-          location: "google/retorno/page.tsx",
-          message: "oauth return session check",
-          data: {
-            returnTo,
-            cookiesReady,
-            bearerAuthenticated: bearerStatus.authenticated,
-            googleStatus,
-            hasError: Boolean(googleError),
-          },
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {});
-      // #endregion
 
       if (!active) return;
 

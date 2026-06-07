@@ -1,6 +1,7 @@
 import type { Json, TablesInsert, TablesUpdate } from "@/types/database";
 import type { PersistGeneratedMaterialInput } from "@/types/generated-material";
 import { extractBnccCodesFromPayload } from "../bncc/extract-bncc-codes";
+import { filterExtractedBnccByStage } from "../bncc/bncc-stage-filter";
 import {
   resolveSchoolYear,
 } from "../bncc/discipline-catalog";
@@ -74,30 +75,31 @@ async function inferBnccCodesWhenEmpty(
     });
 
     const etapa = String(payload?.etapa || "").trim();
-    const isMedio = /m[eé]dio/i.test(etapa);
-    const isFundamental = /fundamental/i.test(etapa);
+    const anoSerie = String(payload?.anoSerie || payload?.serie || "").trim();
 
-    const skills = (suggestion.habilidades || [])
-      .filter((skill) => {
-        const code = skill.codigo.toUpperCase();
-        if (isMedio && code.startsWith("EF")) return false;
-        if (isFundamental && code.startsWith("EM")) return false;
-        return true;
-      })
-      .slice(0, 8);
-    if (skills.length === 0) {
+    const skills = (suggestion.habilidades || []).slice(0, 12);
+    const filtered = filterExtractedBnccByStage(
+      {
+        codes: skills.map((skill) => skill.codigo),
+        skills: skills.map((skill) => ({
+          codigo: skill.codigo,
+          descricao: skill.descricao,
+          componente: skill.componente,
+          etapa: skill.etapa,
+          anoSerie: skill.anoSerie,
+        })),
+      },
+      etapa,
+      anoSerie,
+    );
+    const stageSkills = filtered.skills.slice(0, 8);
+    if (stageSkills.length === 0) {
       return extracted;
     }
 
     return {
-      codes: skills.map((skill) => skill.codigo).sort(),
-      skills: skills.map((skill) => ({
-        codigo: skill.codigo,
-        descricao: skill.descricao,
-        componente: skill.componente,
-        etapa: skill.etapa,
-        anoSerie: skill.anoSerie,
-      })),
+      codes: stageSkills.map((skill) => skill.codigo).sort(),
+      skills: stageSkills,
     };
   } catch {
     return extracted;
@@ -281,7 +283,12 @@ async function persistGenerationRecord(
       params.contentHtml ||
       (typeof params.result?.html === "string" ? params.result.html : null);
 
-    const extracted = await inferBnccCodesWhenEmpty(
+    const etapa = String(params.payload?.etapa || "").trim();
+    const anoSerie = String(
+      params.payload?.anoSerie || params.payload?.serie || "",
+    ).trim();
+
+    const rawExtracted = await inferBnccCodesWhenEmpty(
       extractBnccCodesFromPayload({
         habilidadesSelecionadas: params.payload?.habilidadesSelecionadas,
         habilidadesBncc: params.payload?.habilidadesBncc,
@@ -303,6 +310,36 @@ async function persistGenerationRecord(
       }),
       params,
     );
+
+    const extracted = filterExtractedBnccByStage(rawExtracted, etapa, anoSerie);
+
+    // #region agent log
+    fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Debug-Session-Id": "920c67",
+      },
+      body: JSON.stringify({
+        sessionId: "920c67",
+        runId: "audit",
+        hypothesisId: "H1,H2",
+        location: "persist-generated-material.ts:persistGenerationRecord",
+        message: "bncc stage filter applied on persist",
+        data: {
+          etapa,
+          anoSerie,
+          rawCodes: rawExtracted.codes.slice(0, 12),
+          filteredCodes: extracted.codes.slice(0, 12),
+          dropped: rawExtracted.codes.length - extracted.codes.length,
+          hasEfOnMedio:
+            /m[eé]dio/i.test(etapa) &&
+            rawExtracted.codes.some((code) => code.startsWith("EF")),
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
 
     const schoolId =
       params.schoolId ||

@@ -1,3 +1,7 @@
+import {
+  bnccCodeMatchesStage,
+  resolveBnccStageFromFields,
+} from "../bncc/bncc-stage-filter";
 import type { PlanningAiPayload } from "./planning-ai-service";
 
 const MAX_FIELD_LENGTH = 240;
@@ -77,6 +81,8 @@ export function validatePlanningPayload(
     return `Selecione no máximo ${MAX_SELECTED_SKILLS} habilidades.`;
   }
 
+  const stage = resolveBnccStageFromFields(payload.etapa, payload.anoSerie);
+
   for (const skill of skills) {
     const codigo = normalizeText((skill as { codigo?: string }).codigo);
     const descricao = normalizeText(
@@ -86,6 +92,10 @@ export function validatePlanningPayload(
 
     if (!codigo || !descricao) {
       return "Todas as habilidades selecionadas precisam ter código e descrição.";
+    }
+
+    if (stage && !bnccCodeMatchesStage(codigo.toUpperCase(), stage)) {
+      return `A habilidade ${codigo} não pertence à etapa informada (${payload.etapa}).`;
     }
   }
 

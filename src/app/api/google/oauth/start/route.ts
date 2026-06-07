@@ -36,32 +36,6 @@ export async function POST(request: NextRequest) {
   const returnTo = sanitizeReturnTo(body.returnTo);
   const user = await resolvePlanifyUserFromRequest(request);
 
-  // #region agent log
-  fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Debug-Session-Id": "920c67",
-    },
-    body: JSON.stringify({
-      sessionId: "920c67",
-      runId: "google-oauth-pre-fix",
-      hypothesisId: "C",
-      location: "oauth/start/route.ts:POST",
-      message: "oauth start POST",
-      data: {
-        hasUser: Boolean(user),
-        returnTo,
-        hasSessionCookie: Boolean(request.cookies.get("planify_session")?.value),
-        hasBearer: Boolean(
-          (request.headers.get("authorization") || "").match(/^Bearer\s+/i),
-        ),
-      },
-      timestamp: Date.now(),
-    }),
-  }).catch(() => {});
-  // #endregion
-
   if (!user) {
     return NextResponse.json(
       {

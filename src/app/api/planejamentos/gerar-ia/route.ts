@@ -61,7 +61,21 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const payload = (await request.json()) as PlanningAiPayload;
+    const payload = (await request.json().catch(() => null)) as PlanningAiPayload | null;
+
+    if (!payload || typeof payload !== "object") {
+      if (user?.id && chargedDeepDaily) {
+        await refundDeepGeneration(user.id);
+      }
+
+      return NextResponse.json(
+        {
+          success: false,
+          error: { message: "Corpo da requisição inválido." },
+        },
+        { status: 400 },
+      );
+    }
     const validationError = validatePlanningPayload(payload);
 
     if (validationError) {

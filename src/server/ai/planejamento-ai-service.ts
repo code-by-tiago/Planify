@@ -4,6 +4,10 @@ import type {
   PlanejamentoAIEtapa,
   SelectedBNCCSkill,
 } from "../../types/ai";
+import {
+  bnccCodeMatchesStage,
+  resolveBnccStageFromFields,
+} from "../bncc/bncc-stage-filter";
 import { generateGeminiJSON } from "./gemini-client";
 import {
   buildPlanejamentoDynamicPrompt,
@@ -63,6 +67,22 @@ function deduplicateSkills(skills: SelectedBNCCSkill[]): SelectedBNCCSkill[] {
   }
 
   return Array.from(map.values());
+}
+
+function filterSkillsByStage(
+  skills: SelectedBNCCSkill[],
+  etapa?: string,
+  anoSerie?: string,
+): SelectedBNCCSkill[] {
+  const stage = resolveBnccStageFromFields(etapa, anoSerie);
+
+  if (!stage) {
+    return skills;
+  }
+
+  return skills.filter((skill) =>
+    bnccCodeMatchesStage(extractBnccCode(skill.codigo), stage),
+  );
 }
 
 function validateInput(input: PlanejamentoAIInput): string | null {
@@ -242,7 +262,17 @@ export async function generatePlanejamentoWithAI(
     throw new Error(validationError);
   }
 
-  const selectedSkills = deduplicateSkills(rawInput.habilidadesSelecionadas);
+  const selectedSkills = filterSkillsByStage(
+    deduplicateSkills(rawInput.habilidadesSelecionadas),
+    rawInput.etapa,
+    rawInput.anoSerie,
+  );
+
+  if (selectedSkills.length === 0) {
+    throw new Error(
+      "Nenhuma habilidade BNCC válida para a etapa informada. Revise a seleção.",
+    );
+  }
   const input: PlanejamentoAIInput = {
     ...rawInput,
     conteudos: normalizeConteudos(rawInput.conteudos),

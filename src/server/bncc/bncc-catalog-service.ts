@@ -275,17 +275,28 @@ export async function getBnccCatalogOptions(filters?: {
   knowledgeArea?: string | null;
 }): Promise<BnccCatalogOptions> {
   const stage = filters?.stage?.trim() || null;
+  const grade = filters?.grade?.trim() || null;
   const knowledgeArea = filters?.knowledgeArea?.trim() || null;
 
-  const [dbSubjects, totalSkills] = await Promise.all([
+  const [dbSubjects, dbGrades, totalSkills] = await Promise.all([
     stage
-      ? fetchDistinctColumn("subject", { stage })
+      ? fetchDistinctColumn("subject", { stage, grade, knowledgeArea })
+      : Promise.resolve([] as string[]),
+    stage
+      ? fetchDistinctColumn("grade", { stage })
       : Promise.resolve([] as string[]),
     countBnccSkillsInDb(),
   ]);
 
   const stages = [...EDUCATION_STAGES];
-  const grades = stage ? getYearOptions(stage) : [];
+  const canonicalGrades = stage ? getYearOptions(stage) : [];
+  const intersectedGrades = canonicalGrades.filter((item) =>
+    dbGrades.includes(item),
+  );
+  const grades =
+    dbGrades.length > 0 && intersectedGrades.length > 0
+      ? intersectedGrades
+      : canonicalGrades;
   const knowledgeAreas = stage ? getAreaOptions(stage) : [];
   const mergedSubjects =
     stage && knowledgeArea

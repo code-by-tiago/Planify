@@ -641,6 +641,7 @@ export async function generatePlanningWithAI(
     return fallbackPlanning(payload, "Chave de IA não configurada. Foi usado modo seguro.");
   }
 
+  try {
   let retryNote = "";
 
   for (let attempt = 0; attempt < PLANNING_MAX_ATTEMPTS; attempt += 1) {
@@ -678,4 +679,11 @@ export async function generatePlanningWithAI(
   }
 
   throw new Error("Não foi possível gerar o planejamento com a qualidade esperada.");
+  } catch (error) {
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Não foi possível gerar o planejamento com IA.";
+    return fallbackPlanning(payload, message);
+  }
 }

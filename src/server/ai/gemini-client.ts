@@ -363,32 +363,6 @@ export async function generateGeminiJSON<T>(
 
       lastError = message;
 
-      // #region agent log
-      fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "920c67" },
-        body: JSON.stringify({
-          sessionId: "920c67",
-          runId: "post-fix",
-          hypothesisId: "H1,H2,H4",
-          location: "gemini-client.ts:generateGeminiJSON:retry",
-          message: "gemini call failed",
-          data: {
-            model,
-            attempt,
-            httpStatus: json.httpStatus,
-            isOverload: isGeminiTransientOverloadError(message, json.httpStatus),
-            isQuota: isGeminiQuotaError(message, json.httpStatus),
-            isModelGone: isGeminiModelUnavailableError(message, json.httpStatus),
-            willRetry:
-              shouldRetryGeminiCall(message, json.httpStatus) &&
-              attempt < MAX_RETRIES_PER_MODEL - 1,
-          },
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {});
-      // #endregion
-
       if (isGeminiModelUnavailableError(message, json.httpStatus)) {
         break;
       }
@@ -447,30 +421,6 @@ export async function generateGeminiText(options: {
         `Erro ao chamar a IA. Status HTTP: ${json.httpStatus}`;
 
       lastError = message;
-
-      // #region agent log
-      fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "920c67" },
-        body: JSON.stringify({
-          sessionId: "920c67",
-          runId: "post-fix",
-          hypothesisId: "H1,H2,H4",
-          location: "gemini-client.ts:generateGeminiText:retry",
-          message: "gemini call failed",
-          data: {
-            model,
-            attempt,
-            httpStatus: json.httpStatus,
-            isOverload: isGeminiTransientOverloadError(message, json.httpStatus),
-            willRetry:
-              shouldRetryGeminiCall(message, json.httpStatus) &&
-              attempt < MAX_RETRIES_PER_MODEL - 1,
-          },
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {});
-      // #endregion
 
       if (isGeminiModelUnavailableError(message, json.httpStatus)) {
         break;

@@ -34,6 +34,11 @@ const portalCopy: Record<
     emailPlaceholder: string;
     submitLabel: string;
     heroLead: string;
+    loginLead: string;
+    premiumHintLead: string;
+    premiumHintLink: string;
+    footerDisclaimer: string;
+    noPlanMessage: string;
   }
 > = {
   professor: {
@@ -42,6 +47,15 @@ const portalCopy: Record<
     emailPlaceholder: "Seu e-mail",
     submitLabel: "Entrar como Professor",
     heroLead: "professor.",
+    loginLead:
+      "Use seu e-mail para acessar os geradores com IA, ferramentas alinhadas à BNCC e a exportação em DOCX oficial.",
+    premiumHintLead:
+      "Entre com um e-mail vinculado a plano ativo ou licença institucional da sua escola, ou ",
+    premiumHintLink: "escolha um plano",
+    footerDisclaimer:
+      "Acesso completo com plano ativo ou licença institucional da sua escola.",
+    noPlanMessage:
+      "Sua conta existe, mas ainda não possui plano ativo. Ative um plano para continuar.",
   },
   escola: {
     title: "Portal da Escola",
@@ -49,6 +63,15 @@ const portalCopy: Record<
     emailPlaceholder: "E-mail institucional",
     submitLabel: "Entrar como Gestor",
     heroLead: "gestor.",
+    loginLead:
+      "Entre com o e-mail institucional da sua escola para gerenciar equipes, acompanhar o uso e acessar o painel pedagógico.",
+    premiumHintLead:
+      "Use o e-mail institucional vinculado à licença da sua escola ou ",
+    premiumHintLink: "veja as opções institucionais",
+    footerDisclaimer:
+      "Painel disponível para instituições com licença Planify ativa.",
+    noPlanMessage:
+      "Sua conta existe, mas a escola ainda não possui licença ativa. Verifique o contrato institucional.",
   },
 };
 
@@ -142,10 +165,7 @@ export function LoginPageClient() {
       }
 
       if (!result.premium) {
-        setMessage(
-          result.message ||
-            "Sua conta existe, mas ainda não possui plano ativo. Administradores e proprietários entram automaticamente.",
-        );
+        setMessage(result.message || copy.noPlanMessage);
         window.setTimeout(() => {
           forceNavigate(result.redirectTo || "/planos?premium=required");
         }, 600);
@@ -193,11 +213,7 @@ export function LoginPageClient() {
             </h1>
             <p className="mt-4 max-w-lg text-base font-medium leading-7 text-slate-600">
               {mode === "login" ? (
-                <>
-                  Use o e-mail da sua assinatura para liberar o painel, os
-                  geradores com IA e a exportação em DOCX oficial. Contas de
-                  administrador e proprietário têm acesso liberado após o login.
-                </>
+                copy.loginLead
               ) : (
                 <>
                   O cadastro é gratuito; o acesso aos geradores premium exige
@@ -247,13 +263,12 @@ export function LoginPageClient() {
                     Plano ativo necessário
                   </p>
                   <p className="mt-1 text-sm font-medium leading-6 text-amber-700">
-                    Entre com um e-mail que possua assinatura ativa, permissão
-                    de administrador ou{" "}
+                    {copy.premiumHintLead}
                     <Link
                       href="/planos"
                       className="font-bold text-amber-900 underline"
                     >
-                      escolha um plano
+                      {copy.premiumHintLink}
                     </Link>
                     .
                   </p>
@@ -356,8 +371,7 @@ export function LoginPageClient() {
             </div>
 
             <p className="mt-5 text-center text-xs font-medium leading-5 text-slate-500">
-              O acesso premium depende de assinatura ativa ou permissão de
-              administrador.
+              {copy.footerDisclaimer}
             </p>
           </div>
         </div>

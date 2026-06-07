@@ -29,6 +29,10 @@ export type GeneratedMaterialListFilters = {
   surface?: GeneratedMaterialSurface;
   tipo?: string;
   classId?: string;
+  userId?: string;
+  discipline?: string;
+  fromDate?: string;
+  toDate?: string;
   limit?: number;
   offset?: number;
 };

@@ -41,7 +41,24 @@ export async function acceptPendingSchoolInvites(
   const rows = (invites || []) as Array<{ id: string; school_id: string }>;
 
   if (rows.length === 0) {
-    return { acceptedCount: 0, schoolIds: [], proGranted: false };
+    const { count, error: membershipError } = await supabase
+      .from("school_memberships")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .eq("status", "active");
+
+    if (membershipError) {
+      throw new Error(
+        membershipError.message || "Não foi possível consultar vínculo escolar.",
+      );
+    }
+
+    if (!count) {
+      return { acceptedCount: 0, schoolIds: [], proGranted: false };
+    }
+
+    const proGranted = await grantSchoolProPlan(userId);
+    return { acceptedCount: 0, schoolIds: [], proGranted };
   }
 
   const schoolIds: string[] = [];

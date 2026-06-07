@@ -52,6 +52,14 @@ export type CreateSchoolClassInput = {
   teacherUserId?: string | null;
 };
 
+export type UpdateSchoolClassInput = {
+  name?: string;
+  gradeLevel?: string | null;
+  year?: number | null;
+  discipline?: string | null;
+  teacherUserId?: string | null;
+};
+
 export type CreateSchoolMemberInput = {
   userId: string;
   role: SchoolMembershipRole;

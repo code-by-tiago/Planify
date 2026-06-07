@@ -1,20 +1,47 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { PlanifyPageHero } from "@/components/pro/PlanifyPageHero";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { usePlanifyAccess } from "@/hooks/usePlanifyAccess";
 import { planifyAuthenticatedFetch } from "@/lib/auth/authenticated-fetch";
 import { HUD_FIELD_CLASS } from "@/lib/pro/hud-form-styles";
 import type { SchoolDashboardResponse } from "@/lib/bncc/types";
-import type { SchoolTeachersResponse } from "@/lib/school/types";
+import type {
+  SchoolClassItem,
+  SchoolClassesResponse,
+  SchoolMaterialAuditRow,
+  SchoolMaterialsResponse,
+  SchoolTeacherMember,
+  SchoolTeachersResponse,
+} from "@/lib/school/types";
 
 type DirectorPanelClientProps = {
   embedded?: boolean;
 };
 
-type DirectorTabId = "overview" | "teachers";
+type DirectorTabId = "overview" | "teachers" | "turmas" | "materiais";
+
+type MaterialFilters = {
+  professorId: string;
+  period: "all" | "month" | "quarter" | "year";
+  discipline: string;
+};
+
+type TurmaFormState = {
+  name: string;
+  gradeLevel: string;
+  discipline: string;
+  teacherUserId: string;
+};
+
+const EMPTY_TURMA_FORM: TurmaFormState = {
+  name: "",
+  gradeLevel: "",
+  discipline: "",
+  teacherUserId: "",
+};
 
 function formatDate(value: string): string {
   const date = new Date(value);
@@ -24,6 +51,55 @@ function formatDate(value: string): string {
     month: "short",
     year: "numeric",
   });
+}
+
+function memberDisplayName(member: Pick<SchoolTeacherMember, "fullName" | "email">): string {
+  const fullName = member.fullName?.trim();
+  const email = member.email?.trim();
+  return fullName || email || "Professor";
+}
+
+function exportMaterialsCsv(rows: SchoolMaterialAuditRow[], schoolName: string) {
+  const headers = [
+    "Professor",
+    "E-mail",
+    "Título",
+    "Tipo",
+    "Turma",
+    "Disciplina",
+    "Habilidades BNCC",
+    "Data",
+  ];
+
+  const escape = (value: string) => `"${value.replace(/"/g, '""')}"`;
+
+  const lines = [
+    headers.join(","),
+    ...rows.map((row) =>
+      [
+        row.professorName || "",
+        row.professorEmail || "",
+        row.title,
+        row.tipo,
+        row.className || "",
+        row.discipline || "",
+        row.bnccSkillCodes.join("; "),
+        formatDate(row.createdAt),
+      ]
+        .map((value) => escape(String(value)))
+        .join(","),
+    ),
+  ];
+
+  const blob = new Blob([`\uFEFF${lines.join("\n")}`], {
+    type: "text/csv;charset=utf-8;",
+  });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = `materiais-${schoolName.replace(/[^a-z0-9]+/gi, "-").toLowerCase() || "escola"}.csv`;
+  anchor.click();
+  URL.revokeObjectURL(url);
 }
 
 function BnccProgressBar({ percent }: { percent: number }) {
@@ -79,15 +155,31 @@ export function DirectorPanelClient({ embedded = false }: DirectorPanelClientPro
   const access = usePlanifyAccess();
   const [dashboard, setDashboard] = useState<SchoolDashboardResponse | null>(null);
   const [teachers, setTeachers] = useState<SchoolTeachersResponse | null>(null);
+  const [classes, setClasses] = useState<SchoolClassesResponse | null>(null);
+  const [materials, setMaterials] = useState<SchoolMaterialsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [teachersLoading, setTeachersLoading] = useState(false);
+  const [classesLoading, setClassesLoading] = useState(false);
+  const [materialsLoading, setMaterialsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [classesError, setClassesError] = useState("");
+  const [materialsError, setMaterialsError] = useState("");
   const [expandedClassId, setExpandedClassId] = useState<string | null>(null);
   const [tab, setTab] = useState<DirectorTabId>("overview");
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteLoading, setInviteLoading] = useState(false);
   const [inviteMessage, setInviteMessage] = useState("");
   const [inviteError, setInviteError] = useState("");
+  const [turmaForm, setTurmaForm] = useState<TurmaFormState>(EMPTY_TURMA_FORM);
+  const [turmaSaving, setTurmaSaving] = useState(false);
+  const [turmaMessage, setTurmaMessage] = useState("");
+  const [editingClassId, setEditingClassId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState<TurmaFormState>(EMPTY_TURMA_FORM);
+  const [materialFilters, setMaterialFilters] = useState<MaterialFilters>({
+    professorId: "",
+    period: "all",
+    discipline: "",
+  });
 
   const loadDashboard = useCallback(async () => {
     if (!access.canViewDirectorPanel) {
@@ -143,15 +235,92 @@ export function DirectorPanelClient({ embedded = false }: DirectorPanelClientPro
     }
   }, [access.canViewDirectorPanel]);
 
+  const loadClasses = useCallback(async () => {
+    if (!access.canViewDirectorPanel) return;
+
+    setClassesLoading(true);
+    setClassesError("");
+
+    try {
+      const response = await planifyAuthenticatedFetch("/api/school/classes");
+      const data = (await response.json()) as {
+        success?: boolean;
+        classes?: SchoolClassesResponse;
+        error?: { message?: string };
+      };
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error?.message || "Não foi possível carregar turmas.");
+      }
+
+      setClasses(data.classes || null);
+    } catch (err) {
+      setClassesError(err instanceof Error ? err.message : "Erro ao carregar turmas.");
+    } finally {
+      setClassesLoading(false);
+    }
+  }, [access.canViewDirectorPanel]);
+
+  const loadMaterials = useCallback(async () => {
+    if (!access.canViewDirectorPanel) return;
+
+    setMaterialsLoading(true);
+    setMaterialsError("");
+
+    const params = new URLSearchParams();
+    if (materialFilters.professorId) params.set("professorId", materialFilters.professorId);
+    if (materialFilters.period !== "all") params.set("period", materialFilters.period);
+    if (materialFilters.discipline) params.set("discipline", materialFilters.discipline);
+    params.set("limit", "500");
+
+    try {
+      const response = await planifyAuthenticatedFetch(
+        `/api/school/materials?${params.toString()}`,
+      );
+      const data = (await response.json()) as {
+        success?: boolean;
+        materials?: SchoolMaterialsResponse;
+        error?: { message?: string };
+      };
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error?.message || "Não foi possível carregar materiais.");
+      }
+
+      setMaterials(data.materials || null);
+    } catch (err) {
+      setMaterialsError(err instanceof Error ? err.message : "Erro ao carregar materiais.");
+    } finally {
+      setMaterialsLoading(false);
+    }
+  }, [access.canViewDirectorPanel, materialFilters]);
+
   useEffect(() => {
     if (access.loading) return;
     void loadDashboard();
   }, [access.loading, loadDashboard]);
 
   useEffect(() => {
-    if (access.loading || !access.canViewDirectorPanel || tab !== "teachers") return;
-    void loadTeachers();
+    if (access.loading || !access.canViewDirectorPanel) return;
+    if (tab === "teachers" || tab === "turmas") {
+      void loadTeachers();
+    }
   }, [access.loading, access.canViewDirectorPanel, tab, loadTeachers]);
+
+  useEffect(() => {
+    if (access.loading || !access.canViewDirectorPanel || tab !== "turmas") return;
+    void loadClasses();
+  }, [access.loading, access.canViewDirectorPanel, tab, loadClasses]);
+
+  useEffect(() => {
+    if (access.loading || !access.canViewDirectorPanel || tab !== "materiais") return;
+    void loadMaterials();
+  }, [access.loading, access.canViewDirectorPanel, tab, loadMaterials]);
+
+  const teacherOptions = useMemo(
+    () => teachers?.activeTeachers || [],
+    [teachers?.activeTeachers],
+  );
 
   async function inviteTeacher() {
     const email = inviteEmail.trim().toLowerCase();
@@ -196,6 +365,107 @@ export function DirectorPanelClient({ embedded = false }: DirectorPanelClientPro
     }
   }
 
+  async function createTurma() {
+    const name = turmaForm.name.trim();
+    if (!name) {
+      setClassesError("Informe o nome da turma.");
+      return;
+    }
+
+    setTurmaSaving(true);
+    setClassesError("");
+    setTurmaMessage("");
+
+    try {
+      const response = await planifyAuthenticatedFetch("/api/school/classes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          gradeLevel: turmaForm.gradeLevel.trim() || null,
+          discipline: turmaForm.discipline.trim() || null,
+          teacherUserId: turmaForm.teacherUserId || null,
+        }),
+      });
+      const data = (await response.json()) as {
+        success?: boolean;
+        error?: { message?: string };
+      };
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error?.message || "Não foi possível criar a turma.");
+      }
+
+      setTurmaMessage("Turma criada com sucesso.");
+      setTurmaForm(EMPTY_TURMA_FORM);
+      void loadClasses();
+      void loadDashboard();
+    } catch (err) {
+      setClassesError(err instanceof Error ? err.message : "Erro ao criar turma.");
+    } finally {
+      setTurmaSaving(false);
+    }
+  }
+
+  function startEditTurma(row: SchoolClassItem) {
+    setEditingClassId(row.id);
+    setEditForm({
+      name: row.name,
+      gradeLevel: row.gradeLevel || "",
+      discipline: row.discipline || "",
+      teacherUserId: row.teacherUserId || "",
+    });
+    setTurmaMessage("");
+    setClassesError("");
+  }
+
+  async function saveEditTurma() {
+    if (!editingClassId) return;
+
+    const name = editForm.name.trim();
+    if (!name) {
+      setClassesError("Informe o nome da turma.");
+      return;
+    }
+
+    setTurmaSaving(true);
+    setClassesError("");
+    setTurmaMessage("");
+
+    try {
+      const response = await planifyAuthenticatedFetch(
+        `/api/school/classes/${editingClassId}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name,
+            gradeLevel: editForm.gradeLevel.trim() || null,
+            discipline: editForm.discipline.trim() || null,
+            teacherUserId: editForm.teacherUserId || null,
+          }),
+        },
+      );
+      const data = (await response.json()) as {
+        success?: boolean;
+        error?: { message?: string };
+      };
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error?.message || "Não foi possível atualizar a turma.");
+      }
+
+      setTurmaMessage("Turma atualizada com sucesso.");
+      setEditingClassId(null);
+      void loadClasses();
+      void loadDashboard();
+    } catch (err) {
+      setClassesError(err instanceof Error ? err.message : "Erro ao atualizar turma.");
+    } finally {
+      setTurmaSaving(false);
+    }
+  }
+
   if (access.loading) {
     return (
       <div className="flex h-full min-h-[280px] items-center justify-center">
@@ -235,6 +505,8 @@ export function DirectorPanelClient({ embedded = false }: DirectorPanelClientPro
       ? "border-cyan-500 bg-white text-cyan-700 shadow-sm"
       : "border-transparent text-slate-500 hover:border-slate-200 hover:text-slate-800";
 
+  const schoolLabel = dashboard?.schoolName || materials?.schoolName || "sua escola";
+
   return (
     <div
       className={`flex h-full min-h-0 flex-col overflow-hidden ${
@@ -247,11 +519,7 @@ export function DirectorPanelClient({ embedded = false }: DirectorPanelClientPro
             badge="Gestão escolar"
             icon="clipboard"
             title="Painel do Gestor"
-            description={
-              dashboard?.schoolName
-                ? `${dashboard.schoolName} — turmas, professores e conformidade BNCC em tempo real.`
-                : "Visão geral de turmas, professores e conformidade BNCC da sua instituição."
-            }
+            description={`${schoolLabel} — turmas, professores, materiais e conformidade BNCC em tempo real.`}
           />
         </div>
       ) : null}
@@ -259,22 +527,24 @@ export function DirectorPanelClient({ embedded = false }: DirectorPanelClientPro
       <div className="min-h-0 flex-1 overflow-y-auto">
         <div className="mx-auto max-w-7xl space-y-5 p-4 sm:p-6">
           <nav className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => setTab("overview")}
-              className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-black transition ${tabClass(tab === "overview")}`}
-            >
-              <PlanifyIcon name="clipboard" className="h-4 w-4" />
-              Visão geral
-            </button>
-            <button
-              type="button"
-              onClick={() => setTab("teachers")}
-              className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-black transition ${tabClass(tab === "teachers")}`}
-            >
-              <PlanifyIcon name="user" className="h-4 w-4" />
-              Gerenciar Professores
-            </button>
+            {(
+              [
+                ["overview", "clipboard", "Visão geral"],
+                ["teachers", "user", "Professores"],
+                ["turmas", "listChecks", "Turmas"],
+                ["materiais", "spark", "Materiais"],
+              ] as const
+            ).map(([id, icon, label]) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setTab(id)}
+                className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-black transition ${tabClass(tab === id)}`}
+              >
+                <PlanifyIcon name={icon} className="h-4 w-4" />
+                {label}
+              </button>
+            ))}
           </nav>
 
           {tab === "overview" ? (
@@ -303,12 +573,20 @@ export function DirectorPanelClient({ embedded = false }: DirectorPanelClientPro
                         <PlanifyIcon name="user" className="h-5 w-5" />
                       </span>
                     </div>
-                    <p className="mt-3 text-xs font-semibold text-slate-500">
-                      Membros ativos em school_memberships
-                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setTab("teachers")}
+                      className="mt-3 text-xs font-bold text-cyan-700 underline-offset-2 hover:underline"
+                    >
+                      Gerenciar professores →
+                    </button>
                   </article>
 
-                  <article className="pl-hud-glass rounded-2xl border border-violet-400/20 p-5">
+                  <button
+                    type="button"
+                    onClick={() => setTab("materiais")}
+                    className="pl-hud-glass rounded-2xl border border-violet-400/20 p-5 text-left transition hover:border-violet-400/40"
+                  >
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-violet-700">
@@ -322,10 +600,10 @@ export function DirectorPanelClient({ embedded = false }: DirectorPanelClientPro
                         <PlanifyIcon name="spark" className="h-5 w-5" />
                       </span>
                     </div>
-                    <p className="mt-3 text-xs font-semibold text-slate-500">
-                      Produção docente da escola neste mês
+                    <p className="mt-3 text-xs font-bold text-violet-700 underline-offset-2 hover:underline">
+                      Ver auditoria de materiais →
                     </p>
-                  </article>
+                  </button>
 
                   <article className="pl-hud-glass rounded-2xl border border-emerald-400/20 p-5">
                     <div className="flex items-start justify-between gap-3">
@@ -348,16 +626,32 @@ export function DirectorPanelClient({ embedded = false }: DirectorPanelClientPro
                 </div>
 
                 <section className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
-                  <div className="border-b border-slate-100 px-4 py-4 sm:px-6">
-                    <h2 className="text-base font-black text-slate-950">Turmas e progresso BNCC</h2>
-                    <p className="mt-1 text-sm font-semibold text-slate-500">
-                      Clique numa turma para ver disciplina, professor(a) e detalhes de cobertura.
-                    </p>
+                  <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-4 py-4 sm:px-6">
+                    <div>
+                      <h2 className="text-base font-black text-slate-950">Turmas e progresso BNCC</h2>
+                      <p className="mt-1 text-sm font-semibold text-slate-500">
+                        Clique numa turma para ver disciplina, professor(a) e detalhes de cobertura.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setTab("turmas")}
+                      className="text-xs font-bold text-cyan-700 underline-offset-2 hover:underline"
+                    >
+                      Gerenciar turmas →
+                    </button>
                   </div>
 
                   {(dashboard?.classes || []).length === 0 ? (
                     <p className="p-6 text-sm font-semibold text-slate-500">
-                      Nenhuma turma cadastrada ainda.
+                      Nenhuma turma cadastrada ainda.{" "}
+                      <button
+                        type="button"
+                        onClick={() => setTab("turmas")}
+                        className="font-bold text-cyan-700 underline-offset-2 hover:underline"
+                      >
+                        Cadastrar turmas
+                      </button>
                     </p>
                   ) : (
                     <ul className="divide-y divide-slate-100">
@@ -535,31 +829,417 @@ export function DirectorPanelClient({ embedded = false }: DirectorPanelClientPro
                       </p>
                     ) : (
                       <ul className="divide-y divide-slate-100">
-                        {teachers?.activeTeachers.map((member) => (
-                          <li
-                            key={member.id}
-                            className="flex items-center justify-between gap-3 px-4 py-3 sm:px-5"
-                          >
-                            <div className="min-w-0">
-                              <p className="truncate text-sm font-black text-slate-900">
-                                {member.fullName || member.email || "Professor"}
-                              </p>
-                              {member.email ? (
-                                <p className="truncate text-xs font-semibold text-slate-400">
-                                  {member.email}
+                        {teachers?.activeTeachers.map((member) => {
+                          const displayName = memberDisplayName(member);
+                          const showEmailBelow =
+                            Boolean(member.fullName?.trim()) && Boolean(member.email?.trim());
+
+                          return (
+                            <li
+                              key={member.id}
+                              className="flex items-center justify-between gap-3 px-4 py-3 sm:px-5"
+                            >
+                              <div className="min-w-0">
+                                <p className="truncate text-sm font-black text-slate-900">
+                                  {displayName}
                                 </p>
-                              ) : null}
-                            </div>
-                            <span className="shrink-0 rounded-full bg-emerald-100 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-emerald-800">
-                              Ativo
-                            </span>
-                          </li>
-                        ))}
+                                {showEmailBelow ? (
+                                  <p className="truncate text-xs font-semibold text-slate-400">
+                                    {member.email}
+                                  </p>
+                                ) : null}
+                              </div>
+                              <span className="shrink-0 rounded-full bg-emerald-100 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-emerald-800">
+                                Ativo
+                              </span>
+                            </li>
+                          );
+                        })}
                       </ul>
                     )}
                   </section>
                 </div>
               )}
+            </div>
+          ) : null}
+
+          {tab === "turmas" ? (
+            <div className="space-y-5">
+              <section className="pl-hud-glass rounded-2xl border border-cyan-400/15 p-5 sm:p-6">
+                <h2 className="text-base font-black text-slate-950">Nova turma</h2>
+                <p className="mt-1 text-sm font-semibold text-slate-500">
+                  Cadastre turmas da escola para organizar professores, materiais e cobertura BNCC.
+                </p>
+                <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                  <input
+                    type="text"
+                    value={turmaForm.name}
+                    onChange={(event) =>
+                      setTurmaForm((prev) => ({ ...prev, name: event.target.value }))
+                    }
+                    placeholder="Nome da turma (ex.: 6º A)"
+                    className={HUD_FIELD_CLASS}
+                  />
+                  <input
+                    type="text"
+                    value={turmaForm.gradeLevel}
+                    onChange={(event) =>
+                      setTurmaForm((prev) => ({ ...prev, gradeLevel: event.target.value }))
+                    }
+                    placeholder="Ano/série (ex.: 6º ano)"
+                    className={HUD_FIELD_CLASS}
+                  />
+                  <input
+                    type="text"
+                    value={turmaForm.discipline}
+                    onChange={(event) =>
+                      setTurmaForm((prev) => ({ ...prev, discipline: event.target.value }))
+                    }
+                    placeholder="Disciplina (ex.: Matemática)"
+                    className={HUD_FIELD_CLASS}
+                  />
+                  <select
+                    value={turmaForm.teacherUserId}
+                    onChange={(event) =>
+                      setTurmaForm((prev) => ({ ...prev, teacherUserId: event.target.value }))
+                    }
+                    className={HUD_FIELD_CLASS}
+                  >
+                    <option value="">Professor (opcional)</option>
+                    {teacherOptions.map((teacher) => (
+                      <option key={teacher.userId} value={teacher.userId}>
+                        {memberDisplayName(teacher)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="mt-4 flex flex-wrap items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => void createTurma()}
+                    disabled={turmaSaving}
+                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 px-6 py-2.5 text-sm font-black text-white shadow-sm transition hover:opacity-95 disabled:opacity-60"
+                  >
+                    {turmaSaving ? "Salvando…" : "Criar turma"}
+                  </button>
+                  {turmaMessage ? (
+                    <p className="text-sm font-semibold text-emerald-700">{turmaMessage}</p>
+                  ) : null}
+                  {classesError ? (
+                    <p className="text-sm font-semibold text-rose-600">{classesError}</p>
+                  ) : null}
+                </div>
+              </section>
+
+              <section className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
+                <div className="border-b border-slate-100 px-4 py-4 sm:px-6">
+                  <h2 className="text-base font-black text-slate-950">Turmas cadastradas</h2>
+                  <p className="mt-1 text-sm font-semibold text-slate-500">
+                    {classes?.classes.length || 0} turma(s) em {schoolLabel}
+                  </p>
+                </div>
+
+                {classesLoading ? (
+                  <div className="flex min-h-[160px] items-center justify-center">
+                    <span className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-cyan-200 border-t-cyan-600" />
+                  </div>
+                ) : (classes?.classes || []).length === 0 ? (
+                  <p className="p-6 text-sm font-semibold text-slate-500">
+                    Nenhuma turma cadastrada ainda.
+                  </p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full text-left text-sm">
+                      <thead className="border-b border-slate-100 bg-slate-50/80 text-[10px] font-black uppercase tracking-wide text-slate-500">
+                        <tr>
+                          <th className="px-4 py-3 sm:px-6">Turma</th>
+                          <th className="px-4 py-3">Ano/série</th>
+                          <th className="px-4 py-3">Disciplina</th>
+                          <th className="px-4 py-3">Professor</th>
+                          <th className="px-4 py-3 sm:px-6">Ações</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {classes?.classes.map((row) =>
+                          editingClassId === row.id ? (
+                            <tr key={row.id} className="bg-cyan-50/40">
+                              <td className="px-4 py-3 sm:px-6">
+                                <input
+                                  type="text"
+                                  value={editForm.name}
+                                  onChange={(event) =>
+                                    setEditForm((prev) => ({ ...prev, name: event.target.value }))
+                                  }
+                                  className={`${HUD_FIELD_CLASS} min-w-[120px]`}
+                                />
+                              </td>
+                              <td className="px-4 py-3">
+                                <input
+                                  type="text"
+                                  value={editForm.gradeLevel}
+                                  onChange={(event) =>
+                                    setEditForm((prev) => ({
+                                      ...prev,
+                                      gradeLevel: event.target.value,
+                                    }))
+                                  }
+                                  className={`${HUD_FIELD_CLASS} min-w-[100px]`}
+                                />
+                              </td>
+                              <td className="px-4 py-3">
+                                <input
+                                  type="text"
+                                  value={editForm.discipline}
+                                  onChange={(event) =>
+                                    setEditForm((prev) => ({
+                                      ...prev,
+                                      discipline: event.target.value,
+                                    }))
+                                  }
+                                  className={`${HUD_FIELD_CLASS} min-w-[120px]`}
+                                />
+                              </td>
+                              <td className="px-4 py-3">
+                                <select
+                                  value={editForm.teacherUserId}
+                                  onChange={(event) =>
+                                    setEditForm((prev) => ({
+                                      ...prev,
+                                      teacherUserId: event.target.value,
+                                    }))
+                                  }
+                                  className={`${HUD_FIELD_CLASS} min-w-[140px]`}
+                                >
+                                  <option value="">Sem professor</option>
+                                  {teacherOptions.map((teacher) => (
+                                    <option key={teacher.userId} value={teacher.userId}>
+                                      {memberDisplayName(teacher)}
+                                    </option>
+                                  ))}
+                                </select>
+                              </td>
+                              <td className="px-4 py-3 sm:px-6">
+                                <div className="flex flex-wrap gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => void saveEditTurma()}
+                                    disabled={turmaSaving}
+                                    className="rounded-lg bg-cyan-600 px-3 py-1.5 text-xs font-black text-white disabled:opacity-60"
+                                  >
+                                    Salvar
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setEditingClassId(null)}
+                                    className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-black text-slate-600"
+                                  >
+                                    Cancelar
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ) : (
+                            <tr key={row.id} className="hover:bg-slate-50/60">
+                              <td className="px-4 py-3 font-black text-slate-950 sm:px-6">
+                                {row.name}
+                              </td>
+                              <td className="px-4 py-3 font-semibold text-slate-600">
+                                {row.gradeLevel || "—"}
+                              </td>
+                              <td className="px-4 py-3 font-semibold text-slate-600">
+                                {row.discipline || "—"}
+                              </td>
+                              <td className="px-4 py-3 font-semibold text-slate-600">
+                                {row.teacherName || "—"}
+                              </td>
+                              <td className="px-4 py-3 sm:px-6">
+                                <button
+                                  type="button"
+                                  onClick={() => startEditTurma(row)}
+                                  className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-black text-cyan-700 transition hover:border-cyan-300"
+                                >
+                                  Editar
+                                </button>
+                              </td>
+                            </tr>
+                          ),
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </section>
+            </div>
+          ) : null}
+
+          {tab === "materiais" ? (
+            <div className="space-y-5">
+              <section className="pl-hud-glass rounded-2xl border border-violet-400/15 p-5 sm:p-6">
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div>
+                    <h2 className="text-base font-black text-slate-950">Auditoria de materiais</h2>
+                    <p className="mt-1 text-sm font-semibold text-slate-500">
+                      Produção docente registrada em {schoolLabel}. Filtre por professor, período e
+                      disciplina.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      exportMaterialsCsv(
+                        materials?.materials || [],
+                        materials?.schoolName || schoolLabel,
+                      )
+                    }
+                    disabled={!materials?.materials.length}
+                    className="inline-flex items-center gap-2 rounded-xl border border-violet-200 bg-white px-4 py-2 text-xs font-black text-violet-700 transition hover:border-violet-300 disabled:opacity-50"
+                  >
+                    <PlanifyIcon name="download" className="h-4 w-4" />
+                    Exportar CSV
+                  </button>
+                </div>
+
+                <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                  <select
+                    value={materialFilters.professorId}
+                    onChange={(event) =>
+                      setMaterialFilters((prev) => ({
+                        ...prev,
+                        professorId: event.target.value,
+                      }))
+                    }
+                    className={HUD_FIELD_CLASS}
+                  >
+                    <option value="">Todos os professores</option>
+                    {(materials?.professors || []).map((professor) => (
+                      <option key={professor.userId} value={professor.userId}>
+                        {professor.name}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    value={materialFilters.period}
+                    onChange={(event) =>
+                      setMaterialFilters((prev) => ({
+                        ...prev,
+                        period: event.target.value as MaterialFilters["period"],
+                      }))
+                    }
+                    className={HUD_FIELD_CLASS}
+                  >
+                    <option value="all">Todo o período</option>
+                    <option value="month">Este mês</option>
+                    <option value="quarter">Este trimestre</option>
+                    <option value="year">Este ano</option>
+                  </select>
+                  <select
+                    value={materialFilters.discipline}
+                    onChange={(event) =>
+                      setMaterialFilters((prev) => ({
+                        ...prev,
+                        discipline: event.target.value,
+                      }))
+                    }
+                    className={HUD_FIELD_CLASS}
+                  >
+                    <option value="">Todas as disciplinas</option>
+                    {(materials?.disciplines || []).map((discipline) => (
+                      <option key={discipline} value={discipline}>
+                        {discipline}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <p className="mt-3 text-xs font-semibold text-slate-500">
+                  {materials?.total ?? 0} material(is) encontrado(s)
+                  {materialsLoading ? " · carregando…" : ""}
+                </p>
+              </section>
+
+              {materialsError ? (
+                <div className="rounded-2xl border border-rose-200 bg-rose-50 p-5 text-sm font-semibold text-rose-700">
+                  {materialsError}
+                </div>
+              ) : null}
+
+              <section className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
+                {materialsLoading ? (
+                  <div className="flex min-h-[200px] items-center justify-center">
+                    <span className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-cyan-200 border-t-cyan-600" />
+                  </div>
+                ) : (materials?.materials || []).length === 0 ? (
+                  <p className="p-6 text-sm font-semibold text-slate-500">
+                    Nenhum material encontrado para os filtros selecionados.
+                  </p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full text-left text-sm">
+                      <thead className="border-b border-slate-100 bg-slate-50/80 text-[10px] font-black uppercase tracking-wide text-slate-500">
+                        <tr>
+                          <th className="px-4 py-3 sm:px-6">Professor</th>
+                          <th className="px-4 py-3">Título</th>
+                          <th className="px-4 py-3">Tipo</th>
+                          <th className="px-4 py-3">Turma</th>
+                          <th className="px-4 py-3">Disciplina</th>
+                          <th className="px-4 py-3">BNCC</th>
+                          <th className="px-4 py-3 sm:px-6">Data</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {materials?.materials.map((row) => (
+                          <tr key={row.id} className="hover:bg-slate-50/60">
+                            <td className="px-4 py-3 sm:px-6">
+                              <p className="font-black text-slate-950">
+                                {row.professorName || "—"}
+                              </p>
+                              {row.professorEmail ? (
+                                <p className="text-xs font-semibold text-slate-400">
+                                  {row.professorEmail}
+                                </p>
+                              ) : null}
+                            </td>
+                            <td className="max-w-[220px] px-4 py-3 font-semibold text-slate-800">
+                              <span className="line-clamp-2">{row.title}</span>
+                            </td>
+                            <td className="px-4 py-3 font-semibold text-slate-600">{row.tipo}</td>
+                            <td className="px-4 py-3 font-semibold text-slate-600">
+                              {row.className || "—"}
+                            </td>
+                            <td className="px-4 py-3 font-semibold text-slate-600">
+                              {row.discipline || "—"}
+                            </td>
+                            <td className="px-4 py-3">
+                              {row.bnccSkillCodes.length > 0 ? (
+                                <div className="flex max-w-[180px] flex-wrap gap-1">
+                                  {row.bnccSkillCodes.slice(0, 3).map((code) => (
+                                    <span
+                                      key={code}
+                                      className="rounded-md bg-cyan-50 px-1.5 py-0.5 text-[10px] font-black text-cyan-700"
+                                    >
+                                      {code}
+                                    </span>
+                                  ))}
+                                  {row.bnccSkillCodes.length > 3 ? (
+                                    <span className="text-[10px] font-bold text-slate-400">
+                                      +{row.bnccSkillCodes.length - 3}
+                                    </span>
+                                  ) : null}
+                                </div>
+                              ) : (
+                                <span className="font-semibold text-slate-400">—</span>
+                              )}
+                            </td>
+                            <td className="px-4 py-3 font-semibold text-slate-600 sm:px-6">
+                              {formatDate(row.createdAt)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </section>
             </div>
           ) : null}
         </div>

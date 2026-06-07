@@ -19,48 +19,10 @@ type TeachyStudioHomeProps = {
   onTopicChange?: (topic: string) => void;
 };
 
-const workspaceShortcuts: {
-  id: DashboardSectionId;
-  label: string;
-  description: string;
-  icon: "editor" | "history" | "library" | "market";
-  accent: string;
-}[] = [
-  {
-    id: "editor",
-    label: "Editor",
-    description: "Refine, exporte e publique",
-    icon: "editor",
-    accent: "from-emerald-400 to-teal-600",
-  },
-  {
-    id: "historico",
-    label: "Meus materiais",
-    description: "Tudo que você gerou",
-    icon: "history",
-    accent: "from-slate-500 to-slate-800",
-  },
-  {
-    id: "biblioteca",
-    label: "Biblioteca",
-    description: "Materiais premium curados",
-    icon: "library",
-    accent: "from-cyan-500 to-blue-600",
-  },
-  {
-    id: "marketplace",
-    label: "Comunidade",
-    description: "Trocas entre professores",
-    icon: "market",
-    accent: "from-sky-400 to-cyan-600",
-  },
-];
-
 const trustStats = [
   { value: "BNCC", label: "Alinhamento curricular" },
   { value: "DOCX", label: "Modelo oficial" },
   { value: "Classroom", label: "Publicação direta" },
-  { value: "Slides", label: "Exportação Google" },
 ] as const;
 
 function matchesPlanejamentosSearch(term: string): boolean {
@@ -125,9 +87,9 @@ export default function TeachyStudioHome({
     onSelectTool(toolId);
   }
 
-  function openSection(sectionId: DashboardSectionId) {
+  function openPlanejamentos() {
     persistTopic();
-    onSelectSection?.(sectionId);
+    onSelectSection?.("planejamentos");
   }
 
   function renderToolCard(tool: PlanifyTool) {
@@ -166,7 +128,7 @@ export default function TeachyStudioHome({
     return (
       <button
         type="button"
-        onClick={() => openSection("planejamentos")}
+        onClick={openPlanejamentos}
         className="pl-hud-hub-app group flex min-h-[10rem] flex-col rounded-2xl p-5 text-left sm:min-h-[10.5rem]"
       >
         <span className="pl-hud-hub-tool-icon flex h-11 w-11 items-center justify-center bg-gradient-to-br from-cyan-500 to-blue-600">
@@ -194,8 +156,8 @@ export default function TeachyStudioHome({
 
             <div className="relative">
               <p className="max-w-xl text-sm font-medium leading-relaxed text-slate-600 sm:text-base">
-                {totalGenerators} geradores com IA, planejamentos oficiais e espaço de trabalho
-                completo — busque abaixo ou escolha uma categoria.
+                {totalGenerators} geradores com IA e planejamentos oficiais — busque abaixo ou
+                escolha uma categoria.
               </p>
 
               <div className="pl-hud-hub-trust mt-6">
@@ -254,49 +216,6 @@ export default function TeachyStudioHome({
           <section
             className="pl-hud-hub-reveal mt-10"
             style={{ animationDelay: "80ms" }}
-          >
-            <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-600">
-                  Espaço de trabalho
-                </p>
-                <h2 className="mt-1 text-xl font-extrabold text-slate-950 sm:text-2xl">
-                  Continue criando
-                </h2>
-              </div>
-            </div>
-            <div className="pl-hud-hub-workspace-rail">
-              {workspaceShortcuts.map((item, index) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => openSection(item.id)}
-                  className="pl-hud-hub-workspace-card group p-4 sm:p-5"
-                  style={{ animationDelay: `${120 + index * 50}ms` }}
-                >
-                  <span
-                    className={`relative flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br ${item.accent} text-white shadow-sm transition motion-safe:group-hover:scale-105`}
-                  >
-                    <PlanifyIcon name={item.icon} className="h-5 w-5" />
-                  </span>
-                  <span className="relative mt-3 block text-sm font-extrabold text-slate-950">
-                    {item.label}
-                  </span>
-                  <span className="relative mt-1 block line-clamp-2 text-[11px] font-medium leading-snug text-slate-500">
-                    {item.description}
-                  </span>
-                  <span className="relative mt-3 flex items-center gap-1 text-[11px] font-semibold text-cyan-700 opacity-0 transition group-hover:opacity-100">
-                    Abrir
-                    <PlanifyIcon name="arrowRight" className="h-3 w-3" />
-                  </span>
-                </button>
-              ))}
-            </div>
-          </section>
-
-          <section
-            className="pl-hud-hub-reveal mt-12"
-            style={{ animationDelay: "140ms" }}
           >
             <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
               <div>

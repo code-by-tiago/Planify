@@ -25,6 +25,7 @@ const navLinks: {
 
 export function PublicHeader({ active }: PublicHeaderProps) {
   const [open, setOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const reduce = useReducedMotion();
 
   useEffect(() => {
@@ -34,21 +35,30 @@ export function PublicHeader({ active }: PublicHeaderProps) {
     };
   }, [open]);
 
+  useEffect(() => {
+    function onScroll() {
+      setScrolled(window.scrollY > 8);
+    }
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   function linkClass(key: string) {
     const isActive = active === key;
-    return `rounded-xl px-3.5 py-2 text-sm font-semibold transition ${
-      isActive
-        ? "bg-cyan-50 text-cyan-700 ring-1 ring-cyan-400/20"
-        : "text-slate-600 hover:bg-slate-50 hover:text-slate-950"
-    }`;
+    return `pl-public-header-link${isActive ? " pl-public-header-link--active" : ""}`;
   }
 
   return (
-    <header className="planify-ui3-header sticky top-0 z-50 border-b border-cyan-400/15 bg-white/85 backdrop-blur-md">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-5 py-3 sm:px-8">
-        <PlanifyBrand href="/" hideTagline />
+    <header
+      className={`planify-ui3-header pl-public-header sticky top-0 z-50${scrolled ? " pl-public-header--scrolled" : ""}`}
+    >
+      <div className="pl-public-header-inner mx-auto max-w-7xl">
+        <div className="pl-public-header-brand">
+          <PlanifyBrand href="/" hideTagline />
+        </div>
 
-        <nav className="hidden items-center gap-0.5 lg:flex">
+        <nav className="pl-public-header-nav hidden lg:flex" aria-label="Navegação principal">
           {navLinks.map((item) => (
             <Link key={item.href} href={item.href} className={linkClass(item.key ?? "")}>
               {item.label}
@@ -56,25 +66,24 @@ export function PublicHeader({ active }: PublicHeaderProps) {
           ))}
         </nav>
 
-        <div className="hidden items-center gap-2 sm:flex">
-          <Link
-            href="/login?portal=professor"
-            className="rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-          >
+        <div className="pl-public-header-actions hidden sm:flex">
+          <Link href="/login?portal=professor" className="pl-public-header-portal">
             Portal do Professor
           </Link>
-          <Link
-            href="/login?portal=escola"
-            className="rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-          >
+          <Link href="/login?portal=escola" className="pl-public-header-portal">
             Portal da Escola
           </Link>
-          <Link href="/planos" className="pl-hud-btn rounded-xl px-5 py-2.5 text-sm font-semibold">
+          <Link href="/planos" className="pl-hud-btn pl-public-header-cta">
             Ver planos
           </Link>
         </div>
 
-        <button type="button" onClick={() => setOpen(true)} aria-label="Abrir menu" className="flex h-10 w-10 items-center justify-center rounded-xl border border-cyan-400/20 text-slate-700 lg:hidden">
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          aria-label="Abrir menu"
+          className="pl-public-header-menu lg:hidden"
+        >
           <PlanifyIcon name="menu" className="h-5 w-5" />
         </button>
       </div>

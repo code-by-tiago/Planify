@@ -102,60 +102,12 @@ export default function TeachyStudioHome({
     () => filterTools(query, category),
     [category, query],
   );
-  const popularTools = useMemo(
-    () => planifyTools.filter((tool) => tool.popular),
-    [],
-  );
   const showPlanejamentos =
     (category === "todos" || category === "planejamento") &&
     matchesPlanejamentosSearch(query.trim().toLowerCase());
-  const showPlanejamentosInGrid = showPlanejamentos && hasActiveFilter;
-  const gridTools = useMemo(() => {
-    if (hasActiveFilter) return filteredTools;
-    const featuredPopularIds = new Set(
-      popularTools.slice(0, 2).map((tool) => tool.id),
-    );
-    return planifyTools.filter((tool) => !featuredPopularIds.has(tool.id));
-  }, [filteredTools, hasActiveFilter, popularTools]);
   const categoryTabs = toolCategories.filter((entry) => entry.id !== "todos");
   const totalGenerators = planifyToolCount + 1;
-
-  const toolsByCategory = useMemo(() => {
-    if (hasActiveFilter) return [];
-    return categoryTabs
-      .map((cat) => ({
-        ...cat,
-        tools: gridTools.filter((tool) => tool.category === cat.id),
-      }))
-      .filter((group) => group.tools.length > 0);
-  }, [categoryTabs, gridTools, hasActiveFilter]);
-
-  useEffect(() => {
-    // #region agent log
-    fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Debug-Session-Id": "a3011b",
-      },
-      body: JSON.stringify({
-        sessionId: "a3011b",
-        runId: "verify-home",
-        hypothesisId: "H2",
-        location: "TeachyStudioHome.tsx:mount",
-        message: "TeachyStudioHome rendered",
-        data: {
-          version: "6960f35",
-          hasActiveFilter,
-          pathname: typeof window !== "undefined" ? window.location.pathname : "",
-          search: typeof window !== "undefined" ? window.location.search : "",
-          toolCount: planifyToolCount,
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
-  }, [hasActiveFilter]);
+  const resultCount = filteredTools.length + (showPlanejamentos ? 1 : 0);
 
   function persistTopic(value = topic) {
     const tema = value.trim();
@@ -178,38 +130,23 @@ export default function TeachyStudioHome({
     onSelectSection?.(sectionId);
   }
 
-  function renderToolCard(tool: PlanifyTool, variant: "default" | "compact" | "featured" = "default") {
-    const compact = variant === "compact";
-    const featured = variant === "featured";
-
+  function renderToolCard(tool: PlanifyTool) {
     return (
       <button
         key={tool.id}
         type="button"
         onClick={() => openTool(tool.id)}
-        className={`pl-hud-hub-app group flex flex-col text-left ${
-          featured ? "pl-hud-hub-tool-featured rounded-2xl p-5" : compact ? "min-h-[9rem] rounded-2xl p-4" : "min-h-[10rem] rounded-2xl p-5 sm:min-h-[10.5rem]"
-        }`}
+        className="pl-hud-hub-app group flex min-h-[10rem] flex-col rounded-2xl p-5 text-left sm:min-h-[10.5rem]"
       >
         <span
-          className={`pl-hud-hub-tool-icon bg-gradient-to-br ${tool.accent} ${
-            compact ? "h-10 w-10" : "h-11 w-11"
-          }`}
+          className={`pl-hud-hub-tool-icon bg-gradient-to-br ${tool.accent} h-11 w-11`}
         >
-          <PlanifyIcon name={tool.icon} className={compact ? "h-5 w-5" : "h-5 w-5"} />
+          <PlanifyIcon name={tool.icon} className="h-5 w-5" />
         </span>
-        <span
-          className={`relative font-extrabold text-slate-950 ${
-            compact ? "mt-3 text-base" : "mt-4 text-lg"
-          }`}
-        >
+        <span className="relative mt-4 text-lg font-extrabold text-slate-950">
           {tool.shortTitle}
         </span>
-        <span
-          className={`relative line-clamp-2 font-medium leading-snug text-slate-600 ${
-            compact ? "mt-1 text-xs" : "mt-1.5 text-sm"
-          }`}
-        >
+        <span className="relative mt-1.5 line-clamp-2 text-sm font-medium leading-snug text-slate-600">
           {tool.description}
         </span>
         {tool.popular ? (
@@ -220,46 +157,6 @@ export default function TeachyStudioHome({
         <span className="relative mt-auto flex items-center gap-1 pt-3 text-xs font-semibold text-cyan-700 opacity-80 transition group-hover:gap-1.5 group-hover:opacity-100">
           Abrir
           <PlanifyIcon name="arrowRight" className="h-3 w-3 transition group-hover:translate-x-0.5" />
-        </span>
-      </button>
-    );
-  }
-
-  function renderPlanejamentosHero() {
-    return (
-      <button
-        type="button"
-        onClick={() => openSection("planejamentos")}
-        className="pl-hud-hub-bento-hero group flex min-h-[14rem] flex-col p-6 sm:min-h-[16rem] sm:p-7"
-      >
-        <div className="relative flex items-start justify-between gap-4">
-          <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-400 to-blue-600 text-white shadow-[0_0_24px_rgba(0,212,255,0.35)]">
-            <PlanifyIcon name="clipboard" className="h-7 w-7" />
-          </span>
-          <span className="rounded-full border border-cyan-400/30 bg-cyan-400/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-cyan-200">
-            Fluxo BNCC
-          </span>
-        </div>
-        <span className="relative mt-6 text-2xl font-extrabold tracking-tight text-white sm:text-[1.65rem]">
-          Planejamentos
-        </span>
-        <span className="relative mt-2 max-w-md text-sm font-medium leading-relaxed text-cyan-100/80">
-          Matriz anual ou trimestral · sugira habilidades por conteúdo · DOCX oficial
-          preenchido com IA
-        </span>
-        <div className="relative mt-5 flex flex-wrap gap-2">
-          {["Matriz pedagógica", "Habilidades BNCC", "DOCX oficial"].map((tag) => (
-            <span
-              key={tag}
-              className="rounded-lg border border-cyan-400/20 bg-white/5 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-cyan-100/90"
-            >
-              {tag}
-            </span>
-          ))}
-        </div>
-        <span className="relative mt-auto flex items-center gap-1.5 pt-5 text-sm font-semibold text-cyan-300 transition group-hover:gap-2.5">
-          Continuar planejando
-          <PlanifyIcon name="arrowRight" className="h-4 w-4 transition group-hover:translate-x-0.5" />
         </span>
       </button>
     );
@@ -288,10 +185,7 @@ export default function TeachyStudioHome({
   }
 
   return (
-    <div
-      className="pl-hud-hub pl-hud-board pl-hud-home flex h-full min-h-0 w-full flex-col overflow-hidden"
-      data-planify-studio-home="6960f35"
-    >
+    <div className="pl-hud-hub pl-hud-board pl-hud-home flex h-full min-h-0 w-full flex-col overflow-hidden">
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
         <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:py-10">
           <section className="pl-hud-hub-hero pl-hud-hub-reveal p-6 sm:p-8 lg:p-10">
@@ -400,31 +294,9 @@ export default function TeachyStudioHome({
             </div>
           </section>
 
-          {!hasActiveFilter ? (
-            <section
-              className="pl-hud-hub-reveal mt-12"
-              style={{ animationDelay: "140ms" }}
-            >
-              <div className="mb-5">
-                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-600">
-                  Destaques
-                </p>
-                <h2 className="mt-1 text-xl font-extrabold text-slate-950 sm:text-2xl">
-                  Comece pelo essencial
-                </h2>
-              </div>
-              <div className="pl-hud-hub-bento">
-                {renderPlanejamentosHero()}
-                <div className="grid gap-4">
-                  {popularTools.slice(0, 2).map((tool) => renderToolCard(tool, "featured"))}
-                </div>
-              </div>
-            </section>
-          ) : null}
-
           <section
             className="pl-hud-hub-reveal mt-12"
-            style={{ animationDelay: "180ms" }}
+            style={{ animationDelay: "140ms" }}
           >
             <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
               <div>
@@ -432,9 +304,7 @@ export default function TeachyStudioHome({
                   Ferramentas IA
                 </p>
                 <h2 className="mt-1 text-xl font-extrabold text-slate-950 sm:text-2xl">
-                  {hasActiveFilter
-                    ? `${gridTools.length + (showPlanejamentosInGrid ? 1 : 0)} resultado(s)`
-                    : "Explore por categoria"}
+                  {hasActiveFilter ? `${resultCount} resultado(s)` : "Todos os geradores"}
                 </h2>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -467,37 +337,12 @@ export default function TeachyStudioHome({
               </div>
             </div>
 
-            {hasActiveFilter ? (
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {showPlanejamentosInGrid ? renderPlanejamentosCard() : null}
-                {gridTools.map((tool) => renderToolCard(tool))}
-              </div>
-            ) : (
-              <div className="space-y-10">
-                {toolsByCategory.map((group) => (
-                  <div key={group.id}>
-                    <div className="pl-hud-hub-section-head">
-                      <span className="pl-hud-hub-section-icon">
-                        <PlanifyIcon name={group.icon} className="h-4 w-4" />
-                      </span>
-                      <div>
-                        <h3 className="text-base font-extrabold text-slate-950 sm:text-lg">
-                          {group.label}
-                        </h3>
-                        <p className="text-xs font-medium text-slate-500">
-                          {group.tools.length} ferramenta{group.tools.length === 1 ? "" : "s"}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                      {group.tools.map((tool) => renderToolCard(tool))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {showPlanejamentos ? renderPlanejamentosCard() : null}
+              {filteredTools.map((tool) => renderToolCard(tool))}
+            </div>
 
-            {!showPlanejamentosInGrid && gridTools.length === 0 ? (
+            {!showPlanejamentos && filteredTools.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-cyan-400/25 bg-white/70 px-6 py-12 text-center">
                 <p className="text-xs font-bold uppercase tracking-wide text-cyan-600">
                   Nenhum resultado

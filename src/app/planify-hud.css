@@ -291,6 +291,116 @@ body {
   box-shadow: var(--planify-cyan-glow-soft);
 }
 
+/* ─── Landing hero premium ─── */
+.planify-hud .pl-hud-landing-hero {
+  background:
+    radial-gradient(ellipse 90% 70% at 75% 20%, rgba(0, 212, 255, 0.1), transparent 55%),
+    radial-gradient(ellipse 70% 60% at 10% 90%, rgba(8, 145, 178, 0.08), transparent 50%),
+    linear-gradient(180deg, #ffffff 0%, #f0f9ff 85%, #f4f8fc 100%);
+}
+
+.planify-hud .pl-hud-landing-mesh {
+  opacity: 0.6;
+  background:
+    radial-gradient(circle at 25% 35%, rgba(0, 212, 255, 0.14), transparent 42%),
+    radial-gradient(circle at 72% 28%, rgba(34, 211, 238, 0.1), transparent 38%);
+}
+
+.planify-hud .pl-hud-landing-grid {
+  opacity: 0.25;
+  background:
+    linear-gradient(to right, rgba(0, 212, 255, 0.07) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 212, 255, 0.07) 1px, transparent 1px);
+  background-size: 40px 40px;
+  mask-image: linear-gradient(180deg, #000 0%, transparent 90%);
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, transparent 90%);
+}
+
+.planify-hud .pl-hud-landing-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  overflow: hidden;
+  border-radius: 1rem;
+  border: 1px solid rgba(0, 212, 255, 0.2);
+  background:
+    linear-gradient(145deg, rgba(7, 16, 24, 0.94) 0%, rgba(12, 24, 36, 0.9) 100%);
+  box-shadow: var(--planify-cyan-glow-soft), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.planify-hud .pl-hud-landing-stat {
+  flex: 1 1 7rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.85rem 1rem;
+  border-right: 1px solid rgba(0, 212, 255, 0.12);
+}
+
+.planify-hud .pl-hud-landing-stat:last-child {
+  border-right: none;
+}
+
+.planify-hud .pl-hud-landing-stat-value {
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #67e8f9;
+}
+
+.planify-hud .pl-hud-landing-stat-label {
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(186, 230, 253, 0.75);
+}
+
+.planify-hud .pl-hud-landing-trust {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem 1.5rem;
+}
+
+.planify-hud .pl-hud-landing-trust-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--planify-slate-600);
+}
+
+/* ─── Landing tools section ─── */
+.planify-hud .pl-hud-landing-tools {
+  background: var(--planify-canvas);
+  border-block: 1px solid rgba(0, 212, 255, 0.12);
+}
+
+.planify-hud .pl-hud-landing-tools-glow {
+  background:
+    radial-gradient(ellipse 60% 50% at 50% 0%, rgba(0, 212, 255, 0.08), transparent 60%);
+}
+
+.planify-hud .pl-hud-landing-tool-featured {
+  border: 1px solid var(--planify-glass-border);
+  background: var(--planify-glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 4px 24px rgba(0, 212, 255, 0.08);
+}
+
+.planify-hud .pl-hud-landing-tool-featured:hover {
+  border-color: rgba(0, 212, 255, 0.45);
+  box-shadow: var(--planify-cyan-glow-soft);
+}
+
+.planify-hud .pl-hud-testimonials-section {
+  border-top: 1px solid var(--planify-glass-border);
+}
+
 /* ─── Testimonials ─── */
 .planify-hud .pl-hud-testimonials {
   background: var(--planify-canvas);

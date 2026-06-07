@@ -12,41 +12,46 @@ const sampleMaterials = [
 
 export function TeachyCommunitySection() {
   return (
-    <section className="relative isolate overflow-hidden bg-white py-16 sm:py-20">
-      <div className="mx-auto max-w-7xl px-5 sm:px-8">
-        <div className="mx-auto max-w-3xl text-center">
-          <h2 className="text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
-            Construa o futuro do ensino em conjunto
-          </h2>
-          <p className="mt-4 text-lg font-medium leading-8 text-slate-600">
-            Colabore com educadoras e acesse materiais da comunidade Planify —
-            publique o que você cria e reutilize modelos alinhados à BNCC.
-          </p>
-          <Link
-            href="/dashboard?secao=marketplace"
-            className="pl-hud-btn mt-8 inline-flex items-center gap-2 rounded-xl px-8 py-3.5 text-sm font-semibold"
-          >
-            Abrir Comunidade
-            <PlanifyIcon name="arrowRight" className="h-4 w-4" />
-          </Link>
-        </div>
-
-        <div className="mt-12 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {sampleMaterials.map((item) => (
-            <div
-              key={item.title}
-              className="pl-hud-glass rounded-2xl p-4 transition hover:border-cyan-400/30 hover:shadow-[0_0_16px_rgba(0,212,255,0.12)]"
+    <section className="pl-hud-band-wrap relative isolate overflow-hidden py-16 sm:py-20">
+      <div className="pl-hud-glass-band mx-auto max-w-[calc(100%-2rem)] sm:max-w-7xl">
+        <div className="mx-auto max-w-7xl px-5 py-14 sm:px-8 lg:py-16">
+          <div className="mx-auto max-w-3xl text-center">
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-300/80">
+              Comunidade Planify
+            </p>
+            <h2 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">
+              Construa o futuro do ensino em conjunto
+            </h2>
+            <p className="mt-4 text-lg font-medium leading-8 text-cyan-100/80">
+              Colabore com educadoras e acesse materiais da comunidade Planify —
+              publique o que você cria e reutilize modelos alinhados à BNCC.
+            </p>
+            <Link
+              href="/dashboard?secao=marketplace"
+              className="pl-hud-btn mt-8 inline-flex items-center gap-2 rounded-xl px-8 py-3.5 text-sm font-semibold"
             >
-              <span
-                className={`inline-block rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase ${item.color}`}
+              Abrir Comunidade
+              <PlanifyIcon name="arrowRight" className="h-4 w-4" />
+            </Link>
+          </div>
+
+          <div className="mt-12 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {sampleMaterials.map((item) => (
+              <div
+                key={item.title}
+                className="rounded-2xl border border-cyan-400/15 bg-white/5 p-4 backdrop-blur-sm transition hover:border-cyan-400/30 hover:bg-white/8 hover:shadow-[0_0_16px_rgba(0,212,255,0.12)]"
               >
-                {item.tag}
-              </span>
-              <p className="mt-3 text-sm font-black leading-snug text-slate-900">
-                {item.title}
-              </p>
-            </div>
-          ))}
+                <span
+                  className={`inline-block rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase ${item.color}`}
+                >
+                  {item.tag}
+                </span>
+                <p className="mt-3 text-sm font-black leading-snug text-cyan-50">
+                  {item.title}
+                </p>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </section>

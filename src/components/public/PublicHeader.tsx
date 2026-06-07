@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { PlanifyBrand } from "@/components/pro/PlanifyBrand";
@@ -26,7 +27,12 @@ const navLinks: {
 export function PublicHeader({ active }: PublicHeaderProps) {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const reduce = useReducedMotion();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
@@ -44,97 +50,158 @@ export function PublicHeader({ active }: PublicHeaderProps) {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setOpen(false);
+      }
+    }
+
+    if (!open) {
+      return;
+    }
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [open]);
+
   function linkClass(key: string) {
     const isActive = active === key;
     return `pl-public-header-link${isActive ? " pl-public-header-link--active" : ""}`;
   }
 
-  return (
-    <header
-      className={`planify-ui3-header pl-public-header sticky top-0 z-50${scrolled ? " pl-public-header--scrolled" : ""}`}
-    >
-      <div className="pl-public-header-inner mx-auto max-w-7xl">
-        <div className="pl-public-header-brand">
-          <PlanifyBrand href="/" hideTagline />
-        </div>
-
-        <nav className="pl-public-header-nav hidden lg:flex" aria-label="Navegação principal">
-          {navLinks.map((item) => (
-            <Link key={item.href} href={item.href} className={linkClass(item.key ?? "")}>
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-
-        <div className="pl-public-header-actions hidden sm:flex">
-          <Link href="/login?portal=professor" className="pl-public-header-portal">
-            Portal do Professor
-          </Link>
-          <Link href="/login?portal=escola" className="pl-public-header-portal">
-            Portal da Escola
-          </Link>
-          <Link href="/planos" className="pl-hud-btn pl-public-header-cta">
-            Ver planos
-          </Link>
-        </div>
-
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          aria-label="Abrir menu"
-          className="pl-public-header-menu lg:hidden"
-        >
-          <PlanifyIcon name="menu" className="h-5 w-5" />
-        </button>
-      </div>
-
+  const mobileMenu =
+    mounted &&
+    createPortal(
       <AnimatePresence>
         {open ? (
-          <motion.div className="fixed inset-0 z-[60] lg:hidden" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <div className="absolute inset-0 bg-slate-950/50 backdrop-blur-sm" onClick={() => setOpen(false)} />
+          <motion.div
+            key="pl-public-mobile-menu"
+            className="pl-public-mobile-menu fixed inset-0 z-[200] lg:hidden"
+            data-pl-mobile-menu-overlay
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Menu de navegação"
+          >
+            <button
+              type="button"
+              className="absolute inset-0 bg-slate-950/55 backdrop-blur-[2px]"
+              aria-label="Fechar menu"
+              onClick={() => setOpen(false)}
+            />
             <motion.aside
+              data-pl-mobile-menu-panel
               initial={reduce ? { opacity: 0 } : { x: "100%" }}
               animate={reduce ? { opacity: 1 } : { x: 0 }}
               exit={reduce ? { opacity: 0 } : { x: "100%" }}
-              className="absolute right-0 top-0 flex h-full w-[86%] max-w-sm flex-col bg-white p-5 shadow-2xl"
+              transition={{ type: "tween", duration: reduce ? 0.15 : 0.28, ease: "easeOut" }}
+              className="absolute right-0 top-0 flex h-[100dvh] w-[min(100%,20rem)] flex-col border-l border-slate-200/80 bg-white p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-[max(1.25rem,env(safe-area-inset-top))] shadow-2xl"
             >
-              <div className="flex items-center justify-between">
-                <PlanifyBrand href="/" />
-                <button type="button" onClick={() => setOpen(false)} aria-label="Fechar" className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200">
+              <div className="flex items-center justify-between gap-3">
+                <PlanifyBrand href="/" hideTagline />
+                <button
+                  type="button"
+                  onClick={() => setOpen(false)}
+                  aria-label="Fechar"
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 text-slate-700"
+                >
                   <PlanifyIcon name="close" className="h-5 w-5" />
                 </button>
               </div>
-              <nav className="mt-8 grid gap-2">
+
+              <nav className="mt-6 flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto overscroll-contain">
                 {navLinks.map((item) => (
-                  <Link key={item.href} href={item.href} onClick={() => setOpen(false)} className={`rounded-xl px-4 py-3.5 text-base font-semibold ${active === item.key ? "bg-cyan-50 text-cyan-700" : "text-slate-700"}`}>
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setOpen(false)}
+                    className={`rounded-xl px-4 py-3.5 text-base font-semibold transition-colors ${
+                      active === item.key
+                        ? "bg-cyan-50 text-cyan-800 ring-1 ring-cyan-100"
+                        : "text-slate-800 hover:bg-slate-50"
+                    }`}
+                  >
                     {item.label}
                   </Link>
                 ))}
               </nav>
-              <div className="mt-auto grid gap-3 pt-6">
+
+              <div className="mt-4 grid shrink-0 gap-2.5 border-t border-slate-100 pt-4">
                 <Link
                   href="/login?portal=professor"
                   onClick={() => setOpen(false)}
-                  className="rounded-xl border border-slate-200 py-3 text-center text-sm font-semibold text-slate-800"
+                  className="rounded-xl border border-slate-200 bg-white py-3 text-center text-sm font-semibold text-slate-800"
                 >
                   Portal do Professor
                 </Link>
                 <Link
                   href="/login?portal=escola"
                   onClick={() => setOpen(false)}
-                  className="rounded-xl border border-slate-200 py-3 text-center text-sm font-semibold text-slate-800"
+                  className="rounded-xl border border-slate-200 bg-white py-3 text-center text-sm font-semibold text-slate-800"
                 >
                   Portal da Escola
                 </Link>
-                <Link href="/planos" onClick={() => setOpen(false)} className="pl-hud-btn rounded-xl py-3 text-center text-sm font-semibold">
+                <Link
+                  href="/planos"
+                  onClick={() => setOpen(false)}
+                  className="pl-hud-btn rounded-xl py-3 text-center text-sm font-semibold"
+                >
                   Ver planos
                 </Link>
               </div>
             </motion.aside>
           </motion.div>
         ) : null}
-      </AnimatePresence>
-    </header>
+      </AnimatePresence>,
+      document.body,
+    );
+
+  return (
+    <>
+      <header
+        className={`planify-ui3-header pl-public-header sticky top-0 z-50${scrolled ? " pl-public-header--scrolled" : ""}`}
+      >
+        <div className="pl-public-header-inner mx-auto max-w-7xl">
+          <div className="pl-public-header-brand">
+            <PlanifyBrand href="/" hideTagline />
+          </div>
+
+          <nav className="pl-public-header-nav hidden lg:flex" aria-label="Navegação principal">
+            {navLinks.map((item) => (
+              <Link key={item.href} href={item.href} className={linkClass(item.key ?? "")}>
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+
+          <div className="pl-public-header-actions hidden sm:flex">
+            <Link href="/login?portal=professor" className="pl-public-header-portal">
+              Portal do Professor
+            </Link>
+            <Link href="/login?portal=escola" className="pl-public-header-portal">
+              Portal da Escola
+            </Link>
+            <Link href="/planos" className="pl-hud-btn pl-public-header-cta">
+              Ver planos
+            </Link>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setOpen(true)}
+            aria-label="Abrir menu"
+            aria-expanded={open}
+            className="pl-public-header-menu lg:hidden"
+          >
+            <PlanifyIcon name="menu" className="h-5 w-5" />
+          </button>
+        </div>
+      </header>
+      {mobileMenu}
+    </>
   );
 }
 

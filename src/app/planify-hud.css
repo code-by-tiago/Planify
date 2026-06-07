@@ -191,6 +191,15 @@ body {
   }
 }
 
+/* Mobile drawer portal — fora do header para evitar containing block do backdrop-filter */
+.pl-public-mobile-menu {
+  isolation: isolate;
+}
+
+.pl-public-mobile-menu [data-pl-mobile-menu-panel] {
+  background: #ffffff !important;
+}
+
 /* ─── HUD grid background ─── */
 .planify-hud-app.pl-app-bg,
 .planify-hud-app.pl-hud-shell {

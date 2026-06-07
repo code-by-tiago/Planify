@@ -31,11 +31,12 @@ export default function PlanifyAppFrame({
   const access = usePlanifyAccess();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeTipo, setActiveTipo] = useState<string | null>(null);
+  const [currentSearch, setCurrentSearch] = useState("");
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      setActiveTipo(new URLSearchParams(window.location.search).get("tipo"));
-    }
+    if (typeof window === "undefined") return;
+    setCurrentSearch(window.location.search);
+    setActiveTipo(new URLSearchParams(window.location.search).get("tipo"));
   }, [pathname]);
 
   function isNavActive(href: string): boolean {
@@ -44,28 +45,22 @@ export default function PlanifyAppFrame({
     const currentPath = pathname.split("?")[0];
 
     if (query && path === currentPath) {
-      if (typeof window === "undefined") {
-        return pathname === href || pathname.startsWith(`${path}/`);
-      }
       const expected = new URLSearchParams(query);
-      const current = new URLSearchParams(window.location.search);
+      const current = new URLSearchParams(currentSearch);
       for (const [key, value] of expected.entries()) {
         if (current.get(key) !== value) return false;
       }
       return true;
     }
 
+    if (path === "/gestor") {
+      return currentPath === "/gestor";
+    }
+
     if (href === "/dashboard") {
       return pathname === "/dashboard";
     }
-    if (href === "/gestor") {
-      return (
-        currentPath === "/gestor" &&
-        !new URLSearchParams(
-          typeof window !== "undefined" ? window.location.search : "",
-        ).get("tab")
-      );
-    }
+
     return currentPath === path || currentPath.startsWith(`${path}/`);
   }
 

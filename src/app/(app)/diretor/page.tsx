@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { DirectorPanelClient } from "@/components/bncc/DirectorPanelClient";
+import { GestorPageLoader } from "@/components/bncc/GestorPageLoader";
 
 export const dynamic = "force-dynamic";
 
@@ -10,5 +10,5 @@ export const metadata: Metadata = {
 };
 
 export default function DiretorPage() {
-  return <DirectorPanelClient />;
+  return <GestorPageLoader />;
 }

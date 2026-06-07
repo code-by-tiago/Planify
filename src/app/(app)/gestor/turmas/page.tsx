@@ -4,11 +4,10 @@ import { GestorPageLoader } from "@/components/bncc/GestorPageLoader";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Painel do Gestor | Planify",
-  description:
-    "Visão administrativa de turmas, professores e conformidade BNCC da escola.",
+  title: "Turmas | Painel do Gestor | Planify",
+  description: "Cadastre e gerencie turmas da escola.",
 };
 
-export default function GestorPage() {
+export default function GestorTurmasPage() {
   return <GestorPageLoader />;
 }

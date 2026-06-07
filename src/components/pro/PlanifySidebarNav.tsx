@@ -118,7 +118,7 @@ export function PlanifySidebarNav({
             <Link
               key={item.href}
               href={item.href}
-              onClick={onActivate}
+              onClick={() => onActivate?.()}
               aria-current={selected ? "page" : undefined}
               className={className}
             >

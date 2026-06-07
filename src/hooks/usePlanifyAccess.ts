@@ -21,6 +21,7 @@ export type PlanifyExtendedAccess = {
   isManagerView: boolean;
   canViewBnccProgress: boolean;
   canViewDirectorPanel: boolean;
+  isSiteAdmin: boolean;
 };
 
 const initial: PlanifyExtendedAccess = {
@@ -39,6 +40,7 @@ const initial: PlanifyExtendedAccess = {
   isManagerView: false,
   canViewBnccProgress: false,
   canViewDirectorPanel: false,
+  isSiteAdmin: false,
 };
 
 export function usePlanifyAccess() {
@@ -77,6 +79,7 @@ export function usePlanifyAccess() {
           isManagerView: Boolean(data?.isManagerView),
           canViewBnccProgress: Boolean(data?.canViewBnccProgress),
           canViewDirectorPanel: Boolean(data?.canViewDirectorPanel),
+          isSiteAdmin: Boolean(data?.isSiteAdmin),
         });
       } catch {
         if (!active) return;

@@ -1,4 +1,5 @@
 import type { DashboardSectionId } from "@/lib/pro/dashboardViews";
+import { GESTOR_SECTION_PATHS } from "@/lib/school/gestor-routes";
 import { dashboardToolHref } from "@/lib/pro/toolRoutes";
 
 export type PlanifyIconName =
@@ -350,47 +351,26 @@ export const sidebarNavigation: AppNavItem[] = [
   },
 ];
 
-/** Navegação institucional para gestor/diretor */
+/** Navegação institucional para gestor/diretor (Início = botão primário → /gestor) */
 export const managerSidebarNavigation: AppNavItem[] = [
   {
-    label: "Painel do Gestor",
-    href: "/gestor",
-    icon: "clipboard",
-    panel: "diretor",
-    requiresDirectorAccess: true,
-  },
-  {
     label: "Professores",
-    href: "/gestor?tab=teachers",
+    href: GESTOR_SECTION_PATHS.teachers,
     icon: "user",
     panel: "external",
     requiresDirectorAccess: true,
   },
   {
     label: "Turmas",
-    href: "/gestor?tab=turmas",
+    href: GESTOR_SECTION_PATHS.turmas,
     icon: "listChecks",
     panel: "external",
     requiresDirectorAccess: true,
   },
   {
     label: "Materiais",
-    href: "/gestor?tab=materiais",
+    href: GESTOR_SECTION_PATHS.materiais,
     icon: "spark",
-    panel: "external",
-    requiresDirectorAccess: true,
-  },
-  {
-    label: "Relatórios BNCC",
-    href: "/gestor?tab=overview",
-    icon: "clipboard",
-    panel: "external",
-    requiresDirectorAccess: true,
-  },
-  {
-    label: "Configurações",
-    href: "/gestor?tab=turmas",
-    icon: "settings",
     panel: "external",
     requiresDirectorAccess: true,
   },

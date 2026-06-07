@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { PlanifyPageHero } from "@/components/pro/PlanifyPageHero";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
@@ -16,22 +17,28 @@ import type {
   SchoolTeacherMember,
   SchoolTeachersResponse,
 } from "@/lib/school/types";
+import {
+  gestorPathForSection,
+  gestorSectionFromLegacyTab,
+  gestorSectionFromPath,
+  type GestorSectionId,
+} from "@/lib/school/gestor-routes";
 
 type DirectorPanelClientProps = {
   embedded?: boolean;
 };
 
-type DirectorTabId = "overview" | "teachers" | "turmas" | "materiais";
+function resolveGestorSection(
+  pathname: string,
+  legacyTab: string | null,
+): GestorSectionId {
+  const fromPath = gestorSectionFromPath(pathname);
+  if (fromPath !== "overview") return fromPath;
 
-const DIRECTOR_TABS: DirectorTabId[] = [
-  "overview",
-  "teachers",
-  "turmas",
-  "materiais",
-];
+  const fromLegacy = gestorSectionFromLegacyTab(legacyTab);
+  if (fromLegacy) return fromLegacy;
 
-function isDirectorTab(value: string | null): value is DirectorTabId {
-  return DIRECTOR_TABS.includes(value as DirectorTabId);
+  return "overview";
 }
 
 type MaterialFilters = {
@@ -163,6 +170,9 @@ function RestrictedAccessPanel() {
 }
 
 export function DirectorPanelClient({ embedded = false }: DirectorPanelClientProps) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const access = usePlanifyAccess();
   const [dashboard, setDashboard] = useState<SchoolDashboardResponse | null>(null);
   const [teachers, setTeachers] = useState<SchoolTeachersResponse | null>(null);
@@ -176,7 +186,10 @@ export function DirectorPanelClient({ embedded = false }: DirectorPanelClientPro
   const [classesError, setClassesError] = useState("");
   const [materialsError, setMaterialsError] = useState("");
   const [expandedClassId, setExpandedClassId] = useState<string | null>(null);
-  const [tab, setTab] = useState<DirectorTabId>("overview");
+  const tab = useMemo(
+    () => resolveGestorSection(pathname, searchParams.get("tab")),
+    [pathname, searchParams],
+  );
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteLoading, setInviteLoading] = useState(false);
   const [inviteMessage, setInviteMessage] = useState("");
@@ -312,13 +325,12 @@ export function DirectorPanelClient({ embedded = false }: DirectorPanelClientPro
   }, [access.loading, loadDashboard]);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    const params = new URLSearchParams(window.location.search);
-    const requestedTab = params.get("tab");
-    if (isDirectorTab(requestedTab)) {
-      setTab(requestedTab);
-    }
-  }, []);
+    if (pathname !== "/gestor" && pathname !== "/diretor") return;
+    const legacyTab = searchParams.get("tab");
+    const section = gestorSectionFromLegacyTab(legacyTab);
+    if (!section || section === "overview") return;
+    router.replace(gestorPathForSection(section));
+  }, [pathname, router, searchParams]);
 
   useEffect(() => {
     if (access.loading || !access.canViewDirectorPanel) return;
@@ -520,11 +532,6 @@ export function DirectorPanelClient({ embedded = false }: DirectorPanelClientPro
     return <RestrictedAccessPanel />;
   }
 
-  const tabClass = (active: boolean) =>
-    active
-      ? "border-cyan-500 bg-white text-cyan-700 shadow-sm"
-      : "border-transparent text-slate-500 hover:border-slate-200 hover:text-slate-800";
-
   const schoolLabel = dashboard?.schoolName || materials?.schoolName || "sua escola";
 
   return (
@@ -546,27 +553,6 @@ export function DirectorPanelClient({ embedded = false }: DirectorPanelClientPro
 
       <div className="min-h-0 flex-1 overflow-y-auto">
         <div className="mx-auto max-w-7xl space-y-5 p-4 sm:p-6">
-          <nav className="flex flex-wrap gap-2">
-            {(
-              [
-                ["overview", "clipboard", "Visão geral"],
-                ["teachers", "user", "Professores"],
-                ["turmas", "listChecks", "Turmas"],
-                ["materiais", "spark", "Materiais"],
-              ] as const
-            ).map(([id, icon, label]) => (
-              <button
-                key={id}
-                type="button"
-                onClick={() => setTab(id)}
-                className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-black transition ${tabClass(tab === id)}`}
-              >
-                <PlanifyIcon name={icon} className="h-4 w-4" />
-                {label}
-              </button>
-            ))}
-          </nav>
-
           {tab === "overview" ? (
             loading ? (
               <div className="flex min-h-[280px] items-center justify-center rounded-2xl border border-slate-200 bg-white">
@@ -593,18 +579,16 @@ export function DirectorPanelClient({ embedded = false }: DirectorPanelClientPro
                         <PlanifyIcon name="user" className="h-5 w-5" />
                       </span>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setTab("teachers")}
+                    <Link
+                      href={gestorPathForSection("teachers")}
                       className="mt-3 text-xs font-bold text-cyan-700 underline-offset-2 hover:underline"
                     >
                       Gerenciar professores →
-                    </button>
+                    </Link>
                   </article>
 
-                  <button
-                    type="button"
-                    onClick={() => setTab("materiais")}
+                  <Link
+                    href={gestorPathForSection("materiais")}
                     className="pl-hud-glass rounded-2xl border border-violet-400/20 p-5 text-left transition hover:border-violet-400/40"
                   >
                     <div className="flex items-start justify-between gap-3">
@@ -623,7 +607,7 @@ export function DirectorPanelClient({ embedded = false }: DirectorPanelClientPro
                     <p className="mt-3 text-xs font-bold text-violet-700 underline-offset-2 hover:underline">
                       Ver auditoria de materiais →
                     </p>
-                  </button>
+                  </Link>
 
                   <article className="pl-hud-glass rounded-2xl border border-emerald-400/20 p-5">
                     <div className="flex items-start justify-between gap-3">
@@ -653,25 +637,23 @@ export function DirectorPanelClient({ embedded = false }: DirectorPanelClientPro
                         Clique numa turma para ver disciplina, professor(a) e detalhes de cobertura.
                       </p>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setTab("turmas")}
+                    <Link
+                      href={gestorPathForSection("turmas")}
                       className="text-xs font-bold text-cyan-700 underline-offset-2 hover:underline"
                     >
                       Gerenciar turmas →
-                    </button>
+                    </Link>
                   </div>
 
                   {(dashboard?.classes || []).length === 0 ? (
                     <p className="p-6 text-sm font-semibold text-slate-500">
                       Nenhuma turma cadastrada ainda.{" "}
-                      <button
-                        type="button"
-                        onClick={() => setTab("turmas")}
+                      <Link
+                        href={gestorPathForSection("turmas")}
                         className="font-bold text-cyan-700 underline-offset-2 hover:underline"
                       >
                         Cadastrar turmas
-                      </button>
+                      </Link>
                     </p>
                   ) : (
                     <ul className="divide-y divide-slate-100">

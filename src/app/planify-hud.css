@@ -192,12 +192,13 @@ body {
 }
 
 /* Mobile drawer portal — fora do header para evitar containing block do backdrop-filter */
-.pl-public-mobile-menu {
+.pl-public-mobile-menu-backdrop {
   isolation: isolate;
 }
 
-.pl-public-mobile-menu [data-pl-mobile-menu-panel] {
-  background: #ffffff !important;
+.pl-public-mobile-menu[data-pl-mobile-menu-panel] {
+  isolation: isolate;
+  background-color: #ffffff;
 }
 
 /* ─── HUD grid background ─── */

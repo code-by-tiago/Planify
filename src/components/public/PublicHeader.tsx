@@ -75,30 +75,30 @@ export function PublicHeader({ active }: PublicHeaderProps) {
     createPortal(
       <AnimatePresence>
         {open ? (
-          <motion.div
-            key="pl-public-mobile-menu"
-            className="pl-public-mobile-menu fixed inset-0 z-[200] lg:hidden"
-            data-pl-mobile-menu-overlay
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            role="dialog"
-            aria-modal="true"
-            aria-label="Menu de navegação"
-          >
-            <button
+          <>
+            <motion.button
+              key="pl-public-mobile-backdrop"
               type="button"
-              className="absolute inset-0 bg-slate-950/55 backdrop-blur-[2px]"
+              className="pl-public-mobile-menu-backdrop fixed inset-0 z-[200] bg-slate-950/70 backdrop-blur-sm lg:hidden"
+              data-pl-mobile-menu-overlay
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
               aria-label="Fechar menu"
               onClick={() => setOpen(false)}
             />
             <motion.aside
+              key="pl-public-mobile-panel"
               data-pl-mobile-menu-panel
+              role="dialog"
+              aria-modal="true"
+              aria-label="Menu de navegação"
               initial={reduce ? { opacity: 0 } : { x: "100%" }}
               animate={reduce ? { opacity: 1 } : { x: 0 }}
               exit={reduce ? { opacity: 0 } : { x: "100%" }}
               transition={{ type: "tween", duration: reduce ? 0.15 : 0.28, ease: "easeOut" }}
-              className="absolute right-0 top-0 flex h-[100dvh] w-[min(100%,20rem)] flex-col border-l border-slate-200/80 bg-white p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-[max(1.25rem,env(safe-area-inset-top))] shadow-2xl"
+              className="pl-public-mobile-menu fixed right-0 top-0 z-[201] flex h-[100dvh] w-[min(100%,20rem)] flex-col border-l border-slate-200 bg-white p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-[max(1.25rem,env(safe-area-inset-top))] shadow-2xl lg:hidden"
             >
               <div className="flex items-center justify-between gap-3">
                 <PlanifyBrand href="/" hideTagline />
@@ -153,7 +153,7 @@ export function PublicHeader({ active }: PublicHeaderProps) {
                 </Link>
               </div>
             </motion.aside>
-          </motion.div>
+          </>
         ) : null}
       </AnimatePresence>,
       document.body,

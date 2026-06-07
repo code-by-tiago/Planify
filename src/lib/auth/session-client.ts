@@ -147,6 +147,25 @@ export async function signUpAndGoToPlans(params: {
   password: string;
   fullName?: string;
 }): Promise<LoginResult> {
+  try {
+    const statusResponse = await fetch("/api/public/registrations-status", {
+      cache: "no-store",
+    });
+    const statusJson = await statusResponse.json().catch(() => null);
+
+    if (statusJson?.success && statusJson.registrationsEnabled === false) {
+      return {
+        success: false,
+        premium: false,
+        redirectTo: "/login",
+        message:
+          "Novos cadastros estão temporariamente suspensos. Tente novamente mais tarde ou entre em contato com o suporte.",
+      };
+    }
+  } catch {
+    // Se o endpoint falhar, não bloqueia cadastro legado.
+  }
+
   const supabase = getSupabaseBrowserClient();
 
   const { data, error } = await supabase.auth.signUp({

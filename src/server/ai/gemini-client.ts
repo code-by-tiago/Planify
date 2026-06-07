@@ -9,6 +9,7 @@
 
 import type { AIModelTier } from "../../lib/ai/aiConfig";
 import type { GeminiGenerateJSONOptions } from "../../types/ai";
+import { getPlatformSettingsSync } from "../admin/platform-settings-service";
 import { resolveGeminiCachedContentName } from "./gemini-context-cache";
 import { getGeminiSdk } from "./gemini-sdk";
 import {
@@ -71,9 +72,11 @@ function resolveModel(
     return normalizeModelName(legacyModel);
   }
 
+  const settingsModel = getPlatformSettingsSync().defaultAiModel;
   const fromEnv =
-    process.env.GEMINI_MODEL_DEFAULT ??
-    process.env.GEMINI_MODEL ??
+    settingsModel ||
+    process.env.GEMINI_MODEL_DEFAULT ||
+    process.env.GEMINI_MODEL ||
     "gemini-2.5-flash";
 
   return normalizeModelName(fromEnv);

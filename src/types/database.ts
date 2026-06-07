@@ -798,6 +798,23 @@ export type Database = {
           updated_at?: string;
         }
       >;
+      platform_settings: TableDefinition<
+        {
+          key: string;
+          value: Json;
+          updated_at: string;
+        },
+        {
+          key: string;
+          value?: Json;
+          updated_at?: string;
+        },
+        {
+          key?: string;
+          value?: Json;
+          updated_at?: string;
+        }
+      >;
     };
     Views: Record<string, never>;
     Functions: {

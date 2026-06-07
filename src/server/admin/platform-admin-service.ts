@@ -304,3 +304,18 @@ export async function deleteAdminGeneratedMaterial(
     throw new Error(error.message);
   }
 }
+
+export {
+  fetchAdminActivityFeed,
+  fetchAdminDashboardMetrics,
+  type AdminActivityFeedItem,
+  type AdminDashboardMetrics,
+  type AdminFinancialMetrics,
+} from "./platform-admin-metrics";
+
+export {
+  areRegistrationsEnabled,
+  fetchPlatformSettings,
+  updatePlatformSettings,
+  type PlatformSettings,
+} from "./platform-settings-service";

@@ -31,7 +31,7 @@ export const teachyHomeFeatures: {
   {
     title: "Publique na turma do Classroom",
     description:
-      "No editor, conecte o Google e envie o material à turma — DOCX no Drive e atividade criada automaticamente. Também compartilhe com outras professoras no Marketplace.",
+      "No editor, conecte o Google e envie o material à turma — DOCX no Drive e atividade criada automaticamente. Também compartilhe com outros professores no Marketplace.",
     cta: "Abrir editor",
     href: "/dashboard?secao=editor",
     icon: "externalLink",

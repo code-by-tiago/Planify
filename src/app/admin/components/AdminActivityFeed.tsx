@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import {
   AdminPanel,
   adminButtonPrimaryClassName,
+  adminTableClassName,
+  adminTableWrapClassName,
   formatAdminDate,
 } from "./AdminCommandCenterShell";
 
@@ -58,12 +60,12 @@ export function AdminActivityFeed() {
 
   return (
     <AdminPanel
-      title="Atividade ao vivo · Brasil"
-      subtitle="Últimas 20 gerações · auto-refresh 30s · PII mascarada"
+      title="Atividade recente"
+      subtitle="Últimas 20 gerações · atualização automática a cada 30s"
     >
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <span className="text-[10px] text-slate-600">
-          {lastSync ? `Sync: ${formatAdminDate(lastSync)}` : "Aguardando sync…"}
+        <span className="text-xs text-slate-600">
+          {lastSync ? `Atualizado ${formatAdminDate(lastSync)}` : "Aguardando…"}
         </span>
         <button
           type="button"
@@ -85,30 +87,27 @@ export function AdminActivityFeed() {
       ) : items.length === 0 ? (
         <p className="text-sm text-slate-500">Nenhuma geração recente.</p>
       ) : (
-        <div className="max-h-80 overflow-y-auto rounded-lg border border-slate-800/80">
-          <table className="min-w-full text-left text-xs">
-            <thead className="sticky top-0 bg-[#0d121c] text-[10px] font-bold uppercase tracking-wider text-slate-500">
+        <div className={`${adminTableWrapClassName()} max-h-80 overflow-y-auto`}>
+          <table className={adminTableClassName()}>
+            <thead className="sticky top-0">
               <tr>
-                <th className="px-3 py-2">Usuário</th>
-                <th className="px-3 py-2">Tipo</th>
-                <th className="px-3 py-2">Turma</th>
-                <th className="px-3 py-2">Quando</th>
+                <th className="px-3 py-2.5">Usuário</th>
+                <th className="px-3 py-2.5">Tipo</th>
+                <th className="px-3 py-2.5">Turma</th>
+                <th className="px-3 py-2.5">Quando</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="text-slate-300">
               {items.map((item) => (
-                <tr
-                  key={item.id}
-                  className="border-t border-slate-800/60 text-slate-300 hover:bg-slate-800/30"
-                >
-                  <td className="px-3 py-2 font-mono text-[11px] text-cyan-400/90">
+                <tr key={item.id}>
+                  <td className="px-3 py-2.5 font-mono text-xs text-cyan-400/90">
                     {item.maskedUserId}
                   </td>
-                  <td className="px-3 py-2">{item.tipo}</td>
-                  <td className="px-3 py-2 text-slate-400">
+                  <td className="px-3 py-2.5">{item.tipo}</td>
+                  <td className="px-3 py-2.5 text-slate-400">
                     {item.className || "—"}
                   </td>
-                  <td className="px-3 py-2 whitespace-nowrap text-slate-500">
+                  <td className="px-3 py-2.5 whitespace-nowrap text-slate-500">
                     {formatAdminDate(item.createdAt)}
                   </td>
                 </tr>

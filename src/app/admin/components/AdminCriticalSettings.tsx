@@ -95,14 +95,14 @@ export function AdminCriticalSettings() {
 
   return (
     <AdminPanel
-      title="Configurações Críticas"
-      subtitle="Kill switch de cadastros · modelo IA global · owner only"
+      title="Configurações da plataforma"
+      subtitle="Cadastros públicos e modelo IA padrão"
     >
       {error ? <p className="mb-3 text-sm text-rose-400">{error}</p> : null}
       {message ? <p className="mb-3 text-sm text-emerald-400">{message}</p> : null}
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <div className="rounded-lg border border-slate-800/80 bg-[#0d121c] p-4">
+        <div className="rounded-xl border border-slate-800/60 bg-slate-950/40 p-4">
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-sm font-bold text-slate-200">Cadastros globais</p>
@@ -144,7 +144,7 @@ export function AdminCriticalSettings() {
           </p>
         </div>
 
-        <div className="rounded-lg border border-slate-800/80 bg-[#0d121c] p-4">
+        <div className="rounded-xl border border-slate-800/60 bg-slate-950/40 p-4">
           <p className="text-sm font-bold text-slate-200">Modelo IA padrão</p>
           <p className="mt-1 text-[11px] text-slate-500">
             Sobrescreve GEMINI_MODEL_DEFAULT no runtime (cache 30s).

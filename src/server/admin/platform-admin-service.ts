@@ -1,5 +1,10 @@
 import type { CreateSchoolInput } from "@/types/school";
 import type { Json, TablesInsert } from "@/types/database";
+import {
+  INSTITUTIONAL_PLAN_LABELS,
+  parseInstitutionalPlanFromMetadata,
+  type InstitutionalPlanKey,
+} from "@/lib/school/institutional-plan";
 import { getSupabaseAdminClient } from "../supabase/admin-client";
 
 export type AdminSchoolRow = {
@@ -9,6 +14,8 @@ export type AdminSchoolRow = {
   state: string | null;
   memberCount: number;
   classCount: number;
+  institutionalPlan: InstitutionalPlanKey | null;
+  planLabel: string | null;
   createdAt: string;
 };
 
@@ -51,7 +58,7 @@ export async function listAdminSchools(): Promise<AdminSchoolRow[]> {
 
   const { data: schools, error } = await supabase
     .from("schools")
-    .select("id,name,city,state,created_at")
+    .select("id,name,city,state,metadata,created_at")
     .order("name", { ascending: true });
 
   if (error) {
@@ -63,6 +70,7 @@ export async function listAdminSchools(): Promise<AdminSchoolRow[]> {
     name: string;
     city: string | null;
     state: string | null;
+    metadata: unknown;
     created_at: string;
   }>;
 
@@ -93,15 +101,66 @@ export async function listAdminSchools(): Promise<AdminSchoolRow[]> {
     classCountBySchool.set(schoolId, (classCountBySchool.get(schoolId) || 0) + 1);
   }
 
-  return rows.map((row) => ({
-    id: row.id,
-    name: row.name,
-    city: row.city,
-    state: row.state,
-    memberCount: memberCountBySchool.get(row.id) || 0,
-    classCount: classCountBySchool.get(row.id) || 0,
-    createdAt: row.created_at,
-  }));
+  return rows.map((row) => {
+    const institutionalPlan = parseInstitutionalPlanFromMetadata(row.metadata);
+
+    return {
+      id: row.id,
+      name: row.name,
+      city: row.city,
+      state: row.state,
+      memberCount: memberCountBySchool.get(row.id) || 0,
+      classCount: classCountBySchool.get(row.id) || 0,
+      institutionalPlan,
+      planLabel: institutionalPlan
+        ? INSTITUTIONAL_PLAN_LABELS[institutionalPlan]
+        : null,
+      createdAt: row.created_at,
+    };
+  });
+}
+
+export async function updateAdminSchoolLicense(
+  schoolId: string,
+  institutionalPlan: InstitutionalPlanKey | null,
+): Promise<{ id: string; institutionalPlan: InstitutionalPlanKey | null }> {
+  const supabase = getSupabaseAdminClient();
+  const id = String(schoolId || "").trim();
+
+  if (!id) {
+    throw new Error("Informe o id da escola.");
+  }
+
+  const { data: school, error: lookupError } = await supabase
+    .from("schools")
+    .select("id,metadata")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (lookupError || !school) {
+    throw new Error(lookupError?.message || "Escola não encontrada.");
+  }
+
+  const metadata = {
+    ...((school as { metadata?: Record<string, unknown> }).metadata || {}),
+  };
+
+  if (institutionalPlan) {
+    metadata.institutionalPlan = institutionalPlan;
+  } else {
+    delete metadata.institutionalPlan;
+  }
+
+  const { error } = await supabase
+    .from("schools")
+    .update({ metadata: metadata as Json })
+    .eq("id", id);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return { id, institutionalPlan };
 }
 
 export async function createAdminSchool(

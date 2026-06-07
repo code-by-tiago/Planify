@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { AdminQualidadePanel } from "./AdminQualidadePanel";
 import { AdminActivityFeed } from "./components/AdminActivityFeed";
+import type { InstitutionalPlanKey } from "@/lib/school/institutional-plan";
+import { INSTITUTIONAL_PLAN_LABELS } from "@/lib/school/institutional-plan";
 import {
   AdminCommandCenterShell,
   AdminPanel,
@@ -11,6 +13,8 @@ import {
   adminButtonDangerClassName,
   adminButtonPrimaryClassName,
   adminInputClassName,
+  adminTableClassName,
+  adminTableWrapClassName,
   formatAdminDate,
   type AdminTabId,
 } from "./components/AdminCommandCenterShell";
@@ -25,8 +29,20 @@ type AdminSchool = {
   state: string | null;
   memberCount: number;
   classCount: number;
+  institutionalPlan: InstitutionalPlanKey | null;
+  planLabel: string | null;
   createdAt: string;
 };
+
+const INSTITUTIONAL_PLAN_OPTIONS: Array<{
+  value: InstitutionalPlanKey | "";
+  label: string;
+}> = [
+  { value: "", label: "Sem plano" },
+  { value: "pequena", label: INSTITUTIONAL_PLAN_LABELS.pequena },
+  { value: "media", label: INSTITUTIONAL_PLAN_LABELS.media },
+  { value: "grande", label: INSTITUTIONAL_PLAN_LABELS.grande },
+];
 
 type PlatformUser = {
   id: string;
@@ -108,10 +124,17 @@ type HealthReport = {
 };
 
 const quickLinks = [
-  { href: "/admin/biblioteca", title: "Biblioteca Premium", text: "Materiais oficiais" },
-  { href: "/admin#qualidade-ia", title: "Qualidade IA", text: "Telemetria de gerações" },
-  { href: "/dashboard", title: "Painel Planify", text: "Visão professor" },
-  { href: "/planos", title: "Planos", text: "Página pública" },
+  { href: "/admin/biblioteca", title: "Biblioteca Premium" },
+  { href: "/dashboard", title: "Painel professor" },
+  { href: "/planos", title: "Página de planos" },
+];
+
+const supabaseOnlyTasks = [
+  "Criar conta de usuário (auth.users) e reset de senha",
+  "Alterar papel global (profiles.role) e bloquear conta",
+  "Assinaturas Stripe manuais e reembolsos",
+  "Moderação marketplace (aprovar/publicar materiais de terceiros)",
+  "Migrations, RLS, backups e logs de infraestrutura",
 ];
 
 function statusClass(status: HealthCheck["status"]) {
@@ -134,6 +157,7 @@ export function AdminControleClient() {
   const [newSchoolCity, setNewSchoolCity] = useState("");
   const [newSchoolState, setNewSchoolState] = useState("");
   const [schoolSaving, setSchoolSaving] = useState(false);
+  const [licenseSavingId, setLicenseSavingId] = useState("");
   const [schoolMessage, setSchoolMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [platformLoading, setPlatformLoading] = useState(false);
@@ -305,6 +329,36 @@ export function AdminControleClient() {
     }
   }
 
+  async function updateSchoolLicense(
+    schoolId: string,
+    institutionalPlan: InstitutionalPlanKey | null,
+  ) {
+    setLicenseSavingId(schoolId);
+    setPlatformError("");
+
+    try {
+      const response = await fetch("/api/admin/schools", {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: schoolId, institutionalPlan }),
+      });
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok || !data?.success) {
+        throw new Error(data?.error?.message || "Não foi possível atualizar o plano.");
+      }
+
+      await loadSchools();
+    } catch (err) {
+      setPlatformError(
+        err instanceof Error ? err.message : "Erro ao atualizar licença da escola.",
+      );
+    } finally {
+      setLicenseSavingId("");
+    }
+  }
+
   async function deleteMaterial(materialId: string) {
     if (!window.confirm("Excluir este material gerado? Esta ação não pode ser desfeita.")) {
       return;
@@ -385,24 +439,22 @@ export function AdminControleClient() {
         ) : null}
 
         <AdminActivityFeed />
-        <AdminCriticalSettings />
 
-        <AdminPanel title="Atalhos operacionais">
-          <div className="grid gap-2 sm:grid-cols-2">
+        <AdminPanel title="Atalhos">
+          <div className="flex flex-wrap gap-2">
             {quickLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
-                className="rounded-lg border border-slate-800/80 bg-[#0d121c] p-3 transition hover:border-cyan-500/30 hover:bg-slate-800/40"
+                className="pl-admin-btn-ghost px-4 py-2"
               >
-                <p className="text-sm font-bold text-slate-200">{link.title}</p>
-                <p className="text-[11px] text-slate-500">{link.text}</p>
+                {link.title}
               </Link>
             ))}
           </div>
-          <p className="mt-3 text-[10px] text-slate-600">
-            Overview: {formatAdminDate(overview.checkedAt)}
-            {metrics ? ` · Métricas: ${formatAdminDate(metrics.checkedAt)}` : ""}
+          <p className="mt-3 text-xs text-slate-600">
+            Dados de {formatAdminDate(overview.checkedAt)}
+            {metrics ? ` · métricas ${formatAdminDate(metrics.checkedAt)}` : ""}
           </p>
         </AdminPanel>
       </div>
@@ -430,50 +482,47 @@ export function AdminControleClient() {
           </button>
         </div>
 
-        <div className="overflow-hidden rounded-xl border border-slate-800/80">
-          <table className="min-w-full text-left text-xs">
-            <thead className="bg-[#0d121c] text-[10px] font-bold uppercase tracking-wider text-slate-500">
+        <div className={adminTableWrapClassName()}>
+          <table className={adminTableClassName()}>
+            <thead>
               <tr>
-                <th className="px-3 py-2">Usuário</th>
-                <th className="px-3 py-2">Papel</th>
-                <th className="px-3 py-2">Plano</th>
-                <th className="px-3 py-2">Cadastro</th>
+                <th className="px-3 py-2.5">Usuário</th>
+                <th className="px-3 py-2.5">Papel</th>
+                <th className="px-3 py-2.5">Plano</th>
+                <th className="px-3 py-2.5">Cadastro</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="text-slate-300">
               {platformUsers.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="px-3 py-6 text-center text-slate-500">
+                  <td colSpan={4} className="px-3 py-8 text-center text-slate-500">
                     Nenhum usuário encontrado.
                   </td>
                 </tr>
               ) : (
                 platformUsers.map((user) => (
-                  <tr
-                    key={user.id}
-                    className="border-t border-slate-800/60 text-slate-300 hover:bg-slate-800/20"
-                  >
-                    <td className="px-3 py-2">
-                      <p className="font-semibold text-slate-200">
+                  <tr key={user.id}>
+                    <td className="px-3 py-2.5">
+                      <p className="font-medium text-slate-200">
                         {user.fullName || user.email}
                       </p>
-                      <p className="text-[11px] text-slate-500">{user.email}</p>
+                      <p className="text-xs text-slate-500">{user.email}</p>
                       {user.schoolName ? (
-                        <p className="text-[10px] text-slate-600">{user.schoolName}</p>
+                        <p className="text-xs text-slate-600">{user.schoolName}</p>
                       ) : null}
                     </td>
-                    <td className="px-3 py-2">
-                      <span className="rounded bg-slate-800 px-2 py-0.5 text-[10px] font-bold uppercase text-violet-300">
+                    <td className="px-3 py-2.5">
+                      <span className="rounded-md bg-slate-800/80 px-2 py-0.5 text-xs text-violet-300">
                         {user.role}
                       </span>
-                      <span className="ml-1 rounded bg-slate-800 px-2 py-0.5 text-[10px] text-slate-400">
+                      <span className="ml-1 rounded-md bg-slate-800/80 px-2 py-0.5 text-xs text-slate-400">
                         {user.status}
                       </span>
                     </td>
-                    <td className="px-3 py-2 text-cyan-400/90">
+                    <td className="px-3 py-2.5 text-cyan-400/90">
                       {user.planKey || "—"}
                     </td>
-                    <td className="px-3 py-2 text-slate-500">
+                    <td className="px-3 py-2.5 text-slate-500">
                       {formatAdminDate(user.createdAt)}
                     </td>
                   </tr>
@@ -482,6 +531,9 @@ export function AdminControleClient() {
             </tbody>
           </table>
         </div>
+        <p className="text-xs text-slate-600">
+          Somente leitura. Para criar usuários ou alterar papéis, use o Supabase Auth / SQL.
+        </p>
       </div>
     );
   }
@@ -489,7 +541,7 @@ export function AdminControleClient() {
   function renderSchools() {
     return (
       <div className="grid gap-4">
-        <AdminPanel title="Nova escola B2B">
+        <AdminPanel title="Nova escola" subtitle="Cadastro B2B · licença definida na tabela abaixo">
           <div className="grid gap-2 sm:grid-cols-3">
             <input
               type="text"
@@ -526,37 +578,55 @@ export function AdminControleClient() {
           ) : null}
         </AdminPanel>
 
-        <div className="overflow-hidden rounded-xl border border-slate-800/80">
-          <table className="min-w-full text-left text-xs">
-            <thead className="bg-[#0d121c] text-[10px] font-bold uppercase tracking-wider text-slate-500">
+        <div className={adminTableWrapClassName()}>
+          <table className={adminTableClassName()}>
+            <thead>
               <tr>
-                <th className="px-3 py-2">Escola</th>
-                <th className="px-3 py-2">Local</th>
-                <th className="px-3 py-2">Membros</th>
-                <th className="px-3 py-2">Turmas</th>
-                <th className="px-3 py-2">Criada</th>
+                <th className="px-3 py-2.5">Escola</th>
+                <th className="px-3 py-2.5">Local</th>
+                <th className="px-3 py-2.5">Licença</th>
+                <th className="px-3 py-2.5">Membros</th>
+                <th className="px-3 py-2.5">Turmas</th>
+                <th className="px-3 py-2.5">Criada</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="text-slate-300">
               {schools.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-3 py-6 text-center text-slate-500">
+                  <td colSpan={6} className="px-3 py-8 text-center text-slate-500">
                     Nenhuma escola cadastrada.
                   </td>
                 </tr>
               ) : (
                 schools.map((school) => (
-                  <tr
-                    key={school.id}
-                    className="border-t border-slate-800/60 text-slate-300 hover:bg-slate-800/20"
-                  >
-                    <td className="px-3 py-2 font-semibold text-slate-200">{school.name}</td>
-                    <td className="px-3 py-2 text-slate-500">
+                  <tr key={school.id}>
+                    <td className="px-3 py-2.5 font-medium text-slate-200">{school.name}</td>
+                    <td className="px-3 py-2.5 text-slate-500">
                       {[school.city, school.state].filter(Boolean).join(" / ") || "—"}
                     </td>
-                    <td className="px-3 py-2">{school.memberCount}</td>
-                    <td className="px-3 py-2">{school.classCount}</td>
-                    <td className="px-3 py-2 text-slate-500">
+                    <td className="px-3 py-2.5">
+                      <select
+                        value={school.institutionalPlan || ""}
+                        disabled={licenseSavingId === school.id}
+                        onChange={(event) => {
+                          const value = event.target.value;
+                          void updateSchoolLicense(
+                            school.id,
+                            value ? (value as InstitutionalPlanKey) : null,
+                          );
+                        }}
+                        className={`${adminInputClassName()} max-w-[11rem] text-xs`}
+                      >
+                        {INSTITUTIONAL_PLAN_OPTIONS.map((option) => (
+                          <option key={option.value || "none"} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                    <td className="px-3 py-2.5">{school.memberCount}</td>
+                    <td className="px-3 py-2.5">{school.classCount}</td>
+                    <td className="px-3 py-2.5 text-slate-500">
                       {formatAdminDate(school.createdAt)}
                     </td>
                   </tr>
@@ -565,6 +635,9 @@ export function AdminControleClient() {
             </tbody>
           </table>
         </div>
+        <p className="text-xs text-slate-600">
+          Convites e turmas são geridos pelo gestor em /gestor após vincular o diretor.
+        </p>
       </div>
     );
   }
@@ -590,48 +663,43 @@ export function AdminControleClient() {
           </button>
         </div>
 
-        <div className="overflow-hidden rounded-xl border border-slate-800/80">
-          <table className="min-w-full text-left text-xs">
-            <thead className="bg-[#0d121c] text-[10px] font-bold uppercase tracking-wider text-slate-500">
+        <div className={adminTableWrapClassName()}>
+          <table className={adminTableClassName()}>
+            <thead>
               <tr>
-                <th className="px-3 py-2">Material</th>
-                <th className="px-3 py-2">Autor</th>
-                <th className="px-3 py-2">BNCC</th>
-                <th className="px-3 py-2">Quando</th>
-                <th className="px-3 py-2" />
+                <th className="px-3 py-2.5">Material</th>
+                <th className="px-3 py-2.5">Autor</th>
+                <th className="px-3 py-2.5">BNCC</th>
+                <th className="px-3 py-2.5">Quando</th>
+                <th className="px-3 py-2.5" />
               </tr>
             </thead>
-            <tbody>
+            <tbody className="text-slate-300">
               {platformMaterials.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-3 py-6 text-center text-slate-500">
+                  <td colSpan={5} className="px-3 py-8 text-center text-slate-500">
                     Nenhum material encontrado.
                   </td>
                 </tr>
               ) : (
                 platformMaterials.map((material) => (
-                  <tr
-                    key={material.id}
-                    className="border-t border-slate-800/60 text-slate-300 hover:bg-slate-800/20"
-                  >
-                    <td className="px-3 py-2">
-                      <p className="font-semibold text-slate-200">{material.title}</p>
-                      <p className="text-[11px] text-slate-500">{material.tipo}</p>
+                  <tr key={material.id}>
+                    <td className="px-3 py-2.5">
+                      <p className="font-medium text-slate-200">{material.title}</p>
+                      <p className="text-xs text-slate-500">{material.tipo}</p>
                       {material.className ? (
-                        <p className="text-[10px] text-slate-600">
-                          Turma {material.className}
-                        </p>
+                        <p className="text-xs text-slate-600">Turma {material.className}</p>
                       ) : null}
                     </td>
-                    <td className="px-3 py-2 text-[11px] text-slate-500">
+                    <td className="px-3 py-2.5 text-xs text-slate-500">
                       {material.userEmail || "—"}
                       {material.schoolName ? ` · ${material.schoolName}` : ""}
                     </td>
-                    <td className="px-3 py-2 text-emerald-400">{material.bnccCount}</td>
-                    <td className="px-3 py-2 text-slate-500">
+                    <td className="px-3 py-2.5 text-emerald-400">{material.bnccCount}</td>
+                    <td className="px-3 py-2.5 text-slate-500">
                       {formatAdminDate(material.createdAt)}
                     </td>
-                    <td className="px-3 py-2">
+                    <td className="px-3 py-2.5">
                       <button
                         type="button"
                         onClick={() => void deleteMaterial(material.id)}
@@ -670,15 +738,15 @@ export function AdminControleClient() {
             {health.featureFlags.map((flag) => (
               <div
                 key={flag.key}
-                className="flex items-center justify-between rounded-lg border border-slate-800/80 bg-[#0d121c] px-3 py-2"
+                className="flex items-center justify-between rounded-lg border border-slate-800/60 bg-slate-950/40 px-3 py-2.5"
               >
                 <span className="text-xs text-slate-400">{flag.label}</span>
                 <span
-                  className={`text-[10px] font-bold uppercase ${
+                  className={`text-xs font-semibold ${
                     flag.enabled ? "text-emerald-400" : "text-slate-600"
                   }`}
                 >
-                  {flag.enabled ? "On" : "Off"}
+                  {flag.enabled ? "Ativo" : "Inativo"}
                 </span>
               </div>
             ))}
@@ -686,6 +754,20 @@ export function AdminControleClient() {
         </AdminPanel>
 
         <AdminCriticalSettings />
+
+        <AdminPanel
+          title="Ainda requer Supabase ou painéis externos"
+          subtitle="Operações não expostas neste admin"
+        >
+          <ul className="grid gap-2 text-sm text-slate-400 sm:grid-cols-2">
+            {supabaseOnlyTasks.map((task) => (
+              <li key={task} className="flex gap-2">
+                <span className="text-slate-600">·</span>
+                <span>{task}</span>
+              </li>
+            ))}
+          </ul>
+        </AdminPanel>
       </div>
     );
   }
@@ -693,7 +775,7 @@ export function AdminControleClient() {
   function renderTabContent() {
     if (activeTab === "qualidade-ia") {
       return (
-        <div className="rounded-xl border border-slate-800/80 bg-slate-900/30 p-4 [&_.text-slate-950]:text-slate-100 [&_.text-slate-600]:text-slate-400 [&_.bg-white]:bg-[#0d121c] [&_.border-slate-200]:border-slate-800">
+        <div className="pl-admin-panel p-4 [&_.text-slate-950]:text-slate-100 [&_.text-slate-600]:text-slate-400 [&_.bg-white]:bg-[#0d121c] [&_.border-slate-200]:border-slate-800">
           <AdminQualidadePanel />
         </div>
       );
@@ -722,8 +804,8 @@ export function AdminControleClient() {
       error={error || platformError || undefined}
     >
       {isLoading ? (
-        <div className="rounded-xl border border-slate-800/80 bg-[#0d121c] p-10 text-center text-sm text-slate-500">
-          Sincronizando dados…
+        <div className="pl-admin-panel p-10 text-center text-sm text-slate-500">
+          Carregando…
         </div>
       ) : (
         renderTabContent()

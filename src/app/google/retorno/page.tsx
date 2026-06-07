@@ -6,6 +6,7 @@ import {
   ensurePremiumSessionCookies,
   getCurrentAccessToken,
 } from "@/lib/auth/session-client";
+import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 
 function sanitizeReturnTo(value: string | null): string {
   const raw = String(value || "/dashboard?secao=editor").trim();
@@ -32,6 +33,30 @@ function buildDestination(
   return destination.pathname + destination.search;
 }
 
+function buildLoginRedirect(destination: string, reason: "session_expired" | "auth_required") {
+  const loginUrl = new URL("/login", window.location.origin);
+  loginUrl.searchParams.set("redirect", destination);
+  loginUrl.searchParams.set("sessao_expirada", reason === "session_expired" ? "1" : "0");
+  return loginUrl.pathname + loginUrl.search;
+}
+
+async function resolveAccessTokenAfterOAuth(): Promise<string | null> {
+  const supabase = getSupabaseBrowserClient();
+  const { data: sessionData } = await supabase.auth.getSession();
+  let token = sessionData.session?.access_token || null;
+
+  if (token) {
+    return token;
+  }
+
+  const { data: refreshData, error } = await supabase.auth.refreshSession();
+  if (!error && refreshData.session?.access_token) {
+    return refreshData.session.access_token;
+  }
+
+  return getCurrentAccessToken();
+}
+
 export default function GoogleOAuthReturnPage() {
   const [message, setMessage] = useState("Finalizando conexão com o Google…");
 
@@ -44,12 +69,15 @@ export default function GoogleOAuthReturnPage() {
       const googleStatus = params.get("google");
       const googleError = params.get("google_error");
       const destination = buildDestination(returnTo, googleStatus, googleError);
+      const oauthCompleted = googleStatus === "connected" || Boolean(googleError);
 
-      const token = await getCurrentAccessToken();
+      const token = await resolveAccessTokenAfterOAuth();
 
       if (!token) {
-        const loginUrl = `/login?redirect=${encodeURIComponent(destination)}`;
-        if (active) window.location.replace(loginUrl);
+        const reason = oauthCompleted ? "session_expired" : "auth_required";
+        if (active) {
+          window.location.replace(buildLoginRedirect(destination, reason));
+        }
         return;
       }
 
@@ -62,6 +90,9 @@ export default function GoogleOAuthReturnPage() {
           cookiesReady = true;
           break;
         }
+        if (attempt < 2) {
+          await new Promise((resolve) => window.setTimeout(resolve, 250));
+        }
       }
 
       const bearerStatus = await fetchPlanifyAccessStatus(token);
@@ -70,7 +101,10 @@ export default function GoogleOAuthReturnPage() {
 
       if (!bearerStatus.authenticated) {
         window.location.replace(
-          `/login?redirect=${encodeURIComponent(destination)}`,
+          buildLoginRedirect(
+            destination,
+            oauthCompleted ? "session_expired" : "auth_required",
+          ),
         );
         return;
       }

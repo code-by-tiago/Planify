@@ -5,6 +5,28 @@ export type ClassroomCourse = {
   courseState?: string;
 };
 
+function mapClassroomApiError(status: number, message?: string): string {
+  const normalized = String(message || "").toLowerCase();
+
+  if (
+    status === 403 ||
+    normalized.includes("permission") ||
+    normalized.includes("insufficient") ||
+    normalized.includes("not authorized")
+  ) {
+    return "Conta Google sem perfil de professor no Classroom. Use uma conta de professor com turmas ativas.";
+  }
+
+  if (status === 404) {
+    return "Google Classroom não está disponível para esta conta Google.";
+  }
+
+  return (
+    message ||
+    "Não foi possível listar turmas do Google Classroom. Verifique se a conta tem Classroom ativo."
+  );
+}
+
 export type ClassroomPublishResult = {
   courseWorkId: string;
   alternateLink: string | null;
@@ -45,10 +67,7 @@ export async function listGoogleClassroomCourses(
     };
 
     if (!response.ok) {
-      throw new Error(
-        data.error?.message ||
-          "Não foi possível listar turmas do Google Classroom. Verifique se a conta tem Classroom ativo.",
-      );
+      throw new Error(mapClassroomApiError(response.status, data.error?.message));
     }
 
     for (const course of data.courses || []) {
@@ -110,8 +129,11 @@ export async function publishDriveFileToClassroom(params: {
 
   if (!response.ok || !data.id) {
     throw new Error(
-      data.error?.message ||
-        "Não foi possível publicar o material na turma do Classroom.",
+      mapClassroomApiError(
+        response.status,
+        data.error?.message ||
+          "Não foi possível publicar o material na turma do Classroom.",
+      ),
     );
   }
 

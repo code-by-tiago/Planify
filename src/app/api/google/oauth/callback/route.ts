@@ -32,20 +32,26 @@ export async function GET(request: NextRequest) {
     });
   }
 
-  const error = request.nextUrl.searchParams.get("error");
-
-  if (error) {
-    return redirectWith(request, "/editor", {
-      google_error: `Autorização cancelada ou negada (${error}).`,
-    });
-  }
-
   const code = request.nextUrl.searchParams.get("code");
   const stateRaw = request.nextUrl.searchParams.get("state");
   const state = stateRaw ? verifyGoogleOAuthState(stateRaw) : null;
+  const returnTo = state?.returnTo || "/dashboard?secao=editor";
+
+  const error = request.nextUrl.searchParams.get("error");
+
+  if (error) {
+    return redirectWith(request, "/google/retorno", {
+      returnTo,
+      google_error:
+        error === "access_denied"
+          ? "Autorização Google cancelada. Conecte novamente para usar o Classroom."
+          : `Autorização cancelada ou negada (${error}).`,
+    });
+  }
 
   if (!code || !state) {
-    return redirectWith(request, "/editor", {
+    return redirectWith(request, "/google/retorno", {
+      returnTo,
       google_error: "Resposta OAuth inválida. Tente conectar de novo.",
     });
   }

@@ -70,16 +70,21 @@ export function LoginPageClient() {
   const safeRedirect = sanitizeInternalRedirect(redirectParam);
   const premiumRequired = searchParams.get("premium") === "required";
   const cadastroConfirmar = searchParams.get("cadastro") === "confirmar";
+  const sessaoExpirada = searchParams.get("sessao_expirada") === "1";
 
   const [mode, setMode] = useState<Mode>("login");
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState(() =>
-    cadastroConfirmar
-      ? "Confirme o e-mail que enviamos e depois entre com sua senha para escolher um plano."
-      : "",
-  );
+  const [message, setMessage] = useState(() => {
+    if (cadastroConfirmar) {
+      return "Confirme o e-mail que enviamos e depois entre com sua senha para escolher um plano.";
+    }
+    if (sessaoExpirada) {
+      return "Sua sessão expirou durante a conexão com o Google. Entre novamente para voltar ao editor.";
+    }
+    return "";
+  });
 
   const loginHint = useMemo(() => {
     if (premiumRequired) {

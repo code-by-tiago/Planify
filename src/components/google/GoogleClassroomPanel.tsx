@@ -52,6 +52,12 @@ export function GoogleClassroomPanel({
         const list = await fetchClassroomCourses();
         setCourses(list);
         setCourseId((current) => current || list[0]?.id || "");
+
+        if (list.length === 0) {
+          setError(
+            "Conta Google conectada, mas nenhuma turma de professor foi encontrada. Use uma conta com perfil de professor no Google Classroom.",
+          );
+        }
       } else {
         setCourses([]);
         setCourseId("");

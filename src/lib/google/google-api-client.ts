@@ -67,7 +67,9 @@ export async function startGoogleOAuth(returnTo = "/editor"): Promise<void> {
     );
   }
 
-  window.location.href = buildGoogleOAuthStartUrl(returnTo);
+  throw new Error(
+    data?.error?.message || "Não foi possível iniciar a conexão com o Google.",
+  );
 }
 
 export async function disconnectGoogle(): Promise<void> {

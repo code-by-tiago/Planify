@@ -587,58 +587,425 @@ body .planify-hud.pl-hud-shell .pl-sidebar nav .pl-sidebar-nav-icon svg {
   color: #67e8f9 !important;
 }
 
-/* ─── Hub (social dashboard home) ─── */
+/* ─── Hub (dashboard studio home) ─── */
 .planify-hud .pl-hud-hub {
-  background: var(--planify-canvas);
+  position: relative;
+  isolation: isolate;
+  background:
+    radial-gradient(ellipse 90% 50% at 50% -10%, rgba(0, 212, 255, 0.07), transparent 55%),
+    var(--planify-canvas);
 }
 
-.planify-hud .pl-hud-hub-welcome {
+.planify-hud .pl-hud-hub-shell-header {
+  background: rgba(255, 255, 255, 0.78) !important;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom-color: rgba(0, 212, 255, 0.18) !important;
+  box-shadow: 0 1px 0 rgba(0, 212, 255, 0.06), 0 8px 24px rgba(0, 212, 255, 0.04);
+}
+
+.planify-hud .pl-hud-hub-hero {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1.75rem;
+  border: 1px solid rgba(0, 212, 255, 0.22);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.88) 0%, rgba(240, 249, 255, 0.78) 100%);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow:
+    0 4px 32px rgba(0, 212, 255, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+
+.planify-hud .pl-hud-hub-mesh {
+  pointer-events: none;
+  position: absolute;
+  inset: -40% -20%;
+  opacity: 0.55;
+  background:
+    radial-gradient(circle at 20% 30%, rgba(0, 212, 255, 0.18), transparent 42%),
+    radial-gradient(circle at 78% 22%, rgba(8, 145, 178, 0.14), transparent 38%),
+    radial-gradient(circle at 62% 78%, rgba(34, 211, 238, 0.12), transparent 40%);
+  animation: pl-hud-hub-mesh-drift 18s ease-in-out infinite alternate;
+}
+
+.planify-hud .pl-hud-hub-grid-bg {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  opacity: 0.35;
+  background:
+    linear-gradient(to right, rgba(0, 212, 255, 0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 212, 255, 0.06) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: linear-gradient(180deg, #000 0%, transparent 92%);
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, transparent 92%);
+}
+
+@keyframes pl-hud-hub-mesh-drift {
+  0% { transform: translate3d(-2%, -1%, 0) scale(1); }
+  100% { transform: translate3d(3%, 2%, 0) scale(1.04); }
+}
+
+.planify-hud .pl-hud-hub-trust {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  overflow: hidden;
+  border-radius: 1rem;
+  border: 1px solid rgba(0, 212, 255, 0.2);
+  background:
+    linear-gradient(145deg, rgba(7, 16, 24, 0.94) 0%, rgba(12, 24, 36, 0.9) 100%);
+  box-shadow: var(--planify-cyan-glow-soft), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.planify-hud .pl-hud-hub-trust-item {
+  flex: 1 1 8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.85rem 1.1rem;
+  border-right: 1px solid rgba(0, 212, 255, 0.12);
+}
+
+.planify-hud .pl-hud-hub-trust-item:last-child {
+  border-right: none;
+}
+
+.planify-hud .pl-hud-hub-trust-value {
+  font-family: var(--planify-font-display);
+  font-size: 1.125rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: #67e8f9;
+}
+
+.planify-hud .pl-hud-hub-trust-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: rgba(224, 247, 255, 0.72);
+}
+
+.planify-hud .pl-hud-hub-command {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  overflow: hidden;
+  border-radius: 1.125rem;
+  border: 1px solid rgba(0, 212, 255, 0.28);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.6) inset,
+    0 8px 32px rgba(0, 212, 255, 0.12),
+    var(--planify-cyan-glow-soft);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.planify-hud .pl-hud-hub-command:focus-within {
+  border-color: rgba(0, 212, 255, 0.55);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.7) inset,
+    0 12px 40px rgba(0, 212, 255, 0.18),
+    0 0 24px rgba(0, 212, 255, 0.25);
+}
+
+.planify-hud .pl-hud-hub-command-row {
+  display: flex;
+  align-items: stretch;
+  min-height: 3.25rem;
+}
+
+.planify-hud .pl-hud-hub-command-field {
+  position: relative;
+  flex: 1 1 50%;
+  display: flex;
+  align-items: center;
+}
+
+.planify-hud .pl-hud-hub-command-field + .pl-hud-hub-command-field {
+  border-left: 1px solid rgba(0, 212, 255, 0.14);
+}
+
+.planify-hud .pl-hud-hub-command-field svg {
+  pointer-events: none;
+  position: absolute;
+  left: 1rem;
+  height: 1.125rem;
+  width: 1.125rem;
+  color: rgba(8, 145, 178, 0.65);
+}
+
+.planify-hud .pl-hud-hub-command-field input {
+  width: 100%;
+  height: 3.25rem;
+  border: none;
+  background: transparent;
+  padding: 0 1rem 0 2.75rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--planify-slate-950);
+  outline: none;
+}
+
+.planify-hud .pl-hud-hub-command-field input::placeholder {
+  color: rgba(100, 116, 139, 0.85);
+  font-weight: 500;
+}
+
+.planify-hud .pl-hud-hub-command-hint {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-top: 1px solid rgba(0, 212, 255, 0.1);
+  background: rgba(240, 249, 255, 0.65);
+  padding: 0.45rem 1rem;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: rgba(8, 145, 178, 0.85);
+}
+
+.planify-hud .pl-hud-hub-workspace-rail {
+  display: flex;
+  gap: 0.75rem;
+  overflow-x: auto;
+  padding-bottom: 0.35rem;
+  scroll-snap-type: x mandatory;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.planify-hud .pl-hud-hub-workspace-rail::-webkit-scrollbar {
+  display: none;
+}
+
+.planify-hud .pl-hud-hub-workspace-card {
+  position: relative;
+  flex: 0 0 auto;
+  width: min(100%, 13.5rem);
+  scroll-snap-align: start;
+  overflow: hidden;
+  border-radius: 1.25rem;
   border: 1px solid var(--planify-glass-border);
-  background: var(--planify-glass-bg);
-  backdrop-filter: var(--planify-glass-blur);
-  -webkit-backdrop-filter: var(--planify-glass-blur);
-  box-shadow: 0 4px 24px rgba(0, 212, 255, 0.08);
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, 0.92) 0%, rgba(240, 249, 255, 0.78) 100%);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 4px 20px rgba(0, 212, 255, 0.08);
+  transition: border-color 0.22s, box-shadow 0.22s, transform 0.22s;
+  text-align: left;
+}
+
+.planify-hud .pl-hud-hub-workspace-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.08), transparent 55%);
+  transition: opacity 0.22s;
+}
+
+.planify-hud .pl-hud-hub-workspace-card:hover {
+  border-color: rgba(0, 212, 255, 0.45);
+  box-shadow: var(--planify-cyan-glow-soft), 0 8px 28px rgba(0, 212, 255, 0.12);
+  transform: translateY(-2px);
+}
+
+.planify-hud .pl-hud-hub-workspace-card:hover::before {
+  opacity: 1;
+}
+
+@media (min-width: 1024px) {
+  .planify-hud .pl-hud-hub-workspace-rail {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    overflow: visible;
+  }
+
+  .planify-hud .pl-hud-hub-workspace-card {
+    width: auto;
+  }
+}
+
+.planify-hud .pl-hud-hub-bento {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 1024px) {
+  .planify-hud .pl-hud-hub-bento {
+    grid-template-columns: 1.35fr 1fr;
+    grid-template-rows: auto auto;
+  }
+}
+
+.planify-hud .pl-hud-hub-bento-hero {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1.5rem;
+  border: 1px solid rgba(0, 212, 255, 0.28);
+  background:
+    linear-gradient(145deg, rgba(7, 16, 24, 0.96) 0%, rgba(12, 36, 52, 0.92) 55%, rgba(7, 16, 24, 0.94) 100%);
+  box-shadow: var(--planify-cyan-glow-soft), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  transition: border-color 0.22s, box-shadow 0.22s, transform 0.22s;
+  text-align: left;
+}
+
+.planify-hud .pl-hud-hub-bento-hero::before {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 85% 15%, rgba(0, 212, 255, 0.22), transparent 42%),
+    radial-gradient(circle at 10% 90%, rgba(8, 145, 178, 0.16), transparent 38%);
+}
+
+.planify-hud .pl-hud-hub-bento-hero:hover {
+  border-color: rgba(0, 212, 255, 0.5);
+  box-shadow: 0 0 28px rgba(0, 212, 255, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  transform: translateY(-2px);
+}
+
+@media (min-width: 1024px) {
+  .planify-hud .pl-hud-hub-bento-hero {
+    grid-row: span 2;
+  }
 }
 
 .planify-hud .pl-hud-hub-app {
+  position: relative;
+  overflow: hidden;
   border: 1px solid rgba(0, 212, 255, 0.2);
-  background: rgba(255, 255, 255, 0.85);
-  transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transition: border-color 0.22s, box-shadow 0.22s, transform 0.22s;
+}
+
+.planify-hud .pl-hud-hub-app::after {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: -1px;
+  opacity: 0;
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.12), transparent 50%);
+  transition: opacity 0.22s;
 }
 
 .planify-hud .pl-hud-hub-app:hover {
-  border-color: rgba(0, 212, 255, 0.45);
-  box-shadow: var(--planify-cyan-glow-soft);
-  transform: translateY(-1px);
+  border-color: rgba(0, 212, 255, 0.48);
+  box-shadow: var(--planify-cyan-glow-soft), 0 8px 28px rgba(0, 212, 255, 0.1);
+  transform: translateY(-2px);
 }
 
-.planify-hud .pl-hud-hub-bento-lg {
-  grid-column: span 2;
+.planify-hud .pl-hud-hub-app:hover::after {
+  opacity: 1;
 }
 
-.planify-hud .pl-hud-hub-stat-pill {
+.planify-hud .pl-hud-hub-tool-featured {
+  min-height: 9.5rem;
+}
+
+.planify-hud .pl-hud-hub-tool-icon {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.875rem;
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  transition: transform 0.22s, box-shadow 0.22s;
+}
+
+.planify-hud .pl-hud-hub-app:hover .pl-hud-hub-tool-icon {
+  transform: scale(1.06);
+  box-shadow: 0 6px 20px rgba(0, 212, 255, 0.25);
+}
+
+.planify-hud .pl-hud-hub-category-pill {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.375rem;
+  border-radius: 9999px;
   border: 1px solid rgba(0, 212, 255, 0.18);
-  background: rgba(255, 255, 255, 0.72);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: rgba(255, 255, 255, 0.82);
+  padding: 0.5rem 0.95rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--planify-slate-600);
+  transition: border-color 0.18s, background 0.18s, box-shadow 0.18s, color 0.18s, transform 0.18s;
 }
 
-.planify-hud .pl-hud-hub-workspace-chip {
-  border: 1px solid var(--planify-glass-border);
-  background: var(--planify-glass-bg);
-  backdrop-filter: var(--planify-glass-blur);
-  -webkit-backdrop-filter: var(--planify-glass-blur);
-  box-shadow: 0 2px 12px rgba(0, 212, 255, 0.06);
+.planify-hud .pl-hud-hub-category-pill:hover {
+  border-color: rgba(0, 212, 255, 0.35);
+  box-shadow: 0 0 12px rgba(0, 212, 255, 0.12);
 }
 
-.planify-hud .pl-hud-hub-workspace-chip:hover {
-  border-color: rgba(0, 212, 255, 0.4);
+.planify-hud .pl-hud-hub-category-pill--active {
+  border-color: transparent;
+  background: var(--planify-accent-gradient);
+  color: #fff;
   box-shadow: var(--planify-cyan-glow-soft);
 }
 
-@media (max-width: 639px) {
-  .planify-hud .pl-hud-hub-bento-lg {
-    grid-column: span 1;
+.planify-hud .pl-hud-hub-category-pill--active svg {
+  color: #fff !important;
+}
+
+.planify-hud .pl-hud-hub-section-head {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-bottom: 0.85rem;
+}
+
+.planify-hud .pl-hud-hub-section-icon {
+  display: flex;
+  height: 2rem;
+  width: 2rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.625rem;
+  border: 1px solid rgba(0, 212, 255, 0.22);
+  background: rgba(0, 212, 255, 0.08);
+  color: var(--planify-cyan-deep);
+}
+
+.planify-hud .pl-hud-hub-reveal {
+  animation: pl-hud-hub-reveal 0.55s ease both;
+}
+
+@keyframes pl-hud-hub-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .planify-hud .pl-hud-hub-mesh {
+    animation: none;
+  }
+
+  .planify-hud .pl-hud-hub-reveal {
+    animation: none;
+  }
+
+  .planify-hud .pl-hud-hub-app:hover,
+  .planify-hud .pl-hud-hub-workspace-card:hover,
+  .planify-hud .pl-hud-hub-bento-hero:hover {
+    transform: none;
   }
 }
 

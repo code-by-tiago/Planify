@@ -31,30 +31,37 @@ const workspaceShortcuts: {
     label: "Editor",
     description: "Refine, exporte e publique",
     icon: "editor",
-    accent: "from-emerald-500 to-teal-600",
+    accent: "from-emerald-400 to-teal-600",
   },
   {
     id: "historico",
     label: "Meus materiais",
     description: "Tudo que você gerou",
     icon: "history",
-    accent: "from-slate-600 to-slate-800",
+    accent: "from-slate-500 to-slate-800",
   },
   {
     id: "biblioteca",
     label: "Biblioteca",
     description: "Materiais premium curados",
     icon: "library",
-    accent: "from-violet-500 to-purple-600",
+    accent: "from-cyan-500 to-blue-600",
   },
   {
     id: "marketplace",
     label: "Comunidade",
     description: "Trocas entre professores",
     icon: "market",
-    accent: "from-fuchsia-500 to-pink-600",
+    accent: "from-sky-400 to-cyan-600",
   },
 ];
+
+const trustStats = [
+  { value: "BNCC", label: "Alinhamento curricular" },
+  { value: "DOCX", label: "Modelo oficial" },
+  { value: "Classroom", label: "Publicação direta" },
+  { value: "Slides", label: "Exportação Google" },
+] as const;
 
 function matchesPlanejamentosSearch(term: string): boolean {
   if (!term) return true;
@@ -113,6 +120,16 @@ export default function TeachyStudioHome({
   const categoryTabs = toolCategories.filter((entry) => entry.id !== "todos");
   const totalGenerators = planifyToolCount + 1;
 
+  const toolsByCategory = useMemo(() => {
+    if (hasActiveFilter) return [];
+    return categoryTabs
+      .map((cat) => ({
+        ...cat,
+        tools: gridTools.filter((tool) => tool.category === cat.id),
+      }))
+      .filter((group) => group.tools.length > 0);
+  }, [categoryTabs, gridTools, hasActiveFilter]);
+
   function persistTopic(value = topic) {
     const tema = value.trim();
     onTopicChange?.(tema);
@@ -134,82 +151,110 @@ export default function TeachyStudioHome({
     onSelectSection?.(sectionId);
   }
 
-  function renderToolCard(tool: PlanifyTool, compact = false) {
+  function renderToolCard(tool: PlanifyTool, variant: "default" | "compact" | "featured" = "default") {
+    const compact = variant === "compact";
+    const featured = variant === "featured";
+
     return (
       <button
         key={tool.id}
         type="button"
         onClick={() => openTool(tool.id)}
-        className={`pl-hud-hub-app group flex flex-col text-left transition motion-safe:hover:-translate-y-0.5 ${
-          compact
-            ? "min-h-[8.5rem] rounded-2xl p-4"
-            : "min-h-[9.5rem] rounded-2xl p-5 sm:min-h-[10.5rem]"
+        className={`pl-hud-hub-app group flex flex-col text-left ${
+          featured ? "pl-hud-hub-tool-featured rounded-2xl p-5" : compact ? "min-h-[9rem] rounded-2xl p-4" : "min-h-[10rem] rounded-2xl p-5 sm:min-h-[10.5rem]"
         }`}
       >
         <span
-          className={`flex items-center justify-center rounded-xl bg-gradient-to-br ${tool.accent} text-white shadow-sm ${
-            compact ? "h-10 w-10" : "h-12 w-12"
+          className={`pl-hud-hub-tool-icon bg-gradient-to-br ${tool.accent} ${
+            compact ? "h-10 w-10" : "h-11 w-11"
           }`}
         >
-          <PlanifyIcon name={tool.icon} className={compact ? "h-5 w-5" : "h-6 w-6"} />
+          <PlanifyIcon name={tool.icon} className={compact ? "h-5 w-5" : "h-5 w-5"} />
         </span>
         <span
-          className={`font-extrabold text-slate-950 ${compact ? "mt-3 text-base" : "mt-4 text-lg"}`}
+          className={`relative font-extrabold text-slate-950 ${
+            compact ? "mt-3 text-base" : "mt-4 text-lg"
+          }`}
         >
           {tool.shortTitle}
         </span>
-        {!compact ? (
-          <span className="mt-1.5 line-clamp-2 text-sm font-medium leading-snug text-slate-600">
-            {tool.description}
-          </span>
-        ) : (
-          <span className="mt-1 line-clamp-2 text-xs font-medium leading-snug text-slate-500">
-            {tool.description}
-          </span>
-        )}
+        <span
+          className={`relative line-clamp-2 font-medium leading-snug text-slate-600 ${
+            compact ? "mt-1 text-xs" : "mt-1.5 text-sm"
+          }`}
+        >
+          {tool.description}
+        </span>
         {tool.popular ? (
-          <span className="mt-2 inline-flex w-fit rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase text-amber-800">
+          <span className="relative mt-2 inline-flex w-fit rounded-full border border-amber-300/40 bg-amber-50/90 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-800">
             Popular
           </span>
         ) : null}
-        <span className="mt-auto pt-3 text-xs font-semibold text-cyan-700 opacity-80 transition group-hover:opacity-100 group-hover:underline">
-          Abrir →
+        <span className="relative mt-auto flex items-center gap-1 pt-3 text-xs font-semibold text-cyan-700 opacity-80 transition group-hover:gap-1.5 group-hover:opacity-100">
+          Abrir
+          <PlanifyIcon name="arrowRight" className="h-3 w-3 transition group-hover:translate-x-0.5" />
         </span>
       </button>
     );
   }
 
-  function renderPlanejamentosCard(large = false) {
+  function renderPlanejamentosHero() {
     return (
       <button
         type="button"
         onClick={() => openSection("planejamentos")}
-        className={`pl-hud-hub-app group flex flex-col rounded-2xl text-left transition motion-safe:hover:-translate-y-0.5 ${
-          large
-            ? "pl-hud-hub-bento-lg min-h-[11rem] p-6 sm:min-h-[12rem]"
-            : "min-h-[9.5rem] p-5 sm:min-h-[10.5rem]"
-        }`}
+        className="pl-hud-hub-bento-hero group flex min-h-[14rem] flex-col p-6 sm:min-h-[16rem] sm:p-7"
       >
-        <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 text-white shadow-sm">
-          <PlanifyIcon name="clipboard" className="h-6 w-6" />
-        </span>
-        <span className={`font-extrabold text-slate-950 ${large ? "mt-5 text-xl" : "mt-4 text-lg"}`}>
+        <div className="relative flex items-start justify-between gap-4">
+          <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-400 to-blue-600 text-white shadow-[0_0_24px_rgba(0,212,255,0.35)]">
+            <PlanifyIcon name="clipboard" className="h-7 w-7" />
+          </span>
+          <span className="rounded-full border border-cyan-400/30 bg-cyan-400/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-cyan-200">
+            Fluxo BNCC
+          </span>
+        </div>
+        <span className="relative mt-6 text-2xl font-extrabold tracking-tight text-white sm:text-[1.65rem]">
           Planejamentos
         </span>
-        <span
-          className={`font-medium leading-snug text-slate-600 ${
-            large ? "mt-2 max-w-md text-sm" : "mt-1.5 text-sm"
-          }`}
-        >
+        <span className="relative mt-2 max-w-md text-sm font-medium leading-relaxed text-cyan-100/80">
+          Matriz anual ou trimestral · sugira habilidades por conteúdo · DOCX oficial
+          preenchido com IA
+        </span>
+        <div className="relative mt-5 flex flex-wrap gap-2">
+          {["Matriz pedagógica", "Habilidades BNCC", "DOCX oficial"].map((tag) => (
+            <span
+              key={tag}
+              className="rounded-lg border border-cyan-400/20 bg-white/5 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-cyan-100/90"
+            >
+              {tag}
+            </span>
+          ))}
+        </div>
+        <span className="relative mt-auto flex items-center gap-1.5 pt-5 text-sm font-semibold text-cyan-300 transition group-hover:gap-2.5">
+          Continuar planejando
+          <PlanifyIcon name="arrowRight" className="h-4 w-4 transition group-hover:translate-x-0.5" />
+        </span>
+      </button>
+    );
+  }
+
+  function renderPlanejamentosCard() {
+    return (
+      <button
+        type="button"
+        onClick={() => openSection("planejamentos")}
+        className="pl-hud-hub-app group flex min-h-[10rem] flex-col rounded-2xl p-5 text-left sm:min-h-[10.5rem]"
+      >
+        <span className="pl-hud-hub-tool-icon flex h-11 w-11 items-center justify-center bg-gradient-to-br from-cyan-500 to-blue-600">
+          <PlanifyIcon name="clipboard" className="h-5 w-5" />
+        </span>
+        <span className="relative mt-4 text-lg font-extrabold text-slate-950">Planejamentos</span>
+        <span className="relative mt-1.5 text-sm font-medium leading-snug text-slate-600">
           Matriz BNCC anual ou trimestral · sugira habilidades · DOCX oficial preenchido
         </span>
-        {large ? (
-          <span className="mt-4 inline-flex w-fit rounded-full border border-cyan-400/25 bg-cyan-50 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-cyan-800">
-            Fluxo completo BNCC
-          </span>
-        ) : null}
-        <span className="mt-auto pt-3 text-xs font-semibold text-cyan-700 group-hover:underline">
-          Abrir →
+        <span className="relative mt-auto flex items-center gap-1 pt-3 text-xs font-semibold text-cyan-700 opacity-80 transition group-hover:gap-1.5 group-hover:opacity-100">
+          Abrir
+          <PlanifyIcon name="arrowRight" className="h-3 w-3" />
         </span>
       </button>
     );
@@ -219,110 +264,114 @@ export default function TeachyStudioHome({
     <div className="pl-hud-hub pl-hud-board pl-hud-home flex h-full min-h-0 w-full flex-col overflow-hidden">
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
         <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:py-10">
-          <section className="pl-hud-hub-welcome relative overflow-hidden rounded-[1.75rem] p-6 sm:p-8">
-            <div
-              className="pointer-events-none absolute -right-16 -top-20 h-48 w-48 rounded-full bg-cyan-400/15 blur-3xl"
-              aria-hidden
-            />
-            <div
-              className="pointer-events-none absolute -bottom-24 -left-12 h-40 w-40 rounded-full bg-blue-500/10 blur-3xl"
-              aria-hidden
-            />
-            <div className="relative grid gap-6 lg:grid-cols-[1.1fr_minmax(0,0.9fr)] lg:items-end">
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-cyan-600">
-                  Estúdio pedagógico · BNCC
-                </p>
-                <h1 className="mt-2 text-2xl font-extrabold tracking-tight text-slate-950 sm:text-3xl lg:text-[2rem]">
-                  O que vamos{" "}
-                  <span className="bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent">
-                    criar hoje?
-                  </span>
-                </h1>
-                <p className="mt-3 max-w-xl text-sm font-medium leading-relaxed text-slate-600 sm:text-base">
-                  {totalGenerators} geradores com IA, planejamentos oficiais e espaço de
-                  trabalho completo — escolha a ferramenta, descreva o contexto e exporte
-                  em segundos.
-                </p>
-                <div className="mt-5 flex flex-wrap gap-2">
-                  {[
-                    `${totalGenerators} ferramentas`,
-                    "Matriz BNCC",
-                    "DOCX oficial",
-                    "Google Classroom",
-                  ].map((label) => (
-                    <span
-                      key={label}
-                      className="pl-hud-hub-stat-pill rounded-full px-3 py-1 text-[11px] font-bold text-slate-700"
-                    >
-                      {label}
-                    </span>
-                  ))}
+          <section className="pl-hud-hub-hero pl-hud-hub-reveal p-6 sm:p-8 lg:p-10">
+            <div className="pl-hud-hub-mesh" aria-hidden />
+            <div className="pl-hud-hub-grid-bg" aria-hidden />
+
+            <div className="relative">
+              <span className="pl-hud-badge">
+                <PlanifyIcon name="spark" className="h-3 w-3" />
+                Estúdio pedagógico · BNCC
+              </span>
+              <h1 className="pl-hud-display mt-4 max-w-2xl text-[1.85rem] font-extrabold leading-[1.08] tracking-tight text-slate-950 sm:text-4xl lg:text-[2.65rem]">
+                O que vamos{" "}
+                <span className="pl-hud-gradient-text">criar hoje?</span>
+              </h1>
+              <p className="mt-4 max-w-xl text-sm font-medium leading-relaxed text-slate-600 sm:text-base">
+                {totalGenerators} geradores com IA, planejamentos oficiais e espaço de trabalho
+                completo — escolha a ferramenta, descreva o contexto e exporte em segundos.
+              </p>
+
+              <div className="pl-hud-hub-trust mt-6">
+                <div className="pl-hud-hub-trust-item">
+                  <span className="pl-hud-hub-trust-value">{totalGenerators}+</span>
+                  <span className="pl-hud-hub-trust-label">Geradores IA</span>
                 </div>
+                {trustStats.map((stat) => (
+                  <div key={stat.label} className="pl-hud-hub-trust-item">
+                    <span className="pl-hud-hub-trust-value">{stat.value}</span>
+                    <span className="pl-hud-hub-trust-label">{stat.label}</span>
+                  </div>
+                ))}
               </div>
 
-              <div className="grid gap-3">
-                <label className="grid gap-2">
-                  <span className="text-xs font-bold text-slate-600">Buscar ferramenta</span>
-                  <div className="relative">
-                    <PlanifyIcon
-                      name="search"
-                      className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
-                    />
-                    <input
-                      value={query}
-                      onChange={(event) => setQuery(event.target.value)}
-                      placeholder="Slides, prova, sequência, inclusão…"
-                      aria-label="Buscar ferramentas"
-                      className="h-11 w-full rounded-xl border border-cyan-400/15 bg-white/90 pl-10 pr-3 text-sm font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-cyan-400 focus:bg-white focus:ring-4 focus:ring-cyan-100/80"
-                    />
+              <div className="mt-7">
+                <label className="sr-only" htmlFor="hub-tool-search">
+                  Buscar ferramentas
+                </label>
+                <label className="sr-only" htmlFor="hub-topic">
+                  Tema da aula
+                </label>
+                <div className="pl-hud-hub-command">
+                  <div className="pl-hud-hub-command-row flex-col sm:flex-row">
+                    <div className="pl-hud-hub-command-field">
+                      <PlanifyIcon name="search" />
+                      <input
+                        id="hub-tool-search"
+                        value={query}
+                        onChange={(event) => setQuery(event.target.value)}
+                        placeholder="Buscar slides, prova, sequência, inclusão…"
+                        aria-label="Buscar ferramentas"
+                      />
+                    </div>
+                    <div className="pl-hud-hub-command-field border-t border-cyan-400/15 sm:border-t-0">
+                      <PlanifyIcon name="spark" />
+                      <input
+                        id="hub-topic"
+                        value={topic}
+                        onChange={(event) => setTopic(event.target.value)}
+                        onBlur={() => persistTopic()}
+                        placeholder="Tema da aula (opcional)"
+                        aria-label="Tema da aula"
+                      />
+                    </div>
                   </div>
-                </label>
-                <label className="grid gap-2">
-                  <span className="text-xs font-bold text-slate-600">
-                    Tema da aula (opcional)
-                  </span>
-                  <input
-                    value={topic}
-                    onChange={(event) => setTopic(event.target.value)}
-                    onBlur={() => persistTopic()}
-                    placeholder="Ex.: Frações, Sistema solar, Revolução Industrial…"
-                    className="h-11 w-full rounded-xl border border-cyan-400/15 bg-white/90 px-4 text-sm font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-cyan-400 focus:bg-white focus:ring-4 focus:ring-cyan-100/80"
-                  />
-                </label>
+                  <div className="pl-hud-hub-command-hint">
+                    <PlanifyIcon name="spark" className="h-3 w-3" />
+                    Launcher do estúdio — busque ferramentas ou defina o tema antes de abrir
+                  </div>
+                </div>
               </div>
             </div>
           </section>
 
-          <section className="mt-8">
+          <section
+            className="pl-hud-hub-reveal mt-10"
+            style={{ animationDelay: "80ms" }}
+          >
             <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-600">
                   Espaço de trabalho
                 </p>
-                <h2 className="mt-1 text-lg font-extrabold text-slate-950 sm:text-xl">
-                  Seus materiais e rede docente
+                <h2 className="mt-1 text-xl font-extrabold text-slate-950 sm:text-2xl">
+                  Continue criando
                 </h2>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              {workspaceShortcuts.map((item) => (
+            <div className="pl-hud-hub-workspace-rail">
+              {workspaceShortcuts.map((item, index) => (
                 <button
                   key={item.id}
                   type="button"
                   onClick={() => openSection(item.id)}
-                  className="pl-hud-hub-workspace-chip group flex flex-col rounded-2xl p-4 text-left transition motion-safe:hover:-translate-y-0.5"
+                  className="pl-hud-hub-workspace-card group p-4 sm:p-5"
+                  style={{ animationDelay: `${120 + index * 50}ms` }}
                 >
                   <span
-                    className={`flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${item.accent} text-white shadow-sm transition motion-safe:group-hover:scale-105`}
+                    className={`relative flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br ${item.accent} text-white shadow-sm transition motion-safe:group-hover:scale-105`}
                   >
                     <PlanifyIcon name={item.icon} className="h-5 w-5" />
                   </span>
-                  <span className="mt-3 text-sm font-extrabold text-slate-950">
+                  <span className="relative mt-3 block text-sm font-extrabold text-slate-950">
                     {item.label}
                   </span>
-                  <span className="mt-1 line-clamp-2 text-[11px] font-medium leading-snug text-slate-500">
+                  <span className="relative mt-1 block line-clamp-2 text-[11px] font-medium leading-snug text-slate-500">
                     {item.description}
+                  </span>
+                  <span className="relative mt-3 flex items-center gap-1 text-[11px] font-semibold text-cyan-700 opacity-0 transition group-hover:opacity-100">
+                    Abrir
+                    <PlanifyIcon name="arrowRight" className="h-3 w-3" />
                   </span>
                 </button>
               ))}
@@ -330,46 +379,51 @@ export default function TeachyStudioHome({
           </section>
 
           {!hasActiveFilter ? (
-            <section className="mt-10">
-              <div className="mb-4">
+            <section
+              className="pl-hud-hub-reveal mt-12"
+              style={{ animationDelay: "140ms" }}
+            >
+              <div className="mb-5">
                 <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-600">
                   Destaques
                 </p>
-                <h2 className="mt-1 text-lg font-extrabold text-slate-950 sm:text-xl">
+                <h2 className="mt-1 text-xl font-extrabold text-slate-950 sm:text-2xl">
                   Comece pelo essencial
                 </h2>
               </div>
-              <div className="grid gap-4 lg:grid-cols-3">
-                {renderPlanejamentosCard(true)}
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
-                  {popularTools.slice(0, 2).map((tool) => renderToolCard(tool, true))}
+              <div className="pl-hud-hub-bento">
+                {renderPlanejamentosHero()}
+                <div className="grid gap-4">
+                  {popularTools.slice(0, 2).map((tool) => renderToolCard(tool, "featured"))}
                 </div>
               </div>
             </section>
           ) : null}
 
-          <section className="mt-10">
-            <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <section
+            className="pl-hud-hub-reveal mt-12"
+            style={{ animationDelay: "180ms" }}
+          >
+            <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-600">
                   Ferramentas IA
                 </p>
-                <h2 className="mt-1 text-lg font-extrabold text-slate-950 sm:text-xl">
+                <h2 className="mt-1 text-xl font-extrabold text-slate-950 sm:text-2xl">
                   {hasActiveFilter
                     ? `${gridTools.length + (showPlanejamentosInGrid ? 1 : 0)} resultado(s)`
-                    : "Todos os geradores"}
+                    : "Explore por categoria"}
                 </h2>
               </div>
-              <div className="flex gap-2 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
                   onClick={() => setCategory("todos")}
-                  className={`shrink-0 rounded-xl px-3.5 py-2 text-xs font-bold transition ${
-                    category === "todos"
-                      ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-sm"
-                      : "border border-cyan-400/15 bg-white/80 text-slate-600 hover:border-cyan-400/30"
+                  className={`pl-hud-hub-category-pill ${
+                    category === "todos" ? "pl-hud-hub-category-pill--active" : ""
                   }`}
                 >
+                  <PlanifyIcon name="spark" className="h-3.5 w-3.5" />
                   Todos
                 </button>
                 {categoryTabs.map((cat) => {
@@ -379,10 +433,8 @@ export default function TeachyStudioHome({
                       key={cat.id}
                       type="button"
                       onClick={() => setCategory(cat.id)}
-                      className={`flex shrink-0 items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-bold transition ${
-                        active
-                          ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-sm"
-                          : "border border-cyan-400/15 bg-white/80 text-slate-600 hover:border-cyan-400/30"
+                      className={`pl-hud-hub-category-pill ${
+                        active ? "pl-hud-hub-category-pill--active" : ""
                       }`}
                     >
                       <PlanifyIcon name={cat.icon} className="h-3.5 w-3.5" />
@@ -393,10 +445,35 @@ export default function TeachyStudioHome({
               </div>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {showPlanejamentosInGrid ? renderPlanejamentosCard() : null}
-              {gridTools.map((tool) => renderToolCard(tool))}
-            </div>
+            {hasActiveFilter ? (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {showPlanejamentosInGrid ? renderPlanejamentosCard() : null}
+                {gridTools.map((tool) => renderToolCard(tool))}
+              </div>
+            ) : (
+              <div className="space-y-10">
+                {toolsByCategory.map((group) => (
+                  <div key={group.id}>
+                    <div className="pl-hud-hub-section-head">
+                      <span className="pl-hud-hub-section-icon">
+                        <PlanifyIcon name={group.icon} className="h-4 w-4" />
+                      </span>
+                      <div>
+                        <h3 className="text-base font-extrabold text-slate-950 sm:text-lg">
+                          {group.label}
+                        </h3>
+                        <p className="text-xs font-medium text-slate-500">
+                          {group.tools.length} ferramenta{group.tools.length === 1 ? "" : "s"}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                      {group.tools.map((tool) => renderToolCard(tool))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
 
             {!showPlanejamentosInGrid && gridTools.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-cyan-400/25 bg-white/70 px-6 py-12 text-center">

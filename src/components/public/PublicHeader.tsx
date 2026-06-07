@@ -7,7 +7,7 @@ import { PlanifyBrand } from "@/components/pro/PlanifyBrand";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 
 type PublicHeaderProps = {
-  active?: "home" | "planos" | "contato" | "ferramentas" | "como";
+  active?: "home" | "planos" | "contato" | "ferramentas" | "como" | "escolas";
 };
 
 const navLinks: {
@@ -19,6 +19,7 @@ const navLinks: {
   { key: "ferramentas", href: "/#ferramentas", label: "Ferramentas" },
   { key: "como", href: "/#como-funciona", label: "Como funciona" },
   { key: "planos", href: "/planos", label: "Planos" },
+  { key: "escolas", href: "/escolas", label: "Para escolas" },
   { key: "contato", href: "/contato", label: "Contato" },
 ];
 

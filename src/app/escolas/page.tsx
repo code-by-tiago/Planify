@@ -51,7 +51,7 @@ const comparisonRows = [
 export default function EscolasPage() {
   return (
     <main className="planify-hud planify-ui3 planify-public planify-hud-landing flex min-h-screen flex-col overflow-x-clip bg-white">
-      <PublicHeader active="home" />
+      <PublicHeader active="escolas" />
 
       {/* Hero */}
       <section className="mx-auto w-full max-w-7xl px-5 py-14 sm:px-8 lg:py-20">

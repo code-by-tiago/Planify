@@ -2,7 +2,12 @@ import "server-only";
 
 import type { Json, TablesInsert } from "@/types/database";
 import type { BNCCSkill, BNCCStage } from "@/types/bncc";
-import { EDUCATION_OPTIONS } from "@/lib/educacao/education-options";
+import {
+  EDUCATION_STAGES,
+  getAreaOptions,
+  getComponentOptions,
+  getYearOptions,
+} from "@/lib/educacao/education-options";
 import {
   EXTRA_CATALOG_SUBJECTS,
   normalizeDisciplineKey,
@@ -194,7 +199,11 @@ export function invalidateBnccSkillsCache(): void {
 
 async function fetchDistinctColumn(
   column: "education_stage" | "grade" | "subject" | "knowledge_area",
-  filters?: { stage?: string | null; grade?: string | null },
+  filters?: {
+    stage?: string | null;
+    grade?: string | null;
+    knowledgeArea?: string | null;
+  },
 ): Promise<string[]> {
   const supabase = getSupabaseAdminClient();
   let query = supabase
@@ -208,6 +217,9 @@ async function fetchDistinctColumn(
   }
   if (filters?.grade && column !== "grade") {
     query = query.eq("grade", filters.grade);
+  }
+  if (filters?.knowledgeArea && column === "subject") {
+    query = query.eq("knowledge_area", filters.knowledgeArea);
   }
 
   const { data, error } = await query.order(column, { ascending: true });
@@ -225,27 +237,33 @@ async function fetchDistinctColumn(
   return Array.from(values).sort((a, b) => a.localeCompare(b, "pt-BR"));
 }
 
-function collectEducationComponents(): string[] {
-  const values = new Set<string>(EXTRA_CATALOG_SUBJECTS);
+function mergeScopedCatalogSubjects(
+  dbSubjects: string[],
+  stage: string,
+  knowledgeArea: string,
+): string[] {
+  const canonical = getComponentOptions(stage, knowledgeArea);
+  const canonicalKeys = new Set(canonical.map((item) => normalizeDisciplineKey(item)));
+  const merged = new Map<string, string>();
 
-  for (const stage of Object.values(EDUCATION_OPTIONS)) {
-    for (const components of Object.values(stage.componentsByArea)) {
-      for (const component of components) {
-        values.add(component);
-      }
+  for (const component of canonical) {
+    merged.set(normalizeDisciplineKey(component), component);
+  }
+
+  for (const subject of dbSubjects) {
+    const trimmed = String(subject || "").trim();
+    if (!trimmed) continue;
+    const key = normalizeDisciplineKey(trimmed);
+    if (canonicalKeys.has(key)) {
+      merged.set(key, trimmed);
     }
   }
 
-  return Array.from(values);
-}
-
-function mergeCatalogSubjects(dbSubjects: string[]): string[] {
-  const merged = new Map<string, string>();
-
-  for (const subject of [...dbSubjects, ...collectEducationComponents()]) {
-    const trimmed = String(subject || "").trim();
-    if (!trimmed) continue;
-    merged.set(normalizeDisciplineKey(trimmed), trimmed);
+  for (const extra of EXTRA_CATALOG_SUBJECTS) {
+    const key = normalizeDisciplineKey(extra);
+    if (canonicalKeys.has(key)) {
+      merged.set(key, extra);
+    }
   }
 
   return Array.from(merged.values()).sort((a, b) => a.localeCompare(b, "pt-BR"));
@@ -254,23 +272,62 @@ function mergeCatalogSubjects(dbSubjects: string[]): string[] {
 export async function getBnccCatalogOptions(filters?: {
   stage?: string | null;
   grade?: string | null;
+  knowledgeArea?: string | null;
 }): Promise<BnccCatalogOptions> {
-  const [stages, grades, subjects, knowledgeAreas, totalSkills] =
-    await Promise.all([
-      fetchDistinctColumn("education_stage"),
-      fetchDistinctColumn("grade", { stage: filters?.stage }),
-      fetchDistinctColumn("subject", {
-        stage: filters?.stage,
-        grade: filters?.grade,
-      }),
-      fetchDistinctColumn("knowledge_area", { stage: filters?.stage }),
-      countBnccSkillsInDb(),
-    ]);
+  const stage = filters?.stage?.trim() || null;
+  const knowledgeArea = filters?.knowledgeArea?.trim() || null;
+
+  const [dbSubjects, totalSkills] = await Promise.all([
+    stage
+      ? fetchDistinctColumn("subject", { stage })
+      : Promise.resolve([] as string[]),
+    countBnccSkillsInDb(),
+  ]);
+
+  const stages = [...EDUCATION_STAGES];
+  const grades = stage ? getYearOptions(stage) : [];
+  const knowledgeAreas = stage ? getAreaOptions(stage) : [];
+  const mergedSubjects =
+    stage && knowledgeArea
+      ? mergeScopedCatalogSubjects(dbSubjects, stage, knowledgeArea)
+      : [];
+
+  // #region agent log
+  fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "920c67" },
+    body: JSON.stringify({
+      sessionId: "920c67",
+      runId: "post-fix",
+      hypothesisId: "A,B,C,D",
+      location: "bncc-catalog-service.ts:getBnccCatalogOptions",
+      message: "catalog options built",
+      data: {
+        filters: {
+          stage: filters?.stage ?? null,
+          grade: filters?.grade ?? null,
+          knowledgeArea: filters?.knowledgeArea ?? null,
+        },
+        stagesCount: stages.length,
+        stages,
+        gradesCount: grades.length,
+        gradesSample: grades.slice(0, 15),
+        dbSubjectsCount: dbSubjects.length,
+        mergedSubjectsCount: mergedSubjects.length,
+        mergedSubjectsSample: mergedSubjects.slice(0, 25),
+        knowledgeAreasCount: knowledgeAreas.length,
+        knowledgeAreasSample: knowledgeAreas.slice(0, 10),
+        totalSkills,
+      },
+      timestamp: Date.now(),
+    }),
+  }).catch(() => {});
+  // #endregion
 
   return {
     stages,
     grades,
-    subjects: mergeCatalogSubjects(subjects),
+    subjects: mergedSubjects,
     knowledgeAreas,
     totalSkills,
   };

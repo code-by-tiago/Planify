@@ -12,9 +12,11 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const stage = searchParams.get("stage") || undefined;
   const grade = searchParams.get("grade") || undefined;
+  const knowledgeArea =
+    searchParams.get("area") || searchParams.get("knowledgeArea") || undefined;
 
   try {
-    const options = await getBnccCatalogOptions({ stage, grade });
+    const options = await getBnccCatalogOptions({ stage, grade, knowledgeArea });
 
     return NextResponse.json({
       success: true,

@@ -34,7 +34,10 @@ const LEGACY_MODEL_MAP: Record<string, string> = {
   "gemini-2.0-flash-lite-001": "gemini-2.5-flash",
 };
 
-const DEFAULT_MODEL_FALLBACKS = ["gemini-2.5-flash"] as const;
+const DEFAULT_MODEL_FALLBACKS = [
+  "gemini-2.5-flash",
+  "gemini-2.5-flash-lite",
+] as const;
 
 const ADVANCED_MODEL_FALLBACKS = [
   "gemini-2.5-pro",
@@ -110,6 +113,18 @@ export function isGeminiModelUnavailableError(
   );
 }
 
+export function isGeminiTransientOverloadError(
+  message: string,
+  status = 0,
+): boolean {
+  return (
+    status === 503 ||
+    /high demand|temporarily unavailable|UNAVAILABLE|overloaded|try again later/i.test(
+      message,
+    )
+  );
+}
+
 export function humanizeGeminiError(message: string): string {
   if (isGeminiQuotaError(message)) {
     const retry = message.match(/retry in ([\d.]+)s/i);
@@ -118,6 +133,13 @@ export function humanizeGeminiError(message: string): string {
     return (
       `Limite de uso da IA atingido neste minuto.${wait} e tente de novo. ` +
       "Se o problema continuar, habilite faturação no Google AI Studio ou use uma chave com cota maior."
+    );
+  }
+
+  if (isGeminiTransientOverloadError(message)) {
+    return (
+      "A IA está com alta demanda no momento. Aguarde alguns segundos e tente novamente. " +
+      "Se persistir, o sistema tentará automaticamente um modelo alternativo."
     );
   }
 
@@ -138,12 +160,24 @@ export function humanizeGeminiError(message: string): string {
   return message;
 }
 
-function parseRetryDelayMs(message: string): number {
+function parseRetryDelayMs(message: string, attempt = 0): number {
   const match = message.match(/retry in ([\d.]+)s/i);
   if (match) {
     return Math.ceil(parseFloat(match[1]) * 1000) + 800;
   }
+  if (isGeminiTransientOverloadError(message)) {
+    return 2500 + attempt * 2000;
+  }
   return 4000;
+}
+
+const MAX_RETRIES_PER_MODEL = 3;
+
+function shouldRetryGeminiCall(message: string, status: number): boolean {
+  return (
+    isGeminiQuotaError(message, status) ||
+    isGeminiTransientOverloadError(message, status)
+  );
 }
 
 function sleep(ms: number): Promise<void> {
@@ -303,7 +337,7 @@ export async function generateGeminiJSON<T>(
   let lastError = "Erro ao chamar a IA.";
 
   for (const model of models) {
-    for (let attempt = 0; attempt < 2; attempt += 1) {
+    for (let attempt = 0; attempt < MAX_RETRIES_PER_MODEL; attempt += 1) {
       const plan = await buildGeneratePlan(
         {
           ...options,
@@ -329,18 +363,45 @@ export async function generateGeminiJSON<T>(
 
       lastError = message;
 
+      // #region agent log
+      fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "920c67" },
+        body: JSON.stringify({
+          sessionId: "920c67",
+          runId: "post-fix",
+          hypothesisId: "H1,H2,H4",
+          location: "gemini-client.ts:generateGeminiJSON:retry",
+          message: "gemini call failed",
+          data: {
+            model,
+            attempt,
+            httpStatus: json.httpStatus,
+            isOverload: isGeminiTransientOverloadError(message, json.httpStatus),
+            isQuota: isGeminiQuotaError(message, json.httpStatus),
+            isModelGone: isGeminiModelUnavailableError(message, json.httpStatus),
+            willRetry:
+              shouldRetryGeminiCall(message, json.httpStatus) &&
+              attempt < MAX_RETRIES_PER_MODEL - 1,
+          },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {});
+      // #endregion
+
       if (isGeminiModelUnavailableError(message, json.httpStatus)) {
         break;
       }
 
-      if (!isGeminiQuotaError(message, json.httpStatus)) {
-        break;
-      }
-
-      if (attempt === 0) {
-        await sleep(parseRetryDelayMs(message));
+      if (
+        shouldRetryGeminiCall(message, json.httpStatus) &&
+        attempt < MAX_RETRIES_PER_MODEL - 1
+      ) {
+        await sleep(parseRetryDelayMs(message, attempt));
         continue;
       }
+
+      break;
     }
   }
 
@@ -366,7 +427,7 @@ export async function generateGeminiText(options: {
   let lastError = "Erro ao chamar a IA.";
 
   for (const model of models) {
-    for (let attempt = 0; attempt < 2; attempt += 1) {
+    for (let attempt = 0; attempt < MAX_RETRIES_PER_MODEL; attempt += 1) {
       const plan = await buildGeneratePlan(
         {
           ...options,
@@ -387,18 +448,43 @@ export async function generateGeminiText(options: {
 
       lastError = message;
 
+      // #region agent log
+      fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "920c67" },
+        body: JSON.stringify({
+          sessionId: "920c67",
+          runId: "post-fix",
+          hypothesisId: "H1,H2,H4",
+          location: "gemini-client.ts:generateGeminiText:retry",
+          message: "gemini call failed",
+          data: {
+            model,
+            attempt,
+            httpStatus: json.httpStatus,
+            isOverload: isGeminiTransientOverloadError(message, json.httpStatus),
+            willRetry:
+              shouldRetryGeminiCall(message, json.httpStatus) &&
+              attempt < MAX_RETRIES_PER_MODEL - 1,
+          },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {});
+      // #endregion
+
       if (isGeminiModelUnavailableError(message, json.httpStatus)) {
         break;
       }
 
-      if (!isGeminiQuotaError(message, json.httpStatus)) {
-        break;
-      }
-
-      if (attempt === 0) {
-        await sleep(parseRetryDelayMs(message));
+      if (
+        shouldRetryGeminiCall(message, json.httpStatus) &&
+        attempt < MAX_RETRIES_PER_MODEL - 1
+      ) {
+        await sleep(parseRetryDelayMs(message, attempt));
         continue;
       }
+
+      break;
     }
   }
 

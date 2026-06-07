@@ -14,6 +14,7 @@ const solutionLinks = [
 const resourceLinks = [
   { href: "/#ferramentas", label: "Ferramentas" },
   { href: "/planos", label: "Planos" },
+  { href: "/escolas", label: "Para escolas" },
   { href: "/contato", label: "Contato" },
   { href: "/login", label: "Entrar" },
 ];

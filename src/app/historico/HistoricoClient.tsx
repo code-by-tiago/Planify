@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import type { EditorDocument } from "../../types/editor";
 import type { HistoryFilter, HistoryItem } from "../../types/history";
 import { GoogleClassroomPanel } from "@/components/google/GoogleClassroomPanel";
+import { MarketplacePublishButton } from "@/components/marketplace/MarketplacePublishButton";
 import {
   buildHistoryContentPreview,
   historyItemContentToHtml,
@@ -104,6 +105,12 @@ function sourceIcon(source: string): "clipboard" | "fileText" | "editor" {
   if (source === "planejamento") return "clipboard";
   if (source === "manual") return "editor";
   return "fileText";
+}
+
+function resolveMarketplaceTipo(item: HistoryItem): string {
+  if (item.source === "planejamento") return "Planejamento";
+  if (item.source === "manual") return "Material do editor";
+  return resolveHistoryTypeLabel(item.type);
 }
 
 export function HistoricoClient() {
@@ -421,6 +428,15 @@ export function HistoricoClient() {
                 </p>
               </div>
               <div className="flex shrink-0 flex-wrap items-center gap-2">
+                <MarketplacePublishButton
+                  title={selectedItem.title}
+                  getHtml={getSelectedHtml}
+                  tipoMaterial={resolveMarketplaceTipo(selectedItem)}
+                  tema={selectedItem.subtitle || selectedItem.title}
+                  label="Comunidade"
+                  compact
+                  className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-fuchsia-200 bg-fuchsia-50 px-3 py-2 text-xs font-black text-fuchsia-800 transition hover:bg-fuchsia-100"
+                />
                 <GoogleClassroomPanel
                   compact
                   title={selectedItem.title}

@@ -12,13 +12,13 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "Planify para Escolas | Gestão Pedagógica e Conformidade BNCC",
   description:
-    "Plataforma institucional para gestores escolares: controle pedagógico, conformidade com a BNCC, auditoria em tempo real e portal exclusivo para diretores e coordenadores.",
+    "Plataforma institucional para gestores escolares: controle pedagógico, conformidade com a BNCC, auditoria atualizada automaticamente e portal exclusivo para diretores e coordenadores.",
 };
 
 const benefits = [
   {
     icon: "listChecks" as const,
-    title: "Auditoria em Tempo Real",
+    title: "Auditoria Pedagógica Contínua",
     description:
       "Monitore habilidades da BNCC por turma, identifique lacunas pedagógicas e antecipe atrasos antes que impactem o calendário letivo.",
   },
@@ -32,16 +32,16 @@ const benefits = [
     icon: "lock" as const,
     title: "Autonomia de Acessos",
     description:
-      "Portal exclusivo para diretores e gestores. Gerencie licenças da equipe por e-mail em um clique, com controle granular de permissões.",
+      "Portal exclusivo para diretores e gestores. Convide ou revogue licenças da equipe por e-mail em um clique.",
   },
 ];
 
 const comparisonRows = [
   { label: "Portal exclusivo do gestor", values: [true, true, true] },
   { label: "Painel BNCC por turma", values: [true, true, true] },
-  { label: "Relatórios de conformidade", values: [true, true, true] },
+  { label: "Painel de conformidade BNCC", values: [true, true, true] },
   { label: "Licenciamento por e-mail", values: [true, true, true] },
-  { label: "Auditoria em tempo real ampliada", values: [false, true, true] },
+  { label: "Feed de materiais + alertas de lacunas BNCC", values: [false, true, true] },
   { label: "Métricas de produtividade docente", values: [false, true, true] },
   { label: "Onboarding institucional assistido", values: [false, true, true] },
   { label: "Acordo comercial personalizado", values: [false, false, true] },
@@ -65,7 +65,7 @@ export default function EscolasPage() {
           </h1>
           <p className="mt-6 max-w-3xl text-lg font-medium leading-8 text-slate-600">
             O Planify automatiza a burocracia docente — planejamentos, materiais e registros
-            pedagógicos — e entrega relatórios em tempo real à coordenação e à direção. Sua
+            pedagógicos — e entrega relatórios atualizados automaticamente no painel à coordenação e à direção. Sua
             equipe ganha produtividade; sua gestão ganha visibilidade, conformidade e
             tranquilidade institucional.
           </p>

@@ -52,9 +52,28 @@ export type PlanifyAccessStatus = {
   message?: string;
 };
 
+export type PlanifyFullAccessStatus = PlanifyAccessStatus & {
+  isOwner?: boolean;
+  isAdmin?: boolean;
+  isManagerView?: boolean;
+  canViewDirectorPanel?: boolean;
+};
+
 export async function fetchPlanifyAccessStatus(
   accessToken?: string | null,
 ): Promise<PlanifyAccessStatus> {
+  const full = await fetchFullPlanifyAccessStatus(accessToken);
+  return {
+    authenticated: full.authenticated,
+    premium: full.premium,
+    email: full.email,
+    message: full.message,
+  };
+}
+
+export async function fetchFullPlanifyAccessStatus(
+  accessToken?: string | null,
+): Promise<PlanifyFullAccessStatus> {
   const headers: HeadersInit = accessToken
     ? { Authorization: `Bearer ${accessToken}` }
     : {};
@@ -65,12 +84,18 @@ export async function fetchPlanifyAccessStatus(
     headers,
   });
 
-  const data = (await response.json().catch(() => null)) as PlanifyAccessStatus | null;
+  const data = (await response.json().catch(() => null)) as
+    | PlanifyFullAccessStatus
+    | null;
 
   return {
     authenticated: Boolean(data?.authenticated),
     premium: Boolean(data?.premium),
     email: data?.email,
     message: data?.message,
+    isOwner: Boolean(data?.isOwner),
+    isAdmin: Boolean(data?.isAdmin),
+    isManagerView: Boolean(data?.isManagerView),
+    canViewDirectorPanel: Boolean(data?.canViewDirectorPanel),
   };
 }

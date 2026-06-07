@@ -4,6 +4,7 @@ import type {
   BnccSkillSummary,
   SchoolClassBnccRow,
   SchoolDashboardResponse,
+  TeacherProductivityRow,
 } from "@/lib/bncc/types";
 import {
   DEFAULT_SCHOOL_YEAR,
@@ -31,6 +32,7 @@ type GeneratedMaterialRow = {
   discipline: string | null;
   user_id: string;
   school_year: number | null;
+  surface?: string | null;
 };
 
 const PERSONAL_CLASS_PREFIX = "cn:";
@@ -555,7 +557,7 @@ async function fetchSchoolMaterials(
 ): Promise<GeneratedMaterialRow[]> {
   const supabase = getSupabaseAdminClient();
   const select =
-    "id,title,bncc_skill_codes,created_at,class_id,class_name,user_id,school_id,discipline,school_year";
+    "id,title,bncc_skill_codes,created_at,class_id,class_name,user_id,school_id,discipline,school_year,surface";
 
   const buildQuery = () => {
     let query = supabase
@@ -800,6 +802,94 @@ async function resolveTeacherName(userId: string | null): Promise<string | null>
   return email || null;
 }
 
+const PENDING_SKILLS_PREVIEW = 5;
+const AT_RISK_COVERAGE_THRESHOLD = 50;
+
+async function buildTeacherProductivity(
+  schoolId: string,
+  allMaterials: GeneratedMaterialRow[],
+  monthMaterials: GeneratedMaterialRow[],
+): Promise<TeacherProductivityRow[]> {
+  const teacherIds = await fetchSchoolTeacherIds(schoolId);
+  if (teacherIds.length === 0) return [];
+
+  const teacherNamesById = await resolveTeacherNames(teacherIds);
+  const supabase = getSupabaseAdminClient();
+  const { data: profiles } = await supabase
+    .from("profiles")
+    .select("id,email")
+    .in("id", teacherIds);
+
+  const emailById = new Map(
+    (profiles || []).map((row) => {
+      const profile = row as { id: string; email?: string | null };
+      return [profile.id, profile.email ? String(profile.email).trim() : null];
+    }),
+  );
+
+  const stats = new Map<
+    string,
+    {
+      materialsThisMonth: number;
+      materialsTotal: number;
+      planningsThisMonth: number;
+      planningsTotal: number;
+      lastActivityAt: string | null;
+    }
+  >();
+
+  for (const teacherId of teacherIds) {
+    stats.set(teacherId, {
+      materialsThisMonth: 0,
+      materialsTotal: 0,
+      planningsThisMonth: 0,
+      planningsTotal: 0,
+      lastActivityAt: null,
+    });
+  }
+
+  const monthIds = new Set(monthMaterials.map((row) => row.id));
+
+  for (const material of allMaterials) {
+    const entry = stats.get(material.user_id);
+    if (!entry) continue;
+
+    const isPlanning = material.surface === "planning";
+
+    if (isPlanning) {
+      entry.planningsTotal += 1;
+      if (monthIds.has(material.id)) entry.planningsThisMonth += 1;
+    } else {
+      entry.materialsTotal += 1;
+      if (monthIds.has(material.id)) entry.materialsThisMonth += 1;
+    }
+
+    if (
+      !entry.lastActivityAt ||
+      new Date(material.created_at).getTime() >
+        new Date(entry.lastActivityAt).getTime()
+    ) {
+      entry.lastActivityAt = material.created_at;
+    }
+  }
+
+  return teacherIds
+    .map((userId) => {
+      const entry = stats.get(userId)!;
+      return {
+        userId,
+        name: teacherNamesById.get(userId) || "Professor",
+        email: emailById.get(userId) || null,
+        materialsThisMonth: entry.materialsThisMonth,
+        materialsTotal: entry.materialsTotal,
+        planningsThisMonth: entry.planningsThisMonth,
+        planningsTotal: entry.planningsTotal,
+        lastActivityAt: entry.lastActivityAt,
+      };
+    })
+    .sort((a, b) => b.materialsThisMonth - a.materialsThisMonth);
+}
+
 export async function getSchoolDashboardMetrics(
   schoolId: string,
 ): Promise<SchoolDashboardResponse> {
@@ -860,7 +950,10 @@ export async function getSchoolDashboardMetrics(
       catalogCache,
     );
 
-    const { covered, coveragePercent } = buildCoverage(catalog, classMaterials);
+    const { covered, pending, coveragePercent } = buildCoverage(
+      catalog,
+      classMaterials,
+    );
     const materialsThisMonth = (monthMaterialsByClass.get(cls.id) || []).length;
 
     const teacherUserId =
@@ -879,8 +972,10 @@ export async function getSchoolDashboardMetrics(
       teacherName,
       coveragePercent,
       coveredCount: covered.length,
+      pendingCount: pending.length,
       totalSkills: catalog.length,
       materialsThisMonth,
+      pendingSkills: pending.slice(0, PENDING_SKILLS_PREVIEW),
     });
   }
 
@@ -894,6 +989,27 @@ export async function getSchoolDashboardMetrics(
     allMaterials,
   );
 
+  const teacherProductivity = await buildTeacherProductivity(
+    schoolId,
+    allMaterials,
+    monthMaterials,
+  );
+
+  const atRiskClasses = classMetrics
+    .filter(
+      (row) =>
+        row.totalSkills > 0 &&
+        (row.coveragePercent < AT_RISK_COVERAGE_THRESHOLD ||
+          row.pendingCount > row.coveredCount),
+    )
+    .map((row) => ({
+      classId: row.classId,
+      className: row.className,
+      coveragePercent: row.coveragePercent,
+      pendingCount: row.pendingCount,
+    }))
+    .sort((a, b) => a.coveragePercent - b.coveragePercent);
+
   return {
     schoolId,
     schoolName: String((school as { name: string }).name),
@@ -901,5 +1017,7 @@ export async function getSchoolDashboardMetrics(
     avgBnccCompliance,
     materialsThisMonth: monthMaterials.length,
     classes: classMetrics,
+    teacherProductivity,
+    atRiskClasses,
   };
 }

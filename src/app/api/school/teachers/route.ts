@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireApiAuthenticated } from "@/server/auth/api-access";
 import { listSchoolPendingInvites } from "@/server/schools/school-invite-service";
+import { getSchoolLicenseInfo } from "@/server/schools/school-license";
 import { requireSchoolDashboardAccess } from "@/server/schools/school-access";
 import {
   ensurePrimarySchoolIdForUser,
@@ -46,9 +47,10 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const [members, pendingInvites] = await Promise.all([
+    const [members, pendingInvites, license] = await Promise.all([
       listSchoolMembers(schoolId),
       listSchoolPendingInvites(schoolId),
+      getSchoolLicenseInfo(schoolId),
     ]);
 
     type MemberRow = {
@@ -78,6 +80,15 @@ export async function GET(request: NextRequest) {
         schoolId,
         activeTeachers,
         pendingInvites,
+        license: {
+          institutionalPlan: license.institutionalPlan,
+          planLabel: license.planLabel,
+          teacherLimit: license.teacherLimit,
+          activeTeachers: license.activeTeachers,
+          pendingInvites: license.pendingInvites,
+          seatsUsed: license.seatsUsed,
+          seatsAvailable: license.seatsAvailable,
+        },
       },
     });
   } catch (error) {

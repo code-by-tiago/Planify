@@ -45,8 +45,21 @@ export type SchoolClassBnccRow = {
   teacherName: string | null;
   coveragePercent: number;
   coveredCount: number;
+  pendingCount: number;
   totalSkills: number;
   materialsThisMonth: number;
+  pendingSkills: BnccSkillSummary[];
+};
+
+export type TeacherProductivityRow = {
+  userId: string;
+  name: string;
+  email: string | null;
+  materialsThisMonth: number;
+  materialsTotal: number;
+  planningsThisMonth: number;
+  planningsTotal: number;
+  lastActivityAt: string | null;
 };
 
 export type SchoolDashboardResponse = {
@@ -56,4 +69,11 @@ export type SchoolDashboardResponse = {
   avgBnccCompliance: number;
   materialsThisMonth: number;
   classes: SchoolClassBnccRow[];
+  teacherProductivity: TeacherProductivityRow[];
+  atRiskClasses: Array<{
+    classId: string;
+    className: string;
+    coveragePercent: number;
+    pendingCount: number;
+  }>;
 };

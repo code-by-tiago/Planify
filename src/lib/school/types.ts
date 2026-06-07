@@ -15,10 +15,21 @@ export type SchoolPendingInvite = {
   createdAt: string;
 };
 
+export type SchoolLicenseSummary = {
+  institutionalPlan: string | null;
+  planLabel: string | null;
+  teacherLimit: number | null;
+  activeTeachers: number;
+  pendingInvites: number;
+  seatsUsed: number;
+  seatsAvailable: number | null;
+};
+
 export type SchoolTeachersResponse = {
   schoolId: string;
   activeTeachers: SchoolTeacherMember[];
   pendingInvites: SchoolPendingInvite[];
+  license: SchoolLicenseSummary;
 };
 
 export type SchoolClassItem = {

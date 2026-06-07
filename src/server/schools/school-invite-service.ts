@@ -1,5 +1,6 @@
 import type { TablesInsert } from "@/types/database";
 import { getSupabaseAdminClient } from "../supabase/admin-client";
+import { assertCanInviteTeacher } from "./school-license";
 import { grantSchoolProPlan } from "./school-pro-grant";
 import { createSchoolMember } from "./school-service";
 
@@ -39,13 +40,32 @@ export async function inviteTeacherToSchool(
   const existingUserId = await findUserIdByEmail(normalized);
 
   if (existingUserId) {
+    const supabase = getSupabaseAdminClient();
+    const { data: existingMembership } = await supabase
+      .from("school_memberships")
+      .select("id,status")
+      .eq("school_id", schoolId)
+      .eq("user_id", existingUserId)
+      .eq("role", "teacher")
+      .maybeSingle();
+
+    const membership = existingMembership as {
+      id?: string;
+      status?: string;
+    } | null;
+
+    if (membership?.status === "active") {
+      throw new Error("Este professor já foi vinculado à escola.");
+    }
+
+    await assertCanInviteTeacher(schoolId);
+
     await createSchoolMember(schoolId, {
       userId: existingUserId,
       role: "teacher",
       status: "active",
     });
 
-    const supabase = getSupabaseAdminClient();
     const inviteRow: TablesInsert<"school_invites"> = {
       school_id: schoolId,
       email: normalized,
@@ -86,6 +106,8 @@ export async function inviteTeacherToSchool(
   if (existing?.status === "accepted") {
     throw new Error("Este professor já foi vinculado à escola.");
   }
+
+  await assertCanInviteTeacher(schoolId);
 
   const pendingRow: TablesInsert<"school_invites"> = {
     school_id: schoolId,

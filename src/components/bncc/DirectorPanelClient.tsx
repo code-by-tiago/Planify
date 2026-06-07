@@ -204,6 +204,9 @@ export function DirectorPanelClient({ embedded = false }: DirectorPanelClientPro
     period: "all",
     discipline: "",
   });
+  const [revokeLoadingId, setRevokeLoadingId] = useState<string | null>(null);
+
+  const GESTOR_POLL_MS = 60_000;
 
   const loadDashboard = useCallback(async () => {
     if (!access.canViewDirectorPanel) {
@@ -325,6 +328,16 @@ export function DirectorPanelClient({ embedded = false }: DirectorPanelClientPro
   }, [access.loading, loadDashboard]);
 
   useEffect(() => {
+    if (access.loading || !access.canViewDirectorPanel || tab !== "overview") return;
+
+    const intervalId = window.setInterval(() => {
+      void loadDashboard();
+    }, GESTOR_POLL_MS);
+
+    return () => window.clearInterval(intervalId);
+  }, [access.loading, access.canViewDirectorPanel, tab, loadDashboard]);
+
+  useEffect(() => {
     if (pathname !== "/gestor" && pathname !== "/diretor") return;
     const legacyTab = searchParams.get("tab");
     const section = gestorSectionFromLegacyTab(legacyTab);
@@ -353,6 +366,65 @@ export function DirectorPanelClient({ embedded = false }: DirectorPanelClientPro
     () => teachers?.activeTeachers || [],
     [teachers?.activeTeachers],
   );
+
+  async function revokeTeacher(teacherUserId: string) {
+    setRevokeLoadingId(teacherUserId);
+    setInviteError("");
+    setInviteMessage("");
+
+    try {
+      const response = await planifyAuthenticatedFetch(
+        `/api/school/teachers/${teacherUserId}`,
+        { method: "DELETE" },
+      );
+      const data = (await response.json()) as {
+        success?: boolean;
+        message?: string;
+        error?: { message?: string };
+      };
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error?.message || "Não foi possível revogar a licença.");
+      }
+
+      setInviteMessage(data.message || "Licença revogada com sucesso.");
+      void loadDashboard();
+      void loadTeachers();
+    } catch (err) {
+      setInviteError(err instanceof Error ? err.message : "Erro ao revogar licença.");
+    } finally {
+      setRevokeLoadingId(null);
+    }
+  }
+
+  async function cancelInvite(inviteId: string) {
+    setRevokeLoadingId(inviteId);
+    setInviteError("");
+    setInviteMessage("");
+
+    try {
+      const response = await planifyAuthenticatedFetch(`/api/school/invite/${inviteId}`, {
+        method: "DELETE",
+      });
+      const data = (await response.json()) as {
+        success?: boolean;
+        message?: string;
+        error?: { message?: string };
+      };
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error?.message || "Não foi possível cancelar o convite.");
+      }
+
+      setInviteMessage(data.message || "Convite cancelado com sucesso.");
+      void loadDashboard();
+      void loadTeachers();
+    } catch (err) {
+      setInviteError(err instanceof Error ? err.message : "Erro ao cancelar convite.");
+    } finally {
+      setRevokeLoadingId(null);
+    }
+  }
 
   async function inviteTeacher() {
     const email = inviteEmail.trim().toLowerCase();
@@ -629,6 +701,81 @@ export function DirectorPanelClient({ embedded = false }: DirectorPanelClientPro
                   </article>
                 </div>
 
+                {(dashboard?.atRiskClasses || []).length > 0 ? (
+                  <section className="overflow-hidden rounded-2xl border border-amber-200/80 bg-amber-50/40 shadow-sm">
+                    <div className="border-b border-amber-100 px-4 py-4 sm:px-6">
+                      <h2 className="text-base font-black text-amber-900">
+                        Lacunas e atrasos pedagógicos
+                      </h2>
+                      <p className="mt-1 text-sm font-semibold text-amber-800/80">
+                        Turmas com cobertura BNCC abaixo de 50% ou mais habilidades pendentes
+                        do que cobertas — antecipe ajustes antes do calendário letivo.
+                      </p>
+                    </div>
+                    <ul className="divide-y divide-amber-100">
+                      {dashboard?.atRiskClasses.map((row) => (
+                        <li
+                          key={row.classId}
+                          className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6"
+                        >
+                          <div>
+                            <p className="text-sm font-black text-slate-950">{row.className}</p>
+                            <p className="text-xs font-semibold text-slate-500">
+                              {row.pendingCount} habilidade(s) pendente(s)
+                            </p>
+                          </div>
+                          <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-black text-amber-900">
+                            {row.coveragePercent}% BNCC
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                ) : null}
+
+                {(dashboard?.teacherProductivity || []).length > 0 ? (
+                  <section className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
+                    <div className="border-b border-slate-100 px-4 py-4 sm:px-6">
+                      <h2 className="text-base font-black text-slate-950">
+                        Produtividade docente
+                      </h2>
+                      <p className="mt-1 text-sm font-semibold text-slate-500">
+                        Materiais e planejamentos gerados por professor neste mês.
+                      </p>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full text-left text-sm">
+                        <thead className="border-b border-slate-100 bg-slate-50/80 text-[10px] font-black uppercase tracking-wide text-slate-500">
+                          <tr>
+                            <th className="px-4 py-3 sm:px-6">Professor</th>
+                            <th className="px-4 py-3">Materiais (mês)</th>
+                            <th className="px-4 py-3">Planejamentos (mês)</th>
+                            <th className="px-4 py-3 sm:px-6">Última atividade</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {dashboard?.teacherProductivity.map((row) => (
+                            <tr key={row.userId} className="hover:bg-slate-50/60">
+                              <td className="px-4 py-3 font-black text-slate-950 sm:px-6">
+                                {row.name}
+                              </td>
+                              <td className="px-4 py-3 font-semibold text-slate-700">
+                                {row.materialsThisMonth}
+                              </td>
+                              <td className="px-4 py-3 font-semibold text-slate-700">
+                                {row.planningsThisMonth}
+                              </td>
+                              <td className="px-4 py-3 font-semibold text-slate-600 sm:px-6">
+                                {row.lastActivityAt ? formatDate(row.lastActivityAt) : "—"}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </section>
+                ) : null}
+
                 <section className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
                   <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-4 py-4 sm:px-6">
                     <div>
@@ -728,6 +875,34 @@ export function DirectorPanelClient({ embedded = false }: DirectorPanelClientPro
                                     </p>
                                   </div>
                                 </div>
+                                {row.pendingCount > 0 ? (
+                                  <div className="mt-4 rounded-xl border border-amber-100 bg-white/90 p-4">
+                                    <p className="text-[10px] font-bold uppercase tracking-wide text-amber-700">
+                                      Habilidades BNCC pendentes ({row.pendingCount})
+                                    </p>
+                                    <ul className="mt-2 space-y-1.5">
+                                      {row.pendingSkills.map((skill) => (
+                                        <li
+                                          key={skill.code}
+                                          className="text-xs font-semibold text-slate-700"
+                                        >
+                                          <span className="font-black text-cyan-700">
+                                            {skill.code}
+                                          </span>
+                                          {skill.description
+                                            ? ` — ${skill.description.slice(0, 120)}${skill.description.length > 120 ? "…" : ""}`
+                                            : null}
+                                        </li>
+                                      ))}
+                                      {row.pendingCount > row.pendingSkills.length ? (
+                                        <li className="text-xs font-bold text-slate-400">
+                                          +{row.pendingCount - row.pendingSkills.length} habilidade(s)
+                                          adicionais
+                                        </li>
+                                      ) : null}
+                                    </ul>
+                                  </div>
+                                ) : null}
                               </div>
                             ) : null}
                           </li>
@@ -748,6 +923,17 @@ export function DirectorPanelClient({ embedded = false }: DirectorPanelClientPro
                   Informe o e-mail do docente. Se já tiver conta Planify, o vínculo é imediato;
                   caso contrário, o convite fica pendente até o cadastro.
                 </p>
+                {teachers?.license ? (
+                  <p className="mt-3 text-xs font-bold text-cyan-800">
+                    Licenças: {teachers.license.seatsUsed}
+                    {teachers.license.teacherLimit !== null
+                      ? ` / ${teachers.license.teacherLimit}`
+                      : " (ilimitado)"}
+                    {teachers.license.planLabel
+                      ? ` · Plano ${teachers.license.planLabel}`
+                      : ""}
+                  </p>
+                ) : null}
                 <div className="mt-4 flex flex-col gap-3 sm:flex-row">
                   <input
                     type="email"
@@ -809,9 +995,19 @@ export function DirectorPanelClient({ embedded = false }: DirectorPanelClientPro
                                 Enviado em {formatDate(invite.createdAt)}
                               </p>
                             </div>
-                            <span className="shrink-0 rounded-full bg-amber-100 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-amber-800">
-                              Pendente
-                            </span>
+                            <div className="flex shrink-0 items-center gap-2">
+                              <span className="rounded-full bg-amber-100 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-amber-800">
+                                Pendente
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => void cancelInvite(invite.id)}
+                                disabled={revokeLoadingId === invite.id}
+                                className="rounded-lg border border-amber-200 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-amber-800 transition hover:border-amber-300 disabled:opacity-60"
+                              >
+                                {revokeLoadingId === invite.id ? "…" : "Cancelar"}
+                              </button>
+                            </div>
                           </li>
                         ))}
                       </ul>
@@ -851,9 +1047,19 @@ export function DirectorPanelClient({ embedded = false }: DirectorPanelClientPro
                                   </p>
                                 ) : null}
                               </div>
-                              <span className="shrink-0 rounded-full bg-emerald-100 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-emerald-800">
-                                Ativo
-                              </span>
+                              <div className="flex shrink-0 items-center gap-2">
+                                <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-emerald-800">
+                                  Ativo
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => void revokeTeacher(member.userId)}
+                                  disabled={revokeLoadingId === member.userId}
+                                  className="rounded-lg border border-rose-200 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-rose-700 transition hover:border-rose-300 disabled:opacity-60"
+                                >
+                                  {revokeLoadingId === member.userId ? "…" : "Revogar"}
+                                </button>
+                              </div>
                             </li>
                           );
                         })}

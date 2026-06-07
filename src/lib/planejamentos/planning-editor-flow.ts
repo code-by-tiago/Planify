@@ -28,6 +28,16 @@ export function writeAutoOpenPlanningEditorPreference(enabled: boolean): void {
   window.localStorage.setItem(AUTO_PLANNING_EDITOR_PREF_KEY, String(enabled));
 }
 
+function resolvePlanningDocumentId(meta: PlanningEditorMeta): string | undefined {
+  const key = String(
+    meta.generationPayload?.idempotencyKey ||
+      meta.generationPayload?.idempotency_key ||
+      "",
+  ).trim();
+  if (!key) return undefined;
+  return `plan_${key.slice(0, 120)}`;
+}
+
 export function persistPlanningInEditor(
   html: string,
   title: string,
@@ -35,6 +45,7 @@ export function persistPlanningInEditor(
   raw?: unknown,
 ): ReturnType<typeof createEditorDocument> {
   const document = createEditorDocument({
+    id: resolvePlanningDocumentId(meta),
     source: "planejamento",
     title,
     subtitle: `${meta.componente} · ${meta.anoSerie}`,

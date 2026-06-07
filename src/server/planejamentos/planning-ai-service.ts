@@ -37,6 +37,8 @@ export type PlanningAiPayload = {
   habilidadesSelecionadas?: PlanningSkill[];
   elevarQualidade?: boolean;
   problemasQualidade?: string[];
+  idempotencyKey?: string;
+  idempotency_key?: string;
   classId?: string | null;
   className?: string | null;
   turma?: string | null;

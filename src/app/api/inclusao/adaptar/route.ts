@@ -127,7 +127,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (user?.id) {
-      persistGeneratedMaterialBestEffort({
+      await persistGeneratedMaterialBestEffort({
         userId: user.id,
         surface: "inclusao",
         tipo: `${tipo}:${payload.modo}`,

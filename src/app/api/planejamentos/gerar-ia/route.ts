@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (user?.id && result.success) {
-      persistGeneratedMaterialBestEffort({
+      await persistGeneratedMaterialBestEffort({
         userId: user.id,
         surface: "planning",
         tipo: String(payload.tipoPlanejamento || PLANNING_DEEP_GENERATION_TYPE),

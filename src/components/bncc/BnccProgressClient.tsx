@@ -186,6 +186,8 @@ export function BnccProgressClient({ embedded = false }: BnccProgressClientProps
               <h1 className="text-2xl font-black text-slate-950">Progresso BNCC</h1>
               <p className="mt-1 text-sm font-semibold text-slate-600">
                 Cobertura de habilidades com base nos materiais gerados no ano letivo.
+                Selecione habilidades BNCC ao criar materiais para registrar com
+                precisão.
               </p>
             </div>
             {filterControls}
@@ -194,6 +196,19 @@ export function BnccProgressClient({ embedded = false }: BnccProgressClientProps
       ) : null}
 
       <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">
+        <div className="mb-4 rounded-2xl border border-cyan-400/20 bg-cyan-50/60 px-4 py-3 text-sm leading-6 text-slate-700">
+          O progresso aumenta quando você gera materiais com{" "}
+          <strong className="font-bold text-slate-900">habilidades BNCC selecionadas</strong>{" "}
+          no painel da ferramenta. Sem seleção, o sistema estima pelo tema — com menor
+          precisão.{" "}
+          <Link
+            href={dashboardToolHref("resumo")}
+            className="font-bold text-cyan-800 underline decoration-cyan-400/50 underline-offset-2"
+          >
+            Criar material com BNCC
+          </Link>
+        </div>
+
         {embedded ? (
           <div className="mb-4 flex flex-wrap items-center justify-end gap-3">
             {filterControls}

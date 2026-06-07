@@ -133,7 +133,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (user?.id) {
-      persistGeneratedMaterialBestEffort({
+      await persistGeneratedMaterialBestEffort({
         userId: user.id,
         surface: "material",
         tipo: String(result.data.tipoMaterial || tipo),

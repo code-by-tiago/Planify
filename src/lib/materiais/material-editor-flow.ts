@@ -82,12 +82,23 @@ export function writeAutoOpenEditorPreference(enabled: boolean): void {
   window.localStorage.setItem(AUTO_EDITOR_PREF_KEY, String(enabled));
 }
 
+function resolveMaterialDocumentId(meta: MaterialEditorMeta): string | undefined {
+  const key = String(
+    meta.generationPayload?.idempotencyKey ||
+      meta.generationPayload?.idempotency_key ||
+      "",
+  ).trim();
+  if (!key) return undefined;
+  return `mat_${key.slice(0, 120)}`;
+}
+
 export function persistGeneratedMaterial(
   html: string,
   title: string,
   meta: MaterialEditorMeta,
 ): HistoryItem {
   const document = createEditorDocument({
+    id: resolveMaterialDocumentId(meta),
     source: "material",
     title,
     subtitle: `${meta.componente} · ${meta.anoSerie}`,

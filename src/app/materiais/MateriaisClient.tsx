@@ -66,6 +66,15 @@ import { downloadEditorExport } from "@/lib/downloads/editor-export-client";
 import { lessonBundleFollowUp } from "@/lib/pro/teachyStudio";
 import { useSchoolClasses } from "@/hooks/useSchoolClasses";
 import { TurmaCombobox } from "@/components/school/TurmaCombobox";
+import { MaterialBnccSkillsPanel } from "@/components/bncc/MaterialBnccSkillsPanel";
+import {
+  groupBnccSkillsFromResponse,
+  mapSelectedBnccSkillsToPayload,
+  splitTopicLines,
+  type BnccSkillGroup,
+  type BnccSkillOption,
+} from "@/lib/bncc/bncc-suggestion-ui";
+import { planifyAuthenticatedFetch } from "@/lib/auth/authenticated-fetch";
 
 const SELECT_FIELD_CLASS = HUD_FIELD_CLASS;
 
@@ -296,6 +305,21 @@ export function MateriaisClient({
   const [abrirEditorAutomatico, setAbrirEditorAutomatico] = useState(true);
   const [materialSalvo, setMaterialSalvo] = useState(false);
   const [hintFeedback, setHintFeedback] = useState("");
+  const [bnccGroups, setBnccGroups] = useState<BnccSkillGroup[]>([]);
+  const [selectedBnccSkills, setSelectedBnccSkills] = useState<BnccSkillOption[]>(
+    [],
+  );
+  const [loadingBncc, setLoadingBncc] = useState(false);
+  const [bnccRegistroFeedback, setBnccRegistroFeedback] = useState<{
+    count: number;
+    inferred: boolean;
+  } | null>(null);
+
+  function resetBnccSelection(clearSuggestions = true) {
+    if (clearSuggestions) setBnccGroups([]);
+    setSelectedBnccSkills([]);
+    setBnccRegistroFeedback(null);
+  }
 
   useEffect(() => {
     if (studioMode && initialTipo) {
@@ -334,6 +358,15 @@ export function MateriaisClient({
   useEffect(() => {
     if (initialTema.trim()) setTema(initialTema.trim());
   }, [initialTema]);
+
+  useEffect(() => {
+    resetBnccSelection(true);
+  }, [etapa, anoSerie, areaConhecimento, componente]);
+
+  useEffect(() => {
+    setBnccGroups([]);
+    setBnccRegistroFeedback(null);
+  }, [tema]);
 
   useEffect(() => {
     if (!studioMode) return;
@@ -609,6 +642,102 @@ export function MateriaisClient({
     setResultadoHtml("");
     setResultadoEstrutura(null);
     setErro("");
+    resetBnccSelection(true);
+  }
+
+  function buildBnccSuggestPayload() {
+    return {
+      etapa,
+      anoSerie,
+      areaConhecimento,
+      componenteCurricular: componente,
+      conteudos: tema.trim(),
+      objetivosGerais: objetivo.trim() || undefined,
+      observacoes: observacoes.trim() || undefined,
+      ...school.turmaPayload,
+      discipline: componente.trim() || undefined,
+      disciplina: componente.trim() || undefined,
+    };
+  }
+
+  async function sugerirHabilidadesBncc() {
+    setErro("");
+
+    if (!tema.trim()) {
+      setErro("Informe o tema antes de sugerir habilidades BNCC.");
+      return;
+    }
+
+    if (!componente.trim() || !anoSerie.trim()) {
+      setErro("Informe disciplina e ano/série para sugerir habilidades BNCC.");
+      return;
+    }
+
+    setLoadingBncc(true);
+
+    try {
+      const response = await planifyAuthenticatedFetch("/api/bncc/sugerir", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(buildBnccSuggestPayload()),
+      });
+
+      const data = (await response.json().catch(() => null)) as {
+        success?: boolean;
+        conteudos?: unknown;
+        error?: { message?: string };
+      } | null;
+
+      if (!response.ok || !data?.success) {
+        throw new Error(
+          data?.error?.message || "Não foi possível sugerir habilidades BNCC.",
+        );
+      }
+
+      const topicLines = splitTopicLines(tema);
+      setBnccGroups(
+        groupBnccSkillsFromResponse(data as Record<string, unknown>, topicLines),
+      );
+      setSelectedBnccSkills([]);
+      setBnccRegistroFeedback(null);
+    } catch (error) {
+      setErro(
+        error instanceof Error
+          ? error.message
+          : "Erro ao sugerir habilidades BNCC.",
+      );
+    } finally {
+      setLoadingBncc(false);
+    }
+  }
+
+  function toggleBnccSkill(skill: BnccSkillOption) {
+    setSelectedBnccSkills((current) => {
+      const exists = current.some((item) => item.id === skill.id);
+      return exists
+        ? current.filter((item) => item.id !== skill.id)
+        : [...current, skill];
+    });
+    setBnccRegistroFeedback(null);
+  }
+
+  function selectBnccGroup(group: BnccSkillGroup) {
+    setSelectedBnccSkills((current) => {
+      const map = new Map(current.map((skill) => [skill.id, skill]));
+      for (const skill of group.habilidades.slice(0, 3)) {
+        map.set(skill.id, skill);
+      }
+      return Array.from(map.values());
+    });
+    setBnccRegistroFeedback(null);
+  }
+
+  function clearBnccGroup(group: BnccSkillGroup) {
+    setSelectedBnccSkills((current) =>
+      current.filter(
+        (skill) => !group.habilidades.some((item) => item.id === skill.id),
+      ),
+    );
   }
 
   function buildGenerationPayload(
@@ -642,6 +771,16 @@ export function MateriaisClient({
       ...school.turmaPayload,
       discipline: componente.trim() || undefined,
       disciplina: componente.trim() || undefined,
+      habilidadesSelecionadas: mapSelectedBnccSkillsToPayload(
+        selectedBnccSkills,
+        { etapa, anoSerie, areaConhecimento, componente },
+      ),
+      habilidadesBncc: mapSelectedBnccSkillsToPayload(selectedBnccSkills, {
+        etapa,
+        anoSerie,
+        areaConhecimento,
+        componente,
+      }),
       ...overrides,
     };
   }
@@ -795,6 +934,7 @@ export function MateriaisClient({
     setQualityIssues([]);
     setMaterialSalvo(false);
     setHintFeedback("");
+    setBnccRegistroFeedback(null);
 
     try {
       const turma = school.turmaPayload;
@@ -802,7 +942,10 @@ export function MateriaisClient({
         void school.rememberPersonalClass(turma.className);
       }
 
-      const payload = buildGenerationPayload();
+      const payload = {
+        ...buildGenerationPayload(),
+        idempotencyKey: crypto.randomUUID(),
+      };
       setLastGenerationPayload(payload);
 
       let data: Record<string, unknown>;
@@ -884,17 +1027,23 @@ export function MateriaisClient({
         qualityIssues: issuesValue,
         generationPayload: payload,
       });
-      persistGeneratedMaterial(html, titulo, meta);
-      setHistorico(loadMaterialHistoryPreview());
-      setMaterialSalvo(true);
+      setBnccRegistroFeedback({
+        count: selectedBnccSkills.length,
+        inferred: selectedBnccSkills.length === 0,
+      });
 
       if (abrirEditorAutomatico) {
         openMaterialInEditor(html, titulo, meta, {
           from: "materiais",
         });
+        setHistorico(loadMaterialHistoryPreview());
+        setMaterialSalvo(true);
         return;
       }
 
+      persistGeneratedMaterial(html, titulo, meta);
+      setHistorico(loadMaterialHistoryPreview());
+      setMaterialSalvo(true);
       setResultadoHtml(html);
     } catch (error) {
       const message =
@@ -1170,6 +1319,18 @@ export function MateriaisClient({
               </div>
             ) : null}
 
+            <MaterialBnccSkillsPanel
+              groups={bnccGroups}
+              selectedSkills={selectedBnccSkills}
+              loading={loadingBncc}
+              temaReady={Boolean(tema.trim() && componente.trim() && anoSerie.trim())}
+              onSuggest={() => void sugerirHabilidadesBncc()}
+              onToggleSkill={toggleBnccSkill}
+              onSelectGroup={selectBnccGroup}
+              onClearGroup={clearBnccGroup}
+              onClearAll={() => resetBnccSelection(false)}
+            />
+
             <label className="md:col-span-2">
               <span className={HUD_SECTION_LABEL}>
                 Objetivo pedagógico (opcional)
@@ -1399,6 +1560,42 @@ export function MateriaisClient({
               Abrir no editor automaticamente após gerar (recomendado para revisar e complementar)
             </label>
           </div>
+
+          {selectedBnccSkills.length === 0 && tema.trim() ? (
+            <p className="mt-4 rounded-xl border border-amber-200/80 bg-amber-50/80 px-4 py-3 text-xs font-semibold leading-5 text-amber-900">
+              Dica: selecione habilidades BNCC acima para registrar o material com
+              precisão no Progresso BNCC. Sem seleção, o sistema estima pelo tema ao
+              salvar.
+            </p>
+          ) : null}
+
+          {bnccRegistroFeedback ? (
+            <div
+              className={`mt-4 rounded-2xl border px-4 py-3 text-sm font-semibold leading-6 ${
+                bnccRegistroFeedback.inferred
+                  ? "border-amber-200 bg-amber-50 text-amber-900"
+                  : "border-emerald-200 bg-emerald-50 text-emerald-900"
+              }`}
+            >
+              {bnccRegistroFeedback.inferred ? (
+                <>
+                  Material gerado. As habilidades BNCC serão estimadas automaticamente
+                  pelo tema — para maior precisão, selecione habilidades antes da
+                  próxima geração.
+                </>
+              ) : (
+                <>
+                  <strong className="font-black">
+                    {bnccRegistroFeedback.count} habilidade
+                    {bnccRegistroFeedback.count === 1 ? "" : "s"} BNCC
+                  </strong>{" "}
+                  registrada
+                  {bnccRegistroFeedback.count === 1 ? "" : "s"} no Progresso BNCC
+                  deste material.
+                </>
+              )}
+            </div>
+          ) : null}
 
           {erro ? (
             <div className="mt-4 flex items-start gap-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-700">

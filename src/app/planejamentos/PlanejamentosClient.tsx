@@ -684,7 +684,10 @@ export function PlanejamentosClient() {
         void school.rememberPersonalClass(turma.className);
       }
 
-      const payload = buildBasePayload();
+      const payload = {
+        ...buildBasePayload(),
+        idempotencyKey: crypto.randomUUID(),
+      };
       const data = await requestPlanningGeneration(payload);
 
       window.dispatchEvent(new Event("planify:credits-changed"));
@@ -695,11 +698,6 @@ export function PlanejamentosClient() {
       setUsedAI(Boolean(data.usedAI));
       const issues = applyQualityFromResponse(data);
       setLastGenerationPayload(payload);
-
-      persistGeneratedPlanning(planning, payload, {
-        qualityScore: data.qualityScore,
-        qualityIssues: issues,
-      });
 
       if (abrirEditorAutomatico) {
         const html = buildPlanningEditorHtml(form, planning);
@@ -717,6 +715,11 @@ export function PlanejamentosClient() {
         );
         return;
       }
+
+      persistGeneratedPlanning(planning, payload, {
+        qualityScore: data.qualityScore,
+        qualityIssues: issues,
+      });
 
       setStatus(
         data.usedAI

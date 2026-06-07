@@ -10,6 +10,7 @@ function createId(): string {
 }
 
 export function createEditorDocument(params: {
+  id?: string;
   source: EditorDocumentSource;
   title: string;
   subtitle?: string;
@@ -20,7 +21,7 @@ export function createEditorDocument(params: {
   const now = new Date().toISOString();
 
   return {
-    id: createId(),
+    id: params.id?.trim() || createId(),
     source: params.source,
     title: params.title,
     subtitle: params.subtitle,

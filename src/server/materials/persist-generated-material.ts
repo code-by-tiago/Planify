@@ -250,15 +250,21 @@ export async function persistGeneratedMaterial(
   }
 }
 
-export function persistGeneratedMaterialBestEffort(
+export async function persistGeneratedMaterialBestEffort(
   params: PersistGenerationParams,
-): void {
-  void persistGenerationRecord(params);
+): Promise<string | null> {
+  try {
+    return await persistGenerationRecord(params);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "unknown";
+    console.warn("planify:persist-generated-material best-effort failed", message);
+    return null;
+  }
 }
 
 async function persistGenerationRecord(
   params: PersistGenerationParams,
-): Promise<void> {
+): Promise<string | null> {
   try {
     const htmlContent =
       params.contentHtml ||
@@ -328,7 +334,7 @@ async function persistGenerationRecord(
         params.contentHtml ? "" : String(params.result?.markdown || ""),
       );
 
-    await persistGeneratedMaterial({
+    const materialId = await persistGeneratedMaterial({
       userId: params.userId,
       schoolId,
       classId: params.classId || null,
@@ -352,8 +358,33 @@ async function persistGenerationRecord(
       qualityScore: params.qualityScore ?? null,
       surface: params.surface,
     });
+
+    // #region agent log
+    fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "920c67" },
+      body: JSON.stringify({
+        sessionId: "920c67",
+        runId: "post-fix",
+        hypothesisId: "H-BNCC",
+        location: "persist-generated-material.ts:persistGenerationRecord",
+        message: "material persisted to supabase",
+        data: {
+          materialId: materialId || null,
+          tipo: params.tipo,
+          discipline,
+          bnccCodesCount: extracted.codes.length,
+          schoolYear,
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
+
+    return materialId;
   } catch (error) {
     const message = error instanceof Error ? error.message : "unknown";
     console.warn("planify:persist-generated-material failed", message);
+    return null;
   }
 }

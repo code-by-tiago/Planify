@@ -7,9 +7,14 @@ import {
   getAreaOptions,
   getComponentOptions,
   getYearOptions,
-  normalizeMaterialEducation,
   type MaterialEducationFields,
 } from "@/lib/educacao/education-options";
+import {
+  applyEducationWithCatalogGuards,
+  catalogScopeMatches,
+  reconcileEducationWithCatalog,
+  type CatalogScope,
+} from "@/lib/educacao/catalog-education-guards";
 
 type CatalogOptions = {
   stages: string[];
@@ -33,15 +38,22 @@ export function useBnccEducationOptions(
 ) {
   const [loading, setLoading] = useState(true);
   const [catalog, setCatalog] = useState<CatalogOptions>(EMPTY_OPTIONS);
+  const [catalogScope, setCatalogScope] = useState<CatalogScope | null>(null);
   const [usingFallback, setUsingFallback] = useState(false);
 
   const load = useCallback(async () => {
+    const fetchScope: CatalogScope = {
+      etapa: fields.etapa,
+      anoSerie: fields.anoSerie,
+      areaConhecimento: fields.areaConhecimento,
+    };
+
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      if (fields.etapa) params.set("stage", fields.etapa);
-      if (fields.anoSerie) params.set("grade", fields.anoSerie);
-      if (fields.areaConhecimento) params.set("area", fields.areaConhecimento);
+      if (fetchScope.etapa) params.set("stage", fetchScope.etapa);
+      if (fetchScope.anoSerie) params.set("grade", fetchScope.anoSerie);
+      if (fetchScope.areaConhecimento) params.set("area", fetchScope.areaConhecimento);
 
       const response = await planifyAuthenticatedFetch(
         `/api/bncc/catalog/options${params.toString() ? `?${params.toString()}` : ""}`,
@@ -53,14 +65,17 @@ export function useBnccEducationOptions(
 
       if (!response.ok || !data?.success || !data.options?.totalSkills) {
         setCatalog(EMPTY_OPTIONS);
+        setCatalogScope(null);
         setUsingFallback(true);
         return;
       }
 
       setCatalog(data.options);
+      setCatalogScope(fetchScope);
       setUsingFallback(false);
     } catch {
       setCatalog(EMPTY_OPTIONS);
+      setCatalogScope(null);
       setUsingFallback(true);
     } finally {
       setLoading(false);
@@ -106,30 +121,29 @@ export function useBnccEducationOptions(
 
   const applyEducation = useCallback(
     (patch: Partial<MaterialEducationFields>) => {
-      const next = normalizeMaterialEducation(fields, patch);
-
-      if (!usingFallback) {
-        if (catalog.grades.length > 0 && !catalog.grades.includes(next.anoSerie)) {
-          next.anoSerie = catalog.grades[0] || next.anoSerie;
-        }
-
-        if (
-          catalog.knowledgeAreas.length > 0 &&
-          !catalog.knowledgeAreas.includes(next.areaConhecimento)
-        ) {
-          next.areaConhecimento = catalog.knowledgeAreas[0] || next.areaConhecimento;
-          next.componente = catalog.subjects[0] || next.componente;
-        }
-
-        if (catalog.subjects.length > 0 && !catalog.subjects.includes(next.componente)) {
-          next.componente = catalog.subjects[0] || next.componente;
-        }
-      }
-
+      const next = applyEducationWithCatalogGuards(
+        fields,
+        patch,
+        catalog,
+        catalogScope,
+        usingFallback,
+      );
       onChange(next);
     },
-    [catalog, fields, onChange, usingFallback],
+    [catalog, catalogScope, fields, onChange, usingFallback],
   );
+
+  useEffect(() => {
+    const reconciled = reconcileEducationWithCatalog(
+      fields,
+      catalog,
+      catalogScope,
+      usingFallback,
+    );
+    if (reconciled) {
+      onChange(reconciled);
+    }
+  }, [catalog, catalogScope, fields, onChange, usingFallback]);
 
   return {
     loading,

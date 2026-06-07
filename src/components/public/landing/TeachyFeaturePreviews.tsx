@@ -250,6 +250,73 @@ function RedacaoFeaturePreview() {
   );
 }
 
+export function InclusionFeaturePreview() {
+  return (
+    <PreviewShell className="max-w-lg">
+      <div className="pl-hud-glass overflow-hidden rounded-2xl">
+        <div className="flex items-center gap-2 border-b border-cyan-400/15 bg-white/60 px-4 py-2.5">
+          <span className="h-2.5 w-2.5 rounded-full bg-red-400" aria-hidden />
+          <span className="h-2.5 w-2.5 rounded-full bg-amber-400" aria-hidden />
+          <span className="h-2.5 w-2.5 rounded-full bg-emerald-400" aria-hidden />
+          <span className="ml-1 text-[11px] font-bold tracking-wide text-slate-500">
+            Planify IA — Inclusão
+          </span>
+        </div>
+
+        <div className="p-4 sm:p-5">
+          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-cyan-600">
+            Modo de adaptação
+          </p>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            <span className="rounded-full border border-cyan-400/35 bg-cyan-50/80 px-2.5 py-1 text-[10px] font-bold text-cyan-700">
+              Adaptação de Atividades
+            </span>
+            <span className="rounded-full border border-cyan-400/12 bg-white/70 px-2.5 py-1 text-[10px] font-bold text-slate-500">
+              Trilhas Paralelas
+            </span>
+          </div>
+
+          <p className="mt-4 text-[10px] font-bold uppercase tracking-[0.16em] text-cyan-600">
+            Necessidade do aluno
+          </p>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {["TEA", "TDAH", "Dislexia"].map((chip, i) => (
+              <span
+                key={chip}
+                className={`rounded-full border px-2.5 py-1 text-[10px] font-bold ${
+                  i === 0
+                    ? "border-cyan-400/35 bg-cyan-50/80 text-cyan-700"
+                    : "border-cyan-400/12 bg-white/70 text-slate-500"
+                }`}
+              >
+                {chip}
+              </span>
+            ))}
+          </div>
+
+          <p className="mt-4 text-[10px] font-bold uppercase tracking-[0.16em] text-cyan-600">
+            Conteúdo original
+          </p>
+          <div
+            className="mt-2 space-y-1.5 rounded-xl border border-cyan-400/12 bg-white/70 p-3"
+            aria-hidden
+          >
+            <div className="h-2 w-[42%] rounded-full bg-slate-100" />
+            <div className="h-2 w-full rounded-full bg-slate-50" />
+            <div className="h-2 w-[72%] rounded-full bg-slate-50" />
+          </div>
+
+          <div className="mt-5 flex justify-end">
+            <span className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-cyan-600 px-5 py-2.5 text-xs font-bold text-white shadow-[0_2px_8px_rgba(8,145,178,0.22)]">
+              ✨ Adaptar Material para Inclusão
+            </span>
+          </div>
+        </div>
+      </div>
+    </PreviewShell>
+  );
+}
+
 const previewMap: Record<PreviewVariant, () => ReactNode> = {
   spark: MaterialFeaturePreview,
   layers: () => (

@@ -1,69 +1,54 @@
 import Link from "next/link";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
-import type { PlanifyIconName } from "@/lib/pro/planifyTools";
-import { dashboardToolHref } from "@/lib/pro/toolRoutes";
-
-const INCLUSION_BULLETS: {
-  icon: PlanifyIconName;
-  title: string;
-  description: string;
-}[] = [
-  {
-    icon: "puzzle",
-    title: "Adaptação para TEA (Autismo)",
-    description: "Rotinas visuais e comandos claros.",
-  },
-  {
-    icon: "listChecks",
-    title: "Materiais para TDAH",
-    description: "Textos objetivos, tópicos destacados e exercícios focados.",
-  },
-  {
-    icon: "fileText",
-    title: "Dislexia e Baixa Visão",
-    description: "Formatação limpa e suporte a fontes amigáveis.",
-  },
-];
+import { Reveal } from "@/components/public/landing/Reveal";
+import { InclusionFeaturePreview } from "@/components/public/landing/TeachyFeaturePreviews";
+import { teachyInclusionFeature } from "@/lib/pro/teachyLanding";
 
 export function InclusionFocusSection() {
+  const feature = teachyInclusionFeature;
+
   return (
     <section
       id="inclusao"
-      className="pl-hud-landing-inclusion-section relative isolate scroll-mt-28 overflow-hidden py-4 sm:py-6"
+      className="relative isolate scroll-mt-28 overflow-hidden py-16 sm:py-20"
       aria-labelledby="inclusion-focus-heading"
     >
-      <div className="pl-hud-landing-inclusion-band mx-auto max-w-[calc(100%-2rem)] sm:max-w-7xl">
-        <div className="mx-auto grid max-w-7xl items-center gap-10 px-5 py-14 sm:px-8 lg:grid-cols-2 lg:gap-12 lg:py-20">
-          <div>
-            <span className="pl-hud-badge inline-flex items-center gap-1.5">
-              <PlanifyIcon name="spark" className="h-3 w-3" />
+      <div className="mx-auto max-w-7xl px-5 sm:px-8">
+        <Reveal
+          from="left"
+          className="pl-hud-feature-row pl-hud-feature-row--alt grid items-center gap-10 rounded-3xl p-6 sm:p-8 lg:grid-cols-2 lg:gap-16 lg:p-10"
+        >
+          <div className="lg:order-1">
+            <span className="pl-hud-feature-step inline-flex items-center gap-2 rounded-full border border-cyan-400/25 bg-white/80 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-cyan-700 backdrop-blur-sm">
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-gradient-to-br from-cyan-400 to-cyan-600 text-white">
+                <PlanifyIcon name="spark" className="h-3 w-3" />
+              </span>
               Inclusão
             </span>
+
             <h2
               id="inclusion-focus-heading"
-              className="mt-4 text-3xl font-black leading-tight tracking-tight text-slate-950 sm:text-[2.5rem] lg:text-5xl"
+              className="mt-4 text-2xl font-black tracking-tight text-slate-950 sm:text-3xl lg:text-[2rem]"
             >
-              Educação inclusiva ao alcance de{" "}
-              <span className="pl-hud-gradient-text">um clique</span>
+              {feature.title}
             </h2>
-            <p className="mt-5 max-w-lg text-lg font-medium leading-8 text-slate-600">
-              A única ferramenta que adapta materiais para as necessidades específicas de cada
-              aluno de forma humanizada.
+            <p className="mt-4 text-base font-medium leading-7 text-slate-600 sm:text-lg sm:leading-8">
+              {feature.description}
             </p>
 
-            <ul className="mt-8 space-y-4" role="list">
-              {INCLUSION_BULLETS.map((item) => (
-                <li key={item.title} className="pl-hud-landing-inclusion-bullet flex gap-4">
+            <ul className="mt-6 space-y-3.5" role="list">
+              {feature.bullets.map((item) => (
+                <li key={item.label} className="flex gap-3">
                   <span
-                    className="pl-hud-landing-inclusion-bullet-icon flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-cyan-400/20 bg-cyan-50/60 text-cyan-700"
                     aria-hidden
                   >
-                    <PlanifyIcon name={item.icon} className="h-5 w-5" />
+                    <PlanifyIcon name={item.icon} className="h-4 w-4" />
                   </span>
                   <span className="min-w-0 pt-0.5">
-                    <span className="block text-base font-bold text-slate-950">{item.title}</span>
-                    <span className="mt-0.5 block text-sm font-medium leading-6 text-slate-600">
-                      {item.description}
+                    <span className="block text-sm font-bold text-slate-950">{item.label}</span>
+                    <span className="mt-0.5 block text-sm font-medium leading-snug text-slate-600">
+                      {item.text}
                     </span>
                   </span>
                 </li>
@@ -71,61 +56,21 @@ export function InclusionFocusSection() {
             </ul>
 
             <Link
-              href={dashboardToolHref("inclusao")}
-              className="pl-hud-btn mt-8 inline-flex items-center gap-2 rounded-xl px-8 py-4 text-base font-semibold"
+              href={feature.href}
+              className="pl-hud-btn group mt-7 inline-flex items-center gap-2 rounded-xl px-6 py-3.5 text-sm font-semibold"
             >
-              Adaptar material agora
-              <PlanifyIcon name="arrowRight" className="h-4 w-4" />
+              {feature.cta}
+              <PlanifyIcon
+                name="arrowRight"
+                className="h-4 w-4 transition-transform motion-safe:group-hover:translate-x-0.5"
+              />
             </Link>
           </div>
 
-          <div className="relative w-full min-w-0">
-            <div
-              className="pl-hud-landing-inclusion-window"
-              role="img"
-              aria-label="Painel Planify IA para adaptação inclusiva de materiais"
-            >
-              <div className="pl-hud-landing-inclusion-window-chrome">
-                <span className="pl-hud-landing-inclusion-window-dot" aria-hidden />
-                <span className="pl-hud-landing-inclusion-window-dot" aria-hidden />
-                <span className="pl-hud-landing-inclusion-window-dot" aria-hidden />
-                <span className="pl-hud-landing-inclusion-window-title">Planify IA — Inclusão</span>
-              </div>
-
-              <div className="pl-hud-landing-inclusion-panel">
-                <p className="pl-hud-landing-inclusion-panel-label">Modo de adaptação</p>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  <span className="pl-hud-landing-inclusion-chip pl-hud-landing-inclusion-chip--active">
-                    Adaptação de Atividades
-                  </span>
-                  <span className="pl-hud-landing-inclusion-chip">Trilhas Paralelas</span>
-                </div>
-
-                <p className="pl-hud-landing-inclusion-panel-label mt-5">Necessidade do aluno</p>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  <span className="pl-hud-landing-inclusion-chip pl-hud-landing-inclusion-chip--active">
-                    TEA
-                  </span>
-                  <span className="pl-hud-landing-inclusion-chip">TDAH</span>
-                  <span className="pl-hud-landing-inclusion-chip">Dislexia</span>
-                </div>
-
-                <p className="pl-hud-landing-inclusion-panel-label mt-5">Conteúdo original</p>
-                <div className="pl-hud-landing-inclusion-field mt-2" aria-hidden>
-                  <span className="pl-hud-landing-inclusion-field-line pl-hud-landing-inclusion-field-line--short" />
-                  <span className="pl-hud-landing-inclusion-field-line" />
-                  <span className="pl-hud-landing-inclusion-field-line pl-hud-landing-inclusion-field-line--medium" />
-                </div>
-
-                <div className="mt-6 flex justify-end">
-                  <span className="pl-hud-landing-inclusion-btn-active pl-hud-btn inline-flex items-center justify-center gap-2 rounded-xl px-6 py-3 text-sm font-bold">
-                    ✨ Adaptar Material para Inclusão
-                  </span>
-                </div>
-              </div>
-            </div>
+          <div className="lg:order-2">
+            <InclusionFeaturePreview />
           </div>
-        </div>
+        </Reveal>
       </div>
     </section>
   );

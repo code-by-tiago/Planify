@@ -48,6 +48,32 @@ export const teachyHomeFeatures: {
   },
 ];
 
+/** Destaque de inclusão na landing (card estilo Passo 4) */
+export const teachyInclusionFeature = {
+  title: "Educação inclusiva ao alcance de um clique",
+  description:
+    "A única ferramenta que adapta materiais para as necessidades específicas de cada aluno de forma humanizada.",
+  cta: "Adaptar material",
+  href: "/dashboard?tipo=inclusao",
+  bullets: [
+    {
+      icon: "puzzle" as PlanifyIconName,
+      label: "TEA (Autismo)",
+      text: "Rotinas visuais e comandos claros",
+    },
+    {
+      icon: "listChecks" as PlanifyIconName,
+      label: "TDAH",
+      text: "Textos objetivos, tópicos destacados e exercícios focados",
+    },
+    {
+      icon: "fileText" as PlanifyIconName,
+      label: "Dislexia e Baixa Visão",
+      text: "Formatação limpa e suporte a fontes amigáveis",
+    },
+  ],
+};
+
 export type LandingTestimonial = {
   name: string;
   quote: string;

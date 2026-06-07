@@ -6,22 +6,6 @@ import { useCallback, useEffect, useState } from "react";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 
 const MAX_THEME_LENGTH = 100;
-const SIMULATOR_USED_COOKIE = "planify_sim_used";
-const WINDOW_MS = 24 * 60 * 60 * 1000;
-
-function readCookie(name: string): string | null {
-  if (typeof document === "undefined") return null;
-  const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
-  return match ? decodeURIComponent(match[1]) : null;
-}
-
-function isSimulatorLimitedFromCookie(): boolean {
-  const raw = readCookie(SIMULATOR_USED_COOKIE);
-  if (!raw) return false;
-  const usedAt = Number(raw);
-  if (!Number.isFinite(usedAt) || usedAt <= 0) return false;
-  return Date.now() - usedAt < WINDOW_MS;
-}
 
 function useTypewriter(text: string, active: boolean, speedMs = 10): string {
   const [displayed, setDisplayed] = useState("");
@@ -29,6 +13,11 @@ function useTypewriter(text: string, active: boolean, speedMs = 10): string {
   useEffect(() => {
     if (!active || !text) {
       setDisplayed("");
+      return;
+    }
+
+    if (speedMs <= 0) {
+      setDisplayed(text);
       return;
     }
 
@@ -57,10 +46,27 @@ export function LessonSimulatorSection() {
   const [showLimitModal, setShowLimitModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const typedResult = useTypewriter(result, showResult && !loading);
+  const typedResult = useTypewriter(
+    result,
+    showResult && !loading,
+    result.length > 400 ? 0 : 10,
+  );
 
   useEffect(() => {
-    setLimitReached(isSimulatorLimitedFromCookie());
+    let cancelled = false;
+
+    void fetch("/api/public/lesson-simulator")
+      .then((response) => response.json())
+      .then((json: { limited?: boolean }) => {
+        if (!cancelled && json.limited) {
+          setLimitReached(true);
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const openLimitModal = useCallback(() => {
@@ -72,7 +78,7 @@ export function LessonSimulatorSection() {
     const trimmed = theme.trim();
     if (!trimmed || loading) return;
 
-    if (limitReached || isSimulatorLimitedFromCookie()) {
+    if (limitReached) {
       openLimitModal();
       return;
     }

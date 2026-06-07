@@ -815,6 +815,20 @@ export type Database = {
           updated_at?: string;
         }
       >;
+      lesson_simulator_rate_limits: TableDefinition<
+        {
+          rate_key: string;
+          used_at: string;
+        },
+        {
+          rate_key: string;
+          used_at?: string;
+        },
+        {
+          rate_key?: string;
+          used_at?: string;
+        }
+      >;
     };
     Views: Record<string, never>;
     Functions: {
@@ -829,6 +843,14 @@ export type Database = {
       is_admin: {
         Args: Record<string, never>;
         Returns: boolean;
+      };
+      planify_get_lesson_simulator_usage: {
+        Args: { p_ip: string | null; p_fingerprint: string };
+        Returns: number;
+      };
+      planify_consume_lesson_simulator_usage: {
+        Args: { p_ip: string | null; p_fingerprint: string };
+        Returns: number;
       };
     };
     Enums: {

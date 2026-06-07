@@ -15,6 +15,9 @@ export type InstitutionalPlan = {
   teacherLimit: string;
   priceLabel: string;
   priceNote: string;
+  /** Ex.: "≈ R$ 83/professor/mês (lotação cheia)" */
+  pricePerTeacherNote: string;
+  licenseNote: string;
   description: string;
   highlighted?: boolean;
   features: string[];
@@ -27,12 +30,14 @@ export const institutionalPlans: InstitutionalPlan[] = [
     teacherLimit: "Até 15 professores",
     priceLabel: "R$ 14.900",
     priceNote: "/ ano",
+    pricePerTeacherNote: "≈ R$ 83/professor/mês com até 15 licenças",
+    licenseNote: "Cada professor inclui Planify Pro (geradores IA, editor e exportação).",
     description:
       "Ideal para escolas de ensino básico com equipe docente enxuta e necessidade de visibilidade pedagógica centralizada.",
     features: [
       "Portal exclusivo do gestor",
       "Painel BNCC por turma",
-      "Relatórios de conformidade",
+      "Painel de conformidade BNCC",
       "Licenciamento por e-mail",
       "Suporte comercial dedicado",
     ],
@@ -43,12 +48,14 @@ export const institutionalPlans: InstitutionalPlan[] = [
     teacherLimit: "Até 40 professores",
     priceLabel: "R$ 34.900",
     priceNote: "/ ano",
+    pricePerTeacherNote: "≈ R$ 73/professor/mês com até 40 licenças",
+    licenseNote: "Cada professor inclui Planify Pro (geradores IA, editor e exportação).",
     description:
       "Para instituições em expansão que precisam escalar acompanhamento pedagógico sem aumentar a burocracia da coordenação.",
     highlighted: true,
     features: [
       "Tudo do plano Pequena Escola",
-      "Auditoria em tempo real ampliada",
+      "Feed de materiais + alertas de lacunas BNCC",
       "Métricas de produtividade docente",
       "Onboarding institucional assistido",
       "Prioridade no suporte comercial",
@@ -60,6 +67,8 @@ export const institutionalPlans: InstitutionalPlan[] = [
     teacherLimit: "40+ professores",
     priceLabel: "Sob consulta",
     priceNote: "anual",
+    pricePerTeacherNote: "Proposta personalizada conforme volume de licenças",
+    licenseNote: "Licenças Pro por professor + portal gestor e conformidade BNCC.",
     description:
       "Solução corporativa para redes e colégios de grande porte, com volume elevado de licenças e integração sob medida.",
     features: [

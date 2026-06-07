@@ -186,6 +186,10 @@ export default function EscolasPage() {
                   {plan.priceNote}
                 </span>
               </div>
+              <p className="mt-2 text-xs font-semibold text-cyan-800">
+                {plan.pricePerTeacherNote}
+              </p>
+              <p className="mt-1 text-xs font-medium text-slate-500">{plan.licenseNote}</p>
 
               <p className="mt-5 text-sm font-medium leading-6 text-slate-600">
                 {plan.description}

@@ -146,10 +146,6 @@ export function LessonSimulatorSection() {
             </div>
 
             <div className="relative w-full min-w-0">
-              <div
-                className="pl-hud-landing-simulator-glow pointer-events-none absolute -inset-3 rounded-[1.75rem] sm:-inset-4"
-                aria-hidden
-              />
               <div className="pl-hud-landing-simulator-panel relative w-full min-w-0">
               <label htmlFor="lesson-simulator-theme" className="sr-only">
                 Tema da aula
@@ -161,7 +157,7 @@ export function LessonSimulatorSection() {
                 maxLength={MAX_THEME_LENGTH}
                 disabled={loading || limitReached}
                 placeholder="Digite um tema de aula... ex: Frações com Pizza para o 5º ano"
-                className="pl-hud-landing-simulator-input w-full rounded-xl border border-slate-200/90 bg-white px-4 py-3.5 text-base text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-cyan-400/50 focus:ring-2 focus:ring-cyan-400/15 disabled:cursor-not-allowed disabled:opacity-60"
+                className="pl-hud-landing-simulator-input w-full rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-base text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-cyan-600/40 focus:ring-2 focus:ring-cyan-600/10 disabled:cursor-not-allowed disabled:opacity-60"
                 onChange={(event) => setTheme(event.target.value)}
                 onKeyDown={(event) => {
                   if (event.key === "Enter") {
@@ -210,7 +206,7 @@ export function LessonSimulatorSection() {
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -4 }}
-                    className="pl-hud-landing-simulator-result mt-6 rounded-2xl border border-cyan-400/20 bg-gradient-to-b from-cyan-50/60 to-white p-5 shadow-sm"
+                    className="pl-hud-landing-simulator-result mt-6 rounded-2xl border border-slate-200 bg-white p-5"
                   >
                     {loading ? (
                       <div className="space-y-3" aria-live="polite" aria-busy="true">
@@ -221,13 +217,13 @@ export function LessonSimulatorSection() {
                       </div>
                     ) : (
                       <div aria-live="polite">
-                        <p className="mb-2 text-xs font-bold uppercase tracking-wide text-cyan-700">
+                        <p className="pl-hud-landing-simulator-result-label mb-2 text-xs uppercase tracking-wide">
                           Esqueleto gerado
                         </p>
-                        <pre className="whitespace-pre-wrap font-sans text-sm leading-7 text-slate-700">
+                        <pre className="pl-hud-landing-simulator-result-body whitespace-pre-wrap font-sans text-sm leading-7">
                           {typedResult}
                           {typedResult.length < result.length ? (
-                            <span className="inline-block h-4 w-0.5 animate-pulse bg-cyan-500 align-middle" />
+                            <span className="inline-block h-4 w-0.5 animate-pulse bg-slate-400 align-middle" />
                           ) : null}
                         </pre>
                       </div>
@@ -262,11 +258,10 @@ export function LessonSimulatorSection() {
               initial={{ opacity: 0, scale: 0.96, y: 12 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.96, y: 8 }}
-              className="relative w-full max-w-md overflow-hidden rounded-2xl border border-cyan-400/30 bg-white p-6 shadow-2xl"
+              className="relative w-full max-w-md overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-xl"
             >
-              <div className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-cyan-400/15 blur-2xl" />
               <div className="relative">
-                <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-cyan-50 text-2xl">
+                <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-2xl">
                   ✨
                 </span>
                 <h3

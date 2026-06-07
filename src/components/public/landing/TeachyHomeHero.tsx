@@ -74,7 +74,7 @@ export function TeachyHomeHero() {
         <div className="pl-hud-landing-trust mx-auto max-w-7xl">
           {teachyPartnerLabels.map((label) => (
             <span key={label} className="pl-hud-landing-trust-item">
-              <PlanifyIcon name="checkCircle" className="h-3.5 w-3.5 shrink-0 text-cyan-500" />
+              <PlanifyIcon name="checkCircle" className="h-3.5 w-3.5 shrink-0 text-cyan-700" />
               {label}
             </span>
           ))}

@@ -4,12 +4,14 @@ import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
 import { PlanifyPageHero } from "@/components/pro/PlanifyPageHero";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { EditorDocument } from "../../types/editor";
 import type { HistoryFilter, HistoryItem } from "../../types/history";
+import { GoogleClassroomPanel } from "@/components/google/GoogleClassroomPanel";
 import {
   buildHistoryContentPreview,
+  historyItemContentToHtml,
   isHistoryHtmlContent,
   resolveHistoryTypeLabel,
 } from "../../lib/history/history-preview";
@@ -201,6 +203,11 @@ export function HistoricoClient() {
       message: "Materiais recarregados.",
     });
   }
+
+  const getSelectedHtml = useCallback(() => {
+    if (!selectedItem) return "";
+    return historyItemContentToHtml(selectedItem.content);
+  }, [selectedItem]);
 
   return (
     <PlanifyWorkspacePane
@@ -413,7 +420,15 @@ export function HistoricoClient() {
                   Atualizado em {formatDate(selectedItem.updatedAt)}
                 </p>
               </div>
-              <div className="flex shrink-0 gap-2">
+              <div className="flex shrink-0 flex-wrap items-center gap-2">
+                <GoogleClassroomPanel
+                  compact
+                  title={selectedItem.title}
+                  getHtml={getSelectedHtml}
+                  onStatus={(message) =>
+                    setStatus({ type: "success", message })
+                  }
+                />
                 <button
                   type="button"
                   onClick={() => openInEditor(selectedItem)}

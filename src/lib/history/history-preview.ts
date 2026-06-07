@@ -4,6 +4,28 @@ export function isHistoryHtmlContent(content: string): boolean {
   return /<[a-z][\s\S]*>/i.test(content.trim());
 }
 
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+/** Conteúdo bruto ou HTML do histórico → HTML exportável (Classroom, DOCX, etc.). */
+export function historyItemContentToHtml(content: string): string {
+  const trimmed = String(content || "").trim();
+  if (!trimmed) return "";
+  if (isHistoryHtmlContent(trimmed)) return trimmed;
+
+  return trimmed
+    .split(/\n{2,}/)
+    .filter(Boolean)
+    .map((block) => `<p>${escapeHtml(block).replace(/\n/g, "<br />")}</p>`)
+    .join("");
+}
+
 export function buildHistoryContentPreview(
   content: string,
   maxLength = 260,

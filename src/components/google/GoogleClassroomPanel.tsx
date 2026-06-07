@@ -18,13 +18,26 @@ type GoogleClassroomPanelProps = {
   onStatus?: (message: string) => void;
   /** Barra horizontal compacta no editor */
   compact?: boolean;
+  /** Destino após OAuth Google (ex.: /dashboard?secao=historico) */
+  returnTo?: string;
 };
+
+function resolveGoogleOAuthReturnTo(explicit?: string): string {
+  if (explicit) return explicit;
+  if (typeof window === "undefined") return "/dashboard?secao=editor";
+
+  const { pathname, search } = window.location;
+  if (pathname.startsWith("/dashboard")) return pathname + search;
+  if (pathname === "/historico") return "/dashboard?secao=historico";
+  return "/editor";
+}
 
 export function GoogleClassroomPanel({
   title,
   getHtml,
   onStatus,
   compact = false,
+  returnTo,
 }: GoogleClassroomPanelProps) {
   const [status, setStatus] = useState<GoogleIntegrationStatus | null>(null);
   const [courses, setCourses] = useState<ClassroomCourseOption[]>([]);
@@ -103,12 +116,7 @@ export function GoogleClassroomPanel({
     setError("");
 
     try {
-      const returnTo =
-        typeof window !== "undefined" &&
-        window.location.pathname.startsWith("/dashboard")
-          ? "/dashboard?secao=editor"
-          : "/editor";
-      await startGoogleOAuth(returnTo);
+      await startGoogleOAuth(resolveGoogleOAuthReturnTo(returnTo));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao conectar Google.");
       setBusy(false);
@@ -206,9 +214,11 @@ export function GoogleClassroomPanel({
   }
 
   if (!status.authenticated) {
+    const loginRedirect = encodeURIComponent(resolveGoogleOAuthReturnTo(returnTo));
+
     return compact ? (
       <a
-        href="/login?redirect=/dashboard%3Fsecao%3Deditor"
+        href={`/login?redirect=${loginRedirect}`}
         className="inline-flex shrink-0 items-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700"
       >
         Classroom (login)
@@ -220,7 +230,7 @@ export function GoogleClassroomPanel({
           Faça login no Planify para conectar sua conta Google e publicar materiais na turma.
         </p>
         <a
-          href="/login?redirect=/dashboard%3Fsecao%3Deditor"
+          href={`/login?redirect=${loginRedirect}`}
           className="mt-3 inline-block rounded-xl bg-slate-900 px-4 py-2 text-xs font-black text-white"
         >
           Ir para login

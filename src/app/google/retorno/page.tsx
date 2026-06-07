@@ -113,7 +113,7 @@ export default function GoogleOAuthReturnPage() {
         await ensurePremiumSessionCookies();
       }
 
-      setMessage("Voltando ao editor…");
+      setMessage("Redirecionando…");
       window.location.replace(destination);
     })();
 

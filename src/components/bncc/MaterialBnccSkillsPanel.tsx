@@ -82,8 +82,9 @@ export function MaterialBnccSkillsPanel({
               Selecione as habilidades que este material deve cobrir. Elas entram no
               seu{" "}
               <strong className="font-bold text-slate-800">Progresso BNCC</strong> e
-              orientam a IA na geração. Sem seleção, o sistema estima automaticamente
-              pelo tema — com menor precisão.
+              servem como referência de alinhamento na geração — o conteúdo continua
+              centrado no tema e nos conteúdos que você definiu. Sem seleção, o
+              sistema estima automaticamente pelo tema.
             </p>
           </div>
 

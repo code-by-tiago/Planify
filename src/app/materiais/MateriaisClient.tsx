@@ -650,12 +650,17 @@ export function MateriaisClient({
   }
 
   function buildBnccSuggestPayload() {
+    const topicLines = splitTopicLines(tema);
+    const conteudos =
+      topicLines.length > 1 ? topicLines : tema.trim() || topicLines[0] || "";
+
     return {
       etapa,
       anoSerie,
       areaConhecimento,
       componenteCurricular: componente,
-      conteudos: tema.trim(),
+      conteudos,
+      temaCentral: tema.trim() || undefined,
       objetivosGerais: objetivo.trim() || undefined,
       observacoes: observacoes.trim() || undefined,
       ...school.turmaPayload,

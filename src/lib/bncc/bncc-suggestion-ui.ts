@@ -27,12 +27,7 @@ export type BnccSelectedSkillPayload = {
   conteudo?: string;
 };
 
-export function splitTopicLines(value: string): string[] {
-  return String(value || "")
-    .split(/\n|;|,/)
-    .map((line) => line.trim())
-    .filter(Boolean);
-}
+export { splitTopicLines } from "./split-topic-lines";
 
 export function normalizeBnccSkillOption(
   skill: Record<string, unknown> | null | undefined,

@@ -242,6 +242,31 @@ export function buildMaterialEngineSystemInstruction(type: MaterialEngineType): 
   ].join("\n");
 }
 
+function buildBnccAlignmentBlock(request: MaterialEngineRequest): string {
+  const skills = request.habilidadesSelecionadas;
+
+  if (!skills?.length) {
+    return "";
+  }
+
+  const lines = skills
+    .map((skill) => {
+      const conteudo = skill.conteudo ? ` (conteúdo: ${skill.conteudo})` : "";
+      return `- ${skill.codigo}: ${skill.descricao}${conteudo}`;
+    })
+    .join("\n");
+
+  return `
+ALINHAMENTO BNCC (referência pedagógica — não substitua o tema nem as observações):
+${lines}
+
+Regras de uso:
+- O material deve continuar centrado no TEMA e nas OBSERVAÇÕES do professor.
+- As habilidades acima marcam competências a cobrir de forma compatível com o conteúdo solicitado.
+- Não mude o assunto principal do material para caber apenas na descrição literal de uma habilidade.
+`.trim();
+}
+
 export function buildMaterialEnginePrompt(
   request: MaterialEngineRequest,
   extraBlocks = "",
@@ -270,6 +295,10 @@ export function buildMaterialEnginePrompt(
     ? `\n\nOBSERVAÇÕES DO PROFESSOR:\n${request.observacoes.trim()}`
     : "";
 
+  const bnccBlock = request.habilidadesSelecionadas?.length
+    ? `\n\n${buildBnccAlignmentBlock(request)}`
+    : "";
+
   return `
 Gere material pedagógico para o Planify com qualidade profissional.
 
@@ -296,6 +325,6 @@ REGRAS GERAIS:
 - Entregar conteúdo coeso, sem repetição e sem preenchimento artificial.
 - Entregar pronto para edição no editor do Planify.
 - NÃO preencha o campo "html" — o Planify monta o HTML visual automaticamente.
-- Entregar somente JSON no schema.${disciplineBlock}${extra}${elevateBlock}${observacoesBlock}
+- Entregar somente JSON no schema.${disciplineBlock}${extra}${elevateBlock}${observacoesBlock}${bnccBlock}
 `.trim();
 }

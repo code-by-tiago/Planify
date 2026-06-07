@@ -257,7 +257,7 @@ function splitContents(value: unknown): string[] {
   }
 
   return normalizeText(value)
-    .split(/\r?\n|;/)
+    .split(/\r?\n|;|,|\s·\s/u)
     .map((item) => item.trim())
     .filter(Boolean);
 }

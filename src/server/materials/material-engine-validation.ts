@@ -44,7 +44,33 @@ export function normalizeMaterialEngineRequest(
     problemasQualidade: Array.isArray(payload.problemasQualidade)
       ? payload.problemasQualidade.map((item) => String(item).trim()).filter(Boolean)
       : undefined,
+    habilidadesSelecionadas: normalizeBnccSkillsForPrompt(
+      payload.habilidadesSelecionadas ?? payload.habilidadesBncc,
+    ),
   };
+}
+
+function normalizeBnccSkillsForPrompt(
+  value: MaterialEngineInput["habilidadesSelecionadas"],
+): MaterialEngineRequest["habilidadesSelecionadas"] {
+  if (!Array.isArray(value)) {
+    return undefined;
+  }
+
+  const skills = value
+    .map((skill) => {
+      const codigo = String(skill?.codigo || "").trim().toUpperCase();
+      const descricao = String(skill?.descricao || "").trim();
+      if (!codigo || !descricao) return null;
+      return {
+        codigo,
+        descricao,
+        conteudo: skill?.conteudo ? String(skill.conteudo).trim() : undefined,
+      };
+    })
+    .filter((skill): skill is NonNullable<typeof skill> => Boolean(skill));
+
+  return skills.length > 0 ? skills.slice(0, 24) : undefined;
 }
 
 export function validateMaterialEngineRequest(

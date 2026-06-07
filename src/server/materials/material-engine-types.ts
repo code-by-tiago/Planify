@@ -54,6 +54,11 @@ export type MaterialEngineRequest = {
   observacoes?: string;
   elevarQualidade?: boolean;
   problemasQualidade?: string[];
+  habilidadesSelecionadas?: Array<{
+    codigo: string;
+    descricao: string;
+    conteudo?: string;
+  }>;
 };
 
 export type MaterialEngineInput = {

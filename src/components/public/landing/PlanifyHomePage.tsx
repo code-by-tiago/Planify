@@ -1,6 +1,7 @@
 import { LandingFaq } from "@/components/public/landing/LandingFaq";
 import { TeachyCommunitySection } from "@/components/public/landing/TeachyCommunitySection";
 import { TeachyFinalCta } from "@/components/public/landing/TeachyFinalCta";
+import { InclusionFocusSection } from "@/components/public/landing/InclusionFocusSection";
 import { LessonSimulatorSection } from "@/components/public/landing/LessonSimulatorSection";
 import { TeachyHomeFeatures } from "@/components/public/landing/TeachyHomeFeatures";
 import { TeachyHomeHero } from "@/components/public/landing/TeachyHomeHero";
@@ -37,6 +38,7 @@ export function PlanifyHomePage() {
     <>
       <TeachyHomeHero />
       <LessonSimulatorSection />
+      <InclusionFocusSection />
       <TeachyHomeFeatures />
       <TeachyHomeToolsGrid />
       <TeachyCommunitySection />

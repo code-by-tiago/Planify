@@ -770,6 +770,134 @@ body {
   }
 }
 
+/* ─── Landing inclusion focus (light) ─── */
+.planify-hud .pl-hud-landing-inclusion-section {
+  background: var(--planify-canvas);
+}
+
+.planify-hud .pl-hud-landing-inclusion-band {
+  border-radius: var(--planify-radius-xl);
+  border: 1px solid var(--planify-slate-200);
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+}
+
+.planify-hud .pl-hud-landing-inclusion-bullet-icon {
+  border: 1px solid rgba(8, 145, 178, 0.18);
+  background: rgba(8, 145, 178, 0.06);
+  color: var(--planify-cyan-deep);
+}
+
+.planify-hud .pl-hud-landing-inclusion-window {
+  overflow: hidden;
+  border: 1px solid var(--planify-slate-200);
+  border-radius: var(--planify-radius-xl);
+  background: #ffffff;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
+}
+
+.planify-hud .pl-hud-landing-inclusion-window-chrome {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  border-bottom: 1px solid var(--planify-slate-200);
+  background: #f8fafc;
+  padding: 0.65rem 1rem;
+}
+
+.planify-hud .pl-hud-landing-inclusion-window-dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 999px;
+  background: #cbd5e1;
+}
+
+.planify-hud .pl-hud-landing-inclusion-window-dot:first-child {
+  background: #f87171;
+}
+
+.planify-hud .pl-hud-landing-inclusion-window-dot:nth-child(2) {
+  background: #fbbf24;
+}
+
+.planify-hud .pl-hud-landing-inclusion-window-dot:nth-child(3) {
+  background: #34d399;
+}
+
+.planify-hud .pl-hud-landing-inclusion-window-title {
+  margin-left: 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--planify-slate-600);
+}
+
+.planify-hud .pl-hud-landing-inclusion-panel {
+  padding: 1.25rem;
+}
+
+@media (min-width: 640px) {
+  .planify-hud .pl-hud-landing-inclusion-panel {
+    padding: 1.5rem;
+  }
+}
+
+.planify-hud .pl-hud-landing-inclusion-panel-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--planify-slate-600);
+}
+
+.planify-hud .pl-hud-landing-inclusion-chip {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  border: 1px solid var(--planify-slate-200);
+  background: #f8fafc;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--planify-slate-600);
+}
+
+.planify-hud .pl-hud-landing-inclusion-chip--active {
+  border-color: rgba(8, 145, 178, 0.35);
+  background: rgba(8, 145, 178, 0.08);
+  color: var(--planify-cyan-deep);
+}
+
+.planify-hud .pl-hud-landing-inclusion-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--planify-slate-200);
+  background: #f8fafc;
+  padding: 0.85rem 1rem;
+}
+
+.planify-hud .pl-hud-landing-inclusion-field-line {
+  display: block;
+  height: 0.45rem;
+  border-radius: 999px;
+  background: #e2e8f0;
+}
+
+.planify-hud .pl-hud-landing-inclusion-field-line--short {
+  width: 42%;
+}
+
+.planify-hud .pl-hud-landing-inclusion-field-line--medium {
+  width: 72%;
+}
+
+.planify-hud .pl-hud-landing-inclusion-btn-active {
+  pointer-events: none;
+  box-shadow: 0 2px 8px rgba(8, 145, 178, 0.22);
+}
+
 .planify-hud .pl-hud-testimonials-section {
   border-top: 1px solid var(--planify-glass-border);
 }

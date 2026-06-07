@@ -139,10 +139,15 @@ export async function GET(request: NextRequest) {
         schoolMembershipRole: null,
       };
 
+  const isSiteAdmin = Boolean(
+    admin.isAdmin || isOwner || accessProfile.profileRole === "admin",
+  );
+
   const accessContext = buildPlanifyAccessContext({
     premium,
     planKey,
     isAdmin: Boolean(admin.isAdmin || isOwner),
+    isSiteAdmin,
     profileRole: accessProfile.profileRole,
     schoolId: accessProfile.schoolId,
     schoolMembershipRole: accessProfile.schoolMembershipRole,

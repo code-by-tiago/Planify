@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { signOutPlanify } from "@/lib/auth/session-client";
 
 type AdminLogoutButtonProps = {
   className?: string;
@@ -13,20 +14,12 @@ export function AdminLogoutButton({ className = "" }: AdminLogoutButtonProps) {
     setLoading(true);
 
     try {
-      if (typeof window !== "undefined") {
-        window.sessionStorage.removeItem("planify_admin_tab_unlocked");
-      }
-
-      await fetch("/api/admin/session", {
-        method: "DELETE",
-        credentials: "include",
-        cache: "no-store",
-      });
+      await signOutPlanify();
     } catch {
-      // Mesmo se a chamada falhar, remove a trava local e volta para o gate.
+      // Mesmo se a chamada falhar, limpa caches locais e volta para o gate.
     } finally {
       if (typeof window !== "undefined") {
-        window.location.href = "/admin";
+        window.location.replace("/");
       }
     }
   }

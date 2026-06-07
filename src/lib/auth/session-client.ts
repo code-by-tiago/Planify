@@ -229,18 +229,59 @@ export async function clearAdminSession() {
   });
 }
 
+/** Remove caches locais do Planify e tokens Supabase persistidos no navegador. */
+export function clearPlanifyClientStorage(): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  const sessionKeys = [
+    "planify_admin_tab_unlocked",
+    "planify-invite-sync-warning",
+    "planify-studio-tema",
+    "planify-studio-objetivo-hint",
+  ];
+
+  for (const key of sessionKeys) {
+    try {
+      window.sessionStorage.removeItem(key);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  try {
+    const keysToRemove: string[] = [];
+    for (let index = 0; index < window.localStorage.length; index += 1) {
+      const key = window.localStorage.key(index);
+      if (
+        key &&
+        (key.startsWith("sb-") ||
+          key.startsWith("planify_") ||
+          key.startsWith("planify-"))
+      ) {
+        keysToRemove.push(key);
+      }
+    }
+    for (const key of keysToRemove) {
+      window.localStorage.removeItem(key);
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
 export async function signOutPlanify(): Promise<void> {
   const supabase = getSupabaseBrowserClient();
 
-  await Promise.race([
-    Promise.allSettled([
-      supabase.auth.signOut(),
-      clearPremiumAccessCookie(),
-      clearAdminSession(),
-      clearOwnerSession(),
-    ]).then(() => undefined),
-    timeout(1200),
+  await Promise.allSettled([
+    supabase.auth.signOut({ scope: "local" }),
+    clearPremiumAccessCookie(),
+    clearAdminSession(),
+    clearOwnerSession(),
   ]);
+
+  clearPlanifyClientStorage();
 }
 
 export async function getCurrentAccessToken(): Promise<string | null> {

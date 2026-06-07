@@ -1,4 +1,5 @@
 import { getSupabaseAdminClient } from "../supabase/admin-client";
+import { isOwnerEmail } from "../auth/owner-emails";
 import type { SchoolMembershipRole } from "@/types/school";
 
 type MembershipRow = {
@@ -45,10 +46,36 @@ export async function isSchoolManagerProfile(userId: string): Promise<boolean> {
   return (data as { role?: string | null } | null)?.role === "school_manager";
 }
 
+export async function isSiteAdminUser(userId: string): Promise<boolean> {
+  const supabase = getSupabaseAdminClient();
+  const { data } = await supabase
+    .from("profiles")
+    .select("role,is_admin,email")
+    .eq("id", userId)
+    .maybeSingle();
+
+  const profile = data as {
+    role?: string | null;
+    is_admin?: boolean | null;
+    email?: string | null;
+  } | null;
+
+  const role = String(profile?.role || "").trim().toLowerCase();
+  const email = String(profile?.email || "").trim().toLowerCase();
+
+  return (
+    Boolean(profile?.is_admin) ||
+    role === "admin" ||
+    role === "owner" ||
+    isOwnerEmail(email)
+  );
+}
+
 export async function canAccessSchoolDashboard(
   userId: string,
   schoolId: string,
 ): Promise<boolean> {
+  if (await isSiteAdminUser(userId)) return true;
   if (await isSchoolManagerProfile(userId)) return true;
   return isSchoolDirector(userId, schoolId);
 }
@@ -103,6 +130,19 @@ export async function getPrimarySchoolIdForUser(
   }>;
 
   if (rows.length === 0) {
+    if (await isSiteAdminUser(userId)) {
+      const { data: fallbackSchool } = await supabase
+        .from("schools")
+        .select("id")
+        .order("created_at", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+
+      if ((fallbackSchool as { id?: string } | null)?.id) {
+        return String((fallbackSchool as { id: string }).id);
+      }
+    }
+
     const { data: profile } = await supabase
       .from("profiles")
       .select("school_name")

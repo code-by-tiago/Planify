@@ -5,6 +5,7 @@ import { useState } from "react";
 import { OwnerFooterLink } from "@/components/OwnerFooterLink";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { usePlanifySession } from "@/hooks/usePlanifySession";
+import { signOutPlanify } from "@/lib/auth/session-client";
 
 function SidebarUserAvatar({
   avatarUrl,
@@ -43,6 +44,18 @@ export function PlanifySidebarUser({
   lumiHint = "Pressione / para buscar ferramentas.",
 }: PlanifySidebarUserProps) {
   const session = usePlanifySession();
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  async function handleLogout() {
+    if (loggingOut) return;
+    setLoggingOut(true);
+
+    try {
+      await signOutPlanify();
+    } finally {
+      window.location.replace("/");
+    }
+  }
 
   if (session.loading) {
     return (
@@ -100,6 +113,15 @@ export function PlanifySidebarUser({
           </span>
         </div>
       </div>
+      <button
+        type="button"
+        onClick={() => void handleLogout()}
+        disabled={loggingOut}
+        className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs font-black text-slate-700 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        <PlanifyIcon name="logout" className="h-4 w-4" />
+        {loggingOut ? "Saindo…" : "Sair da conta"}
+      </button>
       <p className="px-1 text-[10px] font-semibold text-slate-400">
         {lumiHint}
       </p>

@@ -41,6 +41,7 @@ export function buildPlanifyAccessContext(input: {
   premium: boolean;
   planKey?: string | null;
   isAdmin?: boolean;
+  isSiteAdmin?: boolean;
   profileRole?: string | null;
   schoolId?: string | null;
   schoolMembershipRole?: SchoolMembershipRole | null;
@@ -51,12 +52,16 @@ export function buildPlanifyAccessContext(input: {
   const hasSchoolMembership = Boolean(input.schoolId && schoolMembershipRole);
   const isSchoolManager = profileRole === "school_manager";
   const isDirector = schoolMembershipRole === "director";
-  const isManagerView = isSchoolManager || isDirector;
+  const isSiteAdmin =
+    Boolean(input.isSiteAdmin) ||
+    profileRole === "admin" ||
+    profileRole === "owner";
+  const isManagerView = isSchoolManager || isDirector || isSiteAdmin;
 
   const canViewBnccProgress =
     tier === "pro" || tier === "premium" || hasSchoolMembership;
   const canViewDirectorPanel =
-    isManagerView && Boolean(input.schoolId);
+    isSiteAdmin || (isManagerView && Boolean(input.schoolId));
 
   return {
     tier,

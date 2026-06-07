@@ -377,8 +377,12 @@ function buildCoverage(
 
   const totalSkills = catalog.length;
   const coveredCount = covered.length;
+  const rawPercent =
+    totalSkills > 0 ? (coveredCount / totalSkills) * 100 : 0;
   const coveragePercent =
-    totalSkills > 0 ? Math.round((coveredCount / totalSkills) * 100) : 0;
+    coveredCount > 0 && rawPercent > 0 && rawPercent < 1
+      ? 1
+      : Math.round(rawPercent);
 
   return { covered, pending, coveragePercent };
 }

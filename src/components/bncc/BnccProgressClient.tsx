@@ -86,6 +86,9 @@ export function BnccProgressClient({ embedded = false }: BnccProgressClientProps
 
   const coverageLabel = useMemo(() => {
     if (!progress) return "0%";
+    if (progress.coveredCount > 0 && progress.coveragePercent === 0) {
+      return "<1%";
+    }
     return `${progress.coveragePercent}%`;
   }, [progress]);
 
@@ -229,7 +232,7 @@ export function BnccProgressClient({ embedded = false }: BnccProgressClientProps
                 <div
                   className="relative flex h-36 w-36 items-center justify-center rounded-full"
                   style={{
-                    background: `conic-gradient(#06b6d4 ${progress?.coveragePercent || 0}%, #e2e8f0 0)`,
+                    background: `conic-gradient(#06b6d4 ${progress?.coveredCount ? Math.max(progress.coveragePercent, 1) : 0}%, #e2e8f0 0)`,
                   }}
                 >
                   <div className="flex h-28 w-28 flex-col items-center justify-center rounded-full bg-white text-center">

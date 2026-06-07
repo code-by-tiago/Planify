@@ -444,6 +444,10 @@ export function MateriaisClient({
     [etapa, anoSerie, areaConhecimento, componente],
   );
 
+  const suggestContextReady = Boolean(
+    tema.trim() && componente.trim() && anoSerie.trim(),
+  );
+
   const {
     stageOptions,
     yearOptions,
@@ -1170,6 +1174,48 @@ export function MateriaisClient({
             </p>
           ) : null}
 
+          <label className="mt-5 block">
+            <span className="text-sm font-black text-slate-700">
+              {mode.primaryFieldLabel}
+            </span>
+            <input
+              value={tema}
+              onChange={(event) => setTema(event.target.value)}
+              placeholder="Digite o tema ou assunto da aula..."
+              className={`${HUD_FIELD_CLASS} mt-2`}
+            />
+          </label>
+
+          <div className="mt-3 flex flex-wrap gap-2">
+            {(sugestoesTema[tipo] || []).map((item) => {
+              const selected = temasRapidosSelecionados.includes(item);
+              return (
+                <button
+                  key={item}
+                  type="button"
+                  onClick={() =>
+                    tipo === "slides"
+                      ? toggleTemaRapido(item)
+                      : setTema(item)
+                  }
+                  className={`rounded-full border px-3 py-2 text-xs font-bold transition ${
+                    selected ? HUD_CHIP_ACTIVE : HUD_CHIP_INACTIVE
+                  }`}
+                  aria-pressed={tipo === "slides" ? selected : undefined}
+                >
+                  {tipo === "slides" && selected ? "✓ " : ""}
+                  {item}
+                </button>
+              );
+            })}
+          </div>
+          {tipo === "slides" && temasRapidosSelecionados.length > 1 ? (
+            <p className="mt-2 text-[11px] font-semibold text-cyan-700">
+              {temasRapidosSelecionados.length} assuntos combinados no tema — a IA
+              montará a sequência pedagógica dos slides.
+            </p>
+          ) : null}
+
           <div className="mt-5 grid gap-4 md:grid-cols-2">
             <label>
               <span className={HUD_SECTION_LABEL}>
@@ -1249,28 +1295,33 @@ export function MateriaisClient({
 
             <TurmaCombobox school={school} className="md:col-span-2" listId="materiais-turma-suggestions" />
 
-            <label className="md:col-span-2">
-              <span className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                <span className="text-sm font-black text-slate-700">
-                  {mode.primaryFieldLabel}
+            {suggestContextReady ? (
+              <div className="md:col-span-2 flex flex-wrap items-center gap-2 rounded-xl border border-cyan-400/15 bg-white/80 px-3 py-2.5">
+                <span className="text-[10px] font-black uppercase tracking-wide text-slate-500">
+                  Contexto
                 </span>
-                <button
-                  type="button"
-                  onClick={() => void sugerirConteudosComIA()}
-                  disabled={sugerindoConteudos || loading}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-cyan-400/25 bg-cyan-50 px-3 py-1.5 text-xs font-bold text-cyan-800 transition hover:border-cyan-400/50 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  <PlanifyIcon name="spark" className="h-3.5 w-3.5" />
-                  {sugerindoConteudos ? "Sugerindo..." : "Sugerir conteúdos"}
-                </button>
-              </span>
-              <input
-                value={tema}
-                onChange={(event) => setTema(event.target.value)}
-                placeholder="Digite ou escolha um assunto abaixo..."
-                className={HUD_FIELD_CLASS}
-              />
-            </label>
+                <span className={HUD_CHIP_ACTIVE}>{etapa}</span>
+                <span className={HUD_CHIP_ACTIVE}>{anoSerie}</span>
+                <span className={HUD_CHIP_ACTIVE}>{componente}</span>
+              </div>
+            ) : (
+              <p className="md:col-span-2 text-xs font-semibold text-amber-800">
+                Preencha tema, disciplina e ano/série para liberar sugestões de conteúdo
+                e habilidades BNCC.
+              </p>
+            )}
+
+            <div className="md:col-span-2">
+              <button
+                type="button"
+                onClick={() => void sugerirConteudosComIA()}
+                disabled={sugerindoConteudos || loading || !suggestContextReady}
+                className="inline-flex items-center gap-1.5 rounded-full border border-cyan-400/25 bg-cyan-50 px-3 py-1.5 text-xs font-bold text-cyan-800 transition hover:border-cyan-400/50 disabled:cursor-not-allowed disabled:opacity-55"
+              >
+                <PlanifyIcon name="spark" className="h-3.5 w-3.5" />
+                {sugerindoConteudos ? "Sugerindo..." : "Sugerir conteúdos"}
+              </button>
+            </div>
 
             {conteudosSugeridos && conteudosSugeridos.length > 0 ? (
               <div className="md:col-span-2 rounded-xl border border-cyan-400/20 bg-cyan-50/50 p-4">
@@ -1323,7 +1374,7 @@ export function MateriaisClient({
               groups={bnccGroups}
               selectedSkills={selectedBnccSkills}
               loading={loadingBncc}
-              temaReady={Boolean(tema.trim() && componente.trim() && anoSerie.trim())}
+              temaReady={suggestContextReady}
               onSuggest={() => void sugerirHabilidadesBncc()}
               onToggleSkill={toggleBnccSkill}
               onSelectGroup={selectBnccGroup}
@@ -1485,36 +1536,6 @@ export function MateriaisClient({
                 })}
               </div>
             </div>
-          ) : null}
-
-          <div className="mt-4 flex flex-wrap gap-2">
-            {(sugestoesTema[tipo] || []).map((item) => {
-              const selected = temasRapidosSelecionados.includes(item);
-              return (
-                <button
-                  key={item}
-                  type="button"
-                  onClick={() =>
-                    tipo === "slides"
-                      ? toggleTemaRapido(item)
-                      : setTema(item)
-                  }
-                  className={`rounded-full border px-3 py-2 text-xs font-bold transition ${
-                    selected ? HUD_CHIP_ACTIVE : HUD_CHIP_INACTIVE
-                  }`}
-                  aria-pressed={tipo === "slides" ? selected : undefined}
-                >
-                  {tipo === "slides" && selected ? "✓ " : ""}
-                  {item}
-                </button>
-              );
-            })}
-          </div>
-          {tipo === "slides" && temasRapidosSelecionados.length > 1 ? (
-            <p className="mt-2 text-[11px] font-semibold text-cyan-700">
-              {temasRapidosSelecionados.length} assuntos combinados no tema — a IA
-              montará a sequência pedagógica dos slides.
-            </p>
           ) : null}
 
           <div className="mt-5 flex flex-col gap-3">

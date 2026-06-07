@@ -118,7 +118,7 @@ export function MaterialBnccSkillsPanel({
 
         {!temaReady ? (
           <p className="mt-3 text-xs font-semibold text-amber-800">
-            Preencha o tema acima para buscar habilidades compatíveis.
+            Preencha tema, disciplina e ano/série acima para buscar habilidades compatíveis.
           </p>
         ) : null}
       </div>

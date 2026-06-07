@@ -510,20 +510,93 @@ function expandTerms(content: string): string[] {
   return Array.from(terms);
 }
 
-// Série/ano alvo informado pelo professor (1..9 no Fundamental, 1..3 no Médio).
+type PayloadStage = "ensino_medio" | "ensino_fundamental" | "educacao_infantil" | null;
+
+function resolvePayloadStage(payload: BnccSuggestionPayload): PayloadStage {
+  const etapa = normalizeSearch(getString(payload, ["etapa"]));
+
+  if (etapa.includes("medio")) {
+    return "ensino_medio";
+  }
+
+  if (etapa.includes("fundamental")) {
+    return "ensino_fundamental";
+  }
+
+  if (etapa.includes("infantil")) {
+    return "educacao_infantil";
+  }
+
+  if (isHighSchoolPayload(payload)) {
+    return "ensino_medio";
+  }
+
+  const anoSerie = normalizeSearch(getString(payload, ["anoSerie", "serie", "ano"]));
+
+  if (/\b([1-9])\D{0,3}ano\b/.test(anoSerie)) {
+    return "ensino_fundamental";
+  }
+
+  return null;
+}
+
+function codeMatchesPayloadStage(code: string, stage: PayloadStage): boolean {
+  if (!stage) {
+    return true;
+  }
+
+  const normalized = code.toUpperCase();
+
+  if (stage === "ensino_medio") {
+    return normalized.startsWith("EM");
+  }
+
+  if (stage === "ensino_fundamental") {
+    return normalized.startsWith("EF");
+  }
+
+  if (stage === "educacao_infantil") {
+    return normalized.startsWith("EI");
+  }
+
+  return true;
+}
+
+function candidateMatchesPayloadStage(
+  candidate: SkillCandidate,
+  payload: BnccSuggestionPayload,
+): boolean {
+  const stage = resolvePayloadStage(payload);
+
+  if (!stage) {
+    return true;
+  }
+
+  return codeMatchesPayloadStage(candidate.codigo, stage);
+}
+
+// Série/ano alvo informado pelo professor (1..9 no Fundamental).
+// No Ensino Médio, "3ª série" não deve casar com habilidades EF03.
 function getTargetGrade(payload: BnccSuggestionPayload): number | null {
-  const value = normalizeSearch(
-    [getString(payload, ["anoSerie", "serie", "ano"]), getString(payload, ["etapa"])].join(" "),
-  );
-  const direct = value.match(/([1-9])\D{0,3}(?:ano|serie)/);
+  if (isHighSchoolPayload(payload) || resolvePayloadStage(payload) === "ensino_medio") {
+    return null;
+  }
+
+  const anoSerie = normalizeSearch(getString(payload, ["anoSerie", "serie", "ano"]));
+  const direct = anoSerie.match(/([1-9])\D{0,3}(?:ano|serie)/);
 
   if (direct) {
     return Number(direct[1]);
   }
 
-  const loose = value.match(/\b([1-9])\b/);
+  const etapa = normalizeSearch(getString(payload, ["etapa"]));
 
-  return loose ? Number(loose[1]) : null;
+  if (etapa.includes("fundamental")) {
+    const loose = anoSerie.match(/\b([1-9])\b/);
+    return loose ? Number(loose[1]) : null;
+  }
+
+  return null;
 }
 
 // Faixa de anos/séries coberta por uma habilidade, a partir do campo ano/série
@@ -677,6 +750,14 @@ function filterByContext(
     } else if (loose.length > 0) {
       result = loose;
     }
+  }
+
+  const stage = resolvePayloadStage(payload);
+
+  if (stage) {
+    result = result.filter((candidate) =>
+      candidateMatchesPayloadStage(candidate, payload),
+    );
   }
 
   const etapa = normalizeSearch(getString(payload, ["etapa"]));
@@ -966,19 +1047,27 @@ function chooseForContent(
     }))
     .sort((a, b) => b.score - a.score);
 
-  const ranked = scored.filter((item) => item.score > 0).slice(0, 3);
+  const stageFiltered = scored.filter((item) =>
+    candidateMatchesPayloadStage(item.candidate, payload),
+  );
+  const ranked = stageFiltered.filter((item) => item.score > 0).slice(0, 3);
+
+  const stageFallbacks = FALLBACK_SKILLS.filter((candidate) =>
+    candidateMatchesPayloadStage(candidate, payload),
+  );
 
   // Mantém-se dentro do componente/etapa já filtrado; só recorre às habilidades
   // genéricas se não houver nenhum candidato local compatível.
   const chosen =
     ranked.length > 0
       ? ranked
-      : scored.length > 0
-        ? scored.slice(0, 3)
-        : FALLBACK_SKILLS.map((candidate) => ({
-            candidate,
-            score: scoreCandidate(candidate, content, payload),
-          }))
+      : stageFiltered.length > 0
+        ? stageFiltered.slice(0, 3)
+        : stageFallbacks
+            .map((candidate) => ({
+              candidate,
+              score: scoreCandidate(candidate, content, payload),
+            }))
             .sort((a, b) => b.score - a.score)
             .slice(0, 3);
 

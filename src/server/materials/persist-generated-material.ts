@@ -73,7 +73,18 @@ async function inferBnccCodesWhenEmpty(
       conteudos: tema,
     });
 
-    const skills = (suggestion.habilidades || []).slice(0, 8);
+    const etapa = String(payload?.etapa || "").trim();
+    const isMedio = /m[eé]dio/i.test(etapa);
+    const isFundamental = /fundamental/i.test(etapa);
+
+    const skills = (suggestion.habilidades || [])
+      .filter((skill) => {
+        const code = skill.codigo.toUpperCase();
+        if (isMedio && code.startsWith("EF")) return false;
+        if (isFundamental && code.startsWith("EM")) return false;
+        return true;
+      })
+      .slice(0, 8);
     if (skills.length === 0) {
       return extracted;
     }
@@ -358,28 +369,6 @@ async function persistGenerationRecord(
       qualityScore: params.qualityScore ?? null,
       surface: params.surface,
     });
-
-    // #region agent log
-    fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "920c67" },
-      body: JSON.stringify({
-        sessionId: "920c67",
-        runId: "post-fix",
-        hypothesisId: "H-BNCC",
-        location: "persist-generated-material.ts:persistGenerationRecord",
-        message: "material persisted to supabase",
-        data: {
-          materialId: materialId || null,
-          tipo: params.tipo,
-          discipline,
-          bnccCodesCount: extracted.codes.length,
-          schoolYear,
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
 
     return materialId;
   } catch (error) {

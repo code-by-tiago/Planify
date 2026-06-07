@@ -140,7 +140,11 @@ export async function POST(request: NextRequest) {
         classId: payload.classId || null,
         className: payload.className?.trim() || payload.turma?.trim() || null,
         discipline:
-          payload.discipline?.trim() || payload.disciplina?.trim() || null,
+          payload.discipline?.trim() ||
+          payload.disciplina?.trim() ||
+          payload.componenteCurricular?.trim() ||
+          payload.componente?.trim() ||
+          null,
         contentHtml: result.data.html,
         pipeline,
         qualityScore: typeof qualityScore === "number" ? qualityScore : null,

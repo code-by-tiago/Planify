@@ -162,6 +162,7 @@ function walkUnknown(value: unknown, codes: Set<string>, depth = 0): void {
 export function extractBnccCodesFromPayload(payload: {
   habilidadesSelecionadas?: unknown;
   habilidadesBncc?: unknown;
+  habilidadesBnccCodigos?: unknown;
   conteudos?: unknown;
   estrutura?: unknown;
   planejamento?: unknown;
@@ -174,6 +175,13 @@ export function extractBnccCodesFromPayload(payload: {
 
   collectFromSkillsArray(payload.habilidadesSelecionadas, codes, skills);
   collectFromSkillsArray(payload.habilidadesBncc, codes, skills);
+
+  if (Array.isArray(payload.habilidadesBnccCodigos)) {
+    for (const code of payload.habilidadesBnccCodigos) {
+      const normalized = normalizeCode(code);
+      if (normalized) codes.add(normalized);
+    }
+  }
 
   for (const textSource of [payload.contentHtml, payload.contentPreview]) {
     if (typeof textSource === "string" && textSource.trim()) {

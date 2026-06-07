@@ -104,7 +104,10 @@ export async function POST(request: NextRequest) {
         classId: payload.classId || null,
         className: payload.className?.trim() || payload.turma?.trim() || null,
         discipline:
-          payload.discipline?.trim() || payload.disciplina?.trim() || null,
+          payload.discipline?.trim() ||
+          payload.disciplina?.trim() ||
+          payload.componenteCurricular?.trim() ||
+          null,
         pipeline: result.usedAI ? "planning-ai" : "planning-fallback",
         qualityScore:
           typeof result.qualityScore === "number" ? result.qualityScore : null,

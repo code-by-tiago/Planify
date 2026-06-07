@@ -7,6 +7,7 @@ import type {
 } from "@/lib/bncc/types";
 import {
   DEFAULT_SCHOOL_YEAR,
+  matchesDisciplineFilter,
   resolveBnccCatalogSubjects,
 } from "./discipline-catalog";
 import { getSupabaseAdminClient } from "../supabase/admin-client";
@@ -54,31 +55,6 @@ export function decodePersonalClassFilter(
   return { classId: raw, className: null };
 }
 
-function debugProgressLog(
-  message: string,
-  data: Record<string, unknown>,
-  hypothesisId: string,
-): void {
-  // #region agent log
-  fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Debug-Session-Id": "920c67",
-    },
-    body: JSON.stringify({
-      sessionId: "920c67",
-      runId: "bncc-progress",
-      hypothesisId,
-      location: "bncc-progress-service.ts",
-      message,
-      data,
-      timestamp: Date.now(),
-    }),
-  }).catch(() => {});
-  // #endregion
-}
-
 type SchoolClassRow = {
   id: string;
   name: string;
@@ -97,12 +73,6 @@ function toSkillSummary(row: BnccSkillRow): BnccSkillSummary {
   };
 }
 
-function normalizeDiscipline(value: string | null | undefined): string {
-  return String(value || "")
-    .trim()
-    .toLowerCase();
-}
-
 function startOfMonthIso(): string {
   const now = new Date();
   return new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
@@ -112,14 +82,64 @@ function normalizeFilterText(value: string | null | undefined): string {
   return String(value || "").trim();
 }
 
-function matchesFilterText(
-  stored: string | null | undefined,
-  filter: string | null | undefined,
-): boolean {
-  const expected = normalizeFilterText(filter);
-  if (!expected) return true;
-  const actual = normalizeFilterText(stored);
-  return actual.toLowerCase() === expected.toLowerCase();
+async function fetchDistinctDisciplines(userId: string): Promise<string[]> {
+  const supabase = getSupabaseAdminClient();
+  const { data, error } = await supabase
+    .from("generated_materials")
+    .select("discipline,bncc_skill_codes,request_payload")
+    .eq("user_id", userId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  const values = new Set<string>();
+  const orphanCodes = new Set<string>();
+
+  for (const row of data || []) {
+    const material = row as {
+      discipline?: string | null;
+      bncc_skill_codes?: string[] | null;
+      request_payload?: Record<string, unknown> | null;
+    };
+
+    const storedDiscipline = String(material.discipline || "").trim();
+    if (storedDiscipline) {
+      values.add(storedDiscipline);
+      continue;
+    }
+
+    const payload = material.request_payload;
+    const payloadDiscipline = String(
+      payload?.componenteCurricular ||
+        payload?.componente ||
+        payload?.disciplina ||
+        payload?.discipline ||
+        "",
+    ).trim();
+    if (payloadDiscipline) {
+      values.add(payloadDiscipline);
+      continue;
+    }
+
+    for (const code of material.bncc_skill_codes || []) {
+      const normalized = String(code || "").trim().toUpperCase();
+      if (normalized) orphanCodes.add(normalized);
+    }
+  }
+
+  if (orphanCodes.size > 0) {
+    const catalogSkills = await fetchCatalogSkillsByCodes(
+      Array.from(orphanCodes),
+    );
+    for (const skill of catalogSkills) {
+      if (skill.subject?.trim()) {
+        values.add(skill.subject.trim());
+      }
+    }
+  }
+
+  return Array.from(values).sort((a, b) => a.localeCompare(b, "pt-BR"));
 }
 
 async function fetchCatalogSkills(filters: {
@@ -251,7 +271,7 @@ async function fetchUserMaterials(
 
   if (filters.discipline) {
     rows = rows.filter((row) =>
-      matchesFilterText(row.discipline, filters.discipline),
+      matchesDisciplineFilter(row.discipline, filters.discipline),
     );
   }
 
@@ -281,27 +301,14 @@ async function fetchDistinctClassNames(userId: string): Promise<string[]> {
   return Array.from(names).sort((a, b) => a.localeCompare(b, "pt-BR"));
 }
 
-async function fetchDistinctDisciplines(userId: string): Promise<string[]> {
-  const supabase = getSupabaseAdminClient();
-  const { data, error } = await supabase
-    .from("generated_materials")
-    .select("discipline")
-    .eq("user_id", userId)
-    .not("discipline", "is", null);
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  const values = new Set<string>();
-  for (const row of data || []) {
-    const value = String(
-      (row as { discipline?: string | null }).discipline || "",
-    ).trim();
-    if (value) values.add(value);
-  }
-
-  return Array.from(values).sort((a, b) => a.localeCompare(b, "pt-BR"));
+function matchesFilterText(
+  stored: string | null | undefined,
+  filter: string | null | undefined,
+): boolean {
+  const expected = normalizeFilterText(filter);
+  if (!expected) return true;
+  const actual = normalizeFilterText(stored);
+  return actual.toLowerCase() === expected.toLowerCase();
 }
 
 async function fetchSchoolMaterials(
@@ -478,25 +485,13 @@ export async function getTeacherBnccProgress(
   }
   for (const value of materialDisciplines) {
     disciplineSet.add(value);
+    for (const alias of resolveBnccCatalogSubjects(value)) {
+      if (alias.trim()) disciplineSet.add(alias.trim());
+    }
   }
   for (const skill of catalog) {
     if (skill.subject?.trim()) disciplineSet.add(skill.subject.trim());
   }
-
-  debugProgressLog(
-    "progress loaded",
-    {
-      materialCount: materials.length,
-      codesInMaterials: materials.reduce(
-        (sum, row) => sum + (row.bncc_skill_codes?.length || 0),
-        0,
-      ),
-      classOptions: classOptions.length,
-      personalClassNames: personalClassNames.length,
-      coveragePercent,
-    },
-    "C",
-  );
 
   return {
     coveragePercent,

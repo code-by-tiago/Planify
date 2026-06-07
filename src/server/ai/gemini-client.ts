@@ -22,18 +22,19 @@ type GeminiCallResult = {
   error?: { message: string };
 };
 
-/** Modelos 1.5 foram descontinuados no free tier — normaliza para 2.5. */
+/** Modelos legados descontinuados — normaliza para equivalentes atuais. */
 const LEGACY_MODEL_MAP: Record<string, string> = {
   "gemini-1.5-flash": "gemini-2.5-flash",
   "gemini-1.5-flash-8b": "gemini-2.5-flash",
   "gemini-1.5-pro": "gemini-2.5-pro",
   "gemini-1.5-pro-latest": "gemini-2.5-pro",
+  "gemini-2.0-flash": "gemini-2.5-flash",
+  "gemini-2.0-flash-001": "gemini-2.5-flash",
+  "gemini-2.0-flash-lite": "gemini-2.5-flash",
+  "gemini-2.0-flash-lite-001": "gemini-2.5-flash",
 };
 
-const DEFAULT_MODEL_FALLBACKS = [
-  "gemini-2.5-flash",
-  "gemini-2.0-flash",
-] as const;
+const DEFAULT_MODEL_FALLBACKS = ["gemini-2.5-flash"] as const;
 
 const ADVANCED_MODEL_FALLBACKS = [
   "gemini-2.5-pro",
@@ -92,6 +93,18 @@ export function isGeminiQuotaError(message: string, status = 0): boolean {
   return (
     status === 429 ||
     /quota exceeded|rate limit|resource exhausted|too many requests/i.test(
+      message,
+    )
+  );
+}
+
+export function isGeminiModelUnavailableError(
+  message: string,
+  status = 0,
+): boolean {
+  return (
+    status === 404 ||
+    /no longer available|not found|NOT_FOUND|model.*not.*supported/i.test(
       message,
     )
   );
@@ -316,6 +329,10 @@ export async function generateGeminiJSON<T>(
 
       lastError = message;
 
+      if (isGeminiModelUnavailableError(message, json.httpStatus)) {
+        break;
+      }
+
       if (!isGeminiQuotaError(message, json.httpStatus)) {
         break;
       }
@@ -369,6 +386,10 @@ export async function generateGeminiText(options: {
         `Erro ao chamar a IA. Status HTTP: ${json.httpStatus}`;
 
       lastError = message;
+
+      if (isGeminiModelUnavailableError(message, json.httpStatus)) {
+        break;
+      }
 
       if (!isGeminiQuotaError(message, json.httpStatus)) {
         break;

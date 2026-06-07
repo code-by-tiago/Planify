@@ -47,6 +47,39 @@ export function resolveBnccCatalogSubjects(
   return [trimmed];
 }
 
+function catalogSubjectKeys(discipline: string | null | undefined): Set<string> {
+  return new Set(
+    resolveBnccCatalogSubjects(discipline).map((subject) =>
+      normalizeDisciplineKey(subject),
+    ),
+  );
+}
+
+/** True when stored material discipline matches a progress filter (handles Redação ↔ LP aliases). */
+export function matchesDisciplineFilter(
+  stored: string | null | undefined,
+  filter: string | null | undefined,
+): boolean {
+  const expected = String(filter || "").trim();
+  if (!expected) return true;
+
+  const actual = String(stored || "").trim();
+  if (!actual) return false;
+
+  if (actual.localeCompare(expected, "pt-BR", { sensitivity: "accent" }) === 0) {
+    return true;
+  }
+
+  const expectedKeys = catalogSubjectKeys(expected);
+  const actualKeys = catalogSubjectKeys(actual);
+
+  for (const key of actualKeys) {
+    if (expectedKeys.has(key)) return true;
+  }
+
+  return false;
+}
+
 export function resolveSchoolYear(
   payload?: Record<string, unknown> | null,
 ): number {

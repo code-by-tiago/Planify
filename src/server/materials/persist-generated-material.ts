@@ -1,51 +1,16 @@
 import type { Json, TablesInsert, TablesUpdate } from "@/types/database";
 import type { PersistGeneratedMaterialInput } from "@/types/generated-material";
 import { extractBnccCodesFromPayload } from "../bncc/extract-bncc-codes";
-import { resolveSchoolYear } from "../bncc/discipline-catalog";
+import {
+  resolveSchoolYear,
+} from "../bncc/discipline-catalog";
+import { suggestBnccByConteudos } from "../bncc/bncc-suggestion-engine";
 import { getSupabaseAdminClient } from "../supabase/admin-client";
 import { getPrimarySchoolIdForUser } from "../schools/school-access";
 import { upsertTeacherClass } from "../schools/teacher-classes-service";
 import { createHash, randomUUID } from "node:crypto";
 
 const PREVIEW_MAX_LENGTH = 2000;
-
-function debugPersistLog(
-  message: string,
-  data: Record<string, unknown>,
-  hypothesisId: string,
-): void {
-  // #region agent log
-  fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Debug-Session-Id": "920c67",
-    },
-    body: JSON.stringify({
-      sessionId: "920c67",
-      runId: "bncc-persist",
-      hypothesisId,
-      location: "persist-generated-material.ts",
-      message,
-      data,
-      timestamp: Date.now(),
-    }),
-  }).catch(() => {});
-  // #endregion
-}
-
-function buildPreview(...parts: Array<string | null | undefined>): string {
-  const text = parts
-    .map((part) => String(part || "").replace(/\s+/g, " ").trim())
-    .filter(Boolean)
-    .join(" ");
-
-  if (text.length <= PREVIEW_MAX_LENGTH) {
-    return text;
-  }
-
-  return `${text.slice(0, PREVIEW_MAX_LENGTH - 1)}…`;
-}
 
 export type PersistGenerationParams = {
   userId: string;
@@ -64,6 +29,82 @@ export type PersistGenerationParams = {
   payload?: Record<string, unknown> | null;
   result?: Record<string, unknown> | null;
 };
+
+function resolvePersistDiscipline(
+  params: PersistGenerationParams,
+): string | null {
+  const payload = params.payload;
+  return (
+    params.discipline?.trim() ||
+    String(
+      payload?.discipline ||
+        payload?.disciplina ||
+        payload?.componenteCurricular ||
+        payload?.componente ||
+        "",
+    ).trim() ||
+    null
+  );
+}
+
+async function inferBnccCodesWhenEmpty(
+  extracted: ReturnType<typeof extractBnccCodesFromPayload>,
+  params: PersistGenerationParams,
+): Promise<ReturnType<typeof extractBnccCodesFromPayload>> {
+  if (extracted.codes.length > 0) {
+    return extracted;
+  }
+
+  const payload = params.payload;
+  const componente = resolvePersistDiscipline(params);
+  const tema = String(payload?.tema || payload?.temaCentral || "").trim();
+
+  if (!componente || !tema) {
+    return extracted;
+  }
+
+  try {
+    const suggestion = await suggestBnccByConteudos({
+      etapa: String(payload?.etapa || "").trim() || undefined,
+      anoSerie: String(payload?.anoSerie || payload?.serie || "").trim() || undefined,
+      areaConhecimento: String(payload?.areaConhecimento || "").trim() || undefined,
+      componenteCurricular: componente,
+      tema,
+      conteudos: tema,
+    });
+
+    const skills = (suggestion.habilidades || []).slice(0, 8);
+    if (skills.length === 0) {
+      return extracted;
+    }
+
+    return {
+      codes: skills.map((skill) => skill.codigo).sort(),
+      skills: skills.map((skill) => ({
+        codigo: skill.codigo,
+        descricao: skill.descricao,
+        componente: skill.componente,
+        etapa: skill.etapa,
+        anoSerie: skill.anoSerie,
+      })),
+    };
+  } catch {
+    return extracted;
+  }
+}
+
+function buildPreview(...parts: Array<string | null | undefined>): string {
+  const text = parts
+    .map((part) => String(part || "").replace(/\s+/g, " ").trim())
+    .filter(Boolean)
+    .join(" ");
+
+  if (text.length <= PREVIEW_MAX_LENGTH) {
+    return text;
+  }
+
+  return `${text.slice(0, PREVIEW_MAX_LENGTH - 1)}…`;
+}
 
 function resolveIdempotencyKey(
   payload?: Record<string, unknown> | null,
@@ -182,22 +223,10 @@ export async function persistGeneratedMaterial(
           .eq("id", existingId);
 
         if (error) {
-          debugPersistLog("update failed", { error: error.message }, "A");
           console.warn("planify:persist-generated-material update failed", error.message);
           return null;
         }
 
-        debugPersistLog(
-          "update ok",
-          {
-            id: existingId,
-            codesCount: input.bnccSkillCodes.length,
-            className: input.className,
-            discipline: input.discipline,
-            schoolYear: row.school_year,
-          },
-          "A",
-        );
         return existingId;
       }
     }
@@ -209,24 +238,11 @@ export async function persistGeneratedMaterial(
       .single();
 
     if (error) {
-      debugPersistLog("insert failed", { error: error.message }, "A");
       console.warn("planify:persist-generated-material failed", error.message);
       return null;
     }
 
-    const id = (data as { id?: string } | null)?.id || null;
-    debugPersistLog(
-      "insert ok",
-      {
-        id,
-        codesCount: input.bnccSkillCodes.length,
-        className: input.className,
-        discipline: input.discipline,
-        schoolYear: row.school_year,
-      },
-      "A",
-    );
-    return id;
+    return (data as { id?: string } | null)?.id || null;
   } catch (error) {
     const message = error instanceof Error ? error.message : "unknown";
     console.warn("planify:persist-generated-material failed", message);
@@ -248,33 +264,27 @@ async function persistGenerationRecord(
       params.contentHtml ||
       (typeof params.result?.html === "string" ? params.result.html : null);
 
-    const extracted = extractBnccCodesFromPayload({
-      habilidadesSelecionadas: params.payload?.habilidadesSelecionadas,
-      habilidadesBncc: params.payload?.habilidadesBncc,
-      conteudos:
-        params.result?.conteudos ??
-        (params.result?.planejamento as Record<string, unknown> | undefined)
-          ?.conteudos,
-      estrutura: params.result?.estrutura ?? params.result,
-      planejamento: params.result?.planejamento ?? params.result,
-      contentHtml: htmlContent,
-      contentPreview:
-        params.contentPreview ||
-        (typeof params.result?.markdown === "string"
-          ? params.result.markdown
-          : null),
-      raw: params.result ?? params.payload,
-    });
-
-    debugPersistLog(
-      "bncc extraction",
-      {
-        surface: params.surface,
-        tipo: params.tipo,
-        codes: extracted.codes,
-        htmlLen: htmlContent ? htmlContent.length : 0,
-      },
-      "B",
+    const extracted = await inferBnccCodesWhenEmpty(
+      extractBnccCodesFromPayload({
+        habilidadesSelecionadas: params.payload?.habilidadesSelecionadas,
+        habilidadesBncc: params.payload?.habilidadesBncc,
+        habilidadesBnccCodigos: params.payload?.habilidadesBnccCodigos,
+        conteudos:
+          params.payload?.conteudos ??
+          params.result?.conteudos ??
+          (params.result?.planejamento as Record<string, unknown> | undefined)
+            ?.conteudos,
+        estrutura: params.result?.estrutura ?? params.result,
+        planejamento: params.result?.planejamento ?? params.result,
+        contentHtml: htmlContent,
+        contentPreview:
+          params.contentPreview ||
+          (typeof params.result?.markdown === "string"
+            ? params.result.markdown
+            : null),
+        raw: params.result ?? params.payload,
+      }),
+      params,
     );
 
     const schoolId =
@@ -290,16 +300,7 @@ async function persistGenerationRecord(
       await upsertTeacherClass(params.userId, className).catch(() => null);
     }
 
-    const discipline =
-      params.discipline?.trim() ||
-      String(
-        params.payload?.discipline ||
-          params.payload?.disciplina ||
-          params.payload?.componenteCurricular ||
-          params.payload?.componente ||
-          "",
-      ).trim() ||
-      null;
+    const discipline = resolvePersistDiscipline(params);
 
     const schoolYear =
       params.schoolYear ?? resolveSchoolYear(params.payload ?? undefined);

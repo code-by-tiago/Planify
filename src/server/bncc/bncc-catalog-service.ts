@@ -292,38 +292,6 @@ export async function getBnccCatalogOptions(filters?: {
       ? mergeScopedCatalogSubjects(dbSubjects, stage, knowledgeArea)
       : [];
 
-  // #region agent log
-  fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "920c67" },
-    body: JSON.stringify({
-      sessionId: "920c67",
-      runId: "post-fix",
-      hypothesisId: "A,B,C,D",
-      location: "bncc-catalog-service.ts:getBnccCatalogOptions",
-      message: "catalog options built",
-      data: {
-        filters: {
-          stage: filters?.stage ?? null,
-          grade: filters?.grade ?? null,
-          knowledgeArea: filters?.knowledgeArea ?? null,
-        },
-        stagesCount: stages.length,
-        stages,
-        gradesCount: grades.length,
-        gradesSample: grades.slice(0, 15),
-        dbSubjectsCount: dbSubjects.length,
-        mergedSubjectsCount: mergedSubjects.length,
-        mergedSubjectsSample: mergedSubjects.slice(0, 25),
-        knowledgeAreasCount: knowledgeAreas.length,
-        knowledgeAreasSample: knowledgeAreas.slice(0, 10),
-        totalSkills,
-      },
-      timestamp: Date.now(),
-    }),
-  }).catch(() => {});
-  // #endregion
-
   return {
     stages,
     grades,

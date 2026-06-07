@@ -616,6 +616,26 @@ body .planify-hud.pl-hud-shell .pl-sidebar nav .pl-sidebar-nav-icon svg {
   grid-column: span 2;
 }
 
+.planify-hud .pl-hud-hub-stat-pill {
+  border: 1px solid rgba(0, 212, 255, 0.18);
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.planify-hud .pl-hud-hub-workspace-chip {
+  border: 1px solid var(--planify-glass-border);
+  background: var(--planify-glass-bg);
+  backdrop-filter: var(--planify-glass-blur);
+  -webkit-backdrop-filter: var(--planify-glass-blur);
+  box-shadow: 0 2px 12px rgba(0, 212, 255, 0.06);
+}
+
+.planify-hud .pl-hud-hub-workspace-chip:hover {
+  border-color: rgba(0, 212, 255, 0.4);
+  box-shadow: var(--planify-cyan-glow-soft);
+}
+
 @media (max-width: 639px) {
   .planify-hud .pl-hud-hub-bento-lg {
     grid-column: span 1;

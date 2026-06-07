@@ -130,6 +130,33 @@ export default function TeachyStudioHome({
       .filter((group) => group.tools.length > 0);
   }, [categoryTabs, gridTools, hasActiveFilter]);
 
+  useEffect(() => {
+    // #region agent log
+    fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Debug-Session-Id": "a3011b",
+      },
+      body: JSON.stringify({
+        sessionId: "a3011b",
+        runId: "verify-home",
+        hypothesisId: "H2",
+        location: "TeachyStudioHome.tsx:mount",
+        message: "TeachyStudioHome rendered",
+        data: {
+          version: "6960f35",
+          hasActiveFilter,
+          pathname: typeof window !== "undefined" ? window.location.pathname : "",
+          search: typeof window !== "undefined" ? window.location.search : "",
+          toolCount: planifyToolCount,
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
+  }, [hasActiveFilter]);
+
   function persistTopic(value = topic) {
     const tema = value.trim();
     onTopicChange?.(tema);
@@ -261,7 +288,10 @@ export default function TeachyStudioHome({
   }
 
   return (
-    <div className="pl-hud-hub pl-hud-board pl-hud-home flex h-full min-h-0 w-full flex-col overflow-hidden">
+    <div
+      className="pl-hud-hub pl-hud-board pl-hud-home flex h-full min-h-0 w-full flex-col overflow-hidden"
+      data-planify-studio-home="6960f35"
+    >
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
         <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:py-10">
           <section className="pl-hud-hub-hero pl-hud-hub-reveal p-6 sm:p-8 lg:p-10">
@@ -269,17 +299,9 @@ export default function TeachyStudioHome({
             <div className="pl-hud-hub-grid-bg" aria-hidden />
 
             <div className="relative">
-              <span className="pl-hud-badge">
-                <PlanifyIcon name="spark" className="h-3 w-3" />
-                Estúdio pedagógico · BNCC
-              </span>
-              <h1 className="pl-hud-display mt-4 max-w-2xl text-[1.85rem] font-extrabold leading-[1.08] tracking-tight text-slate-950 sm:text-4xl lg:text-[2.65rem]">
-                O que vamos{" "}
-                <span className="pl-hud-gradient-text">criar hoje?</span>
-              </h1>
-              <p className="mt-4 max-w-xl text-sm font-medium leading-relaxed text-slate-600 sm:text-base">
+              <p className="max-w-xl text-sm font-medium leading-relaxed text-slate-600 sm:text-base">
                 {totalGenerators} geradores com IA, planejamentos oficiais e espaço de trabalho
-                completo — escolha a ferramenta, descreva o contexto e exporte em segundos.
+                completo — busque abaixo ou escolha uma categoria.
               </p>
 
               <div className="pl-hud-hub-trust mt-6">

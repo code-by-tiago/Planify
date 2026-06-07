@@ -7,7 +7,6 @@ import { PlanifyDashboardMain } from "@/components/dashboard/PlanifyDashboardMai
 import { PlanifyQuickNav } from "@/components/dashboard/PlanifyQuickNav";
 import { CreditsBalancePill } from "@/components/credits/CreditsBalancePill";
 import { LandingHomeLink } from "@/components/public/LandingHomeLink";
-import { PlanifyBrand } from "@/components/pro/PlanifyBrand";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { PlanifyShellSidebar } from "@/components/pro/PlanifyShellSidebar";
 import { PlanifySidebarNav } from "@/components/pro/PlanifySidebarNav";
@@ -18,6 +17,7 @@ import {
 } from "@/lib/pro/dashboardViews";
 import {
   getPlanifyTool,
+  planifyToolCount,
   planifyTools,
   type PlanifyToolId,
 } from "@/lib/pro/planifyTools";
@@ -275,34 +275,47 @@ export default function PlanifyDashboardShell() {
             />
           </header>
         ) : (
-          <header className="pl-hud-hub-shell-header flex shrink-0 items-center justify-between gap-2 border-b px-3 py-2 pt-[max(0.5rem,env(safe-area-inset-top))] sm:gap-3 sm:px-5">
-            <div className="flex min-w-0 items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setSidebarOpen(true)}
-                aria-label="Abrir menu"
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-slate-600 transition hover:bg-slate-50 lg:hidden"
-              >
-                <PlanifyIcon name="menu" className="h-5 w-5" />
-              </button>
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-cyan-600">
-                  Sua rede pedagógica
-                </p>
-                <PlanifyBrand compact href="/" />
+          <header className="pl-hud-hub-shell-header relative shrink-0 overflow-hidden border-b px-3 py-3 pt-[max(0.5rem,env(safe-area-inset-top))] sm:px-5 sm:py-4">
+            <div className="pl-hud-hub-mesh pointer-events-none absolute inset-0 opacity-40" aria-hidden />
+            <div className="pl-hud-hub-grid-bg pointer-events-none absolute inset-0 opacity-25" aria-hidden />
+            <div className="relative flex flex-wrap items-center justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+                <button
+                  type="button"
+                  onClick={() => setSidebarOpen(true)}
+                  aria-label="Abrir menu"
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-cyan-400/15 bg-white/80 text-slate-600 transition hover:border-cyan-400/35 lg:hidden"
+                >
+                  <PlanifyIcon name="menu" className="h-5 w-5" />
+                </button>
+                <div className="min-w-0">
+                  <span className="pl-hud-badge">
+                    <PlanifyIcon name="spark" className="h-3 w-3" />
+                    Estúdio Planify
+                  </span>
+                  <h1 className="mt-1.5 truncate text-lg font-extrabold tracking-tight text-slate-950 sm:text-xl">
+                    O que vamos{" "}
+                    <span className="bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent">
+                      criar hoje?
+                    </span>
+                  </h1>
+                  <p className="hidden text-xs font-medium text-slate-500 sm:block">
+                    {planifyToolCount + 1} geradores · BNCC · DOCX · Comunidade
+                  </p>
+                </div>
               </div>
-            </div>
-            <div className="flex items-center gap-1.5 sm:gap-2">
-              <span className="hidden sm:inline-flex">
-                <LandingHomeLink compact />
-              </span>
-              <CreditsBalancePill />
-              <Link
-                href="/planos"
-                className="pl-hud-btn rounded-xl px-3 py-1.5 text-xs font-semibold sm:px-4"
-              >
-                Planos
-              </Link>
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <span className="hidden sm:inline-flex">
+                  <LandingHomeLink compact />
+                </span>
+                <CreditsBalancePill />
+                <Link
+                  href="/planos"
+                  className="pl-hud-btn rounded-xl px-3 py-1.5 text-xs font-semibold sm:px-4"
+                >
+                  Planos
+                </Link>
+              </div>
             </div>
           </header>
         )}

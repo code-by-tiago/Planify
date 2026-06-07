@@ -69,6 +69,7 @@ const DirectorPanelClient = dynamic(
 );
 
 import type { ReactNode } from "react";
+import { useEffect } from "react";
 import { PlanifyWorkspaceProvider } from "@/components/pro/planify-workspace-context";
 
 function SectionPanel({ children }: { children: ReactNode }) {
@@ -100,6 +101,37 @@ export function PlanifyDashboardMain({
   onSelectSection,
   onClosePanel,
 }: PlanifyDashboardMainProps) {
+  useEffect(() => {
+    const view = toolId
+      ? `tool:${toolId}`
+      : sectionId
+        ? `section:${sectionId}`
+        : "studio-home";
+    // #region agent log
+    fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Debug-Session-Id": "a3011b",
+      },
+      body: JSON.stringify({
+        sessionId: "a3011b",
+        runId: "verify-home",
+        hypothesisId: "H1",
+        location: "PlanifyDashboardMain.tsx:view",
+        message: "dashboard main view",
+        data: {
+          view,
+          toolId,
+          sectionId,
+          search: typeof window !== "undefined" ? window.location.search : "",
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
+  }, [sectionId, toolId]);
+
   if (toolId) {
     if (toolId === "inclusao") {
       return (

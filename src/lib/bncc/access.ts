@@ -55,7 +55,8 @@ export function buildPlanifyAccessContext(input: {
 
   const canViewBnccProgress =
     tier === "pro" || tier === "premium" || hasSchoolMembership;
-  const canViewDirectorPanel = isManagerView;
+  const canViewDirectorPanel =
+    isManagerView && Boolean(input.schoolId);
 
   return {
     tier,

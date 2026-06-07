@@ -125,7 +125,7 @@ export function BnccProgressClient({ embedded = false }: BnccProgressClientProps
             Como gestor ou diretor, use o painel administrativo para acompanhar
             turmas e professores da escola.
           </p>
-          <Link href="/diretor" className="pl-hud-btn mt-4 inline-flex rounded-xl px-5 py-2.5 text-sm font-semibold">
+          <Link href="/gestor" className="pl-hud-btn mt-4 inline-flex rounded-xl px-5 py-2.5 text-sm font-semibold">
             Abrir Painel do Gestor
           </Link>
         </div>

@@ -3,6 +3,7 @@ import type { PremiumAccessResult } from "../../types/access";
 export type AccessCookieResponse = {
   success: boolean;
   access: PremiumAccessResult;
+  inviteSyncWarning?: string | null;
 };
 
 export async function checkPremiumAccess(accessToken: string): Promise<PremiumAccessResult> {

@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { PlanifyPageHero } from "@/components/pro/PlanifyPageHero";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { usePlanifyAccess } from "@/hooks/usePlanifyAccess";
+import { planifyAuthenticatedFetch } from "@/lib/auth/authenticated-fetch";
 import { HUD_FIELD_CLASS } from "@/lib/pro/hud-form-styles";
 import type { SchoolDashboardResponse } from "@/lib/bncc/types";
 import type { SchoolTeachersResponse } from "@/lib/school/types";
@@ -51,9 +52,9 @@ function RestrictedAccessPanel() {
           Painel exclusivo para gestores escolares
         </h1>
         <p className="mx-auto mt-4 max-w-md text-sm font-semibold leading-7 text-slate-600">
-          Esta área é reservada a diretores e gestores com perfil{" "}
-          <strong>school_manager</strong>. Professores podem acompanhar o próprio
-          progresso BNCC no painel individual.
+          Esta área é exclusiva para quem administra uma escola no Planify
+          (diretor ou gestor institucional). Professores acompanham o próprio
+          progresso BNCC em Progresso BNCC.
         </p>
         <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
           <Link
@@ -98,10 +99,7 @@ export function DirectorPanelClient({ embedded = false }: DirectorPanelClientPro
     setError("");
 
     try {
-      const response = await fetch("/api/school/dashboard", {
-        cache: "no-store",
-        credentials: "include",
-      });
+      const response = await planifyAuthenticatedFetch("/api/school/dashboard");
       const data = (await response.json()) as {
         success?: boolean;
         dashboard?: SchoolDashboardResponse;
@@ -126,10 +124,7 @@ export function DirectorPanelClient({ embedded = false }: DirectorPanelClientPro
     setTeachersLoading(true);
 
     try {
-      const response = await fetch("/api/school/teachers", {
-        cache: "no-store",
-        credentials: "include",
-      });
+      const response = await planifyAuthenticatedFetch("/api/school/teachers");
       const data = (await response.json()) as {
         success?: boolean;
         teachers?: SchoolTeachersResponse;
@@ -170,9 +165,8 @@ export function DirectorPanelClient({ embedded = false }: DirectorPanelClientPro
     setInviteMessage("");
 
     try {
-      const response = await fetch("/api/school/invite", {
+      const response = await planifyAuthenticatedFetch("/api/school/invite", {
         method: "POST",
-        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email_professor: email }),
       });
@@ -222,7 +216,7 @@ export function DirectorPanelClient({ embedded = false }: DirectorPanelClientPro
             Entre na sua conta para acessar o painel do gestor.
           </p>
           <Link
-            href="/login?redirect=/diretor"
+            href="/login?redirect=/gestor"
             className="pl-hud-btn mt-5 inline-flex rounded-xl px-5 py-2.5 text-sm font-semibold"
           >
             Entrar

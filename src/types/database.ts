@@ -615,6 +615,7 @@ export type Database = {
           grade_level: string | null;
           year: number | null;
           discipline: string | null;
+          teacher_user_id: string | null;
           created_at: string;
         },
         {
@@ -624,6 +625,7 @@ export type Database = {
           grade_level?: string | null;
           year?: number | null;
           discipline?: string | null;
+          teacher_user_id?: string | null;
           created_at?: string;
         },
         {
@@ -633,6 +635,7 @@ export type Database = {
           grade_level?: string | null;
           year?: number | null;
           discipline?: string | null;
+          teacher_user_id?: string | null;
           created_at?: string;
         }
       >;

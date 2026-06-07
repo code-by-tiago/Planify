@@ -61,7 +61,103 @@ type SchoolClassRow = {
   grade_level: string | null;
   discipline: string | null;
   year: number | null;
+  teacher_user_id?: string | null;
 };
+
+function catalogCacheKey(
+  grade: string | null | undefined,
+  discipline: string | null | undefined,
+): string {
+  return `${String(grade || "").trim()}|${String(discipline || "").trim()}`;
+}
+
+function buildDominantTeacherByClass(
+  materials: GeneratedMaterialRow[],
+): Map<string, string> {
+  const counts = new Map<string, Map<string, number>>();
+
+  for (const material of materials) {
+    if (!material.class_id) continue;
+    const byUser = counts.get(material.class_id) ?? new Map<string, number>();
+    byUser.set(
+      material.user_id,
+      (byUser.get(material.user_id) ?? 0) + 1,
+    );
+    counts.set(material.class_id, byUser);
+  }
+
+  const result = new Map<string, string>();
+
+  for (const [classId, byUser] of counts) {
+    let bestUserId: string | null = null;
+    let bestCount = 0;
+
+    for (const [userId, count] of byUser) {
+      if (count > bestCount) {
+        bestUserId = userId;
+        bestCount = count;
+      }
+    }
+
+    if (bestUserId) {
+      result.set(classId, bestUserId);
+    }
+  }
+
+  return result;
+}
+
+async function loadCatalogCache(
+  classRows: SchoolClassRow[],
+): Promise<Map<string, BnccSkillRow[]>> {
+  const cache = new Map<string, BnccSkillRow[]>();
+  const uniqueKeys = new Set(
+    classRows.map((cls) => catalogCacheKey(cls.grade_level, cls.discipline)),
+  );
+
+  await Promise.all(
+    Array.from(uniqueKeys).map(async (key) => {
+      const [grade, discipline] = key.split("|");
+      const catalog = await fetchCatalogSkills({
+        grade: grade || null,
+        discipline: discipline || null,
+      });
+      cache.set(key, catalog);
+    }),
+  );
+
+  return cache;
+}
+
+async function resolveTeacherNames(
+  userIds: string[],
+): Promise<Map<string, string>> {
+  const uniqueIds = Array.from(new Set(userIds.filter(Boolean)));
+  const result = new Map<string, string>();
+
+  if (uniqueIds.length === 0) {
+    return result;
+  }
+
+  const supabase = getSupabaseAdminClient();
+  const { data } = await supabase
+    .from("profiles")
+    .select("id,full_name,email")
+    .in("id", uniqueIds);
+
+  for (const row of data || []) {
+    const profile = row as {
+      id: string;
+      full_name?: string | null;
+      email?: string | null;
+    };
+    const name = String(profile.full_name || "").trim();
+    const email = String(profile.email || "").trim();
+    result.set(profile.id, name || email || "Professor");
+  }
+
+  return result;
+}
 
 function toSkillSummary(row: BnccSkillRow): BnccSkillSummary {
   return {
@@ -550,7 +646,7 @@ export async function getSchoolDashboardMetrics(
       .eq("status", "active"),
     supabase
       .from("school_classes")
-      .select("id,name,grade_level,discipline,year")
+      .select("id,name,grade_level,discipline,year,teacher_user_id")
       .eq("school_id", schoolId)
       .order("name", { ascending: true }),
     fetchSchoolMaterials(schoolId, { since: startOfMonthIso() }),
@@ -565,21 +661,28 @@ export async function getSchoolDashboardMetrics(
   ).length;
 
   const allMaterials = await fetchSchoolMaterials(schoolId, {});
-  const teacherByClass = new Map<string, string>();
-
-  for (const material of allMaterials) {
-    if (!material.class_id || teacherByClass.has(material.class_id)) continue;
-    teacherByClass.set(material.class_id, material.user_id);
-  }
+  const dominantTeacherByClass = buildDominantTeacherByClass(allMaterials);
 
   const classRows = (classes.data || []) as SchoolClassRow[];
+  const catalogCache = await loadCatalogCache(classRows);
+
+  const teacherIds = classRows.map(
+    (cls) =>
+      cls.teacher_user_id ||
+      dominantTeacherByClass.get(cls.id) ||
+      null,
+  );
+  const teacherNamesById = await resolveTeacherNames(
+    teacherIds.filter((id): id is string => Boolean(id)),
+  );
+
   const classMetrics: SchoolClassBnccRow[] = [];
 
   for (const cls of classRows) {
-    const catalog = await fetchCatalogSkills({
-      grade: cls.grade_level,
-      discipline: cls.discipline,
-    });
+    const catalog =
+      catalogCache.get(
+        catalogCacheKey(cls.grade_level, cls.discipline),
+      ) || [];
 
     const classMaterials = allMaterials.filter(
       (material) => material.class_id === cls.id,
@@ -590,8 +693,13 @@ export async function getSchoolDashboardMetrics(
       (material) => material.class_id === cls.id,
     ).length;
 
-    const teacherUserId = teacherByClass.get(cls.id) || null;
-    const teacherName = await resolveTeacherName(teacherUserId);
+    const teacherUserId =
+      cls.teacher_user_id ||
+      dominantTeacherByClass.get(cls.id) ||
+      null;
+    const teacherName = teacherUserId
+      ? teacherNamesById.get(teacherUserId) || null
+      : null;
 
     classMetrics.push({
       classId: cls.id,

@@ -1,5 +1,6 @@
 import type { TablesInsert } from "@/types/database";
 import { getSupabaseAdminClient } from "../supabase/admin-client";
+import { grantSchoolProPlan } from "./school-pro-grant";
 import { createSchoolMember } from "./school-service";
 
 export type SchoolInviteResult = {
@@ -57,9 +58,12 @@ export async function inviteTeacherToSchool(
       .from("school_invites")
       .upsert(inviteRow, { onConflict: "school_id,email" });
 
+    await grantSchoolProPlan(existingUserId);
+
     return {
       status: "accepted",
-      message: "Professor vinculado à escola. Acesso escolar ativo via associação.",
+      message:
+        "Professor vinculado à escola. Plano Pro escolar ativado quando elegível.",
       userId: existingUserId,
     };
   }

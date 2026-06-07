@@ -263,6 +263,18 @@ export async function ensurePremiumSessionCookies(): Promise<boolean> {
   try {
     const cookieResult = await syncPremiumAccessCookie(token);
     await createOwnerSession(token);
+
+    if (cookieResult.inviteSyncWarning) {
+      try {
+        sessionStorage.setItem(
+          "planify-invite-sync-warning",
+          cookieResult.inviteSyncWarning,
+        );
+      } catch {
+        /* ignore */
+      }
+    }
+
     return Boolean(
       cookieResult?.access?.authenticated || cookieResult?.success,
     );

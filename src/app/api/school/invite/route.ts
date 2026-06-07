@@ -84,7 +84,14 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Erro ao convidar professor.";
-    const status = message.includes("já existe") ? 409 : 500;
+    const normalizedMessage = message.toLowerCase();
+    const status =
+      normalizedMessage.includes("já existe") ||
+      normalizedMessage.includes("ja existe") ||
+      normalizedMessage.includes("já foi vinculado") ||
+      normalizedMessage.includes("ja foi vinculado")
+        ? 409
+        : 500;
 
     return NextResponse.json(
       { success: false, error: { message } },

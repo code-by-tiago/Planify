@@ -145,6 +145,7 @@ export async function createSchoolClass(
     grade_level: input.gradeLevel?.trim() || null,
     year: input.year ?? null,
     discipline: input.discipline?.trim() || null,
+    teacher_user_id: input.teacherUserId || null,
   };
 
   const { data, error } = await supabase

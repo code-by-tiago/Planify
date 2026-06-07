@@ -31,6 +31,7 @@ export type SchoolContext = {
     grade_level: string | null;
     year: number | null;
     discipline: string | null;
+    teacher_user_id: string | null;
     created_at: string;
   }>;
 };
@@ -48,6 +49,7 @@ export type CreateSchoolClassInput = {
   gradeLevel?: string | null;
   year?: number | null;
   discipline?: string | null;
+  teacherUserId?: string | null;
 };
 
 export type CreateSchoolMemberInput = {

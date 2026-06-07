@@ -44,6 +44,8 @@ export async function POST(request: NextRequest) {
   const token = getBearerToken(request);
   let access = await verifyPremiumAccess(token);
 
+  let inviteSyncWarning: string | null = null;
+
   if (access.authenticated && access.user?.id && access.user.email) {
     try {
       const inviteResult = await acceptPendingSchoolInvites(
@@ -54,8 +56,13 @@ export async function POST(request: NextRequest) {
       if (inviteResult.acceptedCount > 0 || inviteResult.proGranted) {
         access = await verifyPremiumAccess(token);
       }
-    } catch {
-      // Não bloqueia login se a sincronização de convite falhar.
+    } catch (error) {
+      console.error("planify:school-invite-sync-failed", {
+        userId: access.user?.id,
+        message: error instanceof Error ? error.message : "unknown",
+      });
+      inviteSyncWarning =
+        "Não foi possível aplicar convites escolares pendentes. Tente entrar novamente em alguns instantes.";
     }
   }
 
@@ -71,6 +78,7 @@ export async function POST(request: NextRequest) {
       success: access.premium,
       access,
       cookiePayload: payload,
+      inviteSyncWarning,
     },
     { status: access.authenticated ? 200 : 401 },
   );

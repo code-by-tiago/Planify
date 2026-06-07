@@ -307,7 +307,7 @@ export type AppNavItem = {
 export const sidebarNavigation: AppNavItem[] = [
   {
     label: "Painel do Gestor",
-    href: "/dashboard?secao=diretor",
+    href: "/gestor",
     icon: "clipboard",
     panel: "diretor",
     requiresDirectorAccess: true,

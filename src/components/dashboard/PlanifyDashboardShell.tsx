@@ -69,6 +69,22 @@ export default function PlanifyDashboardShell() {
     [searchParams],
   );
 
+  useEffect(() => {
+    if (access.loading || !access.authenticated) return;
+    if (!access.isManagerView || !access.canViewDirectorPanel) return;
+    if (selectedToolId || selectedSectionId) return;
+
+    router.replace("/gestor");
+  }, [
+    access.authenticated,
+    access.canViewDirectorPanel,
+    access.isManagerView,
+    access.loading,
+    router,
+    selectedSectionId,
+    selectedToolId,
+  ]);
+
   const replaceDashboardUrl = useCallback(
     (mutate: (params: URLSearchParams) => void) => {
       const params = new URLSearchParams(searchParams.toString());

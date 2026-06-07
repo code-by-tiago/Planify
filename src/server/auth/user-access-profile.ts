@@ -1,6 +1,9 @@
 import { getSupabaseAdminClient } from "../supabase/admin-client";
 import type { SchoolMembershipRole } from "@/types/school";
-import { getPrimarySchoolIdForUser } from "../schools/school-access";
+import {
+  getPrimarySchoolIdForUser,
+  isSiteAdminUser,
+} from "../schools/school-access";
 
 export type UserAccessProfile = {
   profileRole: string;
@@ -12,6 +15,22 @@ export async function resolveUserAccessProfile(
   userId: string,
 ): Promise<UserAccessProfile> {
   const supabase = getSupabaseAdminClient();
+
+  if (await isSiteAdminUser(userId)) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", userId)
+      .maybeSingle();
+
+    return {
+      profileRole: String(
+        (profile as { role?: string | null } | null)?.role || "teacher",
+      ),
+      schoolId: null,
+      schoolMembershipRole: null,
+    };
+  }
 
   const [{ data: profile }, { data: memberships }] = await Promise.all([
     supabase.from("profiles").select("role").eq("id", userId).maybeSingle(),

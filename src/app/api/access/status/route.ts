@@ -9,6 +9,7 @@ import { getSupabaseAdminClient } from "../../../../server/supabase/admin-client
 import { buildPlanifyAccessContext } from "@/lib/bncc/access";
 import { resolveUserAccessProfile } from "../../../../server/auth/user-access-profile";
 import { resolveUserBillingPlanKey } from "../../../../server/credits/credit-subscription-sync";
+import { isSiteAdminUser } from "../../../../server/schools/school-access";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
@@ -142,9 +143,9 @@ export async function GET(request: NextRequest) {
         schoolMembershipRole: null,
       };
 
-  const isSiteAdmin = Boolean(
-    admin.isAdmin || isOwner || accessProfile.profileRole === "admin",
-  );
+  const isSiteAdmin = userId
+    ? await isSiteAdminUser(userId)
+    : Boolean(admin.isAdmin || isOwner || isOwnerEmail(email));
 
   const accessContext = buildPlanifyAccessContext({
     premium,
@@ -182,6 +183,7 @@ export async function GET(request: NextRequest) {
       isManagerView: accessContext.isManagerView,
       canViewBnccProgress: accessContext.canViewBnccProgress,
       canViewDirectorPanel: accessContext.canViewDirectorPanel,
+      isSiteAdmin,
       checkedAt: new Date().toISOString(),
     },
     {

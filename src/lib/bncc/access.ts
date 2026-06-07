@@ -56,12 +56,15 @@ export function buildPlanifyAccessContext(input: {
     Boolean(input.isSiteAdmin) ||
     profileRole === "admin" ||
     profileRole === "owner";
-  const isManagerView = isSchoolManager || isDirector || isSiteAdmin;
+  const isManagerView =
+    !isSiteAdmin && (isSchoolManager || isDirector);
 
   const canViewBnccProgress =
     tier === "pro" || tier === "premium" || hasSchoolMembership;
   const canViewDirectorPanel =
-    isSiteAdmin || (isManagerView && Boolean(input.schoolId));
+    !isSiteAdmin &&
+    (isSchoolManager || isDirector) &&
+    Boolean(input.schoolId);
 
   return {
     tier,

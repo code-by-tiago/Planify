@@ -26,9 +26,10 @@ export function sanitizeInternalRedirect(value: string | null): string | null {
 export function hasGestorHomeAccess(
   access: PostLoginAccessSnapshot,
 ): boolean {
-  return Boolean(
-    access.canViewDirectorPanel || access.isOwner || access.isAdmin,
-  );
+  if (access.isAdmin || access.isOwner) {
+    return false;
+  }
+  return Boolean(access.canViewDirectorPanel);
 }
 
 export function resolveDefaultPostLoginPath(

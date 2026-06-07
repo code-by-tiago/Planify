@@ -75,7 +75,7 @@ export async function canAccessSchoolDashboard(
   userId: string,
   schoolId: string,
 ): Promise<boolean> {
-  if (await isSiteAdminUser(userId)) return true;
+  if (await isSiteAdminUser(userId)) return false;
   if (await isSchoolManagerProfile(userId)) return true;
   return isSchoolDirector(userId, schoolId);
 }
@@ -130,19 +130,6 @@ export async function getPrimarySchoolIdForUser(
   }>;
 
   if (rows.length === 0) {
-    if (await isSiteAdminUser(userId)) {
-      const { data: fallbackSchool } = await supabase
-        .from("schools")
-        .select("id")
-        .order("created_at", { ascending: true })
-        .limit(1)
-        .maybeSingle();
-
-      if ((fallbackSchool as { id?: string } | null)?.id) {
-        return String((fallbackSchool as { id: string }).id);
-      }
-    }
-
     const { data: profile } = await supabase
       .from("profiles")
       .select("school_name")

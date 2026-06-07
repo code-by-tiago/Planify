@@ -405,8 +405,8 @@ export async function createSchoolMember(
 }
 
 /**
- * Resolves the gestor's primary school, creating one when a site admin or
- * school_manager has no membership and no school exists yet (first gestor access).
+ * Resolves the gestor's primary school, creating one when a school_manager
+ * has no membership and no school exists yet (first gestor access).
  */
 export async function ensurePrimarySchoolIdForUser(
   userId: string,
@@ -414,8 +414,9 @@ export async function ensurePrimarySchoolIdForUser(
   const existing = await getPrimarySchoolIdForUser(userId);
   if (existing) return existing;
 
-  const canBootstrap =
-    (await isSiteAdminUser(userId)) || (await isSchoolManagerProfile(userId));
+  if (await isSiteAdminUser(userId)) return null;
+
+  const canBootstrap = await isSchoolManagerProfile(userId);
   if (!canBootstrap) return null;
 
   const supabase = getSupabaseAdminClient();

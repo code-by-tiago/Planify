@@ -71,6 +71,7 @@ export default function PlanifyDashboardShell() {
 
   useEffect(() => {
     if (access.loading || !access.authenticated) return;
+    if (access.isSiteAdmin) return;
     if (!access.isManagerView || !access.canViewDirectorPanel) return;
     if (selectedToolId || selectedSectionId) return;
 
@@ -79,6 +80,7 @@ export default function PlanifyDashboardShell() {
     access.authenticated,
     access.canViewDirectorPanel,
     access.isManagerView,
+    access.isSiteAdmin,
     access.loading,
     router,
     selectedSectionId,
@@ -170,7 +172,8 @@ export default function PlanifyDashboardShell() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [hasPanel, selectInicio]);
 
-  const primaryAction = access.isManagerView ? (
+  const primaryAction =
+    access.isManagerView && !access.isSiteAdmin ? (
     <Link
       href="/gestor"
       onClick={closeSidebar}

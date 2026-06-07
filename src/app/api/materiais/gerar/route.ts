@@ -145,13 +145,7 @@ export async function POST(request: NextRequest) {
         pipeline,
         qualityScore: typeof qualityScore === "number" ? qualityScore : null,
         payload: payload as Record<string, unknown>,
-        result: {
-          tipoMaterial: result.data.tipoMaterial,
-          estrutura: result.data.estrutura,
-          html: result.data.html,
-          pipeline,
-          qualityScore,
-        },
+        result: result.data as Record<string, unknown>,
       });
     }
 

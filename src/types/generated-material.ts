@@ -8,6 +8,10 @@ export type PersistGeneratedMaterialInput = {
   classId?: string | null;
   className?: string | null;
   discipline?: string | null;
+  schoolYear?: number;
+  idempotencyKey?: string | null;
+  requestPayload?: Record<string, unknown> | null;
+  responseJson?: Record<string, unknown> | null;
   tipo: string;
   title: string;
   bnccSkillCodes: string[];

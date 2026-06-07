@@ -702,8 +702,20 @@ export type Database = {
           class_id: string | null;
           class_name: string | null;
           discipline: string | null;
+          school_year: number;
           tipo: string;
           title: string;
+          material_type: string;
+          request_payload: Json;
+          response_json: Json;
+          html_editor: string;
+          model: string;
+          input_tokens: number;
+          output_tokens: number;
+          credit_cost: number;
+          request_hash: string;
+          idempotency_key: string;
+          status: string;
           bncc_skill_codes: string[];
           bncc_skills: Json;
           content_preview: string;
@@ -713,6 +725,7 @@ export type Database = {
           quality_score: number | null;
           surface: Database["public"]["Enums"]["generated_material_surface"];
           created_at: string;
+          updated_at: string;
         },
         {
           id?: string;
@@ -721,8 +734,20 @@ export type Database = {
           class_id?: string | null;
           class_name?: string | null;
           discipline?: string | null;
+          school_year?: number;
           tipo?: string;
           title?: string;
+          material_type?: string;
+          request_payload?: Json;
+          response_json?: Json;
+          html_editor?: string;
+          model?: string;
+          input_tokens?: number;
+          output_tokens?: number;
+          credit_cost?: number;
+          request_hash?: string;
+          idempotency_key?: string;
+          status?: string;
           bncc_skill_codes?: string[];
           bncc_skills?: Json;
           content_preview?: string;
@@ -732,6 +757,7 @@ export type Database = {
           quality_score?: number | null;
           surface?: Database["public"]["Enums"]["generated_material_surface"];
           created_at?: string;
+          updated_at?: string;
         },
         {
           id?: string;
@@ -740,8 +766,20 @@ export type Database = {
           class_id?: string | null;
           class_name?: string | null;
           discipline?: string | null;
+          school_year?: number;
           tipo?: string;
           title?: string;
+          material_type?: string;
+          request_payload?: Json;
+          response_json?: Json;
+          html_editor?: string;
+          model?: string;
+          input_tokens?: number;
+          output_tokens?: number;
+          credit_cost?: number;
+          request_hash?: string;
+          idempotency_key?: string;
+          status?: string;
           bncc_skill_codes?: string[];
           bncc_skills?: Json;
           content_preview?: string;
@@ -751,6 +789,7 @@ export type Database = {
           quality_score?: number | null;
           surface?: Database["public"]["Enums"]["generated_material_surface"];
           created_at?: string;
+          updated_at?: string;
         }
       >;
     };

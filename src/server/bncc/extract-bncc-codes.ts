@@ -89,6 +89,54 @@ function collectFromSkillsArray(
   }
 }
 
+function collectCodesFromQuestoes(
+  value: unknown,
+  codes: Set<string>,
+  skills: Map<string, ExtractedBnccSkill>,
+): void {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return;
+  }
+
+  const record = value as Record<string, unknown>;
+
+  for (const key of ["questoes", "atividades"]) {
+    const group = record[key];
+    if (!Array.isArray(group)) continue;
+
+    for (const item of group) {
+      if (!item || typeof item !== "object") continue;
+      const row = item as Record<string, unknown>;
+
+      const code = normalizeCode(
+        row.habilidadeBncc ??
+          row.habilidadeBnccCodigo ??
+          row.codigoBncc ??
+          row.codigo,
+      );
+      if (code) {
+        codes.add(code);
+        if (!skills.has(code)) {
+          skills.set(code, { codigo: code });
+        }
+      }
+
+      if (Array.isArray(row.questoes)) {
+        collectCodesFromQuestoes({ questoes: row.questoes }, codes, skills);
+      }
+    }
+  }
+
+  const metadata = record.metadata;
+  if (metadata && typeof metadata === "object" && !Array.isArray(metadata)) {
+    collectFromSkillsArray(
+      (metadata as Record<string, unknown>).bncc,
+      codes,
+      skills,
+    );
+  }
+}
+
 function walkUnknown(value: unknown, codes: Set<string>, depth = 0): void {
   if (depth > 8 || value == null) return;
 
@@ -113,6 +161,7 @@ function walkUnknown(value: unknown, codes: Set<string>, depth = 0): void {
 
 export function extractBnccCodesFromPayload(payload: {
   habilidadesSelecionadas?: unknown;
+  habilidadesBncc?: unknown;
   conteudos?: unknown;
   estrutura?: unknown;
   planejamento?: unknown;
@@ -124,6 +173,7 @@ export function extractBnccCodesFromPayload(payload: {
   const skills = new Map<string, ExtractedBnccSkill>();
 
   collectFromSkillsArray(payload.habilidadesSelecionadas, codes, skills);
+  collectFromSkillsArray(payload.habilidadesBncc, codes, skills);
 
   for (const textSource of [payload.contentHtml, payload.contentPreview]) {
     if (typeof textSource === "string" && textSource.trim()) {
@@ -156,11 +206,21 @@ export function extractBnccCodesFromPayload(payload: {
 
   for (const structure of structures) {
     walkUnknown(structure, codes);
+    collectCodesFromQuestoes(structure, codes, skills);
     collectFromSkillsArray(
       structure &&
         typeof structure === "object" &&
         !Array.isArray(structure)
         ? (structure as Record<string, unknown>).habilidadesBnccUtilizadas
+        : null,
+      codes,
+      skills,
+    );
+    collectFromSkillsArray(
+      structure &&
+        typeof structure === "object" &&
+        !Array.isArray(structure)
+        ? (structure as Record<string, unknown>).habilidadesBncc
         : null,
       codes,
       skills,

@@ -2,6 +2,11 @@ import "server-only";
 
 import type { Json, TablesInsert } from "@/types/database";
 import type { BNCCSkill, BNCCStage } from "@/types/bncc";
+import { EDUCATION_OPTIONS } from "@/lib/educacao/education-options";
+import {
+  EXTRA_CATALOG_SUBJECTS,
+  normalizeDisciplineKey,
+} from "./discipline-catalog";
 import { getSupabaseAdminClient } from "../supabase/admin-client";
 
 export type BnccCatalogOptions = {
@@ -220,6 +225,32 @@ async function fetchDistinctColumn(
   return Array.from(values).sort((a, b) => a.localeCompare(b, "pt-BR"));
 }
 
+function collectEducationComponents(): string[] {
+  const values = new Set<string>(EXTRA_CATALOG_SUBJECTS);
+
+  for (const stage of Object.values(EDUCATION_OPTIONS)) {
+    for (const components of Object.values(stage.componentsByArea)) {
+      for (const component of components) {
+        values.add(component);
+      }
+    }
+  }
+
+  return Array.from(values);
+}
+
+function mergeCatalogSubjects(dbSubjects: string[]): string[] {
+  const merged = new Map<string, string>();
+
+  for (const subject of [...dbSubjects, ...collectEducationComponents()]) {
+    const trimmed = String(subject || "").trim();
+    if (!trimmed) continue;
+    merged.set(normalizeDisciplineKey(trimmed), trimmed);
+  }
+
+  return Array.from(merged.values()).sort((a, b) => a.localeCompare(b, "pt-BR"));
+}
+
 export async function getBnccCatalogOptions(filters?: {
   stage?: string | null;
   grade?: string | null;
@@ -239,7 +270,7 @@ export async function getBnccCatalogOptions(filters?: {
   return {
     stages,
     grades,
-    subjects,
+    subjects: mergeCatalogSubjects(subjects),
     knowledgeAreas,
     totalSkills,
   };

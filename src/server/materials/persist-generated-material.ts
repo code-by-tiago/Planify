@@ -1,9 +1,11 @@
-import type { Json, TablesInsert } from "@/types/database";
+import type { Json, TablesInsert, TablesUpdate } from "@/types/database";
 import type { PersistGeneratedMaterialInput } from "@/types/generated-material";
 import { extractBnccCodesFromPayload } from "../bncc/extract-bncc-codes";
+import { resolveSchoolYear } from "../bncc/discipline-catalog";
 import { getSupabaseAdminClient } from "../supabase/admin-client";
 import { getPrimarySchoolIdForUser } from "../schools/school-access";
 import { upsertTeacherClass } from "../schools/teacher-classes-service";
+import { createHash, randomUUID } from "node:crypto";
 
 const PREVIEW_MAX_LENGTH = 2000;
 
@@ -58,34 +60,147 @@ export type PersistGenerationParams = {
   classId?: string | null;
   className?: string | null;
   discipline?: string | null;
+  schoolYear?: number | null;
   payload?: Record<string, unknown> | null;
   result?: Record<string, unknown> | null;
 };
+
+function resolveIdempotencyKey(
+  payload?: Record<string, unknown> | null,
+): string {
+  const key = String(payload?.idempotencyKey || payload?.idempotency_key || "")
+    .trim();
+  if (key) return key.slice(0, 200);
+  return createHash("sha256")
+    .update(JSON.stringify(payload || {}))
+    .digest("hex")
+    .slice(0, 64);
+}
+
+function buildTrackingFields(
+  input: PersistGeneratedMaterialInput,
+): Pick<
+  TablesInsert<"generated_materials">,
+  | "material_type"
+  | "request_payload"
+  | "response_json"
+  | "html_editor"
+  | "model"
+  | "input_tokens"
+  | "output_tokens"
+  | "credit_cost"
+  | "request_hash"
+  | "idempotency_key"
+  | "status"
+> {
+  const idempotencyKey =
+    input.idempotencyKey?.trim() || resolveIdempotencyKey(input.requestPayload);
+  const requestHash = idempotencyKey;
+
+  return {
+    material_type: String(input.tipo || "material").slice(0, 120),
+    request_payload: (input.requestPayload || {}) as Json,
+    response_json: (input.responseJson || {}) as Json,
+    html_editor: String(input.contentHtml || ""),
+    model: String(input.pipeline || "planify").slice(0, 120),
+    input_tokens: 0,
+    output_tokens: 0,
+    credit_cost: 0,
+    request_hash: requestHash,
+    idempotency_key: idempotencyKey || randomUUID(),
+    status: "completed",
+  };
+}
+
+function buildBnccRow(
+  input: PersistGeneratedMaterialInput,
+): TablesInsert<"generated_materials"> {
+  return {
+    user_id: input.userId,
+    school_id: input.schoolId || null,
+    class_id: input.classId || null,
+    class_name: input.className?.trim() || null,
+    discipline: input.discipline?.trim() || null,
+    school_year: input.schoolYear ?? resolveSchoolYear(input.requestPayload),
+    tipo: String(input.tipo || "").slice(0, 120),
+    title: String(input.title || "Sem título").slice(0, 500),
+    bncc_skill_codes: input.bnccSkillCodes,
+    bncc_skills: (input.bnccSkills ?? []) as Json,
+    content_preview: String(input.contentPreview || "").slice(0, PREVIEW_MAX_LENGTH),
+    content_html: input.contentHtml || null,
+    raw: input.raw,
+    pipeline: input.pipeline || null,
+    quality_score:
+      typeof input.qualityScore === "number" ? input.qualityScore : null,
+    surface: input.surface,
+    ...buildTrackingFields(input),
+  };
+}
 
 export async function persistGeneratedMaterial(
   input: PersistGeneratedMaterialInput,
 ): Promise<string | null> {
   try {
     const supabase = getSupabaseAdminClient();
+    const row = buildBnccRow(input);
+    const idempotencyKey = row.idempotency_key;
 
-    const row: TablesInsert<"generated_materials"> = {
-      user_id: input.userId,
-      school_id: input.schoolId || null,
-      class_id: input.classId || null,
-      class_name: input.className?.trim() || null,
-      discipline: input.discipline?.trim() || null,
-      tipo: String(input.tipo || "").slice(0, 120),
-      title: String(input.title || "Sem título").slice(0, 500),
-      bncc_skill_codes: input.bnccSkillCodes,
-      bncc_skills: (input.bnccSkills ?? []) as Json,
-      content_preview: String(input.contentPreview || "").slice(0, PREVIEW_MAX_LENGTH),
-      content_html: input.contentHtml || null,
-      raw: input.raw,
-      pipeline: input.pipeline || null,
-      quality_score:
-        typeof input.qualityScore === "number" ? input.qualityScore : null,
-      surface: input.surface,
-    };
+    if (idempotencyKey) {
+      const { data: existing } = await supabase
+        .from("generated_materials")
+        .select("id")
+        .eq("user_id", input.userId)
+        .eq("idempotency_key", idempotencyKey)
+        .maybeSingle();
+
+      const existingId = (existing as { id?: string } | null)?.id;
+      if (existingId) {
+        const updateRow: TablesUpdate<"generated_materials"> = {
+          school_id: row.school_id,
+          class_id: row.class_id,
+          class_name: row.class_name,
+          discipline: row.discipline,
+          school_year: row.school_year,
+          tipo: row.tipo,
+          title: row.title,
+          bncc_skill_codes: row.bncc_skill_codes,
+          bncc_skills: row.bncc_skills,
+          content_preview: row.content_preview,
+          content_html: row.content_html,
+          raw: row.raw,
+          pipeline: row.pipeline,
+          quality_score: row.quality_score,
+          surface: row.surface,
+          response_json: row.response_json,
+          html_editor: row.html_editor,
+          model: row.model,
+        };
+
+        const { error } = await supabase
+          .from("generated_materials")
+          .update(updateRow)
+          .eq("id", existingId);
+
+        if (error) {
+          debugPersistLog("update failed", { error: error.message }, "A");
+          console.warn("planify:persist-generated-material update failed", error.message);
+          return null;
+        }
+
+        debugPersistLog(
+          "update ok",
+          {
+            id: existingId,
+            codesCount: input.bnccSkillCodes.length,
+            className: input.className,
+            discipline: input.discipline,
+            schoolYear: row.school_year,
+          },
+          "A",
+        );
+        return existingId;
+      }
+    }
 
     const { data, error } = await supabase
       .from("generated_materials")
@@ -107,6 +222,7 @@ export async function persistGeneratedMaterial(
         codesCount: input.bnccSkillCodes.length,
         className: input.className,
         discipline: input.discipline,
+        schoolYear: row.school_year,
       },
       "A",
     );
@@ -134,6 +250,7 @@ async function persistGenerationRecord(
 
     const extracted = extractBnccCodesFromPayload({
       habilidadesSelecionadas: params.payload?.habilidadesSelecionadas,
+      habilidadesBncc: params.payload?.habilidadesBncc,
       conteudos:
         params.result?.conteudos ??
         (params.result?.planejamento as Record<string, unknown> | undefined)
@@ -175,8 +292,17 @@ async function persistGenerationRecord(
 
     const discipline =
       params.discipline?.trim() ||
-      String(params.payload?.discipline || params.payload?.disciplina || "").trim() ||
+      String(
+        params.payload?.discipline ||
+          params.payload?.disciplina ||
+          params.payload?.componenteCurricular ||
+          params.payload?.componente ||
+          "",
+      ).trim() ||
       null;
+
+    const schoolYear =
+      params.schoolYear ?? resolveSchoolYear(params.payload ?? undefined);
 
     const estrutura = (params.result?.estrutura ||
       params.result) as Record<string, unknown> | undefined;
@@ -207,12 +333,16 @@ async function persistGenerationRecord(
       classId: params.classId || null,
       className,
       discipline,
+      schoolYear,
+      idempotencyKey: resolveIdempotencyKey(params.payload),
+      requestPayload: params.payload ?? null,
+      responseJson: params.result ?? null,
       tipo: params.tipo,
       title: title || params.tipo,
       bnccSkillCodes: extracted.codes,
       bnccSkills: extracted.skills as Json,
       contentPreview: preview,
-      contentHtml: params.contentHtml || null,
+      contentHtml: params.contentHtml || htmlContent,
       raw: {
         payload: (params.payload || {}) as Json,
         result: (params.result || {}) as Json,

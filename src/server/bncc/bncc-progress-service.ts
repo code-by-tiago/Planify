@@ -5,6 +5,10 @@ import type {
   SchoolClassBnccRow,
   SchoolDashboardResponse,
 } from "@/lib/bncc/types";
+import {
+  DEFAULT_SCHOOL_YEAR,
+  resolveBnccCatalogSubjects,
+} from "./discipline-catalog";
 import { getSupabaseAdminClient } from "../supabase/admin-client";
 import { getUserSchoolContext } from "../schools/school-service";
 
@@ -25,6 +29,7 @@ type GeneratedMaterialRow = {
   class_name: string | null;
   discipline: string | null;
   user_id: string;
+  school_year: number | null;
 };
 
 const PERSONAL_CLASS_PREFIX = "cn:";
@@ -103,6 +108,20 @@ function startOfMonthIso(): string {
   return new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
 }
 
+function normalizeFilterText(value: string | null | undefined): string {
+  return String(value || "").trim();
+}
+
+function matchesFilterText(
+  stored: string | null | undefined,
+  filter: string | null | undefined,
+): boolean {
+  const expected = normalizeFilterText(filter);
+  if (!expected) return true;
+  const actual = normalizeFilterText(stored);
+  return actual.toLowerCase() === expected.toLowerCase();
+}
+
 async function fetchCatalogSkills(filters: {
   grade?: string | null;
   discipline?: string | null;
@@ -118,7 +137,14 @@ async function fetchCatalogSkills(filters: {
   }
 
   if (filters.discipline) {
-    query = query.ilike("subject", `%${filters.discipline}%`);
+    const subjects = resolveBnccCatalogSubjects(filters.discipline);
+    if (subjects.length === 1) {
+      query = query.ilike("subject", subjects[0]);
+    } else if (subjects.length > 1) {
+      query = query.or(
+        subjects.map((subject) => `subject.ilike.${subject}`).join(","),
+      );
+    }
   }
 
   const { data, error } = await query.order("code", { ascending: true });
@@ -191,27 +217,22 @@ async function fetchUserMaterials(
     classId?: string | null;
     className?: string | null;
     discipline?: string | null;
+    schoolYear?: number;
   },
 ): Promise<GeneratedMaterialRow[]> {
   const supabase = getSupabaseAdminClient();
+  const schoolYear = filters.schoolYear ?? DEFAULT_SCHOOL_YEAR;
   let query = supabase
     .from("generated_materials")
     .select(
-      "id,title,bncc_skill_codes,created_at,class_id,class_name,discipline,user_id",
+      "id,title,bncc_skill_codes,created_at,class_id,class_name,discipline,user_id,school_year",
     )
     .eq("user_id", userId)
+    .eq("school_year", schoolYear)
     .order("created_at", { ascending: false });
 
   if (filters.classId) {
     query = query.eq("class_id", filters.classId);
-  }
-
-  if (filters.className) {
-    query = query.eq("class_name", filters.className);
-  }
-
-  if (filters.discipline) {
-    query = query.ilike("discipline", `%${filters.discipline}%`);
   }
 
   const { data, error } = await query;
@@ -220,7 +241,21 @@ async function fetchUserMaterials(
     throw new Error(error.message);
   }
 
-  return (data || []) as GeneratedMaterialRow[];
+  let rows = (data || []) as GeneratedMaterialRow[];
+
+  if (filters.className) {
+    rows = rows.filter((row) =>
+      matchesFilterText(row.class_name, filters.className),
+    );
+  }
+
+  if (filters.discipline) {
+    rows = rows.filter((row) =>
+      matchesFilterText(row.discipline, filters.discipline),
+    );
+  }
+
+  return rows;
 }
 
 async function fetchDistinctClassNames(userId: string): Promise<string[]> {
@@ -360,7 +395,7 @@ export async function getTeacherBnccProgress(
   const selectedPersonalClassName = classFilter.className;
 
   const grade = selectedSchoolClass?.grade_level || null;
-  const year = selectedSchoolClass?.year ?? new Date().getFullYear();
+  const year = selectedSchoolClass?.year ?? DEFAULT_SCHOOL_YEAR;
   const discipline =
     filters.discipline?.trim() ||
     selectedSchoolClass?.discipline?.trim() ||
@@ -370,16 +405,39 @@ export async function getTeacherBnccProgress(
     classId: classFilter.classId,
     className: classFilter.className,
     discipline: filters.discipline?.trim() || null,
+    schoolYear: year,
   });
 
   const materialCodes = materials.flatMap(
     (material) => material.bncc_skill_codes || [],
   );
 
-  const catalog = mergeCatalogSkills(
-    await fetchCatalogSkills({ grade, discipline }),
-    await fetchCatalogSkillsByCodes(materialCodes),
+  const explicitDiscipline = filters.discipline?.trim() || null;
+  const hasNarrowCatalog = Boolean(grade || explicitDiscipline);
+
+  const materialDisciplineValues = Array.from(
+    new Set(
+      materials
+        .map((material) => material.discipline?.trim())
+        .filter((value): value is string => Boolean(value)),
+    ),
   );
+
+  const catalog = hasNarrowCatalog
+    ? mergeCatalogSkills(
+        await fetchCatalogSkills({ grade, discipline: explicitDiscipline }),
+        await fetchCatalogSkillsByCodes(materialCodes),
+      )
+    : materials.length > 0
+      ? mergeCatalogSkills(
+          await fetchCatalogSkillsByCodes(materialCodes),
+          ...(await Promise.all(
+            materialDisciplineValues.map((value) =>
+              fetchCatalogSkills({ discipline: value }),
+            ),
+          )),
+        )
+      : await fetchCatalogSkills({});
 
   const { covered, pending, coveragePercent } = buildCoverage(
     catalog,

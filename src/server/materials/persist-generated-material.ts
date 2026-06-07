@@ -288,6 +288,66 @@ export async function persistGeneratedMaterialBestEffort(
   }
 }
 
+function normalizeClassName(value: string | null | undefined): string {
+  return String(value || "").trim();
+}
+
+async function resolveSchoolClassLink(
+  schoolId: string | null,
+  classId: string | null | undefined,
+  className: string | null | undefined,
+): Promise<{ classId: string | null; className: string | null }> {
+  const trimmedName = normalizeClassName(className);
+
+  if (!schoolId) {
+    return { classId: classId || null, className: trimmedName || null };
+  }
+
+  const supabase = getSupabaseAdminClient();
+
+  if (classId) {
+    if (trimmedName) {
+      return { classId, className: trimmedName };
+    }
+
+    const { data } = await supabase
+      .from("school_classes")
+      .select("name")
+      .eq("id", classId)
+      .eq("school_id", schoolId)
+      .maybeSingle();
+
+    const resolvedName = normalizeClassName(
+      (data as { name?: string | null } | null)?.name,
+    );
+    return { classId, className: resolvedName || null };
+  }
+
+  if (!trimmedName) {
+    return { classId: null, className: null };
+  }
+
+  const { data: classes } = await supabase
+    .from("school_classes")
+    .select("id,name")
+    .eq("school_id", schoolId);
+
+  const match = (classes || []).find(
+    (row) =>
+      normalizeClassName((row as { name: string }).name).toLowerCase() ===
+      trimmedName.toLowerCase(),
+  );
+
+  if (match) {
+    return {
+      classId: String((match as { id: string }).id),
+      className: trimmedName,
+    };
+  }
+
+  return { classId: null, className: trimmedName };
+}
+
 async function persistGenerationRecord(
   params: PersistGenerationParams,
 ): Promise<string | null> {
@@ -330,12 +390,21 @@ async function persistGenerationRecord(
       params.schoolId ||
       (params.userId ? await getPrimarySchoolIdForUser(params.userId) : null);
 
-    const className =
+    const rawClassName =
       params.className?.trim() ||
       String(params.payload?.className || params.payload?.turma || "").trim() ||
       null;
 
-    if (params.userId && className && !schoolId && !params.classId) {
+    const resolvedClass = await resolveSchoolClassLink(
+      schoolId,
+      params.classId || null,
+      rawClassName,
+    );
+
+    const className = resolvedClass.className;
+    const resolvedClassId = resolvedClass.classId;
+
+    if (params.userId && className && !schoolId && !resolvedClassId) {
       await upsertTeacherClass(params.userId, className).catch(() => null);
     }
 
@@ -370,7 +439,7 @@ async function persistGenerationRecord(
     const materialId = await persistGeneratedMaterial({
       userId: params.userId,
       schoolId,
-      classId: params.classId || null,
+      classId: resolvedClassId,
       className,
       discipline,
       schoolYear,

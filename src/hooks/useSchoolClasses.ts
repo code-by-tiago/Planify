@@ -149,7 +149,7 @@ export function useSchoolClasses() {
       const turma = fromClass || fromText || undefined;
       return {
         classId: classId || null,
-        className: classId ? null : fromText || null,
+        className: selectedClass?.name?.trim() || (classId ? null : fromText || null),
         turma,
       };
     }

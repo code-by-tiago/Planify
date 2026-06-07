@@ -170,7 +170,16 @@ export default function PlanifyDashboardShell() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [hasPanel, selectInicio]);
 
-  const primaryAction = (
+  const primaryAction = access.isManagerView ? (
+    <Link
+      href="/gestor"
+      onClick={closeSidebar}
+      className="pl-hud-btn flex w-full items-center justify-center gap-2 rounded-xl py-3 text-xs font-semibold"
+    >
+      <PlanifyIcon name="home" className="h-4 w-4" />
+      Início
+    </Link>
+  ) : (
     <button
       type="button"
       onClick={() => {

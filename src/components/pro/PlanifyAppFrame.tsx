@@ -40,10 +40,33 @@ export default function PlanifyAppFrame({
 
   function isNavActive(href: string): boolean {
     if (active) return active === href;
+    const [path, query] = href.split("?");
+    const currentPath = pathname.split("?")[0];
+
+    if (query && path === currentPath) {
+      if (typeof window === "undefined") {
+        return pathname === href || pathname.startsWith(`${path}/`);
+      }
+      const expected = new URLSearchParams(query);
+      const current = new URLSearchParams(window.location.search);
+      for (const [key, value] of expected.entries()) {
+        if (current.get(key) !== value) return false;
+      }
+      return true;
+    }
+
     if (href === "/dashboard") {
       return pathname === "/dashboard";
     }
-    return pathname === href || pathname.startsWith(href + "/");
+    if (href === "/gestor") {
+      return (
+        currentPath === "/gestor" &&
+        !new URLSearchParams(
+          typeof window !== "undefined" ? window.location.search : "",
+        ).get("tab")
+      );
+    }
+    return currentPath === path || currentPath.startsWith(`${path}/`);
   }
 
   const pageMeta = useMemo(() => {
@@ -76,7 +99,16 @@ export default function PlanifyAppFrame({
 
   const closeSidebar = () => setSidebarOpen(false);
 
-  const primaryAction = (
+  const primaryAction = access.isManagerView ? (
+    <Link
+      href="/gestor"
+      onClick={closeSidebar}
+      className="pl-hud-btn w-full justify-center rounded-xl py-3 font-semibold"
+    >
+      <PlanifyIcon name="spark" className="h-4 w-4" />
+      Início
+    </Link>
+  ) : (
     <Link
       href="/dashboard"
       onClick={closeSidebar}
@@ -137,12 +169,14 @@ export default function PlanifyAppFrame({
           <div className="flex items-center gap-2">
             {action}
             <LandingHomeLink compact />
-            <Link
-              href="/planos"
-              className="pl-hud-btn rounded-xl px-4 py-2 text-xs font-semibold"
-            >
-              Planos
-            </Link>
+            {!access.isManagerView ? (
+              <Link
+                href="/planos"
+                className="pl-hud-btn rounded-xl px-4 py-2 text-xs font-semibold"
+              >
+                Planos
+              </Link>
+            ) : null}
           </div>
         </header>
 

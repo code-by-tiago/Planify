@@ -325,20 +325,75 @@ export const sidebarNavigation: AppNavItem[] = [
     href: "/dashboard?secao=biblioteca",
     icon: "library",
     panel: "biblioteca",
+    hideForManagerView: true,
   },
   {
     label: "Comunidade",
     href: "/dashboard?secao=marketplace",
     icon: "market",
     panel: "marketplace",
+    hideForManagerView: true,
   },
   {
     label: "Meus materiais",
     href: "/dashboard?secao=historico",
     icon: "history",
     panel: "historico",
+    hideForManagerView: true,
   },
-  { label: "Planos", href: "/planos", icon: "plans", panel: "external" },
+  {
+    label: "Planos",
+    href: "/planos",
+    icon: "plans",
+    panel: "external",
+    hideForManagerView: true,
+  },
+];
+
+/** Navegação institucional para gestor/diretor */
+export const managerSidebarNavigation: AppNavItem[] = [
+  {
+    label: "Painel do Gestor",
+    href: "/gestor",
+    icon: "clipboard",
+    panel: "diretor",
+    requiresDirectorAccess: true,
+  },
+  {
+    label: "Professores",
+    href: "/gestor?tab=teachers",
+    icon: "user",
+    panel: "external",
+    requiresDirectorAccess: true,
+  },
+  {
+    label: "Turmas",
+    href: "/gestor?tab=turmas",
+    icon: "listChecks",
+    panel: "external",
+    requiresDirectorAccess: true,
+  },
+  {
+    label: "Materiais",
+    href: "/gestor?tab=materiais",
+    icon: "spark",
+    panel: "external",
+    requiresDirectorAccess: true,
+  },
+  {
+    label: "Relatórios BNCC",
+    href: "/gestor?tab=overview",
+    icon: "clipboard",
+    panel: "external",
+    requiresDirectorAccess: true,
+  },
+  {
+    label: "Configurações",
+    href: "/gestor?tab=turmas",
+    icon: "settings",
+    panel: "external",
+    requiresDirectorAccess: true,
+  },
 ];
 
 /** @deprecated Use sidebarNavigation for sidebar; kept for legacy references */
@@ -353,14 +408,18 @@ export function filterSidebarNavigation(input: {
   canViewDirectorPanel?: boolean;
   isManagerView?: boolean;
 }): AppNavItem[] {
-  return sidebarNavigation.filter((item) => {
+  const source = input.isManagerView
+    ? managerSidebarNavigation
+    : sidebarNavigation;
+
+  return source.filter((item) => {
     if (item.requiresDirectorAccess && !input.canViewDirectorPanel) {
       return false;
     }
     if (item.requiresBnccAccess && !input.canViewBnccProgress) {
       return false;
     }
-    if (item.hideForManagerView && input.isManagerView) {
+    if (!input.isManagerView && item.hideForManagerView) {
       return false;
     }
     return true;

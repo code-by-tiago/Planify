@@ -178,6 +178,47 @@ function normalizeFilterText(value: string | null | undefined): string {
   return String(value || "").trim();
 }
 
+function materialMatchesSchoolClass(
+  material: GeneratedMaterialRow,
+  cls: SchoolClassRow,
+): boolean {
+  if (material.class_id && material.class_id === cls.id) {
+    return true;
+  }
+
+  if (!material.class_name) {
+    return false;
+  }
+
+  return (
+    normalizeFilterText(material.class_name).toLowerCase() ===
+    normalizeFilterText(cls.name).toLowerCase()
+  );
+}
+
+async function resolveCatalogForClass(
+  cls: SchoolClassRow,
+  classMaterials: GeneratedMaterialRow[],
+  catalogCache: Map<string, BnccSkillRow[]>,
+): Promise<BnccSkillRow[]> {
+  const baseCatalog =
+    catalogCache.get(catalogCacheKey(cls.grade_level, cls.discipline)) || [];
+  const materialCodes = classMaterials.flatMap(
+    (material) => material.bncc_skill_codes || [],
+  );
+
+  if (materialCodes.length === 0) {
+    return baseCatalog;
+  }
+
+  const byCodes = await fetchCatalogSkillsByCodes(materialCodes);
+  if (baseCatalog.length === 0) {
+    return byCodes;
+  }
+
+  return mergeCatalogSkills(baseCatalog, byCodes);
+}
+
 async function fetchDistinctDisciplines(userId: string): Promise<string[]> {
   const supabase = getSupabaseAdminClient();
   const { data, error } = await supabase
@@ -407,32 +448,80 @@ function matchesFilterText(
   return actual.toLowerCase() === expected.toLowerCase();
 }
 
-async function fetchSchoolMaterials(
-  schoolId: string,
-  filters: { classId?: string | null; since?: string | null },
-): Promise<GeneratedMaterialRow[]> {
+async function fetchSchoolTeacherIds(schoolId: string): Promise<string[]> {
   const supabase = getSupabaseAdminClient();
-  let query = supabase
-    .from("generated_materials")
-    .select("id,title,bncc_skill_codes,created_at,class_id,user_id")
+  const { data, error } = await supabase
+    .from("school_memberships")
+    .select("user_id")
     .eq("school_id", schoolId)
-    .order("created_at", { ascending: false });
-
-  if (filters.classId) {
-    query = query.eq("class_id", filters.classId);
-  }
-
-  if (filters.since) {
-    query = query.gte("created_at", filters.since);
-  }
-
-  const { data, error } = await query;
+    .eq("status", "active")
+    .eq("role", "teacher");
 
   if (error) {
     throw new Error(error.message);
   }
 
-  return (data || []) as GeneratedMaterialRow[];
+  return Array.from(
+    new Set(
+      (data || [])
+        .map((row) => String((row as { user_id?: string }).user_id || ""))
+        .filter(Boolean),
+    ),
+  );
+}
+
+async function fetchSchoolMaterials(
+  schoolId: string,
+  filters: { classId?: string | null; since?: string | null },
+): Promise<GeneratedMaterialRow[]> {
+  const supabase = getSupabaseAdminClient();
+  const select =
+    "id,title,bncc_skill_codes,created_at,class_id,class_name,user_id,school_id,discipline,school_year";
+
+  const buildQuery = () => {
+    let query = supabase
+      .from("generated_materials")
+      .select(select)
+      .order("created_at", { ascending: false });
+
+    if (filters.classId) {
+      query = query.eq("class_id", filters.classId);
+    }
+
+    if (filters.since) {
+      query = query.gte("created_at", filters.since);
+    }
+
+    return query;
+  };
+
+  const teacherIds = await fetchSchoolTeacherIds(schoolId);
+  const [{ data: bySchool, error: schoolError }, orphanResult] =
+    await Promise.all([
+      buildQuery().eq("school_id", schoolId),
+      teacherIds.length > 0
+        ? buildQuery().is("school_id", null).in("user_id", teacherIds)
+        : Promise.resolve({ data: [], error: null }),
+    ]);
+
+  if (schoolError) {
+    throw new Error(schoolError.message);
+  }
+
+  if (orphanResult.error) {
+    throw new Error(orphanResult.error.message);
+  }
+
+  const byId = new Map<string, GeneratedMaterialRow>();
+  for (const row of [...(bySchool || []), ...(orphanResult.data || [])]) {
+    const material = row as GeneratedMaterialRow;
+    byId.set(material.id, material);
+  }
+
+  return Array.from(byId.values()).sort(
+    (a, b) =>
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+  );
 }
 
 function buildCoverage(
@@ -679,18 +768,19 @@ export async function getSchoolDashboardMetrics(
   const classMetrics: SchoolClassBnccRow[] = [];
 
   for (const cls of classRows) {
-    const catalog =
-      catalogCache.get(
-        catalogCacheKey(cls.grade_level, cls.discipline),
-      ) || [];
+    const classMaterials = allMaterials.filter((material) =>
+      materialMatchesSchoolClass(material, cls),
+    );
 
-    const classMaterials = allMaterials.filter(
-      (material) => material.class_id === cls.id,
+    const catalog = await resolveCatalogForClass(
+      cls,
+      classMaterials,
+      catalogCache,
     );
 
     const { covered, coveragePercent } = buildCoverage(catalog, classMaterials);
-    const materialsThisMonth = monthMaterials.filter(
-      (material) => material.class_id === cls.id,
+    const materialsThisMonth = monthMaterials.filter((material) =>
+      materialMatchesSchoolClass(material, cls),
     ).length;
 
     const teacherUserId =

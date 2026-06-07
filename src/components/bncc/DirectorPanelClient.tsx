@@ -23,6 +23,17 @@ type DirectorPanelClientProps = {
 
 type DirectorTabId = "overview" | "teachers" | "turmas" | "materiais";
 
+const DIRECTOR_TABS: DirectorTabId[] = [
+  "overview",
+  "teachers",
+  "turmas",
+  "materiais",
+];
+
+function isDirectorTab(value: string | null): value is DirectorTabId {
+  return DIRECTOR_TABS.includes(value as DirectorTabId);
+}
+
 type MaterialFilters = {
   professorId: string;
   period: "all" | "month" | "quarter" | "year";
@@ -299,6 +310,15 @@ export function DirectorPanelClient({ embedded = false }: DirectorPanelClientPro
     if (access.loading) return;
     void loadDashboard();
   }, [access.loading, loadDashboard]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const requestedTab = params.get("tab");
+    if (isDirectorTab(requestedTab)) {
+      setTab(requestedTab);
+    }
+  }, []);
 
   useEffect(() => {
     if (access.loading || !access.canViewDirectorPanel) return;

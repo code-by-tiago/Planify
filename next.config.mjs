@@ -5,6 +5,7 @@ const nextConfig = {
     "@sparticuz/chromium-min",
     "puppeteer-core",
     "linkedom",
+    "pdfkit",
   ],
   async headers() {
     return [

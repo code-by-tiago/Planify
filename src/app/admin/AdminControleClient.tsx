@@ -193,6 +193,7 @@ export function AdminControleClient() {
   const [newUserSchoolId, setNewUserSchoolId] = useState("");
   const [directorSavingId, setDirectorSavingId] = useState("");
   const [directorDrafts, setDirectorDrafts] = useState<Record<string, string>>({});
+  const [proposalDownloading, setProposalDownloading] = useState(false);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -522,6 +523,41 @@ export function AdminControleClient() {
     }
   }
 
+  async function downloadCommercialProposal() {
+    setProposalDownloading(true);
+    setError("");
+
+    try {
+      const response = await fetch("/api/admin/commercial-proposal-pdf", {
+        credentials: "include",
+        cache: "no-store",
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => null);
+        throw new Error(
+          data?.error?.message || "Não foi possível gerar a proposta comercial.",
+        );
+      }
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = "proposta-comercial-b2b-planify.pdf";
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Erro ao baixar PDF da proposta.",
+      );
+    } finally {
+      setProposalDownloading(false);
+    }
+  }
+
   async function deleteMaterial(materialId: string) {
     if (!window.confirm("Excluir este material gerado? Esta ação não pode ser desfeita.")) {
       return;
@@ -605,6 +641,27 @@ export function AdminControleClient() {
         ) : null}
 
         <AdminActivityFeed />
+
+        <AdminPanel
+          title="Proposta Comercial B2B"
+          subtitle="Ferramenta interna de marketing · PDF corporativo de 4 páginas"
+        >
+          <p className="text-sm text-slate-400">
+            Gera o documento institucional para diretores, mantenedores e
+            coordenadores pedagógicos, com capa, diagnóstico, ecossistema Planify
+            e programa escola piloto.
+          </p>
+          <button
+            type="button"
+            onClick={() => void downloadCommercialProposal()}
+            disabled={proposalDownloading}
+            className={`${adminButtonPrimaryClassName(proposalDownloading)} mt-4`}
+          >
+            {proposalDownloading
+              ? "Gerando PDF…"
+              : "Baixar PDF da Proposta Comercial"}
+          </button>
+        </AdminPanel>
 
         <AdminPanel title="Atalhos">
           <div className="flex flex-wrap gap-2">

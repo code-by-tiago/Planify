@@ -3,6 +3,7 @@ import type { InstitutionalPlanKey } from "@/lib/school/institutional-plan";
 import {
   createAdminSchool,
   listAdminSchools,
+  updateAdminSchoolDirector,
   updateAdminSchoolLicense,
 } from "../../../../server/admin/platform-admin-service";
 import { requireOwnerApi } from "../../../../server/auth/owner-access";
@@ -36,6 +37,7 @@ export async function PATCH(request: NextRequest) {
   const body = (await request.json().catch(() => null)) as {
     id?: string;
     institutionalPlan?: InstitutionalPlanKey | null;
+    directorEmail?: string | null;
   } | null;
 
   const schoolId = String(body?.id || "").trim();
@@ -46,7 +48,9 @@ export async function PATCH(request: NextRequest) {
     );
   }
 
+  const hasDirectorUpdate = body?.directorEmail !== undefined;
   const plan = body?.institutionalPlan;
+
   if (plan !== null && plan !== undefined && !VALID_PLANS.has(plan)) {
     return NextResponse.json(
       { success: false, error: { message: "Plano institucional inválido." } },
@@ -55,11 +59,28 @@ export async function PATCH(request: NextRequest) {
   }
 
   try {
-    const result = await updateAdminSchoolLicense(schoolId, plan ?? null);
-    return NextResponse.json({ success: true, school: result });
+    const licenseResult =
+      plan !== undefined
+        ? await updateAdminSchoolLicense(schoolId, plan ?? null)
+        : null;
+
+    const directorResult = hasDirectorUpdate
+      ? await updateAdminSchoolDirector(
+          schoolId,
+          body?.directorEmail ? String(body.directorEmail) : null,
+        )
+      : null;
+
+    return NextResponse.json({
+      success: true,
+      school: {
+        ...(licenseResult || { id: schoolId }),
+        ...(directorResult || {}),
+      },
+    });
   } catch (error) {
     const message =
-      error instanceof Error ? error.message : "Erro ao atualizar licença.";
+      error instanceof Error ? error.message : "Erro ao atualizar escola.";
     return NextResponse.json(
       { success: false, error: { message } },
       { status: 400 },

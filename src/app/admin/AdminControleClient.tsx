@@ -31,8 +31,26 @@ type AdminSchool = {
   classCount: number;
   institutionalPlan: InstitutionalPlanKey | null;
   planLabel: string | null;
+  directorUserId: string | null;
+  directorEmail: string | null;
+  directorName: string | null;
   createdAt: string;
 };
+
+type AssignableUserRole = "teacher" | "school_manager" | "admin";
+
+const USER_ROLE_OPTIONS: Array<{ value: AssignableUserRole; label: string }> = [
+  { value: "teacher", label: "Professor" },
+  { value: "school_manager", label: "Gestor escolar" },
+  { value: "admin", label: "Admin" },
+];
+
+const USER_STATUS_OPTIONS = [
+  { value: "active", label: "Ativo" },
+  { value: "inactive", label: "Inativo" },
+  { value: "pending", label: "Pendente" },
+  { value: "blocked", label: "Bloqueado" },
+] as const;
 
 const INSTITUTIONAL_PLAN_OPTIONS: Array<{
   value: InstitutionalPlanKey | "";
@@ -130,8 +148,7 @@ const quickLinks = [
 ];
 
 const supabaseOnlyTasks = [
-  "Criar conta de usuário (auth.users) e reset de senha",
-  "Alterar papel global (profiles.role) e bloquear conta",
+  "Reset de senha e revogação de sessões em massa",
   "Assinaturas Stripe manuais e reembolsos",
   "Moderação marketplace (aprovar/publicar materiais de terceiros)",
   "Migrations, RLS, backups e logs de infraestrutura",
@@ -163,6 +180,19 @@ export function AdminControleClient() {
   const [platformLoading, setPlatformLoading] = useState(false);
   const [error, setError] = useState("");
   const [platformError, setPlatformError] = useState("");
+  const [userMessage, setUserMessage] = useState("");
+  const [userSaving, setUserSaving] = useState(false);
+  const [editingUser, setEditingUser] = useState<PlatformUser | null>(null);
+  const [editUserRole, setEditUserRole] = useState<AssignableUserRole>("teacher");
+  const [editUserStatus, setEditUserStatus] = useState<string>("active");
+  const [newUserEmail, setNewUserEmail] = useState("");
+  const [newUserPassword, setNewUserPassword] = useState("");
+  const [newUserName, setNewUserName] = useState("");
+  const [newUserRole, setNewUserRole] = useState<AssignableUserRole>("teacher");
+  const [newUserMode, setNewUserMode] = useState<"password" | "invite">("password");
+  const [newUserSchoolId, setNewUserSchoolId] = useState("");
+  const [directorSavingId, setDirectorSavingId] = useState("");
+  const [directorDrafts, setDirectorDrafts] = useState<Record<string, string>>({});
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -359,6 +389,139 @@ export function AdminControleClient() {
     }
   }
 
+  async function createUser() {
+    const email = newUserEmail.trim();
+    if (!email) {
+      setUserMessage("Informe o e-mail.");
+      return;
+    }
+
+    if (newUserMode === "password" && newUserPassword.length < 8) {
+      setUserMessage("A senha deve ter pelo menos 8 caracteres.");
+      return;
+    }
+
+    setUserSaving(true);
+    setUserMessage("");
+
+    try {
+      const response = await fetch("/api/admin/users", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          password: newUserMode === "password" ? newUserPassword : undefined,
+          fullName: newUserName.trim() || undefined,
+          role: newUserRole,
+          schoolId: newUserSchoolId.trim() || undefined,
+          mode: newUserMode,
+        }),
+      });
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok || !data?.success) {
+        throw new Error(data?.error?.message || "Não foi possível criar o usuário.");
+      }
+
+      setNewUserEmail("");
+      setNewUserPassword("");
+      setNewUserName("");
+      setNewUserRole("teacher");
+      setNewUserSchoolId("");
+      setUserMessage(
+        newUserMode === "invite"
+          ? `Convite enviado para ${email}.`
+          : `Usuário ${email} criado.`,
+      );
+      await loadPlatformUsers();
+    } catch (err) {
+      setUserMessage(err instanceof Error ? err.message : "Erro ao criar usuário.");
+    } finally {
+      setUserSaving(false);
+    }
+  }
+
+  function openEditUser(user: PlatformUser) {
+    setEditingUser(user);
+    setEditUserRole(
+      USER_ROLE_OPTIONS.some((option) => option.value === user.role)
+        ? (user.role as AssignableUserRole)
+        : "teacher",
+    );
+    setEditUserStatus(user.status);
+    setUserMessage("");
+  }
+
+  async function saveEditedUser() {
+    if (!editingUser) return;
+
+    setUserSaving(true);
+    setUserMessage("");
+
+    try {
+      const response = await fetch(`/api/admin/users/${editingUser.id}`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          role: editUserRole,
+          status: editUserStatus,
+        }),
+      });
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok || !data?.success) {
+        throw new Error(data?.error?.message || "Não foi possível atualizar o usuário.");
+      }
+
+      setEditingUser(null);
+      setUserMessage("Usuário atualizado.");
+      await loadPlatformUsers();
+    } catch (err) {
+      setUserMessage(
+        err instanceof Error ? err.message : "Erro ao atualizar usuário.",
+      );
+    } finally {
+      setUserSaving(false);
+    }
+  }
+
+  async function updateSchoolDirector(schoolId: string, directorEmail: string) {
+    setDirectorSavingId(schoolId);
+    setPlatformError("");
+
+    try {
+      const response = await fetch("/api/admin/schools", {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: schoolId,
+          directorEmail: directorEmail.trim() || null,
+        }),
+      });
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok || !data?.success) {
+        throw new Error(data?.error?.message || "Não foi possível vincular o diretor.");
+      }
+
+      setDirectorDrafts((current) => {
+        const next = { ...current };
+        delete next[schoolId];
+        return next;
+      });
+      await loadSchools();
+    } catch (err) {
+      setPlatformError(
+        err instanceof Error ? err.message : "Erro ao vincular diretor.",
+      );
+    } finally {
+      setDirectorSavingId("");
+    }
+  }
+
   async function deleteMaterial(materialId: string) {
     if (!window.confirm("Excluir este material gerado? Esta ação não pode ser desfeita.")) {
       return;
@@ -395,7 +558,10 @@ export function AdminControleClient() {
 
   useEffect(() => {
     if (activeTab === "escolas") void loadSchools();
-    if (activeTab === "usuarios") void loadPlatformUsers();
+    if (activeTab === "usuarios") {
+      void loadSchools();
+      void loadPlatformUsers();
+    }
     if (activeTab === "materiais") void loadPlatformMaterials();
   }, [activeTab, loadPlatformMaterials, loadPlatformUsers, loadSchools]);
 
@@ -464,6 +630,83 @@ export function AdminControleClient() {
   function renderUsers() {
     return (
       <div className="grid gap-4">
+        <AdminPanel
+          title="Novo usuário"
+          subtitle="Senha direta ou convite por e-mail · proprietário não pode ser criado aqui"
+        >
+          <div className="grid gap-2 sm:grid-cols-2">
+            <input
+              type="email"
+              value={newUserEmail}
+              onChange={(event) => setNewUserEmail(event.target.value)}
+              placeholder="E-mail"
+              className={adminInputClassName()}
+            />
+            <input
+              type="text"
+              value={newUserName}
+              onChange={(event) => setNewUserName(event.target.value)}
+              placeholder="Nome completo"
+              className={adminInputClassName()}
+            />
+            <select
+              value={newUserRole}
+              onChange={(event) =>
+                setNewUserRole(event.target.value as AssignableUserRole)
+              }
+              className={adminInputClassName()}
+            >
+              {USER_ROLE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            <select
+              value={newUserMode}
+              onChange={(event) =>
+                setNewUserMode(event.target.value as "password" | "invite")
+              }
+              className={adminInputClassName()}
+            >
+              <option value="password">Criar com senha</option>
+              <option value="invite">Enviar convite</option>
+            </select>
+            {newUserMode === "password" ? (
+              <input
+                type="password"
+                value={newUserPassword}
+                onChange={(event) => setNewUserPassword(event.target.value)}
+                placeholder="Senha (mín. 8 caracteres)"
+                className={adminInputClassName()}
+              />
+            ) : null}
+            <select
+              value={newUserSchoolId}
+              onChange={(event) => setNewUserSchoolId(event.target.value)}
+              className={adminInputClassName()}
+            >
+              <option value="">Sem escola vinculada</option>
+              {schools.map((school) => (
+                <option key={school.id} value={school.id}>
+                  {school.name}
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              onClick={() => void createUser()}
+              disabled={userSaving}
+              className={`${adminButtonPrimaryClassName(userSaving)} sm:col-span-2`}
+            >
+              {userSaving ? "Salvando…" : "Criar usuário"}
+            </button>
+          </div>
+          {userMessage ? (
+            <p className="mt-2 text-sm text-cyan-400">{userMessage}</p>
+          ) : null}
+        </AdminPanel>
+
         <div className="flex flex-wrap gap-2">
           <input
             type="search"
@@ -490,12 +733,13 @@ export function AdminControleClient() {
                 <th className="px-3 py-2.5">Papel</th>
                 <th className="px-3 py-2.5">Plano</th>
                 <th className="px-3 py-2.5">Cadastro</th>
+                <th className="px-3 py-2.5" />
               </tr>
             </thead>
             <tbody className="text-slate-300">
               {platformUsers.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="px-3 py-8 text-center text-slate-500">
+                  <td colSpan={5} className="px-3 py-8 text-center text-slate-500">
                     Nenhum usuário encontrado.
                   </td>
                 </tr>
@@ -525,15 +769,83 @@ export function AdminControleClient() {
                     <td className="px-3 py-2.5 text-slate-500">
                       {formatAdminDate(user.createdAt)}
                     </td>
+                    <td className="px-3 py-2.5">
+                      {user.role === "owner" ? (
+                        <span className="text-xs text-slate-600">—</span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => openEditUser(user)}
+                          className="pl-admin-btn-ghost px-3 py-1.5 text-xs"
+                        >
+                          Editar
+                        </button>
+                      )}
+                    </td>
                   </tr>
                 ))
               )}
             </tbody>
           </table>
         </div>
-        <p className="text-xs text-slate-600">
-          Somente leitura. Para criar usuários ou alterar papéis, use o Supabase Auth / SQL.
-        </p>
+
+        {editingUser ? (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4">
+            <div className="pl-admin-panel w-full max-w-md p-5">
+              <p className="text-sm font-semibold text-slate-200">Editar usuário</p>
+              <p className="mt-1 text-xs text-slate-500">{editingUser.email}</p>
+              <div className="mt-4 grid gap-3">
+                <label className="grid gap-1 text-xs text-slate-500">
+                  Papel
+                  <select
+                    value={editUserRole}
+                    onChange={(event) =>
+                      setEditUserRole(event.target.value as AssignableUserRole)
+                    }
+                    className={adminInputClassName()}
+                  >
+                    {USER_ROLE_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="grid gap-1 text-xs text-slate-500">
+                  Status
+                  <select
+                    value={editUserStatus}
+                    onChange={(event) => setEditUserStatus(event.target.value)}
+                    className={adminInputClassName()}
+                  >
+                    {USER_STATUS_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+              <div className="mt-5 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingUser(null)}
+                  className="pl-admin-btn-ghost px-4 py-2 text-sm"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void saveEditedUser()}
+                  disabled={userSaving}
+                  className={adminButtonPrimaryClassName(userSaving)}
+                >
+                  {userSaving ? "Salvando…" : "Salvar"}
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : null}
       </div>
     );
   }
@@ -585,6 +897,7 @@ export function AdminControleClient() {
                 <th className="px-3 py-2.5">Escola</th>
                 <th className="px-3 py-2.5">Local</th>
                 <th className="px-3 py-2.5">Licença</th>
+                <th className="px-3 py-2.5">Diretor</th>
                 <th className="px-3 py-2.5">Membros</th>
                 <th className="px-3 py-2.5">Turmas</th>
                 <th className="px-3 py-2.5">Criada</th>
@@ -593,7 +906,7 @@ export function AdminControleClient() {
             <tbody className="text-slate-300">
               {schools.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-3 py-8 text-center text-slate-500">
+                  <td colSpan={7} className="px-3 py-8 text-center text-slate-500">
                     Nenhuma escola cadastrada.
                   </td>
                 </tr>
@@ -624,6 +937,50 @@ export function AdminControleClient() {
                         ))}
                       </select>
                     </td>
+                    <td className="px-3 py-2.5">
+                      <div className="flex min-w-[12rem] flex-col gap-1">
+                        {school.directorEmail ? (
+                          <p className="text-xs text-slate-400">
+                            {school.directorName || school.directorEmail}
+                          </p>
+                        ) : null}
+                        <div className="flex gap-1">
+                          <input
+                            type="email"
+                            value={
+                              directorDrafts[school.id] ??
+                              school.directorEmail ??
+                              ""
+                            }
+                            onChange={(event) =>
+                              setDirectorDrafts((current) => ({
+                                ...current,
+                                [school.id]: event.target.value,
+                              }))
+                            }
+                            placeholder="E-mail do diretor"
+                            className={`${adminInputClassName()} text-xs`}
+                          />
+                          <button
+                            type="button"
+                            disabled={directorSavingId === school.id}
+                            onClick={() =>
+                              void updateSchoolDirector(
+                                school.id,
+                                directorDrafts[school.id] ??
+                                  school.directorEmail ??
+                                  "",
+                              )
+                            }
+                            className={adminButtonPrimaryClassName(
+                              directorSavingId === school.id,
+                            )}
+                          >
+                            {directorSavingId === school.id ? "…" : "OK"}
+                          </button>
+                        </div>
+                      </div>
+                    </td>
                     <td className="px-3 py-2.5">{school.memberCount}</td>
                     <td className="px-3 py-2.5">{school.classCount}</td>
                     <td className="px-3 py-2.5 text-slate-500">
@@ -636,7 +993,7 @@ export function AdminControleClient() {
           </table>
         </div>
         <p className="text-xs text-slate-600">
-          Convites e turmas são geridos pelo gestor em /gestor após vincular o diretor.
+          Vincule o diretor pelo e-mail (conta deve existir). Convites e turmas seguem em /gestor.
         </p>
       </div>
     );

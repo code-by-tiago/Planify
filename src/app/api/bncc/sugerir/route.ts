@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireApiPremiumAccess } from "../../../../server/auth/api-access";
-import {
-  extractConteudosFromPayload,
-  suggestBnccByConteudos,
-} from "../../../../server/bncc/bncc-suggestion-engine";
+import { suggestBnccByConteudos } from "../../../../server/bncc/bncc-suggestion-engine";
 import { filterExtractedBnccByStage } from "../../../../server/bncc/bncc-stage-filter";
 import { validateBnccSuggestionPayload } from "../../../../server/planejamentos/planning-validation";
 
@@ -43,32 +40,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const conteudoLines = extractConteudosFromPayload(payload || {});
     const result = await suggestBnccByConteudos(payload || {});
-
-    // #region agent log
-    fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Debug-Session-Id": "920c67",
-      },
-      body: JSON.stringify({
-        sessionId: "920c67",
-        runId: "bncc-multi-conteudo",
-        hypothesisId: "H1,H2",
-        location: "bncc/sugerir/route.ts:POST",
-        message: "bncc suggest conteudos parsed",
-        data: {
-          conteudoLinesCount: conteudoLines.length,
-          conteudoLinesSample: conteudoLines.slice(0, 6),
-          groupsCount: Array.isArray(result.conteudos) ? result.conteudos.length : 0,
-          skillsTotal: (result.habilidades || []).length,
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
     const etapa = String(payload?.etapa || "").trim();
     const anoSerie = String(payload?.anoSerie || payload?.serie || "").trim();
     const habilidades = result.habilidades || [];

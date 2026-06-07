@@ -855,32 +855,6 @@ export async function generateMaterialByEngine(input: MaterialEngineInput) {
   }
 
   const basePrompt = buildMaterialEnginePrompt(request, outlineBlock);
-
-  // #region agent log
-  fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Debug-Session-Id": "920c67",
-    },
-    body: JSON.stringify({
-      sessionId: "920c67",
-      runId: "bncc-multi-conteudo",
-      hypothesisId: "H3",
-      location: "material-engine-service.ts:generateMaterialByEngine",
-      message: "material prompt bncc alignment",
-      data: {
-        bnccSkillsInPrompt: request.habilidadesSelecionadas?.length ?? 0,
-        bnccCodesSample: (request.habilidadesSelecionadas || [])
-          .slice(0, 6)
-          .map((skill) => skill.codigo),
-        promptHasBnccBlock: basePrompt.includes("ALINHAMENTO BNCC"),
-      },
-      timestamp: Date.now(),
-    }),
-  }).catch(() => {});
-  // #endregion
-
   const maxOutputTokens = maxOutputTokensFor(request.tipoMaterial);
 
   let activePrompt = basePrompt;

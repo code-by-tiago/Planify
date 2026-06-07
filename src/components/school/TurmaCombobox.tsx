@@ -17,40 +17,18 @@ export function TurmaCombobox({
   className,
   listId = "planify-turma-suggestions",
 }: TurmaComboboxProps) {
-  if (school.hasSchool) {
-    return (
-      <label className={className}>
-        <span className={HUD_SECTION_LABEL}>Turma (opcional)</span>
-        <select
-          value={school.classId || ""}
-          onChange={(event) => school.setClassId(event.target.value)}
-          disabled={school.loading}
-          className={HUD_FIELD_CLASS}
-        >
-          <option value="">
-            {school.loading ? "Carregando turmas…" : school.placeholder}
-          </option>
-          {school.classes.map((cls) => (
-            <option key={cls.id} value={cls.id}>
-              {cls.name}
-              {cls.grade_level ? ` · ${cls.grade_level}` : ""}
-            </option>
-          ))}
-        </select>
-      </label>
-    );
-  }
-
   return (
     <label className={className}>
       <span className={HUD_SECTION_LABEL}>Turma (opcional)</span>
       <input
         type="text"
         list={listId}
-        value={school.className}
-        onChange={(event) => school.setClassName(event.target.value)}
+        value={school.turmaDisplayValue}
+        onChange={(event) => school.setTurmaInput(event.target.value)}
         onBlur={() => {
-          void school.rememberPersonalClass(school.className);
+          if (!school.hasSchool) {
+            void school.rememberPersonalClass(school.className);
+          }
         }}
         disabled={school.loading}
         placeholder={school.loading ? "Carregando turmas…" : school.placeholder}
@@ -58,8 +36,8 @@ export function TurmaCombobox({
         autoComplete="off"
       />
       <datalist id={listId}>
-        {school.personalClasses.map((cls) => (
-          <option key={cls.id} value={cls.name} />
+        {school.turmaSuggestions.map((item) => (
+          <option key={item.key} value={item.label} />
         ))}
       </datalist>
     </label>

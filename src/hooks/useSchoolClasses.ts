@@ -110,12 +110,46 @@ export function useSchoolClasses() {
     setClassId(null);
   }, []);
 
+  const setTurmaInput = useCallback(
+    (value: string) => {
+      if (!hasSchool) {
+        handleClassNameChange(value);
+        return;
+      }
+
+      const match = classes.find((row) => row.name === value);
+      if (match) {
+        handleClassIdChange(match.id);
+        return;
+      }
+
+      handleClassNameChange(value);
+    },
+    [classes, handleClassIdChange, handleClassNameChange, hasSchool],
+  );
+
+  const turmaDisplayValue = useMemo(() => {
+    if (selectedClass?.name) {
+      return selectedClass.name;
+    }
+    return className;
+  }, [className, selectedClass?.name]);
+
+  const turmaSuggestions = useMemo(() => {
+    if (hasSchool) {
+      return classes.map((row) => ({ key: row.id, label: row.name }));
+    }
+    return personalClasses.map((row) => ({ key: row.id, label: row.name }));
+  }, [classes, hasSchool, personalClasses]);
+
   const turmaPayload = useMemo((): TurmaPayload => {
     if (hasSchool) {
-      const turma = selectedClass?.name?.trim() || undefined;
+      const fromClass = selectedClass?.name?.trim();
+      const fromText = className.trim();
+      const turma = fromClass || fromText || undefined;
       return {
         classId: classId || null,
-        className: null,
+        className: classId ? null : fromText || null,
         turma,
       };
     }
@@ -156,6 +190,9 @@ export function useSchoolClasses() {
     className,
     setClassId: handleClassIdChange,
     setClassName: handleClassNameChange,
+    setTurmaInput,
+    turmaDisplayValue,
+    turmaSuggestions,
     selectedClass,
     turmaPayload,
     rememberPersonalClass,

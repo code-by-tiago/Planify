@@ -406,6 +406,18 @@ body {
   -webkit-text-fill-color: transparent;
 }
 
+.planify-hud .pl-hud-glass-band .pl-hud-landing-simulator-panel {
+  border-color: rgba(0, 212, 255, 0.28);
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 12px 40px rgba(0, 0, 0, 0.25);
+}
+
+.planify-hud .pl-hud-glass-band .pl-hud-landing-simulator-meta {
+  color: rgba(224, 247, 255, 0.65);
+}
+
 /* ─── Tools bento ─── */
 .planify-hud .planify-landing-tools-grid > a {
   border-radius: var(--planify-radius-lg) !important;
@@ -683,6 +695,10 @@ body {
 }
 
 /* ─── Landing lesson simulator ─── */
+.planify-hud .pl-hud-glass-band .pl-hud-landing-simulator-meta {
+  color: rgba(224, 247, 255, 0.65);
+}
+
 .planify-hud .pl-hud-landing-simulator-glow {
   background:
     radial-gradient(ellipse 70% 55% at 50% 0%, rgba(0, 212, 255, 0.1), transparent 65%);

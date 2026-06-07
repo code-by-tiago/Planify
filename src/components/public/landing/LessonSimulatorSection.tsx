@@ -119,110 +119,118 @@ export function LessonSimulatorSection() {
     <>
       <section
         id="simulador"
-        className="pl-hud-landing-simulator relative isolate scroll-mt-28 overflow-hidden border-y border-cyan-400/15 bg-[var(--planify-canvas)] py-16 sm:py-20"
+        className="pl-hud-band-wrap relative isolate scroll-mt-28 overflow-hidden bg-slate-50 pb-0 pt-4"
       >
-        <div className="pl-hud-landing-simulator-glow pointer-events-none absolute inset-0" aria-hidden />
-        <div className="relative mx-auto max-w-3xl px-5 sm:px-8">
-          <div className="text-center">
-            <span className="pl-hud-badge inline-flex items-center gap-1.5">
-              <PlanifyIcon name="spark" className="h-3 w-3" />
-              Teste grátis
-            </span>
-            <h2 className="pl-hud-display mt-4 text-2xl font-extrabold text-slate-950 sm:text-3xl">
-              Experimente o{" "}
-              <span className="pl-hud-gradient-text">esqueleto de aula</span> com IA
-            </h2>
-            <p className="mx-auto mt-3 max-w-xl text-base font-medium leading-7 text-slate-600">
-              Digite um tema e veja em segundos como o Planify estrutura uma aula alinhada à BNCC —
-              sem criar conta.
-            </p>
-          </div>
-
-          <div className="pl-hud-landing-simulator-panel mt-8">
-            <label htmlFor="lesson-simulator-theme" className="sr-only">
-              Tema da aula
-            </label>
-            <input
-              id="lesson-simulator-theme"
-              type="text"
-              value={theme}
-              maxLength={MAX_THEME_LENGTH}
-              disabled={loading || limitReached}
-              placeholder="Digite um tema de aula... ex: Frações com Pizza para o 5º ano"
-              className="pl-hud-landing-simulator-input w-full rounded-xl border border-cyan-400/25 bg-white/90 px-4 py-3.5 text-base text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-cyan-400/60 focus:ring-2 focus:ring-cyan-400/20 disabled:cursor-not-allowed disabled:opacity-60"
-              onChange={(event) => setTheme(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") {
-                  event.preventDefault();
-                  void handleGenerate();
-                }
-              }}
-            />
-
-            <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <span className="text-xs font-medium text-slate-500">
-                {theme.length}/{MAX_THEME_LENGTH} caracteres · 1 geração gratuita por dia
+        <div className="pl-hud-glass-band mx-auto max-w-[calc(100%-2rem)] sm:max-w-7xl">
+          <div className="mx-auto grid max-w-7xl items-center gap-10 px-5 py-14 sm:px-8 lg:grid-cols-2 lg:gap-12 lg:py-20">
+            <div>
+              <span className="pl-hud-badge inline-flex items-center gap-1.5 border-cyan-400/30 bg-cyan-400/10 text-cyan-200">
+                <PlanifyIcon name="spark" className="h-3 w-3" />
+                Teste grátis
               </span>
-              <button
-                type="button"
-                disabled={loading || !theme.trim() || limitReached}
-                onClick={() => {
-                  if (limitReached) {
-                    openLimitModal();
-                    return;
-                  }
-                  void handleGenerate();
-                }}
-                className="pl-hud-btn inline-flex items-center justify-center gap-2 rounded-xl px-6 py-3 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-55"
+              <h2 className="mt-4 text-3xl font-black leading-tight tracking-tight sm:text-[2.5rem] lg:text-5xl">
+                Gere materiais baseados na BNCC,{" "}
+                <span className="pl-hud-gradient-text">instantaneamente.</span>
+              </h2>
+              <p className="mt-5 max-w-lg text-lg font-medium leading-8 text-cyan-100/80">
+                Digite um tema e veja em segundos como o Planify estrutura uma aula alinhada à
+                BNCC — sem criar conta. Uma geração gratuita por dia.
+              </p>
+              <Link
+                href="/planos"
+                className="pl-hud-btn mt-8 inline-flex items-center gap-2 rounded-xl px-8 py-4 text-base font-semibold"
               >
-                {loading ? (
-                  <>
-                    <span className="pl-hud-landing-simulator-spinner" aria-hidden />
-                    Gerando...
-                  </>
-                ) : (
-                  <>Gerar Esqueleto de Aula ✨</>
-                )}
-              </button>
+                Ver planos
+                <PlanifyIcon name="arrowRight" className="h-4 w-4" />
+              </Link>
             </div>
 
-            {error ? (
-              <p className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
-                {error}
-              </p>
-            ) : null}
+            <div className="pl-hud-landing-simulator-panel w-full min-w-0">
+              <label htmlFor="lesson-simulator-theme" className="sr-only">
+                Tema da aula
+              </label>
+              <input
+                id="lesson-simulator-theme"
+                type="text"
+                value={theme}
+                maxLength={MAX_THEME_LENGTH}
+                disabled={loading || limitReached}
+                placeholder="Digite um tema de aula... ex: Frações com Pizza para o 5º ano"
+                className="pl-hud-landing-simulator-input w-full rounded-xl border border-cyan-400/25 bg-white/90 px-4 py-3.5 text-base text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-cyan-400/60 focus:ring-2 focus:ring-cyan-400/20 disabled:cursor-not-allowed disabled:opacity-60"
+                onChange={(event) => setTheme(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    void handleGenerate();
+                  }
+                }}
+              />
 
-            <AnimatePresence>
-              {(loading || showResult) && !error ? (
-                <motion.div
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -4 }}
-                  className="pl-hud-landing-simulator-result mt-6 rounded-2xl border border-cyan-400/20 bg-white/80 p-5 shadow-sm backdrop-blur-sm"
+              <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <span className="pl-hud-landing-simulator-meta text-xs font-medium">
+                  {theme.length}/{MAX_THEME_LENGTH} caracteres
+                </span>
+                <button
+                  type="button"
+                  disabled={loading || !theme.trim() || limitReached}
+                  onClick={() => {
+                    if (limitReached) {
+                      openLimitModal();
+                      return;
+                    }
+                    void handleGenerate();
+                  }}
+                  className="pl-hud-btn inline-flex items-center justify-center gap-2 rounded-xl px-6 py-3 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-55"
                 >
                   {loading ? (
-                    <div className="space-y-3" aria-live="polite" aria-busy="true">
-                      <div className="pl-hud-landing-simulator-shimmer h-4 w-3/4 rounded" />
-                      <div className="pl-hud-landing-simulator-shimmer h-4 w-full rounded" />
-                      <div className="pl-hud-landing-simulator-shimmer h-4 w-5/6 rounded" />
-                      <div className="pl-hud-landing-simulator-shimmer h-4 w-2/3 rounded" />
-                    </div>
+                    <>
+                      <span className="pl-hud-landing-simulator-spinner" aria-hidden />
+                      Gerando...
+                    </>
                   ) : (
-                    <div aria-live="polite">
-                      <p className="mb-2 text-xs font-bold uppercase tracking-wide text-cyan-700">
-                        Esqueleto gerado
-                      </p>
-                      <pre className="whitespace-pre-wrap font-sans text-sm leading-7 text-slate-800">
-                        {typedResult}
-                        {typedResult.length < result.length ? (
-                          <span className="inline-block h-4 w-0.5 animate-pulse bg-cyan-500 align-middle" />
-                        ) : null}
-                      </pre>
-                    </div>
+                    <>Gerar Esqueleto de Aula ✨</>
                   )}
-                </motion.div>
+                </button>
+              </div>
+
+              {error ? (
+                <p className="mt-4 rounded-xl border border-red-300/40 bg-red-950/40 px-4 py-3 text-sm font-medium text-red-200">
+                  {error}
+                </p>
               ) : null}
-            </AnimatePresence>
+
+              <AnimatePresence>
+                {(loading || showResult) && !error ? (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -4 }}
+                    className="pl-hud-landing-simulator-result mt-6 rounded-2xl border border-cyan-400/20 bg-slate-950/40 p-5 shadow-sm backdrop-blur-sm"
+                  >
+                    {loading ? (
+                      <div className="space-y-3" aria-live="polite" aria-busy="true">
+                        <div className="pl-hud-landing-simulator-shimmer h-4 w-3/4 rounded" />
+                        <div className="pl-hud-landing-simulator-shimmer h-4 w-full rounded" />
+                        <div className="pl-hud-landing-simulator-shimmer h-4 w-5/6 rounded" />
+                        <div className="pl-hud-landing-simulator-shimmer h-4 w-2/3 rounded" />
+                      </div>
+                    ) : (
+                      <div aria-live="polite">
+                        <p className="mb-2 text-xs font-bold uppercase tracking-wide text-cyan-300">
+                          Esqueleto gerado
+                        </p>
+                        <pre className="whitespace-pre-wrap font-sans text-sm leading-7 text-cyan-50/90">
+                          {typedResult}
+                          {typedResult.length < result.length ? (
+                            <span className="inline-block h-4 w-0.5 animate-pulse bg-cyan-400 align-middle" />
+                          ) : null}
+                        </pre>
+                      </div>
+                    )}
+                  </motion.div>
+                ) : null}
+              </AnimatePresence>
+            </div>
           </div>
         </div>
       </section>

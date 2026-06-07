@@ -3,6 +3,7 @@ import { TeachyCommunitySection } from "@/components/public/landing/TeachyCommun
 import { TeachyFinalCta } from "@/components/public/landing/TeachyFinalCta";
 import { TeachyHomeBnccSection } from "@/components/public/landing/TeachyHomeBnccSection";
 import { TeachyHomeFeatures } from "@/components/public/landing/TeachyHomeFeatures";
+import { LessonSimulatorSection } from "@/components/public/landing/LessonSimulatorSection";
 import { TeachyHomeHero } from "@/components/public/landing/TeachyHomeHero";
 import { TeachyHomeTestimonials } from "@/components/public/landing/TeachyHomeTestimonials";
 import { TeachyHomeToolsGrid } from "@/components/public/landing/TeachyHomeToolsGrid";
@@ -36,6 +37,7 @@ export function PlanifyHomePage() {
   return (
     <>
       <TeachyHomeHero />
+      <LessonSimulatorSection />
       <TeachyHomeBnccSection />
       <TeachyHomeFeatures />
       <TeachyHomeToolsGrid />

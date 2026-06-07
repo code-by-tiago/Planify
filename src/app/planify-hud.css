@@ -682,6 +682,72 @@ body {
   box-shadow: var(--planify-cyan-glow-soft);
 }
 
+/* ─── Landing lesson simulator ─── */
+.planify-hud .pl-hud-landing-simulator-glow {
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 0%, rgba(0, 212, 255, 0.1), transparent 65%);
+}
+
+.planify-hud .pl-hud-landing-simulator-panel {
+  border: 1px solid var(--planify-glass-border);
+  border-radius: var(--planify-radius-xl);
+  background: var(--planify-glass-bg);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 8px 32px rgba(0, 212, 255, 0.08);
+  padding: 1.25rem;
+}
+
+@media (min-width: 640px) {
+  .planify-hud .pl-hud-landing-simulator-panel {
+    padding: 1.5rem;
+  }
+}
+
+.planify-hud .pl-hud-landing-simulator-input:focus {
+  box-shadow: var(--planify-cyan-glow-soft);
+}
+
+.planify-hud .pl-hud-landing-simulator-result {
+  min-height: 7rem;
+}
+
+.planify-hud .pl-hud-landing-simulator-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(0, 212, 255, 0.08) 0%,
+    rgba(0, 212, 255, 0.2) 50%,
+    rgba(0, 212, 255, 0.08) 100%
+  );
+  background-size: 200% 100%;
+  animation: pl-hud-simulator-shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes pl-hud-simulator-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+.planify-hud .pl-hud-landing-simulator-spinner {
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid rgba(7, 16, 24, 0.15);
+  border-top-color: var(--planify-cyan-deep);
+  border-radius: 50%;
+  animation: pl-hud-simulator-spin 0.7s linear infinite;
+}
+
+@keyframes pl-hud-simulator-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .planify-hud .pl-hud-testimonials-section {
   border-top: 1px solid var(--planify-glass-border);
 }

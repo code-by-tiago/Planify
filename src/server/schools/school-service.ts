@@ -7,7 +7,11 @@ import type {
 } from "@/types/school";
 import type { GeneratedMaterialListFilters } from "@/types/generated-material";
 import { getSupabaseAdminClient } from "../supabase/admin-client";
-import { getPrimarySchoolIdForUser } from "./school-access";
+import {
+  getPrimarySchoolIdForUser,
+  isSchoolManagerProfile,
+  isSiteAdminUser,
+} from "./school-access";
 
 function slugify(value: string): string {
   return value
@@ -233,6 +237,36 @@ export async function createSchoolMember(
   }
 
   return data;
+}
+
+/**
+ * Resolves the gestor's primary school, creating one when a site admin or
+ * school_manager has no membership and no school exists yet (first gestor access).
+ */
+export async function ensurePrimarySchoolIdForUser(
+  userId: string,
+): Promise<string | null> {
+  const existing = await getPrimarySchoolIdForUser(userId);
+  if (existing) return existing;
+
+  const canBootstrap =
+    (await isSiteAdminUser(userId)) || (await isSchoolManagerProfile(userId));
+  if (!canBootstrap) return null;
+
+  const supabase = getSupabaseAdminClient();
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("school_name")
+    .eq("id", userId)
+    .maybeSingle();
+
+  const schoolName =
+    String(
+      (profile as { school_name?: string | null } | null)?.school_name || "",
+    ).trim() || "Minha Escola";
+
+  const school = await createSchool(userId, { name: schoolName });
+  return String((school as { id: string }).id);
 }
 
 export async function getUserSchoolContext(userId: string): Promise<SchoolContext> {

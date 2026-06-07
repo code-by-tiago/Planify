@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireApiAuthenticated } from "@/server/auth/api-access";
 import { listSchoolPendingInvites } from "@/server/schools/school-invite-service";
+import { requireSchoolDashboardAccess } from "@/server/schools/school-access";
 import {
-  getPrimarySchoolIdForUser,
-  requireSchoolDashboardAccess,
-} from "@/server/schools/school-access";
-import { listSchoolMembers } from "@/server/schools/school-service";
+  ensurePrimarySchoolIdForUser,
+  listSchoolMembers,
+} from "@/server/schools/school-service";
 import type { SchoolTeacherMember } from "@/lib/school/types";
 
 export const runtime = "nodejs";
@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const schoolId = await getPrimarySchoolIdForUser(userId);
+  const schoolId = await ensurePrimarySchoolIdForUser(userId);
   if (!schoolId) {
     return NextResponse.json(
       {

@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireApiAuthenticated } from "@/server/auth/api-access";
-import {
-  getPrimarySchoolIdForUser,
-  requireSchoolDashboardAccess,
-} from "@/server/schools/school-access";
+import { requireSchoolDashboardAccess } from "@/server/schools/school-access";
 import { inviteTeacherToSchool } from "@/server/schools/school-invite-service";
+import { ensurePrimarySchoolIdForUser } from "@/server/schools/school-service";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -27,7 +25,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const schoolId = await getPrimarySchoolIdForUser(userId);
+  const schoolId = await ensurePrimarySchoolIdForUser(userId);
   if (!schoolId) {
     return NextResponse.json(
       {

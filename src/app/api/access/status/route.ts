@@ -8,6 +8,7 @@ import { resolveUserAvatarFromToken } from "../../../../server/auth/user-avatar"
 import { getSupabaseAdminClient } from "../../../../server/supabase/admin-client";
 import { buildPlanifyAccessContext } from "@/lib/bncc/access";
 import { resolveUserAccessProfile } from "../../../../server/auth/user-access-profile";
+import { resolveUserBillingPlanKey } from "../../../../server/credits/credit-subscription-sync";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
@@ -125,12 +126,14 @@ export async function GET(request: NextRequest) {
       ? "Seu login está ativo, mas é necessário plano premium para continuar."
       : "Acesso premium confirmado.";
 
+  const userId = access.user?.id || null;
+
   const planKey =
     access.subscription?.planKey ||
     access.subscription?.planId ||
-    null;
-
-  const userId = access.user?.id || null;
+    (userId
+      ? await resolveUserBillingPlanKey({ userId, email })
+      : null);
   const accessProfile = userId
     ? await resolveUserAccessProfile(userId)
     : {

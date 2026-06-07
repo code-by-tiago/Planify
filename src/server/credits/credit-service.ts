@@ -5,15 +5,19 @@
  * - Custo ponderado por tipo de material (materiais "pesados" custam mais).
  * - Concessão por ciclo de assinatura (Stripe) — reseta o saldo ao total do plano.
  * - Débito atômico via RPC `planify_spend_credits`.
- * - FALHA ABERTA: se o usuário não for identificado, não tiver carteira, ou o
- *   sistema de créditos ainda não estiver provisionado, a geração é permitida.
- *   O bloqueio só ocorre quando existe carteira com saldo insuficiente.
+ * - FALHA ABERTA apenas para usuários sem plano de cobrança (free / pré-migração).
+ *   Quem tem assinatura Stripe ou `profiles.plan` (ex.: Pro via convite escolar)
+ *   deve ter carteira provisionada; sem carteira após sync, a geração é bloqueada.
  */
 
 import { getBillingPlan } from "@/types/billing";
 import { getSupabaseAdminClient } from "../supabase/admin-client";
 import type { MaterialEngineType } from "../materials/material-engine-types";
-import { syncCreditWalletFromSubscription } from "./credit-subscription-sync";
+import { isOwnerEmail } from "../auth/owner-emails";
+import {
+  resolveUserBillingPlanKey,
+  syncCreditWalletFromSubscription,
+} from "./credit-subscription-sync";
 
 /**
  * O client admin é tipado a partir do schema gerado, que ainda não inclui as
@@ -122,7 +126,16 @@ export async function spendCredits(
   await syncCreditWalletFromSubscription({ userId, email });
 
   const wallet = await getCreditWallet(userId);
-  if (!wallet) return { status: "skipped" };
+  const billedPlanKey = await resolveUserBillingPlanKey({ userId, email });
+  const mustEnforceCredits =
+    Boolean(billedPlanKey) && !isOwnerEmail(email);
+
+  if (!wallet) {
+    if (mustEnforceCredits) {
+      return { status: "insufficient", balance: 0, cost };
+    }
+    return { status: "skipped" };
+  }
 
   try {
     const { data, error } = await db().rpc("planify_spend_credits", {
@@ -131,7 +144,12 @@ export async function spendCredits(
       p_tipo: tipo,
     });
 
-    if (error) return { status: "skipped" };
+    if (error) {
+      if (mustEnforceCredits) {
+        return { status: "insufficient", balance: wallet.balance, cost };
+      }
+      return { status: "skipped" };
+    }
 
     const newBalance = Number(data);
 

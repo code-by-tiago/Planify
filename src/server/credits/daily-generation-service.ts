@@ -17,6 +17,7 @@ import {
 import { isOwnerEmail } from "../auth/owner-emails";
 import { getSupabaseAdminClient } from "../supabase/admin-client";
 import { getCreditWallet } from "./credit-service";
+import { resolveUserBillingPlanKey } from "./credit-subscription-sync";
 
 type DbResult = { data: unknown; error: unknown };
 type SupabaseLoose = {
@@ -40,6 +41,26 @@ type ConsumeResult =
   | { status: "limit_reached"; used: number; limit: number }
   | { status: "skipped" };
 
+async function resolveDeepGenerationPlanKey(params: {
+  userId: string;
+  email?: string | null;
+  planKey?: string | null;
+}): Promise<string | null> {
+  if (params.planKey) {
+    return params.planKey;
+  }
+
+  const wallet = await getCreditWallet(params.userId);
+  if (wallet?.planKey) {
+    return wallet.planKey;
+  }
+
+  return resolveUserBillingPlanKey({
+    userId: params.userId,
+    email: params.email,
+  });
+}
+
 export async function getDailyGenerationStatus(params: {
   userId: string;
   tipo?: string;
@@ -48,7 +69,12 @@ export async function getDailyGenerationStatus(params: {
 }): Promise<DailyGenerationStatus> {
   const tipo = String(params.tipo || "");
   const appliesToType = isDeepGenerationType(tipo);
-  const limit = getDailyDeepGenerationLimit(params.planKey);
+  const resolvedPlanKey = await resolveDeepGenerationPlanKey({
+    userId: params.userId,
+    email: params.email,
+    planKey: params.planKey,
+  });
+  const limit = getDailyDeepGenerationLimit(resolvedPlanKey);
 
   if (isOwnerEmail(params.email)) {
     return {
@@ -107,8 +133,13 @@ export async function consumeDeepGeneration(params: {
     return { status: "skipped" };
   }
 
-  const wallet = await getCreditWallet(params.userId);
-  const limit = getDailyDeepGenerationLimit(wallet?.planKey);
+  const resolvedPlanKey = await resolveDeepGenerationPlanKey({
+    userId: params.userId,
+    email: params.email,
+  });
+  const limit = getDailyDeepGenerationLimit(resolvedPlanKey);
+  const mustEnforceDaily =
+    Boolean(resolvedPlanKey) && !isOwnerEmail(params.email);
 
   try {
     const { data, error } = await db().rpc("planify_consume_deep_generation", {
@@ -116,14 +147,28 @@ export async function consumeDeepGeneration(params: {
       p_daily_limit: limit,
     });
 
-    if (error) return { status: "skipped" };
+    if (error) {
+      if (mustEnforceDaily) {
+        const status = await getDailyGenerationStatus({
+          userId: params.userId,
+          tipo: params.tipo,
+          planKey: resolvedPlanKey,
+        });
+        return {
+          status: "limit_reached",
+          used: status.used,
+          limit: status.limit,
+        };
+      }
+      return { status: "skipped" };
+    }
 
     const used = Number(data);
     if (used < 0) {
       const status = await getDailyGenerationStatus({
         userId: params.userId,
         tipo: params.tipo,
-        planKey: wallet?.planKey,
+        planKey: resolvedPlanKey,
       });
       return {
         status: "limit_reached",
@@ -134,6 +179,9 @@ export async function consumeDeepGeneration(params: {
 
     return { status: "ok", used, limit };
   } catch {
+    if (mustEnforceDaily) {
+      return { status: "limit_reached", used: limit, limit };
+    }
     return { status: "skipped" };
   }
 }

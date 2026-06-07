@@ -74,6 +74,22 @@ async function findActiveSubscription(
   return querySubscription("stripe_customer_email", normalizedEmail);
 }
 
+export async function resolveUserBillingPlanKey(params: {
+  userId: string;
+  email?: string | null;
+}): Promise<string | null> {
+  const subscription = await findActiveSubscription(
+    params.userId,
+    params.email ?? null,
+  );
+
+  if (subscription) {
+    return resolveSubscriptionPlanKey(subscription);
+  }
+
+  return getProfilePlan(params.userId);
+}
+
 async function getProfilePlan(userId: string): Promise<string | null> {
   const supabase = getSupabaseAdminClient();
   const { data } = await supabase

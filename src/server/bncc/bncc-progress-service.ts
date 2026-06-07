@@ -207,16 +207,128 @@ async function resolveCatalogForClass(
     (material) => material.bncc_skill_codes || [],
   );
 
-  if (materialCodes.length === 0) {
+  const materialDisciplines = Array.from(
+    new Set(
+      classMaterials
+        .map((material) => material.discipline?.trim())
+        .filter((value): value is string => Boolean(value)),
+    ),
+  );
+
+  const disciplineCatalogs = await Promise.all(
+    materialDisciplines.map((discipline) =>
+      fetchCatalogSkills({ discipline }),
+    ),
+  );
+
+  const byCodes =
+    materialCodes.length > 0
+      ? await fetchCatalogSkillsByCodes(materialCodes)
+      : [];
+
+  if (classMaterials.length === 0) {
     return baseCatalog;
   }
 
-  const byCodes = await fetchCatalogSkillsByCodes(materialCodes);
-  if (baseCatalog.length === 0) {
-    return byCodes;
+  return mergeCatalogSkills(baseCatalog, ...disciplineCatalogs, byCodes);
+}
+
+function assignMaterialsToClasses(
+  materials: GeneratedMaterialRow[],
+  classRows: SchoolClassRow[],
+): Map<string, GeneratedMaterialRow[]> {
+  const byClass = new Map<string, GeneratedMaterialRow[]>(
+    classRows.map((cls) => [cls.id, []]),
+  );
+  const assignedIds = new Set<string>();
+
+  for (const cls of classRows) {
+    for (const material of materials) {
+      if (assignedIds.has(material.id)) continue;
+      if (materialMatchesSchoolClass(material, cls)) {
+        byClass.get(cls.id)!.push(material);
+        assignedIds.add(material.id);
+      }
+    }
   }
 
-  return mergeCatalogSkills(baseCatalog, byCodes);
+  const classesByTeacher = new Map<string, SchoolClassRow[]>();
+  for (const cls of classRows) {
+    if (!cls.teacher_user_id) continue;
+    const list = classesByTeacher.get(cls.teacher_user_id) ?? [];
+    list.push(cls);
+    classesByTeacher.set(cls.teacher_user_id, list);
+  }
+
+  for (const material of materials) {
+    if (assignedIds.has(material.id)) continue;
+
+    const teacherClasses = classesByTeacher.get(material.user_id);
+    if (!teacherClasses?.length) continue;
+
+    let target: SchoolClassRow | null = null;
+
+    if (teacherClasses.length === 1) {
+      target = teacherClasses[0];
+    } else if (material.class_name) {
+      const normalized = normalizeFilterText(material.class_name).toLowerCase();
+      target =
+        teacherClasses.find(
+          (cls) =>
+            normalizeFilterText(cls.name).toLowerCase() === normalized,
+        ) ?? null;
+    }
+
+    if (target) {
+      byClass.get(target.id)!.push(material);
+      assignedIds.add(material.id);
+    }
+  }
+
+  return byClass;
+}
+
+async function resolveSchoolCatalog(
+  allMaterials: GeneratedMaterialRow[],
+  classRows: SchoolClassRow[],
+  catalogCache: Map<string, BnccSkillRow[]>,
+): Promise<BnccSkillRow[]> {
+  const materialCodes = allMaterials.flatMap(
+    (material) => material.bncc_skill_codes || [],
+  );
+
+  const materialDisciplines = Array.from(
+    new Set(
+      allMaterials
+        .map((material) => material.discipline?.trim())
+        .filter((value): value is string => Boolean(value)),
+    ),
+  );
+
+  const groups: BnccSkillRow[][] = [];
+
+  if (materialCodes.length > 0) {
+    groups.push(await fetchCatalogSkillsByCodes(materialCodes));
+  }
+
+  for (const discipline of materialDisciplines) {
+    groups.push(await fetchCatalogSkills({ discipline }));
+  }
+
+  for (const cls of classRows) {
+    const cached = catalogCache.get(
+      catalogCacheKey(cls.grade_level, cls.discipline),
+    );
+    if (cached?.length) {
+      groups.push(cached);
+    }
+  }
+
+  if (groups.length === 0) {
+    return fetchCatalogSkills({});
+  }
+
+  return mergeCatalogSkills(...groups);
 }
 
 async function fetchDistinctDisciplines(userId: string): Promise<string[]> {
@@ -754,6 +866,11 @@ export async function getSchoolDashboardMetrics(
 
   const classRows = (classes.data || []) as SchoolClassRow[];
   const catalogCache = await loadCatalogCache(classRows);
+  const materialsByClass = assignMaterialsToClasses(allMaterials, classRows);
+  const monthMaterialsByClass = assignMaterialsToClasses(
+    monthMaterials,
+    classRows,
+  );
 
   const teacherIds = classRows.map(
     (cls) =>
@@ -768,9 +885,7 @@ export async function getSchoolDashboardMetrics(
   const classMetrics: SchoolClassBnccRow[] = [];
 
   for (const cls of classRows) {
-    const classMaterials = allMaterials.filter((material) =>
-      materialMatchesSchoolClass(material, cls),
-    );
+    const classMaterials = materialsByClass.get(cls.id) || [];
 
     const catalog = await resolveCatalogForClass(
       cls,
@@ -779,9 +894,7 @@ export async function getSchoolDashboardMetrics(
     );
 
     const { covered, coveragePercent } = buildCoverage(catalog, classMaterials);
-    const materialsThisMonth = monthMaterials.filter((material) =>
-      materialMatchesSchoolClass(material, cls),
-    ).length;
+    const materialsThisMonth = (monthMaterialsByClass.get(cls.id) || []).length;
 
     const teacherUserId =
       cls.teacher_user_id ||
@@ -804,13 +917,15 @@ export async function getSchoolDashboardMetrics(
     });
   }
 
-  const avgBnccCompliance =
-    classMetrics.length > 0
-      ? Math.round(
-          classMetrics.reduce((sum, row) => sum + row.coveragePercent, 0) /
-            classMetrics.length,
-        )
-      : 0;
+  const schoolCatalog = await resolveSchoolCatalog(
+    allMaterials,
+    classRows,
+    catalogCache,
+  );
+  const { coveragePercent: avgBnccCompliance } = buildCoverage(
+    schoolCatalog,
+    allMaterials,
+  );
 
   return {
     schoolId,

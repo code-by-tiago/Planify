@@ -252,39 +252,6 @@ function assignMaterialsToClasses(
     }
   }
 
-  const classesByTeacher = new Map<string, SchoolClassRow[]>();
-  for (const cls of classRows) {
-    if (!cls.teacher_user_id) continue;
-    const list = classesByTeacher.get(cls.teacher_user_id) ?? [];
-    list.push(cls);
-    classesByTeacher.set(cls.teacher_user_id, list);
-  }
-
-  for (const material of materials) {
-    if (assignedIds.has(material.id)) continue;
-
-    const teacherClasses = classesByTeacher.get(material.user_id);
-    if (!teacherClasses?.length) continue;
-
-    let target: SchoolClassRow | null = null;
-
-    if (teacherClasses.length === 1) {
-      target = teacherClasses[0];
-    } else if (material.class_name) {
-      const normalized = normalizeFilterText(material.class_name).toLowerCase();
-      target =
-        teacherClasses.find(
-          (cls) =>
-            normalizeFilterText(cls.name).toLowerCase() === normalized,
-        ) ?? null;
-    }
-
-    if (target) {
-      byClass.get(target.id)!.push(material);
-      assignedIds.add(material.id);
-    }
-  }
-
   return byClass;
 }
 

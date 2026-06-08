@@ -1,5 +1,5 @@
 import { buildVisualGameMaterial } from "@/lib/materiais/game-builder";
-import { getModelTierForMaterialType } from "@/lib/ai/material-generation-policy";
+import { getModelTierForMaterialRequest } from "@/lib/ai/material-generation-policy";
 import { computeQualityScore } from "@/lib/materiais/material-quality-score";
 import {
   renderQuestionCard,
@@ -889,7 +889,7 @@ export async function generateMaterialByEngine(input: MaterialEngineInput) {
   const systemInstruction = buildMaterialEngineSystemInstruction(
     request.tipoMaterial,
   );
-  const modelTier = getModelTierForMaterialType(request.tipoMaterial);
+  const modelTier = getModelTierForMaterialRequest(request.tipoMaterial, request);
   let outlineBlock = "";
 
   if (modelTier === "advanced" && usesPedagogicalOutline(request.tipoMaterial)) {
@@ -908,7 +908,10 @@ export async function generateMaterialByEngine(input: MaterialEngineInput) {
 
   for (let attempt = 0; attempt < 3; attempt += 1) {
     try {
-      const modelTier = getModelTierForMaterialType(request.tipoMaterial);
+      const modelTier = getModelTierForMaterialRequest(
+        request.tipoMaterial,
+        request,
+      );
       const generated = await generateGeminiJSON<Partial<MaterialEngineResponse>>({
         systemInstruction,
         prompt: activePrompt,

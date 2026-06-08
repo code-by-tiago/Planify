@@ -60,8 +60,56 @@ export function getModelTierForMaterialType(tipo: string): AIModelTier {
   return isDeepGenerationType(tipo) ? "advanced" : "default";
 }
 
-/** Planejamento anual/trimestral — produto principal do Planify, sempre Pro. */
-export function getModelTierForPlanning(): AIModelTier {
+/** Marcador de ajuste complementar no editor (SlideAiAdjustPanel). */
+export const EDITOR_COMPLEMENTARY_ADJUST_MARKER =
+  "AJUSTE SOLICITADO PELO PROFESSOR";
+
+/** Marcador de regeneração focada (elevar qualidade no editor). */
+export const EDITOR_ELEVATE_QUALITY_MARKER = "MODO ELEVAR QUALIDADE";
+
+type ComplementaryGenerationContext = {
+  elevarQualidade?: boolean;
+  problemasQualidade?: string[] | null;
+  observacoes?: string | null;
+};
+
+/** Geração complementar no editor — ajuste, elevar qualidade ou pequena regeneração. */
+export function isComplementaryMaterialGeneration(
+  context: ComplementaryGenerationContext,
+): boolean {
+  if (context.elevarQualidade === true) return true;
+  if (
+    Array.isArray(context.problemasQualidade) &&
+    context.problemasQualidade.length > 0
+  ) {
+    return true;
+  }
+
+  const observacoes = String(context.observacoes ?? "");
+  if (observacoes.includes(EDITOR_COMPLEMENTARY_ADJUST_MARKER)) return true;
+  if (observacoes.includes(EDITOR_ELEVATE_QUALITY_MARKER)) return true;
+
+  return false;
+}
+
+/** Tier efetivo para uma requisição de material (geração inicial vs complementar). */
+export function getModelTierForMaterialRequest(
+  tipo: string,
+  context?: ComplementaryGenerationContext,
+): AIModelTier {
+  if (context && isComplementaryMaterialGeneration(context)) {
+    return "default";
+  }
+  return getModelTierForMaterialType(tipo);
+}
+
+/** Planejamento anual/trimestral — Pro na geração inicial; Flash em elevar/ajustar no editor. */
+export function getModelTierForPlanning(
+  context?: ComplementaryGenerationContext,
+): AIModelTier {
+  if (context && isComplementaryMaterialGeneration(context)) {
+    return "default";
+  }
   return "advanced";
 }
 

@@ -1,3 +1,4 @@
+import { EDITOR_COMPLEMENTARY_ADJUST_MARKER } from "@/lib/ai/material-generation-policy";
 import type { MaterialEngineInput } from "@/server/materials/material-engine-types";
 
 export type MaterialGenerationApiResult = {
@@ -53,7 +54,7 @@ export function buildSlideAdjustPayload(
 ): MaterialEngineInput {
   const trimmed = instruction.trim();
   const adjustBlock = [
-    "AJUSTE SOLICITADO PELO PROFESSOR (aplicar sobre a apresentação já gerada; preserve tema, sequência pedagógica e design salvo indicação contrária):",
+    `${EDITOR_COMPLEMENTARY_ADJUST_MARKER} (aplicar sobre a apresentação já gerada; preserve tema, sequência pedagógica e design salvo indicação contrária):`,
     trimmed,
   ].join("\n");
 

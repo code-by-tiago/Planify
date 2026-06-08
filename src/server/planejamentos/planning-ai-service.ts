@@ -627,7 +627,11 @@ async function requestPlanningJson(
     systemInstruction: PLANNING_SYSTEM_INSTRUCTION,
     prompt,
     cacheProfile: "planning-matrix",
-    tier: getModelTierForPlanning(),
+    tier: getModelTierForPlanning({
+      elevarQualidade: payload.elevarQualidade,
+      problemasQualidade: payload.problemasQualidade,
+      observacoes: payload.observacoes,
+    }),
     temperature: 0.18,
     topP: 0.78,
     maxOutputTokens: 24000,

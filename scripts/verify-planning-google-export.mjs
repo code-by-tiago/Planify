@@ -63,7 +63,9 @@ const { buildOfficialPlanningPayloadFromEditorMeta } = loadTs(
   "src/lib/planejamentos/planning-google-export-payload.ts",
 );
 const { buildNativeHtmlDocx } = loadTs("src/server/docx/simple-docx-builder.ts");
-const { buildPlanningDocx } = loadTs("src/server/planejamentos/planning-docx-service.ts");
+const { buildOfficialPlanningDocx } = loadTs(
+  "src/server/planejamentos/official-planning-docx.ts",
+);
 
 const form = {
   escola: "Planify",
@@ -113,13 +115,13 @@ const htmlBuffer = buildNativeHtmlDocx({
   title: "documento-planify",
   htmlBody: html.replace(/<style[\s\S]*?<\/style>/gi, "").trim(),
 });
-const official = payload ? buildPlanningDocx(payload) : null;
+const officialBuffer = payload ? buildOfficialPlanningDocx(payload) : null;
 
 const result = {
   hasPayload: Boolean(payload),
   htmlBytes: htmlBuffer.byteLength,
-  officialBytes: official?.buffer.byteLength ?? 0,
-  officialTemplate: official?.templateSource ?? null,
+  officialBytes: officialBuffer?.byteLength ?? 0,
+  officialEngine: officialBuffer ? "buildOfficialPlanningDocx" : null,
 };
 
 fs.appendFileSync(

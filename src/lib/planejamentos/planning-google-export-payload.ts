@@ -1,23 +1,20 @@
 import type { PlanningEditorMeta } from "@/lib/planejamentos/planning-editor-flow";
-import type { OfficialPlanningPayload } from "@/server/planejamentos/official-planning-docx";
-import type { PlanningAiResult } from "@/server/planejamentos/planning-ai-service";
 
 type PlanningEditorRawMeta = PlanningEditorMeta & {
-  matrizPlanejamento?: PlanningAiResult["planejamento"] | null;
+  matrizPlanejamento?: unknown;
 };
 
-function hasPlanningMatrix(
-  value: unknown,
-): value is PlanningAiResult["planejamento"] {
+function hasPlanningMatrix(value: unknown): boolean {
   if (!value || typeof value !== "object") return false;
 
   const conteudos = (value as { conteudos?: unknown }).conteudos;
   return Array.isArray(conteudos) && conteudos.length > 0;
 }
 
+/** Payload serializável para /api/google/docs|drive/export — sem imports de server. */
 export function buildOfficialPlanningPayloadFromEditorMeta(
   meta: PlanningEditorRawMeta | null | undefined,
-): OfficialPlanningPayload | null {
+): Record<string, unknown> | null {
   if (!meta) return null;
 
   const generation = meta.generationPayload;

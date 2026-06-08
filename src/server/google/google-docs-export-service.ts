@@ -1,10 +1,10 @@
-import fs from "node:fs";
-import path from "node:path";
 import { detectMaterialExportKind } from "@/lib/export/classroom-export-format";
 import { resolvePreparedExportBody } from "../export/editor-html-export-service";
 import { buildNativeHtmlDocx } from "../docx/simple-docx-builder";
-import type { OfficialPlanningPayload } from "../planejamentos/official-planning-docx";
-import { buildPlanningDocx } from "../planejamentos/planning-docx-service";
+import {
+  buildOfficialPlanningDocx,
+  type OfficialPlanningPayload,
+} from "../planejamentos/official-planning-docx";
 import { uploadBufferToGoogleDrive, uploadDocxAsGoogleDocument } from "./google-drive";
 import { getValidGoogleAccessToken } from "./google-token-store";
 
@@ -20,75 +20,48 @@ function safeFilename(value: string): string {
   return cleaned || "documento-planify";
 }
 
-function debugGoogleExportLog(
-  message: string,
-  data: Record<string, unknown>,
-  hypothesisId: string,
-): void {
-  // #region agent log
-  try {
-    const logPath = path.join(process.cwd(), "debug-f33ae7.log");
-    fs.appendFileSync(
-      logPath,
-      `${JSON.stringify({
-        sessionId: "f33ae7",
-        runId: "planning-google-export",
-        hypothesisId,
-        location: "google-docs-export-service.ts",
-        message,
-        data,
-        timestamp: Date.now(),
-      })}\n`,
-    );
-  } catch {
-    // ignore debug log failures
-  }
-  // #endregion
-}
-
 function hasPlanningMatrix(payload: OfficialPlanningPayload): boolean {
   const conteudos = payload.matrizPlanejamento?.conteudos;
   return Array.isArray(conteudos) && conteudos.length > 0;
+}
+
+function normalizePlanningPayload(
+  payload: OfficialPlanningPayload | Record<string, unknown> | null | undefined,
+): OfficialPlanningPayload | null {
+  if (!payload || typeof payload !== "object") return null;
+  return payload as OfficialPlanningPayload;
 }
 
 function buildDocxBuffer(
   title: string,
   html: string,
   documentType?: string | null,
-  planningPayload?: OfficialPlanningPayload | null,
+  planningPayload?: OfficialPlanningPayload | Record<string, unknown> | null,
 ): Buffer {
   const kind = detectMaterialExportKind(html, documentType);
+  const normalizedPlanning = normalizePlanningPayload(planningPayload);
 
-  if (kind === "planejamento" && planningPayload && hasPlanningMatrix(planningPayload)) {
-    const official = buildPlanningDocx(planningPayload);
-    debugGoogleExportLog("official planning docx used", {
-      templateSource: official.templateSource,
-      filename: official.filename,
-      bytes: official.buffer.byteLength,
-    }, "H-OFFICIAL");
-    return official.buffer;
+  if (
+    kind === "planejamento" &&
+    normalizedPlanning &&
+    hasPlanningMatrix(normalizedPlanning)
+  ) {
+    return buildOfficialPlanningDocx(normalizedPlanning);
   }
 
   const htmlBody = resolvePreparedExportBody(html, documentType, "docx");
-  const buffer = buildNativeHtmlDocx({
+
+  return buildNativeHtmlDocx({
     title,
     htmlBody,
   });
-
-  debugGoogleExportLog("html native docx used", {
-    kind,
-    hasPlanningPayload: Boolean(planningPayload),
-    bytes: buffer.byteLength,
-  }, "H-HTML");
-
-  return buffer;
 }
 
 export type GoogleDocsExportInput = {
   title: string;
   html: string;
   documentType?: string | null;
-  planningPayload?: OfficialPlanningPayload | null;
+  planningPayload?: OfficialPlanningPayload | Record<string, unknown> | null;
 };
 
 export type GoogleDocsExportResult = {
@@ -144,7 +117,7 @@ export type GoogleDriveSaveInput = {
   title: string;
   html: string;
   documentType?: string | null;
-  planningPayload?: OfficialPlanningPayload | null;
+  planningPayload?: OfficialPlanningPayload | Record<string, unknown> | null;
 };
 
 export type GoogleDriveSaveResult = {

@@ -359,8 +359,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
       | { raw?: PlanningEditorMeta & { matrizPlanejamento?: unknown } }
       | undefined;
 
-    const payload = buildOfficialPlanningPayloadFromEditorMeta(raw?.raw ?? planningMeta);
-    return payload ? (payload as Record<string, unknown>) : null;
+    return buildOfficialPlanningPayloadFromEditorMeta(raw?.raw ?? planningMeta);
   }, [documentSource, planningMeta]);
 
   const canElevateMaterial = Boolean(

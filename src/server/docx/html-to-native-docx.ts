@@ -233,34 +233,6 @@ function tableXml(table: Element): string {
     })
     .join("");
 
-  // #region agent log
-  try {
-    const fs = require("node:fs") as typeof import("node:fs");
-    const path = require("node:path") as typeof import("node:path");
-    const logPath = path.join(process.cwd(), "debug-f33ae7.log");
-    fs.appendFileSync(
-      logPath,
-      `${JSON.stringify({
-        sessionId: "f33ae7",
-        runId: "table-fix",
-        hypothesisId: "H-TABLE",
-        location: "html-to-native-docx.ts:tableXml",
-        message: "table width resolved",
-        data: {
-          columnCount,
-          columnWidths,
-          tableClass: table.className || "",
-          totalWidth: columnWidths.reduce((sum, width) => sum + width, 0),
-          rowCount: rows.length,
-        },
-        timestamp: Date.now(),
-      })}\n`,
-    );
-  } catch {
-    // ignore debug log failures
-  }
-  // #endregion
-
   return `<w:tbl>
     <w:tblPr>
       <w:tblW w:w="${PAGE_CONTENT_WIDTH_DXA}" w:type="dxa"/>

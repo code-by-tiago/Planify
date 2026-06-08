@@ -120,53 +120,67 @@ export function SlideAiAdjustPanel({
     <aside
       className={
         compact
-          ? "rounded-xl border border-violet-200/80 bg-violet-50/50 p-3"
-          : "mb-4 rounded-xl border border-violet-200/80 bg-gradient-to-r from-violet-50/80 to-fuchsia-50/50 px-4 py-3"
+          ? "rounded-lg border border-violet-200/80 bg-violet-50/50 px-2 py-1.5"
+          : "mb-2 rounded-xl border border-violet-200/80 bg-gradient-to-r from-violet-50/80 to-fuchsia-50/50 px-3 py-2"
       }
     >
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-black text-violet-900">
+      <div className="flex flex-wrap items-center justify-between gap-1.5">
+        <div className="flex min-w-0 flex-1 items-center gap-1.5">
+          <PlanifyIcon
+            name="spark"
+            className={`shrink-0 text-violet-700 ${compact ? "h-3.5 w-3.5" : "h-4 w-4"}`}
+          />
+          <p
+            className={`font-black text-violet-900 ${compact ? "text-xs" : "text-sm"}`}
+          >
             Ajustar slides com IA
           </p>
-          <p className="mt-0.5 text-xs font-semibold leading-5 text-violet-800/90">
-            Peça alterações ou acréscimos antes de salvar — sem voltar ao formulário.
-          </p>
+          {!compact && !open ? (
+            <p className="hidden text-xs font-semibold text-violet-800/80 sm:inline">
+              — peça alterações antes de salvar
+            </p>
+          ) : null}
         </div>
         <button
           type="button"
           onClick={() => setOpen((value) => !value)}
           disabled={disabled || busy}
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-violet-200 bg-white px-3 py-2 text-xs font-black text-violet-900 transition hover:border-violet-400 hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-60"
+          className={`inline-flex shrink-0 items-center gap-1 rounded-lg border border-violet-200 bg-white font-black text-violet-900 transition hover:border-violet-400 hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-60 ${
+            compact ? "px-2 py-1 text-[10px]" : "px-2.5 py-1.5 text-xs"
+          }`}
           aria-expanded={open}
           title="Pedir ajustes ou acréscimos com IA"
         >
-          <PlanifyIcon name="spark" className="h-4 w-4" />
+          {!compact ? <PlanifyIcon name="spark" className="h-3.5 w-3.5" /> : null}
           {open ? "Fechar" : "Pedir ajuste"}
         </button>
       </div>
 
       {open ? (
-        <div className="mt-3 space-y-2">
+        <div className={`space-y-1.5 ${compact ? "mt-1.5" : "mt-2"}`}>
           <textarea
             value={instruction}
             onChange={(event) => setInstruction(event.target.value)}
-            rows={3}
+            rows={compact ? 2 : 3}
             placeholder="Ex.: inclua um slide sobre curiosidades; simplifique os bullets; troque a imagem do slide 3…"
-            className="w-full rounded-xl border border-violet-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 outline-none transition focus:border-violet-400"
+            className={`w-full rounded-lg border border-violet-200 bg-white font-semibold text-slate-900 outline-none transition focus:border-violet-400 ${
+              compact ? "px-2 py-1.5 text-xs" : "px-3 py-2 text-sm"
+            }`}
             disabled={busy}
           />
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-1.5">
             <button
               type="button"
               onClick={() => void handleSubmit()}
               disabled={!canSubmit}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-violet-700 px-3 py-2 text-xs font-black text-white transition hover:bg-violet-800 disabled:cursor-not-allowed disabled:opacity-60"
+              className={`inline-flex items-center gap-1 rounded-lg bg-violet-700 font-black text-white transition hover:bg-violet-800 disabled:cursor-not-allowed disabled:opacity-60 ${
+                compact ? "px-2 py-1 text-[10px]" : "px-2.5 py-1.5 text-xs"
+              }`}
             >
-              <PlanifyIcon name="spark" className="h-4 w-4" />
+              <PlanifyIcon name="spark" className={compact ? "h-3 w-3" : "h-3.5 w-3.5"} />
               {busy ? "Aplicando…" : "Aplicar com IA"}
             </button>
-            <span className="text-[11px] font-semibold text-violet-800/80">
+            <span className="text-[10px] font-semibold text-violet-800/80">
               Consome créditos como uma nova geração.
             </span>
           </div>

@@ -388,16 +388,16 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
   }
 
   const toolBtnClass = embedded
-    ? "h-8 min-w-8 rounded-lg border border-slate-200 bg-white px-2 text-xs font-black text-slate-700 transition hover:border-slate-950"
-    : "h-10 min-w-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-black text-slate-700 transition hover:border-slate-950";
+    ? "h-7 min-w-7 shrink-0 rounded-md border border-slate-200 bg-white px-1.5 text-[11px] font-black text-slate-700 transition hover:border-slate-950"
+    : "h-9 min-w-9 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-black text-slate-700 transition hover:border-slate-950";
 
   const toolSelectClass = embedded
-    ? "h-8 rounded-lg border border-slate-200 bg-slate-50 px-2 text-xs font-bold text-slate-950 outline-none focus:border-slate-950"
-    : "h-10 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-bold text-slate-950 outline-none focus:border-slate-950";
+    ? "h-7 shrink-0 rounded-md border border-slate-200 bg-slate-50 px-1.5 text-[11px] font-bold text-slate-950 outline-none focus:border-slate-950"
+    : "h-9 rounded-lg border border-slate-200 bg-slate-50 px-2.5 text-xs font-bold text-slate-950 outline-none focus:border-slate-950";
 
   const actionBtnClass = embedded
-    ? "rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-black text-slate-700 transition hover:border-slate-950"
-    : "rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-700 transition hover:border-slate-950";
+    ? "rounded-md border border-slate-200 bg-white px-2 py-1 text-[11px] font-black text-slate-700 transition hover:border-slate-950"
+    : "rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-black text-slate-700 transition hover:border-slate-950";
 
   useEffect(() => {
     if (!embedded) return;
@@ -1675,8 +1675,8 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
         <div
           className={
             embedded
-              ? "shrink-0 border-b border-slate-100 bg-slate-50/90 px-3 py-2 text-xs font-semibold text-slate-900"
-              : "mb-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-900"
+              ? "shrink-0 border-b border-slate-100 bg-slate-50/90 px-2 py-1 text-[10px] font-semibold leading-tight text-slate-900"
+              : "mb-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-900"
           }
         >
           {originHint}
@@ -1685,30 +1685,30 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
 
       <div
         className={`planify-editor-toolbar shrink-0 border-b border-slate-200 bg-white ${
-          embedded ? "px-3 py-2" : "mb-4 rounded-2xl border px-4 py-3 shadow-sm"
+          embedded ? "px-2 py-1.5" : "mb-2 rounded-xl border px-3 py-2 shadow-sm"
         }`}
       >
         {embedded ? (
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-1.5">
+          <div className="flex flex-col gap-1">
+            <div className="flex flex-wrap items-center gap-1">
               <input
                 value={title}
                 onChange={(event) => setTitle(event.target.value)}
                 onBlur={() => persistCurrentDocument("Título salvo.")}
                 aria-label="Título do documento"
-                className="h-9 min-w-0 flex-1 rounded-lg border border-slate-200 bg-slate-50 px-3 text-xs font-bold text-slate-950 outline-none focus:border-blue-400 focus:bg-white"
+                className="h-8 min-w-[7rem] flex-1 rounded-md border border-slate-200 bg-slate-50 px-2 text-[11px] font-bold text-slate-950 outline-none focus:border-blue-400 focus:bg-white"
               />
               <button
                 type="button"
                 onClick={saveVersion}
-                className="shrink-0 rounded-lg bg-gradient-to-r from-blue-600 to-slate-600 px-3 py-2 text-xs font-black text-white"
+                className="shrink-0 rounded-md bg-gradient-to-r from-blue-600 to-slate-600 px-2.5 py-1.5 text-[11px] font-black text-white"
               >
                 Salvar
               </button>
               <button
                 type="button"
                 onClick={downloadPdfReal}
-                className="shrink-0 rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-xs font-black text-slate-700"
+                className="shrink-0 rounded-md border border-slate-200 bg-white px-2 py-1.5 text-[11px] font-black text-slate-700"
               >
                 PDF
               </button>
@@ -1717,7 +1717,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
                 onClick={() => setShowMobileActions((value) => !value)}
                 aria-label="Mais ações"
                 aria-expanded={showMobileActions}
-                className={`shrink-0 rounded-lg border px-2.5 py-2 text-xs font-black ${
+                className={`shrink-0 rounded-md border px-2 py-1.5 text-[11px] font-black ${
                   showMobileActions
                     ? "border-blue-300 bg-blue-50 text-blue-800"
                     : "border-slate-200 bg-white text-slate-700"
@@ -1725,10 +1725,22 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
               >
                 ⋯
               </button>
+              <EditorShareBar
+                compact
+                title={title}
+                getHtml={getEditorHtml}
+                onStatus={setStatus}
+                documentType={documentSource?.type}
+                isSlideDeck={isSlideDeck}
+                slideTheme={slideTheme}
+              />
+              <span className="shrink-0 text-[10px] font-bold text-slate-500">
+                {wordCount} pal.
+              </span>
             </div>
 
             {showMobileActions ? (
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap gap-1">
                 <button type="button" onClick={newDocument} className={actionBtnClass}>
                   Novo
                 </button>
@@ -1753,28 +1765,17 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
               </div>
             ) : null}
 
-            <div className="flex items-center justify-between gap-2">
-              <EditorShareBar
-                title={title}
-                getHtml={getEditorHtml}
-                onStatus={setStatus}
-                documentType={documentSource?.type}
-                isSlideDeck={isSlideDeck}
-                slideTheme={slideTheme}
-              />
-              <span className="shrink-0 text-[11px] font-bold text-slate-500">
-                {wordCount} pal.
-              </span>
-            </div>
-            <p className="truncate text-[11px] text-slate-500">{status}</p>
+            <p className="truncate text-[10px] leading-tight text-slate-500" title={status}>
+              {status}
+            </p>
           </div>
         ) : (
           <>
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-1.5">
               <button
                 type="button"
                 onClick={saveVersion}
-                className="rounded-xl bg-gradient-to-r from-blue-600 to-slate-600 px-4 py-2 text-sm font-black text-white"
+                className="rounded-lg bg-gradient-to-r from-blue-600 to-slate-600 px-3 py-1.5 text-xs font-black text-white"
               >
                 Salvar
               </button>
@@ -1789,12 +1790,13 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
                   type="button"
                   onClick={() => void elevarQualidadeDocumentoNoEditor()}
                   disabled={elevatingQuality}
-                  className="rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-black text-indigo-800 transition hover:bg-indigo-100 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-black text-indigo-800 transition hover:bg-indigo-100 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {elevatingQuality ? "Elevando..." : "Elevar qualidade"}
                 </button>
               ) : null}
               <EditorShareBar
+                compact
                 title={title}
                 getHtml={getEditorHtml}
                 onStatus={setStatus}
@@ -1802,11 +1804,13 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
                 isSlideDeck={isSlideDeck}
                 slideTheme={slideTheme}
               />
-              <span className="ml-auto text-[11px] font-bold text-slate-500">
+              <span className="ml-auto text-[10px] font-bold text-slate-500">
                 {wordCount} pal.
               </span>
             </div>
-            <p className="mt-2 truncate text-xs text-slate-500">{status}</p>
+            <p className="mt-1 truncate text-[10px] text-slate-500" title={status}>
+              {status}
+            </p>
           </>
         )}
       </div>
@@ -1815,31 +1819,31 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
         className={
           embedded
             ? "flex min-h-0 flex-1 overflow-hidden"
-            : "grid gap-6 xl:grid-cols-[280px_1fr]"
+            : "grid gap-3 xl:grid-cols-[232px_1fr]"
         }
       >
         {!embedded ? (
-          <aside className="space-y-5">
-            <div className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
-              <p className="text-sm font-black uppercase tracking-[0.24em] text-blue-700">
+          <aside className="space-y-3">
+            <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-700">
                 Documento
               </p>
 
-              <label className="mt-4 grid gap-2">
-                <span className="text-sm font-bold text-slate-700">Título</span>
+              <label className="mt-2 grid gap-1">
+                <span className="text-xs font-bold text-slate-700">Título</span>
                 <input
                   value={title}
                   onChange={(event) => setTitle(event.target.value)}
                   onBlur={() => persistCurrentDocument("Título salvo.")}
-                  className="h-12 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-bold text-slate-950 outline-none transition focus:border-slate-950 focus:bg-white"
+                  className="h-9 rounded-lg border border-slate-200 bg-slate-50 px-3 text-xs font-bold text-slate-950 outline-none transition focus:border-slate-950 focus:bg-white"
                 />
               </label>
 
-              <div className="mt-5 grid gap-3">
+              <div className="mt-3 grid gap-1.5">
                 <button
                   type="button"
                   onClick={saveVersion}
-                  className="rounded-2xl bg-gradient-to-r from-blue-600 to-slate-600 px-5 py-3 text-sm font-black text-white transition hover:opacity-95"
+                  className="rounded-lg bg-gradient-to-r from-blue-600 to-slate-600 px-3 py-2 text-xs font-black text-white transition hover:opacity-95"
                 >
                   Salvar versão
                 </button>
@@ -1851,7 +1855,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
                 <button
                   type="button"
                   onClick={applyAbntToDocument}
-                  className="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-3 text-sm font-black text-emerald-700 transition"
+                  className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-black text-emerald-700 transition"
                 >
                   Aplicar padrão ABNT
                 </button>
@@ -1859,7 +1863,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
                 <button
                   type="button"
                   onClick={printDocument}
-                  className="rounded-2xl border border-blue-200 bg-blue-50 px-5 py-3 text-sm font-black text-blue-700 transition"
+                  className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-black text-blue-700 transition"
                 >
                   Imprimir / PDF limpo
                 </button>
@@ -1873,7 +1877,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
                     type="button"
                     onClick={() => void elevarQualidadeDocumentoNoEditor()}
                     disabled={elevatingQuality}
-                    className="rounded-2xl border border-indigo-200 bg-indigo-50 px-5 py-3 text-sm font-black text-indigo-800 transition hover:bg-indigo-100 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-black text-indigo-800 transition hover:bg-indigo-100 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {elevatingQuality ? "Elevando qualidade..." : "Elevar qualidade"}
                   </button>
@@ -1881,7 +1885,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
               </div>
 
               {typeof documentQualityScore === "number" ? (
-                <div className="mt-5">
+                <div className="mt-3">
                   <MaterialQualityScoreBar
                     score={documentQualityScore}
                     issues={documentQualityIssues}
@@ -1896,23 +1900,23 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
                 </div>
               ) : null}
 
-              <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm leading-7 text-slate-600">
-                <p>{status}</p>
-                <p className="mt-2 font-black text-slate-950">{wordCount} palavra(s)</p>
+              <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-2.5 text-xs leading-5 text-slate-600">
+                <p className="line-clamp-2">{status}</p>
+                <p className="mt-1 font-black text-slate-950">{wordCount} palavra(s)</p>
               </div>
             </div>
 
-            <div className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
-              <p className="text-sm font-black uppercase tracking-[0.24em] text-blue-700">
+            <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-700">
                 Versões salvas
               </p>
 
-              <div className="mt-4 grid gap-3">
+              <div className="mt-2 grid gap-2">
                 {savedDocuments.length > 0 ? (
                   savedDocuments.map((item) => (
                     <div
                       key={item.id}
-                      className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
+                      className="rounded-lg border border-slate-200 bg-slate-50 p-2.5"
                     >
                       <button
                         type="button"
@@ -1984,8 +1988,8 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
         <div
           className={
             embedded
-              ? "flex min-h-0 min-w-0 flex-1 flex-col gap-2 overflow-hidden"
-              : "space-y-5"
+              ? "flex min-h-0 min-w-0 flex-1 flex-col gap-1 overflow-hidden"
+              : "space-y-2"
           }
         >
           {embedded && !showFormatTools ? (
@@ -2044,29 +2048,29 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
           ) : null}
 
           {isTableActive ? (
-            <div className="hidden shrink-0 rounded-2xl border border-cyan-200 bg-cyan-50 p-2 lg:block">
-              <div className="flex flex-wrap items-center gap-1.5">
-                <span className="mr-1 text-xs font-black uppercase tracking-[0.16em] text-cyan-800">
+            <div className="hidden shrink-0 rounded-lg border border-cyan-200 bg-cyan-50 px-2 py-1 lg:block">
+              <div className="flex flex-wrap items-center gap-1">
+                <span className="mr-0.5 text-[10px] font-black uppercase tracking-[0.14em] text-cyan-800">
                   Tabela
                 </span>
                 <button
                   type="button"
                   onClick={() => removeCurrentTable(true)}
-                  className="h-9 rounded-xl border border-rose-200 bg-rose-50 px-3 text-xs font-black text-rose-700"
+                  className="h-7 rounded-md border border-rose-200 bg-rose-50 px-2 text-[10px] font-black text-rose-700"
                 >
                   Excluir tabela
                 </button>
                 <button
                   type="button"
                   onClick={removeTableRow}
-                  className="h-9 rounded-xl border border-cyan-200 bg-white px-3 text-xs font-black text-cyan-800"
+                  className="h-7 rounded-md border border-cyan-200 bg-white px-2 text-[10px] font-black text-cyan-800"
                 >
                   Remover linha
                 </button>
                 <button
                   type="button"
                   onClick={removeTableColumn}
-                  className="h-9 rounded-xl border border-cyan-200 bg-white px-3 text-xs font-black text-cyan-800"
+                  className="h-7 rounded-md border border-cyan-200 bg-white px-2 text-[10px] font-black text-cyan-800"
                 >
                   Remover coluna
                 </button>
@@ -2076,10 +2080,10 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
 
           {(!embedded || showFormatTools) && (
           <div
-            className={`planify-editor-format-panel relative shrink-0 rounded-[2rem] border border-slate-200 bg-white shadow-sm ${
+            className={`planify-editor-format-panel relative shrink-0 rounded-lg border border-slate-200 bg-white shadow-sm ${
               embedded
-                ? "max-lg:max-h-[min(38dvh,280px)] max-lg:overflow-y-auto max-lg:overscroll-contain overflow-x-auto overscroll-contain p-2"
-                : "p-4"
+                ? "max-lg:max-h-[min(32dvh,240px)] max-lg:overflow-y-auto max-lg:overscroll-contain overflow-x-auto overscroll-contain p-1 lg:p-1.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                : "overflow-x-auto p-2"
             }`}
           >
             {embedded && showFormatTools ? (
@@ -2104,7 +2108,11 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
               onChange={handleImageSelected}
             />
 
-            <div className="flex flex-wrap items-center gap-1.5">
+            <div
+              className={`flex items-center gap-1 ${
+                embedded ? "flex-nowrap lg:flex-nowrap" : "flex-wrap"
+              }`}
+            >
               <select
                 value={selectedBlock}
                 onChange={(event) => handleBlockChange(event.target.value)}
@@ -2210,7 +2218,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
                 ⇥
               </button>
 
-              <div className="h-8 w-px bg-slate-200" />
+              <div className={`${embedded ? "h-6" : "h-7"} w-px shrink-0 bg-slate-200`} />
 
               {[
                 ["•", "insertUnorderedList", "Lista com marcadores"],
@@ -2232,8 +2240,8 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
               ))}
 
               <label
-                className={`flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 font-black text-slate-700 ${
-                  embedded ? "h-8 text-[10px]" : "h-10 text-xs"
+                className={`flex shrink-0 items-center gap-1 rounded-md border border-slate-200 bg-white px-1.5 font-black text-slate-700 ${
+                  embedded ? "h-7 text-[10px]" : "h-9 text-[10px]"
                 }`}
               >
                 Cor
@@ -2245,8 +2253,8 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
               </label>
 
               <label
-                className={`flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 font-black text-slate-700 ${
-                  embedded ? "h-8 text-[10px]" : "h-10 text-xs"
+                className={`flex shrink-0 items-center gap-1 rounded-md border border-slate-200 bg-white px-1.5 font-black text-slate-700 ${
+                  embedded ? "h-7 text-[10px]" : "h-9 text-[10px]"
                 }`}
               >
                 Fundo
@@ -2497,13 +2505,17 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
           )}
 
           <div
-            className={`planify-editor-document-scroll min-h-0 flex-1 rounded-[2rem] border border-slate-200 bg-white shadow-sm ${
+            className={`planify-editor-document-scroll min-h-0 flex-1 rounded-lg border border-slate-200 bg-white shadow-sm ${
               embedded
-                ? "overflow-y-auto overscroll-contain p-1 sm:p-2"
-                : "overflow-y-auto overscroll-contain p-2 sm:p-3"
+                ? "overflow-y-auto overscroll-contain p-0.5 sm:p-1"
+                : "overflow-y-auto overscroll-contain p-1 sm:p-2"
             }`}
           >
-            <div className="rounded-[1.5rem] bg-slate-100 p-2 sm:p-6">
+            <div
+              className={`bg-slate-100 ${
+                embedded ? "rounded-md p-1 sm:p-1.5" : "rounded-xl p-1.5 sm:p-2"
+              }`}
+            >
               <div
                 ref={editorRef}
                 contentEditable
@@ -2516,7 +2528,13 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
                   persistCurrentDocument("Editando...");
                 }}
                 onBlur={() => persistCurrentDocument("Documento salvo.")}
-                className="planify-editor-page mx-auto min-h-[50vh] w-full max-w-[21cm] rounded-sm bg-white px-4 py-5 text-slate-950 shadow-lg outline-none sm:min-h-[29.7cm] sm:px-8 sm:py-10 md:px-[2cm] md:py-[2cm] md:shadow-2xl"
+                className={`planify-editor-page mx-auto w-full rounded-sm bg-white text-slate-950 shadow-md outline-none ${
+                  isSlideDeck
+                    ? "max-w-[min(100%,60rem)] px-3 py-4 sm:px-4 sm:py-5"
+                    : embedded
+                      ? "max-w-[21cm] min-h-[36vh] px-3 py-4 sm:min-h-0 sm:px-5 sm:py-6"
+                      : "max-w-[21cm] min-h-[50vh] px-4 py-5 sm:min-h-[29.7cm] sm:px-6 sm:py-8 md:px-[1.75cm] md:py-[1.75cm] md:shadow-lg"
+                }`}
               />
             </div>
           </div>

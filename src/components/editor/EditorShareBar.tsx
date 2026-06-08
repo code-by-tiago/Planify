@@ -22,6 +22,8 @@ type EditorShareBarProps = {
   /** Força detecção quando o HTML já é de slides. */
   isSlideDeck?: boolean;
   slideTheme?: string | null;
+  /** Barra horizontal mais estreita no editor embutido */
+  compact?: boolean;
 };
 
 function resolveSlideDeck(
@@ -68,6 +70,7 @@ export function EditorShareBar({
   documentType,
   isSlideDeck: isSlideDeckProp,
   slideTheme: slideThemeProp,
+  compact = false,
 }: EditorShareBarProps) {
   const [isSlideDeck, setIsSlideDeck] = useState(
     () => resolveSlideDeck(getHtml, documentType, isSlideDeckProp) === true,
@@ -114,14 +117,19 @@ export function EditorShareBar({
     return () => window.clearInterval(timer);
   }, [getHtml, documentType, isSlideDeckProp, slideThemeProp]);
 
+  const shareGap = compact ? "gap-1" : "gap-1.5 sm:gap-2";
+  const comunidadeClass = compact
+    ? "inline-flex shrink-0 items-center gap-1 rounded-lg border border-fuchsia-200 bg-fuchsia-50 px-2 py-1 text-[10px] font-black text-fuchsia-800 transition hover:bg-fuchsia-100"
+    : "inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-fuchsia-200 bg-fuchsia-50 px-3 py-2 text-xs font-black text-fuchsia-800 transition hover:bg-fuchsia-100";
+
   return (
-    <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5 sm:gap-2">
+    <div className={`flex min-w-0 flex-1 flex-wrap items-center ${shareGap}`}>
       <MarketplacePublishButton
         title={title}
         getHtml={getHtml}
-        label="Comunidade"
+        label={compact ? "Comunidade" : "Comunidade"}
         compact
-        className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-fuchsia-200 bg-fuchsia-50 px-3 py-2 text-xs font-black text-fuchsia-800 transition hover:bg-fuchsia-100"
+        className={comunidadeClass}
       />
       {isSlideDeck ? (
         <GoogleSlidesExportButton
@@ -130,6 +138,7 @@ export function EditorShareBar({
           theme={slideTheme ?? undefined}
           returnTo={returnTo}
           alwaysShowExport
+          iconOnly
         />
       ) : (
         <>
@@ -139,6 +148,7 @@ export function EditorShareBar({
             returnTo={returnTo}
             documentType={documentType}
             onStatus={onStatus}
+            iconOnly
           />
           <GoogleDriveExportButton
             title={title}
@@ -146,6 +156,7 @@ export function EditorShareBar({
             returnTo={returnTo}
             documentType={documentType}
             onStatus={onStatus}
+            iconOnly
           />
         </>
       )}
@@ -155,6 +166,7 @@ export function EditorShareBar({
           getHtml={getHtml}
           returnTo={returnTo}
           onStatus={onStatus}
+          iconOnly
         />
       ) : null}
       <GoogleClassroomPanel

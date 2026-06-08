@@ -102,16 +102,16 @@ export async function renderHtmlToPdfBuffer(
           )
         : 0;
 
-    const pdf =
+    const pdfOptions =
       profile === "slides"
-        ? await page.pdf({
+        ? {
             width: SLIDE_PAGE.width,
             height: SLIDE_PAGE.height,
             printBackground: true,
             preferCSSPageSize: true,
             margin: { top: 0, right: 0, bottom: 0, left: 0 },
-          })
-        : await page.pdf({
+          }
+        : {
             format: DOCUMENT_PAGE.format,
             printBackground: true,
             preferCSSPageSize: true,
@@ -121,7 +121,14 @@ export async function renderHtmlToPdfBuffer(
               bottom: "12mm",
               left: "12mm",
             },
-          });
+          };
+
+    const pdf = await page.pdf(pdfOptions);
+
+    const pdfPageCount =
+      profile === "slides"
+        ? (Buffer.from(pdf).toString("latin1").match(/\/Type\s*\/Page\b/g) || []).length
+        : 0;
 
     // #region agent log
     fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
@@ -139,10 +146,13 @@ export async function renderHtmlToPdfBuffer(
         data: {
           profile,
           slideCount,
+          pdfPageCount,
+          pageCountMatchesSlides: slideCount === pdfPageCount,
           pageSize:
             profile === "slides"
               ? `${SLIDE_PAGE.width}x${SLIDE_PAGE.height}`
               : "A4-portrait",
+          preferCssPageSize: pdfOptions.preferCSSPageSize,
           pdfBytes: pdf.byteLength,
         },
         timestamp: Date.now(),

@@ -110,7 +110,7 @@ function detectLayout(block: string, index: number, total: number): SlideItem["l
  * o conteúdo completo (inclusive divs aninhadas). Evita o corte prematuro no
  * primeiro </div> que deixava os slides quase vazios no Google Apresentações.
  */
-function extractSlideBlocks(html: string): string[] {
+export function extractSlideBlocks(html: string): string[] {
   const blocks: string[] = [];
   const openRe = /<div\b[^>]*class=["'][^"']*planify-slide[^"']*["'][^>]*>/gi;
   let open: RegExpExecArray | null = openRe.exec(html);
@@ -142,6 +142,29 @@ function extractSlideBlocks(html: string): string[] {
   }
 
   return blocks;
+}
+
+const TEACHER_NOTES_BLOCK_RE =
+  /<div[^>]*>\s*<span[^>]*>Notas do professor<\/span>[\s\S]*?<\/div>/gi;
+
+/** Prepara um bloco `.planify-slide` isolado para exportação PDF (sem notas do professor). */
+function prepareSlideBlockForExport(block: string): string {
+  const withoutNotes = block.replace(TEACHER_NOTES_BLOCK_RE, "");
+
+  const withNormalizedRoot = withoutNotes.replace(
+    /(<div\s+class="planify-slide")([^>]*)(>)/i,
+    '$1 style="position:relative;overflow:hidden;box-sizing:border-box;margin:0!important;border-radius:0!important;box-shadow:none!important;border:0!important;"$3',
+  );
+
+  return withNormalizedRoot.replace(
+    /(<div\s+class="planify-slide"[^>]*>)([\s\S]*)(<\/div>\s*)$/i,
+    '$1<div class="planify-slide-export-inner">$2</div>$3',
+  );
+}
+
+/** Extrai somente slides prontos para PDF — sem deck wrapper, meta nem seções extras. */
+export function extractSlideBlocksForExport(html: string): string[] {
+  return extractSlideBlocks(html).map(prepareSlideBlockForExport);
 }
 
 /** Lê o tema de design embutido no HTML (data-planify-slide-theme). */

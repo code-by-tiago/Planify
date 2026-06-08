@@ -7,6 +7,7 @@ import {
 import { buildNativeHtmlDocx } from "../docx/simple-docx-builder";
 import { extractBodyHtml } from "../editor/html-inner-text";
 import { prepareHtmlForExport } from "../editor/prepare-export-html";
+import { extractSlideBlocks, extractSlideBlocksForExport } from "../materials/slide-html-parser";
 import { renderHtmlToPdfBuffer } from "../pdf/html-to-pdf";
 
 export type EditorHtmlExportFormat = "docx" | "pdf" | "html";
@@ -48,14 +49,44 @@ export function buildEditorExportHtmlForProfile(
   documentType?: string | null,
 ): { exportHtml: string; pdfProfile: "document" | "slides" } {
   const kind = detectMaterialExportKind(html, documentType);
-  const body = prepareHtmlForExport(resolveEditorHtmlBody(html));
+  const rawBody = resolveEditorHtmlBody(html);
+  const preparedBody = prepareHtmlForExport(rawBody);
 
   if (kind === "slides") {
+    const slideBlocks = extractSlideBlocksForExport(preparedBody);
+    const body = slideBlocks.length ? slideBlocks.join("\n") : preparedBody;
+
+    // #region agent log
+    fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Debug-Session-Id": "1b39d8",
+      },
+      body: JSON.stringify({
+        sessionId: "1b39d8",
+        runId: "pdf-export",
+        hypothesisId: "H2",
+        location: "editor-html-export-service.ts:buildEditorExportHtmlForProfile",
+        message: "slide export body composed",
+        data: {
+          slideBlockCount: slideBlocks.length,
+          rawSlideCount: extractSlideBlocks(preparedBody).length,
+          hasDeckWrapper: /planify-slide-deck/i.test(preparedBody),
+          hasTeacherNotes: /Notas do professor/i.test(preparedBody),
+          bodyUsesOnlySlides: slideBlocks.length > 0,
+          exportBodyHasDeck: /planify-slide-deck/i.test(body),
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
+
     return { exportHtml: wrapAsSlideExportHtml(title, body), pdfProfile: "slides" };
   }
 
   return {
-    exportHtml: wrapAsPlanifyExportHtml(title, body),
+    exportHtml: wrapAsPlanifyExportHtml(title, preparedBody),
     pdfProfile: "document",
   };
 }

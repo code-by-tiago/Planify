@@ -245,6 +245,10 @@ export const PLANIFY_EXPORT_CSS = `
 `;
 
 /** Widescreen 13.33"×7.5" (mesma base do PPTX LAYOUT_WIDE) — um slide por página. */
+const SLIDE_EXPORT_DESIGN_WIDTH_PX = 720;
+const SLIDE_EXPORT_DESIGN_HEIGHT_PX = 405;
+const SLIDE_EXPORT_SCALE = 338 / 190 * (190 / 25.4 * 96) / SLIDE_EXPORT_DESIGN_WIDTH_PX;
+
 export const PLANIFY_SLIDE_EXPORT_CSS = `
   @page {
     size: 338mm 190mm;
@@ -268,36 +272,58 @@ export const PLANIFY_SLIDE_EXPORT_CSS = `
   }
   .planify-slide-deck {
     display: block;
-    margin: 0;
-    padding: 0;
+    margin: 0 !important;
+    padding: 0 !important;
     background: transparent !important;
+    border-radius: 0 !important;
   }
   .planify-slide-deck > p:first-of-type {
     display: none !important;
   }
   .planify-slide {
     display: block;
+    position: relative;
     width: 338mm !important;
     height: 190mm !important;
     min-height: 190mm !important;
     max-width: none !important;
     margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
     border-radius: 0 !important;
     box-shadow: none !important;
     overflow: hidden !important;
     box-sizing: border-box;
-    page-break-after: always;
-    break-after: page;
     page-break-inside: avoid;
     break-inside: avoid;
   }
-  .planify-slide:last-child {
-    page-break-after: auto;
-    break-after: auto;
+  .planify-slide:not(:last-of-type) {
+    page-break-after: always;
+    break-after: page;
+  }
+  .planify-slide:last-of-type {
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+  .planify-slide-export-inner {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: ${SLIDE_EXPORT_DESIGN_WIDTH_PX}px;
+    height: ${SLIDE_EXPORT_DESIGN_HEIGHT_PX}px;
+    transform: scale(${SLIDE_EXPORT_SCALE.toFixed(4)});
+    transform-origin: top left;
+    box-sizing: border-box;
+  }
+  .planify-slide-export-inner > div[style*="padding"] {
+    height: 100%;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
   }
   .planify-slide figure img,
   .planify-slide-image {
-    max-height: 42% !important;
+    max-height: 240px !important;
     object-fit: contain !important;
   }
   img {

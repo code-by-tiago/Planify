@@ -77,10 +77,10 @@ export async function getCommunityProfileForUser(params: {
     .eq("id", params.userId)
     .maybeSingle();
 
-  if (profileResult.error?.message?.includes("bio")) {
+  if (profileResult.error) {
     const fallback = await supabase
       .from("profiles")
-      .select("id,email,full_name,school_name,avatar_url")
+      .select("id,email,full_name")
       .eq("id", params.userId)
       .maybeSingle();
     row = (fallback.data || null) as ProfileRow | null;
@@ -168,10 +168,10 @@ export async function getPublicCommunityProfile(params: {
     .eq("id", params.targetUserId)
     .maybeSingle();
 
-  if (profileResult.error?.message?.includes("bio")) {
+  if (profileResult.error) {
     const fallback = await supabase
       .from("profiles")
-      .select("id,email,full_name,school_name,avatar_url")
+      .select("id,email,full_name")
       .eq("id", params.targetUserId)
       .maybeSingle();
     row = (fallback.data || null) as ProfileRow | null;
@@ -296,17 +296,18 @@ export async function updateCommunityProfile(
 
   const { error } = await supabase.from("profiles").update(update).eq("id", userId);
 
-  if (error?.message?.includes("bio") || error?.message?.includes("community_public")) {
-    const { bio: _bio, community_public: _public, ...legacyUpdate } = update;
-
-    if (Object.keys(legacyUpdate).length) {
-      const retry = await supabase.from("profiles").update(legacyUpdate).eq("id", userId);
-      if (retry.error) {
-        throw new Error(retry.error.message || "Não foi possível atualizar o perfil.");
-      }
-    }
-
-    return;
+  if (
+    error?.message?.includes("schema cache") ||
+    error?.message?.includes("avatar_url") ||
+    error?.message?.includes("school_name") ||
+    error?.message?.includes("bio") ||
+    error?.message?.includes("community_public")
+  ) {
+    throw new Error(
+      error.message.includes("avatar_url")
+        ? "Perfil em atualização no servidor. Aguarde um minuto e tente novamente."
+        : error.message || "Não foi possível atualizar o perfil.",
+    );
   }
 
   if (error) {

@@ -16,7 +16,7 @@ export function LandingHowItWorks() {
         <div className="mt-12 grid gap-8 md:grid-cols-3">
           {HOW_IT_WORKS.map((item) => (
             <article key={item.step} className="relative text-center md:text-left">
-              <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-600 font-[family-name:var(--font-display)] text-xl font-extrabold text-white shadow-lg shadow-cyan-600/25">
+              <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 font-[family-name:var(--font-display)] text-xl font-extrabold text-white shadow-lg shadow-cyan-500/25">
                 {item.step}
               </span>
               <h3 className="mt-5 text-xl font-extrabold text-slate-900">{item.title}</h3>

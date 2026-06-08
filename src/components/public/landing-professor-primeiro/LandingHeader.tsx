@@ -5,6 +5,7 @@ import Link from "next/link";
 import { PlanifyBrand } from "@/components/pro/PlanifyBrand";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { LANDING_NAV } from "./constants";
+import { ppBtnPrimarySm } from "./theme";
 
 export function LandingHeader() {
   const [open, setOpen] = useState(false);
@@ -56,10 +57,7 @@ export function LandingHeader() {
           >
             Entrar
           </Link>
-          <Link
-            href="/planos"
-            className="rounded-xl bg-cyan-600 px-5 py-2.5 text-sm font-bold text-white shadow-md shadow-cyan-600/20 transition hover:bg-cyan-700"
-          >
+          <Link href="/planos" className={ppBtnPrimarySm}>
             Começar agora
           </Link>
         </div>
@@ -100,7 +98,7 @@ export function LandingHeader() {
             <Link
               href="/planos"
               onClick={() => setOpen(false)}
-              className="rounded-xl bg-cyan-600 py-3 text-center text-sm font-bold text-white"
+              className={`${ppBtnPrimarySm} w-full py-3 text-center`}
             >
               Começar agora
             </Link>

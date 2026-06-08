@@ -2,6 +2,7 @@ import Link from "next/link";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import type { PlanifyIconName } from "@/lib/pro/planifyTools";
 import { FINAL_BENEFITS } from "./constants";
+import { ppBtnPrimary } from "./theme";
 
 export function LandingFinalCta() {
   return (
@@ -16,10 +17,7 @@ export function LandingFinalCta() {
         </p>
 
         <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-          <Link
-            href="/planos"
-            className="inline-flex items-center justify-center rounded-xl bg-cyan-500 px-8 py-3.5 text-sm font-bold text-white shadow-lg shadow-cyan-500/30 transition hover:bg-cyan-400"
-          >
+          <Link href="/planos" className={`${ppBtnPrimary} px-8`}>
             Ver planos
           </Link>
           <Link

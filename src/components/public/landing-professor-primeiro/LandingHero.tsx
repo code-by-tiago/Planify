@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { LandingHeroMockCard } from "./LandingHeroMockCard";
+import { ppBtnPrimary, ppBtnSecondary } from "./theme";
 
 export function LandingHero() {
   return (
@@ -9,7 +10,11 @@ export function LandingHero() {
     >
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,rgba(16,185,129,0.12),transparent)]"
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_80%_15%,rgba(8,145,178,0.06),transparent_50%)]"
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 opacity-40 bg-[radial-gradient(circle_at_25%_35%,rgba(8,145,178,0.05),transparent_40%),radial-gradient(circle_at_72%_28%,rgba(71,85,105,0.04),transparent_36%)]"
       />
 
       <div className="relative mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-2 lg:gap-16">
@@ -29,16 +34,10 @@ export function LandingHero() {
           </p>
 
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
-            <Link
-              href="/planos"
-              className="inline-flex items-center justify-center rounded-xl bg-cyan-600 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-cyan-600/25 transition hover:bg-cyan-700"
-            >
+            <Link href="/planos" className={ppBtnPrimary}>
               Começar com plano mensal
             </Link>
-            <Link
-              href="/#recursos"
-              className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-6 py-3.5 text-sm font-bold text-slate-800 shadow-sm transition hover:border-cyan-200 hover:bg-cyan-50/50"
-            >
+            <Link href="/#recursos" className={ppBtnSecondary}>
               Conhecer recursos
             </Link>
           </div>

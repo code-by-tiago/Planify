@@ -1,7 +1,7 @@
 /** Design tokens — cyan/indigo HUD (public pages + landing structure). */
 
 export const ppPage =
-  "flex min-h-screen flex-col overflow-x-clip bg-gradient-to-b from-white via-cyan-50/40 to-slate-50";
+  "planify-hud planify-ui3 planify-hud-landing planify-public flex min-h-screen flex-col overflow-x-clip bg-gradient-to-b from-white via-sky-50/60 to-[var(--planify-canvas)]";
 
 export const ppEyebrow =
   "text-xs font-bold uppercase tracking-[0.2em] text-cyan-700";
@@ -26,7 +26,10 @@ export const ppIconBox =
   "flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-cyan-50 text-cyan-600";
 
 export const ppBtnPrimary =
-  "inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-cyan-600 px-6 py-3.5 text-sm font-bold text-white shadow-md shadow-cyan-600/20 transition hover:from-cyan-600 hover:to-cyan-700";
+  "inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 px-6 py-3.5 text-sm font-bold text-white shadow-md shadow-cyan-500/20 transition hover:from-cyan-600 hover:to-blue-700";
+
+export const ppBtnPrimarySm =
+  "inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 px-5 py-2.5 text-sm font-bold text-white shadow-md shadow-cyan-500/20 transition hover:from-cyan-600 hover:to-blue-700";
 
 export const ppBtnSecondary =
   "inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-6 py-3.5 text-sm font-bold text-slate-800 shadow-sm transition hover:border-cyan-200 hover:bg-cyan-50/50";

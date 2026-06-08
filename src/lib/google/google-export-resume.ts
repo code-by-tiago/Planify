@@ -2,6 +2,7 @@ export type GoogleExportPending = {
   title: string;
   returnTo: string;
   html?: string;
+  planningPayload?: Record<string, unknown> | null;
   ts: number;
 };
 

@@ -44,7 +44,11 @@ type GoogleProductExportButtonProps = {
   };
   exportTitle?: string;
   pendingStorageKey: string;
-  onExport: (html: string) => Promise<{ openUrl: string }>;
+  getPlanningPayload?: () => Record<string, unknown> | null;
+  onExport: (params: {
+    html: string;
+    planningPayload?: Record<string, unknown> | null;
+  }) => Promise<{ openUrl: string }>;
   onStatus?: (message: string) => void;
 };
 
@@ -62,6 +66,7 @@ export function GoogleProductExportButton({
   labels,
   exportTitle,
   pendingStorageKey,
+  getPlanningPayload,
   onExport,
   onStatus,
 }: GoogleProductExportButtonProps) {
@@ -129,7 +134,11 @@ export function GoogleProductExportButton({
         throw new Error("O documento ainda não carregou. Aguarde e tente exportar novamente.");
       }
 
-      const result = await onExport(html);
+      const pendingPayload = readGoogleExportPending(pendingStorageKey)?.planningPayload;
+      const planningPayload =
+        getPlanningPayload?.() ?? pendingPayload ?? null;
+
+      const result = await onExport({ html, planningPayload });
       clearGoogleExportPending(pendingStorageKey);
 
       const opened = openGoogleExportUrl(result.openUrl);
@@ -192,6 +201,7 @@ export function GoogleProductExportButton({
       title,
       returnTo,
       html: getHtml(),
+      planningPayload: getPlanningPayload?.() ?? null,
     });
 
     try {

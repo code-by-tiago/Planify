@@ -11,6 +11,7 @@ export const GOOGLE_DRIVE_EXPORT_PENDING_KEY = "planify:google-drive-export-pend
 type GoogleDriveExportButtonProps = {
   title: string;
   getHtml: () => string;
+  getPlanningPayload?: () => Record<string, unknown> | null;
   returnTo?: string;
   documentType?: string | null;
   className?: string;
@@ -21,17 +22,22 @@ type GoogleDriveExportButtonProps = {
 export function GoogleDriveExportButton({
   title,
   getHtml,
+  getPlanningPayload,
   returnTo = "/dashboard?secao=editor",
   documentType,
   className,
   iconOnly,
   onStatus,
 }: GoogleDriveExportButtonProps) {
-  const runExport = useCallback(async (html: string) => {
+  const runExport = useCallback(async (params: {
+    html: string;
+    planningPayload?: Record<string, unknown> | null;
+  }) => {
     const result = await exportToGoogleDrive({
       title,
-      html,
+      html: params.html,
       documentType,
+      planningPayload: params.planningPayload,
     });
 
     const url =
@@ -45,6 +51,7 @@ export function GoogleDriveExportButton({
     <GoogleProductExportButton
       title={title}
       getHtml={getHtml}
+      getPlanningPayload={getPlanningPayload}
       returnTo={returnTo}
       className={className}
       iconOnly={iconOnly}

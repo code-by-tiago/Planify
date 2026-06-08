@@ -39,6 +39,7 @@ export async function POST(request: NextRequest) {
     title?: string;
     html?: string;
     documentType?: string;
+    planningPayload?: Record<string, unknown> | null;
   };
 
   const title = String(body.title || "").trim();
@@ -62,6 +63,7 @@ export async function POST(request: NextRequest) {
       title,
       html: body.html!,
       documentType: body.documentType,
+      planningPayload: body.planningPayload ?? null,
     });
 
     return NextResponse.json({ success: true, data: result });

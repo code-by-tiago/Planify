@@ -11,6 +11,7 @@ export const GOOGLE_DOCS_EXPORT_PENDING_KEY = "planify:google-docs-export-pendin
 type GoogleDocsExportButtonProps = {
   title: string;
   getHtml: () => string;
+  getPlanningPayload?: () => Record<string, unknown> | null;
   returnTo?: string;
   documentType?: string | null;
   className?: string;
@@ -21,17 +22,22 @@ type GoogleDocsExportButtonProps = {
 export function GoogleDocsExportButton({
   title,
   getHtml,
+  getPlanningPayload,
   returnTo = "/dashboard?secao=editor",
   documentType,
   className,
   iconOnly,
   onStatus,
 }: GoogleDocsExportButtonProps) {
-  const runExport = useCallback(async (html: string) => {
+  const runExport = useCallback(async (params: {
+    html: string;
+    planningPayload?: Record<string, unknown> | null;
+  }) => {
     const result = await exportToGoogleDocs({
       title,
-      html,
+      html: params.html,
       documentType,
+      planningPayload: params.planningPayload,
     });
 
     return { openUrl: result.documentUrl };
@@ -41,6 +47,7 @@ export function GoogleDocsExportButton({
     <GoogleProductExportButton
       title={title}
       getHtml={getHtml}
+      getPlanningPayload={getPlanningPayload}
       returnTo={returnTo}
       className={className}
       iconOnly={iconOnly}

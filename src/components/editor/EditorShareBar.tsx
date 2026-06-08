@@ -16,6 +16,7 @@ import {
 type EditorShareBarProps = {
   title: string;
   getHtml: () => string;
+  getPlanningPayload?: () => Record<string, unknown> | null;
   onStatus?: (message: string) => void;
   /** Tipo salvo no documento (ex.: material:slides) — evita sumir o botão Google. */
   documentType?: string | null;
@@ -66,6 +67,7 @@ function resolveQuizDocument(
 export function EditorShareBar({
   title,
   getHtml,
+  getPlanningPayload,
   onStatus,
   documentType,
   isSlideDeck: isSlideDeckProp,
@@ -145,6 +147,7 @@ export function EditorShareBar({
           <GoogleDocsExportButton
             title={title}
             getHtml={getHtml}
+            getPlanningPayload={getPlanningPayload}
             returnTo={returnTo}
             documentType={documentType}
             onStatus={onStatus}
@@ -153,6 +156,7 @@ export function EditorShareBar({
           <GoogleDriveExportButton
             title={title}
             getHtml={getHtml}
+            getPlanningPayload={getPlanningPayload}
             returnTo={returnTo}
             documentType={documentType}
             onStatus={onStatus}

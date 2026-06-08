@@ -27,6 +27,7 @@ import {
   planningPayloadToHtmlContext,
 } from "@/lib/planejamentos/planning-editor-html";
 import type { PlanningEditorMeta } from "@/lib/planejamentos/planning-editor-flow";
+import { buildOfficialPlanningPayloadFromEditorMeta } from "@/lib/planejamentos/planning-google-export-payload";
 import {
   buildElevatePayload,
   requestMaterialGeneration,
@@ -37,6 +38,7 @@ import { PlanifyPageHero } from "@/components/pro/PlanifyPageHero";
 import {
   ChangeEvent,
   MouseEvent as ReactMouseEvent,
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -351,6 +353,15 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
     if (String(documentSource?.type || "").includes("material")) return null;
     return meta;
   }, [documentSource]);
+
+  const getPlanningPayloadForExport = useCallback((): Record<string, unknown> | null => {
+    const raw = documentSource?.payload as
+      | { raw?: PlanningEditorMeta & { matrizPlanejamento?: unknown } }
+      | undefined;
+
+    const payload = buildOfficialPlanningPayloadFromEditorMeta(raw?.raw ?? planningMeta);
+    return payload ? (payload as Record<string, unknown>) : null;
+  }, [documentSource, planningMeta]);
 
   const canElevateMaterial = Boolean(
     materialMeta?.generationPayload &&
@@ -1729,6 +1740,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
                 compact
                 title={title}
                 getHtml={getEditorHtml}
+                getPlanningPayload={getPlanningPayloadForExport}
                 onStatus={setStatus}
                 documentType={documentSource?.type}
                 isSlideDeck={isSlideDeck}
@@ -1799,6 +1811,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
                 compact
                 title={title}
                 getHtml={getEditorHtml}
+                getPlanningPayload={getPlanningPayloadForExport}
                 onStatus={setStatus}
                 documentType={documentSource?.type}
                 isSlideDeck={isSlideDeck}

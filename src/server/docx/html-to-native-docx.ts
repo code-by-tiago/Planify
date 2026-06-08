@@ -87,6 +87,41 @@ function resolveTableGridColumnCount(rows: Element[]): number {
   return maxColumns;
 }
 
+function normalizeHeaderText(value: string): string {
+  return cleanText(value)
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "");
+}
+
+function detectPlanningMatrixWeights(table: Element): number[] | null {
+  const headerCells = table.querySelectorAll("tr:first-child th, tr:first-child td");
+  const headers = Array.from(headerCells).map((cell) =>
+    normalizeHeaderText(cell.textContent || ""),
+  );
+
+  if (
+    headers.includes("unidade tematica") &&
+    headers.includes("habilidades") &&
+    headers.includes("objetos de conhecimento")
+  ) {
+    return [10, 18, 24, 24, 12, 12];
+  }
+
+  return null;
+}
+
+function distributeWidths(weights: number[]): number[] {
+  const totalWeight = weights.reduce((sum, weight) => sum + weight, 0) || 1;
+  const widths = weights.map((weight) =>
+    Math.floor((PAGE_CONTENT_WIDTH_DXA * weight) / totalWeight),
+  );
+  const distributed = widths.reduce((sum, width) => sum + width, 0);
+  widths[widths.length - 1] += PAGE_CONTENT_WIDTH_DXA - distributed;
+
+  return widths;
+}
+
 function resolveColumnWidths(
   columnCount: number,
   table: Element,
@@ -95,13 +130,18 @@ function resolveColumnWidths(
     return [PAGE_CONTENT_WIDTH_DXA];
   }
 
+  const planningWeights = detectPlanningMatrixWeights(table);
+  if (planningWeights && planningWeights.length === columnCount) {
+    return distributeWidths(planningWeights);
+  }
+
   const isLabelValueTable =
     columnCount === 2 &&
     (table.classList.contains("header") ||
       table.querySelector("tr td:first-child strong, tr th:first-child"));
 
   if (isLabelValueTable) {
-    const labelWidth = Math.floor(PAGE_CONTENT_WIDTH_DXA * 0.24);
+    const labelWidth = Math.floor(PAGE_CONTENT_WIDTH_DXA * 0.28);
     return [labelWidth, PAGE_CONTENT_WIDTH_DXA - labelWidth];
   }
 

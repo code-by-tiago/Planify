@@ -190,6 +190,7 @@ export async function exportToGoogleDocs(params: {
   title: string;
   html: string;
   documentType?: string | null;
+  planningPayload?: Record<string, unknown> | null;
 }): Promise<GoogleDocsExportResult> {
   const response = await fetch("/api/google/docs/export", {
     method: "POST",
@@ -218,6 +219,7 @@ export async function exportToGoogleDrive(params: {
   title: string;
   html: string;
   documentType?: string | null;
+  planningPayload?: Record<string, unknown> | null;
 }): Promise<GoogleDriveExportResult> {
   const response = await fetch("/api/google/drive/export", {
     method: "POST",

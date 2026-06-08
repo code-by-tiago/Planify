@@ -177,36 +177,6 @@ const FALLBACK_SKILLS: SkillCandidate[] = [
   },
 ];
 
-
-const DEBUG_SESSION = "f33ae7";
-const DEBUG_ENDPOINT =
-  "http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281";
-
-function agentLog(
-  location: string,
-  message: string,
-  data: Record<string, unknown>,
-  hypothesisId: string,
-): void {
-  // #region agent log
-  fetch(DEBUG_ENDPOINT, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Debug-Session-Id": DEBUG_SESSION,
-    },
-    body: JSON.stringify({
-      sessionId: DEBUG_SESSION,
-      location,
-      message,
-      data,
-      hypothesisId,
-      timestamp: Date.now(),
-    }),
-  }).catch(() => {});
-  // #endregion
-}
-
 const SPANISH_EM_SKILLS: SkillCandidate[] = [
   {
     codigo: "EM13LGG102",
@@ -863,19 +833,6 @@ function filterByContext(
     }
   }
 
-  agentLog(
-    "bncc-suggestion-engine.ts:filterByContext",
-    "filtered candidates",
-    {
-      inputCount: candidates.length,
-      outputCount: result.length,
-      componente,
-      stage: resolvePayloadStage(payload),
-      sampleCodes: result.slice(0, 5).map((item) => item.codigo),
-    },
-    "H1",
-  );
-
   return result;
 }
 
@@ -1127,17 +1084,6 @@ function buildPortugueseHighSchoolResponse(
   const grouped = conteudos.map((conteudo, contentIndex) => {
     const classified = classifyPortugueseHighSchoolSkills(conteudo, catalog);
 
-    agentLog(
-      "bncc-suggestion-engine.ts:buildPortugueseHighSchoolResponse",
-      "classified content",
-      {
-        contentIndex,
-        conteudo: conteudo.slice(0, 80),
-        codes: classified.map((item) => item.codigo),
-      },
-      "H4",
-    );
-
     return {
       conteudo,
       habilidades: classified.map((candidate, index) =>
@@ -1354,26 +1300,6 @@ function chooseForContent(
             .sort((a, b) => b.score - a.score)
             .slice(0, 3);
 
-  agentLog(
-    "bncc-suggestion-engine.ts:chooseForContent",
-    "chosen skills",
-    {
-      contentIndex,
-      contentPreview: content.slice(0, 80),
-      candidateCount: candidates.length,
-      rankedCount: ranked.length,
-      usedFallback: ranked.length === 0 && stageFiltered.length === 0,
-      topTermScores: stageFiltered.slice(0, 5).map((item) => ({
-        codigo: item.candidate.codigo,
-        termScore: item.termScore,
-        score: item.score,
-      })),
-      chosenCodes: chosen.map((item) => item.candidate.codigo),
-      chosenSources: chosen.map((item) => item.candidate.source),
-    },
-    ranked.length === 0 ? "H2" : "H3",
-  );
-
   return chosen.map(({ candidate, score }, index) =>
     buildSuggestionFromCandidate(candidate, content, index, score),
   );
@@ -1425,18 +1351,6 @@ export async function suggestBnccByConteudos(payload: BnccSuggestionPayload) {
 
   const catalog = await readBNCCSkills();
 
-  agentLog(
-    "bncc-suggestion-engine.ts:suggestBnccByConteudos",
-    "entry",
-    {
-      conteudoCount: conteudos.length,
-      conteudosPreview: conteudos.map((item) => item.slice(0, 60)),
-      catalogCount: catalog.length,
-      ...context,
-    },
-    "H5",
-  );
-
   if (isSpanishComponent(payload) && isHighSchoolPayload(payload)) {
     return buildSpanishHighSchoolResponse(payload, conteudos);
   }
@@ -1456,17 +1370,6 @@ export async function suggestBnccByConteudos(payload: BnccSuggestionPayload) {
   const filtered = filterBnccSkillsByContext(catalog, context);
   const usedCodes = new Set<string>();
 
-  agentLog(
-    "bncc-suggestion-engine.ts:suggestBnccByConteudos",
-    "filtered catalog",
-    {
-      filteredCount: filtered.length,
-      sampleCodes: filtered.slice(0, 6).map((item) => item.codigo),
-      ...context,
-    },
-    "H1",
-  );
-
   const grouped = conteudos.map((conteudo, contentIndex) => {
     const ranked = rankBnccSkillsForContent(filtered, context, conteudo, {
       usedCodes,
@@ -1475,18 +1378,6 @@ export async function suggestBnccByConteudos(payload: BnccSuggestionPayload) {
     });
 
     ranked.forEach((item) => usedCodes.add(item.skill.codigo));
-
-    agentLog(
-      "bncc-suggestion-engine.ts:suggestBnccByConteudos",
-      "ranked content",
-      {
-        contentIndex,
-        contentPreview: conteudo.slice(0, 80),
-        chosenCodes: ranked.map((item) => item.skill.codigo),
-        scores: ranked.map((item) => item.score),
-      },
-      "H2",
-    );
 
     return {
       conteudo,

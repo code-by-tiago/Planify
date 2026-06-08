@@ -496,6 +496,123 @@ export type Database = {
           updated_at?: string;
         }
       >;
+      marketplace_materials: TableDefinition<
+        {
+          id: string;
+          user_id: string | null;
+          owner_email: string | null;
+          author_name: string | null;
+          title: string;
+          description: string | null;
+          etapa: string | null;
+          ano_serie: string | null;
+          componente: string | null;
+          tipo_material: string | null;
+          tema: string | null;
+          tags: string[] | null;
+          file_name: string | null;
+          file_path: string | null;
+          file_mime: string | null;
+          file_size: number | null;
+          is_published: boolean | null;
+          downloads_count: number | null;
+          created_at: string | null;
+          updated_at: string | null;
+        },
+        {
+          id?: string;
+          user_id?: string | null;
+          owner_email?: string | null;
+          author_name?: string | null;
+          title: string;
+          description?: string | null;
+          etapa?: string | null;
+          ano_serie?: string | null;
+          componente?: string | null;
+          tipo_material?: string | null;
+          tema?: string | null;
+          tags?: string[] | null;
+          file_name?: string | null;
+          file_path?: string | null;
+          file_mime?: string | null;
+          file_size?: number | null;
+          is_published?: boolean | null;
+          downloads_count?: number | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        },
+        {
+          id?: string;
+          user_id?: string | null;
+          owner_email?: string | null;
+          author_name?: string | null;
+          title?: string;
+          description?: string | null;
+          etapa?: string | null;
+          ano_serie?: string | null;
+          componente?: string | null;
+          tipo_material?: string | null;
+          tema?: string | null;
+          tags?: string[] | null;
+          file_name?: string | null;
+          file_path?: string | null;
+          file_mime?: string | null;
+          file_size?: number | null;
+          is_published?: boolean | null;
+          downloads_count?: number | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        }
+      >;
+      marketplace_material_likes: TableDefinition<
+        {
+          id: string;
+          material_id: string;
+          user_id: string;
+          created_at: string;
+        },
+        {
+          id?: string;
+          material_id: string;
+          user_id: string;
+          created_at?: string;
+        },
+        {
+          id?: string;
+          material_id?: string;
+          user_id?: string;
+          created_at?: string;
+        }
+      >;
+      marketplace_material_comments: TableDefinition<
+        {
+          id: string;
+          material_id: string;
+          user_id: string | null;
+          author_name: string;
+          author_email: string | null;
+          body: string;
+          created_at: string;
+        },
+        {
+          id?: string;
+          material_id: string;
+          user_id?: string | null;
+          author_name?: string;
+          author_email?: string | null;
+          body: string;
+          created_at?: string;
+        },
+        {
+          id?: string;
+          material_id?: string;
+          user_id?: string | null;
+          author_name?: string;
+          author_email?: string | null;
+          body?: string;
+          created_at?: string;
+        }
+      >;
       library_items: TableDefinition<
         {
           id: string;

@@ -1,0 +1,24 @@
+export type CommunityFeedItem = {
+  id: string;
+  userId: string;
+  ownerEmail: string;
+  authorName: string;
+  authorAvatarUrl: string | null;
+  title: string;
+  description: string;
+  etapa: string;
+  anoSerie: string;
+  componente: string;
+  tipoMaterial: string;
+  tema: string;
+  tags: string[];
+  fileName: string;
+  fileMime: string;
+  fileSize: number;
+  isPublished: boolean;
+  downloadsCount: number;
+  likesCount: number;
+  likedByMe: boolean;
+  signedUrl: string | null;
+  createdAt: string | null;
+};

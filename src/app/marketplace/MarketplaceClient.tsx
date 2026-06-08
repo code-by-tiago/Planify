@@ -1,10 +1,9 @@
 "use client";
 
+import { CommunityFeed } from "@/components/community/CommunityFeed";
 import { CommunityProfilePanel } from "@/components/community/CommunityProfilePanel";
-import { MarketplaceComments } from "@/components/marketplace/MarketplaceComments";
 import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
 import { PlanifyPageHero } from "@/components/pro/PlanifyPageHero";
-import { PlanifyOwlMark } from "@/components/pro/PlanifyOwlMark";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import {
   downloadMarketplaceMaterial,
@@ -17,6 +16,7 @@ type MarketplaceItem = {
   userId: string;
   ownerEmail: string;
   authorName: string;
+  authorAvatarUrl: string | null;
   title: string;
   description: string;
   etapa: string;
@@ -30,6 +30,8 @@ type MarketplaceItem = {
   fileSize: number;
   isPublished: boolean;
   downloadsCount: number;
+  likesCount: number;
+  likedByMe: boolean;
   signedUrl: string | null;
   createdAt: string | null;
 };
@@ -130,75 +132,11 @@ function formatBytes(value: number) {
   return `${(value / 1024 / 1024).toFixed(1)} MB`;
 }
 
-function formatDate(value: string | null) {
-  if (!value) return "";
-  try {
-    return new Intl.DateTimeFormat("pt-BR", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    }).format(new Date(value));
-  } catch {
-    return "";
-  }
-}
-
-function MaterialDownloadButtons({
-  item,
-  downloadingKey,
-  onDownload,
-  compact,
-}: {
-  item: MarketplaceItem;
-  downloadingKey: string | null;
-  onDownload: (item: MarketplaceItem, format: MarketplaceDownloadFormat) => void;
-  compact?: boolean;
-}) {
-  if (!item.fileName && !item.signedUrl) {
-    return (
-      <span className="text-[11px] font-semibold text-amber-700">
-        Anexo indisponível
-      </span>
-    );
-  }
-
-  const btnClass = compact
-    ? "flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-[11px] font-bold"
-    : "flex flex-1 items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-xs font-bold";
-
-  return (
-    <div
-      className="flex gap-2"
-      onClick={(event) => event.stopPropagation()}
-      onKeyDown={(event) => event.stopPropagation()}
-    >
-      <button
-        type="button"
-        disabled={Boolean(downloadingKey)}
-        onClick={() => onDownload(item, "docx")}
-        className={`${btnClass} pl-hud-btn disabled:opacity-60`}
-      >
-        <PlanifyIcon name="download" className="h-3.5 w-3.5" />
-        {downloadingKey === `${item.id}:docx` ? "DOCX…" : "Baixar DOCX"}
-      </button>
-      <button
-        type="button"
-        disabled={Boolean(downloadingKey)}
-        onClick={() => onDownload(item, "pdf")}
-        className={`${btnClass} pl-hud-btn-secondary disabled:opacity-60`}
-      >
-        <PlanifyIcon name="download" className="h-3.5 w-3.5" />
-        {downloadingKey === `${item.id}:pdf` ? "PDF…" : "Baixar PDF"}
-      </button>
-    </div>
-  );
-}
-
 export function MarketplaceClient() {
   const [form, setForm] = useState<FormState>(() => createInitialForm());
   const [file, setFile] = useState<File | null>(null);
   const [items, setItems] = useState<MarketplaceItem[]>([]);
-  const [selected, setSelected] = useState<MarketplaceItem | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [etapaFilter, setEtapaFilter] = useState("Todas");
   const [mineOnly, setMineOnly] = useState(false);
@@ -228,7 +166,7 @@ export function MarketplaceClient() {
 
       const remoteItems = Array.isArray(data.items) ? data.items : [];
       setItems(remoteItems);
-      setSelected(remoteItems[0] || null);
+      setCurrentUserId(String(data.access?.userId || "") || null);
       setStatus(
         nextMineOnly
           ? `${remoteItems.length} material(is) publicado(s) por você.`
@@ -236,7 +174,6 @@ export function MarketplaceClient() {
       );
     } catch (err) {
       setItems([]);
-      setSelected(null);
       setError(err instanceof Error ? err.message : "Erro ao carregar Comunidade.");
       setStatus("Comunidade indisponível no momento.");
     } finally {
@@ -322,7 +259,6 @@ export function MarketplaceClient() {
       setForm(createInitialForm());
       setFile(null);
       setItems((current) => [newItem, ...current]);
-      setSelected(newItem);
       setPublishOpen(false);
       setStatus("Material publicado na Comunidade com sucesso.");
     } catch (err) {
@@ -354,7 +290,6 @@ export function MarketplaceClient() {
       }
 
       setItems((current) => current.filter((candidate) => candidate.id !== item.id));
-      setSelected((current) => (current?.id === item.id ? null : current));
       setStatus("Material removido com sucesso.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao remover material.");
@@ -385,11 +320,6 @@ export function MarketplaceClient() {
             ? { ...candidate, downloadsCount: candidate.downloadsCount + 1 }
             : candidate,
         ),
-      );
-      setSelected((current) =>
-        current?.id === item.id
-          ? { ...current, downloadsCount: current.downloadsCount + 1 }
-          : current,
       );
       setStatus(`Download ${format.toUpperCase()} iniciado.`);
     } catch (err) {
@@ -621,140 +551,16 @@ export function MarketplaceClient() {
           <p className="mt-3 text-xs font-medium text-slate-500">{status}</p>
         </section>
 
-        {loading && items.length === 0 ? (
-          <div className="pl-hud-glass flex items-center justify-center rounded-2xl p-12">
-            <span className="text-sm font-semibold text-cyan-700">
-              Carregando Comunidade...
-            </span>
-          </div>
-        ) : filteredItems.length > 0 ? (
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {filteredItems.map((item) => {
-              const isSelected = selected?.id === item.id;
-              return (
-                <article
-                  key={item.id}
-                  className={`pl-hud-hub-app flex min-h-[16rem] flex-col rounded-2xl p-4 transition ${
-                    isSelected
-                      ? "border-cyan-400/50 shadow-sm"
-                      : ""
-                  }`}
-                >
-                  <button
-                    type="button"
-                    onClick={() => setSelected(item)}
-                    className="flex flex-1 flex-col text-left"
-                  >
-                    <span className="inline-flex w-fit rounded-full border border-cyan-400/20 bg-cyan-50 px-2.5 py-0.5 text-[10px] font-bold uppercase text-cyan-800">
-                      {item.tipoMaterial}
-                    </span>
-                    <h3 className="mt-3 line-clamp-2 text-base font-extrabold leading-snug text-slate-950">
-                      {item.title}
-                    </h3>
-                    <p className="mt-2 line-clamp-2 text-xs leading-5 text-slate-600">
-                      {item.description}
-                    </p>
-                    <div className="mt-auto space-y-1 pt-3 text-[11px] font-medium text-slate-500">
-                      <p className="font-semibold text-slate-700">{item.authorName}</p>
-                      <p>
-                        {item.componente} · {item.etapa} · {item.anoSerie}
-                      </p>
-                      <p>
-                        {formatBytes(item.fileSize)}
-                        {item.downloadsCount > 0
-                          ? ` · ${item.downloadsCount} download(s)`
-                          : ""}
-                      </p>
-                    </div>
-                  </button>
-                  <div className="mt-3 border-t border-cyan-400/10 pt-3">
-                    <MaterialDownloadButtons
-                      item={item}
-                      downloadingKey={downloadingKey}
-                      onDownload={handleDownload}
-                      compact
-                    />
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-        ) : (
-          <section className="pl-hud-glass flex flex-col items-center rounded-2xl px-6 py-12 text-center">
-            <PlanifyOwlMark size={80} glow />
-            <p className="mt-4 text-xs font-bold uppercase tracking-wide text-cyan-600">
-              Comunidade vazia
-            </p>
-            <h3 className="mt-2 text-xl font-extrabold text-slate-950">
-              Nenhum material compartilhado ainda
-            </h3>
-            <p className="mt-2 max-w-md text-sm text-slate-600">
-              Seja o primeiro a publicar — ou ajuste os filtros de busca.
-            </p>
-            <button
-              type="button"
-              onClick={() => setPublishOpen(true)}
-              className="pl-hud-btn mt-6 rounded-xl px-6 py-2.5 text-sm font-semibold"
-            >
-              Publicar material
-            </button>
-          </section>
-        )}
-
-        {selected ? (
-          <section className="pl-hud-glass rounded-2xl p-5 sm:p-6">
-            <p className="text-[10px] font-bold uppercase tracking-wide text-cyan-600">
-              Detalhes
-            </p>
-            <h2 className="mt-2 text-2xl font-extrabold text-slate-950">
-              {selected.title}
-            </h2>
-            <p className="mt-3 text-sm leading-7 text-slate-600">
-              {selected.description}
-            </p>
-
-            <div className="mt-5 grid gap-2 sm:grid-cols-3">
-              {[
-                ["Autor", selected.authorName],
-                ["Componente", selected.componente],
-                ["Etapa", `${selected.etapa} · ${selected.anoSerie}`],
-                ["Tipo", selected.tipoMaterial],
-                ["Tema", selected.tema || "—"],
-                ["Publicado", formatDate(selected.createdAt) || "—"],
-              ].map(([label, value]) => (
-                <div
-                  key={label}
-                  className="rounded-xl border border-cyan-400/15 bg-white/70 px-3 py-2.5"
-                >
-                  <p className="text-[10px] font-bold uppercase text-slate-500">
-                    {label}
-                  </p>
-                  <p className="mt-1 text-sm font-semibold text-slate-900">{value}</p>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-              <MaterialDownloadButtons
-                item={selected}
-                downloadingKey={downloadingKey}
-                onDownload={handleDownload}
-              />
-              <button
-                type="button"
-                onClick={() => removeItem(selected)}
-                disabled={loading}
-                className="rounded-xl border border-rose-200 bg-rose-50 px-5 py-2.5 text-sm font-semibold text-rose-700 disabled:opacity-60"
-              >
-                Remover meu material
-              </button>
-            </div>
-
-            <div className="mt-6 border-t border-cyan-400/10 pt-5">
-              <MarketplaceComments materialId={selected.id} />
-            </div>
-          </section>
-        ) : null}
+        <CommunityFeed
+          items={filteredItems}
+          loading={loading}
+          downloadingKey={downloadingKey}
+          onDownload={handleDownload}
+          onRemove={removeItem}
+          mineOnly={mineOnly}
+          currentUserId={currentUserId}
+          onPublishClick={() => setPublishOpen(true)}
+        />
 
         {error && !publishOpen ? (
           <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm font-semibold text-rose-800">

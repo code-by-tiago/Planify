@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyPremiumAccess } from "../../../../../../server/auth/premium-access-service";
+import { resolveUserDisplayName } from "../../../../../../server/auth/user-display-name";
 import { getSupabaseAdminClient } from "../../../../../../server/supabase/admin-client";
 
 export const runtime = "nodejs";
@@ -95,12 +96,15 @@ export async function POST(
     return jsonError("Material não encontrado.", 404);
   }
 
+  const displayName = await resolveUserDisplayName({
+    userId: access.user?.id || "",
+    email: access.user?.email || null,
+  });
+
   const row = {
     material_id: materialId,
     user_id: access.user?.id || null,
-    author_name: String(
-      payload.authorName || access.user?.email?.split("@")[0] || "Professor",
-    ),
+    author_name: String(payload.authorName || displayName || "Professor"),
     author_email: access.user?.email || null,
     body: text,
   };

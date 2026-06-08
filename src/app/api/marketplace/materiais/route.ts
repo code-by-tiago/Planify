@@ -6,6 +6,10 @@ import { resolveAdminAccess } from "../../../../server/auth/admin-access";
 import { isOwnerEmail } from "../../../../server/auth/owner-emails";
 import { getSupabaseAdminClient } from "../../../../server/supabase/admin-client";
 import { resolveMarketplaceStoredMime } from "../../../../server/marketplace/marketplace-download";
+import {
+  getMaterialLikesSummary,
+  resolveCommunityAuthors,
+} from "../../../../server/community/marketplace-social-service";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -258,7 +262,36 @@ async function withSignedUrl(row: MarketplaceRow) {
     signedUrl,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    authorAvatarUrl: null as string | null,
+    likesCount: 0,
+    likedByMe: false,
   };
+}
+
+async function enrichMarketplaceItems(
+  items: Awaited<ReturnType<typeof withSignedUrl>>[],
+  viewerUserId?: string | null,
+) {
+  const userIds = items.map((item) => item.userId).filter(Boolean);
+  const materialIds = items.map((item) => item.id);
+
+  const [authors, likes] = await Promise.all([
+    resolveCommunityAuthors(userIds),
+    getMaterialLikesSummary({ materialIds, viewerUserId }),
+  ]);
+
+  return items.map((item) => {
+    const author = authors.get(item.userId);
+    const like = likes.get(item.id) || { likesCount: 0, likedByMe: false };
+
+    return {
+      ...item,
+      authorName: author?.displayName || item.authorName,
+      authorAvatarUrl: author?.avatarUrl || null,
+      likesCount: like.likesCount,
+      likedByMe: like.likedByMe,
+    };
+  });
 }
 
 export async function GET(request: NextRequest) {
@@ -300,9 +333,10 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const items = await Promise.all(
+  const baseItems = await Promise.all(
     ((data || []) as MarketplaceRow[]).map((row) => withSignedUrl(row)),
   );
+  const items = await enrichMarketplaceItems(baseItems, access.userId || null);
 
   return NextResponse.json({
     success: true,
@@ -431,9 +465,12 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const baseItem = await withSignedUrl(data as MarketplaceRow);
+  const [item] = await enrichMarketplaceItems([baseItem], access.userId || null);
+
   return NextResponse.json({
     success: true,
-    item: await withSignedUrl(data as MarketplaceRow),
+    item,
   });
 }
 

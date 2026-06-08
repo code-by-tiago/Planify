@@ -34,18 +34,17 @@ type ProfileRow = {
 async function countUserMaterials(userId: string): Promise<number> {
   const supabase = getSupabaseAdminClient();
 
-  const [marketplace, documents] = await Promise.all([
-    supabase
-      .from("marketplace_items")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", userId),
-    supabase
-      .from("documents")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", userId),
-  ]);
+  const { count, error } = await supabase
+    .from("marketplace_materials")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .eq("is_published", true);
 
-  return (marketplace.count || 0) + (documents.count || 0);
+  if (error) {
+    return 0;
+  }
+
+  return count || 0;
 }
 
 async function countUserClasses(userId: string): Promise<number> {
@@ -109,7 +108,7 @@ export async function getCommunityProfileForUser(params: {
     email: row?.email || params.email,
     schoolName: row?.school_name?.trim() || null,
     bio: row?.bio?.trim() || null,
-    avatarUrl,
+    avatarUrl: row?.avatar_url || avatarUrl,
     communityPublic: row?.community_public !== false,
     stats: {
       classesCount,
@@ -117,6 +116,144 @@ export async function getCommunityProfileForUser(params: {
       followersCount: 0,
       followingCount: 0,
     },
+  };
+}
+
+export type PublicCommunityProfile = {
+  userId: string;
+  fullName: string;
+  schoolName: string | null;
+  bio: string | null;
+  avatarUrl: string | null;
+  communityPublic: boolean;
+  isOwnProfile: boolean;
+  stats: CommunityProfileStats;
+  materials: Array<{
+    id: string;
+    title: string;
+    description: string;
+    tipoMaterial: string;
+    componente: string;
+    etapa: string;
+    anoSerie: string;
+    downloadsCount: number;
+    createdAt: string | null;
+  }>;
+};
+
+type MarketplaceMaterialRow = {
+  id: string;
+  title: string;
+  description: string | null;
+  tipo_material: string | null;
+  componente: string | null;
+  etapa: string | null;
+  ano_serie: string | null;
+  downloads_count: number | null;
+  created_at: string | null;
+  is_published: boolean | null;
+};
+
+export async function getPublicCommunityProfile(params: {
+  targetUserId: string;
+  viewerUserId?: string | null;
+}): Promise<PublicCommunityProfile | null> {
+  const supabase = getSupabaseAdminClient();
+
+  let row = null as ProfileRow | null;
+
+  const profileResult = await supabase
+    .from("profiles")
+    .select("id,email,full_name,school_name,avatar_url,bio,community_public")
+    .eq("id", params.targetUserId)
+    .maybeSingle();
+
+  if (profileResult.error?.message?.includes("bio")) {
+    const fallback = await supabase
+      .from("profiles")
+      .select("id,email,full_name,school_name,avatar_url")
+      .eq("id", params.targetUserId)
+      .maybeSingle();
+    row = (fallback.data || null) as ProfileRow | null;
+  } else {
+    row = (profileResult.data || null) as ProfileRow | null;
+  }
+
+  if (!row) {
+    return null;
+  }
+
+  const isOwnProfile = params.viewerUserId === params.targetUserId;
+  const communityPublic = row.community_public !== false;
+
+  if (!communityPublic && !isOwnProfile) {
+    return {
+      userId: params.targetUserId,
+      fullName: "Perfil privado",
+      schoolName: null,
+      bio: null,
+      avatarUrl: null,
+      communityPublic: false,
+      isOwnProfile: false,
+      stats: {
+        classesCount: 0,
+        materialsCount: 0,
+        followersCount: 0,
+        followingCount: 0,
+      },
+      materials: [],
+    };
+  }
+
+  const [fullName, avatarUrl, materialsCount, classesCount, materialsResult] =
+    await Promise.all([
+      resolveUserDisplayName({
+        userId: params.targetUserId,
+        email: row.email,
+      }),
+      resolveUserAvatarUrl({ userId: params.targetUserId }),
+      countUserMaterials(params.targetUserId),
+      countUserClasses(params.targetUserId),
+      supabase
+        .from("marketplace_materials")
+        .select(
+          "id,title,description,tipo_material,componente,etapa,ano_serie,downloads_count,created_at,is_published",
+        )
+        .eq("user_id", params.targetUserId)
+        .eq("is_published", true)
+        .order("created_at", { ascending: false })
+        .limit(50),
+    ]);
+
+  const materials = ((materialsResult.data || []) as MarketplaceMaterialRow[]).map(
+    (material) => ({
+      id: material.id,
+      title: material.title,
+      description: material.description || "",
+      tipoMaterial: material.tipo_material || "Material de apoio",
+      componente: material.componente || "Multicomponente",
+      etapa: material.etapa || "Ensino Fundamental",
+      anoSerie: material.ano_serie || "Geral",
+      downloadsCount: material.downloads_count || 0,
+      createdAt: material.created_at,
+    }),
+  );
+
+  return {
+    userId: params.targetUserId,
+    fullName: row.full_name?.trim() || fullName,
+    schoolName: row.school_name?.trim() || null,
+    bio: row.bio?.trim() || null,
+    avatarUrl: row.avatar_url || avatarUrl,
+    communityPublic,
+    isOwnProfile,
+    stats: {
+      classesCount,
+      materialsCount,
+      followersCount: 0,
+      followingCount: 0,
+    },
+    materials,
   };
 }
 

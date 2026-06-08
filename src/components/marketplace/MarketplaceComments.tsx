@@ -1,10 +1,12 @@
 "use client";
 
+import { CommunityAuthorLink } from "@/components/community/CommunityAuthorLink";
 import { getCurrentAccessToken } from "@/lib/auth/session-client";
 import { useCallback, useEffect, useState } from "react";
 
 type Comment = {
   id: string;
+  user_id: string | null;
   author_name: string;
   author_email: string | null;
   body: string;
@@ -13,9 +15,10 @@ type Comment = {
 
 type MarketplaceCommentsProps = {
   materialId: string;
+  embedded?: boolean;
 };
 
-export function MarketplaceComments({ materialId }: MarketplaceCommentsProps) {
+export function MarketplaceComments({ materialId, embedded }: MarketplaceCommentsProps) {
   const [comments, setComments] = useState<Comment[]>([]);
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(true);
@@ -95,8 +98,12 @@ export function MarketplaceComments({ materialId }: MarketplaceCommentsProps) {
     }
   }
 
+  const shellClass = embedded
+    ? "mt-2 rounded-2xl border border-violet-100/80 bg-violet-50/30 p-4"
+    : "mt-8 rounded-[1.5rem] border border-violet-100 bg-violet-50/40 p-5";
+
   return (
-    <div className="mt-8 rounded-[1.5rem] border border-violet-100 bg-violet-50/40 p-5">
+    <div className={shellClass}>
       <p className="text-xs font-black uppercase tracking-[0.22em] text-violet-700">
         Comentários da comunidade
       </p>
@@ -115,8 +122,12 @@ export function MarketplaceComments({ materialId }: MarketplaceCommentsProps) {
                 key={comment.id}
                 className="rounded-2xl border border-white bg-white/90 px-4 py-3 shadow-sm"
               >
-                <p className="text-xs font-black text-violet-900">
-                  {comment.author_name}
+                <p className="text-xs text-violet-900">
+                  <CommunityAuthorLink
+                    userId={comment.user_id}
+                    name={comment.author_name}
+                    className="text-violet-900"
+                  />
                   <span className="ml-2 font-semibold text-violet-500">
                     {new Intl.DateTimeFormat("pt-BR", {
                       dateStyle: "short",

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
+import { parseJsonResponse } from "@/lib/http/parse-json-response";
 
 type CommunityProfileStats = {
   classesCount: number;
@@ -60,10 +61,17 @@ export function CommunityProfilePanel() {
         cache: "no-store",
         credentials: "include",
       });
-      const data = await response.json();
+      const data = await parseJsonResponse<{
+        profile?: CommunityProfile;
+        error?: { message?: string };
+      }>(response);
 
       if (!response.ok) {
         throw new Error(data?.error?.message || "Não foi possível carregar o perfil.");
+      }
+
+      if (!data?.profile) {
+        throw new Error("Resposta inválida ao carregar o perfil.");
       }
 
       setProfile(data.profile);
@@ -102,10 +110,17 @@ export function CommunityProfilePanel() {
           communityPublic: draft.communityPublic,
         }),
       });
-      const data = await response.json();
+      const data = await parseJsonResponse<{
+        profile?: CommunityProfile;
+        error?: { message?: string };
+      }>(response);
 
       if (!response.ok) {
         throw new Error(data?.error?.message || "Não foi possível salvar o perfil.");
+      }
+
+      if (!data?.profile) {
+        throw new Error("Resposta inválida ao salvar o perfil.");
       }
 
       setProfile(data.profile);
@@ -135,10 +150,22 @@ export function CommunityProfilePanel() {
         credentials: "include",
         body,
       });
-      const data = await response.json();
+      const data = await parseJsonResponse<{
+        profile?: CommunityProfile;
+        error?: { message?: string };
+      }>(response);
 
       if (!response.ok) {
-        throw new Error(data?.error?.message || "Não foi possível enviar a foto.");
+        throw new Error(
+          data?.error?.message ||
+            (response.status === 413
+              ? "A imagem é grande demais (máx. 2 MB)."
+              : "Não foi possível enviar a foto."),
+        );
+      }
+
+      if (!data?.profile) {
+        throw new Error("Resposta inválida ao enviar a foto.");
       }
 
       setProfile(data.profile);
@@ -151,9 +178,13 @@ export function CommunityProfilePanel() {
   }
 
   function shareProfile() {
-    const url = window.location.href;
+    if (!profile) {
+      return;
+    }
+
+    const url = `${window.location.origin}/marketplace/perfil/${profile.userId}`;
     void navigator.clipboard.writeText(url).then(() => {
-      setStatus("Link da Comunidade copiado.");
+      setStatus("Link do seu perfil copiado.");
     });
   }
 

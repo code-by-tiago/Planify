@@ -1,7 +1,5 @@
 import { redirect } from "next/navigation";
-import { PublicHeader } from "@/components/public/PublicHeader";
-import { PublicFooter } from "@/components/public/PublicFooter";
-import { PlanifyHomePage } from "@/components/public/landing/PlanifyHomePage";
+import { LandingProfessorPrimeiroPage } from "@/components/public/landing-professor-primeiro/LandingProfessorPrimeiroPage";
 
 type HomePageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -35,10 +33,8 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   }
 
   return (
-    <main className="planify-hud planify-ui3 planify-public planify-hud-landing flex min-h-screen flex-col overflow-x-clip bg-white">
-      <PublicHeader active="home" />
-      <PlanifyHomePage />
-      <PublicFooter />
+    <main className="flex min-h-screen flex-col overflow-x-clip bg-gradient-to-b from-white via-emerald-50/40 to-slate-50">
+      <LandingProfessorPrimeiroPage />
     </main>
   );
 }

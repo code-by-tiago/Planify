@@ -1,3 +1,5 @@
+import type { Metadata } from "next";
+import { buildPageMetadata } from "@/lib/seo/metadata";
 import { LoginPageClient } from "./LoginPageClient";
 
 export type LoginSearchParams = {
@@ -11,6 +13,13 @@ export type LoginSearchParams = {
 type LoginPageProps = {
   searchParams: Promise<LoginSearchParams>;
 };
+
+export const metadata: Metadata = buildPageMetadata({
+  title: "Entrar ou criar conta",
+  description:
+    "Acesse o Planify IA Educacional: login ou cadastro para professores e gestores escolares usarem geradores com IA, editor e exportação DOCX.",
+  path: "/login",
+});
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
   const params = await searchParams;

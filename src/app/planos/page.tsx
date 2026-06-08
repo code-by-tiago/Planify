@@ -1,5 +1,7 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { PublicProfessorPrimeiroLayout } from "@/components/public/PublicProfessorPrimeiroLayout";
+import { buildPageMetadata } from "@/lib/seo/metadata";
 import { PlanCheckoutLink } from "@/components/planos/PlanCheckoutLink";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { LandingFaq } from "@/components/public/landing/LandingFaq";
@@ -22,6 +24,13 @@ import { billingPlans } from "../../types/billing";
 import { landingPublicToolCount } from "@/lib/pro/teachyLanding";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = buildPageMetadata({
+  title: "Planos e preços",
+  description:
+    "Planos Pro e Premium do Planify IA Educacional: geradores com IA, planejamentos BNCC, editor integrado, biblioteca e exportação DOCX para professores.",
+  path: "/planos",
+});
 
 type PlanosPageProps = {
   searchParams?: Promise<{

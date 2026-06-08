@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PublicProfessorPrimeiroLayout } from "@/components/public/PublicProfessorPrimeiroLayout";
+import { buildPageMetadata } from "@/lib/seo/metadata";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import {
   ppBadge,
@@ -21,11 +22,12 @@ import { EscolasPlanActions } from "./EscolasPlanActions";
 
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = {
-  title: "Planify para Escolas | Gestão Pedagógica e Conformidade BNCC",
+export const metadata: Metadata = buildPageMetadata({
+  title: "Planify para escolas",
   description:
-    "Plataforma institucional para gestores escolares: controle pedagógico, conformidade com a BNCC, auditoria atualizada automaticamente e portal exclusivo para diretores e coordenadores.",
-};
+    "Plataforma institucional Planify IA Educacional para gestores escolares: controle pedagógico, conformidade BNCC, portal do gestor e licenciamento por professor.",
+  path: "/escolas",
+});
 
 const benefits = [
   {

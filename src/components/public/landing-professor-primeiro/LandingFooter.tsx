@@ -2,15 +2,18 @@ import Link from "next/link";
 import { OwnerFooterLink } from "@/components/OwnerFooterLink";
 import { PlanifyBrand } from "@/components/pro/PlanifyBrand";
 
-const PRODUCT_LINKS = [
-  { href: "/planejamentos", label: "Planejamentos" },
-  { href: "/materiais", label: "Materiais" },
-  { href: "/editor", label: "Editor" },
-  { href: "/biblioteca", label: "Biblioteca" },
+const SOLUTION_LINKS = [
+  { href: "/planejamento-escolar-com-ia", label: "Planejamento escolar" },
+  { href: "/gerador-de-atividades-com-ia", label: "Atividades com IA" },
+  { href: "/gerador-de-provas-com-ia", label: "Provas com IA" },
+  { href: "/gerador-de-jogos-pedagogicos", label: "Jogos pedagógicos" },
+  { href: "/apostilas-com-ia-para-professores", label: "Apostilas com IA" },
+  { href: "/editor-de-documentos-para-professores", label: "Editor de documentos" },
 ];
 
 const RESOURCE_LINKS = [
   { href: "/#recursos", label: "Recursos" },
+  { href: "/#solucoes", label: "Soluções" },
   { href: "/#como-funciona", label: "Como funciona" },
   { href: "/escolas", label: "Para escolas" },
 ];
@@ -22,14 +25,15 @@ export function LandingFooter() {
         <div className="sm:col-span-2 lg:col-span-1">
           <PlanifyBrand href="/" hideTagline />
           <p className="mt-4 max-w-xs text-sm font-medium leading-7 text-slate-500">
-            IA pedagógica para professores — planejamentos, materiais e exportação DOCX.
+            Planify IA Educacional — plataforma educacional com IA para professores criarem
+            planejamentos, atividades, provas e documentos editáveis.
           </p>
         </div>
 
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Produto</p>
+          <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Soluções</p>
           <nav className="mt-4 grid gap-2.5">
-            {PRODUCT_LINKS.map((item) => (
+            {SOLUTION_LINKS.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}

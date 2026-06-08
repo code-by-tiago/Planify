@@ -1,9 +1,19 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { StructuredData } from "@/components/seo/StructuredData";
 import { LandingProfessorPrimeiroPage } from "@/components/public/landing-professor-primeiro/LandingProfessorPrimeiroPage";
+import { buildPageMetadata } from "@/lib/seo/metadata";
+import { SEO } from "@/lib/seo/constants";
 
 type HomePageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
+
+export const metadata: Metadata = buildPageMetadata({
+  title: SEO.descriptionShort,
+  description: SEO.descriptionFull,
+  path: "/",
+});
 
 /**
  * A raiz "/" é a landing pública do Planify (sem login).
@@ -33,8 +43,11 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   }
 
   return (
-    <main className="planify-hud planify-ui3 planify-hud-landing planify-public flex min-h-screen flex-col overflow-x-hidden bg-white sm:overflow-x-clip sm:bg-gradient-to-b sm:from-white sm:via-sky-50/60 sm:to-[var(--planify-canvas)]">
-      <LandingProfessorPrimeiroPage />
-    </main>
+    <>
+      <StructuredData />
+      <main className="planify-hud planify-ui3 planify-hud-landing planify-public flex min-h-screen flex-col overflow-x-hidden bg-white sm:overflow-x-clip sm:bg-gradient-to-b sm:from-white sm:via-sky-50/60 sm:to-[var(--planify-canvas)]">
+        <LandingProfessorPrimeiroPage />
+      </main>
+    </>
   );
 }

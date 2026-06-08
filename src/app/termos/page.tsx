@@ -1,14 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { LegalPageShell } from "@/components/public/LegalPageShell";
+import { buildPageMetadata } from "@/lib/seo/metadata";
 
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = {
-  title: "Termos de Uso | Planify",
+export const metadata: Metadata = buildPageMetadata({
+  title: "Termos de uso",
   description:
-    "Condições de uso do Planify: planos, créditos, ferramentas de IA pedagógica e responsabilidades do professor.",
-};
+    "Condições de uso do Planify IA Educacional: planos, créditos, ferramentas de IA pedagógica e responsabilidades do professor.",
+  path: "/termos",
+});
 
 const UPDATED = "5 de junho de 2026";
 

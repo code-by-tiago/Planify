@@ -1,14 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { LegalPageShell } from "@/components/public/LegalPageShell";
+import { buildPageMetadata } from "@/lib/seo/metadata";
 
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = {
-  title: "Política de Privacidade | Planify",
+export const metadata: Metadata = buildPageMetadata({
+  title: "Política de privacidade",
   description:
-    "Como o Planify trata dados pessoais de professores, integrações Google e pagamentos, em conformidade com a LGPD.",
-};
+    "Como o Planify IA Educacional trata dados pessoais de professores, integrações Google e pagamentos, em conformidade com a LGPD.",
+  path: "/privacidade",
+});
 
 const UPDATED = "5 de junho de 2026";
 

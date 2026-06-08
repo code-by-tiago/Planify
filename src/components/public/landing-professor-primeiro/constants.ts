@@ -17,31 +17,31 @@ export const CREATE_OPTIONS = [
     id: "planejamento",
     label: "Planejamento",
     icon: "clipboard" as const,
-    href: "/planejamentos",
+    href: "/planejamento-escolar-com-ia",
   },
   {
     id: "prova",
     label: "Prova",
     icon: "listChecks" as const,
-    href: "/dashboard?tipo=prova",
+    href: "/gerador-de-provas-com-ia",
   },
   {
     id: "slides",
     label: "Slides / Aula",
     icon: "presentation" as const,
-    href: "/dashboard?tipo=slides",
+    href: "/login",
   },
   {
     id: "apostila",
     label: "Apostila / Material",
     icon: "book" as const,
-    href: "/dashboard?tipo=apostila",
+    href: "/apostilas-com-ia-para-professores",
   },
   {
     id: "atividades",
     label: "Atividades",
     icon: "puzzle" as const,
-    href: "/dashboard?tipo=atividade",
+    href: "/gerador-de-atividades-com-ia",
   },
 ] as const;
 

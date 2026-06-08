@@ -1,5 +1,7 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { PublicProfessorPrimeiroLayout } from "@/components/public/PublicProfessorPrimeiroLayout";
+import { buildPageMetadata } from "@/lib/seo/metadata";
 import { ContatoClient } from "./ContatoClient";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import {
@@ -12,6 +14,13 @@ import {
 } from "@/components/public/landing-professor-primeiro/theme";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = buildPageMetadata({
+  title: "Contato e suporte",
+  description:
+    "Fale com o suporte do Planify IA Educacional: dúvidas sobre assinatura, acesso, parcerias e suporte pedagógico para professores.",
+  path: "/contato",
+});
 
 export default function ContatoPage() {
   return (

@@ -5,6 +5,7 @@ import { verifyPremiumAccess } from "../../../../server/auth/premium-access-serv
 import { resolveAdminAccess } from "../../../../server/auth/admin-access";
 import { isOwnerEmail } from "../../../../server/auth/owner-emails";
 import { resolveUserAvatarFromToken } from "../../../../server/auth/user-avatar";
+import { resolveUserDisplayNameFromToken } from "../../../../server/auth/user-display-name";
 import { getSupabaseAdminClient } from "../../../../server/supabase/admin-client";
 import { buildPlanifyAccessContext } from "@/lib/bncc/access";
 import { resolveUserAccessProfile } from "../../../../server/auth/user-access-profile";
@@ -161,6 +162,10 @@ export async function GET(request: NextRequest) {
     ? await resolveUserAvatarFromToken(accessJwtToken)
     : null;
 
+  const displayName = authenticated
+    ? await resolveUserDisplayNameFromToken(accessJwtToken, email)
+    : "Professora";
+
   return NextResponse.json(
     {
       authenticated,
@@ -171,6 +176,7 @@ export async function GET(request: NextRequest) {
       isAdmin: Boolean(admin.isAdmin || isOwner),
       role: isOwner || admin.isAdmin ? "admin" : accessProfile.profileRole || access.user?.role || "teacher",
       email,
+      displayName,
       avatarUrl,
       planKey,
       tier: accessContext.tier,

@@ -49,6 +49,7 @@ export function usePlanifySession() {
           authenticated?: boolean;
           premium?: boolean;
           email?: string;
+          displayName?: string;
           avatarUrl?: string | null;
           isAdmin?: boolean;
           isOwner?: boolean;
@@ -58,6 +59,12 @@ export function usePlanifySession() {
         if (!active) return;
 
         const email = data?.email || "";
+        const displayName =
+          typeof data?.displayName === "string" && data.displayName.trim()
+            ? data.displayName.trim()
+            : email
+              ? formatDisplayNameFromEmail(email)
+              : "Professora";
         const avatarUrl =
           typeof data?.avatarUrl === "string" && data.avatarUrl.trim()
             ? data.avatarUrl.trim()
@@ -68,9 +75,7 @@ export function usePlanifySession() {
           authenticated: Boolean(data?.authenticated),
           premium: Boolean(data?.premium),
           email,
-          displayName: email
-            ? formatDisplayNameFromEmail(email)
-            : "Professora",
+          displayName,
           avatarUrl,
           planLabel: formatPlanLabel(data?.planKey, {
             isAdmin: data?.isAdmin,

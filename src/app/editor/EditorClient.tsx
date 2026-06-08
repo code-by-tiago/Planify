@@ -1467,8 +1467,9 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
         html: getEditorHtml(),
         format: "pdf",
         fallbackFileName: `${sanitizeFilename(title)}.pdf`,
+        documentType: documentSource?.type,
       });
-      setStatus("PDF baixado com o layout do editor.");
+      setStatus("PDF baixado com proporção de slide.");
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Erro ao baixar PDF.");
     }

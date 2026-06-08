@@ -12,6 +12,7 @@ export async function downloadEditorExport(params: {
   html: string;
   format: EditorExportFormat;
   fallbackFileName?: string;
+  documentType?: string | null;
 }): Promise<void> {
   const response = await planifyAuthenticatedFetch("/api/documentos/export", {
     method: "POST",
@@ -19,6 +20,7 @@ export async function downloadEditorExport(params: {
       title: params.title,
       html: params.html,
       format: params.format,
+      documentType: params.documentType ?? null,
     }),
   });
 

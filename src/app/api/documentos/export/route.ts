@@ -45,6 +45,8 @@ export async function POST(request: NextRequest) {
       title,
       html,
       format,
+      documentType:
+        typeof body?.documentType === "string" ? body.documentType : null,
     });
 
     return new NextResponse(new Uint8Array(exported.buffer), {

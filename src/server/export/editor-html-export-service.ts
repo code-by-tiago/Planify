@@ -1,5 +1,9 @@
 import { MAX_EXPORT_FILE_BYTES } from "@/lib/ai/material-generation-policy";
-import { wrapAsPlanifyExportHtml } from "../../lib/editor/editor-print-html";
+import { detectMaterialExportKind } from "@/lib/export/classroom-export-format";
+import {
+  wrapAsPlanifyExportHtml,
+  wrapAsSlideExportHtml,
+} from "../../lib/editor/editor-print-html";
 import { buildNativeHtmlDocx } from "../docx/simple-docx-builder";
 import { extractBodyHtml } from "../editor/html-inner-text";
 import { prepareHtmlForExport } from "../editor/prepare-export-html";
@@ -38,10 +42,29 @@ export function buildEditorExportDocumentHtml(title: string, html: string): stri
   return wrapAsPlanifyExportHtml(title, body);
 }
 
+export function buildEditorExportHtmlForProfile(
+  title: string,
+  html: string,
+  documentType?: string | null,
+): { exportHtml: string; pdfProfile: "document" | "slides" } {
+  const kind = detectMaterialExportKind(html, documentType);
+  const body = prepareHtmlForExport(resolveEditorHtmlBody(html));
+
+  if (kind === "slides") {
+    return { exportHtml: wrapAsSlideExportHtml(title, body), pdfProfile: "slides" };
+  }
+
+  return {
+    exportHtml: wrapAsPlanifyExportHtml(title, body),
+    pdfProfile: "document",
+  };
+}
+
 export async function exportEditorHtmlDocument(params: {
   title: string;
   html: string;
   format: EditorHtmlExportFormat;
+  documentType?: string | null;
 }): Promise<{ buffer: Buffer; contentType: string; filename: string }> {
   const title = String(params.title || "Documento Planify").trim() || "Documento Planify";
   const body = resolveEditorHtmlBody(params.html);
@@ -51,8 +74,37 @@ export async function exportEditorHtmlDocument(params: {
     throw new Error("O documento está vazio. Adicione conteúdo antes de exportar.");
   }
 
-  const exportHtml = buildEditorExportDocumentHtml(title, params.html);
+  const { exportHtml, pdfProfile } = buildEditorExportHtmlForProfile(
+    title,
+    params.html,
+    params.documentType,
+  );
   const filename = cleanFilename(title);
+
+  // #region agent log
+  fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Debug-Session-Id": "1b39d8",
+    },
+    body: JSON.stringify({
+      sessionId: "1b39d8",
+      runId: "pdf-export",
+      hypothesisId: "H4",
+      location: "editor-html-export-service.ts:exportEditorHtmlDocument",
+      message: "export profile resolved",
+      data: {
+        format: params.format,
+        pdfProfile,
+        documentType: params.documentType ?? null,
+        materialKind: detectMaterialExportKind(params.html, params.documentType),
+        usesSlideWrapper: pdfProfile === "slides",
+      },
+      timestamp: Date.now(),
+    }),
+  }).catch(() => {});
+  // #endregion
 
   if (params.format === "html") {
     const buffer = Buffer.from(exportHtml, "utf-8");
@@ -89,7 +141,7 @@ export async function exportEditorHtmlDocument(params: {
     };
   }
 
-  const pdfBuffer = await renderHtmlToPdfBuffer(exportHtml);
+  const pdfBuffer = await renderHtmlToPdfBuffer(exportHtml, pdfProfile);
   if (pdfBuffer.byteLength > MAX_EXPORT_FILE_BYTES) {
     throw new Error(
       "O documento é muito grande para exportar em PDF (máximo 15 MB). Reduza imagens ou divida o material.",

@@ -61,6 +61,7 @@ export async function exportMaterialToGoogle(
       title,
       html,
       format,
+      documentType: input.documentType,
     });
 
     buffer = exported.buffer;

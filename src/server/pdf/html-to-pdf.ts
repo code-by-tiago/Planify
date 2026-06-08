@@ -59,7 +59,15 @@ async function launchBrowser() {
   });
 }
 
-export async function renderHtmlToPdfBuffer(html: string): Promise<Buffer> {
+export type PdfRenderProfile = "document" | "slides";
+
+const SLIDE_PAGE = { width: "338mm", height: "190mm" } as const;
+const DOCUMENT_PAGE = { format: "A4" as const };
+
+export async function renderHtmlToPdfBuffer(
+  html: string,
+  profile: PdfRenderProfile = "document",
+): Promise<Buffer> {
   const browser = await launchBrowser();
 
   try {
@@ -87,17 +95,60 @@ export async function renderHtmlToPdfBuffer(html: string): Promise<Buffer> {
       );
     });
 
-    const pdf = await page.pdf({
-      format: "A4",
-      printBackground: true,
-      preferCSSPageSize: true,
-      margin: {
-        top: "12mm",
-        right: "12mm",
-        bottom: "12mm",
-        left: "12mm",
+    const slideCount =
+      profile === "slides"
+        ? await page.evaluate(
+            () => document.querySelectorAll(".planify-slide").length,
+          )
+        : 0;
+
+    const pdf =
+      profile === "slides"
+        ? await page.pdf({
+            width: SLIDE_PAGE.width,
+            height: SLIDE_PAGE.height,
+            printBackground: true,
+            preferCSSPageSize: true,
+            margin: { top: 0, right: 0, bottom: 0, left: 0 },
+          })
+        : await page.pdf({
+            format: DOCUMENT_PAGE.format,
+            printBackground: true,
+            preferCSSPageSize: true,
+            margin: {
+              top: "12mm",
+              right: "12mm",
+              bottom: "12mm",
+              left: "12mm",
+            },
+          });
+
+    // #region agent log
+    fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Debug-Session-Id": "1b39d8",
       },
-    });
+      body: JSON.stringify({
+        sessionId: "1b39d8",
+        runId: "pdf-export",
+        hypothesisId: "H1",
+        location: "html-to-pdf.ts:renderHtmlToPdfBuffer",
+        message: "pdf rendered",
+        data: {
+          profile,
+          slideCount,
+          pageSize:
+            profile === "slides"
+              ? `${SLIDE_PAGE.width}x${SLIDE_PAGE.height}`
+              : "A4-portrait",
+          pdfBytes: pdf.byteLength,
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
 
     return Buffer.from(pdf);
   } finally {

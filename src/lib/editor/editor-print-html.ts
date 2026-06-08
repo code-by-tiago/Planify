@@ -244,6 +244,76 @@ export const PLANIFY_EXPORT_CSS = `
   }
 `;
 
+/** Widescreen 13.33"×7.5" (mesma base do PPTX LAYOUT_WIDE) — um slide por página. */
+export const PLANIFY_SLIDE_EXPORT_CSS = `
+  @page {
+    size: 338mm 190mm;
+    margin: 0;
+  }
+  html, body, * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: #ffffff;
+    color: #0f172a;
+  }
+  .planify-export-document {
+    width: 338mm;
+    max-width: none;
+    margin: 0;
+    padding: 0;
+  }
+  .planify-slide-deck {
+    display: block;
+    margin: 0;
+    padding: 0;
+    background: transparent !important;
+  }
+  .planify-slide-deck > p:first-of-type {
+    display: none !important;
+  }
+  .planify-slide {
+    display: block;
+    width: 338mm !important;
+    height: 190mm !important;
+    min-height: 190mm !important;
+    max-width: none !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    overflow: hidden !important;
+    box-sizing: border-box;
+    page-break-after: always;
+    break-after: page;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  .planify-slide:last-child {
+    page-break-after: auto;
+    break-after: auto;
+  }
+  .planify-slide figure img,
+  .planify-slide-image {
+    max-height: 42% !important;
+    object-fit: contain !important;
+  }
+  img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+  }
+  [contenteditable],
+  button,
+  input,
+  select,
+  textarea {
+    outline: 0 !important;
+  }
+`;
+
 export function wrapAsPlanifyExportHtml(
   title: string,
   body: string,
@@ -283,4 +353,23 @@ export function wrapAsCleanPrintHtml(
   options?: { autoPrint?: boolean },
 ) {
   return wrapAsPlanifyExportHtml(title, body, options);
+}
+
+export function wrapAsSlideExportHtml(title: string, body: string) {
+  const safeTitle = escapeHtml(title || "Apresentação Planify");
+
+  return `<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <title>${safeTitle}</title>
+  <meta name="Generator" content="Planify" />
+  <style>${PLANIFY_SLIDE_EXPORT_CSS}</style>
+</head>
+<body>
+  <main class="planify-export-document">
+    ${body}
+  </main>
+</body>
+</html>`;
 }

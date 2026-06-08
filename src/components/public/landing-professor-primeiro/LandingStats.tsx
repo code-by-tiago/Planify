@@ -6,7 +6,7 @@ import { ppEyebrow } from "./theme";
 import { useLandingMobileStatic } from "./useLandingMobileStatic";
 
 const statCardClass =
-  "group relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm transition hover:border-cyan-200 hover:shadow-md";
+  "group relative overflow-visible rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm transition hover:border-cyan-200 sm:overflow-hidden sm:hover:shadow-md";
 
 export function LandingStats() {
   const reduce = useReducedMotion();

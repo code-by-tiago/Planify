@@ -1,15 +1,51 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import type { PlanifyIconName } from "@/lib/pro/planifyTools";
 import { CREATE_OPTIONS, type CreateOptionId } from "./constants";
+import styles from "./landing-create-block.module.css";
 
 export function LandingCreateBlock() {
   const [selected, setSelected] = useState<CreateOptionId>("planejamento");
 
   const active = CREATE_OPTIONS.find((o) => o.id === selected) ?? CREATE_OPTIONS[0];
+
+  useEffect(() => {
+    const container = document.querySelector("[data-landing-create]");
+    const btn = document.querySelector("[data-landing-create-option]");
+    if (!btn) return;
+
+    const cs = getComputedStyle(btn);
+    const cc = container ? getComputedStyle(container) : null;
+
+    // #region agent log
+    fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Debug-Session-Id": "1b39d8",
+      },
+      body: JSON.stringify({
+        sessionId: "1b39d8",
+        runId: "post-fix-v2",
+        hypothesisId: "A",
+        location: "LandingCreateBlock.tsx:mount",
+        message: "Create block computed styles",
+        data: {
+          innerWidth: window.innerWidth,
+          display: cc?.display ?? null,
+          btnOverflow: cs.overflow,
+          btnShadow: cs.boxShadow,
+          btnTransform: cs.transform,
+          btnClassList: btn.className,
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
+  }, []);
 
   return (
     <section className="isolate bg-white px-5 py-16 sm:px-8 sm:py-20">
@@ -19,10 +55,7 @@ export function LandingCreateBlock() {
             Hoje você quer criar:
           </h2>
 
-          <div
-            className="mt-6 flex flex-col gap-3 sm:grid sm:grid-cols-2 sm:gap-2.5 lg:grid-cols-5"
-            data-landing-create
-          >
+          <div className={styles.list} data-landing-create>
             {CREATE_OPTIONS.map((option) => {
               const isActive = selected === option.id;
               return (
@@ -31,17 +64,13 @@ export function LandingCreateBlock() {
                   type="button"
                   data-landing-create-option
                   onClick={() => setSelected(option.id)}
-                  className={`flex min-h-[5.5rem] touch-manipulation flex-col items-center justify-center gap-2 overflow-visible rounded-2xl border-2 px-3 py-4 text-center transition-colors ${
-                    isActive
-                      ? "border-cyan-500 bg-cyan-50 text-cyan-900"
-                      : "border-slate-200 bg-white text-slate-700 hover:border-cyan-200 hover:bg-cyan-50/40"
-                  }`}
+                  className={`${styles.option} ${isActive ? styles.optionActive : ""}`}
                 >
                   <PlanifyIcon
                     name={option.icon as PlanifyIconName}
-                    className={`h-5 w-5 shrink-0 ${isActive ? "text-cyan-600" : "text-slate-500"}`}
+                    className={styles.optionIcon}
                   />
-                  <span className="text-sm font-bold leading-tight">{option.label}</span>
+                  <span className={styles.optionLabel}>{option.label}</span>
                 </button>
               );
             })}

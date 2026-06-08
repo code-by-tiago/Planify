@@ -1143,16 +1143,24 @@ body a {
   text-underline-offset: 4px;
 }
 
-body button[class*="bg-white"],
-body a[class*="bg-white"] {
+body .planify-hud-app button[class*="bg-white"],
+body .planify-hud-app a[class*="bg-white"],
+body .pl-hud-shell button[class*="bg-white"],
+body .pl-hud-shell a[class*="bg-white"],
+body .pl-hud-hub button[class*="bg-white"],
+body .pl-hud-hub a[class*="bg-white"] {
   background: #ffffff !important;
   color: var(--pl-internal-text) !important;
   border: 1px solid var(--pl-internal-line) !important;
   box-shadow: var(--pl-internal-shadow-soft) !important;
 }
 
-body button[class*="bg-white"]:hover,
-body a[class*="bg-white"]:hover {
+body .planify-hud-app button[class*="bg-white"]:hover,
+body .planify-hud-app a[class*="bg-white"]:hover,
+body .pl-hud-shell button[class*="bg-white"]:hover,
+body .pl-hud-shell a[class*="bg-white"]:hover,
+body .pl-hud-hub button[class*="bg-white"]:hover,
+body .pl-hud-hub a[class*="bg-white"]:hover {
   background: #f8fafc !important;
   border-color: var(--pl-internal-line-strong) !important;
   transform: translateY(-1px);
@@ -1196,8 +1204,10 @@ body td {
   border-color: rgba(100, 116, 139, 0.30) !important;
 }
 
-/* Dashboard, Biblioteca, Marketplace, Admin: cards mais compactos */
-body [class*="grid"] > [class*="rounded-"][class*="border"] {
+/* Dashboard, Biblioteca, Marketplace, Admin: cards mais compactos (não na landing pública) */
+body .planify-hud-app [class*="grid"] > [class*="rounded-"][class*="border"],
+body .pl-hud-shell [class*="grid"] > [class*="rounded-"][class*="border"],
+body .pl-hud-hub [class*="grid"] > [class*="rounded-"][class*="border"] {
   overflow: hidden;
 }
 

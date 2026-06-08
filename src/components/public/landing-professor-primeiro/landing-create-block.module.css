@@ -1,0 +1,64 @@
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+@media (min-width: 640px) {
+  .list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.625rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .list {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+.option {
+  display: flex;
+  min-height: 5.5rem;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 1rem;
+  border: 2px solid #e2e8f0;
+  background: #ffffff;
+  padding: 1rem 0.75rem;
+  text-align: center;
+  touch-action: manipulation;
+  overflow: visible;
+  box-shadow: none;
+  transform: none;
+  color: #334155;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.optionLabel {
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.optionActive {
+  border-color: #06b6d4;
+  background: #ecfeff;
+  color: #164e63;
+}
+
+.optionIcon {
+  height: 1.25rem;
+  width: 1.25rem;
+  flex-shrink: 0;
+  color: #64748b;
+}
+
+.optionActive .optionIcon {
+  color: #0891b2;
+}

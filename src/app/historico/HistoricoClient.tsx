@@ -451,6 +451,7 @@ export function HistoricoClient() {
                   compact
                   title={selectedItem.title}
                   getHtml={getSelectedHtml}
+                  documentType={selectedItem.type}
                   onStatus={(message) =>
                     setStatus({ type: "success", message })
                   }

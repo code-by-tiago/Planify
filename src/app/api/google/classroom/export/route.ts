@@ -42,6 +42,7 @@ export async function POST(request: NextRequest) {
     description?: string;
     courseId?: string;
     filename?: string;
+    documentType?: string;
   };
 
   const title = String(body.title || "").trim();
@@ -82,6 +83,7 @@ export async function POST(request: NextRequest) {
       description: body.description,
       courseId: body.courseId ? String(body.courseId) : undefined,
       filename: body.filename,
+      documentType: body.documentType,
     });
 
     // #region agent log

@@ -25,6 +25,8 @@ type GoogleClassroomPanelProps = {
   compact?: boolean;
   /** Destino após OAuth Google (ex.: /dashboard?secao=historico) */
   returnTo?: string;
+  /** Tipo salvo no documento (ex.: material:slides) — ajuda o servidor a escolher PDF vs DOCX. */
+  documentType?: string | null;
 };
 
 function resolveGoogleOAuthReturnTo(explicit?: string): string {
@@ -43,6 +45,7 @@ export function GoogleClassroomPanel({
   onStatus,
   compact = false,
   returnTo,
+  documentType,
 }: GoogleClassroomPanelProps) {
   const [status, setStatus] = useState<GoogleIntegrationStatus | null>(null);
   const [courses, setCourses] = useState<ClassroomCourseOption[]>([]);
@@ -158,6 +161,7 @@ export function GoogleClassroomPanel({
         html: getHtml(),
         courseId,
         description: "Material didático enviado pelo Planify.",
+        documentType,
       });
 
       const link =

@@ -1,5 +1,5 @@
-import { buildEditorExportDocumentHtml } from "../export/editor-html-export-service";
-import { buildHtmlAltChunkDocx } from "../docx/simple-docx-builder";
+import { resolveClassroomExportForHtml } from "@/lib/export/classroom-export-format";
+import { exportEditorHtmlDocument } from "../export/editor-html-export-service";
 import { publishDriveFileToClassroom } from "./google-classroom";
 import { uploadBufferToGoogleDrive } from "./google-drive";
 import { getValidGoogleAccessToken } from "./google-token-store";
@@ -23,6 +23,8 @@ export type GoogleClassroomExportInput = {
   courseId?: string;
   docxBuffer?: Buffer;
   filename?: string;
+  /** Tipo salvo no documento (ex.: material:slides) — reforça a detecção no servidor. */
+  documentType?: string | null;
 };
 
 export type GoogleClassroomExportResult = {
@@ -36,6 +38,7 @@ export type GoogleClassroomExportResult = {
     alternateLink: string | null;
   };
   googleEmail: string | null;
+  exportFormat: "pdf" | "docx";
 };
 
 export async function exportMaterialToGoogle(
@@ -46,31 +49,37 @@ export async function exportMaterialToGoogle(
   const title = String(input.title || "Material Planify").trim() || "Material Planify";
 
   let buffer = input.docxBuffer;
+  let filename = `${safeFilename(input.filename || title)}.docx`;
+  let mimeType =
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+  let exportFormat: "pdf" | "docx" = "docx";
 
   if (!buffer) {
-    const exportHtml = buildEditorExportDocumentHtml(
+    const html = String(input.html || "");
+    const format = resolveClassroomExportForHtml(html, input.documentType);
+    const exported = await exportEditorHtmlDocument({
       title,
-      String(input.html || ""),
-    );
-
-    buffer = buildHtmlAltChunkDocx({
-      title,
-      htmlDocument: exportHtml,
+      html,
+      format,
     });
+
+    buffer = exported.buffer;
+    filename = exported.filename;
+    mimeType = exported.contentType;
+    exportFormat = format;
   }
 
-  const filename = `${safeFilename(input.filename || title)}.docx`;
   const drive = await uploadBufferToGoogleDrive({
     accessToken,
     filename,
-    mimeType:
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    mimeType,
     buffer,
   });
 
   const result: GoogleClassroomExportResult = {
     drive,
     googleEmail,
+    exportFormat,
   };
 
   if (input.courseId) {

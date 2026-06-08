@@ -161,6 +161,7 @@ export function EditorShareBar({
         getHtml={getHtml}
         onStatus={onStatus}
         returnTo={returnTo}
+        documentType={documentType}
       />
     </div>
   );

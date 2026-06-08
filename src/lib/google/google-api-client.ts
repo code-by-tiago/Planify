@@ -120,6 +120,7 @@ export async function exportToGoogleClassroom(params: {
   courseId: string;
   description?: string;
   filename?: string;
+  documentType?: string | null;
 }): Promise<ClassroomExportResult> {
   const response = await fetch("/api/google/classroom/export", {
     method: "POST",

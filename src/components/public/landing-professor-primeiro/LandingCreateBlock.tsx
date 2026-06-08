@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import type { PlanifyIconName } from "@/lib/pro/planifyTools";
@@ -11,41 +11,6 @@ export function LandingCreateBlock() {
   const [selected, setSelected] = useState<CreateOptionId>("planejamento");
 
   const active = CREATE_OPTIONS.find((o) => o.id === selected) ?? CREATE_OPTIONS[0];
-
-  useEffect(() => {
-    const container = document.querySelector("[data-landing-create]");
-    const btn = document.querySelector("[data-landing-create-option]");
-    if (!btn) return;
-
-    const cs = getComputedStyle(btn);
-    const cc = container ? getComputedStyle(container) : null;
-
-    // #region agent log
-    fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Debug-Session-Id": "1b39d8",
-      },
-      body: JSON.stringify({
-        sessionId: "1b39d8",
-        runId: "post-fix-v2",
-        hypothesisId: "A",
-        location: "LandingCreateBlock.tsx:mount",
-        message: "Create block computed styles",
-        data: {
-          innerWidth: window.innerWidth,
-          display: cc?.display ?? null,
-          btnOverflow: cs.overflow,
-          btnShadow: cs.boxShadow,
-          btnTransform: cs.transform,
-          btnClassList: btn.className,
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
-  }, []);
 
   return (
     <section className="isolate bg-white px-5 py-16 sm:px-8 sm:py-20">

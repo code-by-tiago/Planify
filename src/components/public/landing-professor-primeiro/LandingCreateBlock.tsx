@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import type { PlanifyIconName } from "@/lib/pro/planifyTools";
@@ -11,48 +11,27 @@ export function LandingCreateBlock() {
 
   const active = CREATE_OPTIONS.find((o) => o.id === selected) ?? CREATE_OPTIONS[0];
 
-  useEffect(() => {
-    // #region agent log
-    fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Debug-Session-Id": "1b39d8",
-      },
-      body: JSON.stringify({
-        sessionId: "1b39d8",
-        runId: "mobile-create-block",
-        hypothesisId: "A",
-        location: "LandingCreateBlock.tsx:mount",
-        message: "Create block viewport",
-        data: {
-          innerWidth: window.innerWidth,
-          devicePixelRatio: window.devicePixelRatio,
-          optionCount: CREATE_OPTIONS.length,
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
-  }, []);
-
   return (
-    <section className="isolate px-5 py-16 sm:px-8 sm:py-20">
+    <section className="isolate bg-white px-5 py-16 sm:px-8 sm:py-20">
       <div className="mx-auto max-w-4xl">
         <div className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8">
           <h2 className="text-center font-[family-name:var(--font-display)] text-2xl font-extrabold text-slate-900 sm:text-3xl">
             Hoje você quer criar:
           </h2>
 
-          <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-2.5 lg:grid-cols-5">
+          <div
+            className="mt-6 flex flex-col gap-3 sm:grid sm:grid-cols-2 sm:gap-2.5 lg:grid-cols-5"
+            data-landing-create
+          >
             {CREATE_OPTIONS.map((option) => {
               const isActive = selected === option.id;
               return (
                 <button
                   key={option.id}
                   type="button"
+                  data-landing-create-option
                   onClick={() => setSelected(option.id)}
-                  className={`flex min-h-[5.5rem] touch-manipulation flex-col items-center justify-center gap-2 rounded-2xl border-2 px-3 py-4 text-center transition-colors ${
+                  className={`flex min-h-[5.5rem] touch-manipulation flex-col items-center justify-center gap-2 overflow-visible rounded-2xl border-2 px-3 py-4 text-center transition-colors ${
                     isActive
                       ? "border-cyan-500 bg-cyan-50 text-cyan-900"
                       : "border-slate-200 bg-white text-slate-700 hover:border-cyan-200 hover:bg-cyan-50/40"

@@ -1980,6 +1980,23 @@ header .planify-brand-logo__icon {
   border-color: rgba(0, 212, 255, 0.12) !important;
 }
 
+/* Landing mobile: fundo sólido e sem overflow/sombras globais no bloco criar */
+@media (max-width: 640px) {
+  html:has(.planify-hud-landing),
+  body:has(.planify-hud-landing) {
+    background: #ffffff !important;
+  }
+}
+
+.planify-hud-landing [data-landing-create-option] {
+  overflow: visible !important;
+  box-shadow: none !important;
+}
+
+.planify-hud-landing [data-landing-create-option]:hover {
+  transform: none !important;
+}
+
 /* Cartão de vidro claro para mockups de produto */
 .planify-ui3 .pl-glass {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.78));

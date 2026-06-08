@@ -200,11 +200,11 @@ export function LandingHeroLiveDashboard() {
 
       <div
         aria-hidden
-        className="pointer-events-none absolute -right-6 -top-6 h-32 w-32 rounded-full bg-cyan-400/20 blur-3xl"
+        className="pointer-events-none absolute -right-6 -top-6 hidden h-32 w-32 rounded-full bg-cyan-400/20 blur-3xl sm:block"
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute -bottom-8 -left-6 h-28 w-28 rounded-full bg-slate-900/5 blur-3xl"
+        className="pointer-events-none absolute -bottom-8 -left-6 hidden h-28 w-28 rounded-full bg-slate-900/5 blur-3xl sm:block"
       />
 
       <div className="relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-5 shadow-2xl shadow-slate-900/10 sm:p-6">

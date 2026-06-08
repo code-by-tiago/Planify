@@ -5,8 +5,36 @@ export type ClassroomCourse = {
   courseState?: string;
 };
 
-function mapClassroomApiError(status: number, message?: string): string {
+function mapClassroomPublishError(apiMessage?: string): string | null {
+  const message = String(apiMessage || "");
+
+  if (message.includes("@ClassroomApiDisabled")) {
+    return "A rede educar.rs bloqueou o uso da API do Classroom por apps externos. Peça à TI da escola para liberar “apps de terceiros” no Google Classroom.";
+  }
+
+  if (message.includes("@AttachmentNotVisible")) {
+    return "O Google Classroom não conseguiu acessar o arquivo no Drive. Desconecte o Google, conecte de novo e tente enviar outra vez.";
+  }
+
+  if (message.includes("@ProjectPermissionDenied")) {
+    return "O Google bloqueou a publicação deste app. Reconecte sua conta Google no Planify e tente novamente.";
+  }
+
+  return null;
+}
+
+function mapClassroomApiError(
+  status: number,
+  message?: string,
+  context: "list" | "publish" = "list",
+): string {
   const normalized = String(message || "").toLowerCase();
+  const publishSpecific =
+    context === "publish" ? mapClassroomPublishError(message) : null;
+
+  if (publishSpecific) {
+    return publishSpecific;
+  }
 
   if (
     status === 403 ||
@@ -14,6 +42,11 @@ function mapClassroomApiError(status: number, message?: string): string {
     normalized.includes("insufficient") ||
     normalized.includes("not authorized")
   ) {
+    if (context === "publish") {
+      const detail = message ? ` (${message})` : "";
+      return `Sem permissão para publicar nesta turma${detail}. Se usa conta educar.rs, peça à TI da escola para liberar apps no Classroom e reconecte o Google no Planify.`;
+    }
+
     return "Conta Google sem perfil de professor no Classroom. Use uma conta de professor com turmas ativas.";
   }
 
@@ -23,7 +56,9 @@ function mapClassroomApiError(status: number, message?: string): string {
 
   return (
     message ||
-    "Não foi possível listar turmas do Google Classroom. Verifique se a conta tem Classroom ativo."
+    (context === "publish"
+      ? "Não foi possível publicar o material na turma do Classroom."
+      : "Não foi possível listar turmas do Google Classroom. Verifique se a conta tem Classroom ativo.")
   );
 }
 
@@ -42,6 +77,7 @@ export async function listGoogleClassroomCourses(
     const params = new URLSearchParams({
       pageSize: "100",
       courseStates: "ACTIVE",
+      teacherId: "me",
     });
 
     if (pageToken) {
@@ -97,7 +133,6 @@ export async function publishDriveFileToClassroom(params: {
   const body = {
     title: params.title,
     description: params.description || "Material enviado pelo Planify.",
-    workType: "ASSIGNMENT",
     state: "PUBLISHED",
     materials: [
       {
@@ -110,7 +145,7 @@ export async function publishDriveFileToClassroom(params: {
   };
 
   const response = await fetch(
-    `https://classroom.googleapis.com/v1/courses/${encodeURIComponent(params.courseId)}/courseWork`,
+    `https://classroom.googleapis.com/v1/courses/${encodeURIComponent(params.courseId)}/courseWorkMaterials`,
     {
       method: "POST",
       headers: {
@@ -128,12 +163,29 @@ export async function publishDriveFileToClassroom(params: {
   };
 
   if (!response.ok || !data.id) {
+    const apiMessage = data.error?.message || "";
+    // #region agent log
+    fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "1b39d8" },
+      body: JSON.stringify({
+        sessionId: "1b39d8",
+        runId: "classroom-publish",
+        hypothesisId: "H-educar",
+        location: "google-classroom.ts:publishDriveFileToClassroom",
+        message: "classroom publish failed",
+        data: {
+          status: response.status,
+          courseId: params.courseId,
+          apiMessage,
+          endpoint: "courseWorkMaterials",
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
     throw new Error(
-      mapClassroomApiError(
-        response.status,
-        data.error?.message ||
-          "Não foi possível publicar o material na turma do Classroom.",
-      ),
+      mapClassroomApiError(response.status, apiMessage, "publish"),
     );
   }
 

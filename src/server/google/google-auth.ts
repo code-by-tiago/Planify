@@ -72,29 +72,46 @@ function getBearerToken(request: NextRequest): string | null {
   return match?.[1]?.trim() || null;
 }
 
+function collectAuthTokens(request: NextRequest): string[] {
+  const seen = new Set<string>();
+  const tokens: string[] = [];
+
+  for (const candidate of [
+    getBearerToken(request),
+    request.cookies.get("planify_session")?.value || null,
+    request.cookies.get("planify_owner_access")?.value || null,
+    request.cookies.get("planify_admin_access")?.value || null,
+  ]) {
+    const token = String(candidate || "").trim();
+    if (!token || seen.has(token)) continue;
+    seen.add(token);
+    tokens.push(token);
+  }
+
+  return tokens;
+}
+
 export async function resolvePlanifyUserFromRequest(
   request: NextRequest,
 ): Promise<PlanifyGoogleUser | null> {
-  const token =
-    getBearerToken(request) ||
-    request.cookies.get("planify_session")?.value ||
-    request.cookies.get("planify_owner_access")?.value ||
-    request.cookies.get("planify_admin_access")?.value ||
-    null;
+  const tokens = collectAuthTokens(request);
 
-  if (!token) {
+  if (!tokens.length) {
     return null;
   }
 
   const supabase = getSupabaseAdminClient();
-  const { data, error } = await supabase.auth.getUser(token);
 
-  if (error || !data.user?.id) {
-    return null;
+  for (const token of tokens) {
+    const { data, error } = await supabase.auth.getUser(token);
+
+    if (!error && data.user?.id) {
+      return {
+        id: data.user.id,
+        email: String(data.user.email || "").trim().toLowerCase(),
+      };
+    }
   }
 
-  return {
-    id: data.user.id,
-    email: String(data.user.email || "").trim().toLowerCase(),
-  };
+  return null;
 }

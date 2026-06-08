@@ -284,7 +284,7 @@ export function GoogleClassroomPanel({
               className="max-w-[min(200px,40vw)] rounded-xl border border-sky-200 bg-white px-2 py-2 text-xs font-semibold text-slate-900"
             >
               {courses.length === 0 ? (
-                <option value="">Sem turmas</option>
+                <option value="">Sem turmas como professor</option>
               ) : (
                 courses.map((course) => (
                   <option key={course.id} value={course.id}>

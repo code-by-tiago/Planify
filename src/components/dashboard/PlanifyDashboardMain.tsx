@@ -10,8 +10,8 @@ function PanelLoading() {
   return (
     <div className="planify-hud flex h-full min-h-[200px] items-center justify-center bg-[var(--planify-canvas)]">
       <div className="flex flex-col items-center gap-3">
-        <span className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-cyan-200 border-t-cyan-500" />
-        <p className="text-sm font-semibold text-cyan-700">Carregando…</p>
+        <span className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-emerald-200 border-t-emerald-600" />
+        <p className="text-sm font-semibold text-emerald-700">Carregando…</p>
       </div>
     </div>
   );

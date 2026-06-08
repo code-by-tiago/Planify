@@ -198,7 +198,7 @@ export default function PlanifyDashboardShell() {
   );
 
   return (
-    <div className="planify-hud planify-ui3 planify-hud-app pl-hud-shell pl-dashboard-root pl-app-bg flex h-[100dvh] w-full max-w-[100vw] overflow-hidden text-slate-950">
+    <div className="planify-hud planify-ui3 planify-hud-app pl-app-professor-primeiro pl-hud-shell pl-dashboard-root pl-app-bg flex h-[100dvh] w-full max-w-[100vw] overflow-hidden text-slate-950">
       <PlanifyShellSidebar
         variant="hud"
         brandHref="/"
@@ -222,7 +222,7 @@ export default function PlanifyDashboardShell() {
 
       <main className="pl-hud-main flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-white">
         {hasPanel ? (
-          <header className="flex shrink-0 flex-col gap-2 border-b border-cyan-400/15 bg-white/95 px-3 py-2.5 pt-[max(0.625rem,env(safe-area-inset-top))] sm:px-5">
+          <header className="flex shrink-0 flex-col gap-2 border-b border-slate-200/80 bg-white/95 px-3 py-2.5 pt-[max(0.625rem,env(safe-area-inset-top))] sm:px-5">
             <div className="flex items-center justify-between gap-2 sm:gap-3">
               <div className="flex min-w-0 flex-1 items-center gap-2">
                 <button
@@ -242,7 +242,7 @@ export default function PlanifyDashboardShell() {
                   <PlanifyIcon name="arrowLeft" className="h-5 w-5" />
                 </button>
                 <div className="min-w-0">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-cyan-600">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-700">
                     {selectedToolId ? "Ferramenta IA · BNCC" : "Espaço de trabalho"}
                   </p>
                   <h1 className="truncate text-base font-extrabold text-slate-950">
@@ -285,7 +285,7 @@ export default function PlanifyDashboardShell() {
                   type="button"
                   onClick={() => setSidebarOpen(true)}
                   aria-label="Abrir menu"
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-cyan-400/15 bg-white/80 text-slate-600 transition hover:border-cyan-400/35 lg:hidden"
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200/80 bg-white/80 text-slate-600 transition hover:border-emerald-200 hover:bg-emerald-50/50 lg:hidden"
                 >
                   <PlanifyIcon name="menu" className="h-5 w-5" />
                 </button>
@@ -296,7 +296,7 @@ export default function PlanifyDashboardShell() {
                   </span>
                   <h1 className="mt-1.5 truncate text-lg font-extrabold tracking-tight text-slate-950 sm:text-xl">
                     O que vamos{" "}
-                    <span className="bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent">
+                    <span className="bg-gradient-to-r from-emerald-600 to-emerald-800 bg-clip-text text-transparent">
                       criar hoje?
                     </span>
                   </h1>

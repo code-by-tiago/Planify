@@ -126,7 +126,7 @@ export default function PlanifyAppFrame({
   );
 
   return (
-    <main className="planify-hud planify-ui3 planify-hud-app pl-shell-root pl-hud-shell pl-app-bg flex h-[100dvh] w-full max-w-[100vw] overflow-hidden text-slate-950">
+    <main className="planify-hud planify-ui3 planify-hud-app pl-app-professor-primeiro pl-shell-root pl-hud-shell pl-app-bg flex h-[100dvh] w-full max-w-[100vw] overflow-hidden text-slate-950">
       <PlanifyShellSidebar
         variant="hud"
         brandHref="/"
@@ -147,7 +147,7 @@ export default function PlanifyAppFrame({
       </PlanifyShellSidebar>
 
       <section className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-white">
-        <header className="flex shrink-0 items-center justify-between gap-3 border-b border-cyan-400/15 bg-white/95 px-4 py-3 sm:px-5">
+        <header className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-200/80 bg-white/95 px-4 py-3 sm:px-5">
           <div className="flex min-w-0 items-center gap-3">
             <button
               type="button"

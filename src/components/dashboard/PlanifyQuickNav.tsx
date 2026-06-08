@@ -51,8 +51,8 @@ export function PlanifyQuickNav({
               }
               className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold transition ${
                 active
-                  ? "bg-cyan-500/15 text-cyan-800 ring-1 ring-cyan-400/30"
-                  : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                  ? "bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200"
+                  : "text-slate-600 hover:bg-emerald-50/50 hover:text-slate-900"
               }`}
             >
               <PlanifyIcon name={link.icon} className="h-3.5 w-3.5" />

@@ -1,4 +1,9 @@
-import { readBNCCSkills } from "./bncc-service";
+import type { BNCCSkill } from "../../types/bncc";
+import {
+  filterBnccSkillsByContext,
+  rankBnccSkillsForContent,
+  readBNCCSkills,
+} from "./bncc-service";
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -173,6 +178,35 @@ const FALLBACK_SKILLS: SkillCandidate[] = [
 ];
 
 
+const DEBUG_SESSION = "f33ae7";
+const DEBUG_ENDPOINT =
+  "http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281";
+
+function agentLog(
+  location: string,
+  message: string,
+  data: Record<string, unknown>,
+  hypothesisId: string,
+): void {
+  // #region agent log
+  fetch(DEBUG_ENDPOINT, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Debug-Session-Id": DEBUG_SESSION,
+    },
+    body: JSON.stringify({
+      sessionId: DEBUG_SESSION,
+      location,
+      message,
+      data,
+      hypothesisId,
+      timestamp: Date.now(),
+    }),
+  }).catch(() => {});
+  // #endregion
+}
+
 const SPANISH_EM_SKILLS: SkillCandidate[] = [
   {
     codigo: "EM13LGG102",
@@ -256,8 +290,22 @@ function splitContents(value: unknown): string[] {
       .filter(Boolean);
   }
 
-  return normalizeText(value)
-    .split(/\r?\n|;|,|\s·\s/u)
+  const text = normalizeText(value);
+
+  if (!text) {
+    return [];
+  }
+
+  // Conteúdos costumam vir um por linha; vírgulas internas não devem fragmentar o tópico.
+  if (/\r?\n/.test(text)) {
+    return text
+      .split(/\r?\n+/)
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+
+  return text
+    .split(/;|\s·\s|,/u)
     .map((item) => item.trim())
     .filter(Boolean);
 }
@@ -497,6 +545,23 @@ function expandTerms(content: string): string[] {
       /leitura|interpretacao|infer/,
       ["leitura", "interpretacao", "sentidos", "inferir", "informacoes"],
     ],
+    [
+      /sintaxe|semantica|orac|coordenad|subordinad|reduzid|regencia|crase|pronominal|periodo|concordancia|colocacao/,
+      [
+        "sintaxe",
+        "semantica",
+        "oracoes",
+        "coordenacao",
+        "subordinacao",
+        "regencia",
+        "crase",
+        "pronominal",
+        "concordancia",
+        "periodo",
+        "gramatica",
+        "sintagmas",
+      ],
+    ],
   ];
 
   for (const [pattern, additions] of synonymGroups) {
@@ -723,6 +788,22 @@ function scoreCandidate(
   return score;
 }
 
+function scoreContentTerms(candidate: SkillCandidate, content: string): number {
+  const terms = expandTerms(content);
+  const candidateText = normalizeSearch(
+    `${candidate.codigo} ${candidate.descricao} ${candidate.rawText}`,
+  );
+  let score = 0;
+
+  for (const term of terms) {
+    if (candidateText.includes(term)) {
+      score += 5;
+    }
+  }
+
+  return score;
+}
+
 // Restringe os candidatos ao componente/etapa informados para nunca sugerir
 // habilidades de outra disciplina ou de outro nível escolar.
 function filterByContext(
@@ -749,6 +830,14 @@ function filterByContext(
       result = exact;
     } else if (loose.length > 0) {
       result = loose;
+    } else if (componente.includes("lingua portuguesa")) {
+      const lpEm = candidates.filter((candidate) =>
+        /^EM13LP/.test(candidate.codigo.toUpperCase()),
+      );
+
+      if (lpEm.length > 0) {
+        result = lpEm;
+      }
     }
   }
 
@@ -774,9 +863,37 @@ function filterByContext(
     }
   }
 
+  agentLog(
+    "bncc-suggestion-engine.ts:filterByContext",
+    "filtered candidates",
+    {
+      inputCount: candidates.length,
+      outputCount: result.length,
+      componente,
+      stage: resolvePayloadStage(payload),
+      sampleCodes: result.slice(0, 5).map((item) => item.codigo),
+    },
+    "H1",
+  );
+
   return result;
 }
 
+function isPortugueseComponent(payload: BnccSuggestionPayload): boolean {
+  const value = normalizeSearch(
+    [
+      getString(payload, ["componenteCurricular", "componente"]),
+      getString(payload, ["areaConhecimento", "area"]),
+    ].join(" "),
+  );
+
+  return (
+    value.includes("lingua portuguesa") ||
+    (value.includes("portugues") &&
+      !value.includes("espanhol") &&
+      !value.includes("espanhola"))
+  );
+}
 
 function isSpanishComponent(payload: BnccSuggestionPayload): boolean {
   const value = normalizeSearch(
@@ -895,6 +1012,157 @@ function classifySpanishHighSchoolSkills(content: string): SkillCandidate[] {
   }
 
   return Array.from(unique.values()).slice(0, 2);
+}
+
+function pickPortugueseEmSkillPool(catalog: SkillCandidate[]): Map<string, SkillCandidate> {
+  const pool = new Map<string, SkillCandidate>();
+
+  for (const candidate of catalog) {
+    const code = candidate.codigo.toUpperCase();
+
+    if (/^EM13(LP|LGG)/.test(code)) {
+      pool.set(code, candidate);
+    }
+  }
+
+  for (const candidate of FALLBACK_SKILLS) {
+    const code = candidate.codigo.toUpperCase();
+
+    if (/^EM13(LP|LGG)/.test(code) && !pool.has(code)) {
+      pool.set(code, candidate);
+    }
+  }
+
+  return pool;
+}
+
+function classifyPortugueseHighSchoolSkills(
+  content: string,
+  catalog: SkillCandidate[],
+): SkillCandidate[] {
+  const pool = pickPortugueseEmSkillPool(catalog);
+  const get = (code: string) => pool.get(code.toUpperCase()) || null;
+  const normalized = normalizeSearch(content);
+  const selected: SkillCandidate[] = [];
+
+  const syntaxPattern =
+    /sintaxe|semantica|orac|coordenad|subordinad|reduzid|regencia|crase|pronominal|periodo|concordancia|colocacao|gramatica/;
+  const cohesionPattern = /coesao|coerencia/;
+  const genrePattern =
+    /tipos de texto|descricao|narracao|dissert|genero|estrutura dissertativa|argumentativ|tese|introducao|conclusao|desenvolvimento/;
+  const enemPattern = /enem|norma|padrao|intervencao/;
+  const repertoirePattern =
+    /repertorio|sociocultural|dados|filosofia|literatura|historia/;
+
+  if (syntaxPattern.test(normalized)) {
+    for (const code of ["EM13LP08", "EM13LP07", "EM13LP15"]) {
+      const skill = get(code);
+
+      if (skill) {
+        selected.push(skill);
+      }
+    }
+  }
+
+  if (cohesionPattern.test(normalized)) {
+    const skill = get("EM13LP02");
+
+    if (skill) {
+      selected.push(skill);
+    }
+  }
+
+  if (genrePattern.test(normalized)) {
+    for (const code of ["EM13LP01", "EM13LP05"]) {
+      const skill = get(code);
+
+      if (skill) {
+        selected.push(skill);
+      }
+    }
+  }
+
+  if (enemPattern.test(normalized)) {
+    for (const code of ["EM13LP09", "EM13LP15"]) {
+      const skill = get(code);
+
+      if (skill) {
+        selected.push(skill);
+      }
+    }
+  }
+
+  if (repertoirePattern.test(normalized)) {
+    for (const code of ["EM13LP04", "EM13LP12", "EM13LGG102"]) {
+      const skill = get(code);
+
+      if (skill) {
+        selected.push(skill);
+      }
+    }
+  }
+
+  if (selected.length === 0) {
+    const fallback = get("EM13LP08") || get("EM13LP01");
+
+    if (fallback) {
+      selected.push(fallback);
+    }
+  }
+
+  const unique = new Map<string, SkillCandidate>();
+
+  for (const skill of selected) {
+    unique.set(skill.codigo, skill);
+  }
+
+  return Array.from(unique.values()).slice(0, 3);
+}
+
+function buildPortugueseHighSchoolResponse(
+  payload: BnccSuggestionPayload,
+  conteudos: string[],
+  catalog: SkillCandidate[],
+) {
+  const grouped = conteudos.map((conteudo, contentIndex) => {
+    const classified = classifyPortugueseHighSchoolSkills(conteudo, catalog);
+
+    agentLog(
+      "bncc-suggestion-engine.ts:buildPortugueseHighSchoolResponse",
+      "classified content",
+      {
+        contentIndex,
+        conteudo: conteudo.slice(0, 80),
+        codes: classified.map((item) => item.codigo),
+      },
+      "H4",
+    );
+
+    return {
+      conteudo,
+      habilidades: classified.map((candidate, index) =>
+        buildSuggestionFromCandidate(candidate, conteudo, index, 100 - index),
+      ),
+    };
+  });
+  const habilidades = grouped.flatMap((group) => group.habilidades);
+
+  return {
+    conteudos: grouped,
+    habilidades,
+    sugeridas: habilidades,
+    skills: habilidades,
+    items: habilidades,
+    data: {
+      conteudos: grouped,
+      habilidades,
+      sugeridas: habilidades,
+    },
+    total: habilidades.length,
+    source: "local",
+    message:
+      "Língua Portuguesa no Ensino Médio usa habilidades EM13LP distribuídas por conteúdo conforme eixo pedagógico.",
+  };
 }
 
 function buildSpanishHighSchoolResponse(payload: BnccSuggestionPayload, conteudos: string[]) {
@@ -1039,22 +1307,36 @@ function chooseForContent(
   content: string,
   payload: BnccSuggestionPayload,
   candidates: SkillCandidate[],
+  contentIndex = 0,
 ): BnccSkillSuggestion[] {
   const scored = candidates
     .map((candidate) => ({
       candidate,
       score: scoreCandidate(candidate, content, payload),
+      termScore: scoreContentTerms(candidate, content),
     }))
-    .sort((a, b) => b.score - a.score);
+    .sort(
+      (a, b) =>
+        b.termScore - a.termScore ||
+        b.score - a.score ||
+        a.candidate.codigo.localeCompare(b.candidate.codigo),
+    );
 
   const stageFiltered = scored.filter((item) =>
     candidateMatchesPayloadStage(item.candidate, payload),
   );
-  const ranked = stageFiltered.filter((item) => item.score > 0).slice(0, 3);
+  const ranked = stageFiltered.filter((item) => item.termScore > 0).slice(0, 3);
 
   const stageFallbacks = FALLBACK_SKILLS.filter((candidate) =>
     candidateMatchesPayloadStage(candidate, payload),
   );
+  const rotatedFallbacks =
+    stageFallbacks.length > 0
+      ? [
+          ...stageFallbacks.slice(contentIndex % stageFallbacks.length),
+          ...stageFallbacks.slice(0, contentIndex % stageFallbacks.length),
+        ]
+      : [];
 
   // Mantém-se dentro do componente/etapa já filtrado; só recorre às habilidades
   // genéricas se não houver nenhum candidato local compatível.
@@ -1063,17 +1345,63 @@ function chooseForContent(
       ? ranked
       : stageFiltered.length > 0
         ? stageFiltered.slice(0, 3)
-        : stageFallbacks
+        : rotatedFallbacks
             .map((candidate) => ({
               candidate,
               score: scoreCandidate(candidate, content, payload),
+              termScore: scoreContentTerms(candidate, content),
             }))
             .sort((a, b) => b.score - a.score)
             .slice(0, 3);
 
+  agentLog(
+    "bncc-suggestion-engine.ts:chooseForContent",
+    "chosen skills",
+    {
+      contentIndex,
+      contentPreview: content.slice(0, 80),
+      candidateCount: candidates.length,
+      rankedCount: ranked.length,
+      usedFallback: ranked.length === 0 && stageFiltered.length === 0,
+      topTermScores: stageFiltered.slice(0, 5).map((item) => ({
+        codigo: item.candidate.codigo,
+        termScore: item.termScore,
+        score: item.score,
+      })),
+      chosenCodes: chosen.map((item) => item.candidate.codigo),
+      chosenSources: chosen.map((item) => item.candidate.source),
+    },
+    ranked.length === 0 ? "H2" : "H3",
+  );
+
   return chosen.map(({ candidate, score }, index) =>
     buildSuggestionFromCandidate(candidate, content, index, score),
   );
+}
+
+function bnccSkillToSuggestion(
+  skill: BNCCSkill,
+  content: string,
+  index: number,
+  score: number,
+): BnccSkillSuggestion {
+  const codigo = skill.codigo;
+  const descricao = skill.descricao;
+
+  return {
+    id: `${codigo}-${normalizeSearch(content).slice(0, 28)}-${index}`,
+    codigo,
+    descricao,
+    texto: `${codigo} — ${descricao}`,
+    label: `${codigo} — ${descricao}`,
+    etapa: skill.etapa,
+    anoSerie: skill.ano || skill.serie,
+    area: skill.areaConhecimento,
+    componente: skill.componente,
+    conteudo: content,
+    score,
+    source: "local",
+  };
 }
 
 export async function suggestBnccByConteudos(payload: BnccSuggestionPayload) {
@@ -1089,27 +1417,84 @@ export async function suggestBnccByConteudos(payload: BnccSuggestionPayload) {
     };
   }
 
-  const localSkills = await loadCatalogSkills();
+  const context = {
+    etapa: getString(payload, ["etapa"]),
+    anoSerie: getString(payload, ["anoSerie", "serie", "ano"]),
+    componenteCurricular: getString(payload, ["componenteCurricular", "componente"]),
+  };
+
+  const catalog = await readBNCCSkills();
+
+  agentLog(
+    "bncc-suggestion-engine.ts:suggestBnccByConteudos",
+    "entry",
+    {
+      conteudoCount: conteudos.length,
+      conteudosPreview: conteudos.map((item) => item.slice(0, 60)),
+      catalogCount: catalog.length,
+      ...context,
+    },
+    "H5",
+  );
 
   if (isSpanishComponent(payload) && isHighSchoolPayload(payload)) {
     return buildSpanishHighSchoolResponse(payload, conteudos);
   }
 
   if (isFundamentalSpanishPayload(payload)) {
-    const spanishFundamental = buildSpanishFundamentalResponse(payload, conteudos, localSkills);
+    const spanishFundamental = buildSpanishFundamentalResponse(
+      payload,
+      conteudos,
+      catalog.map(bnccSkillToCandidate),
+    );
 
     if (spanishFundamental) {
       return spanishFundamental;
     }
   }
 
-  const baseCandidates = localSkills.length > 0 ? localSkills : FALLBACK_SKILLS;
-  const candidates = filterByContext(baseCandidates, payload);
+  const filtered = filterBnccSkillsByContext(catalog, context);
+  const usedCodes = new Set<string>();
 
-  const grouped = conteudos.map((conteudo) => ({
-    conteudo,
-    habilidades: chooseForContent(conteudo, payload, candidates),
-  }));
+  agentLog(
+    "bncc-suggestion-engine.ts:suggestBnccByConteudos",
+    "filtered catalog",
+    {
+      filteredCount: filtered.length,
+      sampleCodes: filtered.slice(0, 6).map((item) => item.codigo),
+      ...context,
+    },
+    "H1",
+  );
+
+  const grouped = conteudos.map((conteudo, contentIndex) => {
+    const ranked = rankBnccSkillsForContent(filtered, context, conteudo, {
+      usedCodes,
+      contentIndex,
+      limit: 3,
+    });
+
+    ranked.forEach((item) => usedCodes.add(item.skill.codigo));
+
+    agentLog(
+      "bncc-suggestion-engine.ts:suggestBnccByConteudos",
+      "ranked content",
+      {
+        contentIndex,
+        contentPreview: conteudo.slice(0, 80),
+        chosenCodes: ranked.map((item) => item.skill.codigo),
+        scores: ranked.map((item) => item.score),
+      },
+      "H2",
+    );
+
+    return {
+      conteudo,
+      habilidades: ranked.map(({ skill, score }, index) =>
+        bnccSkillToSuggestion(skill, conteudo, index, score),
+      ),
+    };
+  });
 
   const flattened = grouped.flatMap((group) => group.habilidades);
   const unique = new Map<string, BnccSkillSuggestion>();
@@ -1136,7 +1521,7 @@ export async function suggestBnccByConteudos(payload: BnccSuggestionPayload) {
       sugeridas: habilidades,
     },
     total: habilidades.length,
-    source: localSkills.length > 0 ? "local" : "fallback",
+    source: catalog.length > 0 ? "local" : "fallback",
     message:
       habilidades.length > 0
         ? "Habilidades sugeridas a partir dos conteúdos informados."

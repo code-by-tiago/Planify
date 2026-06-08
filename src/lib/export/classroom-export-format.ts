@@ -35,6 +35,12 @@ export function detectMaterialExportKind(
     return "planejamento";
   }
 
+  if (
+    /PLANEJAMENTO ANUAL|PLANEJAMENTO TRIMESTRAL|class="planify-doc"/i.test(html)
+  ) {
+    return "planejamento";
+  }
+
   return "document";
 }
 

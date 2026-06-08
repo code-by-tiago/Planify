@@ -27,7 +27,7 @@ import {
   planningPayloadToHtmlContext,
 } from "@/lib/planejamentos/planning-editor-html";
 import type { PlanningEditorMeta } from "@/lib/planejamentos/planning-editor-flow";
-import { buildOfficialPlanningPayloadFromEditorMeta } from "@/lib/planejamentos/planning-google-export-payload";
+import { resolvePlanningPayloadForGoogleExport } from "@/lib/planejamentos/planning-google-export-payload";
 import {
   buildElevatePayload,
   requestMaterialGeneration,
@@ -359,7 +359,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
       | { raw?: PlanningEditorMeta & { matrizPlanejamento?: unknown } }
       | undefined;
 
-    return buildOfficialPlanningPayloadFromEditorMeta(raw?.raw ?? planningMeta);
+    return resolvePlanningPayloadForGoogleExport(raw?.raw ?? planningMeta ?? undefined);
   }, [documentSource, planningMeta]);
 
   const canElevateMaterial = Boolean(

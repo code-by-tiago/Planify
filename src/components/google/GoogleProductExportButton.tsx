@@ -48,7 +48,7 @@ type GoogleProductExportButtonProps = {
   onExport: (params: {
     html: string;
     planningPayload?: Record<string, unknown> | null;
-  }) => Promise<{ openUrl: string }>;
+  }) => Promise<{ openUrl: string; openedInPreview?: boolean }>;
   onStatus?: (message: string) => void;
 };
 
@@ -115,7 +115,7 @@ export function GoogleProductExportButton({
         headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "f33ae7" },
         body: JSON.stringify({
           sessionId: "f33ae7",
-          runId: "pre-fix",
+          runId: "post-fix",
           hypothesisId: "H-A",
           location: "GoogleProductExportButton.tsx:runExport",
           message: "html resolved for export",
@@ -134,14 +134,10 @@ export function GoogleProductExportButton({
         throw new Error("O documento ainda não carregou. Aguarde e tente exportar novamente.");
       }
 
-      const pendingPayload = readGoogleExportPending(pendingStorageKey)?.planningPayload;
+      const pending = readGoogleExportPending(pendingStorageKey);
+      const pendingPayload = pending?.planningPayload;
       const planningPayload =
-        getPlanningPayload?.() ?? pendingPayload ?? null;
-
-      const result = await onExport({ html, planningPayload });
-      clearGoogleExportPending(pendingStorageKey);
-
-      const opened = openGoogleExportUrl(result.openUrl);
+        pendingPayload ?? getPlanningPayload?.() ?? null;
 
       // #region agent log
       fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
@@ -149,7 +145,40 @@ export function GoogleProductExportButton({
         headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "f33ae7" },
         body: JSON.stringify({
           sessionId: "f33ae7",
-          runId: "pre-fix",
+          runId: "post-fix",
+          hypothesisId: "H-PAYLOAD",
+          location: "GoogleProductExportButton.tsx:runExport",
+          message: "planning payload resolved",
+          data: {
+            productName,
+            hasPlanningPayload: Boolean(planningPayload),
+            matrizRows: Array.isArray(
+              (planningPayload as { matrizPlanejamento?: { conteudos?: unknown[] } })
+                ?.matrizPlanejamento?.conteudos,
+            )
+              ? (planningPayload as { matrizPlanejamento: { conteudos: unknown[] } })
+                  .matrizPlanejamento.conteudos.length
+              : 0,
+            fromPending: Boolean(pendingPayload),
+          },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {});
+      // #endregion
+
+      const result = await onExport({ html, planningPayload });
+      clearGoogleExportPending(pendingStorageKey);
+
+      const opened =
+        result.openedInPreview || openGoogleExportUrl(result.openUrl);
+
+      // #region agent log
+      fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "f33ae7" },
+        body: JSON.stringify({
+          sessionId: "f33ae7",
+          runId: "post-fix",
           hypothesisId: "H-C",
           location: "GoogleProductExportButton.tsx:runExport",
           message: "export completed",
@@ -268,7 +297,7 @@ export function GoogleProductExportButton({
         headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "f33ae7" },
         body: JSON.stringify({
           sessionId: "f33ae7",
-          runId: "pre-fix",
+          runId: "post-fix",
           hypothesisId: "H-D",
           location: "GoogleProductExportButton.tsx:oauthResume",
           message: "oauth resume started",
@@ -292,7 +321,7 @@ export function GoogleProductExportButton({
         headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "f33ae7" },
         body: JSON.stringify({
           sessionId: "f33ae7",
-          runId: "pre-fix",
+          runId: "post-fix",
           hypothesisId: "H-B",
           location: "GoogleProductExportButton.tsx:oauthResume",
           message: "google status after oauth",

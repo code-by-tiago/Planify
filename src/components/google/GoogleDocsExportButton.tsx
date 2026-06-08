@@ -33,6 +33,8 @@ export function GoogleDocsExportButton({
     html: string;
     planningPayload?: Record<string, unknown> | null;
   }) => {
+    const previewWindow = window.open("about:blank", "_blank");
+
     const result = await exportToGoogleDocs({
       title,
       html: params.html,
@@ -40,8 +42,18 @@ export function GoogleDocsExportButton({
       planningPayload: params.planningPayload,
     });
 
-    return { openUrl: result.documentUrl };
-  }, [documentType, title]);
+    if (previewWindow && !previewWindow.closed) {
+      previewWindow.location.href = result.documentUrl;
+    }
+
+    if (result.exportEngine === "official") {
+      onStatus?.("Google Docs aberto com o modelo oficial do planejamento.");
+    } else if (params.planningPayload) {
+      onStatus?.("Google Docs aberto (matriz não reconhecida — layout simplificado).");
+    }
+
+    return { openUrl: result.documentUrl, openedInPreview: Boolean(previewWindow) };
+  }, [documentType, onStatus, title]);
 
   return (
     <GoogleProductExportButton

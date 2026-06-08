@@ -33,6 +33,8 @@ export function GoogleDriveExportButton({
     html: string;
     planningPayload?: Record<string, unknown> | null;
   }) => {
+    const previewWindow = window.open("about:blank", "_blank");
+
     const result = await exportToGoogleDrive({
       title,
       html: params.html,
@@ -44,8 +46,16 @@ export function GoogleDriveExportButton({
       result.drive.webViewLink ||
       `https://drive.google.com/file/d/${result.drive.fileId}/view`;
 
-    return { openUrl: url };
-  }, [documentType, title]);
+    if (previewWindow && !previewWindow.closed) {
+      previewWindow.location.href = url;
+    }
+
+    if (result.exportEngine === "official") {
+      onStatus?.("Drive aberto com o modelo oficial do planejamento.");
+    }
+
+    return { openUrl: url, openedInPreview: Boolean(previewWindow) };
+  }, [documentType, onStatus, title]);
 
   return (
     <GoogleProductExportButton

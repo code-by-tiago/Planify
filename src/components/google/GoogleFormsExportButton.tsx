@@ -25,10 +25,10 @@ export function GoogleFormsExportButton({
   iconOnly,
   onStatus,
 }: GoogleFormsExportButtonProps) {
-  const runExport = useCallback(async (html: string) => {
+  const runExport = useCallback(async (params: { html: string }) => {
     const result = await exportToGoogleForms({
       title,
-      html,
+      html: params.html,
       description: "Formulário criado pelo Planify.",
     });
 

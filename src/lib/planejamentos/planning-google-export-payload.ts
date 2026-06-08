@@ -1,5 +1,7 @@
 import type { PlanningEditorMeta } from "@/lib/planejamentos/planning-editor-flow";
 
+const EDITOR_DOCUMENT_KEY = "planify_editor_document";
+
 type PlanningEditorRawMeta = PlanningEditorMeta & {
   matrizPlanejamento?: unknown;
 };
@@ -9,6 +11,22 @@ function hasPlanningMatrix(value: unknown): boolean {
 
   const conteudos = (value as { conteudos?: unknown }).conteudos;
   return Array.isArray(conteudos) && conteudos.length > 0;
+}
+
+export function readPlanningMetaFromEditorStorage(): PlanningEditorRawMeta | null {
+  if (typeof window === "undefined") return null;
+
+  try {
+    const raw = window.localStorage.getItem(EDITOR_DOCUMENT_KEY);
+    if (!raw) return null;
+
+    const parsed = JSON.parse(raw) as { payload?: { raw?: unknown } };
+    const meta = parsed?.payload?.raw;
+
+    return meta && typeof meta === "object" ? (meta as PlanningEditorRawMeta) : null;
+  } catch {
+    return null;
+  }
 }
 
 /** Payload serializável para /api/google/docs|drive/export — sem imports de server. */
@@ -24,10 +42,6 @@ export function buildOfficialPlanningPayloadFromEditorMeta(
     return null;
   }
 
-  if (!generation && !meta.componente && !meta.tipoPlanejamento) {
-    return null;
-  }
-
   return {
     tipoPlanejamento: generation?.tipoPlanejamento || meta.tipoPlanejamento || "anual",
     escola: generation?.escola || meta.escola,
@@ -35,9 +49,19 @@ export function buildOfficialPlanningPayloadFromEditorMeta(
     etapa: generation?.etapa || meta.etapa,
     anoSerie: generation?.anoSerie || meta.anoSerie,
     areaConhecimento: generation?.areaConhecimento,
-    componenteCurricular: generation?.componenteCurricular || meta.componente,
+    componenteCurricular:
+      generation?.componenteCurricular || meta.componente || "Componente",
     cargaHoraria: generation?.cargaHoraria,
     trimestre: generation?.trimestre,
     matrizPlanejamento: matriz,
   };
+}
+
+export function resolvePlanningPayloadForGoogleExport(
+  meta?: PlanningEditorRawMeta | null,
+): Record<string, unknown> | null {
+  return (
+    buildOfficialPlanningPayloadFromEditorMeta(meta) ||
+    buildOfficialPlanningPayloadFromEditorMeta(readPlanningMetaFromEditorStorage())
+  );
 }

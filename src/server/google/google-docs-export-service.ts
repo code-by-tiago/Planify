@@ -1,4 +1,3 @@
-import { detectMaterialExportKind } from "@/lib/export/classroom-export-format";
 import { resolvePreparedExportBody } from "../export/editor-html-export-service";
 import { buildNativeHtmlDocx } from "../docx/simple-docx-builder";
 import {
@@ -37,24 +36,25 @@ function buildDocxBuffer(
   html: string,
   documentType?: string | null,
   planningPayload?: OfficialPlanningPayload | Record<string, unknown> | null,
-): Buffer {
-  const kind = detectMaterialExportKind(html, documentType);
+): { buffer: Buffer; exportEngine: "official" | "html" } {
   const normalizedPlanning = normalizePlanningPayload(planningPayload);
 
-  if (
-    kind === "planejamento" &&
-    normalizedPlanning &&
-    hasPlanningMatrix(normalizedPlanning)
-  ) {
-    return buildOfficialPlanningDocx(normalizedPlanning);
+  if (normalizedPlanning && hasPlanningMatrix(normalizedPlanning)) {
+    return {
+      buffer: buildOfficialPlanningDocx(normalizedPlanning),
+      exportEngine: "official",
+    };
   }
 
   const htmlBody = resolvePreparedExportBody(html, documentType, "docx");
 
-  return buildNativeHtmlDocx({
-    title,
-    htmlBody,
-  });
+  return {
+    buffer: buildNativeHtmlDocx({
+      title,
+      htmlBody,
+    }),
+    exportEngine: "html",
+  };
 }
 
 export type GoogleDocsExportInput = {
@@ -72,6 +72,7 @@ export type GoogleDocsExportResult = {
   };
   documentUrl: string;
   googleEmail: string | null;
+  exportEngine?: "official" | "html";
 };
 
 export async function exportDocumentToGoogleDocs(
@@ -86,7 +87,7 @@ export async function exportDocumentToGoogleDocs(
     throw new Error("Conteúdo do documento vazio.");
   }
 
-  const buffer = buildDocxBuffer(
+  const { buffer, exportEngine } = buildDocxBuffer(
     title,
     html,
     input.documentType,
@@ -110,6 +111,7 @@ export async function exportDocumentToGoogleDocs(
     drive: { ...drive, webViewLink: documentUrl },
     documentUrl,
     googleEmail,
+    exportEngine,
   };
 }
 
@@ -127,6 +129,7 @@ export type GoogleDriveSaveResult = {
     webViewLink: string | null;
   };
   googleEmail: string | null;
+  exportEngine?: "official" | "html";
 };
 
 /** Salva DOCX no Drive (sem converter para Google Docs). */
@@ -142,7 +145,7 @@ export async function saveDocumentToGoogleDrive(
     throw new Error("Conteúdo do documento vazio.");
   }
 
-  const buffer = buildDocxBuffer(
+  const { buffer, exportEngine } = buildDocxBuffer(
     title,
     html,
     input.documentType,
@@ -158,5 +161,5 @@ export async function saveDocumentToGoogleDrive(
     buffer,
   });
 
-  return { drive, googleEmail };
+  return { drive, googleEmail, exportEngine };
 }

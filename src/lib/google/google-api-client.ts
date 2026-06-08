@@ -184,6 +184,7 @@ export type GoogleDocsExportResult = {
   drive: { fileId: string; name: string; webViewLink: string | null };
   documentUrl: string;
   googleEmail: string | null;
+  exportEngine?: "official" | "html";
 };
 
 export async function exportToGoogleDocs(params: {
@@ -213,6 +214,7 @@ export async function exportToGoogleDocs(params: {
 export type GoogleDriveExportResult = {
   drive: { fileId: string; name: string; webViewLink: string | null };
   googleEmail: string | null;
+  exportEngine?: "official" | "html";
 };
 
 export async function exportToGoogleDrive(params: {

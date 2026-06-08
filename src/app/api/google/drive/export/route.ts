@@ -38,6 +38,7 @@ export async function POST(request: NextRequest) {
   const body = (await request.json()) as {
     title?: string;
     html?: string;
+    documentType?: string;
   };
 
   const title = String(body.title || "").trim();
@@ -60,6 +61,7 @@ export async function POST(request: NextRequest) {
     const result = await saveDocumentToGoogleDrive(user.id, {
       title,
       html: body.html!,
+      documentType: body.documentType,
     });
 
     return NextResponse.json({ success: true, data: result });

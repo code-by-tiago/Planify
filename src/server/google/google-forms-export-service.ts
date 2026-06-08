@@ -1,3 +1,4 @@
+import { stripTeacherOnlyExportBlocks } from "../editor/prepare-export-html";
 import type { ParsedQuizQuestion } from "./parse-quiz-from-html";
 import { parseQuizQuestionsFromHtml } from "./parse-quiz-from-html";
 import { getValidGoogleAccessToken } from "./google-token-store";
@@ -88,7 +89,7 @@ export async function exportQuizToGoogleForms(
     throw new Error("Conteúdo do documento vazio.");
   }
 
-  const questions = parseQuizQuestionsFromHtml(html);
+  const questions = parseQuizQuestionsFromHtml(stripTeacherOnlyExportBlocks(html));
 
   if (!questions.length) {
     throw new Error(

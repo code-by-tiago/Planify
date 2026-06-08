@@ -42,6 +42,32 @@ function strengthenFlashcards(root: Element) {
   }
 }
 
+const TEACHER_NOTES_SLIDE_RE =
+  /<div[^>]*>\s*<span[^>]*>Notas do professor<\/span>[\s\S]*?<\/div>/gi;
+
+const TEACHER_NOTES_SECTION_RE =
+  /<section[^>]*>\s*<h2[^>]*>\s*Notas para o professor[\s\S]*?<\/section>/gi;
+
+/** Remove blocos internos de uso do professor (notas, metadados de deck). */
+export function stripTeacherOnlyExportBlocks(html: string): string {
+  let cleaned = String(html || "")
+    .replace(TEACHER_NOTES_SLIDE_RE, "")
+    .replace(TEACHER_NOTES_SECTION_RE, "");
+
+  cleaned = cleaned.replace(
+    /<section[^>]*class=["'][^"']*planify-slide-deck[^"']*["'][^>]*>([\s\S]*?)<\/section>/gi,
+    (_full, inner) => {
+      const withoutMeta = inner.replace(
+        /<p[^>]*>\s*Apresentação\s*[·•][\s\S]*?<\/p>/gi,
+        "",
+      );
+      return withoutMeta.trim();
+    },
+  );
+
+  return cleaned;
+}
+
 export function prepareHtmlForExport(html: string): string {
   const enhanced = enhanceHtmlForExport(html);
   const { document } = parseHTML(

@@ -180,6 +180,49 @@ function walkNode(node: Node, parts: string[]): void {
     return;
   }
 
+  if (element.classList.contains("planify-questao")) {
+    const number = element.querySelector(".planify-questao-number");
+    if (number) {
+      parts.push(paragraph(elementText(number), "Heading1"));
+    }
+
+    const statement = element.querySelector(".planify-questao-statement");
+    if (statement) {
+      parts.push(paragraph(elementText(statement)));
+    }
+
+    const options = element.querySelectorAll(".planify-questao-options li");
+    if (options.length) {
+      for (const option of options) {
+        parts.push(bullet(elementText(option)));
+      }
+    } else if (element.querySelector(".planify-answer-lines")) {
+      parts.push(paragraph(" "));
+      parts.push(paragraph(" "));
+    }
+
+    return;
+  }
+
+  if (
+    element.classList.contains("planify-slide-deck") &&
+    element.querySelector(".planify-slide")
+  ) {
+    for (const child of element.childNodes) {
+      walkNode(child, parts);
+    }
+    return;
+  }
+
+  const firstHeading = element.children[0];
+  if (
+    firstHeading &&
+    (firstHeading.tagName === "H2" || firstHeading.tagName === "H3") &&
+    /notas para o professor/i.test(firstHeading.textContent || "")
+  ) {
+    return;
+  }
+
   if (tag === "TABLE") {
     const table = tableXml(element);
     if (table) parts.push(table);

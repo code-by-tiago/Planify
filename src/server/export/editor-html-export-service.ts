@@ -6,11 +6,19 @@ import {
 } from "../../lib/editor/editor-print-html";
 import { buildNativeHtmlDocx } from "../docx/simple-docx-builder";
 import { extractBodyHtml } from "../editor/html-inner-text";
-import { prepareHtmlForExport } from "../editor/prepare-export-html";
-import { extractSlideBlocks, extractSlideBlocksForExport } from "../materials/slide-html-parser";
+import {
+  prepareHtmlForExport,
+  stripTeacherOnlyExportBlocks,
+} from "../editor/prepare-export-html";
+import {
+  extractSlideBlocksForDocxExport,
+  extractSlideBlocksForExport,
+} from "../materials/slide-html-parser";
 import { renderHtmlToPdfBuffer } from "../pdf/html-to-pdf";
 
 export type EditorHtmlExportFormat = "docx" | "pdf" | "html";
+
+export type ExportBodyTarget = "pdf-document" | "pdf-slides" | "docx";
 
 function cleanFilename(value: string): string {
   const cleaned = value
@@ -38,8 +46,41 @@ export function resolveEditorHtmlBody(html: string): string {
   return trimmed;
 }
 
-export function buildEditorExportDocumentHtml(title: string, html: string): string {
-  const body = prepareHtmlForExport(resolveEditorHtmlBody(html));
+/** Prepara o body HTML conforme o tipo de material e o destino da exportação. */
+export function resolvePreparedExportBody(
+  html: string,
+  documentType?: string | null,
+  target: ExportBodyTarget = "pdf-document",
+): string {
+  const kind = detectMaterialExportKind(html, documentType);
+  const rawBody = resolveEditorHtmlBody(html);
+  const preparedBody = prepareHtmlForExport(rawBody);
+
+  if (kind === "slides") {
+    if (target === "pdf-slides") {
+      const slideBlocks = extractSlideBlocksForExport(preparedBody);
+      return slideBlocks.length ? slideBlocks.join("\n") : preparedBody;
+    }
+
+    const slideBlocks = extractSlideBlocksForDocxExport(preparedBody);
+    return slideBlocks.length
+      ? slideBlocks.join("\n")
+      : stripTeacherOnlyExportBlocks(preparedBody);
+  }
+
+  if (target === "docx") {
+    return stripTeacherOnlyExportBlocks(preparedBody);
+  }
+
+  return preparedBody;
+}
+
+export function buildEditorExportDocumentHtml(
+  title: string,
+  html: string,
+  documentType?: string | null,
+): string {
+  const body = resolvePreparedExportBody(html, documentType, "docx");
   return wrapAsPlanifyExportHtml(title, body);
 }
 
@@ -49,44 +90,16 @@ export function buildEditorExportHtmlForProfile(
   documentType?: string | null,
 ): { exportHtml: string; pdfProfile: "document" | "slides" } {
   const kind = detectMaterialExportKind(html, documentType);
-  const rawBody = resolveEditorHtmlBody(html);
-  const preparedBody = prepareHtmlForExport(rawBody);
 
   if (kind === "slides") {
-    const slideBlocks = extractSlideBlocksForExport(preparedBody);
-    const body = slideBlocks.length ? slideBlocks.join("\n") : preparedBody;
-
-    // #region agent log
-    fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Debug-Session-Id": "1b39d8",
-      },
-      body: JSON.stringify({
-        sessionId: "1b39d8",
-        runId: "pdf-export",
-        hypothesisId: "H2",
-        location: "editor-html-export-service.ts:buildEditorExportHtmlForProfile",
-        message: "slide export body composed",
-        data: {
-          slideBlockCount: slideBlocks.length,
-          rawSlideCount: extractSlideBlocks(preparedBody).length,
-          hasDeckWrapper: /planify-slide-deck/i.test(preparedBody),
-          hasTeacherNotes: /Notas do professor/i.test(preparedBody),
-          bodyUsesOnlySlides: slideBlocks.length > 0,
-          exportBodyHasDeck: /planify-slide-deck/i.test(body),
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
-
+    const body = resolvePreparedExportBody(html, documentType, "pdf-slides");
     return { exportHtml: wrapAsSlideExportHtml(title, body), pdfProfile: "slides" };
   }
 
+  const body = resolvePreparedExportBody(html, documentType, "pdf-document");
+
   return {
-    exportHtml: wrapAsPlanifyExportHtml(title, preparedBody),
+    exportHtml: wrapAsPlanifyExportHtml(title, body),
     pdfProfile: "document",
   };
 }
@@ -112,31 +125,6 @@ export async function exportEditorHtmlDocument(params: {
   );
   const filename = cleanFilename(title);
 
-  // #region agent log
-  fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Debug-Session-Id": "1b39d8",
-    },
-    body: JSON.stringify({
-      sessionId: "1b39d8",
-      runId: "pdf-export",
-      hypothesisId: "H4",
-      location: "editor-html-export-service.ts:exportEditorHtmlDocument",
-      message: "export profile resolved",
-      data: {
-        format: params.format,
-        pdfProfile,
-        documentType: params.documentType ?? null,
-        materialKind: detectMaterialExportKind(params.html, params.documentType),
-        usesSlideWrapper: pdfProfile === "slides",
-      },
-      timestamp: Date.now(),
-    }),
-  }).catch(() => {});
-  // #endregion
-
   if (params.format === "html") {
     const buffer = Buffer.from(exportHtml, "utf-8");
     if (buffer.byteLength > MAX_EXPORT_FILE_BYTES) {
@@ -152,8 +140,11 @@ export async function exportEditorHtmlDocument(params: {
   }
 
   if (params.format === "docx") {
-    const body = resolveEditorHtmlBody(params.html);
-    const preparedBody = prepareHtmlForExport(body);
+    const preparedBody = resolvePreparedExportBody(
+      params.html,
+      params.documentType,
+      "docx",
+    );
 
     const buffer = buildNativeHtmlDocx({
       title,

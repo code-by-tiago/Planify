@@ -137,12 +137,14 @@ export function EditorShareBar({
             title={title}
             getHtml={getHtml}
             returnTo={returnTo}
+            documentType={documentType}
             onStatus={onStatus}
           />
           <GoogleDriveExportButton
             title={title}
             getHtml={getHtml}
             returnTo={returnTo}
+            documentType={documentType}
             onStatus={onStatus}
           />
         </>

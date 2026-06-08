@@ -12,6 +12,7 @@ type GoogleDocsExportButtonProps = {
   title: string;
   getHtml: () => string;
   returnTo?: string;
+  documentType?: string | null;
   className?: string;
   iconOnly?: boolean;
   onStatus?: (message: string) => void;
@@ -21,6 +22,7 @@ export function GoogleDocsExportButton({
   title,
   getHtml,
   returnTo = "/dashboard?secao=editor",
+  documentType,
   className,
   iconOnly,
   onStatus,
@@ -29,10 +31,11 @@ export function GoogleDocsExportButton({
     const result = await exportToGoogleDocs({
       title,
       html: getHtml(),
+      documentType,
     });
 
     return { openUrl: result.documentUrl };
-  }, [getHtml, title]);
+  }, [documentType, getHtml, title]);
 
   return (
     <GoogleProductExportButton

@@ -164,26 +164,6 @@ export async function publishDriveFileToClassroom(params: {
 
   if (!response.ok || !data.id) {
     const apiMessage = data.error?.message || "";
-    // #region agent log
-    fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "1b39d8" },
-      body: JSON.stringify({
-        sessionId: "1b39d8",
-        runId: "classroom-publish",
-        hypothesisId: "H-educar",
-        location: "google-classroom.ts:publishDriveFileToClassroom",
-        message: "classroom publish failed",
-        data: {
-          status: response.status,
-          courseId: params.courseId,
-          apiMessage,
-          endpoint: "courseWorkMaterials",
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
     throw new Error(
       mapClassroomApiError(response.status, apiMessage, "publish"),
     );

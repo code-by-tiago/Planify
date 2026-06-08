@@ -167,6 +167,15 @@ export function extractSlideBlocksForExport(html: string): string[] {
   return extractSlideBlocks(html).map(prepareSlideBlockForExport);
 }
 
+function stripTeacherNotesFromSlideBlock(block: string): string {
+  return block.replace(TEACHER_NOTES_BLOCK_RE, "");
+}
+
+/** Extrai slides para DOCX — sem deck wrapper, notas do professor nem inner wrapper de PDF. */
+export function extractSlideBlocksForDocxExport(html: string): string[] {
+  return extractSlideBlocks(html).map(stripTeacherNotesFromSlideBlock);
+}
+
 /** Lê o tema de design embutido no HTML (data-planify-slide-theme). */
 export function extractSlideThemeFromHtml(html: string): string | undefined {
   const match = String(html || "").match(

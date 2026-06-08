@@ -1,5 +1,5 @@
-import { buildEditorExportDocumentHtml } from "../export/editor-html-export-service";
-import { buildHtmlAltChunkDocx } from "../docx/simple-docx-builder";
+import { resolvePreparedExportBody } from "../export/editor-html-export-service";
+import { buildNativeHtmlDocx } from "../docx/simple-docx-builder";
 import { uploadBufferToGoogleDrive, uploadDocxAsGoogleDocument } from "./google-drive";
 import { getValidGoogleAccessToken } from "./google-token-store";
 
@@ -15,17 +15,23 @@ function safeFilename(value: string): string {
   return cleaned || "documento-planify";
 }
 
-function buildDocxBuffer(title: string, html: string): Buffer {
-  const exportHtml = buildEditorExportDocumentHtml(title, html);
-  return buildHtmlAltChunkDocx({
+function buildDocxBuffer(
+  title: string,
+  html: string,
+  documentType?: string | null,
+): Buffer {
+  const htmlBody = resolvePreparedExportBody(html, documentType, "docx");
+
+  return buildNativeHtmlDocx({
     title,
-    htmlDocument: exportHtml,
+    htmlBody,
   });
 }
 
 export type GoogleDocsExportInput = {
   title: string;
   html: string;
+  documentType?: string | null;
 };
 
 export type GoogleDocsExportResult = {
@@ -50,7 +56,7 @@ export async function exportDocumentToGoogleDocs(
     throw new Error("Conteúdo do documento vazio.");
   }
 
-  const buffer = buildDocxBuffer(title, html);
+  const buffer = buildDocxBuffer(title, html, input.documentType);
   const filename = `${safeFilename(title)}.docx`;
 
   const drive = await uploadDocxAsGoogleDocument({
@@ -75,6 +81,7 @@ export async function exportDocumentToGoogleDocs(
 export type GoogleDriveSaveInput = {
   title: string;
   html: string;
+  documentType?: string | null;
 };
 
 export type GoogleDriveSaveResult = {
@@ -99,7 +106,7 @@ export async function saveDocumentToGoogleDrive(
     throw new Error("Conteúdo do documento vazio.");
   }
 
-  const buffer = buildDocxBuffer(title, html);
+  const buffer = buildDocxBuffer(title, html, input.documentType);
   const filename = `${safeFilename(title)}.docx`;
 
   const drive = await uploadBufferToGoogleDrive({

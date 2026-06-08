@@ -12,6 +12,7 @@ type GoogleDriveExportButtonProps = {
   title: string;
   getHtml: () => string;
   returnTo?: string;
+  documentType?: string | null;
   className?: string;
   iconOnly?: boolean;
   onStatus?: (message: string) => void;
@@ -21,6 +22,7 @@ export function GoogleDriveExportButton({
   title,
   getHtml,
   returnTo = "/dashboard?secao=editor",
+  documentType,
   className,
   iconOnly,
   onStatus,
@@ -29,6 +31,7 @@ export function GoogleDriveExportButton({
     const result = await exportToGoogleDrive({
       title,
       html: getHtml(),
+      documentType,
     });
 
     const url =
@@ -36,7 +39,7 @@ export function GoogleDriveExportButton({
       `https://drive.google.com/file/d/${result.drive.fileId}/view`;
 
     return { openUrl: url };
-  }, [getHtml, title]);
+  }, [documentType, getHtml, title]);
 
   return (
     <GoogleProductExportButton

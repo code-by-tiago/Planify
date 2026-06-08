@@ -38,6 +38,12 @@ import {
   type SlideLayout,
 } from "./material-engine-types";
 import { resolveSlideTheme, type SlideTheme } from "./slide-design-themes";
+import {
+  computeSlideBodyFontSize,
+  computeSlideFigureMaxHeight,
+  computeSlideTitleFontSize,
+  SLIDE_MIN_BODY_FONT,
+} from "@/lib/slides/slide-typography";
 import { enrichSlidesWithImages } from "./slide-image-resolver";
 import {
   assignSlideSequenceLabels,
@@ -237,13 +243,14 @@ function slideHeaderHtml(theme: SlideTheme, tag: string, position: string): stri
   }
 }
 
-function slideBulletsHtml(bullets: string[], theme: SlideTheme): string {
+function slideBulletsHtml(bullets: string[], theme: SlideTheme, fontSize?: number): string {
   const clean = bullets.filter((item) => item.trim());
   if (!clean.length) return "";
+  const size = fontSize ?? computeSlideBodyFontSize({ bullets: clean });
   return `<ul style="margin:0;padding:0;list-style:none;">${clean
     .map(
       (item) =>
-        `<li style="display:flex;gap:9px;margin:9px 0;font-family:${fontStack(theme.fontBody)};font-size:15px;line-height:1.55;color:${h(theme.bodyInk)};"><span style="color:${h(theme.accentHex)};font-weight:900;line-height:1.4;">▪</span><span>${escapeHtml(item)}</span></li>`,
+        `<li style="display:flex;gap:9px;margin:9px 0;font-family:${fontStack(theme.fontBody)};font-size:${size}px;line-height:1.5;color:${h(theme.bodyInk)};"><span style="color:${h(theme.accentHex)};font-weight:900;line-height:1.4;">▪</span><span>${escapeHtml(item)}</span></li>`,
     )
     .join("")}</ul>`;
 }
@@ -251,11 +258,13 @@ function slideBulletsHtml(bullets: string[], theme: SlideTheme): string {
 function slideFigureHtml(
   slide: { imageUrl?: string; imageAlt?: string; imagePrompt?: string },
   theme: SlideTheme,
+  maxHeight?: number,
 ): string {
+  const figureMaxHeight = maxHeight ?? 240;
   if (slide.imageUrl?.trim()) {
     const alt = escapeHtml(slide.imageAlt || slide.imagePrompt || "Ilustração do slide");
     return `<figure class="planify-slide-figure" data-planify-slide-image="true" style="margin:0;border-radius:14px;overflow:hidden;border:${theme.cardBorderCss};background:${theme.accentSoftCss};">
-      <img src="${escapeHtml(slide.imageUrl)}" alt="${alt}" class="planify-slide-image" data-planify-image="true" style="display:block;width:100%;max-height:280px;object-fit:cover;cursor:pointer;" />
+      <img src="${escapeHtml(slide.imageUrl)}" alt="${alt}" class="planify-slide-image" data-planify-image="true" style="display:block;width:100%;max-height:${figureMaxHeight}px;object-fit:contain;cursor:pointer;" />
     </figure>`;
   }
 
@@ -270,11 +279,13 @@ function slideFigureHtml(
 function slideCalloutHtml(
   callout: { title?: string; text?: string } | undefined,
   theme: SlideTheme,
+  bodyFontSize?: number,
 ): string {
   if (!callout || !callout.text) return "";
+  const bodySize = bodyFontSize ?? SLIDE_MIN_BODY_FONT;
   return `<div style="margin-top:14px;border-left:4px solid ${h(theme.accentHex)};background:${theme.accentSoftCss};border-radius:0 12px 12px 0;padding:12px 16px;">
-      ${callout.title ? `<p style="margin:0 0 4px;font-family:${fontStack(theme.fontHeading)};font-size:13px;font-weight:800;color:${h(theme.accentHex)};">★ ${escapeHtml(callout.title)}</p>` : ""}
-      <p style="margin:0;font-family:${fontStack(theme.fontBody)};font-size:14px;line-height:1.55;color:${h(theme.bodyInk)};">${escapeHtml(callout.text)}</p>
+      ${callout.title ? `<p style="margin:0 0 4px;font-family:${fontStack(theme.fontHeading)};font-size:${Math.max(14, bodySize - 2)}px;font-weight:800;color:${h(theme.accentHex)};">★ ${escapeHtml(callout.title)}</p>` : ""}
+      <p style="margin:0;font-family:${fontStack(theme.fontBody)};font-size:${Math.max(SLIDE_MIN_BODY_FONT, bodySize - 1)}px;line-height:1.5;color:${h(theme.bodyInk)};">${escapeHtml(callout.text)}</p>
     </div>`;
 }
 
@@ -346,37 +357,71 @@ function renderSlides(response: MaterialEngineResponse): string {
         theme.headerKind === "bar"
           ? `border-left:5px solid ${h(theme.accentHex)};padding-left:12px;`
           : "";
-      const titleHtml = `<h3 style="margin:0 0 14px;font-family:${fontStack(theme.fontHeading)};font-size:22px;font-weight:800;color:${h(theme.titleInk)};line-height:1.25;${accentBorder}">${escapeHtml(slide.title)}</h3>`;
+      const bodyFontSize = computeSlideBodyFontSize({
+        bullets,
+        hasImage: Boolean(slide.imageUrl?.trim() || slide.imagePrompt?.trim()),
+        hasCallout: Boolean(slide.callout?.text),
+      });
+      const titleFontSize = computeSlideTitleFontSize(bodyFontSize);
+      const figureMaxHeight = computeSlideFigureMaxHeight({
+        bulletCount: bullets.length,
+        hasCallout: Boolean(slide.callout?.text),
+      });
+      const titleHtml = `<h3 style="margin:0 0 14px;font-family:${fontStack(theme.fontHeading)};font-size:${titleFontSize}px;font-weight:800;color:${h(theme.titleInk)};line-height:1.25;${accentBorder}">${escapeHtml(slide.title)}</h3>`;
 
-      const bulletsHtml = slideBulletsHtml(bullets, theme);
-      const figureHtml = slideFigureHtml(slide, theme);
-      const calloutHtml = slideCalloutHtml(slide.callout, theme);
+      const bulletsHtml = slideBulletsHtml(bullets, theme, bodyFontSize);
+      const figureHtml = slideFigureHtml(slide, theme, figureMaxHeight);
+      const calloutHtml = slideCalloutHtml(slide.callout, theme, bodyFontSize);
       const notesHtml = slideNotesHtml(slide.speakerNotes, theme);
+      const imageBlock = figureHtml
+        ? `<div style="margin-top:16px;max-width:100%;">${figureHtml}</div>`
+        : "";
+
+      // #region agent log
+      fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Debug-Session-Id": "1b39d8",
+        },
+        body: JSON.stringify({
+          sessionId: "1b39d8",
+          runId: "runtime",
+          hypothesisId: "H2",
+          location: "material-engine-service.ts:renderSlides",
+          message: "slide render metrics",
+          data: {
+            layout,
+            bodyFontSize,
+            titleFontSize,
+            figureMaxHeight,
+            hasImage: Boolean(slide.imageUrl?.trim() || slide.imagePrompt?.trim()),
+            imageAfterText: true,
+            bulletCount: bullets.length,
+          },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {});
+      // #endregion
 
       let inner = "";
 
       if (layout === "duasColunas") {
-        const right = [figureHtml, calloutHtml].filter(Boolean).join("");
-        inner = `${titleHtml}
-          <div style="display:flex;flex-wrap:wrap;gap:18px;align-items:flex-start;">
-            <div style="flex:1 1 280px;min-width:240px;">${bulletsHtml}</div>
-            <div style="flex:1 1 220px;min-width:200px;">${right || figureHtml}</div>
-          </div>
-          ${notesHtml}`;
+        inner = `${titleHtml}${bulletsHtml}${imageBlock}${calloutHtml}${notesHtml}`;
       } else if (layout === "destaque") {
         const bigCallout = slide.callout?.text
           ? `<div style="margin:0 0 14px;text-align:center;background:${theme.accentSoftCss};border:${theme.cardBorderCss};border-radius:14px;padding:22px;">
-               ${slide.callout.title ? `<p style="margin:0 0 8px;font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:${h(theme.accentHex)};">${escapeHtml(slide.callout.title)}</p>` : ""}
-               <p style="margin:0;font-family:${fontStack(theme.fontHeading)};font-size:20px;font-weight:700;line-height:1.4;color:${h(theme.titleInk)};">${escapeHtml(slide.callout.text)}</p>
+               ${slide.callout.title ? `<p style="margin:0 0 8px;font-size:${Math.max(14, bodyFontSize - 2)}px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:${h(theme.accentHex)};">${escapeHtml(slide.callout.title)}</p>` : ""}
+               <p style="margin:0;font-family:${fontStack(theme.fontHeading)};font-size:${Math.max(SLIDE_MIN_BODY_FONT, bodyFontSize)}px;font-weight:700;line-height:1.4;color:${h(theme.titleInk)};">${escapeHtml(slide.callout.text)}</p>
              </div>`
           : "";
-        inner = `${titleHtml}${bigCallout}${bulletsHtml}${figureHtml ? `<div style="margin-top:14px;">${figureHtml}</div>` : ""}${notesHtml}`;
+        inner = `${titleHtml}${bigCallout}${bulletsHtml}${imageBlock}${notesHtml}`;
       } else if (layout === "fechamento") {
         inner = `${titleHtml}
-          ${slide.subtitle ? `<p style="margin:0 0 12px;font-family:${fontStack(theme.fontBody)};font-size:15px;font-weight:600;color:${h(theme.accentHex)};">${escapeHtml(slide.subtitle)}</p>` : ""}
-          ${bulletsHtml}${calloutHtml}${notesHtml}`;
+          ${slide.subtitle ? `<p style="margin:0 0 12px;font-family:${fontStack(theme.fontBody)};font-size:${Math.max(SLIDE_MIN_BODY_FONT, bodyFontSize - 1)}px;font-weight:600;color:${h(theme.accentHex)};">${escapeHtml(slide.subtitle)}</p>` : ""}
+          ${bulletsHtml}${imageBlock}${calloutHtml}${notesHtml}`;
       } else {
-        inner = `${titleHtml}${bulletsHtml}${figureHtml ? `<div style="margin-top:14px;">${figureHtml}</div>` : ""}${calloutHtml}${notesHtml}`;
+        inner = `${titleHtml}${bulletsHtml}${imageBlock}${calloutHtml}${notesHtml}`;
       }
 
       const leftBar =

@@ -1,4 +1,9 @@
 import PptxGenJS from "pptxgenjs";
+import {
+  computeSlideBodyFontSize,
+  computeSlideTitleFontSize,
+  SLIDE_MIN_BODY_FONT,
+} from "@/lib/slides/slide-typography";
 import type { MaterialEngineResponse } from "./material-engine-types";
 import { resolveSlideTheme, type SlideTheme } from "./slide-design-themes";
 import { assignSlideSequenceLabels, orderSlidesPedagogically } from "./slide-pedagogy";
@@ -313,25 +318,30 @@ export async function buildSlidesPptxBuffer(input: {
           fontFace: theme.fontBody,
         });
       }
+      let coverBottomY = slide.subtitle ? 4.55 : 3.65;
       pptxSlide.addText(`${ordered.length} SLIDES`, {
         x: 0.6,
-        y: 6.7,
+        y: coverBottomY,
         w: 4,
         h: 0.3,
         fontSize: 11,
         color: theme.coverMutedInk,
         charSpacing: 2,
       });
+      coverBottomY += 0.55;
 
       const coverData = slide.imageUrl ? imageMap.get(slide.imageUrl) : null;
       if (coverData) {
+        const imageW = 8.2;
+        const imageH = Math.min(2.8, Math.max(1.6, 7.1 - coverBottomY));
+        const imageX = (13.33 - imageW) / 2;
         pptxSlide.addImage({
           data: coverData,
-          x: 8.0,
-          y: 1.7,
-          w: 4.6,
-          h: 3.4,
-          sizing: { type: "cover", w: 4.6, h: 3.4 },
+          x: imageX,
+          y: coverBottomY,
+          w: imageW,
+          h: imageH,
+          sizing: { type: "contain", w: imageW, h: imageH },
         });
       }
 
@@ -352,24 +362,34 @@ export async function buildSlidesPptxBuffer(input: {
 
     drawContentHeader(pptx, pptxSlide, theme, headerLabel, positionLabel);
 
+    const bullets = (slide.bullets || []).filter((item) => item.trim());
+    const imageData = slide.imageUrl ? imageMap.get(slide.imageUrl) : null;
+    const hasImage = Boolean(imageData);
+    const hasCallout = Boolean(slide.callout?.text);
+    const bodyFontSize = computeSlideBodyFontSize({
+      bullets,
+      hasImage,
+      hasCallout,
+    });
+    const titleFontSize = computeSlideTitleFontSize(bodyFontSize);
+    const textWidth = 11.9;
+
     pptxSlide.addText(slide.title, {
       x: 0.5,
       y: 0.95,
       w: 12.2,
       h: 0.8,
-      fontSize: 23,
+      fontSize: titleFontSize,
       color: theme.titleInk,
       bold: true,
       fontFace: theme.fontHeading,
       valign: "top",
     });
 
-    const bullets = (slide.bullets || []).filter((item) => item.trim());
-    const imageData = slide.imageUrl ? imageMap.get(slide.imageUrl) : null;
-    const hasImage = Boolean(imageData);
-    const textWidth = hasImage && layout !== "destaque" ? 5.9 : 11.9;
+    let contentBottomY = 1.8;
 
     if (bullets.length) {
+      const bulletBlockHeight = Math.min(4.0, 0.42 * bullets.length + 0.35);
       pptxSlide.addText(
         bullets.map((text) => ({
           text,
@@ -380,24 +400,26 @@ export async function buildSlidesPptxBuffer(input: {
         })),
         {
           x: 0.55,
-          y: 1.8,
+          y: contentBottomY,
           w: textWidth,
-          h: 4.1,
-          fontSize: 15,
+          h: bulletBlockHeight,
+          fontSize: bodyFontSize,
           color: theme.bodyInk,
           fontFace: theme.fontBody,
           valign: "top",
-          lineSpacingMultiple: 1.18,
+          lineSpacingMultiple: 1.15,
         },
       );
+      contentBottomY += bulletBlockHeight + 0.18;
     }
 
-    if (slide.callout?.text) {
+    if (hasCallout && slide.callout?.text) {
+      const calloutHeight = 1.15;
       pptxSlide.addShape(pptx.ShapeType.roundRect, {
         x: 0.55,
-        y: 5.55,
+        y: contentBottomY,
         w: textWidth,
-        h: 1.2,
+        h: calloutHeight,
         fill: { color: theme.accentSoftHex },
         line: { color: theme.accentHex, width: 0.75 },
         rectRadius: 0.08,
@@ -411,7 +433,7 @@ export async function buildSlidesPptxBuffer(input: {
                   options: {
                     bold: true,
                     color: theme.accentHex,
-                    fontSize: 11,
+                    fontSize: Math.max(14, bodyFontSize - 4),
                     breakLine: true,
                   },
                 },
@@ -419,32 +441,64 @@ export async function buildSlidesPptxBuffer(input: {
             : []),
           {
             text: slide.callout.text,
-            options: { color: theme.bodyInk, fontSize: 12 },
+            options: {
+              color: theme.bodyInk,
+              fontSize: Math.max(SLIDE_MIN_BODY_FONT, bodyFontSize - 2),
+            },
           },
         ],
         {
           x: 0.7,
-          y: 5.65,
+          y: contentBottomY + 0.08,
           w: textWidth - 0.3,
-          h: 1.0,
+          h: calloutHeight - 0.16,
           valign: "middle",
           fontFace: theme.fontBody,
         },
       );
+      contentBottomY += calloutHeight + 0.18;
     }
 
     if (hasImage && imageData) {
-      const imageX = layout === "destaque" ? 3.5 : 6.7;
-      const imageY = layout === "destaque" ? 2.9 : 1.8;
-      const imageW = layout === "destaque" ? 6 : 5.7;
-      const imageH = layout === "destaque" ? 3 : 3.8;
+      const remainingHeight = Math.max(1.6, 6.95 - contentBottomY);
+      const imageW = Math.min(8.8, textWidth);
+      const imageH = Math.min(2.6, remainingHeight);
+      const imageX = (13.33 - imageW) / 2;
+      // #region agent log
+      if (typeof fetch !== "undefined") {
+        fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Debug-Session-Id": "1b39d8",
+          },
+          body: JSON.stringify({
+            sessionId: "1b39d8",
+            runId: "runtime",
+            hypothesisId: "H3",
+            location: "slide-pptx-builder.ts:contentSlide",
+            message: "pptx image placed after text",
+            data: {
+              contentBottomY,
+              imageY: contentBottomY,
+              imageW,
+              imageH,
+              bodyFontSize,
+              bulletCount: bullets.length,
+              sizing: "contain",
+            },
+            timestamp: Date.now(),
+          }),
+        }).catch(() => {});
+      }
+      // #endregion
       pptxSlide.addImage({
         data: imageData,
         x: imageX,
-        y: imageY,
+        y: contentBottomY,
         w: imageW,
         h: imageH,
-        sizing: { type: "cover", w: imageW, h: imageH },
+        sizing: { type: "contain", w: imageW, h: imageH },
       });
     }
 

@@ -12,6 +12,11 @@ import {
   getClosestTableCell,
 } from "@/lib/editor/editor-selection-utils";
 import { isSlideDeckHtml } from "@/lib/slides/slide-deck-utils";
+import { SlideAiAdjustPanel } from "@/components/slides/SlideAiAdjustPanel";
+import type {
+  MaterialEngineInput,
+  MaterialEngineResponse,
+} from "@/server/materials/material-engine-types";
 import { MaterialQualityScoreBar } from "@/components/materiais/MaterialQualityScoreBar";
 import {
   buildElevatePlanningPayload,
@@ -328,6 +333,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
   const [isSlideDeck, setIsSlideDeck] = useState(false);
   const [slideTheme, setSlideTheme] = useState<string | null>(null);
   const [elevatingQuality, setElevatingQuality] = useState(false);
+  const [adjustingSlides, setAdjustingSlides] = useState(false);
 
   const lastSavedLabel = useMemo(() => nowLabel(), []);
 
@@ -905,6 +911,73 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
     } finally {
       setElevatingQuality(false);
     }
+  }
+
+  function handleSlideAiAdjustResult(result: {
+    html: string;
+    estrutura: MaterialEngineResponse | null;
+    payload: MaterialEngineInput;
+    qualityScore?: number | null;
+    qualityIssues?: string[];
+  }) {
+    if (editorRef.current) {
+      editorRef.current.innerHTML = result.html;
+      prepareImagesInsideEditor();
+      updateWordCount();
+      syncSlideDeckFlags(result.html, documentSource);
+      seedUndoStack(result.html);
+    }
+
+    const nextMeta: MaterialEditorMeta = {
+      ...(materialMeta ?? {
+        toolId: "slides",
+        tema: title,
+        componente: "",
+        anoSerie: "",
+      }),
+      slideTheme:
+        result.estrutura?.slideTheme ||
+        materialMeta?.slideTheme ||
+        materialMeta?.designSlides ||
+        null,
+      designSlides:
+        result.estrutura?.slideTheme ||
+        materialMeta?.designSlides ||
+        null,
+      qualityScore:
+        typeof result.qualityScore === "number" ? result.qualityScore : null,
+      qualityIssues: result.qualityIssues ?? [],
+      generationPayload: result.payload,
+    };
+
+    const source = documentSource;
+    const saved = syncOpenDocumentToHistory({
+      title: title.trim() || getDocumentTitleFromHtml(result.html),
+      content: result.html,
+      type: source?.type || "material:slides",
+      payload: {
+        source: "material",
+        raw: nextMeta,
+        id: (source?.payload as { id?: string } | undefined)?.id,
+      },
+    });
+
+    setDocumentSource({
+      type: saved.type,
+      title: saved.title,
+      html: saved.content,
+      content: saved.content,
+      payload: {
+        source: saved.source,
+        subtitle: saved.subtitle,
+        raw: nextMeta,
+        id: saved.id,
+      },
+      updatedAt: saved.updatedAt,
+    });
+
+    window.dispatchEvent(new Event("planify:credits-changed"));
+    setStatus("Ajuste aplicado — revise os slides antes de salvar ou exportar.");
   }
 
   async function elevarQualidadePlanejamentoNoEditor() {
@@ -1954,6 +2027,17 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
                 Aa+
               </button>
             </div>
+          ) : null}
+
+          {isSlideDeck && materialMeta?.generationPayload ? (
+            <SlideAiAdjustPanel
+              generationPayload={materialMeta.generationPayload}
+              disabled={adjustingSlides || elevatingQuality}
+              compact={embedded}
+              onAdjusting={setAdjustingSlides}
+              onResult={handleSlideAiAdjustResult}
+              onError={(message) => setStatus(message)}
+            />
           ) : null}
 
           {isTableActive ? (

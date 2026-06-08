@@ -50,6 +50,7 @@ export type MaterialHistoryPreview = {
   anoSerie: string;
   html: string;
   createdAt: string;
+  generationPayload?: MaterialEngineInput | null;
 };
 
 type LegacyMaterialHistoryItem = {
@@ -179,7 +180,52 @@ export function historyItemToMaterialPreview(
     anoSerie: raw?.anoSerie || "",
     html: item.content,
     createdAt: item.createdAt,
+    generationPayload: raw?.generationPayload ?? null,
   };
+}
+
+export function loadMaterialMetaFromHistoryId(
+  id: string,
+): MaterialEditorMeta | null {
+  if (typeof window === "undefined") return null;
+  const item = loadHistoryItems().find((entry) => entry.id === id);
+  if (!item) return null;
+  const raw = item.raw as MaterialEditorMeta | undefined;
+  if (!raw) return null;
+  return raw;
+}
+
+const SLIDE_PAYLOAD_SESSION_KEY = "planify:slides:last-generation-payload";
+
+export function persistSlideGenerationPayload(
+  payload: MaterialEngineInput,
+): void {
+  if (typeof window === "undefined") return;
+  try {
+    sessionStorage.setItem(SLIDE_PAYLOAD_SESSION_KEY, JSON.stringify(payload));
+  } catch {
+    /* ignore */
+  }
+}
+
+export function readSlideGenerationPayload(): MaterialEngineInput | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = sessionStorage.getItem(SLIDE_PAYLOAD_SESSION_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as MaterialEngineInput;
+  } catch {
+    return null;
+  }
+}
+
+export function clearSlideGenerationPayload(): void {
+  if (typeof window === "undefined") return;
+  try {
+    sessionStorage.removeItem(SLIDE_PAYLOAD_SESSION_KEY);
+  } catch {
+    /* ignore */
+  }
 }
 
 export function loadMaterialHistoryPreview(limit = 12): MaterialHistoryPreview[] {

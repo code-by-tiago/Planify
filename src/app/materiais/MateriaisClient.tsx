@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { GoogleSlidesExportButton } from "@/components/google/GoogleSlidesExportButton";
+import { SlideAiAdjustPanel } from "@/components/slides/SlideAiAdjustPanel";
 import { MaterialGenerationSummaryPanel } from "@/components/materiais/MaterialGenerationSummary";
 import { MaterialQualityScoreBar } from "@/components/materiais/MaterialQualityScoreBar";
 import { MaterialDocumentPreview } from "@/components/materiais/MaterialDocumentPreview";
@@ -49,9 +50,13 @@ import {
 import {
   clearMaterialHistory,
   loadMaterialHistoryPreview,
+  loadMaterialMetaFromHistoryId,
   openMaterialInEditor,
   persistGeneratedMaterial,
+  clearSlideGenerationPayload,
+  persistSlideGenerationPayload,
   readAutoOpenEditorPreference,
+  readSlideGenerationPayload,
   writeAutoOpenEditorPreference,
   type MaterialEditorMeta,
   type MaterialHistoryPreview,
@@ -282,6 +287,7 @@ export function MateriaisClient({
   const [lastGenerationPayload, setLastGenerationPayload] =
     useState<MaterialEngineInput | null>(null);
   const [elevatingQuality, setElevatingQuality] = useState(false);
+  const [adjustingSlides, setAdjustingSlides] = useState(false);
   const [conteudosSugeridos, setConteudosSugeridos] = useState<
     ConteudoSugerido[] | null
   >(null);
@@ -323,6 +329,21 @@ export function MateriaisClient({
     inferred: boolean;
   } | null>(null);
 
+  function rememberSlideGenerationPayload(payload: MaterialEngineInput | null) {
+    setLastGenerationPayload(payload);
+    if (!payload) {
+      clearSlideGenerationPayload();
+      return;
+    }
+    if (payload.tipoMaterial === "slides") {
+      persistSlideGenerationPayload(payload);
+    }
+  }
+
+  const slideAdjustPayload =
+    lastGenerationPayload ??
+    (tipo === "slides" ? readSlideGenerationPayload() : null);
+
   function resetBnccSelection(clearSuggestions = true) {
     if (clearSuggestions) setBnccGroups([]);
     setSelectedBnccSkills([]);
@@ -353,6 +374,10 @@ export function MateriaisClient({
 
     setHistorico(loadMaterialHistoryPreview());
     setAbrirEditorAutomatico(readAutoOpenEditorPreference());
+    const restoredPayload = readSlideGenerationPayload();
+    if (restoredPayload) {
+      setLastGenerationPayload(restoredPayload);
+    }
   }, [studioMode, initialTipo]);
 
   useEffect(() => {
@@ -651,7 +676,7 @@ export function MateriaisClient({
     setPipelineGeracao(null);
     setQualityScore(null);
     setQualityIssues([]);
-    setLastGenerationPayload(null);
+    rememberSlideGenerationPayload(null);
     setConteudosSugeridos(null);
     setConteudosSelecionadosIds([]);
     setTemasRapidosSelecionados([]);
@@ -853,19 +878,28 @@ export function MateriaisClient({
     setErro("");
     setMaterialSalvo(true);
     setModalAberto(true);
+    const payload =
+      item.generationPayload ??
+      loadMaterialMetaFromHistoryId(item.id)?.generationPayload ??
+      null;
+    if (payload) {
+      rememberSlideGenerationPayload(payload);
+    }
   }
 
   function abrirHistoricoNoEditor(item: MaterialHistoryPreview) {
+    const storedMeta = loadMaterialMetaFromHistoryId(item.id);
     openMaterialInEditor(
       item.html,
       item.titulo,
-      {
+      storedMeta ?? {
         toolId: item.tipo,
         tema: item.tema,
         componente: item.componente,
         anoSerie: item.anoSerie,
         etapa,
         areaConhecimento,
+        generationPayload: item.generationPayload ?? null,
       },
       { from: "materiais" },
     );
@@ -989,7 +1023,7 @@ export function MateriaisClient({
         ...buildGenerationPayload(),
         idempotencyKey: crypto.randomUUID(),
       };
-      setLastGenerationPayload(payload);
+      rememberSlideGenerationPayload(payload);
 
       let data: Record<string, unknown>;
       try {
@@ -1166,7 +1200,7 @@ export function MateriaisClient({
           data.qualityIssues.map((item) => String(item)).filter(Boolean),
         );
       }
-      setLastGenerationPayload(payload);
+      rememberSlideGenerationPayload(payload);
 
       const titulo = buildTitle(tipo, tema);
       const meta = buildMaterialMeta(
@@ -1198,6 +1232,38 @@ export function MateriaisClient({
     } finally {
       setElevatingQuality(false);
     }
+  }
+
+  function handleSlideAiAdjustResult(result: {
+    html: string;
+    estrutura: MaterialEngineResponse | null;
+    payload: MaterialEngineInput;
+    qualityScore?: number | null;
+    qualityIssues?: string[];
+    alertas?: string[];
+    pipeline?: string | null;
+  }) {
+    window.dispatchEvent(new Event("planify:credits-changed"));
+    setResultadoHtml(result.html);
+    setResultadoEstrutura(result.estrutura);
+    rememberSlideGenerationPayload(result.payload);
+    if (result.alertas?.length) setAlertasGeracao(result.alertas);
+    if (typeof result.qualityScore === "number") {
+      setQualityScore(result.qualityScore);
+    }
+    if (result.qualityIssues) setQualityIssues(result.qualityIssues);
+    if (result.pipeline) setPipelineGeracao(result.pipeline);
+
+    const titulo = buildTitle(tipo, tema);
+    const meta = buildMaterialMeta(result.pipeline ?? pipelineGeracao, result.estrutura, {
+      qualityScore: result.qualityScore ?? qualityScore,
+      qualityIssues: result.qualityIssues ?? qualityIssues,
+      generationPayload: result.payload,
+    });
+    persistGeneratedMaterial(result.html, titulo, meta);
+    setMaterialSalvo(true);
+    setHistorico(loadMaterialHistoryPreview());
+    setHintFeedback("Ajuste aplicado — revise os slides antes de salvar ou exportar.");
   }
 
   function gerarMaterial(event: FormEvent<HTMLFormElement>) {
@@ -1835,6 +1901,15 @@ export function MateriaisClient({
                     ))}
                   </div>
                 </aside>
+              ) : null}
+              {tipo === "slides" ? (
+                <SlideAiAdjustPanel
+                  generationPayload={slideAdjustPayload}
+                  disabled={loading || adjustingSlides}
+                  onAdjusting={setAdjustingSlides}
+                  onResult={handleSlideAiAdjustResult}
+                  onError={setErro}
+                />
               ) : null}
               {tipo === "slides" ? (
                 <aside className="mb-4 rounded-xl border border-cyan-400/20 bg-gradient-to-r from-cyan-50/80 to-emerald-50/60 px-4 py-3">

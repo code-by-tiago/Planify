@@ -46,3 +46,20 @@ export function buildElevatePayload(
     problemasQualidade: problemas,
   };
 }
+
+export function buildSlideAdjustPayload(
+  base: MaterialEngineInput,
+  instruction: string,
+): MaterialEngineInput {
+  const trimmed = instruction.trim();
+  const adjustBlock = [
+    "AJUSTE SOLICITADO PELO PROFESSOR (aplicar sobre a apresentação já gerada; preserve tema, sequência pedagógica e design salvo indicação contrária):",
+    trimmed,
+  ].join("\n");
+
+  return {
+    ...base,
+    observacoes: [base.observacoes?.trim(), adjustBlock].filter(Boolean).join("\n\n"),
+    idempotencyKey: crypto.randomUUID(),
+  };
+}

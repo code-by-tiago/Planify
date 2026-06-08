@@ -29,10 +29,10 @@ export function LandingHeader() {
 
   return (
     <header
-      className={`sticky top-0 z-50 border-b pt-[env(safe-area-inset-top)] transition-all duration-300 ${
+      className={`sticky top-0 z-50 border-b bg-white pt-[env(safe-area-inset-top)] transition-all duration-300 max-sm:backdrop-blur-none sm:backdrop-blur-md ${
         scrolled
-          ? "border-slate-200/80 bg-white/90 shadow-sm backdrop-blur-md"
-          : "border-transparent bg-white/70 backdrop-blur-sm"
+          ? "border-slate-200/80 shadow-sm sm:bg-white/90"
+          : "border-transparent sm:bg-white/70"
       }`}
     >
       <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:gap-4 sm:px-8 sm:py-4">

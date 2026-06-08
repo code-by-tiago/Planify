@@ -26,7 +26,7 @@ export function LandingStats() {
               transition={{ duration: 0.5, delay: index * 0.08 }}
             >
               <div
-                className="pointer-events-none absolute -right-6 -top-6 h-24 w-24 rounded-full bg-cyan-500/5 blur-2xl transition group-hover:bg-cyan-500/10"
+                className="pointer-events-none absolute -right-6 -top-6 hidden h-24 w-24 rounded-full bg-cyan-100/80 sm:block"
                 aria-hidden
               />
               <p className="font-[family-name:var(--font-display)] text-3xl font-extrabold tracking-tight text-cyan-600 sm:text-4xl">

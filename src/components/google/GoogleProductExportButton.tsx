@@ -9,20 +9,24 @@ import {
   type GoogleIntegrationStatus,
 } from "@/lib/google/google-api-client";
 import {
+  clearGoogleExportPending,
+  hasExportableHtml,
+  openGoogleExportUrl,
+  readGoogleExportPending,
+  saveGoogleExportPending,
+  waitForExportableHtml,
+  waitForGoogleConnected,
+} from "@/lib/google/google-export-resume";
+import {
   GOOGLE_STATUS_CHANGED_EVENT,
   notifyGoogleStatusChanged,
 } from "@/lib/google/google-status-events";
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-export type GoogleExportPending = {
-  title: string;
-  returnTo: string;
-  ts: number;
-};
-
 type GoogleProductExportButtonProps = {
   title: string;
+  getHtml: () => string;
   returnTo?: string;
   className?: string;
   iconOnly?: boolean;
@@ -40,46 +44,13 @@ type GoogleProductExportButtonProps = {
   };
   exportTitle?: string;
   pendingStorageKey: string;
-  onExport: () => Promise<{ openUrl: string }>;
+  onExport: (html: string) => Promise<{ openUrl: string }>;
   onStatus?: (message: string) => void;
 };
 
-function readPending(key: string): GoogleExportPending | null {
-  if (typeof window === "undefined") return null;
-
-  try {
-    const raw = window.sessionStorage.getItem(key);
-    if (!raw) return null;
-
-    const parsed = JSON.parse(raw) as GoogleExportPending;
-    if (!parsed?.title || !parsed.returnTo) return null;
-
-    if (Date.now() - (parsed.ts || 0) > 30 * 60 * 1000) {
-      window.sessionStorage.removeItem(key);
-      return null;
-    }
-
-    return parsed;
-  } catch {
-    return null;
-  }
-}
-
-function savePending(key: string, payload: Omit<GoogleExportPending, "ts">): void {
-  if (typeof window === "undefined") return;
-  window.sessionStorage.setItem(
-    key,
-    JSON.stringify({ ...payload, ts: Date.now() } satisfies GoogleExportPending),
-  );
-}
-
-function clearPending(key: string): void {
-  if (typeof window === "undefined") return;
-  window.sessionStorage.removeItem(key);
-}
-
 export function GoogleProductExportButton({
   title,
+  getHtml,
   returnTo = "/dashboard?secao=editor",
   className = "",
   iconOnly = true,
@@ -102,6 +73,7 @@ export function GoogleProductExportButton({
 
   const refresh = useCallback(async () => {
     setError("");
+
     try {
       const next = await fetchGoogleStatus();
       setStatus(next);
@@ -114,15 +86,86 @@ export function GoogleProductExportButton({
     }
   }, []);
 
+  const resolveHtmlForExport = useCallback(async (): Promise<string> => {
+    const pending = readGoogleExportPending(pendingStorageKey);
+    const snapshot = pending?.html?.trim() || "";
+
+    if (snapshot && hasExportableHtml(snapshot)) {
+      return snapshot;
+    }
+
+    return waitForExportableHtml(getHtml);
+  }, [getHtml, pendingStorageKey]);
+
   const runExport = useCallback(async () => {
     setBusy(true);
     setError("");
 
     try {
-      const result = await onExport();
-      clearPending(pendingStorageKey);
-      window.open(result.openUrl, "_blank", "noopener,noreferrer");
-      onStatus?.(`${productName} aberto em nova aba.`);
+      const html = await resolveHtmlForExport();
+
+      // #region agent log
+      fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "f33ae7" },
+        body: JSON.stringify({
+          sessionId: "f33ae7",
+          runId: "pre-fix",
+          hypothesisId: "H-A",
+          location: "GoogleProductExportButton.tsx:runExport",
+          message: "html resolved for export",
+          data: {
+            productName,
+            htmlLen: html.length,
+            exportable: hasExportableHtml(html),
+            pendingKey: pendingStorageKey,
+          },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {});
+      // #endregion
+
+      if (!hasExportableHtml(html)) {
+        throw new Error("O documento ainda não carregou. Aguarde e tente exportar novamente.");
+      }
+
+      const result = await onExport(html);
+      clearGoogleExportPending(pendingStorageKey);
+
+      const opened = openGoogleExportUrl(result.openUrl);
+
+      // #region agent log
+      fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "f33ae7" },
+        body: JSON.stringify({
+          sessionId: "f33ae7",
+          runId: "pre-fix",
+          hypothesisId: "H-C",
+          location: "GoogleProductExportButton.tsx:runExport",
+          message: "export completed",
+          data: {
+            productName,
+            opened,
+            openUrlHost: (() => {
+              try {
+                return new URL(result.openUrl).host;
+              } catch {
+                return "invalid";
+              }
+            })(),
+          },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {});
+      // #endregion
+
+      if (opened) {
+        onStatus?.(`${productName} aberto em nova aba.`);
+      } else {
+        onStatus?.(`${productName} criado. Permita pop-ups ou abra: ${result.openUrl}`);
+        setError("Pop-up bloqueado. Permita janelas do Planify e clique de novo.");
+      }
     } catch (err) {
       const message =
         err instanceof Error ? err.message : `Erro ao exportar para ${productName}.`;
@@ -139,51 +182,30 @@ export function GoogleProductExportButton({
     } finally {
       setBusy(false);
     }
-  }, [onExport, onStatus, pendingStorageKey, productName]);
+  }, [onExport, onStatus, pendingStorageKey, productName, resolveHtmlForExport]);
 
   const runConnect = useCallback(async () => {
     setBusy(true);
     setError("");
 
-    savePending(pendingStorageKey, { title, returnTo });
+    saveGoogleExportPending(pendingStorageKey, {
+      title,
+      returnTo,
+      html: getHtml(),
+    });
 
     try {
       await startGoogleOAuth(returnTo);
     } catch (err) {
-      clearPending(pendingStorageKey);
+      clearGoogleExportPending(pendingStorageKey);
       setError(err instanceof Error ? err.message : "Erro ao conectar Google.");
       setBusy(false);
     }
-  }, [pendingStorageKey, returnTo, title]);
+  }, [getHtml, pendingStorageKey, returnTo, title]);
 
   useEffect(() => {
-    void refresh().then((fresh) => {
-      // #region agent log
-      fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "82e773" },
-        body: JSON.stringify({
-          sessionId: "82e773",
-          runId: "google-auto-export",
-          hypothesisId: "H-A",
-          location: "GoogleProductExportButton.tsx:mount",
-          message: "product export button mounted",
-          data: {
-            productName,
-            configured: Boolean(fresh?.configured),
-            authenticated: Boolean(fresh?.authenticated),
-            connected: Boolean(fresh?.connected),
-            autoExportOnGeneration: false,
-            googleConnectedParam: typeof window !== "undefined"
-              ? new URLSearchParams(window.location.search).get("google")
-              : null,
-          },
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {});
-      // #endregion
-    });
-  }, [refresh, productName]);
+    void refresh();
+  }, [refresh]);
 
   useEffect(() => {
     const onStatusChanged = () => {
@@ -211,7 +233,7 @@ export function GoogleProductExportButton({
 
     if (googleError) {
       setError(decodeURIComponent(googleError));
-      clearPending(pendingStorageKey);
+      clearGoogleExportPending(pendingStorageKey);
       params.delete("google_error");
       const next = `${window.location.pathname}?${params.toString()}`.replace(/\?$/, "");
       window.history.replaceState({}, "", next);
@@ -220,20 +242,66 @@ export function GoogleProductExportButton({
 
     if (params.get("google") !== "connected") return;
 
+    const pending = readGoogleExportPending(pendingStorageKey);
+    if (!pending?.title) return;
+
+    autoExportStarted.current = true;
+
     params.delete("google");
     const next = `${window.location.pathname}?${params.toString()}`.replace(/\?$/, "");
     window.history.replaceState({}, "", next);
 
-    autoExportStarted.current = true;
-
     void (async () => {
-      const fresh = await refresh();
+      // #region agent log
+      fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "f33ae7" },
+        body: JSON.stringify({
+          sessionId: "f33ae7",
+          runId: "pre-fix",
+          hypothesisId: "H-D",
+          location: "GoogleProductExportButton.tsx:oauthResume",
+          message: "oauth resume started",
+          data: {
+            productName,
+            pendingTitle: pending?.title,
+            pendingHtmlLen: pending?.html?.length ?? 0,
+            returnTo: pending?.returnTo,
+          },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {});
+      // #endregion
+
+      const fresh = await waitForGoogleConnected(refresh);
       notifyGoogleStatusChanged();
 
-      const pending = readPending(pendingStorageKey);
-      if (fresh?.connected && pending?.title) {
-        await runExport();
+      // #region agent log
+      fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "f33ae7" },
+        body: JSON.stringify({
+          sessionId: "f33ae7",
+          runId: "pre-fix",
+          hypothesisId: "H-B",
+          location: "GoogleProductExportButton.tsx:oauthResume",
+          message: "google status after oauth",
+          data: {
+            productName,
+            connected: Boolean(fresh?.connected),
+            configured: Boolean(fresh?.configured),
+          },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {});
+      // #endregion
+
+      if (!fresh?.connected) {
+        setError("Google conectado, mas a sessão ainda não sincronizou. Clique no botão novamente.");
+        return;
       }
+
+      await runExport();
     })();
   }, [pendingStorageKey, refresh, runExport]);
 

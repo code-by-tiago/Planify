@@ -27,10 +27,10 @@ export function GoogleDriveExportButton({
   iconOnly,
   onStatus,
 }: GoogleDriveExportButtonProps) {
-  const runExport = useCallback(async () => {
+  const runExport = useCallback(async (html: string) => {
     const result = await exportToGoogleDrive({
       title,
-      html: getHtml(),
+      html,
       documentType,
     });
 
@@ -39,11 +39,12 @@ export function GoogleDriveExportButton({
       `https://drive.google.com/file/d/${result.drive.fileId}/view`;
 
     return { openUrl: url };
-  }, [documentType, getHtml, title]);
+  }, [documentType, title]);
 
   return (
     <GoogleProductExportButton
       title={title}
+      getHtml={getHtml}
       returnTo={returnTo}
       className={className}
       iconOnly={iconOnly}

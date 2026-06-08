@@ -27,19 +27,20 @@ export function GoogleDocsExportButton({
   iconOnly,
   onStatus,
 }: GoogleDocsExportButtonProps) {
-  const runExport = useCallback(async () => {
+  const runExport = useCallback(async (html: string) => {
     const result = await exportToGoogleDocs({
       title,
-      html: getHtml(),
+      html,
       documentType,
     });
 
     return { openUrl: result.documentUrl };
-  }, [documentType, getHtml, title]);
+  }, [documentType, title]);
 
   return (
     <GoogleProductExportButton
       title={title}
+      getHtml={getHtml}
       returnTo={returnTo}
       className={className}
       iconOnly={iconOnly}

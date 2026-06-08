@@ -63,26 +63,6 @@ export function useAutoGoogleExport({
         slideTheme: slideTheme ?? intent.slideTheme,
       });
 
-      // #region agent log
-      fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "82e773" },
-        body: JSON.stringify({
-          sessionId: "82e773",
-          runId: "post-fix",
-          hypothesisId: "H-A",
-          location: "useAutoGoogleExport.ts:run",
-          message: "auto google export executed",
-          data: {
-            product: intent.product,
-            result,
-            autoExportOnGeneration: true,
-          },
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {});
-      // #endregion
-
       if (result === "exported") {
         const label =
           intent.product === "slides"

@@ -181,7 +181,7 @@ export function CommunityMaterialComments({
   return (
     <section
       id={`comments-${materialId}`}
-      className="border-t border-cyan-400/10 bg-cyan-50/20 px-4 py-4"
+      className="border-t border-cyan-400/10 bg-cyan-50/20 px-3 py-4 sm:px-4"
       aria-label="Comentários do material"
     >
       <div className="flex items-center justify-between gap-2">

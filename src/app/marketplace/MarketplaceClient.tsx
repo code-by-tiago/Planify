@@ -374,14 +374,14 @@ export function MarketplaceClient() {
           title="Materiais compartilhados por professores"
           description="Baixe DOCX ou PDF com um clique — publique o que você cria e reutilize modelos alinhados à BNCC."
           action={
-            <div className="flex flex-wrap items-center gap-2">
-              <CommunityNotificationsIcon />
-              <CommunityMessagesIcon />
-              <CommunityTeacherSearch />
+            <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center">
+              <CommunityNotificationsIcon className="col-span-1 w-full justify-center sm:w-auto" />
+              <CommunityMessagesIcon className="col-span-1 w-full justify-center sm:w-auto" />
+              <CommunityTeacherSearch className="col-span-2 sm:col-span-1" />
               <button
                 type="button"
                 onClick={() => setPublishOpen((open) => !open)}
-                className="pl-hud-btn rounded-xl px-4 py-2 text-xs font-semibold"
+                className="pl-hud-btn col-span-2 rounded-xl px-4 py-2 text-xs font-semibold sm:col-span-1"
               >
                 {publishOpen ? "Fechar publicação" : "Publicar material"}
               </button>

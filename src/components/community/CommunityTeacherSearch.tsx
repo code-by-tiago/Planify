@@ -19,9 +19,10 @@ const componenteOptions = [
 
 type CommunityTeacherSearchProps = {
   onClose?: () => void;
+  className?: string;
 };
 
-export function CommunityTeacherSearch({ onClose }: CommunityTeacherSearchProps) {
+export function CommunityTeacherSearch({ onClose, className }: CommunityTeacherSearchProps) {
   const [query, setQuery] = useState("");
   const [school, setSchool] = useState("");
   const [component, setComponent] = useState("");
@@ -70,21 +71,22 @@ export function CommunityTeacherSearch({ onClose }: CommunityTeacherSearchProps)
   }, [open, search]);
 
   return (
-    <div className="relative">
+    <div className={`relative w-full sm:w-auto ${className || ""}`}>
       <button
         type="button"
         onClick={() => {
           setOpen((value) => !value);
           if (open) onClose?.();
         }}
-        className="inline-flex h-11 items-center gap-1.5 rounded-xl border border-cyan-400/25 bg-white/90 px-3 text-xs font-bold text-cyan-800 shadow-sm transition hover:bg-cyan-50"
+        className="inline-flex h-11 w-full items-center justify-center gap-1.5 rounded-xl border border-cyan-400/25 bg-white/90 px-3 text-xs font-bold text-cyan-800 shadow-sm transition hover:bg-cyan-50 sm:w-auto sm:justify-start"
+        aria-label="Buscar professores"
       >
-        <PlanifyIcon name="search" className="h-3.5 w-3.5" />
-        Buscar professores
+        <PlanifyIcon name="search" className="h-3.5 w-3.5 shrink-0" />
+        <span className="truncate">Buscar professores</span>
       </button>
 
       {open ? (
-        <div className="absolute left-0 right-0 z-40 mt-2 rounded-2xl border border-cyan-400/20 bg-white p-4 shadow-2xl sm:left-auto sm:right-0 sm:w-[min(420px,calc(100vw-2rem))]">
+        <div className="fixed inset-x-4 top-[5.5rem] z-[60] max-h-[min(70vh,28rem)] overflow-y-auto rounded-2xl border border-cyan-400/20 bg-white p-4 shadow-2xl sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 sm:max-h-none sm:w-[min(420px,calc(100vw-2rem))]">
           <div className="grid gap-2">
             <input
               value={query}

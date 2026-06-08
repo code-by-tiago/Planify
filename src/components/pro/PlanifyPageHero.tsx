@@ -54,7 +54,9 @@ export function PlanifyPageHero({
           </p>
         </div>
         {action ? (
-          <div className={`shrink-0 transition-transform duration-200 ${collapsed ? "scale-95" : ""}`}>
+          <div
+            className={`w-full min-w-0 sm:w-auto sm:shrink-0 transition-transform duration-200 ${collapsed ? "scale-95" : ""}`}
+          >
             {action}
           </div>
         ) : null}

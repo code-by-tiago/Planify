@@ -135,7 +135,7 @@ export function CommunityNotificationsIcon({ className }: CommunityNotifications
         onClick={() => setOpen((value) => !value)}
         className={
           className ||
-          "relative inline-flex items-center justify-center rounded-xl border border-cyan-400/25 bg-white/90 p-2.5 text-cyan-800 shadow-sm transition hover:border-cyan-400/45 hover:bg-cyan-50"
+          "relative inline-flex w-full items-center justify-center rounded-xl border border-cyan-400/25 bg-white/90 p-2.5 text-cyan-800 shadow-sm transition hover:border-cyan-400/45 hover:bg-cyan-50 sm:w-auto"
         }
         title="Notificações"
         aria-label="Abrir notificações"

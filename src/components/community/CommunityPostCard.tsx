@@ -100,7 +100,7 @@ export function CommunityPostCard({
               {commentsCount}
             </a>
           ) : null}
-          <span className="rounded-full border border-cyan-400/20 bg-cyan-50 px-2.5 py-0.5 text-[10px] font-bold uppercase text-cyan-800">
+          <span className="max-w-[7.5rem] truncate rounded-full border border-cyan-400/20 bg-cyan-50 px-2.5 py-0.5 text-[10px] font-bold uppercase text-cyan-800 sm:max-w-none">
             {item.tipoMaterial}
           </span>
         </div>
@@ -150,65 +150,73 @@ export function CommunityPostCard({
 
       <CommunityFeedInlinePreview materialId={item.id} title={item.title} />
 
-      <div className="flex flex-wrap items-center gap-2 border-t border-cyan-400/10 px-4 py-3">
-        <Link
-          href={`/marketplace/material/${item.id}`}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-cyan-500/30 bg-cyan-600 px-3 py-1.5 text-[11px] font-bold text-white shadow-sm transition hover:bg-cyan-700"
-        >
-          <PlanifyIcon name="fileText" className="h-3.5 w-3.5" />
-          Ver material
-        </Link>
-        <MaterialLikeButton
-          materialId={item.id}
-          initialCount={likesCount}
-          initialLiked={likedByMe}
-          onChange={(state) => {
-            setLikesCount(state.likesCount);
-            setLikedByMe(state.likedByMe);
-          }}
-          compact
-        />
-        <MaterialSaveButton
-          materialId={item.id}
-          initialSaved={savedByMe}
-          onChange={setSavedByMe}
-        />
-        <button
-          type="button"
-          onClick={copyShareLink}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-cyan-400/20 bg-white/80 px-2.5 py-1.5 text-[11px] font-bold text-slate-700 transition hover:border-cyan-300 hover:bg-cyan-50/60"
-          title="Copiar link do material"
-        >
-          <PlanifyIcon name="externalLink" className="h-3.5 w-3.5 text-slate-400" />
-          {shareStatus || "Compartilhar"}
-        </button>
-        <a
-          href={`#comments-${item.id}`}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-cyan-400/20 bg-white/80 px-2.5 py-1.5 text-[11px] font-bold text-slate-700 transition hover:border-cyan-300 hover:bg-cyan-50/60 hover:text-cyan-800"
-        >
-          <PlanifyIcon name="message" className="h-3.5 w-3.5 text-slate-400" />
-          {commentsCount > 0 ? `${commentsCount} comentário(s)` : "Comentar"}
-        </a>
-        <CommunityReportButton targetType="material" targetId={item.id} compact />
-        <div className="ml-auto flex gap-2">
+      <div className="space-y-2 border-t border-cyan-400/10 px-3 py-3 sm:px-4">
+        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+          <Link
+            href={`/marketplace/material/${item.id}`}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-cyan-500/30 bg-cyan-600 px-3 py-1.5 text-[11px] font-bold text-white shadow-sm transition hover:bg-cyan-700"
+          >
+            <PlanifyIcon name="fileText" className="h-3.5 w-3.5" />
+            Ver material
+          </Link>
+          <MaterialLikeButton
+            materialId={item.id}
+            initialCount={likesCount}
+            initialLiked={likedByMe}
+            onChange={(state) => {
+              setLikesCount(state.likesCount);
+              setLikedByMe(state.likedByMe);
+            }}
+            compact
+          />
+          <MaterialSaveButton
+            materialId={item.id}
+            initialSaved={savedByMe}
+            onChange={setSavedByMe}
+          />
           <button
             type="button"
-            disabled={Boolean(downloadingKey)}
-            onClick={() => onDownload(item, "docx")}
-            className="inline-flex items-center gap-1 rounded-lg border border-cyan-400/20 px-2.5 py-1.5 text-[11px] font-bold text-cyan-800 transition hover:bg-cyan-50 disabled:opacity-60"
+            onClick={copyShareLink}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-cyan-400/20 bg-white/80 px-2.5 py-1.5 text-[11px] font-bold text-slate-700 transition hover:border-cyan-300 hover:bg-cyan-50/60"
+            title="Copiar link do material"
           >
-            <PlanifyIcon name="download" className="h-3.5 w-3.5" />
-            {downloadingKey === `${item.id}:docx` ? "…" : "DOCX"}
+            <PlanifyIcon name="externalLink" className="h-3.5 w-3.5 text-slate-400" />
+            <span className="hidden sm:inline">{shareStatus || "Compartilhar"}</span>
+            <span className="sm:hidden">{shareStatus ? "OK" : "Link"}</span>
           </button>
-          <button
-            type="button"
-            disabled={Boolean(downloadingKey)}
-            onClick={() => onDownload(item, "pdf")}
-            className="inline-flex items-center gap-1 rounded-lg border border-cyan-400/20 px-2.5 py-1.5 text-[11px] font-bold text-indigo-800 transition hover:bg-indigo-50 disabled:opacity-60"
+          <a
+            href={`#comments-${item.id}`}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-cyan-400/20 bg-white/80 px-2.5 py-1.5 text-[11px] font-bold text-slate-700 transition hover:border-cyan-300 hover:bg-cyan-50/60 hover:text-cyan-800"
           >
-            <PlanifyIcon name="download" className="h-3.5 w-3.5" />
-            {downloadingKey === `${item.id}:pdf` ? "…" : "PDF"}
-          </button>
+            <PlanifyIcon name="message" className="h-3.5 w-3.5 text-slate-400" />
+            <span className="hidden sm:inline">
+              {commentsCount > 0 ? `${commentsCount} comentário(s)` : "Comentar"}
+            </span>
+            <span className="sm:hidden">{commentsCount > 0 ? commentsCount : "Chat"}</span>
+          </a>
+        </div>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <CommunityReportButton targetType="material" targetId={item.id} compact />
+          <div className="flex gap-2">
+            <button
+              type="button"
+              disabled={Boolean(downloadingKey)}
+              onClick={() => onDownload(item, "docx")}
+              className="inline-flex items-center gap-1 rounded-lg border border-cyan-400/20 px-2.5 py-1.5 text-[11px] font-bold text-cyan-800 transition hover:bg-cyan-50 disabled:opacity-60"
+            >
+              <PlanifyIcon name="download" className="h-3.5 w-3.5" />
+              {downloadingKey === `${item.id}:docx` ? "…" : "DOCX"}
+            </button>
+            <button
+              type="button"
+              disabled={Boolean(downloadingKey)}
+              onClick={() => onDownload(item, "pdf")}
+              className="inline-flex items-center gap-1 rounded-lg border border-cyan-400/20 px-2.5 py-1.5 text-[11px] font-bold text-indigo-800 transition hover:bg-indigo-50 disabled:opacity-60"
+            >
+              <PlanifyIcon name="download" className="h-3.5 w-3.5" />
+              {downloadingKey === `${item.id}:pdf` ? "…" : "PDF"}
+            </button>
+          </div>
         </div>
       </div>
 

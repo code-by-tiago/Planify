@@ -44,6 +44,7 @@ function materialShareUrl(materialId: string): string {
 type CommunityPostCardProps = {
   item: CommunityFeedItem;
   downloadingKey: string | null;
+  viewerUserId?: string | null;
   onDownload: (item: CommunityFeedItem, format: MarketplaceDownloadFormat) => void;
   onRemove?: (item: CommunityFeedItem) => void;
   showRemove?: boolean;
@@ -54,6 +55,7 @@ type CommunityPostCardProps = {
 export function CommunityPostCard({
   item,
   downloadingKey,
+  viewerUserId,
   onDownload,
   onRemove,
   showRemove,
@@ -234,6 +236,8 @@ export function CommunityPostCard({
 
       <CommunityMaterialComments
         materialId={item.id}
+        materialOwnerId={item.userId}
+        viewerUserId={viewerUserId}
         initialComments={item.comments ?? EMPTY_COMMENTS}
         onCommentsChange={setCommentsCount}
       />

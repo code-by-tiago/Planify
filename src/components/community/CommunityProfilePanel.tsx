@@ -311,7 +311,7 @@ export function CommunityProfilePanel() {
                   onChange={(event) =>
                     setDraft((current) => ({ ...current, schoolName: event.target.value }))
                   }
-                  className="min-w-[12rem] flex-1 rounded-lg border border-cyan-400/20 px-2.5 py-1.5 text-sm font-semibold text-slate-700 outline-none focus:border-cyan-400"
+                  className="w-full min-w-0 flex-1 rounded-lg border border-cyan-400/20 px-2.5 py-1.5 text-sm font-semibold text-slate-700 outline-none focus:border-cyan-400 sm:min-w-[12rem]"
                   placeholder="Nome da escola"
                 />
               ) : (

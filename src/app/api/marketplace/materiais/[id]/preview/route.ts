@@ -131,6 +131,7 @@ export async function GET(
 
   return NextResponse.json({
     success: true,
+    viewerUserId: userId || null,
     material: {
       id: row.id,
       userId: row.user_id || "",

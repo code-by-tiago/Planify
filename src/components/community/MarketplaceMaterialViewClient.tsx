@@ -18,6 +18,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
 type MaterialPreviewData = {
+  viewerUserId?: string | null;
   material: {
     id: string;
     userId: string;
@@ -253,7 +254,12 @@ export function MarketplaceMaterialViewClient({ materialId }: MarketplaceMateria
                     Comentários
                   </h2>
                 </div>
-                <MarketplaceComments materialId={material.id} embedded />
+                <MarketplaceComments
+                  materialId={material.id}
+                  materialOwnerId={material.userId}
+                  viewerUserId={data.viewerUserId}
+                  embedded
+                />
               </section>
             </div>
 
@@ -297,7 +303,12 @@ export function MarketplaceMaterialViewClient({ materialId }: MarketplaceMateria
                     Comentários
                   </h2>
                 </div>
-                <MarketplaceComments materialId={material.id} embedded />
+                <MarketplaceComments
+                  materialId={material.id}
+                  materialOwnerId={material.userId}
+                  viewerUserId={data.viewerUserId}
+                  embedded
+                />
               </section>
             </aside>
           </div>

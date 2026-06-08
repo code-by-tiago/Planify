@@ -38,7 +38,7 @@ export function MaterialToolPageShell({
       }`}
     >
       {!studioMode && onBack ? (
-        <div className="flex shrink-0 items-center justify-between gap-4 border-b border-cyan-400/15 bg-white/85 px-5 py-4 backdrop-blur-sm">
+        <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-cyan-400/15 bg-white/85 px-4 py-3 backdrop-blur-sm sm:gap-4 sm:px-5 sm:py-4">
           <div className="flex min-w-0 items-center gap-3">
             <div
               className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${tool.accent} text-white shadow-sm`}
@@ -70,7 +70,7 @@ export function MaterialToolPageShell({
 
       <div
         className={`grid min-h-0 flex-1 lg:grid-cols-[0.92fr_1.08fr] ${
-          studioMode ? "min-h-0" : "min-h-[600px] lg:min-h-[680px]"
+          studioMode ? "min-h-0" : "min-h-0 lg:min-h-[680px]"
         }`}
       >
         <div

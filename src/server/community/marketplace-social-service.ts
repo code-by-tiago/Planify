@@ -243,6 +243,23 @@ export async function getMaterialCommentsBatch(
   return result;
 }
 
+export async function deleteMarketplaceComment(params: {
+  materialId: string;
+  commentId: string;
+}): Promise<void> {
+  const supabase = getSupabaseAdminClient();
+
+  const { error } = await supabase
+    .from("marketplace_material_comments")
+    .delete()
+    .eq("id", params.commentId)
+    .eq("material_id", params.materialId);
+
+  if (error) {
+    throw new Error(error.message || "Não foi possível excluir o comentário.");
+  }
+}
+
 export async function getTopLikedMaterialIdsLast7Days(limit = 5): Promise<string[]> {
   const supabase = getSupabaseAdminClient();
   const since = new Date();

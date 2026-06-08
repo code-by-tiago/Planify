@@ -1,7 +1,9 @@
 "use client";
 
 import { CommunityAuthorLink } from "@/components/community/CommunityAuthorLink";
+import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { getCurrentAccessToken } from "@/lib/auth/session-client";
+import { parseJsonResponse } from "@/lib/http/parse-json-response";
 import { useCallback, useEffect, useState } from "react";
 
 type Comment = {
@@ -15,15 +17,29 @@ type Comment = {
 
 type MarketplaceCommentsProps = {
   materialId: string;
+  materialOwnerId?: string | null;
+  viewerUserId?: string | null;
   embedded?: boolean;
 };
 
-export function MarketplaceComments({ materialId, embedded }: MarketplaceCommentsProps) {
+export function MarketplaceComments({
+  materialId,
+  materialOwnerId,
+  viewerUserId,
+  embedded,
+}: MarketplaceCommentsProps) {
   const [comments, setComments] = useState<Comment[]>([]);
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [error, setError] = useState("");
+
+  function canDeleteComment(comment: Comment): boolean {
+    if (!viewerUserId) return false;
+    if (comment.user_id && comment.user_id === viewerUserId) return true;
+    return Boolean(materialOwnerId && materialOwnerId === viewerUserId);
+  }
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -98,6 +114,41 @@ export function MarketplaceComments({ materialId, embedded }: MarketplaceComment
     }
   }
 
+  async function removeComment(commentId: string) {
+    if (!window.confirm("Excluir este comentário?")) {
+      return;
+    }
+
+    setDeletingId(commentId);
+    setError("");
+
+    try {
+      const token = await getCurrentAccessToken();
+      const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
+
+      const response = await fetch(
+        `/api/marketplace/materiais/${materialId}/comentarios/${commentId}`,
+        {
+          method: "DELETE",
+          headers,
+          credentials: "include",
+        },
+      );
+
+      const data = await parseJsonResponse<{ error?: { message?: string } }>(response);
+
+      if (!response.ok) {
+        throw new Error(data?.error?.message || "Não foi possível excluir o comentário.");
+      }
+
+      setComments((current) => current.filter((comment) => comment.id !== commentId));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao excluir comentário.");
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
   const shellClass = embedded
     ? "mt-2 rounded-2xl border border-violet-100/80 bg-violet-50/30 p-4"
     : "mt-8 rounded-[1.5rem] border border-violet-100 bg-violet-50/40 p-5";
@@ -138,6 +189,17 @@ export function MarketplaceComments({ materialId, embedded }: MarketplaceComment
                 <p className="mt-2 text-sm leading-6 text-slate-700 whitespace-pre-wrap">
                   {comment.body}
                 </p>
+                {canDeleteComment(comment) ? (
+                  <button
+                    type="button"
+                    disabled={deletingId === comment.id}
+                    onClick={() => void removeComment(comment.id)}
+                    className="mt-2 inline-flex items-center gap-1 text-[11px] font-bold text-rose-600 transition hover:text-rose-700 disabled:opacity-60"
+                  >
+                    <PlanifyIcon name="trash" className="h-3.5 w-3.5" />
+                    {deletingId === comment.id ? "Excluindo…" : "Excluir"}
+                  </button>
+                ) : null}
               </article>
             ))
           )}

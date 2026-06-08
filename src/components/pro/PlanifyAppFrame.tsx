@@ -147,8 +147,8 @@ export default function PlanifyAppFrame({
       </PlanifyShellSidebar>
 
       <section className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-white">
-        <header className="flex shrink-0 items-center justify-between gap-3 border-b border-cyan-400/15 bg-white/95 px-4 py-3 sm:px-5">
-          <div className="flex min-w-0 items-center gap-3">
+        <header className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-cyan-400/15 bg-white/95 px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] sm:gap-3 sm:px-5">
+          <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
             <button
               type="button"
               onClick={() => setSidebarOpen(true)}
@@ -158,11 +158,11 @@ export default function PlanifyAppFrame({
               <PlanifyIcon name="menu" className="h-5 w-5" />
             </button>
             {!compact ? (
-              <div className="min-w-0 hidden sm:block">
-                <h1 className="truncate text-lg font-black tracking-tight text-slate-950">
+              <div className="min-w-0">
+                <h1 className="truncate text-sm font-black tracking-tight text-slate-950 sm:text-lg">
                   {pageMeta.title}
                 </h1>
-                <p className="truncate text-xs font-semibold text-slate-500">
+                <p className="hidden truncate text-xs font-semibold text-slate-500 sm:block">
                   {pageMeta.subtitle}
                 </p>
               </div>
@@ -172,13 +172,13 @@ export default function PlanifyAppFrame({
               </div>
             )}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex min-w-0 flex-wrap items-center justify-end gap-1.5 sm:gap-2">
             {action}
             <LandingHomeLink compact />
             {!access.isManagerView ? (
               <Link
                 href="/planos"
-                className="pl-hud-btn rounded-xl px-4 py-2 text-xs font-semibold"
+                className="pl-hud-btn rounded-xl px-3 py-1.5 text-xs font-semibold sm:px-4 sm:py-2"
               >
                 Planos
               </Link>

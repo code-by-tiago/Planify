@@ -81,6 +81,7 @@ export function CommunityFeed({
               key={`featured-${item.id}`}
               item={item}
               downloadingKey={downloadingKey}
+              viewerUserId={currentUserId}
               onDownload={onDownload}
               onRemove={onRemove}
               showRemove={Boolean(mineOnly && currentUserId && item.userId === currentUserId)}
@@ -96,6 +97,7 @@ export function CommunityFeed({
           key={item.id}
           item={item}
           downloadingKey={downloadingKey}
+          viewerUserId={currentUserId}
           onDownload={onDownload}
           onRemove={onRemove}
           showRemove={Boolean(mineOnly && currentUserId && item.userId === currentUserId)}

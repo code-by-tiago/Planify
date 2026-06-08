@@ -3,6 +3,7 @@
 import { CommunityAuthorAvatar } from "@/components/community/CommunityAuthorAvatar";
 import { CommunityAuthorLink } from "@/components/community/CommunityAuthorLink";
 import { CommunityReportButton } from "@/components/community/CommunityReportButton";
+import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import type { CommunityMaterialComment } from "@/lib/community/types";
 import { renderCommentBodyWithMentions } from "@/lib/community/mention-utils";
 import { getCurrentAccessToken } from "@/lib/auth/session-client";
@@ -11,6 +12,8 @@ import { useCallback, useEffect, useId, useMemo, useState } from "react";
 
 type CommunityMaterialCommentsProps = {
   materialId: string;
+  materialOwnerId?: string | null;
+  viewerUserId?: string | null;
   initialComments?: CommunityMaterialComment[];
   onCommentsChange?: (count: number) => void;
 };
@@ -46,6 +49,8 @@ function mapApiComment(row: {
 
 export function CommunityMaterialComments({
   materialId,
+  materialOwnerId,
+  viewerUserId,
   initialComments = [],
   onCommentsChange,
 }: CommunityMaterialCommentsProps) {
@@ -54,7 +59,14 @@ export function CommunityMaterialComments({
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(initialComments.length === 0);
   const [busy, setBusy] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [error, setError] = useState("");
+
+  function canDeleteComment(comment: CommunityMaterialComment): boolean {
+    if (!viewerUserId) return false;
+    if (comment.userId && comment.userId === viewerUserId) return true;
+    return Boolean(materialOwnerId && materialOwnerId === viewerUserId);
+  }
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -178,6 +190,41 @@ export function CommunityMaterialComments({
     }
   }
 
+  async function removeComment(commentId: string) {
+    if (!window.confirm("Excluir este comentário?")) {
+      return;
+    }
+
+    setDeletingId(commentId);
+    setError("");
+
+    try {
+      const token = await getCurrentAccessToken();
+      const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
+
+      const response = await fetch(
+        `/api/marketplace/materiais/${materialId}/comentarios/${commentId}`,
+        {
+          method: "DELETE",
+          headers,
+          credentials: "include",
+        },
+      );
+
+      const data = await parseJsonResponse<{ error?: { message?: string } }>(response);
+
+      if (!response.ok) {
+        throw new Error(data?.error?.message || "Não foi possível excluir o comentário.");
+      }
+
+      setComments((current) => current.filter((comment) => comment.id !== commentId));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao excluir comentário.");
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
   return (
     <section
       id={`comments-${materialId}`}
@@ -224,15 +271,26 @@ export function CommunityMaterialComments({
                   <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-6 text-slate-700">
                     {renderCommentBodyWithMentions(comment.body, mentionLinks)}
                   </p>
-                  {comment.userId ? (
-                    <div className="mt-1">
+                  <div className="mt-1 flex flex-wrap items-center gap-2">
+                    {comment.userId ? (
                       <CommunityReportButton
                         targetType="comment"
                         targetId={comment.id}
                         compact
                       />
-                    </div>
-                  ) : null}
+                    ) : null}
+                    {canDeleteComment(comment) ? (
+                      <button
+                        type="button"
+                        disabled={deletingId === comment.id}
+                        onClick={() => void removeComment(comment.id)}
+                        className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-600 transition hover:text-rose-700 disabled:opacity-60"
+                      >
+                        <PlanifyIcon name="trash" className="h-3.5 w-3.5" />
+                        {deletingId === comment.id ? "Excluindo…" : "Excluir"}
+                      </button>
+                    ) : null}
+                  </div>
                 </div>
               </article>
             </li>

@@ -1275,7 +1275,7 @@ export function PlanejamentosClient() {
               <DailyGenerationsBar tipoMaterial={PLANNING_DEEP_GENERATION_TYPE} />
             </div>
 
-            <div className="mt-7 grid gap-3 xl:grid-cols-4">
+            <div className="mt-7 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               <button type="button" onClick={suggestBncc} disabled={loadingBncc} className="pl-hud-btn-secondary rounded-xl px-5 py-3.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60">
                 {loadingBncc ? "Sugerindo BNCC..." : "1. Sugerir BNCC"}
               </button>

@@ -153,7 +153,9 @@ function assertDocxBuffer(label, buffer) {
 async function testServerHealth() {
   const baseUrl = process.env.PLANIFY_URL || "http://localhost:3000";
   try {
-    const response = await fetch(`${baseUrl}/api/planejamentos/docx-oficial`);
+    const response = await fetch(`${baseUrl}/api/planejamentos/docx-oficial`, {
+      signal: AbortSignal.timeout(3000),
+    });
     if (!response.ok) {
       console.log(`verify-planejamento-docx: servidor ${baseUrl} respondeu ${response.status} (health)`);
       return;

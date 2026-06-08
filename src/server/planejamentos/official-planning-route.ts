@@ -1,29 +1,37 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireApiPremiumAccess } from "../auth/api-access";
 import {
-  buildOfficialPlanningDocx,
-  getOfficialPlanningFilename,
-  type OfficialPlanningPayload,
-} from "./official-planning-docx";
+  buildPlanningDocx,
+  parsePlanningDocxRequest,
+} from "./planning-docx-service";
 
 export async function handleOfficialPlanningDocxPost(request: NextRequest) {
   const auth = await requireApiPremiumAccess(request);
   if (!auth.ok) return auth.response;
 
   try {
-    const payload = (await request.json()) as OfficialPlanningPayload;
-    const buffer = buildOfficialPlanningDocx(payload);
-    const filename = getOfficialPlanningFilename(payload);
+    const { payload, customTemplate } = await parsePlanningDocxRequest(request);
+    const result = buildPlanningDocx(payload, customTemplate);
 
-    return new NextResponse(new Uint8Array(buffer), {
+    const headers: Record<string, string> = {
+      "Content-Type":
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "Content-Disposition": `attachment; filename="${result.filename}.docx"; filename*=UTF-8''${encodeURIComponent(result.filename)}.docx`,
+      "X-Planify-Filename": `${result.filename}.docx`,
+      "X-Planify-Template-Source": result.templateSource,
+      "Cache-Control": "no-store",
+    };
+
+    if (result.usedFallback) {
+      headers["X-Planify-Template-Fallback"] = "true";
+      if (result.fallbackMessage) {
+        headers["X-Planify-Template-Message"] = result.fallbackMessage;
+      }
+    }
+
+    return new NextResponse(new Uint8Array(result.buffer), {
       status: 200,
-      headers: {
-        "Content-Type":
-          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        "Content-Disposition": `attachment; filename="${filename}.docx"; filename*=UTF-8''${encodeURIComponent(filename)}.docx`,
-        "X-Planify-Filename": `${filename}.docx`,
-        "Cache-Control": "no-store",
-      },
+      headers,
     });
   } catch (error) {
     return NextResponse.json(
@@ -52,6 +60,12 @@ export async function handleOfficialPlanningDocxGet() {
         "/api/planejamentos/gerar-docx",
         "/api/planejamentos/docx",
       ],
+      customTemplate: {
+        supported: true,
+        maxBytes: 10 * 1024 * 1024,
+        extension: ".docx",
+        multipartFields: ["payload", "template"],
+      },
     },
     { status: 200 },
   );

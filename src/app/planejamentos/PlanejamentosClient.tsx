@@ -34,11 +34,14 @@ import {
 } from "@/lib/downloads/trigger-browser-download";
 import { useBnccEducationOptions } from "@/hooks/useBnccEducationOptions";
 import type { MaterialEducationFields } from "@/lib/educacao/education-options";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { splitTopicLines } from "@/lib/bncc/split-topic-lines";
 
 type TipoPlanejamento = "anual" | "trimestral";
 type DocxDownloadMode = "anual" | "trimestral";
+type DocxTemplateMode = "default" | "custom";
+
+const CUSTOM_DOCX_TEMPLATE_MAX_BYTES = 10 * 1024 * 1024;
 
 type BnccSkill = {
   id: string;
@@ -382,6 +385,11 @@ export function PlanejamentosClient() {
   const [loadingPlan, setLoadingPlan] = useState(false);
   const [loadingDocx, setLoadingDocx] = useState(false);
   const [error, setError] = useState("");
+  const [docxTemplateMode, setDocxTemplateMode] = useState<DocxTemplateMode>("default");
+  const [customTemplateFile, setCustomTemplateFile] = useState<File | null>(null);
+  const [customTemplateFileName, setCustomTemplateFileName] = useState("");
+  const [docxTemplateNotice, setDocxTemplateNotice] = useState("");
+  const customTemplateInputRef = useRef<HTMLInputElement | null>(null);
   const [abrirEditorAutomatico, setAbrirEditorAutomatico] = useState(true);
 
   useEffect(() => {
@@ -500,8 +508,45 @@ export function PlanejamentosClient() {
     setGroups([]);
     setSelectedSkills([]);
     invalidateGenerated();
+    setDocxTemplateMode("default");
+    setCustomTemplateFile(null);
+    setCustomTemplateFileName("");
+    setDocxTemplateNotice("");
+    if (customTemplateInputRef.current) {
+      customTemplateInputRef.current.value = "";
+    }
     setStatus("Aguardando");
     setError("");
+  }
+
+  function handleCustomTemplateChange(fileList: FileList | null) {
+    const file = fileList?.[0];
+
+    if (!file) {
+      setCustomTemplateFile(null);
+      setCustomTemplateFileName("");
+      return;
+    }
+
+    if (!file.name.toLowerCase().endsWith(".docx")) {
+      setError("Envie apenas arquivos com extensão .docx.");
+      setCustomTemplateFile(null);
+      setCustomTemplateFileName("");
+      return;
+    }
+
+    if (file.size > CUSTOM_DOCX_TEMPLATE_MAX_BYTES) {
+      setError("O modelo da escola deve ter no máximo 10 MB.");
+      setCustomTemplateFile(null);
+      setCustomTemplateFileName("");
+      return;
+    }
+
+    setError("");
+    setDocxTemplateMode("custom");
+    setCustomTemplateFile(file);
+    setCustomTemplateFileName(file.name);
+    setDocxTemplateNotice("");
   }
 
   function isSelected(skill: BnccSkill) {
@@ -844,11 +889,21 @@ export function PlanejamentosClient() {
       return;
     }
 
+    if (docxTemplateMode === "custom" && !customTemplateFile) {
+      setError("Selecione o arquivo .docx da sua escola antes de baixar.");
+      return;
+    }
+
     setLoadingDocx(true);
+    setDocxTemplateNotice("");
     setStatus(
       mode === "trimestral"
-        ? `Preenchendo modelo oficial do ${trimester}º trimestre...`
-        : "Preenchendo modelo oficial anual...",
+        ? docxTemplateMode === "custom"
+          ? `Preenchendo modelo da escola do ${trimester}º trimestre...`
+          : `Preenchendo modelo oficial do ${trimester}º trimestre...`
+        : docxTemplateMode === "custom"
+          ? "Preenchendo modelo da escola (anual)..."
+          : "Preenchendo modelo oficial anual...",
     );
 
     try {
@@ -857,7 +912,7 @@ export function PlanejamentosClient() {
           ? `planejamento-trimestral-${trimester}-${form.componenteCurricular}-${form.anoSerie}`
           : `planejamento-anual-${form.componenteCurricular}-${form.anoSerie}`;
 
-      await downloadPlanejamentoOficialDocx(
+      const downloadResult = await downloadPlanejamentoOficialDocx(
         {
           ...buildBasePayload(),
           tipoPlanejamento: mode,
@@ -865,12 +920,28 @@ export function PlanejamentosClient() {
           matrizPlanejamento: generatedPlanning,
         },
         filename,
+        {
+          customTemplateFile:
+            docxTemplateMode === "custom" ? customTemplateFile : null,
+        },
       );
+
+      if (downloadResult.usedFallback && downloadResult.fallbackMessage) {
+        setDocxTemplateNotice(downloadResult.fallbackMessage);
+      }
 
       setStatus(
         mode === "trimestral"
-          ? `${trimester}º trimestre baixado com base na matriz anual.`
-          : "Planejamento anual DOCX oficial baixado.",
+          ? downloadResult.usedFallback
+            ? `${trimester}º trimestre baixado com modelo padrão do Planify.`
+            : docxTemplateMode === "custom"
+              ? `${trimester}º trimestre baixado com modelo da escola.`
+              : `${trimester}º trimestre baixado com base na matriz anual.`
+          : downloadResult.usedFallback
+            ? "Planejamento anual baixado com modelo padrão do Planify."
+            : docxTemplateMode === "custom"
+              ? "Planejamento anual baixado com modelo da escola."
+              : "Planejamento anual DOCX oficial baixado.",
       );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao baixar DOCX.");
@@ -894,6 +965,13 @@ export function PlanejamentosClient() {
 
     if (form.tipoPlanejamento !== "anual") {
       setError("Para baixar anual + trimestrais, gere primeiro o Planejamento Anual.");
+      return;
+    }
+
+    if (docxTemplateMode === "custom") {
+      setError(
+        "O pacote anual + trimestrais usa sempre os modelos oficiais do Planify. Baixe cada trimestre individualmente com seu modelo da escola.",
+      );
       return;
     }
 
@@ -1228,6 +1306,89 @@ export function PlanejamentosClient() {
                     <option value="3">3º trimestre</option>
                   </select>
                 </label>
+              ) : null}
+            </div>
+
+            <div className="mt-8 rounded-2xl border border-cyan-400/20 bg-white/70 p-5">
+              <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-cyan-600">
+                Modelo do documento
+              </p>
+              <h3 className="mt-3 text-lg font-black text-slate-950">
+                Escolha como gerar o DOCX
+              </h3>
+
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDocxTemplateMode("default");
+                    setDocxTemplateNotice("");
+                  }}
+                  className={`rounded-xl border p-4 text-left transition ${
+                    docxTemplateMode === "default"
+                      ? "border-cyan-500 bg-cyan-600 text-white shadow-md"
+                      : "border-cyan-400/20 bg-white text-slate-950 hover:border-cyan-400/50"
+                  }`}
+                >
+                  <p className="text-sm font-black">Usar modelo padrão do Planify</p>
+                  <p
+                    className={`mt-1 text-xs font-semibold ${
+                      docxTemplateMode === "default" ? "text-cyan-100" : "text-slate-500"
+                    }`}
+                  >
+                    Modelos oficiais anual e trimestral já validados
+                  </p>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setDocxTemplateMode("custom")}
+                  className={`rounded-xl border p-4 text-left transition ${
+                    docxTemplateMode === "custom"
+                      ? "border-cyan-500 bg-cyan-600 text-white shadow-md"
+                      : "border-cyan-400/20 bg-white text-slate-950 hover:border-cyan-400/50"
+                  }`}
+                >
+                  <p className="text-sm font-black">Enviar modelo da minha escola</p>
+                  <p
+                    className={`mt-1 text-xs font-semibold ${
+                      docxTemplateMode === "custom" ? "text-cyan-100" : "text-slate-500"
+                    }`}
+                  >
+                    Upload de .docx com tabelas ou campos identificáveis
+                  </p>
+                </button>
+              </div>
+
+              {docxTemplateMode === "custom" ? (
+                <div className="mt-4 space-y-3">
+                  <label className="grid gap-2">
+                    <span className="text-sm font-bold text-slate-500">Arquivo .docx da escola</span>
+                    <input
+                      ref={customTemplateInputRef}
+                      type="file"
+                      accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                      onChange={(event) => handleCustomTemplateChange(event.target.files)}
+                      className="block w-full cursor-pointer rounded-xl border border-cyan-400/20 bg-white px-4 py-3 text-sm text-slate-700 file:mr-4 file:rounded-lg file:border-0 file:bg-cyan-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-cyan-800"
+                    />
+                  </label>
+
+                  {customTemplateFileName ? (
+                    <p className="text-sm font-semibold text-emerald-700">
+                      Arquivo selecionado: {customTemplateFileName}
+                    </p>
+                  ) : null}
+
+                  <p className="text-xs leading-6 text-slate-500">
+                    Use arquivos .docx com tabelas ou campos identificáveis para melhor resultado.
+                  </p>
+                </div>
+              ) : null}
+
+              {docxTemplateNotice ? (
+                <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-800">
+                  {docxTemplateNotice}
+                </div>
               ) : null}
             </div>
 

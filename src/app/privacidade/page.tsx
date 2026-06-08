@@ -30,7 +30,7 @@ export default function PrivacidadePage() {
         </p>
         <p className="mt-2">
           Para questões sobre privacidade e proteção de dados, utilize a página de{" "}
-          <Link href="/contato" className="font-bold text-emerald-700 hover:underline">
+          <Link href="/contato" className="font-bold text-cyan-700 hover:underline">
             contato
           </Link>
           .
@@ -138,7 +138,7 @@ export default function PrivacidadePage() {
         </ul>
         <p className="mt-2">
           Envie pedidos pela página de{" "}
-          <Link href="/contato" className="font-bold text-emerald-700 hover:underline">
+          <Link href="/contato" className="font-bold text-cyan-700 hover:underline">
             contato
           </Link>
           , assunto &quot;Privacidade e dados pessoais&quot;.

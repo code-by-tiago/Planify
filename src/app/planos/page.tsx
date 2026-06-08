@@ -84,7 +84,7 @@ function getAlert(params: Awaited<NonNullable<PlanosPageProps["searchParams"]>>)
 
 function alertClass(type: string) {
   if (type === "success") {
-    return "border-emerald-200 bg-emerald-50 text-emerald-800";
+    return "border-cyan-200 bg-cyan-50 text-cyan-800";
   }
 
   if (type === "error") {
@@ -249,15 +249,15 @@ export default async function PlanosPage({ searchParams }: PlanosPageProps) {
                 <span
                   className={`absolute right-6 top-6 rounded-lg px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] ${
                     plan.highlighted
-                      ? "bg-emerald-600 text-white"
-                      : "bg-emerald-50 text-emerald-700"
+                      ? "bg-cyan-600 text-white"
+                      : "bg-cyan-50 text-cyan-700"
                   }`}
                 >
                   {plan.badgeLabel}
                 </span>
               )}
 
-              <p className="pr-24 text-xs font-black uppercase tracking-[0.2em] text-emerald-700">
+              <p className="pr-24 text-xs font-black uppercase tracking-[0.2em] text-cyan-700">
                 {plan.name}
               </p>
 
@@ -270,7 +270,7 @@ export default async function PlanosPage({ searchParams }: PlanosPageProps) {
                 </span>
               </div>
 
-              <div className="mt-4 inline-flex w-fit items-center gap-2 rounded-full border border-emerald-100 bg-emerald-50 px-4 py-2 text-sm font-bold text-emerald-700">
+              <div className="mt-4 inline-flex w-fit items-center gap-2 rounded-full border border-cyan-100 bg-cyan-50 px-4 py-2 text-sm font-bold text-cyan-700">
                 <PlanifyIcon name="spark" className="h-4 w-4" />
                 {plan.creditsLabel}
               </div>
@@ -284,7 +284,7 @@ export default async function PlanosPage({ searchParams }: PlanosPageProps) {
                   <li key={feature} className="flex items-start gap-2.5">
                     <PlanifyIcon
                       name="checkCircle"
-                      className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600"
+                      className="mt-0.5 h-4 w-4 shrink-0 text-cyan-600"
                     />
                     {feature}
                   </li>
@@ -297,7 +297,7 @@ export default async function PlanosPage({ searchParams }: PlanosPageProps) {
                   className={`flex w-full items-center justify-center gap-2 rounded-xl px-6 py-3.5 text-sm font-semibold transition ${
                     plan.highlighted
                       ? ppBtnPrimary
-                      : "border border-slate-200 bg-white text-slate-900 hover:border-emerald-300 hover:text-emerald-700"
+                      : "border border-slate-200 bg-white text-slate-900 hover:border-cyan-300 hover:text-cyan-700"
                   }`}
                 >
                   {plan.ctaLabel}
@@ -343,13 +343,13 @@ export default async function PlanosPage({ searchParams }: PlanosPageProps) {
                       <th
                         key={plan.key}
                         className={`px-6 py-5 text-sm font-black ${
-                          plan.highlighted ? "text-emerald-700" : "text-slate-700"
+                          plan.highlighted ? "text-cyan-700" : "text-slate-700"
                         }`}
                       >
                         <span className="flex items-center gap-2">
                           {plan.name}
                           {plan.highlighted ? (
-                            <span className="rounded-full bg-emerald-600 px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.14em] text-white">
+                            <span className="rounded-full bg-cyan-600 px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.14em] text-white">
                               Popular
                             </span>
                           ) : null}
@@ -378,7 +378,7 @@ export default async function PlanosPage({ searchParams }: PlanosPageProps) {
                               value ? (
                                 <PlanifyIcon
                                   name="checkCircle"
-                                  className="h-5 w-5 text-emerald-600"
+                                  className="h-5 w-5 text-cyan-600"
                                 />
                               ) : (
                                 <span className="text-slate-300">—</span>
@@ -434,7 +434,7 @@ export default async function PlanosPage({ searchParams }: PlanosPageProps) {
 
       <section className="mx-auto max-w-7xl px-5 pb-16 sm:px-8">
         <div className={ppCtaBand}>
-          <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-emerald-200/90">
+          <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-cyan-200/90">
             Próximo passo
           </p>
           <h2 className="mt-2 text-2xl font-extrabold text-white sm:text-3xl">

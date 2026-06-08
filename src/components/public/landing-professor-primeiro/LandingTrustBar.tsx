@@ -11,7 +11,7 @@ export function LandingTrustBar() {
             key={item.label}
             className="flex items-center justify-center gap-2.5 text-center sm:justify-start sm:text-left"
           >
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-cyan-50 text-cyan-600 ring-1 ring-cyan-100">
               <PlanifyIcon name={item.icon as PlanifyIconName} className="h-4 w-4" />
             </span>
             <span className="text-sm font-bold text-slate-800">{item.label}</span>

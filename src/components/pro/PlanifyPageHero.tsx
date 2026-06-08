@@ -27,7 +27,7 @@ export function PlanifyPageHero({
       }`}
     >
       <div
-        className={`pointer-events-none absolute -right-8 -top-10 h-28 w-28 rounded-full bg-emerald-400/10 blur-3xl transition-opacity duration-200 ${
+        className={`pointer-events-none absolute -right-8 -top-10 h-28 w-28 rounded-full bg-cyan-400/10 blur-3xl transition-opacity duration-200 ${
           collapsed ? "opacity-0" : "opacity-100"
         }`}
         aria-hidden

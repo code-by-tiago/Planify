@@ -123,7 +123,7 @@ export default function EscolasPage() {
                 key={item.title}
                 className="flex h-full flex-col rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm"
               >
-                <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
+                <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-50 text-cyan-700">
                   <PlanifyIcon name={item.icon} className="h-6 w-6" />
                 </span>
                 <h3 className="mt-5 text-lg font-black text-slate-950">{item.title}</h3>
@@ -160,12 +160,12 @@ export default function EscolasPage() {
               }`}
             >
               {plan.highlighted ? (
-                <span className="absolute right-6 top-6 rounded-lg bg-emerald-600 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-white">
+                <span className="absolute right-6 top-6 rounded-lg bg-cyan-600 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-white">
                   Recomendado
                 </span>
               ) : null}
 
-              <p className="pr-24 text-xs font-black uppercase tracking-[0.2em] text-emerald-700">
+              <p className="pr-24 text-xs font-black uppercase tracking-[0.2em] text-cyan-700">
                 {plan.name}
               </p>
               <p className="mt-2 text-sm font-bold text-slate-500">{plan.teacherLimit}</p>
@@ -178,7 +178,7 @@ export default function EscolasPage() {
                   {plan.priceNote}
                 </span>
               </div>
-              <p className="mt-2 text-xs font-semibold text-emerald-800">
+              <p className="mt-2 text-xs font-semibold text-cyan-800">
                 {plan.pricePerTeacherNote}
               </p>
               <p className="mt-1 text-xs font-medium text-slate-500">{plan.licenseNote}</p>
@@ -192,7 +192,7 @@ export default function EscolasPage() {
                   <li key={feature} className="flex items-start gap-2.5">
                     <PlanifyIcon
                       name="checkCircle"
-                      className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600"
+                      className="mt-0.5 h-4 w-4 shrink-0 text-cyan-600"
                     />
                     {feature}
                   </li>
@@ -216,7 +216,7 @@ export default function EscolasPage() {
                     <th
                       key={plan.key}
                       className={`px-6 py-5 text-sm font-black ${
-                        plan.highlighted ? "text-emerald-700" : "text-slate-700"
+                        plan.highlighted ? "text-cyan-700" : "text-slate-700"
                       }`}
                     >
                       {plan.name}
@@ -231,7 +231,7 @@ export default function EscolasPage() {
                     {row.values.map((included, index) => (
                       <td key={index} className="px-6 py-4">
                         {included ? (
-                          <PlanifyIcon name="checkCircle" className="h-5 w-5 text-emerald-600" />
+                          <PlanifyIcon name="checkCircle" className="h-5 w-5 text-cyan-600" />
                         ) : (
                           <span className="text-slate-300">—</span>
                         )}
@@ -245,7 +245,7 @@ export default function EscolasPage() {
                     <td key={plan.key} className="px-6 py-5">
                       <a
                         href="#contato"
-                        className="inline-flex items-center gap-1.5 text-sm font-bold text-emerald-700 hover:text-emerald-900"
+                        className="inline-flex items-center gap-1.5 text-sm font-bold text-cyan-700 hover:text-cyan-900"
                       >
                         Falar com Consultor
                         <PlanifyIcon name="arrowRight" className="h-4 w-4" />
@@ -262,7 +262,7 @@ export default function EscolasPage() {
       {/* CTA band */}
       <section className="mx-auto max-w-7xl px-5 pb-4 sm:px-8">
         <div className={ppCtaBand}>
-          <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-emerald-200/90">
+          <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-cyan-200/90">
             Próximo passo institucional
           </p>
           <h2 className="mt-2 text-2xl font-extrabold text-white sm:text-3xl">

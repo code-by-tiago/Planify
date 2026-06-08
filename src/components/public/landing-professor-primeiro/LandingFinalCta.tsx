@@ -6,7 +6,7 @@ import { FINAL_BENEFITS } from "./constants";
 export function LandingFinalCta() {
   return (
     <section className="px-5 py-16 sm:px-8 sm:py-20">
-      <div className="mx-auto max-w-4xl overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950 px-6 py-12 text-center shadow-2xl sm:px-12 sm:py-14">
+      <div className="mx-auto max-w-4xl overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-900 to-cyan-950 px-6 py-12 text-center shadow-2xl sm:px-12 sm:py-14">
         <h2 className="font-[family-name:var(--font-display)] text-3xl font-extrabold text-white sm:text-4xl">
           Pronto para transformar seu planejamento?
         </h2>
@@ -18,7 +18,7 @@ export function LandingFinalCta() {
         <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Link
             href="/planos"
-            className="inline-flex items-center justify-center rounded-xl bg-emerald-500 px-8 py-3.5 text-sm font-bold text-white shadow-lg shadow-emerald-500/30 transition hover:bg-emerald-400"
+            className="inline-flex items-center justify-center rounded-xl bg-cyan-500 px-8 py-3.5 text-sm font-bold text-white shadow-lg shadow-cyan-500/30 transition hover:bg-cyan-400"
           >
             Ver planos
           </Link>
@@ -34,7 +34,7 @@ export function LandingFinalCta() {
           {FINAL_BENEFITS.map((benefit) => (
             <li
               key={benefit.label}
-              className="flex items-center gap-2 text-xs font-semibold text-emerald-200/90"
+              className="flex items-center gap-2 text-xs font-semibold text-cyan-200/90"
             >
               <PlanifyIcon name={benefit.icon as PlanifyIconName} className="h-3.5 w-3.5" />
               {benefit.label}

@@ -105,9 +105,9 @@ export function ContatoClient() {
 
   function statusClass() {
     if (!status) return "";
-    if (status.type === "success") return "border-emerald-200 bg-emerald-50 text-emerald-800";
+    if (status.type === "success") return "border-cyan-200 bg-cyan-50 text-cyan-800";
     if (status.type === "warning") return "border-amber-200 bg-amber-50 text-amber-800";
-    return "border-emerald-200 bg-emerald-50 text-emerald-800";
+    return "border-cyan-200 bg-cyan-50 text-cyan-800";
   }
 
   return (
@@ -119,7 +119,7 @@ export function ContatoClient() {
             <div className="mt-5 grid gap-3">
               {supportFlow.map((item) => (
                 <div key={item.step} className="flex gap-3 rounded-2xl border border-white bg-white p-4 shadow-sm">
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-xs font-black text-white">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-cyan-600 text-xs font-black text-white">
                     {item.step}
                   </span>
                   <div>
@@ -138,7 +138,7 @@ export function ContatoClient() {
                 <Link
                   key={card.href}
                   href={card.href}
-                  className="rounded-2xl border border-slate-100 bg-slate-50/50 p-4 transition hover:border-emerald-200 hover:bg-emerald-50/50"
+                  className="rounded-2xl border border-slate-100 bg-slate-50/50 p-4 transition hover:border-cyan-200 hover:bg-cyan-50/50"
                 >
                   <p className="text-sm font-black text-slate-950">{card.title}</p>
                   <p className="mt-1 text-xs leading-5 text-slate-500">{card.description}</p>
@@ -234,9 +234,9 @@ export function ContatoClient() {
                 </label>
               </div>
 
-              <div className="rounded-2xl border border-emerald-100 bg-emerald-50/80 p-4">
-                <p className="text-sm font-black text-emerald-900">{selectedType?.label}</p>
-                <p className="mt-1 text-xs text-emerald-800/80">{selectedType?.description}</p>
+              <div className="rounded-2xl border border-cyan-100 bg-cyan-50/80 p-4">
+                <p className="text-sm font-black text-cyan-900">{selectedType?.label}</p>
+                <p className="mt-1 text-xs text-cyan-800/80">{selectedType?.description}</p>
               </div>
 
               <div className="flex flex-col gap-3 sm:flex-row">
@@ -267,7 +267,7 @@ export function ContatoClient() {
               ) : (
                 <div className="grid gap-4">
                   <div className="flex flex-wrap gap-2">
-                    <span className="rounded-full bg-emerald-600 px-3 py-1 text-xs font-black text-white">
+                    <span className="rounded-full bg-cyan-600 px-3 py-1 text-xs font-black text-white">
                       {getTypeLabel(form.tipo)}
                     </span>
                     <span className="rounded-full bg-slate-200 px-3 py-1 text-xs font-black text-slate-700">

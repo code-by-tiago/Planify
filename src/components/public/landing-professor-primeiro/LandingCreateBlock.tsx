@@ -29,13 +29,13 @@ export function LandingCreateBlock() {
                   onClick={() => setSelected(option.id)}
                   className={`flex flex-col items-center gap-2 rounded-2xl border px-3 py-4 text-center transition ${
                     isActive
-                      ? "border-emerald-500 bg-emerald-50 text-emerald-900 shadow-md shadow-emerald-500/10 ring-2 ring-emerald-500/20"
-                      : "border-slate-200 bg-slate-50/50 text-slate-700 hover:border-emerald-200 hover:bg-white"
+                      ? "border-cyan-500 bg-cyan-50 text-cyan-900 shadow-md shadow-cyan-500/10 ring-2 ring-cyan-500/20"
+                      : "border-slate-200 bg-slate-50/50 text-slate-700 hover:border-cyan-200 hover:bg-white"
                   }`}
                 >
                   <PlanifyIcon
                     name={option.icon as PlanifyIconName}
-                    className={`h-5 w-5 ${isActive ? "text-emerald-600" : "text-slate-500"}`}
+                    className={`h-5 w-5 ${isActive ? "text-cyan-600" : "text-slate-500"}`}
                   />
                   <span className="text-xs font-bold leading-tight sm:text-sm">{option.label}</span>
                 </button>

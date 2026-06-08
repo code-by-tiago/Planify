@@ -25,7 +25,7 @@ export function EscolasPlanActions({ planName, highlighted }: EscolasPlanActions
         className={`flex w-full items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold transition ${
           highlighted
             ? ppBtnPrimary
-            : "border border-slate-200 bg-white text-slate-900 hover:border-emerald-300 hover:text-emerald-700"
+            : "border border-slate-200 bg-white text-slate-900 hover:border-cyan-300 hover:text-cyan-700"
         }`}
       >
         Falar com Consultor

@@ -33,7 +33,7 @@ export function LandingFooter() {
               <Link
                 key={item.href}
                 href={item.href}
-                className="text-sm font-medium text-slate-600 transition hover:text-emerald-700"
+                className="text-sm font-medium text-slate-600 transition hover:text-cyan-700"
               >
                 {item.label}
               </Link>
@@ -48,7 +48,7 @@ export function LandingFooter() {
               <Link
                 key={item.href}
                 href={item.href}
-                className="text-sm font-medium text-slate-600 transition hover:text-emerald-700"
+                className="text-sm font-medium text-slate-600 transition hover:text-cyan-700"
               >
                 {item.label}
               </Link>
@@ -61,19 +61,19 @@ export function LandingFooter() {
           <nav className="mt-4 grid gap-2.5">
             <Link
               href="/planos"
-              className="text-sm font-medium text-slate-600 transition hover:text-emerald-700"
+              className="text-sm font-medium text-slate-600 transition hover:text-cyan-700"
             >
               Planos
             </Link>
             <Link
               href="/contato"
-              className="text-sm font-medium text-slate-600 transition hover:text-emerald-700"
+              className="text-sm font-medium text-slate-600 transition hover:text-cyan-700"
             >
               Contato
             </Link>
             <Link
               href="/login"
-              className="text-sm font-medium text-slate-600 transition hover:text-emerald-700"
+              className="text-sm font-medium text-slate-600 transition hover:text-cyan-700"
             >
               Entrar
             </Link>
@@ -87,17 +87,17 @@ export function LandingFooter() {
           <nav className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
             <Link
               href="/privacidade"
-              className="text-xs font-medium text-slate-500 transition hover:text-emerald-700"
+              className="text-xs font-medium text-slate-500 transition hover:text-cyan-700"
             >
               Privacidade
             </Link>
             <Link
               href="/termos"
-              className="text-xs font-medium text-slate-500 transition hover:text-emerald-700"
+              className="text-xs font-medium text-slate-500 transition hover:text-cyan-700"
             >
               Termos de uso
             </Link>
-            <OwnerFooterLink className="text-xs hover:text-emerald-700/70" />
+            <OwnerFooterLink className="text-xs hover:text-cyan-700/70" />
           </nav>
         </div>
       </div>

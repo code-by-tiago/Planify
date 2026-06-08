@@ -36,7 +36,7 @@ const initialForm: FormState = {
 
 function statusClass(type: StatusState["type"]) {
   if (type === "success") {
-    return "border-emerald-300/30 bg-emerald-300/10 text-emerald-100";
+    return "border-cyan-300/30 bg-cyan-300/10 text-cyan-100";
   }
 
   if (type === "warning") {

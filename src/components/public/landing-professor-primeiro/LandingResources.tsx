@@ -19,9 +19,9 @@ export function LandingResources() {
           {RESOURCES.map((resource) => (
             <article
               key={resource.title}
-              className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm transition hover:border-emerald-200 hover:shadow-md"
+              className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm transition hover:border-cyan-200 hover:shadow-md"
             >
-              <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100">
+              <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-cyan-50 text-cyan-600 ring-1 ring-cyan-100">
                 <PlanifyIcon name={resource.icon as PlanifyIconName} className="h-5 w-5" />
               </span>
               <h3 className="mt-4 text-lg font-extrabold text-slate-900">{resource.title}</h3>

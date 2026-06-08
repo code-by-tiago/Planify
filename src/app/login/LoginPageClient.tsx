@@ -237,7 +237,7 @@ export function LoginPageClient() {
                 >
                   <PlanifyIcon
                     name="checkCircle"
-                    className="h-5 w-5 shrink-0 text-emerald-600"
+                    className="h-5 w-5 shrink-0 text-cyan-600"
                   />
                   {item}
                 </li>

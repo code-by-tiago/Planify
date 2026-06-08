@@ -77,8 +77,8 @@ export function PlanifySidebarNav({
   function navButtonClass(selected: boolean) {
     return `pl-sidebar-nav-item flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition ${
       selected
-        ? "is-active bg-gradient-to-r from-emerald-600 to-emerald-700 shadow-sm shadow-emerald-600/20"
-        : "hover:bg-emerald-50"
+        ? "is-active bg-gradient-to-r from-cyan-500 to-blue-600 shadow-sm"
+        : "hover:bg-cyan-400/10"
     }`;
   }
 
@@ -92,7 +92,7 @@ export function PlanifySidebarNav({
         aria-label="Navegação principal"
         className="min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain px-3 py-3"
       >
-        <p className="px-1 pb-1 text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-700/90">
+        <p className="px-1 pb-1 text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-500/90">
           Menu
         </p>
         {navItems.map((item) => {

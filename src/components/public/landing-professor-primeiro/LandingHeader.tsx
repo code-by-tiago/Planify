@@ -42,7 +42,7 @@ export function LandingHeader() {
             <Link
               key={item.href}
               href={item.href}
-              className="rounded-lg px-3.5 py-2 text-sm font-semibold text-slate-600 transition hover:bg-emerald-50 hover:text-emerald-800"
+              className="rounded-lg px-3.5 py-2 text-sm font-semibold text-slate-600 transition hover:bg-cyan-50 hover:text-cyan-800"
             >
               {item.label}
             </Link>
@@ -52,13 +52,13 @@ export function LandingHeader() {
         <div className="hidden items-center gap-2.5 sm:flex">
           <Link
             href="/login"
-            className="rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:text-emerald-700"
+            className="rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:text-cyan-700"
           >
             Entrar
           </Link>
           <Link
             href="/planos"
-            className="rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-bold text-white shadow-md shadow-emerald-600/20 transition hover:bg-emerald-700"
+            className="rounded-xl bg-cyan-600 px-5 py-2.5 text-sm font-bold text-white shadow-md shadow-cyan-600/20 transition hover:bg-cyan-700"
           >
             Começar agora
           </Link>
@@ -83,7 +83,7 @@ export function LandingHeader() {
                 key={item.href}
                 href={item.href}
                 onClick={() => setOpen(false)}
-                className="rounded-xl px-4 py-3 text-base font-semibold text-slate-800 hover:bg-emerald-50"
+                className="rounded-xl px-4 py-3 text-base font-semibold text-slate-800 hover:bg-cyan-50"
               >
                 {item.label}
               </Link>
@@ -100,7 +100,7 @@ export function LandingHeader() {
             <Link
               href="/planos"
               onClick={() => setOpen(false)}
-              className="rounded-xl bg-emerald-600 py-3 text-center text-sm font-bold text-white"
+              className="rounded-xl bg-cyan-600 py-3 text-center text-sm font-bold text-white"
             >
               Começar agora
             </Link>

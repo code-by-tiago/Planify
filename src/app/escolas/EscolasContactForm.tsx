@@ -147,7 +147,7 @@ export function EscolasContactForm() {
             <div
               className={`mt-5 rounded-2xl border p-4 text-sm font-semibold ${
                 status.type === "success"
-                  ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                  ? "border-cyan-200 bg-cyan-50 text-cyan-800"
                   : "border-amber-200 bg-amber-50 text-amber-800"
               }`}
             >

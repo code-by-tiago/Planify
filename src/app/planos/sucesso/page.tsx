@@ -14,7 +14,7 @@ export default function PlanosSucessoPage() {
   return (
     <PublicProfessorPrimeiroLayout>
       <section className="mx-auto flex max-w-2xl flex-1 flex-col items-center justify-center px-5 py-16 text-center sm:px-8">
-        <span className="flex h-16 w-16 items-center justify-center rounded-3xl bg-emerald-50 text-emerald-600">
+        <span className="flex h-16 w-16 items-center justify-center rounded-3xl bg-cyan-50 text-cyan-600">
           <PlanifyIcon name="checkCircle" className="h-8 w-8" />
         </span>
 

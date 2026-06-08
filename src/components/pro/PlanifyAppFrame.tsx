@@ -9,6 +9,10 @@ import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { PlanifyShellSidebar } from "@/components/pro/PlanifyShellSidebar";
 import { PlanifySidebarNav } from "@/components/pro/PlanifySidebarNav";
 import { usePlanifyAccess } from "@/hooks/usePlanifyAccess";
+import {
+  setHistorySupabaseSync,
+  syncLocalHistoryToSupabase,
+} from "@/lib/history/history-storage";
 
 type FrameProps = {
   children: ReactNode;
@@ -38,6 +42,13 @@ export default function PlanifyAppFrame({
     setCurrentSearch(window.location.search);
     setActiveTipo(new URLSearchParams(window.location.search).get("tipo"));
   }, [pathname]);
+
+  useEffect(() => {
+    if (!access.loading && access.authenticated) {
+      setHistorySupabaseSync(true);
+      void syncLocalHistoryToSupabase();
+    }
+  }, [access.authenticated, access.loading]);
 
   function isNavActive(href: string): boolean {
     if (active) return active === href;

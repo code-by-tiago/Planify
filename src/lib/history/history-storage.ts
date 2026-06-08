@@ -5,7 +5,7 @@ import {
 import type { EditorDocument } from "../../types/editor";
 import type { HistoryFilter, HistoryItem } from "../../types/history";
 import { editorDocumentToHistoryItem } from "../../types/history";
-import { saveHistoryItemToAPI } from "./history-api-client";
+import { saveHistoryItemToAPI, listHistoryFromAPI } from "./history-api-client";
 
 const HISTORY_KEY = "planify:history:items";
 const MAX_HISTORY_ITEMS = 80;
@@ -66,6 +66,62 @@ function normalizeHistoryItem(item: HistoryItem): HistoryItem {
   };
 }
 
+export function mergeHistoryItems(
+  local: HistoryItem[],
+  remote: HistoryItem[],
+): HistoryItem[] {
+  const byId = new Map<string, HistoryItem>();
+
+  for (const item of remote) {
+    byId.set(item.id, item);
+  }
+
+  for (const item of local) {
+    const existing = byId.get(item.id);
+    if (!existing) {
+      byId.set(item.id, item);
+      continue;
+    }
+
+    const localTime = new Date(item.updatedAt).getTime();
+    const remoteTime = new Date(existing.updatedAt).getTime();
+    byId.set(item.id, localTime > remoteTime ? item : existing);
+  }
+
+  return Array.from(byId.values())
+    .sort(
+      (a, b) =>
+        new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+    )
+    .slice(0, MAX_HISTORY_ITEMS);
+}
+
+export async function loadHistoryItemsWithSync(): Promise<HistoryItem[]> {
+  const local = loadHistoryItems();
+
+  try {
+    const response = await listHistoryFromAPI();
+    if (!response.success) {
+      return local;
+    }
+
+    const merged = mergeHistoryItems(local, response.data.items);
+    saveHistoryItems(merged);
+    return merged;
+  } catch {
+    return local;
+  }
+}
+
+export async function syncLocalHistoryToSupabase(): Promise<void> {
+  if (!shouldSyncSupabase()) {
+    return;
+  }
+
+  const items = loadHistoryItems();
+  await Promise.allSettled(items.map((item) => saveHistoryItemToAPI(item)));
+}
+
 export function loadHistoryItems(): HistoryItem[] {
   if (!canUseStorage()) {
     return [];
@@ -112,11 +168,9 @@ export function upsertHistoryItem(item: HistoryItem): HistoryItem[] {
 
   saveHistoryItems(next);
 
-  if (shouldSyncSupabase()) {
-    saveHistoryItemToAPI(next[0]).catch(() => {
-      // Mantém o histórico local mesmo se a sincronização falhar.
-    });
-  }
+  saveHistoryItemToAPI(next[0]).catch(() => {
+    // Mantém o histórico local mesmo se a sincronização falhar.
+  });
 
   return next;
 }

@@ -322,6 +322,13 @@ export const sidebarNavigation: AppNavItem[] = [
     hideForManagerView: true,
   },
   {
+    label: "Editor",
+    href: "/dashboard?secao=editor",
+    icon: "editor",
+    panel: "editor",
+    hideForManagerView: true,
+  },
+  {
     label: "Biblioteca",
     href: "/dashboard?secao=biblioteca",
     icon: "library",

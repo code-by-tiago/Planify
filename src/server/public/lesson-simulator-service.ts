@@ -58,7 +58,7 @@ export async function generateLessonSimulatorSkeleton(theme: string): Promise<st
     config: {
       systemInstruction: LESSON_SIMULATOR_SYSTEM_INSTRUCTION,
       temperature: 0.3,
-      maxOutputTokens: 300,
+      maxOutputTokens: 1024,
     },
   });
 

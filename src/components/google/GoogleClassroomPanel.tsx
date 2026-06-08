@@ -11,6 +11,7 @@ import {
 } from "@/lib/google/google-api-client";
 import { notifyGoogleStatusChanged } from "@/lib/google/google-status-events";
 import { useCallback, useEffect, useState } from "react";
+import { GoogleClassroomIcon } from "@/components/google/GoogleClassroomIcon";
 
 type GoogleClassroomPanelProps = {
   title: string;
@@ -175,8 +176,8 @@ export function GoogleClassroomPanel({
   }
 
   const btnPrimary = compact
-    ? "rounded-xl bg-sky-600 px-3 py-2 text-xs font-black text-white transition hover:bg-sky-700 disabled:opacity-60"
-    : "rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-black text-white transition hover:bg-sky-700 disabled:opacity-60";
+    ? "inline-flex items-center gap-1.5 rounded-xl bg-sky-600 px-3 py-2 text-xs font-black text-white transition hover:bg-sky-700 disabled:opacity-60"
+    : "inline-flex items-center gap-2 rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-black text-white transition hover:bg-sky-700 disabled:opacity-60";
 
   const btnSuccess = compact
     ? "rounded-xl bg-emerald-600 px-3 py-2 text-xs font-black text-white transition hover:bg-emerald-700 disabled:opacity-60"
@@ -219,9 +220,10 @@ export function GoogleClassroomPanel({
     return compact ? (
       <a
         href={`/login?redirect=${loginRedirect}`}
-        className="inline-flex shrink-0 items-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700"
+        className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700"
       >
-        Classroom (login)
+        <GoogleClassroomIcon className="h-4 w-4" />
+        Classroom
       </a>
     ) : (
       <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
@@ -249,6 +251,7 @@ export function GoogleClassroomPanel({
             onClick={() => void handleConnect()}
             className={btnPrimary}
           >
+            <GoogleClassroomIcon className="h-4 w-4 shrink-0" />
             {busy ? "Google…" : "Classroom"}
           </button>
         ) : (
@@ -300,9 +303,12 @@ export function GoogleClassroomPanel({
 
   return (
     <div className="rounded-2xl border border-sky-200 bg-gradient-to-br from-sky-50 to-white p-5">
-      <p className="text-xs font-black uppercase tracking-[0.22em] text-sky-700">
-        Google Classroom
-      </p>
+      <div className="flex items-center gap-2">
+        <GoogleClassroomIcon className="h-6 w-6 shrink-0" />
+        <p className="text-xs font-black uppercase tracking-[0.22em] text-sky-700">
+          Google Classroom
+        </p>
+      </div>
 
       {status.connected ? (
         <p className="mt-2 text-sm text-sky-900">
@@ -328,7 +334,8 @@ export function GoogleClassroomPanel({
             onClick={() => void handleConnect()}
             className={btnPrimary}
           >
-            {busy ? "Abrindo Google..." : "Conectar Google"}
+            <GoogleClassroomIcon className="h-4 w-4 shrink-0" />
+            {busy ? "Abrindo Google..." : "Conectar Google Classroom"}
           </button>
         ) : (
           <>

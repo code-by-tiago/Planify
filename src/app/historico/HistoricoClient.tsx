@@ -20,7 +20,7 @@ import {
   clearHistoryItems,
   filterHistoryItems,
   getHistoryTypeOptions,
-  loadHistoryItems,
+  loadHistoryItemsWithSync,
   removeHistoryItem,
 } from "../../lib/history/history-storage";
 import { saveEditorDocument } from "../../lib/editor/editor-storage";
@@ -83,9 +83,9 @@ function historyItemToEditorDocument(item: HistoryItem): EditorDocument {
   };
 }
 
-function refreshHistoryState(): HistoryItem[] {
+function refreshHistoryState(): Promise<HistoryItem[]> {
   migrateLegacyMaterialHistoryOnce();
-  return loadHistoryItems();
+  return loadHistoryItemsWithSync();
 }
 
 function getSourceBadgeClass(source: string): string {
@@ -121,20 +121,29 @@ export function HistoricoClient() {
   const [status, setStatus] = useState<StatusState | null>(null);
 
   useEffect(() => {
-    const loaded = refreshHistoryState();
-    setItems(loaded);
-    setSelectedItem(loaded[0] ?? null);
+    let cancelled = false;
+
+    void refreshHistoryState().then((loaded) => {
+      if (cancelled) return;
+      setItems(loaded);
+      setSelectedItem(loaded[0] ?? null);
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
     function handleRefresh() {
-      const loaded = refreshHistoryState();
-      setItems(loaded);
-      setSelectedItem((current) =>
-        current
-          ? loaded.find((item) => item.id === current.id) ?? loaded[0] ?? null
-          : loaded[0] ?? null,
-      );
+      void refreshHistoryState().then((loaded) => {
+        setItems(loaded);
+        setSelectedItem((current) =>
+          current
+            ? loaded.find((item) => item.id === current.id) ?? loaded[0] ?? null
+            : loaded[0] ?? null,
+        );
+      });
     }
 
     window.addEventListener("focus", handleRefresh);
@@ -202,12 +211,13 @@ export function HistoricoClient() {
   }
 
   function reloadHistory() {
-    const loaded = refreshHistoryState();
-    setItems(loaded);
-    setSelectedItem(loaded[0] ?? null);
-    setStatus({
-      type: "success",
-      message: "Materiais recarregados.",
+    void refreshHistoryState().then((loaded) => {
+      setItems(loaded);
+      setSelectedItem(loaded[0] ?? null);
+      setStatus({
+        type: "success",
+        message: "Materiais recarregados.",
+      });
     });
   }
 
@@ -223,7 +233,7 @@ export function HistoricoClient() {
           badge="Meus materiais"
           icon="history"
           title="Tudo que você gerou"
-          description="Planejamentos, materiais e rascunhos do editor — organizados no seu navegador."
+          description="Planejamentos, materiais e rascunhos do editor — sincronizados com sua conta."
         />
       }
     >

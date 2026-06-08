@@ -97,12 +97,13 @@ export function validateMaterialEngineRequest(
   }
 
   const skills = request.habilidadesSelecionadas ?? [];
+  const bnccRequired = request.tipoMaterial !== "slides";
 
-  if (skills.length === 0) {
+  if (bnccRequired && skills.length === 0) {
     errors.push(
       "Selecione pelo menos uma habilidade BNCC antes de gerar o material.",
     );
-  } else {
+  } else if (skills.length > 0) {
     const stage = resolveBnccStageFromFields(request.etapa, request.anoSerie);
 
     for (const skill of skills) {

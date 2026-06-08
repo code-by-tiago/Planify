@@ -9,6 +9,7 @@ type MaterialBnccSkillsPanelProps = {
   selectedSkills: BnccSkillOption[];
   loading: boolean;
   temaReady: boolean;
+  optional?: boolean;
   onSuggest: () => void;
   onToggleSkill: (skill: BnccSkillOption) => void;
   onSelectGroup: (group: BnccSkillGroup) => void;
@@ -44,6 +45,7 @@ export function MaterialBnccSkillsPanel({
   selectedSkills,
   loading,
   temaReady,
+  optional = false,
   onSuggest,
   onToggleSkill,
   onSelectGroup,
@@ -77,6 +79,9 @@ export function MaterialBnccSkillsPanel({
             </div>
             <h3 className="mt-2 text-lg font-black tracking-tight text-slate-950 sm:text-xl">
               Habilidades BNCC do material
+              {optional ? (
+                <span className="ml-2 text-sm font-bold text-slate-500">(opcional)</span>
+              ) : null}
             </h3>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
               Selecione as habilidades que este material deve cobrir. Elas entram no

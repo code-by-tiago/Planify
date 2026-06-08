@@ -936,11 +936,14 @@ export function MateriaisClient({
       return;
     }
 
-    const bnccValidationError = validateSelectedBnccSkillsForStage(
-      selectedBnccSkills,
-      etapa,
-      anoSerie,
-    );
+    const bnccValidationError =
+      tipo !== "slides" || selectedBnccSkills.length > 0
+        ? validateSelectedBnccSkillsForStage(
+            selectedBnccSkills,
+            etapa,
+            anoSerie,
+          )
+        : null;
     if (bnccValidationError) {
       setErro(bnccValidationError);
       return;
@@ -1413,6 +1416,7 @@ export function MateriaisClient({
               selectedSkills={selectedBnccSkills}
               loading={loadingBncc}
               temaReady={suggestContextReady}
+              optional={tipo === "slides"}
               onSuggest={() => void sugerirHabilidadesBncc()}
               onToggleSkill={toggleBnccSkill}
               onSelectGroup={selectBnccGroup}
@@ -1620,7 +1624,7 @@ export function MateriaisClient({
             </label>
           </div>
 
-          {selectedBnccSkills.length === 0 && tema.trim() ? (
+          {tipo !== "slides" && selectedBnccSkills.length === 0 && tema.trim() ? (
             <p className="mt-4 rounded-xl border border-amber-200/80 bg-amber-50/80 px-4 py-3 text-xs font-semibold leading-5 text-amber-900">
               Selecione pelo menos uma habilidade BNCC antes de gerar. Use o botão
               &quot;Sugerir habilidades BNCC&quot; acima.

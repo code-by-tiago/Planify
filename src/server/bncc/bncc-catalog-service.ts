@@ -171,13 +171,27 @@ export async function fetchBnccSkillsFromDb(filters?: {
     query = query.ilike("subject", filters.subject);
   }
 
-  const { data, error } = await query.order("code", { ascending: true });
+  const pageSize = 1000;
+  const rows: BnccSkillRow[] = [];
 
-  if (error) {
-    throw new Error(error.message);
+  for (let offset = 0; ; offset += pageSize) {
+    const { data, error } = await query
+      .order("code", { ascending: true })
+      .range(offset, offset + pageSize - 1);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    const batch = (data || []) as BnccSkillRow[];
+    rows.push(...batch);
+
+    if (batch.length < pageSize) {
+      break;
+    }
   }
 
-  return ((data || []) as BnccSkillRow[]).map(rowToBnccSkill);
+  return rows.map(rowToBnccSkill);
 }
 
 export async function getCachedBnccSkills(): Promise<BNCCSkill[]> {

@@ -53,15 +53,29 @@ export async function POST(request: NextRequest) {
       anoSerie,
     );
 
+    const allowedCodes = new Set(filtered.codes.map((code) => code.toUpperCase()));
+    const conteudos = (result.conteudos || []).map((group) => ({
+      ...group,
+      habilidades: (group.habilidades || []).filter((skill) =>
+        allowedCodes.has(String(skill.codigo || "").toUpperCase()),
+      ),
+    }));
+
     return NextResponse.json({
       success: true,
       ok: true,
       ...result,
+      conteudos,
       habilidades: filtered.skills,
       sugeridas: filtered.skills,
       skills: filtered.skills,
       items: filtered.skills,
       total: filtered.skills.length,
+      data: {
+        conteudos,
+        habilidades: filtered.skills,
+        sugeridas: filtered.skills,
+      },
     });
   } catch (error) {
     return NextResponse.json(

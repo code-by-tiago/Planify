@@ -14,7 +14,7 @@ import {
   isDeepGenerationType,
   nextBrazilMidnightIso,
 } from "@/lib/ai/material-generation-policy";
-import { isOwnerEmail } from "../auth/owner-emails";
+import { hasUnlimitedQuota } from "../auth/courtesy-emails";
 import { getSupabaseAdminClient } from "../supabase/admin-client";
 import { getCreditWallet } from "./credit-service";
 import { resolveUserBillingPlanKey } from "./credit-subscription-sync";
@@ -76,7 +76,7 @@ export async function getDailyGenerationStatus(params: {
   });
   const limit = getDailyDeepGenerationLimit(resolvedPlanKey);
 
-  if (isOwnerEmail(params.email)) {
+  if (hasUnlimitedQuota(params.email)) {
     return {
       used: 0,
       limit,
@@ -129,7 +129,7 @@ export async function consumeDeepGeneration(params: {
     return { status: "skipped" };
   }
 
-  if (isOwnerEmail(params.email)) {
+  if (hasUnlimitedQuota(params.email)) {
     return { status: "skipped" };
   }
 
@@ -138,8 +138,7 @@ export async function consumeDeepGeneration(params: {
     email: params.email,
   });
   const limit = getDailyDeepGenerationLimit(resolvedPlanKey);
-  const mustEnforceDaily =
-    Boolean(resolvedPlanKey) && !isOwnerEmail(params.email);
+  const mustEnforceDaily = Boolean(resolvedPlanKey);
 
   try {
     const { data, error } = await db().rpc("planify_consume_deep_generation", {

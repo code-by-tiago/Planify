@@ -6,6 +6,7 @@ import {
   syncCreditWalletFromSubscription,
 } from "../../../../server/credits/credit-subscription-sync";
 import { getDailyGenerationStatus } from "../../../../server/credits/daily-generation-service";
+import { hasUnlimitedQuota } from "../../../../server/auth/courtesy-emails";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -37,5 +38,12 @@ export async function GET(request: NextRequest) {
     planKey,
   });
 
-  return NextResponse.json({ ok: true, wallet, daily });
+  const unlimitedQuota = hasUnlimitedQuota(user.email);
+
+  return NextResponse.json({
+    ok: true,
+    wallet,
+    daily,
+    unlimitedQuota,
+  });
 }

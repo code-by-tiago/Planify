@@ -13,7 +13,7 @@
 import { getBillingPlan } from "@/types/billing";
 import { getSupabaseAdminClient } from "../supabase/admin-client";
 import type { MaterialEngineType } from "../materials/material-engine-types";
-import { isOwnerEmail } from "../auth/owner-emails";
+import { hasUnlimitedQuota } from "../auth/courtesy-emails";
 import {
   resolveUserBillingPlanKey,
   syncCreditWalletFromSubscription,
@@ -127,8 +127,11 @@ export async function spendCredits(
 
   const wallet = await getCreditWallet(userId);
   const billedPlanKey = await resolveUserBillingPlanKey({ userId, email });
-  const mustEnforceCredits =
-    Boolean(billedPlanKey) && !isOwnerEmail(email);
+  if (hasUnlimitedQuota(email)) {
+    return { status: "skipped" };
+  }
+
+  const mustEnforceCredits = Boolean(billedPlanKey);
 
   if (!wallet) {
     if (mustEnforceCredits) {

@@ -1088,6 +1088,25 @@ export function MateriaisClient({
       });
 
       if (abrirEditorAutomatico) {
+        // #region agent log
+        fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "82e773" },
+          body: JSON.stringify({
+            sessionId: "82e773",
+            runId: "google-auto-export",
+            hypothesisId: "H-A",
+            location: "MateriaisClient.tsx:executarGeracao",
+            message: "generation complete, opening editor",
+            data: {
+              tipo,
+              abrirEditorAutomatico: true,
+              titulo: titulo.slice(0, 60),
+            },
+            timestamp: Date.now(),
+          }),
+        }).catch(() => {});
+        // #endregion
         openMaterialInEditor(html, titulo, meta, {
           from: "materiais",
         });

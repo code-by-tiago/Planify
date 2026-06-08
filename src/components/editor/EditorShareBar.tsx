@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useAutoGoogleExport } from "@/hooks/useAutoGoogleExport";
+import { useEffect, useMemo, useState } from "react";
 import { GoogleClassroomPanel } from "@/components/google/GoogleClassroomPanel";
 import { GoogleDocsExportButton } from "@/components/google/GoogleDocsExportButton";
 import { GoogleDriveExportButton } from "@/components/google/GoogleDriveExportButton";
@@ -78,12 +79,45 @@ export function EditorShareBar({
     slideThemeProp ?? null,
   );
 
+  const returnTo = useMemo(() => {
+    if (typeof window === "undefined") return "/dashboard?secao=editor";
+    return `${window.location.pathname}${window.location.search}` || "/editor?from=materiais";
+  }, []);
+
+  useAutoGoogleExport({
+    title,
+    getHtml,
+    slideTheme,
+    returnTo,
+    onStatus,
+  });
+
   useEffect(() => {
     const sync = () => {
-      setIsSlideDeck(
-        resolveSlideDeck(getHtml, documentType, isSlideDeckProp),
-      );
-      setIsQuizDocument(resolveQuizDocument(getHtml, documentType));
+      const slideDeck = resolveSlideDeck(getHtml, documentType, isSlideDeckProp);
+      const quizDoc = resolveQuizDocument(getHtml, documentType);
+      setIsSlideDeck(slideDeck);
+      setIsQuizDocument(quizDoc);
+      // #region agent log
+      fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "82e773" },
+        body: JSON.stringify({
+          sessionId: "82e773",
+          runId: "google-auto-export",
+          hypothesisId: "H-B",
+          location: "EditorShareBar.tsx:sync",
+          message: "share bar routing resolved",
+          data: {
+            documentType: documentType ?? null,
+            isSlideDeck: slideDeck,
+            isQuizDocument: quizDoc,
+            defaultProduct: slideDeck ? "slides" : quizDoc ? "forms" : "docs",
+          },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {});
+      // #endregion
       try {
         setSlideTheme(
           slideThemeProp ||
@@ -99,8 +133,6 @@ export function EditorShareBar({
     const timer = window.setInterval(sync, 1500);
     return () => window.clearInterval(timer);
   }, [getHtml, documentType, isSlideDeckProp, slideThemeProp]);
-
-  const returnTo = "/dashboard?secao=editor";
 
   return (
     <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5 sm:gap-2">

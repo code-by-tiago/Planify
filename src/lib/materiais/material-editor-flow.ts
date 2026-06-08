@@ -12,6 +12,10 @@ import type { PlanifyToolId } from "@/lib/pro/planifyTools";
 import { planifyTools } from "@/lib/pro/planifyTools";
 import type { HistoryItem } from "@/types/history";
 import { editorDocumentToHistoryItem } from "@/types/history";
+import {
+  resolveGoogleProductForTool,
+  saveAutoGoogleExportIntent,
+} from "@/lib/google/google-auto-export";
 
 export const AUTO_EDITOR_PREF_KEY = "planify:materiais:auto-editor";
 
@@ -126,6 +130,34 @@ export function openMaterialInEditor(
   if (options?.from) params.set("from", options.from);
   const query = params.toString();
   const href = query ? `/editor?${query}` : "/editor";
+
+  saveAutoGoogleExportIntent({
+    product: resolveGoogleProductForTool(meta.toolId),
+    title,
+    returnTo: href,
+    slideTheme: meta.slideTheme ?? meta.designSlides ?? undefined,
+  });
+
+  // #region agent log
+  fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "82e773" },
+    body: JSON.stringify({
+      sessionId: "82e773",
+      runId: "google-auto-export",
+      hypothesisId: "H-A",
+      location: "material-editor-flow.ts:openMaterialInEditor",
+      message: "opening editor after generation",
+      data: {
+        toolId: meta.toolId,
+        title: title.slice(0, 60),
+        href,
+        redirect: options?.redirect !== false,
+      },
+      timestamp: Date.now(),
+    }),
+  }).catch(() => {});
+  // #endregion
 
   if (options?.redirect !== false) {
     window.location.href = href;

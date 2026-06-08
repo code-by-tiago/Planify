@@ -1,6 +1,7 @@
 "use client";
 
 import { GoogleDriveIcon } from "@/components/google/GoogleDriveIcon";
+import { GOOGLE_PRODUCT_ICON_CLASS } from "@/components/google/google-icon-button-styles";
 import { GoogleProductExportButton } from "@/components/google/GoogleProductExportButton";
 import { exportToGoogleDrive } from "@/lib/google/google-api-client";
 import { useCallback } from "react";
@@ -12,6 +13,7 @@ type GoogleDriveExportButtonProps = {
   getHtml: () => string;
   returnTo?: string;
   className?: string;
+  iconOnly?: boolean;
   onStatus?: (message: string) => void;
 };
 
@@ -20,6 +22,7 @@ export function GoogleDriveExportButton({
   getHtml,
   returnTo = "/dashboard?secao=editor",
   className,
+  iconOnly,
   onStatus,
 }: GoogleDriveExportButtonProps) {
   const runExport = useCallback(async () => {
@@ -39,12 +42,10 @@ export function GoogleDriveExportButton({
     <GoogleProductExportButton
       title={title}
       returnTo={returnTo}
-      className={
-        className ||
-        "inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-800 transition hover:bg-slate-50 disabled:opacity-60"
-      }
+      className={className}
+      iconOnly={iconOnly}
       alwaysShowExport
-      icon={<GoogleDriveIcon className="h-4 w-4 shrink-0" />}
+      icon={<GoogleDriveIcon className={GOOGLE_PRODUCT_ICON_CLASS} />}
       productName="Google Drive"
       configLabel="Drive (config)"
       loginLabel="Drive"

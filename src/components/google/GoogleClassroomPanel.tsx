@@ -12,6 +12,10 @@ import {
 import { notifyGoogleStatusChanged } from "@/lib/google/google-status-events";
 import { useCallback, useEffect, useState } from "react";
 import { GoogleClassroomIcon } from "@/components/google/GoogleClassroomIcon";
+import {
+  GOOGLE_ICON_ONLY_BUTTON_CLASS,
+  GOOGLE_PRODUCT_ICON_CLASS,
+} from "@/components/google/google-icon-button-styles";
 
 type GoogleClassroomPanelProps = {
   title: string;
@@ -176,16 +180,26 @@ export function GoogleClassroomPanel({
   }
 
   const btnPrimary = compact
-    ? "inline-flex items-center gap-1.5 rounded-xl bg-sky-600 px-3 py-2 text-xs font-black text-white transition hover:bg-sky-700 disabled:opacity-60"
+    ? GOOGLE_ICON_ONLY_BUTTON_CLASS
     : "inline-flex items-center gap-2 rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-black text-white transition hover:bg-sky-700 disabled:opacity-60";
 
   const btnSuccess = compact
-    ? "rounded-xl bg-emerald-600 px-3 py-2 text-xs font-black text-white transition hover:bg-emerald-700 disabled:opacity-60"
+    ? GOOGLE_ICON_ONLY_BUTTON_CLASS
     : "rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-black text-white transition hover:bg-emerald-700 disabled:opacity-60";
 
   if (loading) {
     return compact ? (
-      <span className="text-[11px] font-semibold text-sky-700">Google…</span>
+      <button
+        type="button"
+        disabled
+        className={GOOGLE_ICON_ONLY_BUTTON_CLASS}
+        aria-label="Google Classroom"
+        title="Google Classroom"
+      >
+        <span className="opacity-50">
+          <GoogleClassroomIcon className={GOOGLE_PRODUCT_ICON_CLASS} />
+        </span>
+      </button>
     ) : (
       <div className="rounded-2xl border border-sky-200 bg-sky-50/80 p-4 text-sm text-sky-900">
         Verificando integração Google...
@@ -195,12 +209,17 @@ export function GoogleClassroomPanel({
 
   if (!status?.configured) {
     return compact ? (
-      <span
-        className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] font-bold text-amber-900"
+      <button
+        type="button"
+        disabled
+        className={GOOGLE_ICON_ONLY_BUTTON_CLASS}
+        aria-label="Classroom (config)"
         title="Configure GOOGLE_CLIENT_ID no servidor"
       >
-        Classroom (config)
-      </span>
+        <span className="opacity-50">
+          <GoogleClassroomIcon className={GOOGLE_PRODUCT_ICON_CLASS} />
+        </span>
+      </button>
     ) : (
       <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-950">
         <p className="font-black">Google Classroom — configuração pendente</p>
@@ -220,10 +239,11 @@ export function GoogleClassroomPanel({
     return compact ? (
       <a
         href={`/login?redirect=${loginRedirect}`}
-        className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700"
+        className={GOOGLE_ICON_ONLY_BUTTON_CLASS}
+        aria-label="Classroom"
+        title="Fazer login para Google Classroom"
       >
-        <GoogleClassroomIcon className="h-4 w-4" />
-        Classroom
+        <GoogleClassroomIcon className={GOOGLE_PRODUCT_ICON_CLASS} />
       </a>
     ) : (
       <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
@@ -250,9 +270,10 @@ export function GoogleClassroomPanel({
             disabled={busy}
             onClick={() => void handleConnect()}
             className={btnPrimary}
+            aria-label={busy ? "Conectando…" : "Conectar Google Classroom"}
+            title="Conectar Google Classroom"
           >
-            <GoogleClassroomIcon className="h-4 w-4 shrink-0" />
-            {busy ? "Google…" : "Classroom"}
+            <GoogleClassroomIcon className={GOOGLE_PRODUCT_ICON_CLASS} />
           </button>
         ) : (
           <>
@@ -278,15 +299,18 @@ export function GoogleClassroomPanel({
               disabled={busy || !courseId || courses.length === 0}
               onClick={() => void handleExport()}
               className={btnSuccess}
+              aria-label={busy ? "Enviando…" : "Enviar ao Classroom"}
+              title="Enviar ao Classroom"
             >
-              {busy ? "…" : "Classroom"}
+              <GoogleClassroomIcon className={GOOGLE_PRODUCT_ICON_CLASS} />
             </button>
             <button
               type="button"
               disabled={busy}
               onClick={() => void handleDisconnect()}
+              aria-label="Desconectar Google"
               title="Desconectar Google"
-              className="rounded-xl border border-sky-200 bg-white px-2 py-2 text-xs font-bold text-sky-800"
+              className={GOOGLE_ICON_ONLY_BUTTON_CLASS}
             >
               ✕
             </button>

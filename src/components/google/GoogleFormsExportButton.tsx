@@ -1,6 +1,7 @@
 "use client";
 
 import { GoogleFormsIcon } from "@/components/google/GoogleFormsIcon";
+import { GOOGLE_PRODUCT_ICON_CLASS } from "@/components/google/google-icon-button-styles";
 import { GoogleProductExportButton } from "@/components/google/GoogleProductExportButton";
 import { exportToGoogleForms } from "@/lib/google/google-api-client";
 import { useCallback } from "react";
@@ -12,6 +13,7 @@ type GoogleFormsExportButtonProps = {
   getHtml: () => string;
   returnTo?: string;
   className?: string;
+  iconOnly?: boolean;
   onStatus?: (message: string) => void;
 };
 
@@ -20,6 +22,7 @@ export function GoogleFormsExportButton({
   getHtml,
   returnTo = "/dashboard?secao=editor",
   className,
+  iconOnly,
   onStatus,
 }: GoogleFormsExportButtonProps) {
   const runExport = useCallback(async () => {
@@ -36,12 +39,10 @@ export function GoogleFormsExportButton({
     <GoogleProductExportButton
       title={title}
       returnTo={returnTo}
-      className={
-        className ||
-        "inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-violet-700 px-3 py-2 text-xs font-black text-white transition hover:bg-violet-800 disabled:opacity-60"
-      }
+      className={className}
+      iconOnly={iconOnly}
       alwaysShowExport
-      icon={<GoogleFormsIcon className="h-4 w-4 shrink-0" />}
+      icon={<GoogleFormsIcon className={GOOGLE_PRODUCT_ICON_CLASS} />}
       productName="Google Forms"
       configLabel="Forms (config)"
       loginLabel="Forms"

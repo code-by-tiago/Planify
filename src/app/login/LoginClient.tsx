@@ -155,6 +155,7 @@ export function LoginClient() {
     return null;
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [lastRedirect, setLastRedirect] = useState<string | null>(null);
 
   function updateField<K extends keyof FormState>(key: K, value: FormState[K]) {
@@ -393,9 +394,20 @@ export function LoginClient() {
           </label>
 
           <label className="grid gap-2">
-            <span className="text-sm font-bold text-slate-300">Senha</span>
+            <span className="flex items-center justify-between gap-2">
+              <span className="text-sm font-bold text-slate-300">Senha</span>
+              <button
+                type="button"
+                onClick={() => setShowPassword((current) => !current)}
+                className="text-xs font-bold text-cyan-300 transition hover:text-cyan-100"
+                aria-pressed={showPassword}
+                aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+              >
+                {showPassword ? "Ocultar" : "Mostrar"}
+              </button>
+            </span>
             <input
-              type="password"
+              type={showPassword ? "text" : "password"}
               value={form.password}
               onChange={(event) => updateField("password", event.target.value)}
               placeholder="Mínimo 6 caracteres"

@@ -98,6 +98,7 @@ export function LoginPageClient() {
   const [mode, setMode] = useState<Mode>("login");
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(() => {
     if (cadastroConfirmar) {
@@ -319,11 +320,20 @@ export function LoginPageClient() {
               </label>
 
               <label className="block">
-                <span className="mb-2 block text-sm font-bold text-slate-700">
-                  Senha
+                <span className="mb-2 flex items-center justify-between gap-2">
+                  <span className="text-sm font-bold text-slate-700">Senha</span>
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((current) => !current)}
+                    className="text-xs font-bold text-blue-600 transition hover:text-blue-800"
+                    aria-pressed={showPassword}
+                    aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                  >
+                    {showPassword ? "Ocultar" : "Mostrar"}
+                  </button>
                 </span>
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   value={senha}
                   onChange={(event) => setSenha(event.target.value)}
                   placeholder="Mínimo 6 caracteres"

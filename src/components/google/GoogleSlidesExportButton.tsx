@@ -1,6 +1,11 @@
 "use client";
 
 import {
+  GOOGLE_ICON_ONLY_BUTTON_CLASS,
+  GOOGLE_PRODUCT_ICON_CLASS,
+} from "@/components/google/google-icon-button-styles";
+import { GoogleSlidesIcon } from "@/components/google/GoogleSlidesIcon";
+import {
   exportToGoogleSlides,
   fetchGoogleStatus,
   startGoogleOAuth,
@@ -14,7 +19,6 @@ import {
   saveGoogleSlidesExportPending,
 } from "@/lib/google/google-status-events";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { GoogleSlidesIcon } from "@/components/google/GoogleSlidesIcon";
 
 export type PlanifySlideExportPayload = {
   title: string;
@@ -37,6 +41,7 @@ type GoogleSlidesExportButtonProps = {
   theme?: string;
   returnTo?: string;
   className?: string;
+  iconOnly?: boolean;
   /** Mantém o CTA de exportação visível mesmo antes de conectar o Google. */
   alwaysShowExport?: boolean;
 };
@@ -49,6 +54,7 @@ export function GoogleSlidesExportButton({
   theme,
   returnTo = "/dashboard?tipo=slides",
   className = "",
+  iconOnly = true,
   alwaysShowExport = false,
 }: GoogleSlidesExportButtonProps) {
   const [status, setStatus] = useState<GoogleIntegrationStatus | null>(null);
@@ -122,30 +128,8 @@ export function GoogleSlidesExportButton({
   }, [returnTo, theme, title]);
 
   useEffect(() => {
-    void refresh().then((fresh) => {
-      // #region agent log
-      fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "82e773" },
-        body: JSON.stringify({
-          sessionId: "82e773",
-          runId: "google-auto-export",
-          hypothesisId: "H-A",
-          location: "GoogleSlidesExportButton.tsx:mount",
-          message: "slides export button mounted",
-          data: {
-            configured: Boolean(fresh?.configured),
-            authenticated: Boolean(fresh?.authenticated),
-            connected: Boolean(fresh?.connected),
-            alwaysShowExport,
-            autoExportOnGeneration: false,
-          },
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {});
-      // #endregion
-    });
-  }, [refresh, alwaysShowExport]);
+    void refresh();
+  }, [refresh]);
 
   useEffect(() => {
     const onStatusChanged = () => {
@@ -217,13 +201,48 @@ export function GoogleSlidesExportButton({
     await runExport();
   }
 
+  const defaultClassName = iconOnly
+    ? GOOGLE_ICON_ONLY_BUTTON_CLASS
+    : "inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-black text-white hover:bg-emerald-700 disabled:opacity-60";
+
+  const resolvedClassName = className || defaultClassName;
+  const slidesIcon = <GoogleSlidesIcon className={GOOGLE_PRODUCT_ICON_CLASS} />;
+
   if (loading) {
+    if (iconOnly) {
+      return (
+        <button
+          type="button"
+          disabled
+          className={resolvedClassName}
+          aria-label="Google Slides"
+          title="Google Slides"
+        >
+          <span className="opacity-50">{slidesIcon}</span>
+        </button>
+      );
+    }
+
     return (
       <span className="text-[11px] font-semibold text-sky-700">Google…</span>
     );
   }
 
   if (!status?.configured) {
+    if (iconOnly) {
+      return (
+        <button
+          type="button"
+          disabled
+          className={resolvedClassName}
+          aria-label="Apresentações (config)"
+          title="Configure GOOGLE_CLIENT_ID no servidor"
+        >
+          <span className="opacity-50">{slidesIcon}</span>
+        </button>
+      );
+    }
+
     return (
       <span
         className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] font-bold text-amber-900"
@@ -245,6 +264,10 @@ export function GoogleSlidesExportButton({
             ? "Conectar Google Slides"
             : "Conectar Google";
 
+  const exportActionTitle = status.connected
+    ? "Exporta o deck atual para o Google Slides"
+    : "Conecte sua conta Google e abra no Google Slides";
+
   if (alwaysShowExport || status.connected) {
     return (
       <div className="flex min-w-0 flex-wrap items-center gap-2">
@@ -252,20 +275,18 @@ export function GoogleSlidesExportButton({
           type="button"
           disabled={busy}
           onClick={() => void handlePrimaryAction()}
-          className={
-            className ||
-            "inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-black text-white hover:bg-emerald-700 disabled:opacity-60"
-          }
-          title={
-            status.connected
-              ? "Exporta o deck atual para o Google Slides"
-              : "Conecte sua conta Google e abra no Google Slides"
-          }
+          className={resolvedClassName}
+          aria-label={exportLabel}
+          title={exportActionTitle}
         >
-          <GoogleSlidesIcon className="h-4 w-4 shrink-0" />
-          {exportLabel}
+          {iconOnly ? slidesIcon : (
+            <>
+              {slidesIcon}
+              {exportLabel}
+            </>
+          )}
         </button>
-        {status.connected && status.googleEmail ? (
+        {!iconOnly && status.connected && status.googleEmail ? (
           <span
             className="max-w-[160px] truncate text-[10px] font-semibold text-emerald-800"
             title={status.googleEmail}
@@ -286,33 +307,47 @@ export function GoogleSlidesExportButton({
   }
 
   if (!status.authenticated) {
+    const loginTitle = "Apresentações (login)";
+
     return (
       <a
         href={`/login?redirect=${encodeURIComponent(returnTo)}`}
         className={
           className ||
-          "inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700"
+          (iconOnly
+            ? GOOGLE_ICON_ONLY_BUTTON_CLASS
+            : "inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700")
         }
+        aria-label={loginTitle}
+        title={loginTitle}
       >
-        <GoogleSlidesIcon className="h-4 w-4 shrink-0" />
-        Apresentações (login)
+        {iconOnly ? slidesIcon : (
+          <>
+            {slidesIcon}
+            Apresentações (login)
+          </>
+        )}
       </a>
     );
   }
+
+  const connectLabel = busy ? "Conectando…" : "Conectar Google";
 
   return (
     <button
       type="button"
       disabled={busy}
       onClick={() => void runConnect()}
-      className={
-        className ||
-        "inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-sky-600 px-3 py-2 text-xs font-black text-white hover:bg-sky-700 disabled:opacity-60"
-      }
+      className={resolvedClassName}
+      aria-label={connectLabel}
+      title={connectLabel}
     >
-      <GoogleSlidesIcon className="h-4 w-4 shrink-0" />
-      {busy ? "Google…" : "Conectar Google"}
+      {iconOnly ? slidesIcon : (
+        <>
+          {slidesIcon}
+          {busy ? "Google…" : "Conectar Google"}
+        </>
+      )}
     </button>
   );
 }
-

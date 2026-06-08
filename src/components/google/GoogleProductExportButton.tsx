@@ -1,6 +1,9 @@
 "use client";
 
 import {
+  GOOGLE_ICON_ONLY_BUTTON_CLASS,
+} from "@/components/google/google-icon-button-styles";
+import {
   fetchGoogleStatus,
   startGoogleOAuth,
   type GoogleIntegrationStatus,
@@ -22,6 +25,7 @@ type GoogleProductExportButtonProps = {
   title: string;
   returnTo?: string;
   className?: string;
+  iconOnly?: boolean;
   alwaysShowExport?: boolean;
   icon: ReactNode;
   productName: string;
@@ -78,6 +82,7 @@ export function GoogleProductExportButton({
   title,
   returnTo = "/dashboard?secao=editor",
   className = "",
+  iconOnly = true,
   alwaysShowExport = false,
   icon,
   productName,
@@ -250,16 +255,47 @@ export function GoogleProductExportButton({
     await runExport();
   }
 
-  const defaultClassName =
-    "inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-sky-600 px-3 py-2 text-xs font-black text-white transition hover:bg-sky-700 disabled:opacity-60";
+  const defaultClassName = iconOnly
+    ? GOOGLE_ICON_ONLY_BUTTON_CLASS
+    : "inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-sky-600 px-3 py-2 text-xs font-black text-white transition hover:bg-sky-700 disabled:opacity-60";
+
+  const resolvedClassName = className || defaultClassName;
 
   if (loading) {
+    if (iconOnly) {
+      return (
+        <button
+          type="button"
+          disabled
+          className={resolvedClassName}
+          aria-label={productName}
+          title={productName}
+        >
+          <span className="opacity-50">{icon}</span>
+        </button>
+      );
+    }
+
     return (
       <span className="text-[11px] font-semibold text-sky-700">{productName}…</span>
     );
   }
 
   if (!status?.configured) {
+    if (iconOnly) {
+      return (
+        <button
+          type="button"
+          disabled
+          className={resolvedClassName}
+          aria-label={configLabel}
+          title="Configure GOOGLE_CLIENT_ID no servidor"
+        >
+          <span className="opacity-50">{icon}</span>
+        </button>
+      );
+    }
+
     return (
       <span
         className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] font-bold text-amber-900"
@@ -281,6 +317,8 @@ export function GoogleProductExportButton({
             ? labels.exportConnect
             : labels.connect;
 
+  const actionTitle = exportTitle || exportLabel;
+
   if (alwaysShowExport || status.connected) {
     return (
       <div className="flex min-w-0 flex-wrap items-center gap-2">
@@ -288,11 +326,16 @@ export function GoogleProductExportButton({
           type="button"
           disabled={busy}
           onClick={() => void handlePrimaryAction()}
-          className={className || defaultClassName}
-          title={exportTitle || labels.exportConnected}
+          className={resolvedClassName}
+          aria-label={exportLabel}
+          title={actionTitle}
         >
-          {icon}
-          {exportLabel}
+          {iconOnly ? icon : (
+            <>
+              {icon}
+              {exportLabel}
+            </>
+          )}
         </button>
         {error ? (
           <span
@@ -307,29 +350,47 @@ export function GoogleProductExportButton({
   }
 
   if (!status.authenticated) {
+    const loginTitle = loginLabel;
+
     return (
       <a
         href={`/login?redirect=${encodeURIComponent(returnTo)}`}
         className={
           className ||
-          "inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700"
+          (iconOnly
+            ? GOOGLE_ICON_ONLY_BUTTON_CLASS
+            : "inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700")
         }
+        aria-label={loginTitle}
+        title={loginTitle}
       >
-        {icon}
-        {loginLabel}
+        {iconOnly ? icon : (
+          <>
+            {icon}
+            {loginLabel}
+          </>
+        )}
       </a>
     );
   }
+
+  const connectLabel = busy ? labels.connecting : labels.connect;
 
   return (
     <button
       type="button"
       disabled={busy}
       onClick={() => void runConnect()}
-      className={className || defaultClassName}
+      className={resolvedClassName}
+      aria-label={connectLabel}
+      title={connectLabel}
     >
-      {icon}
-      {busy ? "Google…" : labels.connect}
+      {iconOnly ? icon : (
+        <>
+          {icon}
+          {busy ? "Google…" : labels.connect}
+        </>
+      )}
     </button>
   );
 }

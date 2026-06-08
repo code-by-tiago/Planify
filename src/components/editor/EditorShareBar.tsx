@@ -98,26 +98,6 @@ export function EditorShareBar({
       const quizDoc = resolveQuizDocument(getHtml, documentType);
       setIsSlideDeck(slideDeck);
       setIsQuizDocument(quizDoc);
-      // #region agent log
-      fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "82e773" },
-        body: JSON.stringify({
-          sessionId: "82e773",
-          runId: "google-auto-export",
-          hypothesisId: "H-B",
-          location: "EditorShareBar.tsx:sync",
-          message: "share bar routing resolved",
-          data: {
-            documentType: documentType ?? null,
-            isSlideDeck: slideDeck,
-            isQuizDocument: quizDoc,
-            defaultProduct: slideDeck ? "slides" : quizDoc ? "forms" : "docs",
-          },
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {});
-      // #endregion
       try {
         setSlideTheme(
           slideThemeProp ||
@@ -150,7 +130,6 @@ export function EditorShareBar({
           theme={slideTheme ?? undefined}
           returnTo={returnTo}
           alwaysShowExport
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-amber-500 px-3 py-2 text-xs font-black text-white transition hover:bg-amber-600"
         />
       ) : (
         <>

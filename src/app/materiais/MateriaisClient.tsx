@@ -1853,7 +1853,6 @@ export function MateriaisClient({
                       theme={resultadoEstrutura?.slideTheme || designSlides}
                       returnTo="/dashboard?tipo=slides"
                       alwaysShowExport
-                      className="inline-flex items-center gap-2 rounded-2xl bg-emerald-600 px-4 py-2.5 text-sm font-black text-white shadow-sm transition hover:bg-emerald-700 disabled:opacity-60"
                     />
                   </div>
                 </aside>

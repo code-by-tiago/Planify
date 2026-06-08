@@ -1,6 +1,7 @@
 "use client";
 
 import { GoogleDocsIcon } from "@/components/google/GoogleDocsIcon";
+import { GOOGLE_PRODUCT_ICON_CLASS } from "@/components/google/google-icon-button-styles";
 import { GoogleProductExportButton } from "@/components/google/GoogleProductExportButton";
 import { exportToGoogleDocs } from "@/lib/google/google-api-client";
 import { useCallback } from "react";
@@ -12,6 +13,7 @@ type GoogleDocsExportButtonProps = {
   getHtml: () => string;
   returnTo?: string;
   className?: string;
+  iconOnly?: boolean;
   onStatus?: (message: string) => void;
 };
 
@@ -20,6 +22,7 @@ export function GoogleDocsExportButton({
   getHtml,
   returnTo = "/dashboard?secao=editor",
   className,
+  iconOnly,
   onStatus,
 }: GoogleDocsExportButtonProps) {
   const runExport = useCallback(async () => {
@@ -35,12 +38,10 @@ export function GoogleDocsExportButton({
     <GoogleProductExportButton
       title={title}
       returnTo={returnTo}
-      className={
-        className ||
-        "inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-blue-600 px-3 py-2 text-xs font-black text-white transition hover:bg-blue-700 disabled:opacity-60"
-      }
+      className={className}
+      iconOnly={iconOnly}
       alwaysShowExport
-      icon={<GoogleDocsIcon className="h-4 w-4 shrink-0" />}
+      icon={<GoogleDocsIcon className={GOOGLE_PRODUCT_ICON_CLASS} />}
       productName="Google Docs"
       configLabel="Docs (config)"
       loginLabel="Docs"

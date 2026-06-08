@@ -29,7 +29,7 @@ export function LandingHeader() {
 
   return (
     <header
-      className={`sticky top-0 z-50 border-b transition-all duration-300 ${
+      className={`sticky top-0 z-50 border-b pt-[env(safe-area-inset-top)] transition-all duration-300 ${
         scrolled
           ? "border-slate-200/80 bg-white/90 shadow-sm backdrop-blur-md"
           : "border-transparent bg-white/70 backdrop-blur-sm"
@@ -67,14 +67,14 @@ export function LandingHeader() {
           onClick={() => setOpen((v) => !v)}
           aria-label={open ? "Fechar menu" : "Abrir menu"}
           aria-expanded={open}
-          className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-700 lg:hidden"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 text-slate-700 lg:hidden"
         >
           <PlanifyIcon name={open ? "close" : "menu"} className="h-5 w-5" />
         </button>
       </div>
 
       {open ? (
-        <div className="border-t border-slate-100 bg-white px-5 py-4 lg:hidden">
+        <div className="border-t border-slate-100 bg-white px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] lg:hidden">
           <nav className="flex flex-col gap-1">
             {LANDING_NAV.map((item) => (
               <Link

@@ -134,8 +134,33 @@ export function getEngineOutputIssues(
       }
     }
 
+    const questions = output.exam?.questions ?? [];
+    const normalizedStatements = questions.map((question) =>
+      question.statement?.trim().toLowerCase().replace(/\s+/g, " ") || "",
+    );
+    const duplicateStatements = normalizedStatements.filter(
+      (statement, index) =>
+        statement && normalizedStatements.indexOf(statement) !== index,
+    );
+    if (duplicateStatements.length) {
+      issues.push("Prova/lista: enunciados repetidos — reescreva cada questão.");
+    }
+
+    if (tipo === "prova" && q >= 2) {
+      const types = new Set(questions.map((question) => question.type));
+      const hasObjective = [...types].some((type) =>
+        ["multipla-escolha", "verdadeiro-falso", "completar"].includes(type),
+      );
+      const hasDiscursive = types.has("dissertativa");
+      if (!hasObjective || !hasDiscursive) {
+        issues.push(
+          "Prova: inclua questões objetivas e pelo menos uma dissertativa.",
+        );
+      }
+    }
+
     let flagged = 0;
-    for (const question of output.exam?.questions ?? []) {
+    for (const question of questions) {
       for (const semantic of collectQuestionSemanticIssues({
         statement: question.statement,
         answer: question.answer,
@@ -160,11 +185,18 @@ export function getEngineOutputIssues(
   }
 
   if (tipo === "plano-aula") {
-    const steps = output.lessonPlan?.steps?.length ?? 0;
-    if (steps < 3) {
+    const steps = output.lessonPlan?.steps ?? [];
+    if (steps.length < 5) {
       issues.push(
-        `Plano de aula: inclua pelo menos 3 etapas em lessonPlan.steps (recebido ${steps}).`,
+        `Plano de aula: inclua pelo menos 5 etapas em lessonPlan.steps (recebido ${steps.length}).`,
       );
+    }
+    const stageNames = steps.map((step) => step.stage?.toLowerCase() || "").join(" ");
+    if (!/abertura|in[ií]cio|acolhimento/.test(stageNames)) {
+      issues.push("Plano de aula: inclua etapa de Abertura em lessonPlan.steps.");
+    }
+    if (!/fechamento|s[ií]ntese|encerramento/.test(stageNames)) {
+      issues.push("Plano de aula: inclua etapa de Fechamento em lessonPlan.steps.");
     }
   }
 
@@ -191,9 +223,43 @@ export function getEngineOutputIssues(
   }
 
   if (tipo === "atividade") {
-    const activities = output.activities?.length ?? 0;
-    const issue = countIssues("atividades", q, activities);
+    const activities = output.activities ?? [];
+    const issue = countIssues("atividades", q, activities.length);
     if (issue) issues.push(issue);
+
+    for (const [index, activity] of activities.entries()) {
+      if (!activity.objective?.trim()) {
+        issues.push(`Atividade ${index + 1}: preencha 'objective'.`);
+      }
+      if (!activity.estimatedTime?.trim()) {
+        issues.push(`Atividade ${index + 1}: preencha 'estimatedTime'.`);
+      }
+      if (!activity.materials?.length) {
+        issues.push(`Atividade ${index + 1}: liste 'materials' necessários.`);
+      }
+      if (!activity.evaluation?.trim()) {
+        issues.push(`Atividade ${index + 1}: preencha 'evaluation'.`);
+      }
+      if (issues.length >= 12) break;
+    }
+  }
+
+  if (tipo === "apostila") {
+    const titles = (output.sections ?? []).map(
+      (section) => section.title?.toLowerCase() || "",
+    );
+    if (!titles.some((title) => /apresent|introdu/.test(title))) {
+      issues.push("Apostila: inclua seção de Apresentação ou Introdução.");
+    }
+    if (!titles.some((title) => /objetiv/.test(title))) {
+      issues.push("Apostila: inclua seção de Objetivos de aprendizagem.");
+    }
+    const firstTitle = titles[0] || "";
+    if (/quest|exerc|prova|gabarito/.test(firstTitle)) {
+      issues.push(
+        "Apostila: não inicie com questões — explique o conteúdo antes da prática.",
+      );
+    }
   }
 
   if (tipo === "redacao") {

@@ -2115,6 +2115,11 @@ html:has(.pl-single-screen) body {
 
 .pl-main-pane {
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+}
+
+.pl-dashboard-root .min-h-0.flex-1.overflow-hidden {
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 /* Painel lateral — lavanda + rosa, tom feminino acolhedor */

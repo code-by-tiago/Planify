@@ -132,8 +132,12 @@ export function wrapProfessionalDocument(
       ? renderAssessmentInstructions(ctx.tipo)
       : "";
 
+  const tipoClass = ctx.tipo
+    ? `planify-doc-${ctx.tipo.replace(/[^a-z0-9-]/gi, "")}`
+    : "";
+
   return `
-    <article class="planify-doc planify-doc-professional">
+    <article class="planify-doc planify-doc-professional ${tipoClass}">
       ${renderMaterialInstitutionHeader(ctx)}
       <h1 class="planify-doc-title">${escapeHtml(ctx.title)}</h1>
       ${ctx.subtitle ? `<p class="planify-doc-subtitle">${escapeHtml(ctx.subtitle)}</p>` : ""}

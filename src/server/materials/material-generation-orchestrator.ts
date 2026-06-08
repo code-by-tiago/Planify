@@ -139,7 +139,7 @@ export async function generatePlanifyMaterial(input: MaterialEngineInput) {
   try {
     const output = await generateWithAIQualityLoop(request, input, aiInput);
     const postIssues = getAIOutputIssues(request, output);
-    const criticalTypes = new Set(["prova", "lista", "apostila"]);
+    const criticalTypes = new Set(["prova", "lista", "apostila", "atividade"]);
     const warn =
       postIssues.length > 0
         ? criticalTypes.has(request.tipoMaterial)

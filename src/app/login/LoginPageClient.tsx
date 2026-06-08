@@ -2,7 +2,8 @@
 
 import { FormEvent, useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
+import type { LoginSearchParams } from "./page";
 import { PublicProfessorPrimeiroLayout } from "@/components/public/PublicProfessorPrimeiroLayout";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import {
@@ -90,17 +91,20 @@ function resolvePortal(value: string | null): LoginPortal {
   return value === "escola" ? "escola" : "professor";
 }
 
-export function LoginPageClient() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
+type LoginPageClientProps = {
+  initialSearchParams: LoginSearchParams;
+};
 
-  const portal = resolvePortal(searchParams.get("portal"));
+export function LoginPageClient({ initialSearchParams }: LoginPageClientProps) {
+  const router = useRouter();
+
+  const portal = resolvePortal(initialSearchParams.portal ?? null);
   const copy = portalCopy[portal];
-  const redirectParam = searchParams.get("redirect");
+  const redirectParam = initialSearchParams.redirect ?? null;
   const safeRedirect = sanitizeInternalRedirect(redirectParam);
-  const premiumRequired = searchParams.get("premium") === "required";
-  const cadastroConfirmar = searchParams.get("cadastro") === "confirmar";
-  const sessaoExpirada = searchParams.get("sessao_expirada") === "1";
+  const premiumRequired = initialSearchParams.premium === "required";
+  const cadastroConfirmar = initialSearchParams.cadastro === "confirmar";
+  const sessaoExpirada = initialSearchParams.sessao_expirada === "1";
 
   const [mode, setMode] = useState<Mode>("login");
   const [email, setEmail] = useState("");

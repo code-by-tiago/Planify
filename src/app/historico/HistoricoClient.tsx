@@ -330,7 +330,7 @@ export function HistoricoClient() {
         </div>
 
         {filteredItems.length > 0 ? (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+          <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
             {filteredItems.map((item) => {
               const selected = selectedItem?.id === item.id;
               return (
@@ -372,14 +372,14 @@ export function HistoricoClient() {
                     <button
                       type="button"
                       onClick={() => openInEditor(item)}
-                      className="flex-1 rounded-lg bg-cyan-600 py-1.5 text-[10px] font-bold text-white"
+                      className="min-h-11 flex-1 rounded-lg bg-cyan-600 py-2.5 text-xs font-bold text-white sm:min-h-0 sm:py-1.5 sm:text-[10px]"
                     >
                       Editor
                     </button>
                     <button
                       type="button"
                       onClick={() => removeItem(item)}
-                      className="rounded-lg border border-rose-200 bg-rose-50 px-2 py-1.5 text-[10px] font-bold text-rose-700"
+                      className="min-h-11 min-w-11 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2.5 text-sm font-bold text-rose-700 sm:min-h-0 sm:min-w-0 sm:px-2 sm:py-1.5 sm:text-[10px]"
                     >
                       ×
                     </button>

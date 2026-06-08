@@ -146,7 +146,7 @@ export function PlanifyShellSidebar({
                   type="button"
                   onClick={() => onOpenChange?.(false)}
                   aria-label="Fechar menu"
-                  className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-400 transition hover:bg-white/10"
+                  className="flex h-11 w-11 items-center justify-center rounded-xl text-slate-400 transition hover:bg-white/10"
                 >
                   <PlanifyIcon name="close" className="h-5 w-5" />
                 </button>

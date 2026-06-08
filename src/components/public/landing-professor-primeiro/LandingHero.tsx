@@ -20,7 +20,7 @@ export function LandingHero() {
       <div className="relative mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-2 lg:gap-16">
         <div>
           <span className="inline-flex items-center rounded-full border border-cyan-200 bg-cyan-50 px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-cyan-800">
-            Plataforma nº1 em planejamento com IA
+            Plataforma inteligente para planejamento com IA
           </span>
 
           <h1 className="mt-6 font-[family-name:var(--font-display)] text-4xl font-extrabold leading-[1.08] tracking-tight text-slate-900 sm:text-5xl lg:text-[3.25rem]">
@@ -35,7 +35,7 @@ export function LandingHero() {
 
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
             <Link href="/planos" className={ppBtnPrimary}>
-              Começar com plano mensal
+              Ver planos Pro, Premium e anual
             </Link>
             <Link href="/#recursos" className={ppBtnSecondary}>
               Conhecer recursos

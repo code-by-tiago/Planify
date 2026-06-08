@@ -69,19 +69,19 @@ export function MaterialToolPageShell({
       ) : null}
 
       <div
-        className={`grid min-h-0 flex-1 lg:grid-cols-[0.92fr_1.08fr] ${
+        className={`grid min-h-0 flex-1 max-lg:grid-cols-1 lg:grid-cols-[0.92fr_1.08fr] ${
           studioMode ? "min-h-0" : "min-h-0 lg:min-h-[680px]"
         }`}
       >
         <div
           {...(formScrollAttr ? { "data-planify-scroll": "" } : {})}
-          className="min-h-0 overflow-y-auto overscroll-contain border-r border-cyan-400/10 bg-white/50 p-4 sm:p-5"
+          className="min-h-0 overflow-y-auto overscroll-contain bg-white/50 p-4 max-lg:max-h-[min(52vh,520px)] max-lg:border-b max-lg:border-cyan-400/10 sm:p-5 lg:max-h-none lg:border-r lg:border-cyan-400/10"
         >
           {form}
         </div>
         <div
           {...(previewScrollAttr ? { "data-planify-scroll": "" } : {})}
-          className="min-h-0 overflow-y-auto overscroll-contain bg-gradient-to-br from-cyan-50/30 via-white/70 to-white p-4 sm:p-5"
+          className="min-h-0 overflow-y-auto overscroll-contain bg-gradient-to-br from-cyan-50/30 via-white/70 to-white p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:p-5"
         >
           <div className="pl-hud-glass min-h-[280px] rounded-2xl p-4 sm:p-5">
             {preview}

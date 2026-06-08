@@ -14,10 +14,22 @@ const ACTIVITY_SCHEMA = {
   type: "OBJECT",
   properties: {
     title: { type: "STRING" },
+    objective: { type: "STRING" },
+    estimatedTime: { type: "STRING" },
+    materials: { type: "ARRAY", items: { type: "STRING" } },
     instructions: { type: "STRING" },
     items: { type: "ARRAY", items: { type: "STRING" } },
+    evaluation: { type: "STRING" },
   },
-  required: ["title", "instructions", "items"],
+  required: [
+    "title",
+    "objective",
+    "estimatedTime",
+    "materials",
+    "instructions",
+    "items",
+    "evaluation",
+  ],
 };
 
 const BASE_MATERIAL_SCHEMA = {
@@ -223,6 +235,15 @@ const LESSON_PLAN_SCHEMA = {
 
 export function getMaterialEngineSchema(type: MaterialEngineType) {
   if (type === "jogo") return GAME_SCHEMA;
+  if (type === "atividade") {
+    return {
+      ...BASE_MATERIAL_SCHEMA,
+      properties: {
+        ...BASE_MATERIAL_SCHEMA.properties,
+        activities: { type: "ARRAY", items: ACTIVITY_SCHEMA },
+      },
+    };
+  }
   if (type === "slides") return SLIDES_SCHEMA;
   if (type === "flashcards") return FLASHCARDS_SCHEMA;
   if (type === "prova" || type === "lista") return EXAM_SCHEMA;

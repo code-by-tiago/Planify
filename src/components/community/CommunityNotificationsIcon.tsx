@@ -135,7 +135,7 @@ export function CommunityNotificationsIcon({ className }: CommunityNotifications
         onClick={() => setOpen((value) => !value)}
         className={
           className ||
-          "relative inline-flex w-full items-center justify-center rounded-xl border border-cyan-400/25 bg-white/90 p-2.5 text-cyan-800 shadow-sm transition hover:border-cyan-400/45 hover:bg-cyan-50 sm:w-auto"
+          "relative inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-cyan-400/25 bg-white/90 px-3 py-2.5 text-cyan-800 shadow-sm transition hover:border-cyan-400/45 hover:bg-cyan-50 sm:w-auto"
         }
         title="Notificações"
         aria-label="Abrir notificações"
@@ -150,7 +150,14 @@ export function CommunityNotificationsIcon({ className }: CommunityNotifications
       </button>
 
       {open ? (
-        <div className="absolute right-0 z-50 mt-2 w-[min(360px,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-cyan-400/20 bg-white shadow-2xl">
+        <>
+          <button
+            type="button"
+            className="fixed inset-0 z-[55] bg-slate-950/25 sm:hidden"
+            aria-label="Fechar notificações"
+            onClick={() => setOpen(false)}
+          />
+          <div className="fixed inset-x-4 top-[max(4.75rem,calc(env(safe-area-inset-top)+3.75rem))] z-[60] max-h-[min(70vh,24rem)] w-auto overflow-hidden rounded-2xl border border-cyan-400/20 bg-white shadow-2xl sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 sm:max-h-none sm:w-[min(360px,calc(100vw-2rem))]">
           <header className="flex items-center justify-between border-b border-cyan-400/15 bg-gradient-to-r from-cyan-50 to-indigo-50 px-4 py-3">
             <h3 className="text-sm font-extrabold text-slate-950">Notificações</h3>
             {unreadCount > 0 ? (
@@ -222,6 +229,7 @@ export function CommunityNotificationsIcon({ className }: CommunityNotifications
             )}
           </div>
         </div>
+        </>
       ) : null}
     </div>
   );

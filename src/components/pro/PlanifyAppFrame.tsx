@@ -153,7 +153,7 @@ export default function PlanifyAppFrame({
               type="button"
               onClick={() => setSidebarOpen(true)}
               aria-label="Abrir menu"
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-slate-600 transition hover:bg-slate-100 lg:hidden"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-slate-600 transition hover:bg-slate-100 lg:hidden"
             >
               <PlanifyIcon name="menu" className="h-5 w-5" />
             </button>
@@ -188,7 +188,7 @@ export default function PlanifyAppFrame({
 
         <div
           key={pathname}
-          className="pl-main-pane pl-fade-rise min-h-0 flex-1 overflow-x-hidden overflow-y-auto"
+          className="pl-main-pane pl-fade-rise min-h-0 flex-1 overflow-x-hidden overflow-y-auto pb-[max(0.75rem,env(safe-area-inset-bottom))]"
         >
           {children}
         </div>

@@ -22,7 +22,7 @@ export function PlanifyPageHero({
 
   return (
     <div
-      className={`pl-hud-page-hero relative shrink-0 overflow-hidden border-b transition-[padding,box-shadow] duration-200 ${
+      className={`pl-hud-page-hero relative shrink-0 overflow-x-hidden border-b transition-[padding,box-shadow] duration-200 ${
         collapsed ? "px-4 py-2 shadow-sm sm:px-5" : "px-4 py-4 sm:px-6 sm:py-5"
       }`}
     >

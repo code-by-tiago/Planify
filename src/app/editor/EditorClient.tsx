@@ -388,7 +388,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
   }
 
   const toolBtnClass = embedded
-    ? "h-7 min-w-7 shrink-0 rounded-md border border-slate-200 bg-white px-1.5 text-[11px] font-black text-slate-700 transition hover:border-slate-950"
+    ? "h-11 min-w-11 shrink-0 rounded-md border border-slate-200 bg-white px-2 text-sm font-black text-slate-700 transition hover:border-slate-950 lg:h-7 lg:min-w-7 lg:px-1.5 lg:text-[11px]"
     : "h-9 min-w-9 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-black text-slate-700 transition hover:border-slate-950";
 
   const toolSelectClass = embedded
@@ -2082,7 +2082,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
           <div
             className={`planify-editor-format-panel relative shrink-0 rounded-lg border border-slate-200 bg-white shadow-sm ${
               embedded
-                ? "max-lg:max-h-[min(32dvh,240px)] max-lg:overflow-y-auto max-lg:overscroll-contain overflow-x-auto overscroll-contain p-1 lg:p-1.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                ? "max-lg:max-h-[min(38dvh,280px)] max-lg:overflow-y-auto max-lg:overscroll-contain overflow-x-auto overscroll-contain p-1 lg:p-1.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
                 : "overflow-x-auto p-2"
             }`}
           >

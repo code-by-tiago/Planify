@@ -87,12 +87,14 @@ function specializedRules(request: MaterialEngineRequest): string[] {
     return [
       `Gerar exatamente ${quantidade} questões no array 'exam.questions'.`,
       `TEMA OBRIGATÓRIO: cada enunciado deve trabalhar explicitamente "${request.tema}" com situações, frases ou contextos reais.`,
+      "Estrutura profissional: use 'summary' para contextualizar a avaliação e citar habilidades BNCC relacionadas quando couber.",
       "Numerar as questões em ordem ('number' começando em 1).",
-      "Variar os tipos de questão (multipla-escolha, verdadeiro-falso, dissertativa, completar) quando fizer sentido.",
-      "Proibir enunciados genéricos ('explique o conteúdo estudado', 'identifique o conceito').",
-      "Para questões de multipla-escolha, preencher 'options' com 4 a 5 alternativas distintas; para os demais tipos, 'options' pode ficar vazio.",
+      "Incluir pelo menos uma questão objetiva (multipla-escolha ou verdadeiro-falso) e uma dissertativa quando houver 2 ou mais questões.",
+      "Variar os tipos de questão (multipla-escolha, verdadeiro-falso, dissertativa, completar) sem repetir enunciados ou alternativas.",
+      "Proibir enunciados genéricos ('explique o conteúdo estudado', 'identifique o conceito') e perguntas vagas.",
+      "Para questões de multipla-escolha, preencher 'options' com 4 a 5 alternativas distintas (cada alternativa com pelo menos 24 caracteres e justificativa concreta); para os demais tipos, 'options' pode ficar vazio.",
       request.incluirGabarito
-        ? "Preencher 'answer' de cada questão com a resposta correta comentada e também consolidar o gabarito no array 'answerKey'."
+        ? "Preencher 'answer' de cada questão com gabarito comentado (mínimo 36 caracteres; a alternativa correta deve existir em 'options' quando for objetiva) e consolidar o gabarito no array 'answerKey'."
         : "Deixar 'answer' vazio e não preencher 'answerKey' (o professor não quer gabarito).",
       "Equilibrar a dificuldade das questões conforme o nível solicitado.",
     ];
@@ -105,8 +107,9 @@ function specializedRules(request: MaterialEngineRequest): string[] {
       "Numerar os exercícios em ordem ('number' começando em 1).",
       "Priorizar exercícios práticos e progressivos (básico → intermediário → desafio).",
       "Proibir comandos genéricos sem contexto do tema.",
+      "Para multipla-escolha, cada alternativa deve ter pelo menos 24 caracteres com justificativa concreta.",
       request.incluirGabarito
-        ? "Preencher 'answer' de cada exercício e consolidar o gabarito no array 'answerKey'."
+        ? "Preencher 'answer' de cada exercício com gabarito comentado (mínimo 36 caracteres) e consolidar no array 'answerKey'."
         : "Deixar 'answer' vazio e não preencher 'answerKey'.",
     ];
   }
@@ -128,9 +131,11 @@ function specializedRules(request: MaterialEngineRequest): string[] {
         : `${quantidade} aulas/encontros encadeados`;
     return [
       `Planejar ${aulas} no objeto 'lessonPlan.steps' e nas 'sections'.`,
+      "Sequência obrigatória em 'lessonPlan.steps': Abertura → Contextualização → Explicação → Prática guiada → Atividade → Fechamento → Avaliação rápida (adaptar nomes e quantidade ao tempo da aula).",
       "Cada etapa em 'lessonPlan.steps' deve ter 'stage', 'duration', 'description' e 'resources'.",
       "Referenciar competências e habilidades da BNCC quando aplicável ao componente e ano/série.",
       "Incluir objetivos de aprendizagem nas 'sections' e critérios de avaliação nas 'teacherNotes'.",
+      "Não usar blocos genéricos vazios — cada etapa deve orientar o professor com ações concretas em sala.",
     ];
   }
 
@@ -175,7 +180,9 @@ function specializedRules(request: MaterialEngineRequest): string[] {
   if (request.tipoMaterial === "atividade") {
     return [
       `Gerar exatamente ${quantidade} atividades no array 'activities' (um objeto por atividade).`,
-      "Cada atividade: 'title', 'instructions' claras e 'items' aplicáveis em sala.",
+      "Cada atividade deve ter: 'title', 'objective', 'estimatedTime', 'materials' (lista), 'instructions' (desenvolvimento), 'items' (passos ou tarefas) e 'evaluation'.",
+      "Linguagem adequada à série informada; atividades claras e aplicáveis em sala.",
+      "Não inserir jogo ou dinâmica se o professor não pediu formato de jogo.",
       request.incluirGabarito
         ? "Preencher 'answerKey' com a solução de cada item/atividade."
         : "Não incluir gabarito.",
@@ -185,8 +192,12 @@ function specializedRules(request: MaterialEngineRequest): string[] {
   if (request.tipoMaterial === "apostila") {
     return [
       `Estruturar a apostila em ${quantidade} capítulos/seções progressivas no array 'sections'.`,
-      "Explicar o conteúdo antes da prática em cada seção; não iniciar com questões.",
+      "Primeiras seções obrigatórias: 'Apresentação' e 'Objetivos de aprendizagem' antes do conteúdo expositivo.",
+      "Cada capítulo: explicação organizada em 'content' e 'bullets', exemplos concretos do tema e boxes de destaque (bullets prefixados com 'Destaque:').",
+      "Incluir seção de 'Revisão' ou 'Síntese' antes das atividades de fixação.",
+      "Explicar o conteúdo antes da prática em cada seção; não iniciar com questões nem transformar em prova.",
       "Fechar com atividades de fixação nas 'activities'.",
+      "Evitar repetir parágrafos e manter profundidade compatível com o ano/série.",
     ];
   }
 

@@ -146,8 +146,12 @@ export type MaterialEngineResponse = {
   }>;
   activities: Array<{
     title: string;
+    objective?: string;
+    estimatedTime?: string;
+    materials?: string[];
     instructions: string;
     items: string[];
+    evaluation?: string;
   }>;
   answerKey: string[];
   teacherNotes: string[];

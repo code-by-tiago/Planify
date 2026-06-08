@@ -55,6 +55,7 @@ const CRITICAL_QUALITY_TYPES = new Set<MaterialEngineType>([
   "prova",
   "lista",
   "apostila",
+  "atividade",
 ]);
 
 function buildDeliveryAlertas(
@@ -111,15 +112,23 @@ function renderSections(response: MaterialEngineResponse): string {
 function renderActivities(response: MaterialEngineResponse): string {
   if (!response.activities.length) return "";
   return `
-    <section>
+    <section class="planify-atividades-block">
       <h2>Atividades</h2>
       ${response.activities
         .map(
           (activity) => `
-            <article>
+            <article class="planify-atividade-card">
               <h3>${escapeHtml(activity.title)}</h3>
-              ${activity.instructions ? `<p>${escapeHtml(activity.instructions)}</p>` : ""}
+              ${activity.objective ? `<p><strong>Objetivo:</strong> ${escapeHtml(activity.objective)}</p>` : ""}
+              ${activity.estimatedTime ? `<p><strong>Tempo estimado:</strong> ${escapeHtml(activity.estimatedTime)}</p>` : ""}
+              ${
+                activity.materials?.length
+                  ? `<p><strong>Materiais necessários:</strong></p>${asList(activity.materials)}`
+                  : ""
+              }
+              ${activity.instructions ? `<p><strong>Desenvolvimento:</strong> ${escapeHtml(activity.instructions)}</p>` : ""}
               ${asList(activity.items || [])}
+              ${activity.evaluation ? `<p><strong>Avaliação:</strong> ${escapeHtml(activity.evaluation)}</p>` : ""}
             </article>
           `,
         )
@@ -685,10 +694,16 @@ function normalizeOutput(
     activities: Array.isArray(response.activities)
       ? response.activities.map((activity) => ({
           title: String(activity?.title || "Atividade"),
+          objective: String(activity?.objective || ""),
+          estimatedTime: String(activity?.estimatedTime || ""),
+          materials: Array.isArray(activity?.materials)
+            ? activity.materials.map((item) => String(item))
+            : [],
           instructions: String(activity?.instructions || ""),
           items: Array.isArray(activity?.items)
             ? activity.items.map((item) => String(item))
             : [],
+          evaluation: String(activity?.evaluation || ""),
         }))
       : [],
     answerKey: Array.isArray(response.answerKey)
@@ -871,6 +886,16 @@ function maxOutputTokensFor(type: MaterialEngineType): number {
   if (type === "flashcards" || type === "mapa-mental") return 8000;
   if (type === "prova" || type === "lista" || type === "apostila") return 16000;
   return 12000;
+}
+
+/** Smoke/offline: monta HTML a partir de estrutura já normalizada (scripts de verificação). */
+export function buildMaterialEngineHtmlFromStructure(
+  input: MaterialEngineInput,
+  structure: Partial<MaterialEngineResponse>,
+): string {
+  const request = normalizeMaterialEngineRequest(input);
+  const normalized = normalizeOutput(request, structure);
+  return renderDocumentHtml(request, normalized);
 }
 
 export async function generateMaterialByEngine(input: MaterialEngineInput) {

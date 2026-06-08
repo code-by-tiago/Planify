@@ -49,6 +49,20 @@ function loadTsModule(relativePath) {
       }
     }
 
+    if (specifier.startsWith("@/")) {
+      const rel = `src/${specifier.slice(2)}`;
+      const candidates = [`${rel}.ts`, `${rel}.tsx`, join(rel, "index.ts")];
+      for (const candidate of candidates) {
+        const full = join(root, candidate);
+        try {
+          readFileSync(full);
+          return loadTsModule(candidate.replace(/\\/g, "/"));
+        } catch {
+          // try next
+        }
+      }
+    }
+
     return require(specifier);
   };
 

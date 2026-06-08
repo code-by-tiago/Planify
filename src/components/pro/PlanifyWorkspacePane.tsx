@@ -39,7 +39,7 @@ export function PlanifyWorkspacePane({
       >
         <div
           ref={scrollRef}
-          className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain"
+          className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain pb-[max(0.75rem,env(safe-area-inset-bottom))]"
         >
           <PlanifyHeroCollapseProvider collapsed={collapsed}>
             <div className="sticky top-0 z-20 bg-white/90 backdrop-blur-md supports-[backdrop-filter]:bg-white/80">

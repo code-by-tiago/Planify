@@ -102,9 +102,9 @@ export const STATS = [
     detail: "Planejamentos, provas, slides e atividades gerados na plataforma",
   },
   {
-    value: "+500",
-    label: "professores ativos",
-    detail: "Educadores de todo o Brasil usando o Planify no dia a dia",
+    value: "Professores",
+    label: "em todo o Brasil",
+    detail: "Ferramenta pensada para a rotina real de quem leciona na educação básica",
   },
   {
     value: "Horas",
@@ -116,15 +116,6 @@ export const STATS = [
     label: "habilidades alinhadas",
     detail: "Sugestões de competências conforme etapa, ano e componente",
   },
-] as const;
-
-export const SCHOOL_PARTNERS = [
-  { name: "Colégio Aurora", initials: "CA", color: "from-cyan-500 to-blue-600" },
-  { name: "Instituto Horizonte", initials: "IH", color: "from-sky-500 to-cyan-600" },
-  { name: "Escola Nova Geração", initials: "NG", color: "from-blue-500 to-indigo-600" },
-  { name: "Centro Educacional Lírio", initials: "CL", color: "from-cyan-600 to-teal-500" },
-  { name: "Rede Saber Mais", initials: "SM", color: "from-indigo-500 to-cyan-600" },
-  { name: "Colégio Integrar", initials: "CI", color: "from-sky-600 to-blue-500" },
 ] as const;
 
 export const COMPARISON_ROWS = [

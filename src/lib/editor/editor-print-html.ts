@@ -221,6 +221,47 @@ export const PLANIFY_EXPORT_CSS = `
   .planify-doc-summary {
     color: #475569;
   }
+  .planify-preview-prova .planify-doc-professional,
+  .planify-doc-prova {
+    --planify-accent: #312e81;
+  }
+  .planify-preview-apostila .planify-doc-professional,
+  .planify-doc-apostila {
+    --planify-accent: #0f766e;
+  }
+  .planify-preview-atividade .planify-doc-professional,
+  .planify-doc-atividade {
+    --planify-accent: #b45309;
+  }
+  .planify-preview-jogo .planify-doc-professional,
+  .planify-doc-jogo {
+    --planify-accent: #7c3aed;
+  }
+  .planify-doc-prova .planify-doc-kicker,
+  .planify-doc-apostila .planify-doc-kicker,
+  .planify-doc-atividade .planify-doc-kicker,
+  .planify-doc-jogo .planify-doc-kicker {
+    color: var(--planify-accent, #4338ca);
+  }
+  .planify-doc-apostila section h2 {
+    border-bottom: 2px solid #ccfbf1;
+    padding-bottom: 0.25rem;
+  }
+  .planify-atividade-card {
+    border: 1px solid #fcd34d;
+    border-radius: 12px;
+    padding: 0.75rem 0.9rem;
+    margin: 0 0 0.85rem;
+    background: #fffbeb;
+  }
+  .planify-atividades-block > h2 {
+    color: #b45309;
+  }
+  .planify-preview-prova .planify-questoes-block > h2 {
+    color: #312e81;
+    border-bottom: 2px solid #e0e7ff;
+    padding-bottom: 0.25rem;
+  }
   .page-break {
     break-after: page;
     page-break-after: always;

@@ -1,21 +1,18 @@
-import { Suspense } from "react";
 import { LoginPageClient } from "./LoginPageClient";
 
-function LoginPageFallback() {
-  return (
-    <main className="flex min-h-screen items-center justify-center bg-gradient-to-b from-white via-cyan-50/40 to-slate-50">
-      <div className="flex items-center gap-3 text-sm font-semibold text-slate-600">
-        <span className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-slate-200 border-t-cyan-600" />
-        Carregando portal de acesso...
-      </div>
-    </main>
-  );
-}
+export type LoginSearchParams = {
+  portal?: string;
+  redirect?: string;
+  premium?: string;
+  cadastro?: string;
+  sessao_expirada?: string;
+};
 
-export default function LoginPage() {
-  return (
-    <Suspense fallback={<LoginPageFallback />}>
-      <LoginPageClient />
-    </Suspense>
-  );
+type LoginPageProps = {
+  searchParams: Promise<LoginSearchParams>;
+};
+
+export default async function LoginPage({ searchParams }: LoginPageProps) {
+  const params = await searchParams;
+  return <LoginPageClient initialSearchParams={params} />;
 }

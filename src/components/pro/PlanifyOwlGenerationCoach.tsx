@@ -7,6 +7,7 @@ import {
   formatRemainingTime,
   getGenerationDurationEstimateMs,
 } from "@/lib/pro/generation-progress";
+import { getMaterialGenerationSteps } from "@/lib/pro/generation-stage-messages";
 import {
   getMotivationalMessages,
   pickInitialMessageIndex,
@@ -40,10 +41,19 @@ export function PlanifyOwlGenerationCoach({
   estimatedDurationMs,
   className = "",
 }: PlanifyOwlGenerationCoachProps) {
-  const messages = useMemo(
+  const stageMessages = useMemo(() => {
+    if (progressSteps?.length) return progressSteps;
+    if (context === "material") return getMaterialGenerationSteps(toolId);
+    return [];
+  }, [context, progressSteps, toolId]);
+
+  const motivationalMessages = useMemo(
     () => getMotivationalMessages(context, toolId),
     [context, toolId],
   );
+
+  const useStageRotation = stageMessages.length > 0;
+  const messages = useStageRotation ? stageMessages : motivationalMessages;
 
   const durationMs = useMemo(
     () =>
@@ -93,7 +103,7 @@ export function PlanifyOwlGenerationCoach({
   const currentMessage = messages[messageIndex] ?? messages[0] ?? "";
   const progressPercent = computeGenerationProgressPercent(elapsedMs, durationMs);
   const remainingMs = Math.max(0, durationMs - elapsedMs);
-  const remainingLabel = formatRemainingTime(remainingMs);
+  const remainingLabel = useStageRotation ? null : formatRemainingTime(remainingMs);
 
   return (
     <div
@@ -128,11 +138,13 @@ export function PlanifyOwlGenerationCoach({
           </div>
 
           <div className="min-w-0 flex-1 text-center sm:text-left">
-            <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-cyan-600">
-              Coruja Planify · quase pronto
-            </p>
+            {!useStageRotation ? (
+              <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-cyan-600">
+                Coruja Planify · quase pronto
+              </p>
+            ) : null}
             <h3 className="mt-1 text-xl font-extrabold text-slate-950 sm:text-2xl">
-              {title}
+              {useStageRotation ? currentMessage : title}
             </h3>
             {description ? (
               <p className="mt-1.5 text-sm font-semibold leading-6 text-slate-500">
@@ -140,30 +152,22 @@ export function PlanifyOwlGenerationCoach({
               </p>
             ) : null}
 
-            <div className="relative mt-4 rounded-xl border border-cyan-400/20 bg-cyan-50/50 px-4 py-3.5 text-left">
-              <p className="text-xs font-bold uppercase tracking-[0.14em] text-cyan-700">
-                {remainingLabel}
+            {useStageRotation ? (
+              <p className="mt-3 text-sm font-semibold leading-6 text-slate-600">
+                {title}
               </p>
-              <p className="mt-2 text-sm font-semibold leading-6 text-slate-700">
-                {currentMessage}
-              </p>
-            </div>
-
-            {progressSteps && progressSteps.length > 0 ? (
-              <ul className="mt-4 grid gap-2 text-left">
-                {progressSteps.map((step, index) => (
-                  <li
-                    key={step}
-                    className="flex items-center gap-2 text-xs font-semibold text-slate-600"
-                  >
-                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-cyan-100 text-[10px] font-bold text-cyan-700">
-                      {index + 1}
-                    </span>
-                    {step}
-                  </li>
-                ))}
-              </ul>
-            ) : null}
+            ) : (
+              <div className="relative mt-4 rounded-xl border border-cyan-400/20 bg-cyan-50/50 px-4 py-3.5 text-left">
+                {remainingLabel ? (
+                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-cyan-700">
+                    {remainingLabel}
+                  </p>
+                ) : null}
+                <p className="mt-2 text-sm font-semibold leading-6 text-slate-700">
+                  {currentMessage}
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>

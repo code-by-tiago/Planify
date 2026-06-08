@@ -82,7 +82,20 @@ export function themeReferencedInText(text: unknown, tema: string): boolean {
     return normalizedTheme.length >= 4 && normalizedText.includes(normalizedTheme);
   }
 
-  return tokens.some((token) => normalizedText.includes(token));
+  return tokens.some((token) => {
+    if (normalizedText.includes(token)) return true;
+    // Plural/singular PT-BR (ex.: equações ↔ equação)
+    if (token.endsWith("oes") && normalizedText.includes(`${token.slice(0, -2)}ao`)) {
+      return true;
+    }
+    if (token.endsWith("ao") && normalizedText.includes(`${token.slice(0, -2)}oes`)) {
+      return true;
+    }
+    if (token.endsWith("s") && token.length > 4 && normalizedText.includes(token.slice(0, -1))) {
+      return true;
+    }
+    return false;
+  });
 }
 
 export function hasPackedSubquestions(text: unknown): boolean {

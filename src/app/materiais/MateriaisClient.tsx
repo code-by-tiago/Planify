@@ -1828,7 +1828,6 @@ export function MateriaisClient({
               <PlanifyOwlGenerationCoach
                 active
                 title={mode.loadingTitle}
-                description={mode.loadingDescription}
                 context="material"
                 toolId={tipo}
                 className="max-w-lg"
@@ -1977,7 +1976,7 @@ export function MateriaisClient({
                   Histórico
                 </Link>
               </div>
-              <MaterialDocumentPreview html={resultadoHtml} />
+              <MaterialDocumentPreview html={resultadoHtml} tipoMaterial={tipo} />
             </div>
           ) : (
             <div className="flex h-full min-h-[280px] flex-col items-center justify-center px-4 py-8 text-center">

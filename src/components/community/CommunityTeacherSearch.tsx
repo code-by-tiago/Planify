@@ -86,7 +86,7 @@ export function CommunityTeacherSearch({ onClose, className }: CommunityTeacherS
       </button>
 
       {open ? (
-        <div className="fixed inset-x-4 top-[5.5rem] z-[60] max-h-[min(70vh,28rem)] overflow-y-auto rounded-2xl border border-cyan-400/20 bg-white p-4 shadow-2xl sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 sm:max-h-none sm:w-[min(420px,calc(100vw-2rem))]">
+        <div className="fixed inset-x-4 top-[max(4.75rem,calc(env(safe-area-inset-top)+3.75rem))] z-[60] max-h-[min(70vh,28rem)] overflow-y-auto rounded-2xl border border-cyan-400/20 bg-white p-4 shadow-2xl sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 sm:max-h-none sm:w-[min(420px,calc(100vw-2rem))]">
           <div className="grid gap-2">
             <input
               value={query}

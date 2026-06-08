@@ -46,7 +46,7 @@ export default function TermosPage() {
           <li>
             O acesso às ferramentas de IA está vinculado a <strong>planos pagos</strong>{" "}
             com créditos por ciclo (mensal ou anual), conforme descrito em{" "}
-            <Link href="/planos" className="font-bold text-blue-700 hover:underline">
+            <Link href="/planos" className="font-bold text-emerald-700 hover:underline">
               Planos
             </Link>
             .
@@ -131,7 +131,7 @@ export default function TermosPage() {
           O tratamento de dados pessoais é descrito na{" "}
           <Link
             href="/privacidade"
-            className="font-bold text-blue-700 hover:underline"
+            className="font-bold text-emerald-700 hover:underline"
           >
             Política de Privacidade
           </Link>
@@ -152,7 +152,7 @@ export default function TermosPage() {
         <h2 className="text-lg font-black text-slate-900">12. Contato</h2>
         <p className="mt-2">
           Dúvidas sobre estes termos:{" "}
-          <Link href="/contato" className="font-bold text-blue-700 hover:underline">
+          <Link href="/contato" className="font-bold text-emerald-700 hover:underline">
             página de contato
           </Link>
           .

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { OwnerFooterLink } from "@/components/OwnerFooterLink";
 import { PlanifyBrand } from "@/components/pro/PlanifyBrand";
 
 const PRODUCT_LINKS = [
@@ -80,8 +81,25 @@ export function LandingFooter() {
         </div>
       </div>
 
-      <div className="mx-auto mt-10 max-w-7xl border-t border-slate-100 pt-6 text-center">
-        <p className="text-xs font-medium text-slate-500">© 2026 Planify</p>
+      <div className="mx-auto mt-10 max-w-7xl border-t border-slate-100 pt-6">
+        <div className="flex flex-col items-center justify-between gap-4 text-center sm:flex-row sm:text-left">
+          <p className="text-xs font-medium text-slate-500">© 2026 Planify · Educação básica · BNCC · Brasil</p>
+          <nav className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
+            <Link
+              href="/privacidade"
+              className="text-xs font-medium text-slate-500 transition hover:text-emerald-700"
+            >
+              Privacidade
+            </Link>
+            <Link
+              href="/termos"
+              className="text-xs font-medium text-slate-500 transition hover:text-emerald-700"
+            >
+              Termos de uso
+            </Link>
+            <OwnerFooterLink className="text-xs hover:text-emerald-700/70" />
+          </nav>
+        </div>
       </div>
     </footer>
   );

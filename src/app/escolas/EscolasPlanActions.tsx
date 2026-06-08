@@ -1,6 +1,7 @@
 "use client";
 
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
+import { ppBtnPrimary, ppLink } from "@/components/public/landing-professor-primeiro/theme";
 import {
   buildCommercialWhatsAppUrl,
   buildPlanInquiryWhatsAppMessage,
@@ -23,8 +24,8 @@ export function EscolasPlanActions({ planName, highlighted }: EscolasPlanActions
         href="#contato"
         className={`flex w-full items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold transition ${
           highlighted
-            ? "pl-hud-btn"
-            : "border border-slate-200 bg-white text-slate-900 hover:border-cyan-300 hover:text-cyan-700"
+            ? ppBtnPrimary
+            : "border border-slate-200 bg-white text-slate-900 hover:border-emerald-300 hover:text-emerald-700"
         }`}
       >
         Falar com Consultor
@@ -33,7 +34,7 @@ export function EscolasPlanActions({ planName, highlighted }: EscolasPlanActions
       <button
         type="button"
         onClick={handleWhatsAppClick}
-        className="text-xs font-bold text-cyan-700 underline-offset-2 hover:underline"
+        className={`text-xs font-bold underline-offset-2 hover:underline ${ppLink}`}
       >
         Ou iniciar conversa no WhatsApp
       </button>

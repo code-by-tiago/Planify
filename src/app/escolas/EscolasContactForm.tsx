@@ -3,6 +3,13 @@
 import { useState } from "react";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import {
+  ppBtnPrimary,
+  ppEyebrow,
+  ppInput,
+  ppTitle,
+  ppTitleAccent,
+} from "@/components/public/landing-professor-primeiro/theme";
+import {
   buildCommercialWhatsAppUrl,
   buildEscolasLeadWhatsAppMessage,
   type EscolasLeadForm,
@@ -16,8 +23,7 @@ const initialForm: EscolasLeadForm = {
   numeroProfessores: "",
 };
 
-const inputClass =
-  "w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm font-semibold text-slate-950 outline-none transition focus:border-cyan-400 focus:bg-white focus:ring-4 focus:ring-cyan-100";
+const inputClass = ppInput;
 
 export function EscolasContactForm() {
   const [form, setForm] = useState<EscolasLeadForm>(initialForm);
@@ -60,12 +66,10 @@ export function EscolasContactForm() {
     <section id="contato" className="scroll-mt-28 border-t border-slate-200/80 bg-slate-50 py-16 sm:py-20">
       <div className="mx-auto max-w-7xl px-5 sm:px-8">
         <div className="mx-auto max-w-2xl text-center">
-          <p className="text-xs font-black uppercase tracking-[0.2em] text-cyan-700">
-            Contato comercial
-          </p>
-          <h2 className="mt-4 text-3xl font-extrabold tracking-tight text-slate-950 sm:text-4xl">
+          <p className={ppEyebrow}>Contato comercial</p>
+          <h2 className={`${ppTitle} mt-4 text-3xl sm:text-4xl`}>
             Solicite uma demonstração{" "}
-            <span className="pl-hud-gradient-text">para sua instituição</span>
+            <span className={ppTitleAccent}>para sua instituição</span>
           </h2>
           <p className="mt-4 text-base font-medium leading-7 text-slate-600">
             Preencha o formulário abaixo. Nossa equipe comercial entrará em contato para
@@ -133,7 +137,7 @@ export function EscolasContactForm() {
 
           <button
             type="submit"
-            className="pl-btn-brand mt-6 flex w-full items-center justify-center gap-2 rounded-xl px-6 py-3.5 text-sm font-bold text-slate-900"
+            className={`${ppBtnPrimary} mt-6 w-full`}
           >
             Falar com nossa equipe comercial
             <PlanifyIcon name="arrowRight" className="h-4 w-4" />

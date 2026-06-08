@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
+import { ppBtnPrimary, ppBtnSecondary } from "@/components/public/landing-professor-primeiro/theme";
 import { getCurrentAccessToken } from "@/lib/auth/session-client";
 import { syncPremiumAccessCookie } from "@/lib/auth/access-client";
 
@@ -64,17 +65,11 @@ export function PlanosSucessoActions() {
   if (state === "premium") {
     return (
       <div className="flex flex-col justify-center gap-3 sm:flex-row">
-        <Link
-          href="/dashboard"
-          className="pl-hud-btn inline-flex items-center justify-center gap-2 rounded-full px-7 py-3.5 text-sm font-bold text-slate-900"
-        >
+        <Link href="/dashboard" className={ppBtnPrimary}>
           Ir ao painel
           <PlanifyIcon name="arrowRight" className="h-4 w-4" />
         </Link>
-        <Link
-          href="/"
-          className="inline-flex items-center justify-center rounded-full border border-slate-200 px-7 py-3.5 text-sm font-bold text-slate-800 hover:bg-slate-50"
-        >
+        <Link href="/" className={ppBtnSecondary}>
           Página inicial
         </Link>
       </div>
@@ -90,16 +85,10 @@ export function PlanosSucessoActions() {
           entre na conta e aguarde a confirmação.
         </p>
         <div className="flex flex-col justify-center gap-3 sm:flex-row">
-          <Link
-            href="/dashboard"
-            className="pl-hud-btn inline-flex items-center justify-center gap-2 rounded-full px-7 py-3.5 text-sm font-bold text-slate-900"
-          >
+          <Link href="/dashboard" className={ppBtnPrimary}>
             Tentar abrir o painel
           </Link>
-          <Link
-            href="/login"
-            className="inline-flex items-center justify-center rounded-full border border-slate-200 px-7 py-3.5 text-sm font-bold text-slate-800 hover:bg-slate-50"
-          >
+          <Link href="/login" className={ppBtnSecondary}>
             Entrar na conta
           </Link>
         </div>
@@ -109,16 +98,10 @@ export function PlanosSucessoActions() {
 
   return (
     <div className="flex flex-col justify-center gap-3 sm:flex-row">
-      <Link
-        href="/login"
-        className="inline-flex items-center justify-center gap-2 rounded-full bg-blue-600 px-7 py-3.5 text-sm font-bold text-white hover:bg-blue-700"
-      >
+      <Link href="/login" className={ppBtnPrimary}>
         Entrar na conta
       </Link>
-      <Link
-        href="/planos"
-        className="inline-flex items-center justify-center rounded-full border border-slate-200 px-7 py-3.5 text-sm font-bold text-slate-800 hover:bg-slate-50"
-      >
+      <Link href="/planos" className={ppBtnSecondary}>
         Ver planos
       </Link>
     </div>

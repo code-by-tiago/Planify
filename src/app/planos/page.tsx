@@ -1,9 +1,23 @@
 import Link from "next/link";
-import { PublicHeader } from "@/components/public/PublicHeader";
-import { PublicFooter } from "@/components/public/PublicFooter";
+import { PublicProfessorPrimeiroLayout } from "@/components/public/PublicProfessorPrimeiroLayout";
 import { PlanCheckoutLink } from "@/components/planos/PlanCheckoutLink";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { LandingFaq } from "@/components/public/landing/LandingFaq";
+import {
+  ppBadge,
+  ppBtnGhost,
+  ppBtnPrimary,
+  ppBtnSecondary,
+  ppCtaBand,
+  ppEyebrow,
+  ppIconBox,
+  ppLead,
+  ppLink,
+  ppPlanHighlight,
+  ppSectionAlt,
+  ppTitle,
+  ppTitleAccent,
+} from "@/components/public/landing-professor-primeiro/theme";
 import { billingPlans } from "../../types/billing";
 import { landingPublicToolCount } from "@/lib/pro/teachyLanding";
 
@@ -180,30 +194,22 @@ export default async function PlanosPage({ searchParams }: PlanosPageProps) {
   const alert = getAlert(params);
 
   return (
-    <main className="planify-hud planify-ui3 planify-public planify-hud-landing min-h-screen overflow-x-clip bg-white">
-      <PublicHeader active="planos" />
-
-      {/* Hero */}
+    <PublicProfessorPrimeiroLayout>
       <section className="mx-auto max-w-7xl px-5 py-14 sm:px-8 lg:py-20">
         <div className="max-w-3xl">
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">
-            Planos Planify
-          </p>
-          <h1 className="pl-display mt-4 text-4xl font-extrabold leading-[1.06] tracking-tight text-slate-950 sm:text-5xl">
+          <p className={ppEyebrow}>Planos Planify</p>
+          <h1 className={`${ppTitle} mt-4`}>
             Libere o Planify e crie materiais{" "}
-            <span className="pl-hud-gradient-text">sem limites manuais.</span>
+            <span className={ppTitleAccent}>sem limites manuais.</span>
           </h1>
-          <p className="mt-5 max-w-2xl text-lg font-medium leading-8 text-slate-600">
+          <p className={`mt-5 max-w-2xl ${ppLead}`}>
             Materiais profundos com IA avançada — qualidade de preparação manual,
             em minutos. Créditos claros, limite diário previsível e checkout seguro.
           </p>
 
           <ul className="mt-6 flex flex-wrap gap-2">
             {includedFeatures.map((item) => (
-              <span
-                key={item}
-                className="inline-flex items-center gap-1.5 rounded-full border border-blue-100 bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-800"
-              >
+              <span key={item} className={ppBadge}>
                 <PlanifyIcon name="checkCircle" className="h-3.5 w-3.5" />
                 {item}
               </span>
@@ -235,7 +241,7 @@ export default async function PlanosPage({ searchParams }: PlanosPageProps) {
               key={plan.key}
               className={`relative flex h-full flex-col rounded-2xl border p-7 transition hover:shadow-md ${
                 plan.highlighted
-                  ? "pl-hud-plan-highlight border-blue-300 bg-white shadow-md ring-2 ring-blue-500/20 lg:scale-[1.02]"
+                  ? ppPlanHighlight
                   : "border-slate-200 bg-white shadow-sm"
               }`}
             >
@@ -243,15 +249,15 @@ export default async function PlanosPage({ searchParams }: PlanosPageProps) {
                 <span
                   className={`absolute right-6 top-6 rounded-lg px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] ${
                     plan.highlighted
-                      ? "bg-blue-600 text-white"
-                      : "bg-blue-50 text-blue-700"
+                      ? "bg-emerald-600 text-white"
+                      : "bg-emerald-50 text-emerald-700"
                   }`}
                 >
                   {plan.badgeLabel}
                 </span>
               )}
 
-              <p className="pr-24 text-xs font-black uppercase tracking-[0.2em] text-blue-600">
+              <p className="pr-24 text-xs font-black uppercase tracking-[0.2em] text-emerald-700">
                 {plan.name}
               </p>
 
@@ -264,7 +270,7 @@ export default async function PlanosPage({ searchParams }: PlanosPageProps) {
                 </span>
               </div>
 
-              <div className="mt-4 inline-flex w-fit items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-4 py-2 text-sm font-bold text-blue-700">
+              <div className="mt-4 inline-flex w-fit items-center gap-2 rounded-full border border-emerald-100 bg-emerald-50 px-4 py-2 text-sm font-bold text-emerald-700">
                 <PlanifyIcon name="spark" className="h-4 w-4" />
                 {plan.creditsLabel}
               </div>
@@ -290,8 +296,8 @@ export default async function PlanosPage({ searchParams }: PlanosPageProps) {
                   planKey={plan.key}
                   className={`flex w-full items-center justify-center gap-2 rounded-xl px-6 py-3.5 text-sm font-semibold transition ${
                     plan.highlighted
-                      ? "pl-hud-btn"
-                      : "border border-slate-200 bg-white text-slate-900 hover:border-blue-300 hover:text-blue-700"
+                      ? ppBtnPrimary
+                      : "border border-slate-200 bg-white text-slate-900 hover:border-emerald-300 hover:text-emerald-700"
                   }`}
                 >
                   {plan.ctaLabel}
@@ -304,25 +310,21 @@ export default async function PlanosPage({ searchParams }: PlanosPageProps) {
 
         <p className="mt-8 text-center text-sm font-medium text-slate-500">
           Já tem conta?{" "}
-          <Link href="/login" className="font-bold text-blue-600 hover:text-blue-800">
+          <Link href="/login" className={ppLink}>
             Entrar
           </Link>
           {" · "}
-          <Link
-            href="/dashboard"
-            className="font-bold text-blue-600 hover:text-blue-800"
-          >
+          <Link href="/dashboard" className={ppLink}>
             Ir ao painel
           </Link>
         </p>
       </section>
 
-      {/* Comparativo — faixa lavanda */}
-      <section className="border-y border-slate-200/80 bg-slate-50 py-14 sm:py-16">
+      <section className={`${ppSectionAlt} py-14 sm:py-16`}>
         <div className="mx-auto max-w-7xl px-5 sm:px-8">
-          <h2 className="pl-display text-3xl font-extrabold tracking-tight text-slate-950 sm:text-4xl">
+          <h2 className={`${ppTitle} text-3xl sm:text-4xl`}>
             Compare os planos{" "}
-            <span className="pl-hud-gradient-text">lado a lado.</span>
+            <span className={ppTitleAccent}>lado a lado.</span>
           </h2>
           <p className="mt-3 max-w-xl text-base font-medium text-slate-600">
             Créditos, geradores, editor e biblioteca — tudo incluído em cada
@@ -341,13 +343,13 @@ export default async function PlanosPage({ searchParams }: PlanosPageProps) {
                       <th
                         key={plan.key}
                         className={`px-6 py-5 text-sm font-black ${
-                          plan.highlighted ? "text-blue-700" : "text-slate-700"
+                          plan.highlighted ? "text-emerald-700" : "text-slate-700"
                         }`}
                       >
                         <span className="flex items-center gap-2">
                           {plan.name}
                           {plan.highlighted ? (
-                            <span className="rounded-full bg-blue-600 px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.14em] text-white">
+                            <span className="rounded-full bg-emerald-600 px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.14em] text-white">
                               Popular
                             </span>
                           ) : null}
@@ -406,7 +408,7 @@ export default async function PlanosPage({ searchParams }: PlanosPageProps) {
               key={item.title}
               className="flex h-full items-start gap-3 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm"
             >
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
+              <span className={ppIconBox}>
                 <PlanifyIcon name={item.icon} className="h-5 w-5" />
               </span>
               <div>
@@ -430,10 +432,9 @@ export default async function PlanosPage({ searchParams }: PlanosPageProps) {
         </div>
       </section>
 
-      {/* CTA — alinhado à página de planos (sem “grátis” contraditório) */}
       <section className="mx-auto max-w-7xl px-5 pb-16 sm:px-8">
-        <div className="pl-hud-cta-band rounded-2xl px-8 py-10 text-center sm:px-12">
-          <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-blue-200/90">
+        <div className={ppCtaBand}>
+          <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-emerald-200/90">
             Próximo passo
           </p>
           <h2 className="mt-2 text-2xl font-extrabold text-white sm:text-3xl">
@@ -445,17 +446,11 @@ export default async function PlanosPage({ searchParams }: PlanosPageProps) {
             {landingPublicToolCount} ferramentas com IA.
           </p>
           <div className="mt-7 flex flex-wrap justify-center gap-3">
-            <Link
-              href="#precos"
-              className="pl-hud-btn inline-flex items-center gap-2 rounded-xl px-7 py-3.5 text-sm font-semibold"
-            >
+            <Link href="#precos" className={ppBtnPrimary}>
               Ver planos acima
               <PlanifyIcon name="arrowRight" className="h-4 w-4" />
             </Link>
-            <Link
-              href="/login"
-              className="pl-hud-btn-ghost inline-flex items-center gap-2 rounded-xl px-7 py-3.5 text-sm font-semibold transition"
-            >
+            <Link href="/login" className={ppBtnGhost}>
               Criar conta
             </Link>
             <Link
@@ -468,7 +463,6 @@ export default async function PlanosPage({ searchParams }: PlanosPageProps) {
         </div>
       </section>
 
-      <PublicFooter />
-    </main>
+    </PublicProfessorPrimeiroLayout>
   );
 }

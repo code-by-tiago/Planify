@@ -1,8 +1,20 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { PublicHeader } from "@/components/public/PublicHeader";
-import { PublicFooter } from "@/components/public/PublicFooter";
+import { PublicProfessorPrimeiroLayout } from "@/components/public/PublicProfessorPrimeiroLayout";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
+import {
+  ppBadge,
+  ppBtnGhost,
+  ppBtnPrimary,
+  ppBtnSecondary,
+  ppCtaBand,
+  ppEyebrow,
+  ppLead,
+  ppPlanHighlight,
+  ppSectionAlt,
+  ppTitle,
+  ppTitleAccent,
+} from "@/components/public/landing-professor-primeiro/theme";
 import { institutionalPlans } from "@/lib/public/escolasCommercial";
 import { EscolasContactForm } from "./EscolasContactForm";
 import { EscolasPlanActions } from "./EscolasPlanActions";
@@ -50,37 +62,26 @@ const comparisonRows = [
 
 export default function EscolasPage() {
   return (
-    <main className="planify-hud planify-ui3 planify-public planify-hud-landing flex min-h-screen flex-col overflow-x-clip bg-white">
-      <PublicHeader active="escolas" />
-
-      {/* Hero */}
+    <PublicProfessorPrimeiroLayout>
       <section className="mx-auto w-full max-w-7xl px-5 py-14 sm:px-8 lg:py-20">
         <div className="max-w-4xl">
-          <p className="text-xs font-black uppercase tracking-[0.2em] text-cyan-700">
-            Solução institucional Planify
-          </p>
-          <h1 className="pl-display mt-4 text-4xl font-extrabold leading-[1.08] tracking-tight text-slate-950 sm:text-5xl lg:text-[3.25rem]">
+          <p className={ppEyebrow}>Solução institucional Planify</p>
+          <h1 className={`${ppTitle} mt-4 lg:text-[3.25rem]`}>
             O controle pedagógico e a conformidade com a BNCC da sua escola em um único{" "}
-            <span className="pl-hud-gradient-text">painel inteligente</span>
+            <span className={ppTitleAccent}>painel inteligente</span>
           </h1>
-          <p className="mt-6 max-w-3xl text-lg font-medium leading-8 text-slate-600">
+          <p className={`mt-6 max-w-3xl ${ppLead}`}>
             O Planify automatiza a burocracia docente — planejamentos, materiais e registros
             pedagógicos — e entrega relatórios atualizados automaticamente no painel à coordenação e à direção. Sua
             equipe ganha produtividade; sua gestão ganha visibilidade, conformidade e
             tranquilidade institucional.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
-            <a
-              href="#contato"
-              className="pl-btn-brand inline-flex items-center gap-2 rounded-xl px-7 py-3.5 text-sm font-bold text-slate-900"
-            >
+            <a href="#contato" className={ppBtnPrimary}>
               Solicitar uma Demonstração Gratuita
               <PlanifyIcon name="arrowRight" className="h-4 w-4" />
             </a>
-            <Link
-              href="/login?portal=escola"
-              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-7 py-3.5 text-sm font-bold text-slate-700 transition hover:border-cyan-300 hover:text-cyan-800"
-            >
+            <Link href="/login?portal=escola" className={ppBtnSecondary}>
               Acessar Portal da Escola
             </Link>
           </div>
@@ -91,10 +92,7 @@ export default function EscolasPage() {
               "Licenças institucionais",
               "Suporte comercial dedicado",
             ].map((item) => (
-              <span
-                key={item}
-                className="inline-flex items-center gap-1.5 rounded-full border border-cyan-100 bg-cyan-50 px-3 py-1.5 text-xs font-bold text-cyan-900"
-              >
+              <span key={item} className={ppBadge}>
                 <PlanifyIcon name="checkCircle" className="h-3.5 w-3.5" />
                 {item}
               </span>
@@ -104,15 +102,13 @@ export default function EscolasPage() {
       </section>
 
       {/* Benefícios para o Gestor */}
-      <section className="border-y border-slate-200/80 bg-slate-50 py-16 sm:py-20">
+      <section className={`${ppSectionAlt} py-16 sm:py-20`}>
         <div className="mx-auto max-w-7xl px-5 sm:px-8">
           <div className="max-w-2xl">
-            <p className="text-xs font-black uppercase tracking-[0.2em] text-cyan-700">
-              Benefícios para o Gestor
-            </p>
-            <h2 className="mt-4 text-3xl font-extrabold tracking-tight text-slate-950 sm:text-4xl">
+            <p className={ppEyebrow}>Benefícios para o Gestor</p>
+            <h2 className={`${ppTitle} mt-4 text-3xl sm:text-4xl`}>
               Visibilidade pedagógica{" "}
-              <span className="pl-hud-gradient-text">sem aumentar a carga operacional</span>
+              <span className={ppTitleAccent}>sem aumentar a carga operacional</span>
             </h2>
             <p className="mt-4 text-base font-medium leading-7 text-slate-600">
               Ferramentas corporativas pensadas para diretores, mantenedores e coordenadores
@@ -127,7 +123,7 @@ export default function EscolasPage() {
                 key={item.title}
                 className="flex h-full flex-col rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm"
               >
-                <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-50 text-cyan-700">
+                <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
                   <PlanifyIcon name={item.icon} className="h-6 w-6" />
                 </span>
                 <h3 className="mt-5 text-lg font-black text-slate-950">{item.title}</h3>
@@ -143,12 +139,10 @@ export default function EscolasPage() {
       {/* Planos Institucionais */}
       <section id="planos" className="scroll-mt-28 mx-auto max-w-7xl px-5 py-16 sm:px-8 sm:py-20">
         <div className="max-w-2xl">
-          <p className="text-xs font-black uppercase tracking-[0.2em] text-cyan-700">
-            Planos Institucionais
-          </p>
-          <h2 className="mt-4 text-3xl font-extrabold tracking-tight text-slate-950 sm:text-4xl">
+          <p className={ppEyebrow}>Planos Institucionais</p>
+          <h2 className={`${ppTitle} mt-4 text-3xl sm:text-4xl`}>
             Investimento anual{" "}
-            <span className="pl-hud-gradient-text">conforme o porte da instituição</span>
+            <span className={ppTitleAccent}>conforme o porte da instituição</span>
           </h2>
           <p className="mt-4 text-base font-medium leading-7 text-slate-600">
             Planos corporativos com licenciamento por professor, portal do gestor e suporte
@@ -162,18 +156,16 @@ export default function EscolasPage() {
             <article
               key={plan.key}
               className={`relative flex h-full flex-col rounded-2xl border p-7 transition hover:shadow-md ${
-                plan.highlighted
-                  ? "border-cyan-300 bg-white shadow-md ring-2 ring-cyan-500/20 lg:scale-[1.02]"
-                  : "border-slate-200 bg-white shadow-sm"
+                plan.highlighted ? ppPlanHighlight : "border-slate-200 bg-white shadow-sm"
               }`}
             >
               {plan.highlighted ? (
-                <span className="absolute right-6 top-6 rounded-lg bg-cyan-600 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-white">
+                <span className="absolute right-6 top-6 rounded-lg bg-emerald-600 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-white">
                   Recomendado
                 </span>
               ) : null}
 
-              <p className="pr-24 text-xs font-black uppercase tracking-[0.2em] text-cyan-700">
+              <p className="pr-24 text-xs font-black uppercase tracking-[0.2em] text-emerald-700">
                 {plan.name}
               </p>
               <p className="mt-2 text-sm font-bold text-slate-500">{plan.teacherLimit}</p>
@@ -186,7 +178,7 @@ export default function EscolasPage() {
                   {plan.priceNote}
                 </span>
               </div>
-              <p className="mt-2 text-xs font-semibold text-cyan-800">
+              <p className="mt-2 text-xs font-semibold text-emerald-800">
                 {plan.pricePerTeacherNote}
               </p>
               <p className="mt-1 text-xs font-medium text-slate-500">{plan.licenseNote}</p>
@@ -224,7 +216,7 @@ export default function EscolasPage() {
                     <th
                       key={plan.key}
                       className={`px-6 py-5 text-sm font-black ${
-                        plan.highlighted ? "text-cyan-700" : "text-slate-700"
+                        plan.highlighted ? "text-emerald-700" : "text-slate-700"
                       }`}
                     >
                       {plan.name}
@@ -253,7 +245,7 @@ export default function EscolasPage() {
                     <td key={plan.key} className="px-6 py-5">
                       <a
                         href="#contato"
-                        className="inline-flex items-center gap-1.5 text-sm font-bold text-cyan-700 hover:text-cyan-900"
+                        className="inline-flex items-center gap-1.5 text-sm font-bold text-emerald-700 hover:text-emerald-900"
                       >
                         Falar com Consultor
                         <PlanifyIcon name="arrowRight" className="h-4 w-4" />
@@ -269,8 +261,8 @@ export default function EscolasPage() {
 
       {/* CTA band */}
       <section className="mx-auto max-w-7xl px-5 pb-4 sm:px-8">
-        <div className="pl-hud-cta-band rounded-2xl px-8 py-10 text-center sm:px-12">
-          <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-cyan-200/90">
+        <div className={ppCtaBand}>
+          <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-emerald-200/90">
             Próximo passo institucional
           </p>
           <h2 className="mt-2 text-2xl font-extrabold text-white sm:text-3xl">
@@ -282,17 +274,11 @@ export default function EscolasPage() {
             instituição.
           </p>
           <div className="mt-7 flex flex-wrap justify-center gap-3">
-            <a
-              href="#contato"
-              className="pl-hud-btn inline-flex items-center gap-2 rounded-xl px-7 py-3.5 text-sm font-semibold"
-            >
+            <a href="#contato" className={ppBtnPrimary}>
               Solicitar Demonstração Gratuita
               <PlanifyIcon name="arrowRight" className="h-4 w-4" />
             </a>
-            <Link
-              href="/login?portal=escola"
-              className="pl-hud-btn-ghost inline-flex items-center gap-2 rounded-xl px-7 py-3.5 text-sm font-semibold transition"
-            >
+            <Link href="/login?portal=escola" className={ppBtnGhost}>
               Portal da Escola
             </Link>
           </div>
@@ -301,7 +287,6 @@ export default function EscolasPage() {
 
       <EscolasContactForm />
 
-      <PublicFooter />
-    </main>
+    </PublicProfessorPrimeiroLayout>
   );
 }

@@ -3,9 +3,16 @@
 import { FormEvent, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { PublicHeader } from "@/components/public/PublicHeader";
-import { PublicFooter } from "@/components/public/PublicFooter";
+import { PublicProfessorPrimeiroLayout } from "@/components/public/PublicProfessorPrimeiroLayout";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
+import {
+  ppBtnPrimary,
+  ppEyebrow,
+  ppInput,
+  ppLink,
+  ppTitle,
+  ppTitleAccent,
+} from "@/components/public/landing-professor-primeiro/theme";
 import { fetchFullPlanifyAccessStatus } from "@/lib/auth/access-client";
 import {
   resolvePostLoginRedirect,
@@ -193,22 +200,20 @@ export function LoginPageClient() {
   }
 
   return (
-    <main className="planify-hud planify-ui3 planify-public planify-hud-landing flex min-h-screen flex-col">
-      <PublicHeader />
-
+    <PublicProfessorPrimeiroLayout>
       <section className="mx-auto w-full max-w-7xl flex-1 px-5 py-10 sm:px-8 lg:py-14">
         <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-16">
           <div>
-            <h1 className="pl-display text-3xl font-extrabold leading-tight tracking-tight text-slate-950 sm:text-4xl lg:text-[2.75rem]">
+            <h1 className={`${ppTitle} text-3xl sm:text-4xl lg:text-[2.75rem]`}>
               {mode === "login" ? (
                 <>
                   Bem-vindo de volta,{" "}
-                  <span className="pl-hud-gradient-text">{copy.heroLead}</span>
+                  <span className={ppTitleAccent}>{copy.heroLead}</span>
                 </>
               ) : (
                 <>
                   Crie sua conta e escolha um{" "}
-                  <span className="pl-hud-gradient-text">plano Planify.</span>
+                  <span className={ppTitleAccent}>plano Planify.</span>
                 </>
               )}
             </h1>
@@ -241,9 +246,7 @@ export function LoginPageClient() {
           </div>
 
           <div className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-md sm:p-8">
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-600">
-              Acesso Planify
-            </p>
+            <p className={ppEyebrow}>Acesso Planify</p>
             <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">
               {mode === "login" ? copy.title : "Criar conta"}
             </h2>
@@ -315,7 +318,7 @@ export function LoginPageClient() {
                     mode === "login" ? copy.emailPlaceholder : "professor@email.com"
                   }
                   autoComplete="email"
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm font-semibold text-slate-950 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                  className={ppInput}
                 />
               </label>
 
@@ -325,7 +328,7 @@ export function LoginPageClient() {
                   <button
                     type="button"
                     onClick={() => setShowPassword((current) => !current)}
-                    className="text-xs font-bold text-blue-600 transition hover:text-blue-800"
+                    className={`text-xs font-bold ${ppLink}`}
                     aria-pressed={showPassword}
                     aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
                   >
@@ -340,7 +343,7 @@ export function LoginPageClient() {
                   autoComplete={
                     mode === "login" ? "current-password" : "new-password"
                   }
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm font-semibold text-slate-950 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                  className={ppInput}
                 />
               </label>
 
@@ -353,11 +356,7 @@ export function LoginPageClient() {
               <button
                 type="submit"
                 disabled={loading}
-                className={`w-full rounded-xl px-5 py-3.5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${
-                  mode === "signup"
-                    ? "pl-btn-brand w-full justify-center"
-                    : "pl-hud-btn bg-gradient-to-r from-blue-600 to-cyan-600 text-white hover:opacity-95"
-                }`}
+                className={`${ppBtnPrimary} w-full disabled:cursor-not-allowed disabled:opacity-60`}
               >
                 {loading
                   ? "Aguarde..."
@@ -373,7 +372,7 @@ export function LoginPageClient() {
               </p>
               <Link
                 href="/planos"
-                className="inline-flex items-center gap-1 text-sm font-bold text-blue-600 hover:text-blue-800"
+                className={`inline-flex items-center gap-1 text-sm ${ppLink}`}
               >
                 Ver planos
                 <PlanifyIcon name="arrowRight" className="h-4 w-4" />
@@ -387,8 +386,7 @@ export function LoginPageClient() {
         </div>
       </section>
 
-      <PublicFooter />
-    </main>
+    </PublicProfessorPrimeiroLayout>
   );
 }
 

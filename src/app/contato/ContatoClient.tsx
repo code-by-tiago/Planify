@@ -3,6 +3,13 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
+import {
+  ppBtnPrimary,
+  ppBtnSecondary,
+  ppEyebrow,
+  ppInput,
+  ppLink,
+} from "@/components/public/landing-professor-primeiro/theme";
 
 type ContactType = "suporte" | "assinatura" | "erro" | "sugestao" | "parceria" | "pedagogico";
 
@@ -50,8 +57,7 @@ function getTypeLabel(type: ContactType): string {
   return contactTypes.find((item) => item.value === type)?.label ?? "Suporte";
 }
 
-const inputClass =
-  "w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm font-semibold text-slate-950 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100";
+const inputClass = ppInput;
 
 export function ContatoClient() {
   const [form, setForm] = useState<FormState>(initialForm);
@@ -101,7 +107,7 @@ export function ContatoClient() {
     if (!status) return "";
     if (status.type === "success") return "border-emerald-200 bg-emerald-50 text-emerald-800";
     if (status.type === "warning") return "border-amber-200 bg-amber-50 text-amber-800";
-    return "border-blue-200 bg-blue-50 text-blue-800";
+    return "border-emerald-200 bg-emerald-50 text-emerald-800";
   }
 
   return (
@@ -109,13 +115,11 @@ export function ContatoClient() {
       <div className="grid gap-8 xl:grid-cols-[0.85fr_1.15fr]">
         <aside className="grid gap-6 xl:sticky xl:top-24 xl:h-fit">
           <div className="rounded-3xl border border-slate-200 bg-slate-50/80 p-6">
-            <p className="text-xs font-black uppercase tracking-[0.2em] text-blue-600">
-              Como funciona
-            </p>
+            <p className={ppEyebrow}>Como funciona</p>
             <div className="mt-5 grid gap-3">
               {supportFlow.map((item) => (
                 <div key={item.step} className="flex gap-3 rounded-2xl border border-white bg-white p-4 shadow-sm">
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-xs font-black text-white">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-xs font-black text-white">
                     {item.step}
                   </span>
                   <div>
@@ -128,19 +132,17 @@ export function ContatoClient() {
           </div>
 
           <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <p className="text-xs font-black uppercase tracking-[0.2em] text-blue-600">
-              Ajuda rápida
-            </p>
+            <p className={ppEyebrow}>Ajuda rápida</p>
             <div className="mt-4 grid gap-2">
               {helpCards.map((card) => (
                 <Link
                   key={card.href}
                   href={card.href}
-                  className="rounded-2xl border border-slate-100 bg-slate-50/50 p-4 transition hover:border-blue-200 hover:bg-blue-50/50"
+                  className="rounded-2xl border border-slate-100 bg-slate-50/50 p-4 transition hover:border-emerald-200 hover:bg-emerald-50/50"
                 >
                   <p className="text-sm font-black text-slate-950">{card.title}</p>
                   <p className="mt-1 text-xs leading-5 text-slate-500">{card.description}</p>
-                  <p className="mt-2 text-xs font-bold text-blue-600">{card.label} →</p>
+                  <p className={`mt-2 text-xs font-bold ${ppLink}`}>{card.label} →</p>
                 </Link>
               ))}
             </div>
@@ -151,9 +153,7 @@ export function ContatoClient() {
           <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <p className="text-xs font-black uppercase tracking-[0.2em] text-blue-600">
-                  Solicitação
-                </p>
+                <p className={ppEyebrow}>Solicitação</p>
                 <h2 className="mt-2 text-2xl font-black text-slate-950">Envie sua mensagem</h2>
               </div>
               <button
@@ -234,22 +234,16 @@ export function ContatoClient() {
                 </label>
               </div>
 
-              <div className="rounded-2xl border border-blue-100 bg-blue-50/80 p-4">
-                <p className="text-sm font-black text-blue-900">{selectedType?.label}</p>
-                <p className="mt-1 text-xs text-blue-800/80">{selectedType?.description}</p>
+              <div className="rounded-2xl border border-emerald-100 bg-emerald-50/80 p-4">
+                <p className="text-sm font-black text-emerald-900">{selectedType?.label}</p>
+                <p className="mt-1 text-xs text-emerald-800/80">{selectedType?.description}</p>
               </div>
 
               <div className="flex flex-col gap-3 sm:flex-row">
-                <button
-                  type="submit"
-                  className="pl-btn-brand rounded-full px-6 py-3.5 text-sm font-bold text-slate-900"
-                >
+                <button type="submit" className={ppBtnPrimary}>
                   Enviar solicitação
                 </button>
-                <Link
-                  href="/dashboard"
-                  className="rounded-full border border-slate-200 px-6 py-3.5 text-center text-sm font-bold text-slate-700 hover:border-blue-200"
-                >
+                <Link href="/dashboard" className={ppBtnSecondary}>
                   Voltar ao painel
                 </Link>
               </div>
@@ -263,7 +257,7 @@ export function ContatoClient() {
           </div>
 
           <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <p className="text-xs font-black uppercase tracking-[0.2em] text-blue-600">Prévia</p>
+            <p className={ppEyebrow}>Prévia</p>
             <h2 className="mt-2 text-xl font-black text-slate-950">Resumo da solicitação</h2>
             <div className="mt-5 rounded-2xl border border-slate-100 bg-slate-50 p-5">
               {!submitted ? (
@@ -273,7 +267,7 @@ export function ContatoClient() {
               ) : (
                 <div className="grid gap-4">
                   <div className="flex flex-wrap gap-2">
-                    <span className="rounded-full bg-blue-600 px-3 py-1 text-xs font-black text-white">
+                    <span className="rounded-full bg-emerald-600 px-3 py-1 text-xs font-black text-white">
                       {getTypeLabel(form.tipo)}
                     </span>
                     <span className="rounded-full bg-slate-200 px-3 py-1 text-xs font-black text-slate-700">

@@ -2,6 +2,7 @@ export const GOOGLE_OAUTH_SCOPES = [
   "https://www.googleapis.com/auth/drive.file",
   "https://www.googleapis.com/auth/classroom.courses.readonly",
   "https://www.googleapis.com/auth/classroom.coursework.me",
+  "https://www.googleapis.com/auth/forms.body",
 ] as const;
 
 export type GoogleConfigStatus = {

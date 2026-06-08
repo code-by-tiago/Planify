@@ -279,7 +279,7 @@ export function GoogleClassroomPanel({
               onClick={() => void handleExport()}
               className={btnSuccess}
             >
-              {busy ? "…" : "Enviar"}
+              {busy ? "…" : "Classroom"}
             </button>
             <button
               type="button"
@@ -316,7 +316,7 @@ export function GoogleClassroomPanel({
         </p>
       ) : (
         <p className="mt-2 text-sm leading-6 text-sky-900">
-          Conecte sua conta Google (Drive + Classroom) para publicar o DOCX deste material na turma.
+          Conecte sua conta Google (Drive + Classroom) para publicar este material na turma.
         </p>
       )}
 
@@ -381,7 +381,7 @@ export function GoogleClassroomPanel({
       </div>
 
       <p className="mt-3 text-xs leading-5 text-sky-800/90">
-        O Planify gera um DOCX, envia ao seu Google Drive e cria uma atividade na turma escolhida.
+        O Planify envia o material ao seu Google Drive e cria uma atividade na turma escolhida.
         Configure o projeto em{" "}
         <a
           href="https://console.cloud.google.com/"

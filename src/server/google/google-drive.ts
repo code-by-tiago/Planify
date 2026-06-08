@@ -132,3 +132,69 @@ export async function uploadPptxAsGooglePresentation(params: {
     webViewLink: data.webViewLink || presentationUrl,
   };
 }
+
+const DOCX_MIME =
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+
+/** Envia DOCX e converte para Google Docs nativo. */
+export async function uploadDocxAsGoogleDocument(params: {
+  accessToken: string;
+  filename: string;
+  buffer: Buffer;
+}): Promise<DriveUploadResult> {
+  const { driveFolderId } = requireGoogleConfig();
+  const baseName = params.filename.replace(/\.docx$/i, "");
+  const metadata: Record<string, unknown> = {
+    name: baseName,
+    mimeType: "application/vnd.google-apps.document",
+  };
+
+  if (driveFolderId) {
+    metadata.parents = [driveFolderId];
+  }
+
+  const boundary = `planify_docs_${Date.now()}`;
+  const multipartBody = Buffer.concat([
+    Buffer.from(
+      `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(metadata)}\r\n`,
+    ),
+    Buffer.from(`--${boundary}\r\nContent-Type: ${DOCX_MIME}\r\n\r\n`),
+    params.buffer,
+    Buffer.from(`\r\n--${boundary}--`),
+  ]);
+
+  const response = await fetch(
+    "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink,mimeType",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${params.accessToken}`,
+        "Content-Type": `multipart/related; boundary=${boundary}`,
+      },
+      body: multipartBody,
+    },
+  );
+
+  const data = (await response.json()) as {
+    id?: string;
+    name?: string;
+    webViewLink?: string;
+    error?: { message?: string };
+  };
+
+  if (!response.ok || !data.id) {
+    throw new Error(
+      data.error?.message ||
+        "Não foi possível criar o documento no Google Docs.",
+    );
+  }
+
+  const fileId = data.id;
+  const documentUrl = `https://docs.google.com/document/d/${fileId}/edit`;
+
+  return {
+    fileId,
+    name: data.name || baseName,
+    webViewLink: data.webViewLink || documentUrl,
+  };
+}

@@ -1,56 +1,94 @@
 "use client";
 
 import {
-  exportToGoogleSlides,
   fetchGoogleStatus,
   startGoogleOAuth,
   type GoogleIntegrationStatus,
 } from "@/lib/google/google-api-client";
 import {
-  clearGoogleSlidesExportPending,
   GOOGLE_STATUS_CHANGED_EVENT,
   notifyGoogleStatusChanged,
-  readGoogleSlidesExportPending,
-  saveGoogleSlidesExportPending,
 } from "@/lib/google/google-status-events";
+import type { ReactNode } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { GoogleSlidesIcon } from "@/components/google/GoogleSlidesIcon";
 
-export type PlanifySlideExportPayload = {
+export type GoogleExportPending = {
   title: string;
-  bullets: string[];
-  speakerNotes: string;
-  layout?: string;
-  subtitle?: string;
-  imagePrompt?: string;
-  imageUrl?: string;
-  imageAlt?: string;
-  sequenceStep?: number;
-  sequenceLabel?: string;
+  returnTo: string;
+  ts: number;
 };
 
-type GoogleSlidesExportButtonProps = {
+type GoogleProductExportButtonProps = {
   title: string;
-  html?: string;
-  getHtml?: () => string;
-  slides?: PlanifySlideExportPayload[];
-  theme?: string;
   returnTo?: string;
   className?: string;
-  /** Mantém o CTA de exportação visível mesmo antes de conectar o Google. */
   alwaysShowExport?: boolean;
+  icon: ReactNode;
+  productName: string;
+  configLabel: string;
+  loginLabel: string;
+  labels: {
+    exportConnected: string;
+    exportConnect: string;
+    creating: string;
+    connecting: string;
+    connect: string;
+  };
+  exportTitle?: string;
+  pendingStorageKey: string;
+  onExport: () => Promise<{ openUrl: string }>;
+  onStatus?: (message: string) => void;
 };
 
-export function GoogleSlidesExportButton({
+function readPending(key: string): GoogleExportPending | null {
+  if (typeof window === "undefined") return null;
+
+  try {
+    const raw = window.sessionStorage.getItem(key);
+    if (!raw) return null;
+
+    const parsed = JSON.parse(raw) as GoogleExportPending;
+    if (!parsed?.title || !parsed.returnTo) return null;
+
+    if (Date.now() - (parsed.ts || 0) > 30 * 60 * 1000) {
+      window.sessionStorage.removeItem(key);
+      return null;
+    }
+
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function savePending(key: string, payload: Omit<GoogleExportPending, "ts">): void {
+  if (typeof window === "undefined") return;
+  window.sessionStorage.setItem(
+    key,
+    JSON.stringify({ ...payload, ts: Date.now() } satisfies GoogleExportPending),
+  );
+}
+
+function clearPending(key: string): void {
+  if (typeof window === "undefined") return;
+  window.sessionStorage.removeItem(key);
+}
+
+export function GoogleProductExportButton({
   title,
-  html,
-  getHtml,
-  slides,
-  theme,
-  returnTo = "/dashboard?tipo=slides",
+  returnTo = "/dashboard?secao=editor",
   className = "",
   alwaysShowExport = false,
-}: GoogleSlidesExportButtonProps) {
+  icon,
+  productName,
+  configLabel,
+  loginLabel,
+  labels,
+  exportTitle,
+  pendingStorageKey,
+  onExport,
+  onStatus,
+}: GoogleProductExportButtonProps) {
   const [status, setStatus] = useState<GoogleIntegrationStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -76,17 +114,13 @@ export function GoogleSlidesExportButton({
     setError("");
 
     try {
-      const result = await exportToGoogleSlides({
-        title,
-        html: getHtml ? getHtml() : html,
-        slides,
-        theme,
-      });
-      clearGoogleSlidesExportPending();
-      window.open(result.presentationUrl, "_blank", "noopener,noreferrer");
+      const result = await onExport();
+      clearPending(pendingStorageKey);
+      window.open(result.openUrl, "_blank", "noopener,noreferrer");
+      onStatus?.(`${productName} aberto em nova aba.`);
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : "Erro ao exportar slides.";
+        err instanceof Error ? err.message : `Erro ao exportar para ${productName}.`;
 
       if (/não conectada|não conectado/i.test(message)) {
         setStatus((current) =>
@@ -100,26 +134,22 @@ export function GoogleSlidesExportButton({
     } finally {
       setBusy(false);
     }
-  }, [getHtml, html, slides, theme, title]);
+  }, [onExport, onStatus, pendingStorageKey, productName]);
 
   const runConnect = useCallback(async () => {
     setBusy(true);
     setError("");
 
-    saveGoogleSlidesExportPending({
-      title,
-      theme,
-      returnTo,
-    });
+    savePending(pendingStorageKey, { title, returnTo });
 
     try {
       await startGoogleOAuth(returnTo);
     } catch (err) {
-      clearGoogleSlidesExportPending();
+      clearPending(pendingStorageKey);
       setError(err instanceof Error ? err.message : "Erro ao conectar Google.");
       setBusy(false);
     }
-  }, [returnTo, theme, title]);
+  }, [pendingStorageKey, returnTo, title]);
 
   useEffect(() => {
     void refresh();
@@ -151,7 +181,7 @@ export function GoogleSlidesExportButton({
 
     if (googleError) {
       setError(decodeURIComponent(googleError));
-      clearGoogleSlidesExportPending();
+      clearPending(pendingStorageKey);
       params.delete("google_error");
       const next = `${window.location.pathname}?${params.toString()}`.replace(/\?$/, "");
       window.history.replaceState({}, "", next);
@@ -170,12 +200,12 @@ export function GoogleSlidesExportButton({
       const fresh = await refresh();
       notifyGoogleStatusChanged();
 
-      const pending = readGoogleSlidesExportPending();
+      const pending = readPending(pendingStorageKey);
       if (fresh?.connected && pending?.title) {
         await runExport();
       }
     })();
-  }, [refresh, runExport]);
+  }, [pendingStorageKey, refresh, runExport]);
 
   async function handlePrimaryAction() {
     const fresh = (await refresh()) ?? status;
@@ -195,9 +225,12 @@ export function GoogleSlidesExportButton({
     await runExport();
   }
 
+  const defaultClassName =
+    "inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-sky-600 px-3 py-2 text-xs font-black text-white transition hover:bg-sky-700 disabled:opacity-60";
+
   if (loading) {
     return (
-      <span className="text-[11px] font-semibold text-sky-700">Google…</span>
+      <span className="text-[11px] font-semibold text-sky-700">{productName}…</span>
     );
   }
 
@@ -207,21 +240,21 @@ export function GoogleSlidesExportButton({
         className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] font-bold text-amber-900"
         title="Configure GOOGLE_CLIENT_ID no servidor"
       >
-        Apresentações (config)
+        {configLabel}
       </span>
     );
   }
 
   const exportLabel =
     busy && status.connected
-      ? "Criando…"
+      ? labels.creating
       : busy && !status.connected
-        ? "Conectando…"
+        ? labels.connecting
         : status.connected
-          ? "Google Slides"
+          ? labels.exportConnected
           : alwaysShowExport
-            ? "Conectar Google Slides"
-            : "Conectar Google";
+            ? labels.exportConnect
+            : labels.connect;
 
   if (alwaysShowExport || status.connected) {
     return (
@@ -230,27 +263,12 @@ export function GoogleSlidesExportButton({
           type="button"
           disabled={busy}
           onClick={() => void handlePrimaryAction()}
-          className={
-            className ||
-            "inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-black text-white hover:bg-emerald-700 disabled:opacity-60"
-          }
-          title={
-            status.connected
-              ? "Exporta o deck atual para o Google Slides"
-              : "Conecte sua conta Google e abra no Google Slides"
-          }
+          className={className || defaultClassName}
+          title={exportTitle || labels.exportConnected}
         >
-          <GoogleSlidesIcon className="h-4 w-4 shrink-0" />
+          {icon}
           {exportLabel}
         </button>
-        {status.connected && status.googleEmail ? (
-          <span
-            className="max-w-[160px] truncate text-[10px] font-semibold text-emerald-800"
-            title={status.googleEmail}
-          >
-            {status.googleEmail}
-          </span>
-        ) : null}
         {error ? (
           <span
             className="max-w-[260px] truncate text-[11px] font-semibold text-rose-700"
@@ -272,8 +290,8 @@ export function GoogleSlidesExportButton({
           "inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700"
         }
       >
-        <GoogleSlidesIcon className="h-4 w-4 shrink-0" />
-        Apresentações (login)
+        {icon}
+        {loginLabel}
       </a>
     );
   }
@@ -283,14 +301,10 @@ export function GoogleSlidesExportButton({
       type="button"
       disabled={busy}
       onClick={() => void runConnect()}
-      className={
-        className ||
-        "inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-sky-600 px-3 py-2 text-xs font-black text-white hover:bg-sky-700 disabled:opacity-60"
-      }
+      className={className || defaultClassName}
     >
-      <GoogleSlidesIcon className="h-4 w-4 shrink-0" />
-      {busy ? "Google…" : "Conectar Google"}
+      {icon}
+      {busy ? "Google…" : labels.connect}
     </button>
   );
 }
-

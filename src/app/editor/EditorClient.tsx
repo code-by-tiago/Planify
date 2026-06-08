@@ -2,7 +2,6 @@
 
 import { EditorShareBar } from "@/components/editor/EditorShareBar";
 import { downloadEditorExport } from "@/lib/downloads/editor-export-client";
-import { downloadPlanejamentoOficialDocx } from "@/lib/planejamentos/download-planejamento-oficial";
 import {
   syncOpenDocumentToHistory,
   type EditorStoredPayload,
@@ -407,7 +406,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
     const from = new URLSearchParams(window.location.search).get("from");
     if (from === "materiais") {
       setOriginHint(
-        "Material didático recebido do gerador — ajuste o texto, complemente e exporte em DOCX quando estiver pronto.",
+        "Material didático recebido do gerador — ajuste o texto, complemente e exporte pelo Google Docs quando estiver pronto.",
       );
     } else if (from === "planejamentos") {
       setOriginHint("Planejamento recebido — revise a formatação antes de exportar.");
@@ -1378,46 +1377,6 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
     }
   }
 
-  async function downloadDocxReal() {
-    const html = getEditorHtml();
-    const hasText = html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
-
-    if (!hasText) {
-      setStatus("Adicione conteúdo ao documento antes de exportar o DOCX.");
-      return;
-    }
-
-    setStatus("Gerando DOCX...");
-
-    try {
-      const source = documentSource;
-      const isOfficialPlanning =
-        source?.type === "planejamento" &&
-        source.payload &&
-        typeof source.payload === "object" &&
-        "matrizPlanejamento" in source.payload;
-
-      if (isOfficialPlanning) {
-        await downloadPlanejamentoOficialDocx(
-          source.payload as Record<string, unknown>,
-          sanitizeFilename(title),
-        );
-        setStatus("DOCX oficial baixado a partir da matriz do planejamento.");
-        return;
-      }
-
-      await downloadEditorExport({
-        title: title.trim() || "Documento Planify",
-        html: getEditorHtml(),
-        format: "docx",
-        fallbackFileName: `${sanitizeFilename(title)}.docx`,
-      });
-      setStatus("DOCX baixado com o layout do editor.");
-    } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Erro ao baixar DOCX.");
-    }
-  }
-
   async function downloadPdfReal() {
     const html = getEditorHtml();
     const hasText = html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
@@ -1674,13 +1633,6 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
               </button>
               <button
                 type="button"
-                onClick={downloadDocxReal}
-                className="shrink-0 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-2 text-xs font-black text-emerald-800"
-              >
-                DOCX
-              </button>
-              <button
-                type="button"
                 onClick={downloadPdfReal}
                 className="shrink-0 rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-xs font-black text-slate-700"
               >
@@ -1754,9 +1706,6 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
               </button>
               <button type="button" onClick={newDocument} className={actionBtnClass}>
                 Novo
-              </button>
-              <button type="button" onClick={downloadDocxReal} className={actionBtnClass}>
-                DOCX
               </button>
               <button type="button" onClick={downloadPdfReal} className={actionBtnClass}>
                 PDF
@@ -1839,14 +1788,6 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
                   className="rounded-2xl border border-blue-200 bg-blue-50 px-5 py-3 text-sm font-black text-blue-700 transition"
                 >
                   Imprimir / PDF limpo
-                </button>
-
-                <button
-                  type="button"
-                  onClick={downloadDocxReal}
-                  className="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-3 text-sm font-black text-emerald-700 transition"
-                >
-                  Baixar DOCX
                 </button>
 
                 <button type="button" onClick={downloadHtml} className={actionBtnClass}>

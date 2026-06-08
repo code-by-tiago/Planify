@@ -178,3 +178,89 @@ export async function exportToGoogleSlides(params: {
 
   return data.data as GoogleSlidesExportResult;
 }
+
+export type GoogleDocsExportResult = {
+  drive: { fileId: string; name: string; webViewLink: string | null };
+  documentUrl: string;
+  googleEmail: string | null;
+};
+
+export async function exportToGoogleDocs(params: {
+  title: string;
+  html: string;
+}): Promise<GoogleDocsExportResult> {
+  const response = await fetch("/api/google/docs/export", {
+    method: "POST",
+    headers: await authHeaders(),
+    credentials: "include",
+    body: JSON.stringify(params),
+  });
+
+  const data = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new Error(
+      data?.error?.message || "Não foi possível abrir no Google Docs.",
+    );
+  }
+
+  return data.data as GoogleDocsExportResult;
+}
+
+export type GoogleDriveExportResult = {
+  drive: { fileId: string; name: string; webViewLink: string | null };
+  googleEmail: string | null;
+};
+
+export async function exportToGoogleDrive(params: {
+  title: string;
+  html: string;
+}): Promise<GoogleDriveExportResult> {
+  const response = await fetch("/api/google/drive/export", {
+    method: "POST",
+    headers: await authHeaders(),
+    credentials: "include",
+    body: JSON.stringify(params),
+  });
+
+  const data = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new Error(
+      data?.error?.message || "Não foi possível salvar no Google Drive.",
+    );
+  }
+
+  return data.data as GoogleDriveExportResult;
+}
+
+export type GoogleFormsExportResult = {
+  formId: string;
+  formUrl: string;
+  responderUrl: string;
+  questionCount: number;
+  googleEmail: string | null;
+};
+
+export async function exportToGoogleForms(params: {
+  title: string;
+  html: string;
+  description?: string;
+}): Promise<GoogleFormsExportResult> {
+  const response = await fetch("/api/google/forms/export", {
+    method: "POST",
+    headers: await authHeaders(),
+    credentials: "include",
+    body: JSON.stringify(params),
+  });
+
+  const data = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new Error(
+      data?.error?.message || "Não foi possível criar o Google Forms.",
+    );
+  }
+
+  return data.data as GoogleFormsExportResult;
+}

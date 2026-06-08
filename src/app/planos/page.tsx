@@ -331,8 +331,13 @@ export default async function PlanosPage({ searchParams }: PlanosPageProps) {
             assinatura ativa.
           </p>
 
-          <div className="mt-8 overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
-            <div className="overflow-x-auto">
+          <p className="planos-compare-hint">
+            <PlanifyIcon name="arrowRight" className="h-3.5 w-3.5 shrink-0 text-cyan-600" />
+            Deslize para comparar os três planos
+          </p>
+
+          <div className="mt-2 overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
+            <div className="planos-compare-wrap overflow-x-auto">
               <table className="w-full min-w-[640px] border-collapse text-left">
                 <thead>
                   <tr className="border-b border-slate-200 bg-slate-50/80">

@@ -4,9 +4,12 @@ import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { motion, useReducedMotion } from "framer-motion";
 import { COMPARISON_ROWS } from "./constants";
 import { ppEyebrow } from "./theme";
+import { useLandingMobileStatic } from "./useLandingMobileStatic";
 
 export function LandingComparison() {
   const reduce = useReducedMotion();
+  const mobileStatic = useLandingMobileStatic();
+  const staticRender = reduce || mobileStatic;
 
   return (
     <section className="bg-slate-50/80 px-5 py-16 sm:px-8 sm:py-20">
@@ -35,15 +38,11 @@ export function LandingComparison() {
             </div>
           </div>
 
-          {COMPARISON_ROWS.map((row, index) => (
-            <motion.div
-              key={row.topic}
-              className="grid border-b border-slate-100 last:border-b-0 sm:grid-cols-[1fr_1fr_1fr]"
-              initial={reduce ? false : { opacity: 0, x: -12 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true, margin: "-40px" }}
-              transition={{ duration: 0.4, delay: index * 0.05 }}
-            >
+          {COMPARISON_ROWS.map((row, index) => {
+            const rowClassName =
+              "grid border-b border-slate-100 last:border-b-0 sm:grid-cols-[1fr_1fr_1fr]";
+            const rowContent = (
+              <>
               <div className="border-b border-slate-100 bg-slate-50/50 px-5 py-4 sm:border-b-0 sm:bg-transparent sm:px-6">
                 <p className="text-xs font-extrabold uppercase tracking-wide text-slate-400 sm:hidden">
                   Tópico
@@ -80,8 +79,30 @@ export function LandingComparison() {
                   <p className="text-sm font-medium leading-6 text-slate-700">{row.with}</p>
                 </div>
               </div>
-            </motion.div>
-          ))}
+              </>
+            );
+
+            if (staticRender) {
+              return (
+                <div key={row.topic} className={rowClassName}>
+                  {rowContent}
+                </div>
+              );
+            }
+
+            return (
+              <motion.div
+                key={row.topic}
+                className={rowClassName}
+                initial={{ opacity: 0, x: -12 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true, margin: "-40px" }}
+                transition={{ duration: 0.4, delay: index * 0.05 }}
+              >
+                {rowContent}
+              </motion.div>
+            );
+          })}
         </div>
       </div>
     </section>

@@ -226,37 +226,39 @@ export default function TeachyStudioHome({
                   {hasActiveFilter ? `${resultCount} resultado(s)` : "Todos os geradores"}
                 </h2>
               </div>
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => setCategory("todos")}
-                  className={`pl-hud-hub-category-pill ${
-                    category === "todos" ? "pl-hud-hub-category-pill--active" : ""
-                  }`}
-                >
-                  <PlanifyIcon name="spark" className="h-3.5 w-3.5" />
-                  Todos
-                </button>
-                {categoryTabs.map((cat) => {
-                  const active = category === cat.id;
-                  return (
-                    <button
-                      key={cat.id}
-                      type="button"
-                      onClick={() => setCategory(cat.id)}
-                      className={`pl-hud-hub-category-pill ${
-                        active ? "pl-hud-hub-category-pill--active" : ""
-                      }`}
-                    >
-                      <PlanifyIcon name={cat.icon} className="h-3.5 w-3.5" />
-                      {cat.label}
-                    </button>
-                  );
-                })}
+              <div className="pl-hud-hub-category-scroll min-w-0 max-w-full lg:max-w-none">
+                <div className="pl-hud-hub-category-scroll-inner">
+                  <button
+                    type="button"
+                    onClick={() => setCategory("todos")}
+                    className={`pl-hud-hub-category-pill shrink-0 ${
+                      category === "todos" ? "pl-hud-hub-category-pill--active" : ""
+                    }`}
+                  >
+                    <PlanifyIcon name="spark" className="h-3.5 w-3.5" />
+                    Todos
+                  </button>
+                  {categoryTabs.map((cat) => {
+                    const active = category === cat.id;
+                    return (
+                      <button
+                        key={cat.id}
+                        type="button"
+                        onClick={() => setCategory(cat.id)}
+                        className={`pl-hud-hub-category-pill shrink-0 ${
+                          active ? "pl-hud-hub-category-pill--active" : ""
+                        }`}
+                      >
+                        <PlanifyIcon name={cat.icon} className="h-3.5 w-3.5" />
+                        {cat.label}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="pl-hud-tools-grid grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {showPlanejamentos ? renderPlanejamentosCard() : null}
               {filteredTools.map((tool) => renderToolCard(tool))}
             </div>

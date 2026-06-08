@@ -1,0 +1,140 @@
+/* Navegação responsiva — landing pública + app interno */
+
+/* Âncoras não ficam atrás do header fixo */
+.planify-hud-landing [id] {
+  scroll-margin-top: 5.5rem;
+}
+
+/* Links do footer com área de toque confortável no mobile */
+@media (max-width: 640px) {
+  .planify-hud-landing footer nav a {
+    display: inline-flex;
+    min-height: 2.75rem;
+    align-items: center;
+    padding-top: 0.25rem;
+    padding-bottom: 0.25rem;
+  }
+}
+
+/* Hub do dashboard — pills de categoria com scroll horizontal no mobile */
+.pl-hud-hub-category-scroll {
+  min-width: 0;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.pl-hud-hub-category-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.pl-hud-hub-category-scroll-inner {
+  display: flex;
+  width: max-content;
+  max-width: 100%;
+  flex-wrap: nowrap;
+  gap: 0.5rem;
+  padding-bottom: 0.25rem;
+}
+
+@media (min-width: 640px) {
+  .pl-hud-hub-category-scroll-inner {
+    width: auto;
+    flex-wrap: wrap;
+  }
+}
+
+/* Trust bar do hub — 2 colunas no mobile */
+@media (max-width: 640px) {
+  .planify-hud .pl-hud-hub-trust-item {
+    flex: 1 1 50%;
+    min-width: 0;
+    border-bottom: 1px solid rgba(0, 212, 255, 0.12);
+  }
+
+  .planify-hud .pl-hud-hub-trust-item:nth-child(2n) {
+    border-right: none;
+  }
+
+  .planify-hud .pl-hud-hub-trust-item:nth-last-child(-n + 2) {
+    border-bottom: none;
+  }
+}
+
+/* Desativa animações pesadas do hub no mobile (GPU) */
+@media (max-width: 640px) {
+  .planify-hud .pl-hud-hub-mesh {
+    animation: none !important;
+  }
+
+  .planify-hud .pl-hud-hub-grid-bg {
+    display: none;
+  }
+
+  .planify-hud .pl-hud-hub-reveal {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
+/* Quick nav — área de toque no mobile */
+@media (max-width: 640px) {
+  .pl-dashboard-root [data-planify-quick-nav] button {
+    min-height: 2.75rem;
+    padding-left: 0.875rem;
+    padding-right: 0.875rem;
+  }
+}
+
+/* Desktop / notebook — conteúdo centralizado em telas largas */
+@media (min-width: 1280px) {
+  .pl-hud-board > .mx-auto.max-w-7xl,
+  .pl-hud-hub .mx-auto.max-w-7xl {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+
+  .pl-hud-main .pl-hud-board {
+    margin-left: auto;
+    margin-right: auto;
+    max-width: 100%;
+  }
+}
+
+@media (min-width: 1536px) {
+  .pl-hud-tools-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* Tabelas comparativas — hint de scroll no mobile */
+.planos-compare-hint {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .planos-compare-hint {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #64748b;
+  }
+
+  .planos-compare-wrap {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+  }
+}
+
+/* Painéis embutidos — altura de formulário no mobile */
+@media (max-width: 1023px) {
+  .planify-materiais-studio [data-planify-scroll] {
+    -webkit-overflow-scrolling: touch;
+  }
+}

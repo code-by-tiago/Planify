@@ -162,7 +162,7 @@ export default function PlanifyAppFrame({
                 <h1 className="truncate text-sm font-black tracking-tight text-slate-950 sm:text-lg">
                   {pageMeta.title}
                 </h1>
-                <p className="hidden truncate text-xs font-semibold text-slate-500 sm:block">
+                <p className="truncate text-xs font-semibold text-slate-500">
                   {pageMeta.subtitle}
                 </p>
               </div>

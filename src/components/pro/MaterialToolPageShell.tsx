@@ -75,7 +75,7 @@ export function MaterialToolPageShell({
       >
         <div
           {...(formScrollAttr ? { "data-planify-scroll": "" } : {})}
-          className="min-h-0 overflow-y-auto overscroll-contain bg-white/50 p-4 max-lg:max-h-[min(52vh,520px)] max-lg:border-b max-lg:border-cyan-400/10 sm:p-5 lg:max-h-none lg:border-r lg:border-cyan-400/10"
+          className="min-h-0 overflow-y-auto overscroll-contain bg-white/50 p-4 max-lg:max-h-[min(58vh,560px)] max-lg:border-b max-lg:border-cyan-400/10 sm:p-5 lg:max-h-none lg:border-r lg:border-cyan-400/10"
         >
           {form}
         </div>

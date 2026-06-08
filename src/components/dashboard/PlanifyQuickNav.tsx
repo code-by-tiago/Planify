@@ -36,7 +36,10 @@ export function PlanifyQuickNav({
   }
 
   return (
-    <div className="min-w-0 overflow-x-auto overscroll-contain [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+    <div
+      data-planify-quick-nav
+      className="min-w-0 overflow-x-auto overscroll-contain [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+    >
       <div className="flex w-max min-w-full gap-1.5 sm:gap-1">
         {links.map((link) => {
           const active = isActive(link.id);

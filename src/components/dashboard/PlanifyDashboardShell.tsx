@@ -249,7 +249,7 @@ export default function PlanifyDashboardShell() {
                     {panelTitle}
                   </h1>
                   {panelSubtitle ? (
-                    <p className="hidden truncate text-xs font-medium text-slate-500 sm:block">
+                    <p className="truncate text-xs font-medium text-slate-500">
                       {panelSubtitle}
                     </p>
                   ) : null}

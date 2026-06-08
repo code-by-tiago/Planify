@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { inflateRawSync } from "node:zlib";
+import { deflateRawSync, inflateRawSync } from "node:zlib";
 import type { PlanningAiResult, PlanningMatrixItem, PlanningSkill } from "./planning-ai-service";
 
 type Primitive = string | number | boolean | null | undefined;
@@ -115,39 +115,40 @@ function buildZip(files: ZipFileEntry[]): Buffer {
 
   for (const file of files) {
     const fileName = Buffer.from(file.path.replace(/\\/g, "/"), "utf8");
-    const content = Buffer.isBuffer(file.content)
+    const uncompressed = Buffer.isBuffer(file.content)
       ? file.content
       : Buffer.from(file.content, "utf8");
-    const checksum = crc32(content);
+    const compressed = deflateRawSync(uncompressed);
+    const checksum = crc32(uncompressed);
 
     const localHeader = Buffer.concat([
       u32(0x04034b50),
       u16(20),
       u16(0),
-      u16(0),
+      u16(8),
       u16(now.time),
       u16(now.date),
       u32(checksum),
-      u32(content.length),
-      u32(content.length),
+      u32(compressed.length),
+      u32(uncompressed.length),
       u16(fileName.length),
       u16(0),
       fileName,
     ]);
 
-    localParts.push(localHeader, content);
+    localParts.push(localHeader, compressed);
 
     const centralHeader = Buffer.concat([
       u32(0x02014b50),
       u16(20),
       u16(20),
       u16(0),
-      u16(0),
+      u16(8),
       u16(now.time),
       u16(now.date),
       u32(checksum),
-      u32(content.length),
-      u32(content.length),
+      u32(compressed.length),
+      u32(uncompressed.length),
       u16(fileName.length),
       u16(0),
       u16(0),
@@ -159,7 +160,7 @@ function buildZip(files: ZipFileEntry[]): Buffer {
     ]);
 
     centralParts.push(centralHeader);
-    offset += localHeader.length + content.length;
+    offset += localHeader.length + compressed.length;
   }
 
   const centralDirectory = Buffer.concat(centralParts);

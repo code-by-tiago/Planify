@@ -282,6 +282,7 @@ function skillsForContent(
   content: string,
   skills: PlanningSkill[],
   payload?: PlanningAiPayload,
+  contentIndex = 0,
 ): PlanningSkill[] {
   if (isSpanishHighSchoolPayload(payload)) {
     const codes = spanishHighSchoolSkillCodesForContent(content);
@@ -310,17 +311,35 @@ function skillsForContent(
     );
   });
 
-  const chosen = (byContent.length > 0 ? byContent : skills).slice(0, 3);
-
-  if (chosen.length > 0) {
-    return chosen.map((skill) => ({ ...skill, conteudo: content }));
+  if (byContent.length > 0) {
+    return byContent.slice(0, 2).map((skill) => ({ ...skill, conteudo: content }));
   }
 
-  if (skills.length > 0) {
-    return [{ ...skills[0], conteudo: content }];
+  if (skills.length === 0) {
+    return [];
   }
 
-  return [];
+  const perContent = 2;
+  const distributed: PlanningSkill[] = [];
+  const seen = new Set<string>();
+
+  for (let offset = 0; offset < skills.length && distributed.length < perContent; offset += 1) {
+    const skill = skills[(contentIndex * perContent + offset) % skills.length];
+    const key = normalizeSearch(skill.codigo || skill.descricao || "");
+
+    if (!key || seen.has(key)) {
+      continue;
+    }
+
+    seen.add(key);
+    distributed.push({ ...skill, conteudo: content });
+  }
+
+  if (distributed.length > 0) {
+    return distributed;
+  }
+
+  return [{ ...skills[contentIndex % skills.length], conteudo: content }];
 }
 
 function resolveMatrixSkills(
@@ -328,9 +347,10 @@ function resolveMatrixSkills(
   aiSkills: unknown,
   selectedSkills: PlanningSkill[],
   payload?: PlanningAiPayload,
+  contentIndex = 0,
 ): PlanningSkill[] {
   if (selectedSkills.length === 0) {
-    return skillsForContent(conteudo, [], payload);
+    return skillsForContent(conteudo, [], payload, contentIndex);
   }
 
   const index = buildSelectedSkillsIndex(selectedSkills);
@@ -349,7 +369,7 @@ function resolveMatrixSkills(
     return fromAi.slice(0, 3);
   }
 
-  const heuristic = skillsForContent(conteudo, selectedSkills, payload).filter(
+  const heuristic = skillsForContent(conteudo, selectedSkills, payload, contentIndex).filter(
     (skill) => index.has(skill.codigo.toUpperCase()),
   );
 
@@ -392,7 +412,7 @@ function fallbackPlanning(payload: PlanningAiPayload, warning?: string): Plannin
       trimestre,
       aulaInicio,
       aulaFim,
-      habilidades: skillsForContent(conteudo, skills, payload),
+      habilidades: skillsForContent(conteudo, skills, payload, index),
       objetivos:
         normalizeText(payload.objetivosGerais || payload.objetivos) ||
         `Compreender, aplicar e sistematizar conhecimentos relacionados a ${conteudo}, desenvolvendo análise, participação, registro e produção conforme a etapa escolar.`,
@@ -490,6 +510,7 @@ function sanitizeAiResult(value: unknown, payload: PlanningAiPayload): PlanningA
         itemRecord.habilidades,
         selectedSkills,
         payload,
+        index,
       ),
       objetivos:
         normalizeText(itemRecord.objetivos || itemRecord.objetivo) ||

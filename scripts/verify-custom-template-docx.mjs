@@ -178,8 +178,8 @@ function main() {
   // 1. Motor oficial inalterado
   const officialAnual = buildOfficialPlanningDocx(buildPayload("anual"));
   const officialTrim = buildOfficialPlanningDocx(buildPayload("trimestral", 1));
-  assertDocx("official-anual", officialAnual, 500000);
-  assertDocx("official-trimestral", officialTrim, 400000);
+  assertDocx("official-anual", officialAnual, 30000);
+  assertDocx("official-trimestral", officialTrim, 30000);
   checks.push({ name: "official-anual", ok: true, bytes: officialAnual.byteLength });
   checks.push({ name: "official-trimestral", ok: true, bytes: officialTrim.byteLength });
 
@@ -187,7 +187,7 @@ function main() {
   const defaultViaService = buildPlanningDocx(buildPayload("anual"));
   assert.equal(defaultViaService.templateSource, "official");
   assert.equal(defaultViaService.usedFallback, false);
-  assertDocx("service-default", defaultViaService.buffer, 500000);
+  assertDocx("service-default", defaultViaService.buffer, 30000);
   checks.push({ name: "service-default", ok: true, source: defaultViaService.templateSource });
 
   // 3. Placeholders + labels
@@ -220,7 +220,7 @@ function main() {
   assert.equal(fallback.templateSource, "official");
   assert.equal(fallback.usedFallback, true);
   assert.equal(fallback.fallbackMessage, CUSTOM_TEMPLATE_FALLBACK_MESSAGE);
-  assertDocx("fallback", fallback.buffer, 500000);
+  assertDocx("fallback", fallback.buffer, 30000);
   checks.push({ name: "fallback", ok: true, message: fallback.fallbackMessage });
 
   writeFileSync(join(outputDir, "official-anual.docx"), officialAnual);

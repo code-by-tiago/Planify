@@ -1,4 +1,4 @@
-import { inflateRawSync } from "node:zlib";
+import { deflateRawSync, inflateRawSync } from "node:zlib";
 import type { PlanningMatrixItem, PlanningSkill } from "./planning-ai-service";
 import type { OfficialPlanningPayload } from "./official-planning-docx";
 
@@ -104,39 +104,40 @@ function buildZip(files: ZipFileEntry[]): Buffer {
 
   for (const file of files) {
     const fileName = Buffer.from(file.path.replace(/\\/g, "/"), "utf8");
-    const content = Buffer.isBuffer(file.content)
+    const uncompressed = Buffer.isBuffer(file.content)
       ? file.content
       : Buffer.from(file.content, "utf8");
-    const checksum = crc32(content);
+    const compressed = deflateRawSync(uncompressed);
+    const checksum = crc32(uncompressed);
 
     const localHeader = Buffer.concat([
       u32(0x04034b50),
       u16(20),
       u16(0),
-      u16(0),
+      u16(8),
       u16(now.time),
       u16(now.date),
       u32(checksum),
-      u32(content.length),
-      u32(content.length),
+      u32(compressed.length),
+      u32(uncompressed.length),
       u16(fileName.length),
       u16(0),
       fileName,
     ]);
 
-    localParts.push(localHeader, content);
+    localParts.push(localHeader, compressed);
 
     const centralHeader = Buffer.concat([
       u32(0x02014b50),
       u16(20),
       u16(20),
       u16(0),
-      u16(0),
+      u16(8),
       u16(now.time),
       u16(now.date),
       u32(checksum),
-      u32(content.length),
-      u32(content.length),
+      u32(compressed.length),
+      u32(uncompressed.length),
       u16(fileName.length),
       u16(0),
       u16(0),
@@ -148,7 +149,7 @@ function buildZip(files: ZipFileEntry[]): Buffer {
     ]);
 
     centralParts.push(centralHeader);
-    offset += localHeader.length + content.length;
+    offset += localHeader.length + compressed.length;
   }
 
   const centralDirectory = Buffer.concat(centralParts);
@@ -555,6 +556,23 @@ function replaceCellsInRow(rowXml: string, values: Array<Primitive | null>): str
   return output;
 }
 
+function isPedagogicalRowLabel(text: string): boolean {
+  const normalized = normalizeSearch(text);
+
+  return (
+    normalized.includes("habilidade") ||
+    normalized.includes("objeto de conhecimento") ||
+    normalized === "conteudo" ||
+    normalized.includes("conteudos") ||
+    normalized.includes("metodologia") ||
+    normalized.includes("recurso") ||
+    normalized.includes("avaliacao") ||
+    normalized.includes("objetivo") ||
+    normalized.includes("expectativa") ||
+    normalized.includes("evidencia")
+  );
+}
+
 function fieldValueForLabel(text: string, payload: OfficialPlanningPayload): string | null {
   const normalized = normalizeSearch(text);
   const matrix = getMatrix(payload);
@@ -826,9 +844,12 @@ function fillLabelTables(documentXml: string, payload: OfficialPlanningPayload):
   count: number;
 } {
   const tables = parseTables(documentXml);
+  const matrix = getMatrix(payload);
   let count = 0;
 
   const replacements = tables.map((table) => {
+    let matrixRowIndex = 0;
+
     const rowReplacements = table.rows.map((row) => {
       if (row.cells.length < 2) {
         if (row.cells.length === 1) {
@@ -845,6 +866,25 @@ function fillLabelTables(documentXml: string, payload: OfficialPlanningPayload):
 
       const firstText = row.cells[0]?.text || "";
       const secondText = row.cells[1]?.text || "";
+      const item = matrix[matrixRowIndex % Math.max(matrix.length, 1)];
+
+      if (item && (isPedagogicalRowLabel(firstText) || isPedagogicalRowLabel(secondText))) {
+        const byFirst = labelValueForMatrixCell(firstText, item, payload);
+        const bySecond = labelValueForMatrixCell(secondText, item, payload);
+
+        if (byFirst) {
+          count += 1;
+          matrixRowIndex += 1;
+          return replaceCellsInRow(row.xml, [null, byFirst]);
+        }
+
+        if (bySecond) {
+          count += 1;
+          matrixRowIndex += 1;
+          return replaceCellsInRow(row.xml, [bySecond, null]);
+        }
+      }
+
       const byFirst = fieldValueForLabel(firstText, payload);
       const bySecond = fieldValueForLabel(secondText, payload);
 
@@ -900,6 +940,8 @@ function fillPlanningTables(documentXml: string, payload: OfficialPlanningPayloa
     const hasColumnHeader = isPlanningHeaderText(header.text);
 
     if (!hasColumnHeader) {
+      let matrixRowIndex = 0;
+
       const rowReplacements = table.rows.map((row) => {
         if (row.cells.length < 2) {
           return row.xml;
@@ -907,7 +949,7 @@ function fillPlanningTables(documentXml: string, payload: OfficialPlanningPayloa
 
         const left = row.cells[0]?.text || "";
         const right = row.cells[1]?.text || "";
-        const item = items[0];
+        const item = items[matrixRowIndex % Math.max(items.length, 1)];
 
         if (!item) {
           return row.xml;
@@ -918,11 +960,13 @@ function fillPlanningTables(documentXml: string, payload: OfficialPlanningPayloa
 
         if (byLeft) {
           count += 1;
+          matrixRowIndex += 1;
           return replaceCellsInRow(row.xml, [null, byLeft]);
         }
 
         if (byRight) {
           count += 1;
+          matrixRowIndex += 1;
           return replaceCellsInRow(row.xml, [byRight, null]);
         }
 

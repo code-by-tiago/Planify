@@ -20,6 +20,7 @@ type CommunityProfile = {
   bio: string | null;
   avatarUrl: string | null;
   communityPublic: boolean;
+  topComponentes?: string[];
   stats: CommunityProfileStats;
 };
 
@@ -340,6 +341,20 @@ export function CommunityProfilePanel() {
             Adicione uma breve descrição sobre sua atuação pedagógica.
           </p>
         )}
+
+        {profile.topComponentes && profile.topComponentes.length > 0 ? (
+          <div className="mt-4 flex flex-wrap gap-2">
+            <span className="text-xs font-bold text-slate-500">Áreas de atuação:</span>
+            {profile.topComponentes.map((componente) => (
+              <span
+                key={componente}
+                className="rounded-full border border-cyan-400/25 bg-cyan-50 px-2.5 py-0.5 text-[11px] font-bold text-cyan-800"
+              >
+                {componente}
+              </span>
+            ))}
+          </div>
+        ) : null}
 
         <div className="mt-5 flex flex-wrap gap-4 border-t border-slate-100 pt-4 text-sm font-bold text-slate-700">
           <span>

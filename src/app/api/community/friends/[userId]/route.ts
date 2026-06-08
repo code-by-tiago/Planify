@@ -7,6 +7,7 @@ import {
   declineFriendRequest,
   getFriendshipStatusBetweenUsers,
 } from "../../../../../server/community/community-friends-service";
+import { createCommunityNotification } from "../../../../../server/community/community-notifications-service";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -76,6 +77,15 @@ export async function PATCH(
         userId: viewerId,
         otherUserId,
       });
+
+      void createCommunityNotification({
+        userId: otherUserId,
+        type: "friend_accepted",
+        actorUserId: viewerId,
+        bodyPreview: "Aceitou sua solicitação de amizade",
+        friendshipId: friendship.id,
+      });
+
       return NextResponse.json({ ok: true, friendship, status: friendship.status });
     }
 

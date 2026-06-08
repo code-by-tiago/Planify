@@ -2,10 +2,12 @@
 
 import { CommunityAuthorAvatar } from "@/components/community/CommunityAuthorAvatar";
 import { CommunityAuthorLink } from "@/components/community/CommunityAuthorLink";
+import { CommunityReportButton } from "@/components/community/CommunityReportButton";
 import type { CommunityMaterialComment } from "@/lib/community/types";
+import { renderCommentBodyWithMentions } from "@/lib/community/mention-utils";
 import { getCurrentAccessToken } from "@/lib/auth/session-client";
 import { parseJsonResponse } from "@/lib/http/parse-json-response";
-import { useCallback, useEffect, useId, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useState } from "react";
 
 type CommunityMaterialCommentsProps = {
   materialId: string;
@@ -101,6 +103,25 @@ export function CommunityMaterialComments({
   useEffect(() => {
     onCommentsChange?.(comments.length);
   }, [comments.length, onCommentsChange]);
+
+  const mentionLinks = useMemo(() => {
+    const map = new Map<string, string>();
+
+    for (const comment of comments) {
+      if (!comment.userId) continue;
+
+      const normalized = comment.authorName.trim().toLowerCase();
+      if (normalized) {
+        map.set(normalized, comment.userId);
+        const firstName = normalized.split(/\s+/)[0];
+        if (firstName) {
+          map.set(firstName, comment.userId);
+        }
+      }
+    }
+
+    return map;
+  }, [comments]);
 
   async function submit() {
     const body = text.trim();
@@ -201,8 +222,17 @@ export function CommunityMaterialComments({
                     </span>
                   </div>
                   <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-6 text-slate-700">
-                    {comment.body}
+                    {renderCommentBodyWithMentions(comment.body, mentionLinks)}
                   </p>
+                  {comment.userId ? (
+                    <div className="mt-1">
+                      <CommunityReportButton
+                        targetType="comment"
+                        targetId={comment.id}
+                        compact
+                      />
+                    </div>
+                  ) : null}
                 </div>
               </article>
             </li>
@@ -219,7 +249,7 @@ export function CommunityMaterialComments({
             onChange={(event) => setText(event.target.value)}
             rows={2}
             maxLength={2000}
-            placeholder="Sugestão de uso, adaptação para outra série, elogio…"
+            placeholder="Sugestão de uso, @nome do colega, adaptação para outra série…"
             className="resize-none rounded-xl border border-cyan-400/20 bg-white px-3 py-2 text-sm font-medium text-slate-900 outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
           />
         </label>

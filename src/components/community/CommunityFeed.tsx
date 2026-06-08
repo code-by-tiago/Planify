@@ -7,6 +7,7 @@ import type { MarketplaceDownloadFormat } from "@/lib/marketplace/marketplace-do
 
 type CommunityFeedProps = {
   items: CommunityFeedItem[];
+  featuredItems?: CommunityFeedItem[];
   loading?: boolean;
   downloadingKey: string | null;
   onDownload: (item: CommunityFeedItem, format: MarketplaceDownloadFormat) => void;
@@ -14,10 +15,13 @@ type CommunityFeedProps = {
   mineOnly?: boolean;
   currentUserId?: string | null;
   onPublishClick?: () => void;
+  onTagClick?: (tag: string) => void;
+  onTemaClick?: (tema: string) => void;
 };
 
 export function CommunityFeed({
   items,
+  featuredItems = [],
   loading,
   downloadingKey,
   onDownload,
@@ -25,6 +29,8 @@ export function CommunityFeed({
   mineOnly,
   currentUserId,
   onPublishClick,
+  onTagClick,
+  onTemaClick,
 }: CommunityFeedProps) {
   if (loading && items.length === 0) {
     return (
@@ -60,9 +66,32 @@ export function CommunityFeed({
     );
   }
 
+  const featuredIds = new Set(featuredItems.map((item) => item.id));
+  const feedItems = items.filter((item) => !featuredIds.has(item.id));
+
   return (
     <div className="mx-auto grid max-w-2xl gap-5">
-      {items.map((item) => (
+      {featuredItems.length > 0 ? (
+        <section className="space-y-3">
+          <h2 className="text-sm font-black uppercase tracking-[0.18em] text-amber-700">
+            Em destaque esta semana
+          </h2>
+          {featuredItems.map((item) => (
+            <CommunityPostCard
+              key={`featured-${item.id}`}
+              item={item}
+              downloadingKey={downloadingKey}
+              onDownload={onDownload}
+              onRemove={onRemove}
+              showRemove={Boolean(mineOnly && currentUserId && item.userId === currentUserId)}
+              onTagClick={onTagClick}
+              onTemaClick={onTemaClick}
+            />
+          ))}
+        </section>
+      ) : null}
+
+      {feedItems.map((item) => (
         <CommunityPostCard
           key={item.id}
           item={item}
@@ -70,6 +99,8 @@ export function CommunityFeed({
           onDownload={onDownload}
           onRemove={onRemove}
           showRemove={Boolean(mineOnly && currentUserId && item.userId === currentUserId)}
+          onTagClick={onTagClick}
+          onTemaClick={onTemaClick}
         />
       ))}
     </div>

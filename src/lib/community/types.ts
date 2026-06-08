@@ -42,6 +42,41 @@ export type CommunityMaterialComment = {
   createdAt: string;
 };
 
+export type CommunityNotificationType =
+  | "comment"
+  | "like"
+  | "friend_request"
+  | "friend_accepted"
+  | "message";
+
+export type CommunityNotification = {
+  id: string;
+  type: CommunityNotificationType;
+  actorUserId: string;
+  actorName: string;
+  actorAvatarUrl: string | null;
+  materialId: string | null;
+  conversationId: string | null;
+  friendshipId: string | null;
+  bodyPreview: string;
+  readAt: string | null;
+  createdAt: string;
+};
+
+export type CommunityProfileSearchResult = {
+  userId: string;
+  displayName: string;
+  avatarUrl: string | null;
+  schoolName: string | null;
+  bio: string | null;
+  topComponente: string | null;
+  materialsCount: number;
+};
+
+export type CommunityPendingFriend = CommunityFriendSummary & {
+  direction: "incoming" | "outgoing";
+};
+
 export type CommunityFeedItem = {
   id: string;
   userId: string;
@@ -63,6 +98,7 @@ export type CommunityFeedItem = {
   downloadsCount: number;
   likesCount: number;
   likedByMe: boolean;
+  savedByMe?: boolean;
   commentsCount: number;
   comments: CommunityMaterialComment[];
   signedUrl: string | null;

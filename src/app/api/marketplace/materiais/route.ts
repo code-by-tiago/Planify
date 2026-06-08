@@ -9,8 +9,11 @@ import { resolveMarketplaceStoredMime } from "../../../../server/marketplace/mar
 import {
   getMaterialCommentsBatch,
   getMaterialLikesSummary,
+  getTopLikedMaterialIdsLast7Days,
   resolveCommunityAuthors,
 } from "../../../../server/community/marketplace-social-service";
+import { listAcceptedFriendUserIds } from "../../../../server/community/community-friends-service";
+import { getSavedMaterialIds } from "../../../../server/community/community-saved-materials-service";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -276,10 +279,13 @@ async function enrichMarketplaceItems(
   const userIds = items.map((item) => item.userId).filter(Boolean);
   const materialIds = items.map((item) => item.id);
 
-  const [authors, likes, comments] = await Promise.all([
+  const [authors, likes, comments, savedIds] = await Promise.all([
     resolveCommunityAuthors(userIds),
     getMaterialLikesSummary({ materialIds, viewerUserId }),
     getMaterialCommentsBatch(materialIds),
+    viewerUserId
+      ? getSavedMaterialIds({ userId: viewerUserId, materialIds })
+      : Promise.resolve(new Set<string>()),
   ]);
 
   return items.map((item) => {
@@ -295,6 +301,7 @@ async function enrichMarketplaceItems(
       likedByMe: like.likedByMe,
       commentsCount: itemComments.length,
       comments: itemComments,
+      savedByMe: savedIds.has(item.id),
     };
   });
 }
@@ -314,18 +321,42 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const mine = request.nextUrl.searchParams.get("mine") === "true";
+  const params = request.nextUrl.searchParams;
+  const mine = params.get("mine") === "true";
+  const savedOnly = params.get("saved") === "true";
+  const featuredWeek = params.get("featured") === "week";
+  const friendsOnly = params.get("friendsOnly") === "true";
+  const componenteFilter = String(params.get("componente") || "").trim();
+  const etapaFilter = String(params.get("etapa") || "").trim();
+  const tipoFilter = String(params.get("tipoMaterial") || "").trim();
+  const tagFilter = String(params.get("tag") || "").trim().toLowerCase();
+  const temaFilter = String(params.get("tema") || "").trim().toLowerCase();
+
   const supabase = getSupabaseAdminClient();
   const table = supabase.from("marketplace_materials") as any;
 
-  let query = table
-    .select("*")
-    .order("created_at", { ascending: false });
+  let query = table.select("*").order("created_at", { ascending: false });
 
   if (mine) {
     query = query.eq("user_id", access.userId);
   } else {
     query = query.eq("is_published", true);
+  }
+
+  if (componenteFilter && componenteFilter !== "Todos") {
+    query = query.eq("componente", componenteFilter);
+  }
+
+  if (etapaFilter && etapaFilter !== "Todas") {
+    query = query.eq("etapa", etapaFilter);
+  }
+
+  if (tipoFilter && tipoFilter !== "Todos") {
+    query = query.eq("tipo_material", tipoFilter);
+  }
+
+  if (temaFilter) {
+    query = query.ilike("tema", `%${temaFilter}%`);
   }
 
   const { data, error } = await query;
@@ -338,14 +369,47 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const baseItems = await Promise.all(
-    ((data || []) as MarketplaceRow[]).map((row) => withSignedUrl(row)),
-  );
+  let rows = (data || []) as MarketplaceRow[];
+
+  if (friendsOnly && access.userId) {
+    const friendIds = await listAcceptedFriendUserIds(access.userId);
+    const allowed = new Set([...friendIds, access.userId]);
+    rows = rows.filter((row) => row.user_id && allowed.has(row.user_id));
+  }
+
+  if (tagFilter) {
+    rows = rows.filter((row) =>
+      (row.tags || []).some((tag) => String(tag).toLowerCase().includes(tagFilter)),
+    );
+  }
+
+  if (savedOnly && access.userId) {
+    const savedIds = await getSavedMaterialIds({ userId: access.userId });
+    rows = rows.filter((row) => savedIds.has(row.id));
+  }
+
+  const baseItems = await Promise.all(rows.map((row) => withSignedUrl(row)));
   const items = await enrichMarketplaceItems(baseItems, access.userId || null);
+
+  let featured: typeof items = [];
+
+  if (featuredWeek) {
+    const topIds = await getTopLikedMaterialIdsLast7Days(5);
+    if (topIds.length) {
+      const featuredRows = rows.filter((row) => topIds.includes(row.id));
+      const orderMap = new Map(topIds.map((id, index) => [id, index]));
+      featuredRows.sort(
+        (a, b) => (orderMap.get(a.id) ?? 99) - (orderMap.get(b.id) ?? 99),
+      );
+      const featuredBase = await Promise.all(featuredRows.map((row) => withSignedUrl(row)));
+      featured = await enrichMarketplaceItems(featuredBase, access.userId || null);
+    }
+  }
 
   return NextResponse.json({
     success: true,
     items,
+    featured,
     access,
   });
 }

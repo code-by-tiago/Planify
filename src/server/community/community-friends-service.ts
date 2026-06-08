@@ -127,6 +127,101 @@ export async function getCommunityFriendshipCounts(
   }
 }
 
+export type CommunityPendingFriendSummary = CommunityFriendSummary & {
+  direction: "incoming" | "outgoing";
+};
+
+async function mapFriendshipRows(
+  userId: string,
+  rows: FriendshipRow[],
+): Promise<CommunityFriendSummary[]> {
+  if (!rows.length) {
+    return [];
+  }
+
+  const friendIds = rows.map((row) =>
+    row.requester_id === userId ? row.addressee_id : row.requester_id,
+  );
+  const authors = await resolveCommunityAuthors(friendIds);
+
+  return rows.map((row) => {
+    const friendId = row.requester_id === userId ? row.addressee_id : row.requester_id;
+    const author = authors.get(friendId);
+
+    return {
+      userId: friendId,
+      displayName: author?.displayName || "Professor",
+      avatarUrl: author?.avatarUrl || null,
+      friendshipId: row.id,
+      since: row.updated_at,
+    };
+  });
+}
+
+export async function listPendingIncomingFriends(
+  userId: string,
+): Promise<CommunityPendingFriendSummary[]> {
+  const supabase = getSupabaseAdminClient();
+  const { data, error } = await supabase
+    .from("community_friendships")
+    .select("id,requester_id,addressee_id,updated_at")
+    .eq("status", "pending")
+    .eq("addressee_id", userId)
+    .order("updated_at", { ascending: false });
+
+  if (error || !data?.length) {
+    return [];
+  }
+
+  const rows = data as FriendshipRow[];
+  const requesterIds = rows.map((row) => row.requester_id);
+  const authors = await resolveCommunityAuthors(requesterIds);
+
+  return rows.map((row) => {
+    const author = authors.get(row.requester_id);
+    return {
+      userId: row.requester_id,
+      displayName: author?.displayName || "Professor",
+      avatarUrl: author?.avatarUrl || null,
+      friendshipId: row.id,
+      since: row.updated_at,
+      direction: "incoming" as const,
+    };
+  });
+}
+
+export async function listPendingOutgoingFriends(
+  userId: string,
+): Promise<CommunityPendingFriendSummary[]> {
+  const supabase = getSupabaseAdminClient();
+  const { data, error } = await supabase
+    .from("community_friendships")
+    .select("id,requester_id,addressee_id,updated_at")
+    .eq("status", "pending")
+    .eq("requester_id", userId)
+    .order("updated_at", { ascending: false });
+
+  if (error || !data?.length) {
+    return [];
+  }
+
+  const rows = data as FriendshipRow[];
+  const addresseeIds = rows.map((row) => row.addressee_id);
+  const authors = await resolveCommunityAuthors(addresseeIds);
+
+  return rows.map((row) => {
+    const author = authors.get(row.addressee_id);
+    return {
+      userId: row.addressee_id,
+      displayName: author?.displayName || "Professor",
+      avatarUrl: author?.avatarUrl || null,
+      friendshipId: row.id,
+      since: row.updated_at,
+      direction: "outgoing" as const,
+    };
+  });
+}
+
 export async function listCommunityFriends(userId: string): Promise<CommunityFriendSummary[]> {
   const supabase = getSupabaseAdminClient();
   const { data, error } = await supabase
@@ -140,23 +235,12 @@ export async function listCommunityFriends(userId: string): Promise<CommunityFri
     return [];
   }
 
-  const friendIds = (data as FriendshipRow[]).map((row) =>
-    row.requester_id === userId ? row.addressee_id : row.requester_id,
-  );
-  const authors = await resolveCommunityAuthors(friendIds);
+  return mapFriendshipRows(userId, data as FriendshipRow[]);
+}
 
-  return (data as FriendshipRow[]).map((row) => {
-    const friendId = row.requester_id === userId ? row.addressee_id : row.requester_id;
-    const author = authors.get(friendId);
-
-    return {
-      userId: friendId,
-      displayName: author?.displayName || "Professor",
-      avatarUrl: author?.avatarUrl || null,
-      friendshipId: row.id,
-      since: row.updated_at,
-    };
-  });
+export async function listAcceptedFriendUserIds(userId: string): Promise<string[]> {
+  const friends = await listCommunityFriends(userId);
+  return friends.map((friend) => friend.userId);
 }
 
 export async function sendFriendRequest(params: {

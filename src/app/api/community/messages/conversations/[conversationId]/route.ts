@@ -5,6 +5,8 @@ import {
   markConversationRead,
   sendCommunityMessage,
 } from "../../../../../../server/community/community-messages-service";
+import { createCommunityNotification } from "../../../../../../server/community/community-notifications-service";
+import { getSupabaseAdminClient } from "../../../../../../server/supabase/admin-client";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -81,6 +83,29 @@ export async function POST(
       senderId: userId,
       body: messageBody,
     });
+
+    const supabase = getSupabaseAdminClient();
+    const { data: conversation } = await supabase
+      .from("community_conversations")
+      .select("user_a_id,user_b_id")
+      .eq("id", conversationId)
+      .maybeSingle();
+
+    if (conversation) {
+      const recipientId =
+        conversation.user_a_id === userId
+          ? String(conversation.user_b_id)
+          : String(conversation.user_a_id);
+
+      void createCommunityNotification({
+        userId: recipientId,
+        type: "message",
+        actorUserId: userId,
+        conversationId,
+        bodyPreview: messageBody.trim().slice(0, 200),
+      });
+    }
+
     return NextResponse.json({ ok: true, message });
   } catch (error) {
     return jsonError(

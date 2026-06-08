@@ -6,6 +6,8 @@ import type {
   CommunityConversationSummary,
   CommunityMessage,
 } from "@/lib/community/types";
+import { getCurrentAccessToken } from "@/lib/auth/session-client";
+import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 import { parseJsonResponse } from "@/lib/http/parse-json-response";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -220,6 +222,101 @@ export function CommunityMessagesPanel({
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loadingThread]);
+
+  useEffect(() => {
+    if (!open || !activeConversationId) {
+      return;
+    }
+
+    let cancelled = false;
+    let pollTimer: number | null = null;
+    let channel: ReturnType<ReturnType<typeof getSupabaseBrowserClient>["channel"]> | null = null;
+
+    async function setupRealtime() {
+      try {
+        const supabase = getSupabaseBrowserClient();
+        const token = await getCurrentAccessToken();
+
+        if (!token) {
+          throw new Error("no_session");
+        }
+
+        channel = supabase
+          .channel(`community-messages-${activeConversationId}`)
+          .on(
+            "postgres_changes",
+            {
+              event: "INSERT",
+              schema: "public",
+              table: "community_messages",
+              filter: `conversation_id=eq.${activeConversationId}`,
+            },
+            (payload) => {
+              const row = payload.new as {
+                id: string;
+                conversation_id: string;
+                sender_id: string;
+                body: string;
+                read_at: string | null;
+                created_at: string;
+              };
+
+              if (!row?.id || cancelled) return;
+
+              setMessages((current) => {
+                if (current.some((message) => message.id === row.id)) {
+                  return current;
+                }
+
+                return [
+                  ...current,
+                  {
+                    id: row.id,
+                    conversationId: row.conversation_id,
+                    senderId: row.sender_id,
+                    body: row.body,
+                    readAt: row.read_at,
+                    createdAt: row.created_at,
+                  },
+                ];
+              });
+
+              void refreshUnread();
+              void loadConversations();
+            },
+          )
+          .subscribe();
+      } catch {
+        pollTimer = window.setInterval(() => {
+          void openThread(
+            activeConversationId!,
+            activeOtherUserId || "",
+            activeOtherUserName,
+          );
+        }, 8000);
+      }
+    }
+
+    void setupRealtime();
+
+    return () => {
+      cancelled = true;
+      if (pollTimer) {
+        window.clearInterval(pollTimer);
+      }
+      if (channel) {
+        void getSupabaseBrowserClient().removeChannel(channel);
+      }
+    };
+  }, [
+    activeConversationId,
+    activeOtherUserId,
+    activeOtherUserName,
+    loadConversations,
+    open,
+    openThread,
+    refreshUnread,
+  ]);
 
   async function sendMessage(event: React.FormEvent) {
     event.preventDefault();

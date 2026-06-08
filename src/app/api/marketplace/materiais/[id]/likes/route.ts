@@ -6,6 +6,7 @@ import {
   likeMarketplaceMaterial,
   unlikeMarketplaceMaterial,
 } from "../../../../../../server/community/marketplace-social-service";
+import { createCommunityNotification } from "../../../../../../server/community/community-notifications-service";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -78,6 +79,26 @@ export async function POST(
 
   try {
     const summary = await likeMarketplaceMaterial({ materialId, userId });
+
+    const supabase = getSupabaseAdminClient();
+    const { data: material } = await supabase
+      .from("marketplace_materials")
+      .select("user_id,title")
+      .eq("id", materialId)
+      .maybeSingle();
+
+    const ownerUserId = material?.user_id ? String(material.user_id) : null;
+
+    if (ownerUserId) {
+      void createCommunityNotification({
+        userId: ownerUserId,
+        type: "like",
+        actorUserId: userId,
+        materialId,
+        bodyPreview: `Curtiu "${String(material?.title || "seu material").slice(0, 80)}"`,
+      });
+    }
+
     return NextResponse.json({ success: true, ...summary });
   } catch (error) {
     return jsonError(

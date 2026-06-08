@@ -1,8 +1,13 @@
 "use client";
 
 import { CommunityFeed } from "@/components/community/CommunityFeed";
+import { CommunityFriendsPanel } from "@/components/community/CommunityFriendsPanel";
 import { CommunityMessagesIcon } from "@/components/community/CommunityMessagesIcon";
+import { CommunityNotificationsIcon } from "@/components/community/CommunityNotificationsIcon";
+import { CommunityPolicyLink } from "@/components/community/CommunityPolicyModal";
 import { CommunityProfilePanel } from "@/components/community/CommunityProfilePanel";
+import { CommunityTeacherSearch } from "@/components/community/CommunityTeacherSearch";
+import type { CommunityFeedItem } from "@/lib/community/types";
 import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
 import { PlanifyPageHero } from "@/components/pro/PlanifyPageHero";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
@@ -12,39 +17,7 @@ import {
 } from "@/lib/marketplace/marketplace-download-client";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 
-type MarketplaceItem = {
-  id: string;
-  userId: string;
-  ownerEmail: string;
-  authorName: string;
-  authorAvatarUrl: string | null;
-  title: string;
-  description: string;
-  etapa: string;
-  anoSerie: string;
-  componente: string;
-  tipoMaterial: string;
-  tema: string;
-  tags: string[];
-  fileName: string;
-  fileMime: string;
-  fileSize: number;
-  isPublished: boolean;
-  downloadsCount: number;
-  likesCount: number;
-  likedByMe: boolean;
-  commentsCount: number;
-  comments: Array<{
-    id: string;
-    userId: string | null;
-    authorName: string;
-    authorAvatarUrl: string | null;
-    body: string;
-    createdAt: string;
-  }>;
-  signedUrl: string | null;
-  createdAt: string | null;
-};
+type MarketplaceItem = CommunityFeedItem;
 
 type FormState = {
   title: string;
@@ -149,6 +122,12 @@ export function MarketplaceClient() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [etapaFilter, setEtapaFilter] = useState("Todas");
+  const [componenteFilter, setComponenteFilter] = useState("Todos");
+  const [tipoFilter, setTipoFilter] = useState("Todos");
+  const [tagFilter, setTagFilter] = useState("");
+  const [friendsOnly, setFriendsOnly] = useState(false);
+  const [savedOnly, setSavedOnly] = useState(false);
+  const [featuredItems, setFeaturedItems] = useState<MarketplaceItem[]>([]);
   const [mineOnly, setMineOnly] = useState(false);
   const [status, setStatus] = useState("Carregando Comunidade...");
   const [error, setError] = useState("");
@@ -158,16 +137,30 @@ export function MarketplaceClient() {
 
   const availableYears = anoSerieOptions[form.etapa] || ["Geral"];
 
+  function buildFeedQuery(nextMineOnly = mineOnly) {
+    const params = new URLSearchParams();
+    if (nextMineOnly) params.set("mine", "true");
+    if (friendsOnly) params.set("friendsOnly", "true");
+    if (savedOnly) params.set("saved", "true");
+    if (componenteFilter !== "Todos") params.set("componente", componenteFilter);
+    if (etapaFilter !== "Todas") params.set("etapa", etapaFilter);
+    if (tipoFilter !== "Todos") params.set("tipoMaterial", tipoFilter);
+    if (tagFilter.trim()) params.set("tag", tagFilter.trim());
+    params.set("featured", "week");
+    const queryString = params.toString();
+    return queryString ? `?${queryString}` : "";
+  }
+
   async function loadItems(nextMineOnly = mineOnly) {
     setLoading(true);
     setError("");
     setStatus("Carregando materiais compartilhados...");
 
     try {
-      const response = await fetch(
-        `/api/marketplace/materiais${nextMineOnly ? "?mine=true" : ""}`,
-        { cache: "no-store", credentials: "include" },
-      );
+      const response = await fetch(`/api/marketplace/materiais${buildFeedQuery(nextMineOnly)}`, {
+        cache: "no-store",
+        credentials: "include",
+      });
       const data = await response.json();
 
       if (!response.ok) {
@@ -175,7 +168,9 @@ export function MarketplaceClient() {
       }
 
       const remoteItems = Array.isArray(data.items) ? data.items : [];
+      const remoteFeatured = Array.isArray(data.featured) ? data.featured : [];
       setItems(remoteItems);
+      setFeaturedItems(nextMineOnly || savedOnly ? [] : remoteFeatured);
       setCurrentUserId(String(data.access?.userId || "") || null);
       setStatus(
         nextMineOnly
@@ -184,6 +179,7 @@ export function MarketplaceClient() {
       );
     } catch (err) {
       setItems([]);
+      setFeaturedItems([]);
       setError(err instanceof Error ? err.message : "Erro ao carregar Comunidade.");
       setStatus("Comunidade indisponível no momento.");
     } finally {
@@ -192,9 +188,9 @@ export function MarketplaceClient() {
   }
 
   useEffect(() => {
-    loadItems(false);
+    loadItems(mineOnly);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [componenteFilter, etapaFilter, tipoFilter, tagFilter, friendsOnly, savedOnly, mineOnly]);
 
   const filteredItems = useMemo(() => {
     const search = normalize(query);
@@ -204,10 +200,30 @@ export function MarketplaceClient() {
         normalize(
           `${item.title} ${item.description} ${item.etapa} ${item.anoSerie} ${item.componente} ${item.tipoMaterial} ${item.tema} ${item.authorName} ${item.tags.join(" ")}`,
         ).includes(search);
-      const matchEtapa = etapaFilter === "Todas" || item.etapa === etapaFilter;
-      return matchSearch && matchEtapa;
+      return matchSearch;
     });
-  }, [items, query, etapaFilter]);
+  }, [items, query]);
+
+  const filteredFeatured = useMemo(() => {
+    const search = normalize(query);
+    if (!search) return featuredItems;
+    return featuredItems.filter((item) =>
+      normalize(
+        `${item.title} ${item.description} ${item.etapa} ${item.componente} ${item.tema} ${item.authorName}`,
+      ).includes(search),
+    );
+  }, [featuredItems, query]);
+
+  function applyTagFilter(tag: string) {
+    setTagFilter(tag);
+    setSavedOnly(false);
+    setMineOnly(false);
+  }
+
+  function applyTemaFilter(tema: string) {
+    setQuery(tema);
+    setTagFilter("");
+  }
 
   function updateForm<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((current) => {
@@ -342,8 +358,11 @@ export function MarketplaceClient() {
 
   function toggleMineOnly() {
     const next = !mineOnly;
+    if (next) {
+      setFriendsOnly(false);
+      setSavedOnly(false);
+    }
     setMineOnly(next);
-    loadItems(next);
   }
 
   return (
@@ -356,7 +375,9 @@ export function MarketplaceClient() {
           description="Baixe DOCX ou PDF com um clique — publique o que você cria e reutilize modelos alinhados à BNCC."
           action={
             <div className="flex flex-wrap items-center gap-2">
+              <CommunityNotificationsIcon />
               <CommunityMessagesIcon />
+              <CommunityTeacherSearch />
               <button
                 type="button"
                 onClick={() => setPublishOpen((open) => !open)}
@@ -371,6 +392,7 @@ export function MarketplaceClient() {
     >
       <div className="planify-hud pl-hud-hub mx-auto max-w-6xl space-y-5 px-4 py-5 sm:px-6">
         <CommunityProfilePanel />
+        <CommunityFriendsPanel />
 
         {publishOpen ? (
           <section className="pl-hud-glass rounded-2xl p-5 sm:p-6">
@@ -515,7 +537,7 @@ export function MarketplaceClient() {
         ) : null}
 
         <section className="pl-hud-glass rounded-2xl p-4 sm:p-5">
-          <div className="grid gap-3 md:grid-cols-[1fr_auto_auto_auto] md:items-end">
+          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             <label className="grid gap-1.5">
               <span className="text-xs font-semibold text-slate-600">Buscar</span>
               <div className="relative">
@@ -546,26 +568,86 @@ export function MarketplaceClient() {
                 ))}
               </select>
             </label>
+            <label className="grid gap-1.5">
+              <span className="text-xs font-semibold text-slate-600">Componente</span>
+              <select
+                value={componenteFilter}
+                onChange={(event) => setComponenteFilter(event.target.value)}
+                className={hudInput}
+              >
+                <option value="Todos">Todos</option>
+                {componenteOptions.map((item) => (
+                  <option key={item} value={item}>
+                    {item}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="grid gap-1.5">
+              <span className="text-xs font-semibold text-slate-600">Tipo</span>
+              <select
+                value={tipoFilter}
+                onChange={(event) => setTipoFilter(event.target.value)}
+                className={hudInput}
+              >
+                <option value="Todos">Todos</option>
+                {tipoMaterialOptions.map((item) => (
+                  <option key={item} value={item}>
+                    {item}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          <div className="mt-3 flex flex-wrap gap-2">
             <button
               type="button"
               onClick={toggleMineOnly}
-              className="pl-hud-btn-secondary h-11 rounded-xl px-4 text-xs font-semibold"
+              className={`pl-hud-btn-secondary rounded-xl px-4 py-2 text-xs font-semibold ${mineOnly ? "ring-2 ring-cyan-400" : ""}`}
             >
               {mineOnly ? "Ver todos" : "Meus materiais"}
             </button>
             <button
               type="button"
+              onClick={() => {
+                setFriendsOnly((value) => !value);
+                setMineOnly(false);
+                setSavedOnly(false);
+              }}
+              className={`pl-hud-btn-secondary rounded-xl px-4 py-2 text-xs font-semibold ${friendsOnly ? "ring-2 ring-cyan-400" : ""}`}
+            >
+              {friendsOnly ? "Todos os professores" : "Só amigos"}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setSavedOnly((value) => !value);
+                setMineOnly(false);
+                setFriendsOnly(false);
+              }}
+              className={`pl-hud-btn-secondary rounded-xl px-4 py-2 text-xs font-semibold ${savedOnly ? "ring-2 ring-cyan-400" : ""}`}
+            >
+              {savedOnly ? "Ver feed completo" : "Biblioteca salva"}
+            </button>
+            <button
+              type="button"
               onClick={() => loadItems(mineOnly)}
-              className="pl-hud-btn h-11 rounded-xl px-4 text-xs font-semibold"
+              className="pl-hud-btn rounded-xl px-4 py-2 text-xs font-semibold"
             >
               Atualizar
             </button>
           </div>
-          <p className="mt-3 text-xs font-medium text-slate-500">{status}</p>
+
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+            <p className="text-xs font-medium text-slate-500">{status}</p>
+            <CommunityPolicyLink />
+          </div>
         </section>
 
         <CommunityFeed
           items={filteredItems}
+          featuredItems={filteredFeatured}
           loading={loading}
           downloadingKey={downloadingKey}
           onDownload={handleDownload}
@@ -573,6 +655,8 @@ export function MarketplaceClient() {
           mineOnly={mineOnly}
           currentUserId={currentUserId}
           onPublishClick={() => setPublishOpen(true)}
+          onTagClick={applyTagFilter}
+          onTemaClick={applyTemaFilter}
         />
 
         {error && !publishOpen ? (

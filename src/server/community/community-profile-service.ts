@@ -3,6 +3,7 @@ import { getSupabaseAdminClient } from "../supabase/admin-client";
 import { resolveUserAvatarUrl } from "../auth/user-avatar";
 import { resolveUserDisplayName } from "../auth/user-display-name";
 import { getCommunityFriendshipCounts } from "./community-friends-service";
+import { getUserTopComponentes } from "./community-profile-search-service";
 
 export type CommunityProfileStats = {
   classesCount: number;
@@ -19,6 +20,7 @@ export type CommunityProfile = {
   bio: string | null;
   avatarUrl: string | null;
   communityPublic: boolean;
+  topComponentes: string[];
   stats: CommunityProfileStats;
 };
 
@@ -89,7 +91,8 @@ export async function getCommunityProfileForUser(params: {
     row = (profileResult.data || null) as ProfileRow | null;
   }
 
-  const [fullName, avatarUrl, materialsCount, classesCount, friendCounts] = await Promise.all([
+  const [fullName, avatarUrl, materialsCount, classesCount, friendCounts, topComponentes] =
+    await Promise.all([
     resolveUserDisplayName({
       userId: params.userId,
       userMetadata: params.userMetadata,
@@ -102,6 +105,7 @@ export async function getCommunityProfileForUser(params: {
     countUserMaterials(params.userId),
     countUserClasses(params.userId),
     getCommunityFriendshipCounts(params.userId),
+    getUserTopComponentes(params.userId),
   ]);
 
   return {
@@ -112,6 +116,7 @@ export async function getCommunityProfileForUser(params: {
     bio: row?.bio?.trim() || null,
     avatarUrl: row?.avatar_url || avatarUrl,
     communityPublic: row?.community_public !== false,
+    topComponentes,
     stats: {
       classesCount,
       materialsCount,
@@ -129,6 +134,7 @@ export type PublicCommunityProfile = {
   avatarUrl: string | null;
   communityPublic: boolean;
   isOwnProfile: boolean;
+  topComponentes: string[];
   stats: CommunityProfileStats;
   materials: Array<{
     id: string;
@@ -197,6 +203,7 @@ export async function getPublicCommunityProfile(params: {
       avatarUrl: null,
       communityPublic: false,
       isOwnProfile: false,
+      topComponentes: [],
       stats: {
         classesCount: 0,
         materialsCount: 0,
@@ -207,7 +214,7 @@ export async function getPublicCommunityProfile(params: {
     };
   }
 
-  const [fullName, avatarUrl, materialsCount, classesCount, friendCounts, materialsResult] =
+  const [fullName, avatarUrl, materialsCount, classesCount, friendCounts, topComponentes, materialsResult] =
     await Promise.all([
       resolveUserDisplayName({
         userId: params.targetUserId,
@@ -217,6 +224,7 @@ export async function getPublicCommunityProfile(params: {
       countUserMaterials(params.targetUserId),
       countUserClasses(params.targetUserId),
       getCommunityFriendshipCounts(params.targetUserId),
+      getUserTopComponentes(params.targetUserId),
       supabase
         .from("marketplace_materials")
         .select(
@@ -250,6 +258,7 @@ export async function getPublicCommunityProfile(params: {
     avatarUrl: row.avatar_url || avatarUrl,
     communityPublic,
     isOwnProfile,
+    topComponentes,
     stats: {
       classesCount,
       materialsCount,

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyPremiumAccess } from "../../../../../../server/auth/premium-access-service";
 import { resolveDisplayNameFromSources } from "../../../../../../server/auth/user-display-name";
 import { getMaterialCommentsBatch } from "../../../../../../server/community/marketplace-social-service";
+import { createCommunityNotification } from "../../../../../../server/community/community-notifications-service";
 import { getSupabaseAdminClient } from "../../../../../../server/supabase/admin-client";
 
 export const runtime = "nodejs";
@@ -90,7 +91,7 @@ export async function POST(
 
   const { data: material } = await supabase
     .from("marketplace_materials")
-    .select("id")
+    .select("id,user_id,title")
     .eq("id", materialId)
     .maybeSingle();
 
@@ -138,6 +139,18 @@ export async function POST(
 
   const enriched = await getMaterialCommentsBatch([materialId]);
   const saved = (enriched.get(materialId) || []).find((row) => row.id === String(data.id));
+
+  const ownerUserId = material?.user_id ? String(material.user_id) : null;
+
+  if (ownerUserId) {
+    void createCommunityNotification({
+      userId: ownerUserId,
+      type: "comment",
+      actorUserId: userId,
+      materialId,
+      bodyPreview: text.slice(0, 200),
+    });
+  }
 
   return NextResponse.json({
     success: true,

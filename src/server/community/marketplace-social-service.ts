@@ -243,6 +243,34 @@ export async function getMaterialCommentsBatch(
   return result;
 }
 
+export async function getTopLikedMaterialIdsLast7Days(limit = 5): Promise<string[]> {
+  const supabase = getSupabaseAdminClient();
+  const since = new Date();
+  since.setDate(since.getDate() - 7);
+
+  const { data, error } = await supabase
+    .from("marketplace_material_likes")
+    .select("material_id,created_at")
+    .gte("created_at", since.toISOString());
+
+  if (error || !data?.length) {
+    return [];
+  }
+
+  const counts = new Map<string, number>();
+
+  for (const row of data) {
+    const materialId = String(row.material_id || "");
+    if (!materialId) continue;
+    counts.set(materialId, (counts.get(materialId) || 0) + 1);
+  }
+
+  return [...counts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, limit)
+    .map(([materialId]) => materialId);
+}
+
 export async function unlikeMarketplaceMaterial(params: {
   materialId: string;
   userId: string;

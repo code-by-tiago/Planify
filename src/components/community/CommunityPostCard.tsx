@@ -2,7 +2,10 @@
 
 import { CommunityAuthorAvatar } from "@/components/community/CommunityAuthorAvatar";
 import { CommunityAuthorLink } from "@/components/community/CommunityAuthorLink";
+import { CommunityFeedInlinePreview } from "@/components/community/CommunityFeedInlinePreview";
+import { CommunityReportButton } from "@/components/community/CommunityReportButton";
 import { MaterialLikeButton } from "@/components/community/MaterialLikeButton";
+import { MaterialSaveButton } from "@/components/community/MaterialSaveButton";
 import { CommunityMaterialComments } from "@/components/community/CommunityMaterialComments";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import type { CommunityFeedItem } from "@/lib/community/types";
@@ -31,12 +34,21 @@ function formatDate(value: string | null) {
   }
 }
 
+function materialShareUrl(materialId: string): string {
+  if (typeof window !== "undefined") {
+    return `${window.location.origin}/marketplace/material/${materialId}`;
+  }
+  return `https://iaplanify.com.br/marketplace/material/${materialId}`;
+}
+
 type CommunityPostCardProps = {
   item: CommunityFeedItem;
   downloadingKey: string | null;
   onDownload: (item: CommunityFeedItem, format: MarketplaceDownloadFormat) => void;
   onRemove?: (item: CommunityFeedItem) => void;
   showRemove?: boolean;
+  onTagClick?: (tag: string) => void;
+  onTemaClick?: (tema: string) => void;
 };
 
 export function CommunityPostCard({
@@ -45,12 +57,24 @@ export function CommunityPostCard({
   onDownload,
   onRemove,
   showRemove,
+  onTagClick,
+  onTemaClick,
 }: CommunityPostCardProps) {
   const [likesCount, setLikesCount] = useState(item.likesCount);
   const [commentsCount, setCommentsCount] = useState(
     item.commentsCount ?? item.comments?.length ?? 0,
   );
   const [likedByMe, setLikedByMe] = useState(item.likedByMe);
+  const [savedByMe, setSavedByMe] = useState(item.savedByMe ?? false);
+  const [shareStatus, setShareStatus] = useState("");
+
+  function copyShareLink() {
+    const url = materialShareUrl(item.id);
+    void navigator.clipboard.writeText(url).then(() => {
+      setShareStatus("Link copiado!");
+      window.setTimeout(() => setShareStatus(""), 2000);
+    });
+  }
 
   return (
     <article className="overflow-hidden rounded-2xl border border-cyan-400/15 bg-white shadow-sm">
@@ -66,14 +90,50 @@ export function CommunityPostCard({
             {item.componente} · {item.etapa} · {formatDate(item.createdAt)}
           </p>
         </div>
-        <span className="rounded-full border border-cyan-400/20 bg-cyan-50 px-2.5 py-0.5 text-[10px] font-bold uppercase text-cyan-800">
-          {item.tipoMaterial}
-        </span>
+        <div className="flex shrink-0 items-center gap-2">
+          {commentsCount > 0 ? (
+            <a
+              href={`#comments-${item.id}`}
+              className="inline-flex items-center gap-1 rounded-full border border-cyan-400/25 bg-cyan-50 px-2 py-0.5 text-[10px] font-bold text-cyan-800"
+            >
+              <PlanifyIcon name="message" className="h-3 w-3" />
+              {commentsCount}
+            </a>
+          ) : null}
+          <span className="rounded-full border border-cyan-400/20 bg-cyan-50 px-2.5 py-0.5 text-[10px] font-bold uppercase text-cyan-800">
+            {item.tipoMaterial}
+          </span>
+        </div>
       </header>
 
       <div className="px-4 py-4">
         <h3 className="text-lg font-extrabold leading-snug text-slate-950">{item.title}</h3>
         <p className="mt-2 text-sm leading-6 text-slate-600">{item.description}</p>
+
+        {item.tema ? (
+          <button
+            type="button"
+            onClick={() => onTemaClick?.(item.tema)}
+            className="mt-2 inline-flex rounded-full border border-indigo-200 bg-indigo-50 px-2.5 py-0.5 text-[10px] font-bold text-indigo-800 transition hover:bg-indigo-100"
+          >
+            #{item.tema}
+          </button>
+        ) : null}
+
+        {item.tags?.length ? (
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {item.tags.map((tag) => (
+              <button
+                key={tag}
+                type="button"
+                onClick={() => onTagClick?.(tag)}
+                className="rounded-full border border-cyan-400/20 bg-white px-2 py-0.5 text-[10px] font-semibold text-cyan-800 transition hover:bg-cyan-50"
+              >
+                {tag}
+              </button>
+            ))}
+          </div>
+        ) : null}
 
         <div className="mt-3 flex flex-wrap gap-2 text-[11px] font-semibold text-slate-500">
           <span>{item.anoSerie}</span>
@@ -87,6 +147,8 @@ export function CommunityPostCard({
           ) : null}
         </div>
       </div>
+
+      <CommunityFeedInlinePreview materialId={item.id} title={item.title} />
 
       <div className="flex flex-wrap items-center gap-2 border-t border-cyan-400/10 px-4 py-3">
         <Link
@@ -106,6 +168,20 @@ export function CommunityPostCard({
           }}
           compact
         />
+        <MaterialSaveButton
+          materialId={item.id}
+          initialSaved={savedByMe}
+          onChange={setSavedByMe}
+        />
+        <button
+          type="button"
+          onClick={copyShareLink}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-cyan-400/20 bg-white/80 px-2.5 py-1.5 text-[11px] font-bold text-slate-700 transition hover:border-cyan-300 hover:bg-cyan-50/60"
+          title="Copiar link do material"
+        >
+          <PlanifyIcon name="externalLink" className="h-3.5 w-3.5 text-slate-400" />
+          {shareStatus || "Compartilhar"}
+        </button>
         <a
           href={`#comments-${item.id}`}
           className="inline-flex items-center gap-1.5 rounded-lg border border-cyan-400/20 bg-white/80 px-2.5 py-1.5 text-[11px] font-bold text-slate-700 transition hover:border-cyan-300 hover:bg-cyan-50/60 hover:text-cyan-800"
@@ -113,6 +189,7 @@ export function CommunityPostCard({
           <PlanifyIcon name="message" className="h-3.5 w-3.5 text-slate-400" />
           {commentsCount > 0 ? `${commentsCount} comentário(s)` : "Comentar"}
         </a>
+        <CommunityReportButton targetType="material" targetId={item.id} compact />
         <div className="ml-auto flex gap-2">
           <button
             type="button"

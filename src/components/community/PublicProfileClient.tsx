@@ -1,7 +1,9 @@
 "use client";
 
 import { CommunityAuthorAvatar } from "@/components/community/CommunityAuthorAvatar";
+import { CommunityBlockButton } from "@/components/community/CommunityBlockButton";
 import { CommunityFriendButton } from "@/components/community/CommunityFriendButton";
+import { CommunityReportButton } from "@/components/community/CommunityReportButton";
 import { CommunityMessagesIcon } from "@/components/community/CommunityMessagesIcon";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
@@ -24,6 +26,7 @@ type PublicProfile = {
     followersCount: number;
     followingCount: number;
   };
+  topComponentes?: string[];
   materials: Array<{
     id: string;
     title: string;
@@ -137,12 +140,17 @@ export function PublicProfileClient({ userId }: PublicProfileClientProps) {
                       </p>
                     ) : null}
                     {!profile.isOwnProfile && profile.communityPublic ? (
-                      <div className="mt-3 flex justify-center sm:justify-start">
+                      <div className="mt-3 flex flex-wrap justify-center gap-2 sm:justify-start">
                         <CommunityFriendButton
                           targetUserId={profile.userId}
                           isOwnProfile={profile.isOwnProfile}
                           onMessage={(targetId) => setMessageUserId(targetId)}
                         />
+                        <CommunityBlockButton
+                          targetUserId={profile.userId}
+                          isOwnProfile={profile.isOwnProfile}
+                        />
+                        <CommunityReportButton targetType="user" targetId={profile.userId} />
                       </div>
                     ) : null}
                   </div>
@@ -154,6 +162,20 @@ export function PublicProfileClient({ userId }: PublicProfileClientProps) {
                   </p>
                 ) : profile.bio ? (
                   <p className="mt-4 text-sm leading-7 text-slate-600">{profile.bio}</p>
+                ) : null}
+
+                {profile.topComponentes && profile.topComponentes.length > 0 ? (
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <span className="text-xs font-bold text-slate-500">Áreas de atuação:</span>
+                    {profile.topComponentes.map((componente) => (
+                      <span
+                        key={componente}
+                        className="rounded-full border border-cyan-400/25 bg-cyan-50 px-2.5 py-0.5 text-[11px] font-bold text-cyan-800"
+                      >
+                        {componente}
+                      </span>
+                    ))}
+                  </div>
                 ) : null}
 
                 <div className="mt-5 flex flex-wrap gap-4 border-t border-slate-100 pt-4 text-sm font-bold text-slate-700">

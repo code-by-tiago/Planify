@@ -181,10 +181,11 @@ export function PublicProfileClient({ userId }: PublicProfileClientProps) {
                           : ""}
                       </p>
                       <Link
-                        href="/dashboard?secao=marketplace"
-                        className="mt-3 inline-flex text-xs font-bold text-cyan-700 hover:underline"
+                        href={`/marketplace/material/${material.id}`}
+                        className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-cyan-700 hover:underline"
                       >
-                        Ver no feed da Comunidade
+                        <PlanifyIcon name="fileText" className="h-3.5 w-3.5" />
+                        Ver material
                       </Link>
                     </article>
                   ))

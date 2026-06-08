@@ -7,6 +7,7 @@ import { MarketplaceComments } from "@/components/marketplace/MarketplaceComment
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import type { CommunityFeedItem } from "@/lib/community/types";
 import type { MarketplaceDownloadFormat } from "@/lib/marketplace/marketplace-download-client";
+import Link from "next/link";
 import { useState } from "react";
 
 function formatBytes(value: number) {
@@ -84,6 +85,13 @@ export function CommunityPostCard({
       </div>
 
       <div className="flex flex-wrap items-center gap-2 border-t border-cyan-400/10 px-4 py-3">
+        <Link
+          href={`/marketplace/material/${item.id}`}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-cyan-500/30 bg-cyan-600 px-3 py-1.5 text-[11px] font-bold text-white shadow-sm transition hover:bg-cyan-700"
+        >
+          <PlanifyIcon name="fileText" className="h-3.5 w-3.5" />
+          Ver material
+        </Link>
         <MaterialLikeButton
           materialId={item.id}
           initialCount={likesCount}

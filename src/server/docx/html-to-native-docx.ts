@@ -67,12 +67,90 @@ function bullet(value: Primitive) {
   </w:p>`;
 }
 
+/** Largura útil A4 com margens de 2,54 cm (1440 dxa cada lado). */
+const PAGE_CONTENT_WIDTH_DXA = 9026;
+
+function parseColSpan(cell: Element): number {
+  const raw = Number.parseInt(cell.getAttribute("colspan") || "1", 10);
+  return Number.isFinite(raw) && raw > 0 ? raw : 1;
+}
+
+function resolveTableGridColumnCount(rows: Element[]): number {
+  let maxColumns = 1;
+
+  for (const row of rows) {
+    const cells = Array.from(row.querySelectorAll("th,td"));
+    const spanTotal = cells.reduce((sum, cell) => sum + parseColSpan(cell), 0);
+    maxColumns = Math.max(maxColumns, spanTotal);
+  }
+
+  return maxColumns;
+}
+
+function resolveColumnWidths(
+  columnCount: number,
+  table: Element,
+): number[] {
+  if (columnCount <= 1) {
+    return [PAGE_CONTENT_WIDTH_DXA];
+  }
+
+  const isLabelValueTable =
+    columnCount === 2 &&
+    (table.classList.contains("header") ||
+      table.querySelector("tr td:first-child strong, tr th:first-child"));
+
+  if (isLabelValueTable) {
+    const labelWidth = Math.floor(PAGE_CONTENT_WIDTH_DXA * 0.24);
+    return [labelWidth, PAGE_CONTENT_WIDTH_DXA - labelWidth];
+  }
+
+  const equalWidth = Math.floor(PAGE_CONTENT_WIDTH_DXA / columnCount);
+  const widths = Array.from({ length: columnCount }, () => equalWidth);
+  const distributed = widths.reduce((sum, width) => sum + width, 0);
+  widths[widths.length - 1] += PAGE_CONTENT_WIDTH_DXA - distributed;
+
+  return widths;
+}
+
+function cellParagraphs(cell: Element): string {
+  const html = cell.innerHTML || "";
+  const chunks = html
+    .split(/<br\s*\/?>/gi)
+    .map((chunk) =>
+      cleanText(
+        chunk
+          .replace(/<[^>]+>/g, " ")
+          .replace(/\s+/g, " ")
+          .trim(),
+      ),
+    )
+    .filter(Boolean);
+
+  if (chunks.length === 0) {
+    return "<w:p/>";
+  }
+
+  return chunks
+    .map(
+      (text) =>
+        `<w:p><w:r><w:t xml:space="preserve">${escapeXml(text)}</w:t></w:r></w:p>`,
+    )
+    .join("");
+}
+
 function tableXml(table: Element): string {
   const rows = Array.from(table.querySelectorAll("tr"));
 
   if (rows.length === 0) {
     return "";
   }
+
+  const columnCount = resolveTableGridColumnCount(rows);
+  const columnWidths = resolveColumnWidths(columnCount, table);
+  const gridXml = columnWidths
+    .map((width) => `<w:gridCol w:w="${width}"/>`)
+    .join("");
 
   const rowXml = rows
     .map((row) => {
@@ -82,17 +160,31 @@ function tableXml(table: Element): string {
         return "";
       }
 
+      let columnIndex = 0;
       const cellsXml = cells
         .map((cell) => {
           const isHeader = cell.tagName.toUpperCase() === "TH";
-          const text = cleanText(cell.textContent || "");
-          const shade = isHeader
-            ? `<w:shd w:val="clear" w:color="auto" w:fill="E2E8F0"/>`
-            : "";
+          const colspan = parseColSpan(cell);
+          const cellWidth = columnWidths
+            .slice(columnIndex, columnIndex + colspan)
+            .reduce((sum, width) => sum + width, 0);
+          columnIndex += colspan;
+          const isTrimTitle = cell.classList.contains("trim-title");
+          const shade = isTrimTitle
+            ? `<w:shd w:val="clear" w:color="auto" w:fill="0F766E"/>`
+            : isHeader
+              ? `<w:shd w:val="clear" w:color="auto" w:fill="E2E8F0"/>`
+              : "";
+          const spanXml =
+            colspan > 1 ? `<w:gridSpan w:val="${colspan}"/>` : "";
 
           return `<w:tc>
-            <w:tcPr><w:tcW w:w="2400" w:type="dxa"/>${shade}</w:tcPr>
-            <w:p><w:r><w:t xml:space="preserve">${escapeXml(text)}</w:t></w:r></w:p>
+            <w:tcPr>
+              <w:tcW w:w="${cellWidth}" w:type="dxa"/>
+              ${spanXml}
+              ${shade}
+            </w:tcPr>
+            ${cellParagraphs(cell)}
           </w:tc>`;
         })
         .join("");
@@ -101,9 +193,38 @@ function tableXml(table: Element): string {
     })
     .join("");
 
+  // #region agent log
+  try {
+    const fs = require("node:fs") as typeof import("node:fs");
+    const path = require("node:path") as typeof import("node:path");
+    const logPath = path.join(process.cwd(), "debug-f33ae7.log");
+    fs.appendFileSync(
+      logPath,
+      `${JSON.stringify({
+        sessionId: "f33ae7",
+        runId: "table-fix",
+        hypothesisId: "H-TABLE",
+        location: "html-to-native-docx.ts:tableXml",
+        message: "table width resolved",
+        data: {
+          columnCount,
+          columnWidths,
+          tableClass: table.className || "",
+          totalWidth: columnWidths.reduce((sum, width) => sum + width, 0),
+          rowCount: rows.length,
+        },
+        timestamp: Date.now(),
+      })}\n`,
+    );
+  } catch {
+    // ignore debug log failures
+  }
+  // #endregion
+
   return `<w:tbl>
     <w:tblPr>
-      <w:tblW w:w="9000" w:type="dxa"/>
+      <w:tblW w:w="${PAGE_CONTENT_WIDTH_DXA}" w:type="dxa"/>
+      <w:tblLayout w:val="fixed"/>
       <w:tblBorders>
         <w:top w:val="single" w:sz="4" w:space="0" w:color="CBD5E1"/>
         <w:left w:val="single" w:sz="4" w:space="0" w:color="CBD5E1"/>
@@ -113,6 +234,7 @@ function tableXml(table: Element): string {
         <w:insideV w:val="single" w:sz="4" w:space="0" w:color="CBD5E1"/>
       </w:tblBorders>
     </w:tblPr>
+    <w:tblGrid>${gridXml}</w:tblGrid>
     ${rowXml}
   </w:tbl>`;
 }

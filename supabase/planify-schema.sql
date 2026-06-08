@@ -87,6 +87,8 @@ create table if not exists public.profiles (
   is_admin boolean not null default false,
   is_owner boolean not null default false,
   school_name text,
+  bio text,
+  community_public boolean not null default true,
   phone text,
   stripe_customer_id text unique,
   last_login_at timestamptz,

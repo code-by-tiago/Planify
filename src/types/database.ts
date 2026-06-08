@@ -27,6 +27,8 @@ export type Database = {
           is_admin: boolean;
           is_owner: boolean;
           school_name: string | null;
+          bio: string | null;
+          community_public: boolean;
           phone: string | null;
           stripe_customer_id: string | null;
           plan: string | null;
@@ -44,6 +46,8 @@ export type Database = {
           is_admin?: boolean;
           is_owner?: boolean;
           school_name?: string | null;
+          bio?: string | null;
+          community_public?: boolean;
           phone?: string | null;
           stripe_customer_id?: string | null;
           plan?: string | null;
@@ -61,6 +65,8 @@ export type Database = {
           is_admin?: boolean;
           is_owner?: boolean;
           school_name?: string | null;
+          bio?: string | null;
+          community_public?: boolean;
           phone?: string | null;
           stripe_customer_id?: string | null;
           plan?: string | null;

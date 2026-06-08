@@ -1,5 +1,6 @@
 "use client";
 
+import { CommunityProfilePanel } from "@/components/community/CommunityProfilePanel";
 import { MarketplaceComments } from "@/components/marketplace/MarketplaceComments";
 import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
 import { PlanifyPageHero } from "@/components/pro/PlanifyPageHero";
@@ -426,6 +427,8 @@ export function MarketplaceClient() {
       }
     >
       <div className="planify-hud pl-hud-hub mx-auto max-w-6xl space-y-5 px-4 py-5 sm:px-6">
+        <CommunityProfilePanel />
+
         {publishOpen ? (
           <section className="pl-hud-glass rounded-2xl p-5 sm:p-6">
             <h2 className="text-lg font-extrabold text-slate-950">

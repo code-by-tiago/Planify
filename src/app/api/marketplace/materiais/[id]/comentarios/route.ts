@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyPremiumAccess } from "../../../../../../server/auth/premium-access-service";
-import { resolveUserDisplayName } from "../../../../../../server/auth/user-display-name";
+import { resolveDisplayNameFromSources } from "../../../../../../server/auth/user-display-name";
+import { getMaterialCommentsBatch } from "../../../../../../server/community/marketplace-social-service";
 import { getSupabaseAdminClient } from "../../../../../../server/supabase/admin-client";
 
 export const runtime = "nodejs";
@@ -41,20 +42,21 @@ export async function GET(
     return jsonError("Material não informado.", 400);
   }
 
-  const supabase = getSupabaseAdminClient();
-  const { data, error } = await commentsTable(supabase)
-    .select("*")
-    .eq("material_id", materialId)
-    .order("created_at", { ascending: true });
+  const commentsMap = await getMaterialCommentsBatch([materialId]);
+  const comments = commentsMap.get(materialId) || [];
 
-  if (error) {
-    return jsonError(
-      `Não foi possível carregar comentários. Execute supabase/migrations/20260605_marketplace_comments.sql. Detalhe: ${error.message}`,
-      500,
-    );
-  }
-
-  return NextResponse.json({ success: true, comments: (data || []) as CommentRow[] });
+  return NextResponse.json({
+    success: true,
+    comments: comments.map((comment) => ({
+      id: comment.id,
+      material_id: materialId,
+      user_id: comment.userId,
+      author_name: comment.authorName,
+      author_avatar_url: comment.authorAvatarUrl,
+      body: comment.body,
+      created_at: comment.createdAt,
+    })),
+  });
 }
 
 export async function POST(
@@ -73,7 +75,7 @@ export async function POST(
     return jsonError("Comentários exigem plano ativo.", 403);
   }
 
-  const payload = (await request.json()) as { text?: string; authorName?: string };
+  const payload = (await request.json()) as { text?: string };
   const text = String(payload.text || "").trim();
 
   if (text.length < 2) {
@@ -96,16 +98,29 @@ export async function POST(
     return jsonError("Material não encontrado.", 404);
   }
 
-  const displayName = await resolveUserDisplayName({
-    userId: access.user?.id || "",
-    email: access.user?.email || null,
+  const userId = access.user?.id;
+
+  if (!userId) {
+    return jsonError("Faça login para comentar.", 401);
+  }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("full_name,email")
+    .eq("id", userId)
+    .maybeSingle();
+
+  const authorName = resolveDisplayNameFromSources({
+    profileFullName: profile?.full_name,
+    email: profile?.email || access.user?.email || null,
+    fallback: "Professor",
   });
 
   const row = {
     material_id: materialId,
-    user_id: access.user?.id || null,
-    author_name: String(payload.authorName || displayName || "Professor"),
-    author_email: access.user?.email || null,
+    user_id: userId,
+    author_name: authorName,
+    author_email: access.user?.email || profile?.email || null,
     body: text,
   };
 
@@ -121,5 +136,21 @@ export async function POST(
     );
   }
 
-  return NextResponse.json({ success: true, comment: data as CommentRow });
+  const enriched = await getMaterialCommentsBatch([materialId]);
+  const saved = (enriched.get(materialId) || []).find((row) => row.id === String(data.id));
+
+  return NextResponse.json({
+    success: true,
+    comment: saved
+      ? {
+          id: saved.id,
+          material_id: materialId,
+          user_id: saved.userId,
+          author_name: saved.authorName,
+          author_avatar_url: saved.authorAvatarUrl,
+          body: saved.body,
+          created_at: saved.createdAt,
+        }
+      : (data as CommentRow),
+  });
 }

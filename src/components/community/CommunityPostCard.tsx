@@ -3,7 +3,7 @@
 import { CommunityAuthorAvatar } from "@/components/community/CommunityAuthorAvatar";
 import { CommunityAuthorLink } from "@/components/community/CommunityAuthorLink";
 import { MaterialLikeButton } from "@/components/community/MaterialLikeButton";
-import { MarketplaceComments } from "@/components/marketplace/MarketplaceComments";
+import { CommunityMaterialComments } from "@/components/community/CommunityMaterialComments";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import type { CommunityFeedItem } from "@/lib/community/types";
 import type { MarketplaceDownloadFormat } from "@/lib/marketplace/marketplace-download-client";
@@ -15,6 +15,8 @@ function formatBytes(value: number) {
   if (value < 1024 * 1024) return `${Math.max(1, Math.round(value / 1024))} KB`;
   return `${(value / 1024 / 1024).toFixed(1)} MB`;
 }
+
+const EMPTY_COMMENTS: CommunityFeedItem["comments"] = [];
 
 function formatDate(value: string | null) {
   if (!value) return "";
@@ -44,8 +46,10 @@ export function CommunityPostCard({
   onRemove,
   showRemove,
 }: CommunityPostCardProps) {
-  const [commentsOpen, setCommentsOpen] = useState(false);
   const [likesCount, setLikesCount] = useState(item.likesCount);
+  const [commentsCount, setCommentsCount] = useState(
+    item.commentsCount ?? item.comments?.length ?? 0,
+  );
   const [likedByMe, setLikedByMe] = useState(item.likedByMe);
 
   return (
@@ -102,14 +106,13 @@ export function CommunityPostCard({
           }}
           compact
         />
-        <button
-          type="button"
-          onClick={() => setCommentsOpen((open) => !open)}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-cyan-400/20 bg-white/80 px-2.5 py-1.5 text-[11px] font-bold text-slate-700 transition hover:border-violet-200 hover:bg-violet-50/60 hover:text-violet-700"
+        <a
+          href={`#comments-${item.id}`}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-cyan-400/20 bg-white/80 px-2.5 py-1.5 text-[11px] font-bold text-slate-700 transition hover:border-cyan-300 hover:bg-cyan-50/60 hover:text-cyan-800"
         >
-          <PlanifyIcon name="fileText" className="h-3.5 w-3.5 text-slate-400" />
-          Comentar
-        </button>
+          <PlanifyIcon name="message" className="h-3.5 w-3.5 text-slate-400" />
+          {commentsCount > 0 ? `${commentsCount} comentário(s)` : "Comentar"}
+        </a>
         <div className="ml-auto flex gap-2">
           <button
             type="button"
@@ -144,11 +147,11 @@ export function CommunityPostCard({
         </div>
       ) : null}
 
-      {commentsOpen ? (
-        <div className="border-t border-cyan-400/10 px-2 pb-2">
-          <MarketplaceComments materialId={item.id} embedded />
-        </div>
-      ) : null}
+      <CommunityMaterialComments
+        materialId={item.id}
+        initialComments={item.comments ?? EMPTY_COMMENTS}
+        onCommentsChange={setCommentsCount}
+      />
     </article>
   );
 }

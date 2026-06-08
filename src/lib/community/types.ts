@@ -33,6 +33,15 @@ export type CommunityConversationSummary = {
   unreadCount: number;
 };
 
+export type CommunityMaterialComment = {
+  id: string;
+  userId: string | null;
+  authorName: string;
+  authorAvatarUrl: string | null;
+  body: string;
+  createdAt: string;
+};
+
 export type CommunityFeedItem = {
   id: string;
   userId: string;
@@ -54,6 +63,8 @@ export type CommunityFeedItem = {
   downloadsCount: number;
   likesCount: number;
   likedByMe: boolean;
+  commentsCount: number;
+  comments: CommunityMaterialComment[];
   signedUrl: string | null;
   createdAt: string | null;
 };

@@ -1,7 +1,7 @@
 import { getSupabaseAdminClient } from "../supabase/admin-client";
 import { getValidGoogleAccessToken } from "../google/google-token-store";
 
-function normalizeAvatarUrl(value: unknown): string | null {
+export function normalizeAvatarUrl(value: unknown): string | null {
   const url = String(value || "").trim();
 
   if (!url || !/^https?:\/\//i.test(url)) {
@@ -61,17 +61,23 @@ async function getGoogleAvatarUrl(userId: string): Promise<string | null> {
 export async function resolveUserAvatarUrl(params: {
   userId: string;
   userMetadata?: Record<string, unknown> | null;
+  /** When true, return null instead of fetching Google OAuth picture (initials fallback in UI). */
+  skipGoogleFallback?: boolean;
 }): Promise<string | null> {
+  const fromProfile = await getProfileAvatarUrl(params.userId);
+
+  if (fromProfile) {
+    return fromProfile;
+  }
+
   const fromMetadata = extractAvatarFromUserMetadata(params.userMetadata);
 
   if (fromMetadata) {
     return fromMetadata;
   }
 
-  const fromProfile = await getProfileAvatarUrl(params.userId);
-
-  if (fromProfile) {
-    return fromProfile;
+  if (params.skipGoogleFallback) {
+    return null;
   }
 
   return getGoogleAvatarUrl(params.userId);

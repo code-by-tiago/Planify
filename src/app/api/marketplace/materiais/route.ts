@@ -7,6 +7,7 @@ import { isOwnerEmail } from "../../../../server/auth/owner-emails";
 import { getSupabaseAdminClient } from "../../../../server/supabase/admin-client";
 import { resolveMarketplaceStoredMime } from "../../../../server/marketplace/marketplace-download";
 import {
+  getMaterialCommentsBatch,
   getMaterialLikesSummary,
   resolveCommunityAuthors,
 } from "../../../../server/community/marketplace-social-service";
@@ -275,14 +276,16 @@ async function enrichMarketplaceItems(
   const userIds = items.map((item) => item.userId).filter(Boolean);
   const materialIds = items.map((item) => item.id);
 
-  const [authors, likes] = await Promise.all([
+  const [authors, likes, comments] = await Promise.all([
     resolveCommunityAuthors(userIds),
     getMaterialLikesSummary({ materialIds, viewerUserId }),
+    getMaterialCommentsBatch(materialIds),
   ]);
 
   return items.map((item) => {
     const author = authors.get(item.userId);
     const like = likes.get(item.id) || { likesCount: 0, likedByMe: false };
+    const itemComments = comments.get(item.id) || [];
 
     return {
       ...item,
@@ -290,6 +293,8 @@ async function enrichMarketplaceItems(
       authorAvatarUrl: author?.avatarUrl || null,
       likesCount: like.likesCount,
       likedByMe: like.likedByMe,
+      commentsCount: itemComments.length,
+      comments: itemComments,
     };
   });
 }

@@ -1,6 +1,9 @@
 import { getSupabaseAdminClient } from "../supabase/admin-client";
-import { resolveUserAvatarUrl } from "../auth/user-avatar";
-import { resolveUserDisplayName } from "../auth/user-display-name";
+import {
+  extractAvatarFromUserMetadata,
+  normalizeAvatarUrl,
+} from "../auth/user-avatar";
+import { resolveDisplayNameFromSources } from "../auth/user-display-name";
 
 export type CommunityAuthorSummary = {
   userId: string;
@@ -12,6 +15,31 @@ export type MaterialLikeSummary = {
   likesCount: number;
   likedByMe: boolean;
 };
+
+async function getAuthUserMetadata(
+  userId: string,
+): Promise<Record<string, unknown> | null> {
+  try {
+    const supabase = getSupabaseAdminClient();
+    const { data } = await supabase.auth.admin.getUserById(userId);
+    return (data.user?.user_metadata as Record<string, unknown>) || null;
+  } catch {
+    return null;
+  }
+}
+
+async function resolveCommunityAuthorAvatar(params: {
+  userId: string;
+  profileAvatarUrl: string | null | undefined;
+}): Promise<string | null> {
+  const fromProfile = normalizeAvatarUrl(params.profileAvatarUrl);
+  if (fromProfile) {
+    return fromProfile;
+  }
+
+  const metadata = await getAuthUserMetadata(params.userId);
+  return extractAvatarFromUserMetadata(metadata);
+}
 
 export async function resolveCommunityAuthors(
   userIds: string[],
@@ -45,17 +73,22 @@ export async function resolveCommunityAuthors(
     uniqueIds.map(async (userId) => {
       const profile = profileById.get(userId);
       const [displayName, avatarUrl] = await Promise.all([
-        resolveUserDisplayName({
+        Promise.resolve(
+          resolveDisplayNameFromSources({
+            profileFullName: profile?.full_name,
+            email: profile?.email,
+          }),
+        ),
+        resolveCommunityAuthorAvatar({
           userId,
-          email: profile?.email || null,
+          profileAvatarUrl: profile?.avatar_url,
         }),
-        resolveUserAvatarUrl({ userId }),
       ]);
 
       result.set(userId, {
         userId,
-        displayName: profile?.full_name?.trim() || displayName,
-        avatarUrl: profile?.avatar_url || avatarUrl,
+        displayName,
+        avatarUrl,
       });
     }),
   );
@@ -144,6 +177,70 @@ export async function likeMarketplaceMaterial(params: {
     materialId: params.materialId,
     viewerUserId: params.userId,
   });
+}
+
+export type MaterialCommentSummary = {
+  id: string;
+  userId: string | null;
+  authorName: string;
+  authorAvatarUrl: string | null;
+  body: string;
+  createdAt: string;
+};
+
+export async function getMaterialCommentsBatch(
+  materialIds: string[],
+): Promise<Map<string, MaterialCommentSummary[]>> {
+  const result = new Map<string, MaterialCommentSummary[]>();
+  const ids = [...new Set(materialIds.filter(Boolean))];
+
+  for (const materialId of ids) {
+    result.set(materialId, []);
+  }
+
+  if (!ids.length) {
+    return result;
+  }
+
+  const supabase = getSupabaseAdminClient();
+  const { data, error } = await supabase
+    .from("marketplace_material_comments")
+    .select("id,material_id,user_id,author_name,body,created_at")
+    .in("material_id", ids)
+    .order("created_at", { ascending: true });
+
+  if (error || !data?.length) {
+    return result;
+  }
+
+  const commenterIds = [
+    ...new Set(
+      data
+        .map((row) => String(row.user_id || "").trim())
+        .filter(Boolean),
+    ),
+  ];
+  const authors = await resolveCommunityAuthors(commenterIds);
+
+  for (const row of data) {
+    const materialId = String(row.material_id || "");
+    const userId = row.user_id ? String(row.user_id) : null;
+    const author = userId ? authors.get(userId) : null;
+    const list = result.get(materialId) || [];
+
+    list.push({
+      id: String(row.id),
+      userId,
+      authorName: author?.displayName || String(row.author_name || "Professor"),
+      authorAvatarUrl: author?.avatarUrl || null,
+      body: String(row.body || ""),
+      createdAt: String(row.created_at || ""),
+    });
+
+    result.set(materialId, list);
+  }
+
+  return result;
 }
 
 export async function unlikeMarketplaceMaterial(params: {

@@ -33,6 +33,15 @@ type MarketplaceItem = {
   downloadsCount: number;
   likesCount: number;
   likedByMe: boolean;
+  commentsCount: number;
+  comments: Array<{
+    id: string;
+    userId: string | null;
+    authorName: string;
+    authorAvatarUrl: string | null;
+    body: string;
+    createdAt: string;
+  }>;
   signedUrl: string | null;
   createdAt: string | null;
 };

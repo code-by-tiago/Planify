@@ -1813,7 +1813,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
       <div
         className={
           embedded
-            ? "flex h-full min-h-0 flex-1 overflow-hidden"
+            ? "flex min-h-0 flex-1 overflow-hidden"
             : "grid gap-6 xl:grid-cols-[280px_1fr]"
         }
       >
@@ -2030,14 +2030,16 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
           ) : null}
 
           {isSlideDeck && materialMeta?.generationPayload ? (
-            <SlideAiAdjustPanel
-              generationPayload={materialMeta.generationPayload}
-              disabled={adjustingSlides || elevatingQuality}
-              compact={embedded}
-              onAdjusting={setAdjustingSlides}
-              onResult={handleSlideAiAdjustResult}
-              onError={(message) => setStatus(message)}
-            />
+            <div className="shrink-0">
+              <SlideAiAdjustPanel
+                generationPayload={materialMeta.generationPayload}
+                disabled={adjustingSlides || elevatingQuality}
+                compact={embedded}
+                onAdjusting={setAdjustingSlides}
+                onResult={handleSlideAiAdjustResult}
+                onError={(message) => setStatus(message)}
+              />
+            </div>
           ) : null}
 
           {isTableActive ? (
@@ -2494,8 +2496,10 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
           )}
 
           <div
-            className={`min-h-0 flex-1 rounded-[2rem] border border-slate-200 bg-white shadow-sm ${
-              embedded ? "overflow-y-auto overscroll-contain p-1 sm:p-2" : "p-2 sm:p-3"
+            className={`planify-editor-document-scroll min-h-0 flex-1 rounded-[2rem] border border-slate-200 bg-white shadow-sm ${
+              embedded
+                ? "overflow-y-auto overscroll-contain p-1 sm:p-2"
+                : "overflow-y-auto overscroll-contain p-2 sm:p-3"
             }`}
           >
             <div className="rounded-[1.5rem] bg-slate-100 p-2 sm:p-6">
@@ -2699,7 +2703,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
 
   if (embedded) {
     return (
-      <div className="planify-editor-embedded flex h-full min-h-0 w-full flex-col overflow-hidden bg-slate-50">
+      <div className="planify-editor-embedded flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden bg-slate-50">
         {main}
         {editorStyles}
       </div>

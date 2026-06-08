@@ -8,6 +8,12 @@ export const TOOL_IDS_WITH_GABARITO: PlanifyToolId[] = [
   "redacao",
 ];
 
-export function toolSupportsGabarito(toolId: PlanifyToolId): boolean {
+export function toolSupportsGabarito(
+  toolId: PlanifyToolId,
+  options?: { incluirQuestoes?: boolean },
+): boolean {
+  if (toolId === "slides") {
+    return options?.incluirQuestoes === true;
+  }
   return TOOL_IDS_WITH_GABARITO.includes(toolId);
 }

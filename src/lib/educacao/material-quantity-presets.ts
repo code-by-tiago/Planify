@@ -90,3 +90,13 @@ export function defaultQuantityForTool(toolId: PlanifyToolId): string {
   const presets = getQuantityPresets(toolId);
   return presets[1]?.value ?? presets[0]?.value ?? "10";
 }
+
+export const SLIDES_QUESTION_QUANTITY_PRESETS: QuantityPreset[] = [
+  { value: "3", label: "3 questões" },
+  { value: "5", label: "5 questões" },
+  { value: "8", label: "8 questões" },
+];
+
+export function defaultSlidesQuestionQuantity(): string {
+  return SLIDES_QUESTION_QUANTITY_PRESETS[0]?.value ?? "3";
+}

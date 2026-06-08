@@ -52,10 +52,31 @@ const GAME_SCHEMA = {
   required: [...BASE_MATERIAL_SCHEMA.required, "game"],
 };
 
+const EXAM_QUESTION_SCHEMA = {
+  type: "OBJECT",
+  properties: {
+    number: { type: "INTEGER" },
+    type: {
+      type: "STRING",
+      enum: ["multipla-escolha", "verdadeiro-falso", "dissertativa", "completar"],
+    },
+    statement: { type: "STRING" },
+    options: { type: "ARRAY", items: { type: "STRING" } },
+    answer: { type: "STRING" },
+  },
+  required: ["number", "type", "statement", "options", "answer"],
+};
+
 const SLIDES_SCHEMA = {
   ...BASE_MATERIAL_SCHEMA,
   properties: {
     ...BASE_MATERIAL_SCHEMA.properties,
+    exam: {
+      type: "OBJECT",
+      properties: {
+        questions: { type: "ARRAY", items: EXAM_QUESTION_SCHEMA },
+      },
+    },
     slides: {
       type: "ARRAY",
       items: {

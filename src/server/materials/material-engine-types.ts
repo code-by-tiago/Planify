@@ -49,6 +49,10 @@ export type MaterialEngineRequest = {
   dificuldade: string;
   formatoJogo: string | null;
   incluirGabarito: boolean;
+  /** Slides: incluir questões de checagem/prática na apresentação. */
+  incluirQuestoes?: boolean;
+  /** Slides com questões: quantidade de questões (independente do total de slides). */
+  quantidadeQuestoes?: number;
   modeloSlides?: string;
   designSlides?: string;
   observacoes?: string;
@@ -76,6 +80,8 @@ export type MaterialEngineInput = {
   dificuldade?: string;
   formatoJogo?: string | null;
   incluirGabarito?: boolean;
+  incluirQuestoes?: boolean;
+  quantidadeQuestoes?: string | number;
   areaConhecimento?: string;
   observacoes?: string;
   modeloSlides?: string;

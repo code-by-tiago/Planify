@@ -42,7 +42,9 @@ import { useBnccEducationOptions } from "@/hooks/useBnccEducationOptions";
 import { toolSupportsGabarito } from "@/lib/educacao/material-form-config";
 import {
   defaultQuantityForTool,
+  defaultSlidesQuestionQuantity,
   getQuantityPresets,
+  SLIDES_QUESTION_QUANTITY_PRESETS,
 } from "@/lib/educacao/material-quantity-presets";
 import {
   clearMaterialHistory,
@@ -297,6 +299,10 @@ export function MateriaisClient({
   const [dificuldade, setDificuldade] = useState<Dificuldade>("media");
   const [formatoJogo, setFormatoJogo] = useState<FormatoJogo>("caca-palavras");
   const [incluirGabarito, setIncluirGabarito] = useState(true);
+  const [incluirQuestoes, setIncluirQuestoes] = useState(false);
+  const [quantidadeQuestoes, setQuantidadeQuestoes] = useState(
+    defaultSlidesQuestionQuantity(),
+  );
   const [resultadoHtml, setResultadoHtml] = useState("");
   const [resultadoEstrutura, setResultadoEstrutura] =
     useState<MaterialEngineResponse | null>(null);
@@ -439,7 +445,9 @@ export function MateriaisClient({
   );
   const isJogo = tipo === "jogo";
   const isRedacao = tipo === "redacao";
-  const showGabarito = toolSupportsGabarito(tipo);
+  const showGabarito = toolSupportsGabarito(tipo, {
+    incluirQuestoes: tipo === "slides" ? incluirQuestoes : undefined,
+  });
 
   const educationFields = useMemo(
     () => ({ etapa, anoSerie, areaConhecimento, componente }),
@@ -467,6 +475,10 @@ export function MateriaisClient({
 
   useEffect(() => {
     setQuantidade(defaultQuantityForTool(tipo));
+    if (tipo !== "slides") {
+      setIncluirQuestoes(false);
+      setQuantidadeQuestoes(defaultSlidesQuestionQuantity());
+    }
     applyEducation(
       educationDefaultsForTool(tipo, {
         etapa,
@@ -487,7 +499,9 @@ export function MateriaisClient({
 
   const gabaritoLabel = isRedacao
     ? "Incluir critérios de avaliação e redação modelo"
-    : "Incluir gabarito/solução";
+    : tipo === "slides" && incluirQuestoes
+      ? "Incluir gabarito no último slide (opcional)"
+      : "Incluir gabarito/solução";
 
   const ferramentasFiltradas = useMemo(() => {
     const term = busca.trim().toLowerCase();
@@ -645,6 +659,8 @@ export function MateriaisClient({
     setDificuldade("media");
     setFormatoJogo("caca-palavras");
     setIncluirGabarito(true);
+    setIncluirQuestoes(false);
+    setQuantidadeQuestoes(defaultSlidesQuestionQuantity());
     setResultadoHtml("");
     setResultadoEstrutura(null);
     setErro("");
@@ -777,6 +793,9 @@ export function MateriaisClient({
       dificuldade,
       formatoJogo: isJogo ? formatoJogo : null,
       incluirGabarito: showGabarito && incluirGabarito,
+      incluirQuestoes: tipo === "slides" && incluirQuestoes ? true : undefined,
+      quantidadeQuestoes:
+        tipo === "slides" && incluirQuestoes ? quantidadeQuestoes : undefined,
       areaConhecimento,
       designSlides: tipo === "slides" ? designSlides : undefined,
       ...school.turmaPayload,
@@ -1513,6 +1532,52 @@ export function MateriaisClient({
 
           {tipo === "slides" ? (
             <div className="mt-4 rounded-xl border border-cyan-400/20 bg-cyan-50/40 p-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <label className="flex cursor-pointer items-center gap-3 text-sm font-bold text-slate-800">
+                  <input
+                    type="checkbox"
+                    checked={incluirQuestoes}
+                    onChange={(event) => {
+                      const next = event.target.checked;
+                      setIncluirQuestoes(next);
+                      if (!next) {
+                        setIncluirGabarito(false);
+                      }
+                    }}
+                    className="h-4 w-4 accent-cyan-600"
+                  />
+                  Incluir questões nos slides
+                </label>
+                {incluirQuestoes ? (
+                  <label className="flex items-center gap-2 text-xs font-semibold text-slate-600">
+                    <span>Quantidade de questões</span>
+                    <select
+                      value={quantidadeQuestoes}
+                      onChange={(event) =>
+                        setQuantidadeQuestoes(event.target.value)
+                      }
+                      className="rounded-lg border border-cyan-400/25 bg-white px-2 py-1.5 text-xs font-bold text-slate-800"
+                    >
+                      {SLIDES_QUESTION_QUANTITY_PRESETS.map((preset) => (
+                        <option key={preset.value} value={preset.value}>
+                          {preset.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                ) : null}
+              </div>
+              {incluirQuestoes ? (
+                <p className="mt-2 text-[11px] font-semibold leading-4 text-slate-500">
+                  As questões entram nos slides de prática; o gabarito, se marcado,
+                  aparece somente no último slide.
+                </p>
+              ) : null}
+            </div>
+          ) : null}
+
+          {tipo === "slides" ? (
+            <div className="mt-4 rounded-xl border border-cyan-400/20 bg-cyan-50/40 p-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="text-xs font-bold uppercase tracking-wide text-slate-800">
                   Design da apresentação
@@ -1594,6 +1659,11 @@ export function MateriaisClient({
                   />
                   {gabaritoLabel}
                 </label>
+              ) : tipo === "slides" ? (
+                <span className="text-sm font-semibold text-slate-500">
+                  Marque &quot;Incluir questões nos slides&quot; para opcionalmente
+                  adicionar gabarito no último slide.
+                </span>
               ) : (
                 <span className="text-sm font-semibold text-slate-500">
                   Gabarito não se aplica a esta ferramenta.

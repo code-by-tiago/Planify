@@ -41,6 +41,7 @@ import { resolveSlideTheme, type SlideTheme } from "./slide-design-themes";
 import { enrichSlidesWithImages } from "./slide-image-resolver";
 import {
   assignSlideSequenceLabels,
+  consolidateSlideGabarito,
   orderSlidesPedagogically,
 } from "./slide-pedagogy";
 
@@ -879,6 +880,13 @@ export async function generateMaterialByEngine(input: MaterialEngineInput) {
       if (request.tipoMaterial === "slides" && normalized.slides?.length) {
         normalized.slideTheme = resolveSlideTheme(request.designSlides).id;
         normalized.slides = orderSlidesPedagogically(normalized.slides);
+        if (request.incluirQuestoes) {
+          consolidateSlideGabarito(normalized.slides, {
+            incluirGabarito: request.incluirGabarito,
+            exam: normalized.exam,
+            answerKey: normalized.answerKey,
+          });
+        }
         assignSlideSequenceLabels(normalized.slides);
         await enrichSlidesWithImages(normalized.slides, {
           tema: request.tema,

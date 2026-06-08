@@ -55,6 +55,64 @@ export function getEngineOutputIssues(
     if (slides[0]?.layout && slides[0].layout !== "capa") {
       issues.push("Slides: o primeiro slide deve ter layout 'capa'.");
     }
+
+    if (request.incluirQuestoes) {
+      const expected = request.quantidadeQuestoes ?? 3;
+      const n = output.exam?.questions?.length ?? 0;
+      const issue = countIssues("questões nos slides", expected, n);
+      if (issue) issues.push(issue);
+
+      const answerLeakPattern =
+        /(?:^|\s)(?:gabarito|resposta\s*(?:correta|esperada)?)\s*:/i;
+      const answerBulletPattern = /^quest[aã]o\s*\d+\s*:/i;
+
+      for (let index = 0; index < slides.length - 1; index += 1) {
+        const slide = slides[index];
+        const chunks = [
+          slide.title,
+          slide.subtitle,
+          ...(slide.bullets ?? []),
+          slide.callout?.text,
+          slide.speakerNotes,
+        ]
+          .filter(Boolean)
+          .join("\n");
+
+        if (answerLeakPattern.test(chunks) || answerBulletPattern.test(chunks)) {
+          issues.push(
+            "Slides: gabarito e respostas devem aparecer somente no último slide.",
+          );
+          break;
+        }
+      }
+
+      if (request.incluirGabarito && n > 0) {
+        const withAnswer =
+          output.exam?.questions?.filter((item) => item.answer?.trim()).length ??
+          0;
+        if (withAnswer < Math.min(n, expected) - COUNT_TOLERANCE) {
+          issues.push(
+            "Slides: preencha 'answer' em cada questão e consolide o gabarito no último slide.",
+          );
+        }
+
+        const lastSlide = slides[slides.length - 1];
+        const lastText = [
+          lastSlide?.title,
+          ...(lastSlide?.bullets ?? []),
+        ]
+          .filter(Boolean)
+          .join("\n");
+        if (
+          !/gabarito/i.test(lastText) &&
+          !answerBulletPattern.test(lastText)
+        ) {
+          issues.push(
+            "Slides: o último slide deve trazer o gabarito completo das questões.",
+          );
+        }
+      }
+    }
   }
 
   if (tipo === "flashcards") {
@@ -185,6 +243,14 @@ export function buildQualityRetryPrompt(
     `Tipo: ${request.tipoMaterial}`,
     `Quantidade obrigatória: ${request.quantidade}`,
     `Incluir gabarito: ${request.incluirGabarito ? "sim" : "não"}`,
+    ...(request.incluirQuestoes
+      ? [
+          `Questões nos slides: ${request.quantidadeQuestoes ?? 3}`,
+          request.incluirGabarito
+            ? "Gabarito obrigatório somente no último slide."
+            : "Sem gabarito em nenhum slide.",
+        ]
+      : []),
     `Tema obrigatório: "${request.tema}".`,
     "Reescreva com enunciados contextualizados, alternativas distintas e gabarito comentado.",
   ].join("\n");

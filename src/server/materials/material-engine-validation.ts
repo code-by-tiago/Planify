@@ -25,11 +25,26 @@ function normalizeType(value: unknown): MaterialEngineType {
   return raw;
 }
 
+function resolveIncluirGabarito(
+  tipoMaterial: MaterialEngineType,
+  incluirQuestoes: boolean,
+  payload: MaterialEngineInput,
+): boolean {
+  if (tipoMaterial === "slides" && incluirQuestoes) {
+    return payload.incluirGabarito === true;
+  }
+  return payload.incluirGabarito !== false;
+}
+
 export function normalizeMaterialEngineRequest(
   payload: MaterialEngineInput,
 ): MaterialEngineRequest {
+  const tipoMaterial = normalizeType(payload.tipoMaterial || payload.tipo);
+  const incluirQuestoes =
+    tipoMaterial === "slides" && payload.incluirQuestoes === true;
+
   return {
-    tipoMaterial: normalizeType(payload.tipoMaterial || payload.tipo),
+    tipoMaterial,
     etapa: asText(payload.etapa, "Ensino Fundamental"),
     anoSerie: asText(payload.anoSerie),
     componenteCurricular: asText(
@@ -40,7 +55,11 @@ export function normalizeMaterialEngineRequest(
     quantidade: toSafeQuantity(payload.quantidade),
     dificuldade: asText(payload.dificuldade, "media"),
     formatoJogo: asText(payload.formatoJogo, "") || null,
-    incluirGabarito: payload.incluirGabarito !== false,
+    incluirGabarito: resolveIncluirGabarito(tipoMaterial, incluirQuestoes, payload),
+    incluirQuestoes: incluirQuestoes || undefined,
+    quantidadeQuestoes: incluirQuestoes
+      ? toSafeQuantity(payload.quantidadeQuestoes ?? 3)
+      : undefined,
     modeloSlides: asText(payload.modeloSlides, "") || undefined,
     designSlides: asText(payload.designSlides, "") || undefined,
     observacoes: asText(payload.observacoes, "") || undefined,

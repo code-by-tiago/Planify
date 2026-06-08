@@ -59,6 +59,19 @@ function specializedRules(request: MaterialEngineRequest): string[] {
       "- 'iconHint': palavra-chave do tema do slide.",
       "- 'callout': em 1 a 3 slides, destaque com 'title' e 'text'.",
       "Manter coesão narrativa: cada slide avança o raciocínio do anterior na ordem de ensino.",
+      ...(request.incluirQuestoes
+        ? (() => {
+            const questoes = request.quantidadeQuestoes ?? 3;
+            return [
+              `QUESTÕES NOS SLIDES: gerar exatamente ${questoes} questões no array 'exam.questions', numeradas de 1 a ${questoes}.`,
+              "Distribuir as questões em slides de conteúdo (layout 'conteudo' ou 'destaque') antes do fechamento — enunciados e alternativas apenas, sem respostas.",
+              "PROIBIDO revelar gabarito, resposta correta ou justificativa nos slides das questões.",
+              request.incluirGabarito
+                ? "GABARITO SOMENTE NO ÚLTIMO SLIDE: consolidar TODAS as respostas exclusivamente no slide final (layout 'fechamento'), em 'bullets' no formato 'Questão N: resposta comentada'. Preencher 'answer' em exam.questions e 'answerKey'. Não espalhar respostas em outros slides."
+                : "SEM GABARITO: deixar 'answer' vazio, não preencher 'answerKey' e não incluir respostas em nenhum slide.",
+            ];
+          })()
+        : []),
     ];
   }
 
@@ -316,6 +329,7 @@ DADOS DA SOLICITAÇÃO:
 - Dificuldade: ${request.dificuldade}
 - Incluir gabarito: ${request.incluirGabarito ? "sim" : "não"}
 ${request.tipoMaterial === "slides" ? `- Design da apresentação: ${resolveSlideTheme(request.designSlides).label} (${resolveSlideTheme(request.designSlides).id})` : ""}
+${request.tipoMaterial === "slides" && request.incluirQuestoes ? `- Incluir questões nos slides: sim (${request.quantidadeQuestoes ?? 3} questões)` : ""}
 
 REGRAS ESPECIALIZADAS:
 ${rules}

@@ -2,6 +2,7 @@ import type { TablesUpdate } from "@/types/database";
 import { getSupabaseAdminClient } from "../supabase/admin-client";
 import { resolveUserAvatarUrl } from "../auth/user-avatar";
 import { resolveUserDisplayName } from "../auth/user-display-name";
+import { getCommunityFriendshipCounts } from "./community-friends-service";
 
 export type CommunityProfileStats = {
   classesCount: number;
@@ -88,7 +89,7 @@ export async function getCommunityProfileForUser(params: {
     row = (profileResult.data || null) as ProfileRow | null;
   }
 
-  const [fullName, avatarUrl, materialsCount, classesCount] = await Promise.all([
+  const [fullName, avatarUrl, materialsCount, classesCount, friendCounts] = await Promise.all([
     resolveUserDisplayName({
       userId: params.userId,
       userMetadata: params.userMetadata,
@@ -100,6 +101,7 @@ export async function getCommunityProfileForUser(params: {
     }),
     countUserMaterials(params.userId),
     countUserClasses(params.userId),
+    getCommunityFriendshipCounts(params.userId),
   ]);
 
   return {
@@ -113,8 +115,8 @@ export async function getCommunityProfileForUser(params: {
     stats: {
       classesCount,
       materialsCount,
-      followersCount: 0,
-      followingCount: 0,
+      followersCount: friendCounts.friendsCount,
+      followingCount: friendCounts.pendingIncomingCount,
     },
   };
 }
@@ -205,7 +207,7 @@ export async function getPublicCommunityProfile(params: {
     };
   }
 
-  const [fullName, avatarUrl, materialsCount, classesCount, materialsResult] =
+  const [fullName, avatarUrl, materialsCount, classesCount, friendCounts, materialsResult] =
     await Promise.all([
       resolveUserDisplayName({
         userId: params.targetUserId,
@@ -214,6 +216,7 @@ export async function getPublicCommunityProfile(params: {
       resolveUserAvatarUrl({ userId: params.targetUserId }),
       countUserMaterials(params.targetUserId),
       countUserClasses(params.targetUserId),
+      getCommunityFriendshipCounts(params.targetUserId),
       supabase
         .from("marketplace_materials")
         .select(
@@ -250,8 +253,8 @@ export async function getPublicCommunityProfile(params: {
     stats: {
       classesCount,
       materialsCount,
-      followersCount: 0,
-      followingCount: 0,
+      followersCount: friendCounts.friendsCount,
+      followingCount: friendCounts.pendingIncomingCount,
     },
     materials,
   };

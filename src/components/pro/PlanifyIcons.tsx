@@ -344,6 +344,12 @@ export function PlanifyIcon({ name, className }: IconProps) {
           <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
         </BaseIcon>
       );
+    case "message":
+      return (
+        <BaseIcon className={className}>
+          <path d="M21 11.5a8.4 8.4 0 0 1-1.1 4.2 8.5 8.5 0 0 1-7.4 4.3 8.4 8.4 0 0 1-3.9-1L3 20l1.2-3.6a8.4 8.4 0 0 1-1.1-3.9 8.5 8.5 0 0 1 4.3-7.4 8.4 8.4 0 0 1 4.2-1.1h.4a8.5 8.5 0 0 1 8.3 8.3Z" />
+        </BaseIcon>
+      );
     default:
       return (
         <BaseIcon className={className}>

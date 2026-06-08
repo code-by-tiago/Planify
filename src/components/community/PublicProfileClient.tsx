@@ -1,6 +1,8 @@
 "use client";
 
 import { CommunityAuthorAvatar } from "@/components/community/CommunityAuthorAvatar";
+import { CommunityFriendButton } from "@/components/community/CommunityFriendButton";
+import { CommunityMessagesIcon } from "@/components/community/CommunityMessagesIcon";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
 import { PlanifyPageHero } from "@/components/pro/PlanifyPageHero";
@@ -43,6 +45,7 @@ export function PublicProfileClient({ userId }: PublicProfileClientProps) {
   const [profile, setProfile] = useState<PublicProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [messageUserId, setMessageUserId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -88,13 +91,19 @@ export function PublicProfileClient({ userId }: PublicProfileClientProps) {
           title="Perfil na Comunidade"
           description="Materiais publicados e informações do professor."
           action={
-            <Link
-              href="/dashboard?secao=marketplace"
-              className="pl-hud-btn-secondary inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-semibold"
-            >
-              <PlanifyIcon name="arrowLeft" className="h-3.5 w-3.5" />
-              Voltar ao feed
-            </Link>
+            <div className="flex flex-wrap items-center gap-2">
+              <CommunityMessagesIcon
+                initialUserId={messageUserId}
+                onInitialUserHandled={() => setMessageUserId(null)}
+              />
+              <Link
+                href="/dashboard?secao=marketplace"
+                className="pl-hud-btn-secondary inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-semibold"
+              >
+                <PlanifyIcon name="arrowLeft" className="h-3.5 w-3.5" />
+                Voltar ao feed
+              </Link>
+            </div>
           }
         />
       }
@@ -127,6 +136,15 @@ export function PublicProfileClient({ userId }: PublicProfileClientProps) {
                         🏫 {profile.schoolName}
                       </p>
                     ) : null}
+                    {!profile.isOwnProfile && profile.communityPublic ? (
+                      <div className="mt-3 flex justify-center sm:justify-start">
+                        <CommunityFriendButton
+                          targetUserId={profile.userId}
+                          isOwnProfile={profile.isOwnProfile}
+                          onMessage={(targetId) => setMessageUserId(targetId)}
+                        />
+                      </div>
+                    ) : null}
                   </div>
                 </div>
 
@@ -147,8 +165,7 @@ export function PublicProfileClient({ userId }: PublicProfileClientProps) {
                     <strong className="text-slate-950">{profile.stats.classesCount}</strong> Turmas
                   </span>
                   <span>
-                    <strong className="text-slate-950">{profile.stats.followersCount}</strong>{" "}
-                    Seguidores
+                    <strong className="text-slate-950">{profile.stats.followersCount}</strong> Amigos
                   </span>
                 </div>
               </div>

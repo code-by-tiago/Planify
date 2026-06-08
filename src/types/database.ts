@@ -613,6 +613,81 @@ export type Database = {
           created_at?: string;
         }
       >;
+      community_friendships: TableDefinition<
+        {
+          id: string;
+          requester_id: string;
+          addressee_id: string;
+          status: string;
+          created_at: string;
+          updated_at: string;
+        },
+        {
+          id?: string;
+          requester_id: string;
+          addressee_id: string;
+          status?: string;
+          created_at?: string;
+          updated_at?: string;
+        },
+        {
+          id?: string;
+          requester_id?: string;
+          addressee_id?: string;
+          status?: string;
+          created_at?: string;
+          updated_at?: string;
+        }
+      >;
+      community_conversations: TableDefinition<
+        {
+          id: string;
+          user_a_id: string;
+          user_b_id: string;
+          created_at: string;
+          updated_at: string;
+        },
+        {
+          id?: string;
+          user_a_id: string;
+          user_b_id: string;
+          created_at?: string;
+          updated_at?: string;
+        },
+        {
+          id?: string;
+          user_a_id?: string;
+          user_b_id?: string;
+          created_at?: string;
+          updated_at?: string;
+        }
+      >;
+      community_messages: TableDefinition<
+        {
+          id: string;
+          conversation_id: string;
+          sender_id: string;
+          body: string;
+          read_at: string | null;
+          created_at: string;
+        },
+        {
+          id?: string;
+          conversation_id: string;
+          sender_id: string;
+          body: string;
+          read_at?: string | null;
+          created_at?: string;
+        },
+        {
+          id?: string;
+          conversation_id?: string;
+          sender_id?: string;
+          body?: string;
+          read_at?: string | null;
+          created_at?: string;
+        }
+      >;
       library_items: TableDefinition<
         {
           id: string;

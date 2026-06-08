@@ -41,7 +41,8 @@ export type PlanifyIconName =
   | "logout"
   | "plus"
   | "trash"
-  | "settings";
+  | "settings"
+  | "message";
 
 export type ToolCategoryId =
   | "todos"

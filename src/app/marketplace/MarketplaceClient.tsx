@@ -1,6 +1,7 @@
 "use client";
 
 import { CommunityFeed } from "@/components/community/CommunityFeed";
+import { CommunityMessagesIcon } from "@/components/community/CommunityMessagesIcon";
 import { CommunityProfilePanel } from "@/components/community/CommunityProfilePanel";
 import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
 import { PlanifyPageHero } from "@/components/pro/PlanifyPageHero";
@@ -345,13 +346,16 @@ export function MarketplaceClient() {
           title="Materiais compartilhados por professores"
           description="Baixe DOCX ou PDF com um clique — publique o que você cria e reutilize modelos alinhados à BNCC."
           action={
-            <button
-              type="button"
-              onClick={() => setPublishOpen((open) => !open)}
-              className="pl-hud-btn rounded-xl px-4 py-2 text-xs font-semibold"
-            >
-              {publishOpen ? "Fechar publicação" : "Publicar material"}
-            </button>
+            <div className="flex flex-wrap items-center gap-2">
+              <CommunityMessagesIcon />
+              <button
+                type="button"
+                onClick={() => setPublishOpen((open) => !open)}
+                className="pl-hud-btn rounded-xl px-4 py-2 text-xs font-semibold"
+              >
+                {publishOpen ? "Fechar publicação" : "Publicar material"}
+              </button>
+            </div>
           }
         />
       }

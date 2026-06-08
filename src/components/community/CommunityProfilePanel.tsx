@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { CommunityMessagesIcon } from "@/components/community/CommunityMessagesIcon";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { parseJsonResponse } from "@/lib/http/parse-json-response";
 
@@ -348,14 +349,25 @@ export function CommunityProfilePanel() {
             <strong className="text-slate-950">{profile.stats.materialsCount}</strong> Materiais
           </span>
           <span>
-            <strong className="text-slate-950">{profile.stats.followersCount}</strong> Seguidores
+            <strong className="text-slate-950">{profile.stats.followersCount}</strong> Amigos
           </span>
-          <span>
-            <strong className="text-slate-950">{profile.stats.followingCount}</strong> Seguindo
-          </span>
+          {profile.stats.followingCount > 0 ? (
+            <span>
+              <strong className="text-slate-950">{profile.stats.followingCount}</strong>{" "}
+              Solicitações
+            </span>
+          ) : null}
         </div>
 
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-cyan-400/15 bg-cyan-50/40 px-3 py-2.5">
+          <div className="flex items-center gap-2 text-sm font-semibold text-slate-600">
+            <PlanifyIcon name="message" className="h-4 w-4 text-cyan-600" />
+            Mensagens com amigos
+          </div>
+          <CommunityMessagesIcon className="relative inline-flex items-center gap-1.5 rounded-xl border border-cyan-400/25 bg-white px-3 py-1.5 text-xs font-bold text-cyan-800 shadow-sm transition hover:bg-cyan-50" />
+        </div>
+
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-cyan-400/15 bg-cyan-50/40 px-3 py-2.5">
           <div className="flex items-center gap-2 text-sm font-semibold text-slate-600">
             <PlanifyIcon name="infoCircle" className="h-4 w-4 text-cyan-600" />
             Perfil público

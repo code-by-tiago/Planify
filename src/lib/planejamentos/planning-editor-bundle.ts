@@ -106,13 +106,21 @@ function toBundleTab(
   doc: PlanningBundleDocumentInput,
   content: string,
 ): PlanningBundleTab {
+  const tipoFromType = doc.type.includes("trimestral") ? "trimestral" : "anual";
+  const trimestreFromId = doc.id.match(/_trim([123])\b/i)?.[1];
+
   return {
     id: doc.id,
     label: doc.label,
     title: doc.title,
     type: doc.type,
     content,
-    raw: { ...doc.meta, matrizPlanejamento: doc.planning },
+    raw: {
+      ...doc.meta,
+      tipoPlanejamento: doc.meta.tipoPlanejamento || tipoFromType,
+      trimestre: doc.meta.trimestre || trimestreFromId,
+      matrizPlanejamento: doc.planning,
+    },
   };
 }
 

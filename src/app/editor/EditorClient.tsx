@@ -379,19 +379,17 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
   }, [planningBundle, activeBundleIndex, documentSource?.type]);
 
   const getPlanningPayloadForExport = useCallback((): Record<string, unknown> | null => {
-    const bundleTab = planningBundle?.tabs[activeBundleIndexRef.current];
-    const payloadWrapper = documentSource?.payload as
-      | { raw?: PlanningEditorMeta & { matrizPlanejamento?: unknown } }
+    const raw = documentSource?.payload as
+      | { raw?: PlanningEditorMeta & { matrizPlanejamento?: unknown }; id?: string }
       | undefined;
-    const meta =
-      (bundleTab?.raw as
-        | (PlanningEditorMeta & { matrizPlanejamento?: unknown })
-        | undefined) ??
-      payloadWrapper?.raw ??
-      planningMeta ??
-      undefined;
+    const bundleIndex = activeBundleIndexRef.current;
+    const activeBundleTab = planningBundle?.tabs[bundleIndex];
 
-    return resolvePlanningPayloadForGoogleExport(meta, exportDocumentType);
+    return resolvePlanningPayloadForGoogleExport(raw?.raw ?? planningMeta ?? undefined, {
+      documentType: activeBundleTab?.type ?? exportDocumentType,
+      documentId: activeBundleTab?.id ?? raw?.id,
+      title: activeBundleTab?.title ?? documentSource?.title,
+    });
   }, [documentSource, planningMeta, planningBundle, exportDocumentType]);
 
   const canElevateMaterial = Boolean(

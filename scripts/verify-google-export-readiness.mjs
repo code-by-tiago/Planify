@@ -117,18 +117,21 @@ const PAYLOAD_TRIM = {
 function main() {
   if (fs.existsSync(LOG_PATH)) fs.unlinkSync(LOG_PATH);
 
-  const { buildOfficialPlanningDocx } = loadTsModule(
-    "src/server/planejamentos/official-planning-docx.ts",
-  );
+  const {
+    buildOfficialPlanningDocx,
+    getOfficialPlanningTipo,
+    normalizeOfficialPlanningPayload,
+  } = loadTsModule("src/server/planejamentos/official-planning-docx.ts");
   const {
     resolveSlidesExportCompatible,
     resolveSlideDeck,
   } = loadTsModule("src/lib/google/document-type-detection.ts");
+  const { buildOfficialPlanningPayloadFromGeneration } = loadTsModule(
+    "src/lib/planejamentos/planning-google-export-payload.ts",
+  );
   const {
-    buildOfficialPlanningPayloadFromGeneration,
     buildOfficialPlanningPayloadFromEditorMeta,
-    enrichOfficialPlanningPayload,
-    inferPlanningTipoFromDocumentType,
+    inferPlanningTipoFromExportContext,
   } = loadTsModule("src/lib/planejamentos/planning-google-export-payload.ts");
   const {
     embedPlanningPayloadInHtml,
@@ -143,6 +146,51 @@ function main() {
     trimBytes: trimBuf.length,
     anualOk: anualBuf.length > 10000,
     trimOk: trimBuf.length > 10000,
+    distinctTemplates: !anualBuf.equals(trimBuf),
+  });
+
+  const trimTipo = getOfficialPlanningTipo(
+    normalizeOfficialPlanningPayload(PAYLOAD_TRIM, "planejamento:trimestral", "plan_key_trim2"),
+  );
+  const trim2Buf = buildOfficialPlanningDocx(
+    normalizeOfficialPlanningPayload(
+      { ...PAYLOAD_ANUAL, trimestre: "2" },
+      "planejamento:trimestral",
+      "plan_key_trim2",
+    ),
+    { documentType: "planejamento:trimestral", documentId: "plan_key_trim2" },
+  );
+  auditLog("TRIM", "verify-google-export-readiness.mjs", "trimestral template routing", {
+    trimTipo,
+    trim2DistinctFromAnual: !trim2Buf.equals(anualBuf),
+    trim2MatchesTrim1: trim2Buf.equals(trimBuf),
+  });
+
+  const bundleMetaPayload = buildOfficialPlanningPayloadFromEditorMeta(
+    {
+      componente: "História",
+      anoSerie: "5º ano",
+      etapa: "EF",
+      tipoPlanejamento: undefined,
+      generationPayload: { tipoPlanejamento: "anual", trimestre: "1" },
+      matrizPlanejamento: {
+        tipoPlanejamento: "trimestral",
+        conteudos: SAMPLE_MATRIX.conteudos.map((item) => ({ ...item, trimestre: 2 })),
+      },
+    },
+    {
+      documentType: "planejamento:trimestral",
+      documentId: "plan_demo_trim2",
+      title: "Planejamento trimestral — 2º trimestre",
+    },
+  );
+  auditLog("TRIM", "verify-google-export-readiness.mjs", "bundle tab payload inference", {
+    inferredTipo: bundleMetaPayload?.tipoPlanejamento,
+    inferredTrimestre: bundleMetaPayload?.trimestre,
+    contextTipo: inferPlanningTipoFromExportContext({
+      documentType: "planejamento:trimestral",
+      documentId: "plan_demo_trim2",
+    }),
   });
 
   // Hypothesis B/F: missing matrix must throw (no generic fallback for planejamento)
@@ -186,53 +234,6 @@ function main() {
     tipo: built?.tipoPlanejamento,
   });
 
-  const trimBuilt = buildOfficialPlanningPayloadFromGeneration({
-    tipoPlanejamento: "trimestral",
-    escola: "E",
-    professor: "P",
-    etapa: "EF",
-    anoSerie: "5",
-    componenteCurricular: "História",
-    cargaHoraria: "20h",
-    trimestre: "1",
-    matrizPlanejamento: { ...SAMPLE_MATRIX, tipoPlanejamento: "trimestral" },
-  });
-  auditLog("A-TRIM", "verify-google-export-readiness.mjs", "trimestral payload from generation", {
-    hasPayload: Boolean(trimBuilt),
-    tipo: trimBuilt?.tipoPlanejamento,
-    trimestre: trimBuilt?.trimestre ?? null,
-  });
-
-  const bundleTrimMeta = {
-    etapa: "EF",
-    anoSerie: "5",
-    componente: "História",
-    tipoPlanejamento: "trimestral",
-    trimestre: "2",
-    generationPayload: { tipoPlanejamento: "anual", escola: "E", professor: "P" },
-    matrizPlanejamento: {
-      tipoPlanejamento: "trimestral",
-      titulo: "2º trimestre",
-      resumo: "Resumo",
-      conteudos: SAMPLE_MATRIX.conteudos.map((item) => ({ ...item, trimestre: 2 })),
-    },
-  };
-  const bundlePayload = buildOfficialPlanningPayloadFromEditorMeta(bundleTrimMeta);
-  const enrichedStale = enrichOfficialPlanningPayload(
-    {
-      tipoPlanejamento: "anual",
-      trimestre: "2",
-      matrizPlanejamento: bundleTrimMeta.matrizPlanejamento,
-    },
-    "planejamento:trimestral",
-  );
-  auditLog("A-BUNDLE", "verify-google-export-readiness.mjs", "bundle trimestral meta", {
-    bundleTipo: bundlePayload?.tipoPlanejamento,
-    bundleTrimestre: bundlePayload?.trimestre ?? null,
-    enrichedTipo: enrichedStale?.tipoPlanejamento,
-    docTypeInfer: inferPlanningTipoFromDocumentType("planejamento:trimestral"),
-  });
-
   // Hypothesis B: embed/extract for community publish
   const embedded = embedPlanningPayloadInHtml("<p>Planejamento</p>", PAYLOAD_ANUAL);
   const extracted = extractPlanningPayloadFromHtml(embedded);
@@ -262,12 +263,13 @@ function main() {
   const failed =
     anualBuf.length < 10000 ||
     trimBuf.length < 10000 ||
+    anualBuf.equals(trimBuf) ||
+    trimTipo !== "trimestral" ||
+    trim2Buf.equals(anualBuf) ||
+    bundleMetaPayload?.tipoPlanejamento !== "trimestral" ||
+    bundleMetaPayload?.trimestre !== "2" ||
     !missingMatrixThrows ||
     !built?.matrizPlanejamento ||
-    trimBuilt?.tipoPlanejamento !== "trimestral" ||
-    bundlePayload?.tipoPlanejamento !== "trimestral" ||
-    enrichedStale?.tipoPlanejamento !== "trimestral" ||
-    inferPlanningTipoFromDocumentType("planejamento:trimestral") !== "trimestral" ||
     !extracted?.matrizPlanejamento ||
     docxMentions.length > 0;
 

@@ -1,9 +1,8 @@
-import { enrichOfficialPlanningPayload } from "@/lib/planejamentos/planning-google-export-payload";
-import { extractPlanningPayloadFromHtml } from "@/lib/planejamentos/planning-export-embed";
 import { resolvePreparedExportBody } from "../export/editor-html-export-service";
 import { buildNativeHtmlDocx } from "../docx/simple-docx-builder";
 import {
   buildOfficialPlanningDocx,
+  normalizeOfficialPlanningPayload,
   type OfficialPlanningPayload,
 } from "../planejamentos/official-planning-docx";
 import { uploadBufferToGoogleDrive, uploadDocxAsGoogleDocument } from "./google-drive";
@@ -37,19 +36,9 @@ function isPlanningDocumentType(documentType?: string | null): boolean {
   return String(documentType || "").toLowerCase().includes("planejamento");
 }
 
-function resolvePlanningPayloadForExport(
-  planningPayload: OfficialPlanningPayload | Record<string, unknown> | null | undefined,
-  documentType?: string | null,
-  html?: string,
-): OfficialPlanningPayload | null {
-  const direct = normalizePlanningPayload(planningPayload);
-  const fromHtml = !direct
-    ? normalizePlanningPayload(extractPlanningPayloadFromHtml(String(html || "")))
-    : null;
-
-  return normalizePlanningPayload(
-    enrichOfficialPlanningPayload(direct ?? fromHtml, documentType),
-  );
+function isTrimestralPlanningDocumentType(documentType?: string | null): boolean {
+  const type = String(documentType || "").toLowerCase();
+  return type.includes("trimestral") || type.includes("trimestre");
 }
 
 function buildDocxBuffer(
@@ -58,14 +47,9 @@ function buildDocxBuffer(
   documentType?: string | null,
   planningPayload?: OfficialPlanningPayload | Record<string, unknown> | null,
 ): { buffer: Buffer; exportEngine: "official" | "html" } {
-  const isPlanningDoc = isPlanningDocumentType(documentType);
-  const normalizedPlanning = resolvePlanningPayloadForExport(
-    planningPayload,
-    documentType,
-    html,
-  );
+  const normalizedPlanning = normalizePlanningPayload(planningPayload);
   const requiresOfficialTemplate =
-    isPlanningDoc ||
+    isPlanningDocumentType(documentType) ||
     Boolean(normalizedPlanning && hasPlanningMatrix(normalizedPlanning));
 
   if (requiresOfficialTemplate) {
@@ -75,8 +59,33 @@ function buildDocxBuffer(
       );
     }
 
+    const documentId =
+      typeof (normalizedPlanning as { documentId?: unknown }).documentId === "string"
+        ? (normalizedPlanning as { documentId: string }).documentId
+        : null;
+
+    const officialPayload = normalizeOfficialPlanningPayload(
+      normalizedPlanning,
+      documentType,
+      documentId,
+    );
+
+    if (
+      isTrimestralPlanningDocumentType(documentType) &&
+      !String(officialPayload.tipoPlanejamento || "")
+        .toLowerCase()
+        .includes("tri")
+    ) {
+      throw new Error(
+        "Exportação trimestral inconsistente: o Planify exige modelo-trimestral.docx para abas trimestrais.",
+      );
+    }
+
     return {
-      buffer: buildOfficialPlanningDocx(normalizedPlanning),
+      buffer: buildOfficialPlanningDocx(officialPayload, {
+        documentType,
+        documentId: documentId ?? undefined,
+      }),
       exportEngine: "official",
     };
   }

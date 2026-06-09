@@ -308,21 +308,63 @@ function parseNumber(value: unknown, fallback: number): number {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
 
-function getTipo(payload: OfficialPlanningPayload): "anual" | "trimestral" {
-  const matrixTipo =
-    payload.matrizPlanejamento &&
-    typeof payload.matrizPlanejamento === "object" &&
-    "tipoPlanejamento" in payload.matrizPlanejamento
-      ? String(
-          (payload.matrizPlanejamento as { tipoPlanejamento?: string }).tipoPlanejamento || "",
-        )
-      : "";
-
+export function getOfficialPlanningTipo(
+  payload: OfficialPlanningPayload,
+): "anual" | "trimestral" {
   const value = normalizeSearch(
-    payload.tipoPlanejamento || matrixTipo || payload.tipo || payload.modo || "anual",
+    payload.tipoPlanejamento || payload.tipo || payload.modo || "anual",
   );
 
   return value.includes("tri") ? "trimestral" : "anual";
+}
+
+function getTipo(payload: OfficialPlanningPayload): "anual" | "trimestral" {
+  return getOfficialPlanningTipo(payload);
+}
+
+function inferTrimestreFromDocumentType(documentType?: string | null): number | null {
+  const type = String(documentType || "").toLowerCase();
+  const match = type.match(/trimestral[_:-]?([123])/) || type.match(/trimestre[_:-]?([123])/);
+  const parsed = match ? Number(match[1]) : NaN;
+
+  return Number.isFinite(parsed) && parsed >= 1 && parsed <= 3 ? parsed : null;
+}
+
+/** Garante tipo/trimestre corretos quando documentType ou id da aba indicam trimestral. */
+export function normalizeOfficialPlanningPayload(
+  payload: OfficialPlanningPayload,
+  documentType?: string | null,
+  documentId?: string | null,
+): OfficialPlanningPayload {
+  const normalized: OfficialPlanningPayload = { ...payload };
+  const type = String(documentType || "").toLowerCase();
+  const id = String(documentId || "").toLowerCase();
+
+  if (
+    type.includes("trimestral") ||
+    type.includes("trimestre") ||
+    /_trim[123]\b/.test(id) ||
+    /\btrim[123]\b/.test(id)
+  ) {
+    normalized.tipoPlanejamento = "trimestral";
+  } else if (type.includes("anual") && !type.includes("trimestral")) {
+    if (!normalizeSearch(normalized.tipoPlanejamento || normalized.tipo || "").includes("tri")) {
+      normalized.tipoPlanejamento = "anual";
+    }
+  }
+
+  if (getOfficialPlanningTipo(normalized) === "trimestral") {
+    const fromType = inferTrimestreFromDocumentType(documentType);
+    const fromId =
+      id.match(/_trim([123])\b/)?.[1] || id.match(/\btrim([123])\b/)?.[1];
+    const parsed = Number(fromId || fromType || normalized.trimestre);
+
+    if (Number.isFinite(parsed) && parsed >= 1 && parsed <= 3) {
+      normalized.trimestre = parsed;
+    }
+  }
+
+  return normalized;
 }
 
 function getTrimestre(payload: OfficialPlanningPayload): number {
@@ -1169,14 +1211,23 @@ export function getOfficialPlanningFilename(payload: OfficialPlanningPayload): s
   );
 }
 
-export function buildOfficialPlanningDocx(payload: OfficialPlanningPayload): Buffer {
-  if (!payload.matrizPlanejamento?.conteudos?.length) {
+export function buildOfficialPlanningDocx(
+  payload: OfficialPlanningPayload,
+  options?: { documentType?: string | null; documentId?: string | null },
+): Buffer {
+  const normalizedPayload = normalizeOfficialPlanningPayload(
+    payload,
+    options?.documentType,
+    options?.documentId,
+  );
+
+  if (!normalizedPayload.matrizPlanejamento?.conteudos?.length) {
     throw new Error(
       "Gere o planejamento com IA antes de exportar. O Planify não preenche o modelo oficial sem matriz pedagógica.",
     );
   }
 
-  const tipo = getTipo(payload);
+  const tipo = getTipo(normalizedPayload);
   const templatePath = getOfficialTemplatePath(tipo);
   const templateBuffer = fs.readFileSync(templatePath);
   const entries = new Map<string, Buffer | string>(readZip(templateBuffer));
@@ -1190,7 +1241,10 @@ export function buildOfficialPlanningDocx(payload: OfficialPlanningPayload): Buf
     ? documentXml.toString("utf8")
     : String(documentXml);
 
-  entries.set("word/document.xml", fillOfficialTemplateXml(originalXml, payload));
+  entries.set(
+    "word/document.xml",
+    fillOfficialTemplateXml(originalXml, normalizedPayload),
+  );
 
   return buildZipFromEntries(entries);
 }

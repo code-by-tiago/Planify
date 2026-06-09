@@ -15,7 +15,11 @@ export function getHistoryPlanningPayload(
 ): Record<string, unknown> | null {
   return resolvePlanningPayloadForGoogleExport(
     item.raw as Parameters<typeof resolvePlanningPayloadForGoogleExport>[0],
-    item.type,
+    {
+      documentType: item.type,
+      documentId: item.id,
+      title: item.title,
+    },
   );
 }
 

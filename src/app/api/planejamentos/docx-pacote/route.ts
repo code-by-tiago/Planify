@@ -151,15 +151,37 @@ function safeFilename(value: string) {
   );
 }
 
+function sanitizeTrimestresExtraidos(value: unknown): number[] {
+  if (!Array.isArray(value)) {
+    return [1, 2, 3];
+  }
+
+  const normalized = value
+    .map((item) => Number(item))
+    .filter((item) => Number.isFinite(item) && item >= 1 && item <= 3);
+
+  const unique = Array.from(new Set(normalized)).sort((a, b) => a - b);
+  return unique.length ? unique : [1, 2, 3];
+}
+
 function createDocument(
   payload: OfficialPlanningPayload,
   tipoPlanejamento: "anual" | "trimestral",
   trimestre?: number,
 ): ZipFile {
+  const trimestralMatrix =
+    trimestre && payload.matrizesTrimestrais
+      ? payload.matrizesTrimestrais[String(trimestre)]
+      : undefined;
+
   const documentPayload: OfficialPlanningPayload = {
     ...payload,
     tipoPlanejamento,
     trimestre: trimestre ? String(trimestre) : payload.trimestre,
+    matrizPlanejamento:
+      tipoPlanejamento === "trimestral" && trimestralMatrix?.conteudos?.length
+        ? trimestralMatrix
+        : payload.matrizPlanejamento,
   };
 
   const data = buildOfficialPlanningDocx(documentPayload);
@@ -191,12 +213,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const files: ZipFile[] = [
-      createDocument(payload, "anual"),
-      createDocument(payload, "trimestral", 1),
-      createDocument(payload, "trimestral", 2),
-      createDocument(payload, "trimestral", 3),
-    ];
+    const trimestres = sanitizeTrimestresExtraidos(payload.trimestresExtraidos);
+
+    const files: ZipFile[] = [createDocument(payload, "anual")];
+
+    for (const trimestre of trimestres) {
+      files.push(createDocument(payload, "trimestral", trimestre));
+    }
 
     const zip = buildZip(files);
     const zipBody = new Blob([new Uint8Array(zip)], {
@@ -208,7 +231,9 @@ export async function POST(request: NextRequest) {
         ? payload.componenteCurricular
         : "planejamentos";
     const year = typeof payload.anoSerie === "string" ? payload.anoSerie : "planify";
-    const filename = `${safeFilename(`planify-anual-trimestrais-${component}-${year}`)}.zip`;
+    const trimLabel =
+      trimestres.length === 3 ? "trimestrais" : `trim-${trimestres.join("-")}`;
+    const filename = `${safeFilename(`planify-anual-${trimLabel}-${component}-${year}`)}.zip`;
 
     return new NextResponse(zipBody, {
       status: 200,

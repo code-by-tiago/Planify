@@ -24,6 +24,14 @@ import {
   type PlanningEditorMeta,
 } from "@/lib/planejamentos/planning-editor-flow";
 import {
+  buildPlanningBundleDocumentId,
+  openPlanningBundleInEditor,
+  pacoteTrimestralAnualToTrimestres,
+  persistPlanningBundleDocuments,
+  type PacoteTrimestralAnual,
+  type PlanningBundleDocumentInput,
+} from "@/lib/planejamentos/planning-editor-bundle";
+import {
   buildElevatePlanningPayload,
   requestPlanningGeneration,
 } from "@/lib/planejamentos/elevate-planning-client";
@@ -39,11 +47,6 @@ import {
   trimestralCargaHorariaLabel,
   type TrimestralPlanningLike,
 } from "@/lib/planejamentos/planning-trimestral-from-annual";
-import { planifyAuthenticatedFetch } from "@/lib/auth/authenticated-fetch";
-import {
-  readDownloadBlob,
-  triggerBrowserDownload,
-} from "@/lib/downloads/trigger-browser-download";
 import { useBnccEducationOptions } from "@/hooks/useBnccEducationOptions";
 import type { MaterialEducationFields } from "@/lib/educacao/education-options";
 import {
@@ -104,8 +107,7 @@ type FormState = {
   cargaHoraria: string;
   tipoPlanejamento: TipoPlanejamento;
   trimestre: string;
-  gerarTrimestraisJunto: boolean;
-  trimestresJunto: number[];
+  pacoteTrimestralAnual: PacoteTrimestralAnual;
   conteudos: string;
   objetivos: string;
   observacoes: string;
@@ -123,8 +125,7 @@ const initialForm: FormState = {
   cargaHoraria: "80 períodos",
   tipoPlanejamento: "anual",
   trimestre: "1",
-  gerarTrimestraisJunto: false,
-  trimestresJunto: [1, 2, 3],
+  pacoteTrimestralAnual: "nenhum",
   conteudos: "",
   objetivos: "",
   observacoes: "",
@@ -284,31 +285,21 @@ function PlanningGenerationPanel({
 }
 
 
-function safeFilename(value: string) {
-  return (
-    value
-      .normalize("NFD")
-      .replace(/\p{Diacritic}/gu, "")
-      .replace(/[^a-zA-Z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "")
-      .toLowerCase()
-      .slice(0, 90) || "planejamento-planify"
-  );
-}
-
 const TRIMESTRES_DISPONIVEIS = [1, 2, 3] as const;
 
-function sanitizeTrimestresJunto(values: unknown): number[] {
-  if (!Array.isArray(values)) {
-    return [...TRIMESTRES_DISPONIVEIS];
-  }
-
-  const normalized = values
-    .map((value) => Number(value))
-    .filter((value) => Number.isFinite(value) && value >= 1 && value <= 3);
-
-  return Array.from(new Set(normalized)).sort((a, b) => a - b);
-}
+const PACOTE_TRIMESTRAL_OPTIONS: Array<{
+  value: PacoteTrimestralAnual;
+  label: string;
+}> = [
+  { value: "nenhum", label: "Só planejamento anual" },
+  { value: "1", label: "Planejamento anual + 1º trimestre" },
+  { value: "2", label: "Planejamento anual + 2º trimestre" },
+  { value: "3", label: "Planejamento anual + 3º trimestre" },
+  {
+    value: "todos",
+    label: "Planejamento anual + 1º, 2º e 3º trimestres juntos",
+  },
+];
 
 function normalizeSkill(skill: any, fallbackConteudo = ""): BnccSkill {
   const codigo = String(skill?.codigo || skill?.code || "BNCC").trim();
@@ -514,13 +505,17 @@ export function PlanejamentosClient() {
 
   const syncTrimestralPlansFromAnnual = useCallback(
     (annual: GeneratedPlanning | null, nextForm: FormState) => {
-      if (!annual || nextForm.tipoPlanejamento !== "anual" || !nextForm.gerarTrimestraisJunto) {
+      if (
+        !annual ||
+        nextForm.tipoPlanejamento !== "anual" ||
+        nextForm.pacoteTrimestralAnual === "nenhum"
+      ) {
         setGeneratedTrimestralPlans(null);
         setPreviewMatrizKey("anual");
         return;
       }
 
-      const trimestres = sanitizeTrimestresJunto(nextForm.trimestresJunto);
+      const trimestres = pacoteTrimestralAnualToTrimestres(nextForm.pacoteTrimestralAnual);
 
       if (!trimestres.length) {
         setGeneratedTrimestralPlans(null);
@@ -538,8 +533,7 @@ export function PlanejamentosClient() {
   useEffect(() => {
     syncTrimestralPlansFromAnnual(generatedPlanning, form);
   }, [
-    form.gerarTrimestraisJunto,
-    form.trimestresJunto,
+    form.pacoteTrimestralAnual,
     form.tipoPlanejamento,
     generatedPlanning,
     syncTrimestralPlansFromAnnual,
@@ -561,41 +555,15 @@ export function PlanejamentosClient() {
   }, [generatedPlanning, generatedTrimestralPlans, previewMatrizKey]);
 
   const trimestresDisponiveisDownload = useMemo(() => {
-    if (form.gerarTrimestraisJunto) {
-      const selected = sanitizeTrimestresJunto(form.trimestresJunto);
+    if (form.pacoteTrimestralAnual !== "nenhum") {
+      const selected = pacoteTrimestralAnualToTrimestres(form.pacoteTrimestralAnual);
       if (selected.length > 0) {
         return selected;
       }
     }
 
     return [...TRIMESTRES_DISPONIVEIS];
-  }, [form.gerarTrimestraisJunto, form.trimestresJunto]);
-
-  function toggleTrimestreJunto(trimestre: number) {
-    setForm((current) => {
-      const selected = new Set(sanitizeTrimestresJunto(current.trimestresJunto));
-      if (selected.has(trimestre)) {
-        if (selected.size <= 1) {
-          return current;
-        }
-        selected.delete(trimestre);
-      } else {
-        selected.add(trimestre);
-      }
-
-      return {
-        ...current,
-        trimestresJunto: Array.from(selected).sort((a, b) => a - b),
-      };
-    });
-  }
-
-  function selectAllTrimestresJunto() {
-    setForm((current) => ({
-      ...current,
-      trimestresJunto: [...TRIMESTRES_DISPONIVEIS],
-    }));
-  }
+  }, [form.pacoteTrimestralAnual]);
 
   function resolveMatrizForDownload(mode: DocxDownloadMode, trimester?: number) {
     if (mode === "trimestral" && trimester && generatedTrimestralPlans?.[trimester]) {
@@ -929,6 +897,71 @@ export function PlanejamentosClient() {
     return html;
   }
 
+  function buildPlanningBundleDocuments(
+    planning: GeneratedPlanning,
+    trimestres: number[],
+    payload: PlanningAiPayload,
+    quality: {
+      qualityScore?: number | null;
+      qualityIssues?: string[];
+      serverMaterialId?: string;
+    },
+    trimestralPlans: Partial<Record<number, TrimestralPlanningLike>>,
+  ): PlanningBundleDocumentInput[] {
+    const idempotencyKey = String(payload.idempotencyKey || "").trim();
+    const sharedMeta = buildPlanningEditorMeta({
+      generationPayload: payload,
+      qualityScore:
+        typeof quality.qualityScore === "number" ? quality.qualityScore : null,
+      qualityIssues: quality.qualityIssues ?? [],
+      serverMaterialId: quality.serverMaterialId,
+    });
+
+    const documents: PlanningBundleDocumentInput[] = [
+      {
+        id: buildPlanningBundleDocumentId(idempotencyKey, "anual"),
+        label: "Anual",
+        title: planning.titulo || "Planejamento anual",
+        html: buildPlanningEditorHtml(form, planning),
+        type: "planejamento:anual",
+        meta: sharedMeta,
+        planning,
+      },
+    ];
+
+    for (const trimestre of trimestres) {
+      const trimPlan = trimestralPlans[trimestre];
+      if (!trimPlan?.conteudos?.length) {
+        continue;
+      }
+
+      const trimForm = {
+        ...form,
+        tipoPlanejamento: "trimestral" as const,
+        trimestre: String(trimestre),
+        cargaHoraria: trimestralCargaHorariaLabel(trimPlan.conteudos),
+      };
+
+      documents.push({
+        id: buildPlanningBundleDocumentId(
+          idempotencyKey,
+          `trim${trimestre}` as "trim1" | "trim2" | "trim3",
+        ),
+        label: `${trimestre}º trimestre`,
+        title: trimPlan.titulo || `${trimestre}º trimestre`,
+        html: buildPlanningEditorHtml(trimForm, trimPlan),
+        type: "planejamento:trimestral",
+        meta: {
+          ...sharedMeta,
+          tipoPlanejamento: "trimestral",
+        },
+        planning: trimPlan,
+      });
+    }
+
+    return documents;
+  }
+
   async function generatePlanning() {
     setError("");
 
@@ -971,13 +1004,46 @@ export function PlanejamentosClient() {
           : undefined;
 
       const planning = data.planejamento as GeneratedPlanning;
+      const trimestresSelecionados =
+        form.tipoPlanejamento === "anual"
+          ? pacoteTrimestralAnualToTrimestres(form.pacoteTrimestralAnual)
+          : [];
+      const trimestralPlans =
+        trimestresSelecionados.length > 0
+          ? buildTrimestralPlansFromAnnual(planning, trimestresSelecionados)
+          : null;
+
       setGeneratedPlanning(planning);
+      setGeneratedTrimestralPlans(trimestralPlans);
       saveAnnualMatrixSnapshot(form, planning);
       setUsedAI(Boolean(data.usedAI));
       const issues = applyQualityFromResponse(data);
       setLastGenerationPayload(payload);
 
+      const qualityContext = {
+        qualityScore:
+          typeof data.qualityScore === "number" ? data.qualityScore : null,
+        qualityIssues: issues,
+        serverMaterialId,
+      };
+
+      const bundleDocuments =
+        trimestresSelecionados.length > 0 && trimestralPlans
+          ? buildPlanningBundleDocuments(
+              planning,
+              trimestresSelecionados,
+              payload,
+              qualityContext,
+              trimestralPlans,
+            )
+          : null;
+
       if (abrirEditorAutomatico) {
+        if (bundleDocuments && bundleDocuments.length > 1) {
+          openPlanningBundleInEditor(bundleDocuments);
+          return;
+        }
+
         const html = buildPlanningEditorHtml(form, planning);
         const titulo = planning.titulo || "Planejamento";
         openPlanningInEditor(
@@ -985,36 +1051,37 @@ export function PlanejamentosClient() {
           titulo,
           buildPlanningEditorMeta({
             generationPayload: payload,
-            qualityScore:
-              typeof data.qualityScore === "number" ? data.qualityScore : null,
+            qualityScore: qualityContext.qualityScore,
             qualityIssues: issues,
             serverMaterialId,
           }),
           planning,
         );
+
         return;
       }
 
-      persistGeneratedPlanning(planning, payload, {
-        qualityScore: data.qualityScore,
-        qualityIssues: issues,
-        serverMaterialId,
-      });
+      if (bundleDocuments && bundleDocuments.length > 1) {
+        persistPlanningBundleDocuments(bundleDocuments);
+      } else {
+        persistGeneratedPlanning(planning, payload, {
+          qualityScore: data.qualityScore,
+          qualityIssues: issues,
+          serverMaterialId,
+        });
+      }
 
-      const trimestresExtraidos =
-        form.tipoPlanejamento === "anual" && form.gerarTrimestraisJunto
-          ? sanitizeTrimestresJunto(form.trimestresJunto)
-              .map((value) => `${value}º`)
-              .join(", ")
-          : "";
+      const trimestresExtraidos = trimestresSelecionados
+        .map((value) => `${value}º`)
+        .join(", ");
 
       setStatus(
         data.usedAI
           ? trimestresExtraidos
-            ? `Matriz anual gerada. Trimestrais ${trimestresExtraidos} extraídos do anual.`
+            ? `Matriz anual gerada. Trimestrais ${trimestresExtraidos} extraídos e salvos no histórico.`
             : "Matriz gerada e salva no histórico. Baixe o DOCX ou edite no editor."
           : trimestresExtraidos
-            ? `Matriz anual (modo seguro). Trimestrais ${trimestresExtraidos} extraídos do anual.`
+            ? `Matriz anual (modo seguro). Trimestrais ${trimestresExtraidos} extraídos e salvos no histórico.`
             : "Matriz em modo seguro salva no histórico. Baixe o DOCX ou edite no editor.",
       );
 
@@ -1180,59 +1247,6 @@ export function PlanejamentosClient() {
     await downloadDocxWithMode(form.tipoPlanejamento, Number(form.trimestre || 1));
   }
 
-  async function downloadAnnualAndTrimestersPackage() {
-    setError("");
-
-    if (!generatedPlanning) {
-      setError("Gere o planejamento anual com IA antes de baixar o pacote.");
-      return;
-    }
-
-    if (form.tipoPlanejamento !== "anual") {
-      setError("Para baixar anual + trimestrais, gere primeiro o Planejamento Anual.");
-      return;
-    }
-
-    if (docxTemplateMode === "custom") {
-      setError(
-        "O pacote anual + trimestrais usa sempre os modelos oficiais do Planify. Baixe cada trimestre individualmente com seu modelo da escola.",
-      );
-      return;
-    }
-
-    setLoadingDocx(true);
-    setStatus("Gerando pacote com anual + trimestrais...");
-
-    try {
-      const response = await planifyAuthenticatedFetch("/api/planejamentos/docx-pacote", {
-        method: "POST",
-        body: JSON.stringify({
-          ...buildBasePayload(),
-          tipoPlanejamento: "anual",
-          matrizPlanejamento: generatedPlanning,
-        }),
-      });
-
-      if (!response.ok) {
-        const data = await response.json().catch(() => null);
-        throw new Error(data?.error?.message || "Não foi possível gerar o pacote DOCX.");
-      }
-
-      const blob = await readDownloadBlob(response);
-      triggerBrowserDownload(
-        blob,
-        `${safeFilename(`planify-anual-trimestrais-${form.componenteCurricular}-${form.anoSerie}`)}.zip`,
-      );
-
-      setStatus("Pacote anual + trimestrais baixado com sucesso.");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao baixar pacote.");
-      setStatus("Erro ao gerar pacote");
-    } finally {
-      setLoadingDocx(false);
-    }
-  }
-
   function sendToEditor() {
     if (!activePreviewPlanning) {
       setError("Gere o planejamento com IA antes de enviar para o Editor.");
@@ -1326,7 +1340,7 @@ export function PlanejamentosClient() {
                   <Pill tone="emerald">Baseado no anual</Pill>
                 </div>
 
-                <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+                <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                   <button
                     type="button"
                     onClick={() => downloadDocxWithMode("anual")}
@@ -1348,17 +1362,8 @@ export function PlanejamentosClient() {
                       {generatedTrimestralPlans?.[trimestre] ? " ✓" : ""}
                     </button>
                   ))}
-
-                  <button
-                    type="button"
-                    onClick={downloadAnnualAndTrimestersPackage}
-                    disabled={loadingDocx}
-                    className="pl-hud-btn-secondary rounded-xl border border-cyan-400/30 px-5 py-3.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    Pacote ZIP
-                  </button>
                 </div>
-                {form.gerarTrimestraisJunto ? (
+                {form.pacoteTrimestralAnual !== "nenhum" ? (
                   <p className="mt-3 text-xs font-semibold text-emerald-700/90">
                     Trimestrais marcados com ✓ foram extraídos do anual gerado — idênticos ao
                     bloco correspondente na matriz anual.
@@ -1541,82 +1546,40 @@ export function PlanejamentosClient() {
 
             {form.tipoPlanejamento === "anual" ? (
               <fieldset className="relative z-10 mt-6 rounded-2xl border border-cyan-400/20 bg-cyan-50/40 p-5">
-                <label className="flex cursor-pointer items-start gap-3">
-                  <input
-                    type="checkbox"
-                    checked={form.gerarTrimestraisJunto}
-                    onChange={(event) =>
-                      setForm((current) => ({
-                        ...current,
-                        gerarTrimestraisJunto: event.target.checked,
-                        trimestresJunto: event.target.checked
-                          ? [...TRIMESTRES_DISPONIVEIS]
-                          : sanitizeTrimestresJunto(current.trimestresJunto),
-                      }))
-                    }
-                    className="mt-1 h-4 w-4 rounded border-cyan-400 text-cyan-600 focus:ring-cyan-200"
-                  />
-                  <span>
-                    <span className="text-sm font-black text-slate-950">
-                      Gerar trimestrais junto com o anual
-                    </span>
-                    <span className="mt-1 block text-sm font-medium leading-6 text-slate-600">
-                      Após a IA montar o anual, os trimestres escolhidos serão extraídos da
-                      mesma matriz — mesmos conteúdos, habilidades e períodos, sem nova geração.
-                    </span>
-                  </span>
-                </label>
+                <legend className="px-1 text-sm font-black text-slate-950">
+                  Extrair trimestres do anual
+                </legend>
+                <p className="mt-1 text-sm font-medium leading-6 text-slate-600">
+                  Após a IA montar o anual, os trimestres escolhidos serão extraídos da mesma
+                  matriz — mesmos conteúdos, habilidades e períodos, sem nova geração.
+                </p>
 
-                {form.gerarTrimestraisJunto ? (
-                  <div
-                    role="group"
-                    aria-label="Trimestres a extrair do anual"
-                    className="mt-4 space-y-3"
-                    onClick={(event) => event.stopPropagation()}
-                  >
-                    <div className="flex flex-wrap items-center gap-2">
-                      {TRIMESTRES_DISPONIVEIS.map((trimestre) => {
-                        const trimestresSelecionados = sanitizeTrimestresJunto(
-                          form.trimestresJunto,
-                        );
-                        const selected = trimestresSelecionados.includes(trimestre);
-
-                        return (
-                          <label
-                            key={trimestre}
-                            className={`inline-flex cursor-pointer items-center gap-2 rounded-xl border px-4 py-2 text-sm font-bold transition ${
-                              selected
-                                ? "border-cyan-500 bg-cyan-600 text-white shadow-sm"
-                                : "border-cyan-400/25 bg-white text-slate-700 hover:border-cyan-400/50"
-                            }`}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={selected}
-                              onChange={() => toggleTrimestreJunto(trimestre)}
-                              className="h-4 w-4 rounded border-cyan-300 text-cyan-600 focus:ring-cyan-200"
-                            />
-                            {trimestre}º trimestre
-                          </label>
-                        );
-                      })}
-                    </div>
-                    {sanitizeTrimestresJunto(form.trimestresJunto).length < 3 ? (
-                      <button
-                        type="button"
-                        onClick={selectAllTrimestresJunto}
-                        className="text-xs font-bold text-cyan-700 underline-offset-2 hover:underline"
-                      >
-                        Marcar os 3 trimestres
-                      </button>
-                    ) : null}
-                  </div>
-                ) : null}
+                <div className="mt-4 space-y-2">
+                  {PACOTE_TRIMESTRAL_OPTIONS.map((option) => (
+                    <label
+                      key={option.value}
+                      className={`flex cursor-pointer items-start gap-3 rounded-xl border px-4 py-3 transition ${
+                        form.pacoteTrimestralAnual === option.value
+                          ? "border-cyan-500 bg-white shadow-sm"
+                          : "border-cyan-400/20 bg-white/80 hover:border-cyan-400/40"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="pacoteTrimestralAnual"
+                        checked={form.pacoteTrimestralAnual === option.value}
+                        onChange={() => updateField("pacoteTrimestralAnual", option.value)}
+                        className="mt-1 h-4 w-4 border-cyan-400 text-cyan-600 focus:ring-cyan-200"
+                      />
+                      <span className="text-sm font-semibold text-slate-800">{option.label}</span>
+                    </label>
+                  ))}
+                </div>
               </fieldset>
             ) : (
               <p className="mt-6 rounded-2xl border border-amber-200/80 bg-amber-50/80 px-4 py-3 text-sm font-medium leading-6 text-amber-900">
                 Para trimestrais 100% coerentes com o anual, gere o{" "}
-                <strong>Planejamento Anual</strong> e marque a opção de extrair os trimestres
+                <strong>Planejamento Anual</strong> e escolha a opção de extrair os trimestres
                 desejados.
               </p>
             )}
@@ -1778,7 +1741,7 @@ export function PlanejamentosClient() {
                 Editar no editor
               </button>
               <button type="button" onClick={downloadDocx} disabled={loadingDocx || !generatedPlanning} className="pl-hud-btn-secondary rounded-xl border border-emerald-300/40 px-5 py-3.5 text-sm font-semibold text-emerald-800 disabled:cursor-not-allowed disabled:opacity-50">
-                {loadingDocx ? "Preenchendo DOCX..." : "3. Baixar DOCX atual"}
+                {loadingDocx ? "Preparando download..." : "3. Baixar DOCX atual"}
               </button>
             </div>
 
@@ -1843,7 +1806,7 @@ export function PlanejamentosClient() {
                   <Pill tone="emerald">Baseado no anual</Pill>
                 </div>
 
-                <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+                <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                   <button
                     type="button"
                     onClick={() => downloadDocxWithMode("anual")}
@@ -1865,17 +1828,8 @@ export function PlanejamentosClient() {
                       {generatedTrimestralPlans?.[trimestre] ? " ✓" : ""}
                     </button>
                   ))}
-
-                  <button
-                    type="button"
-                    onClick={downloadAnnualAndTrimestersPackage}
-                    disabled={loadingDocx}
-                    className="pl-hud-btn-secondary rounded-xl border border-cyan-400/30 px-5 py-3.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    Pacote ZIP
-                  </button>
                 </div>
-                {form.gerarTrimestraisJunto ? (
+                {form.pacoteTrimestralAnual !== "nenhum" ? (
                   <p className="mt-3 text-xs font-semibold text-emerald-700/90">
                     Trimestrais marcados com ✓ foram extraídos do anual gerado — idênticos ao
                     bloco correspondente na matriz anual.

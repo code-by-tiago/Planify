@@ -57,11 +57,16 @@ export async function readDownloadBlob(response: Response): Promise<Blob> {
     }
   }
 
-  if (contentType.includes("wordprocessingml") || contentType.includes("msword")) {
+  if (
+    contentType.includes("wordprocessingml") ||
+    contentType.includes("msword") ||
+    contentType.includes("application/zip") ||
+    contentType.includes("application/x-zip")
+  ) {
     const header = await blob.slice(0, 2).arrayBuffer();
     const bytes = new Uint8Array(header);
     if (bytes[0] !== 0x50 || bytes[1] !== 0x4b) {
-      throw new Error("O DOCX gerado é inválido. Tente novamente.");
+      throw new Error("O arquivo gerado é inválido. Tente novamente.");
     }
   }
 

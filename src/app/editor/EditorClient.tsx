@@ -3,6 +3,8 @@
 import { EditorShareBar } from "@/components/editor/EditorShareBar";
 import { downloadEditorExport } from "@/lib/downloads/editor-export-client";
 import {
+  createEditorDocument,
+  saveEditorDocument,
   syncOpenDocumentToHistory,
   type EditorStoredPayload,
 } from "@/lib/editor/editor-storage";
@@ -27,6 +29,11 @@ import {
   planningPayloadToHtmlContext,
 } from "@/lib/planejamentos/planning-editor-html";
 import type { PlanningEditorMeta } from "@/lib/planejamentos/planning-editor-flow";
+import {
+  loadPlanningEditorBundle,
+  savePlanningEditorBundle,
+  type PlanningEditorBundle,
+} from "@/lib/planejamentos/planning-editor-bundle";
 import { resolvePlanningPayloadForGoogleExport } from "@/lib/planejamentos/planning-google-export-payload";
 import {
   buildElevatePayload,
@@ -336,6 +343,8 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
   const [slideTheme, setSlideTheme] = useState<string | null>(null);
   const [elevatingQuality, setElevatingQuality] = useState(false);
   const [adjustingSlides, setAdjustingSlides] = useState(false);
+  const [planningBundle, setPlanningBundle] = useState<PlanningEditorBundle | null>(null);
+  const [activeBundleIndex, setActiveBundleIndex] = useState(0);
 
   const lastSavedLabel = useMemo(() => nowLabel(), []);
 
@@ -419,12 +428,27 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
   }, [embedded]);
 
   useEffect(() => {
-    const from = new URLSearchParams(window.location.search).get("from");
+    const params = new URLSearchParams(window.location.search);
+    const from = params.get("from");
+    const isBundle = params.get("bundle") === "1";
+
     if (from === "materiais") {
       setOriginHint(
         "Material didático recebido do gerador — ajuste o texto, complemente e exporte pelo Google Docs quando estiver pronto.",
       );
-    } else if (from === "planejamentos") {
+    } else if (from === "planejamentos" && isBundle) {
+      const bundle = loadPlanningEditorBundle();
+      if (bundle && bundle.tabs.length > 1) {
+        setPlanningBundle(bundle);
+        setActiveBundleIndex(bundle.activeIndex);
+        setOriginHint(
+          "Pacote anual + trimestres — use as abas para alternar entre os documentos. Cada um é salvo separadamente no histórico.",
+        );
+        return;
+      }
+    }
+
+    if (from === "planejamentos") {
       setOriginHint("Planejamento recebido — revise a formatação antes de exportar.");
     }
   }, []);
@@ -1123,8 +1147,93 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
       updatedAt: saved.updatedAt,
     });
 
+    if (planningBundle) {
+      const updatedTabs = [...planningBundle.tabs];
+      updatedTabs[activeBundleIndex] = {
+        ...updatedTabs[activeBundleIndex],
+        content: html,
+        title: currentTitle,
+      };
+      const nextBundle = { ...planningBundle, tabs: updatedTabs };
+      savePlanningEditorBundle(nextBundle);
+      setPlanningBundle(nextBundle);
+    }
+
     window.dispatchEvent(new Event("planify:history-changed"));
     setStatus(`${message} ${nowLabel()}`);
+  }
+
+  function switchPlanningBundleTab(nextIndex: number) {
+    if (!planningBundle || nextIndex === activeBundleIndex) {
+      return;
+    }
+
+    if (nextIndex < 0 || nextIndex >= planningBundle.tabs.length) {
+      return;
+    }
+
+    prepareImagesInsideEditor();
+
+    const html = getEditorHtml();
+    const currentTitle = title.trim() || getDocumentTitleFromHtml(html);
+    const currentTab = planningBundle.tabs[activeBundleIndex];
+    const source = documentSource;
+    const payload = source?.payload as EditorStoredPayload | undefined;
+
+    syncOpenDocumentToHistory({
+      title: currentTitle,
+      content: html,
+      type: source?.type || currentTab.type,
+      payload: {
+        ...payload,
+        id: currentTab.id,
+        raw: currentTab.raw,
+      },
+    });
+
+    const updatedTabs = [...planningBundle.tabs];
+    updatedTabs[activeBundleIndex] = {
+      ...updatedTabs[activeBundleIndex],
+      content: html,
+      title: currentTitle,
+    };
+
+    const nextTab = updatedTabs[nextIndex];
+    const nextBundle = { activeIndex: nextIndex, tabs: updatedTabs };
+    savePlanningEditorBundle(nextBundle);
+    setPlanningBundle(nextBundle);
+    setActiveBundleIndex(nextIndex);
+
+    setTitle(nextTab.title);
+    const nextDocumentSource: StoredEditorDocument = {
+      type: nextTab.type,
+      title: nextTab.title,
+      html: nextTab.content,
+      content: nextTab.content,
+      payload: {
+        source: "planejamento",
+        raw: nextTab.raw,
+        id: nextTab.id,
+      },
+      updatedAt: new Date().toISOString(),
+    };
+
+    setDocumentSource(nextDocumentSource);
+    setEditorHtml(nextTab.content);
+    syncSlideDeckFlags(nextTab.content, nextDocumentSource);
+
+    saveEditorDocument(
+      createEditorDocument({
+        id: nextTab.id,
+        source: "planejamento",
+        title: nextTab.title,
+        type: nextTab.type,
+        content: nextTab.content,
+        raw: nextTab.raw,
+      }),
+    );
+
+    setStatus(`Aba "${nextTab.label}" carregada.`);
   }
 
   function saveVersion() {
@@ -1690,6 +1799,31 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
           }
         >
           {originHint}
+        </div>
+      ) : null}
+
+      {planningBundle && planningBundle.tabs.length > 1 ? (
+        <div
+          className={`shrink-0 border-b border-cyan-200 bg-cyan-50/80 ${
+            embedded ? "px-2 py-1.5" : "mb-2 rounded-xl border px-3 py-2"
+          }`}
+        >
+          <div className="flex flex-wrap gap-2">
+            {planningBundle.tabs.map((tab, index) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => switchPlanningBundleTab(index)}
+                className={`rounded-lg px-3 py-1.5 text-xs font-black transition ${
+                  index === activeBundleIndex
+                    ? "bg-cyan-600 text-white shadow-sm"
+                    : "border border-cyan-200 bg-white text-slate-700 hover:border-cyan-400 hover:bg-cyan-50"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
         </div>
       ) : null}
 

@@ -33,6 +33,13 @@ export type OfficialPlanningPayload = {
   objetivos?: string;
   observacoes?: string;
   matrizPlanejamento?: PlanningAiResult["planejamento"] | { conteudos?: PlanningMatrixItem[] };
+  /** Pacote ZIP: trimestres a incluir (1–3). Omitido = os três. */
+  trimestresExtraidos?: number[];
+  /** Pacote ZIP: matrizes trimestrais já extraídas do anual (chave "1" | "2" | "3"). */
+  matrizesTrimestrais?: Record<
+    string,
+    PlanningAiResult["planejamento"] | { conteudos?: PlanningMatrixItem[] }
+  >;
 };
 
 type ZipFileEntry = {

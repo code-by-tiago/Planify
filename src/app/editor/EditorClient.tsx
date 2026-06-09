@@ -3,11 +3,14 @@
 import { EditorShareBar } from "@/components/editor/EditorShareBar";
 import { downloadEditorExport } from "@/lib/downloads/editor-export-client";
 import {
+  clearEditorDocument,
   createEditorDocument,
+  loadEditorDocument,
   saveEditorDocument,
   syncOpenDocumentToHistory,
   type EditorStoredPayload,
 } from "@/lib/editor/editor-storage";
+import { removeHistoryItem } from "@/lib/history/history-storage";
 import { wrapAsCleanPrintHtml } from "@/lib/editor/editor-print-html";
 import {
   getClosestTable,
@@ -1609,6 +1612,27 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
     setStatus("Novo documento criado.");
   }
 
+  function deleteDocumentPermanently() {
+    const currentDocument = loadEditorDocument();
+    const confirmed = window.confirm(
+      "Excluir permanentemente este documento?\n\nEsta ação não pode ser desfeita. Salve ou exporte antes se precisar manter uma cópia.",
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    if (currentDocument?.id) {
+      removeHistoryItem(currentDocument.id);
+    }
+
+    clearEditorDocument();
+    setTitle("Documento Planify");
+    setDocumentSource(null);
+    setEditorHtml(defaultDocument);
+    setStatus("Documento excluído permanentemente.");
+  }
+
   function printDocument() {
     persistCurrentDocument("Documento preparado para impressão limpa.");
 
@@ -1984,6 +2008,13 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
                 >
                   Formatação
                 </button>
+                <button
+                  type="button"
+                  onClick={deleteDocumentPermanently}
+                  className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-black text-rose-700"
+                >
+                  Excluir
+                </button>
               </div>
             ) : null}
 
@@ -2073,6 +2104,14 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
 
                 <button type="button" onClick={newDocument} className={actionBtnClass}>
                   Novo documento
+                </button>
+
+                <button
+                  type="button"
+                  onClick={deleteDocumentPermanently}
+                  className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-black text-rose-700 transition hover:bg-rose-100"
+                >
+                  Excluir permanentemente
                 </button>
 
                 <button

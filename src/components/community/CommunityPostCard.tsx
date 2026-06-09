@@ -8,7 +8,6 @@ import { MaterialLikeButton } from "@/components/community/MaterialLikeButton";
 import { MaterialSaveButton } from "@/components/community/MaterialSaveButton";
 import { CommunityMaterialComments } from "@/components/community/CommunityMaterialComments";
 import { CommunityMaterialExportBar } from "@/components/documents/CommunityMaterialExportBar";
-import { MaterialTypeCover } from "@/components/materials/MaterialTypeCover";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import type { CommunityFeedItem } from "@/lib/community/types";
 import type { MarketplaceDownloadFormat } from "@/lib/marketplace/marketplace-download-client";
@@ -43,6 +42,20 @@ function materialShareUrl(materialId: string): string {
   return `https://iaplanify.com.br/marketplace/material/${materialId}`;
 }
 
+function tipoAccentClass(tipo: string): string {
+  const normalized = tipo.toLowerCase();
+  if (normalized.includes("planejamento")) {
+    return "from-cyan-500 to-blue-600";
+  }
+  if (normalized.includes("slide")) {
+    return "from-violet-500 to-fuchsia-600";
+  }
+  if (normalized.includes("avalia")) {
+    return "from-amber-500 to-orange-600";
+  }
+  return "from-slate-600 to-cyan-700";
+}
+
 type CommunityPostCardProps = {
   item: CommunityFeedItem;
   downloadingKey: string | null;
@@ -50,6 +63,9 @@ type CommunityPostCardProps = {
   onDownload: (item: CommunityFeedItem, format: MarketplaceDownloadFormat) => void;
   onRemove?: (item: CommunityFeedItem) => void;
   showRemove?: boolean;
+  onHideFromFeed?: (item: CommunityFeedItem) => void;
+  onRestoreToFeed?: (item: CommunityFeedItem) => void;
+  isHiddenFromFeed?: boolean;
   onTagClick?: (tag: string) => void;
   onTemaClick?: (tema: string) => void;
 };
@@ -61,6 +77,9 @@ export function CommunityPostCard({
   onDownload,
   onRemove,
   showRemove,
+  onHideFromFeed,
+  onRestoreToFeed,
+  isHiddenFromFeed,
   onTagClick,
   onTemaClick,
 }: CommunityPostCardProps) {
@@ -72,6 +91,9 @@ export function CommunityPostCard({
   const [savedByMe, setSavedByMe] = useState(item.savedByMe ?? false);
   const [shareStatus, setShareStatus] = useState("");
 
+  const isOwnMaterial = Boolean(viewerUserId && item.userId === viewerUserId);
+  const accentClass = tipoAccentClass(item.tipoMaterial);
+
   function copyShareLink() {
     const url = materialShareUrl(item.id);
     void navigator.clipboard.writeText(url).then(() => {
@@ -80,15 +102,53 @@ export function CommunityPostCard({
     });
   }
 
-  const coverSubtitle = `${item.componente} · ${item.etapa}`;
+  function handleHideFromFeed() {
+    if (!onHideFromFeed) return;
+    onHideFromFeed(item);
+  }
+
+  function handleRestoreToFeed() {
+    if (!onRestoreToFeed) return;
+    onRestoreToFeed(item);
+  }
+
+  function handlePermanentDelete() {
+    onRemove?.(item);
+  }
 
   return (
-    <article className="overflow-hidden rounded-2xl border border-cyan-400/15 bg-white shadow-sm">
-      <Link href={`/marketplace/material/${item.id}`} className="block">
-        <MaterialTypeCover
-          typeLabel={item.tipoMaterial}
-          subtitle={coverSubtitle}
-        />
+    <article
+      className={`group relative overflow-hidden rounded-2xl border border-cyan-400/20 bg-white/90 shadow-sm backdrop-blur-sm transition motion-safe:hover:-translate-y-0.5 motion-safe:hover:shadow-lg ${
+        isHiddenFromFeed ? "opacity-80 ring-2 ring-amber-200/80" : ""
+      }`}
+    >
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-500"
+        aria-hidden
+      />
+
+      <Link
+        href={`/marketplace/material/${item.id}`}
+        className="relative block overflow-hidden"
+      >
+        <div className={`bg-gradient-to-br ${accentClass} px-5 py-6 text-white`}>
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/80">
+                {item.tipoMaterial}
+              </p>
+              <p className="mt-1 text-sm font-bold text-white/95">
+                {item.componente} · {item.etapa}
+              </p>
+              <p className="mt-0.5 text-xs font-medium text-white/75">
+                {item.anoSerie}
+              </p>
+            </div>
+            <span className="rounded-full border border-white/25 bg-white/15 px-2.5 py-1 text-[10px] font-bold backdrop-blur-sm">
+              {formatBytes(item.fileSize)}
+            </span>
+          </div>
+        </div>
       </Link>
 
       <header className="flex items-center gap-3 border-b border-cyan-400/10 px-4 py-3">
@@ -100,7 +160,8 @@ export function CommunityPostCard({
         <div className="min-w-0 flex-1">
           <CommunityAuthorLink userId={item.userId} name={item.authorName} />
           <p className="truncate text-[11px] font-medium text-slate-500">
-            {item.anoSerie} · {formatDate(item.createdAt)}
+            {formatDate(item.createdAt)}
+            {item.downloadsCount > 0 ? ` · ${item.downloadsCount} download(s)` : ""}
           </p>
         </div>
         {commentsCount > 0 ? (
@@ -116,12 +177,12 @@ export function CommunityPostCard({
 
       <div className="px-4 py-4">
         <Link href={`/marketplace/material/${item.id}`}>
-          <h3 className="text-lg font-extrabold leading-snug text-slate-950 transition hover:text-cyan-800">
+          <h3 className="text-lg font-extrabold leading-snug text-slate-950 transition group-hover:text-cyan-800 sm:text-xl">
             {item.title}
           </h3>
         </Link>
         {item.description ? (
-          <p className="mt-2 line-clamp-2 text-sm leading-6 text-slate-600">
+          <p className="mt-2 line-clamp-3 text-sm leading-6 text-slate-600">
             {item.description}
           </p>
         ) : null}
@@ -130,7 +191,7 @@ export function CommunityPostCard({
           <button
             type="button"
             onClick={() => onTemaClick?.(item.tema)}
-            className="mt-2 inline-flex rounded-full border border-indigo-200 bg-indigo-50 px-2.5 py-0.5 text-[10px] font-bold text-indigo-800 transition hover:bg-indigo-100"
+            className="mt-3 inline-flex rounded-full border border-indigo-200 bg-indigo-50 px-2.5 py-0.5 text-[10px] font-bold text-indigo-800 transition hover:bg-indigo-100"
           >
             #{item.tema}
           </button>
@@ -150,25 +211,15 @@ export function CommunityPostCard({
             ))}
           </div>
         ) : null}
-
-        <div className="mt-3 flex flex-wrap gap-2 text-[11px] font-semibold text-slate-500">
-          <span>{formatBytes(item.fileSize)}</span>
-          {item.downloadsCount > 0 ? (
-            <>
-              <span>·</span>
-              <span>{item.downloadsCount} download(s)</span>
-            </>
-          ) : null}
-        </div>
       </div>
 
       <CommunityFeedInlinePreview materialId={item.id} title={item.title} />
 
-      <div className="space-y-3 border-t border-cyan-400/10 px-3 py-3 sm:px-4">
+      <div className="space-y-3 border-t border-cyan-400/10 bg-slate-50/40 px-3 py-3 sm:px-4">
         <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
           <Link
             href={`/marketplace/material/${item.id}`}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-cyan-500/30 bg-cyan-600 px-3 py-1.5 text-[11px] font-bold text-white shadow-sm transition hover:bg-cyan-700"
+            className="pl-hud-btn inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[11px] font-bold"
           >
             <PlanifyIcon name="fileText" className="h-3.5 w-3.5" />
             Ver material
@@ -191,7 +242,7 @@ export function CommunityPostCard({
           <button
             type="button"
             onClick={copyShareLink}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-cyan-400/20 bg-white/80 px-2.5 py-1.5 text-[11px] font-bold text-slate-700 transition hover:border-cyan-300 hover:bg-cyan-50/60"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-cyan-400/20 bg-white px-2.5 py-1.5 text-[11px] font-bold text-slate-700 transition hover:border-cyan-300 hover:bg-cyan-50/60"
             title="Copiar link do material"
           >
             <PlanifyIcon name="externalLink" className="h-3.5 w-3.5 text-slate-400" />
@@ -200,7 +251,7 @@ export function CommunityPostCard({
           </button>
           <a
             href={`#comments-${item.id}`}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-cyan-400/20 bg-white/80 px-2.5 py-1.5 text-[11px] font-bold text-slate-700 transition hover:border-cyan-300 hover:bg-cyan-50/60 hover:text-cyan-800"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-cyan-400/20 bg-white px-2.5 py-1.5 text-[11px] font-bold text-slate-700 transition hover:border-cyan-300 hover:bg-cyan-50/60 hover:text-cyan-800"
           >
             <PlanifyIcon name="message" className="h-3.5 w-3.5 text-slate-400" />
             <span className="hidden sm:inline">
@@ -217,19 +268,37 @@ export function CommunityPostCard({
           returnTo="/marketplace"
         />
 
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <CommunityReportButton targetType="material" targetId={item.id} compact />
+          {!isOwnMaterial && onHideFromFeed && !isHiddenFromFeed ? (
+            <button
+              type="button"
+              onClick={handleHideFromFeed}
+              className="text-[11px] font-bold text-slate-500 transition hover:text-slate-700"
+            >
+              Ocultar do feed
+            </button>
+          ) : null}
+          {!isOwnMaterial && onRestoreToFeed && isHiddenFromFeed ? (
+            <button
+              type="button"
+              onClick={handleRestoreToFeed}
+              className="text-[11px] font-bold text-amber-700 transition hover:text-amber-800"
+            >
+              Mostrar no feed
+            </button>
+          ) : null}
         </div>
       </div>
 
       {showRemove && onRemove ? (
-        <div className="border-t border-cyan-400/10 px-4 py-2">
+        <div className="border-t border-rose-100 bg-rose-50/40 px-4 py-2.5">
           <button
             type="button"
-            onClick={() => onRemove(item)}
-            className="text-[11px] font-bold text-rose-600 hover:text-rose-700"
+            onClick={handlePermanentDelete}
+            className="text-[11px] font-bold text-rose-600 transition hover:text-rose-700"
           >
-            Remover meu material
+            Excluir permanentemente
           </button>
         </div>
       ) : null}

@@ -50,20 +50,8 @@ import {
 } from "@/lib/planejamentos/planning-trimestral-from-annual";
 import { useBnccEducationOptions } from "@/hooks/useBnccEducationOptions";
 import type { MaterialEducationFields } from "@/lib/educacao/education-options";
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-  type ClipboardEvent,
-  type FocusEvent,
-} from "react";
-import {
-  conteudosFieldNeedsNormalization,
-  conteudosTopicsWouldChange,
-  normalizeConteudosFieldText,
-  splitTopicLines,
-} from "@/lib/bncc/split-topic-lines";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { splitTopicLines } from "@/lib/bncc/split-topic-lines";
 
 type TipoPlanejamento = "anual" | "trimestral";
 
@@ -433,7 +421,7 @@ export function PlanejamentosClient() {
     });
   }, []);
 
-  const conteudos = useMemo(() => splitTopicLines(form.conteudos), [form.conteudos]);
+  const conteudosPreenchido = Boolean(form.conteudos.trim());
 
   const educationFields = useMemo(
     (): MaterialEducationFields => ({
@@ -475,12 +463,12 @@ export function PlanejamentosClient() {
 
   const stats = useMemo(
     () => ({
-      conteudos: conteudos.length,
+      conteudos: conteudosPreenchido ? 1 : 0,
       sugeridas: groups.reduce((total, group) => total + group.habilidades.length, 0),
       selecionadas: selectedSkills.length,
       matriz: generatedPlanning?.conteudos?.length || 0,
     }),
-    [conteudos.length, groups, selectedSkills.length, generatedPlanning],
+    [conteudosPreenchido, groups, selectedSkills.length, generatedPlanning],
   );
 
   function invalidateGenerated() {
@@ -561,59 +549,6 @@ export function PlanejamentosClient() {
     invalidateGenerated();
     setStatus("Aguardando nova sugestão");
     setError("");
-  }
-
-  function applyConteudosValue(
-    raw: string,
-    options?: { invalidate?: boolean; announce?: boolean },
-  ): string {
-    const previous = form.conteudos;
-    const normalized = normalizeConteudosFieldText(raw);
-    const changed = normalized !== previous;
-
-    if (changed) {
-      setForm((current) =>
-        normalizeEducationalFields(current, { conteudos: normalized }),
-      );
-
-      if (options?.invalidate && conteudosTopicsWouldChange(previous || raw)) {
-        invalidateConteudosDependents();
-      }
-
-      if (options?.announce) {
-        const topicCount = splitTopicLines(normalized).length;
-        if (topicCount > 0) {
-          setStatus(
-            topicCount === 1
-              ? "1 conteúdo organizado em tópico."
-              : `${topicCount} conteúdos organizados em tópicos.`,
-          );
-        }
-      }
-    }
-
-    return normalized;
-  }
-
-  function handleConteudosPaste(event: ClipboardEvent<HTMLTextAreaElement>) {
-    event.preventDefault();
-    const pasted = event.clipboardData.getData("text");
-    const field = event.currentTarget;
-    const before = field.value.slice(0, field.selectionStart);
-    const after = field.value.slice(field.selectionEnd);
-    applyConteudosValue(`${before}${pasted}${after}`, {
-      invalidate: true,
-      announce: true,
-    });
-  }
-
-  function handleConteudosBlur(event: FocusEvent<HTMLTextAreaElement>) {
-    if (conteudosFieldNeedsNormalization(event.target.value)) {
-      applyConteudosValue(event.target.value, {
-        invalidate: true,
-        announce: true,
-      });
-    }
   }
 
   function updateField<K extends keyof FormState>(key: K, value: FormState[K]) {
@@ -725,16 +660,14 @@ export function PlanejamentosClient() {
   async function suggestBncc() {
     setError("");
 
-    const normalizedConteudos = applyConteudosValue(form.conteudos, {
-      invalidate: true,
-      announce: true,
-    });
-    const topicLines = splitTopicLines(normalizedConteudos);
+    const conteudosText = form.conteudos.trim();
 
-    if (topicLines.length === 0) {
-      setError("Informe pelo menos um conteúdo. A sugestão BNCC usa a caixa Conteúdos como base principal.");
+    if (!conteudosText) {
+      setError("Informe os conteúdos na caixa Conteúdos antes de sugerir BNCC.");
       return;
     }
+
+    const topicLines = splitTopicLines(conteudosText);
 
     setLoadingBncc(true);
     setStatus("Buscando habilidades BNCC pelos conteúdos...");
@@ -746,7 +679,7 @@ export function PlanejamentosClient() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...buildBasePayload(),
-          conteudos: normalizedConteudos,
+          conteudos: conteudosText,
         }),
       });
 
@@ -928,12 +861,9 @@ export function PlanejamentosClient() {
   async function generatePlanning() {
     setError("");
 
-    const normalizedConteudos = applyConteudosValue(form.conteudos, {
-      announce: true,
-    });
-    const topicLines = splitTopicLines(normalizedConteudos);
+    const conteudosText = form.conteudos.trim();
 
-    if (topicLines.length === 0) {
+    if (!conteudosText) {
       setError("Informe os conteúdos antes de gerar o planejamento.");
       return;
     }
@@ -954,7 +884,7 @@ export function PlanejamentosClient() {
 
       const payload = {
         ...buildBasePayload(),
-        conteudos: normalizedConteudos,
+        conteudos: conteudosText,
         idempotencyKey: crypto.randomUUID(),
       };
       const data = await requestPlanningGeneration(payload);
@@ -1508,11 +1438,9 @@ export function PlanejamentosClient() {
                 <textarea
                   value={form.conteudos}
                   onChange={(event) => updateField("conteudos", event.target.value)}
-                  onPaste={handleConteudosPaste}
-                  onBlur={handleConteudosBlur}
                   rows={6}
                   spellCheck={false}
-                  placeholder={"Digite um conteúdo por linha.\nEx.: Estrutura dissertativa-argumentativa\nEx.: Repertório sociocultural"}
+                  placeholder="Descreva os conteúdos, temas ou unidades que deseja trabalhar no planejamento."
                   className={HUD_SCROLLABLE_TEXTAREA_CLASS}
                   aria-describedby="planejamentos-conteudos-hint"
                 />
@@ -1520,11 +1448,9 @@ export function PlanejamentosClient() {
                   id="planejamentos-conteudos-hint"
                   className="text-xs text-cyan-700/80"
                 >
-                  Cada linha = um conteúdo. Colagens bagunçadas são organizadas automaticamente
-                  em tópicos ao colar, ao sair do campo ou ao sugerir BNCC.
-                  {conteudos.length > 0
-                    ? ` (${conteudos.length} ${conteudos.length === 1 ? "tópico" : "tópicos"} detectados)`
-                    : ""}
+                  Texto livre — use o formato que preferir. A IA e a BNCC interpretam o conteúdo
+                  informado sem reorganizar automaticamente este campo.
+                  {conteudosPreenchido ? " (preenchido)" : ""}
                 </span>
               </label>
 

@@ -6,8 +6,11 @@ import { CommunityMaterialPreview } from "@/components/community/CommunityMateri
 import { DocumentDownloadIconBar } from "@/components/documents/DocumentDownloadIconBar";
 import { GoogleDocumentExportBar } from "@/components/google/GoogleDocumentExportBar";
 import { MaterialLikeButton } from "@/components/community/MaterialLikeButton";
-import { MaterialTypeCover } from "@/components/materials/MaterialTypeCover";
 import { MarketplaceComments } from "@/components/marketplace/MarketplaceComments";
+import {
+  hideFeedMaterial,
+  isFeedMaterialHidden,
+} from "@/lib/community/hidden-feed-materials";
 import { resolveDocumentTypeFromMarketplaceItem } from "@/lib/documents/document-export-context";
 import { extractPlanningPayloadFromHtml } from "@/lib/planejamentos/planning-export-embed";
 import { PlanifyPageHero } from "@/components/pro/PlanifyPageHero";
@@ -20,6 +23,7 @@ import {
 } from "@/lib/marketplace/marketplace-download-client";
 import type { MarketplacePreviewKind } from "@/server/marketplace/marketplace-preview";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 type MaterialPreviewData = {
@@ -77,13 +81,30 @@ function formatDate(value: string | null) {
   }
 }
 
+function tipoAccentClass(tipo: string): string {
+  const normalized = tipo.toLowerCase();
+  if (normalized.includes("planejamento")) {
+    return "from-cyan-500 to-blue-600";
+  }
+  if (normalized.includes("slide")) {
+    return "from-violet-500 to-fuchsia-600";
+  }
+  if (normalized.includes("avalia")) {
+    return "from-amber-500 to-orange-600";
+  }
+  return "from-slate-600 to-cyan-700";
+}
+
 export function MarketplaceMaterialViewClient({ materialId }: MarketplaceMaterialViewClientProps) {
+  const router = useRouter();
   const [data, setData] = useState<MaterialPreviewData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [downloadingKey, setDownloadingKey] = useState<string | null>(null);
   const [likesCount, setLikesCount] = useState(0);
   const [likedByMe, setLikedByMe] = useState(false);
+  const [hiddenFromFeed, setHiddenFromFeed] = useState(false);
+  const [actionStatus, setActionStatus] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -122,6 +143,49 @@ export function MarketplaceMaterialViewClient({ materialId }: MarketplaceMateria
     void load();
   }, [load]);
 
+  useEffect(() => {
+    setHiddenFromFeed(isFeedMaterialHidden(materialId));
+  }, [materialId]);
+
+  async function handlePermanentDelete() {
+    if (!data?.material) return;
+
+    const confirmed = window.confirm(
+      `Excluir permanentemente "${data.material.title}" da Comunidade?\n\nEsta ação não pode ser desfeita. O material deixará de aparecer para todos.`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setError("");
+    setActionStatus("Excluindo material...");
+
+    try {
+      const response = await fetch(`/api/marketplace/materiais?id=${data.material.id}`, {
+        method: "DELETE",
+        credentials: "include",
+        cache: "no-store",
+      });
+      const payload = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(payload?.error?.message || "Não foi possível excluir o material.");
+      }
+
+      router.push("/dashboard?secao=marketplace");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao excluir material.");
+      setActionStatus("");
+    }
+  }
+
+  function handleHideFromFeed() {
+    hideFeedMaterial(materialId);
+    setHiddenFromFeed(true);
+    setActionStatus("Material oculto do seu feed.");
+  }
+
   async function handleDownload(format: MarketplaceDownloadFormat) {
     if (!data) return;
 
@@ -144,6 +208,10 @@ export function MarketplaceMaterialViewClient({ materialId }: MarketplaceMateria
 
   const material = data?.material;
   const preview = data?.preview;
+  const isOwnMaterial = Boolean(
+    data?.viewerUserId && material && data.viewerUserId === material.userId,
+  );
+  const accentClass = material ? tipoAccentClass(material.tipoMaterial) : "from-slate-600 to-cyan-700";
   const exportHtml = preview?.htmlContent || "";
   const canGoogleExport = preview?.kind === "html" && exportHtml.trim().length >= 20;
   const documentType = material
@@ -203,11 +271,29 @@ export function MarketplaceMaterialViewClient({ materialId }: MarketplaceMateria
         ) : material && preview ? (
           <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
             <div className="min-w-0 space-y-4">
-              <section className="overflow-hidden rounded-2xl border border-cyan-400/15 bg-white shadow-sm">
-                <MaterialTypeCover
-                  typeLabel={material.tipoMaterial}
-                  subtitle={`${material.componente} · ${material.etapa}`}
+              <section className="group relative overflow-hidden rounded-2xl border border-cyan-400/20 bg-white/90 shadow-sm backdrop-blur-sm">
+                <div
+                  className="pointer-events-none absolute inset-x-0 top-0 z-[1] h-1 bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-500"
+                  aria-hidden
                 />
+                <div className={`bg-gradient-to-br ${accentClass} px-5 py-6 text-white`}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/80">
+                        {material.tipoMaterial}
+                      </p>
+                      <p className="mt-1 text-sm font-bold text-white/95">
+                        {material.componente} · {material.etapa}
+                      </p>
+                      <p className="mt-0.5 text-xs font-medium text-white/75">
+                        {material.anoSerie}
+                      </p>
+                    </div>
+                    <span className="rounded-full border border-white/25 bg-white/15 px-2.5 py-1 text-[10px] font-bold backdrop-blur-sm">
+                      {formatBytes(material.fileSize)}
+                    </span>
+                  </div>
+                </div>
                 <header className="flex items-center gap-3 border-b border-cyan-400/10 px-4 py-3">
                   <CommunityAuthorAvatar
                     userId={material.userId}
@@ -229,16 +315,33 @@ export function MarketplaceMaterialViewClient({ materialId }: MarketplaceMateria
                   {material.description ? (
                     <p className="mt-2 text-sm leading-6 text-slate-600">{material.description}</p>
                   ) : null}
-                  <div className="mt-3 flex flex-wrap gap-2 text-[11px] font-semibold text-slate-500">
-                    <span>{material.anoSerie}</span>
-                    <span>·</span>
-                    <span>{formatBytes(material.fileSize)}</span>
-                    {material.downloadsCount > 0 ? (
-                      <>
-                        <span>·</span>
-                        <span>{material.downloadsCount} download(s)</span>
-                      </>
-                    ) : null}
+                  {material.downloadsCount > 0 ? (
+                    <p className="mt-3 text-[11px] font-semibold text-slate-500">
+                      {material.downloadsCount} download(s)
+                    </p>
+                  ) : null}
+                  {actionStatus ? (
+                    <p className="mt-2 text-xs font-semibold text-cyan-700">{actionStatus}</p>
+                  ) : null}
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {!isOwnMaterial ? (
+                      <button
+                        type="button"
+                        onClick={handleHideFromFeed}
+                        disabled={hiddenFromFeed}
+                        className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-bold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {hiddenFromFeed ? "Oculto do feed" : "Ocultar do feed"}
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => void handlePermanentDelete()}
+                        className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-1.5 text-[11px] font-bold text-rose-700 transition hover:bg-rose-100"
+                      >
+                        Excluir permanentemente
+                      </button>
+                    )}
                   </div>
                 </div>
               </section>
@@ -364,6 +467,24 @@ export function MarketplaceMaterialViewClient({ materialId }: MarketplaceMateria
                       </p>
                     ) : null}
                   </div>
+                  {!isOwnMaterial ? (
+                    <button
+                      type="button"
+                      onClick={handleHideFromFeed}
+                      disabled={hiddenFromFeed}
+                      className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-[11px] font-bold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {hiddenFromFeed ? "Oculto do seu feed" : "Ocultar do feed"}
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => void handlePermanentDelete()}
+                      className="w-full rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-[11px] font-bold text-rose-700 transition hover:bg-rose-100"
+                    >
+                      Excluir permanentemente
+                    </button>
+                  )}
                 </div>
               </section>
 

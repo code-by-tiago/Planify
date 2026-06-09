@@ -11,6 +11,12 @@ import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
 import { PlanifyPageHero } from "@/components/pro/PlanifyPageHero";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import {
+  clearHiddenFeedMaterials,
+  getHiddenFeedMaterialIds,
+  hideFeedMaterial,
+  unhideFeedMaterial,
+} from "@/lib/community/hidden-feed-materials";
+import {
   downloadMarketplaceMaterial,
   type MarketplaceDownloadFormat,
 } from "@/lib/marketplace/marketplace-download-client";
@@ -133,8 +139,16 @@ export function MarketplaceClient() {
   const [loading, setLoading] = useState(false);
   const [downloadingKey, setDownloadingKey] = useState<string | null>(null);
   const [publishOpen, setPublishOpen] = useState(false);
+  const [hiddenFeedRevision, setHiddenFeedRevision] = useState(0);
+  const [showHiddenFeed, setShowHiddenFeed] = useState(false);
 
   const availableYears = anoSerieOptions[form.etapa] || ["Geral"];
+
+  const hiddenFeedIds = useMemo(
+    () => getHiddenFeedMaterialIds(),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [hiddenFeedRevision],
+  );
 
   function buildFeedQuery(nextMineOnly = mineOnly) {
     const params = new URLSearchParams();
@@ -191,9 +205,26 @@ export function MarketplaceClient() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [componenteFilter, etapaFilter, tipoFilter, tagFilter, friendsOnly, savedOnly, mineOnly]);
 
+  function isItemHiddenFromFeed(item: MarketplaceItem): boolean {
+    if (mineOnly) {
+      return false;
+    }
+
+    if (currentUserId && item.userId === currentUserId) {
+      return false;
+    }
+
+    return hiddenFeedIds.has(item.id);
+  }
+
   const filteredItems = useMemo(() => {
     const search = normalize(query);
     return items.filter((item) => {
+      const hidden = isItemHiddenFromFeed(item);
+      if (hidden && !showHiddenFeed) {
+        return false;
+      }
+
       const matchSearch =
         !search ||
         normalize(
@@ -201,17 +232,18 @@ export function MarketplaceClient() {
         ).includes(search);
       return matchSearch;
     });
-  }, [items, query]);
+  }, [items, query, hiddenFeedIds, showHiddenFeed, mineOnly, currentUserId]);
 
   const filteredFeatured = useMemo(() => {
     const search = normalize(query);
-    if (!search) return featuredItems;
-    return featuredItems.filter((item) =>
+    const base = featuredItems.filter((item) => showHiddenFeed || !isItemHiddenFromFeed(item));
+    if (!search) return base;
+    return base.filter((item) =>
       normalize(
         `${item.title} ${item.description} ${item.etapa} ${item.componente} ${item.tema} ${item.authorName}`,
       ).includes(search),
     );
-  }, [featuredItems, query]);
+  }, [featuredItems, query, hiddenFeedIds, showHiddenFeed, mineOnly, currentUserId]);
 
   function applyTagFilter(tag: string) {
     setTagFilter(tag);
@@ -294,8 +326,22 @@ export function MarketplaceClient() {
     }
   }
 
+  function hideItemFromFeed(item: MarketplaceItem) {
+    hideFeedMaterial(item.id);
+    setHiddenFeedRevision((value) => value + 1);
+    setStatus(`"${item.title}" oculto do seu feed.`);
+  }
+
+  function restoreItemToFeed(item: MarketplaceItem) {
+    unhideFeedMaterial(item.id);
+    setHiddenFeedRevision((value) => value + 1);
+    setStatus(`"${item.title}" voltou a aparecer no feed.`);
+  }
+
   async function removeItem(item: MarketplaceItem) {
-    const confirmed = window.confirm(`Remover "${item.title}" da Comunidade?`);
+    const confirmed = window.confirm(
+      `Excluir permanentemente "${item.title}" da Comunidade?\n\nEsta ação não pode ser desfeita. O material deixará de aparecer para todos.`,
+    );
     if (!confirmed) return;
 
     setLoading(true);
@@ -635,6 +681,35 @@ export function MarketplaceClient() {
             >
               Atualizar
             </button>
+            {hiddenFeedIds.size > 0 ? (
+              <button
+                type="button"
+                onClick={() => setShowHiddenFeed((value) => !value)}
+                className={`pl-hud-btn-secondary rounded-xl px-4 py-2 text-xs font-semibold ${showHiddenFeed ? "ring-2 ring-amber-400" : ""}`}
+              >
+                {showHiddenFeed
+                  ? "Ocultar itens do feed"
+                  : `Ver ocultos (${hiddenFeedIds.size})`}
+              </button>
+            ) : null}
+            {hiddenFeedIds.size > 0 ? (
+              <button
+                type="button"
+                onClick={() => {
+                  const confirmed = window.confirm(
+                    "Restaurar todos os materiais ocultos no feed?",
+                  );
+                  if (!confirmed) return;
+                  clearHiddenFeedMaterials();
+                  setHiddenFeedRevision((value) => value + 1);
+                  setShowHiddenFeed(false);
+                  setStatus("Feed restaurado — materiais ocultos voltaram a aparecer.");
+                }}
+                className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-600"
+              >
+                Restaurar feed
+              </button>
+            ) : null}
           </div>
 
           <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
@@ -650,6 +725,10 @@ export function MarketplaceClient() {
           downloadingKey={downloadingKey}
           onDownload={handleDownload}
           onRemove={removeItem}
+          onHideFromFeed={hideItemFromFeed}
+          onRestoreToFeed={restoreItemToFeed}
+          hiddenFeedIds={hiddenFeedIds}
+          showHiddenFeed={showHiddenFeed}
           mineOnly={mineOnly}
           currentUserId={currentUserId}
           onPublishClick={() => setPublishOpen(true)}

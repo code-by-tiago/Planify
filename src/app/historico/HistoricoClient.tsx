@@ -18,9 +18,11 @@ import {
   isHistoryHtmlContent,
   resolveHistoryTypeLabel,
 } from "../../lib/history/history-preview";
+import { removeHistoryItemFromAPI } from "../../lib/history/history-api-client";
 import {
   clearHistoryItems,
   filterHistoryItems,
+  getHistorySupabaseSync,
   getHistoryTypeOptions,
   loadHistoryItemsWithSync,
   removeHistoryItem,
@@ -183,6 +185,14 @@ export function HistoricoClient() {
   }
 
   function removeItem(item: HistoryItem) {
+    const confirmed = window.confirm(
+      `Excluir permanentemente "${item.title}"?\n\nEsta ação não pode ser desfeita. O material será removido do seu histórico.`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
     const next = removeHistoryItem(item.id);
     setItems(next);
 
@@ -190,9 +200,19 @@ export function HistoricoClient() {
       setSelectedItem(next[0] ?? null);
     }
 
+    if (getHistorySupabaseSync()) {
+      void removeHistoryItemFromAPI(item.id).catch(() => {
+        setStatus({
+          type: "warning",
+          message:
+            "Item removido localmente. A exclusão na nuvem pode levar alguns instantes.",
+        });
+      });
+    }
+
     setStatus({
       type: "success",
-      message: "Item removido dos seus materiais.",
+      message: "Item excluído permanentemente dos seus materiais.",
     });
   }
 
@@ -381,9 +401,11 @@ export function HistoricoClient() {
                       <button
                         type="button"
                         onClick={() => removeItem(item)}
-                        className="min-h-9 min-w-9 rounded-lg border border-rose-200 bg-rose-50 px-2 py-1.5 text-sm font-bold text-rose-700"
+                        className="min-h-9 rounded-lg border border-rose-200 bg-rose-50 px-2 py-1.5 text-[10px] font-bold text-rose-700"
+                        title="Excluir permanentemente"
+                        aria-label={`Excluir permanentemente ${item.title}`}
                       >
-                        ×
+                        Excluir
                       </button>
                     </div>
                   </div>
@@ -468,7 +490,7 @@ export function HistoricoClient() {
                     onClick={() => removeItem(selectedItem)}
                     className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-xs font-semibold text-rose-700"
                   >
-                    Remover
+                    Excluir permanentemente
                   </button>
                 </div>
                 <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">

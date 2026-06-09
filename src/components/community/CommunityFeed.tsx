@@ -12,6 +12,10 @@ type CommunityFeedProps = {
   downloadingKey: string | null;
   onDownload: (item: CommunityFeedItem, format: MarketplaceDownloadFormat) => void;
   onRemove?: (item: CommunityFeedItem) => void;
+  onHideFromFeed?: (item: CommunityFeedItem) => void;
+  onRestoreToFeed?: (item: CommunityFeedItem) => void;
+  hiddenFeedIds?: Set<string>;
+  showHiddenFeed?: boolean;
   mineOnly?: boolean;
   currentUserId?: string | null;
   onPublishClick?: () => void;
@@ -26,6 +30,10 @@ export function CommunityFeed({
   downloadingKey,
   onDownload,
   onRemove,
+  onHideFromFeed,
+  onRestoreToFeed,
+  hiddenFeedIds,
+  showHiddenFeed,
   mineOnly,
   currentUserId,
   onPublishClick,
@@ -69,6 +77,29 @@ export function CommunityFeed({
   const featuredIds = new Set(featuredItems.map((item) => item.id));
   const feedItems = items.filter((item) => !featuredIds.has(item.id));
 
+  function renderCard(item: CommunityFeedItem, keyPrefix = "") {
+    const isHiddenFromFeed = Boolean(
+      showHiddenFeed && hiddenFeedIds?.has(item.id),
+    );
+
+    return (
+      <CommunityPostCard
+        key={`${keyPrefix}${item.id}`}
+        item={item}
+        downloadingKey={downloadingKey}
+        viewerUserId={currentUserId}
+        onDownload={onDownload}
+        onRemove={onRemove}
+        showRemove={Boolean(mineOnly && currentUserId && item.userId === currentUserId)}
+        onHideFromFeed={onHideFromFeed}
+        onRestoreToFeed={onRestoreToFeed}
+        isHiddenFromFeed={isHiddenFromFeed}
+        onTagClick={onTagClick}
+        onTemaClick={onTemaClick}
+      />
+    );
+  }
+
   return (
     <div className="mx-auto grid max-w-3xl gap-5">
       {featuredItems.length > 0 ? (
@@ -76,35 +107,11 @@ export function CommunityFeed({
           <h2 className="text-sm font-black uppercase tracking-[0.18em] text-amber-700">
             Em destaque esta semana
           </h2>
-          {featuredItems.map((item) => (
-            <CommunityPostCard
-              key={`featured-${item.id}`}
-              item={item}
-              downloadingKey={downloadingKey}
-              viewerUserId={currentUserId}
-              onDownload={onDownload}
-              onRemove={onRemove}
-              showRemove={Boolean(mineOnly && currentUserId && item.userId === currentUserId)}
-              onTagClick={onTagClick}
-              onTemaClick={onTemaClick}
-            />
-          ))}
+          {featuredItems.map((item) => renderCard(item, "featured-"))}
         </section>
       ) : null}
 
-      {feedItems.map((item) => (
-        <CommunityPostCard
-          key={item.id}
-          item={item}
-          downloadingKey={downloadingKey}
-          viewerUserId={currentUserId}
-          onDownload={onDownload}
-          onRemove={onRemove}
-          showRemove={Boolean(mineOnly && currentUserId && item.userId === currentUserId)}
-          onTagClick={onTagClick}
-          onTemaClick={onTemaClick}
-        />
-      ))}
+      {feedItems.map((item) => renderCard(item))}
     </div>
   );
 }

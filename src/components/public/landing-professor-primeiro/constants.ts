@@ -7,7 +7,7 @@ export const LANDING_NAV = [
 
 export const TRUST_ITEMS = [
   { label: "Alinhado à BNCC", icon: "checkCircle" as const },
-  { label: "Exportação em DOCX", icon: "download" as const },
+  { label: "Exportação Google Docs", icon: "download" as const },
   { label: "Editor integrado", icon: "editor" as const },
   { label: "Google Classroom", icon: "externalLink" as const },
 ];
@@ -55,9 +55,9 @@ export const RESOURCES = [
     icon: "checkCircle" as const,
   },
   {
-    title: "Exportação DOCX",
+    title: "Exportação Google Docs",
     description:
-      "Gere documentos prontos para imprimir ou compartilhar, com formatação profissional e estrutura pedagógica.",
+      "Gere documentos prontos para revisar no Google Docs, com modelos oficiais e estrutura pedagógica.",
     icon: "download" as const,
   },
   {
@@ -91,7 +91,7 @@ export const HOW_IT_WORKS = [
     step: 3,
     title: "Revise e exporte",
     description:
-      "Ajuste no editor, exporte em DOCX ou envie para o Google Classroom — pronto para usar em sala.",
+      "Ajuste no editor, exporte ao Google Docs ou envie para o Google Classroom — pronto para usar em sala.",
   },
 ];
 
@@ -121,7 +121,7 @@ export const STATS = [
 export const COMPARISON_ROWS = [
   {
     topic: "Tempo de planejamento",
-    without: "Horas em planilhas, Word e cópias de anos anteriores",
+    without: "Horas em planilhas e cópias de anos anteriores",
     with: "Minutos com estrutura pedagógica pronta para revisar",
   },
   {
@@ -130,7 +130,7 @@ export const COMPARISON_ROWS = [
     with: "Habilidades sugeridas por etapa, ano e componente",
   },
   {
-    topic: "Exportação DOCX",
+    topic: "Exportação Google Docs",
     without: "Formatação manual, quebras de layout e retrabalho",
     with: "Documento profissional pronto para imprimir ou compartilhar",
   },
@@ -173,7 +173,7 @@ export const TESTIMONIALS = [
     name: "Carlos M.",
     role: "Professor de História · Ensino Médio",
     quote:
-      "As provas e slides saem estruturados. Exporto em DOCX e já uso na aula no mesmo dia.",
+      "As provas e slides saem estruturados. Exporto ao Google Docs e já uso na aula no mesmo dia.",
     badge: "Provas e slides",
     rating: 5,
   },
@@ -205,8 +205,8 @@ export const TESTIMONIALS = [
     name: "Marcos V.",
     role: "Professor de Educação Física",
     quote:
-      "Atividades e avaliações prontas em minutos. Exporto em DOCX e já levo impresso para a aula.",
-    badge: "Exportação DOCX",
+      "Atividades e avaliações prontas em minutos. Exporto ao Google Docs e já levo para a aula.",
+    badge: "Google Docs",
     rating: 4,
   },
   {

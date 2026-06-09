@@ -261,7 +261,7 @@ export function BibliotecaClient() {
           badge="Biblioteca"
           icon="library"
           title="Materiais curados pelo Planify"
-          description="Recursos pedagógicos selecionados pela equipe — baixe DOCX/PDF ou abra no editor para personalizar."
+          description="Recursos pedagógicos selecionados pela equipe — baixe arquivos/PDF ou abra no editor para personalizar."
         />
       }
     >

@@ -9,7 +9,7 @@ import {
 const heroStats = [
   { value: `${landingGeneratorCount}+`, label: "Geradores IA" },
   { value: "BNCC", label: "Alinhamento curricular" },
-  { value: "DOCX", label: "Modelo oficial" },
+  { value: "Google Docs", label: "Modelo oficial" },
   { value: "Classroom", label: "Publicação direta" },
 ] as const;
 
@@ -37,7 +37,7 @@ export function TeachyHomeHero() {
           </h1>
           <p className="pl-hud-landing-hero-subtitle">
             Crie slides, aulas completas, provas e planejamentos alinhados à BNCC —
-            com exportação em DOCX, Google Slides e publicação no Classroom em minutos.
+            com exportação Google Docs, Slides e publicação no Classroom em minutos.
           </p>
 
           <div className="pl-hud-landing-hero-ctas">

@@ -158,6 +158,15 @@ export function MarketplaceMaterialViewClient({ materialId }: MarketplaceMateria
     return extractPlanningPayloadFromHtml(exportHtml);
   }, [exportHtml]);
 
+  const isPlanningMaterial = Boolean(documentType?.includes("planejamento"));
+  const planningPayloadReady =
+    !isPlanningMaterial || Boolean(exportHtml && extractPlanningPayloadFromHtml(exportHtml));
+  const googleExportDisabled =
+    !canGoogleExport || (isPlanningMaterial && !planningPayloadReady);
+  const googleDisabledTitle = isPlanningMaterial && !planningPayloadReady
+    ? "Planejamento publicado sem matriz oficial. Abra no editor e republica na Comunidade para exportar com o modelo da escola."
+    : "Exportação Google indisponível para este formato.";
+
   return (
     <PlanifyWorkspacePane
       header={
@@ -259,8 +268,8 @@ export function MarketplaceMaterialViewClient({ materialId }: MarketplaceMateria
                     returnTo={`/marketplace/material/${material.id}`}
                     compact
                     classroomMode="popover"
-                    disabled={!canGoogleExport}
-                    disabledTitle="Exportação Google indisponível para este formato."
+                    disabled={googleExportDisabled}
+                    disabledTitle={googleDisabledTitle}
                   />
                   <DocumentDownloadIconBar
                     onDownloadPdf={
@@ -271,6 +280,11 @@ export function MarketplaceMaterialViewClient({ materialId }: MarketplaceMateria
                     downloadingPdf={downloadingKey === `${material.id}:pdf`}
                   />
                 </div>
+                {isPlanningMaterial && canGoogleExport && !planningPayloadReady ? (
+                  <p className="mt-2 text-[10px] font-medium text-amber-700">
+                    {googleDisabledTitle}
+                  </p>
+                ) : null}
                 <div className="mt-3">
                   <MaterialLikeButton
                     materialId={material.id}
@@ -332,8 +346,8 @@ export function MarketplaceMaterialViewClient({ materialId }: MarketplaceMateria
                         returnTo={`/marketplace/material/${material.id}`}
                         compact
                         classroomMode="popover"
-                        disabled={!canGoogleExport}
-                        disabledTitle="Exportação Google indisponível para este formato."
+                        disabled={googleExportDisabled}
+                        disabledTitle={googleDisabledTitle}
                       />
                       <DocumentDownloadIconBar
                         onDownloadPdf={
@@ -344,6 +358,11 @@ export function MarketplaceMaterialViewClient({ materialId }: MarketplaceMateria
                         downloadingPdf={downloadingKey === `${material.id}:pdf`}
                       />
                     </div>
+                    {isPlanningMaterial && canGoogleExport && !planningPayloadReady ? (
+                      <p className="mt-2 text-[10px] font-medium text-amber-700">
+                        {googleDisabledTitle}
+                      </p>
+                    ) : null}
                   </div>
                 </div>
               </section>

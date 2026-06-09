@@ -64,10 +64,15 @@ export function CommunityMaterialExportBar({
     [onStatus],
   );
 
-  const googleDisabled = !canExportGoogle && !loading;
-  const googleDisabledTitle =
-    error ||
-    "Use Google Docs para exportar. Materiais sem HTML exigem abrir no editor primeiro.";
+  const isPlanningMaterial = documentType.includes("planejamento");
+  const planningPayloadReady =
+    !isPlanningMaterial || Boolean(html && extractPlanningPayloadFromHtml(html));
+
+  const googleDisabled = (!canExportGoogle && !loading) || (isPlanningMaterial && !planningPayloadReady);
+  const googleDisabledTitle = isPlanningMaterial && !planningPayloadReady
+    ? "Planejamento publicado sem matriz oficial. Abra no editor e republica na Comunidade para exportar com o modelo da escola."
+    : error ||
+      "Use Google Docs para exportar. Materiais sem HTML exigem abrir no editor primeiro.";
 
   return (
     <div className="space-y-1.5">
@@ -105,6 +110,9 @@ export function CommunityMaterialExportBar({
       ) : null}
       {error && !canExportGoogle ? (
         <p className="text-[10px] font-medium text-slate-500">{error}</p>
+      ) : null}
+      {isPlanningMaterial && canExportGoogle && !planningPayloadReady ? (
+        <p className="text-[10px] font-medium text-amber-700">{googleDisabledTitle}</p>
       ) : null}
     </div>
   );

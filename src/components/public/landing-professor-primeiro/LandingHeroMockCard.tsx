@@ -77,7 +77,7 @@ export function LandingHeroMockCard() {
         <div className="mt-5 flex flex-wrap gap-2">
           <span className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
             <PlanifyIcon name="download" className="h-3.5 w-3.5 text-cyan-600" />
-            Gerar DOCX
+            Google Docs
           </span>
           <span className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white">
             <PlanifyIcon name="editor" className="h-3.5 w-3.5" />

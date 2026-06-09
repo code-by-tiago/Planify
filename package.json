@@ -12,7 +12,7 @@
     "verify:generators-live": "node scripts/verify-generators-live.mjs",
     "verify:planejamento-docx": "node scripts/verify-planejamento-docx.mjs",
     "verify:custom-template-docx": "node scripts/verify-custom-template-docx.mjs",
-    "verify:all": "npm run verify:material-quality && npm run verify:generators && node scripts/verify-export-motors.mjs && npm run verify:planejamento-docx",
+    "verify:all": "npm run verify:material-quality && npm run verify:generators && node scripts/verify-export-motors.mjs && npm run verify:planejamento-docx && node scripts/verify-google-export-readiness.mjs",
     "bncc:import": "node scripts/bncc/import-bncc-skills.mjs"
   },
   "dependencies": {

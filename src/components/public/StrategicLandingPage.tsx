@@ -114,7 +114,7 @@ export function StrategicLandingPage({ content }: StrategicLandingPageProps) {
             Crie sua conta e use o Planify
           </h2>
           <p className="mx-auto mt-3 max-w-xl text-sm font-medium leading-7 text-slate-300">
-            Acesse os geradores com IA, revise no editor integrado e exporte em DOCX.
+            Acesse os geradores com IA, revise no editor integrado e exporte ao Google Docs.
             Planos Pro e Premium com créditos transparentes.
           </p>
           <div className="mt-7 flex flex-wrap justify-center gap-3">

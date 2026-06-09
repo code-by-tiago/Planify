@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import type { EditorDocument } from "../../types/editor";
 import type { HistoryFilter, HistoryItem } from "../../types/history";
 import { HistoryDocumentExportBar } from "@/components/documents/HistoryDocumentExportBar";
+import { getHistoryPlanningPayload } from "@/lib/documents/document-export-context";
 import { MaterialTypeCover } from "@/components/materials/MaterialTypeCover";
 import { MarketplacePublishButton } from "@/components/marketplace/MarketplacePublishButton";
 import {
@@ -444,6 +445,11 @@ export function HistoricoClient() {
                   <MarketplacePublishButton
                     title={selectedItem.title}
                     getHtml={getSelectedHtml}
+                    getPlanningPayload={
+                      String(selectedItem.type || "").includes("planejamento")
+                        ? () => getHistoryPlanningPayload(selectedItem)
+                        : undefined
+                    }
                     tipoMaterial={resolveMarketplaceTipo(selectedItem)}
                     tema={selectedItem.subtitle || selectedItem.title}
                     label="Comunidade"

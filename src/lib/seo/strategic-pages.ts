@@ -26,11 +26,11 @@ export const STRATEGIC_PAGES: StrategicPageContent[] = [
     path: "/planejamento-escolar-com-ia",
     title: "Planejamento escolar com IA",
     description:
-      "Crie planejamentos anuais, trimestrais e de aula alinhados à BNCC com IA pedagógica. Revise, edite e exporte em DOCX no Planify.",
+      "Crie planejamentos anuais, trimestrais e de aula alinhados à BNCC com IA pedagógica. Revise, edite e exporte ao Google Docs no Planify.",
     eyebrow: "Planejamento pedagógico",
     h1: "Planejamento escolar com IA",
     h1Accent: "alinhado à BNCC",
-    lead: "Estruture planejamentos anuais, trimestrais e de aula com sugestões de habilidades, sequência didática e objetivos — prontos para revisar no editor e exportar em DOCX.",
+    lead: "Estruture planejamentos anuais, trimestrais e de aula com sugestões de habilidades, sequência didática e objetivos — prontos para revisar no editor e exportar ao Google Docs.",
     benefits: [
       {
         icon: "clipboard",
@@ -46,7 +46,7 @@ export const STRATEGIC_PAGES: StrategicPageContent[] = [
       },
       {
         icon: "download",
-        title: "Exportação DOCX",
+        title: "Exportação Google Docs",
         description:
           "Finalize no editor integrado e exporte documentos com formatação profissional.",
       },
@@ -65,7 +65,7 @@ export const STRATEGIC_PAGES: StrategicPageContent[] = [
       {
         step: 3,
         title: "Revise e exporte",
-        description: "Ajuste no editor, salve no histórico e exporte em DOCX quando estiver pronto.",
+        description: "Ajuste no editor, salve no histórico e exporte ao Google Docs quando estiver pronto.",
       },
     ],
     relatedLinks: [
@@ -77,7 +77,7 @@ export const STRATEGIC_PAGES: StrategicPageContent[] = [
     path: "/gerador-de-atividades-com-ia",
     title: "Gerador de atividades com IA",
     description:
-      "Crie atividades didáticas, exercícios e tarefas alinhadas à BNCC com IA. Personalize no editor e exporte em DOCX no Planify.",
+      "Crie atividades didáticas, exercícios e tarefas alinhadas à BNCC com IA. Personalize no editor e exporte ao Google Docs no Planify.",
     eyebrow: "Atividades didáticas",
     h1: "Gerador de atividades com IA",
     h1Accent: "para sala de aula",
@@ -116,7 +116,7 @@ export const STRATEGIC_PAGES: StrategicPageContent[] = [
       {
         step: 3,
         title: "Exporte ou publique",
-        description: "Baixe em DOCX ou use integrações Google quando disponíveis na sua conta.",
+        description: "Exporte ao Google Docs ou use integrações Google quando disponíveis na sua conta.",
       },
     ],
     relatedLinks: [
@@ -128,7 +128,7 @@ export const STRATEGIC_PAGES: StrategicPageContent[] = [
     path: "/gerador-de-provas-com-ia",
     title: "Gerador de provas com IA",
     description:
-      "Monte provas e avaliações alinhadas à BNCC com IA pedagógica. Edite questões, gabarito e exporte em DOCX no Planify.",
+      "Monte provas e avaliações alinhadas à BNCC com IA pedagógica. Edite questões, gabarito e exporte ao Google Docs no Planify.",
     eyebrow: "Avaliações",
     h1: "Gerador de provas com IA",
     h1Accent: "com gabarito e revisão",
@@ -148,7 +148,7 @@ export const STRATEGIC_PAGES: StrategicPageContent[] = [
       },
       {
         icon: "download",
-        title: "DOCX para impressão",
+        title: "Google Docs para impressão",
         description:
           "Exporte com layout adequado para impressão ou compartilhamento com a coordenação.",
       },
@@ -167,7 +167,7 @@ export const STRATEGIC_PAGES: StrategicPageContent[] = [
       {
         step: 3,
         title: "Finalize e exporte",
-        description: "Salve no histórico, ajuste no editor e exporte em DOCX oficial.",
+        description: "Salve no histórico, ajuste no editor e exporte ao Google Docs oficial.",
       },
     ],
     relatedLinks: [
@@ -230,7 +230,7 @@ export const STRATEGIC_PAGES: StrategicPageContent[] = [
     path: "/apostilas-com-ia-para-professores",
     title: "Apostilas com IA para professores",
     description:
-      "Elabore apostilas e materiais de apoio com IA pedagógica no Planify. Estruture capítulos, revise no editor e exporte em DOCX.",
+      "Elabore apostilas e materiais de apoio com IA pedagógica no Planify. Estruture capítulos, revise no editor e exporte ao Google Docs.",
     eyebrow: "Materiais de apoio",
     h1: "Apostilas com IA para professores",
     h1Accent: "conteúdo estruturado",
@@ -250,7 +250,7 @@ export const STRATEGIC_PAGES: StrategicPageContent[] = [
       },
       {
         icon: "download",
-        title: "DOCX profissional",
+        title: "Google Docs profissional",
         description:
           "Exporte apostilas formatadas para impressão ou distribuição digital.",
       },
@@ -269,7 +269,7 @@ export const STRATEGIC_PAGES: StrategicPageContent[] = [
       {
         step: 3,
         title: "Exporte e compartilhe",
-        description: "Salve no histórico e exporte em DOCX quando o material estiver aprovado.",
+        description: "Salve no histórico e exporte ao Google Docs quando o material estiver aprovado.",
       },
     ],
     relatedLinks: [
@@ -281,11 +281,11 @@ export const STRATEGIC_PAGES: StrategicPageContent[] = [
     path: "/editor-de-documentos-para-professores",
     title: "Editor de documentos para professores",
     description:
-      "Revise e finalize planejamentos, provas, apostilas e materiais didáticos no editor integrado do Planify com exportação DOCX.",
+      "Revise e finalize planejamentos, provas, apostilas e materiais didáticos no editor integrado do Planify com exportação Google Docs.",
     eyebrow: "Editor integrado",
     h1: "Editor de documentos para professores",
     h1Accent: "revise e exporte",
-    lead: "Centralize a revisão dos materiais gerados com IA — ajuste texto, estrutura e formatação antes de exportar em DOCX ou usar em sala.",
+    lead: "Centralize a revisão dos materiais gerados com IA — ajuste texto, estrutura e formatação antes de exportar ao Google Docs ou usar em sala.",
     benefits: [
       {
         icon: "editor",
@@ -301,7 +301,7 @@ export const STRATEGIC_PAGES: StrategicPageContent[] = [
       },
       {
         icon: "download",
-        title: "Exportação DOCX",
+        title: "Exportação Google Docs",
         description:
           "Baixe documentos com padrão profissional para impressão ou envio à coordenação.",
       },
@@ -320,7 +320,7 @@ export const STRATEGIC_PAGES: StrategicPageContent[] = [
       {
         step: 3,
         title: "Exporte ou publique",
-        description: "Exporte em DOCX ou use integrações Google disponíveis na sua conta.",
+        description: "Exporte ao Google Docs ou use integrações Google disponíveis na sua conta.",
       },
     ],
     relatedLinks: [

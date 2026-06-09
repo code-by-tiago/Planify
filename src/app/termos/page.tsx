@@ -26,7 +26,7 @@ export default function TermosPage() {
         <p className="mt-2">
           O Planify oferece ferramentas de inteligência artificial para apoio à
           prática docente: geração de materiais, planejamentos, editor, exportação
-          (DOCX, PDF, Google), histórico, biblioteca e marketplace. O conteúdo é
+          (Google Docs, PDF), histórico, biblioteca e marketplace. O conteúdo é
           produzido com auxílio de IA e deve ser <strong>revisado pelo professor</strong>{" "}
           antes do uso em sala, provas ou documentos oficiais.
         </p>

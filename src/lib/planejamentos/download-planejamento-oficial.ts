@@ -1,3 +1,7 @@
+/**
+ * @deprecated UI removida — exportação de planejamentos é via Google Docs API.
+ * Mantido apenas para scripts E2E legados que ainda chamam `/api/planejamentos/docx-oficial`.
+ */
 import { planifyAuthenticatedFetch } from "@/lib/auth/authenticated-fetch";
 import {
   filenameFromContentDisposition,

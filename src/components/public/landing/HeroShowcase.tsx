@@ -82,7 +82,7 @@ export function HeroShowcase({ tools }: { tools: ShowcaseTool[] }) {
           </div>
           <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-950 px-3 py-1.5 text-xs font-black text-white">
             <PlanifyIcon name="download" className="h-3.5 w-3.5" />
-            DOCX
+            Google Docs
           </span>
         </div>
       </div>

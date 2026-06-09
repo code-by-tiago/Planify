@@ -59,6 +59,7 @@ export function EditorShareBar({
       <MarketplacePublishButton
         title={title}
         getHtml={getHtml}
+        getPlanningPayload={getPlanningPayload}
         label={compact ? "Comunidade" : "Comunidade"}
         compact
         className={comunidadeClass}

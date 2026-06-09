@@ -87,7 +87,7 @@ function MaterialFeaturePreview() {
           </div>
           <span className="inline-flex items-center gap-1 rounded-full bg-slate-900 px-2.5 py-1 text-[10px] font-bold text-white">
             <PlanifyIcon name="download" className="h-3 w-3" />
-            DOCX
+            Google Docs
           </span>
         </div>
       </div>
@@ -173,7 +173,7 @@ function ClassroomFeaturePreview() {
             <div>
               <p className="text-xs font-extrabold text-emerald-800">Material publicado</p>
               <p className="mt-0.5 text-[11px] font-medium leading-snug text-emerald-700/90">
-                DOCX salvo no Drive · atividade criada na turma
+                Google Docs no Drive · atividade criada na turma
               </p>
             </div>
           </div>
@@ -182,7 +182,7 @@ function ClassroomFeaturePreview() {
         <div className="mt-3 flex items-center gap-2 rounded-lg border border-cyan-400/15 bg-white/70 px-3 py-2">
           <PlanifyIcon name="fileText" className="h-4 w-4 text-cyan-600" />
           <span className="truncate text-[11px] font-semibold text-slate-600">
-            revolucao-industrial-lista.docx
+            revolucao-industrial-lista
           </span>
         </div>
       </div>

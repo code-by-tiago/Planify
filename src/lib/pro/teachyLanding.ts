@@ -31,7 +31,7 @@ export const teachyHomeFeatures: {
   {
     title: "Publique na turma do Classroom",
     description:
-      "No editor, conecte o Google e envie o material à turma — DOCX no Drive e atividade criada automaticamente. Também compartilhe com outros professores no Marketplace.",
+      "No editor, conecte o Google e envie o material à turma — documento no Drive e atividade criada automaticamente. Também compartilhe com outros professores no Marketplace.",
     cta: "Abrir editor",
     href: "/dashboard?secao=editor",
     icon: "externalLink",
@@ -118,7 +118,7 @@ export const teachyLandingTestimonials: LandingTestimonial[] = [
     initials: "RL",
     accent: "from-emerald-500 to-teal-600",
     quote:
-      "As provas saem com gabarito e no padrão da escola. O editor me deixa ajustar tudo antes de exportar em DOCX.",
+      "As provas saem com gabarito e no padrão da escola. O editor me deixa ajustar tudo antes de exportar ao Google Docs.",
   },
   {
     name: "Pepsy Penom Audu",
@@ -188,7 +188,7 @@ export const teachyPartnerLabels = [
   "BNCC",
   "Google Classroom",
   "Google Slides",
-  "DOCX oficial",
+  "Modelo oficial",
   `${landingGeneratorCount} ferramentas IA`,
   "Marketplace",
   "Editor integrado",

@@ -17,7 +17,7 @@ const PHASE_ANNOUNCEMENTS: Record<Phase, string> = {
   form: "Preenchendo disciplina, ano e conteúdo do planejamento",
   bncc: "IA sugere habilidades da BNCC",
   generating: "Gerando planejamento",
-  success: "DOCX pronto. Você pode baixar ou abrir no editor.",
+  success: "Documento pronto. Você pode exportar ao Google Docs ou abrir no editor.",
 };
 
 const PHASE_STEP_INDEX: Record<Phase, number> = {
@@ -392,7 +392,7 @@ export function LandingHeroLiveDashboard() {
               {phase === "success" && (
                 <div className="flex items-center gap-2 rounded-xl border border-cyan-200 bg-cyan-50 px-3 py-2.5">
                   <PlanifyIcon name="checkCircle" className="h-4 w-4 shrink-0 text-cyan-600" />
-                  <p className="text-xs font-bold text-cyan-800">DOCX pronto!</p>
+                  <p className="text-xs font-bold text-cyan-800">Pronto no Google Docs!</p>
                 </div>
               )}
             </motion.div>
@@ -417,7 +417,7 @@ export function LandingHeroLiveDashboard() {
                 aria-hidden
               >
                 <PlanifyIcon name="download" className="h-3.5 w-3.5 text-cyan-600" />
-                Baixar DOCX
+                Google Docs
               </button>
               <button
                 type="button"

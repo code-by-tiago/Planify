@@ -32,7 +32,7 @@ export function TeachyHomeToolsGrid() {
             {landingGeneratorCount} geradores + planejamentos BNCC
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-base font-medium leading-7 text-slate-600 sm:text-lg">
-            Materiais com IA, matriz anual ou trimestral e DOCX oficial — escolha
+            Materiais com IA, matriz anual ou trimestral e modelos oficiais — escolha
             a ferramenta, descreva o contexto e revise antes de exportar.
           </p>
         </div>

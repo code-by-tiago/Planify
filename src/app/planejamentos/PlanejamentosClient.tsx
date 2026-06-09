@@ -923,27 +923,6 @@ export function PlanejamentosClient() {
     };
     const anualHtml = buildPlanningEditorHtml(anualForm, planning);
 
-    // #region agent log
-    fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "f33ae7" },
-      body: JSON.stringify({
-        sessionId: "f33ae7",
-        hypothesisId: "H1",
-        location: "PlanejamentosClient.tsx:buildPlanningBundleDocuments",
-        message: "annual bundle doc built",
-        data: {
-          formTipo: form.tipoPlanejamento,
-          anualFormTipo: anualForm.tipoPlanejamento,
-          annualHeading:
-            anualHtml.match(/<h1[^>]*>([^<]+)<\/h1>/i)?.[1]?.trim().slice(0, 60) || "(sem h1)",
-          annualId: buildPlanningBundleDocumentId(idempotencyKey, "anual"),
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
-
     const documents: PlanningBundleDocumentInput[] = [
       {
         id: buildPlanningBundleDocumentId(idempotencyKey, "anual"),

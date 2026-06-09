@@ -440,9 +440,6 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
     } else if (from === "planejamentos" && isBundle) {
       const bundle = loadPlanningEditorBundle();
       if (bundle && bundle.tabs.length > 1) {
-        setPlanningBundle(bundle);
-        setActiveBundleIndex(bundle.activeIndex);
-        skipBundleAutoSaveRef.current = true;
         setOriginHint(
           "Pacote anual + trimestres — use as abas para alternar entre os documentos. Cada um é salvo separadamente no histórico.",
         );
@@ -480,28 +477,11 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
         }
       : initial.storedDocument;
 
-    // #region agent log
-    fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "f33ae7" },
-      body: JSON.stringify({
-        sessionId: "f33ae7",
-        hypothesisId: "H5",
-        location: "EditorClient.tsx:initialLoad",
-        message: "editor initial document resolved",
-        data: {
-          usedBundleTab: Boolean(activeBundleTab),
-          tabId: activeBundleTab?.id,
-          tabLabel: activeBundleTab?.label,
-          storageHeading:
-            initial.html.match(/<h1[^>]*>([^<]+)<\/h1>/i)?.[1]?.trim().slice(0, 60) || "(sem h1)",
-          resolvedHeading:
-            resolvedHtml.match(/<h1[^>]*>([^<]+)<\/h1>/i)?.[1]?.trim().slice(0, 60) || "(sem h1)",
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
+    if (bundleFromSession && bundleFromSession.tabs.length > 1) {
+      setPlanningBundle(bundleFromSession);
+      setActiveBundleIndex(bundleFromSession.activeIndex);
+      skipBundleAutoSaveRef.current = true;
+    }
 
     setTitle(resolvedTitle);
     setDocumentSource(resolvedStoredDocument);
@@ -525,7 +505,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
       return;
     }
 
-    if (planningBundle && skipBundleAutoSaveRef.current) {
+    if (skipBundleAutoSaveRef.current) {
       skipBundleAutoSaveRef.current = false;
       return;
     }
@@ -1187,29 +1167,6 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
         }
       : payload;
     const historyType = activeBundleTab?.type || source?.type || "editor";
-
-    // #region agent log
-    fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "f33ae7" },
-      body: JSON.stringify({
-        sessionId: "f33ae7",
-        hypothesisId: "H4",
-        location: "EditorClient.tsx:persistCurrentDocument",
-        message: "persist current document",
-        data: {
-          activeBundleIndex,
-          bundleTabId: activeBundleTab?.id,
-          bundleTabLabel: activeBundleTab?.label,
-          sourceType: source?.type,
-          historyType,
-          payloadId: historyPayload?.id,
-          heading: html.match(/<h1[^>]*>([^<]+)<\/h1>/i)?.[1]?.trim().slice(0, 60) || "(sem h1)",
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
 
     const saved = syncOpenDocumentToHistory({
       title: currentTitle,

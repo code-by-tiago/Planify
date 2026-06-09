@@ -345,6 +345,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
   const [adjustingSlides, setAdjustingSlides] = useState(false);
   const [planningBundle, setPlanningBundle] = useState<PlanningEditorBundle | null>(null);
   const [activeBundleIndex, setActiveBundleIndex] = useState(0);
+  const skipBundleAutoSaveRef = useRef(true);
 
   const lastSavedLabel = useMemo(() => nowLabel(), []);
 
@@ -441,6 +442,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
       if (bundle && bundle.tabs.length > 1) {
         setPlanningBundle(bundle);
         setActiveBundleIndex(bundle.activeIndex);
+        skipBundleAutoSaveRef.current = true;
         setOriginHint(
           "Pacote anual + trimestres — use as abas para alternar entre os documentos. Cada um é salvo separadamente no histórico.",
         );
@@ -454,18 +456,63 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
   }, []);
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const bundleFromSession =
+      params.get("from") === "planejamentos" && params.get("bundle") === "1"
+        ? loadPlanningEditorBundle()
+        : null;
     const initial = loadInitialDocument();
+    const activeBundleTab = bundleFromSession?.tabs[bundleFromSession.activeIndex];
+    const resolvedHtml = activeBundleTab?.content || initial.html;
+    const resolvedTitle = activeBundleTab?.title || initial.title;
+    const resolvedStoredDocument: StoredEditorDocument | null = activeBundleTab
+      ? {
+          type: activeBundleTab.type,
+          title: activeBundleTab.title,
+          html: activeBundleTab.content,
+          content: activeBundleTab.content,
+          payload: {
+            source: "planejamento",
+            raw: activeBundleTab.raw,
+            id: activeBundleTab.id,
+          },
+          updatedAt: new Date().toISOString(),
+        }
+      : initial.storedDocument;
 
-    setTitle(initial.title);
-    setDocumentSource(initial.storedDocument);
+    // #region agent log
+    fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "f33ae7" },
+      body: JSON.stringify({
+        sessionId: "f33ae7",
+        hypothesisId: "H5",
+        location: "EditorClient.tsx:initialLoad",
+        message: "editor initial document resolved",
+        data: {
+          usedBundleTab: Boolean(activeBundleTab),
+          tabId: activeBundleTab?.id,
+          tabLabel: activeBundleTab?.label,
+          storageHeading:
+            initial.html.match(/<h1[^>]*>([^<]+)<\/h1>/i)?.[1]?.trim().slice(0, 60) || "(sem h1)",
+          resolvedHeading:
+            resolvedHtml.match(/<h1[^>]*>([^<]+)<\/h1>/i)?.[1]?.trim().slice(0, 60) || "(sem h1)",
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
+
+    setTitle(resolvedTitle);
+    setDocumentSource(resolvedStoredDocument);
     setSavedDocuments(loadSavedDocuments());
 
     if (editorRef.current) {
-      editorRef.current.innerHTML = initial.html;
+      editorRef.current.innerHTML = resolvedHtml;
       prepareImagesInsideEditor();
       updateWordCount();
-      syncSlideDeckFlags(initial.html, initial.storedDocument);
-      seedUndoStack(initial.html);
+      syncSlideDeckFlags(resolvedHtml, resolvedStoredDocument);
+      seedUndoStack(resolvedHtml);
     }
 
     setIsLoaded(true);
@@ -478,13 +525,18 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
       return;
     }
 
+    if (planningBundle && skipBundleAutoSaveRef.current) {
+      skipBundleAutoSaveRef.current = false;
+      return;
+    }
+
     const timer = window.setTimeout(() => {
       persistCurrentDocument("Salvo automaticamente.");
     }, 1200);
 
     return () => window.clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [title, wordCount, isLoaded]);
+  }, [title, wordCount, isLoaded, planningBundle]);
 
   function focusEditor() {
     editorRef.current?.focus();
@@ -1125,12 +1177,45 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
     const currentTitle = title.trim() || getDocumentTitleFromHtml(html);
     const source = documentSource;
     const payload = source?.payload as EditorStoredPayload | undefined;
+    const activeBundleTab = planningBundle?.tabs[activeBundleIndex];
+    const historyPayload: EditorStoredPayload | undefined = activeBundleTab
+      ? {
+          ...payload,
+          source: "planejamento",
+          id: activeBundleTab.id,
+          raw: activeBundleTab.raw,
+        }
+      : payload;
+    const historyType = activeBundleTab?.type || source?.type || "editor";
+
+    // #region agent log
+    fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "f33ae7" },
+      body: JSON.stringify({
+        sessionId: "f33ae7",
+        hypothesisId: "H4",
+        location: "EditorClient.tsx:persistCurrentDocument",
+        message: "persist current document",
+        data: {
+          activeBundleIndex,
+          bundleTabId: activeBundleTab?.id,
+          bundleTabLabel: activeBundleTab?.label,
+          sourceType: source?.type,
+          historyType,
+          payloadId: historyPayload?.id,
+          heading: html.match(/<h1[^>]*>([^<]+)<\/h1>/i)?.[1]?.trim().slice(0, 60) || "(sem h1)",
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
 
     const saved = syncOpenDocumentToHistory({
       title: currentTitle,
       content: html,
-      type: source?.type || "editor",
-      payload,
+      type: historyType,
+      payload: historyPayload,
     });
 
     setDocumentSource({
@@ -1183,9 +1268,10 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
     syncOpenDocumentToHistory({
       title: currentTitle,
       content: html,
-      type: source?.type || currentTab.type,
+      type: currentTab.type,
       payload: {
         ...payload,
+        source: "planejamento",
         id: currentTab.id,
         raw: currentTab.raw,
       },

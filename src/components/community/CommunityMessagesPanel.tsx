@@ -10,6 +10,7 @@ import { getCurrentAccessToken } from "@/lib/auth/session-client";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 import { parseJsonResponse } from "@/lib/http/parse-json-response";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 type CommunityMessagesPanelProps = {
   open: boolean;
@@ -49,6 +50,32 @@ export function CommunityMessagesPanel({
   const [viewerUserId, setViewerUserId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const initialHandledRef = useRef<string | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    function handleKey(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    }
+
+    document.addEventListener("keydown", handleKey);
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.removeEventListener("keydown", handleKey);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [open, onClose]);
 
   const loadViewerId = useCallback(async () => {
     try {
@@ -357,13 +384,24 @@ export function CommunityMessagesPanel({
     }
   }
 
-  if (!open) {
+  if (!open || !mounted) {
     return null;
   }
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/40 p-3 sm:items-center sm:p-6">
-      <div className="flex h-[min(720px,92vh)] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-cyan-400/20 bg-white shadow-2xl">
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[80] flex items-end justify-center p-3 sm:items-center sm:p-6"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Mensagens da comunidade"
+    >
+      <button
+        type="button"
+        className="absolute inset-0 bg-slate-950/50 backdrop-blur-[2px]"
+        onClick={onClose}
+        aria-label="Fechar mensagens"
+      />
+      <div className="relative z-10 flex h-[min(720px,92vh)] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-cyan-400/20 bg-white shadow-2xl">
         <header className="flex items-center justify-between border-b border-cyan-400/15 bg-gradient-to-r from-cyan-50 to-indigo-50 px-4 py-3">
           <div className="flex items-center gap-2">
             {activeConversationId ? (
@@ -532,6 +570,7 @@ export function CommunityMessagesPanel({
           </>
         )}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

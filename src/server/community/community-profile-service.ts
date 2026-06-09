@@ -1,4 +1,5 @@
 import type { TablesUpdate } from "@/types/database";
+import { normalizeCommunityBio } from "@/lib/community/profile-bio";
 import { getSupabaseAdminClient } from "../supabase/admin-client";
 import { resolveUserAvatarUrl } from "../auth/user-avatar";
 import { resolveUserDisplayName } from "../auth/user-display-name";
@@ -291,7 +292,7 @@ export async function updateCommunityProfile(
   }
 
   if (input.bio !== undefined) {
-    update.bio = input.bio?.trim().slice(0, 500) || null;
+    update.bio = normalizeCommunityBio(input.bio);
   }
 
   if (input.communityPublic !== undefined) {

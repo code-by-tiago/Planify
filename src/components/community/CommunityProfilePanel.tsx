@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { CommunityMessagesIcon } from "@/components/community/CommunityMessagesIcon";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
+import { CommunityProfileBioField, CommunityProfileBioTopics } from "@/components/community/CommunityProfileBio";
+import { normalizeCommunityBio } from "@/lib/community/profile-bio";
 import { parseJsonResponse } from "@/lib/http/parse-json-response";
 
 type CommunityProfileStats = {
@@ -144,7 +146,7 @@ export function CommunityProfilePanel() {
         body: JSON.stringify({
           fullName: draft.fullName,
           schoolName: draft.schoolName || null,
-          bio: draft.bio || null,
+          bio: normalizeCommunityBio(draft.bio),
           communityPublic: draft.communityPublic,
         }),
       });
@@ -244,7 +246,7 @@ export function CommunityProfilePanel() {
 
   const displayName = editing ? draft.fullName : profile.fullName;
   const displaySchool = editing ? draft.schoolName : profile.schoolName || "";
-  const displayBio = editing ? draft.bio : profile.bio || "";
+  const displayBio = editing ? draft.bio : profile.bio;
   const isPublic = editing ? draft.communityPublic : profile.communityPublic;
 
   return (
@@ -360,22 +362,17 @@ export function CommunityProfilePanel() {
         </div>
 
         {editing ? (
-          <textarea
+          <CommunityProfileBioField
+            className="mt-4"
             value={draft.bio}
-            onChange={(event) =>
-              setDraft((current) => ({ ...current, bio: event.target.value }))
-            }
-            rows={3}
-            maxLength={500}
-            placeholder="Conte em poucas linhas sua atuação (componente, etapa, interesses…)"
-            className="mt-4 w-full rounded-xl border border-cyan-400/20 bg-slate-50/80 px-3 py-2.5 text-sm font-medium leading-6 text-slate-700 outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+            onChange={(bio) => setDraft((current) => ({ ...current, bio }))}
           />
-        ) : displayBio ? (
-          <p className="mt-4 text-sm font-medium leading-7 text-slate-600">{displayBio}</p>
         ) : (
-          <p className="mt-4 text-sm font-medium italic text-slate-400">
-            Adicione uma breve descrição sobre sua atuação pedagógica.
-          </p>
+          <CommunityProfileBioTopics
+            className="mt-4"
+            bio={displayBio}
+            emptyMessage="Adicione uma breve descrição sobre sua atuação pedagógica."
+          />
         )}
 
         {profile.topComponentes && profile.topComponentes.length > 0 ? (

@@ -5,6 +5,7 @@ import { CommunityBlockButton } from "@/components/community/CommunityBlockButto
 import { CommunityFriendButton } from "@/components/community/CommunityFriendButton";
 import { CommunityReportButton } from "@/components/community/CommunityReportButton";
 import { CommunityMessagesIcon } from "@/components/community/CommunityMessagesIcon";
+import { CommunityProfileBioTopics } from "@/components/community/CommunityProfileBio";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
 import { PlanifyPageHero } from "@/components/pro/PlanifyPageHero";
@@ -161,7 +162,7 @@ export function PublicProfileClient({ userId }: PublicProfileClientProps) {
                     Este professor optou por manter o perfil privado.
                   </p>
                 ) : profile.bio ? (
-                  <p className="mt-4 text-sm leading-7 text-slate-600">{profile.bio}</p>
+                  <CommunityProfileBioTopics className="mt-4" bio={profile.bio} />
                 ) : null}
 
                 {profile.topComponentes && profile.topComponentes.length > 0 ? (

@@ -353,8 +353,8 @@ function renderSlides(response: MaterialEngineResponse): string {
             ${decorationHtml(theme, "cover")}
             <div style="position:relative;padding:42px 36px;">
               <span style="display:inline-block;font-size:11px;font-weight:800;letter-spacing:0.16em;text-transform:uppercase;background:${theme.coverBadgeBg};color:${h(theme.coverBadgeInk)};padding:6px 13px;border-radius:999px;">Planify · Apresentação</span>
-              <h3 style="margin:18px 0 0;font-family:${fontStack(theme.fontHeading)};font-size:32px;font-weight:900;line-height:1.16;color:${h(theme.coverInk)};">${escapeHtml(slide.title)}</h3>
-              ${slide.subtitle ? `<p style="margin:14px 0 0;font-family:${fontStack(theme.fontBody)};font-size:17px;font-weight:500;line-height:1.5;color:${h(theme.coverMutedInk)};">${escapeHtml(slide.subtitle)}</p>` : ""}
+              <h3 style="margin:18px 0 0;font-family:${fontStack(theme.fontHeading)};font-size:40px;font-weight:900;line-height:1.16;color:${h(theme.coverInk)};">${escapeHtml(slide.title)}</h3>
+              ${slide.subtitle ? `<p style="margin:14px 0 0;font-family:${fontStack(theme.fontBody)};font-size:22px;font-weight:500;line-height:1.5;color:${h(theme.coverMutedInk)};">${escapeHtml(slide.subtitle)}</p>` : ""}
               <p style="margin:22px 0 0;font-size:12px;font-weight:700;letter-spacing:0.08em;color:${h(theme.coverMutedInk)};">${total} SLIDES</p>
             </div>
           </div>
@@ -385,33 +385,6 @@ function renderSlides(response: MaterialEngineResponse): string {
       const imageBlock = figureHtml
         ? `<div style="margin-top:16px;max-width:100%;">${figureHtml}</div>`
         : "";
-
-      // #region agent log
-      fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Debug-Session-Id": "1b39d8",
-        },
-        body: JSON.stringify({
-          sessionId: "1b39d8",
-          runId: "runtime",
-          hypothesisId: "H2",
-          location: "material-engine-service.ts:renderSlides",
-          message: "slide render metrics",
-          data: {
-            layout,
-            bodyFontSize,
-            titleFontSize,
-            figureMaxHeight,
-            hasImage: Boolean(slide.imageUrl?.trim() || slide.imagePrompt?.trim()),
-            imageAfterText: true,
-            bulletCount: bullets.length,
-          },
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {});
-      // #endregion
 
       let inner = "";
 

@@ -1,7 +1,19 @@
 import PptxGenJS from "pptxgenjs";
 import {
+  computeBulletBlockHeight,
+  computeSlideImageHeight,
+  SLIDE_CONTENT_BOTTOM,
+  SLIDE_CONTENT_W,
+  SLIDE_HEIGHT_IN,
+  SLIDE_LAYOUT,
+  SLIDE_MARGIN_X,
+  SLIDE_WIDTH_IN,
+} from "@/lib/slides/slide-layout";
+import {
   computeSlideBodyFontSize,
   computeSlideTitleFontSize,
+  SLIDE_COVER_SUBTITLE_FONT,
+  SLIDE_COVER_TITLE_FONT,
   SLIDE_MIN_BODY_FONT,
 } from "@/lib/slides/slide-typography";
 import type { MaterialEngineResponse } from "./material-engine-types";
@@ -9,6 +21,8 @@ import { resolveSlideTheme, type SlideTheme } from "./slide-design-themes";
 import { assignSlideSequenceLabels, orderSlidesPedagogically } from "./slide-pedagogy";
 
 type SlideItem = NonNullable<MaterialEngineResponse["slides"]>[number];
+
+const TEXT_FIT = "none" as const;
 
 async function fetchImageDataUrl(url: string): Promise<string | null> {
   try {
@@ -32,14 +46,12 @@ async function fetchImageDataUrl(url: string): Promise<string | null> {
           ? "gif"
           : "jpeg";
 
-    // PptxGenJS exige data URL completo (com prefixo "data:").
     return `data:image/${ext};base64,${base64}`;
   } catch {
     return null;
   }
 }
 
-/** Pré-carrega todas as imagens em paralelo (mais rápido e evita timeouts em série). */
 async function preloadImages(slides: SlideItem[]): Promise<Map<string, string>> {
   const urls = [
     ...new Set(
@@ -68,28 +80,28 @@ function drawCoverDecoration(
   switch (theme.decoration) {
     case "blob":
       slide.addShape(pptx.ShapeType.ellipse, {
-        x: 9.6,
-        y: -1.3,
-        w: 4.2,
-        h: 4.2,
+        x: 7.2,
+        y: -0.98,
+        w: 3.15,
+        h: 3.15,
         fill: { color: theme.coverBgHex2 },
         line: { type: "none" },
       });
       slide.addShape(pptx.ShapeType.ellipse, {
-        x: -1.3,
-        y: 5,
-        w: 3.6,
-        h: 3.6,
+        x: -0.98,
+        y: 3.75,
+        w: 2.7,
+        h: 2.7,
         fill: { color: theme.coverBgHex2 },
         line: { type: "none" },
       });
       break;
     case "corner":
       slide.addShape(pptx.ShapeType.ellipse, {
-        x: 10,
-        y: -1.6,
-        w: 4.4,
-        h: 4.4,
+        x: 7.5,
+        y: -1.2,
+        w: 3.3,
+        h: 3.3,
         fill: { color: theme.coverBgHex2 },
         line: { type: "none" },
       });
@@ -98,18 +110,18 @@ function drawCoverDecoration(
       slide.addShape(pptx.ShapeType.rect, {
         x: 0,
         y: 0,
-        w: 13.33,
-        h: 0.14,
+        w: SLIDE_WIDTH_IN,
+        h: 0.11,
         fill: { color: theme.accentHex },
         line: { type: "none" },
       });
       break;
     case "chalk":
       slide.addShape(pptx.ShapeType.rect, {
-        x: 0.35,
-        y: 0.35,
-        w: 12.63,
-        h: 6.8,
+        x: 0.26,
+        y: 0.26,
+        w: 9.48,
+        h: 5.1,
         fill: { type: "none" },
         line: { color: theme.coverInk, width: 1, dashType: "dash" },
       });
@@ -131,119 +143,126 @@ function drawContentHeader(
       slide.addShape(pptx.ShapeType.rect, {
         x: 0,
         y: 0,
-        w: 13.33,
-        h: 0.62,
+        w: SLIDE_WIDTH_IN,
+        h: 0.42,
         fill: { color: theme.accentHex },
         line: { type: "none" },
       });
       slide.addText(label, {
-        x: 0.5,
-        y: 0.06,
-        w: 9,
-        h: 0.5,
+        x: 0.38,
+        y: 0.04,
+        w: 6.8,
+        h: 0.34,
         fontSize: 11,
         color: "FFFFFF",
         bold: true,
         fontFace: theme.fontHeading,
         valign: "middle",
+        fit: TEXT_FIT,
       });
       slide.addText(position, {
-        x: 10.3,
-        y: 0.06,
-        w: 2.6,
-        h: 0.5,
+        x: 7.4,
+        y: 0.04,
+        w: 2.2,
+        h: 0.34,
         fontSize: 11,
         color: "FFFFFF",
         align: "right",
         valign: "middle",
+        fit: TEXT_FIT,
       });
       break;
     case "block":
       slide.addShape(pptx.ShapeType.roundRect, {
-        x: 0.5,
-        y: 0.28,
-        w: Math.min(0.55 + label.length * 0.085, 5),
-        h: 0.36,
+        x: 0.38,
+        y: 0.18,
+        w: Math.min(0.5 + label.length * 0.075, 3.8),
+        h: 0.3,
         fill: { color: theme.accentHex },
         line: { type: "none" },
-        rectRadius: 0.06,
+        rectRadius: 0.05,
       });
       slide.addText(label, {
-        x: 0.6,
-        y: 0.28,
-        w: 5,
-        h: 0.36,
+        x: 0.45,
+        y: 0.18,
+        w: 3.8,
+        h: 0.3,
         fontSize: 10,
         color: "FFFFFF",
         bold: true,
         fontFace: theme.fontHeading,
         valign: "middle",
+        fit: TEXT_FIT,
       });
       slide.addText(position, {
-        x: 9.7,
-        y: 0.28,
-        w: 2.6,
-        h: 0.36,
+        x: 7.3,
+        y: 0.18,
+        w: 2.2,
+        h: 0.3,
         fontSize: 10,
         color: theme.mutedInk,
         align: "right",
         valign: "middle",
+        fit: TEXT_FIT,
       });
       break;
     case "bar":
       slide.addShape(pptx.ShapeType.rect, {
         x: 0,
         y: 0,
-        w: 0.16,
-        h: 7.5,
+        w: 0.12,
+        h: SLIDE_HEIGHT_IN,
         fill: { color: theme.accentHex },
         line: { type: "none" },
       });
       slide.addText(label, {
-        x: 0.45,
-        y: 0.28,
-        w: 8,
-        h: 0.35,
+        x: 0.34,
+        y: 0.18,
+        w: 6,
+        h: 0.28,
         fontSize: 10,
         color: theme.accentHex,
         bold: true,
         fontFace: theme.fontHeading,
+        fit: TEXT_FIT,
       });
       slide.addText(position, {
-        x: 9.7,
-        y: 0.28,
-        w: 2.6,
-        h: 0.35,
+        x: 7.3,
+        y: 0.18,
+        w: 2.2,
+        h: 0.28,
         fontSize: 10,
         color: theme.mutedInk,
         align: "right",
+        fit: TEXT_FIT,
       });
       break;
     default: {
-      // underline / chalk
       slide.addText(label, {
-        x: 0.5,
-        y: 0.28,
-        w: 8,
-        h: 0.35,
+        x: 0.38,
+        y: 0.18,
+        w: 6,
+        h: 0.28,
         fontSize: 10,
         color: theme.accentHex,
         bold: true,
         fontFace: theme.fontHeading,
+        fit: TEXT_FIT,
       });
       slide.addText(position, {
-        x: 9.7,
-        y: 0.28,
-        w: 2.6,
-        h: 0.35,
+        x: 7.3,
+        y: 0.18,
+        w: 2.2,
+        h: 0.28,
         fontSize: 10,
         color: theme.mutedInk,
         align: "right",
+        fit: TEXT_FIT,
       });
       slide.addShape(pptx.ShapeType.line, {
-        x: 0.5,
-        y: 0.7,
-        w: 12.3,
+        x: 0.38,
+        y: 0.5,
+        w: 9.24,
         h: 0,
         line: {
           color: theme.accentHex,
@@ -254,6 +273,58 @@ function drawContentHeader(
       break;
     }
   }
+}
+
+function addBulletsBlock(
+  pptxSlide: PptxGenJS.Slide,
+  bullets: string[],
+  opts: {
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+    bodyFontSize: number;
+    theme: SlideTheme;
+  },
+): void {
+  if (!bullets.length) return;
+
+  pptxSlide.addText(
+    bullets.map((text) => ({
+      text,
+      options: {
+        bullet: { indent: 16, characterCode: "25AA" },
+        paraSpaceAfter: 8,
+      },
+    })),
+    {
+      x: opts.x,
+      y: opts.y,
+      w: opts.w,
+      h: opts.h,
+      fontSize: opts.bodyFontSize,
+      color: opts.theme.bodyInk,
+      fontFace: opts.theme.fontBody,
+      valign: "top",
+      lineSpacingMultiple: 1.12,
+      fit: TEXT_FIT,
+    },
+  );
+}
+
+function addImageBlock(
+  pptxSlide: PptxGenJS.Slide,
+  imageData: string,
+  opts: { x: number; y: number; w: number; h: number },
+): void {
+  pptxSlide.addImage({
+    data: imageData,
+    x: opts.x,
+    y: opts.y,
+    w: opts.w,
+    h: opts.h,
+    sizing: { type: "contain", w: opts.w, h: opts.h },
+  });
 }
 
 export async function buildSlidesPptxBuffer(input: {
@@ -268,7 +339,7 @@ export async function buildSlidesPptxBuffer(input: {
   const imageMap = await preloadImages(ordered);
 
   const pptx = new PptxGenJS();
-  pptx.layout = "LAYOUT_WIDE";
+  pptx.layout = SLIDE_LAYOUT;
   pptx.author = "Planify";
   pptx.title = input.title;
 
@@ -286,62 +357,64 @@ export async function buildSlidesPptxBuffer(input: {
       drawCoverDecoration(pptx, pptxSlide, theme);
 
       pptxSlide.addText("PLANIFY · APRESENTAÇÃO", {
-        x: 0.6,
-        y: 1.0,
-        w: 11.5,
-        h: 0.4,
+        x: SLIDE_MARGIN_X,
+        y: 0.72,
+        w: SLIDE_CONTENT_W,
+        h: 0.32,
         fontSize: 12,
         color: theme.coverMutedInk,
         bold: true,
         charSpacing: 2,
         fontFace: theme.fontHeading,
+        fit: TEXT_FIT,
       });
       pptxSlide.addText(slide.title, {
-        x: 0.6,
-        y: 1.7,
-        w: 11.5,
-        h: 1.8,
-        fontSize: 34,
+        x: SLIDE_MARGIN_X,
+        y: 1.15,
+        w: SLIDE_CONTENT_W,
+        h: 1.45,
+        fontSize: SLIDE_COVER_TITLE_FONT,
         color: theme.coverInk,
         bold: true,
         fontFace: theme.fontHeading,
         valign: "top",
+        fit: TEXT_FIT,
       });
       if (slide.subtitle) {
         pptxSlide.addText(slide.subtitle, {
-          x: 0.6,
-          y: 3.6,
-          w: 11,
-          h: 0.9,
-          fontSize: 17,
+          x: SLIDE_MARGIN_X,
+          y: 2.65,
+          w: SLIDE_CONTENT_W,
+          h: 0.72,
+          fontSize: SLIDE_COVER_SUBTITLE_FONT,
           color: theme.coverMutedInk,
           fontFace: theme.fontBody,
+          fit: TEXT_FIT,
         });
       }
-      let coverBottomY = slide.subtitle ? 4.55 : 3.65;
+      let coverBottomY = slide.subtitle ? 3.42 : 2.72;
       pptxSlide.addText(`${ordered.length} SLIDES`, {
-        x: 0.6,
+        x: SLIDE_MARGIN_X,
         y: coverBottomY,
-        w: 4,
-        h: 0.3,
+        w: 3.2,
+        h: 0.26,
         fontSize: 11,
         color: theme.coverMutedInk,
         charSpacing: 2,
+        fit: TEXT_FIT,
       });
-      coverBottomY += 0.55;
+      coverBottomY += 0.42;
 
       const coverData = slide.imageUrl ? imageMap.get(slide.imageUrl) : null;
       if (coverData) {
-        const imageW = 8.2;
-        const imageH = Math.min(2.8, Math.max(1.6, 7.1 - coverBottomY));
-        const imageX = (13.33 - imageW) / 2;
-        pptxSlide.addImage({
-          data: coverData,
+        const imageH = Math.max(1.45, SLIDE_CONTENT_BOTTOM - coverBottomY);
+        const imageW = SLIDE_CONTENT_W * 0.92;
+        const imageX = (SLIDE_WIDTH_IN - imageW) / 2;
+        addImageBlock(pptxSlide, coverData, {
           x: imageX,
           y: coverBottomY,
           w: imageW,
           h: imageH,
-          sizing: { type: "contain", w: imageW, h: imageH },
         });
       }
 
@@ -372,57 +445,48 @@ export async function buildSlidesPptxBuffer(input: {
       hasCallout,
     });
     const titleFontSize = computeSlideTitleFontSize(bodyFontSize);
-    const textWidth = 11.9;
+    const useSideBySide = layout === "duasColunas" && hasImage && bullets.length > 0;
 
     pptxSlide.addText(slide.title, {
-      x: 0.5,
-      y: 0.95,
-      w: 12.2,
-      h: 0.8,
+      x: SLIDE_MARGIN_X,
+      y: 0.52,
+      w: SLIDE_CONTENT_W,
+      h: 1.05,
       fontSize: titleFontSize,
       color: theme.titleInk,
       bold: true,
       fontFace: theme.fontHeading,
       valign: "top",
+      fit: TEXT_FIT,
     });
 
-    let contentBottomY = 1.8;
+    let contentBottomY = 1.58;
+    const textColumnW = useSideBySide ? 4.25 : SLIDE_CONTENT_W;
 
     if (bullets.length) {
-      const bulletBlockHeight = Math.min(4.0, 0.42 * bullets.length + 0.35);
-      pptxSlide.addText(
-        bullets.map((text) => ({
-          text,
-          options: {
-            bullet: { indent: 18, characterCode: "25AA" },
-            paraSpaceAfter: 9,
-          },
-        })),
-        {
-          x: 0.55,
-          y: contentBottomY,
-          w: textWidth,
-          h: bulletBlockHeight,
-          fontSize: bodyFontSize,
-          color: theme.bodyInk,
-          fontFace: theme.fontBody,
-          valign: "top",
-          lineSpacingMultiple: 1.15,
-        },
-      );
-      contentBottomY += bulletBlockHeight + 0.18;
+      const bulletBlockHeight = computeBulletBlockHeight(bullets.length);
+      addBulletsBlock(pptxSlide, bullets, {
+        x: SLIDE_MARGIN_X,
+        y: contentBottomY,
+        w: textColumnW,
+        h: bulletBlockHeight,
+        bodyFontSize,
+        theme,
+      });
+      contentBottomY += bulletBlockHeight + 0.14;
     }
 
     if (hasCallout && slide.callout?.text) {
-      const calloutHeight = 1.15;
+      const calloutHeight = 0.95;
+      const calloutW = useSideBySide ? textColumnW : SLIDE_CONTENT_W;
       pptxSlide.addShape(pptx.ShapeType.roundRect, {
-        x: 0.55,
+        x: SLIDE_MARGIN_X,
         y: contentBottomY,
-        w: textWidth,
+        w: calloutW,
         h: calloutHeight,
         fill: { color: theme.accentSoftHex },
         line: { color: theme.accentHex, width: 0.75 },
-        rectRadius: 0.08,
+        rectRadius: 0.07,
       });
       pptxSlide.addText(
         [
@@ -433,7 +497,7 @@ export async function buildSlidesPptxBuffer(input: {
                   options: {
                     bold: true,
                     color: theme.accentHex,
-                    fontSize: Math.max(14, bodyFontSize - 4),
+                    fontSize: Math.max(16, bodyFontSize - 2),
                     breakLine: true,
                   },
                 },
@@ -443,63 +507,45 @@ export async function buildSlidesPptxBuffer(input: {
             text: slide.callout.text,
             options: {
               color: theme.bodyInk,
-              fontSize: Math.max(SLIDE_MIN_BODY_FONT, bodyFontSize - 2),
+              fontSize: Math.max(SLIDE_MIN_BODY_FONT, bodyFontSize - 1),
             },
           },
         ],
         {
-          x: 0.7,
-          y: contentBottomY + 0.08,
-          w: textWidth - 0.3,
-          h: calloutHeight - 0.16,
+          x: SLIDE_MARGIN_X + 0.12,
+          y: contentBottomY + 0.07,
+          w: calloutW - 0.24,
+          h: calloutHeight - 0.14,
           valign: "middle",
           fontFace: theme.fontBody,
+          fit: TEXT_FIT,
         },
       );
-      contentBottomY += calloutHeight + 0.18;
+      contentBottomY += calloutHeight + 0.14;
     }
 
     if (hasImage && imageData) {
-      const remainingHeight = Math.max(1.6, 6.95 - contentBottomY);
-      const imageW = Math.min(8.8, textWidth);
-      const imageH = Math.min(2.6, remainingHeight);
-      const imageX = (13.33 - imageW) / 2;
-      // #region agent log
-      if (typeof fetch !== "undefined") {
-        fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Debug-Session-Id": "1b39d8",
-          },
-          body: JSON.stringify({
-            sessionId: "1b39d8",
-            runId: "runtime",
-            hypothesisId: "H3",
-            location: "slide-pptx-builder.ts:contentSlide",
-            message: "pptx image placed after text",
-            data: {
-              contentBottomY,
-              imageY: contentBottomY,
-              imageW,
-              imageH,
-              bodyFontSize,
-              bulletCount: bullets.length,
-              sizing: "contain",
-            },
-            timestamp: Date.now(),
-          }),
-        }).catch(() => {});
+      if (useSideBySide) {
+        const imageX = SLIDE_MARGIN_X + textColumnW + 0.18;
+        const imageW = SLIDE_WIDTH_IN - imageX - SLIDE_MARGIN_X;
+        const imageH = SLIDE_CONTENT_BOTTOM - 1.58;
+        addImageBlock(pptxSlide, imageData, {
+          x: imageX,
+          y: 1.58,
+          w: imageW,
+          h: imageH,
+        });
+      } else {
+        const imageH = computeSlideImageHeight(contentBottomY);
+        const imageW = SLIDE_CONTENT_W * 0.94;
+        const imageX = (SLIDE_WIDTH_IN - imageW) / 2;
+        addImageBlock(pptxSlide, imageData, {
+          x: imageX,
+          y: contentBottomY,
+          w: imageW,
+          h: imageH,
+        });
       }
-      // #endregion
-      pptxSlide.addImage({
-        data: imageData,
-        x: imageX,
-        y: contentBottomY,
-        w: imageW,
-        h: imageH,
-        sizing: { type: "contain", w: imageW, h: imageH },
-      });
     }
 
     if (slide.speakerNotes?.trim()) {

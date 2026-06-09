@@ -6,6 +6,15 @@ export type DriveUploadResult = {
   webViewLink: string | null;
 };
 
+/** Opens Google Drive UI (folder or My Drive), not a Docs preview. */
+export function buildGoogleDriveDestinationUrl(folderId?: string | null): string {
+  const id = String(folderId || "").trim();
+  if (id) {
+    return `https://drive.google.com/drive/folders/${id}`;
+  }
+  return "https://drive.google.com/drive/my-drive";
+}
+
 export async function uploadBufferToGoogleDrive(params: {
   accessToken: string;
   filename: string;

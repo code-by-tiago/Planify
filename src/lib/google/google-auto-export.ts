@@ -8,6 +8,7 @@ import {
   fetchGoogleStatus,
   startGoogleOAuth,
 } from "@/lib/google/google-api-client";
+import { clearOtherGoogleExportPending } from "@/lib/google/google-export-resume";
 import { saveGoogleSlidesExportPending } from "@/lib/google/google-status-events";
 
 export const AUTO_GOOGLE_EXPORT_INTENT_KEY = "planify:auto-google-export";
@@ -94,6 +95,7 @@ function saveProductExportPending(params: {
       ? GOOGLE_FORMS_EXPORT_PENDING_KEY
       : GOOGLE_DOCS_EXPORT_PENDING_KEY;
 
+  clearOtherGoogleExportPending(key);
   window.sessionStorage.setItem(key, JSON.stringify(pending));
 }
 

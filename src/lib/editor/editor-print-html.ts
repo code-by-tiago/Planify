@@ -285,14 +285,17 @@ export const PLANIFY_EXPORT_CSS = `
   }
 `;
 
-/** Widescreen 13.33"×7.5" (mesma base do PPTX LAYOUT_WIDE) — um slide por página. */
-const SLIDE_EXPORT_DESIGN_WIDTH_PX = 720;
-const SLIDE_EXPORT_DESIGN_HEIGHT_PX = 405;
-const SLIDE_EXPORT_SCALE = 338 / 190 * (190 / 25.4 * 96) / SLIDE_EXPORT_DESIGN_WIDTH_PX;
+import {
+  SLIDE_DESIGN_HEIGHT_PX,
+  SLIDE_DESIGN_WIDTH_PX,
+  SLIDE_EXPORT_INNER_SCALE,
+  SLIDE_EXPORT_PAGE_HEIGHT_MM,
+  SLIDE_EXPORT_PAGE_WIDTH_MM,
+} from "@/lib/slides/slide-layout";
 
 export const PLANIFY_SLIDE_EXPORT_CSS = `
   @page {
-    size: 338mm 190mm;
+    size: ${SLIDE_EXPORT_PAGE_WIDTH_MM}mm ${SLIDE_EXPORT_PAGE_HEIGHT_MM}mm;
     margin: 0;
   }
   html, body, * {
@@ -306,7 +309,7 @@ export const PLANIFY_SLIDE_EXPORT_CSS = `
     color: #0f172a;
   }
   .planify-export-document {
-    width: 338mm;
+    width: ${SLIDE_EXPORT_PAGE_WIDTH_MM}mm;
     max-width: none;
     margin: 0;
     padding: 0;
@@ -324,9 +327,9 @@ export const PLANIFY_SLIDE_EXPORT_CSS = `
   .planify-slide {
     display: block;
     position: relative;
-    width: 338mm !important;
-    height: 190mm !important;
-    min-height: 190mm !important;
+    width: ${SLIDE_EXPORT_PAGE_WIDTH_MM}mm !important;
+    height: ${SLIDE_EXPORT_PAGE_HEIGHT_MM}mm !important;
+    min-height: ${SLIDE_EXPORT_PAGE_HEIGHT_MM}mm !important;
     max-width: none !important;
     margin: 0 !important;
     padding: 0 !important;
@@ -350,9 +353,9 @@ export const PLANIFY_SLIDE_EXPORT_CSS = `
     position: absolute;
     top: 0;
     left: 0;
-    width: ${SLIDE_EXPORT_DESIGN_WIDTH_PX}px;
-    height: ${SLIDE_EXPORT_DESIGN_HEIGHT_PX}px;
-    transform: scale(${SLIDE_EXPORT_SCALE.toFixed(4)});
+    width: ${SLIDE_DESIGN_WIDTH_PX}px;
+    height: ${SLIDE_DESIGN_HEIGHT_PX}px;
+    transform: scale(${SLIDE_EXPORT_INNER_SCALE.toFixed(4)});
     transform-origin: top left;
     box-sizing: border-box;
   }
@@ -364,7 +367,7 @@ export const PLANIFY_SLIDE_EXPORT_CSS = `
   }
   .planify-slide figure img,
   .planify-slide-image {
-    max-height: 240px !important;
+    max-height: 280px !important;
     object-fit: contain !important;
   }
   img {

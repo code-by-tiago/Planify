@@ -1,3 +1,5 @@
+import { clearOtherGoogleExportPending } from "@/lib/google/google-export-resume";
+
 /** Sincroniza status Google entre Classroom, Slides export e editor. */
 export const GOOGLE_STATUS_CHANGED_EVENT = "planify:google-status-changed";
 
@@ -19,6 +21,7 @@ export function saveGoogleSlidesExportPending(
   payload: Omit<GoogleSlidesExportPending, "ts">,
 ): void {
   if (typeof window === "undefined") return;
+  clearOtherGoogleExportPending(GOOGLE_SLIDES_EXPORT_PENDING_KEY);
   window.sessionStorage.setItem(
     GOOGLE_SLIDES_EXPORT_PENDING_KEY,
     JSON.stringify({ ...payload, ts: Date.now() } satisfies GoogleSlidesExportPending),

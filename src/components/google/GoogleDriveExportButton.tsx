@@ -43,8 +43,7 @@ export function GoogleDriveExportButton({
     });
 
     const url =
-      result.drive.webViewLink ||
-      `https://drive.google.com/file/d/${result.drive.fileId}/view`;
+      result.driveOpenUrl || "https://drive.google.com/drive/my-drive";
 
     if (previewWindow && !previewWindow.closed) {
       previewWindow.location.href = url;

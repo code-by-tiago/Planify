@@ -213,6 +213,7 @@ export async function exportToGoogleDocs(params: {
 
 export type GoogleDriveExportResult = {
   drive: { fileId: string; name: string; webViewLink: string | null };
+  driveOpenUrl: string;
   googleEmail: string | null;
   exportEngine?: "official" | "html";
 };

@@ -8,7 +8,9 @@ import {
   computeSlideBodyFontSize,
   computeSlideTitleFontSize,
   SLIDE_MIN_BODY_FONT,
+  SLIDE_MIN_TITLE_FONT,
 } from "../src/lib/slides/slide-typography";
+import { SLIDE_LAYOUT } from "../src/lib/slides/slide-layout";
 import { buildSlideAdjustPayload } from "../src/lib/materiais/elevate-material-client";
 import type { MaterialEngineInput } from "../src/server/materials/material-engine-types";
 
@@ -58,7 +60,7 @@ function verifyTypography() {
     const title = computeSlideTitleFontSize(body);
     minBody = Math.min(minBody, body);
     if (body < SLIDE_MIN_BODY_FONT) failures += 1;
-    if (title < 24) failures += 1;
+    if (title < SLIDE_MIN_TITLE_FONT) failures += 1;
   }
 
   log("H1", "typography sweep", {
@@ -97,7 +99,7 @@ function verifyHtmlImageOrder() {
     return bulletsIdx >= 0 && imageIdx > bulletsIdx;
   };
 
-  const noSub20ProjectedFonts = !src.includes("SLIDE_MIN_BODY_FONT - 2");
+  const noSubMinBodyFonts = !src.includes("SLIDE_MIN_BODY_FONT - 2");
 
   const pass =
     imageAfterBullets(duasOrder) &&
@@ -105,7 +107,7 @@ function verifyHtmlImageOrder() {
     imageAfterBullets(fechamentoOrder) &&
     fechamentoOrder.includes("${imageBlock}") &&
     duasOrder.includes("${imageBlock}") &&
-    noSub20ProjectedFonts &&
+    noSubMinBodyFonts &&
     !duasOrder.match(/display:\s*flex[^`]*\$\{figureHtml\}[^`]*\$\{bulletsHtml\}/);
 
   log("H2", "html image order in source", {
@@ -115,7 +117,7 @@ function verifyHtmlImageOrder() {
     imageAfterBulletsDuas: imageAfterBullets(duasOrder),
     imageAfterBulletsFechamento: imageAfterBullets(fechamentoOrder),
     imageAfterBulletsDefault: imageAfterBullets(defaultOrder),
-    noSub20ProjectedFonts,
+    noSubMinBodyFonts,
     pass,
   });
   return pass;
@@ -130,34 +132,44 @@ function verifyPptxImagePlacement() {
   const hasContain = src.includes('sizing: { type: "contain"');
   const imageAfterBullets =
     src.indexOf("contentBottomY +=") < src.indexOf("if (hasImage && imageData)");
-  const usesRemainingHeight = src.includes("remainingHeight = Math.max");
+  const usesRemainingHeight = src.includes("computeSlideImageHeight");
   const coverImageBelowText =
     src.includes("coverBottomY") &&
-    src.includes("y: coverBottomY") &&
-    !src.includes("x: 8.0,\n          y: 1.7");
-  const calloutMin20 = src.includes(
-    "fontSize: Math.max(SLIDE_MIN_BODY_FONT, bodyFontSize - 2)",
+    src.includes("y: coverBottomY");
+  const calloutMinBody = src.includes(
+    "fontSize: Math.max(SLIDE_MIN_BODY_FONT, bodyFontSize - 1)",
   );
+  const usesGoogleLayout = src.includes(`layout = SLIDE_LAYOUT`) || src.includes('SLIDE_LAYOUT');
+  const disablesAutofit = src.includes('fit: TEXT_FIT') || src.includes('"none"');
 
   log("H3", "pptx image placement in source", {
     hasContain,
     imageAfterBullets,
     usesRemainingHeight,
     coverImageBelowText,
-    calloutMin20,
+    calloutMinBody,
+    usesGoogleLayout,
+    disablesAutofit,
+    slideLayout: SLIDE_LAYOUT,
     pass:
       hasContain &&
       imageAfterBullets &&
       usesRemainingHeight &&
       coverImageBelowText &&
-      calloutMin20,
+      calloutMinBody &&
+      usesGoogleLayout &&
+      disablesAutofit &&
+      SLIDE_LAYOUT === "LAYOUT_16x9",
   });
   return (
     hasContain &&
     imageAfterBullets &&
     usesRemainingHeight &&
     coverImageBelowText &&
-    calloutMin20
+    calloutMinBody &&
+    usesGoogleLayout &&
+    disablesAutofit &&
+    SLIDE_LAYOUT === "LAYOUT_16x9"
   );
 }
 

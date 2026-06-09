@@ -8,6 +8,24 @@ export type GoogleExportPending = {
 
 const PENDING_TTL_MS = 30 * 60 * 1000;
 
+/** Session keys used to resume Google export after OAuth — only one may be active. */
+export const GOOGLE_EXPORT_PENDING_KEYS = [
+  "planify:google-docs-export-pending",
+  "planify:google-drive-export-pending",
+  "planify:google-forms-export-pending",
+  "planify:google-slides-export-pending",
+] as const;
+
+export function clearOtherGoogleExportPending(activeKey: string): void {
+  if (typeof window === "undefined") return;
+
+  for (const key of GOOGLE_EXPORT_PENDING_KEYS) {
+    if (key !== activeKey) {
+      window.sessionStorage.removeItem(key);
+    }
+  }
+}
+
 export function readGoogleExportPending(key: string): GoogleExportPending | null {
   if (typeof window === "undefined") return null;
 
@@ -34,6 +52,8 @@ export function saveGoogleExportPending(
   payload: Omit<GoogleExportPending, "ts">,
 ): void {
   if (typeof window === "undefined") return;
+
+  clearOtherGoogleExportPending(key);
 
   window.sessionStorage.setItem(
     key,

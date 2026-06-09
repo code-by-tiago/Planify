@@ -5,7 +5,12 @@ import {
   normalizeOfficialPlanningPayload,
   type OfficialPlanningPayload,
 } from "../planejamentos/official-planning-docx";
-import { uploadBufferToGoogleDrive, uploadDocxAsGoogleDocument } from "./google-drive";
+import {
+  buildGoogleDriveDestinationUrl,
+  uploadBufferToGoogleDrive,
+  uploadDocxAsGoogleDocument,
+} from "./google-drive";
+import { requireGoogleConfig } from "./google-config";
 import { getValidGoogleAccessToken } from "./google-token-store";
 
 function safeFilename(value: string): string {
@@ -172,6 +177,8 @@ export type GoogleDriveSaveResult = {
     name: string;
     webViewLink: string | null;
   };
+  /** Drive home/folder URL — never a Google Docs editor link. */
+  driveOpenUrl: string;
   googleEmail: string | null;
   exportEngine?: "official" | "html";
 };
@@ -205,5 +212,12 @@ export async function saveDocumentToGoogleDrive(
     buffer,
   });
 
-  return { drive, googleEmail, exportEngine };
+  const { driveFolderId } = requireGoogleConfig();
+
+  return {
+    drive,
+    driveOpenUrl: buildGoogleDriveDestinationUrl(driveFolderId),
+    googleEmail,
+    exportEngine,
+  };
 }

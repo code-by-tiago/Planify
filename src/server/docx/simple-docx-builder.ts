@@ -296,7 +296,7 @@ function stylesXml() {
     <w:name w:val="Normal"/>
     <w:qFormat/>
     <w:pPr><w:spacing w:after="160" w:line="276" w:lineRule="auto"/></w:pPr>
-    <w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial"/><w:sz w:val="22"/><w:color w:val="111827"/></w:rPr>
+    <w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial"/><w:sz w:val="24"/><w:color w:val="111827"/></w:rPr>
   </w:style>
 
   <w:style w:type="paragraph" w:styleId="Title">
@@ -342,7 +342,7 @@ function stylesXml() {
     <w:basedOn w:val="Normal"/>
     <w:qFormat/>
     <w:pPr><w:spacing w:after="100"/></w:pPr>
-    <w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial"/><w:sz w:val="22"/><w:color w:val="334155"/></w:rPr>
+    <w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial"/><w:sz w:val="24"/><w:color w:val="334155"/></w:rPr>
   </w:style>
 </w:styles>`;
 }

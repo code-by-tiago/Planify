@@ -7,7 +7,6 @@ import { GoogleDriveExportButton } from "@/components/google/GoogleDriveExportBu
 import { GoogleFormsExportButton } from "@/components/google/GoogleFormsExportButton";
 import { GoogleSlidesExportButton } from "@/components/google/GoogleSlidesExportButton";
 import {
-  resolveQuizDocument,
   resolveSlideDeck,
   resolveSlidesExportCompatible,
 } from "@/lib/google/document-type-detection";
@@ -52,9 +51,6 @@ export function GoogleDocumentExportBar({
     () =>
       resolveSlidesExportCompatible(getHtml, documentType, isSlideDeckProp) === true,
   );
-  const [isQuizDocument, setIsQuizDocument] = useState(
-    () => resolveQuizDocument(getHtml, documentType),
-  );
   const [slideTheme, setSlideTheme] = useState<string | null>(
     slideThemeProp ?? null,
   );
@@ -75,7 +71,6 @@ export function GoogleDocumentExportBar({
         isSlideDeckProp,
       );
       setShowSlidesExport(slidesCompatible);
-      setIsQuizDocument(resolveQuizDocument(getHtml, documentType));
       try {
         setSlideTheme(
           slideThemeProp || extractSlideThemeFromHtml(getHtml()) || null,
@@ -143,15 +138,13 @@ export function GoogleDocumentExportBar({
           />
         </>
       ) : null}
-      {isQuizDocument ? (
-        <GoogleFormsExportButton
-          title={title}
-          getHtml={getHtml}
-          returnTo={returnTo}
-          onStatus={onStatus}
-          iconOnly
-        />
-      ) : null}
+      <GoogleFormsExportButton
+        title={title}
+        getHtml={getHtml}
+        returnTo={returnTo}
+        onStatus={onStatus}
+        iconOnly
+      />
       {classroomMode === "popover" ? (
         <GoogleClassroomPopoverButton
           title={title}

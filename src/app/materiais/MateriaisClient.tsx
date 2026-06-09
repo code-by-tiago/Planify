@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { GoogleDocumentExportBar } from "@/components/google/GoogleDocumentExportBar";
 import { GoogleSlidesExportButton } from "@/components/google/GoogleSlidesExportButton";
 import { SlideAiAdjustPanel } from "@/components/slides/SlideAiAdjustPanel";
 import { MaterialGenerationSummaryPanel } from "@/components/materiais/MaterialGenerationSummary";
@@ -70,7 +71,6 @@ import {
   type PlanifyToolId,
   type ToolCategoryId,
 } from "@/lib/pro/planifyTools";
-import { downloadEditorExport } from "@/lib/downloads/editor-export-client";
 import { lessonBundleFollowUp } from "@/lib/pro/teachyStudio";
 import { useSchoolClasses } from "@/hooks/useSchoolClasses";
 import { TurmaCombobox } from "@/components/school/TurmaCombobox";
@@ -938,37 +938,6 @@ export function MateriaisClient({
       buildMaterialMeta(),
       { from: "materiais" },
     );
-  }
-
-  async function baixarWord() {
-    if (!resultadoHtml) {
-      setErro("Gere um material antes de baixar.");
-      return;
-    }
-
-    persistGeneratedMaterial(
-      resultadoHtml,
-      buildTitle(tipo, tema),
-      buildMaterialMeta(),
-    );
-    setHistorico(loadMaterialHistoryPreview());
-
-    const titulo = buildTitle(tipo, tema);
-
-    try {
-      await downloadEditorExport({
-        title: titulo,
-        html: resultadoHtml,
-        format: "docx",
-        fallbackFileName: `${titulo.replace(/[\\/:*?"<>|]/g, "-")}.docx`,
-      });
-    } catch (error) {
-      setErro(
-        error instanceof Error
-          ? error.message
-          : "Não foi possível baixar o DOCX do material.",
-      );
-    }
   }
 
   async function executarGeracao() {
@@ -1960,14 +1929,16 @@ export function MateriaisClient({
                   <PlanifyIcon name="spark" className="h-4 w-4" />
                   Regenerar
                 </button>
-                <button
-                  type="button"
-                  onClick={() => void baixarWord()}
-                  className="pl-hud-btn-secondary inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold"
-                >
-                  <PlanifyIcon name="download" className="h-4 w-4" />
-                  Baixar DOCX
-                </button>
+                <GoogleDocumentExportBar
+                  title={buildTitle(tipo, tema)}
+                  getHtml={() => resultadoHtml}
+                  documentType={`material:${tipo}`}
+                  isSlideDeck={tipo === "slides"}
+                  returnTo="/dashboard"
+                  compact
+                  classroomMode="popover"
+                  disabled={!resultadoHtml}
+                />
                 <Link
                   href="/historico"
                   className="pl-hud-btn-secondary inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold"

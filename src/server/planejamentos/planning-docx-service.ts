@@ -81,7 +81,7 @@ async function readCustomTemplateBuffer(file: TemplateUpload): Promise<Buffer> {
 function ensurePayloadHasMatrix(payload: OfficialPlanningPayload): void {
   if (!payload.matrizPlanejamento?.conteudos?.length) {
     throw new Error(
-      "Gere o planejamento com IA antes de baixar o DOCX oficial. O Planify não vai preencher modelo oficial sem matriz pedagógica.",
+      "Gere o planejamento com IA antes de exportar. O Planify não preenche o modelo oficial sem matriz pedagógica.",
     );
   }
 }

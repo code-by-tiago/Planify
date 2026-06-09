@@ -74,12 +74,12 @@ function DocxFallback({ title, fileName }: { title: string; fileName?: string })
   return (
     <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-cyan-400/25 bg-gradient-to-b from-white to-cyan-50/40 px-6 py-14 text-center">
       <span className="rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-[10px] font-bold uppercase tracking-wide text-indigo-700">
-        DOCX
+        Documento
       </span>
       <h3 className="mt-4 text-lg font-extrabold text-slate-950">{title}</h3>
       <p className="mt-2 max-w-md text-sm leading-6 text-slate-600">
-        Este material foi publicado em Word (.docx). Baixe o arquivo para abrir no seu editor
-        preferido.
+        Este material foi publicado como arquivo anexo. Use os botões de exportação Google
+        ou baixe o PDF quando disponível.
       </p>
       {fileName ? (
         <p className="mt-3 text-xs font-semibold text-slate-500">{fileName}</p>

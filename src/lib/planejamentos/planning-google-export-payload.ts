@@ -65,3 +65,34 @@ export function resolvePlanningPayloadForGoogleExport(
     buildOfficialPlanningPayloadFromEditorMeta(readPlanningMetaFromEditorStorage())
   );
 }
+
+/** Payload oficial para export Google a partir do gerador de planejamentos. */
+export function buildOfficialPlanningPayloadFromGeneration(input: {
+  tipoPlanejamento: string;
+  escola?: string;
+  professor?: string;
+  etapa?: string;
+  anoSerie?: string;
+  areaConhecimento?: string;
+  componenteCurricular?: string;
+  cargaHoraria?: string;
+  trimestre?: string;
+  matrizPlanejamento: unknown;
+}): Record<string, unknown> | null {
+  if (!hasPlanningMatrix(input.matrizPlanejamento)) {
+    return null;
+  }
+
+  return {
+    tipoPlanejamento: input.tipoPlanejamento,
+    escola: input.escola,
+    professor: input.professor,
+    etapa: input.etapa,
+    anoSerie: input.anoSerie,
+    areaConhecimento: input.areaConhecimento,
+    componenteCurricular: input.componenteCurricular,
+    cargaHoraria: input.cargaHoraria,
+    trimestre: input.trimestre,
+    matrizPlanejamento: input.matrizPlanejamento,
+  };
+}

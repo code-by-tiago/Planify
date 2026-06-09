@@ -8,7 +8,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { EditorDocument } from "../../types/editor";
 import type { HistoryFilter, HistoryItem } from "../../types/history";
-import { GoogleClassroomPanel } from "@/components/google/GoogleClassroomPanel";
+import { HistoryDocumentExportBar } from "@/components/documents/HistoryDocumentExportBar";
+import { MaterialTypeCover } from "@/components/materials/MaterialTypeCover";
 import { MarketplacePublishButton } from "@/components/marketplace/MarketplacePublishButton";
 import {
   buildHistoryContentPreview,
@@ -99,12 +100,6 @@ function getSourceBadgeClass(source: string): string {
     return "border-emerald-200 bg-emerald-50 text-emerald-700";
   }
   return "border-slate-200 bg-slate-50 text-slate-700";
-}
-
-function sourceIcon(source: string): "clipboard" | "fileText" | "editor" {
-  if (source === "planejamento") return "clipboard";
-  if (source === "manual") return "editor";
-  return "fileText";
 }
 
 function resolveMarketplaceTipo(item: HistoryItem): string {
@@ -333,12 +328,13 @@ export function HistoricoClient() {
           <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
             {filteredItems.map((item) => {
               const selected = selectedItem?.id === item.id;
+              const typeLabel = resolveHistoryTypeLabel(item.type);
               return (
                 <article
                   key={item.id}
-                  className={`group flex aspect-square flex-col rounded-2xl border p-3 transition ${
+                  className={`group flex flex-col overflow-hidden rounded-2xl border transition ${
                     selected
-                      ? "border-cyan-400 bg-cyan-50/50 shadow-sm"
+                      ? "border-cyan-400 bg-cyan-50/30 shadow-sm"
                       : "border-slate-200 bg-white hover:border-cyan-300 hover:shadow-sm"
                   }`}
                 >
@@ -347,42 +343,48 @@ export function HistoricoClient() {
                     onClick={() => setSelectedItem(item)}
                     className="flex min-h-0 flex-1 flex-col text-left"
                   >
-                    <span
-                      className={`flex h-10 w-10 items-center justify-center rounded-xl ${getSourceBadgeClass(item.source)}`}
-                    >
-                      <PlanifyIcon
-                        name={sourceIcon(item.source)}
-                        className="h-5 w-5"
-                      />
-                    </span>
-                    <h3 className="mt-3 line-clamp-2 text-sm font-extrabold leading-snug text-slate-950">
-                      {item.title}
-                    </h3>
-                    <p className="mt-1 line-clamp-1 text-[11px] font-semibold text-cyan-700">
-                      {resolveHistoryTypeLabel(item.type)}
-                    </p>
-                    <p className="mt-auto line-clamp-2 pt-2 text-[10px] leading-4 text-slate-500">
-                      {buildHistoryContentPreview(item.content)}
-                    </p>
-                    <p className="mt-1 text-[10px] font-medium text-slate-400">
-                      {formatDate(item.updatedAt)}
-                    </p>
+                    <MaterialTypeCover
+                      typeLabel={typeLabel}
+                      subtitle={item.subtitle || sourceLabels[item.source]}
+                      compact
+                      className="rounded-none"
+                    />
+                    <div className="flex min-h-0 flex-1 flex-col p-3">
+                      <h3 className="line-clamp-2 text-sm font-extrabold leading-snug text-slate-950">
+                        {item.title}
+                      </h3>
+                      <p className="mt-1 line-clamp-2 text-[10px] leading-4 text-slate-500">
+                        {buildHistoryContentPreview(item.content)}
+                      </p>
+                      <p className="mt-auto pt-2 text-[10px] font-medium text-slate-400">
+                        {formatDate(item.updatedAt)}
+                      </p>
+                    </div>
                   </button>
-                  <div className="mt-2 flex gap-1.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100">
-                    <button
-                      type="button"
-                      onClick={() => openInEditor(item)}
-                      className="min-h-11 flex-1 rounded-lg bg-cyan-600 py-2.5 text-xs font-bold text-white sm:min-h-0 sm:py-1.5 sm:text-[10px]"
-                    >
-                      Editor
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => removeItem(item)}
-                      className="min-h-11 min-w-11 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2.5 text-sm font-bold text-rose-700 sm:min-h-0 sm:min-w-0 sm:px-2 sm:py-1.5 sm:text-[10px]"
-                    >
-                      ×
-                    </button>
+                  <div className="space-y-2 border-t border-slate-100 px-2 py-2">
+                    <HistoryDocumentExportBar
+                      item={item}
+                      onStatus={(message) =>
+                        setStatus({ type: "success", message })
+                      }
+                      classroomMode="popover"
+                    />
+                    <div className="flex gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => openInEditor(item)}
+                        className="min-h-9 flex-1 rounded-lg bg-cyan-600 py-1.5 text-[10px] font-bold text-white"
+                      >
+                        Editor
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => removeItem(item)}
+                        className="min-h-9 min-w-9 rounded-lg border border-rose-200 bg-rose-50 px-2 py-1.5 text-sm font-bold text-rose-700"
+                      >
+                        ×
+                      </button>
+                    </div>
                   </div>
                 </article>
               );
@@ -437,39 +439,46 @@ export function HistoricoClient() {
                   Atualizado em {formatDate(selectedItem.updatedAt)}
                 </p>
               </div>
-              <div className="flex shrink-0 flex-wrap items-center gap-2">
-                <MarketplacePublishButton
-                  title={selectedItem.title}
-                  getHtml={getSelectedHtml}
-                  tipoMaterial={resolveMarketplaceTipo(selectedItem)}
-                  tema={selectedItem.subtitle || selectedItem.title}
-                  label="Comunidade"
-                  compact
-                  className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-fuchsia-200 bg-fuchsia-50 px-3 py-2 text-xs font-black text-fuchsia-800 transition hover:bg-fuchsia-100"
-                />
-                <GoogleClassroomPanel
-                  compact
-                  title={selectedItem.title}
-                  getHtml={getSelectedHtml}
-                  documentType={selectedItem.type}
-                  onStatus={(message) =>
-                    setStatus({ type: "success", message })
-                  }
-                />
-                <button
-                  type="button"
-                  onClick={() => openInEditor(selectedItem)}
-                  className="pl-hud-btn rounded-xl px-4 py-2 text-xs font-semibold"
-                >
-                  Abrir no Editor
-                </button>
-                <button
-                  type="button"
-                  onClick={() => removeItem(selectedItem)}
-                  className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-xs font-semibold text-rose-700"
-                >
-                  Remover
-                </button>
+              <div className="flex shrink-0 flex-col items-end gap-3">
+                <div className="flex flex-wrap items-center justify-end gap-2">
+                  <MarketplacePublishButton
+                    title={selectedItem.title}
+                    getHtml={getSelectedHtml}
+                    tipoMaterial={resolveMarketplaceTipo(selectedItem)}
+                    tema={selectedItem.subtitle || selectedItem.title}
+                    label="Comunidade"
+                    compact
+                    className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-fuchsia-200 bg-fuchsia-50 px-3 py-2 text-xs font-black text-fuchsia-800 transition hover:bg-fuchsia-100"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => openInEditor(selectedItem)}
+                    className="pl-hud-btn rounded-xl px-4 py-2 text-xs font-semibold"
+                  >
+                    Abrir no Editor
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => removeItem(selectedItem)}
+                    className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-xs font-semibold text-rose-700"
+                  >
+                    Remover
+                  </button>
+                </div>
+                <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                  <p className="text-[10px] font-black uppercase tracking-wide text-slate-500">
+                    Exportar
+                  </p>
+                  <div className="mt-1.5">
+                    <HistoryDocumentExportBar
+                      item={selectedItem}
+                      classroomMode="popover"
+                      onStatus={(message) =>
+                        setStatus({ type: "success", message })
+                      }
+                    />
+                  </div>
+                </div>
               </div>
             </div>
 

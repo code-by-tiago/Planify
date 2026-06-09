@@ -131,7 +131,7 @@ function MaterialActions({
             className={`${btnClass} pl-hud-btn disabled:opacity-60`}
           >
             <PlanifyIcon name="download" className="h-3.5 w-3.5" />
-            {downloadingKey === `${item.id}:docx` ? "DOCX…" : "Baixar DOCX"}
+            {downloadingKey === `${item.id}:docx` ? "Baixando…" : "Baixar arquivo"}
           </button>
           <button
             type="button"

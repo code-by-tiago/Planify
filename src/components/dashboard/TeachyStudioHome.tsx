@@ -21,13 +21,13 @@ type TeachyStudioHomeProps = {
 
 const trustStats = [
   { value: "BNCC", label: "Alinhamento curricular" },
-  { value: "DOCX", label: "Modelo oficial" },
+  { value: "Google Docs", label: "Modelo oficial" },
   { value: "Classroom", label: "Publicação direta" },
 ] as const;
 
 function matchesPlanejamentosSearch(term: string): boolean {
   if (!term) return true;
-  return ["planejamento", "planejamentos", "bncc", "docx", "matriz", "anual", "trimestral"].some(
+  return ["planejamento", "planejamentos", "bncc", "google", "docs", "matriz", "anual", "trimestral"].some(
     (token) => token.includes(term) || term.includes(token),
   );
 }
@@ -136,7 +136,7 @@ export default function TeachyStudioHome({
         </span>
         <span className="relative mt-4 text-lg font-extrabold text-slate-950">Planejamentos</span>
         <span className="relative mt-1.5 text-sm font-medium leading-snug text-slate-600">
-          Matriz BNCC anual ou trimestral · sugira habilidades · DOCX oficial preenchido
+          Matriz BNCC anual ou trimestral · sugira habilidades · exportação Google Docs oficial
         </span>
         <span className="relative mt-auto flex items-center gap-1 pt-3 text-xs font-semibold text-cyan-700 opacity-80 transition group-hover:gap-1.5 group-hover:opacity-100">
           Abrir

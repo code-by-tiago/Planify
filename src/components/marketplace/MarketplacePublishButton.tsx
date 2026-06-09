@@ -7,6 +7,7 @@ import { useState } from "react";
 export type MarketplacePublishButtonProps = {
   title: string;
   getHtml: () => string;
+  getPlanningPayload?: () => Record<string, unknown> | null;
   tipoMaterial?: string;
   tema?: string;
   componente?: string;
@@ -23,6 +24,7 @@ export type MarketplacePublishButtonProps = {
 export function MarketplacePublishButton({
   title,
   getHtml,
+  getPlanningPayload,
   tipoMaterial = "Material de apoio",
   tema,
   componente,
@@ -49,6 +51,7 @@ export function MarketplacePublishButton({
         title: title.trim() || "Material Planify",
         description,
         html: getHtml(),
+        planningPayload: getPlanningPayload?.() ?? null,
         tipoMaterial,
         tema: tema || title,
         componente,

@@ -341,7 +341,7 @@ function getOfficialTemplatePath(tipo: "anual" | "trimestral"): string {
 
   if (!fs.existsSync(file)) {
     throw new Error(
-      `Modelo oficial ${tipo} não encontrado exatamente em C:\\planify\\data\\modelos-oficiais.`,
+      `Modelo oficial ${tipo} não encontrado em data/modelos-oficiais (${file}).`,
     );
   }
 
@@ -1145,7 +1145,7 @@ export function getOfficialPlanningFilename(payload: OfficialPlanningPayload): s
 export function buildOfficialPlanningDocx(payload: OfficialPlanningPayload): Buffer {
   if (!payload.matrizPlanejamento?.conteudos?.length) {
     throw new Error(
-      "Gere o planejamento com IA antes de baixar o DOCX oficial. O Planify não vai preencher modelo oficial sem matriz pedagógica.",
+      "Gere o planejamento com IA antes de exportar. O Planify não preenche o modelo oficial sem matriz pedagógica.",
     );
   }
 

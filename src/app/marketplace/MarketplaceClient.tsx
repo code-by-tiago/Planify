@@ -371,7 +371,7 @@ export function MarketplaceClient() {
           badge="Comunidade"
           icon="market"
           title="Materiais compartilhados por professores"
-          description="Baixe DOCX ou PDF com um clique — publique o que você cria e reutilize modelos alinhados à BNCC."
+          description="Exporte ao Google Docs ou baixe PDF — publique o que você cria e reutilize modelos alinhados à BNCC."
           action={
             <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center">
               <CommunityNotificationsIcon className="col-span-1 w-full justify-center sm:w-auto" />
@@ -501,7 +501,7 @@ export function MarketplaceClient() {
                   </span>
                 ) : (
                   <span className="mt-2 block text-xs text-slate-500">
-                    HTML, DOCX ou PDF recomendados para DOCX/PDF automáticos.
+                    HTML ou PDF recomendados para exportação Google e download automático.
                   </span>
                 )}
               </label>

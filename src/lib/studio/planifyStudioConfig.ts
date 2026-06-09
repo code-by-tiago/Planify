@@ -48,12 +48,12 @@ export const studioAreas: StudioArea[] = [
     slug: "planejamentos",
     title: "Planejamento Oficial",
     shortTitle: "Planejar",
-    subtitle: "Anual, trimestral e DOCX",
+    subtitle: "Anual, trimestral e Google Docs",
     description:
       "Gere planejamentos com BNCC, matriz pedagógica e modelos oficiais preservados.",
     href: "/planejamentos",
     icon: "clipboard",
-    badge: "DOCX oficial",
+    badge: "Modelo oficial",
     featured: true,
     accent: "from-sky-500 to-cyan-400",
   },
@@ -74,7 +74,7 @@ export const studioAreas: StudioArea[] = [
     slug: "editor",
     title: "Editor Inteligente",
     shortTitle: "Editor",
-    subtitle: "Edição estilo Word",
+    subtitle: "Edição integrada",
     description:
       "Abra, revise, formate e prepare documentos gerados para impressão e exportação.",
     href: "/editor",

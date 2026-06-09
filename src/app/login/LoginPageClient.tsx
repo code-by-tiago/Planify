@@ -31,7 +31,7 @@ type LoginPortal = "escola" | "professor";
 const benefits = [
   `${landingPublicToolCount} ferramentas com IA alinhadas à BNCC`,
   "Construtor de aula completo em um fluxo",
-  "Editor integrado, histórico e DOCX oficial",
+  "Editor integrado, histórico e Google Docs",
 ];
 
 const portalCopy: Record<
@@ -56,7 +56,7 @@ const portalCopy: Record<
     submitLabel: "Entrar como Professor",
     heroLead: "professor.",
     loginLead:
-      "Use seu e-mail para acessar os geradores com IA, ferramentas alinhadas à BNCC e a exportação em DOCX oficial.",
+      "Use seu e-mail para acessar os geradores com IA, ferramentas alinhadas à BNCC e exportação Google Docs.",
     premiumHintLead:
       "Entre com um e-mail vinculado a plano ativo ou licença institucional da sua escola, ou ",
     premiumHintLink: "escolha um plano",

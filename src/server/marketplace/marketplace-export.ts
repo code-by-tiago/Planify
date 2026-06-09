@@ -72,7 +72,7 @@ export async function buildMarketplaceExportBuffer(params: {
     }
 
     throw new Error(
-      "Este material foi publicado em DOCX. Use o botão Baixar DOCX.",
+      "Este material foi publicado como documento anexo. Use a exportação Google Docs.",
     );
   }
 
@@ -80,13 +80,13 @@ export async function buildMarketplaceExportBuffer(params: {
 
   if (format === "pdf" && !filename.toLowerCase().endsWith(".pdf")) {
     throw new Error(
-      "Este anexo não está em PDF. Baixe o formato original (DOCX) ou peça ao autor uma versão PDF.",
+      "Este anexo não está em PDF. Use a exportação Google ou peça ao autor uma versão PDF.",
     );
   }
 
   if (format === "docx" && !/\.docx?$/i.test(filename)) {
     throw new Error(
-      "Este anexo não está em DOCX. Baixe o formato disponível ou peça ao autor uma versão DOCX.",
+      "Este anexo não está disponível neste formato. Use a exportação Google Docs.",
     );
   }
 

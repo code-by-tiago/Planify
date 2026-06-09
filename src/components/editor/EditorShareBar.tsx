@@ -1,67 +1,21 @@
 "use client";
 
-import { useAutoGoogleExport } from "@/hooks/useAutoGoogleExport";
-import { useEffect, useMemo, useState } from "react";
-import { GoogleClassroomPanel } from "@/components/google/GoogleClassroomPanel";
-import { GoogleDocsExportButton } from "@/components/google/GoogleDocsExportButton";
-import { GoogleDriveExportButton } from "@/components/google/GoogleDriveExportButton";
-import { GoogleFormsExportButton } from "@/components/google/GoogleFormsExportButton";
-import { GoogleSlidesExportButton } from "@/components/google/GoogleSlidesExportButton";
+import { GoogleDocumentExportBar } from "@/components/google/GoogleDocumentExportBar";
 import { MarketplacePublishButton } from "@/components/marketplace/MarketplacePublishButton";
-import {
-  extractSlideThemeFromHtml,
-  isSlideDeckHtml,
-} from "@/lib/slides/slide-deck-utils";
+import { useAutoGoogleExport } from "@/hooks/useAutoGoogleExport";
+import { extractSlideThemeFromHtml } from "@/lib/slides/slide-deck-utils";
+import { useMemo, useState } from "react";
 
 type EditorShareBarProps = {
   title: string;
   getHtml: () => string;
   getPlanningPayload?: () => Record<string, unknown> | null;
   onStatus?: (message: string) => void;
-  /** Tipo salvo no documento (ex.: material:slides) — evita sumir o botão Google. */
   documentType?: string | null;
-  /** Força detecção quando o HTML já é de slides. */
   isSlideDeck?: boolean;
   slideTheme?: string | null;
-  /** Barra horizontal mais estreita no editor embutido */
   compact?: boolean;
 };
-
-function resolveSlideDeck(
-  getHtml: () => string,
-  documentType?: string | null,
-  forced?: boolean,
-): boolean {
-  if (forced) return true;
-  const type = String(documentType || "").toLowerCase();
-  if (type.includes("slides")) return true;
-  try {
-    return isSlideDeckHtml(getHtml());
-  } catch {
-    return false;
-  }
-}
-
-function resolveQuizDocument(
-  getHtml: () => string,
-  documentType?: string | null,
-): boolean {
-  const type = String(documentType || "").toLowerCase();
-  if (
-    type.includes("prova") ||
-    type.includes("lista") ||
-    type.includes("quiz") ||
-    type.includes("jogo")
-  ) {
-    return true;
-  }
-
-  try {
-    return /planify-questao/i.test(getHtml());
-  } catch {
-    return false;
-  }
-}
 
 /** Marketplace + integrações Google no topo do editor */
 export function EditorShareBar({
@@ -74,15 +28,13 @@ export function EditorShareBar({
   slideTheme: slideThemeProp,
   compact = false,
 }: EditorShareBarProps) {
-  const [isSlideDeck, setIsSlideDeck] = useState(
-    () => resolveSlideDeck(getHtml, documentType, isSlideDeckProp) === true,
-  );
-  const [isQuizDocument, setIsQuizDocument] = useState(
-    () => resolveQuizDocument(getHtml, documentType),
-  );
-  const [slideTheme, setSlideTheme] = useState<string | null>(
-    slideThemeProp ?? null,
-  );
+  const [slideTheme] = useState<string | null>(() => {
+    try {
+      return slideThemeProp || extractSlideThemeFromHtml(getHtml()) || null;
+    } catch {
+      return slideThemeProp ?? null;
+    }
+  });
 
   const returnTo = useMemo(() => {
     if (typeof window === "undefined") return "/dashboard?secao=editor";
@@ -96,28 +48,6 @@ export function EditorShareBar({
     returnTo,
     onStatus,
   });
-
-  useEffect(() => {
-    const sync = () => {
-      const slideDeck = resolveSlideDeck(getHtml, documentType, isSlideDeckProp);
-      const quizDoc = resolveQuizDocument(getHtml, documentType);
-      setIsSlideDeck(slideDeck);
-      setIsQuizDocument(quizDoc);
-      try {
-        setSlideTheme(
-          slideThemeProp ||
-            extractSlideThemeFromHtml(getHtml()) ||
-            null,
-        );
-      } catch {
-        setSlideTheme(slideThemeProp ?? null);
-      }
-    };
-
-    sync();
-    const timer = window.setInterval(sync, 1500);
-    return () => window.clearInterval(timer);
-  }, [getHtml, documentType, isSlideDeckProp, slideThemeProp]);
 
   const shareGap = compact ? "gap-1" : "gap-1.5 sm:gap-2";
   const comunidadeClass = compact
@@ -133,53 +63,17 @@ export function EditorShareBar({
         compact
         className={comunidadeClass}
       />
-      {isSlideDeck ? (
-        <GoogleSlidesExportButton
-          title={title}
-          getHtml={getHtml}
-          theme={slideTheme ?? undefined}
-          returnTo={returnTo}
-          alwaysShowExport
-          iconOnly
-        />
-      ) : (
-        <>
-          <GoogleDocsExportButton
-            title={title}
-            getHtml={getHtml}
-            getPlanningPayload={getPlanningPayload}
-            returnTo={returnTo}
-            documentType={documentType}
-            onStatus={onStatus}
-            iconOnly
-          />
-          <GoogleDriveExportButton
-            title={title}
-            getHtml={getHtml}
-            getPlanningPayload={getPlanningPayload}
-            returnTo={returnTo}
-            documentType={documentType}
-            onStatus={onStatus}
-            iconOnly
-          />
-        </>
-      )}
-      {isQuizDocument ? (
-        <GoogleFormsExportButton
-          title={title}
-          getHtml={getHtml}
-          returnTo={returnTo}
-          onStatus={onStatus}
-          iconOnly
-        />
-      ) : null}
-      <GoogleClassroomPanel
-        compact
+      <GoogleDocumentExportBar
         title={title}
         getHtml={getHtml}
+        getPlanningPayload={getPlanningPayload}
         onStatus={onStatus}
-        returnTo={returnTo}
         documentType={documentType}
+        isSlideDeck={isSlideDeckProp}
+        slideTheme={slideThemeProp ?? slideTheme}
+        returnTo={returnTo}
+        compact
+        classroomMode="panel"
       />
     </div>
   );

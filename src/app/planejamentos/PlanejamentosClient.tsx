@@ -41,7 +41,8 @@ import type {
   PlanningMatrixItem,
 } from "@/server/planejamentos/planning-ai-service";
 import { readPlanejamentoPrefill } from "@/lib/planejamentos/planejamento-prefill";
-import { downloadPlanejamentoOficialDocx } from "@/lib/planejamentos/download-planejamento-oficial";
+import { PlanningOfficialExportBar } from "@/components/planejamentos/PlanningOfficialExportBar";
+import { buildOfficialPlanningPayloadFromGeneration } from "@/lib/planejamentos/planning-google-export-payload";
 import {
   buildTrimestralPlansFromAnnual,
   trimestralCargaHorariaLabel,
@@ -53,7 +54,6 @@ import {
   useCallback,
   useEffect,
   useMemo,
-  useRef,
   useState,
   type ClipboardEvent,
   type FocusEvent,
@@ -66,10 +66,6 @@ import {
 } from "@/lib/bncc/split-topic-lines";
 
 type TipoPlanejamento = "anual" | "trimestral";
-type DocxDownloadMode = "anual" | "trimestral";
-type DocxTemplateMode = "default" | "custom";
-
-const CUSTOM_DOCX_TEMPLATE_MAX_BYTES = 10 * 1024 * 1024;
 
 type BnccSkill = {
   id: string;
@@ -410,13 +406,7 @@ export function PlanejamentosClient() {
   const [status, setStatus] = useState("Aguardando");
   const [loadingBncc, setLoadingBncc] = useState(false);
   const [loadingPlan, setLoadingPlan] = useState(false);
-  const [loadingDocx, setLoadingDocx] = useState(false);
   const [error, setError] = useState("");
-  const [docxTemplateMode, setDocxTemplateMode] = useState<DocxTemplateMode>("default");
-  const [customTemplateFile, setCustomTemplateFile] = useState<File | null>(null);
-  const [customTemplateFileName, setCustomTemplateFileName] = useState("");
-  const [docxTemplateNotice, setDocxTemplateNotice] = useState("");
-  const customTemplateInputRef = useRef<HTMLInputElement | null>(null);
   const [abrirEditorAutomatico, setAbrirEditorAutomatico] = useState(true);
 
   useEffect(() => {
@@ -565,22 +555,6 @@ export function PlanejamentosClient() {
     return [...TRIMESTRES_DISPONIVEIS];
   }, [form.pacoteTrimestralAnual]);
 
-  function resolveMatrizForDownload(mode: DocxDownloadMode, trimester?: number) {
-    if (mode === "trimestral" && trimester && generatedTrimestralPlans?.[trimester]) {
-      return generatedTrimestralPlans[trimester]!;
-    }
-
-    return generatedPlanning;
-  }
-
-  function resolveCargaHorariaForDownload(mode: DocxDownloadMode, trimester?: number) {
-    if (mode === "trimestral" && trimester && generatedTrimestralPlans?.[trimester]) {
-      return trimestralCargaHorariaLabel(generatedTrimestralPlans[trimester]!.conteudos);
-    }
-
-    return form.cargaHoraria;
-  }
-
   function invalidateConteudosDependents() {
     setGroups([]);
     setSelectedSkills([]);
@@ -672,45 +646,8 @@ export function PlanejamentosClient() {
     setGroups([]);
     setSelectedSkills([]);
     invalidateGenerated();
-    setDocxTemplateMode("default");
-    setCustomTemplateFile(null);
-    setCustomTemplateFileName("");
-    setDocxTemplateNotice("");
-    if (customTemplateInputRef.current) {
-      customTemplateInputRef.current.value = "";
-    }
     setStatus("Aguardando");
     setError("");
-  }
-
-  function handleCustomTemplateChange(fileList: FileList | null) {
-    const file = fileList?.[0];
-
-    if (!file) {
-      setCustomTemplateFile(null);
-      setCustomTemplateFileName("");
-      return;
-    }
-
-    if (!file.name.toLowerCase().endsWith(".docx")) {
-      setError("Envie apenas arquivos com extensão .docx.");
-      setCustomTemplateFile(null);
-      setCustomTemplateFileName("");
-      return;
-    }
-
-    if (file.size > CUSTOM_DOCX_TEMPLATE_MAX_BYTES) {
-      setError("O modelo da escola deve ter no máximo 10 MB.");
-      setCustomTemplateFile(null);
-      setCustomTemplateFileName("");
-      return;
-    }
-
-    setError("");
-    setDocxTemplateMode("custom");
-    setCustomTemplateFile(file);
-    setCustomTemplateFileName(file.name);
-    setDocxTemplateNotice("");
   }
 
   function isSelected(skill: BnccSkill) {
@@ -1085,10 +1022,10 @@ export function PlanejamentosClient() {
         data.usedAI
           ? trimestresExtraidos
             ? `Matriz anual gerada. Trimestrais ${trimestresExtraidos} extraídos e salvos no histórico.`
-            : "Matriz gerada e salva no histórico. Baixe o DOCX ou edite no editor."
+            : "Matriz gerada e salva no histórico. Exporte ao Google Docs ou edite no editor."
           : trimestresExtraidos
             ? `Matriz anual (modo seguro). Trimestrais ${trimestresExtraidos} extraídos e salvos no histórico.`
-            : "Matriz em modo seguro salva no histórico. Baixe o DOCX ou edite no editor.",
+            : "Matriz em modo seguro salva no histórico. Exporte ao Google Docs ou edite no editor.",
       );
 
       if (data.warning) {
@@ -1176,83 +1113,6 @@ export function PlanejamentosClient() {
     }
   }
 
-  async function downloadDocxWithMode(mode: DocxDownloadMode, trimester?: number) {
-    setError("");
-
-    if (!generatedPlanning) {
-      setError("Gere o planejamento anual com IA antes de baixar o DOCX oficial.");
-      return;
-    }
-
-    if (docxTemplateMode === "custom" && !customTemplateFile) {
-      setError("Selecione o arquivo .docx da sua escola antes de baixar.");
-      return;
-    }
-
-    setLoadingDocx(true);
-    setDocxTemplateNotice("");
-    setStatus(
-      mode === "trimestral"
-        ? docxTemplateMode === "custom"
-          ? `Preenchendo modelo da escola do ${trimester}º trimestre...`
-          : `Preenchendo modelo oficial do ${trimester}º trimestre...`
-        : docxTemplateMode === "custom"
-          ? "Preenchendo modelo da escola (anual)..."
-          : "Preenchendo modelo oficial anual...",
-    );
-
-    try {
-      const filename =
-        mode === "trimestral"
-          ? `planejamento-trimestral-${trimester}-${form.componenteCurricular}-${form.anoSerie}`
-          : `planejamento-anual-${form.componenteCurricular}-${form.anoSerie}`;
-
-      const matriz = resolveMatrizForDownload(mode, trimester);
-
-      const downloadResult = await downloadPlanejamentoOficialDocx(
-        {
-          ...buildBasePayload(),
-          tipoPlanejamento: mode,
-          trimestre: trimester ? String(trimester) : form.trimestre,
-          cargaHoraria: resolveCargaHorariaForDownload(mode, trimester),
-          matrizPlanejamento: matriz,
-        },
-        filename,
-        {
-          customTemplateFile:
-            docxTemplateMode === "custom" ? customTemplateFile : null,
-        },
-      );
-
-      if (downloadResult.usedFallback && downloadResult.fallbackMessage) {
-        setDocxTemplateNotice(downloadResult.fallbackMessage);
-      }
-
-      setStatus(
-        mode === "trimestral"
-          ? downloadResult.usedFallback
-            ? `${trimester}º trimestre baixado com modelo padrão do Planify.`
-            : docxTemplateMode === "custom"
-              ? `${trimester}º trimestre baixado com modelo da escola.`
-              : `${trimester}º trimestre baixado com base na matriz anual.`
-          : downloadResult.usedFallback
-            ? "Planejamento anual baixado com modelo padrão do Planify."
-            : docxTemplateMode === "custom"
-              ? "Planejamento anual baixado com modelo da escola."
-              : "Planejamento anual DOCX oficial baixado.",
-      );
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao baixar DOCX.");
-      setStatus("Erro ao gerar DOCX");
-    } finally {
-      setLoadingDocx(false);
-    }
-  }
-
-  async function downloadDocx() {
-    await downloadDocxWithMode(form.tipoPlanejamento, Number(form.trimestre || 1));
-  }
-
   function sendToEditor() {
     if (!activePreviewPlanning) {
       setError("Gere o planejamento com IA antes de enviar para o Editor.");
@@ -1289,8 +1149,8 @@ export function PlanejamentosClient() {
             <PlanifyPageHero
               badge="Planejamentos"
               icon="clipboard"
-              title="BNCC → IA → DOCX oficial"
-              description="Sugira habilidades por conteúdo, gere a matriz pedagógica com IA e baixe o modelo oficial preenchido."
+              title="BNCC → IA → Google Docs oficial"
+              description="Sugira habilidades por conteúdo, gere a matriz pedagógica com IA e exporte com os modelos oficiais anual/trimestral."
             />
           </div>
         ) : null}
@@ -1304,7 +1164,7 @@ export function PlanejamentosClient() {
               Seu planejamento em 3 passos
             </h2>
             <p className="mt-3 text-sm leading-7 text-slate-500/90">
-              BNCC, matriz com IA e exportação DOCX — tudo alinhado ao que a escola pede.
+              BNCC, matriz com IA e exportação Google Docs — modelos oficiais preservados.
             </p>
 
             <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
@@ -1334,40 +1194,56 @@ export function PlanejamentosClient() {
                       Matriz anual aprovada
                     </p>
                     <h3 className="mt-2 text-2xl font-black text-slate-950">
-                      Baixar anual e trimestrais coerentes
+                      Exportar anual e trimestrais ao Google Docs
                     </h3>
                     <p className="mt-2 text-sm leading-7 text-emerald-700/90">
-                      Os trimestrais abaixo usam exatamente a mesma matriz anual,
-                      os mesmos conteúdos e as mesmas habilidades BNCC. Não há nova
-                      busca de BNCC para trimestre.
+                      Os trimestrais usam a mesma matriz anual e os modelos oficiais
+                      Planify (anual/trimestral). Exportação sempre pelo motor oficial.
                     </p>
                   </div>
 
                   <Pill tone="emerald">Baseado no anual</Pill>
                 </div>
 
-                <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                  <button
-                    type="button"
-                    onClick={() => downloadDocxWithMode("anual")}
-                    disabled={loadingDocx}
-                    className="rounded-2xl bg-white px-5 py-4 text-sm font-black text-slate-950 transition hover:-translate-y-1 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    Anual DOCX
-                  </button>
-
-                  {trimestresDisponiveisDownload.map((trimestre) => (
-                    <button
-                      key={`aside-trim-${trimestre}`}
-                      type="button"
-                      onClick={() => downloadDocxWithMode("trimestral", trimestre)}
-                      disabled={loadingDocx}
-                      className="pl-hud-btn-secondary rounded-xl px-5 py-3.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {trimestre}º Trimestre
-                      {generatedTrimestralPlans?.[trimestre] ? " ✓" : ""}
-                    </button>
-                  ))}
+                <div className="mt-5 space-y-3">
+                  <div className="rounded-xl border border-white/80 bg-white/90 px-4 py-3">
+                    <p className="text-[10px] font-black uppercase tracking-wide text-slate-500">
+                      Anual
+                    </p>
+                    <div className="mt-2">
+                      <PlanningOfficialExportBar
+                        title={generatedPlanning.titulo || "Planejamento anual"}
+                        form={form}
+                        mode="anual"
+                        matriz={generatedPlanning}
+                        onStatus={(message) => setStatus(message)}
+                      />
+                    </div>
+                  </div>
+                  {trimestresDisponiveisDownload.map((trimestre) => {
+                    const trimPlan = generatedTrimestralPlans?.[trimestre];
+                    if (!trimPlan) return null;
+                    return (
+                      <div
+                        key={`export-trim-${trimestre}`}
+                        className="rounded-xl border border-white/80 bg-white/90 px-4 py-3"
+                      >
+                        <p className="text-[10px] font-black uppercase tracking-wide text-slate-500">
+                          {trimestre}º trimestre ✓
+                        </p>
+                        <div className="mt-2">
+                          <PlanningOfficialExportBar
+                            title={trimPlan.titulo || `${trimestre}º trimestre`}
+                            form={form}
+                            mode="trimestral"
+                            trimestre={trimestre}
+                            matriz={trimPlan}
+                            onStatus={(message) => setStatus(message)}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
                 {form.pacoteTrimestralAnual !== "nenhum" ? (
                   <p className="mt-3 text-xs font-semibold text-emerald-700/90">
@@ -1402,8 +1278,8 @@ export function PlanejamentosClient() {
               Planejamento anual ou trimestral
             </h2>
             <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-slate-600">
-              Informe os conteúdos, deixe a IA montar a matriz BNCC e baixe o
-              DOCX oficial em poucos minutos. O trimestral usa a mesma base do
+              Informe os conteúdos, deixe a IA montar a matriz BNCC e exporte ao
+              Google Docs com os modelos oficiais. O trimestral usa a mesma base do
               anual — sem retrabalho.
             </p>
             <div className="mt-5 grid gap-3 sm:grid-cols-2">
@@ -1592,85 +1468,16 @@ export function PlanejamentosClient() {
 
             <div className="mt-8 rounded-2xl border border-cyan-400/20 bg-white/70 p-5">
               <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-cyan-600">
-                Modelo do documento
+                Modelo oficial
               </p>
               <h3 className="mt-3 text-lg font-black text-slate-950">
-                Escolha como gerar o DOCX
+                Exportação Google Docs com templates da escola
               </h3>
-
-              <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setDocxTemplateMode("default");
-                    setDocxTemplateNotice("");
-                  }}
-                  className={`rounded-xl border p-4 text-left transition ${
-                    docxTemplateMode === "default"
-                      ? "border-cyan-500 bg-cyan-600 text-white shadow-md"
-                      : "border-cyan-400/20 bg-white text-slate-950 hover:border-cyan-400/50"
-                  }`}
-                >
-                  <p className="text-sm font-black">Usar modelo padrão do Planify</p>
-                  <p
-                    className={`mt-1 text-xs font-semibold ${
-                      docxTemplateMode === "default" ? "text-cyan-100" : "text-slate-500"
-                    }`}
-                  >
-                    Modelos oficiais anual e trimestral já validados
-                  </p>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setDocxTemplateMode("custom")}
-                  className={`rounded-xl border p-4 text-left transition ${
-                    docxTemplateMode === "custom"
-                      ? "border-cyan-500 bg-cyan-600 text-white shadow-md"
-                      : "border-cyan-400/20 bg-white text-slate-950 hover:border-cyan-400/50"
-                  }`}
-                >
-                  <p className="text-sm font-black">Enviar modelo da minha escola</p>
-                  <p
-                    className={`mt-1 text-xs font-semibold ${
-                      docxTemplateMode === "custom" ? "text-cyan-100" : "text-slate-500"
-                    }`}
-                  >
-                    Upload de .docx com tabelas ou campos identificáveis
-                  </p>
-                </button>
-              </div>
-
-              {docxTemplateMode === "custom" ? (
-                <div className="mt-4 space-y-3">
-                  <label className="grid gap-2">
-                    <span className="text-sm font-bold text-slate-500">Arquivo .docx da escola</span>
-                    <input
-                      ref={customTemplateInputRef}
-                      type="file"
-                      accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                      onChange={(event) => handleCustomTemplateChange(event.target.files)}
-                      className="block w-full cursor-pointer rounded-xl border border-cyan-400/20 bg-white px-4 py-3 text-sm text-slate-700 file:mr-4 file:rounded-lg file:border-0 file:bg-cyan-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-cyan-800"
-                    />
-                  </label>
-
-                  {customTemplateFileName ? (
-                    <p className="text-sm font-semibold text-emerald-700">
-                      Arquivo selecionado: {customTemplateFileName}
-                    </p>
-                  ) : null}
-
-                  <p className="text-xs leading-6 text-slate-500">
-                    Use arquivos .docx com tabelas ou campos identificáveis para melhor resultado.
-                  </p>
-                </div>
-              ) : null}
-
-              {docxTemplateNotice ? (
-                <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-800">
-                  {docxTemplateNotice}
-                </div>
-              ) : null}
+              <p className="mt-2 text-sm leading-7 text-slate-600">
+                O Planify preenche exclusivamente os modelos oficiais anual e trimestral
+                validados. A matriz gerada pela IA é injetada nesses arquivos — sem layout
+                genérico — para manter o padrão pedagógico da rede.
+              </p>
             </div>
 
             <div className="mt-5 grid gap-5">
@@ -1701,7 +1508,7 @@ export function PlanejamentosClient() {
 
               <label className="grid gap-2">
                 <span className="text-sm font-bold text-slate-500">Objetivos gerais</span>
-                <textarea value={form.objetivos} onChange={(event) => updateField("objetivos", event.target.value)} rows={3} placeholder="Opcional. Ajuda no texto pedagógico do DOCX." className={HUD_TEXTAREA_CLASS} />
+                <textarea value={form.objetivos} onChange={(event) => updateField("objetivos", event.target.value)} rows={3} placeholder="Opcional. Ajuda no texto pedagógico do planejamento." className={HUD_TEXTAREA_CLASS} />
               </label>
 
               <label className="grid gap-2">
@@ -1736,7 +1543,7 @@ export function PlanejamentosClient() {
               <DailyGenerationsBar tipoMaterial={PLANNING_DEEP_GENERATION_TYPE} />
             </div>
 
-            <div className="mt-7 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="mt-7 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
               <button type="button" onClick={suggestBncc} disabled={loadingBncc} className="pl-hud-btn-secondary rounded-xl px-5 py-3.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60">
                 {loadingBncc ? "Sugerindo BNCC..." : "1. Sugerir BNCC"}
               </button>
@@ -1746,23 +1553,34 @@ export function PlanejamentosClient() {
               <button type="button" onClick={sendToEditor} disabled={!generatedPlanning} className="pl-hud-btn-secondary rounded-xl px-5 py-3.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50">
                 Editar no editor
               </button>
-              <button type="button" onClick={downloadDocx} disabled={loadingDocx || !generatedPlanning} className="pl-hud-btn-secondary rounded-xl border border-emerald-300/40 px-5 py-3.5 text-sm font-semibold text-emerald-800 disabled:cursor-not-allowed disabled:opacity-50">
-                {loadingDocx ? "Preparando download..." : "3. Baixar DOCX atual"}
-              </button>
             </div>
 
-            {loadingBncc || loadingPlan || loadingDocx ? (
+            {generatedPlanning && form.tipoPlanejamento === "trimestral" ? (
+              <div className="mt-6 rounded-2xl border border-emerald-200/80 bg-emerald-50/80 p-5">
+                <p className="text-[10px] font-black uppercase tracking-[0.28em] text-emerald-600">
+                  Exportar ao Google Docs
+                </p>
+                <div className="mt-3">
+                  <PlanningOfficialExportBar
+                    title={generatedPlanning.titulo || "Planejamento trimestral"}
+                    form={form}
+                    mode="trimestral"
+                    trimestre={Number(form.trimestre || 1)}
+                    matriz={generatedPlanning}
+                    onStatus={(message) => setStatus(message)}
+                  />
+                </div>
+              </div>
+            ) : null}
+
+            {loadingBncc || loadingPlan ? (
               <PlanningGenerationPanel
                 label={
                   loadingBncc
                     ? "Buscando habilidades compatíveis"
-                    : loadingDocx
-                      ? "Preparando documento oficial"
-                      : "Gerando planejamento com IA"
+                    : "Gerando planejamento com IA"
                 }
-                context={
-                  loadingBncc ? "bncc" : loadingDocx ? "docx" : "planejamento"
-                }
+                context={loadingBncc ? "bncc" : "planejamento"}
               />
             ) : null}
 
@@ -1783,6 +1601,27 @@ export function PlanejamentosClient() {
                         : form;
                     return buildPlanningEditorHtml(editorForm, planning);
                   }}
+                  getPlanningPayload={() => {
+                    const planning = activePreviewPlanning || generatedPlanning;
+                    const mode =
+                      previewMatrizKey !== "anual" ? ("trimestral" as const) : ("anual" as const);
+                    return buildOfficialPlanningPayloadFromGeneration({
+                      tipoPlanejamento: mode,
+                      escola: form.escola,
+                      professor: form.professor,
+                      etapa: form.etapa,
+                      anoSerie: form.anoSerie,
+                      areaConhecimento: form.areaConhecimento,
+                      componenteCurricular: form.componenteCurricular,
+                      cargaHoraria:
+                        mode === "trimestral"
+                          ? trimestralCargaHorariaLabel(planning.conteudos)
+                          : form.cargaHoraria,
+                      trimestre:
+                        mode === "trimestral" ? String(previewMatrizKey) : form.trimestre,
+                      matrizPlanejamento: planning,
+                    });
+                  }}
                   tipoMaterial="Planejamento"
                   tema={form.componenteCurricular}
                   componente={form.componenteCurricular}
@@ -1800,40 +1639,56 @@ export function PlanejamentosClient() {
                       Matriz anual aprovada
                     </p>
                     <h3 className="mt-2 text-2xl font-black text-slate-950">
-                      Baixar anual e trimestrais coerentes
+                      Exportar anual e trimestrais ao Google Docs
                     </h3>
                     <p className="mt-2 text-sm leading-7 text-emerald-700/90">
-                      Os trimestrais abaixo usam exatamente a mesma matriz anual,
-                      os mesmos conteúdos e as mesmas habilidades BNCC. Não há nova
-                      busca de BNCC para trimestre.
+                      Os trimestrais usam a mesma matriz anual e os modelos oficiais
+                      Planify (anual/trimestral). Exportação sempre pelo motor oficial.
                     </p>
                   </div>
 
                   <Pill tone="emerald">Baseado no anual</Pill>
                 </div>
 
-                <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                  <button
-                    type="button"
-                    onClick={() => downloadDocxWithMode("anual")}
-                    disabled={loadingDocx}
-                    className="rounded-2xl bg-white px-5 py-4 text-sm font-black text-slate-950 transition hover:-translate-y-1 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    Anual DOCX
-                  </button>
-
-                  {trimestresDisponiveisDownload.map((trimestre) => (
-                    <button
-                      key={`aside-trim-${trimestre}`}
-                      type="button"
-                      onClick={() => downloadDocxWithMode("trimestral", trimestre)}
-                      disabled={loadingDocx}
-                      className="pl-hud-btn-secondary rounded-xl px-5 py-3.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {trimestre}º Trimestre
-                      {generatedTrimestralPlans?.[trimestre] ? " ✓" : ""}
-                    </button>
-                  ))}
+                <div className="mt-5 space-y-3">
+                  <div className="rounded-xl border border-white/80 bg-white/90 px-4 py-3">
+                    <p className="text-[10px] font-black uppercase tracking-wide text-slate-500">
+                      Anual
+                    </p>
+                    <div className="mt-2">
+                      <PlanningOfficialExportBar
+                        title={generatedPlanning.titulo || "Planejamento anual"}
+                        form={form}
+                        mode="anual"
+                        matriz={generatedPlanning}
+                        onStatus={(message) => setStatus(message)}
+                      />
+                    </div>
+                  </div>
+                  {trimestresDisponiveisDownload.map((trimestre) => {
+                    const trimPlan = generatedTrimestralPlans?.[trimestre];
+                    if (!trimPlan) return null;
+                    return (
+                      <div
+                        key={`export-trim-${trimestre}`}
+                        className="rounded-xl border border-white/80 bg-white/90 px-4 py-3"
+                      >
+                        <p className="text-[10px] font-black uppercase tracking-wide text-slate-500">
+                          {trimestre}º trimestre ✓
+                        </p>
+                        <div className="mt-2">
+                          <PlanningOfficialExportBar
+                            title={trimPlan.titulo || `${trimestre}º trimestre`}
+                            form={form}
+                            mode="trimestral"
+                            trimestre={trimestre}
+                            matriz={trimPlan}
+                            onStatus={(message) => setStatus(message)}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
                 {form.pacoteTrimestralAnual !== "nenhum" ? (
                   <p className="mt-3 text-xs font-semibold text-emerald-700/90">

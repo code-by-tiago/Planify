@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { communityProfileHref } from "@/components/community/CommunityAuthorLink";
+import { PlanifyOwlMark } from "@/components/pro/PlanifyOwlMark";
 import { useEffect, useState } from "react";
 
 type CommunityAuthorAvatarProps = {
@@ -11,11 +12,8 @@ type CommunityAuthorAvatarProps = {
   size?: "sm" | "md";
 };
 
-function initialsFromName(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (!parts.length) return "PL";
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return `${parts[0][0] || ""}${parts[parts.length - 1][0] || ""}`.toUpperCase();
+function owlSizeForAvatar(size: "sm" | "md"): number {
+  return size === "sm" ? 36 : 44;
 }
 
 export function CommunityAuthorAvatar({
@@ -26,7 +24,6 @@ export function CommunityAuthorAvatar({
 }: CommunityAuthorAvatarProps) {
   const [photoFailed, setPhotoFailed] = useState(false);
   const dimension = size === "sm" ? "h-9 w-9" : "h-11 w-11";
-  const textSize = size === "sm" ? "text-xs" : "text-sm";
   const profileLabel = userId ? `Ver perfil de ${name}` : undefined;
 
   useEffect(() => {
@@ -44,15 +41,12 @@ export function CommunityAuthorAvatar({
       onError={() => setPhotoFailed(true)}
     />
   ) : (
-    <span
-      aria-hidden={Boolean(userId)}
-      className={`flex h-full w-full items-center justify-center font-black text-white ${textSize}`}
-    >
-      {initialsFromName(name)}
+    <span className="flex h-full w-full items-center justify-center bg-slate-900/5">
+      <PlanifyOwlMark size={owlSizeForAvatar(size)} />
     </span>
   );
 
-  const className = `${dimension} shrink-0 overflow-hidden rounded-full border-2 border-white bg-gradient-to-br from-cyan-500 to-indigo-500 shadow-sm`;
+  const className = `${dimension} shrink-0 overflow-hidden rounded-full border-2 border-white bg-white shadow-sm`;
 
   if (!userId) {
     return (

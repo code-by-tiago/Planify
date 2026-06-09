@@ -70,7 +70,7 @@ export function CommunityFeed({
   const feedItems = items.filter((item) => !featuredIds.has(item.id));
 
   return (
-    <div className="mx-auto grid max-w-2xl gap-5">
+    <div className="mx-auto grid max-w-3xl gap-5">
       {featuredItems.length > 0 ? (
         <section className="space-y-3">
           <h2 className="text-sm font-black uppercase tracking-[0.18em] text-amber-700">

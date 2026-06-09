@@ -3,8 +3,13 @@
 import { CommunityAuthorAvatar } from "@/components/community/CommunityAuthorAvatar";
 import { CommunityAuthorLink } from "@/components/community/CommunityAuthorLink";
 import { CommunityMaterialPreview } from "@/components/community/CommunityMaterialPreview";
+import { DocumentDownloadIconBar } from "@/components/documents/DocumentDownloadIconBar";
+import { GoogleDocumentExportBar } from "@/components/google/GoogleDocumentExportBar";
 import { MaterialLikeButton } from "@/components/community/MaterialLikeButton";
+import { MaterialTypeCover } from "@/components/materials/MaterialTypeCover";
 import { MarketplaceComments } from "@/components/marketplace/MarketplaceComments";
+import { resolveDocumentTypeFromMarketplaceItem } from "@/lib/documents/document-export-context";
+import { extractPlanningPayloadFromHtml } from "@/lib/planejamentos/planning-export-embed";
 import { PlanifyPageHero } from "@/components/pro/PlanifyPageHero";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
@@ -139,6 +144,19 @@ export function MarketplaceMaterialViewClient({ materialId }: MarketplaceMateria
 
   const material = data?.material;
   const preview = data?.preview;
+  const exportHtml = preview?.htmlContent || "";
+  const canGoogleExport = preview?.kind === "html" && exportHtml.trim().length >= 20;
+  const documentType = material
+    ? resolveDocumentTypeFromMarketplaceItem({
+        tipoMaterial: material.tipoMaterial,
+        fileMime: material.fileMime,
+      })
+    : null;
+
+  const getPlanningPayload = useCallback(() => {
+    if (!exportHtml.trim()) return null;
+    return extractPlanningPayloadFromHtml(exportHtml);
+  }, [exportHtml]);
 
   return (
     <PlanifyWorkspacePane
@@ -177,6 +195,10 @@ export function MarketplaceMaterialViewClient({ materialId }: MarketplaceMateria
           <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
             <div className="min-w-0 space-y-4">
               <section className="overflow-hidden rounded-2xl border border-cyan-400/15 bg-white shadow-sm">
+                <MaterialTypeCover
+                  typeLabel={material.tipoMaterial}
+                  subtitle={`${material.componente} · ${material.etapa}`}
+                />
                 <header className="flex items-center gap-3 border-b border-cyan-400/10 px-4 py-3">
                   <CommunityAuthorAvatar
                     userId={material.userId}
@@ -189,9 +211,6 @@ export function MarketplaceMaterialViewClient({ materialId }: MarketplaceMateria
                       {material.componente} · {material.etapa} · {formatDate(material.createdAt)}
                     </p>
                   </div>
-                  <span className="rounded-full border border-cyan-400/20 bg-cyan-50 px-2.5 py-0.5 text-[10px] font-bold uppercase text-cyan-800">
-                    {material.tipoMaterial}
-                  </span>
                 </header>
 
                 <div className="px-4 py-4">
@@ -224,28 +243,45 @@ export function MarketplaceMaterialViewClient({ materialId }: MarketplaceMateria
                 fileName={material.fileName}
               />
 
-              <div className="flex flex-wrap gap-2 lg:hidden">
-                <MaterialLikeButton
-                  materialId={material.id}
-                  initialCount={likesCount}
-                  initialLiked={likedByMe}
-                  onChange={(state) => {
-                    setLikesCount(state.likesCount);
-                    setLikedByMe(state.likedByMe);
-                  }}
-                />
-                {preview.downloadFormats.map((format) => (
-                  <button
-                    key={format}
-                    type="button"
-                    disabled={Boolean(downloadingKey)}
-                    onClick={() => void handleDownload(format)}
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-cyan-400/20 bg-white px-3 py-2 text-xs font-bold text-cyan-800 transition hover:bg-cyan-50 disabled:opacity-60"
-                  >
-                    <PlanifyIcon name="download" className="h-3.5 w-3.5" />
-                    {downloadingKey === `${material.id}:${format}` ? "…" : format.toUpperCase()}
-                  </button>
-                ))}
+              <div className="rounded-2xl border border-cyan-400/15 bg-white p-4 shadow-sm lg:hidden">
+                <p className="text-[10px] font-black uppercase tracking-wide text-slate-500">
+                  Exportar
+                </p>
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <GoogleDocumentExportBar
+                    title={material.title}
+                    getHtml={() => exportHtml}
+                    getPlanningPayload={
+                      documentType?.includes("planejamento") ? getPlanningPayload : undefined
+                    }
+                    documentType={documentType}
+                    isSlideDeck={preview.isSlidePreview}
+                    returnTo={`/marketplace/material/${material.id}`}
+                    compact
+                    classroomMode="popover"
+                    disabled={!canGoogleExport}
+                    disabledTitle="Exportação Google indisponível para este formato."
+                  />
+                  <DocumentDownloadIconBar
+                    onDownloadPdf={
+                      preview.downloadFormats.includes("pdf")
+                        ? () => void handleDownload("pdf")
+                        : undefined
+                    }
+                    downloadingPdf={downloadingKey === `${material.id}:pdf`}
+                  />
+                </div>
+                <div className="mt-3">
+                  <MaterialLikeButton
+                    materialId={material.id}
+                    initialCount={likesCount}
+                    initialLiked={likedByMe}
+                    onChange={(state) => {
+                      setLikesCount(state.likesCount);
+                      setLikedByMe(state.likedByMe);
+                    }}
+                  />
+                </div>
               </div>
 
               <section className="rounded-2xl border border-cyan-400/15 bg-white shadow-sm lg:hidden">
@@ -270,7 +306,7 @@ export function MarketplaceMaterialViewClient({ materialId }: MarketplaceMateria
                     Interações
                   </h2>
                 </div>
-                <div className="space-y-3 px-4 py-4">
+                <div className="space-y-4 px-4 py-4">
                   <MaterialLikeButton
                     materialId={material.id}
                     initialCount={likesCount}
@@ -280,19 +316,34 @@ export function MarketplaceMaterialViewClient({ materialId }: MarketplaceMateria
                       setLikedByMe(state.likedByMe);
                     }}
                   />
-                  <div className="flex flex-col gap-2">
-                    {preview.downloadFormats.map((format) => (
-                      <button
-                        key={format}
-                        type="button"
-                        disabled={Boolean(downloadingKey)}
-                        onClick={() => void handleDownload(format)}
-                        className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-cyan-400/20 bg-white px-3 py-2.5 text-xs font-bold text-cyan-800 transition hover:bg-cyan-50 disabled:opacity-60"
-                      >
-                        <PlanifyIcon name="download" className="h-3.5 w-3.5" />
-                        {downloadingKey === `${material.id}:${format}` ? "Baixando…" : `Baixar ${format.toUpperCase()}`}
-                      </button>
-                    ))}
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-wide text-slate-500">
+                      Exportar
+                    </p>
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <GoogleDocumentExportBar
+                        title={material.title}
+                        getHtml={() => exportHtml}
+                        getPlanningPayload={
+                          documentType?.includes("planejamento") ? getPlanningPayload : undefined
+                        }
+                        documentType={documentType}
+                        isSlideDeck={preview.isSlidePreview}
+                        returnTo={`/marketplace/material/${material.id}`}
+                        compact
+                        classroomMode="popover"
+                        disabled={!canGoogleExport}
+                        disabledTitle="Exportação Google indisponível para este formato."
+                      />
+                      <DocumentDownloadIconBar
+                        onDownloadPdf={
+                          preview.downloadFormats.includes("pdf")
+                            ? () => void handleDownload("pdf")
+                            : undefined
+                        }
+                        downloadingPdf={downloadingKey === `${material.id}:pdf`}
+                      />
+                    </div>
                   </div>
                 </div>
               </section>

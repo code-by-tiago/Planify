@@ -33,7 +33,7 @@ export const teachyWorkflowSteps = [
   {
     step: "3",
     title: "Revisar e exportar",
-    description: "Editor, DOCX oficial e histórico do que você criou.",
+    description: "Editor, Google Docs e histórico do que você criou.",
     icon: "editor" as const,
   },
   {

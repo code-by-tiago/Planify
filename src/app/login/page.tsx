@@ -17,7 +17,7 @@ type LoginPageProps = {
 export const metadata: Metadata = buildPageMetadata({
   title: "Entrar ou criar conta",
   description:
-    "Acesse o Planify IA Educacional: login ou cadastro para professores e gestores escolares usarem geradores com IA, editor e exportação DOCX.",
+    "Acesse o Planify IA Educacional: login ou cadastro para professores e gestores escolares usarem geradores com IA, editor e exportação Google Docs.",
   path: "/login",
 });
 

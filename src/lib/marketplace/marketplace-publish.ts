@@ -1,4 +1,5 @@
 import { getCurrentAccessToken } from "@/lib/auth/session-client";
+import { embedPlanningPayloadInHtml } from "@/lib/planejamentos/planning-export-embed";
 
 export type MarketplacePublishInput = {
   title: string;
@@ -11,6 +12,8 @@ export type MarketplacePublishInput = {
   tema?: string;
   tags?: string[];
   authorName?: string;
+  /** Matriz oficial para export Google Docs de planejamentos publicados. */
+  planningPayload?: Record<string, unknown> | null;
 };
 
 export type MarketplacePublishResult = {
@@ -64,7 +67,11 @@ export async function publishHtmlToMarketplace(
     .slice(0, 60);
 
   // text/plain: o bucket Supabase marketplace-materiais não lista text/html.
-  const documentHtml = wrapHtmlDocument(title, input.html);
+  const bodyHtml =
+    input.planningPayload && Object.keys(input.planningPayload).length > 0
+      ? embedPlanningPayloadInHtml(input.html, input.planningPayload)
+      : input.html;
+  const documentHtml = wrapHtmlDocument(title, bodyHtml);
   const file = new File(
     [documentHtml],
     `${safeName || "material-planify"}.html`,

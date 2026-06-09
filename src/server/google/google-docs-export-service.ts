@@ -31,6 +31,10 @@ function normalizePlanningPayload(
   return payload as OfficialPlanningPayload;
 }
 
+function isPlanningDocumentType(documentType?: string | null): boolean {
+  return String(documentType || "").toLowerCase().includes("planejamento");
+}
+
 function buildDocxBuffer(
   title: string,
   html: string,
@@ -38,8 +42,17 @@ function buildDocxBuffer(
   planningPayload?: OfficialPlanningPayload | Record<string, unknown> | null,
 ): { buffer: Buffer; exportEngine: "official" | "html" } {
   const normalizedPlanning = normalizePlanningPayload(planningPayload);
+  const requiresOfficialTemplate =
+    isPlanningDocumentType(documentType) ||
+    Boolean(normalizedPlanning && hasPlanningMatrix(normalizedPlanning));
 
-  if (normalizedPlanning && hasPlanningMatrix(normalizedPlanning)) {
+  if (requiresOfficialTemplate) {
+    if (!normalizedPlanning || !hasPlanningMatrix(normalizedPlanning)) {
+      throw new Error(
+        "Matriz do planejamento não encontrada. Gere o planejamento com IA antes de exportar — o Planify usa exclusivamente os modelos oficiais anual/trimestral.",
+      );
+    }
+
     return {
       buffer: buildOfficialPlanningDocx(normalizedPlanning),
       exportEngine: "official",

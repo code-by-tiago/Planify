@@ -77,7 +77,7 @@ export function GoogleDriveExportButton({
         connecting: "Conectando…",
         connect: "Conectar Google",
       }}
-      exportTitle="Salva uma cópia DOCX no Google Drive"
+      exportTitle="Salva uma cópia no Google Drive"
       pendingStorageKey={GOOGLE_DRIVE_EXPORT_PENDING_KEY}
       onExport={runExport}
       onStatus={onStatus}

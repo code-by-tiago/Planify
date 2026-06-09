@@ -28,7 +28,7 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = buildPageMetadata({
   title: "Planos e preços",
   description:
-    "Planos Pro e Premium do Planify IA Educacional: geradores com IA, planejamentos BNCC, editor integrado, biblioteca e exportação DOCX para professores.",
+    "Planos Pro e Premium do Planify IA Educacional: geradores com IA, planejamentos BNCC, editor integrado, biblioteca e exportação Google Docs para professores.",
   path: "/planos",
 });
 
@@ -195,7 +195,7 @@ const includedFeatures = [
   `${landingPublicToolCount} ferramentas com IA`,
   "Construtor de aula e planejamentos BNCC",
   "Editor, histórico e biblioteca premium",
-  "Exportação em DOCX oficial",
+  "Exportação Google Docs com modelos oficiais",
 ];
 
 export default async function PlanosPage({ searchParams }: PlanosPageProps) {

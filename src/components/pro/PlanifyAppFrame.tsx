@@ -83,7 +83,7 @@ export default function PlanifyAppFrame({
       return { title: "Materiais", subtitle: "Ferramentas com IA" };
     }
     if (pathname.startsWith("/planejamentos")) {
-      return { title: "Planejamentos", subtitle: "BNCC + DOCX oficial" };
+      return { title: "Planejamentos", subtitle: "BNCC + Google Docs oficial" };
     }
     if (pathname.startsWith("/editor")) {
       return { title: "Editor", subtitle: "Finalize e exporte" };

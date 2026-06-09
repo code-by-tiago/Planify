@@ -7,6 +7,8 @@ import { CommunityReportButton } from "@/components/community/CommunityReportBut
 import { MaterialLikeButton } from "@/components/community/MaterialLikeButton";
 import { MaterialSaveButton } from "@/components/community/MaterialSaveButton";
 import { CommunityMaterialComments } from "@/components/community/CommunityMaterialComments";
+import { CommunityMaterialExportBar } from "@/components/documents/CommunityMaterialExportBar";
+import { MaterialTypeCover } from "@/components/materials/MaterialTypeCover";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import type { CommunityFeedItem } from "@/lib/community/types";
 import type { MarketplaceDownloadFormat } from "@/lib/marketplace/marketplace-download-client";
@@ -78,8 +80,17 @@ export function CommunityPostCard({
     });
   }
 
+  const coverSubtitle = `${item.componente} · ${item.etapa}`;
+
   return (
     <article className="overflow-hidden rounded-2xl border border-cyan-400/15 bg-white shadow-sm">
+      <Link href={`/marketplace/material/${item.id}`} className="block">
+        <MaterialTypeCover
+          typeLabel={item.tipoMaterial}
+          subtitle={coverSubtitle}
+        />
+      </Link>
+
       <header className="flex items-center gap-3 border-b border-cyan-400/10 px-4 py-3">
         <CommunityAuthorAvatar
           userId={item.userId}
@@ -89,28 +100,31 @@ export function CommunityPostCard({
         <div className="min-w-0 flex-1">
           <CommunityAuthorLink userId={item.userId} name={item.authorName} />
           <p className="truncate text-[11px] font-medium text-slate-500">
-            {item.componente} · {item.etapa} · {formatDate(item.createdAt)}
+            {item.anoSerie} · {formatDate(item.createdAt)}
           </p>
         </div>
-        <div className="flex shrink-0 items-center gap-2">
-          {commentsCount > 0 ? (
-            <a
-              href={`#comments-${item.id}`}
-              className="inline-flex items-center gap-1 rounded-full border border-cyan-400/25 bg-cyan-50 px-2 py-0.5 text-[10px] font-bold text-cyan-800"
-            >
-              <PlanifyIcon name="message" className="h-3 w-3" />
-              {commentsCount}
-            </a>
-          ) : null}
-          <span className="max-w-[7.5rem] truncate rounded-full border border-cyan-400/20 bg-cyan-50 px-2.5 py-0.5 text-[10px] font-bold uppercase text-cyan-800 sm:max-w-none">
-            {item.tipoMaterial}
-          </span>
-        </div>
+        {commentsCount > 0 ? (
+          <a
+            href={`#comments-${item.id}`}
+            className="inline-flex shrink-0 items-center gap-1 rounded-full border border-cyan-400/25 bg-cyan-50 px-2 py-0.5 text-[10px] font-bold text-cyan-800"
+          >
+            <PlanifyIcon name="message" className="h-3 w-3" />
+            {commentsCount}
+          </a>
+        ) : null}
       </header>
 
       <div className="px-4 py-4">
-        <h3 className="text-lg font-extrabold leading-snug text-slate-950">{item.title}</h3>
-        <p className="mt-2 text-sm leading-6 text-slate-600">{item.description}</p>
+        <Link href={`/marketplace/material/${item.id}`}>
+          <h3 className="text-lg font-extrabold leading-snug text-slate-950 transition hover:text-cyan-800">
+            {item.title}
+          </h3>
+        </Link>
+        {item.description ? (
+          <p className="mt-2 line-clamp-2 text-sm leading-6 text-slate-600">
+            {item.description}
+          </p>
+        ) : null}
 
         {item.tema ? (
           <button
@@ -138,8 +152,6 @@ export function CommunityPostCard({
         ) : null}
 
         <div className="mt-3 flex flex-wrap gap-2 text-[11px] font-semibold text-slate-500">
-          <span>{item.anoSerie}</span>
-          <span>·</span>
           <span>{formatBytes(item.fileSize)}</span>
           {item.downloadsCount > 0 ? (
             <>
@@ -152,7 +164,7 @@ export function CommunityPostCard({
 
       <CommunityFeedInlinePreview materialId={item.id} title={item.title} />
 
-      <div className="space-y-2 border-t border-cyan-400/10 px-3 py-3 sm:px-4">
+      <div className="space-y-3 border-t border-cyan-400/10 px-3 py-3 sm:px-4">
         <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
           <Link
             href={`/marketplace/material/${item.id}`}
@@ -197,28 +209,16 @@ export function CommunityPostCard({
             <span className="sm:hidden">{commentsCount > 0 ? commentsCount : "Chat"}</span>
           </a>
         </div>
-        <div className="flex flex-wrap items-center justify-between gap-2">
+
+        <CommunityMaterialExportBar
+          item={item}
+          downloadingKey={downloadingKey}
+          onDownload={onDownload}
+          returnTo="/marketplace"
+        />
+
+        <div className="flex items-center justify-between gap-2">
           <CommunityReportButton targetType="material" targetId={item.id} compact />
-          <div className="flex gap-2">
-            <button
-              type="button"
-              disabled={Boolean(downloadingKey)}
-              onClick={() => onDownload(item, "docx")}
-              className="inline-flex items-center gap-1 rounded-lg border border-cyan-400/20 px-2.5 py-1.5 text-[11px] font-bold text-cyan-800 transition hover:bg-cyan-50 disabled:opacity-60"
-            >
-              <PlanifyIcon name="download" className="h-3.5 w-3.5" />
-              {downloadingKey === `${item.id}:docx` ? "…" : "DOCX"}
-            </button>
-            <button
-              type="button"
-              disabled={Boolean(downloadingKey)}
-              onClick={() => onDownload(item, "pdf")}
-              className="inline-flex items-center gap-1 rounded-lg border border-cyan-400/20 px-2.5 py-1.5 text-[11px] font-bold text-indigo-800 transition hover:bg-indigo-50 disabled:opacity-60"
-            >
-              <PlanifyIcon name="download" className="h-3.5 w-3.5" />
-              {downloadingKey === `${item.id}:pdf` ? "…" : "PDF"}
-            </button>
-          </div>
         </div>
       </div>
 

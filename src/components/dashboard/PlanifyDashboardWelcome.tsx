@@ -47,7 +47,7 @@ export function PlanifyDashboardWelcome({
         </li>
         <li className="flex items-start gap-2">
           <PlanifyIcon name="checkCircle" className="mt-0.5 h-4 w-4 shrink-0 text-indigo-500" />
-          BNCC, editor e exportação DOCX no mesmo fluxo
+          BNCC, editor e exportação Google Docs no mesmo fluxo
         </li>
         <li className="flex items-start gap-2">
           <PlanifyIcon name="checkCircle" className="mt-0.5 h-4 w-4 shrink-0 text-indigo-500" />

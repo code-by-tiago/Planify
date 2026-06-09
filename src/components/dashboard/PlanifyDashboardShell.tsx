@@ -149,7 +149,7 @@ export default function PlanifyDashboardShell() {
   const panelTitle = useMemo(() => {
     if (activeTool) return activeTool.title;
     if (selectedSectionId === "planejamentos") {
-      return "BNCC → IA → DOCX oficial";
+      return "BNCC → IA → Google Docs oficial";
     }
     if (selectedSectionId) return dashboardSectionLabels[selectedSectionId];
     return "Início";
@@ -158,7 +158,7 @@ export default function PlanifyDashboardShell() {
   const panelSubtitle = useMemo(() => {
     if (activeTool) return activeTool.description;
     if (selectedSectionId === "planejamentos") {
-      return "Sugira habilidades por conteúdo, gere a matriz pedagógica com IA e baixe o modelo oficial preenchido.";
+      return "Sugira habilidades por conteúdo, gere a matriz pedagógica com IA e exporte com os modelos oficiais.";
     }
     return null;
   }, [activeTool, selectedSectionId]);
@@ -301,7 +301,7 @@ export default function PlanifyDashboardShell() {
                     </span>
                   </h1>
                   <p className="hidden text-xs font-medium text-slate-500 sm:block">
-                    {planifyToolCount + 1} geradores · BNCC · DOCX · Comunidade
+                    {planifyToolCount + 1} geradores · BNCC · Google Docs · Comunidade
                   </p>
                 </div>
               </div>

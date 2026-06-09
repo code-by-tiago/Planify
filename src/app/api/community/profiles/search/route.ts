@@ -21,7 +21,12 @@ export async function GET(request: NextRequest) {
   const component = request.nextUrl.searchParams.get("component") || "";
 
   try {
-    const profiles = await searchCommunityProfiles({ query: q, school, component });
+    const profiles = await searchCommunityProfiles({
+      query: q,
+      school,
+      component,
+      excludeUserId: access.access.user?.id,
+    });
     return NextResponse.json({ ok: true, profiles });
   } catch (error) {
     return jsonError(

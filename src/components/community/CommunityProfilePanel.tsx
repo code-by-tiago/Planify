@@ -42,6 +42,7 @@ export function CommunityProfilePanel() {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [savingVisibility, setSavingVisibility] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [error, setError] = useState("");
   const [status, setStatus] = useState("");
@@ -94,6 +95,41 @@ export function CommunityProfilePanel() {
   useEffect(() => {
     void loadProfile();
   }, [loadProfile]);
+
+  async function saveCommunityVisibility(nextPublic: boolean) {
+    setSavingVisibility(true);
+    setError("");
+    setStatus("");
+
+    try {
+      const response = await fetch("/api/community/profile", {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ communityPublic: nextPublic }),
+      });
+      const data = await parseJsonResponse<{
+        profile?: CommunityProfile;
+        error?: { message?: string };
+      }>(response);
+
+      if (!response.ok) {
+        throw new Error(data?.error?.message || "Não foi possível atualizar a visibilidade.");
+      }
+
+      if (!data?.profile) {
+        throw new Error("Resposta inválida ao atualizar visibilidade.");
+      }
+
+      setProfile(data.profile);
+      setDraft((current) => ({ ...current, communityPublic: nextPublic }));
+      setStatus(nextPublic ? "Perfil visível na comunidade." : "Perfil oculto na comunidade.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao atualizar visibilidade.");
+    } finally {
+      setSavingVisibility(false);
+    }
+  }
 
   async function saveProfile() {
     setSaving(true);
@@ -397,13 +433,15 @@ export function CommunityProfilePanel() {
                 role="switch"
                 aria-checked={isPublic}
                 checked={isPublic}
-                disabled={!editing}
-                onChange={(event) =>
-                  setDraft((current) => ({
-                    ...current,
-                    communityPublic: event.target.checked,
-                  }))
-                }
+                disabled={savingVisibility || saving}
+                onChange={(event) => {
+                  const nextPublic = event.target.checked;
+                  if (editing) {
+                    setDraft((current) => ({ ...current, communityPublic: nextPublic }));
+                    return;
+                  }
+                  void saveCommunityVisibility(nextPublic);
+                }}
                 className="peer sr-only"
               />
               <span className="block h-6 w-11 rounded-full bg-slate-300 transition peer-checked:bg-gradient-to-r peer-checked:from-cyan-600 peer-checked:to-blue-600 peer-disabled:opacity-60" />

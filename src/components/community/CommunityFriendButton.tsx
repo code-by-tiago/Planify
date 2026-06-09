@@ -8,6 +8,7 @@ import { useCallback, useEffect, useState } from "react";
 type CommunityFriendButtonProps = {
   targetUserId: string;
   isOwnProfile?: boolean;
+  compact?: boolean;
   onMessage?: (userId: string) => void;
   onStatusChange?: (status: FriendshipStatus) => void;
 };
@@ -15,6 +16,7 @@ type CommunityFriendButtonProps = {
 export function CommunityFriendButton({
   targetUserId,
   isOwnProfile,
+  compact,
   onMessage,
   onStatusChange,
 }: CommunityFriendButtonProps) {
@@ -108,16 +110,21 @@ export function CommunityFriendButton({
     return null;
   }
 
+  const btnBase = compact
+    ? "inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[10px] font-bold transition disabled:opacity-60"
+    : "inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold transition disabled:opacity-60";
+
+  const iconClass = compact ? "h-3 w-3" : "h-3.5 w-3.5";
+
   if (loading) {
     return (
-      <span className="inline-flex items-center rounded-xl border border-cyan-400/20 bg-white/80 px-3 py-2 text-xs font-bold text-slate-500">
-        Carregando…
+      <span
+        className={`${btnBase} border border-cyan-400/20 bg-white/80 text-slate-500`}
+      >
+        {compact ? "…" : "Carregando…"}
       </span>
     );
   }
-
-  const btnBase =
-    "inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold transition disabled:opacity-60";
 
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -128,8 +135,8 @@ export function CommunityFriendButton({
           onClick={() => void runAction("request")}
           className={`${btnBase} bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-sm hover:brightness-105`}
         >
-          <PlanifyIcon name="plus" className="h-3.5 w-3.5" />
-          Adicionar amigo
+          <PlanifyIcon name="plus" className={iconClass} />
+          {compact ? "Amigo" : "Adicionar amigo"}
         </button>
       ) : null}
 
@@ -140,7 +147,7 @@ export function CommunityFriendButton({
           onClick={() => void runAction("cancel")}
           className={`${btnBase} border border-amber-200 bg-amber-50 text-amber-800`}
         >
-          Solicitação pendente
+          {compact ? "Pendente" : "Solicitação pendente"}
         </button>
       ) : null}
 
@@ -170,8 +177,8 @@ export function CommunityFriendButton({
           <span
             className={`${btnBase} border border-emerald-200 bg-emerald-50 text-emerald-800`}
           >
-            <PlanifyIcon name="checkCircle" className="h-3.5 w-3.5" />
-            Amigos
+            <PlanifyIcon name="checkCircle" className={iconClass} />
+            {compact ? "✓" : "Amigos"}
           </span>
           {onMessage ? (
             <button

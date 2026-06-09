@@ -109,27 +109,6 @@ export function GoogleProductExportButton({
     try {
       const html = await resolveHtmlForExport();
 
-      // #region agent log
-      fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "f33ae7" },
-        body: JSON.stringify({
-          sessionId: "f33ae7",
-          runId: "post-fix",
-          hypothesisId: "H-A",
-          location: "GoogleProductExportButton.tsx:runExport",
-          message: "html resolved for export",
-          data: {
-            productName,
-            htmlLen: html.length,
-            exportable: hasExportableHtml(html),
-            pendingKey: pendingStorageKey,
-          },
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {});
-      // #endregion
-
       if (!hasExportableHtml(html)) {
         throw new Error("O documento ainda não carregou. Aguarde e tente exportar novamente.");
       }
@@ -139,64 +118,11 @@ export function GoogleProductExportButton({
       const planningPayload =
         pendingPayload ?? getPlanningPayload?.() ?? null;
 
-      // #region agent log
-      fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "f33ae7" },
-        body: JSON.stringify({
-          sessionId: "f33ae7",
-          runId: "post-fix",
-          hypothesisId: "H-PAYLOAD",
-          location: "GoogleProductExportButton.tsx:runExport",
-          message: "planning payload resolved",
-          data: {
-            productName,
-            hasPlanningPayload: Boolean(planningPayload),
-            matrizRows: Array.isArray(
-              (planningPayload as { matrizPlanejamento?: { conteudos?: unknown[] } })
-                ?.matrizPlanejamento?.conteudos,
-            )
-              ? (planningPayload as { matrizPlanejamento: { conteudos: unknown[] } })
-                  .matrizPlanejamento.conteudos.length
-              : 0,
-            fromPending: Boolean(pendingPayload),
-          },
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {});
-      // #endregion
-
       const result = await onExport({ html, planningPayload });
       clearGoogleExportPending(pendingStorageKey);
 
       const opened =
         result.openedInPreview || openGoogleExportUrl(result.openUrl);
-
-      // #region agent log
-      fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "f33ae7" },
-        body: JSON.stringify({
-          sessionId: "f33ae7",
-          runId: "post-fix",
-          hypothesisId: "H-C",
-          location: "GoogleProductExportButton.tsx:runExport",
-          message: "export completed",
-          data: {
-            productName,
-            opened,
-            openUrlHost: (() => {
-              try {
-                return new URL(result.openUrl).host;
-              } catch {
-                return "invalid";
-              }
-            })(),
-          },
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {});
-      // #endregion
 
       if (opened) {
         onStatus?.(`${productName} aberto em nova aba.`);
@@ -291,49 +217,8 @@ export function GoogleProductExportButton({
     window.history.replaceState({}, "", next);
 
     void (async () => {
-      // #region agent log
-      fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "f33ae7" },
-        body: JSON.stringify({
-          sessionId: "f33ae7",
-          runId: "post-fix",
-          hypothesisId: "H-D",
-          location: "GoogleProductExportButton.tsx:oauthResume",
-          message: "oauth resume started",
-          data: {
-            productName,
-            pendingTitle: pending?.title,
-            pendingHtmlLen: pending?.html?.length ?? 0,
-            returnTo: pending?.returnTo,
-          },
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {});
-      // #endregion
-
       const fresh = await waitForGoogleConnected(refresh);
       notifyGoogleStatusChanged();
-
-      // #region agent log
-      fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "f33ae7" },
-        body: JSON.stringify({
-          sessionId: "f33ae7",
-          runId: "post-fix",
-          hypothesisId: "H-B",
-          location: "GoogleProductExportButton.tsx:oauthResume",
-          message: "google status after oauth",
-          data: {
-            productName,
-            connected: Boolean(fresh?.connected),
-            configured: Boolean(fresh?.configured),
-          },
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {});
-      // #endregion
 
       if (!fresh?.connected) {
         setError("Google conectado, mas a sessão ainda não sincronizou. Clique no botão novamente.");

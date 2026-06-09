@@ -19,30 +19,53 @@ type ProfileRow = {
   community_public: boolean | null;
 };
 
+function sanitizeIlikeTerm(value: string): string {
+  return value
+    .replace(/[%_(),]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 80);
+}
+
 export async function searchCommunityProfiles(params: {
   query?: string;
   school?: string;
   component?: string;
   limit?: number;
+  excludeUserId?: string;
 }): Promise<CommunityProfileSearchResult[]> {
   const supabase = getSupabaseAdminClient();
-  const q = (params.query || "").trim().toLowerCase();
-  const school = (params.school || "").trim().toLowerCase();
+  const q = sanitizeIlikeTerm((params.query || "").trim().toLowerCase());
+  const school = sanitizeIlikeTerm((params.school || "").trim().toLowerCase());
   const component = (params.component || "").trim();
-  const limit = Math.min(params.limit || 20, 40);
+  const limit = Math.min(params.limit || 24, 40);
+  const searchTerm = q || school;
+
+  if (searchTerm.length > 0 && searchTerm.length < 2) {
+    return [];
+  }
 
   let profileQuery = supabase
     .from("profiles")
     .select("id,full_name,school_name,bio,community_public")
     .eq("community_public", true)
-    .limit(100);
+    .order("full_name", { ascending: true })
+    .limit(200);
 
-  if (school) {
-    profileQuery = profileQuery.ilike("school_name", `%${school}%`);
+  if (params.excludeUserId) {
+    profileQuery = profileQuery.neq("id", params.excludeUserId);
   }
 
-  if (q) {
-    profileQuery = profileQuery.or(`full_name.ilike.%${q}%,bio.ilike.%${q}%`);
+  if (school && q && school !== q) {
+    profileQuery = profileQuery
+      .ilike("school_name", `%${school}%`)
+      .or(`full_name.ilike.%${q}%,school_name.ilike.%${q}%,bio.ilike.%${q}%`);
+  } else if (searchTerm.length >= 2) {
+    profileQuery = profileQuery.or(
+      `full_name.ilike.%${searchTerm}%,school_name.ilike.%${searchTerm}%,bio.ilike.%${searchTerm}%`,
+    );
+  } else if (!component) {
+    return [];
   }
 
   const { data: profiles, error } = await profileQuery;
@@ -112,10 +135,16 @@ export async function searchCommunityProfiles(params: {
     results = results.filter((item) => item.topComponente === component);
   }
 
-  if (q) {
+  const tokens = (q || school)
+    .split(/\s+/)
+    .map((token) => token.trim())
+    .filter((token) => token.length >= 2);
+
+  if (tokens.length) {
     results = results.filter((item) => {
-      const haystack = `${item.displayName} ${item.schoolName || ""} ${item.bio || ""}`.toLowerCase();
-      return haystack.includes(q);
+      const haystack =
+        `${item.displayName} ${item.schoolName || ""} ${item.bio || ""}`.toLowerCase();
+      return tokens.every((token) => haystack.includes(token));
     });
   }
 

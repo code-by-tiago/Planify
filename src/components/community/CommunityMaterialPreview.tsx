@@ -1,6 +1,10 @@
 "use client";
 
-import { PLANIFY_EXPORT_CSS, PLANIFY_SLIDE_EXPORT_CSS } from "@/lib/editor/editor-print-html";
+import {
+  PLANIFY_COMMUNITY_DOCUMENT_PREVIEW_CSS,
+  PLANIFY_COMMUNITY_SLIDE_PREVIEW_CSS,
+} from "@/lib/community/community-material-preview-css";
+import { PLANIFY_EXPORT_CSS } from "@/lib/editor/editor-print-html";
 import type { MarketplacePreviewKind } from "@/server/marketplace/marketplace-preview";
 
 type CommunityMaterialPreviewProps = {
@@ -13,7 +17,7 @@ type CommunityMaterialPreviewProps = {
 };
 
 const htmlPreviewClassName =
-  "planify-community-material-html text-sm leading-7 text-slate-800 [&_.planify-export-document]:mx-auto [&_.planify-flashcards]:flex [&_.planify-flashcards]:flex-wrap [&_.planify-flashcards]:gap-4 [&_.planify-slide-deck]:space-y-6 [&_h1]:text-2xl [&_h1]:font-black [&_h2]:mt-4 [&_h2]:text-lg [&_h2]:font-black [&_h3]:mt-3 [&_h3]:font-black [&_img]:max-w-full [&_li]:ml-5 [&_ol]:list-decimal [&_p]:my-2 [&_table]:w-full [&_table]:border-collapse [&_td]:border [&_td]:border-slate-200 [&_td]:p-2 [&_th]:border [&_th]:border-slate-200 [&_th]:p-2 [&_ul]:list-disc";
+  "planify-community-material-html w-full min-w-0 break-words text-sm leading-7 text-slate-800 [&_.planify-export-document]:mx-auto [&_.planify-flashcards]:flex [&_.planify-flashcards]:flex-wrap [&_.planify-flashcards]:gap-4 [&_.planify-flashcards_.planify-flashcard]:min-w-0 [&_.planify-flashcards_.planify-flashcard]:max-w-full [&_.planify-flashcards_.planify-flashcard]:flex-[1_1_100%] [&_.planify-flashcards_.planify-flashcard]:sm:flex-[1_1_260px] [&_.planify-slide-deck]:w-full [&_h1]:text-xl [&_h1]:font-black [&_h1]:sm:text-2xl [&_h2]:mt-4 [&_h2]:text-lg [&_h2]:font-black [&_h3]:mt-3 [&_h3]:font-black [&_img]:max-w-full [&_li]:ml-5 [&_ol]:list-decimal [&_p]:my-2 [&_table]:w-full [&_table]:max-w-full [&_table]:border-collapse [&_td]:border [&_td]:border-slate-200 [&_td]:p-2 [&_th]:border [&_th]:border-slate-200 [&_th]:p-2 [&_ul]:list-disc";
 
 export function CommunityMaterialPreview({
   kind,
@@ -24,14 +28,20 @@ export function CommunityMaterialPreview({
   fileName,
 }: CommunityMaterialPreviewProps) {
   if (kind === "html" && htmlContent) {
+    const slideMode = Boolean(isSlidePreview);
+
     return (
-      <div className="overflow-hidden rounded-2xl border border-cyan-400/15 bg-white shadow-sm">
-        <style>{isSlidePreview ? PLANIFY_SLIDE_EXPORT_CSS : PLANIFY_EXPORT_CSS}</style>
-        <div className="max-h-[min(78vh,920px)] overflow-auto bg-white p-4 sm:p-6">
+      <div className="w-full min-w-0 overflow-hidden rounded-2xl border border-cyan-400/15 bg-white shadow-sm">
+        <style>
+          {slideMode
+            ? PLANIFY_COMMUNITY_SLIDE_PREVIEW_CSS
+            : `${PLANIFY_EXPORT_CSS}${PLANIFY_COMMUNITY_DOCUMENT_PREVIEW_CSS}`}
+        </style>
+        <div className="max-h-[min(78vh,920px)] w-full min-w-0 overflow-x-hidden overflow-y-auto bg-white p-3 sm:p-5">
           <div
-            className={`${htmlPreviewClassName} ${isSlidePreview ? "planify-community-material-slides" : ""}`}
+            className={`${htmlPreviewClassName} ${slideMode ? "planify-community-material-slides" : ""}`}
             dangerouslySetInnerHTML={{
-              __html: isSlidePreview
+              __html: slideMode
                 ? `<div class="planify-export-document">${htmlContent}</div>`
                 : `<main class="planify-export-document">${htmlContent}</main>`,
             }}
@@ -43,10 +53,10 @@ export function CommunityMaterialPreview({
 
   if (kind === "pdf" && signedUrl) {
     return (
-      <div className="overflow-hidden rounded-2xl border border-cyan-400/15 bg-white shadow-sm">
+      <div className="w-full min-w-0 overflow-hidden rounded-2xl border border-cyan-400/15 bg-white shadow-sm">
         <iframe
           title={title}
-          src={`${signedUrl}#toolbar=1&navpanes=0`}
+          src={`${signedUrl}#toolbar=1&navpanes=0&view=FitH`}
           className="h-[min(78vh,920px)] w-full bg-slate-100"
         />
       </div>
@@ -54,14 +64,10 @@ export function CommunityMaterialPreview({
   }
 
   if (kind === "docx") {
-    return (
-      <DocxFallback title={title} fileName={fileName} />
-    );
+    return <DocxFallback title={title} fileName={fileName} />;
   }
 
-  return (
-    <BinaryFallback title={title} fileName={fileName} kind={kind} />
-  );
+  return <BinaryFallback title={title} fileName={fileName} kind={kind} />;
 }
 
 function DocxFallback({ title, fileName }: { title: string; fileName?: string }) {

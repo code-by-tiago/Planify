@@ -89,7 +89,7 @@ export function CommunityFeedInlinePreview({ materialId, title }: CommunityFeedI
       ) : null}
 
       {expanded && preview ? (
-        <div className="px-4 pb-4">
+        <div className="min-w-0 px-4 pb-4">
           <CommunityMaterialPreview
             kind={preview.kind}
             title={preview.title || title}

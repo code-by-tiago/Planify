@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { deflateRawSync, inflateRawSync } from "node:zlib";
 import type { PlanningAiResult, PlanningMatrixItem, PlanningSkill } from "./planning-ai-service";
+import { extractAnnualItemsForTrimester } from "@/lib/planejamentos/planning-trimestral-from-annual";
 import {
   finalizeMatrixLessonAllocation,
   formatMatrixAulaLabel,
@@ -540,30 +541,6 @@ function getMatrix(payload: OfficialPlanningPayload): PlanningMatrixItem[] {
   return fallbackMatrix(payload);
 }
 
-function annualItemsForTrimester(
-  matrix: PlanningMatrixItem[],
-  trimestre: number,
-): PlanningMatrixItem[] {
-  const explicitTrimesters = new Set(
-    matrix
-      .map((item) => Number(item.trimestre))
-      .filter((value) => Number.isFinite(value) && value >= 1 && value <= 3),
-  );
-
-  if (explicitTrimesters.size >= 2) {
-    const explicit = matrix.filter((item) => Number(item.trimestre) === trimestre);
-
-    if (explicit.length > 0) {
-      return explicit;
-    }
-  }
-
-  const chunkSize = Math.max(1, Math.ceil(matrix.length / 3));
-  const start = (trimestre - 1) * chunkSize;
-
-  return matrix.slice(start, start + chunkSize);
-}
-
 function expandTableDataRows(
   table: TableInfo,
   header: RowInfo,
@@ -894,7 +871,7 @@ function fillAnnualPlanningTables(documentXml: string, payload: OfficialPlanning
     const trimester = trimesterFromTableText(table.text, tableIndex + 1);
     const header = findHeaderRow(table);
     const initialDataRows = table.rows.filter((row) => isDataRowAfterHeader(row, header));
-    const items = annualItemsForTrimester(matrix, trimester);
+    const items = extractAnnualItemsForTrimester(matrix, trimester);
     const expanded = expandTableDataRows(table, header, initialDataRows, items.length);
     const dataRows = expanded.dataRows;
 
@@ -1083,9 +1060,7 @@ function fillOneTrimestralTable(
 function fillTrimestralPlanningTable(documentXml: string, payload: OfficialPlanningPayload): string {
   const matrix = getMatrix(payload);
   const trimester = getTrimestre(payload);
-  const baseItems = matrix.filter((item) => Number(item.trimestre) === trimester).length
-    ? matrix.filter((item) => Number(item.trimestre) === trimester)
-    : matrix;
+  const baseItems = extractAnnualItemsForTrimester(matrix, trimester);
 
   const tables = parseTables(documentXml);
   const table = chooseTrimestralPlanningTable(tables);

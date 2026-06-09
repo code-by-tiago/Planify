@@ -30,6 +30,11 @@ import type {
 } from "@/server/planejamentos/planning-ai-service";
 import { readPlanejamentoPrefill } from "@/lib/planejamentos/planejamento-prefill";
 import { downloadPlanejamentoOficialDocx } from "@/lib/planejamentos/download-planejamento-oficial";
+import {
+  buildTrimestralPlansFromAnnual,
+  trimestralCargaHorariaLabel,
+  type TrimestralPlanningLike,
+} from "@/lib/planejamentos/planning-trimestral-from-annual";
 import { planifyAuthenticatedFetch } from "@/lib/auth/authenticated-fetch";
 import {
   readDownloadBlob,
@@ -82,10 +87,14 @@ type FormState = {
   cargaHoraria: string;
   tipoPlanejamento: TipoPlanejamento;
   trimestre: string;
+  gerarTrimestraisJunto: boolean;
+  trimestresJunto: number[];
   conteudos: string;
   objetivos: string;
   observacoes: string;
 };
+
+type MatrizPreviewKey = "anual" | 1 | 2 | 3;
 
 const initialForm: FormState = {
   escola: "",
@@ -97,6 +106,8 @@ const initialForm: FormState = {
   cargaHoraria: "80 períodos",
   tipoPlanejamento: "anual",
   trimestre: "1",
+  gerarTrimestraisJunto: false,
+  trimestresJunto: [1, 2, 3],
   conteudos: "",
   objetivos: "",
   observacoes: "",
@@ -363,6 +374,10 @@ export function PlanejamentosClient() {
   const [groups, setGroups] = useState<BnccGroup[]>([]);
   const [selectedSkills, setSelectedSkills] = useState<BnccSkill[]>([]);
   const [generatedPlanning, setGeneratedPlanning] = useState<GeneratedPlanning | null>(null);
+  const [generatedTrimestralPlans, setGeneratedTrimestralPlans] = useState<Partial<
+    Record<number, TrimestralPlanningLike>
+  > | null>(null);
+  const [previewMatrizKey, setPreviewMatrizKey] = useState<MatrizPreviewKey>("anual");
   const [usedAI, setUsedAI] = useState<boolean | null>(null);
   const [qualityScore, setQualityScore] = useState<number | null>(null);
   const [qualityIssues, setQualityIssues] = useState<string[]>([]);
@@ -458,10 +473,105 @@ export function PlanejamentosClient() {
 
   function invalidateGenerated() {
     setGeneratedPlanning(null);
+    setGeneratedTrimestralPlans(null);
+    setPreviewMatrizKey("anual");
     setUsedAI(null);
     setQualityScore(null);
     setQualityIssues([]);
     setLastGenerationPayload(null);
+  }
+
+  const syncTrimestralPlansFromAnnual = useCallback(
+    (annual: GeneratedPlanning | null, nextForm: FormState) => {
+      if (!annual || nextForm.tipoPlanejamento !== "anual" || !nextForm.gerarTrimestraisJunto) {
+        setGeneratedTrimestralPlans(null);
+        setPreviewMatrizKey("anual");
+        return;
+      }
+
+      const trimestres = nextForm.trimestresJunto.filter(
+        (value) => value >= 1 && value <= 3,
+      );
+
+      if (!trimestres.length) {
+        setGeneratedTrimestralPlans(null);
+        setPreviewMatrizKey("anual");
+        return;
+      }
+
+      setGeneratedTrimestralPlans(
+        buildTrimestralPlansFromAnnual(annual, trimestres),
+      );
+    },
+    [],
+  );
+
+  useEffect(() => {
+    syncTrimestralPlansFromAnnual(generatedPlanning, form);
+  }, [
+    form.gerarTrimestraisJunto,
+    form.trimestresJunto,
+    form.tipoPlanejamento,
+    generatedPlanning,
+    syncTrimestralPlansFromAnnual,
+  ]);
+
+  const activePreviewPlanning = useMemo(() => {
+    if (!generatedPlanning) {
+      return null;
+    }
+
+    if (
+      previewMatrizKey !== "anual" &&
+      generatedTrimestralPlans?.[previewMatrizKey]
+    ) {
+      return generatedTrimestralPlans[previewMatrizKey]!;
+    }
+
+    return generatedPlanning;
+  }, [generatedPlanning, generatedTrimestralPlans, previewMatrizKey]);
+
+  const trimestresDisponiveisDownload = useMemo(() => {
+    if (form.gerarTrimestraisJunto && form.trimestresJunto.length > 0) {
+      return [...form.trimestresJunto].sort((a, b) => a - b);
+    }
+
+    return [1, 2, 3];
+  }, [form.gerarTrimestraisJunto, form.trimestresJunto]);
+
+  function toggleTrimestreJunto(trimestre: number) {
+    setForm((current) => {
+      const selected = new Set(current.trimestresJunto);
+      if (selected.has(trimestre)) {
+        if (selected.size <= 1) {
+          return current;
+        }
+        selected.delete(trimestre);
+      } else {
+        selected.add(trimestre);
+      }
+
+      return {
+        ...current,
+        trimestresJunto: Array.from(selected).sort((a, b) => a - b),
+      };
+    });
+  }
+
+  function resolveMatrizForDownload(mode: DocxDownloadMode, trimester?: number) {
+    if (mode === "trimestral" && trimester && generatedTrimestralPlans?.[trimester]) {
+      return generatedTrimestralPlans[trimester]!;
+    }
+
+    return generatedPlanning;
+  }
+
+  function resolveCargaHorariaForDownload(mode: DocxDownloadMode, trimester?: number) {
+    if (mode === "trimestral" && trimester && generatedTrimestralPlans?.[trimester]) {
+      return trimestralCargaHorariaLabel(generatedTrimestralPlans[trimester]!.conteudos);
+    }
+
+    return form.cargaHoraria;
   }
 
   function updateField<K extends keyof FormState>(key: K, value: FormState[K]) {
@@ -780,10 +890,23 @@ export function PlanejamentosClient() {
         serverMaterialId,
       });
 
+      const trimestresExtraidos =
+        form.tipoPlanejamento === "anual" && form.gerarTrimestraisJunto
+          ? form.trimestresJunto
+              .filter((value) => value >= 1 && value <= 3)
+              .sort((a, b) => a - b)
+              .map((value) => `${value}º`)
+              .join(", ")
+          : "";
+
       setStatus(
         data.usedAI
-          ? "Matriz gerada e salva no histórico. Baixe o DOCX ou edite no editor."
-          : "Matriz em modo seguro salva no histórico. Baixe o DOCX ou edite no editor.",
+          ? trimestresExtraidos
+            ? `Matriz anual gerada. Trimestrais ${trimestresExtraidos} extraídos do anual.`
+            : "Matriz gerada e salva no histórico. Baixe o DOCX ou edite no editor."
+          : trimestresExtraidos
+            ? `Matriz anual (modo seguro). Trimestrais ${trimestresExtraidos} extraídos do anual.`
+            : "Matriz em modo seguro salva no histórico. Baixe o DOCX ou edite no editor.",
       );
 
       if (data.warning) {
@@ -902,12 +1025,15 @@ export function PlanejamentosClient() {
           ? `planejamento-trimestral-${trimester}-${form.componenteCurricular}-${form.anoSerie}`
           : `planejamento-anual-${form.componenteCurricular}-${form.anoSerie}`;
 
+      const matriz = resolveMatrizForDownload(mode, trimester);
+
       const downloadResult = await downloadPlanejamentoOficialDocx(
         {
           ...buildBasePayload(),
           tipoPlanejamento: mode,
           trimestre: trimester ? String(trimester) : form.trimestre,
-          matrizPlanejamento: generatedPlanning,
+          cargaHoraria: resolveCargaHorariaForDownload(mode, trimester),
+          matrizPlanejamento: matriz,
         },
         filename,
         {
@@ -999,17 +1125,30 @@ export function PlanejamentosClient() {
   }
 
   function sendToEditor() {
-    if (!generatedPlanning) {
+    if (!activePreviewPlanning) {
       setError("Gere o planejamento com IA antes de enviar para o Editor.");
       return;
     }
 
-    const html = buildPlanningEditorHtml(form, generatedPlanning);
+    const editorForm =
+      previewMatrizKey !== "anual"
+        ? {
+            ...form,
+            tipoPlanejamento: "trimestral" as const,
+            trimestre: String(previewMatrizKey),
+            cargaHoraria: trimestralCargaHorariaLabel(activePreviewPlanning.conteudos),
+          }
+        : form;
+
+    const html = buildPlanningEditorHtml(editorForm, activePreviewPlanning);
     openPlanningInEditor(
       html,
-      generatedPlanning.titulo || "Planejamento",
-      buildPlanningEditorMeta(),
-      generatedPlanning,
+      activePreviewPlanning.titulo || "Planejamento",
+      buildPlanningEditorMeta({
+        tipoPlanejamento:
+          previewMatrizKey === "anual" ? "anual" : "trimestral",
+      }),
+      activePreviewPlanning,
     );
   }
 
@@ -1088,32 +1227,18 @@ export function PlanejamentosClient() {
                     Anual DOCX
                   </button>
 
-                  <button
-                    type="button"
-                    onClick={() => downloadDocxWithMode("trimestral", 1)}
-                    disabled={loadingDocx}
-                    className="pl-hud-btn-secondary rounded-xl px-5 py-3.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    1º Trimestre
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => downloadDocxWithMode("trimestral", 2)}
-                    disabled={loadingDocx}
-                    className="pl-hud-btn-secondary rounded-xl px-5 py-3.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    2º Trimestre
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => downloadDocxWithMode("trimestral", 3)}
-                    disabled={loadingDocx}
-                    className="pl-hud-btn-secondary rounded-xl px-5 py-3.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    3º Trimestre
-                  </button>
+                  {trimestresDisponiveisDownload.map((trimestre) => (
+                    <button
+                      key={`aside-trim-${trimestre}`}
+                      type="button"
+                      onClick={() => downloadDocxWithMode("trimestral", trimestre)}
+                      disabled={loadingDocx}
+                      className="pl-hud-btn-secondary rounded-xl px-5 py-3.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {trimestre}º Trimestre
+                      {generatedTrimestralPlans?.[trimestre] ? " ✓" : ""}
+                    </button>
+                  ))}
 
                   <button
                     type="button"
@@ -1124,6 +1249,12 @@ export function PlanejamentosClient() {
                     Pacote ZIP
                   </button>
                 </div>
+                {form.gerarTrimestraisJunto ? (
+                  <p className="mt-3 text-xs font-semibold text-emerald-700/90">
+                    Trimestrais marcados com ✓ foram extraídos do anual gerado — idênticos ao
+                    bloco correspondente na matriz anual.
+                  </p>
+                ) : null}
               </div>
             ) : null}
           </div>
@@ -1299,6 +1430,66 @@ export function PlanejamentosClient() {
               ) : null}
             </div>
 
+            {form.tipoPlanejamento === "anual" ? (
+              <div className="mt-6 rounded-2xl border border-cyan-400/20 bg-cyan-50/40 p-5">
+                <label className="flex cursor-pointer items-start gap-3">
+                  <input
+                    type="checkbox"
+                    checked={form.gerarTrimestraisJunto}
+                    onChange={(event) =>
+                      setForm((current) => ({
+                        ...current,
+                        gerarTrimestraisJunto: event.target.checked,
+                        trimestresJunto:
+                          current.trimestresJunto.length > 0
+                            ? current.trimestresJunto
+                            : [1, 2, 3],
+                      }))
+                    }
+                    className="mt-1 h-4 w-4 rounded border-cyan-400 text-cyan-600 focus:ring-cyan-200"
+                  />
+                  <span>
+                    <span className="text-sm font-black text-slate-950">
+                      Gerar trimestrais junto com o anual
+                    </span>
+                    <span className="mt-1 block text-sm font-medium leading-6 text-slate-600">
+                      Após a IA montar o anual, os trimestres escolhidos serão extraídos da
+                      mesma matriz — mesmos conteúdos, habilidades e períodos, sem nova geração.
+                    </span>
+                  </span>
+                </label>
+
+                {form.gerarTrimestraisJunto ? (
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {[1, 2, 3].map((trimestre) => {
+                      const selected = form.trimestresJunto.includes(trimestre);
+
+                      return (
+                        <button
+                          key={trimestre}
+                          type="button"
+                          onClick={() => toggleTrimestreJunto(trimestre)}
+                          className={`rounded-xl border px-4 py-2 text-sm font-bold transition ${
+                            selected
+                              ? "border-cyan-500 bg-cyan-600 text-white shadow-sm"
+                              : "border-cyan-400/25 bg-white text-slate-700 hover:border-cyan-400/50"
+                          }`}
+                        >
+                          {trimestre}º trimestre
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : null}
+              </div>
+            ) : (
+              <p className="mt-6 rounded-2xl border border-amber-200/80 bg-amber-50/80 px-4 py-3 text-sm font-medium leading-6 text-amber-900">
+                Para trimestrais 100% coerentes com o anual, gere o{" "}
+                <strong>Planejamento Anual</strong> e marque a opção de extrair os trimestres
+                desejados.
+              </p>
+            )}
+
             <div className="mt-8 rounded-2xl border border-cyan-400/20 bg-white/70 p-5">
               <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-cyan-600">
                 Modelo do documento
@@ -1459,8 +1650,20 @@ export function PlanejamentosClient() {
             {generatedPlanning ? (
               <div className="mt-6 flex flex-wrap items-center gap-3">
                 <MarketplacePublishButton
-                  title={generatedPlanning.titulo || "Planejamento"}
-                  getHtml={() => buildPlanningEditorHtml(form, generatedPlanning)}
+                  title={activePreviewPlanning?.titulo || generatedPlanning.titulo || "Planejamento"}
+                  getHtml={() => {
+                    const planning = activePreviewPlanning || generatedPlanning;
+                    const editorForm =
+                      previewMatrizKey !== "anual"
+                        ? {
+                            ...form,
+                            tipoPlanejamento: "trimestral" as const,
+                            trimestre: String(previewMatrizKey),
+                            cargaHoraria: trimestralCargaHorariaLabel(planning.conteudos),
+                          }
+                        : form;
+                    return buildPlanningEditorHtml(editorForm, planning);
+                  }}
                   tipoMaterial="Planejamento"
                   tema={form.componenteCurricular}
                   componente={form.componenteCurricular}
@@ -1500,32 +1703,18 @@ export function PlanejamentosClient() {
                     Anual DOCX
                   </button>
 
-                  <button
-                    type="button"
-                    onClick={() => downloadDocxWithMode("trimestral", 1)}
-                    disabled={loadingDocx}
-                    className="pl-hud-btn-secondary rounded-xl px-5 py-3.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    1º Trimestre
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => downloadDocxWithMode("trimestral", 2)}
-                    disabled={loadingDocx}
-                    className="pl-hud-btn-secondary rounded-xl px-5 py-3.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    2º Trimestre
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => downloadDocxWithMode("trimestral", 3)}
-                    disabled={loadingDocx}
-                    className="pl-hud-btn-secondary rounded-xl px-5 py-3.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    3º Trimestre
-                  </button>
+                  {trimestresDisponiveisDownload.map((trimestre) => (
+                    <button
+                      key={`aside-trim-${trimestre}`}
+                      type="button"
+                      onClick={() => downloadDocxWithMode("trimestral", trimestre)}
+                      disabled={loadingDocx}
+                      className="pl-hud-btn-secondary rounded-xl px-5 py-3.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {trimestre}º Trimestre
+                      {generatedTrimestralPlans?.[trimestre] ? " ✓" : ""}
+                    </button>
+                  ))}
 
                   <button
                     type="button"
@@ -1536,6 +1725,12 @@ export function PlanejamentosClient() {
                     Pacote ZIP
                   </button>
                 </div>
+                {form.gerarTrimestraisJunto ? (
+                  <p className="mt-3 text-xs font-semibold text-emerald-700/90">
+                    Trimestrais marcados com ✓ foram extraídos do anual gerado — idênticos ao
+                    bloco correspondente na matriz anual.
+                  </p>
+                ) : null}
               </div>
             ) : null}
           </div>
@@ -1598,7 +1793,7 @@ export function PlanejamentosClient() {
               </div>
             )}
 
-            {generatedPlanning ? (
+            {activePreviewPlanning ? (
               <div className="mt-7 rounded-[1.75rem] border border-emerald-200/80 bg-emerald-50/80 p-5">
                 {typeof qualityScore === "number" ? (
                   <MaterialQualityScoreBar
@@ -1613,11 +1808,44 @@ export function PlanejamentosClient() {
                     elevating={elevatingQuality}
                   />
                 ) : null}
+                {generatedTrimestralPlans &&
+                Object.keys(generatedTrimestralPlans).length > 0 ? (
+                  <div className="mb-4 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setPreviewMatrizKey("anual")}
+                      className={`rounded-xl px-4 py-2 text-xs font-black transition ${
+                        previewMatrizKey === "anual"
+                          ? "bg-emerald-600 text-white"
+                          : "bg-white text-slate-700 hover:bg-emerald-100"
+                      }`}
+                    >
+                      Anual
+                    </button>
+                    {Object.keys(generatedTrimestralPlans)
+                      .map(Number)
+                      .sort((a, b) => a - b)
+                      .map((trimestre) => (
+                        <button
+                          key={`preview-trim-${trimestre}`}
+                          type="button"
+                          onClick={() => setPreviewMatrizKey(trimestre as MatrizPreviewKey)}
+                          className={`rounded-xl px-4 py-2 text-xs font-black transition ${
+                            previewMatrizKey === trimestre
+                              ? "bg-emerald-600 text-white"
+                              : "bg-white text-slate-700 hover:bg-emerald-100"
+                          }`}
+                        >
+                          {trimestre}º trimestre
+                        </button>
+                      ))}
+                  </div>
+                ) : null}
                 <p className="text-[10px] font-black uppercase tracking-[0.28em] text-emerald-600">Matriz gerada</p>
-                <h3 className="mt-3 text-2xl font-black text-slate-950">{generatedPlanning.titulo}</h3>
-                <p className="mt-3 text-sm leading-7 text-emerald-700/90">{generatedPlanning.resumo}</p>
+                <h3 className="mt-3 text-2xl font-black text-slate-950">{activePreviewPlanning.titulo}</h3>
+                <p className="mt-3 text-sm leading-7 text-emerald-700/90">{activePreviewPlanning.resumo}</p>
                 <div className="mt-4 grid gap-2">
-                  {generatedPlanning.conteudos.map((item) => {
+                  {activePreviewPlanning.conteudos.map((item: PlanningMatrixItem) => {
                     const numeroAula =
                       Number.isFinite(Number(item.numeroAula)) && Number(item.numeroAula) > 0
                         ? Number(item.numeroAula)

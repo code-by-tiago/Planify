@@ -175,7 +175,7 @@ export function MarketplaceMaterialViewClient({ materialId }: MarketplaceMateria
           </section>
         ) : material && preview ? (
           <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
-            <div className="space-y-4">
+            <div className="min-w-0 space-y-4">
               <section className="overflow-hidden rounded-2xl border border-cyan-400/15 bg-white shadow-sm">
                 <header className="flex items-center gap-3 border-b border-cyan-400/10 px-4 py-3">
                   <CommunityAuthorAvatar

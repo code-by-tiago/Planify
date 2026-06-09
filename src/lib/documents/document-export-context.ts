@@ -13,9 +13,10 @@ export function getHistoryItemHtml(item: HistoryItem): string {
 export function getHistoryPlanningPayload(
   item: HistoryItem,
 ): Record<string, unknown> | null {
-  return resolvePlanningPayloadForGoogleExport(item.raw as Parameters<
-    typeof resolvePlanningPayloadForGoogleExport
-  >[0]);
+  return resolvePlanningPayloadForGoogleExport(
+    item.raw as Parameters<typeof resolvePlanningPayloadForGoogleExport>[0],
+    item.type,
+  );
 }
 
 export function resolveDocumentTypeFromMarketplaceItem(item: {

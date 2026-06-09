@@ -369,13 +369,30 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
     return meta;
   }, [documentSource]);
 
+  const exportDocumentType = useMemo(() => {
+    if (planningBundle && planningBundle.tabs.length > 1) {
+      const tab = planningBundle.tabs[activeBundleIndex];
+      if (tab?.type) return tab.type;
+    }
+
+    return documentSource?.type ?? null;
+  }, [planningBundle, activeBundleIndex, documentSource?.type]);
+
   const getPlanningPayloadForExport = useCallback((): Record<string, unknown> | null => {
-    const raw = documentSource?.payload as
+    const bundleTab = planningBundle?.tabs[activeBundleIndexRef.current];
+    const payloadWrapper = documentSource?.payload as
       | { raw?: PlanningEditorMeta & { matrizPlanejamento?: unknown } }
       | undefined;
+    const meta =
+      (bundleTab?.raw as
+        | (PlanningEditorMeta & { matrizPlanejamento?: unknown })
+        | undefined) ??
+      payloadWrapper?.raw ??
+      planningMeta ??
+      undefined;
 
-    return resolvePlanningPayloadForGoogleExport(raw?.raw ?? planningMeta ?? undefined);
-  }, [documentSource, planningMeta]);
+    return resolvePlanningPayloadForGoogleExport(meta, exportDocumentType);
+  }, [documentSource, planningMeta, planningBundle, exportDocumentType]);
 
   const canElevateMaterial = Boolean(
     materialMeta?.generationPayload &&
@@ -1648,7 +1665,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
         html: getEditorHtml(),
         format: "pdf",
         fallbackFileName: `${sanitizeFilename(title)}.pdf`,
-        documentType: documentSource?.type,
+        documentType: exportDocumentType,
       });
       setStatus("PDF baixado com proporção de slide.");
     } catch (error) {
@@ -1937,7 +1954,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
                 getHtml={getEditorHtml}
                 getPlanningPayload={getPlanningPayloadForExport}
                 onStatus={setStatus}
-                documentType={documentSource?.type}
+                documentType={exportDocumentType}
                 isSlideDeck={isSlideDeck}
                 slideTheme={slideTheme}
               />
@@ -2008,7 +2025,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
                 getHtml={getEditorHtml}
                 getPlanningPayload={getPlanningPayloadForExport}
                 onStatus={setStatus}
-                documentType={documentSource?.type}
+                documentType={exportDocumentType}
                 isSlideDeck={isSlideDeck}
                 slideTheme={slideTheme}
               />

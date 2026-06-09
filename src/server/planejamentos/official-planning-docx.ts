@@ -309,8 +309,17 @@ function parseNumber(value: unknown, fallback: number): number {
 }
 
 function getTipo(payload: OfficialPlanningPayload): "anual" | "trimestral" {
+  const matrixTipo =
+    payload.matrizPlanejamento &&
+    typeof payload.matrizPlanejamento === "object" &&
+    "tipoPlanejamento" in payload.matrizPlanejamento
+      ? String(
+          (payload.matrizPlanejamento as { tipoPlanejamento?: string }).tipoPlanejamento || "",
+        )
+      : "";
+
   const value = normalizeSearch(
-    payload.tipoPlanejamento || payload.tipo || payload.modo || "anual",
+    payload.tipoPlanejamento || matrixTipo || payload.tipo || payload.modo || "anual",
   );
 
   return value.includes("tri") ? "trimestral" : "anual";

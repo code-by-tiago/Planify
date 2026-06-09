@@ -1,3 +1,5 @@
+import { enrichOfficialPlanningPayload } from "@/lib/planejamentos/planning-google-export-payload";
+import { extractPlanningPayloadFromHtml } from "@/lib/planejamentos/planning-export-embed";
 import { resolvePreparedExportBody } from "../export/editor-html-export-service";
 import { buildNativeHtmlDocx } from "../docx/simple-docx-builder";
 import {
@@ -35,15 +37,35 @@ function isPlanningDocumentType(documentType?: string | null): boolean {
   return String(documentType || "").toLowerCase().includes("planejamento");
 }
 
+function resolvePlanningPayloadForExport(
+  planningPayload: OfficialPlanningPayload | Record<string, unknown> | null | undefined,
+  documentType?: string | null,
+  html?: string,
+): OfficialPlanningPayload | null {
+  const direct = normalizePlanningPayload(planningPayload);
+  const fromHtml = !direct
+    ? normalizePlanningPayload(extractPlanningPayloadFromHtml(String(html || "")))
+    : null;
+
+  return normalizePlanningPayload(
+    enrichOfficialPlanningPayload(direct ?? fromHtml, documentType),
+  );
+}
+
 function buildDocxBuffer(
   title: string,
   html: string,
   documentType?: string | null,
   planningPayload?: OfficialPlanningPayload | Record<string, unknown> | null,
 ): { buffer: Buffer; exportEngine: "official" | "html" } {
-  const normalizedPlanning = normalizePlanningPayload(planningPayload);
+  const isPlanningDoc = isPlanningDocumentType(documentType);
+  const normalizedPlanning = resolvePlanningPayloadForExport(
+    planningPayload,
+    documentType,
+    html,
+  );
   const requiresOfficialTemplate =
-    isPlanningDocumentType(documentType) ||
+    isPlanningDoc ||
     Boolean(normalizedPlanning && hasPlanningMatrix(normalizedPlanning));
 
   if (requiresOfficialTemplate) {

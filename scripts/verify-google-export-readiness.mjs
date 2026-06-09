@@ -124,9 +124,12 @@ function main() {
     resolveSlidesExportCompatible,
     resolveSlideDeck,
   } = loadTsModule("src/lib/google/document-type-detection.ts");
-  const { buildOfficialPlanningPayloadFromGeneration } = loadTsModule(
-    "src/lib/planejamentos/planning-google-export-payload.ts",
-  );
+  const {
+    buildOfficialPlanningPayloadFromGeneration,
+    buildOfficialPlanningPayloadFromEditorMeta,
+    enrichOfficialPlanningPayload,
+    inferPlanningTipoFromDocumentType,
+  } = loadTsModule("src/lib/planejamentos/planning-google-export-payload.ts");
   const {
     embedPlanningPayloadInHtml,
     extractPlanningPayloadFromHtml,
@@ -183,6 +186,53 @@ function main() {
     tipo: built?.tipoPlanejamento,
   });
 
+  const trimBuilt = buildOfficialPlanningPayloadFromGeneration({
+    tipoPlanejamento: "trimestral",
+    escola: "E",
+    professor: "P",
+    etapa: "EF",
+    anoSerie: "5",
+    componenteCurricular: "História",
+    cargaHoraria: "20h",
+    trimestre: "1",
+    matrizPlanejamento: { ...SAMPLE_MATRIX, tipoPlanejamento: "trimestral" },
+  });
+  auditLog("A-TRIM", "verify-google-export-readiness.mjs", "trimestral payload from generation", {
+    hasPayload: Boolean(trimBuilt),
+    tipo: trimBuilt?.tipoPlanejamento,
+    trimestre: trimBuilt?.trimestre ?? null,
+  });
+
+  const bundleTrimMeta = {
+    etapa: "EF",
+    anoSerie: "5",
+    componente: "História",
+    tipoPlanejamento: "trimestral",
+    trimestre: "2",
+    generationPayload: { tipoPlanejamento: "anual", escola: "E", professor: "P" },
+    matrizPlanejamento: {
+      tipoPlanejamento: "trimestral",
+      titulo: "2º trimestre",
+      resumo: "Resumo",
+      conteudos: SAMPLE_MATRIX.conteudos.map((item) => ({ ...item, trimestre: 2 })),
+    },
+  };
+  const bundlePayload = buildOfficialPlanningPayloadFromEditorMeta(bundleTrimMeta);
+  const enrichedStale = enrichOfficialPlanningPayload(
+    {
+      tipoPlanejamento: "anual",
+      trimestre: "2",
+      matrizPlanejamento: bundleTrimMeta.matrizPlanejamento,
+    },
+    "planejamento:trimestral",
+  );
+  auditLog("A-BUNDLE", "verify-google-export-readiness.mjs", "bundle trimestral meta", {
+    bundleTipo: bundlePayload?.tipoPlanejamento,
+    bundleTrimestre: bundlePayload?.trimestre ?? null,
+    enrichedTipo: enrichedStale?.tipoPlanejamento,
+    docTypeInfer: inferPlanningTipoFromDocumentType("planejamento:trimestral"),
+  });
+
   // Hypothesis B: embed/extract for community publish
   const embedded = embedPlanningPayloadInHtml("<p>Planejamento</p>", PAYLOAD_ANUAL);
   const extracted = extractPlanningPayloadFromHtml(embedded);
@@ -214,6 +264,10 @@ function main() {
     trimBuf.length < 10000 ||
     !missingMatrixThrows ||
     !built?.matrizPlanejamento ||
+    trimBuilt?.tipoPlanejamento !== "trimestral" ||
+    bundlePayload?.tipoPlanejamento !== "trimestral" ||
+    enrichedStale?.tipoPlanejamento !== "trimestral" ||
+    inferPlanningTipoFromDocumentType("planejamento:trimestral") !== "trimestral" ||
     !extracted?.matrizPlanejamento ||
     docxMentions.length > 0;
 

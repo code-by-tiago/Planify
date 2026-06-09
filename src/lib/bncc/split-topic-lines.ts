@@ -5,6 +5,32 @@ function normalizeConteudosText(value: string): string {
     .trim();
 }
 
+/** Desfaz colagens comuns (espaços duplos, tabs, listas na mesma linha). */
+function preprocessMessyConteudosText(value: string): string {
+  let text = normalizeConteudosText(value);
+  if (!text) {
+    return "";
+  }
+
+  text = text.replace(/\t+/g, "\n");
+  text = text.replace(/\s*[|／/]\s*/g, "\n");
+
+  const dashSeparators = text.match(/\s+[-–—]\s+/g) || [];
+  if (dashSeparators.length >= 2) {
+    text = text.replace(/\s+[-–—]\s+/g, "\n");
+  }
+
+  text = text.replace(/ {2,}/g, "\n");
+  text = text.replace(/(?<=\S)\s+(?=\d+[\.\)\-:]\s+\S)/g, "\n");
+  text = text.replace(/(?<=\S)\s+(?=[\u2022\u00b7•]\s*)/g, "\n");
+
+  return text
+    .split(/\n+/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .join("\n");
+}
+
 function cleanTopicLine(line: string): string {
   return line
     .replace(/^\s*[\u2022\u00b7•*>\-–—]+\s*/u, "")
@@ -20,12 +46,29 @@ function splitSingleLineTopics(line: string): string[] {
     .filter(Boolean);
 }
 
+function splitMultilineTopic(line: string): string[] {
+  const cleaned = cleanTopicLine(line);
+  if (!cleaned) {
+    return [];
+  }
+
+  // Em linha própria, vírgulas internas permanecem no tópico (regra BNCC).
+  if (/;|\s·\s/u.test(cleaned)) {
+    return cleaned
+      .split(/;|\s·\s/u)
+      .map((item) => cleanTopicLine(item))
+      .filter(Boolean);
+  }
+
+  return [cleaned];
+}
+
 /**
  * Separa tópicos/conteúdos — alinhado ao motor BNCC (splitContents):
  * com quebras de linha divide só por linha; sem quebras usa ; · ou vírgula.
  */
 export function splitTopicLines(value: string): string[] {
-  const text = normalizeConteudosText(value);
+  const text = preprocessMessyConteudosText(value);
 
   if (!text) {
     return [];
@@ -34,7 +77,7 @@ export function splitTopicLines(value: string): string[] {
   if (/\n/.test(text)) {
     return text
       .split(/\n+/)
-      .map((line) => cleanTopicLine(line))
+      .flatMap((line) => splitMultilineTopic(line))
       .filter(Boolean);
   }
 

@@ -53,8 +53,23 @@ assert.deepEqual(
 );
 
 assert.deepEqual(
+  splitTopicLines("Tema A  Tema B  Tema C"),
+  ["Tema A", "Tema B", "Tema C"],
+);
+
+assert.deepEqual(
+  splitTopicLines("1. Primeiro 2. Segundo 3. Terceiro"),
+  ["Primeiro", "Segundo", "Terceiro"],
+);
+
+assert.deepEqual(
   normalizeConteudosFieldText("• Povos originários\n- Chegada dos portugueses\n2) Colonização"),
   "Povos originários\nChegada dos portugueses\nColonização",
+);
+
+assert.deepEqual(
+  normalizeConteudosFieldText("A; B, C"),
+  "A\nB\nC",
 );
 
 assert.equal(

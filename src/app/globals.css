@@ -1694,6 +1694,20 @@ body h3 {
   - Filtro visual de habilidades BNCC repetidas/excessivas
 */
 
+/* Campo Conteúdos — altura fixa e barra de rolagem interna */
+textarea.planify-conteudos-textarea,
+.planify-hud textarea.planify-conteudos-textarea,
+.pl-hud-hub textarea.planify-conteudos-textarea {
+  display: block;
+  height: 10.5rem !important;
+  min-height: 10.5rem !important;
+  max-height: 10.5rem !important;
+  overflow-y: scroll !important;
+  overflow-x: hidden !important;
+  resize: none !important;
+  box-sizing: border-box;
+}
+
 .planify-smart-field {
   cursor: pointer;
 }

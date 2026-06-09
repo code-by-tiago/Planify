@@ -6,6 +6,10 @@ import {
   computePlanningQualityScore,
   getPlanningOutputIssues,
 } from "./planning-quality";
+import {
+  finalizeMatrixLessonAllocation,
+  parsePlanningCargaHoraria,
+} from "./planning-lesson-allocation";
 import { splitPlanningConteudos } from "./planning-validation";
 
 type UnknownRecord = Record<string, unknown>;
@@ -49,6 +53,8 @@ export type PlanningAiPayload = {
 export type PlanningMatrixItem = {
   conteudo: string;
   trimestre: number;
+  numeroAula: number;
+  periodos: number;
   aulaInicio: number;
   aulaFim: number;
   habilidades: PlanningSkill[];
@@ -188,37 +194,6 @@ REGRAS ESPECÍFICAS PARA LÍNGUA ESPANHOLA NO ENSINO MÉDIO:
 
 const splitConteudos = splitPlanningConteudos;
 
-
-function expandConteudosForAnnualStandard(conteudos: string[], tipo: "anual" | "trimestral"): string[] {
-  if (tipo === "trimestral") {
-    return conteudos;
-  }
-
-  const safeConteudos = conteudos.length > 0 ? conteudos : ["Conteúdo central"];
-  const expanded: string[] = [];
-  const focuses = [
-    "introdução, contextualização e diagnóstico",
-    "desenvolvimento, análise e aplicação orientada",
-    "aprofundamento, prática e sistematização",
-    "revisão, produção, avaliação e retomada",
-  ];
-
-  for (const conteudo of safeConteudos) {
-    expanded.push(conteudo);
-  }
-
-  let index = 0;
-
-  while (expanded.length < 12) {
-    const source = safeConteudos[index % safeConteudos.length];
-    const focus = focuses[expanded.length % focuses.length];
-
-    expanded.push(`${source} — ${focus}`);
-    index += 1;
-  }
-
-  return expanded.slice(0, Math.max(12, safeConteudos.length));
-}
 
 function parseNumber(value: unknown, fallback: number): number {
   const match = normalizeText(value).match(/\d+/);
@@ -384,34 +359,26 @@ function resolveMatrixSkills(
 function fallbackPlanning(payload: PlanningAiPayload, warning?: string): PlanningAiResult {
   const conteudos = splitConteudos(payload.conteudos);
   const tipo = getTipo(payload);
-  const safeConteudos = expandConteudosForAnnualStandard(
-    conteudos.length > 0 ? conteudos : ["Conteúdo central"],
-    tipo,
-  );
+  const safeConteudos = conteudos.length > 0 ? conteudos : ["Conteúdo central"];
   const trimestreSelecionado = getTrimestre(payload);
-  const carga = parseNumber(payload.cargaHoraria, safeConteudos.length * 10);
-  const aulasPorConteudo = 10;
   const chunkSize = Math.max(1, Math.ceil(safeConteudos.length / 3));
   const skills = Array.isArray(payload.habilidadesSelecionadas)
     ? payload.habilidadesSelecionadas.map(normalizeSkill)
     : [];
 
-  const matrix = safeConteudos.map((conteudo, index) => {
+  const draftMatrix = safeConteudos.map((conteudo, index) => {
     const trimestre =
       tipo === "trimestral"
         ? trimestreSelecionado
         : Math.min(3, Math.floor(index / chunkSize) + 1);
 
-    const indexDentroTrimestre =
-      tipo === "trimestral" ? index : index - (trimestre - 1) * chunkSize;
-    const aulaInicio = indexDentroTrimestre * aulasPorConteudo + 1;
-    const aulaFim = (indexDentroTrimestre + 1) * aulasPorConteudo;
-
     return {
       conteudo,
       trimestre,
-      aulaInicio,
-      aulaFim,
+      numeroAula: index + 1,
+      periodos: 0,
+      aulaInicio: 0,
+      aulaFim: 0,
       habilidades: skillsForContent(conteudo, skills, payload, index),
       objetivos:
         normalizeText(payload.objetivosGerais || payload.objetivos) ||
@@ -429,6 +396,8 @@ function fallbackPlanning(payload: PlanningAiPayload, warning?: string): Plannin
         "Registros no caderno, atividades concluídas, respostas orais e escritas, produções individuais ou coletivas e devolutivas do professor.",
     };
   });
+
+  const matrix = finalizeMatrixLessonAllocation(draftMatrix, payload);
 
   return {
     success: true,
@@ -484,27 +453,33 @@ function sanitizeAiResult(value: unknown, payload: PlanningAiPayload): PlanningA
     ? payload.habilidadesSelecionadas.map(normalizeSkill)
     : [];
 
-  const chunkSize = Math.max(1, Math.ceil(rawItems.length / 3));
-  const trimesterCounters = new Map<number, number>();
+  const inputConteudos = splitConteudos(payload.conteudos);
+  const chunkSize = Math.max(1, Math.ceil(Math.max(rawItems.length, inputConteudos.length) / 3));
 
   const items = rawItems.map((item, index) => {
     const itemRecord = (item || {}) as UnknownRecord;
     const conteudo = normalizeText(
-      itemRecord.conteudo || itemRecord.titulo || itemRecord.objetoConhecimento || `Conteúdo ${index + 1}`,
+      itemRecord.conteudo ||
+        itemRecord.titulo ||
+        itemRecord.objetoConhecimento ||
+        inputConteudos[index] ||
+        `Conteúdo ${index + 1}`,
     );
     const trimesterFromAi = Math.min(
       Math.max(parseNumber(itemRecord.trimestre, Math.floor(index / chunkSize) + 1), 1),
       3,
     );
     const trimestre = tipo === "trimestral" ? getTrimestre(payload) : trimesterFromAi;
-    const indexDentroTrimestre = trimesterCounters.get(trimestre) || 0;
-    trimesterCounters.set(trimestre, indexDentroTrimestre + 1);
+    const parsedPeriodos = parseNumber(itemRecord.periodos, 0);
+    const parsedNumeroAula = parseNumber(itemRecord.numeroAula, index + 1);
 
     return {
       conteudo,
       trimestre,
-      aulaInicio: indexDentroTrimestre * 10 + 1,
-      aulaFim: (indexDentroTrimestre + 1) * 10,
+      numeroAula: parsedNumeroAula,
+      periodos: parsedPeriodos,
+      aulaInicio: parseNumber(itemRecord.aulaInicio, 0),
+      aulaFim: parseNumber(itemRecord.aulaFim, 0),
       habilidades: resolveMatrixSkills(
         conteudo,
         itemRecord.habilidades,
@@ -530,6 +505,8 @@ function sanitizeAiResult(value: unknown, payload: PlanningAiPayload): PlanningA
     };
   });
 
+  const finalized = finalizeMatrixLessonAllocation(items, payload);
+
   return {
     success: true,
     usedAI: true,
@@ -543,7 +520,7 @@ function sanitizeAiResult(value: unknown, payload: PlanningAiPayload): PlanningA
       resumo:
         normalizeText(planejamento.resumo) ||
         "Planejamento estruturado pela IA a partir dos conteúdos e habilidades selecionadas.",
-      conteudos: items,
+      conteudos: finalized,
     },
   };
 }
@@ -600,15 +577,17 @@ Regras obrigatórias:
 3. Cada conteúdo deve ter no máximo 3 habilidades.
 4. Use código e descrição completa das habilidades.
 5. Não invente código BNCC se houver habilidade selecionada compatível.
-6. No planejamento anual, distribua os conteúdos entre 1º, 2º e 3º trimestre.
-7. No planejamento anual, gere no mínimo 12 linhas: 4 conteúdos/linhas para cada trimestre.
-8. Em cada trimestre, reinicie a numeração das aulas: 1 a 10, 11 a 20, 21 a 30, 31 a 40.
-9. Cada conteúdo deve ocupar 10 períodos.
-10. Gere objetivos/expectativas de aprendizagem, metodologia, recursos, avaliação e evidências.
-11. Preencha projetos interdisciplinares, temas integradores e instrumentos de avaliação de forma coerente quando estes campos existirem no DOCX.
-12. Não use texto genérico vazio nem repita a mesma metodologia em todas as linhas.
-13. Cada linha deve citar estratégias, recursos e avaliação coerentes com o conteúdo daquela linha.
-14. Objetivos devem ser mensuráveis e ligados ao componente curricular e à etapa informados.
+6. Gere exatamente uma linha por conteúdo informado pelo professor (na mesma ordem).
+7. numeroAula deve ser sequencial: 1 para o 1º conteúdo, 2 para o 2º, e assim por diante.
+8. periodos deve variar conforme a complexidade de cada conteúdo (conteúdos densos recebem mais períodos; revisões e introduções recebem menos).
+9. A soma de periodos de todas as linhas deve ser igual à carga horária informada (${parsePlanningCargaHoraria(payload.cargaHoraria, conteudos.length)} períodos).
+10. No planejamento anual, distribua os conteúdos entre 1º, 2º e 3º trimestre de forma equilibrada.
+11. aulaInicio e aulaFim representam a faixa cumulativa de períodos no ano (ou no trimestre, se trimestral).
+12. Gere objetivos/expectativas de aprendizagem, metodologia, recursos, avaliação e evidências.
+13. Preencha projetos interdisciplinares, temas integradores e instrumentos de avaliação de forma coerente quando estes campos existirem no DOCX.
+14. Não use texto genérico vazio nem repita a mesma metodologia em todas as linhas.
+15. Cada linha deve citar estratégias, recursos e avaliação coerentes com o conteúdo daquela linha.
+16. Objetivos devem ser mensuráveis e ligados ao componente curricular e à etapa informados.
 
 Formato:
 {
@@ -620,8 +599,10 @@ Formato:
       {
         "conteudo": "...",
         "trimestre": 1,
+        "numeroAula": 1,
+        "periodos": 5,
         "aulaInicio": 1,
-        "aulaFim": 10,
+        "aulaFim": 5,
         "habilidades": [
           { "codigo": "...", "descricao": "..." }
         ],

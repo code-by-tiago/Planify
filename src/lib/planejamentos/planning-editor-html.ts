@@ -2,6 +2,10 @@ import type {
   PlanningAiPayload,
   PlanningMatrixItem,
 } from "@/server/planejamentos/planning-ai-service";
+import {
+  formatMatrixAulaLabel,
+  formatMatrixPeriodosLabel,
+} from "@/server/planejamentos/planning-lesson-allocation";
 
 export type PlanningEditorHtmlContext = {
   escola?: string;
@@ -72,55 +76,6 @@ function editorUnitFor(form: PlanningEditorHtmlContext, item: PlanningMatrixItem
   return form.areaConhecimento || "Unidade temática";
 }
 
-function refineEditorContent(content: string, slot: number) {
-  const focuses = [
-    "introdução, contextualização e diagnóstico",
-    "desenvolvimento, análise e aplicação orientada",
-    "aprofundamento, prática e sistematização",
-    "revisão, produção, avaliação e retomada",
-  ];
-
-  const normalized = content
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/\p{Diacritic}/gu, "");
-
-  if (
-    normalized.includes("introducao") ||
-    normalized.includes("desenvolvimento") ||
-    normalized.includes("aprofundamento") ||
-    normalized.includes("revisao")
-  ) {
-    return content;
-  }
-
-  return `${content} — ${focuses[slot % focuses.length]}`;
-}
-
-function sequenceEditorAnnualRows(items: PlanningMatrixItem[], trimester: number, rowCount = 4) {
-  const safeItems = items.length > 0 ? items : [];
-  const rows: PlanningMatrixItem[] = [];
-
-  if (safeItems.length === 0) {
-    return rows;
-  }
-
-  for (let index = 0; index < rowCount; index += 1) {
-    const source = safeItems[index] || safeItems[index % safeItems.length];
-    const missing = !safeItems[index];
-
-    rows.push({
-      ...source,
-      trimestre: trimester,
-      conteudo: missing ? refineEditorContent(source.conteudo, index) : source.conteudo,
-      aulaInicio: index * 10 + 1,
-      aulaFim: (index + 1) * 10,
-    });
-  }
-
-  return rows;
-}
-
 function editorItemsByTrimester(planning: GeneratedPlanningHtml, trimester: number) {
   const explicit = planning.conteudos.filter((item) => Number(item.trimestre) === trimester);
 
@@ -183,19 +138,16 @@ export function buildPlanningEditorHtml(
 
   if (tipo.includes("tri")) {
     const trimester = Number(form.trimestre || 1);
-    const items = sequenceEditorAnnualRows(
-      planning.conteudos.filter((item) => Number(item.trimestre) === trimester).length
+    const items =
+      planning.conteudos.filter((item) => Number(item.trimestre) === trimester).length > 0
         ? planning.conteudos.filter((item) => Number(item.trimestre) === trimester)
-        : planning.conteudos,
-      trimester,
-      Math.max(1, planning.conteudos.length),
-    );
+        : planning.conteudos;
 
     const tables = items
       .map(
         (item) => `
           <table>
-            <tr><th colspan="2" class="trim-title">${trimester}º trimestre - Aula nº ${item.aulaInicio} a ${item.aulaFim}</th></tr>
+            <tr><th colspan="2" class="trim-title">${trimester}º trimestre — Aula ${escapeHtml(formatMatrixAulaLabel(item))} · ${escapeHtml(formatMatrixPeriodosLabel(item))}</th></tr>
             <tr><td><strong>Objetos de conhecimento</strong></td><td>${escapeHtml(item.conteudo)}</td></tr>
             <tr><td><strong>Habilidades BNCC</strong></td><td>${nl2br(item.habilidades.map(skillFullText).join("\n"))}</td></tr>
             <tr><td><strong>Objetivos / expectativas</strong></td><td>${escapeHtml(item.objetivos)}</td></tr>
@@ -219,7 +171,11 @@ export function buildPlanningEditorHtml(
 
   const trimesterBlocks = [1, 2, 3]
     .map((trimester) => {
-      const items = sequenceEditorAnnualRows(editorItemsByTrimester(planning, trimester), trimester, 4);
+      const items = editorItemsByTrimester(planning, trimester);
+
+      if (!items.length) {
+        return "";
+      }
 
       const rows = items
         .map(
@@ -229,8 +185,8 @@ export function buildPlanningEditorHtml(
               <td>${escapeHtml(item.conteudo)}</td>
               <td>${nl2br(item.habilidades.map(skillFullText).join("\n"))}</td>
               <td>${escapeHtml(item.objetivos)}</td>
-              <td>10 período(s)</td>
-              <td>${item.aulaInicio} a ${item.aulaFim}</td>
+              <td>${escapeHtml(formatMatrixPeriodosLabel(item))}</td>
+              <td>${escapeHtml(formatMatrixAulaLabel(item))}</td>
             </tr>
           `,
         )

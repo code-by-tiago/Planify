@@ -116,13 +116,14 @@ REGRAS OBRIGATÓRIAS:
 3. Cada conteúdo deve ter no máximo 3 habilidades.
 4. Use código e descrição completa das habilidades enviadas na solicitação dinâmica.
 5. Não invente código BNCC se houver habilidade selecionada compatível.
-6. No planejamento anual, distribua os conteúdos entre 1º, 2º e 3º trimestre.
-7. No planejamento anual, gere no mínimo 12 linhas: 4 conteúdos/linhas para cada trimestre.
-8. Em cada trimestre, reinicie a numeração das aulas: 1 a 10, 11 a 20, 21 a 30, 31 a 40.
-9. Cada conteúdo deve ocupar 10 períodos.
-10. Gere objetivos/expectativas de aprendizagem, metodologia, recursos, avaliação e evidências.
-11. Preencha projetos interdisciplinares, temas integradores e instrumentos de avaliação de forma coerente quando estes campos existirem no DOCX.
-12. Não use texto genérico vazio.
+6. Gere exatamente uma linha por conteúdo informado pelo professor.
+7. numeroAula sequencial: 1 para o 1º conteúdo, 2 para o 2º, e assim por diante.
+8. periodos variável por complexidade; a soma de periodos deve igualar a carga horária informada.
+9. No planejamento anual, distribua os conteúdos entre 1º, 2º e 3º trimestre.
+10. aulaInicio e aulaFim representam a faixa cumulativa de períodos.
+11. Gere objetivos/expectativas de aprendizagem, metodologia, recursos, avaliação e evidências.
+12. Preencha projetos interdisciplinares, temas integradores e instrumentos de avaliação de forma coerente quando estes campos existirem no DOCX.
+13. Não use texto genérico vazio.
 
 FORMATO JSON:
 {
@@ -134,8 +135,10 @@ FORMATO JSON:
       {
         "conteudo": "...",
         "trimestre": 1,
+        "numeroAula": 1,
+        "periodos": 5,
         "aulaInicio": 1,
-        "aulaFim": 10,
+        "aulaFim": 5,
         "habilidades": [
           { "codigo": "...", "descricao": "..." }
         ],

@@ -4,6 +4,10 @@ import {
 } from "@/lib/materiais/material-semantic-quality";
 import { computeQualityScore } from "@/lib/materiais/material-quality-score";
 import type { PlanningAiPayload, PlanningMatrixItem } from "./planning-ai-service";
+import {
+  matrixPeriodsTotal,
+  parsePlanningCargaHoraria,
+} from "./planning-lesson-allocation";
 import { splitPlanningConteudos } from "./planning-validation";
 
 function normalizeSearch(value: unknown): string {
@@ -57,20 +61,28 @@ export function getPlanningOutputIssues(
     return issues;
   }
 
-  const minRows =
-    tipo === "anual"
-      ? Math.min(12, Math.max(inputContents.length * 4, 3))
-      : Math.max(inputContents.length, 1);
+  const expectedRows = Math.max(inputContents.length, 1);
 
-  if (tipo === "anual" && items.length < minRows) {
+  if (items.length < expectedRows) {
     issues.push(
-      `Planejamento anual: esperado pelo menos ${minRows} linhas na matriz (recebido ${items.length}).`,
+      `Esperada uma linha por conteúdo informado (${expectedRows}); recebido ${items.length}.`,
     );
   }
 
-  if (tipo === "trimestral" && items.length < inputContents.length) {
+  const zeroPeriodRows = items.filter((item) => !item.periodos || item.periodos <= 0).length;
+  if (zeroPeriodRows > 0) {
+    issues.push(`${zeroPeriodRows} linha(s) sem períodos alocados.`);
+  }
+
+  const cargaEsperada = parsePlanningCargaHoraria(
+    payload.cargaHoraria,
+    Math.max(expectedRows, matrixPeriodsTotal(items) || expectedRows),
+  );
+  const cargaAlocada = matrixPeriodsTotal(items);
+
+  if (cargaAlocada > 0 && cargaAlocada !== cargaEsperada) {
     issues.push(
-      `Planejamento trimestral: inclua pelo menos uma linha por conteúdo informado (${inputContents.length}).`,
+      `A soma dos períodos (${cargaAlocada}) deve ser igual à carga horária informada (${cargaEsperada}).`,
     );
   }
 

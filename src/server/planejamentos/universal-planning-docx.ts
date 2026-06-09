@@ -1,6 +1,11 @@
 import { deflateRawSync, inflateRawSync } from "node:zlib";
 import type { PlanningMatrixItem, PlanningSkill } from "./planning-ai-service";
 import type { OfficialPlanningPayload } from "./official-planning-docx";
+import {
+  finalizeMatrixLessonAllocation,
+  formatMatrixAulaLabel,
+  formatMatrixPeriodosLabel,
+} from "./planning-lesson-allocation";
 
 type Primitive = string | number | boolean | null | undefined;
 type UnknownRecord = Record<string, unknown>;
@@ -311,18 +316,20 @@ function getMatrix(payload: OfficialPlanningPayload): PlanningMatrixItem[] {
   const matrix = payload.matrizPlanejamento?.conteudos;
 
   if (Array.isArray(matrix) && matrix.length > 0) {
-    return matrix;
+    return finalizeMatrixLessonAllocation(matrix, payload);
   }
 
   const contents = splitContents(payload.conteudos).length
     ? splitContents(payload.conteudos)
     : splitContents(payload.conteudo);
 
-  return (contents.length ? contents : ["Conteúdo central"]).map((conteudo, index) => ({
+  const base = (contents.length ? contents : ["Conteúdo central"]).map((conteudo, index) => ({
     conteudo,
     trimestre: getTrimestre(payload),
+    numeroAula: index + 1,
+    periodos: 0,
     aulaInicio: index + 1,
-    aulaFim: index + 2,
+    aulaFim: index + 1,
     habilidades: [],
     objetivos: getString(payload, ["objetivosGerais", "objetivos"], ""),
     metodologia: "",
@@ -330,6 +337,8 @@ function getMatrix(payload: OfficialPlanningPayload): PlanningMatrixItem[] {
     avaliacao: "",
     evidencias: "",
   }));
+
+  return finalizeMatrixLessonAllocation(base, payload);
 }
 
 function codesWithShortDescriptions(skills: PlanningSkill[]): string {
@@ -726,8 +735,16 @@ function labelValueForMatrixCell(label: string, item: PlanningMatrixItem, payloa
     return `${item.evidencias}\n${item.avaliacao}`.trim();
   }
 
-  if (normalized.includes("aula") || normalized.includes("carga") || normalized.includes("periodo")) {
-    return `Aulas ${item.aulaInicio} a ${item.aulaFim}`;
+  if (normalized.includes("aula") && (normalized.includes("trimestre") || normalized.includes("carga"))) {
+    return `Aula ${formatMatrixAulaLabel(item)} · ${formatMatrixPeriodosLabel(item)}`;
+  }
+
+  if (normalized.includes("aula")) {
+    return formatMatrixAulaLabel(item);
+  }
+
+  if (normalized.includes("carga") || normalized.includes("periodo")) {
+    return formatMatrixPeriodosLabel(item);
   }
 
   return null;
@@ -796,9 +813,9 @@ function valuesForPlanningRow(
       case "objetivos":
         return item.objetivos;
       case "carga":
-        return getString(payload, ["cargaHoraria"], "");
+        return formatMatrixPeriodosLabel(item);
       case "aula":
-        return `${item.aulaInicio} a ${item.aulaFim}`;
+        return formatMatrixAulaLabel(item);
       case "metodologia":
         return item.metodologia;
       case "recursos":
@@ -918,6 +935,30 @@ function fillLabelTables(documentXml: string, payload: OfficialPlanningPayload):
   };
 }
 
+function expandTableDataRows(
+  table: TableInfo,
+  header: RowInfo,
+  dataRows: RowInfo[],
+  itemCount: number,
+): { tableXml: string; rows: RowInfo[]; dataRows: RowInfo[] } {
+  if (!dataRows.length || itemCount <= dataRows.length) {
+    return { tableXml: table.xml, rows: table.rows, dataRows };
+  }
+
+  const lastDataRow = dataRows[dataRows.length - 1];
+  const extraCount = itemCount - dataRows.length;
+  const clonesXml = Array.from({ length: extraCount }, () => lastDataRow.xml).join("");
+  const relativeEnd = lastDataRow.end - table.start;
+  const tableXml = table.xml.slice(0, relativeEnd) + clonesXml + table.xml.slice(relativeEnd);
+  const rows = parseRows(tableXml, table.start);
+
+  return {
+    tableXml,
+    rows,
+    dataRows: rows.filter((row) => row.start > header.start && row.cells.length >= 3),
+  };
+}
+
 function fillPlanningTables(documentXml: string, payload: OfficialPlanningPayload): {
   xml: string;
   count: number;
@@ -984,8 +1025,13 @@ function fillPlanningTables(documentXml: string, payload: OfficialPlanningPayloa
       );
     }
 
-    const dataRows = table.rows.filter((row) => row.start > header.start && row.cells.length >= 3);
-    const rowReplacements = table.rows.map((row) => {
+    const initialDataRows = table.rows.filter(
+      (row) => row.start > header.start && row.cells.length >= 3,
+    );
+    const expanded = expandTableDataRows(table, header, initialDataRows, items.length);
+    const dataRows = expanded.dataRows;
+
+    const rowReplacements = expanded.rows.map((row) => {
       const dataIndex = dataRows.findIndex((dataRow) => dataRow.start === row.start);
 
       if (dataIndex >= 0 && items[dataIndex]) {
@@ -1000,8 +1046,8 @@ function fillPlanningTables(documentXml: string, payload: OfficialPlanningPayloa
     });
 
     return replaceInXml(
-      table.xml,
-      table.rows.map((row) => ({
+      expanded.tableXml,
+      expanded.rows.map((row) => ({
         start: row.start - table.start,
         end: row.end - table.start,
         xml: row.xml,

@@ -2,6 +2,11 @@ import fs from "node:fs";
 import path from "node:path";
 import { deflateRawSync, inflateRawSync } from "node:zlib";
 import type { PlanningAiResult, PlanningMatrixItem, PlanningSkill } from "./planning-ai-service";
+import {
+  finalizeMatrixLessonAllocation,
+  formatMatrixAulaLabel,
+  formatMatrixPeriodosLabel,
+} from "./planning-lesson-allocation";
 
 type Primitive = string | number | boolean | null | undefined;
 type UnknownRecord = Record<string, unknown>;
@@ -502,21 +507,18 @@ function fallbackMatrix(payload: OfficialPlanningPayload): PlanningMatrixItem[] 
     : splitContents(payload.conteudo);
 
   const safeContents = contents.length ? contents : ["Conteúdo central"];
-  const carga = parseNumber(payload.cargaHoraria, safeContents.length * 10);
-  const aulasPorConteudo = Math.max(1, Math.ceil(carga / safeContents.length));
   const trimestre = getTrimestre(payload);
 
-  return safeContents.map((conteudo, index) => ({
+  const base = safeContents.map((conteudo, index) => ({
     conteudo,
     trimestre:
       getTipo(payload) === "trimestral"
         ? trimestre
         : Math.min(3, Math.floor((index / safeContents.length) * 3) + 1),
-    aulaInicio: index * aulasPorConteudo + 1,
-    aulaFim: Math.max(
-      index * aulasPorConteudo + 1,
-      Math.min(carga, (index + 1) * aulasPorConteudo),
-    ),
+    numeroAula: index + 1,
+    periodos: 0,
+    aulaInicio: index + 1,
+    aulaFim: index + 1,
     habilidades: [],
     objetivos: `Desenvolver aprendizagens relacionadas a ${conteudo}.`,
     metodologia: `Aula dialogada, problematização, prática orientada, registro e socialização das aprendizagens sobre ${conteudo}.`,
@@ -524,45 +526,23 @@ function fallbackMatrix(payload: OfficialPlanningPayload): PlanningMatrixItem[] 
     avaliacao: `Avaliação contínua por participação, registros e evidências de aprendizagem sobre ${conteudo}.`,
     evidencias: "Registros, atividades concluídas, respostas orais e escritas e devolutivas do professor.",
   }));
+
+  return finalizeMatrixLessonAllocation(base, payload);
 }
 
 function getMatrix(payload: OfficialPlanningPayload): PlanningMatrixItem[] {
   const matrix = payload.matrizPlanejamento?.conteudos;
 
   if (Array.isArray(matrix) && matrix.length > 0) {
-    return matrix;
+    return finalizeMatrixLessonAllocation(matrix, payload);
   }
 
   return fallbackMatrix(payload);
 }
 
-function normalizeAulaSequence(items: PlanningMatrixItem[], payload: OfficialPlanningPayload): PlanningMatrixItem[] {
-  const carga = parseNumber(payload.cargaHoraria, items.length * 10);
-  const aulasPorConteudo = Math.max(1, Math.ceil(carga / Math.max(1, items.length)));
-
-  return items.map((item, index) => ({
-    ...item,
-    aulaInicio: index * aulasPorConteudo + 1,
-    aulaFim: Math.max(index * aulasPorConteudo + 1, Math.min(carga, (index + 1) * aulasPorConteudo)),
-  }));
-}
-
-function sequenceItemsTenByTenInsideTrimester(
-  items: PlanningMatrixItem[],
-  trimestre: number,
-): PlanningMatrixItem[] {
-  return items.map((item, index) => ({
-    ...item,
-    trimestre,
-    aulaInicio: index * 10 + 1,
-    aulaFim: (index + 1) * 10,
-  }));
-}
-
 function annualItemsForTrimester(
   matrix: PlanningMatrixItem[],
   trimestre: number,
-  payload: OfficialPlanningPayload,
 ): PlanningMatrixItem[] {
   const explicitTrimesters = new Set(
     matrix
@@ -574,186 +554,38 @@ function annualItemsForTrimester(
     const explicit = matrix.filter((item) => Number(item.trimestre) === trimestre);
 
     if (explicit.length > 0) {
-      return sequenceItemsTenByTenInsideTrimester(explicit, trimestre);
+      return explicit;
     }
   }
 
   const chunkSize = Math.max(1, Math.ceil(matrix.length / 3));
   const start = (trimestre - 1) * chunkSize;
-  const chunk = matrix.slice(start, start + chunkSize);
 
-  return sequenceItemsTenByTenInsideTrimester(chunk, trimestre);
+  return matrix.slice(start, start + chunkSize);
 }
 
-
-function refineContentForAnnualSlot(content: string, slot: number): string {
-  const base = normalizeText(content) || "Conteúdo do período";
-  const normalized = normalizeSearch(base);
-
-  if (
-    normalized.includes("introducao") ||
-    normalized.includes("desenvolvimento") ||
-    normalized.includes("aprofundamento") ||
-    normalized.includes("sistematizacao") ||
-    normalized.includes("revisao")
-  ) {
-    return base;
+function expandTableDataRows(
+  table: TableInfo,
+  header: RowInfo,
+  dataRows: RowInfo[],
+  itemCount: number,
+): { tableXml: string; rows: RowInfo[]; dataRows: RowInfo[] } {
+  if (!dataRows.length || itemCount <= dataRows.length) {
+    return { tableXml: table.xml, rows: table.rows, dataRows };
   }
 
-  const focuses = [
-    "introdução, contextualização e diagnóstico",
-    "desenvolvimento, análise e aplicação orientada",
-    "aprofundamento, prática e sistematização",
-    "revisão, produção, avaliação e retomada",
-  ];
-
-  return `${base} — ${focuses[slot % focuses.length]}`;
-}
-
-function skillKey(skill: PlanningSkill): string {
-  return normalizeSearch(skill.codigo || skill.descricao || "");
-}
-
-function uniqueSkillsFromItems(items: PlanningMatrixItem[]): PlanningSkill[] {
-  const seen = new Set<string>();
-  const result: PlanningSkill[] = [];
-
-  for (const item of items) {
-    for (const skill of item.habilidades || []) {
-      const key = skillKey(skill);
-
-      if (!key || seen.has(key)) {
-        continue;
-      }
-
-      seen.add(key);
-      result.push(skill);
-
-      if (result.length >= 3) {
-        return result;
-      }
-    }
-  }
-
-  return result;
-}
-
-function mergeAnnualBucket(
-  bucket: PlanningMatrixItem[],
-  bucketIndex: number,
-  trimestre: number,
-): PlanningMatrixItem {
-  const first = bucket[0];
-
-  if (!first) {
-    throw new Error("Não foi possível montar linha anual: bucket vazio.");
-  }
-
-  const contents = bucket
-    .map((item) => normalizeText(item.conteudo))
-    .filter(Boolean);
-
-  const uniqueContents = Array.from(new Set(contents));
-  const contentText =
-    uniqueContents.length > 1
-      ? uniqueContents.join("; ")
-      : refineContentForAnnualSlot(uniqueContents[0] || first.conteudo, bucketIndex);
-
-  const objetivos = Array.from(
-    new Set(bucket.map((item) => normalizeText(item.objetivos)).filter(Boolean)),
-  )
-    .slice(0, 2)
-    .join(" ");
-
-  const metodologias = Array.from(
-    new Set(bucket.map((item) => normalizeText(item.metodologia)).filter(Boolean)),
-  )
-    .slice(0, 2)
-    .join(" ");
-
-  const recursos = Array.from(
-    new Set(bucket.map((item) => normalizeText(item.recursos)).filter(Boolean)),
-  )
-    .slice(0, 2)
-    .join("; ");
-
-  const avaliacoes = Array.from(
-    new Set(bucket.map((item) => normalizeText(item.avaliacao)).filter(Boolean)),
-  )
-    .slice(0, 2)
-    .join(" ");
-
-  const evidencias = Array.from(
-    new Set(bucket.map((item) => normalizeText(item.evidencias)).filter(Boolean)),
-  )
-    .slice(0, 2)
-    .join(" ");
+  const lastDataRow = dataRows[dataRows.length - 1];
+  const extraCount = itemCount - dataRows.length;
+  const clonesXml = Array.from({ length: extraCount }, () => lastDataRow.xml).join("");
+  const relativeEnd = lastDataRow.end - table.start;
+  const tableXml = table.xml.slice(0, relativeEnd) + clonesXml + table.xml.slice(relativeEnd);
+  const rows = parseRows(tableXml, table.start);
 
   return {
-    ...first,
-    trimestre,
-    conteudo: contentText,
-    aulaInicio: bucketIndex * 10 + 1,
-    aulaFim: (bucketIndex + 1) * 10,
-    habilidades: uniqueSkillsFromItems(bucket),
-    objetivos: objetivos || first.objetivos,
-    metodologia: metodologias || first.metodologia,
-    recursos: recursos || first.recursos,
-    avaliacao: avaliacoes || first.avaliacao,
-    evidencias: evidencias || first.evidencias,
+    tableXml,
+    rows,
+    dataRows: rows.filter((row) => isDataRowAfterHeader(row, header)),
   };
-}
-
-function expandAnnualItemsToTemplateRows(
-  items: PlanningMatrixItem[],
-  rowCount: number,
-  trimestre: number,
-): PlanningMatrixItem[] {
-  const safeRowCount = Math.max(1, Math.min(4, rowCount || 4));
-
-  if (items.length === 0) {
-    return [];
-  }
-
-  if (items.length <= safeRowCount) {
-    const expanded: PlanningMatrixItem[] = [];
-
-    for (let index = 0; index < safeRowCount; index += 1) {
-      const source = items[index] || items[index % items.length];
-      const shouldRefine = !items[index];
-      const refinedContent = shouldRefine
-        ? refineContentForAnnualSlot(source.conteudo, index)
-        : source.conteudo;
-
-      expanded.push({
-        ...source,
-        trimestre,
-        conteudo: refinedContent,
-        aulaInicio: index * 10 + 1,
-        aulaFim: (index + 1) * 10,
-        objetivos: shouldRefine
-          ? `${source.objetivos} Foco específico: ${refinedContent.toLowerCase()}.`
-          : source.objetivos,
-      });
-    }
-
-    return expanded;
-  }
-
-  const buckets = Array.from({ length: safeRowCount }, () => [] as PlanningMatrixItem[]);
-
-  items.forEach((item, index) => {
-    const bucketIndex = Math.min(
-      safeRowCount - 1,
-      Math.floor((index * safeRowCount) / items.length),
-    );
-
-    buckets[bucketIndex].push(item);
-  });
-
-  return buckets.map((bucket, index) =>
-    mergeAnnualBucket(bucket.length ? bucket : [items[index % items.length]], index, trimestre),
-  );
 }
 
 function unitFor(payload: OfficialPlanningPayload, item: PlanningMatrixItem): string {
@@ -999,9 +831,9 @@ function valuesForPlanningRow(
       case "expectativas":
         return shortText(item.objetivos, 320);
       case "carga":
-        return "10 período(s)";
+        return formatMatrixPeriodosLabel(item);
       case "aula":
-        return `${item.aulaInicio} a ${item.aulaFim}`;
+        return formatMatrixAulaLabel(item);
       case "metodologia":
         return shortText(item.metodologia, 360);
       case "recursos":
@@ -1061,20 +893,18 @@ function fillAnnualPlanningTables(documentXml: string, payload: OfficialPlanning
   const replacements = annualTables.map((table, tableIndex) => {
     const trimester = trimesterFromTableText(table.text, tableIndex + 1);
     const header = findHeaderRow(table);
-    const dataRows = table.rows.filter((row) => isDataRowAfterHeader(row, header));
-    const items = expandAnnualItemsToTemplateRows(
-      annualItemsForTrimester(matrix, trimester, payload),
-      Math.min(dataRows.length || 4, 4),
-      trimester,
-    );
+    const initialDataRows = table.rows.filter((row) => isDataRowAfterHeader(row, header));
+    const items = annualItemsForTrimester(matrix, trimester);
+    const expanded = expandTableDataRows(table, header, initialDataRows, items.length);
+    const dataRows = expanded.dataRows;
 
-    const rowReplacements = table.rows.map((row) => {
+    const rowReplacements = expanded.rows.map((row) => {
       const dataIndex = dataRows.findIndex((dataRow) => dataRow.start === row.start);
 
       if (dataIndex >= 0) {
         const item = items[dataIndex];
 
-        if (!item || dataIndex >= 4) {
+        if (!item) {
           return clearCellsInRow(row.xml);
         }
 
@@ -1089,8 +919,8 @@ function fillAnnualPlanningTables(documentXml: string, payload: OfficialPlanning
     });
 
     return replaceInXml(
-      table.xml,
-      table.rows.map((row) => ({
+      expanded.tableXml,
+      expanded.rows.map((row) => ({
         start: row.start - table.start,
         end: row.end - table.start,
         xml: row.xml,
@@ -1138,8 +968,16 @@ function chooseTrimestralPlanningTable(tables: TableInfo[]): TableInfo | null {
 function labelValue(label: string, item: PlanningMatrixItem, payload: OfficialPlanningPayload): string | null {
   const text = normalizeSearch(label);
 
-  if (text.includes("trimestre") || text.includes("aula")) {
-    return `${getTrimestre(payload)}º trimestre - Aula nº ${item.aulaInicio} a ${item.aulaFim}`;
+  if (text.includes("trimestre") && text.includes("aula")) {
+    return `${getTrimestre(payload)}º trimestre — Aula ${formatMatrixAulaLabel(item)} · ${formatMatrixPeriodosLabel(item)}`;
+  }
+
+  if (text.includes("aula")) {
+    return formatMatrixAulaLabel(item);
+  }
+
+  if (text.includes("carga") || text.includes("periodo")) {
+    return formatMatrixPeriodosLabel(item);
   }
 
   if (text.includes("unidade")) {
@@ -1249,8 +1087,6 @@ function fillTrimestralPlanningTable(documentXml: string, payload: OfficialPlann
     ? matrix.filter((item) => Number(item.trimestre) === trimester)
     : matrix;
 
-  const normalized = sequenceItemsTenByTenInsideTrimester(baseItems, trimester);
-
   const tables = parseTables(documentXml);
   const table = chooseTrimestralPlanningTable(tables);
 
@@ -1260,7 +1096,7 @@ function fillTrimestralPlanningTable(documentXml: string, payload: OfficialPlann
     );
   }
 
-  const filledTables = normalized
+  const filledTables = baseItems
     .map((item) => fillOneTrimestralTable(table, item, payload))
     .join("<w:p><w:r><w:t xml:space=\"preserve\"> </w:t></w:r></w:p>");
 

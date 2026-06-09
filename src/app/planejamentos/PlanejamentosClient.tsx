@@ -24,7 +24,10 @@ import {
   requestPlanningGeneration,
 } from "@/lib/planejamentos/elevate-planning-client";
 import { buildPlanningEditorHtml } from "@/lib/planejamentos/planning-editor-html";
-import type { PlanningAiPayload } from "@/server/planejamentos/planning-ai-service";
+import type {
+  PlanningAiPayload,
+  PlanningMatrixItem,
+} from "@/server/planejamentos/planning-ai-service";
 import { readPlanejamentoPrefill } from "@/lib/planejamentos/planejamento-prefill";
 import { downloadPlanejamentoOficialDocx } from "@/lib/planejamentos/download-planejamento-oficial";
 import { planifyAuthenticatedFetch } from "@/lib/auth/authenticated-fetch";
@@ -60,19 +63,6 @@ type BnccSkill = {
 type BnccGroup = {
   conteudo: string;
   habilidades: BnccSkill[];
-};
-
-type PlanningMatrixItem = {
-  conteudo: string;
-  trimestre: number;
-  aulaInicio: number;
-  aulaFim: number;
-  habilidades: Array<{ codigo: string; descricao: string; conteudo?: string }>;
-  objetivos: string;
-  metodologia: string;
-  recursos: string;
-  avaliacao: string;
-  evidencias: string;
 };
 
 type GeneratedPlanning = {
@@ -1627,12 +1617,30 @@ export function PlanejamentosClient() {
                 <h3 className="mt-3 text-2xl font-black text-slate-950">{generatedPlanning.titulo}</h3>
                 <p className="mt-3 text-sm leading-7 text-emerald-700/90">{generatedPlanning.resumo}</p>
                 <div className="mt-4 grid gap-2">
-                  {generatedPlanning.conteudos.map((item) => (
-                    <div key={`${item.conteudo}-${item.aulaInicio}`} className="rounded-2xl border border-slate-200/80 bg-white/80 p-4">
-                      <p className="font-black text-slate-950">{item.conteudo}</p>
-                      <p className="mt-1 text-sm text-slate-400">Aulas {item.aulaInicio} a {item.aulaFim} · {item.habilidades.length} habilidade(s)</p>
-                    </div>
-                  ))}
+                  {generatedPlanning.conteudos.map((item) => {
+                    const numeroAula =
+                      Number.isFinite(Number(item.numeroAula)) && Number(item.numeroAula) > 0
+                        ? Number(item.numeroAula)
+                        : item.aulaInicio;
+                    const periodos =
+                      Number.isFinite(Number(item.periodos)) && Number(item.periodos) > 0
+                        ? Number(item.periodos)
+                        : Math.max(1, item.aulaFim - item.aulaInicio + 1);
+                    const periodosLabel =
+                      periodos === 1 ? "1 período" : `${periodos} período(s)`;
+
+                    return (
+                      <div
+                        key={`${item.conteudo}-${numeroAula}`}
+                        className="rounded-2xl border border-slate-200/80 bg-white/80 p-4"
+                      >
+                        <p className="font-black text-slate-950">{item.conteudo}</p>
+                        <p className="mt-1 text-sm text-slate-400">
+                          Aula {numeroAula} · {periodosLabel} · {item.habilidades.length} habilidade(s)
+                        </p>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             ) : null}

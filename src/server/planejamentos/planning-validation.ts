@@ -6,8 +6,8 @@ import type { PlanningAiPayload } from "./planning-ai-service";
 
 const MAX_FIELD_LENGTH = 240;
 const MAX_TEXT_BLOCK_LENGTH = 4000;
-const MAX_CONTENT_LINES = 24;
-const MAX_SELECTED_SKILLS = 48;
+const MAX_CONTENT_LINES = 40;
+const MAX_SELECTED_SKILLS = 120;
 
 function normalizeText(value: unknown): string {
   return String(value ?? "")

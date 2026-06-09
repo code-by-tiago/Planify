@@ -32,7 +32,12 @@ export type BnccSelectedSkillPayload = {
   conteudo?: string;
 };
 
-export { splitTopicLines } from "./split-topic-lines";
+export {
+  conteudosFieldNeedsNormalization,
+  conteudosTopicsWouldChange,
+  normalizeConteudosFieldText,
+  splitTopicLines,
+} from "./split-topic-lines";
 
 export function normalizeBnccSkillOption(
   skill: Record<string, unknown> | null | undefined,

@@ -10,7 +10,11 @@ import { useSchoolClasses } from "@/hooks/useSchoolClasses";
 import { TurmaCombobox } from "@/components/school/TurmaCombobox";
 import { PlanifyPageHero } from "@/components/pro/PlanifyPageHero";
 import { usePlanifyWorkspace } from "@/components/pro/planify-workspace-context";
-import { HUD_FIELD_CLASS, HUD_TEXTAREA_CLASS } from "@/lib/pro/hud-form-styles";
+import {
+  HUD_FIELD_CLASS,
+  HUD_SCROLLABLE_TEXTAREA_CLASS,
+  HUD_TEXTAREA_CLASS,
+} from "@/lib/pro/hud-form-styles";
 import type { LumiCoachContext } from "@/lib/pro/lumiMotivationalMessages";
 import {
   openPlanningInEditor,
@@ -42,8 +46,21 @@ import {
 } from "@/lib/downloads/trigger-browser-download";
 import { useBnccEducationOptions } from "@/hooks/useBnccEducationOptions";
 import type { MaterialEducationFields } from "@/lib/educacao/education-options";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { splitTopicLines } from "@/lib/bncc/split-topic-lines";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ClipboardEvent,
+  type FocusEvent,
+} from "react";
+import {
+  conteudosFieldNeedsNormalization,
+  conteudosTopicsWouldChange,
+  normalizeConteudosFieldText,
+  splitTopicLines,
+} from "@/lib/bncc/split-topic-lines";
 
 type TipoPlanejamento = "anual" | "trimestral";
 type DocxDownloadMode = "anual" | "trimestral";
@@ -279,6 +296,20 @@ function safeFilename(value: string) {
   );
 }
 
+const TRIMESTRES_DISPONIVEIS = [1, 2, 3] as const;
+
+function sanitizeTrimestresJunto(values: unknown): number[] {
+  if (!Array.isArray(values)) {
+    return [...TRIMESTRES_DISPONIVEIS];
+  }
+
+  const normalized = values
+    .map((value) => Number(value))
+    .filter((value) => Number.isFinite(value) && value >= 1 && value <= 3);
+
+  return Array.from(new Set(normalized)).sort((a, b) => a - b);
+}
+
 function normalizeSkill(skill: any, fallbackConteudo = ""): BnccSkill {
   const codigo = String(skill?.codigo || skill?.code || "BNCC").trim();
   const descricao = String(
@@ -489,9 +520,7 @@ export function PlanejamentosClient() {
         return;
       }
 
-      const trimestres = nextForm.trimestresJunto.filter(
-        (value) => value >= 1 && value <= 3,
-      );
+      const trimestres = sanitizeTrimestresJunto(nextForm.trimestresJunto);
 
       if (!trimestres.length) {
         setGeneratedTrimestralPlans(null);
@@ -532,16 +561,19 @@ export function PlanejamentosClient() {
   }, [generatedPlanning, generatedTrimestralPlans, previewMatrizKey]);
 
   const trimestresDisponiveisDownload = useMemo(() => {
-    if (form.gerarTrimestraisJunto && form.trimestresJunto.length > 0) {
-      return [...form.trimestresJunto].sort((a, b) => a - b);
+    if (form.gerarTrimestraisJunto) {
+      const selected = sanitizeTrimestresJunto(form.trimestresJunto);
+      if (selected.length > 0) {
+        return selected;
+      }
     }
 
-    return [1, 2, 3];
+    return [...TRIMESTRES_DISPONIVEIS];
   }, [form.gerarTrimestraisJunto, form.trimestresJunto]);
 
   function toggleTrimestreJunto(trimestre: number) {
     setForm((current) => {
-      const selected = new Set(current.trimestresJunto);
+      const selected = new Set(sanitizeTrimestresJunto(current.trimestresJunto));
       if (selected.has(trimestre)) {
         if (selected.size <= 1) {
           return current;
@@ -556,6 +588,13 @@ export function PlanejamentosClient() {
         trimestresJunto: Array.from(selected).sort((a, b) => a - b),
       };
     });
+  }
+
+  function selectAllTrimestresJunto() {
+    setForm((current) => ({
+      ...current,
+      trimestresJunto: [...TRIMESTRES_DISPONIVEIS],
+    }));
   }
 
   function resolveMatrizForDownload(mode: DocxDownloadMode, trimester?: number) {
@@ -574,6 +613,49 @@ export function PlanejamentosClient() {
     return form.cargaHoraria;
   }
 
+  function invalidateConteudosDependents() {
+    setGroups([]);
+    setSelectedSkills([]);
+    invalidateGenerated();
+    setStatus("Aguardando nova sugestão");
+    setError("");
+  }
+
+  function applyConteudosValue(
+    raw: string,
+    options?: { invalidate?: boolean },
+  ): string {
+    const normalized = normalizeConteudosFieldText(raw);
+    const changed = normalized !== form.conteudos;
+
+    if (changed) {
+      setForm((current) =>
+        normalizeEducationalFields(current, { conteudos: normalized }),
+      );
+
+      if (options?.invalidate && conteudosTopicsWouldChange(form.conteudos)) {
+        invalidateConteudosDependents();
+      }
+    }
+
+    return normalized;
+  }
+
+  function handleConteudosPaste(event: ClipboardEvent<HTMLTextAreaElement>) {
+    event.preventDefault();
+    const pasted = event.clipboardData.getData("text");
+    const field = event.currentTarget;
+    const before = field.value.slice(0, field.selectionStart);
+    const after = field.value.slice(field.selectionEnd);
+    applyConteudosValue(`${before}${pasted}${after}`, { invalidate: true });
+  }
+
+  function handleConteudosBlur(event: FocusEvent<HTMLTextAreaElement>) {
+    if (conteudosFieldNeedsNormalization(event.target.value)) {
+      applyConteudosValue(event.target.value, { invalidate: true });
+    }
+  }
+
   function updateField<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((current) => normalizeEducationalFields(current, { [key]: value }));
 
@@ -586,11 +668,7 @@ export function PlanejamentosClient() {
       key === "tipoPlanejamento" ||
       key === "trimestre"
     ) {
-      setGroups([]);
-      setSelectedSkills([]);
-      invalidateGenerated();
-      setStatus("Aguardando nova sugestão");
-      setError("");
+      invalidateConteudosDependents();
     }
   }
 
@@ -724,7 +802,10 @@ export function PlanejamentosClient() {
   async function suggestBncc() {
     setError("");
 
-    if (conteudos.length === 0) {
+    const normalizedConteudos = applyConteudosValue(form.conteudos, { invalidate: true });
+    const topicLines = splitTopicLines(normalizedConteudos);
+
+    if (topicLines.length === 0) {
       setError("Informe pelo menos um conteúdo. A sugestão BNCC usa a caixa Conteúdos como base principal.");
       return;
     }
@@ -737,7 +818,10 @@ export function PlanejamentosClient() {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(buildBasePayload()),
+        body: JSON.stringify({
+          ...buildBasePayload(),
+          conteudos: normalizedConteudos,
+        }),
       });
 
       const data = await response.json().catch(() => null);
@@ -746,7 +830,7 @@ export function PlanejamentosClient() {
         throw new Error(data?.error?.message || "Não foi possível sugerir habilidades BNCC.");
       }
 
-      const nextGroups = groupSkillsFromResponse(data, conteudos);
+      const nextGroups = groupSkillsFromResponse(data, topicLines);
 
       setGroups(nextGroups);
       setSelectedSkills([]);
@@ -827,7 +911,10 @@ export function PlanejamentosClient() {
   async function generatePlanning() {
     setError("");
 
-    if (conteudos.length === 0) {
+    const normalizedConteudos = applyConteudosValue(form.conteudos);
+    const topicLines = splitTopicLines(normalizedConteudos);
+
+    if (topicLines.length === 0) {
       setError("Informe os conteúdos antes de gerar o planejamento.");
       return;
     }
@@ -848,6 +935,7 @@ export function PlanejamentosClient() {
 
       const payload = {
         ...buildBasePayload(),
+        conteudos: normalizedConteudos,
         idempotencyKey: crypto.randomUUID(),
       };
       const data = await requestPlanningGeneration(payload);
@@ -892,9 +980,7 @@ export function PlanejamentosClient() {
 
       const trimestresExtraidos =
         form.tipoPlanejamento === "anual" && form.gerarTrimestraisJunto
-          ? form.trimestresJunto
-              .filter((value) => value >= 1 && value <= 3)
-              .sort((a, b) => a - b)
+          ? sanitizeTrimestresJunto(form.trimestresJunto)
               .map((value) => `${value}º`)
               .join(", ")
           : "";
@@ -1431,7 +1517,7 @@ export function PlanejamentosClient() {
             </div>
 
             {form.tipoPlanejamento === "anual" ? (
-              <div className="mt-6 rounded-2xl border border-cyan-400/20 bg-cyan-50/40 p-5">
+              <fieldset className="relative z-10 mt-6 rounded-2xl border border-cyan-400/20 bg-cyan-50/40 p-5">
                 <label className="flex cursor-pointer items-start gap-3">
                   <input
                     type="checkbox"
@@ -1440,10 +1526,9 @@ export function PlanejamentosClient() {
                       setForm((current) => ({
                         ...current,
                         gerarTrimestraisJunto: event.target.checked,
-                        trimestresJunto:
-                          current.trimestresJunto.length > 0
-                            ? current.trimestresJunto
-                            : [1, 2, 3],
+                        trimestresJunto: event.target.checked
+                          ? [...TRIMESTRES_DISPONIVEIS]
+                          : sanitizeTrimestresJunto(current.trimestresJunto),
                       }))
                     }
                     className="mt-1 h-4 w-4 rounded border-cyan-400 text-cyan-600 focus:ring-cyan-200"
@@ -1460,28 +1545,51 @@ export function PlanejamentosClient() {
                 </label>
 
                 {form.gerarTrimestraisJunto ? (
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    {[1, 2, 3].map((trimestre) => {
-                      const selected = form.trimestresJunto.includes(trimestre);
+                  <div
+                    role="group"
+                    aria-label="Trimestres a extrair do anual"
+                    className="mt-4 space-y-3"
+                    onClick={(event) => event.stopPropagation()}
+                  >
+                    <div className="flex flex-wrap items-center gap-2">
+                      {TRIMESTRES_DISPONIVEIS.map((trimestre) => {
+                        const trimestresSelecionados = sanitizeTrimestresJunto(
+                          form.trimestresJunto,
+                        );
+                        const selected = trimestresSelecionados.includes(trimestre);
 
-                      return (
-                        <button
-                          key={trimestre}
-                          type="button"
-                          onClick={() => toggleTrimestreJunto(trimestre)}
-                          className={`rounded-xl border px-4 py-2 text-sm font-bold transition ${
-                            selected
-                              ? "border-cyan-500 bg-cyan-600 text-white shadow-sm"
-                              : "border-cyan-400/25 bg-white text-slate-700 hover:border-cyan-400/50"
-                          }`}
-                        >
-                          {trimestre}º trimestre
-                        </button>
-                      );
-                    })}
+                        return (
+                          <label
+                            key={trimestre}
+                            className={`inline-flex cursor-pointer items-center gap-2 rounded-xl border px-4 py-2 text-sm font-bold transition ${
+                              selected
+                                ? "border-cyan-500 bg-cyan-600 text-white shadow-sm"
+                                : "border-cyan-400/25 bg-white text-slate-700 hover:border-cyan-400/50"
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={selected}
+                              onChange={() => toggleTrimestreJunto(trimestre)}
+                              className="h-4 w-4 rounded border-cyan-300 text-cyan-600 focus:ring-cyan-200"
+                            />
+                            {trimestre}º trimestre
+                          </label>
+                        );
+                      })}
+                    </div>
+                    {sanitizeTrimestresJunto(form.trimestresJunto).length < 3 ? (
+                      <button
+                        type="button"
+                        onClick={selectAllTrimestresJunto}
+                        className="text-xs font-bold text-cyan-700 underline-offset-2 hover:underline"
+                      >
+                        Marcar os 3 trimestres
+                      </button>
+                    ) : null}
                   </div>
                 ) : null}
-              </div>
+              </fieldset>
             ) : (
               <p className="mt-6 rounded-2xl border border-amber-200/80 bg-amber-50/80 px-4 py-3 text-sm font-medium leading-6 text-amber-900">
                 Para trimestrais 100% coerentes com o anual, gere o{" "}
@@ -1576,7 +1684,15 @@ export function PlanejamentosClient() {
             <div className="mt-5 grid gap-5">
               <label className="grid gap-2">
                 <span className="text-sm font-bold text-slate-500">Conteúdos</span>
-                <textarea value={form.conteudos} onChange={(event) => updateField("conteudos", event.target.value)} rows={6} placeholder={"Digite um conteúdo por linha.\nEx.: Estrutura dissertativa-argumentativa\nEx.: Repertório sociocultural"} className={HUD_TEXTAREA_CLASS} />
+                <textarea
+                  value={form.conteudos}
+                  onChange={(event) => updateField("conteudos", event.target.value)}
+                  onPaste={handleConteudosPaste}
+                  onBlur={handleConteudosBlur}
+                  rows={6}
+                  placeholder={"Digite um conteúdo por linha.\nEx.: Estrutura dissertativa-argumentativa\nEx.: Repertório sociocultural"}
+                  className={HUD_SCROLLABLE_TEXTAREA_CLASS}
+                />
                 <span className="text-xs text-cyan-700/80">Este campo é suficiente para buscar e sugerir habilidades BNCC.</span>
               </label>
 

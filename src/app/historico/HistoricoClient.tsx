@@ -26,6 +26,7 @@ import {
   getHistoryTypeOptions,
   loadHistoryItemsWithSync,
   removeHistoryItem,
+  removeHistoryItems,
 } from "../../lib/history/history-storage";
 import { saveEditorDocument } from "../../lib/editor/editor-storage";
 import { migrateLegacyMaterialHistoryOnce } from "../../lib/materiais/material-editor-flow";
@@ -117,6 +118,8 @@ export function HistoricoClient() {
   const [filter, setFilter] = useState<HistoryFilter>(initialFilter);
   const [selectedItem, setSelectedItem] = useState<HistoryItem | null>(null);
   const [status, setStatus] = useState<StatusState | null>(null);
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     let cancelled = false;
@@ -157,6 +160,14 @@ export function HistoricoClient() {
     () => filterHistoryItems(items, filter),
     [items, filter],
   );
+  const filteredItemIds = useMemo(
+    () => filteredItems.map((item) => item.id),
+    [filteredItems],
+  );
+  const selectedCount = selectedIds.size;
+  const allFilteredSelected =
+    filteredItemIds.length > 0 &&
+    filteredItemIds.every((id) => selectedIds.has(id));
 
   const totals = useMemo(
     () => ({
@@ -184,6 +195,61 @@ export function HistoricoClient() {
     router.push("/editor");
   }
 
+  function exitSelectionMode() {
+    setSelectionMode(false);
+    setSelectedIds(new Set());
+  }
+
+  function toggleItemSelection(id: string) {
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }
+
+  function selectAllFiltered() {
+    setSelectedIds(new Set(filteredItemIds));
+  }
+
+  function deselectAllFiltered() {
+    setSelectedIds(new Set());
+  }
+
+  function syncRemovedItems(removedIds: string[]) {
+    const removedIdSet = new Set(removedIds);
+    const next = removeHistoryItems(removedIds);
+    setItems(next);
+
+    if (selectedItem && removedIdSet.has(selectedItem.id)) {
+      setSelectedItem(next[0] ?? null);
+    }
+
+    setSelectedIds((current) => {
+      const nextSelected = new Set(current);
+      for (const id of removedIds) {
+        nextSelected.delete(id);
+      }
+      return nextSelected;
+    });
+
+    if (getHistorySupabaseSync()) {
+      void Promise.all(
+        removedIds.map((id) => removeHistoryItemFromAPI(id)),
+      ).catch(() => {
+        setStatus({
+          type: "warning",
+          message:
+            "Itens removidos localmente. A exclusão na nuvem pode levar alguns instantes.",
+        });
+      });
+    }
+  }
+
   function removeItem(item: HistoryItem) {
     const confirmed = window.confirm(
       `Excluir permanentemente "${item.title}"?\n\nEsta ação não pode ser desfeita. O material será removido do seu histórico.`,
@@ -193,22 +259,7 @@ export function HistoricoClient() {
       return;
     }
 
-    const next = removeHistoryItem(item.id);
-    setItems(next);
-
-    if (selectedItem?.id === item.id) {
-      setSelectedItem(next[0] ?? null);
-    }
-
-    if (getHistorySupabaseSync()) {
-      void removeHistoryItemFromAPI(item.id).catch(() => {
-        setStatus({
-          type: "warning",
-          message:
-            "Item removido localmente. A exclusão na nuvem pode levar alguns instantes.",
-        });
-      });
-    }
+    syncRemovedItems([item.id]);
 
     setStatus({
       type: "success",
@@ -216,10 +267,37 @@ export function HistoricoClient() {
     });
   }
 
+  function removeSelectedItems() {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Excluir permanentemente ${ids.length} material${ids.length === 1 ? "" : "is"}?\n\nEsta ação não pode ser desfeita. Os itens serão removidos do seu histórico.`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    syncRemovedItems(ids);
+    exitSelectionMode();
+
+    setStatus({
+      type: "success",
+      message:
+        ids.length === 1
+          ? "Item excluído permanentemente dos seus materiais."
+          : `${ids.length} itens excluídos permanentemente dos seus materiais.`,
+    });
+  }
+
   function clearAll() {
     clearHistoryItems();
     setItems([]);
     setSelectedItem(null);
+    exitSelectionMode();
     setStatus({
       type: "info",
       message: "Lista local limpa.",
@@ -272,6 +350,43 @@ export function HistoricoClient() {
             </div>
           ))}
           <div className="ml-auto flex flex-wrap gap-2">
+            {selectionMode ? (
+              <>
+                <button
+                  type="button"
+                  onClick={
+                    allFilteredSelected ? deselectAllFiltered : selectAllFiltered
+                  }
+                  className="pl-hud-btn-secondary rounded-xl px-4 py-2 text-xs font-semibold"
+                >
+                  {allFilteredSelected ? "Desmarcar todos" : "Selecionar todos"}
+                </button>
+                <button
+                  type="button"
+                  onClick={removeSelectedItems}
+                  disabled={selectedCount === 0}
+                  className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-xs font-semibold text-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Excluir selecionados{selectedCount > 0 ? ` (${selectedCount})` : ""}
+                </button>
+                <button
+                  type="button"
+                  onClick={exitSelectionMode}
+                  className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-600"
+                >
+                  Cancelar
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setSelectionMode(true)}
+                disabled={filteredItems.length === 0}
+                className="pl-hud-btn-secondary rounded-xl px-4 py-2 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Selecionar
+              </button>
+            )}
             <button
               type="button"
               onClick={reloadHistory}
@@ -349,19 +464,42 @@ export function HistoricoClient() {
           <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
             {filteredItems.map((item) => {
               const selected = selectedItem?.id === item.id;
+              const checked = selectedIds.has(item.id);
               const typeLabel = resolveHistoryTypeLabel(item.type);
               return (
                 <article
                   key={item.id}
-                  className={`group flex flex-col overflow-hidden rounded-2xl border transition ${
-                    selected
-                      ? "border-cyan-400 bg-cyan-50/30 shadow-sm"
-                      : "border-slate-200 bg-white hover:border-cyan-300 hover:shadow-sm"
+                  className={`group relative flex flex-col overflow-hidden rounded-2xl border transition ${
+                    selectionMode && checked
+                      ? "border-rose-300 bg-rose-50/40 shadow-sm"
+                      : selected
+                        ? "border-cyan-400 bg-cyan-50/30 shadow-sm"
+                        : "border-slate-200 bg-white hover:border-cyan-300 hover:shadow-sm"
                   }`}
                 >
+                  {selectionMode ? (
+                    <label className="absolute left-2 top-2 z-10 flex cursor-pointer items-center gap-1.5 rounded-lg border border-slate-200 bg-white/95 px-2 py-1 shadow-sm">
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => toggleItemSelection(item.id)}
+                        className="h-4 w-4 accent-rose-600"
+                        aria-label={`Selecionar ${item.title}`}
+                      />
+                      <span className="text-[10px] font-bold text-slate-600">
+                        {checked ? "Marcado" : "Marcar"}
+                      </span>
+                    </label>
+                  ) : null}
                   <button
                     type="button"
-                    onClick={() => setSelectedItem(item)}
+                    onClick={() => {
+                      if (selectionMode) {
+                        toggleItemSelection(item.id);
+                        return;
+                      }
+                      setSelectedItem(item);
+                    }}
                     className="flex min-h-0 flex-1 flex-col text-left"
                   >
                     <MaterialTypeCover
@@ -394,14 +532,16 @@ export function HistoricoClient() {
                       <button
                         type="button"
                         onClick={() => openInEditor(item)}
-                        className="min-h-9 flex-1 rounded-lg bg-cyan-600 py-1.5 text-[10px] font-bold text-white"
+                        disabled={selectionMode}
+                        className="min-h-9 flex-1 rounded-lg bg-cyan-600 py-1.5 text-[10px] font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         Editor
                       </button>
                       <button
                         type="button"
                         onClick={() => removeItem(item)}
-                        className="min-h-9 rounded-lg border border-rose-200 bg-rose-50 px-2 py-1.5 text-[10px] font-bold text-rose-700"
+                        disabled={selectionMode}
+                        className="min-h-9 rounded-lg border border-rose-200 bg-rose-50 px-2 py-1.5 text-[10px] font-bold text-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
                         title="Excluir permanentemente"
                         aria-label={`Excluir permanentemente ${item.title}`}
                       >

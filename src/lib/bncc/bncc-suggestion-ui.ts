@@ -124,7 +124,7 @@ export function validateSelectedBnccSkillsForStage(
   anoSerie: string,
 ): string | null {
   if (skills.length === 0) {
-    return "Selecione pelo menos uma habilidade BNCC antes de gerar. Use o botão \"Sugerir habilidades BNCC\" acima.";
+    return null;
   }
 
   const stage = resolveBnccStageFromFields(etapa, anoSerie);

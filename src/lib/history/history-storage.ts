@@ -180,7 +180,12 @@ export function saveEditorDocumentToHistory(document: EditorDocument): HistoryIt
 }
 
 export function removeHistoryItem(id: string): HistoryItem[] {
-  const next = loadHistoryItems().filter((item) => item.id !== id);
+  return removeHistoryItems([id]);
+}
+
+export function removeHistoryItems(ids: string[]): HistoryItem[] {
+  const idSet = new Set(ids);
+  const next = loadHistoryItems().filter((item) => !idSet.has(item.id));
   saveHistoryItems(next);
 
   return next;

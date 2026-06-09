@@ -4,6 +4,11 @@ import { deflateRawSync, inflateRawSync } from "node:zlib";
 import type { PlanningAiResult, PlanningMatrixItem, PlanningSkill } from "./planning-ai-service";
 import { extractAnnualItemsForTrimester } from "@/lib/planejamentos/planning-trimestral-from-annual";
 import {
+  enrichTrimestralMatrixItem,
+  formatExperienciasAprendizagem,
+  formatMateriaisRecursosNecessarios,
+} from "@/lib/planejamentos/planning-trimestral-fields";
+import {
   finalizeMatrixLessonAllocation,
   formatMatrixAulaLabel,
   formatMatrixPeriodosLabel,
@@ -1000,76 +1005,143 @@ function chooseTrimestralPlanningTable(tables: TableInfo[]): TableInfo | null {
   return candidates[0]?.table || null;
 }
 
+function trimestralMatrixItem(item: PlanningMatrixItem): PlanningMatrixItem {
+  return enrichTrimestralMatrixItem(item);
+}
+
 function labelValue(label: string, item: PlanningMatrixItem, payload: OfficialPlanningPayload): string | null {
   const text = normalizeSearch(label);
+  const trimItem = trimestralMatrixItem(item);
 
   if (text.includes("trimestre") && text.includes("aula")) {
-    return `${getTrimestre(payload)}º trimestre — Aula ${formatMatrixAulaLabel(item)} · ${formatMatrixPeriodosLabel(item)}`;
+    return `${getTrimestre(payload)}º trimestre — Aula ${formatMatrixAulaLabel(trimItem)} · ${formatMatrixPeriodosLabel(trimItem)}`;
   }
 
   if (text.includes("aula")) {
-    return formatMatrixAulaLabel(item);
+    return formatMatrixAulaLabel(trimItem);
   }
 
   if (text.includes("carga") || text.includes("periodo")) {
-    return formatMatrixPeriodosLabel(item);
+    return formatMatrixPeriodosLabel(trimItem);
   }
 
   if (text.includes("unidade")) {
-    return unitFor(payload, item);
+    return unitFor(payload, trimItem);
   }
 
   if (text.includes("objeto") || text.includes("conteudo") || text.includes("conhecimento")) {
-    return item.conteudo;
+    return trimItem.conteudo;
   }
 
   if (text.includes("habilidade")) {
-    return codesWithShortDescriptions(item.habilidades);
+    return codesWithShortDescriptions(trimItem.habilidades);
   }
 
-  if (text.includes("objetivo") || text.includes("expectativa")) {
-    return item.objetivos;
+  if (text.includes("expectativa")) {
+    return trimItem.objetivos;
   }
 
-  if (text.includes("metodologia") || text.includes("procedimento") || text.includes("etapa")) {
-    return item.metodologia;
+  if (text.includes("objetivo") && !text.includes("expectativa")) {
+    return trimItem.objetivos;
   }
 
-  if (text.includes("recurso")) {
-    return item.recursos;
+  if (text.includes("experiencia") && text.includes("aprendizagem")) {
+    return formatExperienciasAprendizagem(trimItem);
   }
 
-  if (text.includes("avaliacao") || text.includes("evidencia") || text.includes("instrumento")) {
-    return `${item.evidencias}\n${item.avaliacao}`;
+  if (text.includes("organizacao") && text.includes("metodologia")) {
+    return trimItem.metodologia;
+  }
+
+  if (text.includes("metodologia") || text.includes("procedimento")) {
+    return trimItem.metodologia;
+  }
+
+  if (text.includes("materiais") && text.includes("recursos")) {
+    return formatMateriaisRecursosNecessarios(trimItem);
+  }
+
+  if (text.includes("materiais")) {
+    return trimItem.materiais || "";
+  }
+
+  if (text.includes("recursos")) {
+    return trimItem.recursos;
+  }
+
+  if (text.includes("momento") || text.includes("etapa")) {
+    return trimItem.etapas || "";
+  }
+
+  if (text.includes("evidencia")) {
+    return trimItem.evidencias;
+  }
+
+  if (text.includes("instrumento") || text.includes("avaliacao")) {
+    return trimItem.avaliacao;
   }
 
   if (text.includes("projeto interdisciplinar") || text.includes("tema integrador") || text.includes("temas integradores")) {
-    return projectText(payload, [item]);
+    return projectText(payload, [trimItem]);
   }
 
   return null;
 }
 
-function fillLabelRow(row: RowInfo, item: PlanningMatrixItem, payload: OfficialPlanningPayload): string {
-  if (row.cells.length === 1) {
-    const value = labelValue(row.cells[0]?.text || "", item, payload);
+function fillTrimestralLabelRow(
+  row: RowInfo,
+  item: PlanningMatrixItem,
+  payload: OfficialPlanningPayload,
+): string {
+  const cellCount = row.cells.length;
 
+  if (cellCount === 1) {
+    const value = labelValue(row.cells[0]?.text || "", item, payload);
     return value ? replaceCellsInRow(row.xml, [value]) : row.xml;
   }
 
-  if (row.cells.length >= 2) {
-    const leftText = row.cells[0]?.text || "";
-    const rightText = row.cells[1]?.text || "";
-    const byLeft = labelValue(leftText, item, payload);
-    const byRight = labelValue(rightText, item, payload);
+  if (cellCount === 2) {
+    const value = labelValue(row.cells[0]?.text || "", item, payload);
+    return value ? replaceCellsInRow(row.xml, [null, value]) : row.xml;
+  }
 
-    if (byLeft) {
-      return replaceCellsInRow(row.xml, [null, byLeft]);
+  if (cellCount === 4) {
+    const values: Array<Primitive | null> = [null, null, null, null];
+    const leftValue = labelValue(row.cells[0]?.text || "", item, payload);
+    const rightValue = labelValue(row.cells[2]?.text || "", item, payload);
+
+    if (leftValue) values[1] = leftValue;
+    if (rightValue) values[3] = rightValue;
+
+    if (leftValue || rightValue) {
+      return replaceCellsInRow(row.xml, values);
     }
 
-    if (byRight) {
-      return replaceCellsInRow(row.xml, [byRight, null]);
+    return row.xml;
+  }
+
+  if (cellCount >= 6) {
+    const label = row.cells[0]?.text || "";
+    const rowText = normalizeSearch(row.text);
+
+    if (!label.trim() && rowText.includes("semana")) {
+      const trimItem = trimestralMatrixItem(item);
+      const periodos = Math.max(1, Number(trimItem.periodos) || 1);
+      const periodoLabel = periodos === 1 ? "período" : "períodos";
+      const values = row.cells.map((_, index) =>
+        index === 0 ? `Semana 1 (${periodos} ${periodoLabel})` : null,
+      );
+      return replaceCellsInRow(row.xml, values);
     }
+
+    const value = labelValue(label, item, payload);
+
+    if (!value) {
+      return row.xml;
+    }
+
+    const values = row.cells.map((_, index) => (index === 1 ? value : null));
+    return replaceCellsInRow(row.xml, values);
   }
 
   return row.xml;
@@ -1101,7 +1173,7 @@ function fillOneTrimestralTable(
       return fillProjectAndEvaluationRows(row, [item], payload);
     }
 
-    return fillLabelRow(row, item, payload);
+    return fillTrimestralLabelRow(row, item, payload);
   });
 
   return replaceInXml(

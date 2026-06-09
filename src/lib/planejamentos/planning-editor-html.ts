@@ -1,3 +1,4 @@
+import { enrichTrimestralMatrixItem } from "@/lib/planejamentos/planning-trimestral-fields";
 import type {
   PlanningAiPayload,
   PlanningMatrixItem,
@@ -144,19 +145,25 @@ export function buildPlanningEditorHtml(
         : planning.conteudos;
 
     const tables = items
-      .map(
-        (item) => `
+      .map((item) => {
+        const trimItem = enrichTrimestralMatrixItem(item);
+
+        return `
           <table>
-            <tr><th colspan="2" class="trim-title">${trimester}º trimestre — Aula ${escapeHtml(formatMatrixAulaLabel(item))} · ${escapeHtml(formatMatrixPeriodosLabel(item))}</th></tr>
-            <tr><td><strong>Objetos de conhecimento</strong></td><td>${escapeHtml(item.conteudo)}</td></tr>
-            <tr><td><strong>Habilidades BNCC</strong></td><td>${nl2br(item.habilidades.map(skillFullText).join("\n"))}</td></tr>
-            <tr><td><strong>Objetivos / expectativas</strong></td><td>${escapeHtml(item.objetivos)}</td></tr>
-            <tr><td><strong>Metodologia / etapas</strong></td><td>${escapeHtml(item.metodologia)}</td></tr>
-            <tr><td><strong>Recursos</strong></td><td>${escapeHtml(item.recursos)}</td></tr>
-            <tr><td><strong>Evidências e avaliação</strong></td><td>${nl2br(`${item.evidencias}\n${item.avaliacao}`)}</td></tr>
+            <tr><th colspan="2" class="trim-title">${trimester}º trimestre — Aula ${escapeHtml(formatMatrixAulaLabel(trimItem))} · ${escapeHtml(formatMatrixPeriodosLabel(trimItem))}</th></tr>
+            <tr><td><strong>Unidade temática</strong></td><td>${escapeHtml(editorUnitFor(form, trimItem))}</td></tr>
+            <tr><td><strong>Objetos de conhecimento</strong></td><td>${escapeHtml(trimItem.conteudo)}</td></tr>
+            <tr><td><strong>Habilidades</strong></td><td>${nl2br(trimItem.habilidades.map(skillFullText).join("\n"))}</td></tr>
+            <tr><td><strong>Expectativas de aprendizagem</strong></td><td>${escapeHtml(trimItem.objetivos)}</td></tr>
+            <tr><td><strong>Metodologia</strong></td><td>${escapeHtml(trimItem.metodologia)}</td></tr>
+            <tr><td><strong>Materiais</strong></td><td>${escapeHtml(trimItem.materiais || "")}</td></tr>
+            <tr><td><strong>Recursos necessários</strong></td><td>${escapeHtml(trimItem.recursos)}</td></tr>
+            <tr><td><strong>Etapas desta experiência</strong></td><td>${nl2br(trimItem.etapas || "")}</td></tr>
+            <tr><td><strong>Evidências de aprendizagem</strong></td><td>${escapeHtml(trimItem.evidencias)}</td></tr>
+            <tr><td><strong>Instrumentos de avaliação</strong></td><td>${escapeHtml(trimItem.avaliacao)}</td></tr>
           </table>
-        `,
-      )
+        `;
+      })
       .join("");
 
     return `

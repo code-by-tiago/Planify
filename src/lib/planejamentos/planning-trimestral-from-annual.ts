@@ -1,3 +1,4 @@
+import { enrichTrimestralMatrixItem } from "@/lib/planejamentos/planning-trimestral-fields";
 import type { PlanningMatrixItem } from "@/server/planejamentos/planning-ai-service";
 
 export type AnnualPlanningLike = {
@@ -61,14 +62,14 @@ export function renumberTrimestralMatrixItems(
     const aulaFim = cumulative + periodos;
     cumulative = aulaFim;
 
-    return {
+    return enrichTrimestralMatrixItem({
       ...item,
       trimestre,
       numeroAula: index + 1,
       periodos,
       aulaInicio,
       aulaFim,
-    };
+    });
   });
 }
 

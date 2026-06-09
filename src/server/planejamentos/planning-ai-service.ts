@@ -60,7 +60,9 @@ export type PlanningMatrixItem = {
   habilidades: PlanningSkill[];
   objetivos: string;
   metodologia: string;
+  materiais?: string;
   recursos: string;
+  etapas?: string;
   avaliacao: string;
   evidencias: string;
 };
@@ -387,10 +389,15 @@ function fallbackPlanning(payload: PlanningAiPayload, warning?: string): Plannin
         index % 2 === 0
           ? `Aula dialogada, levantamento de conhecimentos prévios, explicação orientada, prática supervisionada, registro e socialização das aprendizagens sobre ${conteudo}.`
           : `Contextualização, análise guiada, atividade em grupo, produção individual, retomada coletiva e síntese do conteúdo ${conteudo}.`,
+      materiais: "Caderno, fichas de atividade, material impresso e textos de apoio.",
       recursos:
         index % 2 === 0
-          ? "Quadro, caderno, material impresso, textos de apoio, livro didático e recursos digitais disponíveis."
-          : "Slides, fichas de atividade, fontes de consulta, projetor, registros do professor e recursos de sala.",
+          ? "Quadro, livro didático, projetor e recursos digitais disponíveis."
+          : "Quadro, slides, fontes de consulta, projetor e registros do professor.",
+      etapas:
+        index % 2 === 0
+          ? "1. Contextualização do tema.\n2. Explicação e prática orientada.\n3. Registro e socialização."
+          : "1. Mobilização de conhecimentos prévios.\n2. Atividade em grupo e produção individual.\n3. Síntese e devolutiva.",
       avaliacao: `Avaliação contínua por participação, registros, resolução das atividades, qualidade das respostas e evidências de aprendizagem sobre ${conteudo}.`,
       evidencias:
         "Registros no caderno, atividades concluídas, respostas orais e escritas, produções individuais ou coletivas e devolutivas do professor.",
@@ -491,11 +498,18 @@ function sanitizeAiResult(value: unknown, payload: PlanningAiPayload): PlanningA
         normalizeText(itemRecord.objetivos || itemRecord.objetivo) ||
         `Desenvolver aprendizagens relacionadas a ${conteudo}.`,
       metodologia:
-        normalizeText(itemRecord.metodologia || itemRecord.etapas) ||
+        normalizeText(itemRecord.metodologia) ||
         `Aula dialogada, prática orientada, registro e socialização sobre ${conteudo}.`,
+      materiais:
+        normalizeText(itemRecord.materiais) ||
+        "Caderno, fichas de atividade, material impresso e textos de apoio.",
       recursos:
         normalizeText(itemRecord.recursos) ||
-        "Quadro, caderno, material impresso, livro didático e recursos digitais disponíveis.",
+        "Quadro, livro didático, projetor e recursos digitais disponíveis.",
+      etapas:
+        normalizeText(itemRecord.etapas) ||
+        normalizeText(itemRecord["etapas da experiência"]) ||
+        "",
       avaliacao:
         normalizeText(itemRecord.avaliacao || itemRecord["avaliação"]) ||
         `Avaliação contínua por participação, registros e evidências de aprendizagem sobre ${conteudo}.`,
@@ -583,7 +597,7 @@ Regras obrigatórias:
 9. A soma de periodos de todas as linhas deve ser igual à carga horária informada (${parsePlanningCargaHoraria(payload.cargaHoraria, conteudos.length)} períodos).
 10. No planejamento anual, distribua os conteúdos entre 1º, 2º e 3º trimestre de forma equilibrada.
 11. aulaInicio e aulaFim representam a faixa cumulativa de períodos no ano (ou no trimestre, se trimestral).
-12. Gere objetivos/expectativas de aprendizagem, metodologia, recursos, avaliação e evidências.
+12. Gere objetivos/expectativas de aprendizagem, metodologia, materiais, recursos necessários, etapas da experiência, evidências de aprendizagem e instrumentos de avaliação.
 13. Preencha projetos interdisciplinares, temas integradores e instrumentos de avaliação de forma coerente quando estes campos existirem no DOCX.
 14. Não use texto genérico vazio nem repita a mesma metodologia em todas as linhas.
 15. Cada linha deve citar estratégias, recursos e avaliação coerentes com o conteúdo daquela linha.
@@ -608,7 +622,9 @@ Formato:
         ],
         "objetivos": "...",
         "metodologia": "...",
+        "materiais": "...",
         "recursos": "...",
+        "etapas": "...",
         "avaliacao": "...",
         "evidencias": "..."
       }

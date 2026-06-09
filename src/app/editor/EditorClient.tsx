@@ -345,7 +345,12 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
   const [adjustingSlides, setAdjustingSlides] = useState(false);
   const [planningBundle, setPlanningBundle] = useState<PlanningEditorBundle | null>(null);
   const [activeBundleIndex, setActiveBundleIndex] = useState(0);
+  const activeBundleIndexRef = useRef(0);
   const skipBundleAutoSaveRef = useRef(true);
+
+  useEffect(() => {
+    activeBundleIndexRef.current = activeBundleIndex;
+  }, [activeBundleIndex]);
 
   const lastSavedLabel = useMemo(() => nowLabel(), []);
 
@@ -480,6 +485,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
     if (bundleFromSession && bundleFromSession.tabs.length > 1) {
       setPlanningBundle(bundleFromSession);
       setActiveBundleIndex(bundleFromSession.activeIndex);
+      activeBundleIndexRef.current = bundleFromSession.activeIndex;
       skipBundleAutoSaveRef.current = true;
     }
 
@@ -526,7 +532,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
     return editorRef.current?.innerHTML || "";
   }
 
-  function setEditorHtml(html: string) {
+  function applyEditorHtml(html: string) {
     clearSelectedImage();
     clearSelectedTable();
 
@@ -535,8 +541,11 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
       prepareImagesInsideEditor();
       updateWordCount();
       seedUndoStack(html);
-      persistCurrentDocument("Documento carregado.");
     }
+  }
+
+  function setEditorHtml(html: string) {
+    applyEditorHtml(html);
   }
 
   function seedUndoStack(html?: string) {
@@ -1157,13 +1166,16 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
     const currentTitle = title.trim() || getDocumentTitleFromHtml(html);
     const source = documentSource;
     const payload = source?.payload as EditorStoredPayload | undefined;
-    const activeBundleTab = planningBundle?.tabs[activeBundleIndex];
+    const bundleIndex = activeBundleIndexRef.current;
+    const activeBundleTab = planningBundle?.tabs[bundleIndex];
+    const bundleRaw =
+      (payload?.raw as Record<string, unknown> | undefined) ?? activeBundleTab?.raw;
     const historyPayload: EditorStoredPayload | undefined = activeBundleTab
       ? {
           ...payload,
           source: "planejamento",
           id: activeBundleTab.id,
-          raw: activeBundleTab.raw,
+          raw: bundleRaw ?? activeBundleTab.raw,
         }
       : payload;
     const historyType = activeBundleTab?.type || source?.type || "editor";
@@ -1191,10 +1203,11 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
 
     if (planningBundle) {
       const updatedTabs = [...planningBundle.tabs];
-      updatedTabs[activeBundleIndex] = {
-        ...updatedTabs[activeBundleIndex],
+      updatedTabs[bundleIndex] = {
+        ...updatedTabs[bundleIndex],
         content: html,
         title: currentTitle,
+        raw: bundleRaw ?? updatedTabs[bundleIndex].raw,
       };
       const nextBundle = { ...planningBundle, tabs: updatedTabs };
       savePlanningEditorBundle(nextBundle);
@@ -1214,13 +1227,17 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
       return;
     }
 
+    skipBundleAutoSaveRef.current = true;
     prepareImagesInsideEditor();
 
+    const outgoingIndex = activeBundleIndexRef.current;
     const html = getEditorHtml();
     const currentTitle = title.trim() || getDocumentTitleFromHtml(html);
-    const currentTab = planningBundle.tabs[activeBundleIndex];
+    const currentTab = planningBundle.tabs[outgoingIndex];
     const source = documentSource;
     const payload = source?.payload as EditorStoredPayload | undefined;
+    const outgoingRaw =
+      (payload?.raw as Record<string, unknown> | undefined) ?? currentTab.raw;
 
     syncOpenDocumentToHistory({
       title: currentTitle,
@@ -1230,21 +1247,23 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
         ...payload,
         source: "planejamento",
         id: currentTab.id,
-        raw: currentTab.raw,
+        raw: outgoingRaw,
       },
     });
 
     const updatedTabs = [...planningBundle.tabs];
-    updatedTabs[activeBundleIndex] = {
-      ...updatedTabs[activeBundleIndex],
+    updatedTabs[outgoingIndex] = {
+      ...updatedTabs[outgoingIndex],
       content: html,
       title: currentTitle,
+      raw: outgoingRaw,
     };
 
     const nextTab = updatedTabs[nextIndex];
     const nextBundle = { activeIndex: nextIndex, tabs: updatedTabs };
     savePlanningEditorBundle(nextBundle);
     setPlanningBundle(nextBundle);
+    activeBundleIndexRef.current = nextIndex;
     setActiveBundleIndex(nextIndex);
 
     setTitle(nextTab.title);
@@ -1262,7 +1281,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
     };
 
     setDocumentSource(nextDocumentSource);
-    setEditorHtml(nextTab.content);
+    applyEditorHtml(nextTab.content);
     syncSlideDeckFlags(nextTab.content, nextDocumentSource);
 
     saveEditorDocument(

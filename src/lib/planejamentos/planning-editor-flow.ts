@@ -11,6 +11,7 @@ export type PlanningEditorMeta = {
   anoSerie: string;
   componente: string;
   tipoPlanejamento: string;
+  trimestre?: string;
   escola?: string;
   professor?: string;
   generationPayload?: PlanningAiPayload | null;

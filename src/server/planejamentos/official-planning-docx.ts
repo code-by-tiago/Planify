@@ -1064,10 +1064,28 @@ function fillOneTrimestralTable(
   );
 }
 
+function resolveTrimestralMatrixItems(
+  matrix: PlanningMatrixItem[],
+  trimester: number,
+): PlanningMatrixItem[] {
+  const markedTrimesters = new Set(
+    matrix
+      .map((item) => Number(item.trimestre))
+      .filter((value) => Number.isFinite(value) && value >= 1 && value <= 3),
+  );
+
+  // Matriz já extraída de um único trimestre (pacote anual + trimestres no editor).
+  if (markedTrimesters.size === 1) {
+    return matrix;
+  }
+
+  return extractAnnualItemsForTrimester(matrix, trimester);
+}
+
 function fillTrimestralPlanningTable(documentXml: string, payload: OfficialPlanningPayload): string {
   const matrix = getMatrix(payload);
   const trimester = getTrimestre(payload);
-  const baseItems = extractAnnualItemsForTrimester(matrix, trimester);
+  const baseItems = resolveTrimestralMatrixItems(matrix, trimester);
 
   const tables = parseTables(documentXml);
   const table = chooseTrimestralPlanningTable(tables);

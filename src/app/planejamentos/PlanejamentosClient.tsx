@@ -860,6 +860,10 @@ export function PlanejamentosClient() {
     };
     const anualHtml = buildPlanningEditorHtml(anualForm, planning);
 
+    const annualGenerationPayload = sharedMeta.generationPayload
+      ? { ...sharedMeta.generationPayload, tipoPlanejamento: "anual" as const }
+      : sharedMeta.generationPayload;
+
     const documents: PlanningBundleDocumentInput[] = [
       {
         id: buildPlanningBundleDocumentId(idempotencyKey, "anual"),
@@ -867,7 +871,11 @@ export function PlanejamentosClient() {
         title: planning.titulo || "Planejamento anual",
         html: anualHtml,
         type: "planejamento:anual",
-        meta: { ...sharedMeta, tipoPlanejamento: "anual" },
+        meta: {
+          ...sharedMeta,
+          tipoPlanejamento: "anual",
+          generationPayload: annualGenerationPayload,
+        },
         planning,
       },
     ];
@@ -885,6 +893,16 @@ export function PlanejamentosClient() {
         cargaHoraria: trimestralCargaHorariaLabel(trimPlan.conteudos),
       };
 
+      const trimCargaHoraria = trimestralCargaHorariaLabel(trimPlan.conteudos);
+      const trimGenerationPayload = sharedMeta.generationPayload
+        ? {
+            ...sharedMeta.generationPayload,
+            tipoPlanejamento: "trimestral" as const,
+            trimestre: String(trimestre),
+            cargaHoraria: trimCargaHoraria,
+          }
+        : sharedMeta.generationPayload;
+
       documents.push({
         id: buildPlanningBundleDocumentId(
           idempotencyKey,
@@ -897,6 +915,8 @@ export function PlanejamentosClient() {
         meta: {
           ...sharedMeta,
           tipoPlanejamento: "trimestral",
+          trimestre: String(trimestre),
+          generationPayload: trimGenerationPayload,
         },
         planning: trimPlan,
       });
@@ -1136,6 +1156,8 @@ export function PlanejamentosClient() {
       buildPlanningEditorMeta({
         tipoPlanejamento:
           previewMatrizKey === "anual" ? "anual" : "trimestral",
+        trimestre:
+          previewMatrizKey !== "anual" ? String(previewMatrizKey) : undefined,
       }),
       activePreviewPlanning,
     );

@@ -1,4 +1,6 @@
 import type { PlanningEditorMeta } from "@/lib/planejamentos/planning-editor-flow";
+import { trimestralCargaHorariaLabel } from "@/lib/planejamentos/planning-trimestral-from-annual";
+import type { PlanningMatrixItem } from "@/server/planejamentos/planning-ai-service";
 
 const EDITOR_DOCUMENT_KEY = "planify_editor_document";
 
@@ -42,8 +44,16 @@ export function buildOfficialPlanningPayloadFromEditorMeta(
     return null;
   }
 
+  const tipoPlanejamento = meta.tipoPlanejamento || generation?.tipoPlanejamento || "anual";
+  const trimestre = meta.trimestre ?? generation?.trimestre;
+  const matrizConteudos = (matriz as { conteudos?: PlanningMatrixItem[] }).conteudos;
+  const cargaHoraria =
+    tipoPlanejamento === "trimestral" && Array.isArray(matrizConteudos) && matrizConteudos.length > 0
+      ? trimestralCargaHorariaLabel(matrizConteudos)
+      : generation?.cargaHoraria;
+
   return {
-    tipoPlanejamento: generation?.tipoPlanejamento || meta.tipoPlanejamento || "anual",
+    tipoPlanejamento,
     escola: generation?.escola || meta.escola,
     professor: generation?.professor || meta.professor,
     etapa: generation?.etapa || meta.etapa,
@@ -51,8 +61,8 @@ export function buildOfficialPlanningPayloadFromEditorMeta(
     areaConhecimento: generation?.areaConhecimento,
     componenteCurricular:
       generation?.componenteCurricular || meta.componente || "Componente",
-    cargaHoraria: generation?.cargaHoraria,
-    trimestre: generation?.trimestre,
+    cargaHoraria,
+    trimestre,
     matrizPlanejamento: matriz,
   };
 }

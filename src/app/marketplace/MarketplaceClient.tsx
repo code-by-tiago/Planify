@@ -6,7 +6,6 @@ import { CommunityMessagesIcon } from "@/components/community/CommunityMessagesI
 import { CommunityNotificationsIcon } from "@/components/community/CommunityNotificationsIcon";
 import { CommunityPolicyLink } from "@/components/community/CommunityPolicyModal";
 import { CommunityProfilePanel } from "@/components/community/CommunityProfilePanel";
-import { CommunityTeacherSearch } from "@/components/community/CommunityTeacherSearch";
 import type { CommunityFeedItem } from "@/lib/community/types";
 import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
 import { PlanifyPageHero } from "@/components/pro/PlanifyPageHero";
@@ -377,7 +376,6 @@ export function MarketplaceClient() {
             <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center">
               <CommunityNotificationsIcon className="col-span-1 w-full justify-center sm:w-auto" />
               <CommunityMessagesIcon className="col-span-1 w-full justify-center sm:w-auto" />
-              <CommunityTeacherSearch className="col-span-2 sm:col-span-1" />
               <button
                 type="button"
                 onClick={() => setPublishOpen((open) => !open)}

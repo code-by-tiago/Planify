@@ -1,3 +1,4 @@
+import type { CommunityProfileSearchMatchHint } from "@/lib/community/types";
 import { getSupabaseAdminClient } from "../supabase/admin-client";
 import { resolveCommunityAuthors } from "./marketplace-social-service";
 
@@ -9,6 +10,7 @@ export type CommunityProfileSearchResult = {
   bio: string | null;
   topComponente: string | null;
   materialsCount: number;
+  matchHint?: CommunityProfileSearchMatchHint | null;
 };
 
 type ProfileRow = {
@@ -19,12 +21,63 @@ type ProfileRow = {
   community_public: boolean | null;
 };
 
+type ScoredResult = CommunityProfileSearchResult & {
+  relevanceScore: number;
+};
+
 function sanitizeIlikeTerm(value: string): string {
   return value
     .replace(/[%_(),]/g, " ")
     .replace(/\s+/g, " ")
     .trim()
     .slice(0, 80);
+}
+
+function extractSearchTokens(q: string, school: string): string[] {
+  return (q || school)
+    .split(/\s+/)
+    .map((token) => token.trim())
+    .filter((token) => token.length >= 2);
+}
+
+function scoreProfileMatch(
+  item: Pick<CommunityProfileSearchResult, "displayName" | "schoolName" | "bio">,
+  tokens: string[],
+): { score: number; matchHint: CommunityProfileSearchMatchHint | null } {
+  const name = item.displayName.toLowerCase();
+  const school = (item.schoolName || "").toLowerCase();
+  const bio = (item.bio || "").toLowerCase();
+
+  let score = 0;
+  let nameHits = 0;
+  let schoolHits = 0;
+  let bioHits = 0;
+
+  for (const token of tokens) {
+    if (name.includes(token)) {
+      nameHits += 1;
+      score += name.startsWith(token) ? 40 : 25;
+    }
+    if (school.includes(token)) {
+      schoolHits += 1;
+      score += school.startsWith(token) ? 35 : 22;
+    }
+    if (bio.includes(token)) {
+      bioHits += 1;
+      score += 8;
+    }
+  }
+
+  let matchHint: CommunityProfileSearchMatchHint | null = null;
+  if (nameHits >= schoolHits && nameHits >= bioHits && nameHits > 0) {
+    matchHint = "nome";
+  } else if (schoolHits >= bioHits && schoolHits > 0) {
+    matchHint = "escola";
+  } else if (bioHits > 0) {
+    matchHint = "bio";
+  }
+
+  return { score, matchHint };
 }
 
 export async function searchCommunityProfiles(params: {
@@ -38,7 +91,7 @@ export async function searchCommunityProfiles(params: {
   const q = sanitizeIlikeTerm((params.query || "").trim().toLowerCase());
   const school = sanitizeIlikeTerm((params.school || "").trim().toLowerCase());
   const component = (params.component || "").trim();
-  const limit = Math.min(params.limit || 24, 40);
+  const limit = Math.min(params.limit || 30, 40);
   const searchTerm = q || school;
 
   if (searchTerm.length > 0 && searchTerm.length < 2) {
@@ -104,7 +157,7 @@ export async function searchCommunityProfiles(params: {
 
   const authors = await resolveCommunityAuthors(userIds);
 
-  let results: CommunityProfileSearchResult[] = profileRows.map((row) => {
+  let results: ScoredResult[] = profileRows.map((row) => {
     const compMap = componentCountByUser.get(row.id);
     let topComponente: string | null = null;
     let topCount = 0;
@@ -128,6 +181,8 @@ export async function searchCommunityProfiles(params: {
       bio: row.bio?.trim() || null,
       topComponente,
       materialsCount: materialsCountByUser.get(row.id) || 0,
+      relevanceScore: 0,
+      matchHint: null,
     };
   });
 
@@ -135,22 +190,30 @@ export async function searchCommunityProfiles(params: {
     results = results.filter((item) => item.topComponente === component);
   }
 
-  const tokens = (q || school)
-    .split(/\s+/)
-    .map((token) => token.trim())
-    .filter((token) => token.length >= 2);
+  const tokens = extractSearchTokens(q, school);
 
   if (tokens.length) {
-    results = results.filter((item) => {
-      const haystack =
-        `${item.displayName} ${item.schoolName || ""} ${item.bio || ""}`.toLowerCase();
-      return tokens.every((token) => haystack.includes(token));
-    });
+    results = results
+      .filter((item) => {
+        const haystack =
+          `${item.displayName} ${item.schoolName || ""} ${item.bio || ""}`.toLowerCase();
+        return tokens.every((token) => haystack.includes(token));
+      })
+      .map((item) => {
+        const { score, matchHint } = scoreProfileMatch(item, tokens);
+        return { ...item, relevanceScore: score, matchHint };
+      });
   }
 
   return results
-    .sort((a, b) => b.materialsCount - a.materialsCount || a.displayName.localeCompare(b.displayName))
-    .slice(0, limit);
+    .sort(
+      (a, b) =>
+        b.relevanceScore - a.relevanceScore ||
+        b.materialsCount - a.materialsCount ||
+        a.displayName.localeCompare(b.displayName),
+    )
+    .slice(0, limit)
+    .map(({ relevanceScore: _relevanceScore, ...item }) => item);
 }
 
 export async function getUserTopComponentes(userId: string, limit = 3): Promise<string[]> {

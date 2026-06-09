@@ -2,6 +2,7 @@
 
 import { CommunityAuthorAvatar } from "@/components/community/CommunityAuthorAvatar";
 import { CommunityAuthorLink } from "@/components/community/CommunityAuthorLink";
+import { CommunityFriendSearch } from "@/components/community/CommunityFriendSearch";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import type { CommunityFriendSummary, CommunityPendingFriend } from "@/lib/community/types";
 import { parseJsonResponse } from "@/lib/http/parse-json-response";
@@ -102,6 +103,8 @@ export function CommunityFriendsPanel() {
 
       {expanded ? (
         <div className="space-y-4 border-t border-cyan-400/10 px-4 py-4">
+          <CommunityFriendSearch />
+
           {loading ? (
             <p className="text-sm font-semibold text-slate-500">Carregando…</p>
           ) : (
@@ -190,7 +193,8 @@ export function CommunityFriendsPanel() {
                 </h4>
                 {friends.length === 0 ? (
                   <p className="mt-2 text-sm font-medium text-slate-500">
-                    Nenhum amigo ainda. Busque professores na Comunidade.
+                    Nenhum amigo ainda. Use a busca acima para encontrar professores por nome ou
+                    escola.
                   </p>
                 ) : (
                   <ul className="mt-2 space-y-2">

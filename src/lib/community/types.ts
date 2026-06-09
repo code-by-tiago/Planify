@@ -63,6 +63,8 @@ export type CommunityNotification = {
   createdAt: string;
 };
 
+export type CommunityProfileSearchMatchHint = "nome" | "escola" | "bio";
+
 export type CommunityProfileSearchResult = {
   userId: string;
   displayName: string;
@@ -71,6 +73,7 @@ export type CommunityProfileSearchResult = {
   bio: string | null;
   topComponente: string | null;
   materialsCount: number;
+  matchHint?: CommunityProfileSearchMatchHint | null;
 };
 
 export type CommunityPendingFriend = CommunityFriendSummary & {

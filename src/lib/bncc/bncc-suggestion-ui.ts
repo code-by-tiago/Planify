@@ -68,6 +68,64 @@ export function normalizeBnccSkillOption(
   };
 }
 
+export function mergeBnccSkillGroups(
+  existing: BnccSkillGroup[],
+  incoming: BnccSkillGroup[],
+): BnccSkillGroup[] {
+  const byConteudo = new Map(
+    existing.map((group) => [
+      group.conteudo,
+      {
+        conteudo: group.conteudo,
+        habilidades: [...group.habilidades],
+      },
+    ]),
+  );
+
+  for (const group of incoming) {
+    const current = byConteudo.get(group.conteudo);
+
+    if (!current) {
+      byConteudo.set(group.conteudo, {
+        conteudo: group.conteudo,
+        habilidades: [...group.habilidades],
+      });
+      continue;
+    }
+
+    const seenCodes = new Set(
+      current.habilidades.map((skill) => skill.codigo.toUpperCase()),
+    );
+
+    for (const skill of group.habilidades) {
+      const code = skill.codigo.toUpperCase();
+
+      if (!seenCodes.has(code)) {
+        current.habilidades.push(skill);
+        seenCodes.add(code);
+      }
+    }
+  }
+
+  return Array.from(byConteudo.values());
+}
+
+export function collectBnccSkillCodes(groups: BnccSkillGroup[]): string[] {
+  const codes = new Set<string>();
+
+  for (const group of groups) {
+    for (const skill of group.habilidades) {
+      const code = String(skill.codigo || "").trim();
+
+      if (code) {
+        codes.add(code);
+      }
+    }
+  }
+
+  return Array.from(codes);
+}
+
 export function groupBnccSkillsFromResponse(
   data: Record<string, unknown> | null | undefined,
   topicLines: string[],

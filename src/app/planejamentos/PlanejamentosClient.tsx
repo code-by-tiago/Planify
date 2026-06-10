@@ -402,6 +402,10 @@ export function PlanejamentosClient() {
   const [elevatingQuality, setElevatingQuality] = useState(false);
   const [status, setStatus] = useState("Aguardando");
   const [loadingBncc, setLoadingBncc] = useState(false);
+  const [refreshingConteudo, setRefreshingConteudo] = useState<string | null>(null);
+  const [contentRefreshOffsets, setContentRefreshOffsets] = useState<Record<string, number>>(
+    {},
+  );
   const [loadingPlan, setLoadingPlan] = useState(false);
   const [error, setError] = useState("");
   const [errorCta, setErrorCta] = useState<ReturnType<typeof formatGenerationError>["cta"]>(null);
@@ -465,6 +469,7 @@ export function PlanejamentosClient() {
       applyBnccEducation(patch);
       setGroups([]);
       setSelectedSkills([]);
+      setContentRefreshOffsets({});
       invalidateGenerated();
       setStatus("Aguardando nova sugestão");
       setError("");
@@ -557,6 +562,7 @@ export function PlanejamentosClient() {
   function invalidateConteudosDependents() {
     setGroups([]);
     setSelectedSkills([]);
+    setContentRefreshOffsets({});
     invalidateGenerated();
     setStatus("Aguardando nova sugestão");
     setError("");
@@ -582,6 +588,7 @@ export function PlanejamentosClient() {
     setForm((current) => normalizeEducationalFields(current, exemplos[kind]));
     setGroups([]);
     setSelectedSkills([]);
+    setContentRefreshOffsets({});
     invalidateGenerated();
     setStatus("Exemplo preenchido. Agora sugira as habilidades BNCC.");
     setError("");
@@ -591,6 +598,7 @@ export function PlanejamentosClient() {
     setForm(initialForm);
     setGroups([]);
     setSelectedSkills([]);
+    setContentRefreshOffsets({});
     invalidateGenerated();
     setStatus("Aguardando");
     setError("");
@@ -704,6 +712,7 @@ export function PlanejamentosClient() {
 
       setGroups(nextGroups);
       setSelectedSkills([]);
+      setContentRefreshOffsets({});
       invalidateGenerated();
       setStatus("Habilidades sugeridas. Escolha manualmente quais entrarão no planejamento.");
     } catch (err) {
@@ -711,6 +720,87 @@ export function PlanejamentosClient() {
       setStatus("Erro na sugestão");
     } finally {
       setLoadingBncc(false);
+    }
+  }
+
+  async function refreshContentBncc(group: BnccGroup) {
+    setError("");
+
+    const excludeCodigos = group.habilidades
+      .map((skill) => skill.codigo.trim())
+      .filter(Boolean);
+    const nextOffset = (contentRefreshOffsets[group.conteudo] ?? 0) + 1;
+
+    setRefreshingConteudo(group.conteudo);
+    setStatus(`Buscando outras opções para: ${group.conteudo}`);
+
+    try {
+      const response = await fetch("/api/bncc/sugerir", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          etapa: form.etapa,
+          anoSerie: form.anoSerie,
+          areaConhecimento: form.areaConhecimento,
+          componenteCurricular: form.componenteCurricular,
+          conteudos: group.conteudo,
+          refresh: true,
+          excludeCodigos,
+          offset: nextOffset,
+        }),
+      });
+
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok || !data?.success) {
+        throw new Error(data?.error?.message || "Não foi possível buscar outras habilidades BNCC.");
+      }
+
+      const refreshedGroups = groupSkillsFromResponse(data, [group.conteudo]);
+      const refreshed =
+        refreshedGroups.find((item) => item.conteudo === group.conteudo) ?? refreshedGroups[0];
+
+      if (!refreshed?.habilidades.length) {
+        setError(
+          String(data?.message || "Não há mais alternativas compatíveis para este conteúdo."),
+        );
+        setStatus("Sem novas alternativas");
+        return;
+      }
+
+      const replacedCodes = new Set(group.habilidades.map((skill) => skill.codigo));
+      const newCodes = new Set(refreshed.habilidades.map((skill) => skill.codigo));
+
+      setGroups((current) =>
+        current.map((item) =>
+          item.conteudo === group.conteudo
+            ? { conteudo: group.conteudo, habilidades: refreshed.habilidades }
+            : item,
+        ),
+      );
+
+      setSelectedSkills((current) =>
+        current.filter(
+          (skill) =>
+            skill.conteudo !== group.conteudo ||
+            !replacedCodes.has(skill.codigo) ||
+            newCodes.has(skill.codigo),
+        ),
+      );
+
+      setContentRefreshOffsets((current) => ({
+        ...current,
+        [group.conteudo]: nextOffset,
+      }));
+
+      invalidateGenerated();
+      setStatus("Novas opções carregadas para este conteúdo. Escolha as habilidades desejadas.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao buscar outras habilidades BNCC.");
+      setStatus("Erro na sugestão");
+    } finally {
+      setRefreshingConteudo(null);
     }
   }
 
@@ -1671,7 +1761,11 @@ export function PlanejamentosClient() {
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-cyan-600">BNCC por conteúdo</p>
                 <h2 className="mt-4 text-3xl font-black text-slate-950">Habilidades sugeridas</h2>
-                <p className="mt-3 text-sm leading-7 text-slate-400">As sugestões vêm desmarcadas por padrão. Clique apenas nas habilidades que deseja usar no planejamento.</p>
+                <p className="mt-3 text-sm leading-7 text-slate-400">
+                  As sugestões vêm desmarcadas por padrão. Se não concordar com as 3 opções de um
+                  conteúdo, use <strong className="text-slate-700">Atualizar habilidades</strong>{" "}
+                  naquele bloco.
+                </p>
               </div>
               <div className="flex flex-wrap gap-2">
                 <Pill tone="cyan">{stats.sugeridas} sugeridas</Pill>
@@ -1693,7 +1787,19 @@ export function PlanejamentosClient() {
                         <p className="text-xs font-black uppercase tracking-[0.25em] text-blue-600">Conteúdo</p>
                         <h3 className="mt-2 text-xl font-black text-slate-950">{group.conteudo}</h3>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => void refreshContentBncc(group)}
+                          disabled={
+                            loadingBncc || refreshingConteudo === group.conteudo
+                          }
+                          className="rounded-xl border border-cyan-400/30 bg-cyan-50 px-4 py-2 text-xs font-black text-cyan-900 transition hover:bg-cyan-100 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {refreshingConteudo === group.conteudo
+                            ? "Atualizando..."
+                            : "Atualizar habilidades"}
+                        </button>
                         <button type="button" onClick={() => selectGroup(group)} className="rounded-xl border border-emerald-300/30 bg-emerald-300/10 px-4 py-2 text-xs font-black text-emerald-100 transition hover:bg-emerald-300/20">
                           Selecionar grupo
                         </button>

@@ -506,7 +506,12 @@ export function rankBnccSkillsForContent(
   skills: BNCCSkill[],
   context: BnccContextFilter,
   content: string,
-  options?: { usedCodes?: Set<string>; contentIndex?: number; limit?: number },
+  options?: {
+    usedCodes?: Set<string>;
+    contentIndex?: number;
+    limit?: number;
+    excludeCodigos?: Set<string>;
+  },
 ): Array<{ skill: BNCCSkill; score: number }> {
   const limit = Math.min(Math.max(options?.limit ?? 3, 1), 5);
   const request: BNCCSuggestionRequest = {
@@ -516,7 +521,13 @@ export function rankBnccSkillsForContent(
     conteudo: content,
   };
 
-  const ranked = [...skills]
+  const exclude = options?.excludeCodigos;
+  const pool =
+    exclude && exclude.size > 0
+      ? skills.filter((skill) => !exclude.has(skill.codigo.toUpperCase()))
+      : skills;
+
+  const ranked = [...pool]
     .map((skill) => ({
       skill,
       score: calculateTextualRelevance(skill, request, options),
@@ -528,7 +539,7 @@ export function rankBnccSkillsForContent(
     return ranked.slice(0, limit);
   }
 
-  const fallback = [...skills]
+  const fallback = [...pool]
     .map((skill) => ({
       skill,
       score: calculateTextualRelevance(skill, request, options),

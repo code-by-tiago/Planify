@@ -36,6 +36,9 @@ export type BnccSuggestionPayload = {
   contents?: string[];
   temaCentral?: string;
   tema?: string;
+  excludeCodigos?: string[];
+  refresh?: boolean;
+  offset?: number;
 };
 
 type SkillCandidate = {
@@ -278,6 +281,34 @@ function splitContents(value: unknown): string[] {
     .split(/;|\s·\s|,/u)
     .map((item) => item.trim())
     .filter(Boolean);
+}
+
+export function extractExcludeCodigosFromPayload(
+  payload: BnccSuggestionPayload,
+): Set<string> {
+  const raw = (payload as UnknownRecord).excludeCodigos;
+
+  if (!Array.isArray(raw)) {
+    return new Set();
+  }
+
+  return new Set(
+    raw
+      .map((item) => String(item ?? "").trim().toUpperCase())
+      .filter(Boolean),
+  );
+}
+
+export function isBnccRefreshRequest(payload: BnccSuggestionPayload): boolean {
+  const value = (payload as UnknownRecord).refresh;
+
+  return value === true || String(value).toLowerCase() === "true";
+}
+
+export function getBnccRefreshOffset(payload: BnccSuggestionPayload): number {
+  const value = Number((payload as UnknownRecord).offset);
+
+  return Number.isFinite(value) && value >= 0 ? Math.floor(value) : 0;
 }
 
 export function extractConteudosFromPayload(payload: BnccSuggestionPayload): string[] {
@@ -1343,6 +1374,10 @@ export async function suggestBnccByConteudos(payload: BnccSuggestionPayload) {
     };
   }
 
+  const refresh = isBnccRefreshRequest(payload);
+  const refreshOffset = getBnccRefreshOffset(payload);
+  const excludeCodigos = extractExcludeCodigosFromPayload(payload);
+
   const context = {
     etapa: getString(payload, ["etapa"]),
     anoSerie: getString(payload, ["anoSerie", "serie", "ano"]),
@@ -1351,11 +1386,11 @@ export async function suggestBnccByConteudos(payload: BnccSuggestionPayload) {
 
   const catalog = await readBNCCSkills();
 
-  if (isSpanishComponent(payload) && isHighSchoolPayload(payload)) {
+  if (!refresh && isSpanishComponent(payload) && isHighSchoolPayload(payload)) {
     return buildSpanishHighSchoolResponse(payload, conteudos);
   }
 
-  if (isFundamentalSpanishPayload(payload)) {
+  if (!refresh && isFundamentalSpanishPayload(payload)) {
     const spanishFundamental = buildSpanishFundamentalResponse(
       payload,
       conteudos,
@@ -1368,13 +1403,14 @@ export async function suggestBnccByConteudos(payload: BnccSuggestionPayload) {
   }
 
   const filtered = filterBnccSkillsByContext(catalog, context);
-  const usedCodes = new Set<string>();
+  const usedCodes = new Set(excludeCodigos);
 
   const grouped = conteudos.map((conteudo, contentIndex) => {
     const ranked = rankBnccSkillsForContent(filtered, context, conteudo, {
       usedCodes,
-      contentIndex,
+      contentIndex: contentIndex + (refresh ? refreshOffset : 0),
       limit: 3,
+      excludeCodigos: refresh ? excludeCodigos : undefined,
     });
 
     ranked.forEach((item) => usedCodes.add(item.skill.codigo));
@@ -1415,7 +1451,11 @@ export async function suggestBnccByConteudos(payload: BnccSuggestionPayload) {
     source: catalog.length > 0 ? "local" : "fallback",
     message:
       habilidades.length > 0
-        ? "Habilidades sugeridas a partir dos conteúdos informados."
-        : "Nenhuma habilidade encontrada para os conteúdos informados.",
+        ? refresh
+          ? "Novas alternativas de habilidades BNCC para os conteúdos informados."
+          : "Habilidades sugeridas a partir dos conteúdos informados."
+        : refresh
+          ? "Não há mais alternativas compatíveis com os filtros atuais."
+          : "Nenhuma habilidade encontrada para os conteúdos informados.",
   };
 }

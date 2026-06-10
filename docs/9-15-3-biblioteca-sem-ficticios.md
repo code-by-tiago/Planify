@@ -21,6 +21,19 @@ A página `/biblioteca` agora exibe apenas:
 materiais reais cadastrados pelo administrador em /admin/biblioteca
 ```
 
+## Seed de pacotes iniciais (produção)
+
+O cache pedagógico (`npm run seed:pedagogical-themes`) **não** preenche a Biblioteca.
+Para cadastrar materiais reais de demonstração (DOCX no bucket `biblioteca-materiais`):
+
+```powershell
+cd C:\planify
+npm run seed:biblioteca-pacotes
+```
+
+Requer `NEXT_PUBLIC_SUPABASE_URL` e `SUPABASE_SERVICE_ROLE_KEY` em `.env.local`.
+O script é idempotente: ignora pacotes com mesmo título + componente.
+
 ## Quando não houver upload
 
 A página mostra um estado vazio profissional:

@@ -101,17 +101,21 @@ export function CommunityFeed({
   }
 
   return (
-    <div className="mx-auto grid max-w-3xl gap-5">
+    <div className="space-y-6">
       {featuredItems.length > 0 ? (
         <section className="space-y-3">
           <h2 className="text-sm font-black uppercase tracking-[0.18em] text-amber-700">
             Em destaque esta semana
           </h2>
-          {featuredItems.map((item) => renderCard(item, "featured-"))}
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {featuredItems.map((item) => renderCard(item, "featured-"))}
+          </div>
         </section>
       ) : null}
 
-      {feedItems.map((item) => renderCard(item))}
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        {feedItems.map((item) => renderCard(item))}
+      </div>
     </div>
   );
 }

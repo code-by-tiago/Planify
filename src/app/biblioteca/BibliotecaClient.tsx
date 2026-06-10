@@ -8,6 +8,9 @@ import {
   downloadBibliotecaMaterial,
   type BibliotecaDownloadFormat,
 } from "@/lib/biblioteca/biblioteca-download-client";
+import { openBibliotecaMaterialInEditor } from "@/lib/biblioteca/biblioteca-editor-open";
+import { PlanifyMaterialHubCard } from "@/components/materials/PlanifyMaterialHubCard";
+import { formatMaterialBytes } from "@/lib/materials/format-material-bytes";
 import { useEffect, useMemo, useState } from "react";
 import {
   formatGenerationError,
@@ -65,53 +68,18 @@ function normalize(value: string) {
     .replace(/\p{Diacritic}/gu, "");
 }
 
-function formatBytes(value: number | undefined) {
-  if (!value) return "";
-  if (value < 1024 * 1024) {
-    return `${Math.max(1, Math.round(value / 1024))} KB`;
-  }
-  return `${(value / 1024 / 1024).toFixed(1)} MB`;
-}
-
-function openInEditor(item: BibliotecaItem) {
-  const html = `
-    <article class="planify-doc" style="font-family: Arial, sans-serif; line-height: 1.5;">
-      <h1>${item.title}</h1>
-      <table style="width:100%;border-collapse:collapse;margin:16px 0;">
-        <tr><td style="border:1px solid #cbd5e1;padding:8px;"><strong>Etapa</strong></td><td style="border:1px solid #cbd5e1;padding:8px;">${item.etapa || ""}</td></tr>
-        <tr><td style="border:1px solid #cbd5e1;padding:8px;"><strong>Ano/Série</strong></td><td style="border:1px solid #cbd5e1;padding:8px;">${item.anoSerie || "Geral"}</td></tr>
-        <tr><td style="border:1px solid #cbd5e1;padding:8px;"><strong>Componente</strong></td><td style="border:1px solid #cbd5e1;padding:8px;">${item.componente || ""}</td></tr>
-        <tr><td style="border:1px solid #cbd5e1;padding:8px;"><strong>Tipo</strong></td><td style="border:1px solid #cbd5e1;padding:8px;">${item.tipoMaterial || item.categoria || ""}</td></tr>
-        <tr><td style="border:1px solid #cbd5e1;padding:8px;"><strong>Tema</strong></td><td style="border:1px solid #cbd5e1;padding:8px;">${item.tema || ""}</td></tr>
-      </table>
-      <h2>Descrição pedagógica</h2>
-      <p>${item.description || ""}</p>
-    </article>
-  `;
-
-  localStorage.setItem(
-    "planify_editor_document",
-    JSON.stringify({
-      type: "biblioteca",
-      title: item.title,
-      html,
-      content: html,
-      updatedAt: new Date().toISOString(),
-    }),
-  );
-
-  localStorage.setItem("planify_editor_content", html);
-  window.location.href = "/editor?from=biblioteca";
-}
-
 function MaterialActions({
   item,
   downloadingKey,
+  openingEditorId,
+  onOpenEditor,
   onDownload,
   compact,
 }: {
   item: BibliotecaItem;
   downloadingKey: string | null;
+  openingEditorId: string | null;
+  onOpenEditor: (item: BibliotecaItem) => void;
   onDownload: (item: BibliotecaItem, format: BibliotecaDownloadFormat) => void;
   compact?: boolean;
 }) {
@@ -155,11 +123,12 @@ function MaterialActions({
       )}
       <button
         type="button"
-        onClick={() => openInEditor(item)}
-        className={`${btnClass} w-full border border-cyan-400/25 bg-white/80 text-cyan-800 hover:bg-cyan-50`}
+        disabled={openingEditorId === item.id}
+        onClick={() => onOpenEditor(item)}
+        className={`${btnClass} w-full border border-cyan-400/25 bg-white/80 text-cyan-800 hover:bg-cyan-50 disabled:opacity-60`}
       >
         <PlanifyIcon name="editor" className="h-3.5 w-3.5" />
-        Abrir no editor
+        {openingEditorId === item.id ? "Abrindo…" : "Abrir no editor"}
       </button>
     </div>
   );
@@ -177,6 +146,22 @@ export function BibliotecaClient() {
   const { runWithRetry } = useRetryableAction();
   const [loading, setLoading] = useState(true);
   const [downloadingKey, setDownloadingKey] = useState<string | null>(null);
+  const [openingEditorId, setOpeningEditorId] = useState<string | null>(null);
+
+  async function handleOpenInEditor(item: BibliotecaItem) {
+    setOpeningEditorId(item.id);
+    setError("");
+    try {
+      await openBibliotecaMaterialInEditor(item);
+    } catch (err) {
+      const formatted = formatGenerationError(err);
+      setError(formatted.message);
+      setErrorRetryable(formatted.retryable);
+      setStatus("Não foi possível abrir no editor.");
+    } finally {
+      setOpeningEditorId(null);
+    }
+  }
 
   async function loadPremiumMaterials() {
     setLoading(true);
@@ -348,46 +333,27 @@ export function BibliotecaClient() {
             {filteredItems.map((item) => {
               const isSelected = selected?.id === item.id;
               return (
-                <article
+                <PlanifyMaterialHubCard
                   key={item.id}
-                  className={`pl-hud-hub-app flex min-h-[17rem] flex-col rounded-2xl p-4 transition ${
-                    isSelected
-                      ? "border-cyan-400/50 shadow-sm"
-                      : ""
-                  }`}
-                >
-                  <button
-                    type="button"
-                    onClick={() => setSelected(item)}
-                    className="flex flex-1 flex-col text-left"
-                  >
-                    <span className="inline-flex w-fit rounded-full border border-cyan-400/20 bg-cyan-50 px-2.5 py-0.5 text-[10px] font-bold uppercase text-cyan-800">
-                      {item.tipoMaterial || item.categoria}
-                    </span>
-                    <h3 className="mt-3 line-clamp-2 text-base font-extrabold leading-snug text-slate-950">
-                      {item.title}
-                    </h3>
-                    <p className="mt-2 line-clamp-2 text-xs leading-5 text-slate-600">
-                      {item.description}
-                    </p>
-                    <div className="mt-auto space-y-1 pt-3 text-[11px] font-medium text-slate-500">
-                      <p>
-                        {item.componente} · {item.etapa}
-                        {item.anoSerie ? ` · ${item.anoSerie}` : ""}
-                      </p>
-                      {item.tema ? <p>{item.tema}</p> : null}
-                      {item.fileSize ? <p>{formatBytes(item.fileSize)}</p> : null}
-                    </div>
-                  </button>
-                  <div className="mt-3 border-t border-cyan-400/10 pt-3">
+                  badge={item.tipoMaterial || item.categoria}
+                  title={item.title}
+                  description={item.description}
+                  metaPrimary={`${item.componente} · ${item.etapa}${item.anoSerie ? ` · ${item.anoSerie}` : ""}`}
+                  metaSecondary={item.tema || undefined}
+                  metaTertiary={formatMaterialBytes(item.fileSize) || undefined}
+                  selected={isSelected}
+                  onSelect={() => setSelected(item)}
+                  footer={
                     <MaterialActions
                       item={item}
                       downloadingKey={downloadingKey}
+                      openingEditorId={openingEditorId}
+                      onOpenEditor={(entry) => void handleOpenInEditor(entry)}
                       onDownload={handleDownload}
                       compact
                     />
-                  </div>
-                </article>
+                  }
+                />
               );
             })}
           </div>
@@ -444,6 +410,8 @@ export function BibliotecaClient() {
               <MaterialActions
                 item={selected}
                 downloadingKey={downloadingKey}
+                openingEditorId={openingEditorId}
+                onOpenEditor={(entry) => void handleOpenInEditor(entry)}
                 onDownload={handleDownload}
               />
             </div>

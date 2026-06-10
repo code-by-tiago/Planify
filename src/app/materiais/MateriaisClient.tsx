@@ -94,6 +94,7 @@ import { lessonBundleFollowUp } from "@/lib/pro/teachyStudio";
 import { useSchoolClasses } from "@/hooks/useSchoolClasses";
 import { TurmaCombobox } from "@/components/school/TurmaCombobox";
 import { MaterialBnccSkillsPanel } from "@/components/bncc/MaterialBnccSkillsPanel";
+import { PlanifyMaterialHubCard } from "@/components/materials/PlanifyMaterialHubCard";
 import {
   groupBnccSkillsFromResponse,
   mapSelectedBnccSkillsToPayload,
@@ -2467,42 +2468,34 @@ export function MateriaisClient({
               </div>
             </div>
 
-            <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {historico.slice(0, 6).map((item) => {
                 const itemTool = getPlanifyTool(item.tipo);
+                const title = item.tema || itemTool.shortTitle;
                 return (
-                  <div
+                  <PlanifyMaterialHubCard
                     key={item.id}
-                    className="group flex items-start gap-3 rounded-xl border border-cyan-400/15 bg-white/70 p-4 transition hover:-translate-y-0.5 hover:border-cyan-400/35 hover:shadow-md"
-                  >
-                    <button
-                      type="button"
-                      onClick={() => reabrirHistorico(item)}
-                      className="flex min-w-0 flex-1 items-start gap-3 text-left"
-                    >
-                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500/90 to-cyan-700 text-white shadow-sm transition group-hover:scale-105">
-                        <PlanifyIcon name={itemTool.icon} className="h-5 w-5" />
-                      </span>
-                      <span className="min-w-0">
-                        <span className="block truncate text-sm font-extrabold text-slate-950">
-                          {item.tema || itemTool.shortTitle}
-                        </span>
-                        <span className="mt-0.5 block truncate text-xs font-semibold text-slate-500">
-                          {itemTool.shortTitle}
-                          {item.componente ? ` · ${item.componente}` : ""}
-                          {item.createdAt ? ` · ${formatDate(item.createdAt)}` : ""}
-                        </span>
-                      </span>
-                    </button>
-                    <button
-                      type="button"
-                      title="Abrir no editor"
-                      onClick={() => abrirHistoricoNoEditor(item)}
-                      className="shrink-0 rounded-lg border border-cyan-400/20 bg-white p-2 text-cyan-700 transition hover:border-cyan-400/50 hover:bg-cyan-50"
-                    >
-                      <PlanifyIcon name="editor" className="h-4 w-4" />
-                    </button>
-                  </div>
+                    badge={itemTool.shortTitle}
+                    title={title}
+                    description={item.componente ? `Componente: ${item.componente}` : undefined}
+                    metaPrimary={[item.componente, item.anoSerie]
+                      .filter(Boolean)
+                      .join(" · ")}
+                    metaSecondary={
+                      item.createdAt ? formatDate(item.createdAt) : undefined
+                    }
+                    onSelect={() => reabrirHistorico(item)}
+                    footer={
+                      <button
+                        type="button"
+                        onClick={() => abrirHistoricoNoEditor(item)}
+                        className="pl-hud-btn flex w-full items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold"
+                      >
+                        <PlanifyIcon name="editor" className="h-3.5 w-3.5" />
+                        Abrir no editor
+                      </button>
+                    }
+                  />
                 );
               })}
             </div>

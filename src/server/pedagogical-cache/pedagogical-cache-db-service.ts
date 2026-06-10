@@ -104,8 +104,11 @@ export async function findApprovedEntries(
     .or(`expires_at.is.null,expires_at.gt.${nowIso}`)
     .or(orFilters.join(","));
 
-  if (query.bnccCodigos?.length) {
-    dbQuery = dbQuery.overlaps("bncc_codigos", query.bnccCodigos);
+  // Com tema preenchido, entradas curadas (ex.: Wikipédia) podem ter bncc_codigos vazio.
+  // overlaps() excluía alias hits quando o professor já tinha BNCC selecionada.
+  const bnccOnlyLookup = Boolean(query.bnccCodigos?.length) && !query.tema?.trim();
+  if (bnccOnlyLookup) {
+    dbQuery = dbQuery.overlaps("bncc_codigos", query.bnccCodigos!);
   }
 
   const { data, error } = await dbQuery.limit(10);

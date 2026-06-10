@@ -10,7 +10,7 @@ import type { EditorDocument } from "../../types/editor";
 import type { HistoryFilter, HistoryItem } from "../../types/history";
 import { HistoryDocumentExportBar } from "@/components/documents/HistoryDocumentExportBar";
 import { getHistoryPlanningPayload } from "@/lib/documents/document-export-context";
-import { MaterialTypeCover } from "@/components/materials/MaterialTypeCover";
+import { PlanifyMaterialHubCard } from "@/components/materials/PlanifyMaterialHubCard";
 import { MarketplacePublishButton } from "@/components/marketplace/MarketplacePublishButton";
 import {
   buildHistoryContentPreview,
@@ -497,94 +497,55 @@ export function HistoricoClient() {
         </div>
 
         {filteredItems.length > 0 ? (
-          <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {filteredItems.map((item) => {
               const selected = selectedItem?.id === item.id;
               const checked = selectedIds.has(item.id);
               const typeLabel = resolveHistoryTypeLabel(item.type);
               return (
-                <article
+                <PlanifyMaterialHubCard
                   key={item.id}
-                  className={`group relative flex flex-col overflow-hidden rounded-2xl border transition ${
-                    selectionMode && checked
-                      ? "border-rose-300 bg-rose-50/40 shadow-sm"
-                      : selected
-                        ? "border-cyan-400 bg-cyan-50/30 shadow-sm"
-                        : "border-slate-200 bg-white hover:border-cyan-300 hover:shadow-sm"
-                  }`}
-                >
-                  {selectionMode ? (
-                    <label className="absolute left-2 top-2 z-10 flex cursor-pointer items-center gap-1.5 rounded-lg border border-slate-200 bg-white/95 px-2 py-1 shadow-sm">
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        onChange={() => toggleItemSelection(item.id)}
-                        className="h-4 w-4 accent-rose-600"
-                        aria-label={`Selecionar ${item.title}`}
+                  badge={typeLabel}
+                  title={item.title}
+                  description={buildHistoryContentPreview(item.content)}
+                  metaPrimary={item.subtitle || sourceLabels[item.source] || undefined}
+                  metaSecondary={formatDate(item.updatedAt)}
+                  selected={selected}
+                  selectionMode={selectionMode}
+                  checked={checked}
+                  onToggleCheck={() => toggleItemSelection(item.id)}
+                  onSelect={() => setSelectedItem(item)}
+                  footer={
+                    <div className="space-y-2">
+                      <HistoryDocumentExportBar
+                        item={item}
+                        onStatus={handleExportStatus}
+                        onError={handleExportError}
+                        classroomMode="popover"
                       />
-                      <span className="text-[10px] font-bold text-slate-600">
-                        {checked ? "Marcado" : "Marcar"}
-                      </span>
-                    </label>
-                  ) : null}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (selectionMode) {
-                        toggleItemSelection(item.id);
-                        return;
-                      }
-                      setSelectedItem(item);
-                    }}
-                    className="flex min-h-0 flex-1 flex-col text-left"
-                  >
-                    <MaterialTypeCover
-                      typeLabel={typeLabel}
-                      subtitle={item.subtitle || sourceLabels[item.source]}
-                      compact
-                      className="rounded-none"
-                    />
-                    <div className="flex min-h-0 flex-1 flex-col p-3">
-                      <h3 className="line-clamp-2 text-sm font-extrabold leading-snug text-slate-950">
-                        {item.title}
-                      </h3>
-                      <p className="mt-1 line-clamp-2 text-[10px] leading-4 text-slate-500">
-                        {buildHistoryContentPreview(item.content)}
-                      </p>
-                      <p className="mt-auto pt-2 text-[10px] font-medium text-slate-400">
-                        {formatDate(item.updatedAt)}
-                      </p>
+                      <div className="flex gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => openInEditor(item)}
+                          disabled={selectionMode}
+                          className="pl-hud-btn min-h-9 flex-1 rounded-xl py-1.5 text-[10px] font-bold disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          Abrir no editor
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => removeItem(item)}
+                          disabled={selectionMode}
+                          className="min-h-9 rounded-xl border border-rose-200 bg-rose-50 px-2 py-1.5 text-[10px] font-bold text-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
+                          title="Excluir permanentemente"
+                          aria-label={`Excluir permanentemente ${item.title}`}
+                        >
+                          Excluir
+                        </button>
+                      </div>
                     </div>
-                  </button>
-                  <div className="space-y-2 border-t border-slate-100 px-2 py-2">
-                    <HistoryDocumentExportBar
-                      item={item}
-                      onStatus={handleExportStatus}
-                      onError={handleExportError}
-                      classroomMode="popover"
-                    />
-                    <div className="flex gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => openInEditor(item)}
-                        disabled={selectionMode}
-                        className="min-h-9 flex-1 rounded-lg bg-cyan-600 py-1.5 text-[10px] font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        Editor
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => removeItem(item)}
-                        disabled={selectionMode}
-                        className="min-h-9 rounded-lg border border-rose-200 bg-rose-50 px-2 py-1.5 text-[10px] font-bold text-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
-                        title="Excluir permanentemente"
-                        aria-label={`Excluir permanentemente ${item.title}`}
-                      >
-                        Excluir
-                      </button>
-                    </div>
-                  </div>
-                </article>
+                  }
+                />
               );
             })}
           </div>

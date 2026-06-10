@@ -42,6 +42,44 @@ const supabase = createClient(url, key, {
   auth: { persistSession: false, autoRefreshToken: false },
 });
 
+/** Título exato na Wikipédia PT quando difere do nome do tema. */
+const WIKIPEDIA_TITLE_MAP = {
+  "Equações do 1º grau": "Equação linear",
+  "Energia e trabalho": "Energia mecânica",
+  "Meio Ambiente": "Meio ambiente",
+  Ecossistemas: "Ecossistema",
+  Funções: "Função (matemática)",
+  "Clima e tempo": "Clima",
+};
+
+/** Snippet curado quando a Wikipédia não retorna conteúdo utilizável. */
+const CURATED_FALLBACKS = {
+  "Equações do 1º grau": {
+    title: "Equações do 1º grau",
+    summary:
+      "Equação do primeiro grau é uma igualdade com uma incógnita elevada à potência 1. Resolver a equação significa encontrar o valor da incógnita que torna a igualdade verdadeira, usando propriedades das operações.",
+    bodyMarkdown:
+      "## Equações do 1º grau\n\nEquação do primeiro grau é uma igualdade com uma incógnita elevada à potência 1. Resolver a equação significa encontrar o valor da incógnita que torna a igualdade verdadeira, usando propriedades das operações. No Ensino Fundamental, trabalha-se com equações da forma ax + b = c, consolidando álgebra básica e resolução de problemas.",
+    sourceUrl: null,
+  },
+  "Interpretação de texto": {
+    title: "Interpretação de texto",
+    summary:
+      "Interpretação de texto é a capacidade de compreender ideias explícitas e implícitas em um texto, relacionando informações, vocabulário e intenção do autor. Envolve leitura atenta, inferência e verificação de evidências no enunciado.",
+    bodyMarkdown:
+      "## Interpretação de texto\n\nInterpretação de texto é a capacidade de compreender ideias explícitas e implícitas em um texto, relacionando informações, vocabulário e intenção do autor. Envolve leitura atenta, inferência e verificação de evidências no enunciado. Na escola, desenvolve-se com gêneros variados, perguntas orientadoras e retomada sistemática do que o texto afirma ou sugere.",
+    sourceUrl: null,
+  },
+  Proporcionalidade: {
+    title: "Proporcionalidade",
+    summary:
+      "Proporcionalidade descreve relações entre grandezas que variam de forma constante: direta quando aumentam juntas, inversa quando uma cresce e a outra diminui. É base para regra de três, escalas e análise de situações do cotidiano.",
+    bodyMarkdown:
+      "## Proporcionalidade\n\nProporcionalidade descreve relações entre grandezas que variam de forma constante: direta quando aumentam juntas, inversa quando uma cresce e a outra diminui. É base para regra de três, escalas e análise de situações do cotidiano. No Ensino Fundamental, o tema articula razão, fração e resolução de problemas contextualizados.",
+    sourceUrl: null,
+  },
+};
+
 const CURATED_THEMES = [
   { tema: "Fotossíntese", componente: "Ciências", etapa: "EF", anoSerie: "6º ano" },
   { tema: "Revolução Industrial", componente: "História", etapa: "EF", anoSerie: "9º ano" },
@@ -62,6 +100,13 @@ const CURATED_THEMES = [
   { tema: "Funções", componente: "Matemática", etapa: "EM", anoSerie: "1ª série" },
   { tema: "Clima e tempo", componente: "Geografia", etapa: "EF", anoSerie: "5º ano" },
 ];
+
+const WIKI_API = "https://pt.wikipedia.org/w/api.php";
+const USER_AGENT = "Planify/1.0 (pedagogical seed)";
+const MIN_EXTRACT_LENGTH = 80;
+const RATE_LIMIT_MS = 2000;
+
+let lastWikiRequestAt = 0;
 
 function hashPart(text, seed) {
   let h = seed;
@@ -101,39 +146,118 @@ function computeContentHash(body, title = "") {
   return computeHash(`${normalizeText(title)}|${normalizeText(body)}`);
 }
 
-async function fetchWikipediaSummary(tema) {
-  const params = new URLSearchParams({
+async function rateLimitWiki() {
+  const now = Date.now();
+  const wait = lastWikiRequestAt + RATE_LIMIT_MS - now;
+  if (wait > 0) {
+    await new Promise((resolve) => setTimeout(resolve, wait));
+  }
+  lastWikiRequestAt = Date.now();
+}
+
+async function wikiApiFetch(params, retries = 3) {
+  for (let attempt = 0; attempt < retries; attempt += 1) {
+    await rateLimitWiki();
+    const query = new URLSearchParams({ ...params, format: "json", origin: "*" });
+    const response = await fetch(`${WIKI_API}?${query}`, {
+      headers: { "User-Agent": USER_AGENT },
+      signal: AbortSignal.timeout(12000),
+    });
+
+    if (response.status === 429) {
+      const backoff = (attempt + 1) * 3000;
+      console.warn(`Wikipedia rate limit; aguardando ${backoff}ms…`);
+      await new Promise((resolve) => setTimeout(resolve, backoff));
+      continue;
+    }
+
+    if (!response.ok) return null;
+
+    try {
+      return await response.json();
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
+async function resolveWikipediaTitle(tema) {
+  if (WIKIPEDIA_TITLE_MAP[tema]) return WIKIPEDIA_TITLE_MAP[tema];
+
+  const searchJson = await wikiApiFetch({
+    action: "opensearch",
+    search: tema,
+    limit: "1",
+    namespace: "0",
+  });
+  if (Array.isArray(searchJson) && searchJson[1]?.[0]) {
+    return searchJson[1][0];
+  }
+
+  return tema;
+}
+
+async function fetchWikipediaExtract(title, exintro) {
+  const json = await wikiApiFetch({
     action: "query",
-    prop: "extracts",
-    exintro: "1",
+    prop: "extracts|info",
+    exintro: exintro ? "1" : "0",
     explaintext: "1",
-    format: "json",
-    titles: tema,
-    origin: "*",
+    titles: title,
+    inprop: "url",
   });
 
-  const response = await fetch(`https://pt.wikipedia.org/w/api.php?${params}`, {
-    headers: { "User-Agent": "Planify/1.0 (pedagogical seed)" },
-    signal: AbortSignal.timeout(12000),
-  });
-
-  if (!response.ok) return null;
-  const json = await response.json();
-  const pages = json?.query?.pages;
-  if (!pages) return null;
-
-  const page = Object.values(pages)[0];
+  const page = Object.values(json?.query?.pages || {})[0];
   if (!page || page.missing !== undefined) return null;
 
   const extract = String(page.extract || "").trim();
-  if (extract.length < 80) return null;
+  if (extract.length < MIN_EXTRACT_LENGTH) return null;
+
+  const resolvedTitle = page.title || title;
+  return {
+    title: resolvedTitle,
+    summary: extract.slice(0, 400),
+    bodyMarkdown: `## ${resolvedTitle}\n\n${extract.slice(0, 6000)}`,
+    sourceUrl: page.fullurl || `https://pt.wikipedia.org/wiki/${encodeURIComponent(resolvedTitle)}`,
+    license: "CC BY-SA 4.0",
+  };
+}
+
+async function fetchWikipediaSummary(tema) {
+  const title = await resolveWikipediaTitle(tema);
+  if (!title) return null;
+
+  const intro = await fetchWikipediaExtract(title, true);
+  if (intro) return intro;
+
+  return fetchWikipediaExtract(title, false);
+}
+
+function curatedFallback(tema) {
+  const fallback = CURATED_FALLBACKS[tema];
+  if (!fallback) return null;
 
   return {
-    title: page.title || tema,
-    summary: extract.slice(0, 400),
-    bodyMarkdown: `## ${page.title || tema}\n\n${extract.slice(0, 6000)}`,
-    sourceUrl: `https://pt.wikipedia.org/wiki/${encodeURIComponent(page.title || tema)}`,
+    title: fallback.title,
+    summary: fallback.summary,
+    bodyMarkdown: fallback.bodyMarkdown,
+    sourceUrl: fallback.sourceUrl,
+    license: "Planify (curadoria interna)",
   };
+}
+
+async function resolveThemeContent(theme) {
+  const wiki = await fetchWikipediaSummary(theme.tema);
+  if (wiki) return { ...wiki, origin: "wikipedia" };
+
+  const fallback = curatedFallback(theme.tema);
+  if (fallback) {
+    console.warn(`Fallback curado: ${theme.tema}`);
+    return { ...fallback, origin: "curated" };
+  }
+
+  return null;
 }
 
 async function main() {
@@ -151,17 +275,19 @@ async function main() {
   let inserted = 0;
   let skipped = 0;
   let failed = 0;
+  const failures = [];
 
   for (const theme of CURATED_THEMES) {
-    const wiki = await fetchWikipediaSummary(theme.tema);
-    if (!wiki) {
+    const content = await resolveThemeContent(theme);
+    if (!content) {
       failed += 1;
-      console.warn(`Skip (Wikipedia): ${theme.tema}`);
+      failures.push(theme.tema);
+      console.warn(`Skip (sem conteúdo): ${theme.tema}`);
       continue;
     }
 
     const topicSignature = computeTopicSignature(theme);
-    const contentHash = computeContentHash(wiki.bodyMarkdown, wiki.title);
+    const contentHash = computeContentHash(content.bodyMarkdown, content.title);
 
     const { data: existing } = await supabase
       .from("pedagogical_cache_entries")
@@ -178,21 +304,21 @@ async function main() {
     const row = {
       topic_signature: topicSignature,
       content_hash: contentHash,
-      title: wiki.title,
-      summary: wiki.summary,
-      body_markdown: wiki.bodyMarkdown,
+      title: content.title,
+      summary: content.summary,
+      body_markdown: content.bodyMarkdown,
       content_type: "context",
       componente: theme.componente,
       ano_serie: theme.anoSerie,
       etapa: theme.etapa,
       source_id: source.id,
-      source_url: wiki.sourceUrl,
-      source_title: wiki.title,
-      source_license: "CC BY-SA 4.0",
+      source_url: content.sourceUrl,
+      source_title: content.title,
+      source_license: content.license,
       review_status: "approved",
       format_applied: false,
       ai_tokens_used: 0,
-      metadata: { seed: "curated-themes", tema: theme.tema },
+      metadata: { seed: "curated-themes", tema: theme.tema, origin: content.origin },
     };
 
     const { data: upserted, error: upsertError } = existing
@@ -210,6 +336,7 @@ async function main() {
 
     if (upsertError) {
       failed += 1;
+      failures.push(theme.tema);
       console.warn(`Falha ${theme.tema}:`, upsertError.message);
       continue;
     }
@@ -226,12 +353,14 @@ async function main() {
     );
 
     inserted += 1;
-    await new Promise((resolve) => setTimeout(resolve, 1100));
   }
 
   console.log(
     `seed:pedagogical-themes OK — ${inserted} inserido(s)/atualizado(s), ${skipped} já ok, ${failed} falha(s).`,
   );
+  if (failures.length > 0) {
+    console.log("Temas com falha:", failures.join(", "));
+  }
 }
 
 main().catch((error) => {

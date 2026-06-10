@@ -25,6 +25,7 @@
     "seed:pedagogical-themes": "node scripts/seed-pedagogical-themes.mjs",
     "seed:pedagogical-miss-queue": "node scripts/seed-pedagogical-miss-queue.mjs",
     "seed:biblioteca-pacotes": "node scripts/seed-biblioteca-pacotes.mjs",
+    "seed:biblioteca-pacotes:force": "node scripts/seed-biblioteca-pacotes.mjs --force",
     "backfill:history-estrutura": "node scripts/backfill-history-estrutura.mjs",
     "report:question-sources": "node scripts/report-question-sources.mjs",
     "verify:generators-live": "node scripts/verify-generators-live.mjs",

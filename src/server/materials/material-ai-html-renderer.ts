@@ -44,12 +44,11 @@ function renderSections(output: MaterialAIOutput): string {
 function renderQuestions(output: MaterialAIOutput): string {
   if (!output.questoes.length) return "";
 
-  const heading =
-    output.tipo === "lista" || output.tipo.includes("lista")
-      ? "Exercícios"
-      : output.tipo === "prova" || output.tipo.includes("prova")
-        ? "Questões"
-        : "Atividades e questões";
+  const isDirect =
+    output.tipo === "lista" ||
+    output.tipo.includes("lista") ||
+    output.tipo === "prova" ||
+    output.tipo.includes("prova");
 
   const body = output.questoes
     .map((question) =>
@@ -61,11 +60,16 @@ function renderQuestions(output: MaterialAIOutput): string {
           output.tipo === "lista" || output.tipo.includes("lista")
             ? "Exercício"
             : "Questão",
+        compact: isDirect,
       }),
     )
     .join("");
 
-  return `<section class="planify-questoes-block"><h2>${heading}</h2>${body}</section>`;
+  if (isDirect) {
+    return `<section class="planify-questoes-block planify-questoes-block-direct">${body}</section>`;
+  }
+
+  return `<section class="planify-questoes-block"><h2>Atividades e questões</h2>${body}</section>`;
 }
 
 function renderGabarito(output: MaterialAIOutput, incluirGabarito: boolean): string {

@@ -265,6 +265,12 @@ export const PLANIFY_EXPORT_DOC_COMPONENT_CSS = `
   .planify-atividades-block > h2 {
     color: #b45309;
   }
+  .planify-questoes-block-direct {
+    margin-top: 0.15rem;
+  }
+  .planify-questoes-block-direct > .planify-questao-card:first-child {
+    margin-top: 0;
+  }
   .planify-preview-prova .planify-questoes-block > h2 {
     color: #312e81;
     border-bottom: 2px solid #e0e7ff;

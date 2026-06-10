@@ -176,7 +176,6 @@ function renderExam(response: MaterialEngineResponse, ctx?: RenderContext): stri
   if (!questions.length) return "";
 
   const tipo = ctx?.tipo ?? "prova";
-  const heading = tipo === "lista" ? "Exercícios" : "Questões";
   const itemLabel = tipo === "lista" ? "Exercício" : "Questão";
 
   const body = questions
@@ -187,11 +186,12 @@ function renderExam(response: MaterialEngineResponse, ctx?: RenderContext): stri
         options: question.options,
         questionType: question.type,
         label: itemLabel,
+        compact: true,
       }),
     )
     .join("");
 
-  return `<section class="planify-questoes-block"><h2>${heading}</h2>${body}</section>`;
+  return `<section class="planify-questoes-block planify-questoes-block-direct">${body}</section>`;
 }
 
 function renderGame(response: MaterialEngineResponse): string {

@@ -94,11 +94,7 @@ export function renderMaterialInstitutionHeader(ctx: MaterialDocumentContext): s
 
 export function renderAssessmentInstructions(tipo: string): string {
   if (tipo === "lista") {
-    return `
-      <p class="planify-doc-instructions-inline">
-        Resolva os exercícios com atenção. Mostre os cálculos quando necessário.
-      </p>
-    `.trim();
+    return "";
   }
 
   if (tipo === "prova") {
@@ -118,9 +114,11 @@ export function renderQuestionCard(params: {
   options?: string[];
   questionType?: string;
   label?: string;
+  compact?: boolean;
 }): string {
   const itemLabel = params.label || "Questão";
   const num = String(params.number).padStart(2, "0");
+  const compact = params.compact ?? false;
 
   const options =
     params.options && params.options.length
@@ -139,7 +137,7 @@ export function renderQuestionCard(params: {
     <article class="planify-questao planify-questao-card">
       <div class="planify-questao-head">
         <span class="planify-questao-number-badge" aria-label="${escapeHtml(itemLabel)} ${escapeHtml(String(params.number))}">${escapeHtml(num)}</span>
-        <span class="planify-questao-number-label">${escapeHtml(itemLabel)} ${escapeHtml(String(params.number))}</span>
+        ${compact ? "" : `<span class="planify-questao-number-label">${escapeHtml(itemLabel)} ${escapeHtml(String(params.number))}</span>`}
         ${typeBadge}
       </div>
       <p class="planify-questao-statement">${escapeHtml(params.statement)}</p>
@@ -161,16 +159,17 @@ export function wrapProfessionalDocument(
     ? `planify-doc-${ctx.tipo.replace(/[^a-z0-9-]/gi, "")}`
     : "";
 
+  const compactDoc = isDirectAssessmentType(ctx.tipo);
   const showSummary =
     ctx.summary?.trim() &&
-    !isDirectAssessmentType(ctx.tipo) &&
+    !compactDoc &&
     ctx.tipo !== "resumo";
 
   return `
     <article class="planify-doc planify-doc-professional ${tipoClass}">
       ${renderMaterialInstitutionHeader(ctx)}
-      <h1 class="planify-doc-title">${escapeHtml(ctx.title)}</h1>
-      ${ctx.subtitle ? `<p class="planify-doc-subtitle">${escapeHtml(ctx.subtitle)}</p>` : ""}
+      ${compactDoc ? "" : `<h1 class="planify-doc-title">${escapeHtml(ctx.title)}</h1>`}
+      ${!compactDoc && ctx.subtitle ? `<p class="planify-doc-subtitle">${escapeHtml(ctx.subtitle)}</p>` : ""}
       ${showSummary ? `<p class="planify-doc-summary">${escapeHtml(ctx.summary!)}</p>` : ""}
       ${instructions}
       <div class="planify-doc-body">

@@ -13,7 +13,10 @@ import {
   resolveCommunityAuthors,
 } from "../../../../server/community/marketplace-social-service";
 import { listAcceptedFriendUserIds } from "../../../../server/community/community-friends-service";
-import { getSavedMaterialIds } from "../../../../server/community/community-saved-materials-service";
+import {
+  getSavedMaterialIds,
+  listSavedMaterialIds,
+} from "../../../../server/community/community-saved-materials-service";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -41,6 +44,8 @@ type MarketplaceRow = {
   file_mime: string | null;
   file_size: number | null;
   is_published: boolean | null;
+  is_saved_snapshot?: boolean | null;
+  source_material_id?: string | null;
   downloads_count: number | null;
   created_at: string | null;
   updated_at: string | null;
@@ -262,6 +267,8 @@ async function withSignedUrl(row: MarketplaceRow) {
     fileMime: row.file_mime || "",
     fileSize: row.file_size || 0,
     isPublished: Boolean(row.is_published),
+    isSavedSnapshot: Boolean(row.is_saved_snapshot),
+    sourceMaterialId: row.source_material_id || null,
     downloadsCount: row.downloads_count || 0,
     signedUrl,
     createdAt: row.created_at,
@@ -272,36 +279,82 @@ async function withSignedUrl(row: MarketplaceRow) {
   };
 }
 
+async function resolveSnapshotAuthorUserIds(
+  items: Awaited<ReturnType<typeof withSignedUrl>>[],
+): Promise<Map<string, string>> {
+  const sourceIds = items
+    .filter((item) => item.isSavedSnapshot && item.sourceMaterialId)
+    .map((item) => String(item.sourceMaterialId));
+
+  if (!sourceIds.length) {
+    return new Map();
+  }
+
+  const supabase = getSupabaseAdminClient();
+  const { data } = await supabase
+    .from("marketplace_materials")
+    .select("id, user_id")
+    .in("id", sourceIds);
+
+  const map = new Map<string, string>();
+
+  for (const row of data || []) {
+    if (row.user_id) {
+      map.set(String(row.id), String(row.user_id));
+    }
+  }
+
+  return map;
+}
+
 async function enrichMarketplaceItems(
   items: Awaited<ReturnType<typeof withSignedUrl>>[],
   viewerUserId?: string | null,
 ) {
-  const userIds = items.map((item) => item.userId).filter(Boolean);
+  const snapshotAuthors = await resolveSnapshotAuthorUserIds(items);
+  const authorUserIds = items
+    .map((item) => {
+      if (item.isSavedSnapshot && item.sourceMaterialId) {
+        return snapshotAuthors.get(item.sourceMaterialId) || "";
+      }
+
+      return item.userId;
+    })
+    .filter(Boolean);
   const materialIds = items.map((item) => item.id);
+  const savedLookupIds = items.flatMap((item) =>
+    item.sourceMaterialId ? [item.id, item.sourceMaterialId] : [item.id],
+  );
 
   const [authors, likes, comments, savedIds] = await Promise.all([
-    resolveCommunityAuthors(userIds),
+    resolveCommunityAuthors(authorUserIds),
     getMaterialLikesSummary({ materialIds, viewerUserId }),
     getMaterialCommentsBatch(materialIds),
     viewerUserId
-      ? getSavedMaterialIds({ userId: viewerUserId, materialIds })
+      ? getSavedMaterialIds({ userId: viewerUserId, materialIds: savedLookupIds })
       : Promise.resolve(new Set<string>()),
   ]);
 
   return items.map((item) => {
-    const author = authors.get(item.userId);
+    const authorUserId =
+      item.isSavedSnapshot && item.sourceMaterialId
+        ? snapshotAuthors.get(item.sourceMaterialId) || item.userId
+        : item.userId;
+    const author = authors.get(authorUserId);
     const like = likes.get(item.id) || { likesCount: 0, likedByMe: false };
     const itemComments = comments.get(item.id) || [];
+    const savedLookupKey = item.sourceMaterialId || item.id;
 
     return {
       ...item,
+      userId: authorUserId || item.userId,
       authorName: author?.displayName || item.authorName,
       authorAvatarUrl: author?.avatarUrl || null,
       likesCount: like.likesCount,
       likedByMe: like.likedByMe,
       commentsCount: itemComments.length,
       comments: itemComments,
-      savedByMe: savedIds.has(item.id),
+      savedByMe: savedIds.has(savedLookupKey),
     };
   });
 }
@@ -337,10 +390,23 @@ export async function GET(request: NextRequest) {
 
   let query = table.select("*").order("created_at", { ascending: false });
 
-  if (mine) {
-    query = query.eq("user_id", access.userId);
+  if (savedOnly && access.userId) {
+    const savedIds = await listSavedMaterialIds(access.userId);
+
+    if (!savedIds.length) {
+      return NextResponse.json({
+        success: true,
+        items: [],
+        featured: [],
+        access,
+      });
+    }
+
+    query = table.select("*").in("id", savedIds).order("created_at", { ascending: false });
+  } else if (mine) {
+    query = query.eq("user_id", access.userId).eq("is_saved_snapshot", false);
   } else {
-    query = query.eq("is_published", true);
+    query = query.eq("is_published", true).eq("is_saved_snapshot", false);
   }
 
   if (componenteFilter && componenteFilter !== "Todos") {
@@ -381,11 +447,6 @@ export async function GET(request: NextRequest) {
     rows = rows.filter((row) =>
       (row.tags || []).some((tag) => String(tag).toLowerCase().includes(tagFilter)),
     );
-  }
-
-  if (savedOnly && access.userId) {
-    const savedIds = await getSavedMaterialIds({ userId: access.userId });
-    rows = rows.filter((row) => savedIds.has(row.id));
   }
 
   const baseItems = await Promise.all(rows.map((row) => withSignedUrl(row)));

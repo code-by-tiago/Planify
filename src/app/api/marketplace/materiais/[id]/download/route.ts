@@ -24,6 +24,7 @@ type MarketplaceRow = {
   file_path: string | null;
   file_mime: string | null;
   is_published: boolean | null;
+  is_saved_snapshot?: boolean | null;
   downloads_count: number | null;
 };
 

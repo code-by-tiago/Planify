@@ -14,6 +14,8 @@ type CommunityMaterialPreviewProps = {
   htmlContent?: string | null;
   isSlidePreview?: boolean;
   fileName?: string;
+  /** "page" evita scroll interno e deixa o painel principal rolar o documento */
+  scrollMode?: "inner" | "page";
 };
 
 const htmlPreviewClassName =
@@ -26,7 +28,10 @@ export function CommunityMaterialPreview({
   htmlContent,
   isSlidePreview,
   fileName,
+  scrollMode = "inner",
 }: CommunityMaterialPreviewProps) {
+  const pageScroll = scrollMode === "page";
+
   if (kind === "html" && htmlContent) {
     const slideMode = Boolean(isSlidePreview);
 
@@ -37,7 +42,13 @@ export function CommunityMaterialPreview({
             ? PLANIFY_COMMUNITY_SLIDE_PREVIEW_CSS
             : `${PLANIFY_EXPORT_CSS}${PLANIFY_COMMUNITY_DOCUMENT_PREVIEW_CSS}`}
         </style>
-        <div className="max-h-[min(78vh,920px)] w-full min-w-0 overflow-x-hidden overflow-y-auto bg-white p-3 sm:p-5">
+        <div
+          className={`w-full min-w-0 bg-white p-3 sm:p-5 ${
+            pageScroll
+              ? "overflow-x-hidden"
+              : "max-h-[min(78vh,920px)] overflow-x-hidden overflow-y-auto overscroll-contain [touch-action:pan-y]"
+          }`}
+        >
           <div
             className={`${htmlPreviewClassName} ${slideMode ? "planify-community-material-slides" : ""}`}
             dangerouslySetInnerHTML={{
@@ -57,7 +68,7 @@ export function CommunityMaterialPreview({
         <iframe
           title={title}
           src={`${signedUrl}#toolbar=1&navpanes=0&view=FitH`}
-          className="h-[min(78vh,920px)] w-full bg-slate-100"
+          className={`w-full bg-slate-100 ${pageScroll ? "min-h-[70vh]" : "h-[min(78vh,920px)]"}`}
         />
       </div>
     );

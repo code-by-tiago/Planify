@@ -38,6 +38,8 @@ type MarketplaceRow = {
   file_mime: string | null;
   file_size: number | null;
   is_published: boolean | null;
+  is_saved_snapshot?: boolean | null;
+  source_material_id?: string | null;
   downloads_count: number | null;
   created_at: string | null;
 };
@@ -84,6 +86,7 @@ export async function GET(
 
   const row = material as MarketplaceRow;
   const isOwner = Boolean(row.user_id && userId && row.user_id === userId);
+  const isSavedSnapshot = Boolean(row.is_saved_snapshot);
   const canView = Boolean(row.is_published || isOwner || admin.isAdmin);
 
   if (!canView) {
@@ -118,15 +121,28 @@ export async function GET(
     }
   }
 
+  let authorUserId = row.user_id || "";
+
+  if (isSavedSnapshot && row.source_material_id) {
+    const { data: sourceMaterial } = await table
+      .select("user_id")
+      .eq("id", row.source_material_id)
+      .maybeSingle();
+
+    if (sourceMaterial?.user_id) {
+      authorUserId = String(sourceMaterial.user_id);
+    }
+  }
+
   const [authors, likes] = await Promise.all([
-    resolveCommunityAuthors(row.user_id ? [row.user_id] : []),
+    resolveCommunityAuthors(authorUserId ? [authorUserId] : []),
     getMaterialLikesSummary({
       materialIds: [row.id],
       viewerUserId: userId || null,
     }),
   ]);
 
-  const author = row.user_id ? authors.get(row.user_id) : undefined;
+  const author = authorUserId ? authors.get(authorUserId) : undefined;
   const like = likes.get(row.id) || { likesCount: 0, likedByMe: false };
 
   return NextResponse.json({
@@ -134,7 +150,7 @@ export async function GET(
     viewerUserId: userId || null,
     material: {
       id: row.id,
-      userId: row.user_id || "",
+      userId: authorUserId || row.user_id || "",
       authorName: author?.displayName || row.author_name || "Professor",
       authorAvatarUrl: author?.avatarUrl || null,
       title: row.title,

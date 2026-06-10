@@ -1079,6 +1079,253 @@ export type Database = {
           updated_at?: string;
         }
       >;
+      pedagogical_sources: TableDefinition<
+        {
+          id: string;
+          slug: string;
+          name: string;
+          adapter_type: string;
+          base_url: string;
+          license_label: string;
+          attribution_template: string | null;
+          config: Json;
+          is_active: boolean;
+          priority: number;
+          robots_respected: boolean;
+          last_success_at: string | null;
+          created_at: string;
+          updated_at: string;
+        },
+        {
+          id?: string;
+          slug: string;
+          name: string;
+          adapter_type: string;
+          base_url: string;
+          license_label: string;
+          attribution_template?: string | null;
+          config?: Json;
+          is_active?: boolean;
+          priority?: number;
+          robots_respected?: boolean;
+          last_success_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        },
+        {
+          id?: string;
+          slug?: string;
+          name?: string;
+          adapter_type?: string;
+          base_url?: string;
+          license_label?: string;
+          attribution_template?: string | null;
+          config?: Json;
+          is_active?: boolean;
+          priority?: number;
+          robots_respected?: boolean;
+          last_success_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        }
+      >;
+      pedagogical_cache_entries: TableDefinition<
+        {
+          id: string;
+          topic_signature: string;
+          content_hash: string;
+          title: string;
+          summary: string;
+          body_markdown: string;
+          content_type: string;
+          componente: string | null;
+          ano_serie: string | null;
+          etapa: string | null;
+          bncc_codigos: string[];
+          tags: string[];
+          source_id: string;
+          source_url: string | null;
+          source_title: string | null;
+          source_license: string | null;
+          source_fetched_at: string;
+          review_status: string;
+          reviewed_by: string | null;
+          reviewed_at: string | null;
+          review_notes: string | null;
+          format_applied: boolean;
+          ai_tokens_used: number;
+          hit_count: number;
+          last_hit_at: string | null;
+          expires_at: string | null;
+          metadata: Json;
+          created_at: string;
+          updated_at: string;
+        },
+        {
+          id?: string;
+          topic_signature: string;
+          content_hash: string;
+          title: string;
+          summary: string;
+          body_markdown: string;
+          content_type?: string;
+          componente?: string | null;
+          ano_serie?: string | null;
+          etapa?: string | null;
+          bncc_codigos?: string[];
+          tags?: string[];
+          source_id: string;
+          source_url?: string | null;
+          source_title?: string | null;
+          source_license?: string | null;
+          source_fetched_at?: string;
+          review_status?: string;
+          reviewed_by?: string | null;
+          reviewed_at?: string | null;
+          review_notes?: string | null;
+          format_applied?: boolean;
+          ai_tokens_used?: number;
+          hit_count?: number;
+          last_hit_at?: string | null;
+          expires_at?: string | null;
+          metadata?: Json;
+          created_at?: string;
+          updated_at?: string;
+        },
+        {
+          id?: string;
+          topic_signature?: string;
+          content_hash?: string;
+          title?: string;
+          summary?: string;
+          body_markdown?: string;
+          content_type?: string;
+          componente?: string | null;
+          ano_serie?: string | null;
+          etapa?: string | null;
+          bncc_codigos?: string[];
+          tags?: string[];
+          source_id?: string;
+          source_url?: string | null;
+          source_title?: string | null;
+          source_license?: string | null;
+          source_fetched_at?: string;
+          review_status?: string;
+          reviewed_by?: string | null;
+          reviewed_at?: string | null;
+          review_notes?: string | null;
+          format_applied?: boolean;
+          ai_tokens_used?: number;
+          hit_count?: number;
+          last_hit_at?: string | null;
+          expires_at?: string | null;
+          metadata?: Json;
+          created_at?: string;
+          updated_at?: string;
+        }
+      >;
+      pedagogical_cache_aliases: TableDefinition<
+        {
+          id: string;
+          entry_id: string;
+          alias_key: string;
+          alias_type: string;
+        },
+        {
+          id?: string;
+          entry_id: string;
+          alias_key: string;
+          alias_type?: string;
+        },
+        {
+          id?: string;
+          entry_id?: string;
+          alias_key?: string;
+          alias_type?: string;
+        }
+      >;
+      pedagogical_scrape_jobs: TableDefinition<
+        {
+          id: string;
+          trigger: string;
+          query: Json;
+          status: string;
+          sources_attempted: string[];
+          entries_created: number;
+          entries_updated: number;
+          error_code: string | null;
+          error_message: string | null;
+          duration_ms: number | null;
+          requested_by: string | null;
+          started_at: string | null;
+          completed_at: string | null;
+          created_at: string;
+        },
+        {
+          id?: string;
+          trigger: string;
+          query: Json;
+          status?: string;
+          sources_attempted?: string[];
+          entries_created?: number;
+          entries_updated?: number;
+          error_code?: string | null;
+          error_message?: string | null;
+          duration_ms?: number | null;
+          requested_by?: string | null;
+          started_at?: string | null;
+          completed_at?: string | null;
+          created_at?: string;
+        },
+        {
+          id?: string;
+          trigger?: string;
+          query?: Json;
+          status?: string;
+          sources_attempted?: string[];
+          entries_created?: number;
+          entries_updated?: number;
+          error_code?: string | null;
+          error_message?: string | null;
+          duration_ms?: number | null;
+          requested_by?: string | null;
+          started_at?: string | null;
+          completed_at?: string | null;
+          created_at?: string;
+        }
+      >;
+      pedagogical_cache_usage: TableDefinition<
+        {
+          id: string;
+          entry_id: string | null;
+          user_id: string | null;
+          usage_type: string;
+          tokens_saved_estimate: number;
+          ai_tokens_spent: number;
+          tool_tipo: string | null;
+          created_at: string;
+        },
+        {
+          id?: string;
+          entry_id?: string | null;
+          user_id?: string | null;
+          usage_type: string;
+          tokens_saved_estimate?: number;
+          ai_tokens_spent?: number;
+          tool_tipo?: string | null;
+          created_at?: string;
+        },
+        {
+          id?: string;
+          entry_id?: string | null;
+          user_id?: string | null;
+          usage_type?: string;
+          tokens_saved_estimate?: number;
+          ai_tokens_spent?: number;
+          tool_tipo?: string | null;
+          created_at?: string;
+        }
+      >;
       operational_events: TableDefinition<
         {
           id: string;

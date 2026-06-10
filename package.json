@@ -16,6 +16,10 @@
     "verify:unification-u2": "node scripts/verify-unification-u2.mjs",
     "verify:unification-u3": "node scripts/verify-unification-u3.mjs",
     "verify:ecosystem": "node scripts/verify-ecosystem.mjs",
+    "verify:pedagogical-p1": "node scripts/verify-pedagogical-p1.mjs",
+    "verify:pedagogical-p3": "node scripts/verify-pedagogical-p3.mjs",
+    "verify:pedagogical-ecosystem": "node scripts/verify-pedagogical-ecosystem.mjs",
+    "backfill:pedagogical-bncc": "node scripts/backfill-pedagogical-bncc.mjs",
     "seed:community-questions": "node scripts/seed-community-questions.mjs",
     "backfill:history-estrutura": "node scripts/backfill-history-estrutura.mjs",
     "report:question-sources": "node scripts/report-question-sources.mjs",
@@ -32,6 +36,7 @@
     "@supabase/ssr": "0.10.3",
     "@supabase/supabase-js": "2.106.2",
     "@types/pdfkit": "^0.17.6",
+    "dotenv": "^17.4.2",
     "framer-motion": "^12.40.0",
     "linkedom": "^0.18.12",
     "next": "16.2.6",
@@ -44,13 +49,13 @@
     "stripe": "22.2.0"
   },
   "devDependencies": {
+    "@sentry/nextjs": "^10.57.0",
     "@types/node": "25.9.1",
     "@types/react": "19.2.15",
     "@types/react-dom": "19.2.3",
     "autoprefixer": "10.4.20",
     "postcss": "8.4.49",
     "tailwindcss": "3.4.17",
-    "typescript": "6.0.3",
-    "@sentry/nextjs": "^10.57.0"
+    "typescript": "6.0.3"
   }
 }

@@ -25,6 +25,12 @@ type OperationalStats = {
   }>;
 };
 
+type PedagogicalStats = {
+  cacheHits: number;
+  tokensSaved: number;
+  aiTokensSpent: number;
+};
+
 const bucketLabels: Record<string, string> = {
   "90+": "Excelente (90+)",
   "75+": "Bom (75–89)",
@@ -43,6 +49,7 @@ export function AdminQualidadePanel() {
   const [window, setWindow] = useState<StatsWindow>("24h");
   const [stats, setStats] = useState<GenerationStats | null>(null);
   const [operational, setOperational] = useState<OperationalStats | null>(null);
+  const [pedagogical, setPedagogical] = useState<PedagogicalStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -63,9 +70,11 @@ export function AdminQualidadePanel() {
 
       setStats(data.stats as GenerationStats);
       setOperational((data.operational as OperationalStats) ?? null);
+      setPedagogical((data.pedagogical as PedagogicalStats) ?? null);
     } catch (err) {
       setStats(null);
       setOperational(null);
+      setPedagogical(null);
       setError(err instanceof Error ? err.message : "Erro ao carregar estatísticas.");
     } finally {
       setLoading(false);
@@ -116,6 +125,39 @@ export function AdminQualidadePanel() {
         <p className="text-sm font-semibold text-slate-500">Carregando telemetria...</p>
       ) : stats ? (
         <>
+          {pedagogical ? (
+            <div className="grid gap-4 md:grid-cols-3">
+              {[
+                {
+                  label: "Cache didático — hits",
+                  value: String(pedagogical.cacheHits),
+                  detail: "snippet + injeção",
+                },
+                {
+                  label: "Tokens economizados",
+                  value: pedagogical.tokensSaved.toLocaleString("pt-BR"),
+                  detail: "estimativa reservatório",
+                },
+                {
+                  label: "IA formatação",
+                  value: pedagogical.aiTokensSpent.toLocaleString("pt-BR"),
+                  detail: "tokens gastos (format-only)",
+                },
+              ].map((metric) => (
+                <div
+                  key={metric.label}
+                  className="rounded-[1.5rem] border border-emerald-200 bg-emerald-50/50 p-5"
+                >
+                  <p className="text-xs font-black uppercase tracking-[0.18em] text-emerald-700">
+                    {metric.label}
+                  </p>
+                  <p className="mt-3 text-3xl font-black text-slate-950">{metric.value}</p>
+                  <p className="mt-2 text-xs font-bold text-emerald-800">{metric.detail}</p>
+                </div>
+              ))}
+            </div>
+          ) : null}
+
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             {[
               { label: "Gerações", value: String(stats.total), detail: window },

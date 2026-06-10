@@ -118,7 +118,60 @@ async function fallbackToEngine(
   };
 }
 
-export async function generatePlanifyMaterial(input: MaterialEngineInput) {
+function extractBnccCodigos(input: MaterialEngineInput): string[] {
+  const fromSkills = [
+    ...(input.habilidadesSelecionadas || []),
+    ...(input.habilidadesBncc || []),
+  ]
+    .map((s) => String(s.codigo || "").trim().toUpperCase())
+    .filter(Boolean);
+
+  return [...new Set(fromSkills)];
+}
+
+async function enrichInputWithPedagogicalContext(
+  input: MaterialEngineInput,
+  userId?: string | null,
+): Promise<MaterialEngineInput> {
+  const bnccCodigos = extractBnccCodigos(input);
+  const tema = String(input.tema || input.temaCentral || "").trim();
+  if (!tema && !bnccCodigos.length) return input;
+
+  const { resolvePedagogicalContext, appendPedagogicalContext } = await import(
+    "@/server/pedagogical-cache/pedagogical-context-resolver"
+  );
+
+  const pedagogy = await resolvePedagogicalContext(
+    {
+      tema,
+      componente: input.componenteCurricular || input.componente,
+      etapa: input.etapa,
+      anoSerie: input.anoSerie,
+      bnccCodigos,
+    },
+    {
+      allowScrape: true,
+      minApproved: 1,
+      userId: userId ?? null,
+      toolTipo: input.tipoMaterial || input.tipo || "material",
+      trigger: "generation_inject",
+    },
+  );
+
+  if (pedagogy.kind !== "cache_hit" || !pedagogy.entries.length) {
+    return input;
+  }
+
+  return {
+    ...input,
+    observacoes: appendPedagogicalContext(input.observacoes, pedagogy.entries),
+  };
+}
+
+export async function generatePlanifyMaterial(
+  input: MaterialEngineInput,
+  options?: { userId?: string | null },
+) {
   const request = normalizeMaterialEngineRequest(input);
   const errors = validateMaterialEngineRequest(request);
 
@@ -130,11 +183,16 @@ export async function generatePlanifyMaterial(input: MaterialEngineInput) {
     };
   }
 
+  const enrichedInput = await enrichInputWithPedagogicalContext(
+    input,
+    options?.userId,
+  );
+
   if (usesPlanifyMaterialEngine(request.tipoMaterial)) {
-    return generateMaterialByEngine(input);
+    return generateMaterialByEngine(enrichedInput);
   }
 
-  const aiInput = engineRequestToMaterialAI(request, input);
+  const aiInput = engineRequestToMaterialAI(request, enrichedInput);
 
   try {
     const output = await generateWithAIQualityLoop(request, input, aiInput);

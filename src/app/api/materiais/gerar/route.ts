@@ -45,7 +45,7 @@ async function handlePost(request: NextRequest, _context: { params: Promise<Reco
   }
 
   try {
-    const result = await generatePlanifyMaterial(payload);
+    const result = await generatePlanifyMaterial(payload, { userId: user?.id });
 
     if (!result.ok) {
       await finalizeGenerationFailure(user?.id, tipo, charge, {

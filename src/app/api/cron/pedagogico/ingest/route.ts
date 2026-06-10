@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 
 const MAX_ITEMS_PER_RUN = 20;
 
-export async function POST(request: NextRequest) {
+async function handleCron(request: NextRequest) {
   const secret = process.env.CRON_SECRET?.trim();
   const authHeader = request.headers.get("authorization") || "";
   const bearer = authHeader.match(/^Bearer\s+(.+)$/i)?.[1]?.trim();
@@ -100,4 +100,12 @@ export async function POST(request: NextRequest) {
     items: processed,
     errors,
   });
+}
+
+export async function GET(request: NextRequest) {
+  return handleCron(request);
+}
+
+export async function POST(request: NextRequest) {
+  return handleCron(request);
 }

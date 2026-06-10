@@ -64,10 +64,12 @@ Monitorar no painel **Admin → Qualidade**:
 
 | Rota | Função |
 |------|--------|
-| `POST /api/cron/pedagogico/refresh` | Marca entradas expiradas como `stale` |
-| `POST /api/cron/pedagogico/ingest` | Re-scrape stale + top miss (máx. 20/run) |
+| `GET/POST /api/cron/pedagogico/refresh` | Marca entradas expiradas como `stale` |
+| `GET/POST /api/cron/pedagogico/ingest` | Re-scrape stale + top miss (máx. 20/run) |
 
-Agendar no Vercel Cron ou scheduler externo com header `Authorization: Bearer $CRON_SECRET`.
+**Vercel Cron** (`vercel.json`): jobs nativos disparam **GET** e injetam automaticamente `Authorization: Bearer <CRON_SECRET>`. Defina `CRON_SECRET` nas env vars do projeto e faça redeploy.
+
+Chamadas manuais (curl/scripts) podem usar GET ou POST com o mesmo header `Authorization: Bearer $CRON_SECRET`.
 
 ## Operações (Phase 0)
 

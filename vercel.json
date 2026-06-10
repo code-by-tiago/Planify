@@ -1,0 +1,6 @@
+{
+  "crons": [
+    { "path": "/api/cron/pedagogico/refresh", "schedule": "0 6 * * *" },
+    { "path": "/api/cron/pedagogico/ingest", "schedule": "0 7 * * 0" }
+  ]
+}

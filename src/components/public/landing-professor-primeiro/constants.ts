@@ -49,28 +49,28 @@ export type CreateOptionId = (typeof CREATE_OPTIONS)[number]["id"];
 
 export const RESOURCES = [
   {
-    title: "BNCC alinhada",
+    title: "BNCC local",
     description:
-      "Habilidades e competências sugeridas conforme etapa, ano/série e componente curricular — você revisa e ajusta.",
+      "Habilidades sugeridas conforme etapa, ano/série e componente — com base na matriz curricular, para você revisar.",
     icon: "checkCircle" as const,
   },
   {
-    title: "Exportação Google Docs",
+    title: "Biblioteca",
     description:
-      "Gere documentos prontos para revisar no Google Docs, com modelos oficiais e estrutura pedagógica.",
+      "Salve, organize e reabra planejamentos e materiais que você já gerou ou importou no painel.",
+    icon: "library" as const,
+  },
+  {
+    title: "Comunidade",
+    description:
+      "Publique materiais e reutilize modelos compartilhados por outros professores da plataforma.",
+    icon: "market" as const,
+  },
+  {
+    title: "Exportação Google",
+    description:
+      "Envie ao Google Docs ou Slides, salve no Drive e publique atividades no Classroom conectado.",
     icon: "download" as const,
-  },
-  {
-    title: "Editor integrado",
-    description:
-      "Revise, personalize e finalize seus materiais no mesmo painel — sem trocar de ferramenta.",
-    icon: "editor" as const,
-  },
-  {
-    title: "Google Classroom",
-    description:
-      "Conecte o Google, salve no Drive e publique atividades diretamente na turma.",
-    icon: "externalLink" as const,
   },
 ];
 
@@ -97,24 +97,28 @@ export const HOW_IT_WORKS = [
 
 export const STATS = [
   {
-    value: "Milhares",
-    label: "de materiais criados",
-    detail: "Planejamentos, provas, slides e atividades gerados na plataforma",
-  },
-  {
-    value: "Professores",
-    label: "em todo o Brasil",
-    detail: "Ferramenta pensada para a rotina real de quem leciona na educação básica",
-  },
-  {
-    value: "Horas",
-    label: "economizadas por semana",
-    detail: "Menos tempo em planilhas e documentos, mais tempo em sala",
-  },
-  {
     value: "BNCC",
-    label: "habilidades alinhadas",
-    detail: "Sugestões de competências conforme etapa, ano e componente",
+    label: "local integrada",
+    detail:
+      "Habilidades sugeridas conforme etapa, ano/série e componente — você revisa e ajusta antes de usar.",
+  },
+  {
+    value: "Reservatório",
+    label: "didático verificado",
+    detail:
+      "Contexto pedagógico checado na geração para reduzir conteúdo genérico ou fora de lugar.",
+  },
+  {
+    value: "Material",
+    label: "Engine + editor",
+    detail:
+      "Estruture o rascunho com IA, personalize no editor integrado e finalize sem trocar de ferramenta.",
+  },
+  {
+    value: "Google",
+    label: "Docs e Classroom",
+    detail:
+      "Exporte ao Google Docs ou Slides, salve no Drive e publique atividades na turma conectada.",
   },
 ] as const;
 
@@ -150,74 +154,6 @@ export const COMPARISON_ROWS = [
     with: "Estrutura uniforme, fácil de revisar em equipe",
   },
 ] as const;
-
-export const FEATURED_TESTIMONIAL = {
-  quote:
-    "O Planify transformou minha rotina. O que levava um fim de semana inteiro agora faço em uma tarde — com qualidade e BNCC alinhada.",
-  name: "Fernanda L.",
-  role: "Professora de Ciências",
-  badge: "Ensino Fundamental II",
-  rating: 5,
-} as const;
-
-export const TESTIMONIALS = [
-  {
-    name: "Juliana A.",
-    role: "Professora de Língua Portuguesa · 8º ano",
-    quote:
-      "Reduzi de horas para minutos o planejamento anual. A BNCC vem sugerida e eu só adapto ao meu contexto.",
-    badge: "Planejamento",
-    rating: 5,
-  },
-  {
-    name: "Carlos M.",
-    role: "Professor de História · Ensino Médio",
-    quote:
-      "As provas e slides saem estruturados. Exporto ao Google Docs e já uso na aula no mesmo dia.",
-    badge: "Provas e slides",
-    rating: 5,
-  },
-  {
-    name: "Patrícia S.",
-    role: "Coordenadora pedagógica",
-    quote:
-      "A equipe ganhou consistência nos planejamentos. Tudo alinhado à BNCC e fácil de revisar.",
-    badge: "Coordenação",
-    rating: 5,
-  },
-  {
-    name: "Ricardo T.",
-    role: "Professor de Matemática · 6º ao 9º",
-    quote:
-      "O editor integrado mudou meu fluxo. Gero, ajusto e publico no Classroom sem sair do Planify.",
-    badge: "Google Classroom",
-    rating: 5,
-  },
-  {
-    name: "Ana Paula R.",
-    role: "Professora de Geografia · Ensino Médio",
-    quote:
-      "Consigo manter o mesmo padrão em todas as turmas. A coordenação elogia a organização dos meus planejamentos.",
-    badge: "BNCC",
-    rating: 5,
-  },
-  {
-    name: "Marcos V.",
-    role: "Professor de Educação Física",
-    quote:
-      "Atividades e avaliações prontas em minutos. Exporto ao Google Docs e já levo para a aula.",
-    badge: "Google Docs",
-    rating: 4,
-  },
-  {
-    name: "Luciana F.",
-    role: "Professora de Inglês · 5º ao 9º",
-    quote:
-      "Uso em todas as minhas turmas. A interface é clara e os materiais saem com estrutura didática de verdade.",
-    badge: "Editor integrado",
-    rating: 5,
-  },
-];
 
 export const FINAL_BENEFITS = [
   { label: "Pagamento seguro", icon: "lock" as const },

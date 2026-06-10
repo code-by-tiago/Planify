@@ -135,8 +135,8 @@ export function LessonSimulatorSection() {
                 Teste grátis
               </span>
               <h2 className="mt-4 text-3xl font-black leading-tight tracking-tight text-slate-950 sm:text-[2.5rem] lg:text-5xl">
-                Gere materiais baseados na BNCC,{" "}
-                <span className="pl-hud-gradient-text">instantaneamente.</span>
+                Veja como o Planify estrutura uma aula{" "}
+                <span className="pl-hud-gradient-text">alinhada à BNCC.</span>
               </h2>
               <p className="mt-5 max-w-lg text-lg font-medium leading-8 text-slate-600">
                 Digite um tema e veja em segundos como o Planify estrutura uma aula alinhada à

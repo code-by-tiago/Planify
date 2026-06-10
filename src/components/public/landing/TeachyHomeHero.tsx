@@ -24,7 +24,7 @@ export function TeachyHomeHero() {
           <div className="pl-hud-landing-hero-badges">
             <span className="pl-hud-badge">
               <PlanifyIcon name="spark" className="h-3 w-3" />
-              Líder em IA pedagógica
+              IA pedagógica para professores
             </span>
             <span className="pl-hud-landing-hero-badge-secondary">
               BNCC · Google Classroom
@@ -32,12 +32,12 @@ export function TeachyHomeHero() {
           </div>
 
           <h1 className="pl-hud-display pl-hud-landing-hero-title">
-            A plataforma de IA{" "}
-            <span className="pl-hud-gradient-text">nº 1 para professores.</span>
+            Materiais pedagógicos com IA{" "}
+            <span className="pl-hud-gradient-text">alinhados à BNCC.</span>
           </h1>
           <p className="pl-hud-landing-hero-subtitle">
-            Crie slides, aulas completas, provas e planejamentos alinhados à BNCC —
-            com exportação Google Docs, Slides e publicação no Classroom em minutos.
+            Planejamentos, slides, provas e atividades estruturados para você revisar no editor —
+            com BNCC local, Material Engine e exportação ao Google Docs, Slides e Classroom.
           </p>
 
           <div className="pl-hud-landing-hero-ctas">

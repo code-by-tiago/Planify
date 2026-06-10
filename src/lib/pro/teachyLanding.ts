@@ -52,7 +52,7 @@ export const teachyHomeFeatures: {
 export const teachyInclusionFeature = {
   title: "Educação inclusiva ao alcance de um clique",
   description:
-    "A única ferramenta que adapta materiais para as necessidades específicas de cada aluno de forma humanizada.",
+    "Adapte materiais para necessidades específicas de cada aluno — rotinas visuais, textos objetivos e formatação acessível.",
   cta: "Adaptar material",
   href: "/dashboard?tipo=inclusao",
   bullets: [
@@ -74,69 +74,32 @@ export const teachyInclusionFeature = {
   ],
 };
 
-export type LandingTestimonial = {
-  name: string;
-  quote: string;
-  role: string;
-  school: string;
-  initials: string;
+/** Ferramentas extras na landing pública (fora dos geradores do painel). */
+export const landingExtraTools: {
+  id: string;
+  shortTitle: string;
+  description: string;
+  href: string;
+  icon: PlanifyIconName;
   accent: string;
-};
-
-export const teachyLandingTestimonials: LandingTestimonial[] = [
+}[] = [
   {
-    name: "Luciano Legi",
-    role: "Professor de História",
-    school: "Ensino Médio · SP",
-    initials: "LL",
-    accent: "from-indigo-500 to-violet-600",
-    quote:
-      "Com o Planify, melhorei minha qualidade de vida porque agora não passo horas fazendo listas, provas e planejamentos. Tudo que preciso é descrever o tema e pronto.",
+    id: "planejamentos",
+    shortTitle: "Planejamentos",
+    description:
+      "Matriz anual ou trimestral com habilidades BNCC locais, modelos oficiais em DOCX e exportação Google — você revisa cada campo.",
+    href: "/planejamento-escolar-com-ia",
+    icon: "clipboard",
+    accent: "from-blue-500 to-blue-600",
   },
   {
-    name: "Ana Paula Germano",
-    role: "Professora de Português",
-    school: "Rede pública · MG",
-    initials: "AP",
-    accent: "from-sky-500 to-indigo-600",
-    quote:
-      "Antes eu estava exausta e cheguei a pensar em desistir. Hoje tenho tempo para minha família e materiais alinhados à BNCC em minutos.",
-  },
-  {
-    name: "Luiza M.",
-    role: "Coordenadora pedagógica",
-    school: "Ensino Fundamental · RJ",
-    initials: "LM",
-    accent: "from-fuchsia-500 to-rose-500",
-    quote:
-      "Não consigo mais viver sem a plataforma. Espalhei a novidade para todos os colegas — virou parte da rotina da escola.",
-  },
-  {
-    name: "Rafael Lima",
-    role: "Professor de Matemática",
-    school: "Colégio particular · PR",
-    initials: "RL",
-    accent: "from-emerald-500 to-teal-600",
-    quote:
-      "As provas saem com gabarito e no padrão da escola. O editor me deixa ajustar tudo antes de exportar ao Google Docs.",
-  },
-  {
-    name: "Pepsy Penom Audu",
-    role: "Professora de Ciências",
-    school: "Ensino Fundamental II",
-    initials: "PP",
-    accent: "from-amber-500 to-orange-500",
-    quote:
-      "A plataforma torna o aprendizado mágico. Criei aulas práticas envolventes que encantam meus alunos.",
-  },
-  {
-    name: "Nokulunga Mdladla",
-    role: "Professora de Geografia",
-    school: "Ensino Médio",
-    initials: "NM",
-    accent: "from-cyan-500 to-blue-600",
-    quote:
-      "Otimizei meu planejamento, criei atividades envolventes e gerei materiais para meus alunos com facilidade.",
+    id: "banco-questoes",
+    shortTitle: "Banco de questões",
+    description:
+      "Organize questões próprias e da comunidade; monte provas e listas reutilizando o que já criou ou salvou.",
+    href: "/dashboard?secao=banco-questoes",
+    icon: "library",
+    accent: "from-sky-500 to-indigo-500",
   },
 ];
 

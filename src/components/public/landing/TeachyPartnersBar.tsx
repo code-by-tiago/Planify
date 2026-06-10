@@ -6,7 +6,7 @@ export function TeachyPartnersBar() {
   return (
     <section className="pl-hud-partners py-8">
       <p className="text-center text-sm font-semibold text-slate-500">
-        Integrações e recursos que professores usam todos os dias
+        Integrações e recursos disponíveis na plataforma
       </p>
       <div className="pl-marquee relative mt-5 overflow-hidden">
         <div className="pl-marquee__track flex gap-10">

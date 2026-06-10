@@ -16,9 +16,9 @@ export function LandingStats() {
   return (
     <section className="border-y border-slate-200/80 bg-white px-5 py-14 sm:bg-gradient-to-b sm:from-cyan-50/40 sm:via-white sm:to-white sm:px-8 sm:py-16">
       <div className="mx-auto max-w-7xl">
-        <p className={`${ppEyebrow} text-center`}>Resultados reais</p>
+        <p className={`${ppEyebrow} text-center`}>Diferenciais</p>
         <h2 className="mt-3 text-center font-[family-name:var(--font-display)] text-2xl font-extrabold text-slate-900 sm:text-3xl">
-          Feito para o dia a dia do professor
+          O que o Planify entrega na prática
         </h2>
 
         <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">

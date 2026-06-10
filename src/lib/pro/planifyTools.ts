@@ -104,7 +104,8 @@ export const planifyTools: PlanifyTool[] = [
     id: "slides",
     title: "Apresentação de Slides",
     shortTitle: "Slides",
-    description: "Slides em sequência de aula, com imagens reais e roteiro do professor.",
+    description:
+      "Apresentação em sequência didática com roteiro para o professor; revise no editor e exporte ao Google Slides.",
     category: "preparar-aulas",
     href: dashboardToolHref("slides"),
     icon: "presentation",
@@ -118,7 +119,8 @@ export const planifyTools: PlanifyTool[] = [
     id: "prova",
     title: "Prova",
     shortTitle: "Prova",
-    description: "Gere questões objetivas e discursivas com gabarito.",
+    description:
+      "Questões objetivas e discursivas com gabarito sugerido; contexto pedagógico verificado antes da geração.",
     category: "avaliacoes",
     href: dashboardToolHref("prova"),
     icon: "fileText",
@@ -132,7 +134,8 @@ export const planifyTools: PlanifyTool[] = [
     id: "lista",
     title: "Lista de Exercícios",
     shortTitle: "Lista",
-    description: "Liste exercícios com variedade e progressão.",
+    description:
+      "Exercícios com progressão de dificuldade para fixação em sala ou tarefa de casa.",
     category: "avaliacoes",
     href: dashboardToolHref("lista"),
     icon: "listChecks",
@@ -146,7 +149,8 @@ export const planifyTools: PlanifyTool[] = [
     id: "plano-aula",
     title: "Plano de Aula",
     shortTitle: "Plano de Aula",
-    description: "Planeje objetivos, metodologia e avaliação.",
+    description:
+      "Objetivos, metodologia, materiais e avaliação em documento editável — habilidades BNCC sugeridas por etapa e componente.",
     category: "planejamento",
     href: dashboardToolHref("plano-aula"),
     icon: "clipboard",
@@ -160,7 +164,8 @@ export const planifyTools: PlanifyTool[] = [
     id: "sequencia",
     title: "Sequência Didática",
     shortTitle: "Sequência",
-    description: "Organize aulas em sequência com progressão.",
+    description:
+      "Várias aulas encadeadas com distribuição de conteúdo, atividades e avaliações ao longo do tempo.",
     category: "planejamento",
     href: dashboardToolHref("sequencia"),
     icon: "layers",
@@ -173,7 +178,8 @@ export const planifyTools: PlanifyTool[] = [
     id: "apostila",
     title: "Apostila",
     shortTitle: "Apostila",
-    description: "Material de apoio estruturado para os alunos.",
+    description:
+      "Material de apoio para alunos com explicações e exemplos; estruturado pelo Material Engine para revisão no editor.",
     category: "preparar-aulas",
     href: dashboardToolHref("apostila"),
     icon: "book",
@@ -186,7 +192,8 @@ export const planifyTools: PlanifyTool[] = [
     id: "atividade",
     title: "Atividade",
     shortTitle: "Atividade",
-    description: "Atividades práticas com instruções claras.",
+    description:
+      "Enunciado, passos e critérios para aplicação em sala ou como tarefa — pronto para ajustar e exportar.",
     category: "engajar",
     href: dashboardToolHref("atividade"),
     icon: "puzzle",
@@ -199,7 +206,8 @@ export const planifyTools: PlanifyTool[] = [
     id: "jogo",
     title: "Jogo Pedagógico",
     shortTitle: "Jogo",
-    description: "Dinâmicas e jogos para engajar a turma.",
+    description:
+      "Dinâmica ou jogo pedagógico com regras, rodadas e materiais para engajar a turma no tema.",
     category: "engajar",
     href: dashboardToolHref("jogo"),
     icon: "cards",
@@ -212,7 +220,8 @@ export const planifyTools: PlanifyTool[] = [
     id: "projeto",
     title: "Projeto",
     shortTitle: "Projeto",
-    description: "Projeto interdisciplinar com etapas e produtos.",
+    description:
+      "Proposta interdisciplinar com etapas, produto final e critérios de avaliação formativa.",
     category: "engajar",
     href: dashboardToolHref("projeto"),
     icon: "project",
@@ -225,7 +234,8 @@ export const planifyTools: PlanifyTool[] = [
     id: "resumo",
     title: "Resumo",
     shortTitle: "Resumo",
-    description: "Resumo didático do conteúdo para revisão.",
+    description:
+      "Síntese didática do conteúdo para revisão em sala ou entrega aos alunos.",
     category: "preparar-aulas",
     href: dashboardToolHref("resumo"),
     icon: "fileText",
@@ -238,7 +248,8 @@ export const planifyTools: PlanifyTool[] = [
     id: "flashcards",
     title: "Flashcards",
     shortTitle: "Flashcards",
-    description: "Cartões de estudo para memorização.",
+    description:
+      "Perguntas e respostas curtas para estudo, revisão e memorização do tema.",
     category: "preparar-aulas",
     href: dashboardToolHref("flashcards"),
     icon: "cards",
@@ -252,7 +263,7 @@ export const planifyTools: PlanifyTool[] = [
     title: "Gerador de Redação",
     shortTitle: "Redação",
     description:
-      "Monte proposta completa com tema, textos motivadores, comando e critérios de avaliação.",
+      "Proposta com tema, textos motivadores, comando e critérios — formato ENEM ou escolar, pronta para revisar.",
     category: "avaliacoes",
     href: dashboardToolHref("redacao"),
     icon: "pen",
@@ -266,7 +277,8 @@ export const planifyTools: PlanifyTool[] = [
     id: "mapa-mental",
     title: "Mapa Mental",
     shortTitle: "Mapa Mental",
-    description: "Organize tema central, ramos e conexões.",
+    description:
+      "Tema central, ramos e conexões organizados no documento para visualizar o conteúdo com a turma.",
     category: "preparar-aulas",
     href: dashboardToolHref("mapa-mental"),
     icon: "brain",
@@ -280,7 +292,7 @@ export const planifyTools: PlanifyTool[] = [
     title: "Adaptação Curricular — Inclusão",
     shortTitle: "Inclusão",
     description:
-      "Adapte atividades, trilhas paralelas, relatórios e mediação para educação inclusiva.",
+      "Adaptações curriculares (TEA, TDAH, dislexia e outras necessidades) no material que você descreve ou já tem.",
     category: "preparar-aulas",
     href: dashboardToolHref("inclusao"),
     icon: "spark",
@@ -296,7 +308,7 @@ export const planifyTools: PlanifyTool[] = [
     title: "Construtor de Aula Completa",
     shortTitle: "Aula completa",
     description:
-      "Um fluxo: tema → plano de aula, slides, atividade e avaliação alinhados no mesmo pacote.",
+      "Um tema gera plano, slides, atividade e avaliação coesos no mesmo pacote — revise cada peça antes de exportar.",
     category: "preparar-aulas",
     href: dashboardToolHref("aula-completa"),
     icon: "layers",
@@ -312,7 +324,7 @@ export const planifyTools: PlanifyTool[] = [
     title: "Correção + Feedback IA",
     shortTitle: "Correção IA",
     description:
-      "Cole a resposta do estudante, aplique rubrica e receba devolutiva personalizada que aprende seu estilo.",
+      "Cole a resposta do aluno, aplique rubrica e receba devolutiva para complementar sua correção.",
     category: "correcao",
     href: dashboardToolHref("correcao-ia"),
     icon: "pen",

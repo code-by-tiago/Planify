@@ -8,7 +8,7 @@ import { LandingHowItWorks } from "./LandingHowItWorks";
 import { LandingResources } from "./LandingResources";
 import { LandingSolutions } from "./LandingSolutions";
 import { LandingStats } from "./LandingStats";
-import { LandingTestimonials } from "./LandingTestimonials";
+import { LandingTools } from "./LandingTools";
 import { LandingTrustBar } from "./LandingTrustBar";
 
 export function LandingProfessorPrimeiroPage() {
@@ -19,11 +19,11 @@ export function LandingProfessorPrimeiroPage() {
       <LandingTrustBar />
       <LandingStats />
       <LandingCreateBlock />
+      <LandingTools />
       <LandingResources />
       <LandingSolutions />
       <LandingHowItWorks />
       <LandingComparison />
-      <LandingTestimonials />
       <LandingFinalCta />
       <LandingFooter />
     </>

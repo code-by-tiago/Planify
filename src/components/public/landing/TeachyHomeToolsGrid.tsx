@@ -2,6 +2,7 @@ import Link from "next/link";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { planifyTools } from "@/lib/pro/planifyTools";
 import {
+  landingExtraTools,
   landingGeneratorCount,
   landingPlanejamentoTools,
 } from "@/lib/pro/teachyLanding";
@@ -32,14 +33,14 @@ export function TeachyHomeToolsGrid() {
             {landingGeneratorCount} geradores + planejamentos BNCC
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-base font-medium leading-7 text-slate-600 sm:text-lg">
-            Materiais com IA, matriz anual ou trimestral e modelos oficiais — escolha
-            a ferramenta, descreva o contexto e revise antes de exportar.
+            Do planejamento BNCC à correção de redações — descreva o contexto da turma,
+            gere o rascunho e revise no editor antes de exportar ou publicar.
           </p>
         </div>
 
         <div className="mt-12">
           <p className="mb-4 text-center text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-600">
-            Mais usados
+            Destaques
           </p>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {featuredTools.map((tool) => (
@@ -70,9 +71,28 @@ export function TeachyHomeToolsGrid() {
 
         <div className="mt-12">
           <p className="mb-4 text-center text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">
-            Planejamentos + todos os geradores
+            Planejamentos, banco de questões e geradores
           </p>
           <div className="planify-landing-tools-grid grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+            {landingExtraTools
+              .filter((tool) => tool.id !== "planejamentos")
+              .map((tool) => (
+                <Link
+                  key={tool.id}
+                  href={tool.href}
+                  className="pl-hud-glass group flex flex-col items-center rounded-2xl p-4 text-center transition hover:border-cyan-400/40 motion-safe:hover:-translate-y-0.5 motion-safe:hover:shadow-md"
+                  title={tool.description}
+                >
+                  <span
+                    className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br ${tool.accent} text-white shadow-sm transition max-lg:group-hover:scale-100 motion-safe:group-hover:scale-105`}
+                  >
+                    <PlanifyIcon name={tool.icon} className="h-5 w-5" />
+                  </span>
+                  <span className="mt-3 line-clamp-2 text-xs font-black leading-snug text-slate-900">
+                    {tool.shortTitle}
+                  </span>
+                </Link>
+              ))}
             {landingPlanejamentoTools.map((tool) => (
               <Link
                 key={tool.id}

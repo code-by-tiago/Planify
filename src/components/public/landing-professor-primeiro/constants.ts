@@ -1,9 +1,8 @@
 export const LANDING_NAV = [
   { href: "/#professores", label: "Para professores" },
-  { href: "/#comunidade", label: "Comunidade" },
-  { href: "/#exportacao-google", label: "Google" },
   { href: "/escolas", label: "Para escolas" },
   { href: "/planos", label: "Planos" },
+  { href: "/#recursos", label: "Recursos" },
 ] as const;
 
 export const TRUST_ITEMS = [
@@ -161,90 +160,3 @@ export const FINAL_BENEFITS = [
   { label: "Acesso imediato", icon: "spark" as const },
   { label: "Créditos transparentes", icon: "checkCircle" as const },
 ];
-
-export const COMMUNITY_FEATURES = [
-  {
-    title: "Feed e publicações",
-    description: "Publique materiais no feed da comunidade e acompanhe o que outros professores compartilham.",
-    icon: "market" as const,
-  },
-  {
-    title: "Curtidas e comentários",
-    description: "Interaja com posts, troque ideias e descubra materiais relevantes para sua prática.",
-    icon: "spark" as const,
-  },
-  {
-    title: "Salvar com cópia",
-    description:
-      "Ao salvar, o Planify guarda uma cópia sua — ela permanece mesmo se o autor remover o original.",
-    icon: "download" as const,
-  },
-  {
-    title: "Perfis e amigos",
-    description: "Monte seu perfil, conecte-se com colegas e acompanhe o que publicam.",
-    icon: "user" as const,
-  },
-  {
-    title: "Mensagens diretas",
-    description: "Converse em particular com outros professores da comunidade.",
-    icon: "message" as const,
-  },
-  {
-    title: "Abrir, baixar e visualizar",
-    description: "Abra no editor integrado, baixe o arquivo ou visualize antes de reutilizar.",
-    icon: "editor" as const,
-  },
-] as const;
-
-export const COMMUNITY_DIFFERENTIATION = [
-  {
-    title: "Biblioteca",
-    accent: "cyan",
-    description:
-      "Materiais oficiais e pacotes curados pelo Planify — ponto de partida confiável, não troca entre pares.",
-    icon: "library" as const,
-  },
-  {
-    title: "Meus materiais",
-    accent: "emerald",
-    description:
-      "Tudo o que você gerou ou importou no painel — seu repositório pessoal de rascunhos e versões.",
-    icon: "history" as const,
-  },
-  {
-    title: "Comunidade",
-    accent: "violet",
-    description:
-      "Rede entre professores premium: compartilhamento entre pares, sem loja nem marketplace de venda.",
-    icon: "market" as const,
-  },
-] as const;
-
-export const GOOGLE_EXPORT_PRODUCTS = [
-  {
-    product: "drive" as const,
-    title: "Google Drive",
-    description:
-      "Salva uma cópia DOCX no Drive e abre a pasta do arquivo — não o editor do Google Docs.",
-  },
-  {
-    product: "docs" as const,
-    title: "Google Docs",
-    description: "Exporta um documento editável no Google Docs, pronto para ajustar e compartilhar.",
-  },
-  {
-    product: "slides" as const,
-    title: "Google Slides",
-    description: "Gera apresentação a partir de decks de slides criados no Planify.",
-  },
-  {
-    product: "forms" as const,
-    title: "Google Forms",
-    description: "Monta formulário com as questões do material — ideal para provas e atividades.",
-  },
-  {
-    product: "classroom" as const,
-    title: "Google Classroom",
-    description: "Publica na turma conectada como tarefa ou material, direto do painel.",
-  },
-] as const;

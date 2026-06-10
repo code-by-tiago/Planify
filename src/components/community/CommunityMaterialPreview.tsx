@@ -2,9 +2,10 @@
 
 import {
   PLANIFY_COMMUNITY_DOCUMENT_PREVIEW_CSS,
+  PLANIFY_COMMUNITY_DOCUMENT_SCREEN_CSS,
   PLANIFY_COMMUNITY_SLIDE_PREVIEW_CSS,
 } from "@/lib/community/community-material-preview-css";
-import { PLANIFY_EXPORT_CSS } from "@/lib/editor/editor-print-html";
+import { PLANIFY_EXPORT_DOC_COMPONENT_CSS } from "@/lib/editor/editor-print-html";
 import type { MarketplacePreviewKind } from "@/server/marketplace/marketplace-preview";
 
 type CommunityMaterialPreviewProps = {
@@ -18,7 +19,10 @@ type CommunityMaterialPreviewProps = {
   scrollMode?: "inner" | "page";
 };
 
-const htmlPreviewClassName =
+const documentPreviewClassName =
+  "planify-community-material-html planify-community-material-document w-full min-w-0 break-words text-slate-950";
+
+const slidePreviewClassName =
   "planify-community-material-html w-full min-w-0 break-words text-sm leading-7 text-slate-800 [&_.planify-export-document]:mx-auto [&_.planify-flashcards]:flex [&_.planify-flashcards]:flex-wrap [&_.planify-flashcards]:gap-4 [&_.planify-flashcards_.planify-flashcard]:min-w-0 [&_.planify-flashcards_.planify-flashcard]:max-w-full [&_.planify-flashcards_.planify-flashcard]:flex-[1_1_100%] [&_.planify-flashcards_.planify-flashcard]:sm:flex-[1_1_260px] [&_.planify-slide-deck]:w-full [&_h1]:text-xl [&_h1]:font-black [&_h1]:sm:text-2xl [&_h2]:mt-4 [&_h2]:text-lg [&_h2]:font-black [&_h3]:mt-3 [&_h3]:font-black [&_img]:max-w-full [&_li]:ml-5 [&_ol]:list-decimal [&_p]:my-2 [&_table]:w-full [&_table]:max-w-full [&_table]:border-collapse [&_td]:border [&_td]:border-slate-200 [&_td]:p-2 [&_th]:border [&_th]:border-slate-200 [&_th]:p-2 [&_ul]:list-disc";
 
 export function CommunityMaterialPreview({
@@ -40,21 +44,23 @@ export function CommunityMaterialPreview({
         <style>
           {slideMode
             ? PLANIFY_COMMUNITY_SLIDE_PREVIEW_CSS
-            : `${PLANIFY_EXPORT_CSS}${PLANIFY_COMMUNITY_DOCUMENT_PREVIEW_CSS}`}
+            : `${PLANIFY_COMMUNITY_DOCUMENT_SCREEN_CSS}${PLANIFY_EXPORT_DOC_COMPONENT_CSS}${PLANIFY_COMMUNITY_DOCUMENT_PREVIEW_CSS}`}
         </style>
         <div
-          className={`w-full min-w-0 bg-white p-3 sm:p-5 ${
+          className={`w-full min-w-0 bg-white ${
+            slideMode ? "p-3 sm:p-5" : "px-3 py-4 sm:px-5 sm:py-6"
+          } ${
             pageScroll
               ? "overflow-x-hidden"
               : "max-h-[min(78vh,920px)] overflow-x-hidden overflow-y-auto overscroll-contain [touch-action:pan-y]"
           }`}
         >
           <div
-            className={`${htmlPreviewClassName} ${slideMode ? "planify-community-material-slides" : ""}`}
+            className={`${slideMode ? slidePreviewClassName : documentPreviewClassName} ${slideMode ? "planify-community-material-slides" : ""}`}
             dangerouslySetInnerHTML={{
               __html: slideMode
                 ? `<div class="planify-export-document">${htmlContent}</div>`
-                : `<main class="planify-export-document">${htmlContent}</main>`,
+                : htmlContent,
             }}
           />
         </div>

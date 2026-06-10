@@ -7,19 +7,7 @@ function escapeHtml(value: string) {
     .replace(/'/g, "&#039;");
 }
 
-export const PLANIFY_EXPORT_CSS = `
-  @page { size: A4 portrait; margin: 1.2cm; }
-  html, body, * {
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-  }
-  html, body { background: #ffffff; color: #0f172a; margin: 0; }
-  body {
-    font-family: "Times New Roman", Times, serif;
-    font-size: 12pt;
-    line-height: 1.5;
-    text-align: left;
-  }
+export const PLANIFY_EXPORT_DOC_COMPONENT_CSS = `
   .planify-export-document {
     width: 100%;
     max-width: 18.6cm;
@@ -124,46 +112,6 @@ export const PLANIFY_EXPORT_CSS = `
     padding: 0.65rem 0.85rem;
     margin-top: 1rem;
   }
-  h1, h2, h3, h4 {
-    color: #0f172a;
-    line-height: 1.2;
-    page-break-after: avoid;
-    text-align: left;
-  }
-  h1 {
-    font-size: 14pt;
-    margin: 0 0 1rem;
-  }
-  h2 {
-    font-size: 13pt;
-    margin: 1.1rem 0 0.65rem;
-  }
-  h3, h4 {
-    font-size: 12pt;
-    margin: 0.9rem 0 0.5rem;
-  }
-  p {
-    margin: 0 0 0.65rem;
-  }
-  ul, ol {
-    margin: 0 0 0.65rem 1.2rem;
-    padding: 0;
-  }
-  li {
-    margin: 0 0 0.35rem;
-  }
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 0.8rem 0;
-    page-break-inside: avoid;
-    text-align: left;
-  }
-  td, th {
-    border: 1px solid #cbd5e1;
-    padding: 0.45rem;
-    vertical-align: top;
-  }
   figure,
   img,
   table,
@@ -266,6 +214,62 @@ export const PLANIFY_EXPORT_CSS = `
     break-after: page;
     page-break-after: always;
     border: 0;
+  }
+`;
+
+export const PLANIFY_EXPORT_CSS = `
+  @page { size: A4 portrait; margin: 1.2cm; }
+  html, body, * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  html, body { background: #ffffff; color: #0f172a; margin: 0; }
+  body {
+    font-family: "Times New Roman", Times, serif;
+    font-size: 12pt;
+    line-height: 1.5;
+    text-align: left;
+  }
+  ${PLANIFY_EXPORT_DOC_COMPONENT_CSS}
+  h1, h2, h3, h4 {
+    color: #0f172a;
+    line-height: 1.2;
+    page-break-after: avoid;
+    text-align: left;
+  }
+  h1 {
+    font-size: 14pt;
+    margin: 0 0 1rem;
+  }
+  h2 {
+    font-size: 13pt;
+    margin: 1.1rem 0 0.65rem;
+  }
+  h3, h4 {
+    font-size: 12pt;
+    margin: 0.9rem 0 0.5rem;
+  }
+  p {
+    margin: 0 0 0.65rem;
+  }
+  ul, ol {
+    margin: 0 0 0.65rem 1.2rem;
+    padding: 0;
+  }
+  li {
+    margin: 0 0 0.35rem;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0.8rem 0;
+    page-break-inside: avoid;
+    text-align: left;
+  }
+  td, th {
+    border: 1px solid #cbd5e1;
+    padding: 0.45rem;
+    vertical-align: top;
   }
   [contenteditable],
   button,

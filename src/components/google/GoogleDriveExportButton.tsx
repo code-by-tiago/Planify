@@ -17,6 +17,7 @@ type GoogleDriveExportButtonProps = {
   className?: string;
   iconOnly?: boolean;
   onStatus?: (message: string) => void;
+  onExportError?: (error: unknown) => void;
 };
 
 export function GoogleDriveExportButton({
@@ -28,6 +29,7 @@ export function GoogleDriveExportButton({
   className,
   iconOnly,
   onStatus,
+  onExportError,
 }: GoogleDriveExportButtonProps) {
   const runExport = useCallback(async (params: {
     html: string;
@@ -80,6 +82,7 @@ export function GoogleDriveExportButton({
       pendingStorageKey={GOOGLE_DRIVE_EXPORT_PENDING_KEY}
       onExport={runExport}
       onStatus={onStatus}
+      onExportError={onExportError}
     />
   );
 }

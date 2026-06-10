@@ -15,6 +15,7 @@ type GoogleFormsExportButtonProps = {
   className?: string;
   iconOnly?: boolean;
   onStatus?: (message: string) => void;
+  onExportError?: (error: unknown) => void;
 };
 
 export function GoogleFormsExportButton({
@@ -24,6 +25,7 @@ export function GoogleFormsExportButton({
   className,
   iconOnly,
   onStatus,
+  onExportError,
 }: GoogleFormsExportButtonProps) {
   const runExport = useCallback(async (params: { html: string }) => {
     const result = await exportToGoogleForms({
@@ -58,6 +60,7 @@ export function GoogleFormsExportButton({
       pendingStorageKey={GOOGLE_FORMS_EXPORT_PENDING_KEY}
       onExport={runExport}
       onStatus={onStatus}
+      onExportError={onExportError}
     />
   );
 }

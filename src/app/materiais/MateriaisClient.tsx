@@ -14,6 +14,8 @@ import {
 } from "@/lib/materiais/elevate-material-client";
 import { isMaterialStreamType } from "@/lib/materiais/material-stream-types";
 import { requestMaterialGenerationStream } from "@/lib/materiais/material-stream-client";
+import { requestExamQuestionsRetry } from "@/lib/materiais/material-exam-retry-client";
+import { requestSlideImagesRetry } from "@/lib/materiais/material-images-retry-client";
 import { MarketplacePublishButton } from "@/components/marketplace/MarketplacePublishButton";
 import type {
   MaterialEngineInput,
@@ -316,6 +318,8 @@ export function MateriaisClient({
   const [lastGenerationPayload, setLastGenerationPayload] =
     useState<MaterialEngineInput | null>(null);
   const [elevatingQuality, setElevatingQuality] = useState(false);
+  const [retryingImages, setRetryingImages] = useState(false);
+  const [retryingExam, setRetryingExam] = useState(false);
   const [adjustingSlides, setAdjustingSlides] = useState(false);
   const [conteudosSugeridos, setConteudosSugeridos] = useState<
     ConteudoSugerido[] | null
@@ -572,6 +576,26 @@ export function MateriaisClient({
   const showGabarito = toolSupportsGabarito(tipo, {
     incluirQuestoes: tipo === "slides" ? incluirQuestoes : undefined,
   });
+
+  const canRetrySlideImages = useMemo(() => {
+    if (tipo !== "slides" || !resultadoEstrutura?.slides?.length) return false;
+    return resultadoEstrutura.slides.some(
+      (slide) =>
+        slide.layout !== "fechamento" &&
+        !slide.imageUrl?.trim() &&
+        Boolean(slide.imagePrompt?.trim() || slide.title?.trim()),
+    );
+  }, [tipo, resultadoEstrutura]);
+
+  const canRetryExamQuestions = useMemo(() => {
+    if (tipo !== "prova" && tipo !== "lista") return false;
+    if (!resultadoEstrutura?.exam?.questions?.length) return false;
+    return qualityIssues.some(
+      (issue) =>
+        /^Questão \d+/i.test(issue) ||
+        /enunciado|alternativas|gabarito|Prova\/lista/i.test(issue),
+    );
+  }, [tipo, resultadoEstrutura, qualityIssues]);
 
   const educationFields = useMemo(
     () => ({ etapa, anoSerie, areaConhecimento, componente }),
@@ -1321,6 +1345,98 @@ export function MateriaisClient({
     }
   }
 
+  async function regenerarImagensSlides() {
+    if (!lastGenerationPayload || !resultadoEstrutura) {
+      setErro("Gere os slides antes de tentar resolver imagens.");
+      return;
+    }
+
+    setRetryingImages(true);
+    setErro("");
+
+    try {
+      const result = await requestSlideImagesRetry({
+        ...lastGenerationPayload,
+        estrutura: resultadoEstrutura,
+      });
+      window.dispatchEvent(new Event("planify:credits-changed"));
+      setResultadoHtml(result.html);
+      setResultadoEstrutura(result.estrutura);
+
+      const titulo = buildTitle(tipo, tema);
+      const meta = buildMaterialMeta(pipelineGeracao, result.estrutura, {
+        qualityScore,
+        qualityIssues,
+        generationPayload: lastGenerationPayload,
+      });
+      persistGeneratedMaterial(result.html, titulo, meta);
+      setMaterialSalvo(true);
+      setHistorico(loadMaterialHistoryPreview());
+      setHintFeedback(
+        result.imagesResolved > 0
+          ? `${result.imagesResolved} imagem(ns) resolvida(s) — revise os slides.`
+          : "Nenhuma imagem pendente encontrada.",
+      );
+    } catch (error) {
+      dispatchCreditsChangedIfNeeded(error);
+      const formatted = formatGenerationError(error);
+      setErro(formatted.message);
+      setErroCta(formatted.cta ?? null);
+      setErroRetryable(formatted.retryable);
+    } finally {
+      setRetryingImages(false);
+    }
+  }
+
+  async function regenerarQuestoesFracas() {
+    if (!lastGenerationPayload || !resultadoEstrutura) {
+      setErro("Gere a prova ou lista antes de corrigir questões.");
+      return;
+    }
+
+    setRetryingExam(true);
+    setErro("");
+
+    try {
+      const result = await requestExamQuestionsRetry({
+        ...lastGenerationPayload,
+        estrutura: resultadoEstrutura,
+      });
+      window.dispatchEvent(new Event("planify:credits-changed"));
+      setResultadoHtml(result.html);
+      setResultadoEstrutura(result.estrutura);
+      if (typeof result.qualityScore === "number") {
+        setQualityScore(result.qualityScore);
+      }
+      if (result.qualityIssues) {
+        setQualityIssues(result.qualityIssues);
+      }
+
+      const titulo = buildTitle(tipo, tema);
+      const meta = buildMaterialMeta(pipelineGeracao, result.estrutura, {
+        qualityScore: result.qualityScore ?? qualityScore,
+        qualityIssues: result.qualityIssues ?? qualityIssues,
+        generationPayload: lastGenerationPayload,
+      });
+      persistGeneratedMaterial(result.html, titulo, meta);
+      setMaterialSalvo(true);
+      setHistorico(loadMaterialHistoryPreview());
+      setHintFeedback(
+        result.questionsResolved > 0
+          ? `${result.questionsResolved} questão(ões) reescrita(s) — revise antes de exportar.`
+          : "Nenhuma questão fraca detectada para correção parcial.",
+      );
+    } catch (error) {
+      dispatchCreditsChangedIfNeeded(error);
+      const formatted = formatGenerationError(error);
+      setErro(formatted.message);
+      setErroCta(formatted.cta ?? null);
+      setErroRetryable(formatted.retryable);
+    } finally {
+      setRetryingExam(false);
+    }
+  }
+
   function handleSlideAiAdjustResult(result: {
     html: string;
     estrutura: MaterialEngineResponse | null;
@@ -2024,6 +2140,30 @@ export function MateriaisClient({
                   }
                   elevating={elevatingQuality}
                 />
+              ) : null}
+              {(canRetrySlideImages || canRetryExamQuestions) ? (
+                <div className="mb-4 flex flex-wrap gap-2">
+                  {canRetrySlideImages ? (
+                    <button
+                      type="button"
+                      onClick={() => void regenerarImagensSlides()}
+                      disabled={loading || retryingImages || retryingExam}
+                      className="rounded-full border border-violet-200 bg-violet-50 px-4 py-2 text-xs font-black text-violet-900 transition hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {retryingImages ? "Resolvendo imagens…" : "Resolver imagens pendentes"}
+                    </button>
+                  ) : null}
+                  {canRetryExamQuestions ? (
+                    <button
+                      type="button"
+                      onClick={() => void regenerarQuestoesFracas()}
+                      disabled={loading || retryingExam || retryingImages}
+                      className="rounded-full border border-amber-200 bg-amber-50 px-4 py-2 text-xs font-black text-amber-900 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {retryingExam ? "Corrigindo questões…" : "Corrigir questões fracas"}
+                    </button>
+                  ) : null}
+                </div>
               ) : null}
               {(pipelineGeracao || alertasGeracao.length > 0) && (
                 <div className="mb-4 space-y-3">

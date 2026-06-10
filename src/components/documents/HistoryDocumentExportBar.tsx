@@ -16,6 +16,7 @@ type HistoryDocumentExportBarProps = {
   item: HistoryItem;
   returnTo?: string;
   onStatus?: (message: string) => void;
+  onError?: (error: unknown) => void;
   classroomMode?: "panel" | "popover";
   showDownloads?: boolean;
 };
@@ -24,6 +25,7 @@ export function HistoryDocumentExportBar({
   item,
   returnTo = "/dashboard?secao=historico",
   onStatus,
+  onError,
   classroomMode = "popover",
   showDownloads = true,
 }: HistoryDocumentExportBarProps) {
@@ -48,6 +50,7 @@ export function HistoryDocumentExportBar({
       });
       onStatus?.("Download PDF iniciado.");
     } catch (err) {
+      onError?.(err);
       onStatus?.(err instanceof Error ? err.message : "Erro no download.");
     } finally {
       setDownloadingPdf(false);
@@ -64,6 +67,7 @@ export function HistoryDocumentExportBar({
         isSlideDeck={isSlideDeck}
         returnTo={returnTo}
         onStatus={onStatus}
+        onExportError={onError}
         compact
         classroomMode={classroomMode}
       />

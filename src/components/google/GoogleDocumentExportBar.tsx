@@ -18,6 +18,7 @@ export type GoogleDocumentExportBarProps = {
   getHtml: () => string;
   getPlanningPayload?: () => Record<string, unknown> | null;
   onStatus?: (message: string) => void;
+  onExportError?: (error: unknown) => void;
   documentType?: string | null;
   isSlideDeck?: boolean;
   slideTheme?: string | null;
@@ -34,6 +35,7 @@ export function GoogleDocumentExportBar({
   getHtml,
   getPlanningPayload,
   onStatus,
+  onExportError,
   documentType,
   isSlideDeck: isSlideDeckProp,
   slideTheme: slideThemeProp,
@@ -125,6 +127,7 @@ export function GoogleDocumentExportBar({
             returnTo={returnTo}
             documentType={documentType}
             onStatus={onStatus}
+            onExportError={onExportError}
             iconOnly
           />
           <GoogleDriveExportButton
@@ -134,6 +137,7 @@ export function GoogleDocumentExportBar({
             returnTo={returnTo}
             documentType={documentType}
             onStatus={onStatus}
+            onExportError={onExportError}
             iconOnly
           />
         </>
@@ -143,6 +147,7 @@ export function GoogleDocumentExportBar({
         getHtml={getHtml}
         returnTo={returnTo}
         onStatus={onStatus}
+        onExportError={onExportError}
         iconOnly
       />
       {classroomMode === "popover" ? (

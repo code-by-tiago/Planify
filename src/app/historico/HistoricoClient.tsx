@@ -30,6 +30,10 @@ import {
 } from "../../lib/history/history-storage";
 import { saveEditorDocument } from "../../lib/editor/editor-storage";
 import { migrateLegacyMaterialHistoryOnce } from "../../lib/materiais/material-editor-flow";
+import {
+  formatGenerationError,
+  GenerationErrorBanner,
+} from "@/lib/pro/generation-error-ui";
 
 type StatusState = {
   type: "info" | "success" | "warning";
@@ -118,6 +122,11 @@ export function HistoricoClient() {
   const [filter, setFilter] = useState<HistoryFilter>(initialFilter);
   const [selectedItem, setSelectedItem] = useState<HistoryItem | null>(null);
   const [status, setStatus] = useState<StatusState | null>(null);
+  const [exportError, setExportError] = useState("");
+  const [exportErrorCta, setExportErrorCta] = useState<
+    ReturnType<typeof formatGenerationError>["cta"]
+  >(null);
+  const [exportErrorRetryable, setExportErrorRetryable] = useState(false);
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
@@ -320,6 +329,24 @@ export function HistoricoClient() {
     return historyItemContentToHtml(selectedItem.content);
   }, [selectedItem]);
 
+  function handleExportStatus(message: string) {
+    setExportError("");
+    setExportErrorCta(null);
+    setExportErrorRetryable(false);
+    setStatus({ type: "success", message });
+  }
+
+  function handleExportError(error: unknown) {
+    const formatted = formatGenerationError(error);
+    setExportError(formatted.message);
+    setExportErrorCta(formatted.cta ?? null);
+    setExportErrorRetryable(formatted.retryable);
+    setStatus({
+      type: "warning",
+      message: "Falha na exportação — veja o aviso abaixo.",
+    });
+  }
+
   return (
     <PlanifyWorkspacePane
       header={
@@ -458,6 +485,15 @@ export function HistoricoClient() {
               {status.message}
             </div>
           ) : null}
+
+          {exportError ? (
+            <GenerationErrorBanner
+              message={exportError}
+              cta={exportErrorCta}
+              retryable={exportErrorRetryable}
+              className="mt-4"
+            />
+          ) : null}
         </div>
 
         {filteredItems.length > 0 ? (
@@ -523,9 +559,8 @@ export function HistoricoClient() {
                   <div className="space-y-2 border-t border-slate-100 px-2 py-2">
                     <HistoryDocumentExportBar
                       item={item}
-                      onStatus={(message) =>
-                        setStatus({ type: "success", message })
-                      }
+                      onStatus={handleExportStatus}
+                      onError={handleExportError}
                       classroomMode="popover"
                     />
                     <div className="flex gap-1.5">
@@ -641,9 +676,8 @@ export function HistoricoClient() {
                     <HistoryDocumentExportBar
                       item={selectedItem}
                       classroomMode="popover"
-                      onStatus={(message) =>
-                        setStatus({ type: "success", message })
-                      }
+                      onStatus={handleExportStatus}
+                      onError={handleExportError}
                     />
                   </div>
                 </div>

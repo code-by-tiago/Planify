@@ -17,6 +17,7 @@ const steps = [
   "npm run verify:unification-u1",
   "npm run verify:unification-u2",
   "npm run verify:unification-u3",
+  "npm run verify:unification-u4",
   "npm run verify:pedagogical-ecosystem",
   "npm run build",
 ];

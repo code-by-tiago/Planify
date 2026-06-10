@@ -50,6 +50,7 @@ type GoogleProductExportButtonProps = {
     planningPayload?: Record<string, unknown> | null;
   }) => Promise<{ openUrl: string; openedInPreview?: boolean }>;
   onStatus?: (message: string) => void;
+  onExportError?: (error: unknown) => void;
 };
 
 export function GoogleProductExportButton({
@@ -69,6 +70,7 @@ export function GoogleProductExportButton({
   getPlanningPayload,
   onExport,
   onStatus,
+  onExportError,
 }: GoogleProductExportButtonProps) {
   const [status, setStatus] = useState<GoogleIntegrationStatus | null>(null);
   const [loading, setLoading] = useState(true);
@@ -131,6 +133,7 @@ export function GoogleProductExportButton({
         setError("Pop-up bloqueado. Permita janelas do Planify e clique de novo.");
       }
     } catch (err) {
+      onExportError?.(err);
       const message =
         err instanceof Error ? err.message : `Erro ao exportar para ${productName}.`;
 
@@ -146,7 +149,7 @@ export function GoogleProductExportButton({
     } finally {
       setBusy(false);
     }
-  }, [onExport, onStatus, pendingStorageKey, productName, resolveHtmlForExport]);
+  }, [onExport, onExportError, onStatus, pendingStorageKey, productName, resolveHtmlForExport]);
 
   const runConnect = useCallback(async () => {
     setBusy(true);

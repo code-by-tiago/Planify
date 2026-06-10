@@ -60,19 +60,74 @@ export const PLANIFY_EXPORT_DOC_COMPONENT_CSS = `
     margin: 0 0 1rem;
     background: #eef2ff;
   }
-  .planify-questao-card {
-    border: 1px solid #cbd5e1;
-    border-radius: 12px;
-    padding: 0.75rem 0.9rem;
+  .planify-doc-instructions-inline {
     margin: 0 0 0.85rem;
+    padding: 0.4rem 0.65rem;
+    font-size: 10pt;
+    color: #475569;
+    border-left: 3px solid var(--planify-accent, #4338ca);
+    background: #f8fafc;
+  }
+  .planify-doc-header-compact {
+    padding: 0.55rem 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+  .planify-doc-header-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.45rem;
+  }
+  .planify-doc-header-theme {
+    margin: 0;
+    font-size: 10pt;
+    font-weight: 700;
+    color: #334155;
+    text-align: right;
+  }
+  .planify-doc-meta-compact th,
+  .planify-doc-meta-compact td {
+    font-size: 10pt;
+    padding: 0.28rem 0.45rem;
+  }
+  .planify-doc-meta-compact th {
+    width: auto;
+    min-width: 4.5rem;
+  }
+  .planify-questao-card {
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 0.7rem 0.85rem 0.8rem;
+    margin: 0 0 0.75rem;
     background: #ffffff;
+    box-shadow: 0 1px 0 rgba(15, 23, 42, 0.04);
   }
   .planify-questao-head {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 0.5rem;
-    margin-bottom: 0.45rem;
+    gap: 0.55rem;
+    margin-bottom: 0.5rem;
+  }
+  .planify-questao-number-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.85rem;
+    height: 1.85rem;
+    border-radius: 999px;
+    background: var(--planify-accent, #312e81);
+    color: #ffffff;
+    font-size: 10pt;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    flex-shrink: 0;
+  }
+  .planify-questao-number-label {
+    font-size: 10pt;
+    font-weight: 700;
+    color: #334155;
+    flex: 1;
   }
   .planify-questao-number {
     font-size: 10.5pt;
@@ -101,9 +156,14 @@ export const PLANIFY_EXPORT_DOC_COMPONENT_CSS = `
     margin-bottom: 0.45rem;
   }
   .planify-gabarito-block {
-    margin-top: 1.2rem;
-    padding-top: 0.6rem;
-    border-top: 2px dashed #cbd5e1;
+    margin-top: 1.4rem;
+    padding-top: 0.75rem;
+    border-top: 2px dashed #94a3b8;
+  }
+  .planify-gabarito-block h2 {
+    font-size: 13pt;
+    color: #334155;
+    margin-bottom: 0.5rem;
   }
   .planify-alertas {
     border: 1px solid #fcd34d;
@@ -209,6 +269,42 @@ export const PLANIFY_EXPORT_DOC_COMPONENT_CSS = `
     color: #312e81;
     border-bottom: 2px solid #e0e7ff;
     padding-bottom: 0.25rem;
+    margin-bottom: 0.65rem;
+    font-size: 13pt;
+  }
+  .planify-doc-lista .planify-questoes-block > h2,
+  .planify-doc-prova .planify-questoes-block > h2 {
+    display: none;
+  }
+  .planify-doc-lista .planify-doc-title,
+  .planify-doc-prova .planify-doc-title {
+    margin-bottom: 0.35rem;
+    font-size: 17pt;
+  }
+  .planify-doc-lista .planify-doc-subtitle,
+  .planify-doc-prova .planify-doc-subtitle {
+    text-align: center;
+    margin-bottom: 0.65rem;
+    font-size: 10.5pt;
+  }
+  .planify-resumo-section h2 {
+    font-size: 12.5pt;
+    color: #0f766e;
+    border-bottom: 1px solid #ccfbf1;
+    padding-bottom: 0.2rem;
+    margin-top: 0.85rem;
+  }
+  .planify-resumo-section ul {
+    margin: 0.35rem 0 0.5rem 1rem;
+  }
+  .planify-resumo-section li {
+    margin-bottom: 0.25rem;
+    line-height: 1.35;
+  }
+  .planify-resumo-lead {
+    margin: 0 0 0.35rem;
+    font-size: 10.5pt;
+    color: #64748b;
   }
   .page-break {
     break-after: page;

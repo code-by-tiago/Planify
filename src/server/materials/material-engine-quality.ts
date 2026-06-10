@@ -217,8 +217,26 @@ export function getEngineOutputIssues(
   }
 
   if (["prova", "lista", "apostila"].includes(tipo)) {
-    if (isGenericEducationalText(output.summary)) {
+    if (tipo !== "prova" && tipo !== "lista" && isGenericEducationalText(output.summary)) {
       issues.push("Resumo inicial genérico — use síntese específica do tema.");
+    }
+    if (tipo === "prova" || tipo === "lista") {
+      const summary = output.summary?.trim() || "";
+      if (summary.length > 120) {
+        issues.push(
+          "Prova/lista: 'summary' deve ficar vazio ou ter no máximo 1 frase curta — remova contextualização longa.",
+        );
+      }
+      if ((output.sections?.length ?? 0) > 0) {
+        issues.push(
+          "Prova/lista: não use 'sections' — concentre tudo em exam.questions.",
+        );
+      }
+      if ((output.teacherNotes?.length ?? 0) > 0) {
+        issues.push(
+          "Prova/lista: não preencha 'teacherNotes' — orientações pedagógicas não entram na versão do aluno.",
+        );
+      }
     }
   }
 
@@ -291,6 +309,17 @@ export function getEngineOutputIssues(
     if ((output.sections?.length ?? 0) < 2) {
       issues.push("Resumo: organize pelo menos 2 seções temáticas com bullets.");
     }
+    const longParagraphs = (output.sections ?? []).filter(
+      (section) => (section.content?.trim().length ?? 0) > 180,
+    ).length;
+    if (longParagraphs > 0) {
+      issues.push(
+        "Resumo: use bullets curtos — evite parágrafos explicativos longos em 'content'.",
+      );
+    }
+    if ((output.exam?.questions?.length ?? 0) > 0) {
+      issues.push("Resumo: não inclua exam.questions — use apenas sections com bullets.");
+    }
   }
 
   return issues;
@@ -298,9 +327,10 @@ export function getEngineOutputIssues(
 
 const TEACHY_DEPTH_CHECKLIST = [
   "MODO TEACHY — CHECKLIST DE PROFUNDIDADE (última tentativa):",
-  "- Cada enunciado/seção cita subconceito concreto do tema (zero placeholders genéricos).",
-  "- Progressão didática: aquecimento → desenvolvimento → consolidação/avaliação.",
-  "- Gabarito/resposta com comentário pedagógico (por que a alternativa correta e por que as outras falham).",
+  "- Material direto: questões/exercícios numerados sem preâmbulos pedagógicos longos.",
+  "- Cada enunciado cita subconceito concreto do tema (zero placeholders genéricos).",
+  "- Progressão: básico → intermediário → desafio.",
+  "- Gabarito objetivo: resposta correta + critério breve (sem comentário pedagógico extenso).",
   "- Vocabulário e complexidade compatíveis com ano/série informados.",
   "- Quantidade e formato exatos do contrato (questões, slides, cards, seções).",
   "- Zero repetição de parágrafos ou enunciados equivalentes.",
@@ -329,7 +359,7 @@ export function buildQualityRetryPrompt(
         ]
       : []),
     `Tema obrigatório: "${request.tema}".`,
-    "Reescreva com enunciados contextualizados, alternativas distintas e gabarito comentado.",
+    "Reescreva com enunciados contextualizados, alternativas distintas e gabarito objetivo.",
     ...(options?.teachyDepth ? ["", TEACHY_DEPTH_CHECKLIST] : []),
   ].join("\n");
 }

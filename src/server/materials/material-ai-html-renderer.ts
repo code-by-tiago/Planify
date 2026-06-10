@@ -57,6 +57,10 @@ function renderQuestions(output: MaterialAIOutput): string {
         number: question.numero,
         statement: question.enunciado,
         options: question.alternativas,
+        label:
+          output.tipo === "lista" || output.tipo.includes("lista")
+            ? "Exercício"
+            : "Questão",
       }),
     )
     .join("");
@@ -84,7 +88,7 @@ function renderGabarito(output: MaterialAIOutput, incluirGabarito: boolean): str
 
   if (!lines.length) return "";
 
-  return `<section class="planify-gabarito-block page-break"><h2>Gabarito e critérios de correção</h2>${asList(lines, true)}</section>`;
+  return `<section class="planify-gabarito-block page-break"><h2>Gabarito</h2>${asList(lines, true)}</section>`;
 }
 
 function renderGame(output: MaterialAIOutput): string {

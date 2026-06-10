@@ -1,6 +1,7 @@
 import { buildVisualGameMaterial } from "@/lib/materiais/game-builder";
 import { getModelTierForMaterialRequest } from "@/lib/ai/material-generation-policy";
 import { computeQualityScore } from "@/lib/materiais/material-quality-score";
+import { isGenericEducationalText } from "@/lib/materiais/material-semantic-quality";
 import {
   renderQuestionCard,
   wrapProfessionalDocument,
@@ -110,13 +111,17 @@ function asList(items: string[], ordered = false) {
   return `<${tag}>${clean.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</${tag}>`;
 }
 
-function renderSections(response: MaterialEngineResponse): string {
+function renderSections(response: MaterialEngineResponse, ctx?: RenderContext): string {
+  const tipo = ctx?.tipo;
+  const concise = tipo === "resumo";
+
   return response.sections
     .map(
       (section) => `
-        <section>
+        <section class="${concise ? "planify-resumo-section" : ""}">
           <h2>${escapeHtml(section.title)}</h2>
-          ${section.content ? `<p>${escapeHtml(section.content)}</p>` : ""}
+          ${!concise && section.content ? `<p>${escapeHtml(section.content)}</p>` : ""}
+          ${concise && section.content && section.content.length <= 120 ? `<p class="planify-resumo-lead">${escapeHtml(section.content)}</p>` : ""}
           ${asList(section.bullets || [])}
         </section>
       `,
@@ -172,6 +177,7 @@ function renderExam(response: MaterialEngineResponse, ctx?: RenderContext): stri
 
   const tipo = ctx?.tipo ?? "prova";
   const heading = tipo === "lista" ? "Exercícios" : "Questões";
+  const itemLabel = tipo === "lista" ? "Exercício" : "Questão";
 
   const body = questions
     .map((question) =>
@@ -180,6 +186,7 @@ function renderExam(response: MaterialEngineResponse, ctx?: RenderContext): stri
         statement: question.statement,
         options: question.options,
         questionType: question.type,
+        label: itemLabel,
       }),
     )
     .join("");
@@ -581,10 +588,10 @@ function renderAnswerKey(response: MaterialEngineResponse, ctx?: RenderContext):
 
   const title =
     ctx.tipo === "prova" || ctx.tipo === "lista"
-      ? "Gabarito e critérios de correção"
+      ? "Gabarito"
       : "Gabarito";
 
-  return `<section><h2>${title}</h2>${asList(merged, true)}</section>`;
+  return `<section class="planify-gabarito-block page-break"><h2>${title}</h2>${asList(merged, true)}</section>`;
 }
 
 function renderTeacherNotes(response: MaterialEngineResponse): string {
@@ -617,18 +624,25 @@ function renderHtml(response: MaterialEngineResponse, ctx?: RenderContext): stri
         ? [renderFlashcards(response), renderTeacherNotes(response)]
         : tipo === "mapa-mental"
           ? [renderMindMap(response), renderTeacherNotes(response)]
-          : [
-              renderSections(response),
-              renderLessonPlan(response),
-              renderMindMap(response),
-              renderSlides(response),
-              renderGame(response),
-              renderFlashcards(response),
-              renderExam(response, ctx),
-              renderActivities(response),
-              renderAnswerKey(response, ctx),
-              renderTeacherNotes(response),
-            ];
+          : tipo === "prova" || tipo === "lista"
+            ? [renderExam(response, ctx), renderAnswerKey(response, ctx)]
+            : tipo === "resumo"
+              ? [
+                  renderSections(response, ctx),
+                  renderActivities(response),
+                ]
+              : [
+                  renderSections(response, ctx),
+                  renderLessonPlan(response),
+                  renderMindMap(response),
+                  renderSlides(response),
+                  renderGame(response),
+                  renderFlashcards(response),
+                  renderExam(response, ctx),
+                  renderActivities(response),
+                  renderAnswerKey(response, ctx),
+                  renderTeacherNotes(response),
+                ];
 
   const joined = blocks.filter(Boolean).join("");
 
@@ -826,6 +840,24 @@ function normalizeOutput(
         answer: "",
       }));
     }
+  }
+
+  if (request.tipoMaterial === "prova" || request.tipoMaterial === "lista") {
+    const summary = normalized.summary.trim();
+    if (!summary || isGenericEducationalText(summary) || summary.length > 120) {
+      normalized.summary = "";
+    }
+    normalized.sections = [];
+    normalized.teacherNotes = [];
+    normalized.activities = [];
+  }
+
+  if (request.tipoMaterial === "resumo") {
+    normalized.teacherNotes = [];
+    if (normalized.exam) {
+      normalized.exam = { questions: [] };
+    }
+    normalized.answerKey = [];
   }
 
   return normalized;

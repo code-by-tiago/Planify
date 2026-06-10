@@ -87,14 +87,17 @@ function specializedRules(request: MaterialEngineRequest): string[] {
     return [
       `Gerar exatamente ${quantidade} questões no array 'exam.questions'.`,
       `TEMA OBRIGATÓRIO: cada enunciado deve trabalhar explicitamente "${request.tema}" com situações, frases ou contextos reais.`,
-      "Estrutura profissional: use 'summary' para contextualizar a avaliação e citar habilidades BNCC relacionadas quando couber.",
+      "MATERIAL DIRETO (obrigatório): professor quer prova pronta para aplicar — sem textos introdutórios longos, sem explicações pedagógicas no corpo do documento.",
+      "Deixe 'summary' vazio ou com no máximo 1 frase curta (ex.: título da avaliação). Não cite BNCC, objetivos nem contextualização da avaliação.",
+      "Não preencha 'sections', 'activities' nem 'teacherNotes' — o documento do aluno é só cabeçalho + questões (+ gabarito separado).",
       "Numerar as questões em ordem ('number' começando em 1).",
       "Incluir pelo menos uma questão objetiva (multipla-escolha ou verdadeiro-falso) e uma dissertativa quando houver 2 ou mais questões.",
       "Variar os tipos de questão (multipla-escolha, verdadeiro-falso, dissertativa, completar) sem repetir enunciados ou alternativas.",
       "Proibir enunciados genéricos ('explique o conteúdo estudado', 'identifique o conceito') e perguntas vagas.",
-      "Para questões de multipla-escolha, preencher 'options' com 4 a 5 alternativas distintas (cada alternativa com pelo menos 24 caracteres e justificativa concreta); para os demais tipos, 'options' pode ficar vazio.",
+      "Enunciados diretos: comando + contexto mínimo necessário para resolver — sem preâmbulos ('nesta prova', 'a seguir apresentamos').",
+      "Para questões de multipla-escolha, preencher 'options' com 4 a 5 alternativas distintas e concretas; para os demais tipos, 'options' pode ficar vazio.",
       request.incluirGabarito
-        ? "Preencher 'answer' de cada questão com gabarito comentado (mínimo 36 caracteres; a alternativa correta deve existir em 'options' quando for objetiva) e consolidar o gabarito no array 'answerKey'."
+        ? "Preencher 'answer' com resposta objetiva e critério breve (alternativa correta + justificativa curta quando objetiva). Consolidar no array 'answerKey' — sem comentário pedagógico longo."
         : "Deixar 'answer' vazio e não preencher 'answerKey' (o professor não quer gabarito).",
       "Equilibrar a dificuldade das questões conforme o nível solicitado.",
     ];
@@ -104,12 +107,15 @@ function specializedRules(request: MaterialEngineRequest): string[] {
     return [
       `Gerar exatamente ${quantidade} exercícios no array 'exam.questions'.`,
       `TEMA OBRIGATÓRIO: cada exercício deve aplicar "${request.tema}" com exemplos concretos.`,
+      "MATERIAL DIRETO (obrigatório): foco em exercícios numerados — sem introdução longa, sem explicações pedagógicas no corpo.",
+      "Deixe 'summary' vazio ou com no máximo 1 frase. Não preencha 'sections', 'activities' nem 'teacherNotes'.",
       "Numerar os exercícios em ordem ('number' começando em 1).",
       "Priorizar exercícios práticos e progressivos (básico → intermediário → desafio).",
       "Proibir comandos genéricos sem contexto do tema.",
-      "Para multipla-escolha, cada alternativa deve ter pelo menos 24 caracteres com justificativa concreta.",
+      "Enunciados diretos, sem preâmbulos.",
+      "Para multipla-escolha, alternativas concretas e distintas.",
       request.incluirGabarito
-        ? "Preencher 'answer' de cada exercício com gabarito comentado (mínimo 36 caracteres) e consolidar no array 'answerKey'."
+        ? "Preencher 'answer' com resposta objetiva e critério breve; consolidar no array 'answerKey'."
         : "Deixar 'answer' vazio e não preencher 'answerKey'.",
     ];
   }
@@ -172,8 +178,11 @@ function specializedRules(request: MaterialEngineRequest): string[] {
 
   if (request.tipoMaterial === "resumo") {
     return [
-      `Organizar o resumo em ${quantidade} seções temáticas no array 'sections', cada uma com bullets objetivos.`,
-      "Incluir quadro de revisão ou perguntas de fixação nas 'activities'.",
+      `Organizar o resumo em ${quantidade} seções temáticas no array 'sections'.`,
+      "Formato sintético: cada seção com 'bullets' curtos (máx. 12 palavras por item); 'content' vazio ou no máximo 1 frase.",
+      "Proibido parágrafos explicativos longos, texto corrido ou tom de apostila.",
+      "Não preencha 'exam.questions' nem 'teacherNotes' — resumo é revisão em tópicos.",
+      "Opcional: 2 a 4 perguntas de fixação curtas em 'activities' (sem gabarito extenso).",
     ];
   }
 
@@ -253,6 +262,8 @@ REGRAS GERAIS:
 - Entregar pronto para edição no editor do Planify.
 - NÃO preencha o campo "html" — o Planify monta o HTML visual automaticamente.
 - Entregar somente JSON no schema.
+${["prova", "lista"].includes(type) ? "- PROVA/LISTA: material direto — questões numeradas e gabarito separado; sem textos introdutórios longos." : ""}
+${type === "resumo" ? "- RESUMO: bullets sintéticos; evite parágrafos explicativos." : ""}
 `.trim();
 }
 
@@ -350,6 +361,8 @@ REGRAS GERAIS:
 - Entregar conteúdo coeso, sem repetição e sem preenchimento artificial.
 - Entregar pronto para edição no editor do Planify.
 - NÃO preencha o campo "html" — o Planify monta o HTML visual automaticamente.
-- Entregar somente JSON no schema.${disciplineBlock}${extra}${elevateBlock}${observacoesBlock}${bnccBlock}
+- Entregar somente JSON no schema.
+${["prova", "lista"].includes(request.tipoMaterial) ? "- PROVA/LISTA: material direto para o aluno — questões numeradas e gabarito separado; sem textos introdutórios longos." : ""}
+${request.tipoMaterial === "resumo" ? "- RESUMO: bullets sintéticos; evite parágrafos explicativos." : ""}${disciplineBlock}${extra}${elevateBlock}${observacoesBlock}${bnccBlock}
 `.trim();
 }

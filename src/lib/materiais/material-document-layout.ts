@@ -34,13 +34,44 @@ function tipoLabel(tipo: string): string {
   return map[tipo] || "Material didático";
 }
 
+function isDirectAssessmentType(tipo: string): boolean {
+  return tipo === "prova" || tipo === "lista";
+}
+
 export function renderMaterialInstitutionHeader(ctx: MaterialDocumentContext): string {
   const req = ctx.request;
-  const meta = [
-    req?.componenteCurricular,
-    req?.anoSerie,
-    req?.etapa,
-  ]
+  const compact = isDirectAssessmentType(ctx.tipo);
+
+  if (compact) {
+    return `
+    <header class="planify-doc-header planify-doc-header-compact">
+      <div class="planify-doc-header-row">
+        <p class="planify-doc-kicker">${escapeHtml(tipoLabel(ctx.tipo))}</p>
+        <p class="planify-doc-header-theme">${escapeHtml(ctx.tema || "—")}</p>
+      </div>
+      <table class="planify-doc-meta planify-doc-meta-compact" role="presentation">
+        <tbody>
+          <tr>
+            <th>Componente</th>
+            <td>${escapeHtml(req?.componenteCurricular || "—")}</td>
+            <th>Ano/Série</th>
+            <td>${escapeHtml(req?.anoSerie || "—")}</td>
+          </tr>
+          <tr>
+            <th>Aluno(a)</th>
+            <td colspan="3">____________________________________________</td>
+          </tr>
+          <tr>
+            <th>Data</th>
+            <td colspan="3">___/___/______</td>
+          </tr>
+        </tbody>
+      </table>
+    </header>
+  `.trim();
+  }
+
+  const meta = [req?.componenteCurricular, req?.anoSerie, req?.etapa]
     .filter(Boolean)
     .map((item) => escapeHtml(String(item)));
 
@@ -64,28 +95,17 @@ export function renderMaterialInstitutionHeader(ctx: MaterialDocumentContext): s
 export function renderAssessmentInstructions(tipo: string): string {
   if (tipo === "lista") {
     return `
-      <section class="planify-doc-instructions">
-        <h2>Instruções</h2>
-        <ul>
-          <li>Leia cada exercício com atenção antes de responder.</li>
-          <li>Organize o desenvolvimento quando necessário.</li>
-          <li>Revise ortografia, clareza e completude antes de entregar.</li>
-        </ul>
-      </section>
+      <p class="planify-doc-instructions-inline">
+        Resolva os exercícios com atenção. Mostre os cálculos quando necessário.
+      </p>
     `.trim();
   }
 
   if (tipo === "prova") {
     return `
-      <section class="planify-doc-instructions">
-        <h2>Instruções gerais</h2>
-        <ul>
-          <li>Leia todas as questões antes de começar.</li>
-          <li>Responda de forma clara, objetiva e legível.</li>
-          <li>Não é permitido o uso de celular ou material não autorizado.</li>
-          <li>Boa prova.</li>
-        </ul>
-      </section>
+      <p class="planify-doc-instructions-inline">
+        Leia todas as questões antes de responder. Respostas claras e legíveis.
+      </p>
     `.trim();
   }
 
@@ -97,7 +117,11 @@ export function renderQuestionCard(params: {
   statement: string;
   options?: string[];
   questionType?: string;
+  label?: string;
 }): string {
+  const itemLabel = params.label || "Questão";
+  const num = String(params.number).padStart(2, "0");
+
   const options =
     params.options && params.options.length
       ? `<ol class="planify-questao-options" type="a">${params.options
@@ -114,7 +138,8 @@ export function renderQuestionCard(params: {
   return `
     <article class="planify-questao planify-questao-card">
       <div class="planify-questao-head">
-        <span class="planify-questao-number">Questão ${escapeHtml(String(params.number))}</span>
+        <span class="planify-questao-number-badge" aria-label="${escapeHtml(itemLabel)} ${escapeHtml(String(params.number))}">${escapeHtml(num)}</span>
+        <span class="planify-questao-number-label">${escapeHtml(itemLabel)} ${escapeHtml(String(params.number))}</span>
         ${typeBadge}
       </div>
       <p class="planify-questao-statement">${escapeHtml(params.statement)}</p>
@@ -136,12 +161,17 @@ export function wrapProfessionalDocument(
     ? `planify-doc-${ctx.tipo.replace(/[^a-z0-9-]/gi, "")}`
     : "";
 
+  const showSummary =
+    ctx.summary?.trim() &&
+    !isDirectAssessmentType(ctx.tipo) &&
+    ctx.tipo !== "resumo";
+
   return `
     <article class="planify-doc planify-doc-professional ${tipoClass}">
       ${renderMaterialInstitutionHeader(ctx)}
       <h1 class="planify-doc-title">${escapeHtml(ctx.title)}</h1>
       ${ctx.subtitle ? `<p class="planify-doc-subtitle">${escapeHtml(ctx.subtitle)}</p>` : ""}
-      ${ctx.summary ? `<p class="planify-doc-summary">${escapeHtml(ctx.summary)}</p>` : ""}
+      ${showSummary ? `<p class="planify-doc-summary">${escapeHtml(ctx.summary!)}</p>` : ""}
       ${instructions}
       <div class="planify-doc-body">
         ${bodyHtml}

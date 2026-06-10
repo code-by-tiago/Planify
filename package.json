@@ -9,7 +9,14 @@
     "typecheck": "tsc --noEmit",
     "verify:material-quality": "node scripts/verify-material-quality.mjs",
     "verify:generators": "node scripts/verify-all-generators.mjs",
+    "verify:sprint2": "node scripts/verify-sprint2.mjs",
+    "verify:sprint3": "node scripts/verify-sprint3.mjs",
+    "verify:sprint4": "node scripts/verify-sprint4.mjs",
+    "seed:community-questions": "node scripts/seed-community-questions.mjs",
+    "backfill:history-estrutura": "node scripts/backfill-history-estrutura.mjs",
+    "report:question-sources": "node scripts/report-question-sources.mjs",
     "verify:generators-live": "node scripts/verify-generators-live.mjs",
+    "verify:staging": "node scripts/verify-generators-live.mjs --suite=sprint1",
     "verify:planejamento-docx": "node scripts/verify-planejamento-docx.mjs",
     "verify:custom-template-docx": "node scripts/verify-custom-template-docx.mjs",
     "verify:all": "npm run verify:material-quality && npm run verify:generators && node scripts/verify-export-motors.mjs && npm run verify:planejamento-docx && node scripts/verify-google-export-readiness.mjs",
@@ -39,6 +46,7 @@
     "autoprefixer": "10.4.20",
     "postcss": "8.4.49",
     "tailwindcss": "3.4.17",
-    "typescript": "6.0.3"
+    "typescript": "6.0.3",
+    "@sentry/nextjs": "^10.57.0"
   }
 }

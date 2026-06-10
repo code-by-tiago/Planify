@@ -32,6 +32,13 @@ function matchesPlanejamentosSearch(term: string): boolean {
   );
 }
 
+function matchesBancoQuestoesSearch(term: string): boolean {
+  if (!term) return true;
+  return ["banco", "questões", "questoes", "bncc", "prova", "lista", "comunidade", "remix"].some(
+    (token) => token.includes(term) || term.includes(token),
+  );
+}
+
 function filterTools(query: string, category: ToolCategoryId): PlanifyTool[] {
   const term = query.trim().toLowerCase();
   return planifyTools.filter((tool) => {
@@ -67,9 +74,13 @@ export default function TeachyStudioHome({
   const showPlanejamentos =
     (category === "todos" || category === "planejamento") &&
     matchesPlanejamentosSearch(query.trim().toLowerCase());
+  const showBancoQuestoes =
+    (category === "todos" || category === "avaliacoes") &&
+    matchesBancoQuestoesSearch(query.trim().toLowerCase());
   const categoryTabs = toolCategories.filter((entry) => entry.id !== "todos");
-  const totalGenerators = planifyToolCount + 1;
-  const resultCount = filteredTools.length + (showPlanejamentos ? 1 : 0);
+  const extraSections = (showPlanejamentos ? 1 : 0) + (showBancoQuestoes ? 1 : 0);
+  const totalGenerators = planifyToolCount + 2;
+  const resultCount = filteredTools.length + extraSections;
 
   function persistTopic(value = topic) {
     const tema = value.trim();
@@ -90,6 +101,11 @@ export default function TeachyStudioHome({
   function openPlanejamentos() {
     persistTopic();
     onSelectSection?.("planejamentos");
+  }
+
+  function openBancoQuestoes() {
+    persistTopic();
+    onSelectSection?.("banco-questoes");
   }
 
   function renderToolCard(tool: PlanifyTool) {
@@ -119,6 +135,30 @@ export default function TeachyStudioHome({
         <span className="relative mt-auto flex items-center gap-1 pt-3 text-xs font-semibold text-cyan-700 opacity-80 transition group-hover:gap-1.5 group-hover:opacity-100">
           Abrir
           <PlanifyIcon name="arrowRight" className="h-3 w-3 transition group-hover:translate-x-0.5" />
+        </span>
+      </button>
+    );
+  }
+
+  function renderBancoQuestoesCard() {
+    return (
+      <button
+        type="button"
+        onClick={openBancoQuestoes}
+        className="pl-hud-hub-app group flex min-h-[10rem] flex-col rounded-2xl p-5 text-left sm:min-h-[10.5rem]"
+      >
+        <span className="pl-hud-hub-tool-icon flex h-11 w-11 items-center justify-center bg-gradient-to-br from-emerald-500 to-teal-500">
+          <PlanifyIcon name="library" className="h-5 w-5" />
+        </span>
+        <span className="relative mt-4 text-lg font-extrabold text-slate-950">
+          Banco de questões
+        </span>
+        <span className="relative mt-1.5 text-sm font-medium leading-snug text-slate-600">
+          Importe, reutilize e remixe — busca por BNCC, disciplina e série
+        </span>
+        <span className="relative mt-auto flex items-center gap-1 pt-3 text-xs font-semibold text-cyan-700 opacity-80 transition group-hover:gap-1.5 group-hover:opacity-100">
+          Abrir
+          <PlanifyIcon name="arrowRight" className="h-3 w-3" />
         </span>
       </button>
     );
@@ -260,10 +300,11 @@ export default function TeachyStudioHome({
 
             <div className="pl-hud-tools-grid grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {showPlanejamentos ? renderPlanejamentosCard() : null}
+              {showBancoQuestoes ? renderBancoQuestoesCard() : null}
               {filteredTools.map((tool) => renderToolCard(tool))}
             </div>
 
-            {!showPlanejamentos && filteredTools.length === 0 ? (
+            {!showPlanejamentos && !showBancoQuestoes && filteredTools.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-cyan-400/25 bg-white/70 px-6 py-12 text-center">
                 <p className="text-xs font-bold uppercase tracking-wide text-cyan-600">
                   Nenhum resultado

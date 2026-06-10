@@ -4,6 +4,7 @@ import {
   fetchGenerationStats,
   type GenerationStatsWindow,
 } from "../../../../server/telemetry/generation-stats-service";
+import { fetchOperationalStats } from "../../../../server/telemetry/operational-stats-service";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -17,12 +18,16 @@ export async function GET(request: NextRequest) {
   if (!gate.ok) return gate.response;
 
   const window = parseWindow(request.nextUrl.searchParams.get("window"));
-  const stats = await fetchGenerationStats(window);
+  const [stats, operational] = await Promise.all([
+    fetchGenerationStats(window),
+    fetchOperationalStats(window),
+  ]);
 
   return NextResponse.json(
     {
       success: true,
       stats,
+      operational,
     },
     {
       headers: {

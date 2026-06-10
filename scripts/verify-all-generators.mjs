@@ -672,16 +672,108 @@ function testGoldenFixtures() {
   }
 }
 
+function testNewToolsFixtures() {
+  const { extractQuestionsFromMaterialOutput } = loadTsModule(
+    "src/lib/banco-questoes/question-bank-extract.ts",
+  );
+  const { normalizeMaterialEstrutura } = loadTsModule(
+    "src/lib/materiais/normalize-material-estrutura.ts",
+  );
+  const { generateLessonBundle } = loadTsModule(
+    "src/server/materials/lesson-bundle-orchestrator.ts",
+  );
+
+  const estrutura = {
+    titulo: "Prova de História",
+    questoes: [
+      {
+        enunciado: "Cite uma causa da Revolução Industrial.",
+        tipo: "discursiva",
+        alternativas: [],
+        respostaEsperada: "Urbanização",
+      },
+      {
+        enunciado: "Qual século marcou a Revolução Industrial?",
+        tipo: "objetiva",
+        alternativas: ["Séc. XVIII", "Séc. XX"],
+        respostaEsperada: "Séc. XVIII",
+      },
+    ],
+  };
+
+  const extracted = extractQuestionsFromMaterialOutput(estrutura, {
+    componente: "História",
+    sourceTitle: "Prova fixture",
+  });
+  assert.equal(extracted.length, 2);
+  assert.notEqual(extracted[0].enunciado, extracted[1].enunciado);
+
+  const { computeQuestionContentHash } = loadTsModule(
+    "src/lib/banco-questoes/question-bank-hash.ts",
+  );
+  assert.notEqual(
+    computeQuestionContentHash(extracted[0].enunciado, extracted[0].tipo),
+    computeQuestionContentHash(extracted[1].enunciado, extracted[1].tipo),
+    "dedup hash deve diferenciar enunciados distintos",
+  );
+
+  const normalized = normalizeMaterialEstrutura({ estrutura });
+  assert.ok(normalized.estrutura?.questoes?.length === 2);
+
+  const correctionOutput = {
+    nota: 8,
+    notaMaxima: 10,
+    percentual: 80,
+    feedbackGeral: "Boa resposta com detalhes relevantes.",
+    criterios: [
+      {
+        criterio: "Conteúdo",
+        atendido: true,
+        pontos: 4,
+        pontosMaximos: 5,
+        comentario: "Domínio adequado.",
+      },
+    ],
+    pontosFortes: ["Clareza"],
+    pontosMelhoria: ["Exemplos"],
+    sugestaoProfessor: "Revisar causas econômicas.",
+  };
+  for (const field of [
+    "nota",
+    "notaMaxima",
+    "percentual",
+    "feedbackGeral",
+    "criterios",
+    "pontosFortes",
+    "pontosMelhoria",
+    "sugestaoProfessor",
+  ]) {
+    assert.ok(field in correctionOutput, `CorrectionAiOutput.${field} obrigatório`);
+  }
+
+  assert.equal(typeof generateLessonBundle, "function");
+
+  const orchestratorSource = readFileSync(
+    join(root, "src/server/materials/lesson-bundle-orchestrator.ts"),
+    "utf8",
+  );
+  assert.match(orchestratorSource, /onProgress\?\./);
+  assert.match(orchestratorSource, /status: "started"/);
+  assert.match(orchestratorSource, /status: "done"/);
+  assert.match(orchestratorSource, /status: "failed"/);
+}
+
 function main() {
   const started = Date.now();
   runTest("engine-routing", testEngineRouting);
   runTest("generation-steps", testGenerationSteps);
   runTest("google-export-routing", testGoogleExportRouting);
   runTest("golden-fixtures", testGoldenFixtures);
+  runTest("new-tools-fixtures", testNewToolsFixtures);
 
   const elapsedMs = Date.now() - started;
   console.log(
-    `verify-all-generators: OK (${MATERIAL_ENGINE_TYPES.length} ferramentas, fixtures + HTML + export) — ${elapsedMs}ms`,
+    `verify-all-generators: OK (${MATERIAL_ENGINE_TYPES.length} ferramentas, fixtures + HTML + export + new-tools) — ${elapsedMs}ms`,
   );
 }
 

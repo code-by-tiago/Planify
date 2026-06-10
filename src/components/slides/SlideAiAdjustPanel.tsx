@@ -58,28 +58,6 @@ export function SlideAiAdjustPanel({
 
     try {
       const payload = buildSlideAdjustPayload(generationPayload, instruction.trim());
-      // #region agent log
-      fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Debug-Session-Id": "1b39d8",
-        },
-        body: JSON.stringify({
-          sessionId: "1b39d8",
-          runId: "runtime",
-          hypothesisId: "H4",
-          location: "SlideAiAdjustPanel.tsx:handleSubmit",
-          message: "slide ai adjust submitted",
-          data: {
-            hasObservacoes: Boolean(payload.observacoes?.includes("AJUSTE SOLICITADO")),
-            instructionLen: instruction.trim().length,
-            tipoMaterial: payload.tipoMaterial,
-          },
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {});
-      // #endregion
       const data = await requestMaterialGeneration(payload);
 
       if (!data.html?.trim()) {

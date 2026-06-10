@@ -16,6 +16,8 @@ const TOOL_DURATION_MS: Partial<Record<PlanifyToolId | string, number>> = {
   redacao: 65_000,
   "mapa-mental": 60_000,
   inclusao: 70_000,
+  "aula-completa": 240_000,
+  "correcao-ia": 45_000,
 };
 
 const CONTEXT_DURATION_MS: Record<LumiCoachContext, number> = {

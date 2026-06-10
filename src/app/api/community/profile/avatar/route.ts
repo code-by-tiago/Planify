@@ -107,51 +107,8 @@ export async function POST(request: NextRequest) {
       email: user.email,
     });
 
-    // #region agent log
-    fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Debug-Session-Id": "1b39d8",
-      },
-      body: JSON.stringify({
-        sessionId: "1b39d8",
-        runId: "avatar-upload",
-        hypothesisId: "H1",
-        location: "avatar/route.ts:POST",
-        message: "avatar upload success",
-        data: {
-          hasAvatarUrl: Boolean(avatarUrl),
-          profileHasAvatar: Boolean(profile.avatarUrl),
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
-
     return NextResponse.json({ ok: true, profile, avatarUrl });
   } catch (error) {
-    // #region agent log
-    fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Debug-Session-Id": "1b39d8",
-      },
-      body: JSON.stringify({
-        sessionId: "1b39d8",
-        runId: "avatar-upload",
-        hypothesisId: "H1",
-        location: "avatar/route.ts:POST",
-        message: "avatar upload failed",
-        data: {
-          error: error instanceof Error ? error.message : "unknown",
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
-
     return jsonError(
       error instanceof Error
         ? error.message

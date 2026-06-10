@@ -79,6 +79,18 @@ const MATERIAL_STEPS: Partial<Record<PlanifyToolId, string[]>> = {
     "Conectando subtópicos ao tema...",
     "Preparando material para edição...",
   ],
+  "aula-completa": [
+    "Montando seu pacote de aula completa...",
+    "Gerando plano, slides, atividade e avaliação...",
+    "Alinhando linguagem e progressão entre materiais...",
+    "Preparando pré-visualização do pacote...",
+  ],
+  "correcao-ia": [
+    "Analisando a resposta do estudante...",
+    "Aplicando rubrica e critérios pedagógicos...",
+    "Preparando devolutiva personalizada...",
+    "Finalizando nota e feedback...",
+  ],
 };
 
 const DEFAULT_MATERIAL_STEPS = [

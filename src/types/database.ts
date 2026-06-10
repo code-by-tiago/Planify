@@ -33,6 +33,7 @@ export type Database = {
           stripe_customer_id: string | null;
           plan: string | null;
           last_login_at: string | null;
+          correction_profile: Json | null;
           created_at: string;
           updated_at: string;
         },
@@ -52,6 +53,7 @@ export type Database = {
           stripe_customer_id?: string | null;
           plan?: string | null;
           last_login_at?: string | null;
+          correction_profile?: Json | null;
           created_at?: string;
           updated_at?: string;
         },
@@ -71,6 +73,7 @@ export type Database = {
           stripe_customer_id?: string | null;
           plan?: string | null;
           last_login_at?: string | null;
+          correction_profile?: Json | null;
           created_at?: string;
           updated_at?: string;
         }
@@ -994,6 +997,118 @@ export type Database = {
           surface?: Database["public"]["Enums"]["generated_material_surface"];
           created_at?: string;
           updated_at?: string;
+        }
+      >;
+      question_bank_items: TableDefinition<
+        {
+          id: string;
+          user_id: string;
+          school_id: string | null;
+          enunciado: string;
+          tipo: string;
+          alternativas: Json;
+          resposta_esperada: string;
+          criterio_correcao: string;
+          componente: string;
+          ano_serie: string;
+          etapa: string;
+          tema: string;
+          bncc_codigos: string[];
+          tags: string[];
+          source_title: string | null;
+          source_type: string | null;
+          content_hash: string;
+          visibility: string;
+          is_published: boolean;
+          published_at: string | null;
+          usage_count: number;
+          author_display_name: string | null;
+          created_at: string;
+          updated_at: string;
+        },
+        {
+          id?: string;
+          user_id: string;
+          school_id?: string | null;
+          enunciado: string;
+          tipo?: string;
+          alternativas?: Json;
+          resposta_esperada?: string;
+          criterio_correcao?: string;
+          componente: string;
+          ano_serie?: string;
+          etapa?: string;
+          tema?: string;
+          bncc_codigos?: string[];
+          tags?: string[];
+          source_title?: string | null;
+          source_type?: string | null;
+          content_hash: string;
+          visibility?: string;
+          is_published?: boolean;
+          published_at?: string | null;
+          usage_count?: number;
+          author_display_name?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        },
+        {
+          id?: string;
+          user_id?: string;
+          school_id?: string | null;
+          enunciado?: string;
+          tipo?: string;
+          alternativas?: Json;
+          resposta_esperada?: string;
+          criterio_correcao?: string;
+          componente?: string;
+          ano_serie?: string;
+          etapa?: string;
+          tema?: string;
+          bncc_codigos?: string[];
+          tags?: string[];
+          source_title?: string | null;
+          source_type?: string | null;
+          content_hash?: string;
+          visibility?: string;
+          is_published?: boolean;
+          published_at?: string | null;
+          usage_count?: number;
+          author_display_name?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        }
+      >;
+      operational_events: TableDefinition<
+        {
+          id: string;
+          created_at: string;
+          event_type: string;
+          tool_tipo: string;
+          ok: boolean;
+          error_code: string | null;
+          duration_ms: number | null;
+          metadata: Json;
+        },
+        {
+          id?: string;
+          created_at?: string;
+          event_type: string;
+          tool_tipo?: string;
+          ok?: boolean;
+          error_code?: string | null;
+          duration_ms?: number | null;
+          metadata?: Json;
+        },
+        {
+          id?: string;
+          created_at?: string;
+          event_type?: string;
+          tool_tipo?: string;
+          ok?: boolean;
+          error_code?: string | null;
+          duration_ms?: number | null;
+          metadata?: Json;
         }
       >;
       platform_settings: TableDefinition<

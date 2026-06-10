@@ -93,6 +93,16 @@ const toolMessages: Partial<Record<PlanifyToolId, string[]>> = {
     "Técnicas de mediação alinhadas à necessidade informada.",
     "Material inclusivo saindo com cuidado pedagógico.",
   ],
+  "aula-completa": [
+    "Montando plano, slides, atividade e avaliação no mesmo tema.",
+    "Cada material do pacote conversa com o anterior.",
+    "Sua aula completa está ganhando coesão pedagógica.",
+  ],
+  "correcao-ia": [
+    "Lendo a resposta com o olhar pedagógico que você configurou.",
+    "Aplicando rubrica e preparando devolutiva útil em sala.",
+    "Feedback formativo quase pronto para seus alunos.",
+  ],
 };
 
 function uniqueMessages(items: string[]): string[] {

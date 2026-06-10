@@ -24,6 +24,7 @@ const TURMA_PLACEHOLDER = "Digite ou selecione uma turma (opcional)";
 export function useSchoolClasses() {
   const [loading, setLoading] = useState(true);
   const [hasSchool, setHasSchool] = useState(false);
+  const [schoolId, setSchoolId] = useState<string | null>(null);
   const [schoolName, setSchoolName] = useState<string | null>(null);
   const [classes, setClasses] = useState<SchoolClassOption[]>([]);
   const [personalClasses, setPersonalClasses] = useState<PersonalClassOption[]>([]);
@@ -34,12 +35,13 @@ export function useSchoolClasses() {
     const response = await planifyAuthenticatedFetch("/api/me/school");
     const data = (await response.json().catch(() => null)) as {
       success?: boolean;
-      school?: { name?: string } | null;
+      school?: { id?: string; name?: string } | null;
       classes?: SchoolClassOption[];
     } | null;
 
     if (!response.ok || !data?.success) {
       setHasSchool(false);
+      setSchoolId(null);
       setSchoolName(null);
       setClasses([]);
       return false;
@@ -47,6 +49,7 @@ export function useSchoolClasses() {
 
     const linked = Boolean(data.school);
     setHasSchool(linked);
+    setSchoolId(data.school?.id || null);
     setSchoolName(data.school?.name || null);
     setClasses(data.classes || []);
 
@@ -83,6 +86,7 @@ export function useSchoolClasses() {
       }
     } catch {
       setHasSchool(false);
+      setSchoolId(null);
       setSchoolName(null);
       setClasses([]);
       setPersonalClasses([]);
@@ -183,6 +187,7 @@ export function useSchoolClasses() {
   return {
     loading,
     hasSchool,
+    schoolId,
     schoolName,
     classes,
     personalClasses,

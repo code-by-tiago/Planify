@@ -385,6 +385,130 @@ export async function generateGeminiJSON<T>(
   throw new Error(humanizeGeminiError(lastError));
 }
 
+export type GeminiMediaPart = {
+  mimeType: "image/jpeg" | "image/png" | "image/webp" | "application/pdf";
+  base64: string;
+};
+
+async function callGeminiGenerateContentMultimodal(
+  model: string,
+  options: {
+    systemInstruction: string;
+    prompt: string;
+    media: GeminiMediaPart[];
+    temperature?: number;
+    topP?: number;
+    maxOutputTokens?: number;
+  },
+): Promise<GeminiCallResult> {
+  try {
+    const parts: Array<{ text?: string; inlineData?: { mimeType: string; data: string } }> =
+      [];
+
+    for (const item of options.media) {
+      parts.push({
+        inlineData: {
+          mimeType: item.mimeType,
+          data: item.base64,
+        },
+      });
+    }
+
+    parts.push({ text: options.prompt });
+
+    const response = await getGeminiSdk().models.generateContent({
+      model,
+      contents: [{ role: "user", parts }],
+      config: {
+        systemInstruction: options.systemInstruction,
+        temperature: options.temperature ?? 0.2,
+        topP: options.topP ?? 0.8,
+        maxOutputTokens: options.maxOutputTokens ?? 8192,
+      },
+    });
+
+    const text = response.text?.trim() ?? "";
+
+    if (!text) {
+      return {
+        text: "",
+        httpStatus: 502,
+        error: { message: "A IA não retornou conteúdo textual." },
+      };
+    }
+
+    return { text, httpStatus: 200 };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Erro ao chamar a IA.";
+    const status =
+      typeof error === "object" &&
+      error !== null &&
+      "status" in error &&
+      typeof (error as { status?: unknown }).status === "number"
+        ? Number((error as { status: number }).status)
+        : 500;
+
+    return {
+      text: "",
+      httpStatus: status,
+      error: { message },
+    };
+  }
+}
+
+/**
+ * Gera texto a partir de mídia (OCR, leitura de PDF/imagem).
+ * Modelo padrão: gemini-2.5-flash (rápido e econômico).
+ */
+export async function generateGeminiTextFromMedia(options: {
+  systemInstruction: string;
+  prompt: string;
+  media: GeminiMediaPart[];
+  tier?: "default" | "advanced";
+  maxOutputTokens?: number;
+}): Promise<string> {
+  const models = resolveModelCandidates(options.tier);
+
+  let lastError = "Erro ao chamar a IA.";
+
+  for (const model of models) {
+    for (let attempt = 0; attempt < MAX_RETRIES_PER_MODEL; attempt += 1) {
+      const json = await callGeminiGenerateContentMultimodal(model, {
+        systemInstruction: options.systemInstruction,
+        prompt: options.prompt,
+        media: options.media,
+        maxOutputTokens: options.maxOutputTokens ?? 8192,
+      });
+
+      if (json.httpStatus >= 200 && json.httpStatus < 300 && !json.error) {
+        return json.text;
+      }
+
+      const message =
+        json.error?.message ??
+        `Erro ao chamar a IA. Status HTTP: ${json.httpStatus}`;
+
+      lastError = message;
+
+      if (isGeminiModelUnavailableError(message, json.httpStatus)) {
+        break;
+      }
+
+      if (
+        shouldRetryGeminiCall(message, json.httpStatus) &&
+        attempt < MAX_RETRIES_PER_MODEL - 1
+      ) {
+        await sleep(parseRetryDelayMs(message, attempt));
+        continue;
+      }
+
+      break;
+    }
+  }
+
+  throw new Error(humanizeGeminiError(lastError));
+}
+
 /**
  * Gera conteúdo em texto livre (HTML, Markdown, etc.) via IA.
  * Usar para materiais didáticos com saída em HTML estruturado.

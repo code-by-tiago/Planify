@@ -107,6 +107,8 @@ export const lessonBundleObjetivoHint =
   "Montar pacote coeso de aula completa: sequência pedagógica clara, linguagem adequada ao ano, exemplos do cotidiano brasileiro e alinhamento BNCC quando aplicável.";
 
 export const teachyFeaturedToolIds: PlanifyToolId[] = [
+  "aula-completa",
+  "correcao-ia",
   "plano-aula",
   "slides",
   "prova",

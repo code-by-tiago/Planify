@@ -17,10 +17,10 @@ export const HUD_CHIP_INACTIVE =
   "rounded-full border border-cyan-400/20 bg-white px-3 py-2 text-xs font-bold text-slate-600 transition hover:border-cyan-400/45 hover:text-slate-950";
 
 export const HUD_FILTER_CHIP_ACTIVE =
-  "flex shrink-0 items-center gap-2 rounded-full border border-cyan-500 bg-cyan-600 px-4 py-2 text-sm font-bold text-white shadow-sm";
+  "flex shrink-0 items-center gap-2 rounded-full border border-cyan-500 bg-cyan-600 px-4 py-2 text-sm font-bold text-white shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:ring-offset-2";
 
 export const HUD_FILTER_CHIP_INACTIVE =
-  "flex shrink-0 items-center gap-2 rounded-full border border-cyan-400/20 bg-white px-4 py-2 text-sm font-bold text-slate-600 transition hover:border-cyan-400/40 hover:text-slate-950";
+  "flex shrink-0 items-center gap-2 rounded-full border border-cyan-400/20 bg-white px-4 py-2 text-sm font-bold text-slate-600 transition hover:border-cyan-400/40 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:ring-offset-2";
 
 export const HUD_SECTION_LABEL =
   "mb-2 block text-sm font-bold text-slate-700";

@@ -23,6 +23,28 @@ const InclusaoClient = dynamic(
   { ssr: false, loading: PanelLoading },
 );
 
+const AulaCompletaClient = dynamic(
+  () =>
+    import("@/app/aula-completa/AulaCompletaClient").then(
+      (m) => m.AulaCompletaClient,
+    ),
+  { ssr: false, loading: PanelLoading },
+);
+
+const CorrecaoClient = dynamic(
+  () =>
+    import("@/app/correcao/CorrecaoClient").then((m) => m.CorrecaoClient),
+  { ssr: false, loading: PanelLoading },
+);
+
+const BancoQuestoesClient = dynamic(
+  () =>
+    import("@/app/banco-questoes/BancoQuestoesClient").then(
+      (m) => m.BancoQuestoesClient,
+    ),
+  { ssr: false, loading: PanelLoading },
+);
+
 const PlanejamentosClient = dynamic(
   () =>
     import("@/app/planejamentos/PlanejamentosClient").then(
@@ -113,6 +135,34 @@ export function PlanifyDashboardMain({
       );
     }
 
+    if (toolId === "aula-completa") {
+      return (
+        <PlanifyWorkspaceProvider embeddedInDashboard>
+          <div className="planify-hud planify-materiais-studio flex h-full min-h-0 w-full flex-col overflow-hidden bg-[var(--planify-canvas)]">
+            <div className="min-h-0 flex-1 overflow-hidden">
+              <AulaCompletaClient
+                studioMode
+                onStudioClose={onClosePanel}
+                initialTema={initialTopic}
+              />
+            </div>
+          </div>
+        </PlanifyWorkspaceProvider>
+      );
+    }
+
+    if (toolId === "correcao-ia") {
+      return (
+        <PlanifyWorkspaceProvider embeddedInDashboard>
+          <div className="planify-hud planify-materiais-studio flex h-full min-h-0 w-full flex-col overflow-hidden bg-[var(--planify-canvas)]">
+            <div className="min-h-0 flex-1 overflow-hidden">
+              <CorrecaoClient studioMode onStudioClose={onClosePanel} />
+            </div>
+          </div>
+        </PlanifyWorkspaceProvider>
+      );
+    }
+
     return (
       <TeachyMateriaisStudio
         toolId={toolId}
@@ -127,6 +177,14 @@ export function PlanifyDashboardMain({
     return (
       <SectionPanel>
         <PlanejamentosClient />
+      </SectionPanel>
+    );
+  }
+
+  if (sectionId === "banco-questoes") {
+    return (
+      <SectionPanel>
+        <BancoQuestoesClient />
       </SectionPanel>
     );
   }

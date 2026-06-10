@@ -42,7 +42,8 @@ export type PlanifyIconName =
   | "plus"
   | "trash"
   | "settings"
-  | "message";
+  | "message"
+  | "layers";
 
 export type ToolCategoryId =
   | "todos"
@@ -66,7 +67,9 @@ export type PlanifyToolId =
   | "flashcards"
   | "redacao"
   | "mapa-mental"
-  | "inclusao";
+  | "inclusao"
+  | "aula-completa"
+  | "correcao-ia";
 
 export type PlanifyTool = {
   id: PlanifyToolId;
@@ -288,6 +291,38 @@ export const planifyTools: PlanifyTool[] = [
       "Aplicando técnicas de psicopedagogia e inclusão escolar ao seu material.",
     accent: "from-teal-300 via-cyan-300 to-sky-300",
   },
+  {
+    id: "aula-completa",
+    title: "Construtor de Aula Completa",
+    shortTitle: "Aula completa",
+    description:
+      "Um fluxo: tema → plano de aula, slides, atividade e avaliação alinhados no mesmo pacote.",
+    category: "preparar-aulas",
+    href: dashboardToolHref("aula-completa"),
+    icon: "layers",
+    popular: true,
+    primaryFieldLabel: "Tema da aula",
+    loadingTitle: "Montando aula completa",
+    loadingDescription:
+      "Gerando plano, slides, atividade e avaliação com sequência pedagógica coesa.",
+    accent: "from-indigo-400 via-violet-400 to-fuchsia-400",
+  },
+  {
+    id: "correcao-ia",
+    title: "Correção + Feedback IA",
+    shortTitle: "Correção IA",
+    description:
+      "Cole a resposta do estudante, aplique rubrica e receba devolutiva personalizada que aprende seu estilo.",
+    category: "correcao",
+    href: dashboardToolHref("correcao-ia"),
+    icon: "pen",
+    popular: true,
+    primaryFieldLabel: "Resposta do estudante",
+    loadingTitle: "Corrigindo com IA",
+    loadingDescription:
+      "Avaliando critérios, calculando nota e preparando feedback para o professor.",
+    accent: "from-amber-300 via-orange-300 to-rose-300",
+  },
 ];
 
 export type AppNavPanel = "inicio" | DashboardSectionId | "external";
@@ -320,6 +355,13 @@ export const sidebarNavigation: AppNavItem[] = [
     icon: "listChecks",
     panel: "bncc",
     requiresBnccAccess: true,
+    hideForManagerView: true,
+  },
+  {
+    label: "Banco de questões",
+    href: "/dashboard?secao=banco-questoes",
+    icon: "library",
+    panel: "banco-questoes",
     hideForManagerView: true,
   },
   {

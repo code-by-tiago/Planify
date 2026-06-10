@@ -15,6 +15,16 @@ type GenerationStats = {
   dailyQuotaRate: number;
 };
 
+type OperationalStats = {
+  window: StatsWindow;
+  failureRateByTipo: Array<{
+    toolTipo: string;
+    failures: number;
+    total: number;
+    failureRate: number;
+  }>;
+};
+
 const bucketLabels: Record<string, string> = {
   "90+": "Excelente (90+)",
   "75+": "Bom (75–89)",
@@ -32,6 +42,7 @@ const bucketColors: Record<string, string> = {
 export function AdminQualidadePanel() {
   const [window, setWindow] = useState<StatsWindow>("24h");
   const [stats, setStats] = useState<GenerationStats | null>(null);
+  const [operational, setOperational] = useState<OperationalStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -51,8 +62,10 @@ export function AdminQualidadePanel() {
       }
 
       setStats(data.stats as GenerationStats);
+      setOperational((data.operational as OperationalStats) ?? null);
     } catch (err) {
       setStats(null);
+      setOperational(null);
       setError(err instanceof Error ? err.message : "Erro ao carregar estatísticas.");
     } finally {
       setLoading(false);
@@ -185,6 +198,31 @@ export function AdminQualidadePanel() {
                   ))
                 )}
               </div>
+            </div>
+          </div>
+
+          <div className="rounded-[2rem] border border-slate-200 bg-white p-6">
+            <p className="text-sm font-black uppercase tracking-[0.25em] text-rose-600">
+              Falhas operacionais
+            </p>
+            <div className="mt-6 grid gap-2">
+              {!operational?.failureRateByTipo.length ? (
+                <p className="text-sm text-slate-500">
+                  Sem eventos operacionais no período (após migration 20260622).
+                </p>
+              ) : (
+                operational.failureRateByTipo.slice(0, 8).map((item) => (
+                  <div
+                    key={item.toolTipo}
+                    className="flex items-center justify-between rounded-xl border border-rose-100 bg-rose-50/50 px-4 py-3 text-sm"
+                  >
+                    <span className="font-black text-slate-950">{item.toolTipo}</span>
+                    <span className="font-bold text-rose-700">
+                      {item.failureRate}% ({item.failures}/{item.total})
+                    </span>
+                  </div>
+                ))
+              )}
             </div>
           </div>
 

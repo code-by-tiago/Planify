@@ -20,11 +20,15 @@ export const PLANNING_DEEP_GENERATION_TYPE = "planejamento";
 /** Adaptação curricular inclusiva — geração profunda (Pro), conta na cota diária. */
 export const INCLUSAO_DEEP_GENERATION_TYPE = "inclusao";
 
+/** Pacote Aula Completa — uma cota profunda para o pacote inteiro. */
+export const LESSON_BUNDLE_DEEP_GENERATION_TYPE = "aula-completa";
+
 const DEEP_PLANNING_TYPES = new Set([
   PLANNING_DEEP_GENERATION_TYPE,
   "planejamento-anual",
   "planejamento-trimestral",
   INCLUSAO_DEEP_GENERATION_TYPE,
+  LESSON_BUNDLE_DEEP_GENERATION_TYPE,
 ]);
 
 /** Materiais leves (Flash) — não consomem cota diária profunda. */

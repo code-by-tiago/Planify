@@ -68,6 +68,8 @@ const CREDIT_COST: Partial<Record<MaterialEngineType, number>> & Record<string, 
   "mapa-mental": 1,
   jogo: 1,
   inclusao: 6,
+  "aula-completa": 28,
+  "correcao-ia": 3,
 };
 
 export function getCreditCost(tipo: string): number {
@@ -120,8 +122,12 @@ export async function spendCredits(
   userId: string,
   tipo: string,
   email?: string | null,
+  costOverride?: number,
 ): Promise<SpendResult> {
-  const cost = getCreditCost(tipo);
+  const cost =
+    typeof costOverride === "number" && costOverride > 0
+      ? Math.round(costOverride)
+      : getCreditCost(tipo);
 
   await syncCreditWalletFromSubscription({ userId, email });
 

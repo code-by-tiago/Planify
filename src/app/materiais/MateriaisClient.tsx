@@ -19,7 +19,9 @@ import type {
 } from "@/server/materials/material-engine-types";
 import { SLIDE_THEME_OPTIONS } from "@/server/materials/slide-design-themes";
 import { CreditsBalancePill } from "@/components/credits/CreditsBalancePill";
+import { GenerationCostHint } from "@/components/credits/GenerationCostHint";
 import { DailyGenerationsBar } from "@/components/credits/DailyGenerationsBar";
+import { MaterialPreviewSkeleton } from "@/components/materiais/MaterialPreviewSkeleton";
 import { MaterialToolPageShell } from "@/components/pro/MaterialToolPageShell";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { PlanifyOwlGenerationCoach } from "@/components/pro/PlanifyOwlGenerationCoach";
@@ -71,6 +73,13 @@ import {
   type PlanifyToolId,
   type ToolCategoryId,
 } from "@/lib/pro/planifyTools";
+import { getClientCreditCost } from "@/lib/credits/credit-costs";
+import {
+  dispatchCreditsChangedIfNeeded,
+  formatGenerationError,
+  GenerationErrorBanner,
+} from "@/lib/pro/generation-error-ui";
+import { readProvaInjectObservacoes } from "@/lib/banco-questoes/question-bank-storage";
 import { lessonBundleFollowUp } from "@/lib/pro/teachyStudio";
 import { useSchoolClasses } from "@/hooks/useSchoolClasses";
 import { TurmaCombobox } from "@/components/school/TurmaCombobox";
@@ -138,6 +147,16 @@ const sugestoesTema: Record<PlanifyToolId, string[]> = {
     "Atividade sobre frações adaptada para TDAH",
     "Relatório de progresso — participação em grupo",
     "Trilhas paralelas sobre sistema solar",
+  ],
+  "aula-completa": [
+    "Revolução Industrial — pacote completo",
+    "Frações no cotidiano — aula integrada",
+    "Sistema solar — plano, slides e avaliação",
+  ],
+  "correcao-ia": [
+    "Redação sobre mobilidade urbana",
+    "Questão discursiva de História",
+    "Produção textual — carta argumentativa",
   ],
 };
 
@@ -313,6 +332,8 @@ export function MateriaisClient({
   const [resultadoEstrutura, setResultadoEstrutura] =
     useState<MaterialEngineResponse | null>(null);
   const [erro, setErro] = useState("");
+  const [erroCta, setErroCta] = useState<ReturnType<typeof formatGenerationError>["cta"]>(null);
+  const [erroRetryable, setErroRetryable] = useState(false);
   const [loading, setLoading] = useState(false);
   const [busca, setBusca] = useState("");
   const [historico, setHistorico] = useState<MaterialHistoryPreview[]>([]);
@@ -447,6 +468,14 @@ export function MateriaisClient({
       new CustomEvent("planify-objetivo-updated", { detail: objetivo }),
     );
   }, [objetivo, studioMode]);
+
+  useEffect(() => {
+    if (tipo !== "prova" && tipo !== "lista") return;
+    const injected = readProvaInjectObservacoes();
+    if (!injected) return;
+    setObservacoes((prev) => (prev.trim() ? `${prev.trim()}\n\n${injected}` : injected));
+    setHintFeedback("Questões do banco importadas — revise e clique em Criar.");
+  }, [tipo]);
 
   const mode = useMemo(() => getPlanifyTool(tipo), [tipo]);
   const generationSummary = useMemo(
@@ -861,6 +890,8 @@ export function MateriaisClient({
       qualityScore: extras?.qualityScore ?? qualityScore,
       qualityIssues: extras?.qualityIssues ?? qualityIssues,
       generationPayload: extras?.generationPayload ?? lastGenerationPayload,
+      serverMaterialId: extras?.serverMaterialId,
+      estrutura: resolvedEstrutura ?? null,
     };
   }
 
@@ -942,6 +973,8 @@ export function MateriaisClient({
 
   async function executarGeracao() {
     setErro("");
+    setErroCta(null);
+    setErroRetryable(false);
 
     if (!tema.trim()) {
       setErro("Informe o tema para gerar o material.");
@@ -1091,25 +1124,6 @@ export function MateriaisClient({
       });
 
       if (abrirEditorAutomatico) {
-        // #region agent log
-        fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "82e773" },
-          body: JSON.stringify({
-            sessionId: "82e773",
-            runId: "google-auto-export",
-            hypothesisId: "H-A",
-            location: "MateriaisClient.tsx:executarGeracao",
-            message: "generation complete, opening editor",
-            data: {
-              tipo,
-              abrirEditorAutomatico: true,
-              titulo: titulo.slice(0, 60),
-            },
-            timestamp: Date.now(),
-          }),
-        }).catch(() => {});
-        // #endregion
         openMaterialInEditor(html, titulo, meta, {
           from: "materiais",
         });
@@ -1123,11 +1137,11 @@ export function MateriaisClient({
       setMaterialSalvo(true);
       setResultadoHtml(html);
     } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Erro inesperado ao gerar o material.";
-      setErro(message);
+      dispatchCreditsChangedIfNeeded(error);
+      const formatted = formatGenerationError(error);
+      setErro(formatted.message);
+      setErroCta(formatted.cta ?? null);
+      setErroRetryable(formatted.retryable);
     } finally {
       setLoading(false);
     }
@@ -1760,12 +1774,19 @@ export function MateriaisClient({
             </div>
           ) : null}
 
-          {erro ? (
-            <div className="mt-4 flex items-start gap-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-700">
-              <PlanifyIcon name="alertCircle" className="mt-0.5 h-4 w-4 shrink-0" />
-              {erro}
-            </div>
-          ) : null}
+          <GenerationCostHint
+            creditCost={getClientCreditCost(tipo)}
+            className="mt-4"
+          />
+
+          <GenerationErrorBanner
+            message={erro}
+            cta={erroCta}
+            retryable={erroRetryable}
+            onRetry={() => void executarGeracao()}
+            retrying={loading}
+            className="mt-4"
+          />
 
           <button
             type="submit"
@@ -1786,14 +1807,17 @@ export function MateriaisClient({
       preview={
         <>
           {loading ? (
-            <div className="flex h-full min-h-[280px] items-center justify-center p-2">
-              <PlanifyOwlGenerationCoach
-                active
-                title={mode.loadingTitle}
-                context="material"
-                toolId={tipo}
-                className="max-w-lg"
-              />
+            <div className="space-y-4 p-2">
+              <div className="flex min-h-[200px] items-center justify-center">
+                <PlanifyOwlGenerationCoach
+                  active
+                  title={mode.loadingTitle}
+                  context="material"
+                  toolId={tipo}
+                  className="max-w-lg"
+                />
+              </div>
+              <MaterialPreviewSkeleton />
             </div>
           ) : resultadoHtml ? (
             <div>

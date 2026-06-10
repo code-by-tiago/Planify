@@ -252,9 +252,12 @@ export async function generateMaterialWithAI(rawInput: MaterialAIInput): Promise
         systemInstruction: buildMaterialSystemInstruction(),
         prompt: buildMaterialDynamicPrompt(input),
         cacheProfile: "material-json",
+        tier: getModelTierForMaterialRequest(input.tipo, {
+          observacoes: input.observacoes,
+        }),
         temperature: 0.2,
         topP: 0.8,
-        maxOutputTokens: 9000,
+        maxOutputTokens: 16000,
       });
       return finalizeMaterial(input, enforceMaterialTypeContract(input, mergeGameWithAI(input, generated)));
     } catch {

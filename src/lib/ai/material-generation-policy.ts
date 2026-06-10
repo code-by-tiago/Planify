@@ -31,7 +31,7 @@ const DEEP_PLANNING_TYPES = new Set([
   LESSON_BUNDLE_DEEP_GENERATION_TYPE,
 ]);
 
-/** Materiais leves (Flash) — não consomem cota diária profunda. */
+/** Materiais leves — legado de cota/UI; geração inicial usa Pro como os demais. */
 export const LIGHT_GENERATION_TYPES: MaterialEngineType[] = [
   "flashcards",
   "resumo",
@@ -54,14 +54,15 @@ export function normalizeMaterialTypeKey(tipo: string): string {
 
 export function isDeepGenerationType(tipo: string): boolean {
   const key = normalizeMaterialTypeKey(tipo);
-  if (LIGHT_SET.has(key)) return false;
   if (DEEP_SET.has(key)) return true;
+  if (LIGHT_SET.has(key)) return true;
   if (DEEP_PLANNING_TYPES.has(key)) return true;
   return false;
 }
 
-export function getModelTierForMaterialType(tipo: string): AIModelTier {
-  return isDeepGenerationType(tipo) ? "advanced" : "default";
+/** Geração inicial de material — sempre Gemini Pro. */
+export function getModelTierForMaterialType(_tipo: string): AIModelTier {
+  return "advanced";
 }
 
 /** Marcador de ajuste complementar no editor (SlideAiAdjustPanel). */
@@ -77,8 +78,8 @@ type ComplementaryGenerationContext = {
   observacoes?: string | null;
 };
 
-/** Geração complementar no editor — ajuste, elevar qualidade ou pequena regeneração. */
-export function isComplementaryMaterialGeneration(
+/** Elevar qualidade ou regeneração focada — sempre Pro. */
+export function isElevateQualityGeneration(
   context: ComplementaryGenerationContext,
 ): boolean {
   if (context.elevarQualidade === true) return true;
@@ -88,10 +89,19 @@ export function isComplementaryMaterialGeneration(
   ) {
     return true;
   }
+  return String(context.observacoes ?? "").includes(
+    EDITOR_ELEVATE_QUALITY_MARKER,
+  );
+}
+
+/** Geração complementar no editor — ajuste, elevar qualidade ou pequena regeneração. */
+export function isComplementaryMaterialGeneration(
+  context: ComplementaryGenerationContext,
+): boolean {
+  if (isElevateQualityGeneration(context)) return true;
 
   const observacoes = String(context.observacoes ?? "");
   if (observacoes.includes(EDITOR_COMPLEMENTARY_ADJUST_MARKER)) return true;
-  if (observacoes.includes(EDITOR_ELEVATE_QUALITY_MARKER)) return true;
 
   return false;
 }
@@ -101,18 +111,20 @@ export function getModelTierForMaterialRequest(
   tipo: string,
   context?: ComplementaryGenerationContext,
 ): AIModelTier {
-  if (context && isComplementaryMaterialGeneration(context)) {
-    return "default";
+  if (context) {
+    if (isElevateQualityGeneration(context)) return "advanced";
+    if (isComplementaryMaterialGeneration(context)) return "default";
   }
   return getModelTierForMaterialType(tipo);
 }
 
-/** Planejamento anual/trimestral — Pro na geração inicial; Flash em elevar/ajustar no editor. */
+/** Planejamento — Pro na geração inicial e ao elevar; Flash só em ajuste complementar leve. */
 export function getModelTierForPlanning(
   context?: ComplementaryGenerationContext,
 ): AIModelTier {
-  if (context && isComplementaryMaterialGeneration(context)) {
-    return "default";
+  if (context) {
+    if (isElevateQualityGeneration(context)) return "advanced";
+    if (isComplementaryMaterialGeneration(context)) return "default";
   }
   return "advanced";
 }

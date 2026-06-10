@@ -208,8 +208,8 @@ function testMaterialTypeRouting() {
     }
 
     if (lightSet.has(tipo)) {
-      assert.equal(deep, false, `${tipo} deve rotear como geração leve (Flash)`);
-      assert.equal(tier, "default", `${tipo} deve usar tier default`);
+      assert.equal(deep, true, `${tipo} deve contar na cota diária profunda (Pro universal)`);
+      assert.equal(tier, "advanced", `${tipo} deve usar tier advanced (Pro)`);
       continue;
     }
 
@@ -225,7 +225,7 @@ function testMaterialTypeRouting() {
   assert.equal(isDeepGenerationType(PLANNING_DEEP_GENERATION_TYPE), true);
   assert.equal(isDeepGenerationType("planejamento-anual"), true);
   assert.equal(isDeepGenerationType("planejamento-trimestral"), true);
-  assert.equal(isDeepGenerationType("flashcards"), false);
+  assert.equal(isDeepGenerationType("flashcards"), true);
   assert.equal(isDeepGenerationType("prova"), true);
 }
 

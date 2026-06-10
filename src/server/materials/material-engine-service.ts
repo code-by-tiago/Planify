@@ -56,7 +56,21 @@ const CRITICAL_QUALITY_TYPES = new Set<MaterialEngineType>([
   "lista",
   "apostila",
   "atividade",
+  "plano-aula",
+  "slides",
 ]);
+
+const CRITICAL_RETRY_TYPES = new Set<MaterialEngineType>([
+  "prova",
+  "lista",
+  "atividade",
+  "plano-aula",
+  "slides",
+]);
+
+function maxAttemptsFor(type: MaterialEngineType): number {
+  return CRITICAL_RETRY_TYPES.has(type) ? 4 : 3;
+}
 
 function buildDeliveryAlertas(
   request: MaterialEngineRequest,
@@ -66,8 +80,9 @@ function buildDeliveryAlertas(
   if (!issues.length) return undefined;
 
   if (CRITICAL_QUALITY_TYPES.has(request.tipoMaterial) && isFinalAttempt) {
+    const attempts = maxAttemptsFor(request.tipoMaterial);
     return [
-      "Passo crítico: a IA não resolveu todos os critérios após 3 tentativas.",
+      `Passo crítico: a IA não resolveu todos os critérios após ${attempts} tentativas.`,
       "Regenere o material ou use Elevar qualidade antes de imprimir ou aplicar em sala.",
       ...issues.slice(0, 8),
     ];
@@ -856,7 +871,8 @@ function renderDocumentHtml(
 
 function maxOutputTokensFor(type: MaterialEngineType): number {
   if (type === "slides") return 24000;
-  if (type === "flashcards" || type === "mapa-mental") return 8000;
+  if (type === "flashcards" || type === "mapa-mental") return 14000;
+  if (type === "resumo" || type === "atividade" || type === "jogo") return 16000;
   if (type === "prova" || type === "lista" || type === "apostila") return 16000;
   return 12000;
 }
@@ -904,7 +920,9 @@ export async function generateMaterialByEngine(input: MaterialEngineInput) {
   let activePrompt = basePrompt;
   let lastError: unknown = null;
 
-  for (let attempt = 0; attempt < 3; attempt += 1) {
+  const maxAttempts = maxAttemptsFor(request.tipoMaterial);
+
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
     try {
       const modelTier = getModelTierForMaterialRequest(
         request.tipoMaterial,
@@ -942,13 +960,15 @@ export async function generateMaterialByEngine(input: MaterialEngineInput) {
 
       const issues = getEngineOutputIssues(request, normalized);
 
-      if (issues.length && attempt < 2) {
-        activePrompt = `${basePrompt}\n\n${buildQualityRetryPrompt(request, issues)}`;
+      if (issues.length && attempt < maxAttempts - 1) {
+        activePrompt = `${basePrompt}\n\n${buildQualityRetryPrompt(request, issues, {
+          teachyDepth: attempt === maxAttempts - 2,
+        })}`;
         continue;
       }
 
       const html = renderDocumentHtml(request, normalized);
-      const isFinalAttempt = attempt >= 2;
+      const isFinalAttempt = attempt >= maxAttempts - 1;
       const alertas = buildDeliveryAlertas(request, issues, isFinalAttempt);
       const qualityScore = computeQualityScore(issues, alertas ?? []);
 

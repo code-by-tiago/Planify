@@ -296,9 +296,20 @@ export function getEngineOutputIssues(
   return issues;
 }
 
+const TEACHY_DEPTH_CHECKLIST = [
+  "MODO TEACHY — CHECKLIST DE PROFUNDIDADE (última tentativa):",
+  "- Cada enunciado/seção cita subconceito concreto do tema (zero placeholders genéricos).",
+  "- Progressão didática: aquecimento → desenvolvimento → consolidação/avaliação.",
+  "- Gabarito/resposta com comentário pedagógico (por que a alternativa correta e por que as outras falham).",
+  "- Vocabulário e complexidade compatíveis com ano/série informados.",
+  "- Quantidade e formato exatos do contrato (questões, slides, cards, seções).",
+  "- Zero repetição de parágrafos ou enunciados equivalentes.",
+].join("\n");
+
 export function buildQualityRetryPrompt(
   request: MaterialEngineRequest,
   issues: string[],
+  options?: { teachyDepth?: boolean },
 ): string {
   return [
     "A entrega anterior não atendeu o contrato pedagógico. Corrija e regenere o JSON completo.",
@@ -319,5 +330,6 @@ export function buildQualityRetryPrompt(
       : []),
     `Tema obrigatório: "${request.tema}".`,
     "Reescreva com enunciados contextualizados, alternativas distintas e gabarito comentado.",
+    ...(options?.teachyDepth ? ["", TEACHY_DEPTH_CHECKLIST] : []),
   ].join("\n");
 }

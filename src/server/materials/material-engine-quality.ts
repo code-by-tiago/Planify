@@ -3,6 +3,7 @@ import {
   collectSectionSemanticIssues,
   isGenericEducationalText,
 } from "@/lib/materiais/material-semantic-quality";
+import { TEACHY_QUALITY_RULES } from "@/lib/materiais/teachy-document-contract";
 import type {
   MaterialEngineRequest,
   MaterialEngineResponse,
@@ -325,17 +326,6 @@ export function getEngineOutputIssues(
   return issues;
 }
 
-const TEACHY_DEPTH_CHECKLIST = [
-  "MODO TEACHY — CHECKLIST DE PROFUNDIDADE (última tentativa):",
-  "- Material direto: questões/exercícios numerados sem preâmbulos pedagógicos longos.",
-  "- Cada enunciado cita subconceito concreto do tema (zero placeholders genéricos).",
-  "- Progressão: básico → intermediário → desafio.",
-  "- Gabarito objetivo: resposta correta + critério breve (sem comentário pedagógico extenso).",
-  "- Vocabulário e complexidade compatíveis com ano/série informados.",
-  "- Quantidade e formato exatos do contrato (questões, slides, cards, seções).",
-  "- Zero repetição de parágrafos ou enunciados equivalentes.",
-].join("\n");
-
 export function buildQualityRetryPrompt(
   request: MaterialEngineRequest,
   issues: string[],
@@ -360,6 +350,6 @@ export function buildQualityRetryPrompt(
       : []),
     `Tema obrigatório: "${request.tema}".`,
     "Reescreva com enunciados contextualizados, alternativas distintas e gabarito objetivo.",
-    ...(options?.teachyDepth ? ["", TEACHY_DEPTH_CHECKLIST] : []),
+    ...(options?.teachyDepth ? ["", TEACHY_QUALITY_RULES] : []),
   ].join("\n");
 }

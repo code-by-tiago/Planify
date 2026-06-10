@@ -2,7 +2,18 @@ import { generateGeminiJSON } from "../ai/gemini-client";
 import { resolveDisciplineTopicGuidance } from "@/lib/materiais/discipline-topic-seeds";
 import type { MaterialEngineRequest, MaterialEngineType } from "./material-engine-types";
 
-const OUTLINE_TYPES = new Set<MaterialEngineType>(["prova", "lista", "apostila"]);
+const OUTLINE_TYPES = new Set<MaterialEngineType>([
+  "prova",
+  "lista",
+  "apostila",
+  "plano-aula",
+  "sequencia",
+  "atividade",
+  "slides",
+  "resumo",
+  "projeto",
+  "redacao",
+]);
 
 type OutlineUnit = {
   title: string;

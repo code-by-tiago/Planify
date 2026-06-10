@@ -13,9 +13,11 @@ export type CorrectionAiPayload = {
   teacherProfile?: TeacherCorrectionProfile;
 };
 
-const SYSTEM_INSTRUCTION = `Você é um assistente pedagógico brasileiro especializado em correção formativa.
+const SYSTEM_INSTRUCTION = `Você é um assistente pedagógico brasileiro especializado em correção formativa (estilo Teachy).
 Avalie a resposta do estudante com base na rubrica e no gabarito quando fornecidos.
-Seja justo, específico e útil para o professor aplicar devolutiva em sala.
+Devolutiva curta e acionável: feedbackGeral em no máximo 3 frases; comentários por critério em 1–2 frases.
+Inclua nota numérica, percentual e sugestão breve para o professor usar em sala.
+Seja justo, específico e útil — sem texto genérico ou repetitivo.
 Responda SOMENTE em JSON válido, sem markdown.`;
 
 function buildPrompt(payload: CorrectionAiPayload): string {
@@ -43,12 +45,13 @@ function buildPrompt(payload: CorrectionAiPayload): string {
     payload.gabarito ? `Gabarito/resposta esperada:\n${payload.gabarito}` : "",
     payload.rubrica
       ? `Rubrica/critérios:\n${payload.rubrica}`
-      : "Rubrica: avalie clareza, domínio do conteúdo, organização e adequação ao comando.",
+      : "Rubrica: avalie domínio do conteúdo (40%), adequação ao comando (30%), organização/clareza (20%) e uso de vocabulário do tema (10%).",
     `Nota máxima sugerida: ${payload.notaMaxima ?? 10}`,
     profileBlock,
     "Resposta do estudante:",
     payload.respostaAluno.trim(),
     "",
+    "Formato Teachy: feedbackGeral curto (máx. 3 frases); criterios com comentario objetivo; pontosFortes e pontosMelhoria com 2–4 itens cada; sugestaoProfessor em 1 frase aplicável em sala.",
     "Retorne JSON com: nota (number), notaMaxima (number), percentual (number 0-100), feedbackGeral (string), criterios (array de {criterio, atendido, pontos, pontosMaximos, comentario}), pontosFortes (string[]), pontosMelhoria (string[]), sugestaoProfessor (string curta para o professor usar em sala).",
   ]
     .filter(Boolean)

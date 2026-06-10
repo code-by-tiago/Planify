@@ -44,17 +44,13 @@ export function renderMaterialInstitutionHeader(ctx: MaterialDocumentContext): s
 
   if (compact) {
     return `
-    <header class="planify-doc-header planify-doc-header-compact">
-      <div class="planify-doc-header-row">
-        <p class="planify-doc-kicker">${escapeHtml(tipoLabel(ctx.tipo))}</p>
-        <p class="planify-doc-header-theme">${escapeHtml(ctx.tema || "—")}</p>
-      </div>
+    <header class="planify-doc-header planify-doc-header-compact planify-doc-header-teachy">
       <table class="planify-doc-meta planify-doc-meta-compact" role="presentation">
         <tbody>
           <tr>
-            <th>Componente</th>
+            <th>Disciplina</th>
             <td>${escapeHtml(req?.componenteCurricular || "—")}</td>
-            <th>Ano/Série</th>
+            <th>Ano</th>
             <td>${escapeHtml(req?.anoSerie || "—")}</td>
           </tr>
           <tr>
@@ -92,19 +88,7 @@ export function renderMaterialInstitutionHeader(ctx: MaterialDocumentContext): s
   `.trim();
 }
 
-export function renderAssessmentInstructions(tipo: string): string {
-  if (tipo === "lista") {
-    return "";
-  }
-
-  if (tipo === "prova") {
-    return `
-      <p class="planify-doc-instructions-inline">
-        Leia todas as questões antes de responder. Respostas claras e legíveis.
-      </p>
-    `.trim();
-  }
-
+export function renderAssessmentInstructions(_tipo: string): string {
   return "";
 }
 
@@ -129,20 +113,58 @@ export function renderQuestionCard(params: {
           <span></span><span></span><span></span><span></span>
         </div>`;
 
-  const typeBadge = params.questionType
-    ? `<span class="planify-questao-type">${escapeHtml(params.questionType)}</span>`
-    : "";
+  const typeBadge =
+    !compact && params.questionType
+      ? `<span class="planify-questao-type">${escapeHtml(params.questionType)}</span>`
+      : "";
+
+  const headContent = compact
+    ? `<span class="planify-questao-number-badge" aria-label="${escapeHtml(itemLabel)} ${escapeHtml(String(params.number))}">${escapeHtml(num)}</span>`
+    : `<div class="planify-questao-head">
+        <span class="planify-questao-number-badge" aria-label="${escapeHtml(itemLabel)} ${escapeHtml(String(params.number))}">${escapeHtml(num)}</span>
+        <span class="planify-questao-number-label">${escapeHtml(itemLabel)} ${escapeHtml(String(params.number))}</span>
+        ${typeBadge}
+      </div>`;
 
   return `
-    <article class="planify-questao planify-questao-card">
-      <div class="planify-questao-head">
-        <span class="planify-questao-number-badge" aria-label="${escapeHtml(itemLabel)} ${escapeHtml(String(params.number))}">${escapeHtml(num)}</span>
-        ${compact ? "" : `<span class="planify-questao-number-label">${escapeHtml(itemLabel)} ${escapeHtml(String(params.number))}</span>`}
-        ${typeBadge}
-      </div>
+    <article class="planify-questao planify-questao-card${compact ? " planify-questao-card-compact" : ""}">
+      ${headContent}
       <p class="planify-questao-statement">${escapeHtml(params.statement)}</p>
       ${options}
     </article>
+  `.trim();
+}
+
+export function renderGabaritoTable(
+  entries: { number: number | string; answer: string }[],
+): string {
+  const clean = entries.filter((entry) => entry.answer.trim());
+  if (!clean.length) return "";
+
+  const rows = clean
+    .map(
+      (entry) => `
+        <tr>
+          <td class="planify-gabarito-num">${escapeHtml(String(entry.number).padStart(2, "0"))}</td>
+          <td class="planify-gabarito-answer">${escapeHtml(entry.answer)}</td>
+        </tr>
+      `,
+    )
+    .join("");
+
+  return `
+    <section class="planify-gabarito-block page-break">
+      <h2>Gabarito</h2>
+      <table class="planify-gabarito-table" role="presentation">
+        <thead>
+          <tr>
+            <th class="planify-gabarito-num">#</th>
+            <th class="planify-gabarito-answer">Resposta</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </section>
   `.trim();
 }
 

@@ -1,4 +1,5 @@
 import {
+  renderGabaritoTable,
   renderQuestionCard,
   wrapProfessionalDocument,
 } from "@/lib/materiais/material-document-layout";
@@ -75,24 +76,30 @@ function renderQuestions(output: MaterialAIOutput): string {
 function renderGabarito(output: MaterialAIOutput, incluirGabarito: boolean): string {
   if (!incluirGabarito) return "";
 
-  const lines = [...output.gabarito];
+  const byNumber = new Map<number, string>();
 
   for (const question of output.questoes) {
     const answer = question.respostaEsperada?.trim();
-    if (!answer) continue;
-    const label =
-      output.tipo === "lista" ? "Exercício" : "Questão";
-    const entry = `${label} ${question.numero}: ${answer}`;
-    const criteria = question.criterioCorrecao?.trim();
-    const full = criteria ? `${entry} — Critério: ${criteria}` : entry;
-    if (!lines.some((line) => line.includes(`${label} ${question.numero}:`))) {
-      lines.push(full);
+    if (answer) {
+      byNumber.set(question.numero, answer);
     }
   }
 
-  if (!lines.length) return "";
+  for (const line of output.gabarito) {
+    const match = line.match(/(?:quest[aã]o|exerc[ií]cio)\s*(\d+)\s*:\s*(.+)/i);
+    if (match) {
+      const num = Number(match[1]);
+      if (!byNumber.has(num)) {
+        byNumber.set(num, match[2].trim());
+      }
+    }
+  }
 
-  return `<section class="planify-gabarito-block page-break"><h2>Gabarito</h2>${asList(lines, true)}</section>`;
+  const entries = [...byNumber.entries()]
+    .sort(([a], [b]) => a - b)
+    .map(([number, answer]) => ({ number, answer }));
+
+  return renderGabaritoTable(entries);
 }
 
 function renderGame(output: MaterialAIOutput): string {

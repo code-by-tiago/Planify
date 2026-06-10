@@ -18,12 +18,21 @@ export const PLANIFY_EXPORT_DOC_COMPONENT_CSS = `
   .planify-doc-professional {
     width: 100%;
   }
+  @media screen {
+    .planify-doc,
+    .planify-doc-ai,
+    .planify-doc-professional,
+    .planify-export-document {
+      font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+  }
   .planify-doc-header {
-    border: 1px solid #cbd5e1;
-    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
     padding: 0.75rem 0.9rem;
     margin: 0 0 1rem;
-    background: #f8fafc;
+    background: #fafbfc;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
   }
   .planify-doc-kicker {
     margin: 0 0 0.55rem;
@@ -40,15 +49,16 @@ export const PLANIFY_EXPORT_DOC_COMPONENT_CSS = `
   }
   .planify-doc-meta th,
   .planify-doc-meta td {
-    border: 1px solid #cbd5e1;
+    border: 1px solid #e2e8f0;
     padding: 0.35rem 0.5rem;
     text-align: left;
     vertical-align: top;
   }
   .planify-doc-meta th {
     width: 24%;
-    background: #e2e8f0;
-    font-weight: 700;
+    background: #f1f5f9;
+    font-weight: 600;
+    color: #475569;
   }
   .planify-doc-title {
     text-align: center;
@@ -69,8 +79,13 @@ export const PLANIFY_EXPORT_DOC_COMPONENT_CSS = `
     background: #f8fafc;
   }
   .planify-doc-header-compact {
-    padding: 0.55rem 0.75rem;
-    margin-bottom: 0.75rem;
+    padding: 0.5rem 0.7rem;
+    margin-bottom: 0.85rem;
+    border-color: #e2e8f0;
+    background: #ffffff;
+  }
+  .planify-doc-header-teachy {
+    box-shadow: none;
   }
   .planify-doc-header-row {
     display: flex;
@@ -89,19 +104,29 @@ export const PLANIFY_EXPORT_DOC_COMPONENT_CSS = `
   .planify-doc-meta-compact th,
   .planify-doc-meta-compact td {
     font-size: 10pt;
-    padding: 0.28rem 0.45rem;
+    padding: 0.32rem 0.5rem;
   }
   .planify-doc-meta-compact th {
     width: auto;
-    min-width: 4.5rem;
+    min-width: 4.25rem;
+    white-space: nowrap;
   }
   .planify-questao-card {
     border: 1px solid #e2e8f0;
-    border-radius: 10px;
-    padding: 0.7rem 0.85rem 0.8rem;
-    margin: 0 0 0.75rem;
+    border-radius: 12px;
+    padding: 1rem 1.1rem 1.05rem;
+    margin: 0 0 1rem;
     background: #ffffff;
-    box-shadow: 0 1px 0 rgba(15, 23, 42, 0.04);
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.06);
+  }
+  .planify-questao-card-compact {
+    padding: 0.95rem 1.05rem 1rem;
+  }
+  .planify-questao-card-compact .planify-questao-number-badge {
+    margin-bottom: 0.55rem;
+  }
+  .planify-questao-card-compact .planify-questao-type {
+    display: none;
   }
   .planify-questao-head {
     display: flex;
@@ -113,8 +138,8 @@ export const PLANIFY_EXPORT_DOC_COMPONENT_CSS = `
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 1.85rem;
-    height: 1.85rem;
+    min-width: 2rem;
+    height: 2rem;
     border-radius: 999px;
     background: var(--planify-accent, #312e81);
     color: #ffffff;
@@ -143,27 +168,82 @@ export const PLANIFY_EXPORT_DOC_COMPONENT_CSS = `
     text-transform: uppercase;
   }
   .planify-questao-statement {
-    margin: 0 0 0.55rem;
-    font-weight: 600;
+    margin: 0 0 0.65rem;
+    font-weight: 500;
+    line-height: 1.45;
+    color: #0f172a;
   }
   .planify-questao-options {
-    margin: 0 0 0.35rem 1.1rem;
+    margin: 0.15rem 0 0.25rem 0;
+    padding-left: 0;
+    list-style: none;
+    counter-reset: planify-option;
+  }
+  .planify-questao-options li {
+    position: relative;
+    margin: 0 0 0.4rem;
+    padding-left: 1.65rem;
+    line-height: 1.4;
+    counter-increment: planify-option;
+  }
+  .planify-questao-options li::before {
+    content: counter(planify-option, lower-alpha) ")";
+    position: absolute;
+    left: 0;
+    font-weight: 700;
+    color: #475569;
   }
   .planify-answer-lines span {
     display: block;
-    border-bottom: 1px solid #94a3b8;
-    height: 1.35rem;
-    margin-bottom: 0.45rem;
+    border-bottom: 1px solid #cbd5e1;
+    height: 1.5rem;
+    margin-bottom: 0.55rem;
   }
   .planify-gabarito-block {
-    margin-top: 1.4rem;
-    padding-top: 0.75rem;
-    border-top: 2px dashed #94a3b8;
+    margin-top: 1.6rem;
+    padding-top: 0.85rem;
+    border-top: 1px solid #e2e8f0;
   }
   .planify-gabarito-block h2 {
     font-size: 13pt;
     color: #334155;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.6rem;
+    font-weight: 700;
+  }
+  .planify-gabarito-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0.35rem 0 0;
+    font-size: 10.5pt;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .planify-gabarito-table th,
+  .planify-gabarito-table td {
+    border: 1px solid #e2e8f0;
+    padding: 0.5rem 0.65rem;
+    vertical-align: top;
+    text-align: left;
+  }
+  .planify-gabarito-table thead th {
+    background: #f1f5f9;
+    font-weight: 700;
+    color: #475569;
+    font-size: 10pt;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .planify-gabarito-num {
+    width: 3.25rem;
+    text-align: center;
+    font-weight: 800;
+    color: #312e81;
+    background: #f8fafc;
+  }
+  .planify-gabarito-answer {
+    color: #0f172a;
+    line-height: 1.4;
   }
   .planify-alertas {
     border: 1px solid #fcd34d;
@@ -283,15 +363,12 @@ export const PLANIFY_EXPORT_DOC_COMPONENT_CSS = `
     display: none;
   }
   .planify-doc-lista .planify-doc-title,
-  .planify-doc-prova .planify-doc-title {
-    margin-bottom: 0.35rem;
-    font-size: 17pt;
-  }
+  .planify-doc-prova .planify-doc-title,
   .planify-doc-lista .planify-doc-subtitle,
-  .planify-doc-prova .planify-doc-subtitle {
-    text-align: center;
-    margin-bottom: 0.65rem;
-    font-size: 10.5pt;
+  .planify-doc-prova .planify-doc-subtitle,
+  .planify-doc-lista .planify-doc-summary,
+  .planify-doc-prova .planify-doc-summary {
+    display: none;
   }
   .planify-resumo-section h2 {
     font-size: 12.5pt;

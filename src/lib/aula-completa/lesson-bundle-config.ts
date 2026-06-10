@@ -1,12 +1,16 @@
 import { getClientCreditCost } from "@/lib/credits/credit-costs";
 import type { PlanifyToolId } from "@/lib/pro/planifyTools";
 
-/** Pacote padrão: tema → plano + slides + atividade + avaliação */
+/** Pacote padrão (modelo Teachy Aula Mágica): plano → slides → resumo → prática → avaliação */
 export const DEFAULT_LESSON_BUNDLE_TOOLS: PlanifyToolId[] = [
   "plano-aula",
   "slides",
+  "resumo",
+  "lista",
   "atividade",
+  "jogo",
   "prova",
+  "projeto",
 ];
 
 export const LESSON_BUNDLE_GENERATION_TYPE = "aula-completa";

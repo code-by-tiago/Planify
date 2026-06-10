@@ -1,4 +1,6 @@
 import { buildElevateQualityObservacoes } from "@/lib/materiais/material-quality-score";
+import { buildTeachyContractForType } from "@/lib/materiais/teachy-document-contract";
+import { buildTeachyFewShotBlock } from "@/lib/materiais/teachy-few-shot-samples";
 import { resolveDisciplineTopicGuidance } from "@/lib/materiais/discipline-topic-seeds";
 import type { MaterialEngineRequest, MaterialEngineType } from "./material-engine-types";
 import { resolveSlideTheme } from "./slide-design-themes";
@@ -97,7 +99,7 @@ function specializedRules(request: MaterialEngineRequest): string[] {
       "Enunciados diretos: comando + contexto mínimo necessário para resolver — sem preâmbulos ('nesta prova', 'a seguir apresentamos').",
       "Para questões de multipla-escolha, preencher 'options' com 4 a 5 alternativas distintas e concretas; para os demais tipos, 'options' pode ficar vazio.",
       request.incluirGabarito
-        ? "Preencher 'answer' com resposta objetiva e critério breve (alternativa correta + justificativa curta quando objetiva). Consolidar no array 'answerKey' — sem comentário pedagógico longo."
+        ? "GABARITO ENXUTO: 'answer' em no máximo 1 linha (até 120 caracteres) — só resposta/critério mínimo, sem aula explicativa. Repetir no 'answerKey' no formato 'Questão N: resposta'."
         : "Deixar 'answer' vazio e não preencher 'answerKey' (o professor não quer gabarito).",
       "Equilibrar a dificuldade das questões conforme o nível solicitado.",
     ];
@@ -115,7 +117,7 @@ function specializedRules(request: MaterialEngineRequest): string[] {
       "Enunciados diretos, sem preâmbulos.",
       "Para multipla-escolha, alternativas concretas e distintas.",
       request.incluirGabarito
-        ? "Preencher 'answer' com resposta objetiva e critério breve; consolidar no array 'answerKey'."
+        ? "GABARITO ENXUTO: 'answer' em no máximo 1 linha (até 120 caracteres). 'answerKey' no formato 'Exercício N: resposta' — sem explicação longa."
         : "Deixar 'answer' vazio e não preencher 'answerKey'.",
     ];
   }
@@ -262,8 +264,8 @@ REGRAS GERAIS:
 - Entregar pronto para edição no editor do Planify.
 - NÃO preencha o campo "html" — o Planify monta o HTML visual automaticamente.
 - Entregar somente JSON no schema.
-${["prova", "lista"].includes(type) ? "- PROVA/LISTA: material direto — questões numeradas e gabarito separado; sem textos introdutórios longos." : ""}
-${type === "resumo" ? "- RESUMO: bullets sintéticos; evite parágrafos explicativos." : ""}
+${buildTeachyContractForType(type)}
+${buildTeachyFewShotBlock(type) ? `\n${buildTeachyFewShotBlock(type)}` : ""}
 `.trim();
 }
 
@@ -362,7 +364,6 @@ REGRAS GERAIS:
 - Entregar pronto para edição no editor do Planify.
 - NÃO preencha o campo "html" — o Planify monta o HTML visual automaticamente.
 - Entregar somente JSON no schema.
-${["prova", "lista"].includes(request.tipoMaterial) ? "- PROVA/LISTA: material direto para o aluno — questões numeradas e gabarito separado; sem textos introdutórios longos." : ""}
-${request.tipoMaterial === "resumo" ? "- RESUMO: bullets sintéticos; evite parágrafos explicativos." : ""}${disciplineBlock}${extra}${elevateBlock}${observacoesBlock}${bnccBlock}
+${buildTeachyContractForType(request.tipoMaterial)}${disciplineBlock}${extra}${elevateBlock}${observacoesBlock}${bnccBlock}
 `.trim();
 }

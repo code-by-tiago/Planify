@@ -11,7 +11,10 @@ import {
   type EditorStoredPayload,
 } from "@/lib/editor/editor-storage";
 import { removeHistoryItem } from "@/lib/history/history-storage";
-import { wrapAsCleanPrintHtml } from "@/lib/editor/editor-print-html";
+import {
+  PLANIFY_EXPORT_DOC_COMPONENT_CSS,
+  wrapAsCleanPrintHtml,
+} from "@/lib/editor/editor-print-html";
 import {
   getClosestTable,
   getClosestTableCell,
@@ -2810,6 +2813,8 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
           font-size: 12pt;
           line-height: 1.5;
         }
+
+        ${PLANIFY_EXPORT_DOC_COMPONENT_CSS}
 
         .planify-editor-page.planify-abnt-page {
           padding: 3cm 2cm 2cm 3cm !important;

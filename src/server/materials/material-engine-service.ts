@@ -3,6 +3,7 @@ import { getModelTierForMaterialRequest } from "@/lib/ai/material-generation-pol
 import { computeQualityScore } from "@/lib/materiais/material-quality-score";
 import { isGenericEducationalText } from "@/lib/materiais/material-semantic-quality";
 import {
+  renderGabaritoTable,
   renderQuestionCard,
   wrapProfessionalDocument,
 } from "@/lib/materiais/material-document-layout";
@@ -60,6 +61,16 @@ const CRITICAL_QUALITY_TYPES = new Set<MaterialEngineType>([
   "plano-aula",
   "slides",
 ]);
+
+const P0_QUALITY_GATE_TYPES = new Set<MaterialEngineType>([
+  "prova",
+  "lista",
+  "slides",
+  "plano-aula",
+  "atividade",
+]);
+
+const MIN_P0_QUALITY_SCORE = 80;
 
 const CRITICAL_RETRY_TYPES = new Set<MaterialEngineType>([
   "prova",
@@ -565,33 +576,52 @@ function renderLessonPlan(response: MaterialEngineResponse): string {
   return `<section><h2>Etapas da aula</h2>${body}</section>`;
 }
 
+function conciseGabaritoAnswer(text: string, maxLen = 180): string {
+  const trimmed = String(text || "").replace(/\s+/g, " ").trim();
+  if (!trimmed) return "";
+  if (trimmed.length <= maxLen) return trimmed;
+  const slice = trimmed.slice(0, maxLen);
+  const lastSpace = slice.lastIndexOf(" ");
+  return `${(lastSpace > 60 ? slice.slice(0, lastSpace) : slice).trim()}…`;
+}
+
+function parseGabaritoEntry(
+  line: string,
+  fallbackNumber: number,
+): { number: number | string; answer: string } {
+  const match = line.match(/^(?:exerc[ií]cio|quest[aã]o)\s*(\d+)\s*:\s*(.+)$/i);
+  if (match) {
+    return { number: Number(match[1]), answer: conciseGabaritoAnswer(match[2]) };
+  }
+  return { number: fallbackNumber, answer: conciseGabaritoAnswer(line) };
+}
+
 function renderAnswerKey(response: MaterialEngineResponse, ctx?: RenderContext): string {
   if (!ctx?.incluirGabarito) return "";
 
-  const merged = [...response.answerKey];
-  const label = ctx.tipo === "lista" ? "Exercício" : "Questão";
+  const byNumber = new Map<number, string>();
 
   for (const question of response.exam?.questions ?? []) {
-    const answer = question.answer?.trim();
+    const answer = conciseGabaritoAnswer(question.answer || "");
     if (!answer) continue;
-    const entry = `${label} ${question.number}: ${answer}`;
-    const exists = merged.some(
-      (line) =>
-        line.includes(`${label} ${question.number}:`) ||
-        line.includes(`Questão ${question.number}:`) ||
-        line.includes(`Exercício ${question.number}:`),
-    );
-    if (!exists) merged.push(entry);
+    byNumber.set(Number(question.number), answer);
   }
 
-  if (!merged.length) return "";
+  let fallbackIndex = 1;
+  for (const line of response.answerKey) {
+    const parsed = parseGabaritoEntry(line, fallbackIndex);
+    const num = Number(parsed.number);
+    if (!byNumber.has(num)) {
+      byNumber.set(num, parsed.answer);
+    }
+    fallbackIndex += 1;
+  }
 
-  const title =
-    ctx.tipo === "prova" || ctx.tipo === "lista"
-      ? "Gabarito"
-      : "Gabarito";
+  const entries = [...byNumber.entries()]
+    .sort(([a], [b]) => a - b)
+    .map(([number, answer]) => ({ number, answer }));
 
-  return `<section class="planify-gabarito-block page-break"><h2>${title}</h2>${asList(merged, true)}</section>`;
+  return renderGabaritoTable(entries);
 }
 
 function renderTeacherNotes(response: MaterialEngineResponse): string {
@@ -850,6 +880,31 @@ function normalizeOutput(
     normalized.sections = [];
     normalized.teacherNotes = [];
     normalized.activities = [];
+    if (normalized.exam?.questions.length) {
+      normalized.exam.questions = normalized.exam.questions.map((question, index) => {
+        let statement = String(question.statement || "").trim();
+        const num = question.number || index + 1;
+        statement = statement
+          .replace(
+            new RegExp(`^\\s*(?:quest[aã]o|exerc[ií]cio)\\s*${num}\\s*[:.)-]?\\s*`, "i"),
+            "",
+          )
+          .replace(new RegExp(`^\\s*${String(num).padStart(2, "0")}\\s+\\w+\\s*`, "i"), "")
+          .trim();
+        return {
+          ...question,
+          statement,
+          answer: request.incluirGabarito
+            ? conciseGabaritoAnswer(question.answer)
+            : "",
+        };
+      });
+      const itemLabel = request.tipoMaterial === "lista" ? "Exercício" : "Questão";
+      normalized.answerKey = normalized.answerKey.map((line, index) => {
+        const parsed = parseGabaritoEntry(line, index + 1);
+        return `${itemLabel} ${parsed.number}: ${parsed.answer}`;
+      });
+    }
   }
 
   if (request.tipoMaterial === "resumo") {
@@ -1003,6 +1058,34 @@ export async function generateMaterialByEngine(input: MaterialEngineInput) {
       const isFinalAttempt = attempt >= maxAttempts - 1;
       const alertas = buildDeliveryAlertas(request, issues, isFinalAttempt);
       const qualityScore = computeQualityScore(issues, alertas ?? []);
+
+      if (
+        P0_QUALITY_GATE_TYPES.has(request.tipoMaterial) &&
+        qualityScore < MIN_P0_QUALITY_SCORE &&
+        attempt < maxAttempts - 1
+      ) {
+        activePrompt = `${basePrompt}\n\n${buildQualityRetryPrompt(
+          request,
+          [
+            ...issues,
+            `Score de qualidade ${qualityScore}/100 abaixo do mínimo ${MIN_P0_QUALITY_SCORE} para entrega P0.`,
+          ],
+          { teachyDepth: true },
+        )}`;
+        continue;
+      }
+
+      if (
+        P0_QUALITY_GATE_TYPES.has(request.tipoMaterial) &&
+        qualityScore < MIN_P0_QUALITY_SCORE &&
+        isFinalAttempt
+      ) {
+        return {
+          ok: false as const,
+          status: 502,
+          message: `Qualidade insuficiente (${qualityScore}/100). Regenere o material ou use Elevar qualidade.`,
+        };
+      }
 
       return {
         ok: true as const,

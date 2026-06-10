@@ -211,20 +211,41 @@ function normalizeForSearch(value: unknown): string {
     .trim();
 }
 
-function normalizeModel(value: unknown): PremiumGameModel {
-  const model = String(value || "").trim().toLowerCase();
+const TEACHY_GAME_ALIASES: Record<string, PremiumGameModel> = {
+  caca_palavras: "caca_palavras",
+  "caca-palavras": "caca_palavras",
+  "caça-palavras": "caca_palavras",
+  "caca palavras": "caca_palavras",
+  cruzadinha: "cruzadinha",
+  "palavra cruzada": "cruzadinha",
+  "palavra-cruzada": "cruzadinha",
+  crossword: "cruzadinha",
+  bingo: "bingo",
+  memoria: "memoria",
+  "jogo da memoria": "memoria",
+  "jogo da memória": "memoria",
+  "memory game": "memoria",
+  domino: "domino",
+  dominó: "domino",
+  quiz: "quiz",
+  cartas: "cartas",
+  trilha: "trilha",
+};
 
-  if (
-    model === "caca_palavras" ||
-    model === "cruzadinha" ||
-    model === "bingo" ||
-    model === "memoria" ||
-    model === "domino" ||
-    model === "quiz" ||
-    model === "cartas" ||
-    model === "trilha"
-  ) {
-    return model;
+function normalizeModel(value: unknown): PremiumGameModel {
+  const raw = String(value || "").trim().toLowerCase();
+  const normalized = raw
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (TEACHY_GAME_ALIASES[normalized]) {
+    return TEACHY_GAME_ALIASES[normalized];
+  }
+  if (TEACHY_GAME_ALIASES[raw.replace(/\s+/g, "_")]) {
+    return TEACHY_GAME_ALIASES[raw.replace(/\s+/g, "_")];
   }
 
   return "caca_palavras";

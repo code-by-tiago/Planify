@@ -1,7 +1,9 @@
+import { LandingCommunity } from "./LandingCommunity";
 import { LandingComparison } from "./LandingComparison";
 import { LandingCreateBlock } from "./LandingCreateBlock";
 import { LandingFinalCta } from "./LandingFinalCta";
 import { LandingFooter } from "./LandingFooter";
+import { LandingGoogleExport } from "./LandingGoogleExport";
 import { LandingHeader } from "./LandingHeader";
 import { LandingHero } from "./LandingHero";
 import { LandingHowItWorks } from "./LandingHowItWorks";
@@ -20,6 +22,8 @@ export function LandingProfessorPrimeiroPage() {
       <LandingStats />
       <LandingCreateBlock />
       <LandingTools />
+      <LandingCommunity />
+      <LandingGoogleExport />
       <LandingResources />
       <LandingSolutions />
       <LandingHowItWorks />

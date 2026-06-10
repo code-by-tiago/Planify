@@ -6,6 +6,7 @@ import {
   getMaterialLikesSummary,
   resolveCommunityAuthors,
 } from "../../../../../../server/community/marketplace-social-service";
+import { convertSimpleDocxToHtml } from "../../../../../../server/docx/simple-docx-to-html";
 import {
   buildPreviewHtmlContent,
   isSlidePreviewHtml,
@@ -117,6 +118,15 @@ export async function GET(
         isSlidePreview = Boolean(
           htmlContent && isSlidePreviewHtml(htmlContent, row),
         );
+      }
+    } else if (previewKind === "docx") {
+      const { data: fileData, error: downloadError } = await (
+        supabase.storage.from(BUCKET_NAME) as any
+      ).download(row.file_path);
+
+      if (!downloadError && fileData) {
+        const storedBuffer = Buffer.from(await fileData.arrayBuffer());
+        htmlContent = convertSimpleDocxToHtml(storedBuffer, row.title);
       }
     }
   }

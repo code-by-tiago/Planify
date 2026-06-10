@@ -12,6 +12,10 @@ import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import type { CommunityFeedItem } from "@/lib/community/types";
 import { formatMaterialBytes } from "@/lib/materials/format-material-bytes";
 import type { MarketplaceDownloadFormat } from "@/lib/marketplace/marketplace-download-client";
+import {
+  canOpenMarketplaceMaterialInEditor,
+  openMarketplaceMaterialInEditor,
+} from "@/lib/marketplace/marketplace-editor-open";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -71,8 +75,25 @@ export function CommunityPostCard({
   const [likedByMe, setLikedByMe] = useState(item.likedByMe);
   const [savedByMe, setSavedByMe] = useState(item.savedByMe ?? false);
   const [shareStatus, setShareStatus] = useState("");
+  const [openingEditor, setOpeningEditor] = useState(false);
+  const [editorError, setEditorError] = useState("");
 
   const isOwnMaterial = Boolean(viewerUserId && item.userId === viewerUserId);
+  const canOpenEditor = canOpenMarketplaceMaterialInEditor(item);
+
+  async function handleOpenEditor() {
+    setOpeningEditor(true);
+    setEditorError("");
+
+    try {
+      await openMarketplaceMaterialInEditor(item);
+    } catch (err) {
+      setEditorError(
+        err instanceof Error ? err.message : "Não foi possível abrir no editor.",
+      );
+      setOpeningEditor(false);
+    }
+  }
 
   function copyShareLink() {
     const url = materialShareUrl(item.id);
@@ -186,6 +207,20 @@ export function CommunityPostCard({
               onDownload={onDownload}
               returnTo="/marketplace"
             />
+            {canOpenEditor ? (
+              <button
+                type="button"
+                disabled={openingEditor}
+                onClick={() => void handleOpenEditor()}
+                className="pl-hud-btn inline-flex w-full items-center justify-center gap-1 rounded-xl px-2.5 py-1.5 text-[10px] font-bold disabled:opacity-60"
+              >
+                <PlanifyIcon name="editor" className="h-3.5 w-3.5" />
+                {openingEditor ? "Abrindo…" : "Abrir no editor"}
+              </button>
+            ) : null}
+            {editorError ? (
+              <p className="text-[10px] font-semibold text-rose-700">{editorError}</p>
+            ) : null}
             <div className="flex flex-wrap items-center justify-between gap-2">
               <CommunityReportButton targetType="material" targetId={item.id} compact />
               {!isOwnMaterial && onHideFromFeed && !isHiddenFromFeed ? (

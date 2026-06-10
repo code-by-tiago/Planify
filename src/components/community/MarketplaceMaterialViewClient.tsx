@@ -20,6 +20,7 @@ import {
   downloadMarketplaceMaterial,
   type MarketplaceDownloadFormat,
 } from "@/lib/marketplace/marketplace-download-client";
+import { openMarketplaceMaterialInEditor } from "@/lib/marketplace/marketplace-editor-open";
 import type { MarketplacePreviewKind } from "@/server/marketplace/marketplace-preview";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -86,6 +87,7 @@ export function MarketplaceMaterialViewClient({ materialId }: MarketplaceMateria
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [downloadingKey, setDownloadingKey] = useState<string | null>(null);
+  const [openingEditor, setOpeningEditor] = useState(false);
   const [likesCount, setLikesCount] = useState(0);
   const [likedByMe, setLikedByMe] = useState(false);
   const [hiddenFromFeed, setHiddenFromFeed] = useState(false);
@@ -172,6 +174,20 @@ export function MarketplaceMaterialViewClient({ materialId }: MarketplaceMateria
     setActionStatus("Material oculto do seu feed.");
   }
 
+  async function handleOpenEditor() {
+    if (!material) return;
+
+    setOpeningEditor(true);
+    setError("");
+
+    try {
+      await openMarketplaceMaterialInEditor(material);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Não foi possível abrir no editor.");
+      setOpeningEditor(false);
+    }
+  }
+
   async function handleDownload(format: MarketplaceDownloadFormat) {
     if (!data) return;
 
@@ -219,6 +235,19 @@ export function MarketplaceMaterialViewClient({ materialId }: MarketplaceMateria
   const googleDisabledTitle = isPlanningMaterial && !planningPayloadReady
     ? "Planejamento publicado sem matriz oficial. Abra no editor e republica na Comunidade para exportar com o modelo da escola."
     : "Exportação Google indisponível para este formato.";
+  const canOpenEditor = preview?.kind === "html" || preview?.kind === "docx";
+
+  const openEditorButton = canOpenEditor ? (
+    <button
+      type="button"
+      disabled={openingEditor}
+      onClick={() => void handleOpenEditor()}
+      className="pl-hud-btn inline-flex w-full items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold disabled:opacity-60"
+    >
+      <PlanifyIcon name="editor" className="h-3.5 w-3.5" />
+      {openingEditor ? "Abrindo…" : "Abrir no editor"}
+    </button>
+  ) : null;
 
   const exportBar = material && preview ? (
     <>
@@ -357,7 +386,9 @@ export function MarketplaceMaterialViewClient({ materialId }: MarketplaceMateria
               />
 
               <div className="rounded-xl border border-cyan-400/15 bg-white p-3 shadow-sm lg:hidden">
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="space-y-2">
+                  {openEditorButton}
+                  <div className="flex flex-wrap items-center gap-2">
                   {exportBar}
                   <MaterialLikeButton
                     materialId={material.id}
@@ -369,6 +400,7 @@ export function MarketplaceMaterialViewClient({ materialId }: MarketplaceMateria
                     }}
                   />
                   {moderationActions}
+                  </div>
                 </div>
               </div>
 
@@ -390,6 +422,7 @@ export function MarketplaceMaterialViewClient({ materialId }: MarketplaceMateria
             <aside className="hidden space-y-3 lg:sticky lg:top-3 lg:block lg:max-h-[calc(100vh-5rem)] lg:overflow-y-auto lg:overscroll-contain">
               <section className="overflow-hidden rounded-xl border border-cyan-400/15 bg-white shadow-sm">
                 <div className="space-y-3 px-3 py-3">
+                  {openEditorButton}
                   <MaterialLikeButton
                     materialId={material.id}
                     initialCount={likesCount}

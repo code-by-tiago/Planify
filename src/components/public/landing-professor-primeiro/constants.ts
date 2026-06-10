@@ -1,9 +1,7 @@
 export const LANDING_NAV = [
   { href: "/#professores", label: "Para professores" },
-  { href: "/#ferramentas", label: "Ferramentas" },
   { href: "/#comunidade", label: "Comunidade" },
   { href: "/#exportacao-google", label: "Google" },
-  { href: "/#recursos", label: "Recursos" },
   { href: "/escolas", label: "Para escolas" },
   { href: "/planos", label: "Planos" },
 ] as const;
@@ -52,28 +50,28 @@ export type CreateOptionId = (typeof CREATE_OPTIONS)[number]["id"];
 
 export const RESOURCES = [
   {
-    title: "Editor integrado",
+    title: "BNCC local",
     description:
-      "Personalize cada rascunho no painel — o passo entre a IA estruturar e você exportar ou publicar.",
-    icon: "editor" as const,
-  },
-  {
-    title: "Meus materiais",
-    description:
-      "Histórico pessoal de rascunhos e versões que você gerou ou importou — reabra e evolua sem recomeçar.",
-    icon: "history" as const,
-  },
-  {
-    title: "Créditos por ciclo",
-    description:
-      "Cada geração consome créditos de forma visível no painel — sem surpresas na fatura.",
+      "Habilidades sugeridas conforme etapa, ano/série e componente — com base na matriz curricular, para você revisar.",
     icon: "checkCircle" as const,
   },
   {
-    title: "Contexto em português",
+    title: "Biblioteca",
     description:
-      "Disciplina, etapa e objetivos informados em português orientam a estrutura pedagógica da IA.",
-    icon: "spark" as const,
+      "Salve, organize e reabra planejamentos e materiais que você já gerou ou importou no painel.",
+    icon: "library" as const,
+  },
+  {
+    title: "Comunidade",
+    description:
+      "Publique materiais e reutilize modelos compartilhados por outros professores da plataforma.",
+    icon: "market" as const,
+  },
+  {
+    title: "Exportação Google",
+    description:
+      "Envie ao Google Docs ou Slides, salve no Drive e publique atividades no Classroom conectado.",
+    icon: "download" as const,
   },
 ];
 
@@ -88,13 +86,13 @@ export const HOW_IT_WORKS = [
     step: 2,
     title: "IA estrutura o conteúdo",
     description:
-      "Receba rascunhos com sequência didática e sugestões de habilidades — prontos para você revisar.",
+      "Receba planejamentos e materiais alinhados à BNCC, com sugestões de habilidades e sequência didática.",
   },
   {
     step: 3,
-    title: "Revise e entregue",
+    title: "Revise e exporte",
     description:
-      "Ajuste no editor integrado e leve para a turma quando estiver satisfeito com o material.",
+      "Ajuste no editor, exporte ao Google Docs ou envie para o Google Classroom — pronto para usar em sala.",
   },
 ];
 
@@ -113,15 +111,15 @@ export const STATS = [
   },
   {
     value: "Material",
-    label: "Engine pedagógico",
+    label: "Engine + editor",
     detail:
-      "A IA monta rascunhos com contexto verificado — você revisa e personaliza antes de usar em sala.",
+      "Estruture o rascunho com IA, personalize no editor integrado e finalize sem trocar de ferramenta.",
   },
   {
     value: "Google",
-    label: "integrado",
+    label: "Docs e Classroom",
     detail:
-      "OAuth no painel para Docs, Slides, Drive, Forms e Classroom — detalhes na seção Exportação Google.",
+      "Exporte ao Google Docs ou Slides, salve no Drive e publique atividades na turma conectada.",
   },
 ] as const;
 
@@ -137,14 +135,19 @@ export const COMPARISON_ROWS = [
     with: "Habilidades sugeridas por etapa, ano e componente",
   },
   {
+    topic: "Exportação Google Docs",
+    without: "Formatação manual, quebras de layout e retrabalho",
+    with: "Documento profissional pronto para imprimir ou compartilhar",
+  },
+  {
     topic: "Editor integrado",
     without: "Várias ferramentas desconectadas para criar e ajustar",
     with: "Gere, edite e finalize no mesmo painel",
   },
   {
-    topic: "Integração Google",
-    without: "Download, formatação manual e publicação em etapas separadas",
-    with: "OAuth no painel — Docs, Drive e Classroom sem retrabalho",
+    topic: "Google Classroom",
+    without: "Download, upload e publicação em etapas separadas",
+    with: "Salve no Drive e publique direto na turma",
   },
   {
     topic: "Consistência pedagógica",

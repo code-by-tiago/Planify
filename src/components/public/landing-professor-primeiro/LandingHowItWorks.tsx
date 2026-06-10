@@ -1,16 +1,11 @@
 import { HOW_IT_WORKS } from "./constants";
-import { ppEyebrow } from "./theme";
 
 export function LandingHowItWorks() {
   return (
-    <section
-      id="como-funciona"
-      className="scroll-mt-24 border-y border-slate-200/80 bg-white px-5 py-16 sm:px-8 sm:py-20"
-    >
+    <section id="como-funciona" className="scroll-mt-24 px-5 py-16 sm:px-8 sm:py-20">
       <div className="mx-auto max-w-7xl">
         <div className="mx-auto max-w-2xl text-center">
-          <p className={ppEyebrow}>Fluxo</p>
-          <h2 className="mt-3 font-[family-name:var(--font-display)] text-3xl font-extrabold text-slate-900 sm:text-4xl">
+          <h2 className="font-[family-name:var(--font-display)] text-3xl font-extrabold text-slate-900 sm:text-4xl">
             Como funciona
           </h2>
           <p className="mt-4 text-base font-medium leading-7 text-slate-600">

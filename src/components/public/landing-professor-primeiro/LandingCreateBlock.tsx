@@ -13,7 +13,7 @@ export function LandingCreateBlock() {
   const active = CREATE_OPTIONS.find((o) => o.id === selected) ?? CREATE_OPTIONS[0];
 
   return (
-    <section className="isolate border-y border-slate-200/80 bg-slate-50/50 px-5 py-16 sm:px-8 sm:py-20">
+    <section className="isolate bg-white px-5 py-16 sm:px-8 sm:py-20">
       <div className="mx-auto max-w-4xl">
         <div className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8">
           <h2 className="text-center font-[family-name:var(--font-display)] text-2xl font-extrabold text-slate-900 sm:text-3xl">

@@ -8,7 +8,7 @@ export default function CorrecaoRedirectPage() {
   const router = useRouter();
 
   useEffect(() => {
-    router.replace("/dashboard?tipo=correcao-ia", { scroll: false });
+    router.replace("/dashboard?tipo=correcao-ia&mode=upload", { scroll: false });
   }, [router]);
 
   return <PlanifyToolRedirectShell />;

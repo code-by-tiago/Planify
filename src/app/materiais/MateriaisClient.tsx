@@ -94,10 +94,13 @@ import { lessonBundleFollowUp } from "@/lib/pro/teachyStudio";
 import { useSchoolClasses } from "@/hooks/useSchoolClasses";
 import { TurmaCombobox } from "@/components/school/TurmaCombobox";
 import { MaterialBnccSkillsPanel } from "@/components/bncc/MaterialBnccSkillsPanel";
+import { TemaCombobox } from "@/components/bncc/TemaCombobox";
+import type { BnccTemaAutocompleteSuggestion } from "@/lib/bncc/bncc-tema-autocomplete";
 import { PlanifyMaterialHubCard } from "@/components/materials/PlanifyMaterialHubCard";
 import {
   groupBnccSkillsFromResponse,
   mapSelectedBnccSkillsToPayload,
+  normalizeBnccSkillOption,
   splitTopicLines,
   validateSelectedBnccSkillsForStage,
   type BnccSkillGroup,
@@ -885,6 +888,21 @@ export function MateriaisClient({
     }
   }
 
+  function handleTemaSuggestionSelect(suggestion: BnccTemaAutocompleteSuggestion) {
+    const habilidades = suggestion.habilidades.map((skill) =>
+      normalizeBnccSkillOption(skill, suggestion.tema),
+    );
+
+    setBnccGroups([
+      {
+        conteudo: suggestion.tema,
+        habilidades,
+      },
+    ]);
+    setSelectedBnccSkills(habilidades.slice(0, 3));
+    setBnccRegistroFeedback(null);
+  }
+
   function toggleBnccSkill(skill: BnccSkillOption) {
     setSelectedBnccSkills((current) => {
       const exists = current.some((item) => item.id === skill.id);
@@ -1523,17 +1541,16 @@ export function MateriaisClient({
             </p>
           ) : null}
 
-          <label className="mt-5 block">
-            <span className="text-sm font-black text-slate-700">
-              {mode.primaryFieldLabel}
-            </span>
-            <input
-              value={tema}
-              onChange={(event) => setTema(event.target.value)}
-              placeholder="Digite o tema ou assunto da aula..."
-              className={`${HUD_FIELD_CLASS} mt-2`}
-            />
-          </label>
+          <TemaCombobox
+            className="mt-5"
+            label={mode.primaryFieldLabel}
+            value={tema}
+            onChange={setTema}
+            onSelectSuggestion={handleTemaSuggestionSelect}
+            etapa={etapa}
+            anoSerie={anoSerie}
+            componente={componente}
+          />
 
           {(loadingPedagogical || pedagogicalEntries.length > 0) ? (
             <div className="mt-4 rounded-xl border border-emerald-400/25 bg-emerald-50/60">

@@ -1,5 +1,7 @@
 import "server-only";
 
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import type { Json, TablesInsert } from "@/types/database";
 import type { BNCCSkill, BNCCStage } from "@/types/bncc";
 import {
@@ -86,6 +88,66 @@ function rowToBnccSkill(row: BnccSkillRow): BNCCSkill {
     keywords: Array.isArray(row.keywords) ? row.keywords : [],
     fonte: "bncc_skills",
   };
+}
+
+function jsonRecordToBnccSkill(item: Record<string, unknown>): BNCCSkill | null {
+  const code = String(item.codigo || item.code || item.id || "")
+    .trim()
+    .toUpperCase();
+  const description = String(item.descricao || item.description || "").trim();
+
+  if (!code || !description) {
+    return null;
+  }
+
+  const etapaRaw = String(item.etapa || item.educationStage || "").trim();
+  const grade = String(item.ano || item.grade || item.serie || "").trim() || undefined;
+
+  return {
+    id: code,
+    codigo: code,
+    descricao: description,
+    etapa: normalizeStageCode(etapaRaw, code),
+    ano: grade,
+    serie: grade,
+    componente:
+      String(item.componente || item.componenteCurricular || item.subject || "").trim() ||
+      undefined,
+    areaConhecimento:
+      String(item.areaConhecimento || item.knowledgeArea || "").trim() || undefined,
+    unidadeTematica:
+      String(item.unidadeTematica || item.thematicUnit || "").trim() || undefined,
+    objetoConhecimento:
+      String(item.objetoConhecimento || item.knowledgeObject || "").trim() || undefined,
+    keywords: Array.isArray(item.keywords)
+      ? (item.keywords as unknown[]).map((k) => String(k).trim()).filter(Boolean)
+      : [],
+    fonte: "bncc_local_json",
+  };
+}
+
+let localJsonCache: BNCCSkill[] | null = null;
+
+export async function loadBnccSkillsFromLocalFile(): Promise<BNCCSkill[]> {
+  if (localJsonCache) {
+    return localJsonCache;
+  }
+
+  const filePath = join(
+    process.cwd(),
+    "data",
+    "bncc",
+    "processado",
+    "bncc-habilidades.json",
+  );
+  const raw = await readFile(filePath, "utf8");
+  const items = JSON.parse(raw) as Record<string, unknown>[];
+
+  localJsonCache = items
+    .map((item) => jsonRecordToBnccSkill(item))
+    .filter((skill): skill is BNCCSkill => skill !== null);
+
+  return localJsonCache;
 }
 
 export function jsonSkillToInsertRow(
@@ -200,7 +262,22 @@ export async function getCachedBnccSkills(): Promise<BNCCSkill[]> {
     return cachedSkills;
   }
 
-  const skills = await fetchBnccSkillsFromDb();
+  let skills: BNCCSkill[] = [];
+
+  try {
+    skills = await fetchBnccSkillsFromDb();
+  } catch {
+    skills = [];
+  }
+
+  if (skills.length === 0) {
+    try {
+      skills = await loadBnccSkillsFromLocalFile();
+    } catch {
+      skills = [];
+    }
+  }
+
   cachedSkills = skills;
   cacheLoadedAt = now;
   return skills;

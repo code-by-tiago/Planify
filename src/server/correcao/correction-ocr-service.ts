@@ -32,9 +32,10 @@ function normalizeMime(mimeType: string): GeminiMediaPart["mimeType"] | null {
 function buildPrompt(hint: "resposta" | "prova_completa"): string {
   if (hint === "prova_completa") {
     return [
-      "Extraia o texto de todas as respostas de estudantes neste documento.",
+      "Extraia o texto de todas as respostas de estudantes neste documento (prova completa ou pilha de folhas).",
       "Separe cada aluno com uma linha contendo apenas --- entre blocos.",
-      "Se houver identificação (Aluno:, Nome:), preserve-a antes de cada resposta.",
+      "Se houver identificação (Aluno:, Nome:, Estudante:), preserve-a no início de cada bloco.",
+      "Cada bloco deve conter somente as respostas daquele estudante — não repita o enunciado da prova.",
       "Se o documento tiver até 20 páginas, processe todas; ignore páginas em branco.",
       "Se ilegível, responda apenas: ILEGIVEL: tire foto com mais luz ou recorte a área da resposta.",
     ].join("\n");

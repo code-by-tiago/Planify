@@ -42,19 +42,31 @@ export async function extractTextFromUpload(params: {
 
 /** Divide texto OCR de prova completa em respostas individuais. */
 export function splitMultiStudentText(texto: string): string[] {
-  const bySeparator = texto
+  const trimmed = texto.trim();
+  if (!trimmed) return [];
+
+  const bySeparator = trimmed
     .split(/\n\s*---\s*\n/)
     .map((part) => part.trim())
     .filter((part) => part.length >= 15);
 
   if (bySeparator.length > 1) return bySeparator.slice(0, 5);
 
-  const byAluno = texto
-    .split(/(?=(?:^|\n)(?:Aluno|Nome|Estudante)\s*[:\-])/i)
+  const byAluno = trimmed
+    .split(
+      /(?=(?:^|\n)(?:Aluno(?:\s+\d+)?|Nome(?:\s+do\s+aluno)?|Estudante|Candidato)\s*[:\-])/i,
+    )
     .map((part) => part.trim())
     .filter((part) => part.length >= 15);
 
   if (byAluno.length > 1) return byAluno.slice(0, 5);
 
-  return [texto.trim()].filter((part) => part.length >= 15);
+  const byFolha = trimmed
+    .split(/(?=(?:^|\n)(?:Folha|Ficha|Cart[ãa]o)\s*(?:de\s+resposta\s*)?\d*)/i)
+    .map((part) => part.trim())
+    .filter((part) => part.length >= 15);
+
+  if (byFolha.length > 1) return byFolha.slice(0, 5);
+
+  return [trimmed].filter((part) => part.length >= 15);
 }

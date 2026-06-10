@@ -321,18 +321,18 @@ export const planifyTools: PlanifyTool[] = [
   },
   {
     id: "correcao-ia",
-    title: "Correção + Feedback IA",
-    shortTitle: "Correção IA",
+    title: "Corretor de Provas em Papel",
+    shortTitle: "Corretor IA",
     description:
-      "Cole a resposta do aluno, aplique rubrica e receba devolutiva para complementar sua correção.",
+      "Fotografe ou envie PDF da prova ou redação — o OCR extrai o texto e a IA corrige com rubrica e devolutiva.",
     category: "correcao",
-    href: dashboardToolHref("correcao-ia"),
+    href: `${dashboardToolHref("correcao-ia")}&mode=upload`,
     icon: "pen",
     popular: true,
     primaryFieldLabel: "Resposta do estudante",
-    loadingTitle: "Corrigindo com IA",
+    loadingTitle: "Corrigindo prova…",
     loadingDescription:
-      "Avaliando critérios, calculando nota e preparando feedback para o professor.",
+      "Lendo a resposta, aplicando rubrica e preparando devolutiva para a turma.",
     accent: "from-amber-300 via-orange-300 to-rose-300",
   },
 ];

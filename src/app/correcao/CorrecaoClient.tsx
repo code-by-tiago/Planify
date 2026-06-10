@@ -1,6 +1,7 @@
 "use client";
 
 import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { CreditsBalancePill } from "@/components/credits/CreditsBalancePill";
 import { GenerationCostHint } from "@/components/credits/GenerationCostHint";
 import { MaterialPreviewSkeleton } from "@/components/materiais/MaterialPreviewSkeleton";
@@ -42,9 +43,22 @@ import {
 type CorrecaoClientProps = {
   studioMode?: boolean;
   onStudioClose?: () => void;
+  /** Abre direto na aba de upload (foto/PDF). */
+  initialInputMode?: InputMode;
 };
 
 type InputMode = "paste" | "upload";
+
+function resolveInitialInputMode(
+  searchParams: ReturnType<typeof useSearchParams>,
+  propMode?: InputMode,
+): InputMode {
+  if (propMode) return propMode;
+  const mode = searchParams.get("mode")?.trim().toLowerCase();
+  if (mode === "upload" || mode === "foto") return "upload";
+  if (mode === "paste" || mode === "texto") return "paste";
+  return "upload";
+}
 
 const tool = getPlanifyTool("correcao-ia");
 
@@ -81,11 +95,15 @@ function formatWhatsAppDevolutiva(
 export function CorrecaoClient({
   studioMode = false,
   onStudioClose,
+  initialInputMode,
 }: CorrecaoClientProps = {}) {
+  const searchParams = useSearchParams();
   const school = useSchoolClasses();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [profile, setProfile] = useState(loadTeacherCorrectionProfile);
-  const [inputMode, setInputMode] = useState<InputMode>("paste");
+  const [inputMode, setInputMode] = useState<InputMode>(() =>
+    resolveInitialInputMode(searchParams, initialInputMode),
+  );
   const [batchMode, setBatchMode] = useState(false);
   const [respostaAluno, setRespostaAluno] = useState("");
   const [enunciado, setEnunciado] = useState("");
@@ -95,6 +113,7 @@ export function CorrecaoClient({
   const [loading, setLoading] = useState(false);
   const [ocrLoading, setOcrLoading] = useState(false);
   const [uploadFileName, setUploadFileName] = useState("");
+  const [detectedStudents, setDetectedStudents] = useState(0);
   const [erro, setErro] = useState("");
   const [erroCta, setErroCta] = useState<ReturnType<typeof formatGenerationError>["cta"]>(null);
   const [erroRetryable, setErroRetryable] = useState(false);
@@ -107,6 +126,13 @@ export function CorrecaoClient({
   useEffect(() => {
     void syncTeacherCorrectionProfileFromServer().then(setProfile);
   }, []);
+
+  useEffect(() => {
+    const mode = searchParams.get("mode")?.trim().toLowerCase();
+    if (mode === "upload" || mode === "foto") {
+      setInputMode("upload");
+    }
+  }, [searchParams]);
 
   const exportSummary = useMemo(() => {
     if (!resultado) return "";
@@ -152,26 +178,37 @@ export function CorrecaoClient({
     setOcrLoading(true);
     setOcrStatus("Lendo arquivo…");
     setUploadFileName(file.name);
+    setDetectedStudents(0);
 
     try {
       const hint = batchMode ? "prova_completa" : "resposta";
       const { texto, avisos } = await extractTextFromUpload({ file, hint });
 
-      if (batchMode) {
-        const partes = splitMultiStudentText(texto);
+      const partes = splitMultiStudentText(texto);
+
+      if (batchMode || partes.length > 1) {
         setRespostaAluno(partes.join("\n---\n"));
+        setDetectedStudents(partes.length);
         if (partes.length > 1) {
           setBatchMode(true);
         }
       } else {
         setRespostaAluno(texto);
+        setDetectedStudents(partes.length);
       }
 
-      if (avisos?.length) {
-        setOcrStatus(avisos.join(" "));
+      const statusParts: string[] = [];
+      if (partes.length > 1) {
+        statusParts.push(
+          `${partes.length} estudante${partes.length > 1 ? "s" : ""} detectado${partes.length > 1 ? "s" : ""} — revise a separação antes de corrigir.`,
+        );
       } else {
-        setOcrStatus("Texto extraído com sucesso.");
+        statusParts.push("Texto extraído com sucesso. Confira abaixo antes de corrigir.");
       }
+      if (avisos?.length) {
+        statusParts.push(...avisos);
+      }
+      setOcrStatus(statusParts.join(" "));
     } catch (error) {
       setOcrStatus("");
       applyFormattedError(error);
@@ -419,6 +456,19 @@ export function CorrecaoClient({
             <button
               type="button"
               role="tab"
+              aria-selected={inputMode === "upload"}
+              onClick={() => setInputMode("upload")}
+              className={
+                inputMode === "upload"
+                  ? HUD_FILTER_CHIP_ACTIVE
+                  : HUD_FILTER_CHIP_INACTIVE
+              }
+            >
+              Foto ou PDF
+            </button>
+            <button
+              type="button"
+              role="tab"
               aria-selected={inputMode === "paste"}
               onClick={() => setInputMode("paste")}
               className={
@@ -428,19 +478,6 @@ export function CorrecaoClient({
               }
             >
               Colar texto
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={inputMode === "upload"}
-              onClick={() => setInputMode("upload")}
-              className={
-                inputMode === "upload"
-                  ? HUD_FILTER_CHIP_ACTIVE
-                  : HUD_FILTER_CHIP_INACTIVE
-              }
-            >
-              Enviar arquivo
             </button>
             <button
               type="button"
@@ -456,11 +493,18 @@ export function CorrecaoClient({
           </div>
 
           {inputMode === "upload" ? (
-            <div className="rounded-xl border border-dashed border-cyan-400/30 bg-white px-4 py-4">
+            <div className="rounded-xl border border-cyan-400/35 bg-gradient-to-br from-cyan-50/90 to-white px-4 py-4 shadow-sm">
+              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-cyan-700">
+                Corretor de provas em papel
+              </p>
+              <p className="mt-1 text-sm font-semibold text-slate-700">
+                Fotografe a prova, redação ou folha de respostas — o OCR extrai o
+                texto automaticamente.
+              </p>
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/*,application/pdf"
+                accept="image/jpeg,image/png,image/webp,application/pdf,.jpg,.jpeg,.png,.webp,.pdf"
                 capture="environment"
                 className="hidden"
                 onChange={onFileChange}
@@ -469,13 +513,16 @@ export function CorrecaoClient({
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={ocrLoading}
-                className="pl-hud-btn rounded-xl px-4 py-2 text-xs font-semibold disabled:opacity-60"
+                className="pl-hud-btn mt-3 rounded-xl px-5 py-2.5 text-sm font-bold disabled:opacity-60"
               >
-                {ocrLoading ? "Lendo resposta…" : "Escolher foto ou PDF"}
+                {ocrLoading ? "Lendo arquivo…" : "Escolher foto ou PDF"}
               </button>
               {uploadFileName ? (
                 <p className="mt-2 text-xs font-medium text-slate-600">
                   Arquivo: {uploadFileName}
+                  {detectedStudents > 1
+                    ? ` · ${detectedStudents} estudantes detectados`
+                    : null}
                 </p>
               ) : null}
               <p
@@ -483,11 +530,13 @@ export function CorrecaoClient({
                 aria-live="polite"
                 role="status"
               >
-                {ocrLoading ? "Lendo resposta…" : ocrStatus}
+                {ocrLoading ? "Extraindo texto com IA…" : ocrStatus}
               </p>
               <p className="mt-2 text-xs text-slate-500">
-                JPG, PNG, WebP ou PDF. No celular, use a câmera para fotografar a
-                resposta.
+                Formatos: JPG, PNG, WebP ou PDF (até 8 MB por foto, 15 MB por PDF).
+                No celular, use a câmera. Para várias folhas de alunos, ative{" "}
+                <span className="font-semibold text-slate-600">Várias respostas</span>{" "}
+                antes de enviar.
               </p>
             </div>
           ) : null}
@@ -504,14 +553,21 @@ export function CorrecaoClient({
               className={HUD_TEXTAREA_CLASS}
               placeholder={
                 batchMode
-                  ? "Cole uma resposta por bloco, separadas por --- (máx. 5)…"
-                  : "Cole aqui a resposta do aluno (texto digitado ou transcrito)…"
+                  ? "Cole uma resposta por bloco, separadas por --- (máx. 5). Após upload de prova completa, a separação é automática."
+                  : inputMode === "upload"
+                    ? "O texto extraído da foto/PDF aparecerá aqui para revisão…"
+                    : "Cole aqui a resposta do aluno (texto digitado ou transcrito)…"
               }
               required
             />
             {batchMode ? (
               <p className="mt-1 text-xs font-medium text-slate-500">
-                Separe cada aluno com uma linha contendo apenas ---
+                Separe cada aluno com uma linha contendo apenas ---. Upload de
+                prova completa detecta Aluno:, Nome: ou folhas separadas
+                automaticamente.
+                {detectedStudents > 1
+                  ? ` ${detectedStudents} blocos prontos para correção.`
+                  : null}
               </p>
             ) : null}
           </div>
@@ -718,14 +774,14 @@ export function CorrecaoClient({
           ) : (
             <div className="rounded-2xl border border-dashed border-cyan-400/25 bg-white/70 px-6 py-12 text-center">
               <p className="text-xs font-bold uppercase tracking-wide text-cyan-600">
-                Correção + feedback
+                Corretor de provas em papel
               </p>
               <h3 className="mt-2 text-lg font-extrabold text-slate-950">
-                Upload → rubrica → devolutiva
+                Foto ou PDF → rubrica → devolutiva
               </h3>
               <p className="mt-2 text-sm font-medium text-slate-600">
-                Envie foto/PDF ou cole a resposta do estudante e receba nota,
-                critérios e feedback alinhado ao seu estilo.
+                Envie foto da prova ou redação, aplique rubrica e receba nota,
+                critérios e feedback alinhado ao seu estilo — como no Teachy.
               </p>
             </div>
           )}
@@ -744,7 +800,7 @@ export function CorrecaoClient({
           onClick={() => setModalAberto(true)}
           className="pl-hud-btn rounded-xl px-5 py-2.5 text-sm font-bold"
         >
-          Corrigir resposta
+          Corrigir prova
         </button>
       ) : null}
       {painelCriacao}

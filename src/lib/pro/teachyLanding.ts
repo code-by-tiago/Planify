@@ -87,7 +87,7 @@ export const landingExtraTools: {
     id: "planejamentos",
     shortTitle: "Planejamentos",
     description:
-      "Matriz anual ou trimestral com habilidades BNCC locais, modelos oficiais em DOCX e exportação Google — você revisa cada campo.",
+      "Matriz anual ou trimestral com modelos oficiais em DOCX — você revisa cada campo antes de exportar.",
     href: "/planejamento-escolar-com-ia",
     icon: "clipboard",
     accent: "from-blue-500 to-blue-600",
@@ -96,7 +96,7 @@ export const landingExtraTools: {
     id: "banco-questoes",
     shortTitle: "Banco de questões",
     description:
-      "Organize questões próprias e da comunidade; monte provas e listas reutilizando o que já criou ou salvou.",
+      "Organize questões próprias e monte provas e listas reutilizando o que já criou ou salvou no painel.",
     href: "/dashboard?secao=banco-questoes",
     icon: "library",
     accent: "from-sky-500 to-indigo-500",

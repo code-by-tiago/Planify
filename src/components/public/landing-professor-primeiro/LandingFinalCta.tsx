@@ -13,7 +13,7 @@ export function LandingFinalCta() {
         </h2>
         <p className="mx-auto mt-4 max-w-xl text-base font-medium leading-7 text-slate-300">
           Escolha um plano, descreva o tema da aula e revise cada material antes de levar para
-          a turma — com BNCC, editor e exportação Google no mesmo fluxo.
+          a turma.
         </p>
 
         <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">

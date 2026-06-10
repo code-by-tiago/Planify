@@ -19,8 +19,8 @@ export function LandingTools() {
             Ferramentas para cada etapa da aula
           </h2>
           <p className="mt-4 text-base font-medium leading-7 text-slate-600">
-            Do planejamento BNCC à correção de redações — cada gerador estrutura um rascunho
-            pedagógico para você revisar no editor antes de exportar ou publicar.
+            Do planejamento à correção de redações — cada gerador estrutura um rascunho pedagógico
+            para você revisar no editor antes de exportar ou publicar.
           </p>
         </div>
 
@@ -29,7 +29,7 @@ export function LandingTools() {
             <Link
               key={tool.id}
               href={tool.href}
-              className="group flex flex-col rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm transition hover:border-cyan-200 hover:shadow-md"
+              className="pl-hud-glass group flex flex-col rounded-2xl border border-cyan-400/15 p-5 transition hover:border-cyan-300/40"
             >
               <span
                 className={`flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br ${tool.accent} text-white shadow-sm`}

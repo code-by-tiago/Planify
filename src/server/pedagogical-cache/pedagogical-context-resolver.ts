@@ -9,6 +9,7 @@ import {
   recordCacheMissUsage,
   type PedagogicalCacheEntry,
 } from "./pedagogical-cache-db-service";
+import { filterEntriesByConfidence } from "./pedagogical-match-confidence";
 import { scrapePedagogicalSources } from "./scrape-orchestrator";
 
 export type PedagogicalContextResult =
@@ -37,6 +38,41 @@ export function appendPedagogicalContext(
   return [observacoes?.trim(), block].filter(Boolean).join("\n\n");
 }
 
+async function recordApprovedHits(
+  entries: PedagogicalCacheEntry[],
+  options?: {
+    userId?: string | null;
+    toolTipo?: string;
+    trigger?: string;
+  },
+): Promise<void> {
+  for (const entry of entries) {
+    await recordCacheHit(
+      entry.id,
+      options?.userId ?? null,
+      options?.trigger === "snippet" ? "snippet" : "generation_inject",
+      options?.toolTipo,
+    );
+  }
+}
+
+function logInjectSkipped(
+  query: PedagogicalScrapeQuery,
+  reason: string,
+  options?: { toolTipo?: string; candidateCount?: number },
+): void {
+  logOperationalEvent({
+    eventType: "pedagogical_inject_skipped",
+    toolTipo: options?.toolTipo || "pedagogical_cache",
+    ok: true,
+    metadata: {
+      reason,
+      tema: query.tema,
+      candidateCount: options?.candidateCount ?? 0,
+    },
+  });
+}
+
 export async function resolvePedagogicalContext(
   query: PedagogicalScrapeQuery,
   options?: {
@@ -51,26 +87,35 @@ export async function resolvePedagogicalContext(
   const approved = await findApprovedEntries(query);
 
   if (approved.length >= minApproved) {
-    for (const entry of approved) {
-      await recordCacheHit(
-        entry.id,
-        options?.userId ?? null,
-        options?.trigger === "snippet" ? "snippet" : "generation_inject",
-        options?.toolTipo,
-      );
+    const confidence = filterEntriesByConfidence(query, approved);
+
+    if (!confidence.pass) {
+      logInjectSkipped(query, confidence.reason, {
+        toolTipo: options?.toolTipo,
+        candidateCount: approved.length,
+      });
+      return { kind: "empty" };
     }
+
+    const entries = confidence.entries.slice(0, minApproved === 1 ? 3 : minApproved);
+
+    await recordApprovedHits(entries, options);
 
     logOperationalEvent({
       eventType: "pedagogical_cache_hit",
       toolTipo: options?.toolTipo || "pedagogical_cache",
       ok: true,
-      metadata: { count: approved.length, tema: query.tema },
+      metadata: {
+        count: entries.length,
+        tema: query.tema,
+        match: confidence.reason,
+      },
     });
 
     return {
       kind: "cache_hit",
-      entries: approved,
-      tokensSaved: estimateTokensSaved(approved.length),
+      entries,
+      tokensSaved: estimateTokensSaved(entries.length),
     };
   }
 
@@ -85,7 +130,11 @@ export async function resolvePedagogicalContext(
     eventType: "pedagogical_cache_miss",
     toolTipo: options?.toolTipo || "pedagogical_cache",
     ok: true,
-    metadata: { tema: query.tema },
+    metadata: {
+      tema: query.tema,
+      componente: query.componente,
+      etapa: query.etapa,
+    },
   });
 
   const { entries: scraped, jobId } = await scrapePedagogicalSources({
@@ -97,19 +146,28 @@ export async function resolvePedagogicalContext(
   const newlyApproved = scraped.filter((e) => e.review_status === "approved");
 
   if (newlyApproved.length >= minApproved) {
-    for (const entry of newlyApproved) {
-      await recordCacheHit(
-        entry.id,
-        options?.userId ?? null,
-        "snippet",
-        options?.toolTipo,
-      );
+    const confidence = filterEntriesByConfidence(query, newlyApproved);
+
+    if (!confidence.pass) {
+      logInjectSkipped(query, confidence.reason, {
+        toolTipo: options?.toolTipo,
+        candidateCount: newlyApproved.length,
+      });
+      return {
+        kind: "cache_miss",
+        scraped,
+        jobId,
+      };
     }
+
+    const entries = confidence.entries.slice(0, minApproved === 1 ? 3 : minApproved);
+
+    await recordApprovedHits(entries, { ...options, trigger: "snippet" });
 
     return {
       kind: "cache_hit",
-      entries: newlyApproved,
-      tokensSaved: estimateTokensSaved(newlyApproved.length),
+      entries,
+      tokensSaved: estimateTokensSaved(entries.length),
     };
   }
 

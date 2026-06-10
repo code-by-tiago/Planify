@@ -468,6 +468,8 @@ export type DisciplineTopicGuidance = {
   seedId: string;
   specialistLabel: string;
   promptBlock: string;
+  mustCover: string[];
+  vocabulary: string[];
 };
 
 export function resolveDisciplineTopicGuidance(params: {
@@ -507,5 +509,7 @@ export function resolveDisciplineTopicGuidance(params: {
     seedId: seed.id,
     promptBlock: lines.join("\n"),
     specialistLabel: seed.specialistLabel,
+    mustCover: seed.mustCover,
+    vocabulary: seed.vocabulary,
   };
 }

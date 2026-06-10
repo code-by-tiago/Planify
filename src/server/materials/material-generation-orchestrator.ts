@@ -118,54 +118,30 @@ async function fallbackToEngine(
   };
 }
 
-function extractBnccCodigos(input: MaterialEngineInput): string[] {
-  const fromSkills = [
-    ...(input.habilidadesSelecionadas || []),
-    ...(input.habilidadesBncc || []),
-  ]
-    .map((s) => String(s.codigo || "").trim().toUpperCase())
-    .filter(Boolean);
-
-  return [...new Set(fromSkills)];
-}
-
 async function enrichInputWithPedagogicalContext(
   input: MaterialEngineInput,
   userId?: string | null,
 ): Promise<MaterialEngineInput> {
-  const bnccCodigos = extractBnccCodigos(input);
-  const tema = String(input.tema || input.temaCentral || "").trim();
-  if (!tema && !bnccCodigos.length) return input;
-
-  const { resolvePedagogicalContext, appendPedagogicalContext } = await import(
-    "@/server/pedagogical-cache/pedagogical-context-resolver"
+  const { enrichWithPedagogicalContext } = await import(
+    "@/server/pedagogical-cache/enrich-with-pedagogical-context"
   );
 
-  const pedagogy = await resolvePedagogicalContext(
+  return enrichWithPedagogicalContext(
+    input,
     {
-      tema,
-      componente: input.componenteCurricular || input.componente,
+      tema: String(input.tema || input.temaCentral || "").trim(),
+      componenteCurricular: input.componenteCurricular || input.componente,
       etapa: input.etapa,
       anoSerie: input.anoSerie,
-      bnccCodigos,
+      habilidadesSelecionadas: input.habilidadesSelecionadas,
+      habilidadesBncc: input.habilidadesBncc,
     },
     {
-      allowScrape: true,
-      minApproved: 1,
       userId: userId ?? null,
       toolTipo: input.tipoMaterial || input.tipo || "material",
-      trigger: "generation_inject",
+      allowScrape: true,
     },
   );
-
-  if (pedagogy.kind !== "cache_hit" || !pedagogy.entries.length) {
-    return input;
-  }
-
-  return {
-    ...input,
-    observacoes: appendPedagogicalContext(input.observacoes, pedagogy.entries),
-  };
 }
 
 export async function generatePlanifyMaterial(

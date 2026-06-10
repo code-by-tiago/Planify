@@ -50,6 +50,28 @@ const WIKIPEDIA_TITLE_MAP = {
   Ecossistemas: "Ecossistema",
   Funções: "Função (matemática)",
   "Clima e tempo": "Clima",
+  "Brasil República": "República Velha",
+  "Escravidão no Brasil": "Escravidão no Brasil",
+  "Independência do Brasil": "Independência do Brasil",
+  "Grécia Antiga": "Grécia Antiga",
+  "Roma Antiga": "Roma Antiga",
+  "Guerra Fria": "Guerra Fria",
+  "Ditadura Militar no Brasil": "Ditadura militar no Brasil",
+  "Concordância verbal": "Concordância verbal",
+  "Regência verbal": "Regência verbal",
+  Ortografia: "Ortografia",
+  "Gêneros textuais": "Gênero textual",
+  "Produção de texto": "Produção textual",
+  Frações: "Fração",
+  "Área e perímetro": "Área",
+  Porcentagem: "Porcentagem",
+  "Estatística básica": "Estatística",
+  Trigonometria: "Trigonometria",
+  Logaritmo: "Logaritmo",
+  "Sistema respiratório": "Sistema respiratório",
+  "Máquinas simples": "Máquina simples",
+  "Estados da matéria": "Estado da matéria",
+  "Cadeia alimentar": "Cadeia alimentar",
 };
 
 /** Snippet curado quando a Wikipédia não retorna conteúdo utilizável. */
@@ -78,6 +100,62 @@ const CURATED_FALLBACKS = {
       "## Proporcionalidade\n\nProporcionalidade descreve relações entre grandezas que variam de forma constante: direta quando aumentam juntas, inversa quando uma cresce e a outra diminui. É base para regra de três, escalas e análise de situações do cotidiano. No Ensino Fundamental, o tema articula razão, fração e resolução de problemas contextualizados.",
     sourceUrl: null,
   },
+  Crase: {
+    title: "Crase",
+    summary:
+      "Crase é a fusão da preposição a com o artigo feminino a ou com pronomes demonstrativos e possessivos femininos. Ocorre em locuções adverbiais femininas, antes de nomes femininos e em casos facultativos conforme a pronúncia.",
+    bodyMarkdown:
+      "## Crase\n\nCrase é a fusão da preposição a com o artigo feminino a ou com pronomes demonstrativos e possessivos femininos. Ocorre em locuções adverbiais femininas, antes de nomes femininos e em casos facultativos conforme a pronúncia. No ensino, trabalha-se com regras de obrigatoriedade, proibição e facultatividade.",
+    sourceUrl: null,
+  },
+  "Sistema digestório": {
+    title: "Sistema digestório",
+    summary:
+      "O sistema digestório transforma alimentos em nutrientes por meio de órgãos como boca, esôfago, estômago e intestinos, com auxílio de enzimas e movimentos peristálticos.",
+    bodyMarkdown:
+      "## Sistema digestório\n\nO sistema digestório transforma alimentos em nutrientes por meio de órgãos como boca, esôfago, estômago e intestinos, com auxílio de enzimas e movimentos peristálticos. A digestão mecânica e química prepara moléculas para absorção e distribuição pelo organismo.",
+    sourceUrl: null,
+  },
+  "Geometria plana": {
+    title: "Geometria plana",
+    summary:
+      "Geometria plana estuda figuras bidimensionais, medidas de comprimento, área, perímetro e relações entre ângulos, lados e propriedades de polígonos e circunferências.",
+    bodyMarkdown:
+      "## Geometria plana\n\nGeometria plana estuda figuras bidimensionais, medidas de comprimento, área, perímetro e relações entre ângulos, lados e propriedades de polígonos e circunferências. No Ensino Fundamental e Médio, articula visualização espacial, demonstrações e resolução de problemas.",
+    sourceUrl: null,
+  },
+  "Idade Média": {
+    title: "Idade Média",
+    summary:
+      "A Idade Média no Ocidente (séculos V a XV) envolve feudalismo, Igreja Católica, reinos germânicos, comércio e formação de identidades europeias após o Império Romano.",
+    bodyMarkdown:
+      "## Idade Média\n\nA Idade Média no Ocidente (séculos V a XV) envolve feudalismo, Igreja Católica, reinos germânicos, comércio e formação de identidades europeias após o Império Romano. O período articula sociedade rural, poder político descentralizado e transformações urbanas.",
+    sourceUrl: null,
+  },
+  "Figuras de linguagem": {
+    title: "Figuras de linguagem",
+    summary:
+      "Figuras de linguagem são recursos expressivos que ampliam sentidos do texto por meio de comparações, metáforas, ironias, hipérboles e outras estratégias estilísticas.",
+    bodyMarkdown:
+      "## Figuras de linguagem\n\nFiguras de linguagem são recursos expressivos que ampliam sentidos do texto por meio de comparações, metáforas, ironias, hipérboles e outras estratégias estilísticas. A identificação exige atenção ao contexto e à intenção comunicativa do autor.",
+    sourceUrl: null,
+  },
+  "Números inteiros": {
+    title: "Números inteiros",
+    summary:
+      "Números inteiros incluem positivos, negativos e zero, permitindo representar ganhos e perdas, temperaturas, altitudes e movimentos em sentidos opostos.",
+    bodyMarkdown:
+      "## Números inteiros\n\nNúmeros inteiros incluem positivos, negativos e zero, permitindo representar ganhos e perdas, temperaturas, altitudes e movimentos em sentidos opostos. Operações com inteiros exigem atenção a sinais e à reta numérica.",
+    sourceUrl: null,
+  },
+  "Corpo humano": {
+    title: "Corpo humano",
+    summary:
+      "O corpo humano é organizado em sistemas que mantêm a vida, como respiratório, circulatório, nervoso e locomotor, integrando órgãos e funções.",
+    bodyMarkdown:
+      "## Corpo humano\n\nO corpo humano é organizado em sistemas que mantêm a vida, como respiratório, circulatório, nervoso e locomotor, integrando órgãos e funções. O estudo articula anatomia básica, hábitos saudáveis e relação entre estrutura e função.",
+    sourceUrl: null,
+  },
 };
 
 const CURATED_THEMES = [
@@ -99,6 +177,35 @@ const CURATED_THEMES = [
   { tema: "Ecossistemas", componente: "Ciências", etapa: "EF", anoSerie: "8º ano" },
   { tema: "Funções", componente: "Matemática", etapa: "EM", anoSerie: "1ª série" },
   { tema: "Clima e tempo", componente: "Geografia", etapa: "EF", anoSerie: "5º ano" },
+  { tema: "Brasil República", componente: "História", etapa: "EF", anoSerie: "9º ano" },
+  { tema: "Escravidão no Brasil", componente: "História", etapa: "EF", anoSerie: "8º ano" },
+  { tema: "Independência do Brasil", componente: "História", etapa: "EF", anoSerie: "8º ano" },
+  { tema: "Idade Média", componente: "História", etapa: "EF", anoSerie: "7º ano" },
+  { tema: "Grécia Antiga", componente: "História", etapa: "EF", anoSerie: "6º ano" },
+  { tema: "Roma Antiga", componente: "História", etapa: "EF", anoSerie: "7º ano" },
+  { tema: "Guerra Fria", componente: "História", etapa: "EM", anoSerie: "3ª série" },
+  { tema: "Ditadura Militar no Brasil", componente: "História", etapa: "EM", anoSerie: "3ª série" },
+  { tema: "Crase", componente: "Língua Portuguesa", etapa: "EF", anoSerie: "8º ano" },
+  { tema: "Concordância verbal", componente: "Língua Portuguesa", etapa: "EF", anoSerie: "7º ano" },
+  { tema: "Regência verbal", componente: "Língua Portuguesa", etapa: "EF", anoSerie: "9º ano" },
+  { tema: "Ortografia", componente: "Língua Portuguesa", etapa: "EF", anoSerie: "6º ano" },
+  { tema: "Figuras de linguagem", componente: "Língua Portuguesa", etapa: "EF", anoSerie: "8º ano" },
+  { tema: "Gêneros textuais", componente: "Língua Portuguesa", etapa: "EF", anoSerie: "6º ano" },
+  { tema: "Produção de texto", componente: "Língua Portuguesa", etapa: "EF", anoSerie: "7º ano" },
+  { tema: "Frações", componente: "Matemática", etapa: "EF", anoSerie: "6º ano" },
+  { tema: "Números inteiros", componente: "Matemática", etapa: "EF", anoSerie: "7º ano" },
+  { tema: "Geometria plana", componente: "Matemática", etapa: "EF", anoSerie: "8º ano" },
+  { tema: "Área e perímetro", componente: "Matemática", etapa: "EF", anoSerie: "5º ano" },
+  { tema: "Porcentagem", componente: "Matemática", etapa: "EF", anoSerie: "9º ano" },
+  { tema: "Estatística básica", componente: "Matemática", etapa: "EF", anoSerie: "9º ano" },
+  { tema: "Trigonometria", componente: "Matemática", etapa: "EM", anoSerie: "1ª série" },
+  { tema: "Logaritmo", componente: "Matemática", etapa: "EM", anoSerie: "2ª série" },
+  { tema: "Sistema digestório", componente: "Ciências", etapa: "EF", anoSerie: "8º ano" },
+  { tema: "Sistema respiratório", componente: "Ciências", etapa: "EF", anoSerie: "6º ano" },
+  { tema: "Corpo humano", componente: "Ciências", etapa: "EF", anoSerie: "5º ano" },
+  { tema: "Máquinas simples", componente: "Ciências", etapa: "EF", anoSerie: "8º ano" },
+  { tema: "Estados da matéria", componente: "Ciências", etapa: "EF", anoSerie: "6º ano" },
+  { tema: "Cadeia alimentar", componente: "Ciências", etapa: "EF", anoSerie: "5º ano" },
 ];
 
 const WIKI_API = "https://pt.wikipedia.org/w/api.php";

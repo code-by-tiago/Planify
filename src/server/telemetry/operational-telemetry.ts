@@ -12,6 +12,7 @@ export type OperationalEventType =
   | "editor_ai_adjust_failed"
   | "pedagogical_cache_hit"
   | "pedagogical_cache_miss"
+  | "pedagogical_inject_skipped"
   | "pedagogical_format_only";
 
 export function logOperationalEvent(event: {

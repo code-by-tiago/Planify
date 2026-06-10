@@ -13,8 +13,8 @@ const orchestrator = readFileSync(
   join(root, "src/server/materials/material-generation-orchestrator.ts"),
   "utf8",
 );
-assert.match(orchestrator, /resolvePedagogicalContext/);
-assert.match(orchestrator, /appendPedagogicalContext/);
+assert.match(orchestrator, /enrichWithPedagogicalContext/);
+assert.match(orchestrator, /enrich-with-pedagogical-context/);
 assert.match(orchestrator, /enrichInputWithPedagogicalContext/);
 
 const materiais = readFileSync(
@@ -33,6 +33,7 @@ const telemetry = readFileSync(
 assert.match(telemetry, /pedagogical_cache_hit/);
 assert.match(telemetry, /pedagogical_cache_miss/);
 assert.match(telemetry, /pedagogical_format_only/);
+assert.match(telemetry, /pedagogical_inject_skipped/);
 
 const admin = readFileSync(
   join(root, "src/app/admin/AdminQualidadePanel.tsx"),
@@ -40,5 +41,6 @@ const admin = readFileSync(
 );
 assert.match(admin, /pedagogical/);
 assert.match(admin, /Cache didático/);
+assert.match(admin, /hitRate|Taxa de hit/);
 
 console.log("verify:pedagogical-p3: OK");

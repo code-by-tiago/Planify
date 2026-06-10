@@ -20,6 +20,7 @@ import {
   buildMaterialDynamicPrompt,
   buildMaterialSystemInstruction,
 } from "./prompts/material-prompt";
+import { resolveDisciplineTopicGuidance } from "@/lib/materiais/discipline-topic-seeds";
 import {
   buildMaterialContentSuggestionPrompt,
   buildMaterialContentSuggestionSystemInstruction,
@@ -504,6 +505,46 @@ function normalizeSuggestionOutput(output: Partial<MaterialContentSuggestionOutp
   };
 }
 
+function buildSuggestionFromDisciplineSeed(
+  input: MaterialContentSuggestionInput,
+): MaterialContentSuggestionOutput | null {
+  const guidance = resolveDisciplineTopicGuidance({
+    tema: input.tema,
+    componenteCurricular: input.componenteCurricular,
+  });
+
+  if (!guidance || guidance.mustCover.length < 2) {
+    return null;
+  }
+
+  const fallback = fallbackSuggestedContents(input);
+  const conteudos: MaterialSuggestedContent[] = guidance.mustCover
+    .slice(0, 8)
+    .map((item, index) => ({
+      id: `seed-${index + 1}`,
+      titulo: item.split("(")[0]?.trim().slice(0, 80) || `Conteúdo ${index + 1}`,
+      descricao: item,
+      palavrasChave: uniq(guidance.vocabulary.slice(0, 6)),
+      objetivos: [
+        `Compreender e aplicar: ${item.slice(0, 120)}.`,
+      ],
+      dificuldade: index < 2 ? "Básico" : "Intermediário",
+      tempoEstimado: "15 a 25 minutos",
+      justificativaPedagogica: `Conteúdo alinhado à referência pedagógica Planify (${guidance.specialistLabel}).`,
+    }));
+
+  return {
+    ...fallback,
+    resumoPedagogico: `Sugestões baseadas em referência pedagógica local (${guidance.specialistLabel}) para o tema ${input.tema}.`,
+    conteudos,
+    palavrasChaveGerais: uniq([...guidance.vocabulary, input.tema]),
+    alertas: uniq([
+      ...fallback.alertas,
+      "Sugestões geradas a partir de seeds pedagógicos locais (sem chamada à IA).",
+    ]),
+  };
+}
+
 export async function suggestMaterialContents(rawInput: MaterialContentSuggestionInput): Promise<MaterialContentSuggestionOutput> {
   if (!rawInput) throw new Error("Dados para sugestão não foram enviados.");
   if (!String(rawInput.etapa || "").trim()) throw new Error("Informe a etapa.");
@@ -525,6 +566,11 @@ export async function suggestMaterialContents(rawInput: MaterialContentSuggestio
   };
 
   const fallback = fallbackSuggestedContents(input);
+  const seedSuggestion = buildSuggestionFromDisciplineSeed(input);
+
+  if (seedSuggestion && seedSuggestion.conteudos.length >= 2) {
+    return seedSuggestion;
+  }
 
   try {
     const generated = await generateGeminiJSON<MaterialContentSuggestionOutput>({
@@ -550,6 +596,16 @@ export async function suggestMaterialContents(rawInput: MaterialContentSuggestio
 
     console.error("[suggestMaterialContents] Falha na IA:", message);
 
-    throw new Error(message);
+    if (!fallback.conteudos.length) {
+      throw new Error(message);
+    }
+
+    return {
+      ...fallback,
+      alertas: uniq([
+        ...fallback.alertas,
+        "A IA não respondeu; exibindo sugestões locais de fallback.",
+      ]),
+    };
   }
 }

@@ -27,8 +27,11 @@ type OperationalStats = {
 
 type PedagogicalStats = {
   cacheHits: number;
+  cacheMisses: number;
+  hitRate: number | null;
   tokensSaved: number;
   aiTokensSpent: number;
+  topMissThemes: Array<{ tema: string; count: number }>;
 };
 
 const bucketLabels: Record<string, string> = {
@@ -126,12 +129,21 @@ export function AdminQualidadePanel() {
       ) : stats ? (
         <>
           {pedagogical ? (
-            <div className="grid gap-4 md:grid-cols-3">
+            <>
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
               {[
                 {
                   label: "Cache didático — hits",
                   value: String(pedagogical.cacheHits),
                   detail: "snippet + injeção",
+                },
+                {
+                  label: "Taxa de hit",
+                  value:
+                    pedagogical.hitRate !== null
+                      ? `${pedagogical.hitRate}%`
+                      : "—",
+                  detail: `misses: ${pedagogical.cacheMisses}`,
                 },
                 {
                   label: "Tokens economizados",
@@ -156,6 +168,26 @@ export function AdminQualidadePanel() {
                 </div>
               ))}
             </div>
+
+            {pedagogical.topMissThemes.length > 0 ? (
+              <div className="rounded-[2rem] border border-amber-200 bg-amber-50/50 p-6">
+                <p className="text-sm font-black uppercase tracking-[0.25em] text-amber-700">
+                  Top temas miss (reservatório)
+                </p>
+                <div className="mt-6 grid gap-2">
+                  {pedagogical.topMissThemes.slice(0, 8).map((item) => (
+                    <div
+                      key={item.tema}
+                      className="flex items-center justify-between rounded-xl border border-amber-100 bg-white px-4 py-3 text-sm"
+                    >
+                      <span className="font-black text-slate-950">{item.tema}</span>
+                      <span className="font-bold text-amber-700">{item.count}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+            </>
           ) : null}
 
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">

@@ -390,25 +390,161 @@ export async function markStaleEntries(ttlDays = 90): Promise<number> {
 
 export async function fetchPedagogicalUsageStats(windowHours = 24): Promise<{
   cacheHits: number;
+  cacheMisses: number;
+  hitRate: number | null;
   tokensSaved: number;
   aiTokensSpent: number;
+  topMissThemes: Array<{ tema: string; count: number }>;
 }> {
   const supabase = getSupabaseAdminClient();
   const since = new Date(Date.now() - windowHours * 60 * 60 * 1000).toISOString();
 
+  const [{ data, error }, { data: missEvents, error: missError }] = await Promise.all([
+    supabase
+      .from("pedagogical_cache_usage")
+      .select("usage_type, tokens_saved_estimate, ai_tokens_spent")
+      .gte("created_at", since)
+      .in("usage_type", ["snippet", "generation_inject", "scrape_miss"]),
+    supabase
+      .from("operational_events")
+      .select("metadata")
+      .eq("event_type", "pedagogical_cache_miss")
+      .gte("created_at", since),
+  ]);
+
+  if (error) throw new Error(error.message);
+  if (missError) throw new Error(missError.message);
+
+  const rows = data || [];
+  const hits = rows.filter((row) =>
+    row.usage_type === "snippet" || row.usage_type === "generation_inject",
+  );
+  const misses = rows.filter((row) => row.usage_type === "scrape_miss");
+
+  const temaCounts = new Map<string, number>();
+  for (const event of missEvents || []) {
+    const metadata = (event.metadata || {}) as Record<string, unknown>;
+    const tema = String(metadata.tema || "").trim();
+    if (!tema) continue;
+    temaCounts.set(tema, (temaCounts.get(tema) || 0) + 1);
+  }
+
+  const topMissThemes = [...temaCounts.entries()]
+    .map(([tema, count]) => ({ tema, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 10);
+
+  const cacheHits = hits.length;
+  const cacheMisses = Math.max(misses.length, topMissThemes.reduce((sum, item) => sum + item.count, 0));
+  const denominator = cacheHits + cacheMisses;
+
+  return {
+    cacheHits,
+    cacheMisses,
+    hitRate: denominator > 0 ? Math.round((cacheHits / denominator) * 100) : null,
+    tokensSaved: hits.reduce((sum, r) => sum + (r.tokens_saved_estimate ?? 0), 0),
+    aiTokensSpent: rows.reduce((sum, r) => sum + (r.ai_tokens_spent ?? 0), 0),
+    topMissThemes,
+  };
+}
+
+export async function listStaleEntriesForRefresh(
+  limit = 10,
+): Promise<PedagogicalCacheEntry[]> {
+  const supabase = getSupabaseAdminClient();
+  const nowIso = new Date().toISOString();
+
+  const { data: staleRows, error: staleError } = await supabase
+    .from("pedagogical_cache_entries")
+    .select("*")
+    .eq("review_status", "stale")
+    .order("source_fetched_at", { ascending: true })
+    .limit(limit);
+
+  if (staleError) throw new Error(staleError.message);
+
+  const remaining = Math.max(0, limit - (staleRows?.length ?? 0));
+  let expiredRows: Tables<"pedagogical_cache_entries">[] = [];
+
+  if (remaining > 0) {
+    const { data, error } = await supabase
+      .from("pedagogical_cache_entries")
+      .select("*")
+      .eq("review_status", "approved")
+      .not("expires_at", "is", null)
+      .lt("expires_at", nowIso)
+      .order("expires_at", { ascending: true })
+      .limit(remaining);
+
+    if (error) throw new Error(error.message);
+    expiredRows = (data || []) as Tables<"pedagogical_cache_entries">[];
+  }
+
+  const rows = [...(staleRows || []), ...expiredRows] as Tables<"pedagogical_cache_entries">[];
+  const sources = await getActiveSources();
+  const sourceById = new Map(sources.map((s) => [s.id, s]));
+
+  return rows.map((row) => ({
+    ...row,
+    source_slug: sourceById.get(row.source_id)?.slug,
+    source_priority: sourceById.get(row.source_id)?.priority,
+  }));
+}
+
+export async function listTopMissThemes(
+  windowDays = 7,
+  limit = 10,
+): Promise<Array<{ tema: string; count: number; componente?: string; etapa?: string }>> {
+  const supabase = getSupabaseAdminClient();
+  const since = new Date(Date.now() - windowDays * 24 * 60 * 60 * 1000).toISOString();
+
   const { data, error } = await supabase
-    .from("pedagogical_cache_usage")
-    .select("usage_type, tokens_saved_estimate, ai_tokens_spent")
-    .gte("created_at", since)
-    .in("usage_type", ["snippet", "generation_inject"]);
+    .from("operational_events")
+    .select("metadata")
+    .eq("event_type", "pedagogical_cache_miss")
+    .gte("created_at", since);
 
   if (error) throw new Error(error.message);
 
-  const rows = data || [];
+  const counts = new Map<string, { count: number; componente?: string; etapa?: string }>();
+
+  for (const row of data || []) {
+    const metadata = (row.metadata || {}) as Record<string, unknown>;
+    const tema = String(metadata.tema || "").trim();
+    if (!tema) continue;
+
+    const current = counts.get(tema) || {
+      count: 0,
+      componente: metadata.componente ? String(metadata.componente) : undefined,
+      etapa: metadata.etapa ? String(metadata.etapa) : undefined,
+    };
+    current.count += 1;
+    counts.set(tema, current);
+  }
+
+  return [...counts.entries()]
+    .map(([tema, meta]) => ({
+      tema,
+      count: meta.count,
+      componente: meta.componente,
+      etapa: meta.etapa,
+    }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, limit);
+}
+
+export function entryToScrapeQuery(entry: PedagogicalCacheEntry): PedagogicalScrapeQuery {
+  const metadata =
+    entry.metadata && typeof entry.metadata === "object" && !Array.isArray(entry.metadata)
+      ? (entry.metadata as Record<string, unknown>)
+      : {};
+
   return {
-    cacheHits: rows.length,
-    tokensSaved: rows.reduce((sum, r) => sum + (r.tokens_saved_estimate ?? 0), 0),
-    aiTokensSpent: rows.reduce((sum, r) => sum + (r.ai_tokens_spent ?? 0), 0),
+    tema: String(metadata.tema || entry.title || "").trim(),
+    componente: entry.componente || undefined,
+    etapa: entry.etapa || undefined,
+    anoSerie: entry.ano_serie || undefined,
+    bnccCodigos: entry.bncc_codigos?.length ? entry.bncc_codigos : undefined,
   };
 }
 

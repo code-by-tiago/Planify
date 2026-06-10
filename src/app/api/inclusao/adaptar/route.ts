@@ -35,7 +35,7 @@ async function handlePost(request: NextRequest, _context: { params: Promise<Reco
   const { user, payload, tipo, charge } = prepared;
 
   try {
-    const result = await generateInclusaoWithAI(payload);
+    const result = await generateInclusaoWithAI(payload, { userId: user?.id ?? null });
 
     if (!result.ok) {
       await finalizeGenerationFailure(user?.id, tipo, charge, {

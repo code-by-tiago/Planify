@@ -50,6 +50,7 @@ function validatePayload(payload: InclusaoAiPayload): string | null {
 
 export async function generateInclusaoWithAI(
   payload: InclusaoAiPayload,
+  options?: { userId?: string | null },
 ): Promise<
   | { ok: false; status: number; message: string }
   | InclusaoAiResult
@@ -59,13 +60,31 @@ export async function generateInclusaoWithAI(
     return { ok: false, status: 400, message: validationError };
   }
 
+  const { enrichWithPedagogicalContext } = await import(
+    "@/server/pedagogical-cache/enrich-with-pedagogical-context"
+  );
+  const enrichedPayload = await enrichWithPedagogicalContext(
+    payload,
+    {
+      tema: String(payload.conteudo || "").trim().slice(0, 200),
+      disciplina: payload.disciplina || payload.discipline || undefined,
+      etapa: payload.etapaEnsino,
+      observacoes: payload.observacoes,
+    },
+    {
+      userId: options?.userId ?? null,
+      toolTipo: "inclusao",
+      allowScrape: true,
+    },
+  );
+
   const prompt = buildInclusaoPrompt({
-    mode: payload.modo,
-    need: payload.necessidade,
-    educationLevel: payload.etapaEnsino,
-    content: payload.conteudo,
-    observacoes: payload.observacoes,
-    turma: payload.turma || payload.className || undefined,
+    mode: enrichedPayload.modo,
+    need: enrichedPayload.necessidade,
+    educationLevel: enrichedPayload.etapaEnsino,
+    content: enrichedPayload.conteudo,
+    observacoes: enrichedPayload.observacoes,
+    turma: enrichedPayload.turma || enrichedPayload.className || undefined,
   });
 
   const tier = getModelTierForMaterialType(INCLUSAO_GENERATION_TYPE);

@@ -658,22 +658,43 @@ async function requestPlanningJson(
 
 export async function generatePlanningWithAI(
   payload: PlanningAiPayload,
+  options?: { userId?: string | null },
 ): Promise<PlanningAiResult> {
   if (!process.env.GEMINI_API_KEY) {
     return fallbackPlanning(payload, "Chave de IA não configurada. Foi usado modo seguro.");
   }
+
+  const { enrichWithPedagogicalContext } = await import(
+    "@/server/pedagogical-cache/enrich-with-pedagogical-context"
+  );
+  const conteudosList = splitConteudos(payload.conteudos);
+  const enrichedPayload = await enrichWithPedagogicalContext(
+    payload,
+    {
+      tema: conteudosList[0] || "",
+      componenteCurricular: payload.componenteCurricular,
+      etapa: payload.etapa,
+      anoSerie: payload.anoSerie,
+      habilidadesSelecionadas: payload.habilidadesSelecionadas,
+    },
+    {
+      userId: options?.userId ?? null,
+      toolTipo: "planejamento",
+      allowScrape: true,
+    },
+  );
 
   try {
   let retryNote = "";
 
   for (let attempt = 0; attempt < PLANNING_MAX_ATTEMPTS; attempt += 1) {
     const json = await requestPlanningJson(
-      payload,
+      enrichedPayload,
       retryNote || undefined,
     );
-    const result = sanitizeAiResult(json, payload);
+    const result = sanitizeAiResult(json, enrichedPayload);
     const issues = getPlanningOutputIssues(
-      payload,
+      enrichedPayload,
       result.planejamento.conteudos,
     );
 

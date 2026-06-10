@@ -80,7 +80,7 @@ async function handlePost(request: NextRequest, _context: { params: Promise<Reco
       return jsonPlanningError(validationError, 400);
     }
 
-    const result = await generatePlanningWithAI(payload);
+    const result = await generatePlanningWithAI(payload, { userId: user?.id ?? null });
 
     const dailyQuotaConsumed = chargedDeepDaily && result.usedAI;
 

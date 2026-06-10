@@ -999,7 +999,7 @@ function classifySpanishHighSchoolSkills(content: string): SkillCandidate[] {
     unique.set(skill.codigo, skill);
   }
 
-  return Array.from(unique.values()).slice(0, 2);
+  return Array.from(unique.values());
 }
 
 function pickPortugueseEmSkillPool(catalog: SkillCandidate[]): Map<string, SkillCandidate> {
@@ -1142,12 +1142,49 @@ function buildPortugueseHighSchoolResponse(
   };
 }
 
+function buildSpanishHighSchoolRefreshResponse(
+  conteudos: string[],
+  excludeCodigos: Set<string>,
+) {
+  const grouped = conteudos.map((conteudo) => ({
+    conteudo,
+    habilidades: classifySpanishHighSchoolSkills(conteudo)
+      .filter((candidate) => !excludeCodigos.has(candidate.codigo.toUpperCase()))
+      .slice(0, 3)
+      .map((candidate, index) =>
+        buildSuggestionFromCandidate(candidate, conteudo, index, 100 - index),
+      ),
+  }));
+  const habilidades = grouped.flatMap((group) => group.habilidades);
+
+  return {
+    conteudos: grouped,
+    habilidades,
+    sugeridas: habilidades,
+    skills: habilidades,
+    items: habilidades,
+    data: {
+      conteudos: grouped,
+      habilidades,
+      sugeridas: habilidades,
+    },
+    total: habilidades.length,
+    source: "local" as const,
+    message:
+      habilidades.length > 0
+        ? "Novas alternativas de habilidades BNCC para os conteúdos informados."
+        : "Sem outras opções compatíveis com este conteúdo.",
+  };
+}
+
 function buildSpanishHighSchoolResponse(payload: BnccSuggestionPayload, conteudos: string[]) {
   const grouped = conteudos.map((conteudo) => ({
     conteudo,
-    habilidades: classifySpanishHighSchoolSkills(conteudo).map((candidate, index) =>
-      buildSuggestionFromCandidate(candidate, conteudo, index, 100 - index),
-    ),
+    habilidades: classifySpanishHighSchoolSkills(conteudo)
+      .slice(0, 2)
+      .map((candidate, index) =>
+        buildSuggestionFromCandidate(candidate, conteudo, index, 100 - index),
+      ),
   }));
   const habilidades = grouped.flatMap((group) => group.habilidades);
 
@@ -1225,6 +1262,81 @@ function classifySpanishFundamentalAxis(content: string): "grammar" | "reading" 
   return "grammar";
 }
 
+function rankSpanishFundamentalForContent(
+  conteudo: string,
+  payload: BnccSuggestionPayload,
+  candidates: SkillCandidate[],
+  options?: { excludeCodigos?: Set<string>; limit?: number },
+) {
+  const grade = getFundamentalGrade(payload);
+  const filtered = candidates.filter((candidate) => {
+    const code = candidate.codigo.toUpperCase();
+
+    return code.startsWith("EF") && code.includes("LI") && (!grade || gradeFromCode(code) === grade);
+  });
+
+  if (filtered.length === 0) {
+    return [];
+  }
+
+  const axis = classifySpanishFundamentalAxis(conteudo);
+  const exclude = options?.excludeCodigos;
+  const limit = options?.limit ?? 3;
+
+  return filtered
+    .map((candidate) => ({
+      candidate,
+      score: scoreSpanishFundamentalCandidate(candidate, conteudo, axis),
+    }))
+    .filter((item) => item.score > 0)
+    .filter(
+      (item) => !exclude?.size || !exclude.has(item.candidate.codigo.toUpperCase()),
+    )
+    .sort((a, b) => b.score - a.score || a.candidate.codigo.localeCompare(b.candidate.codigo))
+    .slice(0, limit);
+}
+
+function buildSpanishFundamentalRefreshResponse(
+  payload: BnccSuggestionPayload,
+  conteudos: string[],
+  candidates: SkillCandidate[],
+  excludeCodigos: Set<string>,
+) {
+  const grouped = conteudos.map((conteudo) => {
+    const chosen = rankSpanishFundamentalForContent(conteudo, payload, candidates, {
+      excludeCodigos,
+      limit: 3,
+    });
+
+    return {
+      conteudo,
+      habilidades: chosen.map(({ candidate, score }, index) =>
+        buildSuggestionFromCandidate(candidate, conteudo, index, score),
+      ),
+    };
+  });
+  const habilidades = grouped.flatMap((group) => group.habilidades);
+
+  return {
+    conteudos: grouped,
+    habilidades,
+    sugeridas: habilidades,
+    skills: habilidades,
+    items: habilidades,
+    data: {
+      conteudos: grouped,
+      habilidades,
+      sugeridas: habilidades,
+    },
+    total: habilidades.length,
+    source: "local" as const,
+    message:
+      habilidades.length > 0
+        ? "Novas alternativas de habilidades BNCC para os conteúdos informados."
+        : "Sem outras opções compatíveis com este conteúdo.",
+  };
+}
+
 function buildSpanishFundamentalResponse(
   payload: BnccSuggestionPayload,
   conteudos: string[],
@@ -1242,16 +1354,13 @@ function buildSpanishFundamentalResponse(
   }
 
   const grouped = conteudos.map((conteudo) => {
-    const axis = classifySpanishFundamentalAxis(conteudo);
-    const ranked = filtered
-      .map((candidate) => ({
-        candidate,
-        score: scoreSpanishFundamentalCandidate(candidate, conteudo, axis),
-      }))
-      .filter((item) => item.score > 0)
-      .sort((a, b) => b.score - a.score || a.candidate.codigo.localeCompare(b.candidate.codigo))
-      .slice(0, 2);
-    const chosen = ranked.length > 0 ? ranked : filtered.slice(0, 1).map((candidate) => ({ candidate, score: 1 }));
+    const ranked = rankSpanishFundamentalForContent(conteudo, payload, candidates, {
+      limit: 2,
+    });
+    const chosen =
+      ranked.length > 0
+        ? ranked
+        : filtered.slice(0, 1).map((candidate) => ({ candidate, score: 1 }));
 
     return {
       conteudo,
@@ -1386,15 +1495,30 @@ export async function suggestBnccByConteudos(payload: BnccSuggestionPayload) {
 
   const catalog = await readBNCCSkills();
 
-  if (!refresh && isSpanishComponent(payload) && isHighSchoolPayload(payload)) {
+  if (isSpanishComponent(payload) && isHighSchoolPayload(payload)) {
+    if (refresh) {
+      return buildSpanishHighSchoolRefreshResponse(conteudos, excludeCodigos);
+    }
+
     return buildSpanishHighSchoolResponse(payload, conteudos);
   }
 
-  if (!refresh && isFundamentalSpanishPayload(payload)) {
+  if (isFundamentalSpanishPayload(payload)) {
+    const spanishCandidates = catalog.map(bnccSkillToCandidate);
+
+    if (refresh) {
+      return buildSpanishFundamentalRefreshResponse(
+        payload,
+        conteudos,
+        spanishCandidates,
+        excludeCodigos,
+      );
+    }
+
     const spanishFundamental = buildSpanishFundamentalResponse(
       payload,
       conteudos,
-      catalog.map(bnccSkillToCandidate),
+      spanishCandidates,
     );
 
     if (spanishFundamental) {
@@ -1408,9 +1532,10 @@ export async function suggestBnccByConteudos(payload: BnccSuggestionPayload) {
   const grouped = conteudos.map((conteudo, contentIndex) => {
     const ranked = rankBnccSkillsForContent(filtered, context, conteudo, {
       usedCodes,
-      contentIndex: contentIndex + (refresh ? refreshOffset : 0),
+      contentIndex: refresh ? refreshOffset : contentIndex,
       limit: 3,
       excludeCodigos: refresh ? excludeCodigos : undefined,
+      requireContentMatch: refresh,
     });
 
     ranked.forEach((item) => usedCodes.add(item.skill.codigo));
@@ -1455,7 +1580,7 @@ export async function suggestBnccByConteudos(payload: BnccSuggestionPayload) {
           ? "Novas alternativas de habilidades BNCC para os conteúdos informados."
           : "Habilidades sugeridas a partir dos conteúdos informados."
         : refresh
-          ? "Não há mais alternativas compatíveis com os filtros atuais."
+          ? "Sem outras opções compatíveis com este conteúdo."
           : "Nenhuma habilidade encontrada para os conteúdos informados.",
   };
 }

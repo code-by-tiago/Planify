@@ -511,6 +511,7 @@ export function rankBnccSkillsForContent(
     contentIndex?: number;
     limit?: number;
     excludeCodigos?: Set<string>;
+    requireContentMatch?: boolean;
   },
 ): Array<{ skill: BNCCSkill; score: number }> {
   const limit = Math.min(Math.max(options?.limit ?? 3, 1), 5);
@@ -534,6 +535,10 @@ export function rankBnccSkillsForContent(
     }))
     .filter((item) => item.score > 0)
     .sort((a, b) => b.score - a.score || a.skill.codigo.localeCompare(b.skill.codigo));
+
+  if (options?.requireContentMatch) {
+    return ranked.slice(0, limit);
+  }
 
   if (ranked.length >= limit) {
     return ranked.slice(0, limit);

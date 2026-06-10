@@ -763,9 +763,9 @@ export function PlanejamentosClient() {
 
       if (!refreshed?.habilidades.length) {
         setError(
-          String(data?.message || "Não há mais alternativas compatíveis para este conteúdo."),
+          String(data?.message || "Sem outras opções compatíveis com este conteúdo."),
         );
-        setStatus("Sem novas alternativas");
+        setStatus("Sem outras opções compatíveis");
         return;
       }
 
@@ -795,7 +795,11 @@ export function PlanejamentosClient() {
       }));
 
       invalidateGenerated();
-      setStatus("Novas opções carregadas para este conteúdo. Escolha as habilidades desejadas.");
+      setStatus(
+        refreshed.habilidades.length < 3
+          ? `Foram encontradas ${refreshed.habilidades.length} alternativa(s) compatíveis com este conteúdo.`
+          : "Novas opções carregadas para este conteúdo. Escolha as habilidades desejadas.",
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao buscar outras habilidades BNCC.");
       setStatus("Erro na sugestão");

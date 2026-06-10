@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { GoogleDocumentExportBar } from "@/components/google/GoogleDocumentExportBar";
 import { GoogleSlidesExportButton } from "@/components/google/GoogleSlidesExportButton";
@@ -12,6 +12,8 @@ import {
   buildElevatePayload,
   requestMaterialGeneration,
 } from "@/lib/materiais/elevate-material-client";
+import { isMaterialStreamType } from "@/lib/materiais/material-stream-types";
+import { requestMaterialGenerationStream } from "@/lib/materiais/material-stream-client";
 import { MarketplacePublishButton } from "@/components/marketplace/MarketplacePublishButton";
 import type {
   MaterialEngineInput,
@@ -78,6 +80,7 @@ import {
   dispatchCreditsChangedIfNeeded,
   formatGenerationError,
   GenerationErrorBanner,
+  useRetryableAction,
 } from "@/lib/pro/generation-error-ui";
 import { readProvaInjectObservacoes } from "@/lib/banco-questoes/question-bank-storage";
 import { lessonBundleFollowUp } from "@/lib/pro/teachyStudio";
@@ -95,6 +98,8 @@ import {
 import { planifyAuthenticatedFetch } from "@/lib/auth/authenticated-fetch";
 
 const SELECT_FIELD_CLASS = HUD_FIELD_CLASS;
+const PATIENCE_THRESHOLD_MS = 90_000;
+const LONG_GENERATION_TYPES = new Set(["slides", "prova", "apostila"]);
 
 type Dificuldade = "facil" | "media" | "avancada";
 type FormatoJogo =
@@ -335,6 +340,10 @@ export function MateriaisClient({
   const [erroCta, setErroCta] = useState<ReturnType<typeof formatGenerationError>["cta"]>(null);
   const [erroRetryable, setErroRetryable] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [progressLabel, setProgressLabel] = useState("");
+  const [showPatienceMessage, setShowPatienceMessage] = useState(false);
+  const patienceTimerRef = useRef<number | null>(null);
+  const { runWithRetry, retrying: retryingGeneration } = useRetryableAction();
   const [busca, setBusca] = useState("");
   const [historico, setHistorico] = useState<MaterialHistoryPreview[]>([]);
   const [abrirEditorAutomatico, setAbrirEditorAutomatico] = useState(true);
@@ -638,11 +647,10 @@ export function MateriaisClient({
         setAlertasGeracao(data.data.alertas);
       }
     } catch (error) {
-      setErro(
-        error instanceof Error
-          ? error.message
-          : "Erro ao sugerir conteúdos com IA.",
-      );
+      const formatted = formatGenerationError(error);
+      setErro(formatted.message);
+      setErroCta(formatted.cta ?? null);
+      setErroRetryable(formatted.retryable);
     } finally {
       setSugerindoConteudos(false);
     }
@@ -782,11 +790,10 @@ export function MateriaisClient({
       setSelectedBnccSkills([]);
       setBnccRegistroFeedback(null);
     } catch (error) {
-      setErro(
-        error instanceof Error
-          ? error.message
-          : "Erro ao sugerir habilidades BNCC.",
-      );
+      const formatted = formatGenerationError(error);
+      setErro(formatted.message);
+      setErroCta(formatted.cta ?? null);
+      setErroRetryable(formatted.retryable);
     } finally {
       setLoadingBncc(false);
     }
@@ -1014,8 +1021,19 @@ export function MateriaisClient({
     setMaterialSalvo(false);
     setHintFeedback("");
     setBnccRegistroFeedback(null);
+    setProgressLabel("");
+    setShowPatienceMessage(false);
+    if (patienceTimerRef.current) {
+      window.clearTimeout(patienceTimerRef.current);
+    }
+    if (LONG_GENERATION_TYPES.has(tipo)) {
+      patienceTimerRef.current = window.setTimeout(() => {
+        setShowPatienceMessage(true);
+      }, PATIENCE_THRESHOLD_MS);
+    }
 
     try {
+      await runWithRetry(async () => {
       const turma = school.turmaPayload;
       if (turma.className) {
         await school.rememberPersonalClass(turma.className);
@@ -1029,8 +1047,21 @@ export function MateriaisClient({
 
       let data: Record<string, unknown>;
       try {
-        const result = await requestMaterialGeneration(payload);
-        data = result as Record<string, unknown>;
+        if (isMaterialStreamType(tipo)) {
+          const streamResult = await requestMaterialGenerationStream(payload, {
+            onProgress: ({ phase, message, index, total }) => {
+              if (phase === "images" && index != null && total != null) {
+                setProgressLabel(`Resolvendo imagens (${index}/${total})…`);
+              } else {
+                setProgressLabel(message);
+              }
+            },
+          });
+          data = streamResult as Record<string, unknown>;
+        } else {
+          const result = await requestMaterialGeneration(payload);
+          data = result as Record<string, unknown>;
+        }
       } catch (error) {
         const code =
           error && typeof error === "object" && "code" in error
@@ -1136,6 +1167,7 @@ export function MateriaisClient({
       setHistorico(loadMaterialHistoryPreview());
       setMaterialSalvo(true);
       setResultadoHtml(html);
+      }, { onError: dispatchCreditsChangedIfNeeded });
     } catch (error) {
       dispatchCreditsChangedIfNeeded(error);
       const formatted = formatGenerationError(error);
@@ -1143,6 +1175,12 @@ export function MateriaisClient({
       setErroCta(formatted.cta ?? null);
       setErroRetryable(formatted.retryable);
     } finally {
+      if (patienceTimerRef.current) {
+        window.clearTimeout(patienceTimerRef.current);
+        patienceTimerRef.current = null;
+      }
+      setShowPatienceMessage(false);
+      setProgressLabel("");
       setLoading(false);
     }
   }
@@ -1207,11 +1245,11 @@ export function MateriaisClient({
       setMaterialSalvo(true);
       setHistorico(loadMaterialHistoryPreview());
     } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Não foi possível elevar a qualidade do material.";
-      setErro(message);
+      dispatchCreditsChangedIfNeeded(error);
+      const formatted = formatGenerationError(error);
+      setErro(formatted.message);
+      setErroCta(formatted.cta ?? null);
+      setErroRetryable(formatted.retryable);
     } finally {
       setElevatingQuality(false);
     }
@@ -1784,7 +1822,7 @@ export function MateriaisClient({
             cta={erroCta}
             retryable={erroRetryable}
             onRetry={() => void executarGeracao()}
-            retrying={loading}
+            retrying={loading || retryingGeneration}
             className="mt-4"
           />
 
@@ -1811,12 +1849,17 @@ export function MateriaisClient({
               <div className="flex min-h-[200px] items-center justify-center">
                 <PlanifyOwlGenerationCoach
                   active
-                  title={mode.loadingTitle}
+                  title={progressLabel || mode.loadingTitle}
                   context="material"
                   toolId={tipo}
                   className="max-w-lg"
                 />
               </div>
+              {showPatienceMessage ? (
+                <p className="text-center text-sm font-semibold text-slate-600">
+                  Materiais complexos podem levar alguns minutos. Não feche esta página.
+                </p>
+              ) : null}
               <MaterialPreviewSkeleton />
             </div>
           ) : resultadoHtml ? (

@@ -42,6 +42,7 @@ import {
   buildElevatePayload,
   requestMaterialGeneration,
 } from "@/lib/materiais/elevate-material-client";
+import { formatGenerationError } from "@/lib/pro/generation-error-ui";
 import type { MaterialEditorMeta } from "@/lib/materiais/material-editor-flow";
 import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
 import { PlanifyPageHero } from "@/components/pro/PlanifyPageHero";
@@ -996,11 +997,8 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
       window.dispatchEvent(new Event("planify:credits-changed"));
       setStatus("Qualidade elevada — revise o material antes de exportar.");
     } catch (error) {
-      setStatus(
-        error instanceof Error
-          ? error.message
-          : "Não foi possível elevar a qualidade.",
-      );
+      const formatted = formatGenerationError(error);
+      setStatus(formatted.message);
     } finally {
       setElevatingQuality(false);
     }

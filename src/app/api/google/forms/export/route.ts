@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { resolvePlanifyUserFromRequest } from "../../../../../server/google/google-auth";
 import { exportQuizToGoogleForms } from "../../../../../server/google/google-forms-export-service";
 import { getGoogleConfigStatus } from "../../../../../server/google/google-oauth";
+import { jsonExportErrorResponse } from "@/server/export/export-error-service";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -66,17 +67,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: result });
   } catch (error) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: {
-          message:
-            error instanceof Error
-              ? error.message
-              : "Não foi possível criar o Google Forms.",
-        },
-      },
-      { status: 400 },
-    );
+    return jsonExportErrorResponse(error, { surface: "google-forms" });
   }
 }

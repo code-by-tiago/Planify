@@ -6,6 +6,8 @@ import {
   requestMaterialGeneration,
   type MaterialGenerationApiResult,
 } from "@/lib/materiais/elevate-material-client";
+import { formatGenerationError, useRetryableAction } from "@/lib/pro/generation-error-ui";
+import { MaterialPreviewSkeleton } from "@/components/materiais/MaterialPreviewSkeleton";
 import type {
   MaterialEngineInput,
   MaterialEngineResponse,
@@ -47,6 +49,7 @@ export function SlideAiAdjustPanel({
   const [open, setOpen] = useState(false);
   const [instruction, setInstruction] = useState("");
   const [busy, setBusy] = useState(false);
+  const { runWithRetry, retrying } = useRetryableAction();
 
   const canSubmit = Boolean(generationPayload && instruction.trim() && !busy && !disabled);
 
@@ -57,35 +60,34 @@ export function SlideAiAdjustPanel({
     onAdjusting?.(true);
 
     try {
-      const payload = buildSlideAdjustPayload(generationPayload, instruction.trim());
-      const data = await requestMaterialGeneration(payload);
+      await runWithRetry(async () => {
+        const payload = buildSlideAdjustPayload(generationPayload, instruction.trim());
+        const data = await requestMaterialGeneration(payload);
 
-      if (!data.html?.trim()) {
-        throw new Error("A IA não retornou slides atualizados.");
-      }
+        if (!data.html?.trim()) {
+          throw new Error("A IA não retornou slides atualizados.");
+        }
 
-      onResult({
-        html: data.html,
-        estrutura: extractEstrutura(data),
-        payload,
-        qualityScore:
-          typeof data.qualityScore === "number" ? data.qualityScore : null,
-        qualityIssues: Array.isArray(data.qualityIssues)
-          ? data.qualityIssues.map((item) => String(item)).filter(Boolean)
-          : [],
-        alertas: Array.isArray(data.alertas)
-          ? data.alertas.map((item) => String(item)).filter(Boolean)
-          : [],
-        pipeline: typeof data.pipeline === "string" ? data.pipeline : null,
+        onResult({
+          html: data.html,
+          estrutura: extractEstrutura(data),
+          payload,
+          qualityScore:
+            typeof data.qualityScore === "number" ? data.qualityScore : null,
+          qualityIssues: Array.isArray(data.qualityIssues)
+            ? data.qualityIssues.map((item) => String(item)).filter(Boolean)
+            : [],
+          alertas: Array.isArray(data.alertas)
+            ? data.alertas.map((item) => String(item)).filter(Boolean)
+            : [],
+          pipeline: typeof data.pipeline === "string" ? data.pipeline : null,
+        });
+        setInstruction("");
+        setOpen(false);
       });
-      setInstruction("");
-      setOpen(false);
     } catch (error) {
-      onError?.(
-        error instanceof Error
-          ? error.message
-          : "Não foi possível aplicar o ajuste com IA.",
-      );
+      const formatted = formatGenerationError(error);
+      onError?.(formatted.message);
     } finally {
       setBusy(false);
       onAdjusting?.(false);
@@ -156,12 +158,13 @@ export function SlideAiAdjustPanel({
               }`}
             >
               <PlanifyIcon name="spark" className={compact ? "h-3 w-3" : "h-3.5 w-3.5"} />
-              {busy ? "Aplicando…" : "Aplicar com IA"}
+              {busy ? "Aplicando…" : retrying ? "Tentando novamente…" : "Aplicar com IA"}
             </button>
             <span className="text-[10px] font-semibold text-violet-800/80">
               Consome créditos como uma nova geração.
             </span>
           </div>
+          {busy || retrying ? <MaterialPreviewSkeleton /> : null}
         </div>
       ) : null}
     </aside>

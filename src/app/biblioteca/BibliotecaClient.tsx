@@ -9,6 +9,11 @@ import {
   type BibliotecaDownloadFormat,
 } from "@/lib/biblioteca/biblioteca-download-client";
 import { useEffect, useMemo, useState } from "react";
+import {
+  formatGenerationError,
+  GenerationErrorBanner,
+  useRetryableAction,
+} from "@/lib/pro/generation-error-ui";
 
 type BibliotecaItem = {
   id: string;
@@ -168,6 +173,8 @@ export function BibliotecaClient() {
   const [selected, setSelected] = useState<BibliotecaItem | null>(null);
   const [status, setStatus] = useState("Carregando Biblioteca...");
   const [error, setError] = useState("");
+  const [errorRetryable, setErrorRetryable] = useState(false);
+  const { runWithRetry } = useRetryableAction();
   const [loading, setLoading] = useState(true);
   const [downloadingKey, setDownloadingKey] = useState<string | null>(null);
 
@@ -202,9 +209,9 @@ export function BibliotecaClient() {
     } catch (err) {
       setItems([]);
       setSelected(null);
-      setError(
-        err instanceof Error ? err.message : "Erro ao carregar a Biblioteca.",
-      );
+      const formatted = formatGenerationError(err);
+      setError(formatted.message);
+      setErrorRetryable(formatted.retryable);
       setStatus("Biblioteca indisponível no momento.");
     } finally {
       setLoading(false);
@@ -322,19 +329,13 @@ export function BibliotecaClient() {
           <p className="mt-3 text-xs font-medium text-slate-500">{status}</p>
         </section>
 
-        {error ? (
-          <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-800">
-            {error}
-            <div className="mt-3 flex flex-wrap gap-2">
-              <a href="/login?redirect=/biblioteca&premium=required" className="pl-hud-btn rounded-lg px-4 py-2 text-xs">
-                Fazer login
-              </a>
-              <a href="/planos" className="pl-hud-btn-secondary rounded-lg px-4 py-2 text-xs">
-                Ver planos
-              </a>
-            </div>
-          </div>
-        ) : null}
+        <GenerationErrorBanner
+          message={error}
+          retryable={errorRetryable}
+          onRetry={() => void loadPremiumMaterials()}
+          retrying={loading}
+          className="mb-4"
+        />
 
         {loading && items.length === 0 ? (
           <div className="pl-hud-glass flex items-center justify-center rounded-2xl p-12">

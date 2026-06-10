@@ -21,6 +21,11 @@ import {
   type MarketplaceDownloadFormat,
 } from "@/lib/marketplace/marketplace-download-client";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
+import {
+  formatGenerationError,
+  GenerationErrorBanner,
+  useRetryableAction,
+} from "@/lib/pro/generation-error-ui";
 
 type MarketplaceItem = CommunityFeedItem;
 
@@ -136,6 +141,8 @@ export function MarketplaceClient() {
   const [mineOnly, setMineOnly] = useState(false);
   const [status, setStatus] = useState("Carregando Comunidade...");
   const [error, setError] = useState("");
+  const [errorRetryable, setErrorRetryable] = useState(false);
+  const { runWithRetry } = useRetryableAction();
   const [loading, setLoading] = useState(false);
   const [downloadingKey, setDownloadingKey] = useState<string | null>(null);
   const [publishOpen, setPublishOpen] = useState(false);
@@ -193,7 +200,9 @@ export function MarketplaceClient() {
     } catch (err) {
       setItems([]);
       setFeaturedItems([]);
-      setError(err instanceof Error ? err.message : "Erro ao carregar Comunidade.");
+      const formatted = formatGenerationError(err);
+      setError(formatted.message);
+      setErrorRetryable(formatted.retryable);
       setStatus("Comunidade indisponível no momento.");
     } finally {
       setLoading(false);
@@ -447,11 +456,13 @@ export function MarketplaceClient() {
               Envie um material para outros professores premium baixarem.
             </p>
 
-            {error ? (
-              <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm font-semibold text-amber-800">
-                {error}
-              </div>
-            ) : null}
+            <GenerationErrorBanner
+              message={error}
+              retryable={errorRetryable}
+              onRetry={() => void loadItems(mineOnly)}
+              retrying={loading}
+              className="mt-4"
+            />
 
             <form onSubmit={handleSubmit} className="mt-5 grid gap-3 sm:grid-cols-2">
               <input
@@ -737,9 +748,12 @@ export function MarketplaceClient() {
         />
 
         {error && !publishOpen ? (
-          <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm font-semibold text-rose-800">
-            {error}
-          </div>
+          <GenerationErrorBanner
+            message={error}
+            retryable={errorRetryable}
+            onRetry={() => void loadItems(mineOnly)}
+            retrying={loading}
+          />
         ) : null}
       </div>
     </PlanifyWorkspacePane>

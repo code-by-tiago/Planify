@@ -29,8 +29,9 @@ export async function requestMaterialGeneration(
 
   if (!response.ok || !data?.ok) {
     const message = data?.message || "Não foi possível gerar o material.";
-    const error = new Error(message) as Error & { code?: string };
+    const error = new Error(message) as Error & { code?: string; status?: number };
     if (data?.code) error.code = data.code;
+    error.status = response.status;
     throw error;
   }
 

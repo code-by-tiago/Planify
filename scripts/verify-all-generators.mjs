@@ -3,7 +3,7 @@
  * Sem chamadas à API. Run: npm run verify:generators
  */
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
@@ -761,6 +761,13 @@ function testNewToolsFixtures() {
   assert.match(orchestratorSource, /status: "started"/);
   assert.match(orchestratorSource, /status: "done"/);
   assert.match(orchestratorSource, /status: "failed"/);
+
+  // U2 — stream + retry imagens
+  assert.ok(existsSync(join(root, "src/app/api/materiais/gerar-stream/route.ts")));
+  assert.ok(existsSync(join(root, "src/app/api/materiais/regenerar-imagens/route.ts")));
+  const { isMaterialStreamType } = loadTsModule("src/lib/materiais/material-stream-types.ts");
+  assert.equal(isMaterialStreamType("slides"), true);
+  assert.equal(isMaterialStreamType("flashcards"), false);
 }
 
 function main() {

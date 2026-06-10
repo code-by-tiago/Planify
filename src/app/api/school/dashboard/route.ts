@@ -3,6 +3,7 @@ import { requireApiAuthenticated } from "@/server/auth/api-access";
 import { getSchoolDashboardMetrics } from "@/server/bncc/bncc-progress-service";
 import { requireSchoolDashboardAccess } from "@/server/schools/school-access";
 import { ensurePrimarySchoolIdForUser } from "@/server/schools/school-service";
+import { logOperationalEvent } from "@/server/telemetry/operational-telemetry";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -47,6 +48,13 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Erro ao carregar painel.";
+    logOperationalEvent({
+      eventType: "api_502",
+      toolTipo: "school-dashboard",
+      ok: false,
+      errorCode: "exception",
+      metadata: { message },
+    });
     return NextResponse.json(
       { success: false, error: { message } },
       { status: 500 },

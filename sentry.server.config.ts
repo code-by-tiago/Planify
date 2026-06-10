@@ -1,8 +1,11 @@
 import * as Sentry from "@sentry/nextjs";
+import { getSentryDsn } from "./src/lib/ops/sentry-dsn";
 
-if (process.env.SENTRY_DSN) {
+const dsn = getSentryDsn();
+
+if (dsn) {
   Sentry.init({
-    dsn: process.env.SENTRY_DSN,
+    dsn,
     tracesSampleRate: 0.1,
     sendDefaultPii: false,
     beforeSend(event) {

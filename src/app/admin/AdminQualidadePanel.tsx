@@ -203,7 +203,11 @@ export function AdminQualidadePanel() {
 
           <div className="rounded-[2rem] border border-slate-200 bg-white p-6">
             <p className="text-sm font-black uppercase tracking-[0.25em] text-rose-600">
-              Falhas operacionais
+              Taxa sucesso/falha por tool_tipo (generation + operational)
+            </p>
+            <p className="mt-1 text-xs font-semibold text-slate-500">
+              Gerações bem-sucedidas (generation_events) vs falhas operacionais (operational_events).
+              Alertas: configure Sentry → email/Slack manualmente.
             </p>
             <div className="mt-6 grid gap-2">
               {!operational?.failureRateByTipo.length ? (

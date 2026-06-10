@@ -5,6 +5,7 @@ import {
   getOfficialPlanningFilename,
   type OfficialPlanningPayload,
 } from "../../../../server/planejamentos/official-planning-docx";
+import { jsonExportErrorResponse } from "@/server/export/export-error-service";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -244,17 +245,6 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: {
-          message:
-            error instanceof Error
-              ? error.message
-              : "Não foi possível gerar o pacote anual + trimestrais.",
-        },
-      },
-      { status: 500 },
-    );
+    return jsonExportErrorResponse(error, { surface: "planning-docx-pacote" });
   }
 }

@@ -480,6 +480,19 @@ async function main() {
     await runSprint3Suite(failures);
   } else if (suite === "sprint4") {
     await runSprint4Suite(failures);
+  } else if (suite === "u2") {
+    const { generateMaterialByEngine } = loadTsModule(
+      "src/server/materials/material-engine-service.ts",
+    );
+    await runEngineType("slides", generateMaterialByEngine, failures);
+    console.log("\n→ inclusão: contrato client (sem live API)");
+    const inclusaoClient = readFileSync(
+      join(root, "src/lib/inclusao/inclusao-client.ts"),
+      "utf8",
+    );
+    if (!inclusaoClient.includes("requestInclusaoGeneration")) {
+      failures.push({ tipo: "inclusao", reason: "client ausente" });
+    }
   } else {
     const { MATERIAL_ENGINE_TYPES } = loadTsModule(
       "src/server/materials/material-engine-types.ts",
@@ -511,6 +524,9 @@ async function main() {
   } else if (suite === "sprint4") {
     const total = 4;
     console.log(`\nverify:staging (sprint4): ${total - failures.length}/${total} OK — ${elapsedMs}ms`);
+  } else if (suite === "u2") {
+    const total = 1;
+    console.log(`\nverify:staging (u2): ${total - failures.length}/${total} OK — ${elapsedMs}ms`);
   }
 
   if (failures.length) {

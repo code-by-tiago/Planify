@@ -1,8 +1,16 @@
 "use client";
 
 import { DailyGenerationsBar } from "@/components/credits/DailyGenerationsBar";
+import { GenerationCostHint } from "@/components/credits/GenerationCostHint";
+import { MaterialPreviewSkeleton } from "@/components/materiais/MaterialPreviewSkeleton";
 import { MaterialQualityScoreBar } from "@/components/materiais/MaterialQualityScoreBar";
 import { PLANNING_DEEP_GENERATION_TYPE } from "@/lib/ai/material-generation-policy";
+import { getClientCreditCost } from "@/lib/credits/credit-costs";
+import {
+  dispatchCreditsChangedIfNeeded,
+  formatGenerationError,
+  GenerationErrorBanner,
+} from "@/lib/pro/generation-error-ui";
 import { MarketplacePublishButton } from "@/components/marketplace/MarketplacePublishButton";
 import { PlanifyOwlGenerationCoach } from "@/components/pro/PlanifyOwlGenerationCoach";
 import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
@@ -264,6 +272,7 @@ function PlanningGenerationPanel({
         context={context}
         progressSteps={planningProgressSteps}
       />
+      <MaterialPreviewSkeleton />
     </div>
   );
 }
@@ -395,6 +404,8 @@ export function PlanejamentosClient() {
   const [loadingBncc, setLoadingBncc] = useState(false);
   const [loadingPlan, setLoadingPlan] = useState(false);
   const [error, setError] = useState("");
+  const [errorCta, setErrorCta] = useState<ReturnType<typeof formatGenerationError>["cta"]>(null);
+  const [errorRetryable, setErrorRetryable] = useState(false);
   const [abrirEditorAutomatico, setAbrirEditorAutomatico] = useState(true);
 
   useEffect(() => {
@@ -982,14 +993,11 @@ export function PlanejamentosClient() {
         setError(data.warning);
       }
     } catch (err) {
-      const code =
-        err instanceof Error && "code" in err
-          ? String((err as Error & { code?: string }).code || "")
-          : "";
-      if (code === "daily_limit_reached") {
-        window.dispatchEvent(new Event("planify:credits-changed"));
-      }
-      setError(err instanceof Error ? err.message : "Erro ao gerar planejamento com IA.");
+      dispatchCreditsChangedIfNeeded(err);
+      const formatted = formatGenerationError(err);
+      setError(formatted.message);
+      setErrorCta(formatted.cta ?? null);
+      setErrorRetryable(formatted.retryable);
       setStatus("Erro ao gerar planejamento");
     } finally {
       setLoadingPlan(false);
@@ -1466,10 +1474,20 @@ export function PlanejamentosClient() {
             </div>
 
             {error ? (
-              <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm font-bold text-amber-800">
-                {error}
-              </div>
+              <GenerationErrorBanner
+                message={error}
+                cta={errorCta}
+                retryable={errorRetryable}
+                onRetry={() => void generatePlanning()}
+                retrying={loadingPlan}
+                className="mt-6"
+              />
             ) : null}
+
+            <GenerationCostHint
+              creditCost={getClientCreditCost(PLANNING_DEEP_GENERATION_TYPE)}
+              className="mt-4"
+            />
 
             <label className="mt-6 flex cursor-pointer items-center gap-3 rounded-xl border border-cyan-400/20 bg-cyan-50/50 px-5 py-3">
               <input

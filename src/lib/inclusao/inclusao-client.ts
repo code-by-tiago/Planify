@@ -48,10 +48,12 @@ export async function requestInclusaoGeneration(
   const data = await response.json().catch(() => null);
 
   if (!response.ok || !data?.ok) {
-    throw new InclusaoGenerationError(
+    const error = new Error(
       data?.message || "Não foi possível gerar a adaptação inclusiva.",
-      { code: data?.code, status: response.status },
-    );
+    ) as Error & { code?: string; status?: number };
+    error.code = data?.code;
+    error.status = response.status;
+    throw error;
   }
 
   window.dispatchEvent(new Event("planify:credits-changed"));

@@ -7,6 +7,10 @@ import { BnccPaywall } from "@/components/bncc/BnccPaywall";
 import { usePlanifyAccess } from "@/hooks/usePlanifyAccess";
 import type { BnccProgressResponse } from "@/lib/bncc/types";
 import { dashboardToolHref } from "@/lib/pro/toolRoutes";
+import {
+  formatGenerationError,
+  GenerationErrorBanner,
+} from "@/lib/pro/generation-error-ui";
 
 type BnccProgressClientProps = {
   embedded?: boolean;
@@ -35,6 +39,7 @@ export function BnccProgressClient({ embedded = false }: BnccProgressClientProps
   const [progress, setProgress] = useState<BnccProgressResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [errorRetryable, setErrorRetryable] = useState(false);
   const [tab, setTab] = useState<TabId>("covered");
   const [classId, setClassId] = useState("");
   const [discipline, setDiscipline] = useState("");
@@ -73,7 +78,9 @@ export function BnccProgressClient({ embedded = false }: BnccProgressClientProps
 
       setProgress(data.progress || null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao carregar progresso.");
+      const formatted = formatGenerationError(err);
+      setError(formatted.message);
+      setErrorRetryable(formatted.retryable);
     } finally {
       setLoading(false);
     }
@@ -222,9 +229,12 @@ export function BnccProgressClient({ embedded = false }: BnccProgressClientProps
             <span className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-cyan-200 border-t-cyan-600" />
           </div>
         ) : error ? (
-          <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm font-semibold text-rose-700">
-            {error}
-          </div>
+          <GenerationErrorBanner
+            message={error}
+            retryable={errorRetryable}
+            onRetry={() => void loadProgress()}
+            retrying={loading}
+          />
         ) : (
           <>
             <div className="grid gap-4 lg:grid-cols-[220px_1fr]">

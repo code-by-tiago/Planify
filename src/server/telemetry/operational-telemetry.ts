@@ -5,7 +5,11 @@ export type OperationalEventType =
   | "bundle_item_failed"
   | "correction_ocr_empty"
   | "question_import_zero"
-  | "api_502";
+  | "api_502"
+  | "material_generation_failed"
+  | "planning_generation_failed"
+  | "export_failed"
+  | "editor_ai_adjust_failed";
 
 export function logOperationalEvent(event: {
   eventType: OperationalEventType;

@@ -1,9 +1,11 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useMemo, useRef, useState } from "react";
 import { CreditsBalancePill } from "@/components/credits/CreditsBalancePill";
 import { DailyGenerationsBar } from "@/components/credits/DailyGenerationsBar";
+import { GenerationCostHint } from "@/components/credits/GenerationCostHint";
 import { MaterialDocumentPreview } from "@/components/materiais/MaterialDocumentPreview";
+import { MaterialPreviewSkeleton } from "@/components/materiais/MaterialPreviewSkeleton";
 import { MaterialToolPageShell } from "@/components/pro/MaterialToolPageShell";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { PlanifyOwlGenerationCoach } from "@/components/pro/PlanifyOwlGenerationCoach";
@@ -22,9 +24,15 @@ import {
   type InclusaoNeedId,
 } from "@/lib/inclusao/inclusao-config";
 import {
-  InclusaoGenerationError,
   requestInclusaoGeneration,
 } from "@/lib/inclusao/inclusao-client";
+import { getClientCreditCost } from "@/lib/credits/credit-costs";
+import {
+  dispatchCreditsChangedIfNeeded,
+  formatGenerationError,
+  GenerationErrorBanner,
+  useRetryableAction,
+} from "@/lib/pro/generation-error-ui";
 import { getPlanifyTool } from "@/lib/pro/planifyTools";
 import { useSchoolClasses } from "@/hooks/useSchoolClasses";
 import { TurmaCombobox } from "@/components/school/TurmaCombobox";
@@ -43,6 +51,7 @@ type InclusaoClientProps = {
 };
 
 const tool = getPlanifyTool("inclusao");
+const PATIENCE_THRESHOLD_MS = 90_000;
 
 const MODE_CONTENT_LABELS: Record<InclusaoModeId, string> = {
   adaptacao: "Atividade ou plano original",
@@ -83,6 +92,11 @@ export function InclusaoClient({
   const [observacoes, setObservacoes] = useState("");
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState("");
+  const [erroCta, setErroCta] = useState<ReturnType<typeof formatGenerationError>["cta"]>(null);
+  const [erroRetryable, setErroRetryable] = useState(false);
+  const [showPatienceMessage, setShowPatienceMessage] = useState(false);
+  const patienceTimerRef = useRef<number | null>(null);
+  const { runWithRetry, retrying: retryingGeneration } = useRetryableAction();
   const [resultadoHtml, setResultadoHtml] = useState("");
   const [resultadoMarkdown, setResultadoMarkdown] = useState("");
   const [modalAberto, setModalAberto] = useState(studioMode);
@@ -95,6 +109,8 @@ export function InclusaoClient({
 
   async function executarGeracao() {
     setErro("");
+    setErroCta(null);
+    setErroRetryable(false);
 
     const trimmed = conteudo.trim();
     if (contentRequired && trimmed.length < 10) {
@@ -105,40 +121,47 @@ export function InclusaoClient({
     setLoading(true);
     setResultadoHtml("");
     setResultadoMarkdown("");
+    setShowPatienceMessage(false);
+    if (patienceTimerRef.current) {
+      window.clearTimeout(patienceTimerRef.current);
+    }
+    patienceTimerRef.current = window.setTimeout(() => {
+      setShowPatienceMessage(true);
+    }, PATIENCE_THRESHOLD_MS);
 
     try {
-      const turma = school.turmaPayload;
-      if (turma.className) {
-        void school.rememberPersonalClass(turma.className);
-      }
+      await runWithRetry(async () => {
+        const turma = school.turmaPayload;
+        if (turma.className) {
+          void school.rememberPersonalClass(turma.className);
+        }
 
-      const result = await requestInclusaoGeneration({
-        modo,
-        necessidade,
-        etapaEnsino,
-        conteudo: trimmed,
-        observacoes: observacoes.trim() || undefined,
-        ...turma,
-        discipline: school.selectedClass?.discipline?.trim() || undefined,
-        disciplina: school.selectedClass?.discipline?.trim() || undefined,
-      });
+        const result = await requestInclusaoGeneration({
+          modo,
+          necessidade,
+          etapaEnsino,
+          conteudo: trimmed,
+          observacoes: observacoes.trim() || undefined,
+          ...turma,
+          discipline: school.selectedClass?.discipline?.trim() || undefined,
+          disciplina: school.selectedClass?.discipline?.trim() || undefined,
+        });
 
-      setResultadoMarkdown(result.markdown);
-      setResultadoHtml(result.html);
+        setResultadoMarkdown(result.markdown);
+        setResultadoHtml(result.html);
+      }, { onError: dispatchCreditsChangedIfNeeded });
     } catch (error) {
-      if (
-        error instanceof InclusaoGenerationError &&
-        error.code === "daily_limit_reached"
-      ) {
-        window.dispatchEvent(new Event("planify:credits-changed"));
-      }
-
-      setErro(
-        error instanceof Error
-          ? error.message
-          : "Não foi possível gerar a adaptação inclusiva.",
-      );
+      dispatchCreditsChangedIfNeeded(error);
+      const formatted = formatGenerationError(error);
+      setErro(formatted.message);
+      setErroCta(formatted.cta ?? null);
+      setErroRetryable(formatted.retryable);
     } finally {
+      if (patienceTimerRef.current) {
+        window.clearTimeout(patienceTimerRef.current);
+        patienceTimerRef.current = null;
+      }
+      setShowPatienceMessage(false);
       setLoading(false);
     }
   }
@@ -172,11 +195,10 @@ export function InclusaoClient({
         fallbackFileName: `${exportTitle.replace(/[\\/:*?"<>|]/g, "-")}.pdf`,
       });
     } catch (error) {
-      setErro(
-        error instanceof Error
-          ? error.message
-          : "Não foi possível baixar o PDF.",
-      );
+      const formatted = formatGenerationError(error);
+      setErro(formatted.message);
+      setErroCta(formatted.cta ?? null);
+      setErroRetryable(formatted.retryable);
     }
   }
 
@@ -302,11 +324,19 @@ export function InclusaoClient({
 
           <DailyGenerationsBar tipoMaterial={INCLUSAO_GENERATION_TYPE} compact />
 
-          {erro ? (
-            <p className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-800">
-              {erro}
-            </p>
-          ) : null}
+          <GenerationCostHint
+            creditCost={getClientCreditCost(INCLUSAO_GENERATION_TYPE)}
+            className="mt-2"
+          />
+
+          <GenerationErrorBanner
+            message={erro}
+            cta={erroCta}
+            retryable={erroRetryable}
+            onRetry={() => void executarGeracao()}
+            retrying={loading || retryingGeneration}
+            className="mt-2"
+          />
 
           <div className="flex flex-wrap items-center gap-3 pt-1">
             <button
@@ -324,12 +354,20 @@ export function InclusaoClient({
       preview={
         <>
           {loading ? (
-            <PlanifyOwlGenerationCoach
-              active
-              title={tool.loadingTitle}
-              description={tool.loadingDescription}
-              toolId="inclusao"
-            />
+            <div className="space-y-4 p-2">
+              <PlanifyOwlGenerationCoach
+                active
+                title={tool.loadingTitle}
+                description={tool.loadingDescription}
+                toolId="inclusao"
+              />
+              {showPatienceMessage ? (
+                <p className="text-center text-sm font-semibold text-slate-600">
+                  A adaptação inclusiva pode levar alguns minutos. Não feche esta página.
+                </p>
+              ) : null}
+              <MaterialPreviewSkeleton />
+            </div>
           ) : resultadoHtml ? (
             <div>
               <div className="mb-4 flex flex-wrap justify-end gap-2">

@@ -1,126 +1,58 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireApiPremiumAccess } from "../../../../server/auth/api-access";
 import { generatePlanifyMaterial } from "../../../../server/materials/material-generation-orchestrator";
 import type { MaterialEngineInput } from "../../../../server/materials/material-engine-types";
-import { isDeepGenerationType } from "@/lib/ai/material-generation-policy";
-import {
-  consumeDeepGeneration,
-  refundDeepGeneration,
-} from "../../../../server/credits/daily-generation-service";
-import {
-  getCreditCost,
-  refundCredits,
-  spendCredits,
-} from "../../../../server/credits/credit-service";
-import {
-  bucketQualityScore,
-  logGenerationComplete,
-} from "../../../../server/telemetry/generation-telemetry";
 import { persistGeneratedMaterialBestEffort } from "../../../../server/materials/persist-generated-material";
 import {
   normalizeMaterialEngineRequest,
   validateMaterialEngineRequest,
 } from "../../../../server/materials/material-engine-validation";
+import {
+  finalizeGenerationFailure,
+  logGenerationSuccessEvent,
+  prepareGenerationRequest,
+  resolveGenerationCreditCost,
+} from "@/server/generation/generation-api-shared";
+import { jsonGenerationValidationError } from "@/server/generation/generation-api-contract";
+import { withOperationalCapture } from "@/server/telemetry/with-operational-capture";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-// Gerar slides pode incluir várias ilustrações por IA — concede mais tempo.
 export const maxDuration = 300;
 
-export async function POST(request: NextRequest) {
-  const auth = await requireApiPremiumAccess(request);
-  if (!auth.ok) return auth.response;
+async function handlePost(request: NextRequest, _context: { params: Promise<Record<string, string>> }) {
+  const prepared = await prepareGenerationRequest<MaterialEngineInput>(request, {
+    parsePayload: (raw) =>
+      raw && typeof raw === "object" ? (raw as MaterialEngineInput) : null,
+    resolveTipo: (payload) => String(payload.tipoMaterial || payload.tipo || ""),
+    dailyLimitMessage:
+      "Você usou suas gerações profundas de hoje (materiais e planejamentos). A cota reinicia à meia-noite (horário de Brasília). Faça upgrade para Premium e tenha até 5 por dia — ou gere flashcards e resumos, que não contam na cota.",
+    insufficientCreditsMessage:
+      "Você não tem créditos suficientes neste ciclo. Faça upgrade do plano para continuar gerando materiais.",
+  });
 
-  const payload = (await request.json().catch(() => null)) as
-    | MaterialEngineInput
-    | null;
+  if (!prepared.ok) return prepared.response;
 
-  if (!payload) {
-    return NextResponse.json(
-      { ok: false, message: "Requisição inválida." },
-      { status: 400 },
-    );
-  }
-
+  const { user, payload, tipo, charge } = prepared;
   const normalizedRequest = normalizeMaterialEngineRequest(payload);
   const validationErrors = validateMaterialEngineRequest(normalizedRequest);
+
   if (validationErrors.length > 0) {
-    return NextResponse.json(
-      { ok: false, message: validationErrors[0] },
-      { status: 400 },
-    );
-  }
-
-  const tipo = String(payload.tipoMaterial || payload.tipo || "");
-
-  const user = auth.access.user;
-  let chargedCost = 0;
-  let chargedDeepDaily = false;
-
-  const deepType = isDeepGenerationType(tipo);
-
-  if (user?.id && deepType) {
-    const daily = await consumeDeepGeneration({
-      userId: user.id,
-      tipo,
-      email: user.email,
+    await finalizeGenerationFailure(user?.id, tipo, charge, {
+      eventType: "material_generation_failed",
+      errorCode: "validation_error",
     });
-
-    if (daily.status === "limit_reached") {
-      return NextResponse.json(
-        {
-          ok: false,
-          code: "daily_limit_reached",
-          message:
-            `Você usou suas ${daily.limit} gerações profundas de hoje (materiais e planejamentos). A cota reinicia à meia-noite (horário de Brasília). Faça upgrade para Premium e tenha até 5 por dia — ou gere flashcards e resumos, que não contam na cota.`,
-          used: daily.used,
-          limit: daily.limit,
-        },
-        { status: 429 },
-      );
-    }
-
-    if (daily.status === "ok") {
-      chargedDeepDaily = true;
-    }
-  }
-
-  if (user?.id) {
-    const spend = await spendCredits(user.id, tipo, user.email);
-
-    if (spend.status === "insufficient") {
-      if (chargedDeepDaily) {
-        await refundDeepGeneration(user.id);
-      }
-
-      return NextResponse.json(
-        {
-          ok: false,
-          code: "insufficient_credits",
-          message:
-            "Você não tem créditos suficientes neste ciclo. Faça upgrade do plano para continuar gerando materiais.",
-          balance: spend.balance,
-          cost: spend.cost,
-        },
-        { status: 402 },
-      );
-    }
-
-    if (spend.status === "ok") {
-      chargedCost = spend.cost;
-    }
+    return jsonGenerationValidationError(validationErrors[0]);
   }
 
   try {
     const result = await generatePlanifyMaterial(payload);
 
     if (!result.ok) {
-      if (user?.id && chargedDeepDaily) {
-        await refundDeepGeneration(user.id);
-      }
-      if (user?.id && chargedCost > 0) {
-        await refundCredits(user.id, chargedCost, tipo);
-      }
+      await finalizeGenerationFailure(user?.id, tipo, charge, {
+        eventType: "material_generation_failed",
+        errorCode: String(result.status),
+        metadata: { message: result.message },
+      });
 
       return NextResponse.json(
         { ok: false, message: result.message },
@@ -133,16 +65,14 @@ export async function POST(request: NextRequest) {
     const qualityScore =
       "qualityScore" in result.data ? result.data.qualityScore : undefined;
 
-    logGenerationComplete({
+    logGenerationSuccessEvent({
       surface: "material",
       tipo: String(result.data.tipoMaterial || tipo),
       pipeline,
-      qualityScoreBucket: bucketQualityScore(
-        typeof qualityScore === "number" ? qualityScore : undefined,
-      ),
+      qualityScore: typeof qualityScore === "number" ? qualityScore : undefined,
       elevarQualidade: payload.elevarQualidade === true,
       usedAI: pipeline !== "engine-fallback",
-      dailyQuotaConsumed: chargedDeepDaily,
+      dailyQuotaConsumed: charge.chargedDeepDaily,
     });
 
     let materialId: string | null = null;
@@ -186,17 +116,18 @@ export async function POST(request: NextRequest) {
       qualityScore,
       qualityIssues:
         "qualityIssues" in result.data ? result.data.qualityIssues : [],
-      creditCost: chargedCost || getCreditCost(tipo),
+      creditCost: resolveGenerationCreditCost(charge, tipo),
       materialId,
       persistWarning,
     });
   } catch (error) {
-    if (user?.id && chargedDeepDaily) {
-      await refundDeepGeneration(user.id);
-    }
-    if (user?.id && chargedCost > 0) {
-      await refundCredits(user.id, chargedCost, tipo);
-    }
+    await finalizeGenerationFailure(user?.id, tipo, charge, {
+      eventType: "material_generation_failed",
+      errorCode: "exception",
+      metadata: {
+        message: error instanceof Error ? error.message : "unknown",
+      },
+    });
 
     const message =
       error instanceof Error ? error.message : "Erro inesperado ao gerar material.";
@@ -204,3 +135,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: false, message }, { status: 500 });
   }
 }
+
+export const POST = withOperationalCapture(
+  { eventType: "material_generation_failed", toolTipo: "material" },
+  handlePost,
+);

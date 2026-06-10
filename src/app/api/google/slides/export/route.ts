@@ -3,6 +3,7 @@ import { resolvePlanifyUserFromRequest } from "../../../../../server/google/goog
 import { getGoogleConfigStatus } from "../../../../../server/google/google-oauth";
 import { exportSlidesToGooglePresentations } from "../../../../../server/google/google-slides-export-service";
 import type { MaterialEngineResponse } from "../../../../../server/materials/material-engine-types";
+import { jsonExportErrorResponse } from "@/server/export/export-error-service";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -70,17 +71,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: result });
   } catch (error) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: {
-          message:
-            error instanceof Error
-              ? error.message
-              : "Não foi possível abrir no Google Apresentações.",
-        },
-      },
-      { status: 400 },
-    );
+    return jsonExportErrorResponse(error, { surface: "google-slides" });
   }
 }

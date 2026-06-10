@@ -1,3 +1,9 @@
+import { withSentryConfig } from "@sentry/nextjs";
+
+const sentryDsn =
+  process.env.SENTRY_DSN?.trim() ||
+  process.env.NEXT_PUBLIC_SENTRY_DSN?.trim();
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   serverExternalPackages: [
@@ -31,4 +37,10 @@ const nextConfig = {
   },
 };
 
-export default nextConfig;
+export default sentryDsn
+  ? withSentryConfig(nextConfig, {
+      silent: true,
+      disableServerWebpackPlugin: true,
+      disableClientWebpackPlugin: true,
+    })
+  : nextConfig;

@@ -1,5 +1,7 @@
+import { getSentryDsn } from "./src/lib/ops/sentry-dsn";
+
 export async function register() {
-  if (!process.env.SENTRY_DSN) return;
+  if (!getSentryDsn()) return;
 
   if (process.env.NEXT_RUNTIME === "nodejs") {
     await import("./sentry.server.config");

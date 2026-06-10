@@ -4,6 +4,7 @@ import {
   exportEditorHtmlDocument,
   type EditorHtmlExportFormat,
 } from "../../../../server/export/editor-html-export-service";
+import { jsonExportErrorResponse } from "@/server/export/export-error-service";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -59,17 +60,6 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: {
-          message:
-            error instanceof Error
-              ? error.message
-              : "Não foi possível exportar o documento.",
-        },
-      },
-      { status: 500 },
-    );
+    return jsonExportErrorResponse(error, { surface: "documentos-export" });
   }
 }

@@ -1,22 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { INCLUSAO_GENERATION_TYPE } from "@/lib/inclusao/inclusao-config";
-import { isDeepGenerationType } from "@/lib/ai/material-generation-policy";
-import { requireApiPremiumAccess } from "@/server/auth/api-access";
-import {
-  consumeDeepGeneration,
-  refundDeepGeneration,
-} from "@/server/credits/daily-generation-service";
-import {
-  getCreditCost,
-  refundCredits,
-  spendCredits,
-} from "@/server/credits/credit-service";
 import {
   generateInclusaoWithAI,
   type InclusaoAiPayload,
 } from "@/server/inclusao/inclusao-ai-service";
-import { logGenerationComplete, bucketQualityScore } from "@/server/telemetry/generation-telemetry";
 import { persistGeneratedMaterialBestEffort } from "@/server/materials/persist-generated-material";
+import {
+  finalizeGenerationFailure,
+  logGenerationSuccessEvent,
+  prepareGenerationRequest,
+  resolveGenerationCreditCost,
+} from "@/server/generation/generation-api-shared";
+import { withOperationalCapture } from "@/server/telemetry/with-operational-capture";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -25,90 +20,29 @@ export const maxDuration = 120;
 const DAILY_LIMIT_MESSAGE =
   "Você usou suas gerações profundas de hoje. A cota reinicia à meia-noite (horário de Brasília). Faça upgrade para Premium e tenha até 5 por dia.";
 
-export async function POST(request: NextRequest) {
-  const auth = await requireApiPremiumAccess(request);
-  if (!auth.ok) return auth.response;
+async function handlePost(request: NextRequest, _context: { params: Promise<Record<string, string>> }) {
+  const prepared = await prepareGenerationRequest<InclusaoAiPayload>(request, {
+    parsePayload: (raw) =>
+      raw && typeof raw === "object" ? (raw as InclusaoAiPayload) : null,
+    resolveTipo: () => INCLUSAO_GENERATION_TYPE,
+    dailyLimitMessage: DAILY_LIMIT_MESSAGE,
+    insufficientCreditsMessage:
+      "Você não tem créditos suficientes neste ciclo. Faça upgrade do plano para continuar gerando.",
+  });
 
-  const user = auth.access.user;
-  const payload = (await request.json().catch(() => null)) as
-    | InclusaoAiPayload
-    | null;
+  if (!prepared.ok) return prepared.response;
 
-  if (!payload) {
-    return NextResponse.json(
-      { ok: false, message: "Requisição inválida." },
-      { status: 400 },
-    );
-  }
-
-  const tipo = INCLUSAO_GENERATION_TYPE;
-  let chargedCost = 0;
-  let chargedDeepDaily = false;
-
-  if (user?.id && isDeepGenerationType(tipo)) {
-    const daily = await consumeDeepGeneration({
-      userId: user.id,
-      tipo,
-      email: user.email,
-    });
-
-    if (daily.status === "limit_reached") {
-      return NextResponse.json(
-        {
-          ok: false,
-          code: "daily_limit_reached",
-          message: DAILY_LIMIT_MESSAGE.replace(
-            "suas gerações profundas",
-            `suas ${daily.limit} gerações profundas`,
-          ),
-          used: daily.used,
-          limit: daily.limit,
-        },
-        { status: 429 },
-      );
-    }
-
-    if (daily.status === "ok") {
-      chargedDeepDaily = true;
-    }
-  }
-
-  if (user?.id) {
-    const spend = await spendCredits(user.id, tipo, user.email);
-
-    if (spend.status === "insufficient") {
-      if (chargedDeepDaily) {
-        await refundDeepGeneration(user.id);
-      }
-
-      return NextResponse.json(
-        {
-          ok: false,
-          code: "insufficient_credits",
-          message:
-            "Você não tem créditos suficientes neste ciclo. Faça upgrade do plano para continuar gerando.",
-          balance: spend.balance,
-          cost: spend.cost,
-        },
-        { status: 402 },
-      );
-    }
-
-    if (spend.status === "ok") {
-      chargedCost = spend.cost;
-    }
-  }
+  const { user, payload, tipo, charge } = prepared;
 
   try {
     const result = await generateInclusaoWithAI(payload);
 
     if (!result.ok) {
-      if (user?.id && chargedDeepDaily) {
-        await refundDeepGeneration(user.id);
-      }
-      if (user?.id && chargedCost > 0) {
-        await refundCredits(user.id, chargedCost, tipo);
-      }
+      await finalizeGenerationFailure(user?.id, tipo, charge, {
+        eventType: "material_generation_failed",
+        errorCode: String(result.status),
+        metadata: { message: result.message, modo: payload.modo },
+      });
 
       return NextResponse.json(
         { ok: false, message: result.message },
@@ -116,14 +50,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    logGenerationComplete({
+    logGenerationSuccessEvent({
       surface: "material",
       tipo: `${tipo}:${payload.modo}`,
       pipeline: result.usedAI ? "inclusao-ai" : "inclusao-fallback",
-      qualityScoreBucket: bucketQualityScore(undefined),
       elevarQualidade: false,
       usedAI: result.usedAI,
-      dailyQuotaConsumed: chargedDeepDaily && result.usedAI,
+      dailyQuotaConsumed: charge.chargedDeepDaily && result.usedAI,
     });
 
     if (user?.id) {
@@ -152,15 +85,16 @@ export async function POST(request: NextRequest) {
       ok: true,
       markdown: result.markdown,
       html: result.html,
-      creditCost: chargedCost || getCreditCost(tipo),
+      creditCost: resolveGenerationCreditCost(charge, tipo),
     });
   } catch (error) {
-    if (user?.id && chargedDeepDaily) {
-      await refundDeepGeneration(user.id);
-    }
-    if (user?.id && chargedCost > 0) {
-      await refundCredits(user.id, chargedCost, tipo);
-    }
+    await finalizeGenerationFailure(user?.id, tipo, charge, {
+      eventType: "material_generation_failed",
+      errorCode: "exception",
+      metadata: {
+        message: error instanceof Error ? error.message : "unknown",
+      },
+    });
 
     const message =
       error instanceof Error
@@ -170,3 +104,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: false, message }, { status: 500 });
   }
 }
+
+export const POST = withOperationalCapture(
+  { eventType: "material_generation_failed", toolTipo: "inclusao" },
+  handlePost,
+);

@@ -1,0 +1,33 @@
+-- Mapeamento: pipeline IA OpenAI → question_bank_items (tabela existente)
+-- NÃO cria tabela nova — reutiliza public.question_bank_items + texto_apoio (20260628).
+--
+-- ┌─────────────────────────────┬──────────────────────────┬────────────────────────────────────────────┐
+-- │ Campo gerado (ETAPA 1 JSON) │ Coluna question_bank_items│ Observação                                 │
+-- ├─────────────────────────────┼──────────────────────────┼────────────────────────────────────────────┤
+-- │ enunciado                   │ enunciado                │ texto da pergunta (autossuficiente)        │
+-- │ texto_apoio                 │ texto_apoio              │ opcional; leitura separada do enunciado    │
+-- │ (fixo) "objetiva"           │ tipo                     │ múltipla escolha A–E                       │
+-- │ alternativas[]              │ alternativas             │ jsonb — 5 strings "A) …" … "E) …"          │
+-- │ gabarito                    │ resposta_esperada        │ letra única A|B|C|D|E                      │
+-- │ justificativa               │ criterio_correcao        │ explicação pedagógica do gabarito          │
+-- │ CLI --componente            │ componente               │ ex.: Matemática, História                  │
+-- │ CLI --anoSerie              │ ano_serie                │ ex.: 5º ano, 9º ano, 1º EM                  │
+-- │ derivado de ano_serie       │ etapa                    │ EF I / EF II / EM                          │
+-- │ CLI --topic                 │ tema                     │ ex.: Frações, Revolução Industrial         │
+-- │ tags[]                      │ tags                     │ text[] — palavras-chave BNCC               │
+-- │ bncc_codigos[]              │ bncc_codigos             │ text[] — códigos EF/EM quando inferidos    │
+-- │ (fixo)                      │ source_type              │ ingest:ai-openai                           │
+-- │ (fixo)                      │ source_title             │ Geração IA Planify                         │
+-- │ hash(enunciado, tipo)       │ content_hash             │ dedup via computeQuestionContentHash       │
+-- │ (fixo) community            │ visibility               │ comunidade pública                         │
+-- │ (fixo) true                 │ is_published             │ publicado na curadoria                     │
+-- │ now()                       │ published_at             │ timestamp de publicação                    │
+-- │ curador resolveCuratorUserId│ user_id                  │ perfil owner/admin ou PLANIFY_OWNER_USER_ID│
+-- │ Planify Curadoria OER       │ author_display_name      │ exibição na comunidade                     │
+-- └─────────────────────────────┴──────────────────────────┴────────────────────────────────────────────┘
+--
+-- Índice de dedup: question_bank_items_user_hash_uidx (user_id, content_hash)
+-- O script também consulta content_hash global antes de inserir.
+
+comment on column public.question_bank_items.source_type is
+  'Origem da questão — inclui ingest:ai-openai para geração via pipeline OpenAI.';

@@ -1,7 +1,9 @@
 import {
   buildLessonBundleObservacoes,
   DEFAULT_LESSON_BUNDLE_TOOLS,
+  getBundleQuantityForTool,
 } from "@/lib/aula-completa/lesson-bundle-config";
+import { BUNDLE_SERVER_DEADLINE_MS } from "@/lib/pro/generation-timeout";
 import type { PlanifyToolId } from "@/lib/pro/planifyTools";
 import type { MaterialAIOutput } from "@/types/ai";
 import { logOperationalEvent } from "../telemetry/operational-telemetry";
@@ -63,8 +65,32 @@ export async function generateLessonBundle(
 
   const items: LessonBundleItemResult[] = [];
   const completedLabels: string[] = [];
+  const bundleStartedAt = Date.now();
+  const isPastBundleDeadline = () =>
+    Date.now() - bundleStartedAt > BUNDLE_SERVER_DEADLINE_MS;
 
   for (let index = 0; index < toolIds.length; index += 1) {
+    if (isPastBundleDeadline()) {
+      for (let skipIndex = index; skipIndex < toolIds.length; skipIndex += 1) {
+        const skippedToolId = toolIds[skipIndex];
+        const skipped: LessonBundleItemResult = {
+          toolId: skippedToolId,
+          ok: false,
+          error:
+            "Tempo do pacote esgotado — os materiais anteriores foram entregues. Regenere este item individualmente.",
+        };
+        items.push(skipped);
+        options?.onItem?.(skipped);
+        options?.onProgress?.({
+          index: skipIndex,
+          total: toolIds.length,
+          toolId: skippedToolId,
+          status: "failed",
+        });
+      }
+      break;
+    }
+
     const toolId = toolIds[index];
     options?.onProgress?.({
       index,
@@ -80,12 +106,15 @@ export async function generateLessonBundle(
       completedLabels,
     });
 
+    const bundleQuantity = getBundleQuantityForTool(toolId);
+
     const payload: MaterialEngineInput = {
       ...input,
       tipoMaterial: toolId,
       tipo: toolId,
       tema,
       observacoes,
+      ...(bundleQuantity ? { quantidade: bundleQuantity } : {}),
       idempotencyKey: crypto.randomUUID(),
     };
 

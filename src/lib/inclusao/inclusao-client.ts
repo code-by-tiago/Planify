@@ -4,6 +4,12 @@ import type {
   InclusaoModeId,
   InclusaoNeedId,
 } from "@/lib/inclusao/inclusao-config";
+import {
+  createGenerationTimeoutError,
+  GENERATION_CLIENT_TIMEOUT_MS,
+  isFetchTimeoutError,
+  withGenerationTimeoutSignal,
+} from "@/lib/pro/generation-timeout";
 
 export type InclusaoGenerationPayload = {
   modo: InclusaoModeId;
@@ -39,11 +45,26 @@ export class InclusaoGenerationError extends Error {
 
 export async function requestInclusaoGeneration(
   payload: InclusaoGenerationPayload,
+  options?: { signal?: AbortSignal },
 ): Promise<InclusaoGenerationResult> {
-  const response = await planifyAuthenticatedFetch("/api/inclusao/adaptar", {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
+  const signal = withGenerationTimeoutSignal(
+    options?.signal,
+    GENERATION_CLIENT_TIMEOUT_MS,
+  );
+
+  let response: Response;
+  try {
+    response = await planifyAuthenticatedFetch("/api/inclusao/adaptar", {
+      method: "POST",
+      body: JSON.stringify(payload),
+      signal,
+    });
+  } catch (error) {
+    if (isFetchTimeoutError(error)) {
+      throw createGenerationTimeoutError("inclusao");
+    }
+    throw error;
+  }
 
   const data = await response.json().catch(() => null);
 
@@ -53,6 +74,7 @@ export async function requestInclusaoGeneration(
     ) as Error & { code?: string; status?: number };
     error.code = data?.code;
     error.status = response.status;
+    if (response.status === 504) error.code = "timeout";
     throw error;
   }
 

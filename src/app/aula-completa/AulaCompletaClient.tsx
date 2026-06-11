@@ -17,7 +17,10 @@ import { MaterialToolPageShell } from "@/components/pro/MaterialToolPageShell";
 import { SwipeTabPanel } from "@/components/pro/SwipeTabPanel";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { PlanifyOwlGenerationCoach } from "@/components/pro/PlanifyOwlGenerationCoach";
-import { getLessonBundleCreditCost } from "@/lib/aula-completa/lesson-bundle-config";
+import {
+  DEFAULT_LESSON_BUNDLE_TOOLS,
+  getLessonBundleCreditCost,
+} from "@/lib/aula-completa/lesson-bundle-config";
 import type { LessonBundleItem } from "@/lib/aula-completa/lesson-bundle-client";
 import { persistBundleItemToHistory } from "@/lib/aula-completa/lesson-bundle-persist-client";
 import { requestLessonBundleItemRetry } from "@/lib/aula-completa/lesson-bundle-retry-client";
@@ -48,8 +51,8 @@ type AulaCompletaClientProps = {
   initialTema?: string;
 };
 
-const MOBILE_BUNDLE_TOOLS: PlanifyToolId[] = ["plano-aula", "slides", "atividade"];
-const PATIENCE_THRESHOLD_MS = 90_000;
+const MOBILE_BUNDLE_TOOLS: PlanifyToolId[] = [...DEFAULT_LESSON_BUNDLE_TOOLS];
+const PATIENCE_THRESHOLD_MS = 60_000;
 
 const tool = getPlanifyTool("aula-completa");
 
@@ -74,10 +77,7 @@ export function AulaCompletaClient({
   const [objetivo, setObjetivo] = useState(lessonBundleObjetivoHint);
   const [observacoes, setObservacoes] = useState("");
   const [selectedTools, setSelectedTools] = useState<PlanifyToolId[]>([
-    "plano-aula",
-    "slides",
-    "atividade",
-    "prova",
+    ...DEFAULT_LESSON_BUNDLE_TOOLS,
   ]);
   const [loading, setLoading] = useState(false);
   const [retryingToolId, setRetryingToolId] = useState<PlanifyToolId | null>(null);
@@ -482,8 +482,8 @@ export function AulaCompletaClient({
             <p className="mt-1 text-xs font-semibold text-cyan-700">
               {durationBadge} — não feche a aba
             </p>
-            <p className="mt-1 text-xs font-medium text-slate-500 lg:hidden">
-              No celular, prova é opcional — marque se precisar.
+            <p className="mt-1 text-xs font-medium text-slate-500">
+              Pacote essencial: plano, slides, atividade e lista. Acrescente itens opcionais só se precisar.
             </p>
           </div>
 

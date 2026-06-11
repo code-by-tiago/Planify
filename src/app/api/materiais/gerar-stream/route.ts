@@ -42,9 +42,7 @@ async function handlePost(request: NextRequest, _context: { params: Promise<Reco
 
   if (!isMaterialStreamType(tipo)) {
     await finalizeGenerationFailure(user?.id, tipo, charge);
-    return jsonGenerationValidationError(
-      "Streaming disponível apenas para slides, prova e apostila.",
-    );
+    return jsonGenerationValidationError("Tipo de material inválido para geração.");
   }
 
   const normalizedRequest = normalizeMaterialEngineRequest(payload);

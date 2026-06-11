@@ -257,7 +257,7 @@ type EnrichableSlide = {
 };
 
 /** Teto de imagens geradas por IA por apresentação (controla custo/latência). */
-const MAX_AI_IMAGES = 16;
+const MAX_AI_IMAGES = 8;
 /** Quantas gerações de imagem correm em paralelo. */
 const IMAGE_CONCURRENCY = 4;
 

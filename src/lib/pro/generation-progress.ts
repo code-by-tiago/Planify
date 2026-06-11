@@ -2,28 +2,28 @@ import type { LumiCoachContext } from "./lumiMotivationalMessages";
 import type { PlanifyToolId } from "./planifyTools";
 
 const TOOL_DURATION_MS: Partial<Record<PlanifyToolId | string, number>> = {
-  slides: 95_000,
-  prova: 80_000,
-  lista: 75_000,
-  apostila: 70_000,
-  atividade: 65_000,
-  "plano-aula": 70_000,
-  sequencia: 75_000,
-  jogo: 70_000,
-  projeto: 80_000,
-  resumo: 55_000,
+  slides: 150_000,
+  prova: 180_000,
+  lista: 180_000,
+  apostila: 150_000,
+  atividade: 90_000,
+  "plano-aula": 120_000,
+  sequencia: 150_000,
+  jogo: 90_000,
+  projeto: 120_000,
+  resumo: 75_000,
   flashcards: 60_000,
-  redacao: 65_000,
+  redacao: 100_000,
   "mapa-mental": 60_000,
-  inclusao: 70_000,
-  "aula-completa": 240_000,
-  "correcao-ia": 45_000,
+  inclusao: 90_000,
+  "aula-completa": 360_000,
+  "correcao-ia": 60_000,
 };
 
 const CONTEXT_DURATION_MS: Record<LumiCoachContext, number> = {
   generic: 60_000,
-  material: 70_000,
-  planejamento: 110_000,
+  material: 90_000,
+  planejamento: 150_000,
   bncc: 35_000,
   docx: 25_000,
 };
@@ -79,5 +79,20 @@ export function computeGenerationProgressPercent(
 
   const ratio = elapsedMs / estimatedMs;
   const eased = 1 - Math.exp(-ratio * 2.4);
-  return Math.min(92, Math.max(6, Math.round(eased * 100)));
+  const base = Math.min(92, Math.max(6, Math.round(eased * 100)));
+
+  if (elapsedMs <= estimatedMs * 1.05) {
+    return base;
+  }
+
+  const overtimeMs = elapsedMs - estimatedMs * 1.05;
+  const creep = Math.min(6, Math.floor(overtimeMs / 20_000));
+  return Math.min(98, 92 + creep);
+}
+
+export function isGenerationOvertime(
+  elapsedMs: number,
+  estimatedMs: number,
+): boolean {
+  return estimatedMs > 0 && elapsedMs > estimatedMs * 1.05;
 }

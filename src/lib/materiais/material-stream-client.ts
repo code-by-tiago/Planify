@@ -3,6 +3,12 @@ import type {
   MaterialStreamEvent,
   MaterialStreamPayload,
 } from "@/lib/materiais/material-stream-types";
+import {
+  createGenerationTimeoutError,
+  GENERATION_CLIENT_TIMEOUT_MS,
+  isFetchTimeoutError,
+  withGenerationTimeoutSignal,
+} from "@/lib/pro/generation-timeout";
 
 export type MaterialStreamCallbacks = {
   onProgress?: (payload: {
@@ -42,11 +48,24 @@ export async function requestMaterialGenerationStream(
   payload: MaterialStreamPayload,
   callbacks: MaterialStreamCallbacks = {},
 ): Promise<MaterialStreamResult> {
-  const response = await planifyAuthenticatedFetch("/api/materiais/gerar-stream", {
-    method: "POST",
-    body: JSON.stringify(payload),
-    signal: callbacks.signal,
-  });
+  const signal = withGenerationTimeoutSignal(
+    callbacks.signal,
+    GENERATION_CLIENT_TIMEOUT_MS,
+  );
+
+  let response: Response;
+  try {
+    response = await planifyAuthenticatedFetch("/api/materiais/gerar-stream", {
+      method: "POST",
+      body: JSON.stringify(payload),
+      signal,
+    });
+  } catch (error) {
+    if (isFetchTimeoutError(error)) {
+      throw createGenerationTimeoutError("material");
+    }
+    throw error;
+  }
 
   if (!response.ok) {
     const data = await response.json().catch(() => null);
@@ -55,6 +74,7 @@ export async function requestMaterialGenerationStream(
     ) as Error & { code?: string; status?: number };
     error.code = data?.code;
     error.status = response.status;
+    if (response.status === 504) error.code = "timeout";
     throw error;
   }
 

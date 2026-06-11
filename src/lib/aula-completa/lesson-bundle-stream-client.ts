@@ -3,6 +3,12 @@ import type { LessonBundlePayload, LessonBundleItem } from "@/lib/aula-completa/
 import { LessonBundleError } from "@/lib/aula-completa/lesson-bundle-client";
 import type { BundleStreamEvent } from "@/lib/aula-completa/lesson-bundle-stream-types";
 import type { PlanifyToolId } from "@/lib/pro/planifyTools";
+import {
+  createGenerationTimeoutError,
+  GENERATION_CLIENT_TIMEOUT_MS,
+  isFetchTimeoutError,
+  withGenerationTimeoutSignal,
+} from "@/lib/pro/generation-timeout";
 
 export type LessonBundleStreamCallbacks = {
   onProgress?: (payload: {
@@ -36,11 +42,24 @@ export async function requestLessonBundleGenerationStream(
   payload: LessonBundlePayload,
   callbacks: LessonBundleStreamCallbacks = {},
 ): Promise<LessonBundleStreamResult> {
-  const response = await planifyAuthenticatedFetch("/api/aula-completa/gerar-stream", {
-    method: "POST",
-    body: JSON.stringify(payload),
-    signal: callbacks.signal,
-  });
+  const signal = withGenerationTimeoutSignal(
+    callbacks.signal,
+    GENERATION_CLIENT_TIMEOUT_MS,
+  );
+
+  let response: Response;
+  try {
+    response = await planifyAuthenticatedFetch("/api/aula-completa/gerar-stream", {
+      method: "POST",
+      body: JSON.stringify(payload),
+      signal,
+    });
+  } catch (error) {
+    if (isFetchTimeoutError(error)) {
+      throw createGenerationTimeoutError("aula-completa");
+    }
+    throw error;
+  }
 
   if (!response.ok) {
     const data = await response.json().catch(() => null);

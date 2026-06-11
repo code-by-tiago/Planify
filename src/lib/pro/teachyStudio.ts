@@ -6,15 +6,17 @@ export const lessonBundleTools: {
   label: string;
   tag: string;
   icon: PlanifyIconName;
+  recommended?: boolean;
 }[] = [
-  { id: "plano-aula", label: "Plano de aula", tag: "Sala", icon: "clipboard" },
-  { id: "slides", label: "Slides", tag: "Sala", icon: "presentation" },
-  { id: "lista", label: "Lista de exercícios", tag: "Tarefa", icon: "listChecks" },
-  { id: "atividade", label: "Atividade", tag: "Sala", icon: "puzzle" },
-  { id: "resumo", label: "Resumo", tag: "Estudo", icon: "fileText" },
-  { id: "mapa-mental", label: "Mapa mental", tag: "Revisão", icon: "brain" },
-  { id: "prova", label: "Quiz / Prova", tag: "Avaliação", icon: "fileText" },
-  { id: "jogo", label: "Jogo educativo", tag: "Engajar", icon: "puzzle" },
+  { id: "plano-aula", label: "Plano de aula", tag: "Essencial · Sala", icon: "clipboard", recommended: true },
+  { id: "slides", label: "Slides", tag: "Essencial · Sala", icon: "presentation", recommended: true },
+  { id: "atividade", label: "Atividade", tag: "Essencial · Sala", icon: "puzzle", recommended: true },
+  { id: "lista", label: "Lista de exercícios", tag: "Essencial · Fixação", icon: "listChecks", recommended: true },
+  { id: "resumo", label: "Resumo", tag: "Opcional · Estudo", icon: "fileText" },
+  { id: "flashcards", label: "Flashcards", tag: "Opcional · Revisão", icon: "cards" },
+  { id: "jogo", label: "Jogo educativo", tag: "Opcional · Engajar", icon: "puzzle" },
+  { id: "prova", label: "Quiz / Prova", tag: "Opcional · Avaliação", icon: "fileText" },
+  { id: "mapa-mental", label: "Mapa mental", tag: "Opcional · Revisão", icon: "brain" },
 ];
 
 export const teachyWorkflowSteps = [

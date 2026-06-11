@@ -271,6 +271,7 @@ function PlanningGenerationPanel({
         title={label}
         context={context}
         progressSteps={planningProgressSteps}
+        estimatedDurationMs={150_000}
       />
       <MaterialPreviewSkeleton />
     </div>

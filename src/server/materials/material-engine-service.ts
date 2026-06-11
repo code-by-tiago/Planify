@@ -1,5 +1,6 @@
 import { buildVisualGameMaterial } from "@/lib/materiais/game-builder";
 import { getModelTierForMaterialRequest } from "@/lib/ai/material-generation-policy";
+import { GENERATION_SERVER_DEADLINE_MS } from "@/lib/pro/generation-timeout";
 import { computeQualityScore } from "@/lib/materiais/material-quality-score";
 import { isGenericEducationalText } from "@/lib/materiais/material-semantic-quality";
 import {
@@ -84,6 +85,9 @@ const P0_QUALITY_GATE_TYPES = new Set<MaterialEngineType>([
 /** Mínimo para entrega sem alerta crítico — acima do piso Teachy (80). */
 const MIN_P0_QUALITY_SCORE = 88;
 
+const GENERATION_DEADLINE_MS = GENERATION_SERVER_DEADLINE_MS;
+const MAX_EXAM_REPAIR_PASSES = 1;
+
 const CRITICAL_RETRY_TYPES = new Set<MaterialEngineType>([
   "prova",
   "lista",
@@ -96,7 +100,19 @@ const CRITICAL_RETRY_TYPES = new Set<MaterialEngineType>([
 ]);
 
 function maxAttemptsFor(type: MaterialEngineType): number {
-  return CRITICAL_RETRY_TYPES.has(type) ? 5 : 4;
+  switch (type) {
+    case "prova":
+    case "lista":
+    case "slides":
+    case "apostila":
+    case "plano-aula":
+    case "sequencia":
+    case "projeto":
+    case "redacao":
+      return 3;
+    default:
+      return 2;
+  }
 }
 
 function buildDeliveryAlertas(
@@ -1026,6 +1042,9 @@ export async function generateMaterialByEngine(input: MaterialEngineInput) {
   let lastError: unknown = null;
 
   const maxAttempts = maxAttemptsFor(request.tipoMaterial);
+  const generationStartedAt = Date.now();
+  const isPastGenerationDeadline = () =>
+    Date.now() - generationStartedAt > GENERATION_DEADLINE_MS;
 
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
     try {
@@ -1065,7 +1084,11 @@ export async function generateMaterialByEngine(input: MaterialEngineInput) {
 
       const issues = getEngineOutputIssues(request, normalized);
 
-      if (issues.length && attempt < maxAttempts - 1) {
+      if (
+        issues.length &&
+        attempt < maxAttempts - 1 &&
+        !isPastGenerationDeadline()
+      ) {
         activePrompt = `${basePrompt}\n\n${buildQualityRetryPrompt(request, issues, {
           teachyDepth: attempt >= 1,
         })}`;
@@ -1080,7 +1103,8 @@ export async function generateMaterialByEngine(input: MaterialEngineInput) {
       if (
         P0_QUALITY_GATE_TYPES.has(request.tipoMaterial) &&
         qualityScore < MIN_P0_QUALITY_SCORE &&
-        attempt < maxAttempts - 1
+        attempt < maxAttempts - 1 &&
+        !isPastGenerationDeadline()
       ) {
         activePrompt = `${basePrompt}\n\n${buildQualityRetryPrompt(
           request,
@@ -1105,20 +1129,26 @@ export async function generateMaterialByEngine(input: MaterialEngineInput) {
         (finalNormalized.exam?.questions?.length ?? 0) > 0
       ) {
         const { regenerateWeakExamQuestions } = await import("./exam-questions-retry");
-        for (let repairPass = 0; repairPass < 3; repairPass += 1) {
-          const repaired = await regenerateWeakExamQuestions(input, finalNormalized);
-          finalNormalized = repaired.estrutura;
-          finalIssues = repaired.qualityIssues;
-          finalHtml = repaired.html;
-          finalScore = repaired.qualityScore;
-          finalAlertas = buildDeliveryAlertas(
-            request,
-            finalIssues,
-            isFinalAttempt,
-          );
+        if (!isPastGenerationDeadline()) {
+          for (
+            let repairPass = 0;
+            repairPass < MAX_EXAM_REPAIR_PASSES;
+            repairPass += 1
+          ) {
+            const repaired = await regenerateWeakExamQuestions(input, finalNormalized);
+            finalNormalized = repaired.estrutura;
+            finalIssues = repaired.qualityIssues;
+            finalHtml = repaired.html;
+            finalScore = repaired.qualityScore;
+            finalAlertas = buildDeliveryAlertas(
+              request,
+              finalIssues,
+              isFinalAttempt,
+            );
 
-          if (!finalIssues.length || finalScore >= MIN_P0_QUALITY_SCORE) {
-            break;
+            if (!finalIssues.length || finalScore >= MIN_P0_QUALITY_SCORE) {
+              break;
+            }
           }
         }
       }

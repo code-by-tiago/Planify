@@ -6,6 +6,7 @@ import {
   computeGenerationProgressPercent,
   formatRemainingTime,
   getGenerationDurationEstimateMs,
+  isGenerationOvertime,
 } from "@/lib/pro/generation-progress";
 import { getMaterialGenerationSteps } from "@/lib/pro/generation-stage-messages";
 import {
@@ -102,8 +103,13 @@ export function PlanifyOwlGenerationCoach({
 
   const currentMessage = messages[messageIndex] ?? messages[0] ?? "";
   const progressPercent = computeGenerationProgressPercent(elapsedMs, durationMs);
+  const overtime = isGenerationOvertime(elapsedMs, durationMs);
   const remainingMs = Math.max(0, durationMs - elapsedMs);
-  const remainingLabel = useStageRotation ? null : formatRemainingTime(remainingMs);
+  const remainingLabel = useStageRotation
+    ? overtime
+      ? "Levando mais tempo que o usual — ainda gerando…"
+      : null
+    : formatRemainingTime(remainingMs);
 
   return (
     <div
@@ -153,9 +159,16 @@ export function PlanifyOwlGenerationCoach({
             ) : null}
 
             {useStageRotation ? (
-              <p className="mt-3 text-sm font-semibold leading-6 text-slate-600">
-                {title}
-              </p>
+              <>
+                <p className="mt-3 text-sm font-semibold leading-6 text-slate-600">
+                  {title}
+                </p>
+                {overtime ? (
+                  <p className="mt-2 text-sm font-semibold leading-6 text-amber-700">
+                    Levando mais tempo que o usual — ainda gerando. Não feche esta página.
+                  </p>
+                ) : null}
+              </>
             ) : (
               <div className="relative mt-4 rounded-xl border border-cyan-400/20 bg-cyan-50/50 px-4 py-3.5 text-left">
                 {remainingLabel ? (

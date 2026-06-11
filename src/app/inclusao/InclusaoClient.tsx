@@ -51,7 +51,7 @@ type InclusaoClientProps = {
 };
 
 const tool = getPlanifyTool("inclusao");
-const PATIENCE_THRESHOLD_MS = 90_000;
+const PATIENCE_THRESHOLD_MS = 60_000;
 
 const MODE_CONTENT_LABELS: Record<InclusaoModeId, string> = {
   adaptacao: "Atividade ou plano original",

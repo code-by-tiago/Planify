@@ -1,4 +1,9 @@
 import { EDITOR_COMPLEMENTARY_ADJUST_MARKER } from "@/lib/ai/material-generation-policy";
+import {
+  createGenerationTimeoutError,
+  GENERATION_CLIENT_TIMEOUT_MS,
+  isFetchTimeoutError,
+} from "@/lib/pro/generation-timeout";
 import type { MaterialEngineInput } from "@/server/materials/material-engine-types";
 
 export type MaterialGenerationApiResult = {
@@ -18,20 +23,35 @@ export type MaterialGenerationApiResult = {
 export async function requestMaterialGeneration(
   payload: MaterialEngineInput,
 ): Promise<MaterialGenerationApiResult> {
-  const response = await fetch("/api/materiais/gerar", {
-    method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
+  let response: Response;
+  try {
+    response = await fetch("/api/materiais/gerar", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(GENERATION_CLIENT_TIMEOUT_MS),
+    });
+  } catch (error) {
+    if (isFetchTimeoutError(error)) {
+      throw createGenerationTimeoutError("material");
+    }
+    throw error;
+  }
 
-  const data = (await response.json().catch(() => null)) as MaterialGenerationApiResult | null;
+  let data: MaterialGenerationApiResult | null = null;
+  try {
+    data = (await response.json()) as MaterialGenerationApiResult;
+  } catch {
+    data = null;
+  }
 
   if (!response.ok || !data?.ok) {
     const message = data?.message || "Não foi possível gerar o material.";
     const error = new Error(message) as Error & { code?: string; status?: number };
     if (data?.code) error.code = data.code;
     error.status = response.status;
+    if (response.status === 504) error.code = "timeout";
     throw error;
   }
 

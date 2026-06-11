@@ -126,10 +126,15 @@ export function formatGenerationError(error: unknown): FormattedGenerationError 
   }
 
   if (code === "timeout" || status === 504) {
+    const rawMessage =
+      error instanceof Error ? error.message.trim() : "";
     return {
-      message: "A operação demorou demais. Tente novamente.",
+      message:
+        rawMessage && rawMessage !== "A operação demorou demais. Tente novamente."
+          ? rawMessage
+          : "A operação demorou demais. Tente novamente com menos itens ou aguarde alguns instantes.",
       code: "timeout",
-      retryable: true,
+      retryable: false,
     };
   }
 

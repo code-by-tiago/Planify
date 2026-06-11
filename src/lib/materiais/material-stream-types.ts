@@ -34,10 +34,25 @@ export type MaterialStreamEvent =
   | MaterialStreamCompleteEvent
   | MaterialStreamErrorEvent;
 
-export const MATERIAL_STREAM_TYPES = new Set(["slides", "prova", "apostila"]);
+/** Todos os 13 geradores do Material Engine — streaming NDJSON em /gerar-stream. */
+export const MATERIAL_STREAM_TYPES = new Set([
+  "apostila",
+  "atividade",
+  "prova",
+  "slides",
+  "projeto",
+  "jogo",
+  "sequencia",
+  "resumo",
+  "lista",
+  "plano-aula",
+  "flashcards",
+  "redacao",
+  "mapa-mental",
+]);
 
 export function isMaterialStreamType(tipo: string): boolean {
-  return MATERIAL_STREAM_TYPES.has(tipo);
+  return MATERIAL_STREAM_TYPES.has(String(tipo || "").trim());
 }
 
 export type MaterialStreamPayload = MaterialEngineInput;

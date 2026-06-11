@@ -15,7 +15,7 @@ import { withOperationalCapture } from "@/server/telemetry/with-operational-capt
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 120;
+export const maxDuration = 300;
 
 const DAILY_LIMIT_MESSAGE =
   "Você usou suas gerações profundas de hoje. A cota reinicia à meia-noite (horário de Brasília). Faça upgrade para Premium e tenha até 5 por dia.";

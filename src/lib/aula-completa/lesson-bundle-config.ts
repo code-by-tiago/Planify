@@ -1,21 +1,45 @@
 import { getClientCreditCost } from "@/lib/credits/credit-costs";
 import type { PlanifyToolId } from "@/lib/pro/planifyTools";
 
-/** Pacote padrão (modelo Teachy Aula Mágica): plano → slides → resumo → prática → avaliação */
+/**
+ * Pacote enxuto para sala de aula — fluxo natural:
+ * planejar → apresentar → praticar → fixar com exercícios.
+ */
 export const DEFAULT_LESSON_BUNDLE_TOOLS: PlanifyToolId[] = [
   "plano-aula",
   "slides",
-  "resumo",
-  "lista",
   "atividade",
+  "lista",
+];
+
+/** Materiais opcionais que o professor pode acrescentar ao pacote. */
+export const OPTIONAL_LESSON_BUNDLE_TOOLS: PlanifyToolId[] = [
+  "resumo",
+  "flashcards",
   "jogo",
   "prova",
-  "projeto",
+  "mapa-mental",
 ];
 
 export const LESSON_BUNDLE_GENERATION_TYPE = "aula-completa";
 
 const BUNDLE_DISCOUNT = 0.85;
+
+/** Quantidades menores no pacote — mais rápido sem perder coerência pedagógica. */
+export function getBundleQuantityForTool(toolId: PlanifyToolId): string | undefined {
+  switch (toolId) {
+    case "lista":
+      return "5";
+    case "prova":
+      return "8";
+    case "slides":
+      return "8";
+    case "atividade":
+      return "1";
+    default:
+      return undefined;
+  }
+}
 
 export function getLessonBundleCreditCost(toolIds: PlanifyToolId[]): number {
   const sum = toolIds.reduce((acc, id) => acc + getClientCreditCost(id), 0);
@@ -31,16 +55,17 @@ export function buildLessonBundleObservacoes(input: {
   const parts = [
     input.baseObservacoes?.trim(),
     [
-      "PACOTE AULA COMPLETA — gere material coeso com os demais itens do pacote.",
+      "PACOTE AULA COMPLETA — gere material coeso, enxuto e pronto para aplicar em sala.",
       `Tema central: ${input.tema.trim()}.`,
       input.objetivo?.trim() ? `Objetivo: ${input.objetivo.trim()}.` : "",
       input.completedLabels.length
         ? `Materiais já gerados neste pacote:\n${input.completedLabels.map((l) => `- ${l}`).join("\n")}\nMantenha linguagem, exemplos e progressão alinhados.`
         : "",
+      "Versão do pacote: objetiva, sem introduções longas; priorize aplicabilidade imediata em sala.",
     ]
       .filter(Boolean)
       .join("\n"),
-  ].filter(Boolean);
+  ];
 
-  return parts.join("\n\n");
+  return parts.filter(Boolean).join("\n\n");
 }

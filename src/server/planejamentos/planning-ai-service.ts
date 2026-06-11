@@ -1,4 +1,5 @@
 import { getModelTierForPlanning } from "@/lib/ai/material-generation-policy";
+import { GENERATION_SERVER_DEADLINE_MS } from "@/lib/pro/generation-timeout";
 import { buildElevateQualityObservacoes } from "@/lib/materiais/material-quality-score";
 import { generateGeminiJSON } from "../ai/gemini-client";
 import {
@@ -686,6 +687,9 @@ export async function generatePlanningWithAI(
 
   try {
   let retryNote = "";
+  const planningStartedAt = Date.now();
+  const isPastPlanningDeadline = () =>
+    Date.now() - planningStartedAt > GENERATION_SERVER_DEADLINE_MS;
 
   for (let attempt = 0; attempt < PLANNING_MAX_ATTEMPTS; attempt += 1) {
     const json = await requestPlanningJson(
@@ -706,7 +710,7 @@ export async function generatePlanningWithAI(
       };
     }
 
-    if (attempt === PLANNING_MAX_ATTEMPTS - 1) {
+    if (attempt === PLANNING_MAX_ATTEMPTS - 1 || isPastPlanningDeadline()) {
       const warning =
         "Passo crítico: a matriz foi gerada, mas ainda há pendências de qualidade. Revise antes de aplicar: " +
         issues.slice(0, 6).join(" ");

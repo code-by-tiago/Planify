@@ -308,7 +308,7 @@ export const planifyTools: PlanifyTool[] = [
     title: "Construtor de Aula Completa",
     shortTitle: "Aula completa",
     description:
-      "Um tema gera plano, slides, atividade e avaliação coesos no mesmo pacote — revise cada peça antes de exportar.",
+      "Um tema gera plano, slides, atividade e lista de fixação coesos — pacote enxuto pronto para sala. Acrescente itens opcionais se quiser.",
     category: "preparar-aulas",
     href: dashboardToolHref("aula-completa"),
     icon: "layers",
@@ -316,7 +316,7 @@ export const planifyTools: PlanifyTool[] = [
     primaryFieldLabel: "Tema da aula",
     loadingTitle: "Montando aula completa",
     loadingDescription:
-      "Gerando plano, slides, atividade e avaliação com sequência pedagógica coesa.",
+      "Gerando plano, slides, atividade e lista com sequência pedagógica coesa.",
     accent: "from-indigo-400 via-violet-400 to-fuchsia-400",
   },
   {

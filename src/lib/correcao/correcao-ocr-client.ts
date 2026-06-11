@@ -23,6 +23,7 @@ export async function extractTextFromUpload(params: {
   const response = await planifyAuthenticatedFetch("/api/correcao/extrair", {
     method: "POST",
     body: form,
+    signal: AbortSignal.timeout(55_000),
   });
 
   const data = await response.json().catch(() => null);

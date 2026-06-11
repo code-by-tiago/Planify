@@ -109,8 +109,17 @@ import {
 import { planifyAuthenticatedFetch } from "@/lib/auth/authenticated-fetch";
 
 const SELECT_FIELD_CLASS = HUD_FIELD_CLASS;
-const PATIENCE_THRESHOLD_MS = 90_000;
-const LONG_GENERATION_TYPES = new Set(["slides", "prova", "apostila"]);
+const PATIENCE_THRESHOLD_MS = 60_000;
+const LONG_GENERATION_TYPES = new Set([
+  "slides",
+  "prova",
+  "lista",
+  "apostila",
+  "plano-aula",
+  "sequencia",
+  "projeto",
+  "redacao",
+]);
 
 type Dificuldade = "facil" | "media" | "avancada";
 type FormatoJogo =

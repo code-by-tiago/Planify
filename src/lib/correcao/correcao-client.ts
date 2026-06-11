@@ -1,5 +1,13 @@
 import { planifyAuthenticatedFetch } from "@/lib/auth/authenticated-fetch";
+import {
+  createGenerationTimeoutError,
+  isFetchTimeoutError,
+  withGenerationTimeoutSignal,
+} from "@/lib/pro/generation-timeout";
 import type { CorrectionAiOutput, TeacherCorrectionProfile } from "@/types/correction";
+
+const CORRECTION_TIMEOUT_MS = 110_000;
+const BATCH_CORRECTION_TIMEOUT_MS = 170_000;
 
 export type CorrectionPayload = {
   respostaAluno: string;
@@ -34,10 +42,21 @@ export class CorrectionError extends Error {
 export async function requestCorrection(
   payload: CorrectionPayload,
 ): Promise<CorrectionResult> {
-  const response = await planifyAuthenticatedFetch("/api/correcao/avaliar", {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
+  const signal = withGenerationTimeoutSignal(undefined, CORRECTION_TIMEOUT_MS);
+
+  let response: Response;
+  try {
+    response = await planifyAuthenticatedFetch("/api/correcao/avaliar", {
+      method: "POST",
+      body: JSON.stringify(payload),
+      signal,
+    });
+  } catch (error) {
+    if (isFetchTimeoutError(error)) {
+      throw createGenerationTimeoutError("correcao");
+    }
+    throw error;
+  }
 
   const data = await response.json().catch(() => null);
 
@@ -67,10 +86,21 @@ export type BatchCorrectionResult = {
 export async function requestBatchCorrection(
   payload: Omit<CorrectionPayload, "respostaAluno"> & { respostas: string[] },
 ): Promise<BatchCorrectionResult> {
-  const response = await planifyAuthenticatedFetch("/api/correcao/avaliar-lote", {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
+  const signal = withGenerationTimeoutSignal(undefined, BATCH_CORRECTION_TIMEOUT_MS);
+
+  let response: Response;
+  try {
+    response = await planifyAuthenticatedFetch("/api/correcao/avaliar-lote", {
+      method: "POST",
+      body: JSON.stringify(payload),
+      signal,
+    });
+  } catch (error) {
+    if (isFetchTimeoutError(error)) {
+      throw createGenerationTimeoutError("correcao");
+    }
+    throw error;
+  }
 
   const data = await response.json().catch(() => null);
 

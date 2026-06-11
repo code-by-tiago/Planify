@@ -14,11 +14,6 @@ import type { PlanifyToolId } from "@/lib/pro/planifyTools";
 import { planifyTools } from "@/lib/pro/planifyTools";
 import type { HistoryItem } from "@/types/history";
 import { editorDocumentToHistoryItem } from "@/types/history";
-import {
-  resolveGoogleProductForTool,
-  saveAutoGoogleExportIntent,
-} from "@/lib/google/google-auto-export";
-
 export const AUTO_EDITOR_PREF_KEY = "planify:materiais:auto-editor";
 
 const LEGACY_HISTORY_KEYS = [
@@ -135,13 +130,6 @@ export function openMaterialInEditor(
   if (options?.from) params.set("from", options.from);
   const query = params.toString();
   const href = query ? `/editor?${query}` : "/editor";
-
-  saveAutoGoogleExportIntent({
-    product: resolveGoogleProductForTool(meta.toolId),
-    title,
-    returnTo: href,
-    slideTheme: meta.slideTheme ?? meta.designSlides ?? undefined,
-  });
 
   if (options?.redirect !== false) {
     window.location.href = href;

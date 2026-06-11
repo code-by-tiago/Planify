@@ -3,6 +3,8 @@ import { computeQualityScore } from "@/lib/materiais/material-quality-score";
 import type { QuestionBankItem } from "@/types/question-bank";
 import { generateGeminiJSON } from "../ai/gemini-client";
 import {
+  getQuestionsByIds,
+  incrementUsageCount,
   listCommunityQuestions,
   listSchoolQuestions,
   listUserQuestions,
@@ -45,10 +47,13 @@ function parseTargetQuantity(quantidade: number): number {
   return Math.min(20, Math.max(3, quantidade || 10));
 }
 
-function scoreBankMatch(item: QuestionBankItem, tema: string): number {
+function scoreBankMatch(
+  item: QuestionBankItem,
+  tema: string,
+  componente: string,
+): number {
   const topic = tema.trim().toLowerCase();
-  if (!topic) return 1;
-
+  const comp = componente.trim().toLowerCase();
   const haystack = [
     item.enunciado,
     item.tema,
@@ -59,11 +64,33 @@ function scoreBankMatch(item: QuestionBankItem, tema: string): number {
     .toLowerCase();
 
   let score = 0;
+  if (comp && item.componente.toLowerCase().includes(comp)) score += 3;
+  if (!topic) return Math.max(score, 1);
+
   for (const token of topic.split(/\s+/).filter((w) => w.length > 2)) {
     if (haystack.includes(token)) score += 2;
   }
   if (item.tema.trim().toLowerCase().includes(topic)) score += 4;
-  return score;
+  return Math.max(score, topic ? 0 : 1);
+}
+
+function rankBankItems(
+  items: QuestionBankItem[],
+  tema: string,
+  componente: string,
+  minScore = 0,
+): QuestionBankItem[] {
+  return items
+    .map((item) => ({
+      item,
+      score: scoreBankMatch(item, tema, componente),
+    }))
+    .filter((entry) => entry.score > minScore)
+    .sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      return (b.item.usageCount ?? 0) - (a.item.usageCount ?? 0);
+    })
+    .map((entry) => entry.item);
 }
 
 function bankItemToExamQuestion(
@@ -85,18 +112,21 @@ function bankItemToExamQuestion(
   };
 }
 
-async function searchBankQuestions(input: {
-  userId?: string | null;
-  componente: string;
-  anoSerie: string;
-  tema: string;
-  limit: number;
-}): Promise<QuestionBankItem[]> {
+async function collectBankPool(
+  input: {
+    userId?: string | null;
+    componente?: string;
+    anoSerie?: string;
+    tema: string;
+    limit: number;
+  },
+  tier: "strict" | "relaxed" | "community",
+): Promise<QuestionBankItem[]> {
   const filter = {
-    componente: input.componente,
-    anoSerie: input.anoSerie,
-    query: input.tema,
-    limit: Math.max(input.limit * 3, 30),
+    componente: tier === "community" ? undefined : input.componente,
+    anoSerie: tier === "strict" ? input.anoSerie : undefined,
+    query: tier === "community" ? undefined : input.tema,
+    limit: Math.max(input.limit * 4, 60),
   };
 
   const pools: QuestionBankItem[] = [];
@@ -120,12 +150,36 @@ async function searchBankQuestions(input: {
     unique.push(item);
   }
 
-  return unique
-    .map((item) => ({ item, score: scoreBankMatch(item, input.tema) }))
-    .filter((entry) => entry.score > 0)
-    .sort((a, b) => b.score - a.score)
-    .map((entry) => entry.item)
-    .slice(0, input.limit);
+  const minScore = tier === "community" ? 0 : 1;
+  return rankBankItems(
+    unique,
+    input.tema,
+    input.componente || "",
+    minScore,
+  ).slice(0, input.limit);
+}
+
+async function searchBankQuestions(input: {
+  userId?: string | null;
+  componente: string;
+  anoSerie: string;
+  tema: string;
+  limit: number;
+}): Promise<QuestionBankItem[]> {
+  const tiers: Array<"strict" | "relaxed" | "community"> = [
+    "strict",
+    "relaxed",
+    "community",
+  ];
+
+  for (const tier of tiers) {
+    const hits = await collectBankPool(input, tier);
+    if (hits.length >= Math.ceil(input.limit * 0.4)) {
+      return hits.slice(0, input.limit);
+    }
+  }
+
+  return collectBankPool(input, "community");
 }
 
 async function generateMissingQuestions(
@@ -175,12 +229,63 @@ export type ExamBankAssemblyResult =
       ok: true;
       html: string;
       estrutura: MaterialEngineResponse;
-      pipeline: "bank" | "bank-hybrid";
+      pipeline: "bank" | "bank-hybrid" | "bank-selected";
       qualityScore: number;
       qualityIssues: string[];
       alertas?: string[];
+      bankQuestionIds?: string[];
     }
   | { ok: false; reason: "no_bank_hits" | "strict_bank_empty" };
+
+async function finalizeExamAssembly(
+  input: MaterialEngineInput,
+  request: ReturnType<typeof normalizeMaterialEngineRequest>,
+  questions: ExamQuestion[],
+  pipeline: "bank" | "bank-hybrid" | "bank-selected",
+  alertas: string[],
+  bankQuestionIds?: string[],
+  repairIfNeeded = true,
+): Promise<Exclude<ExamBankAssemblyResult, { ok: false }>> {
+  const estrutura: MaterialEngineResponse = {
+    title: request.tema,
+    subtitle: "",
+    summary: "",
+    sections: [],
+    activities: [],
+    answerKey: [],
+    teacherNotes: [],
+    exam: { questions },
+  };
+
+  let issues = getEngineOutputIssues(request, estrutura);
+
+  if (issues.length && repairIfNeeded) {
+    const { regenerateWeakExamQuestions } = await import("./exam-questions-retry");
+    const repaired = await regenerateWeakExamQuestions(input, estrutura);
+    return {
+      ok: true,
+      html: repaired.html,
+      estrutura: repaired.estrutura,
+      pipeline: pipeline === "bank-selected" ? "bank-selected" : "bank-hybrid",
+      qualityScore: repaired.qualityScore,
+      qualityIssues: repaired.qualityIssues,
+      alertas,
+      bankQuestionIds,
+    };
+  }
+
+  const html = buildMaterialEngineHtmlFromStructure(input, estrutura);
+  return {
+    ok: true,
+    html,
+    estrutura,
+    pipeline,
+    qualityScore: computeQualityScore(issues),
+    qualityIssues: issues,
+    alertas,
+    bankQuestionIds,
+  };
+}
 
 export async function tryAssembleExamFromBank(
   input: MaterialEngineInput,
@@ -222,54 +327,63 @@ export async function tryAssembleExamFromBank(
       : { ok: false, reason: "no_bank_hits" };
   }
 
-  const estrutura: MaterialEngineResponse = {
-    title: request.tema,
-    subtitle: "",
-    summary: "",
-    sections: [],
-    activities: [],
-    answerKey: [],
-    teacherNotes: [],
-    exam: { questions },
-  };
+  const pipeline: "bank" | "bank-hybrid" = missing > 0 ? "bank-hybrid" : "bank";
+  const bankUsedCount = Math.min(bankItems.length, target);
+  const usedIds = bankItems.slice(0, bankUsedCount).map((item) => item.id);
 
-  let issues = getEngineOutputIssues(request, estrutura);
-  let pipeline: "bank" | "bank-hybrid" = missing > 0 ? "bank-hybrid" : "bank";
-
-  if (issues.length && missing === 0) {
-    const { regenerateWeakExamQuestions } = await import("./exam-questions-retry");
-    const repaired = await regenerateWeakExamQuestions(input, estrutura);
-    issues = repaired.qualityIssues;
-    const html = repaired.html;
-    return {
-      ok: true,
-      html,
-      estrutura: repaired.estrutura,
-      pipeline: "bank-hybrid",
-      qualityScore: repaired.qualityScore,
-      qualityIssues: issues,
-      alertas: [
-        `Montado com ${questions.length} questões do banco Planify (modo rápido).`,
-      ],
-    };
+  for (const id of usedIds) {
+    void incrementUsageCount(id);
   }
 
-  const html = buildMaterialEngineHtmlFromStructure(input, estrutura);
-  const qualityScore = computeQualityScore(issues);
-
-  return {
-    ok: true,
-    html,
-    estrutura,
+  return finalizeExamAssembly(
+    input,
+    request,
+    questions,
     pipeline,
-    qualityScore,
-    qualityIssues: issues,
-    alertas: [
+    [
       pipeline === "bank"
         ? `Lista montada do banco (${questions.length} itens) — entrega rápida.`
         : `Banco + IA completaram ${questions.length} itens.`,
     ],
-  };
+    usedIds,
+    missing === 0,
+  );
+}
+
+/** Teachy "Banco de questões" — monta a partir de IDs escolhidos pelo professor. */
+export async function assembleExamFromQuestionIds(
+  input: MaterialEngineInput,
+  questionIds: string[],
+): Promise<ExamBankAssemblyResult> {
+  const request = normalizeMaterialEngineRequest(input);
+  if (request.tipoMaterial !== "lista" && request.tipoMaterial !== "prova") {
+    return { ok: false, reason: "no_bank_hits" };
+  }
+
+  const uniqueIds = [...new Set(questionIds.map((id) => id.trim()).filter(Boolean))];
+  if (!uniqueIds.length) {
+    return { ok: false, reason: "strict_bank_empty" };
+  }
+
+  const items = await getQuestionsByIds(uniqueIds);
+  if (!items.length) {
+    return { ok: false, reason: "strict_bank_empty" };
+  }
+
+  const questions = items.map((item, index) => bankItemToExamQuestion(item, index + 1));
+
+  for (const id of items.map((item) => item.id)) {
+    void incrementUsageCount(id);
+  }
+
+  return finalizeExamAssembly(
+    input,
+    request,
+    questions,
+    "bank-selected",
+    [`${questions.length} questão(ões) selecionada(s) do banco Planify.`],
+    items.map((item) => item.id),
+  );
 }
 
 /** Modo banco estrito sem hits: não gera — retorna falha para UI sugerir modo IA. */

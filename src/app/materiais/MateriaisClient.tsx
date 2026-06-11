@@ -97,6 +97,8 @@ import { MaterialBnccSkillsPanel } from "@/components/bncc/MaterialBnccSkillsPan
 import { TemaCombobox } from "@/components/bncc/TemaCombobox";
 import type { BnccTemaAutocompleteSuggestion } from "@/lib/bncc/bncc-tema-autocomplete";
 import { PlanifyMaterialHubCard } from "@/components/materials/PlanifyMaterialHubCard";
+import { ExamTeachyCreationFlow } from "@/components/materiais/ExamTeachyCreationFlow";
+import { requestExamAssemblyFromBank } from "@/lib/materiais/exam-bank-montar-client";
 import {
   groupBnccSkillsFromResponse,
   mapSelectedBnccSkillsToPayload,
@@ -369,6 +371,7 @@ export function MateriaisClient({
   const [modoGeracao, setModoGeracao] = useState<"hibrido" | "banco" | "ia">(
     "hibrido",
   );
+  const [showExamCreationFlow, setShowExamCreationFlow] = useState(false);
   const [showPatienceMessage, setShowPatienceMessage] = useState(false);
   const patienceTimerRef = useRef<number | null>(null);
   const { runWithRetry, retrying: retryingGeneration } = useRetryableAction();
@@ -1104,7 +1107,9 @@ export function MateriaisClient({
     );
   }
 
-  async function executarGeracao() {
+  async function executarGeracao(
+    overrides: Partial<MaterialEngineInput> = {},
+  ) {
     setErro("");
     setErroCta(null);
     setErroRetryable(false);
@@ -1167,7 +1172,7 @@ export function MateriaisClient({
       }
 
       const payload = {
-        ...buildGenerationPayload(),
+        ...buildGenerationPayload(overrides),
         idempotencyKey: crypto.randomUUID(),
       };
       rememberSlideGenerationPayload(payload);
@@ -1511,7 +1516,66 @@ export function MateriaisClient({
 
   function gerarMaterial(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (isExamTool) {
+      setShowExamCreationFlow(true);
+      return;
+    }
     void executarGeracao();
+  }
+
+  function handleExamAutomatic(mode: "hibrido" | "ia") {
+    setModoGeracao(mode);
+    setShowExamCreationFlow(false);
+    void executarGeracao({ modoGeracao: mode });
+  }
+
+  async function handleExamBankAssembly(questionIds: string[]) {
+    setShowExamCreationFlow(false);
+    setModoGeracao("banco");
+    setErro("");
+    setErroCta(null);
+    setErroRetryable(false);
+    setLoading(true);
+    setResultadoHtml("");
+    setResultadoEstrutura(null);
+    setAlertasGeracao([]);
+    setPipelineGeracao(null);
+    setQualityScore(null);
+    setQualityIssues([]);
+    setMaterialSalvo(false);
+    setRealGenerationProgress(100);
+    setProgressLabel("Montando do banco…");
+
+    try {
+      const payload = buildGenerationPayload({ modoGeracao: "banco" });
+      const result = await requestExamAssemblyFromBank(payload, questionIds);
+      window.dispatchEvent(new Event("planify:credits-changed"));
+      setResultadoHtml(result.html);
+      setResultadoEstrutura(result.estrutura);
+      setPipelineGeracao(result.pipeline);
+      setQualityScore(result.qualityScore);
+      setQualityIssues(result.qualityIssues);
+      setAlertasGeracao(result.alertas);
+      const titulo = buildTitle(tipo, tema);
+      const meta = buildMaterialMeta(result.pipeline, result.estrutura, {
+        qualityScore: result.qualityScore,
+        qualityIssues: result.qualityIssues,
+        generationPayload: payload,
+      });
+      persistGeneratedMaterial(result.html, titulo, meta);
+      setMaterialSalvo(Boolean(result.materialId));
+      setHistorico(loadMaterialHistoryPreview());
+      setHintFeedback("Lista montada do banco — revisão instantânea.");
+    } catch (error) {
+      const formatted = formatGenerationError(error);
+      setErro(formatted.message);
+      setErroCta(formatted.cta);
+      setErroRetryable(formatted.retryable);
+    } finally {
+      setLoading(false);
+      setProgressLabel("");
+      setRealGenerationProgress(undefined);
+    }
   }
 
   function fecharPainel() {
@@ -1889,30 +1953,6 @@ export function MateriaisClient({
               </select>
             </label>
 
-            {isExamTool ? (
-              <label className="md:col-span-2">
-                <span className={HUD_SECTION_LABEL}>Modo de geração</span>
-                <select
-                  value={modoGeracao}
-                  onChange={(event) =>
-                    setModoGeracao(
-                      event.target.value as "hibrido" | "banco" | "ia",
-                    )
-                  }
-                  className={SELECT_FIELD_CLASS}
-                >
-                  <option value="hibrido">
-                    Híbrido (banco + IA) — recomendado, mais rápido
-                  </option>
-                  <option value="banco">Só banco — instantâneo quando houver questões</option>
-                  <option value="ia">IA completa — máxima originalidade</option>
-                </select>
-                <p className="mt-1 text-xs font-medium text-slate-500">
-                  Estilo Teachy: montamos do banco Planify e a IA só completa o que faltar.
-                </p>
-              </label>
-            ) : null}
-
             {isJogo ? (
               <label>
                 <span className={HUD_SECTION_LABEL}>
@@ -1932,6 +1972,29 @@ export function MateriaisClient({
                   ))}
                 </select>
               </label>
+            ) : isExamTool ? (
+              <div>
+                <span className={HUD_SECTION_LABEL}>Quantidade</span>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {quantityPresets.map((preset) => (
+                    <button
+                      key={preset.value}
+                      type="button"
+                      onClick={() => setQuantidade(preset.value)}
+                      className={
+                        quantidade === preset.value
+                          ? HUD_FILTER_CHIP_ACTIVE
+                          : HUD_FILTER_CHIP_INACTIVE
+                      }
+                    >
+                      {preset.label.replace(/\s.*/, "")}
+                    </button>
+                  ))}
+                </div>
+                <p className="mt-2 text-xs font-medium text-slate-500">
+                  Ao criar, você escolhe lista automática (banco + IA) ou banco de questões — como na Teachy.
+                </p>
+              </div>
             ) : (
               <label>
                 <span className={HUD_SECTION_LABEL}>
@@ -2383,10 +2446,25 @@ export function MateriaisClient({
     />
   ) : null;
 
+  const examCreationFlow = (
+    <ExamTeachyCreationFlow
+      open={showExamCreationFlow}
+      toolLabel={mode.title}
+      tema={tema}
+      componente={componente}
+      anoSerie={anoSerie}
+      quantidade={Number(quantidade) || 10}
+      onClose={() => setShowExamCreationFlow(false)}
+      onChooseAutomatic={handleExamAutomatic}
+      onAssembleFromBank={(ids) => void handleExamBankAssembly(ids)}
+    />
+  );
+
   if (studioMode) {
     return (
       <div className="flex h-full min-h-0 w-full flex-col overflow-hidden">
         {painelCriacao}
+        {examCreationFlow}
       </div>
     );
   }
@@ -2570,6 +2648,7 @@ export function MateriaisClient({
       ) : null}
 
       {painelCriacao}
+      {examCreationFlow}
     </div>
     </PlanifyWorkspacePane>
   );

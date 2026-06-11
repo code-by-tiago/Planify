@@ -179,6 +179,27 @@ export async function listCommunityQuestions(
   return items;
 }
 
+export async function getQuestionsByIds(ids: string[]): Promise<QuestionBankItem[]> {
+  const unique = [...new Set(ids.map((id) => id.trim()).filter(Boolean))];
+  if (!unique.length) return [];
+
+  const supabase = getSupabaseAdminClient();
+  const { data, error } = await supabase
+    .from("question_bank_items")
+    .select("*")
+    .in("id", unique);
+
+  if (error) throw new Error(error.message);
+
+  const byId = new Map(
+    (data ?? []).map((row) => [row.id, mapRowToItem(row as QuestionBankRow)]),
+  );
+
+  return unique
+    .map((id) => byId.get(id))
+    .filter((item): item is QuestionBankItem => Boolean(item));
+}
+
 export async function listSchoolQuestions(
   schoolId: string,
   filter: QuestionBankListFilter = {},

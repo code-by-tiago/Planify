@@ -1,0 +1,47 @@
+name: Question bank ingest
+
+on:
+  schedule:
+    - cron: "0 4 * * *"
+  workflow_dispatch:
+    inputs:
+      hours:
+        description: "Horas de execução"
+        default: "2"
+        required: false
+      max:
+        description: "Máximo de inserções"
+        default: "3000"
+        required: false
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - run: npm ci
+
+      - name: Ingest question bank (OER + internal)
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          PLANIFY_OWNER_USER_ID: ${{ secrets.PLANIFY_OWNER_USER_ID }}
+          STACKEXCHANGE_KEY: ${{ secrets.STACKEXCHANGE_KEY }}
+        run: |
+          node scripts/ingest-question-bank-web.mjs \
+            --hours=${{ github.event.inputs.hours || '2' }} \
+            --max=${{ github.event.inputs.max || '3000' }} \
+            --sources=planify-materials,planify-biblioteca,stackexchange,wikiversity-pt
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: question-bank-ingest-report
+          path: tmp/question-bank-ingest-report.json

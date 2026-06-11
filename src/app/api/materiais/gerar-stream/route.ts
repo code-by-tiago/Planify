@@ -22,6 +22,8 @@ import {
   failGenerationJob,
   updateGenerationJobStage,
 } from "@/server/generation/generation-job-service";
+import { autoPublishExamToQuestionBank } from "@/server/banco-questoes/question-bank-auto-publish";
+import type { MaterialEngineResponse } from "@/server/materials/material-engine-types";
 import { withOperationalCapture } from "@/server/telemetry/with-operational-capture";
 
 export const runtime = "nodejs";
@@ -135,6 +137,25 @@ async function handlePost(request: NextRequest, _context: { params: Promise<Reco
           usedAI: !pipeline.startsWith("bank"),
           dailyQuotaConsumed: charge.chargedDeepDaily,
         });
+
+        const estruturaResult = result.data.estrutura as MaterialEngineResponse | undefined;
+        const examQuestions = estruturaResult?.exam?.questions ?? [];
+        const tipoMaterial = String(result.data.tipoMaterial || tipo);
+
+        if (
+          user?.id &&
+          examQuestions.length > 0 &&
+          (tipoMaterial === "lista" || tipoMaterial === "prova") &&
+          typeof qualityScore === "number"
+        ) {
+          void autoPublishExamToQuestionBank({
+            userId: user.id,
+            engineInput: payload,
+            questions: examQuestions,
+            qualityScore,
+            pipeline,
+          });
+        }
 
         let materialId: string | null = null;
         if (user?.id) {

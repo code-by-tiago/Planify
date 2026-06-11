@@ -1,0 +1,52 @@
+name: Question bank auto feed
+
+on:
+  schedule:
+    # 05:00 UTC (~02h BR) — após ingestão interna (04:00 UTC)
+    - cron: "0 5 * * *"
+    # 17:00 UTC (~14h BR) — segunda rodada no mesmo dia (temas diferentes)
+    - cron: "0 17 * * *"
+  workflow_dispatch:
+    inputs:
+      topics_per_run:
+        description: "Temas BNCC por execução (máx. ~40 na fila)"
+        default: "20"
+        required: false
+      questions_per_topic:
+        description: "Questões aprovadas por tema"
+        default: "10"
+        required: false
+
+jobs:
+  ai-pipeline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - run: npm ci
+
+      - name: Alimentar banco com IA (Gemini Gerador + Revisor)
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL || 'gemini-3.5-flash' }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          PLANIFY_OWNER_USER_ID: ${{ secrets.PLANIFY_OWNER_USER_ID }}
+        run: |
+          node scripts/ai-question-bank-pipeline-auto.mjs \
+            --topicsPerRun=${{ github.event.inputs.topics_per_run || '20' }} \
+            --questionsPerTopic=${{ github.event.inputs.questions_per_topic || '10' }}
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: question-bank-auto-report
+          path: |
+            tmp/ai-question-bank-pipeline-auto-report.json
+            tmp/ai-pipeline-*.json

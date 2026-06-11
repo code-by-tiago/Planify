@@ -30,6 +30,7 @@
     "report:question-sources": "node scripts/report-question-sources.mjs",
     "ingest:question-bank": "node scripts/ingest-question-bank-web.mjs",
     "generate:question-bank-ai": "node scripts/ai-question-bank-pipeline.mjs",
+    "generate:question-bank-ai:auto": "node scripts/ai-question-bank-pipeline-auto.mjs",
     "cleanup:question-bank": "node scripts/cleanup-question-bank-bad-ingest.mjs",
     "verify:generators-live": "node scripts/verify-generators-live.mjs",
     "verify:staging": "node scripts/verify-generators-live.mjs --suite=sprint1",

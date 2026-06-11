@@ -89,7 +89,7 @@ const structure = {
         number: 1,
         type: "multipla-escolha",
         statement: "João comeu 2/8 de uma pizza. Qual fração representa o que sobrou?",
-        options: ["6/8", "2/6", "4/8", "8/2"],
+        options: ["a) 6/8", "b) 2/6", "c) 4/8", "d) 8/2"],
         answer: "6/8 — sobraram seis oitavos.",
       },
       {
@@ -113,8 +113,10 @@ const structure = {
 
 const html = buildMaterialEngineHtmlFromStructure(input, structure);
 
+const hasDoublePrefix = /a\)\s*a\)/i.test(html) || /b\)\s*b\)/i.test(html);
+
 log({
-  hypothesisId: "E",
+  hypothesisId: "H-prefix",
   location: "debug-render-lista.mjs",
   message: "render smoke result",
   data: {
@@ -122,8 +124,14 @@ log({
     hasGabaritoTable: html.includes("planify-gabarito-table"),
     hasTypeBadge: html.includes("planify-questao-type"),
     hasProfessionalWrap: html.includes("planify-doc-professional"),
+    hasDoublePrefix,
     htmlLen: html.length,
   },
 });
+
+if (hasDoublePrefix) {
+  console.error("FAIL: duplicate option prefix detected in HTML");
+  process.exit(1);
+}
 
 console.log("OK — see debug-0e58e7.log");

@@ -15,6 +15,7 @@ import { enforceMaterialTypeContract } from "../../lib/materiais/material-type-v
 import { guardMaterialQuality } from "../../lib/materiais/material-quality-guardian";
 import { auditMaterialAgainstKnowledgeEngine } from "../../lib/materiais/material-quality-auditor";
 import { getModelTierForMaterialRequest } from "@/lib/ai/material-generation-policy";
+import { normalizeQuestionOptions } from "@/lib/materiais/material-document-layout";
 import { generateGeminiJSON } from "./gemini-client";
 import {
   buildMaterialDynamicPrompt,
@@ -120,7 +121,9 @@ function normalizeQuestion(question: Partial<MaterialAIQuestion>, index: number)
     numero: Number(question.numero || index + 1),
     tipo: String(question.tipo || "discursiva").trim(),
     enunciado: String(question.enunciado || "").trim(),
-    alternativas: normalizeStringArray(question.alternativas),
+    alternativas: normalizeQuestionOptions(
+      normalizeStringArray(question.alternativas),
+    ),
     respostaEsperada: String(question.respostaEsperada || "").trim(),
     criterioCorrecao: String(question.criterioCorrecao || "").trim(),
   };

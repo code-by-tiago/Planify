@@ -92,6 +92,20 @@ export function renderAssessmentInstructions(_tipo: string): string {
   return "";
 }
 
+/** Remove leading a)/A)/b) etc. — CSS ::before already adds option letters. */
+export function stripOptionLetterPrefix(value: string): string {
+  return String(value || "")
+    .trim()
+    .replace(/^[A-Ea-e][).:\-]\s*/, "");
+}
+
+export function normalizeQuestionOptions(options: string[] | undefined): string[] {
+  if (!Array.isArray(options)) return [];
+  return options
+    .map((item) => stripOptionLetterPrefix(String(item)))
+    .filter(Boolean);
+}
+
 export function renderQuestionCard(params: {
   number: number | string;
   statement: string;
@@ -104,9 +118,11 @@ export function renderQuestionCard(params: {
   const num = String(params.number).padStart(2, "0");
   const compact = params.compact ?? false;
 
+  const cleanOptions = normalizeQuestionOptions(params.options);
+
   const options =
-    params.options && params.options.length
-      ? `<ol class="planify-questao-options" type="a">${params.options
+    cleanOptions.length
+      ? `<ol class="planify-questao-options" type="a">${cleanOptions
           .map((option) => `<li>${escapeHtml(option)}</li>`)
           .join("")}</ol>`
       : `<div class="planify-answer-lines" aria-hidden="true">

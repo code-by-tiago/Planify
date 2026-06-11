@@ -9,7 +9,7 @@ CONTRATO TEACHY — FORMATO DE DOCUMENTO (obrigatório):
 - Cabeçalho mínimo: componente curricular, ano/série, aluno(a), data — sem título H1 redundante em prova/lista.
 - Enunciados diretos: 1 a 3 frases no máximo; comando claro + contexto mínimo; sem preâmbulos ("nesta atividade", "a seguir").
 - Questões numeradas: badge numérico apenas — NÃO rotular tipo visível ao aluno (dissertativa, múltipla escolha etc.).
-- Alternativas: lista limpa a) b) c) d) com 4 a 5 opções distintas e concretas.
+- Alternativas: 4 a 5 opções distintas no array JSON sem prefixo de letra (o layout adiciona a) b) c) d) automaticamente).
 - Gabarito (quando solicitado): página separada em tabela (# | resposta); cada resposta em no máximo 1–2 linhas (até 120 caracteres).
 - Versão do aluno: NÃO incluir teacherNotes, sections introdutórias nem parágrafos de resumo/contextualização longos.
 - Linguagem adequada ao ano/série; zero placeholders genéricos; zero repetição de enunciados.

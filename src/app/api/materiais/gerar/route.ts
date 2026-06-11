@@ -48,30 +48,6 @@ async function handlePost(request: NextRequest, _context: { params: Promise<Reco
     const result = await generatePlanifyMaterial(payload, { userId: user?.id });
 
     if (!result.ok) {
-      // #region agent log
-      try {
-        const { appendFileSync } = await import("node:fs");
-        const { join } = await import("node:path");
-        appendFileSync(
-          join(process.cwd(), "debug-0e58e7.log"),
-          `${JSON.stringify({
-            sessionId: "0e58e7",
-            hypothesisId: "H3",
-            location: "api/materiais/gerar:handlePost",
-            message: "generation failed",
-            data: {
-              tipo,
-              status: result.status,
-              errorMessage: result.message,
-            },
-            timestamp: Date.now(),
-          })}\n`,
-        );
-      } catch {
-        /* debug log optional */
-      }
-      // #endregion
-
       await finalizeGenerationFailure(user?.id, tipo, charge, {
         eventType: "material_generation_failed",
         errorCode: String(result.status),

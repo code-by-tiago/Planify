@@ -1541,6 +1541,84 @@ export function MateriaisClient({
             </p>
           ) : null}
 
+          <div className="mt-5 grid gap-4 md:grid-cols-2">
+            <label>
+              <span className={HUD_SECTION_LABEL}>
+                Etapa de ensino
+              </span>
+              <select
+                value={etapa}
+                onChange={(event) =>
+                  applyEducation({ etapa: event.target.value })
+                }
+                className={SELECT_FIELD_CLASS}
+              >
+                {stageOptions.map((stage) => (
+                  <option key={stage} value={stage}>
+                    {stage}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label>
+              <span className={HUD_SECTION_LABEL}>
+                Ano / série
+              </span>
+              <select
+                value={anoSerie}
+                onChange={(event) =>
+                  applyEducation({ anoSerie: event.target.value })
+                }
+                className={SELECT_FIELD_CLASS}
+              >
+                {yearOptions.map((year) => (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="md:col-span-2">
+              <span className={HUD_SECTION_LABEL}>
+                Área do conhecimento
+              </span>
+              <select
+                value={areaConhecimento}
+                onChange={(event) =>
+                  applyEducation({ areaConhecimento: event.target.value })
+                }
+                className={SELECT_FIELD_CLASS}
+              >
+                {areaOptions.map((area) => (
+                  <option key={area} value={area}>
+                    {area}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="md:col-span-2">
+              <span className={HUD_SECTION_LABEL}>
+                Disciplina / componente
+              </span>
+              <select
+                value={componente}
+                onChange={(event) =>
+                  applyEducation({ componente: event.target.value })
+                }
+                className={SELECT_FIELD_CLASS}
+              >
+                {componentOptions.map((item) => (
+                  <option key={item} value={item}>
+                    {item}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+
           <TemaCombobox
             className="mt-5"
             label={mode.primaryFieldLabel}
@@ -1665,82 +1743,6 @@ export function MateriaisClient({
           ) : null}
 
           <div className="mt-5 grid gap-4 md:grid-cols-2">
-            <label>
-              <span className={HUD_SECTION_LABEL}>
-                Etapa de ensino
-              </span>
-              <select
-                value={etapa}
-                onChange={(event) =>
-                  applyEducation({ etapa: event.target.value })
-                }
-                className={SELECT_FIELD_CLASS}
-              >
-                {stageOptions.map((stage) => (
-                  <option key={stage} value={stage}>
-                    {stage}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label>
-              <span className={HUD_SECTION_LABEL}>
-                Ano / série
-              </span>
-              <select
-                value={anoSerie}
-                onChange={(event) =>
-                  applyEducation({ anoSerie: event.target.value })
-                }
-                className={SELECT_FIELD_CLASS}
-              >
-                {yearOptions.map((year) => (
-                  <option key={year} value={year}>
-                    {year}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className="md:col-span-2">
-              <span className={HUD_SECTION_LABEL}>
-                Área do conhecimento
-              </span>
-              <select
-                value={areaConhecimento}
-                onChange={(event) =>
-                  applyEducation({ areaConhecimento: event.target.value })
-                }
-                className={SELECT_FIELD_CLASS}
-              >
-                {areaOptions.map((area) => (
-                  <option key={area} value={area}>
-                    {area}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className="md:col-span-2">
-              <span className={HUD_SECTION_LABEL}>
-                Disciplina / componente
-              </span>
-              <select
-                value={componente}
-                onChange={(event) =>
-                  applyEducation({ componente: event.target.value })
-                }
-                className={SELECT_FIELD_CLASS}
-              >
-                {componentOptions.map((item) => (
-                  <option key={item} value={item}>
-                    {item}
-                  </option>
-                ))}
-              </select>
-            </label>
-
             <TurmaCombobox school={school} className="md:col-span-2" listId="materiais-turma-suggestions" />
 
             {suggestContextReady ? (

@@ -1058,6 +1058,7 @@ export type Database = {
           user_id: string;
           school_id: string | null;
           enunciado: string;
+          texto_apoio: string | null;
           tipo: string;
           alternativas: Json;
           resposta_esperada: string;
@@ -1084,6 +1085,7 @@ export type Database = {
           user_id: string;
           school_id?: string | null;
           enunciado: string;
+          texto_apoio?: string | null;
           tipo?: string;
           alternativas?: Json;
           resposta_esperada?: string;
@@ -1110,6 +1112,7 @@ export type Database = {
           user_id?: string;
           school_id?: string | null;
           enunciado?: string;
+          texto_apoio?: string | null;
           tipo?: string;
           alternativas?: Json;
           resposta_esperada?: string;

@@ -1,4 +1,5 @@
 import { computeQuestionContentHash } from "@/lib/banco-questoes/question-bank-hash";
+import { isQuestionSelfContained } from "@/lib/banco-questoes/question-bank-self-contained";
 import type {
   ExamQuestion,
   MaterialEngineInput,
@@ -18,6 +19,7 @@ function examQuestionToBankItem(
 ) {
   const enunciado = String(question.statement || "").trim();
   if (enunciado.length < 20) return null;
+  if (!isQuestionSelfContained(enunciado).ok) return null;
 
   const options = Array.isArray(question.options)
     ? question.options.map((o) => String(o).trim()).filter(Boolean)

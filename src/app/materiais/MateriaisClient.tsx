@@ -97,8 +97,6 @@ import { MaterialBnccSkillsPanel } from "@/components/bncc/MaterialBnccSkillsPan
 import { TemaCombobox } from "@/components/bncc/TemaCombobox";
 import type { BnccTemaAutocompleteSuggestion } from "@/lib/bncc/bncc-tema-autocomplete";
 import { PlanifyMaterialHubCard } from "@/components/materials/PlanifyMaterialHubCard";
-import { ExamTeachyCreationFlow } from "@/components/materiais/ExamTeachyCreationFlow";
-import { requestExamAssemblyFromBank } from "@/lib/materiais/exam-bank-montar-client";
 import {
   groupBnccSkillsFromResponse,
   mapSelectedBnccSkillsToPayload,
@@ -368,10 +366,6 @@ export function MateriaisClient({
   const [realGenerationProgress, setRealGenerationProgress] = useState<
     number | undefined
   >(undefined);
-  const [modoGeracao, setModoGeracao] = useState<"hibrido" | "banco" | "ia">(
-    "hibrido",
-  );
-  const [showExamCreationFlow, setShowExamCreationFlow] = useState(false);
   const [showPatienceMessage, setShowPatienceMessage] = useState(false);
   const patienceTimerRef = useRef<number | null>(null);
   const { runWithRetry, retrying: retryingGeneration } = useRetryableAction();
@@ -994,7 +988,6 @@ export function MateriaisClient({
         selectedBnccSkills,
         { etapa, anoSerie, areaConhecimento, componente },
       ),
-      modoGeracao: isExamTool ? modoGeracao : undefined,
       habilidadesBncc: mapSelectedBnccSkillsToPayload(selectedBnccSkills, {
         etapa,
         anoSerie,
@@ -1516,66 +1509,7 @@ export function MateriaisClient({
 
   function gerarMaterial(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (isExamTool) {
-      setShowExamCreationFlow(true);
-      return;
-    }
     void executarGeracao();
-  }
-
-  function handleExamAutomatic(mode: "hibrido" | "ia") {
-    setModoGeracao(mode);
-    setShowExamCreationFlow(false);
-    void executarGeracao({ modoGeracao: mode });
-  }
-
-  async function handleExamBankAssembly(questionIds: string[]) {
-    setShowExamCreationFlow(false);
-    setModoGeracao("banco");
-    setErro("");
-    setErroCta(null);
-    setErroRetryable(false);
-    setLoading(true);
-    setResultadoHtml("");
-    setResultadoEstrutura(null);
-    setAlertasGeracao([]);
-    setPipelineGeracao(null);
-    setQualityScore(null);
-    setQualityIssues([]);
-    setMaterialSalvo(false);
-    setRealGenerationProgress(100);
-    setProgressLabel("Montando do banco…");
-
-    try {
-      const payload = buildGenerationPayload({ modoGeracao: "banco" });
-      const result = await requestExamAssemblyFromBank(payload, questionIds);
-      window.dispatchEvent(new Event("planify:credits-changed"));
-      setResultadoHtml(result.html);
-      setResultadoEstrutura(result.estrutura);
-      setPipelineGeracao(result.pipeline);
-      setQualityScore(result.qualityScore);
-      setQualityIssues(result.qualityIssues);
-      setAlertasGeracao(result.alertas);
-      const titulo = buildTitle(tipo, tema);
-      const meta = buildMaterialMeta(result.pipeline, result.estrutura, {
-        qualityScore: result.qualityScore,
-        qualityIssues: result.qualityIssues,
-        generationPayload: payload,
-      });
-      persistGeneratedMaterial(result.html, titulo, meta);
-      setMaterialSalvo(Boolean(result.materialId));
-      setHistorico(loadMaterialHistoryPreview());
-      setHintFeedback("Lista montada do banco — revisão instantânea.");
-    } catch (error) {
-      const formatted = formatGenerationError(error);
-      setErro(formatted.message);
-      setErroCta(formatted.cta);
-      setErroRetryable(formatted.retryable);
-    } finally {
-      setLoading(false);
-      setProgressLabel("");
-      setRealGenerationProgress(undefined);
-    }
   }
 
   function fecharPainel() {
@@ -1991,9 +1925,6 @@ export function MateriaisClient({
                     </button>
                   ))}
                 </div>
-                <p className="mt-2 text-xs font-medium text-slate-500">
-                  Ao criar, você escolhe lista automática (banco + IA) ou banco de questões — como na Teachy.
-                </p>
               </div>
             ) : (
               <label>
@@ -2446,25 +2377,10 @@ export function MateriaisClient({
     />
   ) : null;
 
-  const examCreationFlow = (
-    <ExamTeachyCreationFlow
-      open={showExamCreationFlow}
-      toolLabel={mode.title}
-      tema={tema}
-      componente={componente}
-      anoSerie={anoSerie}
-      quantidade={Number(quantidade) || 10}
-      onClose={() => setShowExamCreationFlow(false)}
-      onChooseAutomatic={handleExamAutomatic}
-      onAssembleFromBank={(ids) => void handleExamBankAssembly(ids)}
-    />
-  );
-
   if (studioMode) {
     return (
       <div className="flex h-full min-h-0 w-full flex-col overflow-hidden">
         {painelCriacao}
-        {examCreationFlow}
       </div>
     );
   }
@@ -2648,7 +2564,6 @@ export function MateriaisClient({
       ) : null}
 
       {painelCriacao}
-      {examCreationFlow}
     </div>
     </PlanifyWorkspacePane>
   );

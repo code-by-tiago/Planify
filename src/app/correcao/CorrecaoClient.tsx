@@ -781,7 +781,7 @@ export function CorrecaoClient({
               </h3>
               <p className="mt-2 text-sm font-medium text-slate-600">
                 Envie foto da prova ou redação, aplique rubrica e receba nota,
-                critérios e feedback alinhado ao seu estilo — como no Teachy.
+                critérios e feedback alinhado ao seu estilo pedagógico.
               </p>
             </div>
           )}

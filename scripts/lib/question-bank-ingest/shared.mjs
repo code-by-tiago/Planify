@@ -113,6 +113,39 @@ const GENERIC_PATTERNS = [
   /nenhuma das anteriores/i,
 ];
 
+/** Fórum universitário em inglês — não é questão escolar BR */
+const FORUM_ENGLISH_PATTERNS = [
+  /\bI\s+(used|have|played|tried|made)\b/i,
+  /\bEDIT:\b/i,
+  /\bany hints\b/i,
+  /\bshow that\b/i,
+  /\bprove that\b/i,
+  /\bsimulation\b/i,
+  /\bExcel\b/i,
+];
+
+const UNIVERSITY_TOPIC_PATTERNS = [
+  /automorphism/i,
+  /dihedral/i,
+  /homomorphism/i,
+  /eigenvalue/i,
+  /stochastic/i,
+  /manifold/i,
+  /isomorphism/i,
+];
+
+const RAW_LATEX = /\$[^$]{2,}\$|\\\(|\\\)|\\frac|\\binom|\\color|\\begin\{/;
+
+const PT_SIGNAL =
+  /[áàâãéêíóôõúçÁÀÂÃÉÊÍÓÔÕÚÇ]|\b(qual|quanto|quais|calcule|determine|assinale|marque|explique|resolva|encontre|verdadeiro|falso|alternativa|questão|exercício)\b/i;
+
+const INTERNAL_SOURCE_PREFIXES = [
+  "ingest:planify",
+  "planify:",
+  "ingest:planify-biblioteca",
+  "ingest:planify-materials",
+];
+
 export function normalizeWhitespace(text) {
   return String(text || "")
     .replace(/<[^>]+>/g, " ")
@@ -133,14 +166,59 @@ export function stripHtml(html) {
  * @param {object} q
  * @returns {{ ok: boolean; reason?: string }}
  */
+function isInternalCuratedSource(sourceType) {
+  const st = String(sourceType || "");
+  return INTERNAL_SOURCE_PREFIXES.some((prefix) => st.startsWith(prefix));
+}
+
 export function validateQuestionCandidate(q) {
   const enunciado = normalizeWhitespace(q.enunciado);
+  const textoApoio = normalizeWhitespace(q.textoApoio || "");
+  const sourceType = String(q.sourceType || "");
+
+  let hasReading = false;
+  try {
+    const selfContainedMod = loadTsModule(
+      "src/lib/banco-questoes/question-bank-self-contained.ts",
+    );
+    const selfContained = selfContainedMod.isQuestionSelfContained(
+      enunciado,
+      textoApoio || undefined,
+    );
+    if (!selfContained.ok) return { ok: false, reason: selfContained.reason };
+    hasReading =
+      textoApoio.length >= 40 ||
+      selfContainedMod.hasEmbeddedReadingContext(enunciado);
+  } catch {
+    // fallback silencioso — demais regras abaixo
+  }
+
   if (enunciado.length < 35) return { ok: false, reason: "enunciado_curto" };
-  if (enunciado.length > 2400) return { ok: false, reason: "enunciado_longo" };
+  const maxLen = hasReading ? 3200 : 900;
+  if (enunciado.length > maxLen) return { ok: false, reason: "enunciado_longo" };
   if (/https?:\/\//i.test(enunciado)) return { ok: false, reason: "url_no_enunciado" };
+
+  if (RAW_LATEX.test(enunciado)) return { ok: false, reason: "latex_cru" };
 
   for (const pattern of GENERIC_PATTERNS) {
     if (pattern.test(enunciado)) return { ok: false, reason: "texto_generico" };
+  }
+
+  if (!isInternalCuratedSource(sourceType)) {
+    for (const pattern of FORUM_ENGLISH_PATTERNS) {
+      if (pattern.test(enunciado)) return { ok: false, reason: "forum_ingles" };
+    }
+    for (const pattern of UNIVERSITY_TOPIC_PATTERNS) {
+      if (pattern.test(enunciado)) return { ok: false, reason: "nivel_universitario" };
+    }
+
+    const englishHits = (enunciado.match(
+      /\b(the|and|of|is|are|what|how|find|prove|show|that|with|from|this|which)\b/gi,
+    ) || []).length;
+
+    if (!PT_SIGNAL.test(enunciado) && englishHits >= 3) {
+      return { ok: false, reason: "idioma_nao_pt" };
+    }
   }
 
   const tipo = String(q.tipo || "discursiva").toLowerCase();
@@ -219,6 +297,7 @@ export async function persistQuestion(supabase, userId, question, { dryRun, hash
   const { error } = await supabase.from("question_bank_items").insert({
     user_id: userId,
     enunciado: question.enunciado,
+    texto_apoio: question.textoApoio?.trim() || null,
     tipo: question.tipo,
     alternativas: question.alternativas || [],
     resposta_esperada: question.respostaEsperada || "",

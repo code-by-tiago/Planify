@@ -75,6 +75,7 @@ export function filterQuestionBankItems(
 
     const haystack = [
       item.enunciado,
+      item.textoApoio ?? "",
       item.tema,
       item.tipo,
       item.tags.join(" "),
@@ -96,6 +97,7 @@ export function readProvaInjectObservacoes(): string | null {
     sessionStorage.removeItem("planify:banco-questoes:prova-inject");
     const items = JSON.parse(raw) as Array<{
       enunciado: string;
+      textoApoio?: string;
       tipo: string;
       alternativas?: string[];
       respostaEsperada?: string;
@@ -110,7 +112,10 @@ export function readProvaInjectObservacoes(): string | null {
       const gabarito = item.respostaEsperada
         ? `\nGabarito: ${item.respostaEsperada}`
         : "";
-      return `${index + 1}. [${item.tipo}] ${item.enunciado}${alts}${gabarito}`;
+      const apoio = item.textoApoio?.trim()
+        ? `Texto de apoio: ${item.textoApoio}\n`
+        : "";
+      return `${index + 1}. [${item.tipo}] ${apoio}${item.enunciado}${alts}${gabarito}`;
     });
 
     return [
@@ -131,6 +136,7 @@ export function stashQuestionsForProva(items: QuestionBankItem[]): void {
       JSON.stringify(
         items.map((item) => ({
           enunciado: item.enunciado,
+          textoApoio: item.textoApoio,
           tipo: item.tipo,
           alternativas: item.alternativas,
           respostaEsperada: item.respostaEsperada,

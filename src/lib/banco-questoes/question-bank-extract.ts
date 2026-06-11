@@ -1,6 +1,7 @@
 import type { MaterialAIOutput } from "@/types/ai";
 import type { QuestionBankItem } from "@/types/question-bank";
 import { computeQuestionContentHash } from "@/lib/banco-questoes/question-bank-hash";
+import { isQuestionSelfContained } from "@/lib/banco-questoes/question-bank-self-contained";
 
 export function extractQuestionsFromMaterialOutput(
   estrutura: MaterialAIOutput | null | undefined,
@@ -26,7 +27,11 @@ export function extractQuestionsFromMaterialOutput(
   const tema = meta.tema || estrutura.dadosGerais?.tema || estrutura.titulo || "";
 
   return estrutura.questoes
-    .filter((q) => String(q.enunciado || "").trim().length > 10)
+    .filter((q) => {
+      const enunciado = String(q.enunciado || "").trim();
+      if (enunciado.length <= 10) return false;
+      return isQuestionSelfContained(enunciado).ok;
+    })
     .map((q) => {
       const enunciado = String(q.enunciado || "").trim();
       const tipo = String(q.tipo || "discursiva").trim();

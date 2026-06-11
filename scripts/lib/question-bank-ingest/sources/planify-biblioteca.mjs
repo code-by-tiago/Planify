@@ -6,6 +6,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import {
   bumpReject,
   bumpSource,
+  loadTsModule,
   normalizeWhitespace,
   validateQuestionCandidate,
 } from "../shared.mjs";
@@ -16,12 +17,17 @@ const dataPath = join(
 );
 
 const { SEED_PACKAGES } = await import(pathToFileURL(dataPath).href);
+const { isQuestionSelfContained } = loadTsModule(
+  "src/lib/banco-questoes/question-bank-self-contained.ts",
+);
 
 export const SOURCE_ID = "planify-biblioteca";
 
 const QUESTION_START = /^\s*(\d+)\)\s*/;
 const TYPE_TAG = /^\(?(objetiva|discursiva|múltipla|multipla|desafio|verdadeiro ou falso)\)?\s*/i;
 const ALT_LINE = /^\s*([a-dA-D])\)\s*(.+)$/;
+const READING_SECTION = /texto (?:para )?leitura|texto de apoio|leitura\b/i;
+const QUESTION_SECTION = /quest/i;
 
 function parseGabaritoMap(items) {
   /** @type {Map<number, string>} */
@@ -68,7 +74,7 @@ function resolveMcAnswer(enunciado, alternativas, gabarito) {
   return gabarito;
 }
 
-function extractQuestionsFromSectionItems(items, pkg, gabaritoMap) {
+function extractQuestionsFromSectionItems(items, pkg, gabaritoMap, readingContext) {
   const results = [];
 
   for (const raw of items) {
@@ -89,6 +95,7 @@ function extractQuestionsFromSectionItems(items, pkg, gabaritoMap) {
       enunciado = enunciado.replace(/\s+[a-dA-D]\)\s*.+$/s, "").trim();
     }
     enunciado = normalizeWhitespace(enunciado);
+    const textoApoio = readingContext || undefined;
 
     const isMc =
       tipoTag.includes("objetiva") ||
@@ -97,17 +104,18 @@ function extractQuestionsFromSectionItems(items, pkg, gabaritoMap) {
       alternativas.length >= 3;
 
     const gabaritoRaw = gabaritoMap.get(num) || "";
-    if (!gabaritoRaw && !isMc) {
-      // discursiva sem gabarito explícito — usa critério mínimo
-      if (enunciado.length < 35) continue;
-    }
+    if (!gabaritoRaw && !isMc && enunciado.length < 35) continue;
 
     const respostaEsperada = isMc
       ? resolveMcAnswer(enunciado, alternativas, gabaritoRaw || "Ver gabarito do pacote.")
       : gabaritoRaw || "Resposta discursiva — ver gabarito do pacote curado.";
 
+    const selfCheck = isQuestionSelfContained(enunciado, textoApoio);
+    if (!selfCheck.ok) continue;
+
     results.push({
       enunciado,
+      textoApoio,
       tipo: isMc ? "multipla-escolha" : "discursiva",
       alternativas: alternativas.slice(0, 5),
       respostaEsperada,
@@ -141,15 +149,32 @@ export async function* iteratePlanifyBiblioteca(ctx) {
       }
     }
 
+    let activeReading = "";
+
     for (const section of spec.sections) {
       if (ctx.shouldAbort()) return;
-      if (/gabarito|critério|rubrica/i.test(section.title || "")) continue;
-      if (!Array.isArray(section.items)) continue;
+
+      const title = section.title || "";
+
+      if (READING_SECTION.test(title) && section.content) {
+        activeReading = normalizeWhitespace(section.content);
+        continue;
+      }
+
+      if (/gabarito|critério|rubrica|glossário/i.test(title)) continue;
+
+      if (!Array.isArray(section.items) || !QUESTION_SECTION.test(title)) continue;
 
       bumpSource(ctx.stats, SOURCE_ID, "scanned");
       ctx.stats.scanned += section.items.length;
 
-      const candidates = extractQuestionsFromSectionItems(section.items, pkg, gabaritoMap);
+      const candidates = extractQuestionsFromSectionItems(
+        section.items,
+        pkg,
+        gabaritoMap,
+        activeReading,
+      );
+
       for (const candidate of candidates) {
         const validation = validateQuestionCandidate(candidate);
         if (!validation.ok) {

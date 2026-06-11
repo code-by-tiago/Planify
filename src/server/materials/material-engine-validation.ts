@@ -7,7 +7,6 @@ import {
   type MaterialEngineInput,
   type MaterialEngineRequest,
   type MaterialEngineType,
-  type MaterialGenerationMode,
 } from "./material-engine-types";
 
 function asText(value: unknown, fallback = ""): string {
@@ -18,12 +17,6 @@ function toSafeQuantity(value: unknown): number {
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) return 10;
   return Math.max(1, Math.min(30, Math.round(parsed)));
-}
-
-function normalizeGenerationMode(value: unknown): MaterialGenerationMode {
-  const raw = asText(value, "hibrido").toLowerCase();
-  if (raw === "banco" || raw === "ia") return raw;
-  return "hibrido";
 }
 
 function normalizeType(value: unknown): MaterialEngineType {
@@ -71,7 +64,6 @@ export function normalizeMaterialEngineRequest(
     designSlides: asText(payload.designSlides, "") || undefined,
     observacoes: asText(payload.observacoes, "") || undefined,
     elevarQualidade: payload.elevarQualidade === true,
-    modoGeracao: normalizeGenerationMode(payload.modoGeracao),
     problemasQualidade: Array.isArray(payload.problemasQualidade)
       ? payload.problemasQualidade.map((item) => String(item).trim()).filter(Boolean)
       : undefined,

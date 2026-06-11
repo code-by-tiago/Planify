@@ -174,25 +174,16 @@ async function tryBankPath(
     return null;
   }
 
-  if (request.modoGeracao === "ia" || request.elevarQualidade) {
+  if (request.elevarQualidade) {
     return null;
   }
 
   emitStage(options, "bank");
   const bank = await tryAssembleExamFromBank(input, {
     userId: options?.userId,
-    strictBank: request.modoGeracao === "banco",
   });
 
   if (!bank.ok) {
-    if (request.modoGeracao === "banco") {
-      return {
-        ok: false as const,
-        status: 404,
-        message:
-          "Não encontramos questões suficientes no banco para este tema. Tente o modo Híbrido ou IA completa.",
-      };
-    }
     return null;
   }
 
@@ -238,7 +229,7 @@ export async function generatePlanifyMaterial(
   const enrichedInput = await enrichInputWithPedagogicalContext(
     input,
     options?.userId,
-    request.modoGeracao !== "banco",
+    true,
   );
 
   if (usesPlanifyMaterialEngine(request.tipoMaterial)) {

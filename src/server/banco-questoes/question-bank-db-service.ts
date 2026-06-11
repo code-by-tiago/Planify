@@ -24,6 +24,7 @@ function mapRowToItem(row: QuestionBankRow): QuestionBankItem {
   return {
     id: row.id,
     enunciado: row.enunciado,
+    textoApoio: row.texto_apoio ?? undefined,
     tipo: row.tipo,
     alternativas,
     respostaEsperada: row.resposta_esperada,
@@ -62,6 +63,7 @@ function mapItemToInsert(
     user_id: userId,
     school_id: item.schoolId ?? null,
     enunciado: item.enunciado,
+    texto_apoio: item.textoApoio?.trim() || null,
     tipo: item.tipo || "discursiva",
     alternativas: item.alternativas ?? [],
     resposta_esperada: item.respostaEsperada ?? "",
@@ -119,6 +121,7 @@ export async function listUserQuestions(
     items = items.filter((item) => {
       const haystack = [
         item.enunciado,
+        item.textoApoio ?? "",
         item.tema,
         item.tags.join(" "),
         item.bnccCodigos.join(" "),
@@ -166,6 +169,7 @@ export async function listCommunityQuestions(
     items = items.filter((item) => {
       const haystack = [
         item.enunciado,
+        item.textoApoio ?? "",
         item.tema,
         item.authorName ?? "",
         item.tags.join(" "),
@@ -236,6 +240,7 @@ export async function listSchoolQuestions(
     items = items.filter((item) => {
       const haystack = [
         item.enunciado,
+        item.textoApoio ?? "",
         item.tema,
         item.authorName ?? "",
         item.tags.join(" "),

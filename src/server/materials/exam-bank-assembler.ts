@@ -43,6 +43,8 @@ const PARTIAL_EXAM_SCHEMA = {
   required: ["questions"],
 };
 
+const WEAK_BANK_MATCH_THRESHOLD = 4;
+
 function parseTargetQuantity(quantidade: number): number {
   return Math.min(20, Math.max(3, quantidade || 10));
 }
@@ -56,6 +58,7 @@ function scoreBankMatch(
   const comp = componente.trim().toLowerCase();
   const haystack = [
     item.enunciado,
+    item.textoApoio ?? "",
     item.tema,
     item.tags.join(" "),
     item.componente,
@@ -93,6 +96,13 @@ function rankBankItems(
     .map((entry) => entry.item);
 }
 
+function buildExamStatement(item: QuestionBankItem): string {
+  const stem = trimTeachyStatement(item.enunciado);
+  const apoio = item.textoApoio?.trim();
+  if (!apoio) return stem;
+  return `Texto para leitura:\n${apoio}\n\n${stem}`;
+}
+
 function bankItemToExamQuestion(
   item: QuestionBankItem,
   number: number,
@@ -106,7 +116,7 @@ function bankItemToExamQuestion(
   return {
     number,
     type: isMc ? "multipla-escolha" : "dissertativa",
-    statement: trimTeachyStatement(item.enunciado),
+    statement: buildExamStatement(item),
     options: isMc ? alternatives : [],
     answer: String(item.respostaEsperada || item.criterioCorrecao || "").trim(),
   };
@@ -157,6 +167,29 @@ async function collectBankPool(
     input.componente || "",
     minScore,
   ).slice(0, input.limit);
+}
+
+function selectStrongBankItems(
+  items: QuestionBankItem[],
+  tema: string,
+  componente: string,
+  target: number,
+): { selected: QuestionBankItem[]; weakSkipped: number } {
+  const ranked = rankBankItems(items, tema, componente, 0);
+  const selected: QuestionBankItem[] = [];
+  let weakSkipped = 0;
+
+  for (const item of ranked) {
+    if (selected.length >= target) break;
+    const score = scoreBankMatch(item, tema, componente);
+    if (score < WEAK_BANK_MATCH_THRESHOLD) {
+      weakSkipped++;
+      continue;
+    }
+    selected.push(item);
+  }
+
+  return { selected, weakSkipped };
 }
 
 async function searchBankQuestions(input: {
@@ -297,23 +330,30 @@ export async function tryAssembleExamFromBank(
   }
 
   const target = parseTargetQuantity(request.quantidade);
-  const bankItems = await searchBankQuestions({
+  const bankPool = await searchBankQuestions({
     userId: options?.userId,
     componente: request.componenteCurricular,
     anoSerie: request.anoSerie,
     tema: request.tema,
-    limit: target,
+    limit: Math.max(target * 3, 30),
   });
 
-  if (!bankItems.length) {
+  if (!bankPool.length) {
     return options?.strictBank
       ? { ok: false, reason: "strict_bank_empty" }
       : { ok: false, reason: "no_bank_hits" };
   }
 
-  let questions: ExamQuestion[] = bankItems
-    .slice(0, target)
-    .map((item, index) => bankItemToExamQuestion(item, index + 1));
+  const { selected: strongItems, weakSkipped } = selectStrongBankItems(
+    bankPool,
+    request.tema,
+    request.componenteCurricular,
+    target,
+  );
+
+  let questions: ExamQuestion[] = strongItems.map((item, index) =>
+    bankItemToExamQuestion(item, index + 1),
+  );
 
   const missing = target - questions.length;
   if (missing > 0) {
@@ -327,12 +367,26 @@ export async function tryAssembleExamFromBank(
       : { ok: false, reason: "no_bank_hits" };
   }
 
-  const pipeline: "bank" | "bank-hybrid" = missing > 0 ? "bank-hybrid" : "bank";
-  const bankUsedCount = Math.min(bankItems.length, target);
-  const usedIds = bankItems.slice(0, bankUsedCount).map((item) => item.id);
+  const iaFilled = missing > 0;
+  const pipeline: "bank" | "bank-hybrid" = iaFilled ? "bank-hybrid" : "bank";
+  const usedIds = strongItems.map((item) => item.id);
 
   for (const id of usedIds) {
     void incrementUsageCount(id);
+  }
+
+  const alertas: string[] = [];
+  if (pipeline === "bank") {
+    alertas.push(
+      `Lista montada do banco (${questions.length} itens) — entrega rápida.`,
+    );
+  } else {
+    alertas.push(`Banco + IA completaram ${questions.length} itens.`);
+    if (weakSkipped > 0) {
+      alertas.push(
+        `${weakSkipped} item(ns) do banco foram genéricos demais para o tema — IA preencheu as lacunas.`,
+      );
+    }
   }
 
   return finalizeExamAssembly(
@@ -340,13 +394,9 @@ export async function tryAssembleExamFromBank(
     request,
     questions,
     pipeline,
-    [
-      pipeline === "bank"
-        ? `Lista montada do banco (${questions.length} itens) — entrega rápida.`
-        : `Banco + IA completaram ${questions.length} itens.`,
-    ],
+    alertas,
     usedIds,
-    missing === 0,
+    !iaFilled,
   );
 }
 

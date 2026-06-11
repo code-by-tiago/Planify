@@ -5,8 +5,8 @@
  * Fontes:
  *  - planify-materials   — generated_materials (dados próprios)
  *  - planify-biblioteca  — pacotes curados Planify
- *  - stackexchange       — API oficial CC BY-SA (matemática, física, química, biologia)
- *  - wikiversity-pt      — MediaWiki API CC BY-SA (pt.wikiversity.org)
+ *  - stackexchange       — DESATIVADO (fórum universitário EN, não serve EF/EM BR)
+ *  - wikiversity-pt      — DESATIVADO (qualidade inconsistente)
  *
  * NÃO inclui scraping de bancos comerciais (QConcursos, Teachy, etc.).
  *
@@ -40,9 +40,13 @@ loadEnvLocal();
 
 const { computeQuestionContentHash } = loadTsModule("src/lib/banco-questoes/question-bank-hash.ts");
 
+/** Padrão Teachy: só curadoria Planify + materiais gerados com qualidade. */
+const DEFAULT_SOURCES = `${MAT_ID},${BIB_ID}`;
+
 const ALL_SOURCES = {
   [MAT_ID]: iteratePlanifyMaterials,
   [BIB_ID]: iteratePlanifyBiblioteca,
+  // Fontes externas desativadas — volume ≠ qualidade escolar BR
   [SE_ID]: iterateStackExchange,
   [WIKI_ID]: iterateWikiversityPt,
 };
@@ -58,7 +62,7 @@ async function main() {
 
   const selected =
     args.sources === "all"
-      ? Object.keys(ALL_SOURCES)
+      ? DEFAULT_SOURCES.split(",").map((s) => s.trim())
       : args.sources.split(",").map((s) => s.trim()).filter(Boolean);
 
   for (const id of selected) {

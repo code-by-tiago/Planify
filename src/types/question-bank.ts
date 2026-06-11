@@ -1,6 +1,8 @@
 export type QuestionBankItem = {
   id: string;
   enunciado: string;
+  /** Texto de leitura/apoio exibido uma vez por grupo de questões */
+  textoApoio?: string;
   tipo: string;
   alternativas: string[];
   respostaEsperada: string;

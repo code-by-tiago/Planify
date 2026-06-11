@@ -8,6 +8,7 @@ import {
   filterQuestionBankItems,
   stashQuestionsForProva,
 } from "@/lib/banco-questoes/question-bank-storage";
+import { splitEmbeddedReadingText } from "@/lib/banco-questoes/question-bank-self-contained";
 import { extractQuestionsFromMaterialOutput } from "@/lib/banco-questoes/question-bank-extract";
 import {
   deleteQuestionHybrid,
@@ -78,6 +79,20 @@ const SOURCE_OPTIONS: { id: QuestionBankFilter["source"]; label: string }[] = [
 
 function newId(): string {
   return `qb-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function resolveQuestionDisplay(item: QuestionBankItem): {
+  enunciado: string;
+  textoApoio?: string;
+} {
+  if (item.textoApoio?.trim()) {
+    return { enunciado: item.enunciado, textoApoio: item.textoApoio.trim() };
+  }
+  const split = splitEmbeddedReadingText(item.enunciado);
+  return {
+    enunciado: split.enunciado,
+    textoApoio: split.textoApoio,
+  };
 }
 
 type RemixDraft = {
@@ -622,6 +637,7 @@ export function BancoQuestoesClient() {
         <div className="space-y-3">
           {filtered.map((item) => {
             const selected = selectedIds.has(item.id);
+            const display = resolveQuestionDisplay(item);
             return (
               <article
                 key={item.id}
@@ -665,8 +681,18 @@ export function BancoQuestoesClient() {
                         </span>
                       ) : null}
                     </div>
+                    {display.textoApoio ? (
+                      <details className="mt-2 rounded-lg border border-slate-100 bg-slate-50/80 px-3 py-2">
+                        <summary className="cursor-pointer text-xs font-semibold text-slate-600">
+                          Texto de apoio
+                        </summary>
+                        <p className="mt-2 whitespace-pre-wrap text-xs leading-relaxed text-slate-600">
+                          {display.textoApoio}
+                        </p>
+                      </details>
+                    ) : null}
                     <p className="mt-2 text-sm font-medium leading-relaxed text-slate-800">
-                      {item.enunciado}
+                      {display.enunciado}
                     </p>
                     <div className="mt-2 flex flex-wrap gap-2 text-[11px] font-semibold text-slate-500">
                       <span>{item.tipo}</span>

@@ -5,7 +5,14 @@ import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { PlanifyPageHero } from "@/components/pro/PlanifyPageHero";
 import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
 import {
+  getQuestionBankComponenteOptions,
+  getQuestionBankYearOptions,
+  normalizeQuestionBankFilterEducation,
+  QUESTION_BANK_ETAPA_OPTIONS,
+} from "@/lib/banco-questoes/question-bank-education";
+import {
   isQuestionBankFilterActive,
+  isQuestionBankSearchActive,
   searchQuestionBankItems,
 } from "@/lib/banco-questoes/question-bank-match";
 import {
@@ -38,7 +45,12 @@ import { openMaterialInEditor } from "@/lib/materiais/material-editor-flow";
 import { dashboardToolHref } from "@/lib/pro/toolRoutes";
 import type { MaterialAIOutput } from "@/types/ai";
 import type { MaterialEngineInput } from "@/server/materials/material-engine-types";
-import type { QuestionBankFilter, QuestionBankItem } from "@/types/question-bank";
+import {
+  DEFAULT_QUESTION_BANK_FILTER,
+  type QuestionBankFilter,
+  type QuestionBankItem,
+  type QuestionBankSource,
+} from "@/types/question-bank";
 import { useRouter } from "next/navigation";
 import {
   HUD_FIELD_CLASS,
@@ -48,41 +60,15 @@ import {
   HUD_TEXTAREA_CLASS,
 } from "@/lib/pro/hud-form-styles";
 
-const COMPONENTE_OPTIONS = [
-  "todos",
-  "Multicomponente",
-  "Língua Portuguesa",
-  "Matemática",
-  "História",
-  "Geografia",
-  "Ciências",
-  "Inglês",
-  "Arte",
-  "Educação Física",
-];
-
-const ANO_OPTIONS = [
-  "todos",
-  "Geral",
-  "1º ano",
-  "2º ano",
-  "3º ano",
-  "4º ano",
-  "5º ano",
-  "6º ano",
-  "7º ano",
-  "8º ano",
-  "9º ano",
-  "1ª série",
-  "2ª série",
-  "3ª série",
-];
-
-const SOURCE_OPTIONS: { id: QuestionBankFilter["source"]; label: string }[] = [
-  { id: "todas", label: "Todas" },
-  { id: "minhas", label: "Minhas" },
-  { id: "comunidade", label: "Comunidade" },
-  { id: "escola", label: "Escola" },
+const SOURCE_OPTIONS: {
+  id: QuestionBankSource;
+  label: string;
+  hint: string;
+}[] = [
+  { id: "todas", label: "Todo o acervo", hint: "Suas questões, comunidade e escola" },
+  { id: "minhas", label: "Criadas por mim", hint: "Questões importadas ou remixadas por você" },
+  { id: "comunidade", label: "Comunidade Planify", hint: "Questões públicas de outros professores" },
+  { id: "escola", label: "Da minha escola", hint: "Questões compartilhadas na sua escola" },
 ];
 
 function newId(): string {
@@ -127,14 +113,7 @@ export function BancoQuestoesClient() {
   const [schoolItems, setSchoolItems] = useState<QuestionBankItem[]>([]);
   const [syncing, setSyncing] = useState(true);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [filter, setFilter] = useState<QuestionBankFilter>({
-    query: "",
-    componente: "todos",
-    anoSerie: "todos",
-    bncc: "",
-    bnccCodigos: undefined,
-    source: "todas",
-  });
+  const [filter, setFilter] = useState<QuestionBankFilter>(DEFAULT_QUESTION_BANK_FILTER);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [importStatus, setImportStatus] = useState("");
   const [importError, setImportError] = useState("");
@@ -175,6 +154,16 @@ export function BancoQuestoesClient() {
     [school.hasSchool],
   );
 
+  const yearOptions = useMemo(
+    () => getQuestionBankYearOptions(filter.etapa),
+    [filter.etapa],
+  );
+
+  const componenteOptions = useMemo(
+    () => getQuestionBankComponenteOptions(filter.etapa),
+    [filter.etapa],
+  );
+
   const searchResult = useMemo(() => {
     return searchQuestionBankItems(allItems, filter);
   }, [allItems, filter]);
@@ -182,7 +171,17 @@ export function BancoQuestoesClient() {
   const filtered = searchResult.items;
   const relatedItems = searchResult.related;
   const searchMode = searchResult.mode;
+  const searchActive = isQuestionBankSearchActive(filter);
   const filterActive = isQuestionBankFilterActive(filter);
+  const searchFallback = searchResult.fallback;
+
+  function patchFilter(patch: Partial<QuestionBankFilter>) {
+    setFilter((current) => {
+      const next = { ...current, ...patch };
+      const education = normalizeQuestionBankFilterEducation(current, patch);
+      return { ...next, ...education };
+    });
+  }
 
   const selectedItems = useMemo(() => {
     const byId = new Map(allItems.map((item) => [item.id, item]));
@@ -198,20 +197,26 @@ export function BancoQuestoesClient() {
 
   function handleTemaSuggestionSelect(suggestion: BnccTemaAutocompleteSuggestion) {
     const codes = suggestion.habilidades.map((skill) => skill.codigo).filter(Boolean);
-    setFilter((current) => ({
-      ...current,
+    const skill = suggestion.habilidades[0];
+    const etapaPatch =
+      filter.etapa === "todos" && skill?.etapa
+        ? (skill.etapa as QuestionBankFilter["etapa"])
+        : filter.etapa;
+
+    patchFilter({
       query: suggestion.tema,
       bncc: "",
       bnccCodigos: codes.length ? codes : undefined,
+      etapa: etapaPatch,
       componente:
-        current.componente === "todos" && suggestion.componente
+        filter.componente === "todos" && suggestion.componente
           ? suggestion.componente
-          : current.componente,
+          : filter.componente,
       anoSerie:
-        current.anoSerie === "todos" && suggestion.habilidades[0]?.anoSerie
-          ? suggestion.habilidades[0].anoSerie
-          : current.anoSerie,
-    }));
+        filter.anoSerie === "todos" && skill?.anoSerie
+          ? skill.anoSerie
+          : filter.anoSerie,
+    });
   }
 
   function clearBnccAutoFilter() {
@@ -222,14 +227,7 @@ export function BancoQuestoesClient() {
   }
 
   function resetFilters() {
-    setFilter({
-      query: "",
-      componente: "todos",
-      anoSerie: "todos",
-      bncc: "",
-      bnccCodigos: undefined,
-      source: "todas",
-    });
+    setFilter(DEFAULT_QUESTION_BANK_FILTER);
     setSelectedIds(new Set());
     setShowAdvanced(false);
   }
@@ -539,6 +537,10 @@ export function BancoQuestoesClient() {
       filter.anoSerie !== "todos"
         ? filter.anoSerie
         : selected[0]?.anoSerie || "Geral";
+    const etapa =
+      filter.etapa !== "todos"
+        ? filter.etapa
+        : selected[0]?.etapa || "Ensino Fundamental";
 
     return {
       tipoMaterial,
@@ -550,7 +552,7 @@ export function BancoQuestoesClient() {
       disciplina: componente,
       discipline: componente,
       anoSerie,
-      etapa: selected[0]?.etapa || "Ensino Fundamental",
+      etapa,
       quantidade: selected.length,
       incluirGabarito: true,
     };
@@ -638,7 +640,7 @@ export function BancoQuestoesClient() {
       header={
         <PlanifyPageHero
           title="Banco de questões"
-          description="Escolha disciplina e série, digite o tema — as questões compatíveis aparecem sozinhas."
+          description="Navegue pelo acervo completo ou refine por nível, disciplina, série e tema."
           icon="library"
         />
       }
@@ -669,26 +671,25 @@ export function BancoQuestoesClient() {
 
         <fieldset className="space-y-3">
           <legend className="sr-only">Filtros do banco de questões</legend>
-          <div className="flex flex-wrap items-end gap-3">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <div>
-              <label className={HUD_SECTION_LABEL} htmlFor="qb-comp">
-                Disciplina
+              <label className={HUD_SECTION_LABEL} htmlFor="qb-etapa">
+                Nível escolar
               </label>
               <select
-                id="qb-comp"
-                value={filter.componente}
+                id="qb-etapa"
+                value={filter.etapa}
                 onChange={(event) =>
-                  setFilter((current) => ({
-                    ...current,
-                    componente: event.target.value,
-                  }))
+                  patchFilter({
+                    etapa: event.target.value as QuestionBankFilter["etapa"],
+                  })
                 }
-                aria-label="Filtrar por disciplina"
+                aria-label="Filtrar por nível escolar"
                 className={HUD_FIELD_CLASS}
               >
-                {COMPONENTE_OPTIONS.map((option) => (
-                  <option key={option} value={option}>
-                    {option === "todos" ? "Todas" : option}
+                {QUESTION_BANK_ETAPA_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
                   </option>
                 ))}
               </select>
@@ -700,23 +701,61 @@ export function BancoQuestoesClient() {
               <select
                 id="qb-ano"
                 value={filter.anoSerie}
-                onChange={(event) =>
-                  setFilter((current) => ({
-                    ...current,
-                    anoSerie: event.target.value,
-                  }))
-                }
+                onChange={(event) => patchFilter({ anoSerie: event.target.value })}
                 aria-label="Filtrar por série ou ano"
                 className={HUD_FIELD_CLASS}
               >
-                {ANO_OPTIONS.map((option) => (
+                {yearOptions.map((option) => (
                   <option key={option} value={option}>
                     {option === "todos" ? "Todas" : option}
                   </option>
                 ))}
               </select>
             </div>
+            <div>
+              <label className={HUD_SECTION_LABEL} htmlFor="qb-comp">
+                Disciplina
+              </label>
+              <select
+                id="qb-comp"
+                value={filter.componente}
+                onChange={(event) => patchFilter({ componente: event.target.value })}
+                aria-label="Filtrar por disciplina"
+                className={HUD_FIELD_CLASS}
+              >
+                {componenteOptions.map((option) => (
+                  <option key={option} value={option}>
+                    {option === "todos" ? "Todas" : option}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className={HUD_SECTION_LABEL} htmlFor="qb-source">
+                Origem
+              </label>
+              <select
+                id="qb-source"
+                value={filter.source}
+                onChange={(event) =>
+                  patchFilter({
+                    source: event.target.value as QuestionBankSource,
+                  })
+                }
+                aria-label="Filtrar por origem das questões"
+                className={HUD_FIELD_CLASS}
+              >
+                {sourceOptions.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
+          <p className="text-[11px] font-medium text-slate-500">
+            {sourceOptions.find((option) => option.id === filter.source)?.hint}
+          </p>
 
           <TemaCombobox
             label="Tema da aula"
@@ -730,6 +769,7 @@ export function BancoQuestoesClient() {
               }))
             }
             onSelectSuggestion={handleTemaSuggestionSelect}
+            etapa={filter.etapa === "todos" ? undefined : filter.etapa}
             componente={filter.componente === "todos" ? undefined : filter.componente}
             anoSerie={filter.anoSerie === "todos" ? undefined : filter.anoSerie}
             placeholder="Ex.: tipos de sujeito, frações, Brasil colonial…"
@@ -811,26 +851,6 @@ export function BancoQuestoesClient() {
             ) : null}
           </div>
 
-          <div className="flex flex-wrap gap-2" role="group" aria-label="Fonte das questões">
-          {sourceOptions.map((option) => (
-            <button
-              key={option.id}
-              type="button"
-              aria-label={`Filtrar fonte: ${option.label}`}
-              aria-pressed={filter.source === option.id}
-              onClick={() =>
-                setFilter((current) => ({ ...current, source: option.id }))
-              }
-              className={
-                filter.source === option.id
-                  ? HUD_FILTER_CHIP_ACTIVE
-                  : HUD_FILTER_CHIP_INACTIVE
-              }
-            >
-              {option.label}
-            </button>
-          ))}
-          </div>
         </fieldset>
 
         <div className="flex flex-wrap gap-2">
@@ -912,12 +932,19 @@ export function BancoQuestoesClient() {
           <p className="text-sm font-medium text-slate-500">Sincronizando banco…</p>
         ) : searchMode === "browse" ? (
           <p className="text-sm font-semibold text-slate-600">
-            {filtered.length} questão(ões) no acervo — refine por disciplina, série e tema.
+            {filtered.length} questão(ões) no acervo
+            {filterActive ? " com os filtros atuais" : ""}
+            {searchActive ? "" : " — digite um tema para busca mais precisa."}
           </p>
         ) : (
           <p className="text-sm font-semibold text-slate-600">
             {filtered.length} compatível(is)
-            {relatedItems.length > 0 ? ` · ${relatedItems.length} relacionada(s)` : ""}
+            {relatedItems.length > 0
+              ? searchFallback === "structural"
+                ? ` · ${relatedItems.length} no acervo filtrado`
+                : ` · ${relatedItems.length} relacionada(s)`
+              : ""}
+            {filter.etapa !== "todos" ? ` · ${filter.etapa}` : ""}
             {filter.componente !== "todos" ? ` · ${filter.componente}` : ""}
             {filter.anoSerie !== "todos" ? ` · ${filter.anoSerie}` : ""}
             {filter.query.trim() ? ` · tema “${filter.query.trim()}”` : ""}
@@ -1051,15 +1078,16 @@ export function BancoQuestoesClient() {
             : null}
         </div>
 
-        {!syncing && filterActive && relatedItems.length > 0 ? (
+        {!syncing && searchActive && relatedItems.length > 0 && filtered.length === 0 ? (
           <div className="space-y-3">
             <div>
               <p className="text-xs font-bold uppercase tracking-wide text-amber-700">
-                Relacionadas
+                {searchFallback === "structural" ? "Acervo filtrado" : "Relacionadas"}
               </p>
               <p className="mt-1 text-sm font-medium text-slate-600">
-                Nenhuma exata para este tema e série — veja opções próximas (outras séries ou
-                tema parecido).
+                {searchFallback === "structural"
+                  ? "Nenhuma questão exata para este tema — mostrando o acervo com os filtros de nível, disciplina e série."
+                  : "Nenhuma exata para este tema e série — veja opções próximas (outras séries ou tema parecido)."}
               </p>
             </div>
             {relatedItems.map((item) => {
@@ -1273,7 +1301,6 @@ export function BancoQuestoesClient() {
         ) : null}
 
         {!syncing &&
-        filterActive &&
         filtered.length === 0 &&
         relatedItems.length === 0 &&
         filter.source !== "comunidade" ? (
@@ -1291,7 +1318,7 @@ export function BancoQuestoesClient() {
                   crescer.
                 </p>
               </>
-            ) : (
+            ) : searchActive ? (
               <>
                 <p className="text-xs font-bold uppercase tracking-wide text-cyan-600">
                   Nenhuma compatível
@@ -1304,7 +1331,20 @@ export function BancoQuestoesClient() {
                   amplie a série para ver mais questões da disciplina.
                 </p>
               </>
-            )}
+            ) : filterActive ? (
+              <>
+                <p className="text-xs font-bold uppercase tracking-wide text-cyan-600">
+                  Nenhuma neste recorte
+                </p>
+                <h3 className="mt-2 text-lg font-extrabold text-slate-950">
+                  Amplie os filtros para ver mais questões
+                </h3>
+                <p className="mt-2 text-sm font-medium text-slate-600">
+                  Tente outro nível, disciplina ou série — ou limpe os filtros para ver todo o
+                  acervo disponível.
+                </p>
+              </>
+            ) : null}
           </div>
         ) : null}
       </div>

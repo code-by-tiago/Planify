@@ -50,7 +50,11 @@ export function removeQuestionBankItem(id: string): QuestionBankItem[] {
 }
 
 export { filterQuestionBankItems, searchQuestionBankItems } from "./question-bank-match";
-export type { QuestionBankSearchResult, RankedQuestionBankItem } from "./question-bank-match";
+export type {
+  QuestionBankSearchFallback,
+  QuestionBankSearchResult,
+  RankedQuestionBankItem,
+} from "./question-bank-match";
 
 export function readProvaInjectObservacoes(): string | null {
   if (!canUseStorage()) return null;

@@ -20,6 +20,8 @@ export type BnccTemaAutocompleteSuggestion = {
   score: number;
 };
 
+import { planifyAuthenticatedFetch } from "@/lib/auth/authenticated-fetch";
+
 export type BnccTemaAutocompleteQuery = {
   query: string;
   etapa?: string;
@@ -45,10 +47,9 @@ export async function fetchBnccTemaSuggestions(
   if (input.componente?.trim()) params.set("componente", input.componente.trim());
   if (input.limit) params.set("limit", String(input.limit));
 
-  const response = await fetch(`/api/bncc/autocomplete?${params.toString()}`, {
-    cache: "no-store",
-    credentials: "include",
-  });
+  const response = await planifyAuthenticatedFetch(
+    `/api/bncc/autocomplete?${params.toString()}`,
+  );
 
   const data = (await response.json().catch(() => null)) as {
     success?: boolean;

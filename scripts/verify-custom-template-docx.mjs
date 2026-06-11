@@ -33,13 +33,34 @@ function loadTsModule(relativePath) {
   const localRequire = (specifier) => {
     if (specifier.startsWith(".")) {
       const resolved = join(dirname(sourcePath), specifier);
-      for (const candidate of [`${resolved}.ts`, `${resolved}.js`]) {
+      const candidates = [
+        `${resolved}.ts`,
+        `${resolved}.js`,
+        join(resolved, "index.ts"),
+        join(resolved, "index.js"),
+      ];
+      for (const candidate of candidates) {
         if (candidate.endsWith(".ts")) {
           const rel = candidate.slice(root.length + 1).replace(/\\/g, "/");
           return loadTsModule(rel);
         }
       }
     }
+
+    if (specifier.startsWith("@/")) {
+      const rel = `src/${specifier.slice(2)}`;
+      const candidates = [`${rel}.ts`, `${rel}.tsx`, join(rel, "index.ts")];
+      for (const candidate of candidates) {
+        const full = join(root, candidate);
+        try {
+          readFileSync(full);
+          return loadTsModule(candidate.replace(/\\/g, "/"));
+        } catch {
+          // try next
+        }
+      }
+    }
+
     return require(specifier);
   };
 

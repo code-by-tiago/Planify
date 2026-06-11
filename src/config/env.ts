@@ -5,6 +5,7 @@ export const envKeys = {
   geminiApiKey: "GEMINI_API_KEY",
   geminiModelDefault: "GEMINI_MODEL_DEFAULT",
   geminiModelAdvanced: "GEMINI_MODEL_ADVANCED",
+  imagenModel: "IMAGEN_MODEL",
   stripeSecretKey: "STRIPE_SECRET_KEY",
   stripePublishableKey: "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY",
   stripeWebhookSecret: "STRIPE_WEBHOOK_SECRET",

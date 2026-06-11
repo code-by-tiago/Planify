@@ -102,6 +102,13 @@ const {
   getPlanningOutputIssues,
   buildPlanningQualityRetryNote,
 } = loadTsModule("src/server/planejamentos/planning-quality.ts");
+const { getEngineOutputIssues } = loadTsModule(
+  "src/server/materials/material-engine-quality.ts",
+);
+const { normalizeMaterialEngineRequest } = loadTsModule(
+  "src/server/materials/material-engine-validation.ts",
+);
+const { resolveImagenModel } = loadTsModule("src/server/ai/imagen-client.ts");
 
 const DISCIPLINE_SEED_CASES = [
   {
@@ -324,6 +331,109 @@ function testDailyQuotaMigrationContract() {
   }
 }
 
+function testImagenModelResolution() {
+  const previous = process.env.IMAGEN_MODEL;
+  try {
+    process.env.IMAGEN_MODEL = "imagen-4";
+    assert.equal(resolveImagenModel(), "imagen-4.0-generate-001");
+
+    process.env.IMAGEN_MODEL = "imagen-4-fast";
+    assert.equal(resolveImagenModel(), "imagen-4.0-fast-generate-001");
+
+    process.env.IMAGEN_MODEL = "imagen-4.0-ultra-generate-001";
+    assert.equal(resolveImagenModel(), "imagen-4.0-ultra-generate-001");
+  } finally {
+    if (previous === undefined) delete process.env.IMAGEN_MODEL;
+    else process.env.IMAGEN_MODEL = previous;
+  }
+}
+
+function testProvaListaQualityGate() {
+  const baseInput = {
+    etapa: "Ensino Fundamental - Anos Finais",
+    anoSerie: "9º ano",
+    componenteCurricular: "Matemática",
+    tema: "Equações do 1º grau",
+    objetivo: "Resolver equações",
+    quantidade: 2,
+    dificuldade: "media",
+    incluirGabarito: true,
+    habilidadesSelecionadas: [],
+  };
+
+  const request = normalizeMaterialEngineRequest({
+    tipoMaterial: "prova",
+    ...baseInput,
+  });
+
+  const weakOutput = {
+    title: "Prova",
+    subtitle: "",
+    summary: "",
+    sections: [],
+    activities: [],
+    answerKey: [],
+    teacherNotes: ["Nota do professor"],
+    exam: {
+      questions: [
+        {
+          number: 1,
+          type: "multipla-escolha",
+          statement: "Explique o conteúdo estudado sobre o tema.",
+          options: ["a", "b"],
+          answer: "a",
+        },
+      ],
+    },
+  };
+
+  const weakIssues = getEngineOutputIssues(request, weakOutput);
+  assert.ok(weakIssues.length >= 3, "prova fraca deve acumular issues de qualidade");
+
+  const strongOutput = {
+    title: "Prova — Equações",
+    subtitle: "9º ano",
+    summary: "",
+    sections: [],
+    activities: [],
+    answerKey: ["Questão 1: b) x = 3"],
+    teacherNotes: [],
+    exam: {
+      questions: [
+        {
+          number: 1,
+          type: "multipla-escolha",
+          statement:
+            "Em equações do 1º grau, qual valor de x resolve 2x + 4 = 10?",
+          options: [
+            "Substituindo x = 2 em 2x+4 obtemos 8, que não satisfaz a igualdade 10",
+            "Substituindo x = 3 em 2x+4 obtemos 10, confirmando a solução da equação",
+            "Substituindo x = 4 em 2x+4 obtemos 12, que não satisfaz a igualdade 10",
+            "Substituindo x = 5 em 2x+4 obtemos 14, que não satisfaz a igualdade 10",
+          ],
+          answer: "x = 3, pois 2·3+4=10 confirma a equação do 1º grau.",
+        },
+        {
+          number: 2,
+          type: "dissertativa",
+          statement:
+            "Descreva os passos para resolver 5x - 7 = 18 em equações do 1º grau.",
+          options: [],
+          answer:
+            "Somar 7 aos dois membros (5x=25), dividir por 5 e concluir x=5 verificando na equação original.",
+        },
+      ],
+    },
+  };
+
+  const strongIssues = getEngineOutputIssues(request, strongOutput);
+  assert.deepEqual(
+    strongIssues,
+    [],
+    `prova forte deveria passar, recebido: ${strongIssues.join("; ")}`,
+  );
+}
+
 function testGenerationEventsMigrationContract() {
   const migrationPath = join(
     root,
@@ -346,6 +456,8 @@ function main() {
   runTest("material-type-routing", testMaterialTypeRouting);
   runTest("discipline-seeds", testDisciplineSeeds);
   runTest("quality-score", testQualityScore);
+  runTest("imagen-model", testImagenModelResolution);
+  runTest("prova-lista-quality-gate", testProvaListaQualityGate);
   runTest("planning-quality", testPlanningQuality);
   runTest("daily-quota-migration", testDailyQuotaMigrationContract);
   runTest("generation-events-migration", testGenerationEventsMigrationContract);

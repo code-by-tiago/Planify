@@ -1,6 +1,6 @@
 /**
  * Resolve imagens para slides. Prioridade:
- *   1) Ilustração gerada por IA (Gemini) — sempre condiz com o conteúdo.
+ *   1) Ilustração Imagen 4 (IMAGEN_MODEL + GEMINI_API_KEY) — condiz com o slide.
  *   2) Foto de stock relevante (Wikimedia/Openverse/Unsplash), com filtro.
  *   3) Nenhuma imagem (o design do tema preenche o espaço).
  * Nunca retorna placeholder de "sugestão de imagem" nem foto sem relação.
@@ -321,7 +321,7 @@ async function runWithConcurrency<T>(
 }
 
 /**
- * Imagens de slides por Gemini exigem faturação ativa na API.
+ * Ilustrações Imagen 4 usam GEMINI_API_KEY + IMAGEN_MODEL (ex.: imagen-4).
  * Com GEMINI_API_KEY configurada, fica ligado por padrão.
  * Desligue com SLIDE_AI_IMAGES=0 se quiser só Wikimedia/stock.
  */

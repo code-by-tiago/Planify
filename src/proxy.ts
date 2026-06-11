@@ -44,7 +44,15 @@ export async function proxy(request: NextRequest) {
     return redirectToLogin(request);
   }
 
-  const access = await verifyPremiumAccess(token);
+  let access;
+  try {
+    access = await verifyPremiumAccess(token);
+  } catch {
+    return NextResponse.json(
+      { error: { message: "Serviço temporariamente indisponível. Tente novamente." } },
+      { status: 503 },
+    );
+  }
 
   if (!access.authenticated) {
     return redirectToLogin(request);

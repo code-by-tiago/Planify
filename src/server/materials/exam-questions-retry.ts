@@ -1,7 +1,11 @@
-import { collectQuestionSemanticIssues } from "@/lib/materiais/material-semantic-quality";
+import { normalizeQuestionOptions } from "@/lib/materiais/material-document-layout";
+import { trimTeachyStatement } from "@/lib/materiais/material-document-layout";
 import { computeQualityScore } from "@/lib/materiais/material-quality-score";
 import { generateGeminiJSON } from "../ai/gemini-client";
-import { getEngineOutputIssues } from "./material-engine-quality";
+import {
+  collectSingleExamQuestionIssues,
+  getEngineOutputIssues,
+} from "./material-engine-quality";
 import {
   buildMaterialEngineHtmlFromStructure,
 } from "./material-engine-service";
@@ -49,12 +53,7 @@ function findWeakQuestions(
   const weak: WeakQuestion[] = [];
 
   for (const [index, question] of questions.entries()) {
-    const issues = collectQuestionSemanticIssues({
-      statement: question.statement,
-      answer: question.answer,
-      options: question.options,
-      tema: request.tema,
-    });
+    const issues = collectSingleExamQuestionIssues(request, question);
 
     if (issues.length) {
       weak.push({ index, question, issues });
@@ -72,7 +71,11 @@ async function regenerateExamQuestions(
   const prompt = [
     `Regenere SOMENTE as ${label}s abaixo para ${request.tipoMaterial} sobre "${request.tema}".`,
     `Componente: ${request.componenteCurricular}. Ano/série: ${request.anoSerie}.`,
-    "Cada item deve citar o tema, ter enunciado direto (sem preâmbulo), alternativas distintas quando objetiva, e gabarito comentado.",
+    "Cada item deve citar o tema, ter enunciado direto (sem preâmbulo) e gabarito objetivo.",
+    "MÚLTIPLA ESCOLHA: exatamente 4 alternativas no array options, SEM prefixo a) b) — cada alternativa com frase completa (mín. 35 caracteres), plausível e distinta, contextualizada no tema.",
+    "PROIBIDO alternativas genéricas ('todas as anteriores', 'nenhuma das anteriores', 'conteúdo estudado', opções de 1–2 palavras).",
+    "GABARITO: objetivas com letra/resposta + justificativa mínima (1 frase); dissertativas com passos ou critérios concretos (mín. 40 caracteres).",
+    "ENUNCIADO: no máximo 3 frases curtas e diretas — comando claro sem contextualização longa.",
     "",
     "Itens a corrigir:",
     ...weak.map(
@@ -97,10 +100,12 @@ async function regenerateExamQuestions(
   return (generated.questions ?? []).map((question, index) => ({
     number: question.number ?? weak[index]?.question.number ?? index + 1,
     type: question.type || weak[index]?.question.type || "multipla-escolha",
-    statement: String(question.statement || "").trim(),
-    options: Array.isArray(question.options)
-      ? question.options.map((item) => String(item).trim()).filter(Boolean)
-      : [],
+    statement: trimTeachyStatement(String(question.statement || "")),
+    options: normalizeQuestionOptions(
+      Array.isArray(question.options)
+        ? question.options.map((item) => String(item).trim()).filter(Boolean)
+        : [],
+    ),
     answer: String(question.answer || "").trim(),
   }));
 }

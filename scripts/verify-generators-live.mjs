@@ -219,17 +219,18 @@ async function runEngineType(tipo, generateMaterialByEngine, failures) {
 
     const { html, qualityScore, qualityIssues = [], alertas = [] } = result.data;
     const htmlLen = String(html || "").length;
-    const hasTitle = /<h1|planify-doc-title/i.test(html || "");
+    const hasStructure = /<h1|planify-doc-title|planify-doc-header/i.test(html || "");
+    const minScore = 88;
     const acceptable =
       htmlLen > 200 &&
-      hasTitle &&
-      (qualityScore ?? 0) >= 55 &&
-      (qualityIssues.length === 0 || (alertas.length > 0 && qualityScore >= 55));
+      hasStructure &&
+      (qualityScore ?? 0) >= minScore &&
+      qualityIssues.length === 0;
 
     if (!acceptable) {
       failures.push({
         tipo,
-        reason: `qualidade insuficiente (score=${qualityScore}, issues=${qualityIssues.length}, html=${htmlLen})`,
+        reason: `qualidade insuficiente (score=${qualityScore}, min=${minScore}, issues=${qualityIssues.length}, alertas=${alertas.length}, html=${htmlLen})`,
         issues: qualityIssues.slice(0, 5),
         elapsedMs,
       });

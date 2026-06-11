@@ -74,7 +74,7 @@ export function fetchSiteHealthReport(): SiteHealthReport {
       label: "Gemini IA",
       status: envPresent("GEMINI_API_KEY") ? "ok" : "warn",
       detail: envPresent("GEMINI_API_KEY")
-        ? `Modelo: ${process.env.GEMINI_MODEL_DEFAULT || process.env.GEMINI_MODEL || "padrão"}.`
+        ? `Texto: ${process.env.GEMINI_MODEL_DEFAULT || process.env.GEMINI_MODEL || "padrão"} · Imagens: ${process.env.IMAGEN_MODEL || "imagen-4.0-fast-generate-001"}.`
         : "GEMINI_API_KEY não definida — gerações IA desativadas.",
     },
     {

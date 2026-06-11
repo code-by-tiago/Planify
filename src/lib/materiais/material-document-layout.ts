@@ -106,6 +106,33 @@ export function normalizeQuestionOptions(options: string[] | undefined): string[
     .filter(Boolean);
 }
 
+const TEACHY_MAX_STATEMENT_CHARS = 320;
+const TEACHY_MAX_STATEMENT_SENTENCES = 3;
+
+/** Enunciado Teachy: no máximo 3 frases curtas (prova/lista). */
+export function trimTeachyStatement(statement: string): string {
+  const trimmed = String(statement || "").replace(/\s+/g, " ").trim();
+  if (!trimmed) return "";
+
+  const sentences = trimmed
+    .split(/(?<=[.!?])\s+/)
+    .map((part) => part.trim())
+    .filter((part) => part.length > 2);
+
+  let compact =
+    sentences.length > TEACHY_MAX_STATEMENT_SENTENCES
+      ? sentences.slice(0, TEACHY_MAX_STATEMENT_SENTENCES).join(" ")
+      : trimmed;
+
+  if (compact.length > TEACHY_MAX_STATEMENT_CHARS) {
+    const slice = compact.slice(0, TEACHY_MAX_STATEMENT_CHARS);
+    const lastSpace = slice.lastIndexOf(" ");
+    compact = `${(lastSpace > 80 ? slice.slice(0, lastSpace) : slice).trim()}…`;
+  }
+
+  return compact;
+}
+
 export function renderQuestionCard(params: {
   number: number | string;
   statement: string;

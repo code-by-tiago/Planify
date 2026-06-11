@@ -10,6 +10,57 @@ import type {
 } from "./material-engine-types";
 
 const COUNT_TOLERANCE = 1;
+const MAX_STATEMENT_CHARS = 320;
+const MIN_MC_OPTIONS = 4;
+
+function countStatementSentences(text: string): number {
+  return text
+    .split(/[.!?]+/)
+    .map((part) => part.trim())
+    .filter((part) => part.length > 2).length;
+}
+
+/** Issues de uma única questão/exercício (prova/lista) — usado no reparo automático. */
+export function collectSingleExamQuestionIssues(
+  request: Pick<MaterialEngineRequest, "tema" | "tipoMaterial">,
+  question: {
+    number?: number;
+    type?: string;
+    statement?: string;
+    answer?: string;
+    options?: string[];
+  },
+): string[] {
+  const issues: string[] = [];
+  const statement = question.statement?.trim() || "";
+
+  if (statement.length > MAX_STATEMENT_CHARS) {
+    issues.push("enunciado longo demais — máximo 3 frases curtas e diretas.");
+  } else if (countStatementSentences(statement) > 3) {
+    issues.push("limite de 3 frases no enunciado — seja mais direto.");
+  }
+
+  if (
+    question.type === "multipla-escolha" &&
+    (question.options?.length ?? 0) < MIN_MC_OPTIONS
+  ) {
+    issues.push(
+      `múltipla escolha exige pelo menos ${MIN_MC_OPTIONS} alternativas distintas.`,
+    );
+  }
+
+  for (const semantic of collectQuestionSemanticIssues({
+    statement: question.statement || "",
+    answer: question.answer,
+    options: question.options,
+    tema: request.tema,
+    questionType: question.type,
+  }).slice(0, 3)) {
+    issues.push(semantic);
+  }
+
+  return issues;
+}
 
 function countIssues(
   label: string,
@@ -162,17 +213,48 @@ export function getEngineOutputIssues(
 
     let flagged = 0;
     for (const question of questions) {
+      const statement = question.statement?.trim() || "";
+      if (statement.length > MAX_STATEMENT_CHARS) {
+        issues.push(
+          `Questão ${question.number}: enunciado longo demais — máximo 3 frases curtas e diretas.`,
+        );
+      } else if (countStatementSentences(statement) > 3) {
+        issues.push(
+          `Questão ${question.number}: limite de 3 frases no enunciado — seja mais direto.`,
+        );
+      }
+
+      if (
+        question.type === "multipla-escolha" &&
+        (question.options?.length ?? 0) < MIN_MC_OPTIONS
+      ) {
+        issues.push(
+          `Questão ${question.number}: múltipla escolha exige pelo menos ${MIN_MC_OPTIONS} alternativas distintas.`,
+        );
+      }
+
       for (const semantic of collectQuestionSemanticIssues({
         statement: question.statement,
         answer: question.answer,
         options: question.options,
         tema: request.tema,
+        questionType: question.type,
       }).slice(0, 2)) {
         issues.push(`Questão ${question.number}: ${semantic}`);
         flagged += 1;
         if (flagged >= 6) break;
       }
       if (flagged >= 6) break;
+    }
+
+    if (tipo === "lista" && questions.length >= 3) {
+      const types = questions.map((q) => q.type);
+      const uniqueTypes = new Set(types);
+      if (uniqueTypes.size < 2) {
+        issues.push(
+          "Lista: varie tipos de exercício (múltipla escolha, completar, dissertativa curta etc.).",
+        );
+      }
     }
   }
 

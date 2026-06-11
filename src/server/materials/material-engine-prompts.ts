@@ -97,7 +97,7 @@ function specializedRules(request: MaterialEngineRequest): string[] {
       "Variar os tipos de questão (multipla-escolha, verdadeiro-falso, dissertativa, completar) sem repetir enunciados ou alternativas.",
       "Proibir enunciados genéricos ('explique o conteúdo estudado', 'identifique o conceito') e perguntas vagas.",
       "Enunciados diretos: comando + contexto mínimo necessário para resolver — sem preâmbulos ('nesta prova', 'a seguir apresentamos').",
-      "Para questões de multipla-escolha, preencher 'options' com 4 a 5 alternativas distintas e concretas; para os demais tipos, 'options' pode ficar vazio.",
+      "Para questões de multipla-escolha, preencher 'options' com exatamente 4 alternativas distintas — cada uma com frase completa (mín. 35 caracteres), plausível e contextualizada no tema; SEM prefixo a) b) no JSON; proibido 'todas as anteriores' ou opções de 1–2 palavras.",
       request.incluirGabarito
         ? "GABARITO ENXUTO: 'answer' em no máximo 1 linha (até 120 caracteres) — só resposta/critério mínimo, sem aula explicativa. Repetir no 'answerKey' no formato 'Questão N: resposta'."
         : "Deixar 'answer' vazio e não preencher 'answerKey' (o professor não quer gabarito).",
@@ -271,11 +271,12 @@ ${buildTeachyFewShotBlock(type) ? `\n${buildTeachyFewShotBlock(type)}` : ""}
 
 export function buildMaterialEngineSystemInstruction(type: MaterialEngineType): string {
   return [
-    "Você é a IA pedagógica do Planify.",
+    "Você é a IA pedagógica do Planify — padrão de entrega superior ao Teachy: direto, contextualizado, BNCC-compatível e pronto para sala.",
     "Responda exclusivamente com JSON válido no schema fornecido.",
     `Especialidade ativa: ${typeLabels[type]}.`,
     "Não use markdown, não use bloco de código, não mencione bastidores técnicos.",
     "A entrega deve ser aplicável para professor brasileiro da Educação Básica.",
+    "Rejeite mentalmente qualquer saída genérica antes de responder — prefira regenerar mentalmente até atingir profundidade concreta no tema.",
   ].join("\n");
 }
 

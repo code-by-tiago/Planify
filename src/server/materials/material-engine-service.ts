@@ -4,6 +4,7 @@ import { computeQualityScore } from "@/lib/materiais/material-quality-score";
 import { isGenericEducationalText } from "@/lib/materiais/material-semantic-quality";
 import {
   normalizeQuestionOptions,
+  trimTeachyStatement,
   renderGabaritoTable,
   renderQuestionCard,
   wrapProfessionalDocument,
@@ -63,26 +64,39 @@ const CRITICAL_QUALITY_TYPES = new Set<MaterialEngineType>([
   "slides",
 ]);
 
+/** All 13 geradores passam pelo gate P0 antes da entrega final. */
 const P0_QUALITY_GATE_TYPES = new Set<MaterialEngineType>([
-  "prova",
-  "lista",
-  "slides",
-  "plano-aula",
+  "apostila",
   "atividade",
+  "prova",
+  "slides",
+  "projeto",
+  "jogo",
+  "sequencia",
+  "resumo",
+  "lista",
+  "plano-aula",
+  "flashcards",
+  "redacao",
+  "mapa-mental",
 ]);
 
-const MIN_P0_QUALITY_SCORE = 80;
+/** Mínimo para entrega sem alerta crítico — acima do piso Teachy (80). */
+const MIN_P0_QUALITY_SCORE = 88;
 
 const CRITICAL_RETRY_TYPES = new Set<MaterialEngineType>([
   "prova",
   "lista",
-  "atividade",
-  "plano-aula",
   "slides",
+  "plano-aula",
+  "atividade",
+  "apostila",
+  "sequencia",
+  "resumo",
 ]);
 
 function maxAttemptsFor(type: MaterialEngineType): number {
-  return CRITICAL_RETRY_TYPES.has(type) ? 4 : 3;
+  return CRITICAL_RETRY_TYPES.has(type) ? 5 : 4;
 }
 
 function buildDeliveryAlertas(
@@ -885,7 +899,7 @@ function normalizeOutput(
     normalized.activities = [];
     if (normalized.exam?.questions.length) {
       normalized.exam.questions = normalized.exam.questions.map((question, index) => {
-        let statement = String(question.statement || "").trim();
+        let statement = trimTeachyStatement(String(question.statement || ""));
         const num = question.number || index + 1;
         statement = statement
           .replace(
@@ -894,6 +908,7 @@ function normalizeOutput(
           )
           .replace(new RegExp(`^\\s*${String(num).padStart(2, "0")}\\s+\\w+\\s*`, "i"), "")
           .trim();
+        statement = trimTeachyStatement(statement);
         return {
           ...question,
           statement,
@@ -1052,7 +1067,7 @@ export async function generateMaterialByEngine(input: MaterialEngineInput) {
 
       if (issues.length && attempt < maxAttempts - 1) {
         activePrompt = `${basePrompt}\n\n${buildQualityRetryPrompt(request, issues, {
-          teachyDepth: attempt === maxAttempts - 2,
+          teachyDepth: attempt >= 1,
         })}`;
         continue;
       }
@@ -1078,16 +1093,46 @@ export async function generateMaterialByEngine(input: MaterialEngineInput) {
         continue;
       }
 
+      let finalNormalized = normalized;
+      let finalIssues = issues;
+      let finalHtml = html;
+      let finalScore = qualityScore;
+      let finalAlertas = alertas;
+
+      if (
+        (request.tipoMaterial === "prova" || request.tipoMaterial === "lista") &&
+        finalIssues.length > 0 &&
+        (finalNormalized.exam?.questions?.length ?? 0) > 0
+      ) {
+        const { regenerateWeakExamQuestions } = await import("./exam-questions-retry");
+        for (let repairPass = 0; repairPass < 3; repairPass += 1) {
+          const repaired = await regenerateWeakExamQuestions(input, finalNormalized);
+          finalNormalized = repaired.estrutura;
+          finalIssues = repaired.qualityIssues;
+          finalHtml = repaired.html;
+          finalScore = repaired.qualityScore;
+          finalAlertas = buildDeliveryAlertas(
+            request,
+            finalIssues,
+            isFinalAttempt,
+          );
+
+          if (!finalIssues.length || finalScore >= MIN_P0_QUALITY_SCORE) {
+            break;
+          }
+        }
+      }
+
       return {
         ok: true as const,
         status: 200,
         data: {
           tipoMaterial: request.tipoMaterial,
-          html,
-          estrutura: normalized,
-          qualityScore,
-          qualityIssues: issues,
-          ...(alertas ? { alertas } : {}),
+          html: finalHtml,
+          estrutura: finalNormalized,
+          qualityScore: finalScore,
+          qualityIssues: finalIssues,
+          ...(finalAlertas ? { alertas: finalAlertas } : {}),
         },
       };
     } catch (error) {

@@ -117,7 +117,36 @@ export function hasDuplicateOptions(options: string[]): boolean {
 export function weakOptions(options: string[]): boolean {
   const clean = options.map((item) => String(item || "").trim()).filter(Boolean);
   if (clean.length < 2) return false;
-  return clean.some((item) => item.length < 3 || isGenericEducationalText(item));
+
+  const genericChoice = /^(todas|nenhuma|algumas)\s+(as\s+)?(anteriores|alternativas|opções)/i;
+  return clean.some(
+    (item) =>
+      item.length < 12 ||
+      genericChoice.test(item) ||
+      isGenericEducationalText(item),
+  );
+}
+
+function isWeakExamAnswer(answer: unknown, questionType?: string): boolean {
+  const text = String(answer || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase("pt-BR")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (!text) return true;
+
+  const objective = ["multipla-escolha", "verdadeiro-falso", "completar"].includes(
+    String(questionType || "").toLowerCase(),
+  );
+
+  if (objective) {
+    if (text.length < 8) return true;
+    return /(resposta pessoal|a criterio do professor|livre interpretacao)/i.test(text);
+  }
+
+  return isWeakTeacherAnswer(answer);
 }
 
 export function collectQuestionSemanticIssues(params: {
@@ -125,6 +154,7 @@ export function collectQuestionSemanticIssues(params: {
   answer?: string;
   options?: string[];
   tema: string;
+  questionType?: string;
   requireTheme?: boolean;
 }): string[] {
   const issues: string[] = [];
@@ -157,7 +187,7 @@ export function collectQuestionSemanticIssues(params: {
   }
 
   const answer = params.answer?.trim();
-  if (answer && isWeakTeacherAnswer(answer)) {
+  if (answer && isWeakExamAnswer(answer, params.questionType)) {
     issues.push("Gabarito/resposta esperada vago ou genérico.");
   }
 

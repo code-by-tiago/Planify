@@ -54,11 +54,18 @@ export function describeQualityScore(score: number): {
       hint: "Material pronto para aplicar em sala com revisão leve.",
     };
   }
-  if (score >= 75) {
+  if (score >= 88) {
     return {
       label: "Bom",
       tone: "amber",
-      hint: "Revise os avisos ou use Elevar qualidade antes de imprimir.",
+      hint: "Quase no padrão Planify — revise os avisos ou use Elevar qualidade.",
+    };
+  }
+  if (score >= 75) {
+    return {
+      label: "Regular+",
+      tone: "amber",
+      hint: "Abaixo do mínimo Planify (88) — regenere ou eleve a qualidade.",
     };
   }
   if (score >= 55) {

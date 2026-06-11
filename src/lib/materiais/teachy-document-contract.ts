@@ -1,7 +1,19 @@
 /**
  * Shared Teachy-style document contract for Planify material generation.
  * Benchmark: minimal headers, direct statements, clean options, table gabarito.
+ * Planify bar: Teachy parity + BNCC + reservatório didático + validação semântica.
  */
+
+/** Planify quality bar — must exceed generic IA / Teachy-style fillers. */
+export const PLANIFY_EXCELLENCE_BAR = `
+BARA DE EXCELÊNCIA PLANIFY (acima do padrão Teachy):
+- Cada enunciado cita subconceito concreto do tema — zero placeholders ("conteúdo estudado", "explique o conceito").
+- Múltipla escolha: 4 alternativas plausíveis, uma correta, distintas — sem prefixo a) b) no JSON.
+- Gabarito objetivo em 1–2 linhas; justificativa pedagógica só quando indispensável.
+- Progressão didática: básico → intermediário → desafio (listas e provas com 3+ itens).
+- Linguagem calibrada ao ano/série; vocabulário do componente curricular.
+- Material pronto para sala: professor imprime, aplica e revisa pontualmente — não reescreve o todo.
+`.trim();
 
 /** Prompt block appended to every material type generation request. */
 export const TEACHY_DIRECT_CONTRACT = `
@@ -52,9 +64,10 @@ export const TEACHY_TYPE_HINTS: Record<string, string> = {
 
 export function buildTeachyContractForType(tipo: string): string {
   const hint = TEACHY_TYPE_HINTS[tipo];
-  return hint
+  const typeBlock = hint
     ? `${TEACHY_DIRECT_CONTRACT}\n\nREFINO DO TIPO (${tipo}):\n- ${hint}`
     : TEACHY_DIRECT_CONTRACT;
+  return `${PLANIFY_EXCELLENCE_BAR}\n\n${typeBlock}`;
 }
 
 /** Quality checklist injected on depth retry (last attempt before failure). */

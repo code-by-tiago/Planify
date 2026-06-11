@@ -130,7 +130,7 @@ function baseInput(tipo, extras = {}) {
   };
 }
 
-function emptyBase() {
+function emptyBase({ teacherNotes = ["Orientações ao professor."] } = {}) {
   return {
     title: "Material de teste",
     subtitle: "9º ano",
@@ -139,15 +139,18 @@ function emptyBase() {
     sections: [],
     activities: [],
     answerKey: [],
-    teacherNotes: ["Orientações ao professor."],
+    teacherNotes,
   };
 }
+
+/** Prova/lista Teachy: versão do aluno sem teacherNotes. */
+const studentDocBase = () => emptyBase({ teacherNotes: [] });
 
 const GOLDEN = {
   prova: {
     input: baseInput("prova"),
     structure: {
-      ...emptyBase(),
+      ...studentDocBase(),
       title: "Prova — Equações do 1º grau",
       summary:
         "Avaliação formativa sobre equações do 1º grau e resolução de problemas (BNCC EF09MA15).",
@@ -193,12 +196,12 @@ const GOLDEN = {
         ],
       },
     },
-    htmlChecks: [/planify-doc-header/, /Instruções gerais/, /planify-questao-card/, /Gabarito/],
+    htmlChecks: [/planify-doc-header-teachy/, /planify-questao-card/, /Gabarito/],
   },
   lista: {
     input: baseInput("lista"),
     structure: {
-      ...emptyBase(),
+      ...studentDocBase(),
       title: "Lista — Equações do 1º grau",
       exam: {
         questions: [
@@ -247,7 +250,7 @@ const GOLDEN = {
         "Exercício 3: b) 2x = 14",
       ],
     },
-    htmlChecks: [/Exercícios/, /planify-questao-card/],
+    htmlChecks: [/planify-doc-header-teachy/, /Exercício/, /planify-questao-card/],
   },
   apostila: {
     input: baseInput("apostila"),

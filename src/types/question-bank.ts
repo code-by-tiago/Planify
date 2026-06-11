@@ -25,9 +25,13 @@ export type QuestionBankItem = {
 };
 
 export type QuestionBankFilter = {
+  /** Tema ou assunto da aula — busca inteligente, sem precisar de código BNCC */
   query: string;
   componente: string;
   anoSerie: string;
+  /** Filtro manual opcional (avançado) */
   bncc: string;
+  /** Preenchido automaticamente ao escolher tema sugerido pela BNCC */
+  bnccCodigos?: string[];
   source: "todas" | "minhas" | "comunidade" | "escola";
 };

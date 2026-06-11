@@ -5,9 +5,11 @@ import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { PlanifyPageHero } from "@/components/pro/PlanifyPageHero";
 import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
 import {
-  filterQuestionBankItems,
+  searchQuestionBankItems,
   stashQuestionsForProva,
 } from "@/lib/banco-questoes/question-bank-storage";
+import { TemaCombobox } from "@/components/bncc/TemaCombobox";
+import type { BnccTemaAutocompleteSuggestion } from "@/lib/bncc/bncc-tema-autocomplete";
 import { splitEmbeddedReadingText } from "@/lib/banco-questoes/question-bank-self-contained";
 import { extractQuestionsFromMaterialOutput } from "@/lib/banco-questoes/question-bank-extract";
 import {
@@ -115,8 +117,10 @@ export function BancoQuestoesClient() {
     componente: "todos",
     anoSerie: "todos",
     bncc: "",
+    bnccCodigos: undefined,
     source: "todas",
   });
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [importStatus, setImportStatus] = useState("");
   const [importError, setImportError] = useState("");
   const [importRetryable, setImportRetryable] = useState(false);
@@ -155,10 +159,32 @@ export function BancoQuestoesClient() {
     [school.hasSchool],
   );
 
-  const filtered = useMemo(
-    () => filterQuestionBankItems(allItems, filter),
+  const searchResult = useMemo(
+    () => searchQuestionBankItems(allItems, filter),
     [allItems, filter],
   );
+  const filtered = searchResult.items;
+  const relatedItems = searchResult.related;
+
+  function handleTemaSuggestionSelect(suggestion: BnccTemaAutocompleteSuggestion) {
+    const codes = suggestion.habilidades.map((skill) => skill.codigo).filter(Boolean);
+    setFilter((current) => ({
+      ...current,
+      query: suggestion.tema,
+      bnccCodigos: codes.length ? codes : undefined,
+      componente:
+        current.componente === "todos" && suggestion.componente
+          ? suggestion.componente
+          : current.componente,
+    }));
+  }
+
+  function clearBnccAutoFilter() {
+    setFilter((current) => ({
+      ...current,
+      bnccCodigos: undefined,
+    }));
+  }
 
   function refreshFromHybrid() {
     void syncFromServerOnMount().then((all) => {
@@ -477,95 +503,153 @@ export function BancoQuestoesClient() {
       header={
         <PlanifyPageHero
           title="Banco de questões"
-          description="Importe, reutilize e remixe questões — busca por BNCC, disciplina e série."
+          description="Escolha disciplina e série, digite o tema — as questões compatíveis aparecem sozinhas."
           icon="library"
         />
       }
     >
       <div className="space-y-6 px-4 py-6 sm:px-6">
+        <details className="rounded-2xl border border-cyan-400/20 bg-cyan-50/40 px-4 py-3">
+          <summary className="cursor-pointer text-sm font-bold text-cyan-900">
+            Como o ecossistema Planify se conecta
+          </summary>
+          <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm font-medium text-slate-700">
+            <li>
+              <strong>Meus materiais</strong> — gere lista ou prova; o sistema busca aqui
+              automaticamente antes de usar IA.
+            </li>
+            <li>
+              <strong>Banco de questões</strong> — navegue, selecione e remixe questões da
+              comunidade, da escola ou suas.
+            </li>
+            <li>
+              <strong>Montar prova</strong> — leva as questões selecionadas para o gerador de
+              prova com um clique.
+            </li>
+            <li>
+              <strong>Editor</strong> — ajuste o material; exporte para Google só quando quiser.
+            </li>
+          </ol>
+        </details>
+
         <fieldset className="space-y-3">
           <legend className="sr-only">Filtros do banco de questões</legend>
           <div className="flex flex-wrap items-end gap-3">
-          <div className="min-w-[12rem] flex-1">
-            <label className={HUD_SECTION_LABEL} htmlFor="qb-search">
-              Buscar
-            </label>
-            <input
-              id="qb-search"
-              value={filter.query}
-              onChange={(event) =>
-                setFilter((current) => ({ ...current, query: event.target.value }))
-              }
-              placeholder="Tema, enunciado, tag…"
-              aria-describedby="qb-search-hint"
-              className={HUD_FIELD_CLASS}
-            />
-            <p id="qb-search-hint" className="mt-1 text-[11px] font-medium text-slate-500">
-              Busque por código BNCC, tema ou trecho do enunciado.
-            </p>
+            <div>
+              <label className={HUD_SECTION_LABEL} htmlFor="qb-comp">
+                Disciplina
+              </label>
+              <select
+                id="qb-comp"
+                value={filter.componente}
+                onChange={(event) =>
+                  setFilter((current) => ({
+                    ...current,
+                    componente: event.target.value,
+                  }))
+                }
+                aria-label="Filtrar por disciplina"
+                className={HUD_FIELD_CLASS}
+              >
+                {COMPONENTE_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {option === "todos" ? "Todas" : option}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className={HUD_SECTION_LABEL} htmlFor="qb-ano">
+                Série / ano
+              </label>
+              <select
+                id="qb-ano"
+                value={filter.anoSerie}
+                onChange={(event) =>
+                  setFilter((current) => ({
+                    ...current,
+                    anoSerie: event.target.value,
+                  }))
+                }
+                aria-label="Filtrar por série ou ano"
+                className={HUD_FIELD_CLASS}
+              >
+                {ANO_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {option === "todos" ? "Todas" : option}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
-          <div>
-            <label className={HUD_SECTION_LABEL} htmlFor="qb-bncc">
-              BNCC
-            </label>
-            <input
-              id="qb-bncc"
-              value={filter.bncc}
-              onChange={(event) =>
-                setFilter((current) => ({ ...current, bncc: event.target.value }))
-              }
-              placeholder="EF05HI06"
-              aria-label="Filtrar por código BNCC"
-              className={HUD_FIELD_CLASS}
-            />
-          </div>
-          <div>
-            <label className={HUD_SECTION_LABEL} htmlFor="qb-comp">
-              Disciplina
-            </label>
-            <select
-              id="qb-comp"
-              value={filter.componente}
-              onChange={(event) =>
-                setFilter((current) => ({
-                  ...current,
-                  componente: event.target.value,
-                }))
-              }
-              aria-label="Filtrar por disciplina"
-              className={HUD_FIELD_CLASS}
-            >
-              {COMPONENTE_OPTIONS.map((option) => (
-                <option key={option} value={option}>
-                  {option === "todos" ? "Todas" : option}
-                </option>
+
+          <TemaCombobox
+            label="Tema da aula"
+            value={filter.query}
+            onChange={(value) =>
+              setFilter((current) => ({
+                ...current,
+                query: value,
+                bnccCodigos: value.trim() ? current.bnccCodigos : undefined,
+              }))
+            }
+            onSelectSuggestion={handleTemaSuggestionSelect}
+            componente={filter.componente === "todos" ? undefined : filter.componente}
+            anoSerie={filter.anoSerie === "todos" ? undefined : filter.anoSerie}
+            placeholder="Ex.: tipos de sujeito, frações, Brasil colonial…"
+            className="w-full"
+          />
+          <p className="text-[11px] font-medium text-slate-500">
+            Escolha uma sugestão da lista para alinhar BNCC automaticamente — sem digitar código.
+          </p>
+
+          {filter.bnccCodigos?.length ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
+                BNCC (automático)
+              </span>
+              {filter.bnccCodigos.map((code) => (
+                <span
+                  key={code}
+                  className="rounded-full bg-cyan-100 px-2.5 py-0.5 text-[11px] font-bold text-cyan-900"
+                >
+                  {code}
+                </span>
               ))}
-            </select>
-          </div>
-          <div>
-            <label className={HUD_SECTION_LABEL} htmlFor="qb-ano">
-              Série
-            </label>
-            <select
-              id="qb-ano"
-              value={filter.anoSerie}
-              onChange={(event) =>
-                setFilter((current) => ({
-                  ...current,
-                  anoSerie: event.target.value,
-                }))
-              }
-              aria-label="Filtrar por série ou ano"
-              className={HUD_FIELD_CLASS}
-            >
-              {ANO_OPTIONS.map((option) => (
-                <option key={option} value={option}>
-                  {option === "todos" ? "Todas" : option}
-                </option>
-              ))}
-            </select>
-          </div>
-          </div>
+              <button
+                type="button"
+                onClick={clearBnccAutoFilter}
+                className="text-[11px] font-semibold text-slate-500 underline"
+              >
+                Limpar BNCC
+              </button>
+            </div>
+          ) : null}
+
+          <button
+            type="button"
+            onClick={() => setShowAdvanced((current) => !current)}
+            className="text-xs font-semibold text-slate-600 underline"
+          >
+            {showAdvanced ? "Ocultar filtro avançado" : "Filtro avançado (código BNCC manual)"}
+          </button>
+          {showAdvanced ? (
+            <div className="max-w-xs">
+              <label className={HUD_SECTION_LABEL} htmlFor="qb-bncc">
+                Código BNCC (opcional)
+              </label>
+              <input
+                id="qb-bncc"
+                value={filter.bncc}
+                onChange={(event) =>
+                  setFilter((current) => ({ ...current, bncc: event.target.value }))
+                }
+                placeholder="EF05HI06"
+                aria-label="Filtrar por código BNCC manual"
+                className={HUD_FIELD_CLASS}
+              />
+            </div>
+          ) : null}
 
           <div className="flex flex-wrap gap-2" role="group" aria-label="Fonte das questões">
           {sourceOptions.map((option) => (
@@ -630,7 +714,11 @@ export function BancoQuestoesClient() {
           <p className="text-sm font-medium text-slate-500">Sincronizando banco…</p>
         ) : (
           <p className="text-sm font-semibold text-slate-600">
-            {filtered.length} questão(ões) encontrada(s)
+            {filtered.length} questão(ões) compatível(is)
+            {filter.query.trim() && filter.componente !== "todos"
+              ? ` · ${filter.componente}`
+              : ""}
+            {filter.anoSerie !== "todos" ? ` · ${filter.anoSerie}` : ""}
           </p>
         )}
 
@@ -660,6 +748,11 @@ export function BancoQuestoesClient() {
                       <span className="text-[10px] font-bold uppercase tracking-wide text-slate-500">
                         {item.componente} · {item.anoSerie}
                       </span>
+                      {item.matchScore >= 8 ? (
+                        <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold uppercase text-emerald-800">
+                          Alta compatibilidade
+                        </span>
+                      ) : null}
                       {item.isCommunity ? (
                         <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-bold uppercase text-violet-700">
                           Comunidade
@@ -753,6 +846,47 @@ export function BancoQuestoesClient() {
             );
           })}
         </div>
+
+        {!syncing && relatedItems.length > 0 ? (
+          <div className="space-y-3">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wide text-amber-700">
+                Relacionadas
+              </p>
+              <p className="mt-1 text-sm font-medium text-slate-600">
+                Nenhuma exata para este tema e série — veja opções próximas (outras séries ou
+                tema parecido).
+              </p>
+            </div>
+            {relatedItems.map((item) => {
+              const display = resolveQuestionDisplay(item);
+              return (
+                <article
+                  key={`related-${item.id}`}
+                  className="rounded-2xl border border-amber-200/60 bg-amber-50/30 p-4"
+                >
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                      {item.componente} · {item.anoSerie}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => toggleSelect(item.id)}
+                      className={
+                        selectedIds.has(item.id)
+                          ? HUD_FILTER_CHIP_ACTIVE
+                          : HUD_FILTER_CHIP_INACTIVE
+                      }
+                    >
+                      {selectedIds.has(item.id) ? "Selecionada" : "Selecionar"}
+                    </button>
+                  </div>
+                  <p className="mt-2 text-sm font-medium text-slate-800">{display.enunciado}</p>
+                </article>
+              );
+            })}
+          </div>
+        ) : null}
 
         {remixSource && remixDraft ? (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4">
@@ -934,18 +1068,38 @@ export function BancoQuestoesClient() {
           </div>
         ) : null}
 
-        {!syncing && filtered.length === 0 && filter.source !== "comunidade" ? (
+        {!syncing &&
+        filtered.length === 0 &&
+        relatedItems.length === 0 &&
+        filter.source !== "comunidade" ? (
           <div className="rounded-2xl border border-dashed border-cyan-400/25 bg-white/70 px-6 py-12 text-center">
-            <p className="text-xs font-bold uppercase tracking-wide text-cyan-600">
-              Banco vazio
-            </p>
-            <h3 className="mt-2 text-lg font-extrabold text-slate-950">
-              Comece importando suas provas
-            </h3>
-            <p className="mt-2 text-sm font-medium text-slate-600">
-              Gere uma prova ou lista, depois importe as questões para reutilizar e
-              remixar.
-            </p>
+            {allItems.length === 0 ? (
+              <>
+                <p className="text-xs font-bold uppercase tracking-wide text-cyan-600">
+                  Banco vazio
+                </p>
+                <h3 className="mt-2 text-lg font-extrabold text-slate-950">
+                  Comece importando suas provas
+                </h3>
+                <p className="mt-2 text-sm font-medium text-slate-600">
+                  Gere uma prova ou lista em Meus materiais, ou aguarde o acervo da comunidade
+                  crescer.
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="text-xs font-bold uppercase tracking-wide text-cyan-600">
+                  Nenhuma compatível
+                </p>
+                <h3 className="mt-2 text-lg font-extrabold text-slate-950">
+                  Ajuste disciplina, série ou tema
+                </h3>
+                <p className="mt-2 text-sm font-medium text-slate-600">
+                  Escolha uma sugestão de tema na lista — a BNCC é aplicada automaticamente. Ou
+                  amplie a série para ver mais questões da disciplina.
+                </p>
+              </>
+            )}
           </div>
         ) : null}
       </div>

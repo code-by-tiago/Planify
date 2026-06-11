@@ -1,3 +1,4 @@
+import { scoreQuestionBankMatch } from "@/lib/banco-questoes/question-bank-match";
 import { normalizeQuestionOptions, trimTeachyStatement } from "@/lib/materiais/material-document-layout";
 import { computeQualityScore } from "@/lib/materiais/material-quality-score";
 import type { QuestionBankItem } from "@/types/question-bank";
@@ -49,34 +50,6 @@ function parseTargetQuantity(quantidade: number): number {
   return Math.min(20, Math.max(3, quantidade || 10));
 }
 
-function scoreBankMatch(
-  item: QuestionBankItem,
-  tema: string,
-  componente: string,
-): number {
-  const topic = tema.trim().toLowerCase();
-  const comp = componente.trim().toLowerCase();
-  const haystack = [
-    item.enunciado,
-    item.textoApoio ?? "",
-    item.tema,
-    item.tags.join(" "),
-    item.componente,
-  ]
-    .join(" ")
-    .toLowerCase();
-
-  let score = 0;
-  if (comp && item.componente.toLowerCase().includes(comp)) score += 3;
-  if (!topic) return Math.max(score, 1);
-
-  for (const token of topic.split(/\s+/).filter((w) => w.length > 2)) {
-    if (haystack.includes(token)) score += 2;
-  }
-  if (item.tema.trim().toLowerCase().includes(topic)) score += 4;
-  return Math.max(score, topic ? 0 : 1);
-}
-
 function rankBankItems(
   items: QuestionBankItem[],
   tema: string,
@@ -86,7 +59,7 @@ function rankBankItems(
   return items
     .map((item) => ({
       item,
-      score: scoreBankMatch(item, tema, componente),
+      score: scoreQuestionBankMatch(item, tema, componente),
     }))
     .filter((entry) => entry.score > minScore)
     .sort((a, b) => {
@@ -181,7 +154,7 @@ function selectStrongBankItems(
 
   for (const item of ranked) {
     if (selected.length >= target) break;
-    const score = scoreBankMatch(item, tema, componente);
+    const score = scoreQuestionBankMatch(item, tema, componente);
     if (score < WEAK_BANK_MATCH_THRESHOLD) {
       weakSkipped++;
       continue;

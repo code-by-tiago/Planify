@@ -49,45 +49,8 @@ export function removeQuestionBankItem(id: string): QuestionBankItem[] {
   return next;
 }
 
-export function filterQuestionBankItems(
-  items: QuestionBankItem[],
-  filter: QuestionBankFilter,
-): QuestionBankItem[] {
-  const query = filter.query.trim().toLowerCase();
-  const bncc = filter.bncc.trim().toLowerCase();
-
-  return items.filter((item) => {
-    if (filter.source === "minhas" && (item.isCommunity || item.isSchool)) {
-      return false;
-    }
-    if (filter.source === "comunidade" && !item.isCommunity) return false;
-    if (filter.source === "escola" && !item.isSchool) return false;
-    if (filter.componente !== "todos" && item.componente !== filter.componente) {
-      return false;
-    }
-    if (filter.anoSerie !== "todos" && item.anoSerie !== filter.anoSerie) {
-      return false;
-    }
-    if (bncc && !item.bnccCodigos.some((code) => code.toLowerCase().includes(bncc))) {
-      return false;
-    }
-    if (!query) return true;
-
-    const haystack = [
-      item.enunciado,
-      item.textoApoio ?? "",
-      item.tema,
-      item.tipo,
-      item.tags.join(" "),
-      item.bnccCodigos.join(" "),
-      item.componente,
-    ]
-      .join(" ")
-      .toLowerCase();
-
-    return haystack.includes(query);
-  });
-}
+export { filterQuestionBankItems, searchQuestionBankItems } from "./question-bank-match";
+export type { QuestionBankSearchResult, RankedQuestionBankItem } from "./question-bank-match";
 
 export function readProvaInjectObservacoes(): string | null {
   if (!canUseStorage()) return null;

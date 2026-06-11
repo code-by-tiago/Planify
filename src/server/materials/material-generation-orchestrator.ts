@@ -1,28 +1,41 @@
 import { buildStageEvent } from "@/lib/generation/generation-pipeline-stages";
 import type { GenerationStageEvent } from "@/lib/generation/generation-job-types";
-import { computeQualityScore } from "@/lib/materiais/material-quality-score";
-import { generateMaterialWithAI } from "../ai/material-ai-service";
-import type { MaterialAIInput, MaterialAIOutput } from "@/types/ai";
-import { tryAssembleExamFromBank } from "./exam-bank-assembler";
-import { generateMaterialByEngine } from "./material-engine-service";
-import { renderMaterialAIOutputToHtml } from "./material-ai-html-renderer";
-import { engineRequestToMaterialAI } from "./material-input-adapter";
 import {
-  buildAIQualityRetryObservacoes,
-  getAIOutputIssues,
-} from "./material-ai-output-quality";
-import { usesPlanifyMaterialEngine } from "./planify-material-routing";
+  prefetchQuestionBankContext,
+  tryAssembleExamFromBank,
+} from "./exam-bank-assembler";
+import {
+  buildBankFirstEngineHint,
+  resolveQuestionBankFirstMode,
+} from "./question-bank-first-policy";
+import { generateMaterialByEngine } from "./material-engine-service";
+import {
+  finalizeUnifiedDelivery,
+  shouldAutoElevateQuality,
+  type UnifiedDeliveryPipeline,
+  type UnifiedMaterialDelivery,
+} from "./material-unified-delivery";
 import type { MaterialEngineInput } from "./material-engine-types";
 import {
   normalizeMaterialEngineRequest,
   validateMaterialEngineRequest,
 } from "./material-engine-validation";
 
-const AI_MAX_ATTEMPTS = 3;
-
 export type MaterialGenerationOptions = {
   userId?: string | null;
   onStage?: (stage: GenerationStageEvent) => void;
+};
+
+type GenerationSuccess = {
+  ok: true;
+  status: 200;
+  data: UnifiedMaterialDelivery;
+};
+
+type GenerationFailure = {
+  ok: false;
+  status: number;
+  message: string;
 };
 
 function emitStage(
@@ -33,115 +46,9 @@ function emitStage(
   options?.onStage?.(buildStageEvent(stage, message));
 }
 
-function isClientValidationError(message: string): boolean {
-  return (
-    message.includes("Informe") ||
-    message.includes("Selecione") ||
-    message.includes("Envie") ||
-    message.includes("Dados") ||
-    message.includes("inválido")
-  );
-}
-
-async function generateWithAIQualityLoop(
-  request: ReturnType<typeof normalizeMaterialEngineRequest>,
-  input: MaterialEngineInput,
-  baseAiInput: MaterialAIInput,
-): Promise<MaterialAIOutput> {
-  let retryNotes = "";
-
-  for (let attempt = 0; attempt < AI_MAX_ATTEMPTS; attempt += 1) {
-    const aiInput: MaterialAIInput = {
-      ...baseAiInput,
-      observacoes: [baseAiInput.observacoes, retryNotes]
-        .filter(Boolean)
-        .join("\n\n"),
-    };
-
-    const output = await generateMaterialWithAI(aiInput);
-    const issues = getAIOutputIssues(request, output);
-
-    if (!issues.length || attempt === AI_MAX_ATTEMPTS - 1) {
-      return output;
-    }
-
-    retryNotes = buildAIQualityRetryObservacoes(request, issues);
-  }
-
-  return generateMaterialWithAI(baseAiInput);
-}
-
-function successFromAI(
-  request: ReturnType<typeof normalizeMaterialEngineRequest>,
-  output: MaterialAIOutput,
-  pipeline: "ai" | "engine-fallback",
-  extraAlertas: string[] = [],
-  qualityIssues: string[] = [],
-) {
-  const html = renderMaterialAIOutputToHtml(output, request);
-  const alertas = [
-    ...(output.alertas ?? []),
-    ...extraAlertas,
-  ].filter(Boolean);
-  const qualityScore = computeQualityScore(qualityIssues, alertas);
-
-  return {
-    ok: true as const,
-    status: 200,
-    data: {
-      tipoMaterial: request.tipoMaterial,
-      html,
-      estrutura: output,
-      alertas,
-      pipeline,
-      qualityScore,
-      qualityIssues,
-    },
-  };
-}
-
-async function fallbackToEngine(
-  input: MaterialEngineInput,
-  reason: string,
-  options?: MaterialGenerationOptions,
-) {
-  emitStage(options, "generate", "Gerando com motor estruturado…");
-  const engineResult = await generateMaterialByEngine(input);
-
-  if (!engineResult.ok) {
-    return engineResult;
-  }
-
-  const fallbackIssues =
-    "qualityIssues" in engineResult.data
-      ? (engineResult.data.qualityIssues as string[])
-      : [];
-  const fallbackAlertas = [
-    `O motor pedagógico auxiliar assumiu a entrega: ${reason}`,
-  ];
-
-  emitStage(options, "quality");
-
-  return {
-    ok: true as const,
-    status: 200,
-    data: {
-      ...engineResult.data,
-      alertas: fallbackAlertas,
-      pipeline: "engine-fallback" as const,
-      qualityScore:
-        "qualityScore" in engineResult.data
-          ? engineResult.data.qualityScore
-          : computeQualityScore(fallbackIssues, fallbackAlertas),
-      qualityIssues: fallbackIssues,
-    },
-  };
-}
-
 async function enrichInputWithPedagogicalContext(
   input: MaterialEngineInput,
   userId?: string | null,
-  allowScrape = true,
 ): Promise<MaterialEngineInput> {
   const { enrichWithPedagogicalContext } = await import(
     "@/server/pedagogical-cache/enrich-with-pedagogical-context"
@@ -160,25 +67,21 @@ async function enrichInputWithPedagogicalContext(
     {
       userId: userId ?? null,
       toolTipo: input.tipoMaterial || input.tipo || "material",
-      allowScrape,
+      allowScrape: true,
     },
   );
 }
 
-async function tryBankPath(
+async function tryBankFullDelivery(
   input: MaterialEngineInput,
   request: ReturnType<typeof normalizeMaterialEngineRequest>,
   options?: MaterialGenerationOptions,
-) {
-  if (request.tipoMaterial !== "lista" && request.tipoMaterial !== "prova") {
+): Promise<GenerationSuccess | null> {
+  if (resolveQuestionBankFirstMode(request) !== "full") {
     return null;
   }
 
-  if (request.elevarQualidade) {
-    return null;
-  }
-
-  emitStage(options, "bank");
+  emitStage(options, "bank", "Buscando questões no banco Planify…");
   const bank = await tryAssembleExamFromBank(input, {
     userId: options?.userId,
   });
@@ -189,109 +92,137 @@ async function tryBankPath(
 
   emitStage(options, "quality");
   return {
-    ok: true as const,
+    ok: true,
     status: 200,
-    data: {
-      tipoMaterial: request.tipoMaterial,
-      html: bank.html,
-      estrutura: bank.estrutura,
-      alertas: bank.alertas,
-      pipeline: bank.pipeline,
-      qualityScore: bank.qualityScore,
-      qualityIssues: bank.qualityIssues,
-    },
+    data: finalizeUnifiedDelivery(
+      {
+        tipoMaterial: request.tipoMaterial,
+        html: bank.html,
+        estrutura: bank.estrutura,
+        alertas: bank.alertas,
+        qualityScore: bank.qualityScore,
+        qualityIssues: bank.qualityIssues,
+      },
+      bank.pipeline as UnifiedDeliveryPipeline,
+      request,
+    ),
   };
 }
 
+async function enrichInputWithBankPrefetch(
+  input: MaterialEngineInput,
+  request: ReturnType<typeof normalizeMaterialEngineRequest>,
+  options?: MaterialGenerationOptions,
+): Promise<MaterialEngineInput> {
+  if (resolveQuestionBankFirstMode(request) !== "prefetch") {
+    return input;
+  }
+
+  emitStage(options, "bank", "Injetando questões fortes do banco no contexto…");
+  const prefetch = await prefetchQuestionBankContext(input, {
+    userId: options?.userId,
+  });
+
+  if (!prefetch?.bankCount) {
+    return input;
+  }
+
+  const hint = buildBankFirstEngineHint("prefetch");
+  const observacoes = [hint, input.observacoes, prefetch.observacoes]
+    .filter(Boolean)
+    .join("\n\n");
+
+  return { ...input, observacoes };
+}
+
+async function runEngineDelivery(
+  input: MaterialEngineInput,
+  request: ReturnType<typeof normalizeMaterialEngineRequest>,
+  options?: MaterialGenerationOptions,
+): Promise<GenerationSuccess | GenerationFailure> {
+  emitStage(options, "generate");
+  const firstPass = await generateMaterialByEngine(input);
+
+  if (!firstPass.ok) {
+    return firstPass;
+  }
+
+  let result = firstPass;
+  let pipeline: UnifiedDeliveryPipeline = request.elevarQualidade
+    ? "engine-elevated"
+    : "engine";
+
+  const firstScore = result.data.qualityScore ?? 0;
+  const firstIssues = result.data.qualityIssues ?? [];
+
+  if (shouldAutoElevateQuality(firstScore, Boolean(request.elevarQualidade))) {
+    emitStage(options, "generate", "Reforçando qualidade automaticamente…");
+    const elevated = await generateMaterialByEngine({
+      ...input,
+      elevarQualidade: true,
+      problemasQualidade: firstIssues,
+    });
+
+    if (elevated.ok) {
+      const elevatedScore = elevated.data.qualityScore ?? 0;
+      if (elevatedScore >= firstScore) {
+        result = elevated;
+        pipeline = "engine-elevated";
+      }
+    }
+  }
+
+  emitStage(options, "quality");
+  return {
+    ok: true,
+    status: 200,
+    data: finalizeUnifiedDelivery(
+      {
+        tipoMaterial: result.data.tipoMaterial,
+        html: result.data.html,
+        estrutura: result.data.estrutura,
+        qualityScore: result.data.qualityScore,
+        qualityIssues: result.data.qualityIssues,
+        alertas: result.data.alertas,
+      },
+      pipeline,
+      request,
+    ),
+  };
+}
+
+/**
+ * Entrega unificada Planify — todas as ferramentas:
+ * 1. Banco (quando aplicável) → 2. Contexto pedagógico → 3. Motor + qualidade máxima
+ */
 export async function generatePlanifyMaterial(
   input: MaterialEngineInput,
   options?: MaterialGenerationOptions,
-) {
+): Promise<GenerationSuccess | GenerationFailure> {
   const request = normalizeMaterialEngineRequest(input);
   const errors = validateMaterialEngineRequest(request);
 
   if (errors.length > 0) {
     return {
-      ok: false as const,
+      ok: false,
       status: 400,
       message: errors[0],
     };
   }
 
-  emitStage(options, "prepare");
+  emitStage(options, "prepare", "Preparando entrega unificada…");
 
-  const bankResult = await tryBankPath(input, request, options);
-  if (bankResult) {
-    return bankResult;
+  const bankDelivery = await tryBankFullDelivery(input, request, options);
+  if (bankDelivery) {
+    return bankDelivery;
   }
 
-  emitStage(options, "context");
+  emitStage(options, "context", "Enriquecendo contexto pedagógico…");
+  const withBank = await enrichInputWithBankPrefetch(input, request, options);
   const enrichedInput = await enrichInputWithPedagogicalContext(
-    input,
+    withBank,
     options?.userId,
-    true,
   );
 
-  if (usesPlanifyMaterialEngine(request.tipoMaterial)) {
-    emitStage(options, "generate");
-    const engineResult = await generateMaterialByEngine(enrichedInput);
-    if (engineResult.ok) {
-      emitStage(options, "quality");
-    }
-    return engineResult;
-  }
-
-  const aiInput = engineRequestToMaterialAI(request, enrichedInput);
-
-  try {
-    emitStage(options, "generate");
-    const output = await generateWithAIQualityLoop(request, input, aiInput);
-    const postIssues = getAIOutputIssues(request, output);
-    const criticalTypes = new Set(["prova", "lista", "apostila", "atividade"]);
-    const warn =
-      postIssues.length > 0
-        ? criticalTypes.has(request.tipoMaterial)
-          ? [
-              "Passo crítico: a IA não resolveu todos os critérios após 3 tentativas.",
-              "Regenere o material ou use Elevar qualidade antes de imprimir ou aplicar em sala.",
-              ...postIssues.slice(0, 8),
-            ]
-          : [
-              "Alguns critérios de qualidade ainda precisam de revisão antes de aplicar em sala.",
-              ...postIssues.slice(0, 8),
-            ]
-        : [];
-
-    emitStage(options, "quality");
-    return successFromAI(request, output, "ai", warn, postIssues);
-  } catch (error) {
-    const message =
-      error instanceof Error
-        ? error.message
-        : "A IA não conseguiu gerar o material. Tente novamente.";
-
-    if (isClientValidationError(message)) {
-      return {
-        ok: false as const,
-        status: 400,
-        message,
-      };
-    }
-
-    const fallback = await fallbackToEngine(
-      input,
-      "a geração principal falhou; usamos o motor estruturado como alternativa.",
-      options,
-    );
-
-    if (fallback.ok) {
-      return fallback;
-    }
-
-    return {
-      ok: false as const,
-      status: 502,
-      message,
-    };
-  }
+  return runEngineDelivery(enrichedInput, request, options);
 }

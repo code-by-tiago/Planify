@@ -5,7 +5,10 @@ import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { PlanifyPageHero } from "@/components/pro/PlanifyPageHero";
 import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
 import {
+  isQuestionBankFilterActive,
   searchQuestionBankItems,
+} from "@/lib/banco-questoes/question-bank-match";
+import {
   stashQuestionsForProva,
 } from "@/lib/banco-questoes/question-bank-storage";
 import { TemaCombobox } from "@/components/bncc/TemaCombobox";
@@ -30,8 +33,11 @@ import {
 } from "@/lib/banco-questoes/question-bank-import-client";
 import { fetchMaterialEstrutura } from "@/lib/materiais/material-estrutura-client";
 import { loadHistoryItems } from "@/lib/history/history-storage";
+import { requestExamAssemblyFromBank } from "@/lib/materiais/exam-bank-montar-client";
+import { openMaterialInEditor } from "@/lib/materiais/material-editor-flow";
 import { dashboardToolHref } from "@/lib/pro/toolRoutes";
 import type { MaterialAIOutput } from "@/types/ai";
+import type { MaterialEngineInput } from "@/server/materials/material-engine-types";
 import type { QuestionBankFilter, QuestionBankItem } from "@/types/question-bank";
 import { useRouter } from "next/navigation";
 import {
@@ -83,6 +89,15 @@ function newId(): string {
   return `qb-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
+function isLocalOnlyQuestionId(id: string): boolean {
+  return id.startsWith("qb-");
+}
+
+function buildAvaliacaoTitle(tipo: "prova" | "lista", tema: string): string {
+  const label = tipo === "lista" ? "Lista" : "Prova";
+  return `${label} — ${tema.trim() || "Material Planify"}`;
+}
+
 function resolveQuestionDisplay(item: QuestionBankItem): {
   enunciado: string;
   textoApoio?: string;
@@ -132,6 +147,7 @@ export function BancoQuestoesClient() {
   const [remixSource, setRemixSource] = useState<QuestionBankItem | null>(null);
   const [remixDraft, setRemixDraft] = useState<RemixDraft | null>(null);
   const [publishingId, setPublishingId] = useState<string | null>(null);
+  const [assembling, setAssembling] = useState(false);
 
   useEffect(() => {
     void syncFromServerOnMount()
@@ -159,23 +175,42 @@ export function BancoQuestoesClient() {
     [school.hasSchool],
   );
 
-  const searchResult = useMemo(
-    () => searchQuestionBankItems(allItems, filter),
-    [allItems, filter],
-  );
+  const searchResult = useMemo(() => {
+    return searchQuestionBankItems(allItems, filter);
+  }, [allItems, filter]);
+
   const filtered = searchResult.items;
   const relatedItems = searchResult.related;
+  const searchMode = searchResult.mode;
+  const filterActive = isQuestionBankFilterActive(filter);
+
+  const selectedItems = useMemo(() => {
+    const byId = new Map(allItems.map((item) => [item.id, item]));
+    return Array.from(selectedIds)
+      .map((id) => byId.get(id))
+      .filter((item): item is QuestionBankItem => Boolean(item));
+  }, [allItems, selectedIds]);
+
+  const visibleItems = useMemo(
+    () => [...filtered, ...relatedItems],
+    [filtered, relatedItems],
+  );
 
   function handleTemaSuggestionSelect(suggestion: BnccTemaAutocompleteSuggestion) {
     const codes = suggestion.habilidades.map((skill) => skill.codigo).filter(Boolean);
     setFilter((current) => ({
       ...current,
       query: suggestion.tema,
+      bncc: "",
       bnccCodigos: codes.length ? codes : undefined,
       componente:
         current.componente === "todos" && suggestion.componente
           ? suggestion.componente
           : current.componente,
+      anoSerie:
+        current.anoSerie === "todos" && suggestion.habilidades[0]?.anoSerie
+          ? suggestion.habilidades[0].anoSerie
+          : current.anoSerie,
     }));
   }
 
@@ -184,6 +219,19 @@ export function BancoQuestoesClient() {
       ...current,
       bnccCodigos: undefined,
     }));
+  }
+
+  function resetFilters() {
+    setFilter({
+      query: "",
+      componente: "todos",
+      anoSerie: "todos",
+      bncc: "",
+      bnccCodigos: undefined,
+      source: "todas",
+    });
+    setSelectedIds(new Set());
+    setShowAdvanced(false);
   }
 
   function refreshFromHybrid() {
@@ -465,19 +513,106 @@ export function BancoQuestoesClient() {
     }
   }
 
-  function montarProva() {
-    const selected = filtered.filter((item) => selectedIds.has(item.id));
+  function selectAllVisible() {
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      for (const item of visibleItems) next.add(item.id);
+      return next;
+    });
+  }
+
+  function clearSelection() {
+    setSelectedIds(new Set());
+  }
+
+  function buildMontarPayload(
+    selected: QuestionBankItem[],
+    tipoMaterial: "prova" | "lista",
+  ): MaterialEngineInput {
+    const tema =
+      filter.query.trim() || selected[0]?.tema.trim() || "Avaliação do banco";
+    const componente =
+      filter.componente !== "todos"
+        ? filter.componente
+        : selected[0]?.componente || "Multicomponente";
+    const anoSerie =
+      filter.anoSerie !== "todos"
+        ? filter.anoSerie
+        : selected[0]?.anoSerie || "Geral";
+
+    return {
+      tipoMaterial,
+      tipo: tipoMaterial,
+      tema,
+      temaCentral: tema,
+      componente,
+      componenteCurricular: componente,
+      disciplina: componente,
+      discipline: componente,
+      anoSerie,
+      etapa: selected[0]?.etapa || "Ensino Fundamental",
+      quantidade: selected.length,
+      incluirGabarito: true,
+    };
+  }
+
+  async function montarAvaliacao(tipoMaterial: "prova" | "lista") {
+    const selected = selectedItems;
     if (!selected.length) {
-      setImportStatus("Selecione ao menos uma questão.");
+      setImportStatus("Selecione ao menos uma questão (botão Selecionar em cada card).");
       return;
     }
 
-    for (const item of selected) {
-      void incrementQuestionUsage(item.id);
-    }
+    setAssembling(true);
+    setImportError("");
+    setImportStatus("");
 
-    stashQuestionsForProva(selected);
-    router.push(dashboardToolHref("prova"));
+    try {
+      const payload = buildMontarPayload(selected, tipoMaterial);
+      const questionIds = selected.map((item) => item.id);
+      const allServerIds = questionIds.every((id) => !isLocalOnlyQuestionId(id));
+
+      if (allServerIds) {
+        const result = await requestExamAssemblyFromBank(payload, questionIds);
+        const titulo = buildAvaliacaoTitle(tipoMaterial, payload.tema || "");
+        openMaterialInEditor(
+          result.html,
+          titulo,
+          {
+            toolId: tipoMaterial,
+            tema: payload.tema || "",
+            componente: payload.componente || "",
+            anoSerie: payload.anoSerie || "",
+            etapa: payload.etapa,
+            pipeline: result.pipeline,
+            qualityScore: result.qualityScore,
+            qualityIssues: result.qualityIssues,
+            estrutura: result.estrutura,
+            serverMaterialId: result.materialId ?? undefined,
+            generationPayload: payload,
+          },
+          { from: "banco-questoes" },
+        );
+        setSelectedIds(new Set());
+        setImportStatus(
+          `${selected.length} questão(ões) montadas — editor aberto.`,
+        );
+        return;
+      }
+
+      for (const item of selected) {
+        void incrementQuestionUsage(item.id);
+      }
+      stashQuestionsForProva(selected);
+      router.push(dashboardToolHref(tipoMaterial));
+      setImportStatus(
+        `${selected.length} questão(ões) enviadas — revise em Meus materiais e clique em Criar.`,
+      );
+    } catch (error) {
+      applyImportError(error);
+    } finally {
+      setAssembling(false);
+    }
   }
 
   async function excluirItem(id: string) {
@@ -515,8 +650,8 @@ export function BancoQuestoesClient() {
           </summary>
           <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm font-medium text-slate-700">
             <li>
-              <strong>Meus materiais</strong> — gere lista ou prova; o sistema busca aqui
-              automaticamente antes de usar IA.
+              <strong>Meus materiais</strong> — todas as ferramentas usam a mesma entrega:
+              banco → contexto pedagógico → motor com qualidade máxima (score verificado).
             </li>
             <li>
               <strong>Banco de questões</strong> — navegue, selecione e remixe questões da
@@ -591,6 +726,7 @@ export function BancoQuestoesClient() {
                 ...current,
                 query: value,
                 bnccCodigos: value.trim() ? current.bnccCodigos : undefined,
+                bncc: value.trim() ? current.bncc : "",
               }))
             }
             onSelectSuggestion={handleTemaSuggestionSelect}
@@ -634,7 +770,7 @@ export function BancoQuestoesClient() {
             {showAdvanced ? "Ocultar filtro avançado" : "Filtro avançado (código BNCC manual)"}
           </button>
           {showAdvanced ? (
-            <div className="max-w-xs">
+            <div className="max-w-xs space-y-1">
               <label className={HUD_SECTION_LABEL} htmlFor="qb-bncc">
                 Código BNCC (opcional)
               </label>
@@ -642,14 +778,38 @@ export function BancoQuestoesClient() {
                 id="qb-bncc"
                 value={filter.bncc}
                 onChange={(event) =>
-                  setFilter((current) => ({ ...current, bncc: event.target.value }))
+                  setFilter((current) => ({
+                    ...current,
+                    bncc: event.target.value,
+                    bnccCodigos: event.target.value.trim()
+                      ? undefined
+                      : current.bnccCodigos,
+                  }))
                 }
                 placeholder="EF05HI06"
+                disabled={Boolean(filter.bnccCodigos?.length)}
                 aria-label="Filtrar por código BNCC manual"
                 className={HUD_FIELD_CLASS}
               />
+              {filter.bnccCodigos?.length ? (
+                <p className="text-[11px] font-medium text-slate-500">
+                  BNCC automático ativo — limpe os chips acima para usar código manual.
+                </p>
+              ) : null}
             </div>
           ) : null}
+
+          <div className="flex flex-wrap items-center gap-2">
+            {filterActive ? (
+              <button
+                type="button"
+                onClick={resetFilters}
+                className="text-xs font-semibold text-rose-700 underline"
+              >
+                Limpar filtros
+              </button>
+            ) : null}
+          </div>
 
           <div className="flex flex-wrap gap-2" role="group" aria-label="Fonte das questões">
           {sourceOptions.map((option) => (
@@ -688,14 +848,52 @@ export function BancoQuestoesClient() {
           >
             Importar do servidor
           </button>
+          {visibleItems.length > 0 ? (
+            <button
+              type="button"
+              onClick={selectAllVisible}
+              className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+            >
+              Selecionar todas visíveis ({visibleItems.length})
+            </button>
+          ) : null}
+          {selectedItems.length > 0 ? (
+            <button
+              type="button"
+              onClick={clearSelection}
+              className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+            >
+              Limpar seleção
+            </button>
+          ) : null}
           <button
             type="button"
-            onClick={montarProva}
-            className="pl-hud-btn rounded-xl px-4 py-2 text-xs font-semibold"
+            onClick={() => void montarAvaliacao("prova")}
+            disabled={assembling || selectedItems.length === 0}
+            className="pl-hud-btn rounded-xl px-4 py-2 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-50"
           >
-            Montar prova ({selectedIds.size} questões)
+            {assembling
+              ? "Montando…"
+              : `Montar prova (${selectedItems.length})`}
+          </button>
+          <button
+            type="button"
+            onClick={() => void montarAvaliacao("lista")}
+            disabled={assembling || selectedItems.length === 0}
+            className="rounded-xl border border-cyan-400/40 bg-white px-4 py-2 text-xs font-semibold text-cyan-900 hover:bg-cyan-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {assembling
+              ? "Montando…"
+              : `Montar lista (${selectedItems.length})`}
           </button>
         </div>
+
+        {selectedItems.length > 0 ? (
+          <p className="text-sm font-semibold text-cyan-800">
+            {selectedItems.length} questão(ões) selecionada(s) — clique em Montar prova ou
+            Montar lista para enviar ao editor.
+          </p>
+        ) : null}
 
         {importStatus ? (
           <p className="text-sm font-medium text-cyan-800">{importStatus}</p>
@@ -712,18 +910,23 @@ export function BancoQuestoesClient() {
 
         {syncing ? (
           <p className="text-sm font-medium text-slate-500">Sincronizando banco…</p>
+        ) : searchMode === "browse" ? (
+          <p className="text-sm font-semibold text-slate-600">
+            {filtered.length} questão(ões) no acervo — refine por disciplina, série e tema.
+          </p>
         ) : (
           <p className="text-sm font-semibold text-slate-600">
-            {filtered.length} questão(ões) compatível(is)
-            {filter.query.trim() && filter.componente !== "todos"
-              ? ` · ${filter.componente}`
-              : ""}
+            {filtered.length} compatível(is)
+            {relatedItems.length > 0 ? ` · ${relatedItems.length} relacionada(s)` : ""}
+            {filter.componente !== "todos" ? ` · ${filter.componente}` : ""}
             {filter.anoSerie !== "todos" ? ` · ${filter.anoSerie}` : ""}
+            {filter.query.trim() ? ` · tema “${filter.query.trim()}”` : ""}
           </p>
         )}
 
         <div className="space-y-3">
-          {filtered.map((item) => {
+          {filtered.length > 0
+            ? filtered.map((item) => {
             const selected = selectedIds.has(item.id);
             const display = resolveQuestionDisplay(item);
             return (
@@ -844,10 +1047,11 @@ export function BancoQuestoesClient() {
                 </div>
               </article>
             );
-          })}
+          })
+            : null}
         </div>
 
-        {!syncing && relatedItems.length > 0 ? (
+        {!syncing && filterActive && relatedItems.length > 0 ? (
           <div className="space-y-3">
             <div>
               <p className="text-xs font-bold uppercase tracking-wide text-amber-700">
@@ -1069,6 +1273,7 @@ export function BancoQuestoesClient() {
         ) : null}
 
         {!syncing &&
+        filterActive &&
         filtered.length === 0 &&
         relatedItems.length === 0 &&
         filter.source !== "comunidade" ? (

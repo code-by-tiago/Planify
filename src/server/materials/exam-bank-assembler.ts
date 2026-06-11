@@ -14,11 +14,16 @@ import { getPrimarySchoolIdForUser } from "../schools/school-access";
 import { getEngineOutputIssues } from "./material-engine-quality";
 import { buildMaterialEngineHtmlFromStructure } from "./material-engine-service";
 import { normalizeMaterialEngineRequest } from "./material-engine-validation";
+import {
+  FULL_BANK_ASSEMBLY_TYPES,
+  resolveBankTargetQuantity,
+} from "./question-bank-first-policy";
 import type {
   ExamQuestion,
   MaterialEngineInput,
   MaterialEngineResponse,
 } from "./material-engine-types";
+import type { MaterialEngineRequest } from "./material-engine-types";
 
 const PARTIAL_EXAM_SCHEMA = {
   type: "OBJECT",
@@ -46,8 +51,56 @@ const PARTIAL_EXAM_SCHEMA = {
 
 const WEAK_BANK_MATCH_THRESHOLD = 4;
 
-function parseTargetQuantity(quantidade: number): number {
-  return Math.min(20, Math.max(3, quantidade || 10));
+function parseTargetQuantity(request: MaterialEngineRequest): number {
+  const raw = resolveBankTargetQuantity(request);
+  return Math.min(20, Math.max(3, raw || 10));
+}
+
+function buildActivitiesFromExamQuestions(
+  request: MaterialEngineRequest,
+  questions: ExamQuestion[],
+): MaterialEngineResponse["activities"] {
+  return questions.map((question, index) => ({
+    title: `Atividade ${index + 1}`,
+    objective: `Consolidar aprendizagens sobre ${request.tema}.`,
+    estimatedTime: "15–20 min",
+    materials: ["Caderno", "Material de apoio do professor"],
+    instructions: trimTeachyStatement(question.statement),
+    items: normalizeQuestionOptions(question.options ?? []),
+    evaluation: request.incluirGabarito && question.answer?.trim()
+      ? `Gabarito: ${question.answer.trim()}`
+      : "Correção coletiva em sala.",
+  }));
+}
+
+function formatBankQuestionsObservacoes(
+  questions: ExamQuestion[],
+  meta: { tema: string; weakSkipped: number; fromBank: number },
+): string {
+  const blocks = questions.map((question, index) => {
+    const alts =
+      question.options?.length
+        ? `\nAlternativas: ${question.options.join(" | ")}`
+        : "";
+    const gabarito = question.answer
+      ? `\nGabarito: ${question.answer}`
+      : "";
+    return `${index + 1}. [${question.type}] ${question.statement}${alts}${gabarito}`;
+  });
+
+  const lines = [
+    `BANCO PLANIFY — reutilize estas ${questions.length} questão(ões) fortes sobre "${meta.tema}" (não invente duplicatas genéricas).`,
+    "Complete apenas transições, slides ou seções em torno delas; mantenha enunciados e gabaritos.",
+    ...blocks,
+  ];
+
+  if (meta.weakSkipped > 0) {
+    lines.push(
+      `${meta.weakSkipped} item(ns) do banco foram descartados por baixa aderência ao tema — gere substitutos robustos se faltar quantidade.`,
+    );
+  }
+
+  return lines.join("\n\n");
 }
 
 function rankBankItems(
@@ -255,10 +308,20 @@ async function finalizeExamAssembly(
   const estrutura: MaterialEngineResponse = {
     title: request.tema,
     subtitle: "",
-    summary: "",
+    summary: request.tipoMaterial === "atividade"
+      ? `Atividades sobre ${request.tema}`
+      : "",
     sections: [],
-    activities: [],
-    answerKey: [],
+    activities:
+      request.tipoMaterial === "atividade"
+        ? buildActivitiesFromExamQuestions(request, questions)
+        : [],
+    answerKey: questions
+      .filter((q) => q.answer?.trim())
+      .map((q, index) => {
+        const label = request.tipoMaterial === "lista" ? "Exercício" : "Questão";
+        return `${label} ${q.number || index + 1}: ${q.answer}`;
+      }),
     teacherNotes: [],
     exam: { questions },
   };
@@ -293,16 +356,64 @@ async function finalizeExamAssembly(
   };
 }
 
+export async function prefetchQuestionBankContext(
+  input: MaterialEngineInput,
+  options?: { userId?: string | null },
+): Promise<{
+  observacoes: string;
+  bankCount: number;
+  weakSkipped: number;
+} | null> {
+  const request = normalizeMaterialEngineRequest(input);
+  const target = parseTargetQuantity(request);
+  const bankPool = await searchBankQuestions({
+    userId: options?.userId,
+    componente: request.componenteCurricular,
+    anoSerie: request.anoSerie,
+    tema: request.tema,
+    limit: Math.max(target * 3, 20),
+  });
+
+  if (!bankPool.length) return null;
+
+  const { selected: strongItems, weakSkipped } = selectStrongBankItems(
+    bankPool,
+    request.tema,
+    request.componenteCurricular,
+    target,
+  );
+
+  if (!strongItems.length) return null;
+
+  const questions = strongItems.map((item, index) =>
+    bankItemToExamQuestion(item, index + 1),
+  );
+
+  for (const id of strongItems.map((item) => item.id)) {
+    void incrementUsageCount(id);
+  }
+
+  return {
+    observacoes: formatBankQuestionsObservacoes(questions, {
+      tema: request.tema,
+      weakSkipped,
+      fromBank: questions.length,
+    }),
+    bankCount: questions.length,
+    weakSkipped,
+  };
+}
+
 export async function tryAssembleExamFromBank(
   input: MaterialEngineInput,
   options?: { userId?: string | null; strictBank?: boolean },
 ): Promise<ExamBankAssemblyResult> {
   const request = normalizeMaterialEngineRequest(input);
-  if (request.tipoMaterial !== "lista" && request.tipoMaterial !== "prova") {
+  if (!FULL_BANK_ASSEMBLY_TYPES.has(request.tipoMaterial)) {
     return { ok: false, reason: "no_bank_hits" };
   }
 
-  const target = parseTargetQuantity(request.quantidade);
+  const target = parseTargetQuantity(request);
   const bankPool = await searchBankQuestions({
     userId: options?.userId,
     componente: request.componenteCurricular,
@@ -348,16 +459,23 @@ export async function tryAssembleExamFromBank(
     void incrementUsageCount(id);
   }
 
+  const tipoLabel =
+    request.tipoMaterial === "lista"
+      ? "Lista"
+      : request.tipoMaterial === "atividade"
+        ? "Atividade"
+        : "Prova";
+
   const alertas: string[] = [];
   if (pipeline === "bank") {
     alertas.push(
-      `Lista montada do banco (${questions.length} itens) — entrega rápida.`,
+      `${tipoLabel} montada do banco (${questions.length} itens) — entrega rápida.`,
     );
   } else {
     alertas.push(`Banco + IA completaram ${questions.length} itens.`);
     if (weakSkipped > 0) {
       alertas.push(
-        `${weakSkipped} item(ns) do banco foram genéricos demais para o tema — IA preencheu as lacunas.`,
+        `${weakSkipped} item(ns) do banco foram genéricos ou fracos para o tema — IA reforçou as lacunas.`,
       );
     }
   }
@@ -379,7 +497,7 @@ export async function assembleExamFromQuestionIds(
   questionIds: string[],
 ): Promise<ExamBankAssemblyResult> {
   const request = normalizeMaterialEngineRequest(input);
-  if (request.tipoMaterial !== "lista" && request.tipoMaterial !== "prova") {
+  if (!FULL_BANK_ASSEMBLY_TYPES.has(request.tipoMaterial)) {
     return { ok: false, reason: "no_bank_hits" };
   }
 

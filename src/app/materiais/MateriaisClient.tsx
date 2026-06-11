@@ -1241,8 +1241,12 @@ export function MateriaisClient({
 
         if (typeof record.pipeline === "string") {
           const labels: Record<string, string> = {
-            ai: "Motor pedagógico completo",
-            engine: "Motor visual dedicado",
+            bank: "Banco Planify — entrega rápida",
+            "bank-hybrid": "Banco + IA — lacunas reforçadas",
+            "bank-selected": "Questões escolhidas do banco",
+            engine: "Motor pedagógico Planify",
+            "engine-elevated": "Motor pedagógico — qualidade elevada",
+            ai: "Motor pedagógico Planify",
             "engine-fallback": "Motor auxiliar (fallback)",
           };
           pipelineLabel = labels[record.pipeline] ?? record.pipeline;

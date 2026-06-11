@@ -48,9 +48,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: false, message: errors[0] }, { status: 400 });
   }
 
-  if (requestNorm.tipoMaterial !== "lista" && requestNorm.tipoMaterial !== "prova") {
+  if (
+    requestNorm.tipoMaterial !== "lista" &&
+    requestNorm.tipoMaterial !== "prova" &&
+    requestNorm.tipoMaterial !== "atividade"
+  ) {
     return NextResponse.json(
-      { ok: false, message: "Montagem do banco disponível só para lista e prova." },
+      {
+        ok: false,
+        message: "Montagem do banco disponível para lista, prova e atividade.",
+      },
       { status: 400 },
     );
   }

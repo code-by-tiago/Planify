@@ -15,6 +15,7 @@ import {
   usesDedicatedEngineRenderer,
   usesPlanifyMaterialEngine,
 } from "./planify-material-routing";
+import { shouldRepairExamAfterEngine } from "./question-bank-first-policy";
 import { getMaterialEngineSchema } from "./material-engine-schemas";
 import {
   buildMaterialEnginePrompt,
@@ -1124,7 +1125,7 @@ export async function generateMaterialByEngine(input: MaterialEngineInput) {
       let finalAlertas = alertas;
 
       if (
-        (request.tipoMaterial === "prova" || request.tipoMaterial === "lista") &&
+        shouldRepairExamAfterEngine(request) &&
         finalIssues.length > 0 &&
         (finalNormalized.exam?.questions?.length ?? 0) > 0
       ) {
@@ -1162,6 +1163,7 @@ export async function generateMaterialByEngine(input: MaterialEngineInput) {
           estrutura: finalNormalized,
           qualityScore: finalScore,
           qualityIssues: finalIssues,
+          pipeline: request.elevarQualidade ? "engine-elevated" : "engine",
           ...(finalAlertas ? { alertas: finalAlertas } : {}),
         },
       };

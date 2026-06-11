@@ -1,6 +1,10 @@
 import type { MaterialEngineType } from "./material-engine-types";
 
-/** Tipos gerados pelo Material Engine (schema JSON + retries). */
+/**
+ * Tipos gerados pelo Material Engine (schema JSON + retries).
+ * Lista/prova/atividade: banco primeiro (tryAssembleExamFromBank).
+ * Slides/apostila com questões: prefetch do banco + IA robusta no engine.
+ */
 export const PLANIFY_ENGINE_TYPES: MaterialEngineType[] = [
   "slides",
   "flashcards",

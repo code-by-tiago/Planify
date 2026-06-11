@@ -102,6 +102,22 @@ export function formatGenerationError(error: unknown): FormattedGenerationError 
   }
 
   if (status === 502 || status === 503 || code === "server_error") {
+    const rawMessage =
+      error instanceof Error ? error.message.trim() : "";
+    const isGenericOperationalMessage =
+      !rawMessage ||
+      rawMessage === "Não foi possível gerar o material." ||
+      rawMessage ===
+        "Servidor ocupado. Aguarde alguns segundos e tente novamente.";
+
+    if (!isGenericOperationalMessage) {
+      return {
+        message: rawMessage,
+        code: "server_error",
+        retryable: true,
+      };
+    }
+
     return {
       message: "Servidor ocupado. Aguarde alguns segundos e tente novamente.",
       code: "server_error",

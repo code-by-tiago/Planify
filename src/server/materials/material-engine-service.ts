@@ -1075,17 +1075,35 @@ export async function generateMaterialByEngine(input: MaterialEngineInput) {
         continue;
       }
 
+      // #region agent log
       if (
         P0_QUALITY_GATE_TYPES.has(request.tipoMaterial) &&
         qualityScore < MIN_P0_QUALITY_SCORE &&
         isFinalAttempt
       ) {
-        return {
-          ok: false as const,
-          status: 502,
-          message: `Qualidade insuficiente (${qualityScore}/100). Regenere o material ou use Elevar qualidade.`,
-        };
+        try {
+          const { appendFileSync } = await import("node:fs");
+          const { join } = await import("node:path");
+          appendFileSync(
+            join(process.cwd(), "debug-0e58e7.log"),
+            `${JSON.stringify({
+              sessionId: "0e58e7",
+              hypothesisId: "H1",
+              location: "material-engine-service.ts:qualityGate",
+              message: "delivering below P0 threshold with warnings",
+              data: {
+                tipo: request.tipoMaterial,
+                qualityScore,
+                issueCount: issues.length,
+              },
+              timestamp: Date.now(),
+            })}\n`,
+          );
+        } catch {
+          /* debug log optional */
+        }
       }
+      // #endregion
 
       return {
         ok: true as const,

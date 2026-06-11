@@ -5,6 +5,10 @@ export type MaterialStreamProgressEvent = {
   type: "progress";
   phase: "content" | "images";
   message: string;
+  /** Progresso real do pipeline (0–100), quando disponível */
+  progress?: number;
+  stage?: string;
+  jobId?: string;
   index?: number;
   total?: number;
 };
@@ -12,6 +16,7 @@ export type MaterialStreamProgressEvent = {
 export type MaterialStreamCompleteEvent = {
   type: "complete";
   html: string;
+  jobId?: string;
   tipoMaterial: string;
   estrutura?: MaterialAIOutput;
   alertas?: string[];

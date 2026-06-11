@@ -26,6 +26,8 @@ type PlanifyOwlGenerationCoachProps = {
   progressSteps?: string[];
   /** Duração estimada em ms (sobrescreve contexto/ferramenta) */
   estimatedDurationMs?: number;
+  /** Progresso real do pipeline (0–100). Substitui a barra estimada quando informado. */
+  realProgressPercent?: number;
   className?: string;
 };
 
@@ -40,6 +42,7 @@ export function PlanifyOwlGenerationCoach({
   toolId,
   progressSteps,
   estimatedDurationMs,
+  realProgressPercent,
   className = "",
 }: PlanifyOwlGenerationCoachProps) {
   const stageMessages = useMemo(() => {
@@ -102,8 +105,14 @@ export function PlanifyOwlGenerationCoach({
   }
 
   const currentMessage = messages[messageIndex] ?? messages[0] ?? "";
-  const progressPercent = computeGenerationProgressPercent(elapsedMs, durationMs);
-  const overtime = isGenerationOvertime(elapsedMs, durationMs);
+  const estimatedPercent = computeGenerationProgressPercent(elapsedMs, durationMs);
+  const progressPercent =
+    typeof realProgressPercent === "number"
+      ? Math.min(100, Math.max(0, Math.round(realProgressPercent)))
+      : estimatedPercent;
+  const overtime =
+    typeof realProgressPercent !== "number" &&
+    isGenerationOvertime(elapsedMs, durationMs);
   const remainingMs = Math.max(0, durationMs - elapsedMs);
   const remainingLabel = useStageRotation
     ? overtime

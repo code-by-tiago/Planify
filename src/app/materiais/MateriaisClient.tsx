@@ -363,6 +363,12 @@ export function MateriaisClient({
   const [erroRetryable, setErroRetryable] = useState(false);
   const [loading, setLoading] = useState(false);
   const [progressLabel, setProgressLabel] = useState("");
+  const [realGenerationProgress, setRealGenerationProgress] = useState<
+    number | undefined
+  >(undefined);
+  const [modoGeracao, setModoGeracao] = useState<"hibrido" | "banco" | "ia">(
+    "hibrido",
+  );
   const [showPatienceMessage, setShowPatienceMessage] = useState(false);
   const patienceTimerRef = useRef<number | null>(null);
   const { runWithRetry, retrying: retryingGeneration } = useRetryableAction();
@@ -586,6 +592,7 @@ export function MateriaisClient({
   );
   const isJogo = tipo === "jogo";
   const isRedacao = tipo === "redacao";
+  const isExamTool = tipo === "lista" || tipo === "prova";
   const showGabarito = toolSupportsGabarito(tipo, {
     incluirQuestoes: tipo === "slides" ? incluirQuestoes : undefined,
   });
@@ -984,6 +991,7 @@ export function MateriaisClient({
         selectedBnccSkills,
         { etapa, anoSerie, areaConhecimento, componente },
       ),
+      modoGeracao: isExamTool ? modoGeracao : undefined,
       habilidadesBncc: mapSelectedBnccSkillsToPayload(selectedBnccSkills, {
         etapa,
         anoSerie,
@@ -1140,6 +1148,7 @@ export function MateriaisClient({
     setHintFeedback("");
     setBnccRegistroFeedback(null);
     setProgressLabel("");
+    setRealGenerationProgress(undefined);
     setShowPatienceMessage(false);
     if (patienceTimerRef.current) {
       window.clearTimeout(patienceTimerRef.current);
@@ -1167,7 +1176,10 @@ export function MateriaisClient({
       try {
         if (isMaterialStreamType(tipo)) {
           const streamResult = await requestMaterialGenerationStream(payload, {
-            onProgress: ({ phase, message, index, total }) => {
+            onProgress: ({ phase, message, progress, index, total }) => {
+              if (typeof progress === "number") {
+                setRealGenerationProgress(progress);
+              }
               if (phase === "images" && index != null && total != null) {
                 setProgressLabel(`Resolvendo imagens (${index}/${total})…`);
               } else {
@@ -1877,6 +1889,30 @@ export function MateriaisClient({
               </select>
             </label>
 
+            {isExamTool ? (
+              <label className="md:col-span-2">
+                <span className={HUD_SECTION_LABEL}>Modo de geração</span>
+                <select
+                  value={modoGeracao}
+                  onChange={(event) =>
+                    setModoGeracao(
+                      event.target.value as "hibrido" | "banco" | "ia",
+                    )
+                  }
+                  className={SELECT_FIELD_CLASS}
+                >
+                  <option value="hibrido">
+                    Híbrido (banco + IA) — recomendado, mais rápido
+                  </option>
+                  <option value="banco">Só banco — instantâneo quando houver questões</option>
+                  <option value="ia">IA completa — máxima originalidade</option>
+                </select>
+                <p className="mt-1 text-xs font-medium text-slate-500">
+                  Estilo Teachy: montamos do banco Planify e a IA só completa o que faltar.
+                </p>
+              </label>
+            ) : null}
+
             {isJogo ? (
               <label>
                 <span className={HUD_SECTION_LABEL}>
@@ -2145,6 +2181,7 @@ export function MateriaisClient({
                   title={progressLabel || mode.loadingTitle}
                   context="material"
                   toolId={tipo}
+                  realProgressPercent={realGenerationProgress}
                   className="max-w-lg"
                 />
               </div>

@@ -1048,10 +1048,10 @@ export async function generateMaterialByEngine(input: MaterialEngineInput) {
 
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
     try {
-      const modelTier = getModelTierForMaterialRequest(
-        request.tipoMaterial,
-        request,
-      );
+      const modelTier =
+        request.elevarQualidade || attempt > 0
+          ? "advanced"
+          : "default";
       const generated = await generateGeminiJSON<Partial<MaterialEngineResponse>>({
         systemInstruction,
         prompt: activePrompt,

@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { buildStageEvent } from "@/lib/generation/generation-pipeline-stages";
 import type { MaterialStreamEvent, MaterialStreamCompleteEvent } from "@/lib/materiais/material-stream-types";
 import { isMaterialStreamType } from "@/lib/materiais/material-stream-types";
 import type { MaterialEngineInput } from "@/server/materials/material-engine-types";
@@ -15,6 +16,12 @@ import {
   resolveGenerationCreditCost,
 } from "@/server/generation/generation-api-shared";
 import { jsonGenerationValidationError } from "@/server/generation/generation-api-contract";
+import {
+  completeGenerationJob,
+  createGenerationJob,
+  failGenerationJob,
+  updateGenerationJobStage,
+} from "@/server/generation/generation-job-service";
 import { withOperationalCapture } from "@/server/telemetry/with-operational-capture";
 
 export const runtime = "nodejs";
@@ -23,6 +30,10 @@ export const maxDuration = 300;
 
 function encodeEvent(event: MaterialStreamEvent): Uint8Array {
   return new TextEncoder().encode(`${JSON.stringify(event)}\n`);
+}
+
+function progressPhase(stage: string): "content" | "images" {
+  return stage === "images" ? "images" : "content";
 }
 
 async function handlePost(request: NextRequest, _context: { params: Promise<Record<string, string>> }) {
@@ -62,33 +73,53 @@ async function handlePost(request: NextRequest, _context: { params: Promise<Reco
         controller.enqueue(encodeEvent(event));
       };
 
+      let jobId: string | undefined;
+
       try {
-        emit({
-          type: "progress",
-          phase: "content",
-          message: "Gerando conteúdo…",
+        try {
+          const job = await createGenerationJob({
+            userId: user?.id,
+            surface: "material",
+            tipo,
+            payload: payload as Record<string, unknown>,
+          });
+          jobId = job.id;
+        } catch {
+          jobId = undefined;
+        }
+
+        const emitStage = (stage: ReturnType<typeof buildStageEvent>) => {
+          emit({
+            type: "progress",
+            phase: progressPhase(stage.stage),
+            message: stage.message,
+            progress: stage.progress,
+            stage: stage.stage,
+            jobId,
+          });
+          if (jobId) {
+            void updateGenerationJobStage(jobId, stage);
+          }
+        };
+
+        const result = await generatePlanifyMaterial(payload, {
+          userId: user?.id,
+          onStage: emitStage,
         });
 
-        const result = await generatePlanifyMaterial(payload, { userId: user?.id });
-
         if (!result.ok) {
+          if (jobId) await failGenerationJob(jobId, result.message);
           await finalizeGenerationFailure(user?.id, tipo, charge, {
             eventType: "material_generation_failed",
             errorCode: String(result.status),
             metadata: { message: result.message },
           });
-          emit({ type: "error", message: result.message });
+          emit({ type: "error", message: result.message, code: "server_error" });
           controller.close();
           return;
         }
 
-        if (tipo === "slides") {
-          emit({
-            type: "progress",
-            phase: "images",
-            message: "Resolvendo imagens…",
-          });
-        }
+        emitStage(buildStageEvent("persist", "Salvando material…"));
 
         const pipeline =
           "pipeline" in result.data ? String(result.data.pipeline) : "engine";
@@ -101,7 +132,7 @@ async function handlePost(request: NextRequest, _context: { params: Promise<Reco
           pipeline,
           qualityScore: typeof qualityScore === "number" ? qualityScore : undefined,
           elevarQualidade: payload.elevarQualidade === true,
-          usedAI: pipeline !== "engine-fallback",
+          usedAI: !pipeline.startsWith("bank"),
           dailyQuotaConsumed: charge.chargedDeepDaily,
         });
 
@@ -136,9 +167,10 @@ async function handlePost(request: NextRequest, _context: { params: Promise<Reco
             ? "O material foi gerado, mas não foi possível registrá-lo no Progresso BNCC. Tente gerar novamente em instantes."
             : null;
 
-        emit({
-          type: "complete",
+        const completePayload = {
+          type: "complete" as const,
           html: result.data.html,
+          jobId,
           tipoMaterial: String(result.data.tipoMaterial || tipo),
           estrutura: result.data.estrutura as MaterialStreamCompleteEvent["estrutura"],
           alertas: persistWarning ? [...baseAlertas, persistWarning] : baseAlertas,
@@ -151,18 +183,29 @@ async function handlePost(request: NextRequest, _context: { params: Promise<Reco
           creditCost: resolveGenerationCreditCost(charge, tipo),
           materialId,
           persistWarning,
-        });
+        };
+
+        if (jobId) {
+          await completeGenerationJob(jobId, {
+            pipeline,
+            result: completePayload as unknown as Record<string, unknown>,
+          });
+        }
+
+        emit(completePayload);
+        emitStage(buildStageEvent("done"));
       } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Erro inesperado ao gerar material.";
+
+        if (jobId) await failGenerationJob(jobId, message);
+
         await finalizeGenerationFailure(user?.id, tipo, charge, {
           eventType: "material_generation_failed",
           errorCode: "exception",
-          metadata: {
-            message: error instanceof Error ? error.message : "unknown",
-          },
+          metadata: { message },
         });
 
-        const message =
-          error instanceof Error ? error.message : "Erro inesperado ao gerar material.";
         emit({ type: "error", message, code: "server_error" });
       } finally {
         controller.close();

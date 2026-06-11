@@ -38,6 +38,9 @@ export const SLIDE_ACCENTS = [
 
 export type SlideAccent = (typeof SLIDE_ACCENTS)[number];
 
+/** hibrido = banco primeiro + IA se faltar; banco = só banco; ia = motor completo */
+export type MaterialGenerationMode = "hibrido" | "banco" | "ia";
+
 export type MaterialEngineRequest = {
   tipoMaterial: MaterialEngineType;
   etapa: string;
@@ -58,6 +61,7 @@ export type MaterialEngineRequest = {
   observacoes?: string;
   elevarQualidade?: boolean;
   problemasQualidade?: string[];
+  modoGeracao?: MaterialGenerationMode;
   habilidadesSelecionadas?: Array<{
     codigo: string;
     descricao: string;
@@ -88,6 +92,8 @@ export type MaterialEngineInput = {
   designSlides?: string;
   elevarQualidade?: boolean;
   problemasQualidade?: string[];
+  /** lista/prova: hibrido (padrão Teachy), banco estrito ou IA completa */
+  modoGeracao?: MaterialGenerationMode;
   idempotencyKey?: string;
   idempotency_key?: string;
   classId?: string | null;

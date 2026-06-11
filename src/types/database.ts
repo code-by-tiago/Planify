@@ -999,6 +999,59 @@ export type Database = {
           updated_at?: string;
         }
       >;
+      generation_jobs: TableDefinition<
+        {
+          id: string;
+          user_id: string | null;
+          surface: string;
+          tipo: string;
+          status: string;
+          stage: string;
+          progress: number;
+          message: string;
+          pipeline: string;
+          payload: Json;
+          result: Json | null;
+          error_message: string | null;
+          created_at: string;
+          updated_at: string;
+          completed_at: string | null;
+        },
+        {
+          id?: string;
+          user_id?: string | null;
+          surface: string;
+          tipo?: string;
+          status?: string;
+          stage?: string;
+          progress?: number;
+          message?: string;
+          pipeline?: string;
+          payload?: Json;
+          result?: Json | null;
+          error_message?: string | null;
+          created_at?: string;
+          updated_at?: string;
+          completed_at?: string | null;
+        },
+        {
+          id?: string;
+          user_id?: string | null;
+          surface?: string;
+          tipo?: string;
+          status?: string;
+          stage?: string;
+          progress?: number;
+          message?: string;
+          pipeline?: string;
+          payload?: Json;
+          result?: Json | null;
+          error_message?: string | null;
+          created_at?: string;
+          updated_at?: string;
+          completed_at?: string | null;
+        }
+      >;
       question_bank_items: TableDefinition<
         {
           id: string;

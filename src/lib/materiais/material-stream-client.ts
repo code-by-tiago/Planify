@@ -14,6 +14,9 @@ export type MaterialStreamCallbacks = {
   onProgress?: (payload: {
     phase: "content" | "images";
     message: string;
+    progress?: number;
+    stage?: string;
+    jobId?: string;
     index?: number;
     total?: number;
   }) => void;
@@ -104,6 +107,9 @@ export async function requestMaterialGenerationStream(
           callbacks.onProgress?.({
             phase: event.phase,
             message: event.message,
+            progress: event.progress,
+            stage: event.stage,
+            jobId: event.jobId,
             index: event.index,
             total: event.total,
           });

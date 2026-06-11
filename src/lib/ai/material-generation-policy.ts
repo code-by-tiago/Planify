@@ -60,9 +60,9 @@ export function isDeepGenerationType(tipo: string): boolean {
   return false;
 }
 
-/** Geração inicial de material — sempre Gemini Pro. */
+/** Tier legado — o motor usa Flash na 1ª passada e Pro em retries/elevar. */
 export function getModelTierForMaterialType(_tipo: string): AIModelTier {
-  return "advanced";
+  return "default";
 }
 
 /** Marcador de ajuste complementar no editor (SlideAiAdjustPanel). */

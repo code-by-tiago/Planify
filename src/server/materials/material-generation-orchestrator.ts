@@ -1,6 +1,9 @@
+import { buildStageEvent } from "@/lib/generation/generation-pipeline-stages";
+import type { GenerationStageEvent } from "@/lib/generation/generation-job-types";
 import { computeQualityScore } from "@/lib/materiais/material-quality-score";
 import { generateMaterialWithAI } from "../ai/material-ai-service";
 import type { MaterialAIInput, MaterialAIOutput } from "@/types/ai";
+import { tryAssembleExamFromBank } from "./exam-bank-assembler";
 import { generateMaterialByEngine } from "./material-engine-service";
 import { renderMaterialAIOutputToHtml } from "./material-ai-html-renderer";
 import { engineRequestToMaterialAI } from "./material-input-adapter";
@@ -16,6 +19,19 @@ import {
 } from "./material-engine-validation";
 
 const AI_MAX_ATTEMPTS = 3;
+
+export type MaterialGenerationOptions = {
+  userId?: string | null;
+  onStage?: (stage: GenerationStageEvent) => void;
+};
+
+function emitStage(
+  options: MaterialGenerationOptions | undefined,
+  stage: GenerationStageEvent["stage"],
+  message?: string,
+) {
+  options?.onStage?.(buildStageEvent(stage, message));
+}
 
 function isClientValidationError(message: string): boolean {
   return (
@@ -87,7 +103,9 @@ function successFromAI(
 async function fallbackToEngine(
   input: MaterialEngineInput,
   reason: string,
+  options?: MaterialGenerationOptions,
 ) {
+  emitStage(options, "generate", "Gerando com motor estruturado…");
   const engineResult = await generateMaterialByEngine(input);
 
   if (!engineResult.ok) {
@@ -101,6 +119,8 @@ async function fallbackToEngine(
   const fallbackAlertas = [
     `O motor pedagógico auxiliar assumiu a entrega: ${reason}`,
   ];
+
+  emitStage(options, "quality");
 
   return {
     ok: true as const,
@@ -121,6 +141,7 @@ async function fallbackToEngine(
 async function enrichInputWithPedagogicalContext(
   input: MaterialEngineInput,
   userId?: string | null,
+  allowScrape = true,
 ): Promise<MaterialEngineInput> {
   const { enrichWithPedagogicalContext } = await import(
     "@/server/pedagogical-cache/enrich-with-pedagogical-context"
@@ -139,14 +160,61 @@ async function enrichInputWithPedagogicalContext(
     {
       userId: userId ?? null,
       toolTipo: input.tipoMaterial || input.tipo || "material",
-      allowScrape: true,
+      allowScrape,
     },
   );
 }
 
+async function tryBankPath(
+  input: MaterialEngineInput,
+  request: ReturnType<typeof normalizeMaterialEngineRequest>,
+  options?: MaterialGenerationOptions,
+) {
+  if (request.tipoMaterial !== "lista" && request.tipoMaterial !== "prova") {
+    return null;
+  }
+
+  if (request.modoGeracao === "ia" || request.elevarQualidade) {
+    return null;
+  }
+
+  emitStage(options, "bank");
+  const bank = await tryAssembleExamFromBank(input, {
+    userId: options?.userId,
+    strictBank: request.modoGeracao === "banco",
+  });
+
+  if (!bank.ok) {
+    if (request.modoGeracao === "banco") {
+      return {
+        ok: false as const,
+        status: 404,
+        message:
+          "Não encontramos questões suficientes no banco para este tema. Tente o modo Híbrido ou IA completa.",
+      };
+    }
+    return null;
+  }
+
+  emitStage(options, "quality");
+  return {
+    ok: true as const,
+    status: 200,
+    data: {
+      tipoMaterial: request.tipoMaterial,
+      html: bank.html,
+      estrutura: bank.estrutura,
+      alertas: bank.alertas,
+      pipeline: bank.pipeline,
+      qualityScore: bank.qualityScore,
+      qualityIssues: bank.qualityIssues,
+    },
+  };
+}
+
 export async function generatePlanifyMaterial(
   input: MaterialEngineInput,
-  options?: { userId?: string | null },
+  options?: MaterialGenerationOptions,
 ) {
   const request = normalizeMaterialEngineRequest(input);
   const errors = validateMaterialEngineRequest(request);
@@ -159,18 +227,33 @@ export async function generatePlanifyMaterial(
     };
   }
 
+  emitStage(options, "prepare");
+
+  const bankResult = await tryBankPath(input, request, options);
+  if (bankResult) {
+    return bankResult;
+  }
+
+  emitStage(options, "context");
   const enrichedInput = await enrichInputWithPedagogicalContext(
     input,
     options?.userId,
+    request.modoGeracao !== "banco",
   );
 
   if (usesPlanifyMaterialEngine(request.tipoMaterial)) {
-    return generateMaterialByEngine(enrichedInput);
+    emitStage(options, "generate");
+    const engineResult = await generateMaterialByEngine(enrichedInput);
+    if (engineResult.ok) {
+      emitStage(options, "quality");
+    }
+    return engineResult;
   }
 
   const aiInput = engineRequestToMaterialAI(request, enrichedInput);
 
   try {
+    emitStage(options, "generate");
     const output = await generateWithAIQualityLoop(request, input, aiInput);
     const postIssues = getAIOutputIssues(request, output);
     const criticalTypes = new Set(["prova", "lista", "apostila", "atividade"]);
@@ -188,6 +271,7 @@ export async function generatePlanifyMaterial(
             ]
         : [];
 
+    emitStage(options, "quality");
     return successFromAI(request, output, "ai", warn, postIssues);
   } catch (error) {
     const message =
@@ -206,6 +290,7 @@ export async function generatePlanifyMaterial(
     const fallback = await fallbackToEngine(
       input,
       "a geração principal falhou; usamos o motor estruturado como alternativa.",
+      options,
     );
 
     if (fallback.ok) {

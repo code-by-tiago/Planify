@@ -663,6 +663,31 @@ function testGenerationEventsMigrationContract() {
   assert.match(telemetry, /elevar_qualidade/);
 }
 
+function testGameExportMarkup() {
+  const { buildVisualGameMaterial } = loadTsModule("src/lib/materiais/game-builder.ts");
+  const { PLANIFY_GAME_EXPORT_CSS } = loadTsModule("src/lib/materiais/game-export-styles.ts");
+  const { PLANIFY_EXPORT_CSS } = loadTsModule("src/lib/editor/editor-print-html.ts");
+
+  const output = buildVisualGameMaterial({
+    tipo: "jogo",
+    modeloJogo: "cruzadinha",
+    tema: "Sintaxe: Sintagmas",
+    componenteCurricular: "Língua Portuguesa",
+    anoSerie: "8º ano",
+    etapa: "Ensino Fundamental",
+  });
+
+  const html = String(output.visualHtml || "");
+  assert.match(html, /planify-game-table--crossword/);
+  assert.match(html, /planify-game-cell--letter/);
+  assert.match(html, /planify-game-clues-table/);
+  assert.match(html, /planify-game-teacher-block/);
+  assert.doesNotMatch(html, /width:100%.*planify-game-table/s);
+
+  assert.match(PLANIFY_GAME_EXPORT_CSS, /planify-game-cell--letter/);
+  assert.match(PLANIFY_EXPORT_CSS, /table:not\(\.planify-game-table\)/);
+}
+
 function testUnifiedQualityGate() {
   const {
     assessUnifiedQualityGate,
@@ -718,6 +743,7 @@ function main() {
   runTest("unified-material-engine", testUnifiedMaterialEngineContract);
   runTest("cronograma-table-renderer", testCronogramaTableRenderer);
   runTest("unified-quality-gate", testUnifiedQualityGate);
+  runTest("game-export-markup", testGameExportMarkup);
   runTest("planning-quality", testPlanningQuality);
   runTest("daily-quota-migration", testDailyQuotaMigrationContract);
   runTest("generation-events-migration", testGenerationEventsMigrationContract);

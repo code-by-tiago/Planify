@@ -21,6 +21,24 @@ function applyBgcolorOnStyledElements(root: Element) {
   }
 }
 
+function strengthenGameVisuals(root: Element) {
+  for (const section of root.querySelectorAll("section")) {
+    const html = section.innerHTML;
+    if (
+      html.includes("planify-game-table") ||
+      html.includes("Cruzadinha") ||
+      html.includes("Caça-palavras") ||
+      html.includes("Bingo pedagógico")
+    ) {
+      section.classList.add("planify-game-section");
+    }
+  }
+
+  for (const table of root.querySelectorAll("table.planify-game-table")) {
+    table.setAttribute("style", "width:auto;border-collapse:collapse;table-layout:fixed;");
+  }
+}
+
 function strengthenFlashcards(root: Element) {
   const cards = root.querySelectorAll(".planify-flashcard");
 
@@ -75,6 +93,7 @@ export function prepareHtmlForExport(html: string): string {
   );
 
   applyBgcolorOnStyledElements(document.body);
+  strengthenGameVisuals(document.body);
   strengthenFlashcards(document.body);
 
   return document.body.innerHTML;

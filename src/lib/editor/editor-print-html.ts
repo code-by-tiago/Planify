@@ -1,3 +1,5 @@
+import { PLANIFY_GAME_EXPORT_CSS } from "@/lib/materiais/game-export-styles";
+
 function escapeHtml(value: string) {
   return value
     .replace(/&/g, "&amp;")
@@ -499,18 +501,20 @@ export const PLANIFY_EXPORT_CSS = `
   li {
     margin: 0 0 0.35rem;
   }
-  table {
+  table:not(.planify-game-table):not(.planify-game-clues-table):not(.planify-game-data-table) {
     width: 100%;
     border-collapse: collapse;
     margin: 0.8rem 0;
     page-break-inside: avoid;
     text-align: left;
   }
-  td, th {
+  table:not(.planify-game-table):not(.planify-game-clues-table):not(.planify-game-data-table) td,
+  table:not(.planify-game-table):not(.planify-game-clues-table):not(.planify-game-data-table) th {
     border: 1px solid #cbd5e1;
     padding: 0.45rem;
     vertical-align: top;
   }
+  ${PLANIFY_GAME_EXPORT_CSS}
   [contenteditable],
   button,
   input,

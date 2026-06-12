@@ -15,6 +15,7 @@ import {
   PLANIFY_EXPORT_DOC_COMPONENT_CSS,
   wrapAsCleanPrintHtml,
 } from "@/lib/editor/editor-print-html";
+import { PLANIFY_GAME_EXPORT_CSS } from "@/lib/materiais/game-export-styles";
 import {
   getClosestTable,
   getClosestTableCell,
@@ -2815,6 +2816,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
         }
 
         ${PLANIFY_EXPORT_DOC_COMPONENT_CSS}
+        ${PLANIFY_GAME_EXPORT_CSS}
 
         .planify-editor-page.planify-abnt-page {
           padding: 3cm 2cm 2cm 3cm !important;
@@ -2849,14 +2851,14 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
           padding-left: 1.5rem;
         }
 
-        .planify-editor-page table {
+        .planify-editor-page table:not(.planify-game-table):not(.planify-game-clues-table):not(.planify-game-data-table) {
           width: 100%;
           border-collapse: collapse;
           margin: 1rem 0;
         }
 
-        .planify-editor-page td,
-        .planify-editor-page th {
+        .planify-editor-page table:not(.planify-game-table):not(.planify-game-clues-table):not(.planify-game-data-table) td,
+        .planify-editor-page table:not(.planify-game-table):not(.planify-game-clues-table):not(.planify-game-data-table) th {
           border: 1px solid #cbd5e1;
           padding: 0.55rem;
           vertical-align: top;

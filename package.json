@@ -38,7 +38,8 @@
     "verify:staging": "node scripts/verify-generators-live.mjs --suite=sprint1",
     "verify:planejamento-docx": "node scripts/verify-planejamento-docx.mjs",
     "verify:custom-template-docx": "node scripts/verify-custom-template-docx.mjs",
-    "verify:all": "npm run verify:material-quality && npm run verify:generators && node scripts/verify-export-motors.mjs && npm run verify:planejamento-docx && node scripts/verify-google-export-readiness.mjs",
+    "verify:export-pipeline": "node scripts/verify-export-pipeline.mjs",
+    "verify:all": "npm run verify:material-quality && npm run verify:generators && npm run verify:export-pipeline && node scripts/verify-export-motors.mjs && node scripts/verify-forms-export-payload.mjs && npm run verify:planejamento-docx && node scripts/verify-google-export-readiness.mjs",
     "bncc:import": "node scripts/bncc/import-bncc-skills.mjs"
   },
   "dependencies": {

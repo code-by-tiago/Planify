@@ -102,7 +102,7 @@ const { planifyTools } = loadTsModule("src/lib/pro/planifyTools.ts");
 /** Espelha resolveGoogleProductForTool sem importar módulo client-side. */
 function resolveGoogleProductForTool(toolId) {
   if (toolId === "slides") return "slides";
-  if (toolId === "prova" || toolId === "lista" || toolId === "jogo") return "forms";
+  if (toolId === "prova" || toolId === "lista") return "forms";
   return "docs";
 }
 
@@ -649,7 +649,7 @@ function testGoogleExportRouting() {
   assert.equal(resolveGoogleProductForTool("slides"), "slides");
   assert.equal(resolveGoogleProductForTool("prova"), "forms");
   assert.equal(resolveGoogleProductForTool("lista"), "forms");
-  assert.equal(resolveGoogleProductForTool("jogo"), "forms");
+  assert.equal(resolveGoogleProductForTool("jogo"), "docs");
   assert.equal(resolveGoogleProductForTool("apostila"), "docs");
   assert.equal(resolveGoogleProductForTool("atividade"), "docs");
 }

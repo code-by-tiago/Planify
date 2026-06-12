@@ -29,7 +29,7 @@ export function resolveGoogleProductForTool(
   toolId: PlanifyToolId,
 ): GoogleAutoExportProduct {
   if (toolId === "slides") return "slides";
-  if (toolId === "prova" || toolId === "lista" || toolId === "jogo") {
+  if (toolId === "prova" || toolId === "lista") {
     return "forms";
   }
   return "docs";

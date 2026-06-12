@@ -10,6 +10,18 @@ export function isQuizMaterialHtml(html: string): boolean {
   return /planify-questao/i.test(html);
 }
 
+/** Jogos visuais (cruzadinha, caça-palavras, bingo…) — PDF preserva a grade. */
+export function isVisualGameHtml(html: string): boolean {
+  if (!html?.trim()) return false;
+  return /planify-game-table|planify-jogo-visual|planify-game-section/i.test(html);
+}
+
+/** Materiais com layout fixo que degradam em DOCX (flashcards, mapa mental). */
+export function isFixedLayoutVisualHtml(html: string): boolean {
+  if (!html?.trim()) return false;
+  return /planify-flashcard|planify-mindmap/i.test(html);
+}
+
 /** Classifica o material para escolher o formato de exportação ao Classroom. */
 export function detectMaterialExportKind(
   html: string,
@@ -26,7 +38,11 @@ export function detectMaterialExportKind(
     type.includes("lista") ||
     type.includes("quiz") ||
     type.includes("jogo") ||
-    isQuizMaterialHtml(html)
+    type.includes("flashcards") ||
+    type.includes("mapa-mental") ||
+    isQuizMaterialHtml(html) ||
+    isVisualGameHtml(html) ||
+    isFixedLayoutVisualHtml(html)
   ) {
     return "quiz";
   }

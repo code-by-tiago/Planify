@@ -122,6 +122,32 @@ assert.equal(
   "docx",
 );
 
+const { buildVisualGameMaterial } = loadTsModule("src/lib/materiais/game-builder.ts");
+const detection = loadTsModule("src/lib/google/document-type-detection.ts");
+const gameHtml = String(
+  buildVisualGameMaterial({
+    tipo: "jogo",
+    modeloJogo: "cruzadinha",
+    tema: "Sintaxe",
+    componenteCurricular: "Português",
+    anoSerie: "8º ano",
+    etapa: "EF",
+  }).visualHtml || "",
+);
+assert.equal(
+  classroomModule.resolveClassroomExportForHtml(gameHtml, "material:jogo"),
+  "pdf",
+);
+assert.equal(
+  detection.resolveFormsExportCompatible(() => gameHtml, "material:jogo"),
+  false,
+);
+assert.equal(
+  quizModule.parseQuizQuestionsFromHtml(prepareModule.stripTeacherOnlyExportBlocks(gameHtml))
+    .length,
+  0,
+);
+
 const cleanedQuizHtml = prepareModule.stripTeacherOnlyExportBlocks(quizHtml);
 const questions = quizModule.parseQuizQuestionsFromHtml(cleanedQuizHtml);
 

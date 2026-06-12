@@ -465,36 +465,38 @@ function wordSearch(input: MaterialAIInput, aiOutput?: MaterialOutputWithSeed): 
   return { grid, placed };
 }
 
-function renderGridTable(grid: string[][], cellSize = 32): string {
-  return `<table style="border-collapse:collapse;margin:14px 0;width:auto;">${grid
+function renderGridTable(grid: string[][]): string {
+  return `<div class="planify-game-board"><table class="planify-game-table planify-game-table--wordsearch">${grid
     .map(
       (row) =>
         `<tr>${row
           .map(
             (cell) =>
-              `<td style="width:${cellSize}px;height:${cellSize}px;border:1px solid #111827;text-align:center;vertical-align:middle;font-weight:800;font-family:Arial, sans-serif;font-size:14px;">${escapeHtml(cell)}</td>`,
+              `<td class="planify-game-cell--letter">${escapeHtml(cell)}</td>`,
           )
           .join("")}</tr>`,
     )
-    .join("")}</table>`;
+    .join("")}</table></div>`;
 }
 
 function renderWordBank(words: string[]): string {
-  return `<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:12px 0;">${words
+  return `<div class="planify-game-word-bank">${words
     .map(
       (word) =>
-        `<div style="border:1px solid #94a3b8;border-radius:8px;padding:8px;text-align:center;font-weight:700;">${escapeHtml(word)}</div>`,
+        `<div class="planify-game-word-bank-item">${escapeHtml(word)}</div>`,
     )
     .join("")}</div>`;
 }
 
-function renderPrintableCards(cards: Array<{ title: string; body: string; footer?: string }>, columns = 3): string {
-  return `<div style="display:grid;grid-template-columns:repeat(${columns},minmax(0,1fr));gap:10px;margin:14px 0;">${cards
+function renderPrintableCards(
+  cards: Array<{ title: string; body: string; footer?: string }>,
+): string {
+  return `<div class="planify-game-cards-grid">${cards
     .map(
-      (card) => `<div style="min-height:118px;border:2px dashed #334155;border-radius:12px;padding:12px;background:#ffffff;break-inside:avoid;">
-        <p style="margin:0 0 8px;font-size:12px;font-weight:900;text-transform:uppercase;color:#0f766e;">${escapeHtml(card.title)}</p>
-        <p style="margin:0;font-size:14px;font-weight:700;color:#111827;">${escapeHtml(card.body)}</p>
-        ${card.footer ? `<p style="margin:10px 0 0;font-size:11px;color:#475569;">${escapeHtml(card.footer)}</p>` : ""}
+      (card) => `<div class="planify-game-card">
+        <p class="planify-game-card-title">${escapeHtml(card.title)}</p>
+        <p class="planify-game-card-body">${escapeHtml(card.body)}</p>
+        ${card.footer ? `<p class="planify-game-card-footer">${escapeHtml(card.footer)}</p>` : ""}
       </div>`,
     )
     .join("")}</div>`;
@@ -513,14 +515,14 @@ function bingoCards(input: MaterialAIInput, aiOutput?: MaterialOutputWithSeed): 
 }
 
 function renderBingoCard(rows: string[][], index: number): string {
-  return `<div style="break-inside:avoid;margin:14px 0;padding:12px;border:2px solid #0f172a;border-radius:12px;">
+  return `<div class="planify-game-bingo-card">
     <h3 style="margin:0 0 10px;text-align:center;font-size:18px;">Cartela ${index + 1}</h3>
-    <table style="border-collapse:collapse;width:100%;table-layout:fixed;">
-      <tr>${["B", "I", "N", "G"].map((letter) => `<th style="border:1px solid #111827;padding:8px;background:#e0f2fe;font-weight:900;">${letter}</th>`).join("")}</tr>
+    <table class="planify-game-table planify-game-table--bingo">
+      <tr>${["B", "I", "N", "G"].map((letter) => `<th>${letter}</th>`).join("")}</tr>
       ${rows
         .map(
           (row) => `<tr>${row
-            .map((cell) => `<td style="height:68px;border:1px solid #111827;text-align:center;vertical-align:middle;font-size:12px;font-weight:700;padding:6px;">${escapeHtml(cell)}</td>`)
+            .map((cell) => `<td>${escapeHtml(cell)}</td>`)
             .join("")}</tr>`,
         )
         .join("")}
@@ -653,10 +655,10 @@ function renderCrosswordGrid(board: CrosswordBoard, showAnswers: boolean): strin
       const letter = board.grid[row]?.[col] || "";
       const number = numberMap.get(`${row}:${col}`);
       if (!letter) {
-        cells.push(`<td style="width:30px;height:30px;border:1px solid transparent;background:#f1f5f9;"></td>`);
+        cells.push(`<td class="planify-game-cell--block"></td>`);
       } else {
-        cells.push(`<td style="position:relative;width:30px;height:30px;border:1px solid #111827;background:#ffffff;text-align:center;vertical-align:middle;font-family:Arial, sans-serif;font-size:14px;font-weight:900;">
-          ${number ? `<span style="position:absolute;top:1px;left:2px;font-size:8px;font-weight:800;color:#0f766e;">${number}</span>` : ""}
+        cells.push(`<td class="planify-game-cell--letter">
+          ${number ? `<span class="planify-game-cell-number">${number}</span>` : ""}
           ${showAnswers ? escapeHtml(letter) : ""}
         </td>`);
       }
@@ -664,7 +666,7 @@ function renderCrosswordGrid(board: CrosswordBoard, showAnswers: boolean): strin
     rows.push(`<tr>${cells.join("")}</tr>`);
   }
 
-  return `<table style="border-collapse:collapse;margin:16px 0;width:auto;">${rows.join("")}</table>`;
+  return `<div class="planify-game-board"><table class="planify-game-table planify-game-table--crossword">${rows.join("")}</table></div>`;
 }
 
 function renderCrosswordClues(board: CrosswordBoard) {
@@ -675,10 +677,12 @@ function renderCrosswordClues(board: CrosswordBoard) {
       ? `<ol>${items.map((item) => `<li><strong>${item.number}.</strong> ${escapeHtml(item.clue)} <em>(${item.answer.length} letras)</em></li>`).join("")}</ol>`
       : `<p>Nenhuma pista nesta direção.</p>`;
 
-  return `<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin:14px 0;">
-    <div><h3>Horizontais</h3>${renderList(across)}</div>
-    <div><h3>Verticais</h3>${renderList(down)}</div>
-  </div>`;
+  return `<table class="planify-game-clues-table" role="presentation">
+    <tr>
+      <td><h3>Horizontais</h3>${renderList(across)}</td>
+      <td><h3>Verticais</h3>${renderList(down)}</td>
+    </tr>
+  </table>`;
 }
 
 function dataSection(titulo: string, conteudo: string, itens: string[] = []): MaterialAISection {
@@ -777,7 +781,7 @@ export function buildVisualGameMaterial(input: MaterialAIInput, aiOutput?: Mater
     const game = wordSearch(input, aiOutput);
     const words = game.placed.map((item) => item.word);
     visualHtml = `
-      <section style="font-family:Arial, sans-serif;color:#111827;">
+      <section class="planify-game-section">
         <h2>Caça-palavras — versão do aluno</h2>
         <p>Encontre as palavras relacionadas ao tema <strong>${escapeHtml(tema)}</strong>. Depois escolha três palavras e escreva uma frase explicando cada uma.</p>
         ${renderGridTable(game.grid)}
@@ -785,10 +789,12 @@ export function buildVisualGameMaterial(input: MaterialAIInput, aiOutput?: Mater
         ${renderWordBank(words)}
         <h3>Pistas rápidas</h3>
         <ol>${game.placed.map((item) => `<li>${escapeHtml(item.clue)}</li>`).join("")}</ol>
-        <h2>Gabarito do professor</h2>
-        <table style="border-collapse:collapse;width:100%;"><tr><th style="border:1px solid #111827;padding:8px;">Palavra</th><th style="border:1px solid #111827;padding:8px;">Início</th><th style="border:1px solid #111827;padding:8px;">Direção</th></tr>${game.placed
-          .map((item) => `<tr><td style="border:1px solid #111827;padding:8px;">${escapeHtml(item.word)}</td><td style="border:1px solid #111827;padding:8px;">linha ${item.row}, coluna ${item.col}</td><td style="border:1px solid #111827;padding:8px;">${escapeHtml(item.direction)}</td></tr>`)
-          .join("")}</table>
+        <div class="planify-game-teacher-block">
+          <h2>Gabarito do professor</h2>
+          <table class="planify-game-data-table"><tr><th>Palavra</th><th>Início</th><th>Direção</th></tr>${game.placed
+            .map((item) => `<tr><td>${escapeHtml(item.word)}</td><td>linha ${item.row}, coluna ${item.col}</td><td>${escapeHtml(item.direction)}</td></tr>`)
+            .join("")}</table>
+        </div>
       </section>`;
     sections = [
       dataSection("Grade visual do caça-palavras", "Grade em quadradinhos, banco de palavras, pistas e gabarito."),
@@ -800,14 +806,16 @@ export function buildVisualGameMaterial(input: MaterialAIInput, aiOutput?: Mater
   if (model === "cruzadinha") {
     const board = buildCrosswordBoard(input, aiOutput);
     visualHtml = `
-      <section style="font-family:Arial, sans-serif;color:#111827;">
+      <section class="planify-game-section">
         <h2>Cruzadinha — versão do aluno</h2>
         <p>Leia as pistas, observe a numeração e preencha a cruzadinha com respostas relacionadas ao tema <strong>${escapeHtml(tema)}</strong>.</p>
         ${renderCrosswordGrid(board, false)}
         ${renderCrosswordClues(board)}
-        <h2>Gabarito do professor</h2>
-        ${renderCrosswordGrid(board, true)}
-        <ol>${board.placements.map((item) => `<li><strong>${item.number}. ${escapeHtml(item.answer)}</strong> — ${escapeHtml(item.clue)}</li>`).join("")}</ol>
+        <div class="planify-game-teacher-block">
+          <h2>Gabarito do professor</h2>
+          ${renderCrosswordGrid(board, true)}
+          <ol>${board.placements.map((item) => `<li><strong>${item.number}. ${escapeHtml(item.answer)}</strong> — ${escapeHtml(item.clue)}</li>`).join("")}</ol>
+        </div>
       </section>`;
     sections = [
       dataSection("Cruzadinha visual conectada", "A cruzadinha é montada em grade única, com palavras cruzadas, pistas horizontais/verticais e gabarito."),
@@ -820,14 +828,16 @@ export function buildVisualGameMaterial(input: MaterialAIInput, aiOutput?: Mater
     const cards = bingoCards(input, aiOutput);
     const callList = seeds.slice(0, 28);
     visualHtml = `
-      <section style="font-family:Arial, sans-serif;color:#111827;">
+      <section class="planify-game-section">
         <h2>Bingo pedagógico — cartelas para imprimir</h2>
         <p>O professor sorteia as pistas. Os estudantes marcam na cartela o termo correspondente.</p>
-        <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;">${cards.map(renderBingoCard).join("")}</div>
-        <h2>Lista de chamada do professor</h2>
-        <table style="border-collapse:collapse;width:100%;"><tr><th style="border:1px solid #111827;padding:8px;">Termo</th><th style="border:1px solid #111827;padding:8px;">Pista de chamada</th></tr>${callList
-          .map((seed) => `<tr><td style="border:1px solid #111827;padding:8px;font-weight:700;">${escapeHtml(seed.label)}</td><td style="border:1px solid #111827;padding:8px;">${escapeHtml(seed.clue)}</td></tr>`)
-          .join("")}</table>
+        <div class="planify-game-bingo-grid">${cards.map(renderBingoCard).join("")}</div>
+        <div class="planify-game-teacher-block">
+          <h2>Lista de chamada do professor</h2>
+          <table class="planify-game-data-table"><tr><th>Termo</th><th>Pista de chamada</th></tr>${callList
+            .map((seed) => `<tr><td><strong>${escapeHtml(seed.label)}</strong></td><td>${escapeHtml(seed.clue)}</td></tr>`)
+            .join("")}</table>
+        </div>
       </section>`;
     sections = [
       dataSection("Cartelas visuais de bingo", "Seis cartelas diferentes em tabela 4x4."),
@@ -843,12 +853,14 @@ export function buildVisualGameMaterial(input: MaterialAIInput, aiOutput?: Mater
       { title: `Par ${index + 1}B`, body: seed.clue, footer: "Carta pista" },
     ]);
     visualHtml = `
-      <section style="font-family:Arial, sans-serif;color:#111827;">
+      <section class="planify-game-section">
         <h2>Jogo da memória — cartas recortáveis</h2>
         <p>Recorte as cartas. O par correto une a carta de conceito à carta de pista.</p>
-        ${renderPrintableCards(cards, 4)}
-        <h2>Gabarito do professor</h2>
-        <ol>${pairs.map((seed, index) => `<li>Par ${index + 1}: ${escapeHtml(seed.label)} ↔ ${escapeHtml(seed.clue)}</li>`).join("")}</ol>
+        ${renderPrintableCards(cards)}
+        <div class="planify-game-teacher-block">
+          <h2>Gabarito do professor</h2>
+          <ol>${pairs.map((seed, index) => `<li>Par ${index + 1}: ${escapeHtml(seed.label)} ↔ ${escapeHtml(seed.clue)}</li>`).join("")}</ol>
+        </div>
       </section>`;
     sections = [
       dataSection("Cartas visuais recortáveis", "Cartas em grade, com bordas tracejadas para recorte."),
@@ -868,12 +880,14 @@ export function buildVisualGameMaterial(input: MaterialAIInput, aiOutput?: Mater
       };
     });
     visualHtml = `
-      <section style="font-family:Arial, sans-serif;color:#111827;">
+      <section class="planify-game-section">
         <h2>Dominó pedagógico — peças recortáveis</h2>
         <p>Cada peça tem dois lados. Encaixe a resposta ao conceito ou pista correspondente.</p>
-        ${renderPrintableCards(cards, 2)}
-        <h2>Sequência sugerida do gabarito</h2>
-        <ol>${pieces.map((seed, index) => `<li>Peça ${index + 1}: ${escapeHtml(seed.label)} deve conectar com pista de ${escapeHtml(pieces[(index + 1) % pieces.length]?.label || pieces[0]?.label || "termo")}</li>`).join("")}</ol>
+        ${renderPrintableCards(cards)}
+        <div class="planify-game-teacher-block">
+          <h2>Sequência sugerida do gabarito</h2>
+          <ol>${pieces.map((seed, index) => `<li>Peça ${index + 1}: ${escapeHtml(seed.label)} deve conectar com pista de ${escapeHtml(pieces[(index + 1) % pieces.length]?.label || pieces[0]?.label || "termo")}</li>`).join("")}</ol>
+        </div>
       </section>`;
     sections = [
       dataSection("Peças visuais do dominó", "Peças retangulares recortáveis com dois lados."),
@@ -890,12 +904,12 @@ export function buildVisualGameMaterial(input: MaterialAIInput, aiOutput?: Mater
       footer: "Valor sugerido: 1 ponto pela resposta + 1 ponto pela justificativa.",
     }));
     visualHtml = `
-      <section style="font-family:Arial, sans-serif;color:#111827;">
+      <section class="planify-game-section">
         <h2>Quiz pedagógico — cartões de pergunta</h2>
         <p>Use os cartões em equipes, duplas ou individualmente. A resposta precisa ter justificativa.</p>
-        ${renderPrintableCards(questions, 2)}
+        ${renderPrintableCards(questions)}
         <h2>Folha de pontuação</h2>
-        <table style="border-collapse:collapse;width:100%;"><tr><th style="border:1px solid #111827;padding:8px;">Equipe</th><th style="border:1px solid #111827;padding:8px;">Rodada 1</th><th style="border:1px solid #111827;padding:8px;">Rodada 2</th><th style="border:1px solid #111827;padding:8px;">Total</th></tr>${[1, 2, 3, 4].map((row) => `<tr><td style="border:1px solid #111827;padding:10px;">Equipe ${row}</td><td style="border:1px solid #111827;padding:10px;"></td><td style="border:1px solid #111827;padding:10px;"></td><td style="border:1px solid #111827;padding:10px;"></td></tr>`).join("")}</table>
+        <table class="planify-game-data-table"><tr><th>Equipe</th><th>Rodada 1</th><th>Rodada 2</th><th>Total</th></tr>${[1, 2, 3, 4].map((row) => `<tr><td>Equipe ${row}</td><td></td><td></td><td></td></tr>`).join("")}</table>
       </section>`;
     sections = [
       dataSection("Cartões visuais do quiz", "Cartões de perguntas prontos para imprimir e recortar."),
@@ -912,10 +926,10 @@ export function buildVisualGameMaterial(input: MaterialAIInput, aiOutput?: Mater
       footer: index % 4 === 0 ? "Carta desafio" : index % 4 === 1 ? "Carta exemplo" : index % 4 === 2 ? "Carta associação" : "Carta síntese",
     }));
     visualHtml = `
-      <section style="font-family:Arial, sans-serif;color:#111827;">
+      <section class="planify-game-section">
         <h2>Baralho pedagógico — cartas recortáveis</h2>
         <p>Recorte as cartas e use como revisão, estações de aprendizagem, sorteio de desafios ou jogo em equipes.</p>
-        ${renderPrintableCards(cards, 3)}
+        ${renderPrintableCards(cards)}
         <h2>Modo rápido de aplicação</h2>
         <ol><li>Cada grupo compra uma carta.</li><li>Responde com justificativa.</li><li>Outro grupo pode complementar.</li><li>O professor valida e pontua.</li></ol>
       </section>`;
@@ -941,10 +955,10 @@ export function buildVisualGameMaterial(input: MaterialAIInput, aiOutput?: Mater
     });
 
     visualHtml = `
-      <section style="font-family:Arial, sans-serif;color:#111827;">
+      <section class="planify-game-section">
         <h2>Trilha pedagógica — tabuleiro imprimível</h2>
         <p>Imprima o tabuleiro. Cada equipe lança um dado, avança e responde à casa. Casas de desafio (⭐) valem ponto extra com justificativa.</p>
-        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:16px 0;">${cells.join("")}</div>
+        <div class="planify-game-cards-grid">${cells.join("")}</div>
         <h3>Regras rápidas</h3>
         <ol>
           <li>Forme equipes e escolha um peão por grupo.</li>
@@ -954,9 +968,11 @@ export function buildVisualGameMaterial(input: MaterialAIInput, aiOutput?: Mater
           <li>Primeira equipe a cruzar a casa 20 vence.</li>
         </ol>
         <h3>Folha de pontuação</h3>
-        <table style="border-collapse:collapse;width:100%;"><tr><th style="border:1px solid #111827;padding:8px;">Equipe</th><th style="border:1px solid #111827;padding:8px;">Pontos</th><th style="border:1px solid #111827;padding:8px;">Observações</th></tr>${[1, 2, 3, 4].map((row) => `<tr><td style="border:1px solid #111827;padding:10px;">Equipe ${row}</td><td style="border:1px solid #111827;padding:10px;"></td><td style="border:1px solid #111827;padding:10px;"></td></tr>`).join("")}</table>
-        <h2>Gabarito do professor</h2>
-        <ol>${steps.map((seed, index) => `<li><strong>Casa ${index + 1}:</strong> ${escapeHtml(seed.label)} — resposta esperada relacionada a: ${escapeHtml(seed.clue)}</li>`).join("")}</ol>
+        <table class="planify-game-data-table"><tr><th>Equipe</th><th>Pontos</th><th>Observações</th></tr>${[1, 2, 3, 4].map((row) => `<tr><td>Equipe ${row}</td><td></td><td></td></tr>`).join("")}</table>
+        <div class="planify-game-teacher-block">
+          <h2>Gabarito do professor</h2>
+          <ol>${steps.map((seed, index) => `<li><strong>Casa ${index + 1}:</strong> ${escapeHtml(seed.label)} — resposta esperada relacionada a: ${escapeHtml(seed.clue)}</li>`).join("")}</ol>
+        </div>
       </section>`;
     sections = [
       dataSection("Tabuleiro da trilha", "Grade 5×4 com casas numeradas, início, desafios e pistas."),

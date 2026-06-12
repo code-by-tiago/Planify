@@ -212,10 +212,12 @@ export function BancoQuestoesClient() {
   const searchMode = searchResult.mode;
   const searchActive = isQuestionBankSearchActive(effectiveFilter);
   const filterActive = isQuestionBankFilterActive(effectiveFilter);
+  const appliedBnccCodes = (appliedSearch.bnccCodigos ?? []).join(",");
+  const selectedBnccCodes = selectedBnccSkills.map((skill) => skill.codigo).join(",");
   const searchPending =
     draftQuery.trim() !== appliedSearch.query.trim() ||
     manualBncc.trim() !== appliedSearch.bncc.trim() ||
-    selectedBnccSkills.length !== (appliedSearch.bnccCodigos?.length ?? 0);
+    selectedBnccCodes !== appliedBnccCodes;
 
   function patchFilter(patch: Partial<QuestionBankFilter>) {
     setFilter((current) => {
@@ -347,6 +349,11 @@ export function BancoQuestoesClient() {
 
   function runQuestionBankSearch() {
     setBnccError("");
+
+    if (!draftQuery.trim() && selectedBnccSkills.length === 0 && !manualBncc.trim()) {
+      setAppliedSearch(EMPTY_APPLIED_SEARCH);
+      return;
+    }
 
     const stageError =
       selectedBnccSkills.length > 0 && filter.etapa !== "todos" && filter.anoSerie !== "todos"

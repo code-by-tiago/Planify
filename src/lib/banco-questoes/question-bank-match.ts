@@ -40,6 +40,31 @@ function temaTokens(topic: string): string[] {
     .filter((word) => word.length > 2);
 }
 
+const PT_TEMA_SUFFIXES = ["icas", "icos", "acao", "icao", "mente", "ica", "ico", "ais", "eis", "es", "as", "os"];
+
+function temaTokenVariants(token: string): string[] {
+  const variants = new Set<string>([token]);
+  for (const suffix of PT_TEMA_SUFFIXES) {
+    if (token.endsWith(suffix) && token.length > suffix.length + 3) {
+      variants.add(token.slice(0, -suffix.length));
+    }
+  }
+  if (token.length >= 7) {
+    variants.add(token.slice(0, 6));
+  }
+  if (token.length >= 6) {
+    variants.add(token.slice(0, 5));
+  }
+  return Array.from(variants).filter((value) => value.length >= 4);
+}
+
+function tokenMatchesHaystack(token: string, haystack: string): boolean {
+  for (const variant of temaTokenVariants(token)) {
+    if (haystack.includes(variant)) return true;
+  }
+  return false;
+}
+
 function bnccComponentArea(code: string): string {
   const match = String(code || "")
     .trim()
@@ -129,7 +154,7 @@ export function scoreQuestionBankMatch(
 
   let tokenHits = 0;
   for (const token of searchTerms) {
-    if (haystack.includes(token)) {
+    if (tokenMatchesHaystack(token, haystack)) {
       score += 3;
       tokenHits += 1;
     }
@@ -241,7 +266,7 @@ function passesBnccFilter(item: QuestionBankItem, filter: QuestionBankFilter): b
 
     if (searchTerms.length > 0) {
       const tokens = searchTerms.flatMap((term) => temaTokens(term));
-      if (tokens.some((token) => haystack.includes(token))) {
+      if (tokens.some((token) => tokenMatchesHaystack(token, haystack))) {
         return true;
       }
       continue;
@@ -282,6 +307,10 @@ function rankPool(
     .map((entry) => ({ ...entry.item, matchScore: entry.matchScore }));
 }
 
+function passesItemQuality(item: QuestionBankItem): boolean {
+  return itemEducationIsConsistent(item);
+}
+
 function basePool(
   items: QuestionBankItem[],
   filter: QuestionBankFilter,
@@ -289,6 +318,7 @@ function basePool(
 ): QuestionBankItem[] {
   return items.filter(
     (item) =>
+      passesItemQuality(item) &&
       passesSourceFilter(item, filter.source) &&
       passesEtapaFilter(item, filter.etapa) &&
       passesComponenteFilter(item, filter.componente) &&
@@ -361,6 +391,7 @@ export function searchQuestionBankItems(
     anoSerie: "todos",
     bncc: "",
     bnccCodigos: undefined,
+    bnccSearchTerms: filter.bnccSearchTerms,
   };
   const relaxedPool = basePool(items, relaxedFilter, { relaxWithinStage: true });
   const related = rankPool(relaxedPool, relaxedFilter, 3).slice(0, 8);

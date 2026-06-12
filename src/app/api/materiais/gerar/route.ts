@@ -25,9 +25,9 @@ async function handlePost(request: NextRequest, _context: { params: Promise<Reco
       raw && typeof raw === "object" ? (raw as MaterialEngineInput) : null,
     resolveTipo: (payload) => String(payload.tipoMaterial || payload.tipo || ""),
     dailyLimitMessage:
-      "Você usou suas gerações profundas de hoje (materiais e planejamentos). A cota reinicia à meia-noite (horário de Brasília). Faça upgrade para Premium e tenha até 5 por dia — ou gere flashcards e resumos, que não contam na cota.",
+      "Você usou suas gerações profundas de hoje (materiais e planejamentos). A cota reinicia à meia-noite (horário de Brasília). Você ainda pode gerar flashcards e resumos, que não contam na cota.",
     insufficientCreditsMessage:
-      "Você não tem créditos suficientes neste ciclo. Faça upgrade do plano para continuar gerando materiais.",
+      "Você não tem créditos suficientes neste ciclo. Aguarde a renovação mensal ou fale com o suporte se precisar de mais volume.",
   });
 
   if (!prepared.ok) return prepared.response;

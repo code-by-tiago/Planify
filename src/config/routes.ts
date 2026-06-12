@@ -31,7 +31,7 @@ export const appRoutes: AppRoute[] = [
   {
     href: "/planos",
     label: "Planos",
-    description: "Planos Professor Pro Mensal e Anual com checkout preparado.",
+    description: "Plano Professor único com checkout preparado.",
     group: "public",
     status: "ready",
   },

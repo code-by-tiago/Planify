@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createStripeCheckoutSession } from "../../../../server/stripe/checkout-service";
 import {
+  isPublicBillingPlanKey,
   normalizeBillingPlanKey,
   type BillingPlanKey,
 } from "../../../../types/billing";
@@ -38,7 +39,7 @@ function redirectToPlansWithError(request: NextRequest, message: string) {
 export async function GET(request: NextRequest) {
   const planKey = getPlanFromRequest(request);
 
-  if (!planKey) {
+  if (!planKey || !isPublicBillingPlanKey(planKey)) {
     return redirectToPlans(request, "missing_plan");
   }
 
@@ -76,13 +77,12 @@ export async function POST(request: NextRequest) {
 
     const planKey = normalizeBillingPlanKey(body.plan || body.tipo);
 
-    if (!planKey) {
+    if (!planKey || !isPublicBillingPlanKey(planKey)) {
       return NextResponse.json(
         {
           success: false,
           error: {
-            message:
-              "Plano inválido. Use monthly, premium, yearly, mensal ou anual.",
+            message: "Plano inválido. Use monthly ou mensal (Planify Professor).",
           },
         },
         { status: 400 },

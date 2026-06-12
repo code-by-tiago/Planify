@@ -52,7 +52,7 @@ export function BnccPaywall({ redirectPath = "/progresso-bncc" }: BnccPaywallPro
             href={plansHref}
             className="pl-hud-btn rounded-full px-6 py-3 text-sm font-black text-slate-900"
           >
-            Ver planos Pro
+            Assinar plano Professor
           </Link>
           <Link
             href="/dashboard"

@@ -136,7 +136,16 @@ export function getDailyDeepGenerationLimit(
   planKey: string | null | undefined,
 ): number {
   const key = String(planKey || "").trim().toLowerCase();
-  if (key === "premium" || key === "professor_premium") return 5;
+  if (
+    key === "monthly" ||
+    key === "mensal" ||
+    key === "professor_pro" ||
+    key === "pro" ||
+    key === "premium" ||
+    key === "professor_premium"
+  ) {
+    return 5;
+  }
   return 3;
 }
 

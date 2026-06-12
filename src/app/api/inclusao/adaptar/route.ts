@@ -18,7 +18,7 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
 const DAILY_LIMIT_MESSAGE =
-  "Você usou suas gerações profundas de hoje. A cota reinicia à meia-noite (horário de Brasília). Faça upgrade para Premium e tenha até 5 por dia.";
+  "Você usou suas gerações profundas de hoje. A cota reinicia à meia-noite (horário de Brasília).";
 
 async function handlePost(request: NextRequest, _context: { params: Promise<Record<string, string>> }) {
   const prepared = await prepareGenerationRequest<InclusaoAiPayload>(request, {
@@ -27,7 +27,7 @@ async function handlePost(request: NextRequest, _context: { params: Promise<Reco
     resolveTipo: () => INCLUSAO_GENERATION_TYPE,
     dailyLimitMessage: DAILY_LIMIT_MESSAGE,
     insufficientCreditsMessage:
-      "Você não tem créditos suficientes neste ciclo. Faça upgrade do plano para continuar gerando.",
+      "Você não tem créditos suficientes neste ciclo. Aguarde a renovação mensal ou fale com o suporte.",
   });
 
   if (!prepared.ok) return prepared.response;

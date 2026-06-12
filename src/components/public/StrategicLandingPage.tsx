@@ -115,14 +115,14 @@ export function StrategicLandingPage({ content }: StrategicLandingPageProps) {
           </h2>
           <p className="mx-auto mt-3 max-w-xl text-sm font-medium leading-7 text-slate-300">
             Acesse os geradores com IA, revise no editor integrado e exporte ao Google Docs.
-            Planos Pro e Premium com créditos transparentes.
+            Plano Professor único por R$ 24,90/mês com uso generoso.
           </p>
           <div className="mt-7 flex flex-wrap justify-center gap-3">
             <Link href="/login" className={ppBtnPrimary}>
               Criar conta
             </Link>
             <Link href="/planos" className={ppBtnGhost}>
-              Comparar planos
+              Ver plano Professor
             </Link>
           </div>
         </div>

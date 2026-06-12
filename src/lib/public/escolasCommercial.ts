@@ -13,11 +13,6 @@ export type InstitutionalPlan = {
   key: string;
   name: string;
   teacherLimit: string;
-  priceLabel: string;
-  priceNote: string;
-  /** Ex.: "≈ R$ 83/professor/mês (lotação cheia)" */
-  pricePerTeacherNote: string;
-  licenseNote: string;
   description: string;
   highlighted?: boolean;
   features: string[];
@@ -28,10 +23,6 @@ export const institutionalPlans: InstitutionalPlan[] = [
     key: "pequena",
     name: "Pequena Escola",
     teacherLimit: "Até 15 professores",
-    priceLabel: "R$ 14.900",
-    priceNote: "/ ano",
-    pricePerTeacherNote: "≈ R$ 83/professor/mês com até 15 licenças",
-    licenseNote: "Cada professor inclui Planify Pro (geradores IA, editor e exportação).",
     description:
       "Ideal para escolas de ensino básico com equipe docente enxuta e necessidade de visibilidade pedagógica centralizada.",
     features: [
@@ -46,10 +37,6 @@ export const institutionalPlans: InstitutionalPlan[] = [
     key: "media",
     name: "Média Escola",
     teacherLimit: "Até 40 professores",
-    priceLabel: "R$ 34.900",
-    priceNote: "/ ano",
-    pricePerTeacherNote: "≈ R$ 73/professor/mês com até 40 licenças",
-    licenseNote: "Cada professor inclui Planify Pro (geradores IA, editor e exportação).",
     description:
       "Para instituições em expansão que precisam escalar acompanhamento pedagógico sem aumentar a burocracia da coordenação.",
     highlighted: true,
@@ -65,15 +52,11 @@ export const institutionalPlans: InstitutionalPlan[] = [
     key: "grande",
     name: "Grande Escola",
     teacherLimit: "40+ professores",
-    priceLabel: "Sob consulta",
-    priceNote: "anual",
-    pricePerTeacherNote: "Proposta personalizada conforme volume de licenças",
-    licenseNote: "Licenças Pro por professor + portal gestor e conformidade BNCC.",
     description:
       "Solução corporativa para redes e colégios de grande porte, com volume elevado de licenças e integração sob medida.",
     features: [
       "Tudo do plano Média Escola",
-      "Volume ilimitado de professores",
+      "Volume elevado de licenças docentes",
       "Acordo comercial personalizado",
       "Implementação e treinamento",
       "Contato direto com consultor sênior",

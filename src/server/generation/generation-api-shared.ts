@@ -45,7 +45,7 @@ export type GenerationPreparedRequest<TPayload = unknown> =
     };
 
 const DEFAULT_DAILY_LIMIT_MESSAGE =
-  "Você usou suas gerações profundas de hoje. A cota reinicia à meia-noite (horário de Brasília). Faça upgrade para Premium e tenha até 5 por dia — ou gere flashcards e resumos, que não contam na cota.";
+  "Você usou suas gerações profundas de hoje. A cota reinicia à meia-noite (horário de Brasília). Você ainda pode gerar flashcards e resumos, que não contam na cota.";
 
 export type PrepareGenerationOptions<TPayload = unknown> = {
   skipDailyQuota?: boolean;
@@ -130,7 +130,7 @@ export async function prepareGenerationRequest<TPayload>(
         response: jsonGenerationError(
           "insufficient_credits",
           options.insufficientCreditsMessage ??
-            "Você não tem créditos suficientes neste ciclo. Faça upgrade do plano para continuar.",
+            "Você não tem créditos suficientes neste ciclo. Aguarde a renovação mensal ou fale com o suporte.",
           402,
           { meta: { balance: spend.balance, cost: spend.cost } },
         ),

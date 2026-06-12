@@ -16,73 +16,75 @@ export type BillingPlan = {
   features: string[];
 };
 
+/** Plano único exibido na vitrine (/planos). */
 export const billingPlans: BillingPlan[] = [
   {
     key: "monthly",
     stripePlanKey: "professor_pro",
-    name: "Professor Pro Mensal",
+    name: "Planify Professor",
     description:
-      "Ideal para professores que querem criar planejamentos, atividades e materiais com IA durante o mês.",
-    priceLabel: "R$ 49,90",
+      "Um único plano com tudo que você precisa: geradores com IA, planejamentos BNCC, editor, exportação e biblioteca premium.",
+    priceLabel: "R$ 24,90",
     recurrenceLabel: "por mês",
-    creditsLabel: "~35 materiais completos/mês",
-    creditsPerCycle: 350,
-    envPriceKeys: ["STRIPE_PRICE_PRO_MONTHLY", "STRIPE_PRICE_PRO_MENSAL"],
-    ctaLabel: "Assinar Pro mensal",
+    creditsLabel: "Uso generoso — ideal para o ano letivo",
+    creditsPerCycle: 800,
+    envPriceKeys: [
+      "STRIPE_PRICE_PRO_MONTHLY",
+      "STRIPE_PRICE_PRO_MENSAL",
+      "STRIPE_PRICE_FOUNDING_MONTHLY",
+    ],
+    ctaLabel: "Assinar agora",
+    badgeLabel: "Preço de lançamento",
+    highlighted: true,
     features: [
-      "Até 3 gerações profundas por dia (materiais + planejamentos)",
-      "~35 materiais completos por mês (provas, apostilas, planos)",
-      "Gerador IA de planejamentos",
+      "Até 5 gerações profundas por dia (materiais + planejamentos)",
+      "Créditos generosos por mês para provas, apostilas e planos",
+      "Todas as ferramentas com IA e planejamentos BNCC",
       "Editor, histórico e exportação Google Docs/PDF",
       "Biblioteca premium e marketplace",
+      "Uso pessoal com política de uso justo",
     ],
   },
+];
+
+/** Planos legados — assinantes ativos e price IDs antigos no Stripe. */
+const legacyBillingPlans: BillingPlan[] = [
   {
     key: "premium",
     stripePlanKey: "professor_premium",
     name: "Professor Premium",
-    description:
-      "Plano mais completo para professores com alta demanda de criação, apostilas, provas e materiais extensos.",
+    description: "Plano legado para assinantes Premium.",
     priceLabel: "R$ 89,90",
     recurrenceLabel: "por mês",
     creditsLabel: "~80 materiais completos/mês",
     creditsPerCycle: 800,
     envPriceKeys: ["STRIPE_PRICE_PREMIUM_MONTHLY", "STRIPE_PRICE_PREMIUM_MENSAL"],
     ctaLabel: "Assinar Premium",
-    badgeLabel: "Mais completo",
-    highlighted: true,
-    features: [
-      "Até 5 gerações profundas por dia (materiais + planejamentos)",
-      "~80 materiais completos por mês",
-      "Ideal para apostilas, provas e listas em volume",
-      "Gerador IA de planejamentos",
-      "Editor, histórico e exportação Google Docs/PDF",
-      "Biblioteca premium e marketplace",
-    ],
+    features: [],
   },
   {
     key: "yearly",
     stripePlanKey: "professor_pro_anual",
     name: "Professor Pro Anual",
-    description:
-      "Melhor custo-benefício para usar o Planify durante todo o ano letivo com créditos anuais.",
+    description: "Plano legado anual.",
     priceLabel: "R$ 479,90",
     recurrenceLabel: "por ano",
     creditsLabel: "~450 materiais completos/ano",
     creditsPerCycle: 4500,
     envPriceKeys: ["STRIPE_PRICE_PRO_YEARLY", "STRIPE_PRICE_PRO_ANUAL"],
     ctaLabel: "Assinar anual",
-    badgeLabel: "Melhor anual",
-    features: [
-      "Até 3 gerações profundas por dia (materiais + planejamentos)",
-      "~450 materiais completos no ano letivo",
-      "Melhor custo-benefício do Planify",
-      "Gerador IA de planejamentos",
-      "Editor, histórico e exportação Google Docs/PDF",
-      "Biblioteca premium e marketplace",
-    ],
+    features: [],
   },
 ];
+
+const allBillingPlans: BillingPlan[] = [...billingPlans, ...legacyBillingPlans];
+
+export function isPublicBillingPlanKey(
+  key: string | null | undefined,
+): key is BillingPlanKey {
+  const normalized = normalizeBillingPlanKey(key);
+  return Boolean(normalized && billingPlans.some((plan) => plan.key === normalized));
+}
 
 export function getBillingPlan(key: string | null | undefined): BillingPlan | null {
   const normalizedKey = normalizeBillingPlanKey(key);
@@ -91,7 +93,7 @@ export function getBillingPlan(key: string | null | undefined): BillingPlan | nu
     return null;
   }
 
-  return billingPlans.find((plan) => plan.key === normalizedKey) || null;
+  return allBillingPlans.find((plan) => plan.key === normalizedKey) || null;
 }
 
 /** Mapeia price_id do Stripe (env) para a chave interna do plano. */
@@ -102,7 +104,7 @@ export function resolvePlanKeyFromPriceId(
     return null;
   }
 
-  for (const plan of billingPlans) {
+  for (const plan of allBillingPlans) {
     for (const envKey of plan.envPriceKeys) {
       const configured = process.env[envKey];
       if (configured && configured === priceId) {
@@ -128,7 +130,9 @@ export function normalizeBillingPlanKey(
     normalized === "mensal" ||
     normalized === "professor_pro" ||
     normalized === "pro" ||
-    normalized === "pro_mensal"
+    normalized === "pro_mensal" ||
+    normalized === "founding" ||
+    normalized === "professor"
   ) {
     return "monthly";
   }

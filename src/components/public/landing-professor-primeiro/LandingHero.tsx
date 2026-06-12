@@ -35,7 +35,7 @@ export function LandingHero() {
 
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
             <Link href="/planos" className={ppBtnPrimary}>
-              Ver planos Pro, Premium e anual
+              Assinar por R$ 24,90/mês
             </Link>
             <Link href="/#recursos" className={ppBtnSecondary}>
               Conhecer recursos

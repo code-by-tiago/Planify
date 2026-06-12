@@ -227,8 +227,8 @@ export function LoginPageClient({ initialSearchParams }: LoginPageClientProps) {
               ) : (
                 <>
                   O cadastro é gratuito; o acesso aos geradores premium exige
-                  um plano ativo (Pro ou Premium). Após criar a conta, você
-                  escolhe o plano e libera créditos claros por ciclo.
+                  o plano Professor (R$ 24,90/mês). Após criar a conta, você
+                  assina e libera o acesso completo.
                 </>
               )}
             </p>

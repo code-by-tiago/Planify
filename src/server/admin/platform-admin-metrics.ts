@@ -45,7 +45,7 @@ export type AdminDashboardMetrics = {
 };
 
 const PLAN_MRR_BRL: Record<string, number> = {
-  monthly: 49.9,
+  monthly: 24.9,
   premium: 89.9,
   yearly: 479.9 / 12,
 };

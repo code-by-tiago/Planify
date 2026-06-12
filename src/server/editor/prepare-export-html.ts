@@ -35,7 +35,45 @@ function strengthenGameVisuals(root: Element) {
   }
 
   for (const table of root.querySelectorAll("table.planify-game-table")) {
-    table.setAttribute("style", "width:auto;border-collapse:collapse;table-layout:fixed;");
+    const isCrosswordOrWordsearch =
+      table.classList.contains("planify-game-table--crossword") ||
+      table.classList.contains("planify-game-table--wordsearch");
+    const isBingo = table.classList.contains("planify-game-table--bingo");
+    const isGridGame = isCrosswordOrWordsearch || isBingo;
+
+    table.setAttribute(
+      "style",
+      isGridGame
+        ? isBingo
+          ? "width:100%;border-collapse:separate;border-spacing:0;table-layout:fixed;"
+          : "width:auto;border-collapse:separate;border-spacing:0;table-layout:fixed;"
+        : "width:auto;border-collapse:collapse;table-layout:fixed;",
+    );
+
+    if (isBingo) {
+      for (const cell of table.querySelectorAll("td, th")) {
+        const isHeader = cell.tagName.toLowerCase() === "th";
+        cell.setAttribute(
+          "style",
+          isHeader
+            ? "box-shadow:inset 0 0 0 1px #111827;border:none;background:#e0f2fe;"
+            : "box-shadow:inset 0 0 0 1px #111827;border:none;",
+        );
+      }
+      continue;
+    }
+
+    if (!isCrosswordOrWordsearch) continue;
+
+    for (const cell of table.querySelectorAll("td")) {
+      const isBlock = cell.classList.contains("planify-game-cell--block");
+      cell.setAttribute(
+        "style",
+        isBlock
+          ? "box-shadow:inset 0 0 0 1px #94a3b8;border:none;background:#f1f5f9;"
+          : "box-shadow:inset 0 0 0 1px #111827;border:none;",
+      );
+    }
   }
 }
 

@@ -161,6 +161,8 @@ const prepared = exportSvc.resolvePreparedExportBody(
   "pdf-document",
 );
 assert.match(prepared, /planify-game-table--crossword/);
+assert.match(prepared, /box-shadow:inset 0 0 0 1px #111827/);
+assert.match(gamePdfHtml, /box-shadow: inset 0 0 0 1px #111827/);
 
 // --- Rotas API existem ---
 for (const route of [

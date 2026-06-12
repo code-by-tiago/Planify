@@ -210,7 +210,7 @@ export async function signUpAndGoToPlans(params: {
     premium: false,
     redirectTo: "/planos?cadastro=ok",
     message:
-      "Conta criada! Na próxima tela, escolha Pro ou Premium para liberar os geradores IA.",
+      "Conta criada! Na próxima tela, assine o plano Professor para liberar os geradores IA.",
     accessToken: data.session?.access_token,
   };
 }

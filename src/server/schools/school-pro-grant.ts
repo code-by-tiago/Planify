@@ -2,7 +2,7 @@ import { getBillingPlan, normalizeBillingPlanKey } from "@/types/billing";
 import { getSupabaseAdminClient } from "../supabase/admin-client";
 import { grantPlanCredits } from "../credits/credit-service";
 
-/** Mesma chave e cotas do Professor Pro mensal (Stripe) — sem Premium/ilimitado. */
+/** Mesma chave e cotas do plano Professor mensal (Stripe). */
 const SCHOOL_INVITE_PRO_PLAN_KEY = "monthly";
 
 async function userAlreadyHasPaidAccess(userId: string): Promise<boolean> {
@@ -73,7 +73,7 @@ async function userAlreadyHasPaidAccess(userId: string): Promise<boolean> {
 
 /**
  * Concede Pro via convite escolar quando o usuário ainda não tem plano pago.
- * Créditos e cota diária profunda seguem o plano `monthly` (350/ciclo, 3/dia).
+ * Créditos e cota diária profunda seguem o plano `monthly` (800/ciclo, 5/dia).
  */
 export async function grantSchoolProPlan(userId: string): Promise<boolean> {
   if (await userAlreadyHasPaidAccess(userId)) {

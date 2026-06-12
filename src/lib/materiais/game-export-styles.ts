@@ -30,6 +30,16 @@ export const PLANIFY_GAME_EXPORT_CSS = `
     page-break-inside: avoid;
     break-inside: avoid;
   }
+  /*
+   * Cruzadinha e caça-palavras: border-collapse em células 28–30px quebra linhas
+   * no PDF do Chromium (Puppeteer). box-shadow inset desenha a grade por célula.
+   */
+  .planify-game-table--crossword,
+  .planify-game-table--wordsearch,
+  .planify-game-table--bingo {
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+  }
   .planify-game-table td,
   .planify-game-table th {
     box-sizing: border-box;
@@ -51,6 +61,12 @@ export const PLANIFY_GAME_EXPORT_CSS = `
     line-height: 1 !important;
     position: relative;
   }
+  .planify-game-table--crossword .planify-game-cell--letter,
+  .planify-game-table--wordsearch .planify-game-cell--letter {
+    border: none !important;
+    box-shadow: inset 0 0 0 1px #111827 !important;
+    -webkit-box-shadow: inset 0 0 0 1px #111827 !important;
+  }
   .planify-game-cell--block {
     width: 28px !important;
     min-width: 28px !important;
@@ -60,6 +76,11 @@ export const PLANIFY_GAME_EXPORT_CSS = `
     padding: 0 !important;
     border: 1px solid #e2e8f0 !important;
     background: #f1f5f9 !important;
+  }
+  .planify-game-table--crossword .planify-game-cell--block {
+    border: none !important;
+    box-shadow: inset 0 0 0 1px #94a3b8 !important;
+    -webkit-box-shadow: inset 0 0 0 1px #94a3b8 !important;
   }
   .planify-game-cell-number {
     position: absolute;
@@ -170,7 +191,9 @@ export const PLANIFY_GAME_EXPORT_CSS = `
     width: 100% !important;
   }
   .planify-game-table--bingo th {
-    border: 1px solid #111827 !important;
+    border: none !important;
+    box-shadow: inset 0 0 0 1px #111827 !important;
+    -webkit-box-shadow: inset 0 0 0 1px #111827 !important;
     padding: 8px !important;
     background: #e0f2fe !important;
     font-weight: 900 !important;
@@ -178,7 +201,9 @@ export const PLANIFY_GAME_EXPORT_CSS = `
   }
   .planify-game-table--bingo td {
     height: 68px !important;
-    border: 1px solid #111827 !important;
+    border: none !important;
+    box-shadow: inset 0 0 0 1px #111827 !important;
+    -webkit-box-shadow: inset 0 0 0 1px #111827 !important;
     text-align: center !important;
     vertical-align: middle !important;
     font-size: 11px !important;

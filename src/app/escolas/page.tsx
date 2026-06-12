@@ -143,13 +143,12 @@ export default function EscolasPage() {
         <div className="max-w-2xl">
           <p className={ppEyebrow}>Planos Institucionais</p>
           <h2 className={`${ppTitle} mt-4 text-3xl sm:text-4xl`}>
-            Investimento anual{" "}
-            <span className={ppTitleAccent}>conforme o porte da instituição</span>
+            Solução sob medida{" "}
+            <span className={ppTitleAccent}>para o porte da sua instituição</span>
           </h2>
           <p className="mt-4 text-base font-medium leading-7 text-slate-600">
             Planos corporativos com licenciamento por professor, portal do gestor e suporte
-            comercial dedicado. Valores anuais em reais — proposta formal mediante contato com
-            nossa equipe.
+            comercial dedicado. Valores e proposta formal mediante contato com nossa equipe.
           </p>
         </div>
 
@@ -172,18 +171,12 @@ export default function EscolasPage() {
               </p>
               <p className="mt-2 text-sm font-bold text-slate-500">{plan.teacherLimit}</p>
 
-              <div className="mt-5 flex flex-wrap items-end gap-2">
-                <span className="text-4xl font-black tracking-tight text-slate-950">
-                  {plan.priceLabel}
-                </span>
-                <span className="pb-1.5 text-sm font-semibold text-slate-500">
-                  {plan.priceNote}
-                </span>
+              <div className="mt-5 rounded-xl border border-cyan-100 bg-cyan-50/80 px-4 py-3">
+                <p className="text-lg font-black text-slate-950">Sob consulta</p>
+                <p className="mt-1 text-xs font-medium leading-5 text-slate-600">
+                  Proposta personalizada conforme número de licenças e necessidades da escola.
+                </p>
               </div>
-              <p className="mt-2 text-xs font-semibold text-cyan-800">
-                {plan.pricePerTeacherNote}
-              </p>
-              <p className="mt-1 text-xs font-medium text-slate-500">{plan.licenseNote}</p>
 
               <p className="mt-5 text-sm font-medium leading-6 text-slate-600">
                 {plan.description}

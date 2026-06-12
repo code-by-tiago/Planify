@@ -22,7 +22,7 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
 const DAILY_LIMIT_MESSAGE =
-  "Você usou suas gerações profundas de hoje. A cota reinicia à meia-noite (horário de Brasília). Faça upgrade para Premium e tenha até 5 por dia — ou gere flashcards e resumos, que não contam na cota.";
+  "Você usou suas gerações profundas de hoje. A cota reinicia à meia-noite (horário de Brasília). Você ainda pode gerar flashcards e resumos, que não contam na cota.";
 
 async function handlePost(request: NextRequest, _context: { params: Promise<Record<string, string>> }) {
   const auth = await requireApiPremiumAccess(request);

@@ -1,3 +1,4 @@
+import { assessUnifiedQualityGate } from "@/lib/materiais/unified-quality-gate";
 import { resolvePreparedExportBody } from "../export/editor-html-export-service";
 import { buildNativeHtmlDocx } from "../docx/simple-docx-builder";
 import {
@@ -28,6 +29,33 @@ function safeFilename(value: string): string {
 function hasPlanningMatrix(payload: OfficialPlanningPayload): boolean {
   const conteudos = payload.matrizPlanejamento?.conteudos;
   return Array.isArray(conteudos) && conteudos.length > 0;
+}
+
+function assertPlanningExportQualityGate(
+  payload: OfficialPlanningPayload | Record<string, unknown> | null | undefined,
+): void {
+  if (!payload || typeof payload !== "object") return;
+
+  const record = payload as Record<string, unknown>;
+  const scoreRaw = record._planifyQualityScore;
+  const issuesRaw = record._planifyQualityIssues;
+  const hasScore = typeof scoreRaw === "number";
+  const issues = Array.isArray(issuesRaw)
+    ? issuesRaw.map((item) => String(item)).filter(Boolean)
+    : [];
+
+  if (!hasScore && issues.length === 0) return;
+
+  const gate = assessUnifiedQualityGate({
+    qualityScore: hasScore ? scoreRaw : undefined,
+    qualityIssues: issues,
+  });
+
+  if (!gate.pass) {
+    throw new Error(
+      `${gate.message} Corrija a matriz ou use Elevar qualidade antes de exportar ao Google.`,
+    );
+  }
 }
 
 function normalizePlanningPayload(
@@ -74,6 +102,8 @@ function buildDocxBuffer(
       documentType,
       documentId,
     );
+
+    assertPlanningExportQualityGate(officialPayload);
 
     if (
       isTrimestralPlanningDocumentType(documentType) &&

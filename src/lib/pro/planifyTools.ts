@@ -92,7 +92,7 @@ export const toolCategories: {
   icon: PlanifyIconName;
 }[] = [
   { id: "todos", label: "Todos", icon: "spark" },
-  { id: "planejamento", label: "Planejamento", icon: "clipboard" },
+  { id: "planejamento", label: "Planos de aula", icon: "clipboard" },
   { id: "preparar-aulas", label: "Preparar aulas", icon: "presentation" },
   { id: "avaliacoes", label: "Avaliações", icon: "listChecks" },
   { id: "engajar", label: "Engajar alunos", icon: "puzzle" },
@@ -147,10 +147,10 @@ export const planifyTools: PlanifyTool[] = [
   },
   {
     id: "plano-aula",
-    title: "Plano de Aula",
+    title: "Plano de Aula (1 encontro)",
     shortTitle: "Plano de Aula",
     description:
-      "Objetivos, metodologia, materiais e avaliação em documento editável — habilidades BNCC sugeridas por etapa e componente.",
+      "Um encontro de aula — objetivos, metodologia, materiais e avaliação. Para planejamento escolar anual ou trimestral, use Planejamentos.",
     category: "planejamento",
     href: dashboardToolHref("plano-aula"),
     icon: "clipboard",

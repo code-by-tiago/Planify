@@ -140,6 +140,13 @@ export type LessonPlanStep = {
   resources: string[];
 };
 
+/** Tabela cronometrada (plano de aula, sequência, projeto). */
+export type ScheduleTable = {
+  title: string;
+  headers: string[];
+  rows: string[][];
+};
+
 export type MaterialEngineResponse = {
   title: string;
   subtitle: string;
@@ -205,4 +212,6 @@ export type MaterialEngineResponse = {
   lessonPlan?: {
     steps: LessonPlanStep[];
   };
+  /** Cronogramas em tabela HTML — prioridade sobre lessonPlan.steps na renderização. */
+  scheduleTables?: ScheduleTable[];
 };

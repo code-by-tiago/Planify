@@ -1,3 +1,7 @@
+/**
+ * @deprecated Não usado em produção — planejamentos usam somente modelos oficiais
+ * (modelo-anual.docx / modelo-trimestral.docx). Mantido para scripts de diagnóstico.
+ */
 import { deflateRawSync, inflateRawSync } from "node:zlib";
 import type { PlanningMatrixItem, PlanningSkill } from "./planning-ai-service";
 import type { OfficialPlanningPayload } from "./official-planning-docx";

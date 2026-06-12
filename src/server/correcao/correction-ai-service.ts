@@ -1,3 +1,4 @@
+import { appendPedagogicalGuardrails } from "@/lib/materiais/pedagogical-guardrails";
 import type { CorrectionAiOutput, TeacherCorrectionProfile } from "@/types/correction";
 import { generateGeminiJSON } from "../ai/gemini-client";
 
@@ -13,12 +14,12 @@ export type CorrectionAiPayload = {
   teacherProfile?: TeacherCorrectionProfile;
 };
 
-const SYSTEM_INSTRUCTION = `Você é um assistente pedagógico brasileiro especializado em correção formativa (estilo Teachy).
+const SYSTEM_INSTRUCTION = appendPedagogicalGuardrails(`Você é um assistente pedagógico brasileiro especializado em correção formativa (estilo Teachy).
 Avalie a resposta do estudante com base na rubrica e no gabarito quando fornecidos.
 Devolutiva curta e acionável: feedbackGeral em no máximo 3 frases; comentários por critério em 1–2 frases.
 Inclua nota numérica, percentual e sugestão breve para o professor usar em sala.
 Seja justo, específico e útil — sem texto genérico ou repetitivo.
-Responda SOMENTE em JSON válido, sem markdown.`;
+Responda SOMENTE em JSON válido, sem markdown.`);
 
 function buildPrompt(payload: CorrectionAiPayload): string {
   const profile = payload.teacherProfile;

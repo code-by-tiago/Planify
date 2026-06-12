@@ -13,6 +13,7 @@ import {
   finalizeGenerationFailure,
   logGenerationSuccessEvent,
 } from "@/server/generation/generation-api-shared";
+import { UnifiedQualityGateError } from "@/lib/materiais/unified-quality-gate";
 import { jsonPlanningError } from "@/server/generation/generation-api-contract";
 import { withOperationalCapture } from "@/server/telemetry/with-operational-capture";
 
@@ -138,6 +139,26 @@ async function handlePost(request: NextRequest, _context: { params: Promise<Reco
         : existingAlertas,
     });
   } catch (error) {
+    if (error instanceof UnifiedQualityGateError) {
+      if (chargedDeepDaily && user?.id) {
+        await refundDeepGeneration(user.id);
+      }
+      await finalizeGenerationFailure(user?.id, tipo, charge, {
+        eventType: "planning_generation_failed",
+        errorCode: "quality_gate_failed",
+        metadata: {
+          qualityScore: error.qualityScore,
+          qualityIssues: error.qualityIssues,
+        },
+      });
+      return jsonPlanningError(error.message, 422, "server_error", {
+        code: "quality_gate_failed",
+        qualityScore: error.qualityScore,
+        qualityIssues: error.qualityIssues,
+        retryable: true,
+      });
+    }
+
     await finalizeGenerationFailure(user?.id, tipo, charge, {
       eventType: "planning_generation_failed",
       errorCode: "exception",

@@ -1271,6 +1271,8 @@ export function PlanejamentosClient() {
                         form={form}
                         mode="anual"
                         matriz={generatedPlanning}
+                        qualityScore={qualityScore}
+                        qualityIssues={qualityIssues}
                         onStatus={(message) => setStatus(message)}
                       />
                     </div>
@@ -1293,6 +1295,8 @@ export function PlanejamentosClient() {
                             mode="trimestral"
                             trimestre={trimestre}
                             matriz={trimPlan}
+                            qualityScore={qualityScore}
+                            qualityIssues={qualityIssues}
                             onStatus={(message) => setStatus(message)}
                           />
                         </div>
@@ -1526,12 +1530,12 @@ export function PlanejamentosClient() {
                 Modelo oficial
               </p>
               <h3 className="mt-3 text-lg font-black text-slate-950">
-                Exportação Google Docs com templates da escola
+                Exportação Google Docs com modelos oficiais
               </h3>
               <p className="mt-2 text-sm leading-7 text-slate-600">
                 O Planify preenche exclusivamente os modelos oficiais anual e trimestral
-                validados. A matriz gerada pela IA é injetada nesses arquivos — sem layout
-                genérico — para manter o padrão pedagógico da rede.
+                do Planify. A matriz gerada pela IA é injetada nesses arquivos — sem modelos
+                customizados nem layout genérico.
               </p>
             </div>
 
@@ -1628,6 +1632,8 @@ export function PlanejamentosClient() {
                     mode="trimestral"
                     trimestre={Number(form.trimestre || 1)}
                     matriz={generatedPlanning}
+                    qualityScore={qualityScore}
+                    qualityIssues={qualityIssues}
                     onStatus={(message) => setStatus(message)}
                   />
                 </div>
@@ -1722,6 +1728,8 @@ export function PlanejamentosClient() {
                         form={form}
                         mode="anual"
                         matriz={generatedPlanning}
+                        qualityScore={qualityScore}
+                        qualityIssues={qualityIssues}
                         onStatus={(message) => setStatus(message)}
                       />
                     </div>
@@ -1744,6 +1752,8 @@ export function PlanejamentosClient() {
                             mode="trimestral"
                             trimestre={trimestre}
                             matriz={trimPlan}
+                            qualityScore={qualityScore}
+                            qualityIssues={qualityIssues}
                             onStatus={(message) => setStatus(message)}
                           />
                         </div>

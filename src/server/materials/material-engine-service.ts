@@ -6,6 +6,7 @@ import { isGenericEducationalText } from "@/lib/materiais/material-semantic-qual
 import {
   normalizeQuestionOptions,
   trimTeachyStatement,
+  renderCronogramaTables,
   renderGabaritoTable,
   renderQuestionCard,
   wrapProfessionalDocument,
@@ -16,11 +17,12 @@ import {
   usesPlanifyMaterialEngine,
 } from "./planify-material-routing";
 import { shouldRepairExamAfterEngine } from "./question-bank-first-policy";
-import { getMaterialEngineSchema } from "./material-engine-schemas";
 import {
-  buildMaterialEnginePrompt,
-  buildMaterialEngineSystemInstruction,
-} from "./material-engine-prompts";
+  materialLayoutToEngineResponse,
+  toPromptEngineInput,
+} from "./material-layout-adapter";
+import { getMaterialLayoutSchema } from "./material-layout-schema";
+import { buildPromptEngine } from "./promptEngine";
 import {
   buildQualityRetryPrompt,
   getEngineOutputIssues,
@@ -56,6 +58,8 @@ import {
   consolidateSlideGabarito,
   orderSlidesPedagogically,
 } from "./slide-pedagogy";
+import type { MaterialLayout } from "./types";
+import { validateMaterialLayout } from "./validator";
 
 const CRITICAL_QUALITY_TYPES = new Set<MaterialEngineType>([
   "prova",
@@ -589,25 +593,6 @@ function renderMindMap(response: MaterialEngineResponse): string {
   `;
 }
 
-function renderLessonPlan(response: MaterialEngineResponse): string {
-  const steps = response.lessonPlan?.steps ?? [];
-  if (!steps.length) return "";
-
-  const body = steps
-    .map(
-      (step) => `
-        <article class="planify-etapa">
-          <h3>${escapeHtml(step.stage)}${step.duration ? ` (${escapeHtml(step.duration)})` : ""}</h3>
-          ${step.description ? `<p>${escapeHtml(step.description)}</p>` : ""}
-          ${step.resources.length ? `<p><em>Recursos:</em></p>${asList(step.resources)}` : ""}
-        </article>
-      `,
-    )
-    .join("");
-
-  return `<section><h2>Etapas da aula</h2>${body}</section>`;
-}
-
 function conciseGabaritoAnswer(text: string, maxLen = 180): string {
   const trimmed = String(text || "").replace(/\s+/g, " ").trim();
   if (!trimmed) return "";
@@ -693,9 +678,17 @@ function renderHtml(response: MaterialEngineResponse, ctx?: RenderContext): stri
                   renderSections(response, ctx),
                   renderActivities(response),
                 ]
-              : [
+              : tipo === "plano-aula" || tipo === "sequencia" || tipo === "projeto"
+                ? [
+                    renderSections(response, ctx),
+                    renderCronogramaTables(response),
+                    renderActivities(response),
+                    renderAnswerKey(response, ctx),
+                    renderTeacherNotes(response),
+                  ]
+                : [
                   renderSections(response, ctx),
-                  renderLessonPlan(response),
+                  renderCronogramaTables(response),
                   renderMindMap(response),
                   renderSlides(response),
                   renderGame(response),
@@ -889,6 +882,25 @@ function normalizeOutput(
             : [],
         }
       : undefined,
+    scheduleTables: Array.isArray(response.scheduleTables)
+      ? response.scheduleTables
+          .map((table) => ({
+            title: String(table?.title || "Cronograma").trim(),
+            headers: Array.isArray(table?.headers)
+              ? table.headers.map((header) => String(header).trim()).filter(Boolean)
+              : [],
+            rows: Array.isArray(table?.rows)
+              ? table.rows
+                  .map((row) =>
+                    Array.isArray(row)
+                      ? row.map((cell) => String(cell ?? "").trim())
+                      : [],
+                  )
+                  .filter((row) => row.some((cell) => cell.length > 0))
+              : [],
+          }))
+          .filter((table) => table.headers.length > 0 && table.rows.length > 0)
+      : undefined,
     html:
       usesPlanifyMaterialEngine(request.tipoMaterial) ||
       typeof response.html !== "string"
@@ -1021,11 +1033,11 @@ export async function generateMaterialByEngine(input: MaterialEngineInput) {
     };
   }
 
-  const schema = getMaterialEngineSchema(request.tipoMaterial);
-  const systemInstruction = buildMaterialEngineSystemInstruction(
-    request.tipoMaterial,
-  );
   const modelTier = getModelTierForMaterialRequest(request.tipoMaterial, request);
+
+  const promptInput = toPromptEngineInput(request);
+  const { systemInstruction, userPrompt } = buildPromptEngine(promptInput);
+  const schema = getMaterialLayoutSchema();
   let outlineBlock = "";
 
   if (modelTier === "advanced" && usesPedagogicalOutline(request.tipoMaterial)) {
@@ -1036,7 +1048,9 @@ export async function generateMaterialByEngine(input: MaterialEngineInput) {
     }
   }
 
-  const basePrompt = buildMaterialEnginePrompt(request, outlineBlock);
+  const basePrompt = outlineBlock
+    ? `${userPrompt}\n\n${outlineBlock}`
+    : userPrompt;
   const maxOutputTokens = maxOutputTokensFor(request.tipoMaterial);
 
   let activePrompt = basePrompt;
@@ -1053,7 +1067,7 @@ export async function generateMaterialByEngine(input: MaterialEngineInput) {
         request.elevarQualidade || attempt > 0
           ? "advanced"
           : "default";
-      const generated = await generateGeminiJSON<Partial<MaterialEngineResponse>>({
+      const layoutRaw = await generateGeminiJSON<MaterialLayout>({
         systemInstruction,
         prompt: activePrompt,
         cacheProfile: `material-engine:${request.tipoMaterial}`,
@@ -1064,6 +1078,19 @@ export async function generateMaterialByEngine(input: MaterialEngineInput) {
         responseSchema: schema,
       });
 
+      const layoutIssues = validateMaterialLayout(promptInput, layoutRaw);
+      if (
+        layoutIssues.length &&
+        attempt < maxAttempts - 1 &&
+        !isPastGenerationDeadline()
+      ) {
+        activePrompt = `${basePrompt}\n\n${buildQualityRetryPrompt(request, layoutIssues, {
+          teachyDepth: attempt >= 1,
+        })}`;
+        continue;
+      }
+
+      const generated = materialLayoutToEngineResponse(layoutRaw, request);
       const normalized = normalizeOutput(request, generated);
 
       if (request.tipoMaterial === "slides" && normalized.slides?.length) {
@@ -1083,7 +1110,7 @@ export async function generateMaterialByEngine(input: MaterialEngineInput) {
         });
       }
 
-      const issues = getEngineOutputIssues(request, normalized);
+      const issues = [...layoutIssues, ...getEngineOutputIssues(request, normalized)];
 
       if (
         issues.length &&

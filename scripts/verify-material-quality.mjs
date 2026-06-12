@@ -105,8 +105,26 @@ const {
 const { getEngineOutputIssues } = loadTsModule(
   "src/server/materials/material-engine-quality.ts",
 );
+const { DISPLAY_FORMAT_CONTRACT } = loadTsModule(
+  "src/server/materials/prova-engine-contract.ts",
+);
+const {
+  containsMarkdownArtifacts,
+  collectStructuredDisplayIssues,
+  buildDisplayFormatContractForType,
+} = loadTsModule("src/server/materials/structured-display-contract.ts");
 const { normalizeMaterialEngineRequest } = loadTsModule(
   "src/server/materials/material-engine-validation.ts",
+);
+const { materialLayoutToEngineResponse } = loadTsModule(
+  "src/server/materials/material-layout-adapter.ts",
+);
+const { validateMaterialLayout, containsForbiddenChitchat } = loadTsModule(
+  "src/server/materials/validator.ts",
+);
+const { TIPO_FERRAMENTA_VALUES } = loadTsModule("src/server/materials/types.ts");
+const { getMaterialLayoutSchema } = loadTsModule(
+  "src/server/materials/material-layout-schema.ts",
 );
 const { resolveImagenModel } = loadTsModule("src/server/ai/imagen-client.ts");
 
@@ -348,6 +366,69 @@ function testImagenModelResolution() {
   }
 }
 
+function testStructuredDisplayContract() {
+  assert.ok(
+    DISPLAY_FORMAT_CONTRACT.includes("exam.questions"),
+    "DISPLAY_FORMAT_CONTRACT deve mapear questões para exam.questions",
+  );
+  assert.ok(
+    DISPLAY_FORMAT_CONTRACT.includes("planify-gabarito-table"),
+    "DISPLAY_FORMAT_CONTRACT deve referenciar tabela de gabarito renderizada",
+  );
+  assert.ok(
+    buildDisplayFormatContractForType("slides").includes("slides[]"),
+    "contrato de slides deve orientar array slides[]",
+  );
+
+  assert.equal(
+    containsMarkdownArtifacts("## Título"),
+    "cabeçalho markdown (#)",
+  );
+  assert.equal(
+    containsMarkdownArtifacts("| # | Resposta |"),
+    "tabela markdown (|)",
+  );
+  assert.equal(containsMarkdownArtifacts("Enunciado direto."), null);
+
+  const markdownOutput = {
+    title: "Prova",
+    subtitle: "",
+    summary: "",
+    sections: [],
+    activities: [],
+    answerKey: ["| 1 | x = 3 |"],
+    teacherNotes: [],
+    exam: {
+      questions: [
+        {
+          number: 1,
+          type: "multipla-escolha",
+          statement: "Questão 1: Qual o valor de x?",
+          options: ["a) x=2", "b) x=3", "c) x=4", "d) x=5"],
+          answer: "x = 3",
+        },
+      ],
+    },
+  };
+
+  const displayIssues = collectStructuredDisplayIssues(markdownOutput, {
+    tipo: "prova",
+    incluirGabarito: true,
+  });
+  assert.ok(
+    displayIssues.some((issue) => issue.includes("Questão 1:")),
+    "deve detectar prefixo Questão N: no enunciado",
+  );
+  assert.ok(
+    displayIssues.some((issue) => issue.includes("prefixo a) b)")),
+    "deve detectar prefixo de letra nas alternativas",
+  );
+  assert.ok(
+    displayIssues.some((issue) => issue.includes("tabela markdown")),
+    "deve detectar tabela markdown no answerKey",
+  );
+}
+
 function testProvaListaQualityGate() {
   const baseInput = {
     etapa: "Ensino Fundamental - Anos Finais",
@@ -410,6 +491,7 @@ function testProvaListaQualityGate() {
             "Substituindo x = 3 em 2x+4 obtemos 10, confirmando a solução da equação",
             "Substituindo x = 4 em 2x+4 obtemos 12, que não satisfaz a igualdade 10",
             "Substituindo x = 5 em 2x+4 obtemos 14, que não satisfaz a igualdade 10",
+            "Substituindo x = 6 em 2x+4 obtemos 16, que não satisfaz a igualdade 10",
           ],
           answer: "x = 3, pois 2·3+4=10 confirma a equação do 1º grau.",
         },
@@ -434,6 +516,138 @@ function testProvaListaQualityGate() {
   );
 }
 
+function testUnifiedMaterialEngineContract() {
+  assert.equal(TIPO_FERRAMENTA_VALUES.length, 16, "16 ferramentas no contrato unificado");
+  assert.ok(getMaterialLayoutSchema().properties.secoes, "schema MaterialLayout presente");
+  assert.equal(
+    containsForbiddenChitchat("Aqui está seu material de prova"),
+    true,
+    "deve rejeitar vazamento conversacional",
+  );
+
+  const request = normalizeMaterialEngineRequest({
+    tipoMaterial: "prova",
+    etapa: "Ensino Fundamental",
+    anoSerie: "8º ano",
+    componenteCurricular: "História",
+    tema: "Independência do Brasil",
+    quantidade: 1,
+    incluirGabarito: true,
+  });
+
+  const layout = {
+    metadata: {
+      tema: "Independência do Brasil",
+      serie: "8º ano",
+      habilidadeBNCC: "",
+      codigoBNCC: "",
+    },
+    secoes: [
+      {
+        titulo: "Questões",
+        tipo: "questoes",
+        conteudo: {
+          questoes: [
+            {
+              numero: 1,
+              enunciado:
+                "Qual documento formalizou a independência do Brasil em 1822?",
+              tipo: "multipla-escolha",
+              alternativas: [
+                { letra: "A", texto: "Tratado de Tordesilhas de 1494" },
+                { letra: "B", texto: "Grito do Ipiranga e ato simbólico de setembro" },
+                { letra: "C", texto: "Lei Áurea de 1888 sobre escravatura" },
+                { letra: "D", texto: "Constituição de 1988 pós-ditadura" },
+                { letra: "E", texto: "Plano Real de estabilização econômica" },
+              ],
+              respostaCorreta: "B",
+              justificativa: "O Grito do Ipiranga marcou a ruptura com Portugal.",
+            },
+          ],
+        },
+      },
+    ],
+  };
+
+  const layoutIssues = validateMaterialLayout(
+    {
+      tipoFerramenta: "prova",
+      etapa: request.etapa,
+      anoSerie: request.anoSerie,
+      componenteCurricular: request.componenteCurricular,
+      tema: request.tema,
+      quantidade: request.quantidade,
+      dificuldade: request.dificuldade,
+      incluirGabarito: true,
+    },
+    layout,
+  );
+  assert.deepEqual(layoutIssues, [], `layout prova válido: ${layoutIssues.join("; ")}`);
+
+  const estrutura = materialLayoutToEngineResponse(layout, request);
+  assert.ok(estrutura.exam?.questions?.length === 1, "adapter deve gerar exam.questions");
+  assert.equal(estrutura.exam.questions[0].options.length, 5, "5 alternativas no renderer");
+}
+
+function testCronogramaTableRenderer() {
+  const { renderCronogramaTables } = loadTsModule(
+    "src/lib/materiais/material-document-layout.ts",
+  );
+  const { buildMaterialEngineHtmlFromStructure } = loadTsModule(
+    "src/server/materials/material-engine-service.ts",
+  );
+
+  const html = renderCronogramaTables({
+    scheduleTables: [
+      {
+        title: "Cronograma da aula",
+        headers: ["Etapa", "Duração", "Atividade", "Recursos"],
+        rows: [
+          ["Abertura", "10 min", "Retomar conceitos", "Quadro"],
+          ["Fechamento", "10 min", "Síntese", "Caderno"],
+        ],
+      },
+    ],
+  });
+
+  assert.match(html, /planify-cronograma-table/);
+  assert.match(html, /Abertura/);
+  assert.match(html, /<th scope="col">Duração<\/th>/);
+
+  const legacyHtml = buildMaterialEngineHtmlFromStructure(
+    {
+      tipoMaterial: "plano-aula",
+      etapa: "Ensino Fundamental",
+      anoSerie: "8º ano",
+      componenteCurricular: "História",
+      tema: "Independência",
+      quantidade: 1,
+    },
+    {
+      title: "Plano de aula",
+      subtitle: "8º ano",
+      summary: "Plano sobre Independência.",
+      sections: [{ title: "Objetivos", content: "Compreender o processo.", bullets: [] }],
+      activities: [],
+      answerKey: [],
+      teacherNotes: [],
+      lessonPlan: {
+        steps: [
+          {
+            stage: "Abertura",
+            duration: "10 min",
+            description: "Contextualizar o tema.",
+            resources: ["Mapa"],
+          },
+        ],
+      },
+    },
+  );
+
+  assert.match(legacyHtml, /planify-cronograma-table/);
+  assert.match(legacyHtml, /Contextualizar o tema/);
+}
+
 function testGenerationEventsMigrationContract() {
   const migrationPath = join(
     root,
@@ -449,6 +663,48 @@ function testGenerationEventsMigrationContract() {
   assert.match(telemetry, /elevar_qualidade/);
 }
 
+function testUnifiedQualityGate() {
+  const {
+    assessUnifiedQualityGate,
+    passesExportQualityGate,
+    UNIFIED_MIN_QUALITY_SCORE,
+    isCriticalQualityIssue,
+  } = loadTsModule("src/lib/materiais/unified-quality-gate.ts");
+
+  assert.equal(UNIFIED_MIN_QUALITY_SCORE, 88);
+
+  const pass = assessUnifiedQualityGate({
+    qualityScore: 92,
+    qualityIssues: [],
+  });
+  assert.equal(pass.pass, true);
+
+  const low = assessUnifiedQualityGate({
+    qualityScore: 70,
+    qualityIssues: ["Conteúdo genérico demais."],
+  });
+  assert.equal(low.pass, false);
+  assert.equal(low.code, "quality_score_low");
+
+  assert.equal(
+    isCriticalQualityIssue(
+      "múltipla escolha exige pelo menos 5 alternativas distintas.",
+    ),
+    true,
+  );
+  const critical = assessUnifiedQualityGate({
+    qualityScore: 95,
+    qualityIssues: [
+      "múltipla escolha exige pelo menos 5 alternativas distintas.",
+    ],
+  });
+  assert.equal(critical.pass, false);
+  assert.equal(critical.code, "critical_issues");
+
+  assert.equal(passesExportQualityGate(null, []), true);
+  assert.equal(passesExportQualityGate(70, ["pendência"]), false);
+}
+
 function main() {
   const started = Date.now();
 
@@ -457,7 +713,11 @@ function main() {
   runTest("discipline-seeds", testDisciplineSeeds);
   runTest("quality-score", testQualityScore);
   runTest("imagen-model", testImagenModelResolution);
+  runTest("structured-display-contract", testStructuredDisplayContract);
   runTest("prova-lista-quality-gate", testProvaListaQualityGate);
+  runTest("unified-material-engine", testUnifiedMaterialEngineContract);
+  runTest("cronograma-table-renderer", testCronogramaTableRenderer);
+  runTest("unified-quality-gate", testUnifiedQualityGate);
   runTest("planning-quality", testPlanningQuality);
   runTest("daily-quota-migration", testDailyQuotaMigrationContract);
   runTest("generation-events-migration", testGenerationEventsMigrationContract);

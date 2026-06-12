@@ -70,7 +70,7 @@ export function CommunityMaterialExportBar({
 
   const googleDisabled = (!canExportGoogle && !loading) || (isPlanningMaterial && !planningPayloadReady);
   const googleDisabledTitle = isPlanningMaterial && !planningPayloadReady
-    ? "Planejamento publicado sem matriz oficial. Abra no editor e republica na Comunidade para exportar com o modelo da escola."
+    ? "Planejamento publicado sem matriz oficial. Abra no editor e republica na Comunidade para exportar com o modelo oficial."
     : error ||
       "Use Google Docs para exportar. Materiais sem HTML exigem abrir no editor primeiro.";
 

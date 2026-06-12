@@ -1,8 +1,8 @@
 import { computeQualityScore } from "@/lib/materiais/material-quality-score";
+import { UNIFIED_MIN_QUALITY_SCORE } from "@/lib/materiais/unified-quality-gate";
 import type { MaterialEngineRequest } from "./material-engine-types";
 
-/** Piso Teachy+ — todas as ferramentas passam por este gate antes da entrega. */
-export const UNIFIED_MIN_QUALITY_SCORE = 88;
+export { UNIFIED_MIN_QUALITY_SCORE };
 
 export type UnifiedDeliveryPipeline =
   | "bank"
@@ -21,19 +21,10 @@ export type UnifiedMaterialDelivery = {
   alertas?: string[];
 };
 
-export const UNIFIED_PIPELINE_LABELS: Record<UnifiedDeliveryPipeline, string> = {
-  bank: "Banco Planify — entrega rápida",
-  "bank-hybrid": "Banco + IA — lacunas reforçadas",
-  "bank-selected": "Questões escolhidas do banco",
-  engine: "Motor pedagógico Planify",
-  "engine-elevated": "Motor pedagógico — qualidade elevada",
-};
-
-export function resolveUnifiedPipelineLabel(pipeline: string): string {
-  return (
-    UNIFIED_PIPELINE_LABELS[pipeline as UnifiedDeliveryPipeline] ?? pipeline
-  );
-}
+export {
+  UNIFIED_PIPELINE_LABELS,
+  resolveUnifiedPipelineLabel,
+} from "@/lib/materiais/unified-pipeline-labels";
 
 export function shouldAutoElevateQuality(
   qualityScore: number,

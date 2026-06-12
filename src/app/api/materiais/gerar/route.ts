@@ -55,7 +55,14 @@ async function handlePost(request: NextRequest, _context: { params: Promise<Reco
       });
 
       return NextResponse.json(
-        { ok: false, message: result.message },
+        {
+          ok: false,
+          message: result.message,
+          code: result.errorCode ?? "quality_gate_failed",
+          qualityScore: result.qualityScore,
+          qualityIssues: result.qualityIssues,
+          retryable: result.status === 422,
+        },
         { status: result.status },
       );
     }

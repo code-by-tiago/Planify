@@ -4,6 +4,7 @@ import {
   describeQualityScore,
   type QualityScoreTone,
 } from "@/lib/materiais/material-quality-score";
+import { UNIFIED_ELEVATE_BANNER_THRESHOLD } from "@/lib/materiais/unified-quality-gate";
 
 type MaterialQualityScoreBarProps = {
   score: number;
@@ -40,7 +41,8 @@ export function MaterialQualityScoreBar({
 }: MaterialQualityScoreBarProps) {
   const meta = describeQualityScore(score);
   const styles = toneClasses[meta.tone];
-  const showElevate = score < 90 && typeof onElevate === "function";
+  const showElevate =
+    score < UNIFIED_ELEVATE_BANNER_THRESHOLD && typeof onElevate === "function";
 
   return (
     <div

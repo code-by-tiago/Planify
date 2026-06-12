@@ -167,13 +167,14 @@ const GOLDEN = {
             statement:
               "Em equações do 1º grau, qual valor de x resolve 2x + 4 = 10 em um problema de Matemática do 9º ano?",
             options: [
-              "a) x = 2, pois ao substituir em 2x+4 obtemos 8, que não é igual a 10",
-              "b) x = 3, pois ao substituir em 2x+4 obtemos 10, que é a solução correta",
-              "c) x = 4, pois ao substituir em 2x+4 obtemos 12, que não é igual a 10",
-              "d) x = 5, pois ao substituir em 2x+4 obtemos 14, que não é igual a 10",
+              "Substituindo x = 2 em 2x+4 obtemos 8, que não é igual a 10",
+              "Substituindo x = 3 em 2x+4 obtemos 10, que confirma a solução correta",
+              "Substituindo x = 4 em 2x+4 obtemos 12, que não é igual a 10",
+              "Substituindo x = 5 em 2x+4 obtemos 14, que não é igual a 10",
+              "Substituindo x = 6 em 2x+4 obtemos 16, que não é igual a 10",
             ],
             answer:
-              "b) x = 3, pois substituindo na equação do 1º grau obtemos 2·3+4=10, confirmando a solução.",
+              "x = 3, pois substituindo na equação do 1º grau obtemos 2·3+4=10, confirmando a solução.",
           },
           {
             number: 2,
@@ -211,13 +212,14 @@ const GOLDEN = {
             statement:
               "Em equações do 1º grau, qual valor de x satisfaz x + 5 = 12 no contexto de Matemática?",
             options: [
-              "a) x = 5, pois ao substituir em x+5=12 obtemos 10, que não fecha a igualdade",
-              "b) x = 6, pois ao substituir em x+5=12 obtemos 11, que não fecha a igualdade",
-              "c) x = 7, pois ao substituir em x+5=12 obtemos 12, que confirma a solução",
-              "d) x = 8, pois ao substituir em x+5=12 obtemos 13, que não fecha a igualdade",
+              "Substituindo x = 5 em x+5=12 obtemos 10, que não fecha a igualdade",
+              "Substituindo x = 6 em x+5=12 obtemos 11, que não fecha a igualdade",
+              "Substituindo x = 7 em x+5=12 obtemos 12, que confirma a solução",
+              "Substituindo x = 8 em x+5=12 obtemos 13, que não fecha a igualdade",
+              "Substituindo x = 9 em x+5=12 obtemos 14, que não fecha a igualdade",
             ],
             answer:
-              "c) x = 7, pois ao substituir na equação do 1º grau obtemos 7+5=12, confirmando a solução.",
+              "x = 7, pois ao substituir na equação do 1º grau obtemos 7+5=12, confirmando a solução.",
           },
           {
             number: 2,
@@ -234,13 +236,14 @@ const GOLDEN = {
             statement:
               "Em equações do 1º grau, qual sentença representa o dobro de um número igual a 14?",
             options: [
-              "a) x + 2 = 14, que modela soma e não o dobro de um número",
-              "b) 2x = 14, que representa corretamente o dobro de x igual a 14",
-              "c) x/2 = 14, que modela metade de x e não o dobro pedido",
-              "d) x = 16, que fixa x sem relação com o dobro igual a 14",
+              "x + 2 = 14, que modela soma e não o dobro de um número",
+              "2x = 14, que representa corretamente o dobro de x igual a 14",
+              "x/2 = 14, que modela metade de x e não o dobro pedido",
+              "x = 16, que fixa x sem relação com o dobro igual a 14",
+              "2x = 7, que não representa o dobro de x igual a 14",
             ],
             answer:
-              "b) 2x = 14, pois o dobro de x em equações do 1º grau é modelado por 2x = 14.",
+              "2x = 14, pois o dobro de x em equações do 1º grau é modelado por 2x = 14.",
           },
         ],
       },
@@ -377,7 +380,7 @@ const GOLDEN = {
         },
       ],
     },
-    htmlChecks: [/Etapas da aula/, /Abertura/, /Fechamento/],
+    htmlChecks: [/planify-cronograma-table/, /Cronograma da aula/, /Abertura/, /Fechamento/],
   },
   jogo: {
     input: baseInput("jogo", { formatoJogo: "quiz", quantidade: 1 }),
@@ -770,7 +773,7 @@ function testNewToolsFixtures() {
   assert.ok(existsSync(join(root, "src/app/api/materiais/regenerar-imagens/route.ts")));
   const { isMaterialStreamType } = loadTsModule("src/lib/materiais/material-stream-types.ts");
   assert.equal(isMaterialStreamType("slides"), true);
-  assert.equal(isMaterialStreamType("flashcards"), false);
+  assert.equal(isMaterialStreamType("flashcards"), true);
 }
 
 function main() {

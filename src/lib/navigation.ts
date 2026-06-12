@@ -155,9 +155,9 @@ export const adminNavigationItems: NavigationItem[] =
 
 export const dashboardCards: DashboardCard[] = [
   {
-    title: "Planejamentos",
+    title: "Planejamento escolar",
     href: "/planejamentos",
-    description: "Crie planejamentos com BNCC oficial e seleção manual de habilidades.",
+    description: "Planejamento anual ou trimestral com BNCC oficial — modelos DOCX oficiais.",
     badge: "BNCC oficial",
     metric: "Pronto",
     icon: "planning",

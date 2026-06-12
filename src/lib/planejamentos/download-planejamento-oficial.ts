@@ -1,6 +1,7 @@
 /**
  * @deprecated UI removida — exportação de planejamentos é via Google Docs API.
  * Mantido apenas para scripts E2E legados que ainda chamam `/api/planejamentos/docx-oficial`.
+ * Usa exclusivamente os modelos oficiais anual/trimestral (sem upload customizado).
  */
 import { planifyAuthenticatedFetch } from "@/lib/auth/authenticated-fetch";
 import {
@@ -11,15 +12,9 @@ import {
 
 type PlanejamentoPayload = Record<string, unknown>;
 
-export type DownloadPlanejamentoDocxOptions = {
-  customTemplateFile?: File | null;
-};
-
 export type DownloadPlanejamentoDocxResult = {
   filename: string;
-  usedFallback: boolean;
-  fallbackMessage?: string;
-  templateSource: "official" | "custom";
+  templateSource: "official";
 };
 
 function safeFileName(value: string) {
@@ -34,44 +29,15 @@ function safeFileName(value: string) {
   );
 }
 
-function validateClientTemplateFile(file: File): void {
-  if (!file.name.toLowerCase().endsWith(".docx")) {
-    throw new Error("Envie apenas arquivos com extensão .docx.");
-  }
-
-  const maxBytes = 10 * 1024 * 1024;
-
-  if (file.size > maxBytes) {
-    throw new Error("O modelo da escola deve ter no máximo 10 MB.");
-  }
-}
-
 export async function downloadPlanejamentoOficialDocx(
   payload: PlanejamentoPayload,
   fallbackFilename = "planejamento-planify",
-  options: DownloadPlanejamentoDocxOptions = {},
 ): Promise<DownloadPlanejamentoDocxResult> {
-  const customTemplateFile = options.customTemplateFile;
-
-  let response: Response;
-
-  if (customTemplateFile) {
-    validateClientTemplateFile(customTemplateFile);
-
-    const body = new FormData();
-    body.set("payload", JSON.stringify(payload));
-    body.set("template", customTemplateFile);
-
-    response = await planifyAuthenticatedFetch("/api/planejamentos/docx-oficial", {
-      method: "POST",
-      body,
-    });
-  } else {
-    response = await planifyAuthenticatedFetch("/api/planejamentos/docx-oficial", {
-      method: "POST",
-      body: JSON.stringify(payload),
-    });
-  }
+  const response = await planifyAuthenticatedFetch("/api/planejamentos/docx-oficial", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
 
   if (!response.ok) {
     const error = await response.json().catch(() => null);
@@ -91,15 +57,8 @@ export async function downloadPlanejamentoOficialDocx(
 
   triggerBrowserDownload(blob, filename);
 
-  const usedFallback = response.headers.get("X-Planify-Template-Fallback") === "true";
-  const fallbackMessage = response.headers.get("X-Planify-Template-Message") || undefined;
-  const templateSource =
-    response.headers.get("X-Planify-Template-Source") === "custom" ? "custom" : "official";
-
   return {
     filename,
-    usedFallback,
-    fallbackMessage,
-    templateSource,
+    templateSource: "official",
   };
 }

@@ -202,10 +202,17 @@ export function buildOfficialPlanningPayloadFromGeneration(input: {
   cargaHoraria?: string;
   trimestre?: string;
   matrizPlanejamento: unknown;
+  planifyQuality?: {
+    qualityScore?: number | null;
+    qualityIssues?: string[];
+  };
 }): Record<string, unknown> | null {
   if (!hasPlanningMatrix(input.matrizPlanejamento)) {
     return null;
   }
+
+  const qualityScore = input.planifyQuality?.qualityScore;
+  const qualityIssues = input.planifyQuality?.qualityIssues ?? [];
 
   return {
     tipoPlanejamento: input.tipoPlanejamento,
@@ -218,5 +225,12 @@ export function buildOfficialPlanningPayloadFromGeneration(input: {
     cargaHoraria: input.cargaHoraria,
     trimestre: input.trimestre,
     matrizPlanejamento: input.matrizPlanejamento,
+    ...(typeof qualityScore === "number" || qualityIssues.length > 0
+      ? {
+          _planifyQualityScore:
+            typeof qualityScore === "number" ? qualityScore : undefined,
+          _planifyQualityIssues: qualityIssues,
+        }
+      : {}),
   };
 }

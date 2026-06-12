@@ -233,7 +233,7 @@ export function MarketplaceMaterialViewClient({ materialId }: MarketplaceMateria
   const googleExportDisabled =
     !canGoogleExport || (isPlanningMaterial && !planningPayloadReady);
   const googleDisabledTitle = isPlanningMaterial && !planningPayloadReady
-    ? "Planejamento publicado sem matriz oficial. Abra no editor e republica na Comunidade para exportar com o modelo da escola."
+    ? "Planejamento publicado sem matriz oficial. Abra no editor e republica na Comunidade para exportar com o modelo oficial."
     : "Exportação Google indisponível para este formato.";
   const canOpenEditor = preview?.kind === "html" || preview?.kind === "docx";
 

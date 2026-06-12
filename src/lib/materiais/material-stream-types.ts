@@ -32,6 +32,8 @@ export type MaterialStreamErrorEvent = {
   type: "error";
   message: string;
   code?: string;
+  qualityScore?: number;
+  qualityIssues?: string[];
 };
 
 export type MaterialStreamEvent =

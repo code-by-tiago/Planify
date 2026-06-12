@@ -1,6 +1,10 @@
 import { getModelTierForPlanning } from "@/lib/ai/material-generation-policy";
 import { GENERATION_SERVER_DEADLINE_MS } from "@/lib/pro/generation-timeout";
 import { buildElevateQualityObservacoes } from "@/lib/materiais/material-quality-score";
+import {
+  assessUnifiedQualityGate,
+  UnifiedQualityGateError,
+} from "@/lib/materiais/unified-quality-gate";
 import { generateGeminiJSON } from "../ai/gemini-client";
 import {
   buildPlanningQualityRetryNote,
@@ -711,13 +715,17 @@ export async function generatePlanningWithAI(
     }
 
     if (attempt === PLANNING_MAX_ATTEMPTS - 1 || isPastPlanningDeadline()) {
-      const warning =
-        "Passo crítico: a matriz foi gerada, mas ainda há pendências de qualidade. Revise antes de aplicar: " +
-        issues.slice(0, 6).join(" ");
+      const qualityScore = computePlanningQualityScore(issues);
+      const gate = assessUnifiedQualityGate({
+        qualityScore,
+        qualityIssues: issues,
+      });
+      if (!gate.pass) {
+        throw new UnifiedQualityGateError(gate);
+      }
       return {
         ...result,
-        warning,
-        qualityScore: computePlanningQualityScore(issues, warning),
+        qualityScore,
         qualityIssues: issues,
       };
     }
@@ -727,6 +735,9 @@ export async function generatePlanningWithAI(
 
   throw new Error("Não foi possível gerar o planejamento com a qualidade esperada.");
   } catch (error) {
+    if (error instanceof UnifiedQualityGateError) {
+      throw error;
+    }
     const message =
       error instanceof Error
         ? error.message

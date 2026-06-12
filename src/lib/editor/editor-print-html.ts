@@ -245,6 +245,65 @@ export const PLANIFY_EXPORT_DOC_COMPONENT_CSS = `
     color: #0f172a;
     line-height: 1.4;
   }
+  .planify-cronograma-block {
+    margin: 1.25rem 0 1.6rem;
+  }
+  .planify-cronograma-title {
+    font-size: 13pt;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0 0 0.65rem;
+    letter-spacing: -0.01em;
+  }
+  .planify-cronograma-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+    background: #ffffff;
+  }
+  .planify-cronograma-table {
+    width: 100%;
+    min-width: 520px;
+    border-collapse: collapse;
+    font-size: 10.5pt;
+    line-height: 1.45;
+  }
+  .planify-cronograma-table thead th {
+    background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+    color: #475569;
+    font-weight: 700;
+    font-size: 10pt;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 0.6rem 0.75rem;
+    border-bottom: 2px solid #cbd5e1;
+    text-align: left;
+    white-space: nowrap;
+  }
+  .planify-cronograma-table tbody td {
+    padding: 0.55rem 0.75rem;
+    border-bottom: 1px solid #e2e8f0;
+    vertical-align: top;
+    color: #0f172a;
+  }
+  .planify-cronograma-table tbody tr:nth-child(even) td {
+    background: #f8fafc;
+  }
+  .planify-cronograma-table tbody tr:last-child td {
+    border-bottom: none;
+  }
+  .planify-cronograma-table tbody td:first-child {
+    font-weight: 600;
+    color: #312e81;
+    white-space: nowrap;
+  }
+  .planify-doc-plano-aula .planify-cronograma-block,
+  .planify-doc-sequencia .planify-cronograma-block,
+  .planify-doc-projeto .planify-cronograma-block {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
   .planify-alertas {
     border: 1px solid #fcd34d;
     background: #fffbeb;
@@ -269,6 +328,8 @@ export const PLANIFY_EXPORT_DOC_COMPONENT_CSS = `
   .planify-mindmap,
   .planify-mindmap-branch,
   .planify-etapa,
+  .planify-cronograma-block,
+  .planify-cronograma-table,
   .planify-section-visual,
   .planify-jogo-visual,
   .planify-alertas {

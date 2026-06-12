@@ -8,10 +8,11 @@ import type {
   MaterialEngineRequest,
   MaterialEngineResponse,
 } from "./material-engine-types";
+import { validateProvaEngineOutput } from "./prova-engine-contract";
 
 const COUNT_TOLERANCE = 1;
 const MAX_STATEMENT_CHARS = 320;
-const MIN_MC_OPTIONS = 4;
+const MIN_MC_OPTIONS = 5;
 
 function countStatementSentences(text: string): number {
   return text
@@ -80,6 +81,10 @@ export function getEngineOutputIssues(
   request: MaterialEngineRequest,
   output: MaterialEngineResponse,
 ): string[] {
+  if (request.tipoMaterial === "prova") {
+    return validateProvaEngineOutput(request, output);
+  }
+
   const issues: string[] = [];
   const q = request.quantidade;
   const tipo = request.tipoMaterial;
@@ -172,9 +177,9 @@ export function getEngineOutputIssues(
     if (issue) issues.push(issue);
   }
 
-  if (tipo === "prova" || tipo === "lista") {
+  if (tipo === "lista") {
     const n = output.exam?.questions?.length ?? 0;
-    const issue = countIssues(tipo === "lista" ? "exercícios" : "questões", q, n);
+    const issue = countIssues("exercícios", q, n);
     if (issue) issues.push(issue);
     if (request.incluirGabarito && n > 0) {
       const withAnswer =
@@ -195,20 +200,7 @@ export function getEngineOutputIssues(
         statement && normalizedStatements.indexOf(statement) !== index,
     );
     if (duplicateStatements.length) {
-      issues.push("Prova/lista: enunciados repetidos — reescreva cada questão.");
-    }
-
-    if (tipo === "prova" && q >= 2) {
-      const types = new Set(questions.map((question) => question.type));
-      const hasObjective = [...types].some((type) =>
-        ["multipla-escolha", "verdadeiro-falso", "completar"].includes(type),
-      );
-      const hasDiscursive = types.has("dissertativa");
-      if (!hasObjective || !hasDiscursive) {
-        issues.push(
-          "Prova: inclua questões objetivas e pelo menos uma dissertativa.",
-        );
-      }
+      issues.push("Lista: enunciados repetidos — reescreva cada exercício.");
     }
 
     let flagged = 0;
@@ -299,25 +291,25 @@ export function getEngineOutputIssues(
     }
   }
 
-  if (["prova", "lista", "apostila"].includes(tipo)) {
-    if (tipo !== "prova" && tipo !== "lista" && isGenericEducationalText(output.summary)) {
+  if (["lista", "apostila"].includes(tipo)) {
+    if (tipo === "apostila" && isGenericEducationalText(output.summary)) {
       issues.push("Resumo inicial genérico — use síntese específica do tema.");
     }
-    if (tipo === "prova" || tipo === "lista") {
+    if (tipo === "lista") {
       const summary = output.summary?.trim() || "";
       if (summary.length > 120) {
         issues.push(
-          "Prova/lista: 'summary' deve ficar vazio ou ter no máximo 1 frase curta — remova contextualização longa.",
+          "Lista: 'summary' deve ficar vazio ou ter no máximo 1 frase curta — remova contextualização longa.",
         );
       }
       if ((output.sections?.length ?? 0) > 0) {
         issues.push(
-          "Prova/lista: não use 'sections' — concentre tudo em exam.questions.",
+          "Lista: não use 'sections' — concentre tudo em exam.questions.",
         );
       }
       if ((output.teacherNotes?.length ?? 0) > 0) {
         issues.push(
-          "Prova/lista: não preencha 'teacherNotes' — orientações pedagógicas não entram na versão do aluno.",
+          "Lista: não preencha 'teacherNotes' — orientações pedagógicas não entram na versão do aluno.",
         );
       }
     }
@@ -431,7 +423,7 @@ export function buildQualityRetryPrompt(
         ]
       : []),
     `Tema obrigatório: "${request.tema}".`,
-    "Reescreva com enunciados contextualizados, alternativas distintas e gabarito objetivo.",
+    "Reescreva o JSON MaterialLayout completo com enunciados contextualizados, 5 alternativas (A–E) distintas e gabarito objetivo.",
     ...(options?.teachyDepth ? ["", TEACHY_QUALITY_RULES] : []),
   ].join("\n");
 }

@@ -41,7 +41,9 @@ export async function requestPlanningGeneration(
   if (!response.ok || !data?.success || !data?.planejamento) {
     const message = data?.error?.message || "Não foi possível gerar o planejamento.";
     const error = new Error(message) as Error & { code?: string; status?: number };
+    error.status = response.status;
     if (data?.code) error.code = data.code;
+    if (response.status === 422 && !error.code) error.code = "quality_gate_failed";
     if (response.status === 504) error.code = "timeout";
     if (
       !data?.code &&

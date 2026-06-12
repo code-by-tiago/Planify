@@ -16,7 +16,8 @@ export type GenerationErrorCode =
   | "daily_limit_reached"
   | "offline"
   | "timeout"
-  | "server_error";
+  | "server_error"
+  | "quality_gate_failed";
 
 export type FormattedGenerationError = {
   message: string;
@@ -89,6 +90,18 @@ export function formatGenerationError(error: unknown): FormattedGenerationError 
       message: DAILY_LIMIT_MESSAGE,
       code: "daily_limit_reached",
       retryable: false,
+    };
+  }
+
+  if (code === "quality_gate_failed" || status === 422) {
+    const rawMessage =
+      error instanceof Error ? error.message.trim() : "";
+    return {
+      message:
+        rawMessage ||
+        "O conteúdo não atingiu o padrão mínimo Planify. Use Elevar qualidade ou ajuste o tema e gere novamente.",
+      code: "quality_gate_failed",
+      retryable: true,
     };
   }
 

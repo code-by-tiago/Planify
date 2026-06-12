@@ -116,7 +116,13 @@ async function handlePost(request: NextRequest, _context: { params: Promise<Reco
             errorCode: String(result.status),
             metadata: { message: result.message },
           });
-          emit({ type: "error", message: result.message, code: "server_error" });
+          emit({
+            type: "error",
+            message: result.message,
+            code: result.errorCode ?? "quality_gate_failed",
+            qualityScore: result.qualityScore,
+            qualityIssues: result.qualityIssues,
+          });
           controller.close();
           return;
         }

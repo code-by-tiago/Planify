@@ -85,6 +85,7 @@ import {
   useRetryableAction,
 } from "@/lib/pro/generation-error-ui";
 import { readProvaInjectObservacoes } from "@/lib/banco-questoes/question-bank-storage";
+import { resolveUnifiedPipelineLabel } from "@/lib/materiais/unified-pipeline-labels";
 import {
   buildPedagogicalObservacoes,
   fetchPedagogicalContext,
@@ -1240,16 +1241,7 @@ export function MateriaisClient({
         if (alertas.length) setAlertasGeracao(alertas);
 
         if (typeof record.pipeline === "string") {
-          const labels: Record<string, string> = {
-            bank: "Banco Planify — entrega rápida",
-            "bank-hybrid": "Banco + IA — lacunas reforçadas",
-            "bank-selected": "Questões escolhidas do banco",
-            engine: "Motor pedagógico Planify",
-            "engine-elevated": "Motor pedagógico — qualidade elevada",
-            ai: "Motor pedagógico Planify",
-            "engine-fallback": "Motor auxiliar (fallback)",
-          };
-          pipelineLabel = labels[record.pipeline] ?? record.pipeline;
+          pipelineLabel = resolveUnifiedPipelineLabel(record.pipeline);
           setPipelineGeracao(pipelineLabel);
         }
 
@@ -2233,8 +2225,8 @@ export function MateriaisClient({
                 <div className="mb-4 space-y-3">
                   {pipelineGeracao ? (
                     <p className="text-xs font-bold text-slate-500">
-                      Entrega:{" "}
-                      <span className="font-bold text-cyan-700">
+                      Origem:{" "}
+                      <span className="inline-flex rounded-full border border-cyan-200 bg-cyan-50 px-2.5 py-0.5 text-[11px] font-black uppercase tracking-wide text-cyan-800">
                         {pipelineGeracao}
                       </span>
                     </p>

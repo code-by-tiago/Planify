@@ -7,7 +7,8 @@ import {
 } from "@/lib/planejamentos/planning-editor-html";
 import { buildOfficialPlanningPayloadFromGeneration } from "@/lib/planejamentos/planning-google-export-payload";
 import { trimestralCargaHorariaLabel } from "@/lib/planejamentos/planning-trimestral-from-annual";
-import { useCallback } from "react";
+import { passesExportQualityGate } from "@/lib/materiais/unified-quality-gate";
+import { useCallback, useMemo } from "react";
 
 type PlanningFormSlice = {
   escola: string;
@@ -26,6 +27,8 @@ type PlanningOfficialExportBarProps = {
   mode: "anual" | "trimestral";
   trimestre?: number;
   matriz: GeneratedPlanningHtml;
+  qualityScore?: number | null;
+  qualityIssues?: string[];
   onStatus?: (message: string) => void;
   returnTo?: string;
 };
@@ -36,9 +39,18 @@ export function PlanningOfficialExportBar({
   mode,
   trimestre,
   matriz,
+  qualityScore = null,
+  qualityIssues = [],
   onStatus,
   returnTo = "/dashboard?secao=planejamentos",
 }: PlanningOfficialExportBarProps) {
+  const exportBlocked = useMemo(
+    () => !passesExportQualityGate(qualityScore, qualityIssues),
+    [qualityScore, qualityIssues],
+  );
+  const exportBlockedTitle = exportBlocked
+    ? "A matriz não atingiu o padrão mínimo Planify (88/100). Use Elevar qualidade antes de exportar."
+    : undefined;
   const editorForm =
     mode === "trimestral" && trimestre
       ? {
@@ -70,8 +82,12 @@ export function PlanningOfficialExportBar({
             : form.cargaHoraria,
         trimestre: trimestre ? String(trimestre) : form.trimestre,
         matrizPlanejamento: matriz,
+        planifyQuality: {
+          qualityScore,
+          qualityIssues,
+        },
       }),
-    [form, mode, trimestre, matriz],
+    [form, mode, trimestre, matriz, qualityScore, qualityIssues],
   );
 
   return (
@@ -82,6 +98,8 @@ export function PlanningOfficialExportBar({
       documentType={`planejamento:${mode}`}
       returnTo={returnTo}
       onStatus={onStatus}
+      disabled={exportBlocked}
+      disabledTitle={exportBlockedTitle}
       compact
       classroomMode="popover"
     />

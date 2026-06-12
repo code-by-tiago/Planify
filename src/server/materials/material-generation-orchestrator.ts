@@ -9,6 +9,7 @@ import {
   resolveQuestionBankFirstMode,
 } from "./question-bank-first-policy";
 import { generateMaterialByEngine } from "./material-engine-service";
+import { assessUnifiedQualityGate } from "@/lib/materiais/unified-quality-gate";
 import {
   finalizeUnifiedDelivery,
   shouldAutoElevateQuality,
@@ -36,7 +37,32 @@ type GenerationFailure = {
   ok: false;
   status: number;
   message: string;
+  errorCode?: string;
+  qualityScore?: number;
+  qualityIssues?: string[];
 };
+
+function enforceUnifiedQualityGate(
+  delivery: UnifiedMaterialDelivery,
+): GenerationSuccess | GenerationFailure {
+  const gate = assessUnifiedQualityGate({
+    qualityScore: delivery.qualityScore,
+    qualityIssues: delivery.qualityIssues,
+  });
+
+  if (!gate.pass) {
+    return {
+      ok: false,
+      status: 422,
+      message: gate.message,
+      errorCode: gate.code,
+      qualityScore: gate.qualityScore,
+      qualityIssues: gate.qualityIssues,
+    };
+  }
+
+  return { ok: true, status: 200, data: delivery };
+}
 
 function emitStage(
   options: MaterialGenerationOptions | undefined,
@@ -76,7 +102,7 @@ async function tryBankFullDelivery(
   input: MaterialEngineInput,
   request: ReturnType<typeof normalizeMaterialEngineRequest>,
   options?: MaterialGenerationOptions,
-): Promise<GenerationSuccess | null> {
+): Promise<GenerationSuccess | GenerationFailure | null> {
   if (resolveQuestionBankFirstMode(request) !== "full") {
     return null;
   }
@@ -91,10 +117,8 @@ async function tryBankFullDelivery(
   }
 
   emitStage(options, "quality");
-  return {
-    ok: true,
-    status: 200,
-    data: finalizeUnifiedDelivery(
+  return enforceUnifiedQualityGate(
+    finalizeUnifiedDelivery(
       {
         tipoMaterial: request.tipoMaterial,
         html: bank.html,
@@ -106,7 +130,7 @@ async function tryBankFullDelivery(
       bank.pipeline as UnifiedDeliveryPipeline,
       request,
     ),
-  };
+  );
 }
 
 async function enrichInputWithBankPrefetch(
@@ -173,10 +197,8 @@ async function runEngineDelivery(
   }
 
   emitStage(options, "quality");
-  return {
-    ok: true,
-    status: 200,
-    data: finalizeUnifiedDelivery(
+  return enforceUnifiedQualityGate(
+    finalizeUnifiedDelivery(
       {
         tipoMaterial: result.data.tipoMaterial,
         html: result.data.html,
@@ -188,7 +210,7 @@ async function runEngineDelivery(
       pipeline,
       request,
     ),
-  };
+  );
 }
 
 /**
@@ -213,7 +235,7 @@ export async function generatePlanifyMaterial(
   emitStage(options, "prepare", "Preparando entrega unificada…");
 
   const bankDelivery = await tryBankFullDelivery(input, request, options);
-  if (bankDelivery) {
+  if (bankDelivery?.ok) {
     return bankDelivery;
   }
 

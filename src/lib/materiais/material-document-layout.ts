@@ -1,4 +1,8 @@
-import type { MaterialEngineRequest } from "@/server/materials/material-engine-types";
+import type {
+  MaterialEngineRequest,
+  MaterialEngineResponse,
+  ScheduleTable,
+} from "@/server/materials/material-engine-types";
 
 function escapeHtml(value: string): string {
   return value
@@ -209,6 +213,79 @@ export function renderGabaritoTable(
       </table>
     </section>
   `.trim();
+}
+
+/** Resolve tabelas de cronograma — usa scheduleTables ou deriva de lessonPlan.steps (legado). */
+export function resolveScheduleTables(
+  response: Pick<MaterialEngineResponse, "scheduleTables" | "lessonPlan">,
+): ScheduleTable[] {
+  if (response.scheduleTables?.length) {
+    return response.scheduleTables.map((table) => ({
+      title: String(table.title || "Cronograma").trim(),
+      headers: (table.headers ?? []).map((header) => String(header).trim()).filter(Boolean),
+      rows: (table.rows ?? [])
+        .map((row) => row.map((cell) => String(cell ?? "").trim()))
+        .filter((row) => row.some((cell) => cell.length > 0)),
+    }));
+  }
+
+  const steps = response.lessonPlan?.steps ?? [];
+  if (!steps.length) return [];
+
+  return [
+    {
+      title: "Cronograma da aula",
+      headers: ["Etapa", "Duração", "Atividade", "Recursos"],
+      rows: steps.map((step) => [
+        String(step.stage || "").trim(),
+        String(step.duration || "").trim(),
+        String(step.description || "").trim(),
+        (step.resources ?? []).map((item) => String(item).trim()).filter(Boolean).join(", "),
+      ]),
+    },
+  ];
+}
+
+function renderScheduleTableHtml(table: ScheduleTable): string {
+  const headers = table.headers;
+  const rows = table.rows;
+  if (!headers.length || !rows.length) return "";
+
+  const head = headers
+    .map((header) => `<th scope="col">${escapeHtml(header)}</th>`)
+    .join("");
+
+  const body = rows
+    .map((row) => {
+      const cells = headers
+        .map((_, index) => `<td>${escapeHtml(row[index] ?? "")}</td>`)
+        .join("");
+      return `<tr>${cells}</tr>`;
+    })
+    .join("");
+
+  const title = table.title.trim();
+
+  return `
+    <section class="planify-cronograma-block">
+      <h2 class="planify-cronograma-title">${escapeHtml(title)}</h2>
+      <div class="planify-cronograma-scroll">
+        <table class="planify-cronograma-table" role="presentation">
+          <thead><tr>${head}</tr></thead>
+          <tbody>${body}</tbody>
+        </table>
+      </div>
+    </section>
+  `.trim();
+}
+
+/** Renderiza cronogramas cronometrados em tabela HTML elegante. */
+export function renderCronogramaTables(
+  response: Pick<MaterialEngineResponse, "scheduleTables" | "lessonPlan">,
+): string {
+  const tables = resolveScheduleTables(response);
+  if (!tables.length) return "";
+  return tables.map((table) => renderScheduleTableHtml(table)).join("");
 }
 
 export function wrapProfessionalDocument(

@@ -40,7 +40,8 @@
     "verify:custom-template-docx": "node scripts/verify-custom-template-docx.mjs",
     "verify:export-pipeline": "node scripts/verify-export-pipeline.mjs",
     "verify:all": "npm run verify:material-quality && npm run verify:generators && npm run verify:export-pipeline && node scripts/verify-export-motors.mjs && node scripts/verify-forms-export-payload.mjs && npm run verify:planejamento-docx && node scripts/verify-google-export-readiness.mjs",
-    "bncc:import": "node scripts/bncc/import-bncc-skills.mjs"
+    "bncc:import": "node scripts/bncc/import-bncc-skills.mjs",
+    "render:launch-social": "node scripts/render-launch-social.mjs"
   },
   "dependencies": {
     "@google/genai": "^2.8.0",

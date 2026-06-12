@@ -4,6 +4,7 @@ import {
   extractBackgroundColorFromStyle,
   normalizeInlineStyle,
 } from "../../lib/editor/enhance-export-html";
+import { upgradeLegacyGameTables } from "./legacy-game-export";
 
 function applyBgcolorOnStyledElements(root: Element) {
   const elements = root.querySelectorAll("[style]");
@@ -131,6 +132,7 @@ export function prepareHtmlForExport(html: string): string {
   );
 
   applyBgcolorOnStyledElements(document.body);
+  upgradeLegacyGameTables(document.body);
   strengthenGameVisuals(document.body);
   strengthenFlashcards(document.body);
 

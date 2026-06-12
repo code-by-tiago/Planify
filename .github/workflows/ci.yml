@@ -25,6 +25,15 @@ jobs:
       - name: Material quality smoke suite
         run: npm run verify:material-quality
 
+      - name: Generator fixtures smoke suite
+        run: npm run verify:generators
+
+      - name: Export pipeline smoke suite
+        run: npm run verify:export-pipeline
+
+      - name: Prova engine contract
+        run: npm run verify:prova-engine-contract
+
       - name: Typecheck
         run: npm run typecheck
 

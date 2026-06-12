@@ -170,12 +170,12 @@ function bibliotecaToSpec(document: AnyRecord): DocxDocumentSpec {
 }
 
 function marketplaceToSpec(document: AnyRecord): DocxDocumentSpec {
-  const title = document.title || "Material do Marketplace";
+  const title = document.title || "Material da Comunidade";
 
   return {
     title,
-    subtitle: document.description || "Material publicado no Marketplace",
-    badge: "Marketplace Planify",
+    subtitle: document.description || "Material publicado na Comunidade",
+    badge: "Comunidade Planify",
     metadata: {
       Autor: document.autor,
       Etapa: document.etapa,

@@ -164,6 +164,25 @@ assert.match(prepared, /planify-game-table--crossword/);
 assert.match(prepared, /box-shadow:inset 0 0 0 1px #111827/);
 assert.match(gamePdfHtml, /box-shadow: inset 0 0 0 1px #111827/);
 
+const legacyCrosswordHtml = `
+<section>
+  <h2>Cruzadinha — versão do aluno</h2>
+  <table>
+    <tr><td></td><td>S</td><td></td><td></td></tr>
+    <tr><td>N</td><td>A</td><td>R</td><td></td></tr>
+    <tr><td></td><td>T</td><td></td><td></td></tr>
+    <tr><td></td><td>A</td><td></td><td></td></tr>
+  </table>
+</section>`;
+const legacyPrepared = exportSvc.resolvePreparedExportBody(
+  legacyCrosswordHtml,
+  "material:jogo",
+  "pdf-document",
+);
+assert.match(legacyPrepared, /planify-game-table--crossword/);
+assert.match(legacyPrepared, /planify-game-cell--letter/);
+assert.match(legacyPrepared, /box-shadow:inset 0 0 0 1px #111827/);
+
 // --- Rotas API existem ---
 for (const route of [
   "src/app/api/google/classroom/export/route.ts",
@@ -182,4 +201,5 @@ console.log("- Classroom jogo/prova → PDF; apostila → DOCX");
 console.log("- Forms só prova/lista; jogo sem questões parseáveis");
 console.log("- Auto-export: jogo → Docs, prova/lista → Forms");
 console.log("- PDF preserva markup planify-game-*");
+console.log("- Jogos legados sem classes são promovidos na exportação");
 console.log("- 6 rotas de exportação com POST");

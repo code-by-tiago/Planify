@@ -72,7 +72,7 @@ export function NewMarketplaceItemClient() {
   const [form, setForm] = useState<FormState>(initialForm);
   const [fileName, setFileName] = useState("");
   const [message, setMessage] = useState(
-    "Preencha as informações para publicar um material no Marketplace.",
+    "Preencha as informações para publicar um material na Comunidade.",
   );
 
   const tags = useMemo(() => splitTags(form.tags), [form.tags]);
@@ -131,7 +131,7 @@ export function NewMarketplaceItemClient() {
     );
 
     setMessage(
-      "Material publicado localmente. Ele já aparecerá na página do Marketplace.",
+      "Material publicado localmente. Ele já aparecerá na Comunidade.",
     );
   }
 
@@ -149,7 +149,7 @@ export function NewMarketplaceItemClient() {
             Publicação
           </p>
           <h1 className="mt-4 text-3xl font-black text-white">
-            Novo material no Marketplace
+            Novo material na Comunidade
           </h1>
           <p className="mt-4 text-sm leading-7 text-cyan-100/80">
             Cadastre um recurso pedagógico, informe tags e anexe o nome do
@@ -180,7 +180,7 @@ export function NewMarketplaceItemClient() {
             href="/marketplace"
             className="mt-6 flex rounded-2xl border border-white/10 bg-white/5 px-6 py-4 text-center text-sm font-black text-white transition hover:-translate-y-1 hover:bg-white/10"
           >
-            <span className="w-full">Voltar ao Marketplace</span>
+            <span className="w-full">Voltar à Comunidade</span>
           </Link>
         </div>
 

@@ -5,7 +5,7 @@ import { NewMarketplaceItemClient } from "@/app/marketplace/novo/NewMarketplaceI
 
 export default function NewMarketplaceItemPage() {
   return (
-    <PremiumAccessGate featureName="a publicação no Marketplace">
+    <PremiumAccessGate featureName="a publicação na Comunidade">
       <NewMarketplaceItemClient />
     </PremiumAccessGate>
   );

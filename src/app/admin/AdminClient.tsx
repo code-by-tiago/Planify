@@ -59,7 +59,7 @@ const tabs: Array<{ id: AdminTab; label: string }> = [
   { id: "usuarios", label: "Usuários" },
   { id: "assinaturas", label: "Assinaturas" },
   { id: "biblioteca", label: "Biblioteca" },
-  { id: "marketplace", label: "Marketplace" },
+  { id: "marketplace", label: "Comunidade" },
   { id: "documentos", label: "Documentos" },
   { id: "sistema", label: "Sistema" },
 ];
@@ -338,7 +338,7 @@ export function AdminClient() {
             <div className="mt-6 grid gap-3">
               {[
                 ["Biblioteca", "Cadastrar materiais oficiais e destacar conteúdos premium."],
-                ["Marketplace", "Moderar publicações dos professores e aprovar anexos."],
+                ["Comunidade", "Moderar publicações dos professores e aprovar anexos."],
                 ["Assinaturas", "Acompanhar plano ativo, vencido, pendente e cancelado."],
                 ["Documentos", "Auditar uso, histórico e geração de arquivos."],
               ].map(([title, description]) => (

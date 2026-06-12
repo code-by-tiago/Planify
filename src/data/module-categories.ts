@@ -21,8 +21,8 @@ export const moduleCategories = [
   },
   {
     id: "marketplace",
-    label: "Marketplace",
-    description: "Troca de materiais entre professores.",
+    label: "Comunidade",
+    description: "Materiais compartilhados entre professores.",
   },
   {
     id: "admin",

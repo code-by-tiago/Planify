@@ -86,15 +86,15 @@ export const appRoutes: AppRoute[] = [
   },
   {
     href: "/marketplace",
-    label: "Marketplace",
-    description: "Troca de materiais pedagógicos entre professores.",
+    label: "Comunidade",
+    description: "Compartilhamento de materiais pedagógicos entre professores.",
     group: "premium",
     status: "ready",
   },
   {
     href: "/marketplace/novo",
     label: "Publicar material",
-    description: "Publicação de material para o Marketplace.",
+    description: "Publicação de material para a Comunidade.",
     group: "premium",
     status: "ready",
   },

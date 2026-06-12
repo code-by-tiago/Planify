@@ -447,7 +447,7 @@ function polishBibliotecaCards() {
     if (candidate?.parentElement) {
       const marketplace = candidate.cloneNode(true) as HTMLAnchorElement;
       marketplace.href = "/marketplace";
-      marketplace.textContent = "Abrir Marketplace";
+      marketplace.textContent = "Abrir Comunidade";
       marketplace.classList.add("planify-generated-marketplace-link");
       candidate.insertAdjacentElement("afterend", marketplace);
     }

@@ -43,7 +43,7 @@ const contactTypes: Array<{ value: ContactType; label: string; description: stri
 const helpCards = [
   { title: "Acesso premium", description: "O dashboard premium exige plano ativo.", href: "/planos", label: "Ver planos" },
   { title: "Planejamentos", description: "BNCC oficial, habilidades e prévia estruturada.", href: "/planejamentos", label: "Abrir planejamentos" },
-  { title: "Marketplace", description: "Troca de materiais entre professores.", href: "/marketplace", label: "Abrir marketplace" },
+  { title: "Comunidade", description: "Materiais compartilhados entre professores.", href: "/marketplace", label: "Abrir comunidade" },
   { title: "Biblioteca", description: "Materiais curados pela curadoria Planify.", href: "/biblioteca", label: "Abrir biblioteca" },
 ];
 

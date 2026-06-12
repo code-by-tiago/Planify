@@ -28,7 +28,7 @@ export const billingPlans: BillingPlan[] = [
       "Materiais didáticos profissionais",
       "Editor e histórico",
       "Biblioteca Premium",
-      "Marketplace educacional",
+      "Comunidade docente",
     ],
   },
 ];

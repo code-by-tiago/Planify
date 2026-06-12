@@ -41,7 +41,7 @@ export const billingPlans: BillingPlan[] = [
       "Créditos generosos por mês para provas, apostilas e planos",
       "Todas as ferramentas com IA e planejamentos BNCC",
       "Editor, histórico e exportação Google Docs/PDF",
-      "Biblioteca premium e marketplace",
+      "Biblioteca premium e Comunidade",
       "Uso pessoal com política de uso justo",
     ],
   },

@@ -11,6 +11,7 @@ import {
   evaluateCorrectionWithAI,
   type CorrectionAiPayload,
 } from "@/server/correcao/correction-ai-service";
+import { assessCorrectionQuality } from "@/server/correcao/correction-quality";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -90,6 +91,7 @@ export async function POST(request: NextRequest) {
 
   const falhas: { index: number; message: string }[] = [];
   let successCount = 0;
+  const qualityScores: number[] = [];
 
   for (let index = 0; index < respostas.length; index += 1) {
     const payload: CorrectionAiPayload = {
@@ -107,7 +109,14 @@ export async function POST(request: NextRequest) {
     const result = await evaluateCorrectionWithAI(payload);
 
     if (result.ok) {
+      const quality = assessCorrectionQuality(result.result);
+      if (!quality.pass) {
+        falhas.push({ index, message: quality.message });
+        continue;
+      }
+
       resultados.push(result.result);
+      qualityScores.push(quality.qualityScore);
       successCount += 1;
     } else {
       falhas.push({ index, message: result.message });
@@ -131,11 +140,19 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const avgQuality =
+    qualityScores.length > 0
+      ? Math.round(
+          qualityScores.reduce((sum, score) => sum + score, 0) /
+            qualityScores.length,
+        )
+      : undefined;
+
   logGenerationComplete({
     surface: "material",
     tipo,
-    pipeline: "ai",
-    qualityScoreBucket: bucketQualityScore(undefined),
+    pipeline: "correcao-ai-batch",
+    qualityScoreBucket: bucketQualityScore(avgQuality),
     elevarQualidade: false,
     usedAI: true,
     dailyQuotaConsumed: false,
@@ -145,6 +162,7 @@ export async function POST(request: NextRequest) {
     ok: true,
     resultados,
     falhas,
+    qualityScore: avgQuality,
     creditCost: successCount * BATCH_CREDIT_PER_RESPONSE || getCreditCost(tipo),
   });
 }

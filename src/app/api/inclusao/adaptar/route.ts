@@ -4,6 +4,7 @@ import {
   generateInclusaoWithAI,
   type InclusaoAiPayload,
 } from "@/server/inclusao/inclusao-ai-service";
+import { assessInclusaoQuality } from "@/server/inclusao/inclusao-quality";
 import { persistGeneratedMaterialBestEffort } from "@/server/materials/persist-generated-material";
 import {
   finalizeGenerationFailure,
@@ -50,10 +51,40 @@ async function handlePost(request: NextRequest, _context: { params: Promise<Reco
       );
     }
 
+    const quality = assessInclusaoQuality({
+      modo: payload.modo,
+      markdown: result.markdown,
+      sourceContent: payload.conteudo,
+    });
+
+    if (!quality.pass) {
+      await finalizeGenerationFailure(user?.id, tipo, charge, {
+        eventType: "material_generation_failed",
+        errorCode: "quality_gate",
+        metadata: {
+          modo: payload.modo,
+          qualityScore: quality.qualityScore,
+          qualityIssues: quality.qualityIssues,
+        },
+      });
+
+      return NextResponse.json(
+        {
+          ok: false,
+          code: "quality_gate",
+          message: quality.message,
+          qualityScore: quality.qualityScore,
+          qualityIssues: quality.qualityIssues,
+        },
+        { status: 422 },
+      );
+    }
+
     logGenerationSuccessEvent({
       surface: "material",
       tipo: `${tipo}:${payload.modo}`,
       pipeline: result.usedAI ? "inclusao-ai" : "inclusao-fallback",
+      qualityScore: quality.qualityScore,
       elevarQualidade: false,
       usedAI: result.usedAI,
       dailyQuotaConsumed: charge.chargedDeepDaily && result.usedAI,
@@ -77,6 +108,8 @@ async function handlePost(request: NextRequest, _context: { params: Promise<Reco
           markdown: result.markdown,
           html: result.html,
           usedAI: result.usedAI,
+          qualityScore: quality.qualityScore,
+          qualityIssues: quality.qualityIssues,
         },
       });
     }
@@ -85,6 +118,8 @@ async function handlePost(request: NextRequest, _context: { params: Promise<Reco
       ok: true,
       markdown: result.markdown,
       html: result.html,
+      qualityScore: quality.qualityScore,
+      qualityIssues: quality.qualityIssues,
       creditCost: resolveGenerationCreditCost(charge, tipo),
     });
   } catch (error) {

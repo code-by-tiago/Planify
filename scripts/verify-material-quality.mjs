@@ -730,6 +730,69 @@ function testUnifiedQualityGate() {
   assert.equal(passesExportQualityGate(70, ["pendência"]), false);
 }
 
+function testCompanionToolsQuality() {
+  const { assessInclusaoQuality } = loadTsModule(
+    "src/server/inclusao/inclusao-quality.ts",
+  );
+  const { assessCorrectionQuality } = loadTsModule(
+    "src/server/correcao/correction-quality.ts",
+  );
+
+  const goodInclusao = assessInclusaoQuality({
+    modo: "adaptacao",
+    sourceContent: "Atividade sobre frações para o 5º ano com exercícios de soma.",
+    markdown: [
+      "## Adaptações para TDAH",
+      "- Dividir a atividade em blocos de 8 minutos.",
+      "- Usar cartões visuais de frações antes dos exercícios escritos.",
+      "- Oferecer checklist com passos numerados para cada questão.",
+    ].join("\n"),
+  });
+  assert.equal(goodInclusao.pass, true);
+  assert.ok(goodInclusao.qualityScore >= 80);
+
+  const badInclusao = assessInclusaoQuality({
+    modo: "adaptacao",
+    sourceContent:
+      "Atividade sobre frações para o 5º ano com exercícios de soma e representação pictórica.",
+    markdown: "Atividade sobre frações para o 5º ano com exercícios de soma e representação pictórica.",
+  });
+  assert.equal(badInclusao.pass, false);
+
+  const goodCorrection = assessCorrectionQuality({
+    nota: 7,
+    notaMaxima: 10,
+    percentual: 70,
+    feedbackGeral:
+      "A resposta identifica corretamente a causa do fenômeno, mas falta exemplificar com o contexto local.",
+    criterios: [
+      {
+        criterio: "Compreensão do conceito",
+        atendido: true,
+        pontos: 4,
+        pontosMaximos: 5,
+        comentario: "Explica o conceito com clareza parcial.",
+      },
+    ],
+    pontosFortes: ["Usa vocabulário adequado do tema."],
+    pontosMelhoria: ["Incluir um exemplo concreto da unidade em estudo."],
+    sugestaoProfessor: "Peça um contraexemplo em dupla na próxima aula.",
+  });
+  assert.equal(goodCorrection.pass, true);
+
+  const badCorrection = assessCorrectionQuality({
+    nota: 8,
+    notaMaxima: 10,
+    percentual: 80,
+    feedbackGeral: "Bom trabalho.",
+    criterios: [],
+    pontosFortes: [],
+    pontosMelhoria: [],
+    sugestaoProfessor: "",
+  });
+  assert.equal(badCorrection.pass, false);
+}
+
 function main() {
   const started = Date.now();
 
@@ -747,6 +810,7 @@ function main() {
   runTest("planning-quality", testPlanningQuality);
   runTest("daily-quota-migration", testDailyQuotaMigrationContract);
   runTest("generation-events-migration", testGenerationEventsMigrationContract);
+  runTest("companion-tools-quality", testCompanionToolsQuality);
 
   const elapsedMs = Date.now() - started;
   console.log(

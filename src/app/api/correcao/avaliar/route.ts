@@ -11,6 +11,7 @@ import {
   evaluateCorrectionWithAI,
   type CorrectionAiPayload,
 } from "@/server/correcao/correction-ai-service";
+import { assessCorrectionQuality } from "@/server/correcao/correction-quality";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -42,7 +43,7 @@ export async function POST(request: NextRequest) {
           ok: false,
           code: "insufficient_credits",
           message:
-            "Você não tem créditos suficientes para corrigir com IA. Faça upgrade do plano.",
+            "Você não tem créditos suficientes neste ciclo. Aguarde a renovação mensal ou fale com o suporte.",
           balance: spend.balance,
           cost: spend.cost,
         },
@@ -68,11 +69,29 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const quality = assessCorrectionQuality(result.result);
+  if (!quality.pass) {
+    if (user?.id && chargedCost > 0) {
+      await refundCredits(user.id, chargedCost, tipo);
+    }
+
+    return NextResponse.json(
+      {
+        ok: false,
+        code: "quality_gate",
+        message: quality.message,
+        qualityScore: quality.qualityScore,
+        qualityIssues: quality.qualityIssues,
+      },
+      { status: 422 },
+    );
+  }
+
   logGenerationComplete({
     surface: "material",
     tipo,
-    pipeline: "ai",
-    qualityScoreBucket: bucketQualityScore(undefined),
+    pipeline: "correcao-ai",
+    qualityScoreBucket: bucketQualityScore(quality.qualityScore),
     elevarQualidade: false,
     usedAI: true,
     dailyQuotaConsumed: false,
@@ -81,6 +100,8 @@ export async function POST(request: NextRequest) {
   return NextResponse.json({
     ok: true,
     result: result.result,
+    qualityScore: quality.qualityScore,
+    qualityIssues: quality.qualityIssues,
     creditCost: chargedCost || getCreditCost(tipo),
   });
 }

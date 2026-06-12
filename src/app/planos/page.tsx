@@ -7,9 +7,13 @@ import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { LandingFaq } from "@/components/public/landing/LandingFaq";
 import {
   ppBadge,
-  ppBtnGhost,
+  ppBtnOnDark,
   ppBtnPrimary,
   ppCtaBand,
+  ppCtaEyebrow,
+  ppCtaLead,
+  ppCtaLinkOnDark,
+  ppCtaTitle,
   ppEyebrow,
   ppIconBox,
   ppLead,
@@ -325,13 +329,11 @@ export default async function PlanosPage({ searchParams }: PlanosPageProps) {
 
       <section className="mx-auto max-w-7xl px-5 pb-16 sm:px-8">
         <div className={ppCtaBand}>
-          <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-cyan-200/90">
-            Próximo passo
-          </p>
-          <h2 className="mt-2 text-2xl font-extrabold text-white sm:text-3xl">
+          <p className={ppCtaEyebrow}>Próximo passo</p>
+          <h2 className={`mt-2 text-2xl sm:text-3xl ${ppCtaTitle}`}>
             Assine por R$ 24,90 e entre no painel
           </h2>
-          <p className="mx-auto mt-3 max-w-xl text-sm font-medium leading-7 text-slate-300">
+          <p className={`mx-auto mt-3 max-w-xl ${ppCtaLead}`}>
             Crie sua conta para assinar com checkout seguro ou entre com o
             e-mail da assinatura já ativa para usar as {landingPublicToolCount}{" "}
             ferramentas com IA.
@@ -341,13 +343,10 @@ export default async function PlanosPage({ searchParams }: PlanosPageProps) {
               Assinar agora
               <PlanifyIcon name="arrowRight" className="h-4 w-4" />
             </Link>
-            <Link href="/login" className={ppBtnGhost}>
+            <Link href="/login" className={ppBtnOnDark}>
               Criar conta
             </Link>
-            <Link
-              href="/login"
-              className="inline-flex items-center gap-2 rounded-xl px-7 py-3.5 text-sm font-semibold text-slate-300 underline-offset-4 transition hover:text-white hover:underline"
-            >
+            <Link href="/login" className={`rounded-xl px-7 py-3.5 ${ppCtaLinkOnDark}`}>
               Já sou assinante — Entrar
             </Link>
           </div>

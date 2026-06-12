@@ -5,10 +5,13 @@ import { buildPageMetadata } from "@/lib/seo/metadata";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import {
   ppBadge,
-  ppBtnGhost,
+  ppBtnOnDark,
   ppBtnPrimary,
   ppBtnSecondary,
   ppCtaBand,
+  ppCtaEyebrow,
+  ppCtaLead,
+  ppCtaTitle,
   ppEyebrow,
   ppLead,
   ppPlanHighlight,
@@ -257,13 +260,11 @@ export default function EscolasPage() {
       {/* CTA band */}
       <section className="mx-auto max-w-7xl px-5 pb-4 sm:px-8">
         <div className={ppCtaBand}>
-          <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-cyan-200/90">
-            Próximo passo institucional
-          </p>
-          <h2 className="mt-2 text-2xl font-extrabold text-white sm:text-3xl">
+          <p className={ppCtaEyebrow}>Próximo passo institucional</p>
+          <h2 className={`mt-2 text-2xl sm:text-3xl ${ppCtaTitle}`}>
             Transforme a gestão pedagógica da sua escola
           </h2>
-          <p className="mx-auto mt-3 max-w-2xl text-sm font-medium leading-7 text-slate-300">
+          <p className={`mx-auto mt-3 max-w-2xl ${ppCtaLead}`}>
             Agende uma demonstração gratuita com nossa equipe comercial. Apresentaremos o
             portal do gestor, o painel BNCC e as opções de licenciamento para o porte da sua
             instituição.
@@ -273,7 +274,7 @@ export default function EscolasPage() {
               Solicitar Demonstração Gratuita
               <PlanifyIcon name="arrowRight" className="h-4 w-4" />
             </a>
-            <Link href="/login?portal=escola" className={ppBtnGhost}>
+            <Link href="/login?portal=escola" className={ppBtnOnDark}>
               Portal da Escola
             </Link>
           </div>

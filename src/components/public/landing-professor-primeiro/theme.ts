@@ -50,6 +50,17 @@ export const ppInput =
 export const ppCtaBand =
   "overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-[#0c2a3a] to-[#071018] px-8 py-10 text-center shadow-2xl sm:px-12";
 
+/** Dark-band copy — hex bypasses global text-slate/cyan overrides on public pages. */
+export const ppCtaEyebrow =
+  "text-[10px] font-bold uppercase tracking-[0.22em] text-[#a5f3fc]";
+
+export const ppCtaLead = "text-sm font-medium leading-7 text-[#bae6fd]";
+
+export const ppCtaTitle = "font-extrabold !text-white";
+
+export const ppCtaLinkOnDark =
+  "inline-flex items-center gap-2 text-sm font-semibold text-[#bae6fd] underline-offset-4 transition hover:text-white hover:underline";
+
 export const ppSectionAlt = "border-y border-slate-200/80 bg-slate-50/80";
 
 export const ppPlanHighlight =

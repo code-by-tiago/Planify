@@ -87,7 +87,7 @@ export async function createStripeCheckoutSession(
     mode: "subscription",
     "line_items[0][price]": priceId,
     "line_items[0][quantity]": "1",
-    success_url: `${appUrl}/planos/sucesso?checkout=success&plan=${params.planKey}`,
+    success_url: `${appUrl}/planos/sucesso?checkout=success&plan=${params.planKey}&session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${appUrl}/planos?checkout=cancelled&plan=${params.planKey}`,
     "metadata[ui_plan_key]": params.planKey,
     "metadata[plan_key]": plan.stripePlanKey,

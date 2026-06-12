@@ -196,13 +196,23 @@ export async function signUpAndGoToPlans(params: {
       needsEmailConfirmation: true,
       redirectTo: "/login?cadastro=confirmar",
       message:
-        "Conta criada! Confirme o e-mail que enviamos e depois entre para escolher seu plano.",
+        "Conta criada! Confirme o e-mail que enviamos. Se você já pagou, o plano será liberado automaticamente ao entrar.",
     };
   }
 
   if (hasSession && data.session?.access_token) {
-    await syncPremiumAccessCookie(data.session.access_token);
+    const cookieResult = await syncPremiumAccessCookie(data.session.access_token);
     await createOwnerSession(data.session.access_token);
+
+    if (cookieResult.access.premium) {
+      return {
+        success: true,
+        premium: true,
+        redirectTo: "/dashboard",
+        message: "Conta criada e plano vinculado! Bem-vindo ao Planify.",
+        accessToken: data.session.access_token,
+      };
+    }
   }
 
   return {

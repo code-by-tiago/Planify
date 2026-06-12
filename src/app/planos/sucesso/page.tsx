@@ -10,7 +10,17 @@ import {
 
 export const dynamic = "force-dynamic";
 
-export default function PlanosSucessoPage() {
+type PlanosSucessoPageProps = {
+  searchParams: Promise<{
+    session_id?: string;
+  }>;
+};
+
+export default async function PlanosSucessoPage({
+  searchParams,
+}: PlanosSucessoPageProps) {
+  const params = await searchParams;
+
   return (
     <PublicProfessorPrimeiroLayout>
       <section className="mx-auto flex max-w-2xl flex-1 flex-col items-center justify-center px-5 py-16 text-center sm:px-8">
@@ -26,12 +36,12 @@ export default function PlanosSucessoPage() {
         </h1>
 
         <p className={`mt-5 ${ppLead}`}>
-          Assim que o pagamento for confirmado, seu plano é vinculado ao e-mail
-          da conta e o acesso premium é liberado automaticamente.
+          Seu plano será vinculado ao e-mail do pagamento. Crie sua senha ou
+          entre na conta com esse mesmo e-mail para acessar o painel.
         </p>
 
         <div className="mt-8 w-full">
-          <PlanosSucessoActions />
+          <PlanosSucessoActions sessionId={params.session_id ?? null} />
         </div>
       </section>
     </PublicProfessorPrimeiroLayout>

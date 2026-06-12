@@ -8,6 +8,8 @@ export type LoginSearchParams = {
   premium?: string;
   cadastro?: string;
   sessao_expirada?: string;
+  mode?: string;
+  email?: string;
 };
 
 type LoginPageProps = {

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { ppBtnPrimary, ppBtnSecondary } from "@/components/public/landing-professor-primeiro/theme";
 import { getCurrentAccessToken } from "@/lib/auth/session-client";
@@ -9,8 +9,73 @@ import { syncPremiumAccessCookie } from "@/lib/auth/access-client";
 
 type AccessState = "loading" | "premium" | "pending" | "login";
 
-export function PlanosSucessoActions() {
+type PlanosSucessoActionsProps = {
+  sessionId?: string | null;
+};
+
+function buildSignupHref(checkoutEmail: string | null): string {
+  const params = new URLSearchParams({
+    mode: "signup",
+    redirect: "/dashboard",
+  });
+
+  if (checkoutEmail) {
+    params.set("email", checkoutEmail);
+  }
+
+  return `/login?${params.toString()}`;
+}
+
+function buildLoginHref(checkoutEmail: string | null): string {
+  const params = new URLSearchParams({ redirect: "/dashboard" });
+
+  if (checkoutEmail) {
+    params.set("email", checkoutEmail);
+  }
+
+  return `/login?${params.toString()}`;
+}
+
+export function PlanosSucessoActions({ sessionId }: PlanosSucessoActionsProps) {
   const [state, setState] = useState<AccessState>("loading");
+  const [checkoutEmail, setCheckoutEmail] = useState<string | null>(null);
+
+  const signupHref = useMemo(
+    () => buildSignupHref(checkoutEmail),
+    [checkoutEmail],
+  );
+  const loginHref = useMemo(() => buildLoginHref(checkoutEmail), [checkoutEmail]);
+
+  useEffect(() => {
+    if (!sessionId) {
+      return;
+    }
+
+    let active = true;
+
+    async function loadCheckoutEmail() {
+      try {
+        const res = await fetch(
+          `/api/stripe/checkout-session?session_id=${encodeURIComponent(sessionId)}`,
+          { cache: "no-store" },
+        );
+        const json = await res.json().catch(() => null);
+        const email = json?.data?.email?.trim();
+
+        if (active && email) {
+          setCheckoutEmail(email);
+        }
+      } catch {
+        // Mantém mensagem genérica se a consulta falhar.
+      }
+    }
+
+    void loadCheckoutEmail();
+
+    return () => {
+      active = false;
+    };
+  }, [sessionId]);
 
   useEffect(() => {
     let active = true;
@@ -81,14 +146,22 @@ export function PlanosSucessoActions() {
       <div className="space-y-4">
         <p className="text-sm font-semibold leading-6 text-slate-600">
           Pagamento recebido. Estamos liberando seu plano — isso leva alguns
-          segundos. Você já pode tentar abrir o painel; se ainda não liberar,
-          entre na conta e aguarde a confirmação.
+          segundos.
+          {checkoutEmail ? (
+            <>
+              {" "}
+              Use o e-mail <strong className="text-slate-800">{checkoutEmail}</strong>{" "}
+              ao entrar ou criar sua senha.
+            </>
+          ) : (
+            " Entre na conta com o mesmo e-mail usado no pagamento."
+          )}
         </p>
         <div className="flex flex-col justify-center gap-3 sm:flex-row">
           <Link href="/dashboard" className={ppBtnPrimary}>
             Tentar abrir o painel
           </Link>
-          <Link href="/login" className={ppBtnSecondary}>
+          <Link href={loginHref} className={ppBtnSecondary}>
             Entrar na conta
           </Link>
         </div>
@@ -97,13 +170,31 @@ export function PlanosSucessoActions() {
   }
 
   return (
-    <div className="flex flex-col justify-center gap-3 sm:flex-row">
-      <Link href="/login" className={ppBtnPrimary}>
-        Entrar na conta
-      </Link>
-      <Link href="/planos" className={ppBtnSecondary}>
-        Ver planos
-      </Link>
+    <div className="space-y-4">
+      <p className="text-sm font-semibold leading-6 text-slate-600">
+        {checkoutEmail ? (
+          <>
+            Crie sua senha com o e-mail{" "}
+            <strong className="text-slate-800">{checkoutEmail}</strong> para
+            liberar o acesso ao painel. Se já tiver conta, entre com esse mesmo
+            e-mail.
+          </>
+        ) : (
+          <>
+            Crie sua senha com o <strong className="text-slate-800">mesmo e-mail</strong>{" "}
+            usado no pagamento para liberar o acesso ao painel.
+          </>
+        )}
+      </p>
+      <div className="flex flex-col justify-center gap-3 sm:flex-row">
+        <Link href={signupHref} className={ppBtnPrimary}>
+          Criar minha senha
+          <PlanifyIcon name="arrowRight" className="h-4 w-4" />
+        </Link>
+        <Link href={loginHref} className={ppBtnSecondary}>
+          Já tenho conta
+        </Link>
+      </div>
     </div>
   );
 }

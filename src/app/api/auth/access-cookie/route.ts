@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import type { AccessCookiePayload } from "../../../../types/access";
 import { verifyPremiumAccess } from "../../../../server/auth/premium-access-service";
 import { acceptPendingSchoolInvites } from "../../../../server/schools/accept-pending-school-invites";
+import { linkPendingSubscriptionsToUser } from "../../../../server/stripe/link-subscription-to-user";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -47,6 +48,22 @@ export async function POST(request: NextRequest) {
   let inviteSyncWarning: string | null = null;
 
   if (access.authenticated && access.user?.id && access.user.email) {
+    try {
+      const linkResult = await linkPendingSubscriptionsToUser({
+        userId: access.user.id,
+        email: access.user.email,
+      });
+
+      if (linkResult.linkedCount > 0) {
+        access = await verifyPremiumAccess(token);
+      }
+    } catch (error) {
+      console.error("planify:subscription-link-failed", {
+        userId: access.user?.id,
+        message: error instanceof Error ? error.message : "unknown",
+      });
+    }
+
     try {
       const inviteResult = await acceptPendingSchoolInvites(
         access.user.id,

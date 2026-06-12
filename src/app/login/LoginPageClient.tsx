@@ -105,15 +105,22 @@ export function LoginPageClient({ initialSearchParams }: LoginPageClientProps) {
   const premiumRequired = initialSearchParams.premium === "required";
   const cadastroConfirmar = initialSearchParams.cadastro === "confirmar";
   const sessaoExpirada = initialSearchParams.sessao_expirada === "1";
+  const postPaymentSignup =
+    initialSearchParams.mode === "signup" && Boolean(initialSearchParams.email?.trim());
 
-  const [mode, setMode] = useState<Mode>("login");
-  const [email, setEmail] = useState("");
+  const [mode, setMode] = useState<Mode>(() =>
+    initialSearchParams.mode === "signup" ? "signup" : "login",
+  );
+  const [email, setEmail] = useState(() => initialSearchParams.email?.trim() ?? "");
   const [senha, setSenha] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(() => {
     if (cadastroConfirmar) {
-      return "Confirme o e-mail que enviamos e depois entre com sua senha para escolher um plano.";
+      return "Confirme o e-mail que enviamos. Se você já pagou, o plano será liberado automaticamente ao entrar.";
+    }
+    if (postPaymentSignup) {
+      return "Crie sua senha com o mesmo e-mail usado no pagamento para liberar o acesso.";
     }
     if (sessaoExpirada) {
       return "Sua sessão expirou durante a conexão com o Google. Entre novamente para voltar ao editor.";

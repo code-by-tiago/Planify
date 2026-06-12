@@ -83,6 +83,19 @@ export function getQuestionBankComponenteOptions(etapa: QuestionBankEtapa): stri
   return ["todos", ...Array.from(all).sort((a, b) => a.localeCompare(b, "pt-BR"))];
 }
 
+export function resolveQuestionBankArea(
+  etapa: QuestionBankEtapa,
+  componente: string,
+): string {
+  if (etapa === "todos" || componente === "todos") return "";
+  const config = EDUCATION_OPTIONS[etapa];
+  if (!config) return "";
+  for (const [area, components] of Object.entries(config.componentsByArea)) {
+    if ((components as string[]).includes(componente)) return area;
+  }
+  return config.areas[0] ?? "";
+}
+
 export function normalizeQuestionBankFilterEducation(
   filter: Pick<QuestionBankFilter, "etapa" | "anoSerie" | "componente">,
   patch: Partial<Pick<QuestionBankFilter, "etapa" | "anoSerie" | "componente">> = {},

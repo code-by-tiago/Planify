@@ -4,6 +4,10 @@ import {
 } from "@/lib/banco-questoes/question-bank-education";
 
 export { inferSerieStage } from "@/lib/banco-questoes/question-bank-education";
+import {
+  bnccCodeMatchesStage,
+  resolveBnccStageFromFields,
+} from "@/lib/bncc/bncc-stage-filter";
 import type { QuestionBankFilter, QuestionBankItem } from "@/types/question-bank";
 import { DEFAULT_QUESTION_BANK_FILTER } from "@/types/question-bank";
 
@@ -11,7 +15,7 @@ export type RankedQuestionBankItem = QuestionBankItem & { matchScore: number };
 
 export type QuestionBankSearchMode = "browse" | "search";
 
-export type QuestionBankSearchFallback = "none" | "related" | "structural";
+export type QuestionBankSearchFallback = "none" | "related";
 
 export type QuestionBankSearchResult = {
   mode: QuestionBankSearchMode;
@@ -36,11 +40,33 @@ function temaTokens(topic: string): string[] {
     .filter((word) => word.length > 2);
 }
 
+function bnccComponentArea(code: string): string {
+  const match = String(code || "")
+    .trim()
+    .toUpperCase()
+    .match(/^(?:EM|EF|EI)\d{2}([A-Z]{2})/);
+  return match?.[1] ?? "";
+}
+
+function itemEffectiveEtapa(item: QuestionBankItem): string {
+  const fromField = item.etapa?.trim();
+  if (fromField) return fromField;
+  return inferEtapaFromAnoSerie(item.anoSerie) ?? "";
+}
+
+function itemEducationIsConsistent(item: QuestionBankItem): boolean {
+  const fromAno = inferEtapaFromAnoSerie(item.anoSerie);
+  const fromField = item.etapa?.trim();
+  if (!fromAno || !fromField) return true;
+  return fromAno === fromField;
+}
+
 export function isQuestionBankSearchActive(filter: QuestionBankFilter): boolean {
   return Boolean(
     filter.query.trim() ||
       filter.bncc.trim() ||
-      filter.bnccCodigos?.length,
+      filter.bnccCodigos?.length ||
+      filter.bnccSearchTerms?.length,
   );
 }
 
@@ -59,6 +85,7 @@ export function scoreQuestionBankMatch(
   tema: string,
   componente: string,
   anoSerie?: string,
+  bnccTerms: string[] = [],
 ): number {
   const topic = normalizeQuestionBankText(tema);
   const comp = normalizeQuestionBankText(componente);
@@ -88,15 +115,20 @@ export function scoreQuestionBankMatch(
     else {
       const wanted = inferSerieStage(anoSerie);
       const got = inferSerieStage(item.anoSerie);
-      if (wanted !== "geral" && got !== "geral" && wanted !== got) score -= 4;
+      if (wanted !== "geral" && got !== "geral" && wanted !== got) return 0;
+      if (item.anoSerie !== anoSerie) score += 1;
     }
   }
 
-  if (!topic) return Math.max(score, 1);
+  const searchTerms = [
+    ...temaTokens(topic),
+    ...bnccTerms.flatMap((term) => temaTokens(term)),
+  ];
 
-  const tokens = temaTokens(topic);
+  if (!topic && searchTerms.length === 0) return Math.max(score, 1);
+
   let tokenHits = 0;
-  for (const token of tokens) {
+  for (const token of searchTerms) {
     if (haystack.includes(token)) {
       score += 3;
       tokenHits += 1;
@@ -104,10 +136,10 @@ export function scoreQuestionBankMatch(
   }
 
   const itemTema = normalizeQuestionBankText(item.tema);
-  if (itemTema.includes(topic)) score += 8;
-  if (haystack.includes(topic)) score += 5;
+  if (topic && itemTema.includes(topic)) score += 8;
+  if (topic && haystack.includes(topic)) score += 5;
 
-  if (tokens.length > 0 && tokenHits === 0) return 0;
+  if (searchTerms.length > 0 && tokenHits === 0 && topic) return 0;
 
   return Math.max(score, 0);
 }
@@ -124,10 +156,10 @@ function passesSourceFilter(
 
 function passesEtapaFilter(item: QuestionBankItem, etapa: QuestionBankFilter["etapa"]): boolean {
   if (etapa === "todos") return true;
+  if (!itemEducationIsConsistent(item)) return false;
 
-  const itemEtapa =
-    item.etapa?.trim() || inferEtapaFromAnoSerie(item.anoSerie) || "";
-  if (!itemEtapa) return true;
+  const itemEtapa = itemEffectiveEtapa(item);
+  if (!itemEtapa) return false;
   return itemEtapa === etapa;
 }
 
@@ -139,11 +171,11 @@ function passesComponenteFilter(item: QuestionBankItem, componente: string): boo
 function passesAnoSerieFilter(
   item: QuestionBankItem,
   anoSerie: string,
-  options?: { allowSameStage?: boolean },
+  options?: { relaxWithinStage?: boolean },
 ): boolean {
   if (anoSerie === "todos") return true;
   if (item.anoSerie === anoSerie || item.anoSerie === "Geral") return true;
-  if (!options?.allowSameStage) return false;
+  if (!options?.relaxWithinStage) return false;
 
   const wanted = inferSerieStage(anoSerie);
   const got = inferSerieStage(item.anoSerie);
@@ -156,19 +188,71 @@ function passesAnoSerieFilter(
 function collectBnccCodes(filter: QuestionBankFilter): string[] {
   if (filter.bnccCodigos?.length) {
     return filter.bnccCodigos
-      .map((code) => code.trim().toLowerCase())
+      .map((code) => code.trim().toUpperCase())
       .filter(Boolean);
   }
   const manual = filter.bncc.trim();
-  return manual ? [manual.toLowerCase()] : [];
+  return manual ? [manual.toUpperCase()] : [];
 }
 
-function passesBnccFilter(item: QuestionBankItem, codes: string[]): boolean {
-  if (!codes.length) return true;
-  const itemCodes = item.bnccCodigos.map((code) => code.toLowerCase());
-  return codes.some((code) =>
-    itemCodes.some((itemCode) => itemCode === code || itemCode.includes(code)),
+function collectBnccSearchTerms(filter: QuestionBankFilter): string[] {
+  const terms = (filter.bnccSearchTerms ?? [])
+    .map((term) => term.trim())
+    .filter(Boolean);
+  if (terms.length > 0) return terms;
+  if (filter.query.trim()) return [filter.query.trim()];
+  return [];
+}
+
+function itemHaystack(item: QuestionBankItem): string {
+  return normalizeQuestionBankText(
+    [
+      item.enunciado,
+      item.textoApoio ?? "",
+      item.tema,
+      item.tags.join(" "),
+      item.bnccCodigos.join(" "),
+    ].join(" "),
   );
+}
+
+function passesBnccFilter(item: QuestionBankItem, filter: QuestionBankFilter): boolean {
+  const codes = collectBnccCodes(filter);
+  if (!codes.length) return true;
+
+  const stage = resolveBnccStageFromFields(filter.etapa, filter.anoSerie);
+  const itemCodes = item.bnccCodigos.map((code) => code.toUpperCase());
+  const filterAreas = new Set(codes.map(bnccComponentArea).filter(Boolean));
+  const searchTerms = collectBnccSearchTerms(filter);
+  const haystack = itemHaystack(item);
+
+  for (const code of codes) {
+    const normalized = code.toUpperCase();
+    if (itemCodes.some((itemCode) => itemCode === normalized)) {
+      return true;
+    }
+  }
+
+  for (const itemCode of itemCodes) {
+    if (stage && !bnccCodeMatchesStage(itemCode, stage)) continue;
+
+    const itemArea = bnccComponentArea(itemCode);
+    if (filterAreas.size > 0 && itemArea && !filterAreas.has(itemArea)) continue;
+
+    if (searchTerms.length > 0) {
+      const tokens = searchTerms.flatMap((term) => temaTokens(term));
+      if (tokens.some((token) => haystack.includes(token))) {
+        return true;
+      }
+      continue;
+    }
+
+    if (filterAreas.size > 0 && itemArea && filterAreas.has(itemArea)) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 function rankPool(
@@ -177,6 +261,7 @@ function rankPool(
   minScore: number,
 ): RankedQuestionBankItem[] {
   const tema = filter.query.trim();
+  const bnccTerms = collectBnccSearchTerms(filter);
 
   return items
     .map((item) => ({
@@ -186,6 +271,7 @@ function rankPool(
         tema,
         filter.componente,
         filter.anoSerie,
+        bnccTerms,
       ),
     }))
     .filter((entry) => entry.matchScore >= minScore)
@@ -199,16 +285,15 @@ function rankPool(
 function basePool(
   items: QuestionBankItem[],
   filter: QuestionBankFilter,
-  options?: { allowSameStage?: boolean },
+  options?: { relaxWithinStage?: boolean },
 ): QuestionBankItem[] {
-  const bnccCodes = collectBnccCodes(filter);
   return items.filter(
     (item) =>
       passesSourceFilter(item, filter.source) &&
       passesEtapaFilter(item, filter.etapa) &&
       passesComponenteFilter(item, filter.componente) &&
       passesAnoSerieFilter(item, filter.anoSerie, options) &&
-      passesBnccFilter(item, bnccCodes),
+      passesBnccFilter(item, filter),
   );
 }
 
@@ -221,6 +306,7 @@ function browsePool(
     query: "",
     bncc: "",
     bnccCodigos: undefined,
+    bnccSearchTerms: undefined,
   });
 
   return pool
@@ -247,13 +333,23 @@ export function searchQuestionBankItems(
   }
 
   const pool = basePool(items, filter);
-  const minScore = tema ? 3 : 1;
+  const minScore = tema || filter.bnccSearchTerms?.length ? 3 : 1;
   const ranked = rankPool(pool, filter, minScore);
 
-  if (ranked.length > 0 || !tema) {
+  if (ranked.length > 0) {
     return {
       mode: "search",
       items: ranked,
+      related: [],
+      poolSize: pool.length,
+      fallback: "none",
+    };
+  }
+
+  if (!tema && !filter.bnccSearchTerms?.length) {
+    return {
+      mode: "search",
+      items: [],
       related: [],
       poolSize: pool.length,
       fallback: "none",
@@ -266,32 +362,15 @@ export function searchQuestionBankItems(
     bncc: "",
     bnccCodigos: undefined,
   };
-  const relaxedPool = basePool(items, relaxedFilter, { allowSameStage: true });
+  const relaxedPool = basePool(items, relaxedFilter, { relaxWithinStage: true });
   const related = rankPool(relaxedPool, relaxedFilter, 3).slice(0, 8);
-
-  if (related.length > 0) {
-    return {
-      mode: "search",
-      items: [],
-      related,
-      poolSize: pool.length,
-      fallback: "related",
-    };
-  }
-
-  const structural = browsePool(items, {
-    ...filter,
-    query: "",
-    bncc: "",
-    bnccCodigos: undefined,
-  }).slice(0, 12);
 
   return {
     mode: "search",
     items: [],
-    related: structural,
+    related,
     poolSize: pool.length,
-    fallback: "structural",
+    fallback: related.length > 0 ? "related" : "none",
   };
 }
 

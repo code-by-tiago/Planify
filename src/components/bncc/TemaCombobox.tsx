@@ -15,6 +15,7 @@ type TemaComboboxProps = {
   anoSerie?: string;
   componente?: string;
   className?: string;
+  onKeyDown?: (event: React.KeyboardEvent<HTMLInputElement>) => void;
 };
 
 export function TemaCombobox({
@@ -27,6 +28,7 @@ export function TemaCombobox({
   anoSerie,
   componente,
   className,
+  onKeyDown,
 }: TemaComboboxProps) {
   const listboxId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
@@ -91,12 +93,16 @@ export function TemaCombobox({
       return;
     }
 
-    if (event.key === "Enter" && activeIndex >= 0) {
-      event.preventDefault();
-      const suggestion = suggestions[activeIndex];
-      if (suggestion) {
-        selectSuggestion(suggestion);
+    if (event.key === "Enter") {
+      if (activeIndex >= 0) {
+        event.preventDefault();
+        const suggestion = suggestions[activeIndex];
+        if (suggestion) {
+          selectSuggestion(suggestion);
+        }
+        return;
       }
+      onKeyDown?.(event);
       return;
     }
 
@@ -104,6 +110,8 @@ export function TemaCombobox({
       setOpen(false);
       setActiveIndex(-1);
     }
+
+    onKeyDown?.(event);
   }
 
   return (

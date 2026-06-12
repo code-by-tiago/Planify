@@ -39,6 +39,8 @@ export type QuestionBankFilter = {
   bncc: string;
   /** Preenchido automaticamente ao escolher tema sugerido pela BNCC */
   bnccCodigos?: string[];
+  /** Conteúdo/descrição das habilidades selecionadas — matching semântico no acervo */
+  bnccSearchTerms?: string[];
   source: QuestionBankSource;
 };
 

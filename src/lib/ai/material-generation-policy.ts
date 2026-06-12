@@ -60,8 +60,11 @@ export function isDeepGenerationType(tipo: string): boolean {
   return false;
 }
 
-/** Tier legado — o motor usa Flash na 1ª passada e Pro em retries/elevar. */
-export function getModelTierForMaterialType(_tipo: string): AIModelTier {
+/** Tier do tipo — materiais profundos/leves usam Pro; complementares leves usam Flash. */
+export function getModelTierForMaterialType(tipo: string): AIModelTier {
+  const key = normalizeMaterialTypeKey(tipo);
+  if (DEEP_SET.has(key) || LIGHT_SET.has(key)) return "advanced";
+  if (DEEP_PLANNING_TYPES.has(key)) return "advanced";
   return "default";
 }
 

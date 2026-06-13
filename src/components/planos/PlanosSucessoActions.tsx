@@ -47,16 +47,17 @@ export function PlanosSucessoActions({ sessionId }: PlanosSucessoActionsProps) {
   const loginHref = useMemo(() => buildLoginHref(checkoutEmail), [checkoutEmail]);
 
   useEffect(() => {
-    if (!sessionId) {
+    if (typeof sessionId !== "string" || !sessionId.trim()) {
       return;
     }
 
+    const checkoutSessionId = sessionId.trim();
     let active = true;
 
     async function loadCheckoutEmail() {
       try {
         const res = await fetch(
-          `/api/stripe/checkout-session?session_id=${encodeURIComponent(sessionId)}`,
+          `/api/stripe/checkout-session?session_id=${encodeURIComponent(checkoutSessionId)}`,
           { cache: "no-store" },
         );
         const json = await res.json().catch(() => null);

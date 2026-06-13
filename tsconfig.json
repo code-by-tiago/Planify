@@ -40,6 +40,12 @@
     "backups",
     "backups/**/*",
     "planify-backups",
-    "planify-backups/**/*"
+    "planify-backups/**/*",
+    "desenho biblico",
+    "desenho biblico/**/*",
+    "tmp",
+    "tmp/**/*",
+    "marketing",
+    "marketing/**/*"
   ]
 }

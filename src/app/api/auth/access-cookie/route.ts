@@ -48,10 +48,13 @@ export async function POST(request: NextRequest) {
   let inviteSyncWarning: string | null = null;
 
   if (access.authenticated && access.user?.id && access.user.email) {
+    const userId = access.user.id;
+    const userEmail = access.user.email;
+
     try {
       const linkResult = await linkPendingSubscriptionsToUser({
-        userId: access.user.id,
-        email: access.user.email,
+        userId,
+        email: userEmail,
       });
 
       if (linkResult.linkedCount > 0) {
@@ -59,23 +62,20 @@ export async function POST(request: NextRequest) {
       }
     } catch (error) {
       console.error("planify:subscription-link-failed", {
-        userId: access.user?.id,
+        userId,
         message: error instanceof Error ? error.message : "unknown",
       });
     }
 
     try {
-      const inviteResult = await acceptPendingSchoolInvites(
-        access.user.id,
-        access.user.email,
-      );
+      const inviteResult = await acceptPendingSchoolInvites(userId, userEmail);
 
       if (inviteResult.acceptedCount > 0 || inviteResult.proGranted) {
         access = await verifyPremiumAccess(token);
       }
     } catch (error) {
       console.error("planify:school-invite-sync-failed", {
-        userId: access.user?.id,
+        userId,
         message: error instanceof Error ? error.message : "unknown",
       });
       inviteSyncWarning =

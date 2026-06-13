@@ -53,6 +53,7 @@ type StripeCheckoutSession = {
     email?: string | null;
   } | null;
   subscription?: string | null;
+  payment_status?: string | null;
   metadata?: Record<string, string | undefined> | null;
 };
 
@@ -422,4 +423,35 @@ export async function handleStripeWebhookEvent(event: StripeWebhookEvent) {
         eventType: event.type,
       };
   }
+}
+
+/** Sincroniza assinatura do Stripe quando o webhook ainda não gravou no banco. */
+export async function syncCheckoutSessionToDatabase(sessionId: string): Promise<{
+  synced: boolean;
+  email: string | null;
+}> {
+  const trimmed = sessionId.trim();
+  if (!trimmed.startsWith("cs_")) {
+    return { synced: false, email: null };
+  }
+
+  const session = await stripeApiRequest<StripeCheckoutSession>(
+    `/checkout/sessions/${encodeURIComponent(trimmed)}`,
+  );
+
+  const email =
+    session.customer_details?.email?.trim() ||
+    session.customer_email?.trim() ||
+    null;
+
+  if (session.payment_status !== "paid" || !session.subscription) {
+    return { synced: false, email };
+  }
+
+  const result = await handleCheckoutCompleted(session, "checkout.session.sync");
+
+  return {
+    synced: Boolean(result.handled),
+    email,
+  };
 }

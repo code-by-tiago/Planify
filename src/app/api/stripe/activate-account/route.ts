@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdminClient } from "@/server/supabase/admin-client";
 import { getCheckoutSessionPublicSummary } from "@/server/stripe/checkout-session-lookup";
 import { linkPendingSubscriptionsToUser } from "@/server/stripe/link-subscription-to-user";
+import { syncCheckoutSessionToDatabase } from "@/server/stripe/webhook-service";
 import { appendFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -63,6 +64,39 @@ async function hasActiveSubscription(email: string): Promise<boolean> {
   return Boolean(data);
 }
 
+async function wait(ms: number) {
+  await new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function resolvePaidSubscription(params: {
+  email: string;
+  sessionId: string;
+}): Promise<boolean> {
+  if (params.sessionId) {
+    await syncCheckoutSessionToDatabase(params.sessionId);
+  }
+
+  if (await hasActiveSubscription(params.email)) {
+    return true;
+  }
+
+  const attempts = params.sessionId ? 5 : 6;
+
+  for (let attempt = 1; attempt < attempts; attempt += 1) {
+    await wait(1500);
+
+    if (params.sessionId) {
+      await syncCheckoutSessionToDatabase(params.sessionId);
+    }
+
+    if (await hasActiveSubscription(params.email)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = (await request.json().catch(() => ({}))) as {
@@ -117,7 +151,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const paid = await hasActiveSubscription(email);
+    const paid = await resolvePaidSubscription({ email, sessionId });
 
     if (!paid) {
       debugLog({

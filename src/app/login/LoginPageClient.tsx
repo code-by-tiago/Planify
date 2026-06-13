@@ -205,17 +205,8 @@ export function LoginPageClient({ initialSearchParams }: LoginPageClientProps) {
         <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-16">
           <div>
             <h1 className={`${ppTitle} text-3xl sm:text-4xl lg:text-[2.75rem]`}>
-              {mode === "login" ? (
-                <>
-                  Bem-vindo de volta,{" "}
-                  <span className={ppTitleAccent}>{copy.heroLead}</span>
-                </>
-              ) : (
-                <>
-                  Crie sua conta e escolha um{" "}
-                  <span className={ppTitleAccent}>plano Planify.</span>
-                </>
-              )}
+              Bem-vindo de volta,{" "}
+              <span className={ppTitleAccent}>{copy.heroLead}</span>
             </h1>
             <p className="mt-4 max-w-lg text-base font-medium leading-7 text-slate-600">
               {copy.loginLead}

@@ -1,5 +1,6 @@
 import { Buffer } from "node:buffer";
 import { NextRequest, NextResponse } from "next/server";
+import { getRequestAccessToken } from "../../../../server/auth/api-access";
 import { verifyPremiumAccess } from "../../../../server/auth/premium-access-service";
 import { resolveAdminAccess } from "../../../../server/auth/admin-access";
 import { isOwnerEmail } from "../../../../server/auth/owner-emails";
@@ -8,7 +9,6 @@ import { getSupabaseAdminClient } from "../../../../server/supabase/admin-client
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const PREMIUM_COOKIE_NAME = "planify_access";
 const ADMIN_COOKIE_NAME = "planify_admin_access";
 const OWNER_COOKIE_NAME = "planify_owner_access";
 const BUCKET_NAME = "biblioteca-materiais";
@@ -150,15 +150,15 @@ async function withSignedUrl(row: LibraryMaterialRow) {
 }
 
 async function resolvePremiumOrOwnerAccess(request: NextRequest) {
-  const premiumToken = request.cookies.get(PREMIUM_COOKIE_NAME)?.value || null;
+  const sessionToken = getRequestAccessToken(request);
   const adminToken = request.cookies.get(ADMIN_COOKIE_NAME)?.value || null;
   const ownerToken = request.cookies.get(OWNER_COOKIE_NAME)?.value || null;
 
-  const access = await verifyPremiumAccess(premiumToken);
+  const access = await verifyPremiumAccess(sessionToken);
   const admin = await resolveAdminAccess(adminToken);
-  const owner = await resolveOwnerByToken(ownerToken || premiumToken || adminToken);
+  const owner = await resolveOwnerByToken(ownerToken || sessionToken || adminToken);
 
-  const tokenEmail = decodeJwtEmail(premiumToken);
+  const tokenEmail = decodeJwtEmail(sessionToken);
   const email = String(
     access.user?.email ||
       owner.email ||

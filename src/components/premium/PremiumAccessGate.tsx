@@ -9,11 +9,7 @@ import {
   buildPlansRedirect,
   getCurrentPathWithSearch,
 } from "@/lib/auth/premium-gate";
-import { fetchPlanifyAccessStatus } from "@/lib/auth/access-client";
-import {
-  ensurePremiumSessionCookies,
-  getCurrentAccessToken,
-} from "@/lib/auth/session-client";
+import { resolveClientPlanifyAccess } from "@/lib/auth/resolve-client-access";
 
 type GateStatus = {
   loading: boolean;
@@ -52,22 +48,52 @@ export default function PremiumAccessGate({
 
     async function loadAccess() {
       try {
-        const token = await getCurrentAccessToken();
-        await ensurePremiumSessionCookies();
-        const data = await fetchPlanifyAccessStatus(token);
+        let snapshot = await resolveClientPlanifyAccess();
+
+        if (!active) return;
+
+        if (!snapshot.authenticated && !snapshot.token) {
+          await new Promise((resolve) => setTimeout(resolve, 800));
+          if (!active) return;
+          snapshot = await resolveClientPlanifyAccess();
+        }
+
+        // #region agent log
+        fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Debug-Session-Id": "3ed578",
+          },
+          body: JSON.stringify({
+            sessionId: "3ed578",
+            runId: "auth-session-debug",
+            hypothesisId: "H3-H5",
+            location: "PremiumAccessGate.tsx:loadAccess",
+            message: "premium gate access result",
+            data: {
+              featureName,
+              authenticated: snapshot.authenticated,
+              premium: snapshot.premium,
+              hasToken: Boolean(snapshot.token),
+            },
+            timestamp: Date.now(),
+          }),
+        }).catch(() => {});
+        // #endregion
 
         if (!active) return;
 
         setStatus({
           loading: false,
-          authenticated: Boolean(data.authenticated),
-          premium: Boolean(data.premium),
-          email: data.email || "",
+          authenticated: snapshot.authenticated,
+          premium: snapshot.premium,
+          email: snapshot.email || "",
           message:
-            data.message ||
-            (data.premium
+            snapshot.message ||
+            (snapshot.premium
               ? "Acesso premium confirmado."
-              : data.authenticated
+              : snapshot.authenticated
                 ? "Este e-mail ainda não possui plano ativo."
                 : "Entre com o e-mail da sua conta Planify para continuar."),
         });

@@ -1,11 +1,33 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isAuthOnlyRoute, isProtectedRoute } from "./config/protected-routes";
 import {
+  isAccessCookieGraceValid,
+  parseAccessCookiePayload,
+} from "./lib/auth/access-cookie-server";
+import {
   getRequestAccessToken,
   isJwtNotExpired,
   looksLikeJwt,
 } from "./server/auth/api-access";
 import { verifyPremiumAccess } from "./server/auth/premium-access-service";
+
+function debugProxyLog(payload: Record<string, unknown>) {
+  // #region agent log
+  fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Debug-Session-Id": "3ed578",
+    },
+    body: JSON.stringify({
+      sessionId: "3ed578",
+      runId: "auth-session-debug",
+      timestamp: Date.now(),
+      ...payload,
+    }),
+  }).catch(() => {});
+  // #endregion
+}
 
 function redirectToLogin(request: NextRequest) {
   const url = request.nextUrl.clone();
@@ -39,8 +61,28 @@ export async function proxy(request: NextRequest) {
   }
 
   const token = getRequestAccessToken(request);
+  const accessPayload = parseAccessCookiePayload(request);
+  const graceOk = isAccessCookieGraceValid(accessPayload);
+  const hasValidJwt =
+    Boolean(token && looksLikeJwt(token) && isJwtNotExpired(token));
 
-  if (!token || !looksLikeJwt(token) || !isJwtNotExpired(token)) {
+  debugProxyLog({
+    hypothesisId: "H1-H2",
+    location: "proxy.ts:authCheck",
+    message: "protected route auth decision",
+    data: {
+      pathname,
+      hasToken: Boolean(token),
+      hasValidJwt,
+      graceOk,
+      gracePremium: Boolean(accessPayload?.premium),
+    },
+  });
+
+  if (!hasValidJwt) {
+    if (graceOk) {
+      return NextResponse.next();
+    }
     return redirectToLogin(request);
   }
 
@@ -55,6 +97,9 @@ export async function proxy(request: NextRequest) {
   }
 
   if (!access.authenticated) {
+    if (graceOk) {
+      return NextResponse.next();
+    }
     return redirectToLogin(request);
   }
 
@@ -63,6 +108,9 @@ export async function proxy(request: NextRequest) {
   }
 
   if (!access.premium) {
+    if (graceOk && accessPayload?.premium) {
+      return NextResponse.next();
+    }
     return redirectToPlans(request);
   }
 

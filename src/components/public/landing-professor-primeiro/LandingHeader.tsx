@@ -4,12 +4,14 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { PlanifyBrand } from "@/components/pro/PlanifyBrand";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
+import { usePlanifySession } from "@/hooks/usePlanifySession";
 import { LANDING_NAV } from "./constants";
 import { ppBtnPrimarySm } from "./theme";
 
 export function LandingHeader() {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const session = usePlanifySession();
 
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
@@ -26,6 +28,36 @@ export function LandingHeader() {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  useEffect(() => {
+    if (session.loading) {
+      return;
+    }
+
+    // #region agent log
+    fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Debug-Session-Id": "3ed578",
+      },
+      body: JSON.stringify({
+        sessionId: "3ed578",
+        runId: "auth-session-debug",
+        hypothesisId: "H5",
+        location: "LandingHeader.tsx:session",
+        message: "landing session state",
+        data: {
+          authenticated: session.authenticated,
+          premium: session.premium,
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
+  }, [session.authenticated, session.loading, session.premium]);
+
+  const showPainel = !session.loading && session.authenticated;
 
   return (
     <header
@@ -51,15 +83,34 @@ export function LandingHeader() {
         </nav>
 
         <div className="hidden items-center gap-2.5 sm:flex">
-          <Link
-            href="/login"
-            className="rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:text-cyan-700"
-          >
-            Entrar
-          </Link>
-          <Link href="/planos" className={ppBtnPrimarySm}>
-            Começar agora
-          </Link>
+          {showPainel ? (
+            <>
+              <Link
+                href="/dashboard"
+                className="rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:brightness-105"
+              >
+                Painel
+              </Link>
+              <Link
+                href="/planos"
+                className="rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:text-cyan-700"
+              >
+                Planos
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link
+                href="/login"
+                className="rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:text-cyan-700"
+              >
+                Entrar
+              </Link>
+              <Link href="/planos" className={ppBtnPrimarySm}>
+                Começar agora
+              </Link>
+            </>
+          )}
         </div>
 
         <button
@@ -88,20 +139,41 @@ export function LandingHeader() {
             ))}
           </nav>
           <div className="mt-4 grid gap-2 border-t border-slate-100 pt-4">
-            <Link
-              href="/login"
-              onClick={() => setOpen(false)}
-              className="rounded-xl border border-slate-200 py-3 text-center text-sm font-semibold text-slate-800"
-            >
-              Entrar
-            </Link>
-            <Link
-              href="/planos"
-              onClick={() => setOpen(false)}
-              className={`${ppBtnPrimarySm} w-full py-3 text-center`}
-            >
-              Começar agora
-            </Link>
+            {showPainel ? (
+              <>
+                <Link
+                  href="/dashboard"
+                  onClick={() => setOpen(false)}
+                  className={`${ppBtnPrimarySm} w-full py-3 text-center`}
+                >
+                  Entrar no painel
+                </Link>
+                <Link
+                  href="/planos"
+                  onClick={() => setOpen(false)}
+                  className="rounded-xl border border-slate-200 py-3 text-center text-sm font-semibold text-slate-800"
+                >
+                  Planos
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  onClick={() => setOpen(false)}
+                  className="rounded-xl border border-slate-200 py-3 text-center text-sm font-semibold text-slate-800"
+                >
+                  Entrar
+                </Link>
+                <Link
+                  href="/planos"
+                  onClick={() => setOpen(false)}
+                  className={`${ppBtnPrimarySm} w-full py-3 text-center`}
+                >
+                  Começar agora
+                </Link>
+              </>
+            )}
           </div>
         </div>
       ) : null}

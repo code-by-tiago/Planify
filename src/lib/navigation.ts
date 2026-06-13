@@ -192,7 +192,7 @@ export const dashboardCards: DashboardCard[] = [
   },
   {
     title: "Biblioteca Premium",
-    href: "/biblioteca",
+    href: "/dashboard?secao=biblioteca",
     description: "Materiais oficiais curados pela administração.",
     badge: "Premium",
     metric: "Curadoria",
@@ -324,7 +324,7 @@ export const pageContent: Record<string, ProductPageContent> = {
     eyebrow: "Biblioteca Premium",
     title: "Materiais oficiais e curados.",
     description: "Biblioteca premium separada da Comunidade.",
-    href: "/biblioteca",
+    href: "/dashboard?secao=biblioteca",
     primaryAction: "Abrir biblioteca",
     secondaryAction: "Ir à Comunidade",
     badge: "Curadoria",

@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Plus_Jakarta_Sans } from "next/font/google";
+import { PlanifySessionSync } from "@/components/auth/PlanifySessionSync";
 import { buildGlobalMetadata } from "@/lib/seo/metadata";
 import "./planify-hud.css";
 import "./globals.css";
@@ -39,7 +40,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR" className={`${inter.variable} ${display.variable}`}>
-      <body className="font-sans antialiased">{children}</body>
+      <body className="font-sans antialiased">
+        <PlanifySessionSync />
+        {children}
+      </body>
     </html>
   );
 }

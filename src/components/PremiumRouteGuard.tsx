@@ -7,18 +7,7 @@ import {
   buildPlansRedirect,
   getCurrentPathWithSearch,
 } from "@/lib/auth/premium-gate";
-import { fetchPlanifyAccessStatus } from "@/lib/auth/access-client";
-import {
-  ensurePremiumSessionCookies,
-  getCurrentAccessToken,
-} from "@/lib/auth/session-client";
-
-type AccessStatus = {
-  authenticated: boolean;
-  premium: boolean;
-  role?: string;
-  email?: string;
-};
+import { resolveClientPlanifyAccess } from "@/lib/auth/resolve-client-access";
 
 const protectedPrefixes = [
   "/dashboard",
@@ -63,22 +52,50 @@ export function PremiumRouteGuard() {
       setChecking(true);
 
       try {
-        const supabaseToken = await getCurrentAccessToken();
-        await ensurePremiumSessionCookies();
-        const data = (await fetchPlanifyAccessStatus(
-          supabaseToken,
-        )) as AccessStatus;
+        let snapshot = await resolveClientPlanifyAccess();
+
+        if (!active) return;
+
+        if (!snapshot.authenticated && !snapshot.token) {
+          await new Promise((resolve) => setTimeout(resolve, 800));
+          if (!active) return;
+          snapshot = await resolveClientPlanifyAccess();
+        }
+
+        // #region agent log
+        fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Debug-Session-Id": "3ed578",
+          },
+          body: JSON.stringify({
+            sessionId: "3ed578",
+            runId: "auth-session-debug",
+            hypothesisId: "H3-H4",
+            location: "PremiumRouteGuard.tsx:checkAccess",
+            message: "client route guard result",
+            data: {
+              pathname,
+              authenticated: snapshot.authenticated,
+              premium: snapshot.premium,
+              hasToken: Boolean(snapshot.token),
+            },
+            timestamp: Date.now(),
+          }),
+        }).catch(() => {});
+        // #endregion
 
         if (!active) return;
 
         const currentPath = getCurrentPathWithSearch(pathname);
 
-        if (!data.authenticated) {
+        if (!snapshot.authenticated) {
           window.location.href = buildLoginRedirect(currentPath);
           return;
         }
 
-        if (!data.premium) {
+        if (!snapshot.premium) {
           window.location.href = buildPlansRedirect(currentPath);
           return;
         }

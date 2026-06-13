@@ -3,6 +3,8 @@ import type { AccessCookiePayload } from "../../../../types/access";
 import { verifyPremiumAccess } from "../../../../server/auth/premium-access-service";
 import { acceptPendingSchoolInvites } from "../../../../server/schools/accept-pending-school-invites";
 import { linkPendingSubscriptionsToUser } from "../../../../server/stripe/link-subscription-to-user";
+import { appendFileSync } from "node:fs";
+import { join } from "node:path";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -41,6 +43,20 @@ function encodeCookie(payload: AccessCookiePayload): string {
   return encodeURIComponent(JSON.stringify(payload));
 }
 
+function debugLog(payload: Record<string, unknown>) {
+  try {
+    const line = JSON.stringify({
+      sessionId: "3ed578",
+      runId: "checkout-debug",
+      timestamp: Date.now(),
+      ...payload,
+    });
+    appendFileSync(join(process.cwd(), "debug-3ed578.log"), `${line}\n`, "utf8");
+  } catch {
+    // ignore
+  }
+}
+
 export async function POST(request: NextRequest) {
   const token = getBearerToken(request);
   let access = await verifyPremiumAccess(token);
@@ -60,6 +76,16 @@ export async function POST(request: NextRequest) {
       if (linkResult.linkedCount > 0) {
         access = await verifyPremiumAccess(token);
       }
+
+      debugLog({
+        hypothesisId: "H1-H2",
+        location: "access-cookie/route.ts:linkSubscription",
+        message: "subscription link attempt",
+        data: {
+          linkedCount: linkResult.linkedCount,
+          premiumAfterLink: access.premium,
+        },
+      });
     } catch (error) {
       console.error("planify:subscription-link-failed", {
         userId,

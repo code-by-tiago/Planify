@@ -251,18 +251,22 @@ export default async function PlanosPage({ searchParams }: PlanosPageProps) {
                 {plan.ctaLabel}
                 <PlanifyIcon name="arrowRight" className="h-4 w-4" />
               </PlanCheckoutLink>
+              <p className="mt-3 text-center text-xs font-medium leading-5 text-slate-500">
+                Após o pagamento, você cria a senha na próxima tela — use o
+                mesmo e-mail do checkout.
+              </p>
             </div>
           </article>
         </div>
 
         <p className="mt-8 text-center text-sm font-medium text-slate-500">
-          Já tem conta?{" "}
-          <Link href="/login" className={ppLink}>
-            Entrar
+          Prefere criar conta antes?{" "}
+          <Link href="/login?mode=signup&redirect=/planos" className={ppLink}>
+            Criar conta e depois assinar
           </Link>
           {" · "}
-          <Link href="/dashboard" className={ppLink}>
-            Ir ao painel
+          <Link href="/login" className={ppLink}>
+            Já tenho conta
           </Link>
         </p>
       </section>
@@ -334,17 +338,16 @@ export default async function PlanosPage({ searchParams }: PlanosPageProps) {
             Assine por R$ 24,90 e entre no painel
           </h2>
           <p className={`mx-auto mt-3 max-w-xl ${ppCtaLead}`}>
-            Crie sua conta para assinar com checkout seguro ou entre com o
-            e-mail da assinatura já ativa para usar as {landingPublicToolCount}{" "}
-            ferramentas com IA.
+            Fluxo rápido: assine agora e crie a senha na tela seguinte. Ou crie
+            conta antes e assine com o e-mail já logado.
           </p>
           <div className="mt-7 flex flex-wrap justify-center gap-3">
             <Link href="#precos" className={ppBtnPrimary}>
               Assinar agora
               <PlanifyIcon name="arrowRight" className="h-4 w-4" />
             </Link>
-            <Link href="/login" className={ppBtnOnDark}>
-              Criar conta
+            <Link href="/login?mode=signup&redirect=/planos" className={ppBtnOnDark}>
+              Criar conta primeiro
             </Link>
             <Link href="/login" className={`rounded-xl px-7 py-3.5 ${ppCtaLinkOnDark}`}>
               Já sou assinante — Entrar

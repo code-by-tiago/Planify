@@ -20,6 +20,54 @@ function timeout(ms: number): Promise<void> {
   });
 }
 
+function mapAuthErrorMessage(
+  message: string | undefined,
+  code: string | undefined,
+): string {
+  const normalized = String(message || "").toLowerCase();
+
+  if (
+    code === "email_not_confirmed" ||
+    normalized.includes("email not confirmed")
+  ) {
+    return "Confirme seu e-mail antes de entrar. Verifique a caixa de entrada e o spam.";
+  }
+
+  if (
+    normalized.includes("invalid login credentials") ||
+    normalized.includes("invalid credentials")
+  ) {
+    return "E-mail ou senha incorretos. Use o mesmo e-mail do pagamento ou redefina sua senha abaixo.";
+  }
+
+  return message || "Não foi possível fazer login.";
+}
+
+export async function requestPasswordReset(email: string): Promise<{
+  success: boolean;
+  message: string;
+}> {
+  const supabase = getSupabaseBrowserClient();
+  const redirectTo = `${window.location.origin}/login`;
+
+  const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+    redirectTo,
+  });
+
+  if (error) {
+    return {
+      success: false,
+      message: mapAuthErrorMessage(error.message, error.code),
+    };
+  }
+
+  return {
+    success: true,
+    message:
+      "Enviamos um link para redefinir sua senha. Verifique seu e-mail (e o spam).",
+  };
+}
+
 export async function createOwnerSession(accessToken: string) {
   const response = await fetch("/api/owner/session", {
     method: "POST",
@@ -67,18 +115,44 @@ export async function signInAndSyncPremiumAccess(params: {
   requirePremium?: boolean;
 }): Promise<LoginResult> {
   const supabase = getSupabaseBrowserClient();
+  const emailDomain = params.email.split("@")[1] || "unknown";
 
   const { data, error } = await supabase.auth.signInWithPassword({
     email: params.email,
     password: params.password,
   });
 
+  // #region agent log
+  fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Debug-Session-Id": "3ed578",
+    },
+    body: JSON.stringify({
+      sessionId: "3ed578",
+      runId: "checkout-debug",
+      hypothesisId: "H3-H4",
+      location: "session-client.ts:signIn:afterSignIn",
+      message: "signInWithPassword result",
+      data: {
+        emailDomain,
+        hasSession: Boolean(data.session?.access_token),
+        errorStatus: error?.status ?? null,
+        errorCode: error?.code ?? null,
+        errorMessage: error?.message ?? null,
+      },
+      timestamp: Date.now(),
+    }),
+  }).catch(() => {});
+  // #endregion
+
   if (error || !data.session?.access_token) {
     return {
       success: false,
       premium: false,
       redirectTo: "/login",
-      message: error?.message || "Não foi possível fazer login.",
+      message: mapAuthErrorMessage(error?.message, error?.code),
     };
   }
 
@@ -120,6 +194,32 @@ export async function signInAndSyncPremiumAccess(params: {
 
   const requirePremium = params.requirePremium !== false;
   const hasPremiumAccess = Boolean(premiumAccess || ownerAccess);
+
+  // #region agent log
+  fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Debug-Session-Id": "3ed578",
+    },
+    body: JSON.stringify({
+      sessionId: "3ed578",
+      runId: "checkout-debug",
+      hypothesisId: "H1-H2",
+      location: "session-client.ts:signIn:afterCookieSync",
+      message: "premium access after login",
+      data: {
+        emailDomain,
+        premiumAuthenticated,
+        premiumAccess,
+        ownerAccess,
+        hasPremiumAccess,
+        requirePremium,
+      },
+      timestamp: Date.now(),
+    }),
+  }).catch(() => {});
+  // #endregion
 
   if (requirePremium && !hasPremiumAccess) {
     return {
@@ -190,6 +290,27 @@ export async function signUpAndGoToPlans(params: {
   const hasSession = Boolean(data.session?.access_token);
 
   if (data.user && !hasSession) {
+    // #region agent log
+    fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Debug-Session-Id": "3ed578",
+      },
+      body: JSON.stringify({
+        sessionId: "3ed578",
+        runId: "checkout-debug",
+        hypothesisId: "H5",
+        location: "session-client.ts:signUp:needsConfirmation",
+        message: "signup requires email confirmation",
+        data: {
+          emailDomain: params.email.split("@")[1] || "unknown",
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
+
     return {
       success: true,
       premium: false,
@@ -223,6 +344,96 @@ export async function signUpAndGoToPlans(params: {
       "Conta criada! Na próxima tela, assine o plano Professor para liberar os geradores IA.",
     accessToken: data.session?.access_token,
   };
+}
+
+/** Pós-pagamento: cria senha ou entra com conta existente e libera o plano. */
+export async function activateAccountAfterPayment(params: {
+  email: string;
+  password: string;
+}): Promise<LoginResult> {
+  const email = params.email.trim();
+  const password = params.password;
+
+  const statusRes = await fetch(
+    `/api/public/checkout-account-status?email=${encodeURIComponent(email)}`,
+    { cache: "no-store" },
+  );
+  const statusJson = await statusRes.json().catch(() => null);
+  const hasAccount = Boolean(statusJson?.data?.hasAccount);
+
+  // #region agent log
+  fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Debug-Session-Id": "3ed578",
+    },
+    body: JSON.stringify({
+      sessionId: "3ed578",
+      runId: "checkout-activate",
+      hypothesisId: "H1-H6",
+      location: "session-client.ts:activateAccountAfterPayment:start",
+      message: "post-payment activation start",
+      data: {
+        emailDomain: email.split("@")[1] || "unknown",
+        hasAccount,
+        hasActiveSubscription: Boolean(statusJson?.data?.hasActiveSubscription),
+      },
+      timestamp: Date.now(),
+    }),
+  }).catch(() => {});
+  // #endregion
+
+  if (hasAccount) {
+    return signInAndSyncPremiumAccess({
+      email,
+      password,
+      redirectTo: "/dashboard",
+      requirePremium: false,
+    });
+  }
+
+  const signup = await signUpAndGoToPlans({ email, password });
+
+  if (
+    !signup.success &&
+    String(signup.message).toLowerCase().includes("already registered")
+  ) {
+    return signInAndSyncPremiumAccess({
+      email,
+      password,
+      redirectTo: "/dashboard",
+      requirePremium: false,
+    });
+  }
+
+  if (signup.needsEmailConfirmation) {
+    return {
+      ...signup,
+      redirectTo: "/planos/sucesso?ativar=confirmar",
+      message:
+        "Conta criada! Confirme o e-mail que enviamos e depois entre com a senha que você acabou de criar. Seu plano já está pago.",
+    };
+  }
+
+  if (signup.success && signup.premium) {
+    return signup;
+  }
+
+  if (signup.success && signup.accessToken) {
+    const login = await signInAndSyncPremiumAccess({
+      email,
+      password,
+      redirectTo: "/dashboard",
+      requirePremium: false,
+    });
+
+    if (login.success) {
+      return login;
+    }
+  }
+
+  return signup;
 }
 
 export async function createAdminSession(accessToken: string) {

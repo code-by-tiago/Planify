@@ -20,6 +20,7 @@ import {
   sanitizeInternalRedirect,
 } from "@/lib/auth/post-login-redirect";
 import {
+  requestPasswordReset,
   signInAndSyncPremiumAccess,
   signUpAndGoToPlans,
 } from "@/lib/auth/session-client";
@@ -134,6 +135,28 @@ export function LoginPageClient({ initialSearchParams }: LoginPageClientProps) {
     }
     return null;
   }, [premiumRequired]);
+
+  async function handleForgotPassword() {
+    setMessage("");
+    if (!email.trim()) {
+      setMessage("Informe seu e-mail para redefinir a senha.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const result = await requestPasswordReset(email.trim());
+      setMessage(result.message);
+    } catch (error) {
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível enviar o link de redefinição.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -357,6 +380,19 @@ export function LoginPageClient({ initialSearchParams }: LoginPageClientProps) {
                   className={ppInput}
                 />
               </label>
+
+              {mode === "login" ? (
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => void handleForgotPassword()}
+                    disabled={loading}
+                    className={`text-xs font-bold ${ppLink}`}
+                  >
+                    Esqueci minha senha
+                  </button>
+                </div>
+              ) : null}
 
               {message ? (
                 <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700">

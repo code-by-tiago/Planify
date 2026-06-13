@@ -18,7 +18,7 @@ export function LandingFinalCta() {
 
         <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Link href="/planos" className={`${ppBtnPrimary} px-8`}>
-            Ver planos
+            Assinar agora
           </Link>
           <Link href="/login" className={`${ppBtnOnDark} px-8`}>
             Já tenho conta

@@ -31,11 +31,11 @@ export function StrategicLandingPage({ content }: StrategicLandingPageProps) {
           </h1>
           <p className={`mt-5 max-w-2xl ${ppLead}`}>{content.lead}</p>
           <div className="mt-8 flex flex-wrap gap-3">
-            <Link href="/login" className={ppBtnPrimary}>
-              Começar no Planify
+            <Link href="/planos" className={ppBtnPrimary}>
+              Assinar agora
             </Link>
-            <Link href="/planos" className={ppBtnSecondary}>
-              Ver planos
+            <Link href="/login" className={ppBtnSecondary}>
+              Já tenho conta
             </Link>
           </div>
         </div>
@@ -111,18 +111,18 @@ export function StrategicLandingPage({ content }: StrategicLandingPageProps) {
             Próximo passo
           </p>
           <h2 className="mt-2 text-2xl font-extrabold text-white sm:text-3xl">
-            Crie sua conta e use o Planify
+            Assine e comece a usar o Planify
           </h2>
           <p className="mx-auto mt-3 max-w-xl text-sm font-medium leading-7 text-slate-300">
-            Acesse os geradores com IA, revise no editor integrado e exporte ao Google Docs.
-            Plano Professor único por R$ 24,90/mês com uso generoso.
+            Checkout seguro, crie a senha na tela seguinte e entre no painel com
+            geradores IA, BNCC e exportação Google.
           </p>
           <div className="mt-7 flex flex-wrap justify-center gap-3">
-            <Link href="/login" className={ppBtnPrimary}>
-              Criar conta
+            <Link href="/planos" className={ppBtnPrimary}>
+              Assinar agora
             </Link>
-            <Link href="/planos" className={ppBtnGhost}>
-              Ver plano Professor
+            <Link href="/login" className={ppBtnGhost}>
+              Já tenho conta
             </Link>
           </div>
         </div>

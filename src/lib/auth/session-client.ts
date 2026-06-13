@@ -287,83 +287,12 @@ export async function signUpAndGoToPlans(params: {
     });
   }
 
-  const supabase = getSupabaseBrowserClient();
-
-  const { data, error } = await supabase.auth.signUp({
-    email: params.email,
-    password: params.password,
-    options: {
-      data: {
-        full_name: params.fullName || "",
-      },
-    },
-  });
-
-  if (error) {
-    return {
-      success: false,
-      premium: false,
-      redirectTo: "/login",
-      message: error.message,
-    };
-  }
-
-  const hasSession = Boolean(data.session?.access_token);
-
-  if (data.user && !hasSession) {
-    // #region agent log
-    fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Debug-Session-Id": "3ed578",
-      },
-      body: JSON.stringify({
-        sessionId: "3ed578",
-        runId: "checkout-debug",
-        hypothesisId: "H5",
-        location: "session-client.ts:signUp:needsConfirmation",
-        message: "signup requires email confirmation",
-        data: {
-          emailDomain: params.email.split("@")[1] || "unknown",
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
-
-    return {
-      success: true,
-      premium: false,
-      needsEmailConfirmation: true,
-      redirectTo: "/login?cadastro=confirmar",
-      message:
-        "Conta criada! Confirme o e-mail que enviamos. Se você já pagou, o plano será liberado automaticamente ao entrar.",
-    };
-  }
-
-  if (hasSession && data.session?.access_token) {
-    const cookieResult = await syncPremiumAccessCookie(data.session.access_token);
-    await createOwnerSession(data.session.access_token);
-
-    if (cookieResult.access.premium) {
-      return {
-        success: true,
-        premium: true,
-        redirectTo: "/dashboard",
-        message: "Conta criada e plano vinculado! Bem-vindo ao Planify.",
-        accessToken: data.session.access_token,
-      };
-    }
-  }
-
   return {
-    success: true,
+    success: false,
     premium: false,
-    redirectTo: "/planos?cadastro=ok",
+    redirectTo: "/planos",
     message:
-      "Conta criada! Na próxima tela, assine o plano Professor para liberar os geradores IA.",
-    accessToken: data.session?.access_token,
+      "Assine o plano primeiro. Após o pagamento, crie sua senha na tela seguinte.",
   };
 }
 

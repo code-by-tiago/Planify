@@ -56,10 +56,10 @@ function getAlert(params: Awaited<NonNullable<PlanosPageProps["searchParams"]>>)
 
   if (params?.cadastro === "ok") {
     return {
-      type: "success",
-      title: "Conta criada",
+      type: "warning",
+      title: "Assine para começar",
       message:
-        "Conta pronta! Assine o plano Professor abaixo para iniciar o checkout e liberar os geradores IA.",
+        "Crie sua conta após o pagamento. Clique em Assinar agora — na próxima tela você define sua senha.",
     };
   }
 
@@ -151,6 +151,11 @@ const planFaq = [
       "Nada para você agora: assinaturas antigas continuam ativas com os benefícios do plano contratado. Novas assinaturas seguem o plano único Professor por R$ 24,90/mês.",
   },
   {
+    question: "Como começo a usar o Planify?",
+    answer:
+      "Clique em Assinar, conclua o checkout com seu e-mail e, na tela seguinte, crie sua senha. Depois é só entrar em /login com o mesmo e-mail.",
+  },
+  {
     question: "O pagamento é seguro?",
     answer:
       "Sim. O checkout é processado com segurança e seus dados de pagamento ficam protegidos. A liberação premium acontece logo após a confirmação.",
@@ -172,9 +177,8 @@ export default async function PlanosPage({ searchParams }: PlanosPageProps) {
             <span className={ppTitleAccent}>R$ 24,90/mês.</span>
           </h1>
           <p className={`mx-auto mt-5 max-w-2xl ${ppLead}`}>
-            Um plano simples, sem escolher tier: geradores com IA, planejamentos
-            BNCC, editor, exportação e biblioteca premium — com uso generoso no
-            preço de lançamento.
+            Assine em um passo: checkout seguro, crie a senha na tela seguinte
+            e entre no painel com o mesmo e-mail do pagamento.
           </p>
 
           <ul className="mt-6 flex flex-wrap justify-center gap-2">
@@ -260,13 +264,9 @@ export default async function PlanosPage({ searchParams }: PlanosPageProps) {
         </div>
 
         <p className="mt-8 text-center text-sm font-medium text-slate-500">
-          Prefere criar conta antes?{" "}
-          <Link href="/login?mode=signup&redirect=/planos" className={ppLink}>
-            Criar conta e depois assinar
-          </Link>
-          {" · "}
+          Já assinou e criou sua senha?{" "}
           <Link href="/login" className={ppLink}>
-            Já tenho conta
+            Entrar
           </Link>
         </p>
       </section>
@@ -338,19 +338,16 @@ export default async function PlanosPage({ searchParams }: PlanosPageProps) {
             Assine por R$ 24,90 e entre no painel
           </h2>
           <p className={`mx-auto mt-3 max-w-xl ${ppCtaLead}`}>
-            Fluxo rápido: assine agora e crie a senha na tela seguinte. Ou crie
-            conta antes e assine com o e-mail já logado.
+            Um único fluxo: assine agora, crie a senha na próxima tela e acesse
+            o painel. Quem já tem conta entra pelo login.
           </p>
           <div className="mt-7 flex flex-wrap justify-center gap-3">
             <Link href="#precos" className={ppBtnPrimary}>
               Assinar agora
               <PlanifyIcon name="arrowRight" className="h-4 w-4" />
             </Link>
-            <Link href="/login?mode=signup&redirect=/planos" className={ppBtnOnDark}>
-              Criar conta primeiro
-            </Link>
             <Link href="/login" className={`rounded-xl px-7 py-3.5 ${ppCtaLinkOnDark}`}>
-              Já sou assinante — Entrar
+              Já tenho conta — Entrar
             </Link>
           </div>
         </div>

@@ -271,7 +271,7 @@ export function PlanosAtivarContaForm({
 
       <p className="mt-4 text-center">
         <Link href="/login" className={`text-xs font-semibold ${ppLink}`}>
-          Ir para login completo
+          Já tenho conta — entrar
         </Link>
       </p>
     </div>

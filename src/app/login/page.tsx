@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { buildPageMetadata } from "@/lib/seo/metadata";
 import { LoginPageClient } from "./LoginPageClient";
 
@@ -17,13 +18,18 @@ type LoginPageProps = {
 };
 
 export const metadata: Metadata = buildPageMetadata({
-  title: "Entrar ou criar conta",
+  title: "Entrar",
   description:
-    "Acesse o Planify IA Educacional: login ou cadastro para professores e gestores escolares usarem geradores com IA, editor e exportação Google Docs.",
+    "Entre no Planify com o e-mail e senha criados após a assinatura do plano Professor.",
   path: "/login",
 });
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
   const params = await searchParams;
+
+  if (params.mode === "signup") {
+    redirect("/planos");
+  }
+
   return <LoginPageClient initialSearchParams={params} />;
 }

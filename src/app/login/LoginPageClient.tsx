@@ -22,11 +22,9 @@ import {
 import {
   requestPasswordReset,
   signInAndSyncPremiumAccess,
-  signUpAndGoToPlans,
 } from "@/lib/auth/session-client";
 import { landingPublicToolCount } from "@/lib/pro/teachyLanding";
 
-type Mode = "login" | "signup";
 type LoginPortal = "escola" | "professor";
 
 const benefits = [
@@ -106,12 +104,7 @@ export function LoginPageClient({ initialSearchParams }: LoginPageClientProps) {
   const premiumRequired = initialSearchParams.premium === "required";
   const cadastroConfirmar = initialSearchParams.cadastro === "confirmar";
   const sessaoExpirada = initialSearchParams.sessao_expirada === "1";
-  const postPaymentSignup =
-    initialSearchParams.mode === "signup" && Boolean(initialSearchParams.email?.trim());
 
-  const [mode, setMode] = useState<Mode>(() =>
-    initialSearchParams.mode === "signup" ? "signup" : "login",
-  );
   const [email, setEmail] = useState(() => initialSearchParams.email?.trim() ?? "");
   const [senha, setSenha] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -119,9 +112,6 @@ export function LoginPageClient({ initialSearchParams }: LoginPageClientProps) {
   const [message, setMessage] = useState(() => {
     if (cadastroConfirmar) {
       return "Confirme o e-mail que enviamos. Se você já pagou, o plano será liberado automaticamente ao entrar.";
-    }
-    if (postPaymentSignup) {
-      return "Crie sua senha com o mesmo e-mail usado no pagamento para liberar o acesso.";
     }
     if (sessaoExpirada) {
       return "Sua sessão expirou durante a conexão com o Google. Entre novamente para voltar ao editor.";
@@ -170,30 +160,6 @@ export function LoginPageClient({ initialSearchParams }: LoginPageClientProps) {
     setLoading(true);
 
     try {
-      if (mode === "signup") {
-        const result = await signUpAndGoToPlans({
-          email: email.trim(),
-          password: senha,
-        });
-
-        if (!result.success) {
-          setMessage(result.message);
-          return;
-        }
-
-        setMessage(result.message);
-
-        if (result.needsEmailConfirmation) {
-          setMode("login");
-          return;
-        }
-
-        window.setTimeout(() => {
-          forceNavigate(result.redirectTo || "/planos?cadastro=ok");
-        }, 700);
-        return;
-      }
-
       const result = await signInAndSyncPremiumAccess({
         email: email.trim(),
         password: senha,
@@ -252,15 +218,7 @@ export function LoginPageClient({ initialSearchParams }: LoginPageClientProps) {
               )}
             </h1>
             <p className="mt-4 max-w-lg text-base font-medium leading-7 text-slate-600">
-              {mode === "login" ? (
-                copy.loginLead
-              ) : (
-                <>
-                  O cadastro é gratuito; o acesso aos geradores premium exige
-                  o plano Professor (R$ 24,90/mês). Após criar a conta, você
-                  assina e libera o acesso completo.
-                </>
-              )}
+              {copy.loginLead}
             </p>
 
             <ul className="mt-6 grid gap-2.5 sm:max-w-md">
@@ -282,13 +240,9 @@ export function LoginPageClient({ initialSearchParams }: LoginPageClientProps) {
           <div className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-md sm:p-8">
             <p className={ppEyebrow}>Acesso Planify</p>
             <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">
-              {mode === "login" ? copy.title : "Criar conta"}
+              {copy.title}
             </h2>
-            <p className="mt-2 text-sm font-medium text-slate-500">
-              {mode === "login"
-                ? copy.subtitle
-                : "Cadastro gratuito · plano necessário para usar os geradores IA."}
-            </p>
+            <p className="mt-2 text-sm font-medium text-slate-500">{copy.subtitle}</p>
 
             {loginHint ? (
               <div className="mt-5 flex gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">
@@ -314,32 +268,7 @@ export function LoginPageClient({ initialSearchParams }: LoginPageClientProps) {
               </div>
             ) : null}
 
-            <div className="mt-6 grid grid-cols-2 rounded-full border border-slate-200 bg-slate-50 p-1">
-              <button
-                type="button"
-                onClick={() => setMode("login")}
-                className={`rounded-full px-4 py-2.5 text-sm font-bold transition ${
-                  mode === "login"
-                    ? "bg-white text-slate-950 shadow-sm"
-                    : "text-slate-500 hover:text-slate-800"
-                }`}
-              >
-                Entrar
-              </button>
-              <button
-                type="button"
-                onClick={() => setMode("signup")}
-                className={`rounded-full px-4 py-2.5 text-sm font-bold transition ${
-                  mode === "signup"
-                    ? "bg-white text-slate-950 shadow-sm"
-                    : "text-slate-500 hover:text-slate-800"
-                }`}
-              >
-                Criar conta
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmit} className="mt-5 space-y-4">
+            <form onSubmit={handleSubmit} className="mt-6 space-y-4">
               <label className="block">
                 <span className="mb-2 block text-sm font-bold text-slate-700">
                   E-mail
@@ -348,9 +277,7 @@ export function LoginPageClient({ initialSearchParams }: LoginPageClientProps) {
                   type="email"
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
-                  placeholder={
-                    mode === "login" ? copy.emailPlaceholder : "professor@email.com"
-                  }
+                  placeholder={copy.emailPlaceholder}
                   autoComplete="email"
                   className={ppInput}
                 />
@@ -374,25 +301,21 @@ export function LoginPageClient({ initialSearchParams }: LoginPageClientProps) {
                   value={senha}
                   onChange={(event) => setSenha(event.target.value)}
                   placeholder="Mínimo 6 caracteres"
-                  autoComplete={
-                    mode === "login" ? "current-password" : "new-password"
-                  }
+                  autoComplete="current-password"
                   className={ppInput}
                 />
               </label>
 
-              {mode === "login" ? (
-                <div className="flex justify-end">
-                  <button
-                    type="button"
-                    onClick={() => void handleForgotPassword()}
-                    disabled={loading}
-                    className={`text-xs font-bold ${ppLink}`}
-                  >
-                    Esqueci minha senha
-                  </button>
-                </div>
-              ) : null}
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => void handleForgotPassword()}
+                  disabled={loading}
+                  className={`text-xs font-bold ${ppLink}`}
+                >
+                  Esqueci minha senha
+                </button>
+              </div>
 
               {message ? (
                 <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700">
@@ -405,23 +328,19 @@ export function LoginPageClient({ initialSearchParams }: LoginPageClientProps) {
                 disabled={loading}
                 className={`${ppBtnPrimary} w-full disabled:cursor-not-allowed disabled:opacity-60`}
               >
-                {loading
-                  ? "Aguarde..."
-                  : mode === "login"
-                    ? copy.submitLabel
-                    : "Criar conta e ver planos"}
+                {loading ? "Aguarde..." : copy.submitLabel}
               </button>
             </form>
 
-            <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-100 bg-slate-50/80 px-4 py-3">
-              <p className="text-sm font-semibold text-slate-600">
-                Ainda não tem plano ativo?
+            <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-cyan-100 bg-cyan-50/80 px-4 py-3">
+              <p className="text-sm font-semibold text-slate-700">
+                Primeira vez no Planify?
               </p>
               <Link
                 href="/planos"
-                className={`inline-flex items-center gap-1 text-sm ${ppLink}`}
+                className={`inline-flex items-center gap-1 text-sm font-bold ${ppLink}`}
               >
-                Ver planos
+                Assinar e criar senha
                 <PlanifyIcon name="arrowRight" className="h-4 w-4" />
               </Link>
             </div>

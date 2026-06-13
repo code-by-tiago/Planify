@@ -140,10 +140,10 @@ export function PlanosSucessoActions({
           Pagamento recebido. Estamos liberando seu plano — aguarde alguns
           segundos ou ative sua conta abaixo.
         </p>
-        <PlanosAtivarContaForm checkoutEmail={checkoutEmail} />
+        <PlanosAtivarContaForm checkoutEmail={checkoutEmail} sessionId={sessionId} />
       </div>
     );
   }
 
-  return <PlanosAtivarContaForm checkoutEmail={checkoutEmail} />;
+  return <PlanosAtivarContaForm checkoutEmail={checkoutEmail} sessionId={sessionId} />;
 }

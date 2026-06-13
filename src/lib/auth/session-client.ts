@@ -40,6 +40,10 @@ function mapAuthErrorMessage(
     return "E-mail ou senha incorretos. Use o mesmo e-mail do pagamento ou redefina sua senha abaixo.";
   }
 
+  if (normalized.includes("rate limit") || normalized.includes("rate_limit")) {
+    return "Muitas tentativas em pouco tempo. Aguarde alguns minutos e tente de novo na tela de ativação após o pagamento.";
+  }
+
   return message || "Não foi possível fazer login.";
 }
 
@@ -266,6 +270,23 @@ export async function signUpAndGoToPlans(params: {
     // Se o endpoint falhar, não bloqueia cadastro legado.
   }
 
+  const normalizedEmail = params.email.trim();
+  const statusRes = await fetch(
+    `/api/public/checkout-account-status?email=${encodeURIComponent(normalizedEmail)}`,
+    { cache: "no-store" },
+  );
+  const statusJson = await statusRes.json().catch(() => null);
+
+  if (
+    statusJson?.data?.hasActiveSubscription &&
+    !statusJson?.data?.hasAccount
+  ) {
+    return activateAccountAfterPayment({
+      email: normalizedEmail,
+      password: params.password,
+    });
+  }
+
   const supabase = getSupabaseBrowserClient();
 
   const { data, error } = await supabase.auth.signUp({
@@ -350,6 +371,7 @@ export async function signUpAndGoToPlans(params: {
 export async function activateAccountAfterPayment(params: {
   email: string;
   password: string;
+  sessionId?: string | null;
 }): Promise<LoginResult> {
   const email = params.email.trim();
   const password = params.password;
@@ -393,12 +415,42 @@ export async function activateAccountAfterPayment(params: {
     });
   }
 
-  const signup = await signUpAndGoToPlans({ email, password });
+  const activateRes = await fetch("/api/stripe/activate-account", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      email,
+      password,
+      sessionId: params.sessionId || undefined,
+    }),
+  });
 
-  if (
-    !signup.success &&
-    String(signup.message).toLowerCase().includes("already registered")
-  ) {
+  const activateJson = await activateRes.json().catch(() => null);
+
+  // #region agent log
+  fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Debug-Session-Id": "3ed578",
+    },
+    body: JSON.stringify({
+      sessionId: "3ed578",
+      runId: "checkout-activate",
+      hypothesisId: "H6",
+      location: "session-client.ts:activateAccountAfterPayment:serverActivate",
+      message: "server-side account activation result",
+      data: {
+        httpStatus: activateRes.status,
+        success: Boolean(activateJson?.success),
+        errorCode: activateJson?.error?.code ?? null,
+      },
+      timestamp: Date.now(),
+    }),
+  }).catch(() => {});
+  // #endregion
+
+  if (activateJson?.error?.code === "account_exists") {
     return signInAndSyncPremiumAccess({
       email,
       password,
@@ -407,33 +459,23 @@ export async function activateAccountAfterPayment(params: {
     });
   }
 
-  if (signup.needsEmailConfirmation) {
+  if (!activateRes.ok || !activateJson?.success) {
     return {
-      ...signup,
-      redirectTo: "/planos/sucesso?ativar=confirmar",
+      success: false,
+      premium: false,
+      redirectTo: "/planos/sucesso",
       message:
-        "Conta criada! Confirme o e-mail que enviamos e depois entre com a senha que você acabou de criar. Seu plano já está pago.",
+        activateJson?.error?.message ||
+        "Não foi possível criar sua conta. Tente novamente em instantes.",
     };
   }
 
-  if (signup.success && signup.premium) {
-    return signup;
-  }
-
-  if (signup.success && signup.accessToken) {
-    const login = await signInAndSyncPremiumAccess({
-      email,
-      password,
-      redirectTo: "/dashboard",
-      requirePremium: false,
-    });
-
-    if (login.success) {
-      return login;
-    }
-  }
-
-  return signup;
+  return signInAndSyncPremiumAccess({
+    email,
+    password,
+    redirectTo: "/dashboard",
+    requirePremium: false,
+  });
 }
 
 export async function createAdminSession(accessToken: string) {

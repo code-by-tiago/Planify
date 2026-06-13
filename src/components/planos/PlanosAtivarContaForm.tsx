@@ -18,11 +18,13 @@ type Mode = "create" | "login";
 
 type PlanosAtivarContaFormProps = {
   checkoutEmail: string | null;
+  sessionId?: string | null;
   onActivated?: () => void;
 };
 
 export function PlanosAtivarContaForm({
   checkoutEmail,
+  sessionId,
   onActivated,
 }: PlanosAtivarContaFormProps) {
   const [mode, setMode] = useState<Mode>("create");
@@ -99,6 +101,7 @@ export function PlanosAtivarContaForm({
       const result = await activateAccountAfterPayment({
         email: normalizedEmail,
         password: senha,
+        sessionId,
       });
 
       setMessage(result.message);

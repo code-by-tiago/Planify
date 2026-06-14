@@ -89,6 +89,8 @@ export async function requestMaterialGenerationStream(
   const decoder = new TextDecoder();
   let buffer = "";
   let complete: MaterialStreamResult | null = null;
+  let lastProgressStage: string | undefined;
+  let lastProgressMessage: string | undefined;
 
   try {
     while (true) {
@@ -104,6 +106,8 @@ export async function requestMaterialGenerationStream(
         if (!event) continue;
 
         if (event.type === "progress") {
+          lastProgressStage = event.stage;
+          lastProgressMessage = event.message;
           callbacks.onProgress?.({
             phase: event.phase,
             message: event.message,
@@ -139,7 +143,12 @@ export async function requestMaterialGenerationStream(
   }
 
   if (!complete) {
-    throw new Error("Geração interrompida antes da conclusão.");
+    const stageHint = lastProgressStage
+      ? ` (parou em "${lastProgressMessage || lastProgressStage}")`
+      : "";
+    throw new Error(
+      `Geração interrompida antes da conclusão${stageHint}. Tente novamente em instantes.`,
+    );
   }
 
   return complete;

@@ -51,12 +51,18 @@ language plpgsql
 security definer
 set search_path = public
 as $$
+declare
+  v_cycle_start timestamptz := coalesce(p_cycle_start, now());
+  v_cycle_end timestamptz := coalesce(
+    p_cycle_end,
+    v_cycle_start + interval '1 month'
+  );
 begin
   insert into public.credit_wallets (
     user_id, balance, monthly_limit, plan_key, cycle_started_at, cycle_ends_at, updated_at
   )
   values (
-    p_user, p_credits, p_credits, p_plan_key, coalesce(p_cycle_start, now()), p_cycle_end, now()
+    p_user, p_credits, p_credits, p_plan_key, v_cycle_start, v_cycle_end, now()
   )
   on conflict (user_id) do update set
     balance = excluded.balance,

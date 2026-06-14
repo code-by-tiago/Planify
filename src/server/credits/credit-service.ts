@@ -81,17 +81,38 @@ type SpendResult =
   | { status: "insufficient"; balance: number; cost: number }
   | { status: "skipped" };
 
+async function readCreditWalletRow(
+  userId: string,
+): Promise<Record<string, unknown> | null> {
+  const full = await db()
+    .from("credit_wallets")
+    .select("balance, monthly_limit, plan_key, cycle_started_at, cycle_ends_at")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (!full.error && full.data) {
+    return full.data as Record<string, unknown>;
+  }
+
+  const legacy = await db()
+    .from("credit_wallets")
+    .select("balance, monthly_limit, cycle_started_at, cycle_ends_at")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (legacy.error || !legacy.data) {
+    return null;
+  }
+
+  return legacy.data as Record<string, unknown>;
+}
+
 export async function getCreditWallet(
   userId: string,
 ): Promise<CreditWallet | null> {
   try {
-    const { data, error } = await db()
-      .from("credit_wallets")
-      .select("balance, monthly_limit, plan_key, cycle_started_at, cycle_ends_at")
-      .eq("user_id", userId)
-      .maybeSingle();
-
-    if (error || !data) return null;
+    const data = await readCreditWalletRow(userId);
+    if (!data) return null;
 
     const row = data as {
       balance?: number;
@@ -210,8 +231,26 @@ export async function grantPlanCredits(params: {
       p_cycle_start: params.cycleStart ?? null,
       p_cycle_end: params.cycleEnd ?? null,
     });
-    return !error;
-  } catch {
+    if (error) {
+      console.error("planify:grant-credits-failed", {
+        userId: params.userId,
+        planKey: plan.key,
+        message:
+          typeof error === "object" &&
+          error !== null &&
+          "message" in error
+            ? String((error as { message?: unknown }).message)
+            : "unknown",
+      });
+      return false;
+    }
+    return true;
+  } catch (error) {
+    console.error("planify:grant-credits-exception", {
+      userId: params.userId,
+      planKey: plan.key,
+      message: error instanceof Error ? error.message : "unknown",
+    });
     return false;
   }
 }

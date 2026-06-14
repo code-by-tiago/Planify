@@ -175,18 +175,45 @@ function parseRetryDelayMs(message: string, attempt = 0): number {
 }
 
 const MAX_RETRIES_PER_MODEL = 3;
+const GEMINI_CALL_TIMEOUT_MS = 120_000;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+async function withGeminiCallTimeout<T>(
+  promise: Promise<T>,
+  label = "Chamada à IA",
+): Promise<T> {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<T>((_, reject) => {
+        timeoutId = setTimeout(() => {
+          reject(
+            new Error(
+              `${label} passou do tempo limite (${Math.round(GEMINI_CALL_TIMEOUT_MS / 1000)}s). Tente novamente.`,
+            ),
+          );
+        }, GEMINI_CALL_TIMEOUT_MS);
+      }),
+    ]);
+  } finally {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+  }
+}
 
 function shouldRetryGeminiCall(message: string, status: number): boolean {
   return (
     isGeminiQuotaError(message, status) ||
     isGeminiTransientOverloadError(message, status)
   );
-}
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms);
-  });
 }
 
 // ---------------------------------------------------------------------------
@@ -297,11 +324,14 @@ async function callGeminiGenerateContent(
   plan: GenerateContentPlan,
 ): Promise<GeminiCallResult> {
   try {
-    const response = await getGeminiSdk().models.generateContent({
-      model,
-      contents: plan.contents,
-      config: plan.config,
-    });
+    const response = await withGeminiCallTimeout(
+      getGeminiSdk().models.generateContent({
+        model,
+        contents: plan.contents,
+        config: plan.config,
+      }),
+      "Geração de conteúdo",
+    );
 
     const text = response.text?.trim() ?? "";
 

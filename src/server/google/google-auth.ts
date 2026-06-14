@@ -79,7 +79,6 @@ function collectAuthTokens(request: NextRequest): string[] {
   for (const candidate of [
     getBearerToken(request),
     request.cookies.get("planify_session")?.value || null,
-    request.cookies.get("planify_access")?.value || null,
     request.cookies.get("planify_owner_access")?.value || null,
     request.cookies.get("planify_admin_access")?.value || null,
   ]) {

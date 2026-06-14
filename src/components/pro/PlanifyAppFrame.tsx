@@ -97,6 +97,9 @@ export default function PlanifyAppFrame({
     if (pathname.startsWith("/marketplace")) {
       return { title: "Comunidade", subtitle: "Materiais compartilhados por professores" };
     }
+    if (pathname.startsWith("/comunidade")) {
+      return { title: "Comunidade Docente", subtitle: "Conecte-se com professores de todo o Brasil" };
+    }
     if (pathname.startsWith("/diretor") || pathname.startsWith("/gestor")) {
       return { title: "Painel do Gestor", subtitle: "Turmas, professores e BNCC" };
     }

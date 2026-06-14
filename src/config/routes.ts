@@ -92,6 +92,13 @@ export const appRoutes: AppRoute[] = [
     status: "ready",
   },
   {
+    href: "/comunidade",
+    label: "Comunidade Docente",
+    description: "Comunidade profissional para professores compartilharem materiais e experiências.",
+    group: "premium",
+    status: "ready",
+  },
+  {
     href: "/marketplace/novo",
     label: "Publicar material",
     description: "Publicação de material para a Comunidade.",

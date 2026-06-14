@@ -69,8 +69,11 @@ const BibliotecaClient = dynamic(
   { ssr: false, loading: PanelLoading },
 );
 
-const MarketplaceClient = dynamic(
-  () => import("@/app/marketplace/MarketplaceClient").then((m) => m.default),
+const ComunidadeDocenteClient = dynamic(
+  () =>
+    import("@/app/comunidade/ComunidadeDocenteClient").then(
+      (m) => m.ComunidadeDocenteClient,
+    ),
   { ssr: false, loading: PanelLoading },
 );
 
@@ -216,7 +219,7 @@ export function PlanifyDashboardMain({
   if (sectionId === "marketplace") {
     return (
       <SectionPanel>
-        <MarketplaceClient />
+        <ComunidadeDocenteClient embedded />
       </SectionPanel>
     );
   }

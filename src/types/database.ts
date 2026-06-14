@@ -29,6 +29,7 @@ export type Database = {
           school_name: string | null;
           bio: string | null;
           community_public: boolean;
+          community_reputation: number;
           phone: string | null;
           stripe_customer_id: string | null;
           plan: string | null;
@@ -49,6 +50,7 @@ export type Database = {
           school_name?: string | null;
           bio?: string | null;
           community_public?: boolean;
+          community_reputation?: number;
           phone?: string | null;
           stripe_customer_id?: string | null;
           plan?: string | null;
@@ -69,6 +71,7 @@ export type Database = {
           school_name?: string | null;
           bio?: string | null;
           community_public?: boolean;
+          community_reputation?: number;
           phone?: string | null;
           stripe_customer_id?: string | null;
           plan?: string | null;
@@ -689,6 +692,309 @@ export type Database = {
           body?: string;
           read_at?: string | null;
           created_at?: string;
+        }
+      >;
+      community_posts: TableDefinition<
+        {
+          id: string;
+          author_id: string;
+          title: string;
+          body: string;
+          disciplina: string;
+          tags: string[];
+          likes_count: number;
+          comments_count: number;
+          is_published: boolean;
+          created_at: string;
+          updated_at: string;
+        },
+        {
+          id?: string;
+          author_id: string;
+          title: string;
+          body?: string;
+          disciplina?: string;
+          tags?: string[];
+          likes_count?: number;
+          comments_count?: number;
+          is_published?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        },
+        {
+          id?: string;
+          author_id?: string;
+          title?: string;
+          body?: string;
+          disciplina?: string;
+          tags?: string[];
+          likes_count?: number;
+          comments_count?: number;
+          is_published?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        }
+      >;
+      community_comments: TableDefinition<
+        {
+          id: string;
+          post_id: string | null;
+          material_id: string | null;
+          author_id: string;
+          body: string;
+          created_at: string;
+        },
+        {
+          id?: string;
+          post_id?: string | null;
+          material_id?: string | null;
+          author_id: string;
+          body: string;
+          created_at?: string;
+        },
+        {
+          id?: string;
+          post_id?: string | null;
+          material_id?: string | null;
+          author_id?: string;
+          body?: string;
+          created_at?: string;
+        }
+      >;
+      community_likes: TableDefinition<
+        {
+          id: string;
+          user_id: string;
+          post_id: string | null;
+          material_id: string | null;
+          created_at: string;
+        },
+        {
+          id?: string;
+          user_id: string;
+          post_id?: string | null;
+          material_id?: string | null;
+          created_at?: string;
+        },
+        {
+          id?: string;
+          user_id?: string;
+          post_id?: string | null;
+          material_id?: string | null;
+          created_at?: string;
+        }
+      >;
+      community_materials: TableDefinition<
+        {
+          id: string;
+          author_id: string;
+          title: string;
+          description: string;
+          disciplina: string;
+          ano_serie: string;
+          tags: string[];
+          cover_url: string | null;
+          file_path: string | null;
+          file_name: string | null;
+          file_mime: string | null;
+          file_size: number;
+          views_count: number;
+          likes_count: number;
+          downloads_count: number;
+          is_published: boolean;
+          created_at: string;
+          updated_at: string;
+        },
+        {
+          id?: string;
+          author_id: string;
+          title: string;
+          description?: string;
+          disciplina?: string;
+          ano_serie?: string;
+          tags?: string[];
+          cover_url?: string | null;
+          file_path?: string | null;
+          file_name?: string | null;
+          file_mime?: string | null;
+          file_size?: number;
+          views_count?: number;
+          likes_count?: number;
+          downloads_count?: number;
+          is_published?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        },
+        {
+          id?: string;
+          author_id?: string;
+          title?: string;
+          description?: string;
+          disciplina?: string;
+          ano_serie?: string;
+          tags?: string[];
+          cover_url?: string | null;
+          file_path?: string | null;
+          file_name?: string | null;
+          file_mime?: string | null;
+          file_size?: number;
+          views_count?: number;
+          likes_count?: number;
+          downloads_count?: number;
+          is_published?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        }
+      >;
+      community_followers: TableDefinition<
+        {
+          id: string;
+          follower_id: string;
+          following_id: string;
+          created_at: string;
+        },
+        {
+          id?: string;
+          follower_id: string;
+          following_id: string;
+          created_at?: string;
+        },
+        {
+          id?: string;
+          follower_id?: string;
+          following_id?: string;
+          created_at?: string;
+        }
+      >;
+      community_groups: TableDefinition<
+        {
+          id: string;
+          owner_id: string;
+          name: string;
+          description: string;
+          disciplina: string;
+          cover_url: string | null;
+          members_count: number;
+          is_public: boolean;
+          created_at: string;
+          updated_at: string;
+        },
+        {
+          id?: string;
+          owner_id: string;
+          name: string;
+          description?: string;
+          disciplina?: string;
+          cover_url?: string | null;
+          members_count?: number;
+          is_public?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        },
+        {
+          id?: string;
+          owner_id?: string;
+          name?: string;
+          description?: string;
+          disciplina?: string;
+          cover_url?: string | null;
+          members_count?: number;
+          is_public?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        }
+      >;
+      community_events: TableDefinition<
+        {
+          id: string;
+          host_id: string;
+          title: string;
+          description: string;
+          presenter_name: string;
+          starts_at: string;
+          is_online: boolean;
+          location: string | null;
+          max_attendees: number | null;
+          created_at: string;
+          updated_at: string;
+        },
+        {
+          id?: string;
+          host_id: string;
+          title: string;
+          description?: string;
+          presenter_name?: string;
+          starts_at: string;
+          is_online?: boolean;
+          location?: string | null;
+          max_attendees?: number | null;
+          created_at?: string;
+          updated_at?: string;
+        },
+        {
+          id?: string;
+          host_id?: string;
+          title?: string;
+          description?: string;
+          presenter_name?: string;
+          starts_at?: string;
+          is_online?: boolean;
+          location?: string | null;
+          max_attendees?: number | null;
+          created_at?: string;
+          updated_at?: string;
+        }
+      >;
+      community_badges: TableDefinition<
+        {
+          id: string;
+          slug: string;
+          name: string;
+          description: string;
+          icon: string;
+          color: string;
+          min_reputation: number;
+          created_at: string;
+        },
+        {
+          id?: string;
+          slug: string;
+          name: string;
+          description?: string;
+          icon?: string;
+          color?: string;
+          min_reputation?: number;
+          created_at?: string;
+        },
+        {
+          id?: string;
+          slug?: string;
+          name?: string;
+          description?: string;
+          icon?: string;
+          color?: string;
+          min_reputation?: number;
+          created_at?: string;
+        }
+      >;
+      community_user_badges: TableDefinition<
+        {
+          id: string;
+          user_id: string;
+          badge_id: string;
+          awarded_at: string;
+        },
+        {
+          id?: string;
+          user_id: string;
+          badge_id: string;
+          awarded_at?: string;
+        },
+        {
+          id?: string;
+          user_id?: string;
+          badge_id?: string;
+          awarded_at?: string;
         }
       >;
       library_items: TableDefinition<

@@ -23,8 +23,10 @@ function AppFrameFallback() {
 export default function AppLayoutClient({ children }: AppLayoutClientProps) {
   const pathname = usePathname();
   const isDashboard = pathname === "/dashboard";
+  const isComunidadeDocente =
+    pathname === "/comunidade" || pathname.startsWith("/comunidade/");
 
-  if (isDashboard) {
+  if (isDashboard || isComunidadeDocente) {
     return <>{children}</>;
   }
 

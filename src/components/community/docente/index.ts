@@ -1,0 +1,10 @@
+export { ComunidadeDocenteSidebar } from "./ComunidadeDocenteSidebar";
+export { ComunidadeDocenteTopBar } from "./ComunidadeDocenteTopBar";
+export { ComunidadeDocenteHero } from "./ComunidadeDocenteHero";
+export { ComunidadeDocenteStats } from "./ComunidadeDocenteStats";
+export { ComunidadeDocenteDiscussions } from "./ComunidadeDocenteDiscussions";
+export { ComunidadeDocenteDiscussionCard } from "./ComunidadeDocenteDiscussionCard";
+export { ComunidadeDocenteMaterials } from "./ComunidadeDocenteMaterials";
+export { ComunidadeDocenteMaterialCard } from "./ComunidadeDocenteMaterialCard";
+export { ComunidadeDocenteRightSidebar } from "./ComunidadeDocenteRightSidebar";
+export { ComunidadeDocenteCreatePostModal } from "./ComunidadeDocenteCreatePostModal";

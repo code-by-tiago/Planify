@@ -7,6 +7,7 @@ export const protectedRoutes = [
   "/historico",
   "/biblioteca",
   "/marketplace",
+  "/comunidade",
   "/admin",
 ];
 

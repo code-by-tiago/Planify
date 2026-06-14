@@ -1,4 +1,5 @@
 import type { CommunityProfileSearchMatchHint } from "@/lib/community/types";
+import { formatDisplayNameFromEmail } from "@/lib/auth/format-plan-label";
 import { getSupabaseAdminClient } from "../supabase/admin-client";
 import { resolveCommunityAuthors } from "./marketplace-social-service";
 
@@ -15,6 +16,7 @@ export type CommunityProfileSearchResult = {
 
 type ProfileRow = {
   id: string;
+  email: string | null;
   full_name: string | null;
   school_name: string | null;
   bio: string | null;
@@ -38,6 +40,23 @@ function extractSearchTokens(q: string, school: string): string[] {
     .split(/\s+/)
     .map((token) => token.trim())
     .filter((token) => token.length >= 2);
+}
+
+function profileTextSearchOrFilter(term: string): string {
+  return `full_name.ilike.%${term}%,school_name.ilike.%${term}%,bio.ilike.%${term}%,email.ilike.%${term}%`;
+}
+
+function buildProfileSearchHaystack(params: {
+  displayName: string;
+  schoolName: string | null;
+  bio: string | null;
+  email: string | null;
+}): string {
+  const emailLabel = params.email ? formatDisplayNameFromEmail(params.email) : "";
+  return `${params.displayName} ${params.schoolName || ""} ${params.bio || ""} ${params.email || ""} ${emailLabel}`
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function scoreProfileMatch(
@@ -100,7 +119,7 @@ export async function searchCommunityProfiles(params: {
 
   let profileQuery = supabase
     .from("profiles")
-    .select("id,full_name,school_name,bio,community_public")
+    .select("id,email,full_name,school_name,bio,community_public")
     .eq("community_public", true)
     .order("full_name", { ascending: true })
     .limit(200);
@@ -112,11 +131,9 @@ export async function searchCommunityProfiles(params: {
   if (school && q && school !== q) {
     profileQuery = profileQuery
       .ilike("school_name", `%${school}%`)
-      .or(`full_name.ilike.%${q}%,school_name.ilike.%${q}%,bio.ilike.%${q}%`);
+      .or(profileTextSearchOrFilter(q));
   } else if (searchTerm.length >= 2) {
-    profileQuery = profileQuery.or(
-      `full_name.ilike.%${searchTerm}%,school_name.ilike.%${searchTerm}%,bio.ilike.%${searchTerm}%`,
-    );
+    profileQuery = profileQuery.or(profileTextSearchOrFilter(searchTerm));
   } else if (!component) {
     return [];
   }
@@ -129,6 +146,9 @@ export async function searchCommunityProfiles(params: {
 
   const profileRows = profiles as ProfileRow[];
   const userIds = profileRows.map((row) => row.id);
+  const emailByUserId = new Map(
+    profileRows.map((row) => [row.id, row.email?.trim().toLowerCase() || ""]),
+  );
 
   const { data: materials } = await supabase
     .from("marketplace_materials")
@@ -195,8 +215,12 @@ export async function searchCommunityProfiles(params: {
   if (tokens.length) {
     results = results
       .filter((item) => {
-        const haystack =
-          `${item.displayName} ${item.schoolName || ""} ${item.bio || ""}`.toLowerCase();
+        const haystack = buildProfileSearchHaystack({
+          displayName: item.displayName,
+          schoolName: item.schoolName,
+          bio: item.bio,
+          email: emailByUserId.get(item.userId) || null,
+        });
         return tokens.every((token) => haystack.includes(token));
       })
       .map((item) => {

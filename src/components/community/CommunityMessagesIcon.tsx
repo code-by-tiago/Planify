@@ -8,15 +8,17 @@ import { useCallback, useEffect, useState } from "react";
 type CommunityMessagesIconProps = {
   className?: string;
   initialUserId?: string | null;
+  initialOpen?: boolean;
   onInitialUserHandled?: () => void;
 };
 
 export function CommunityMessagesIcon({
   className,
   initialUserId,
+  initialOpen = false,
   onInitialUserHandled,
 }: CommunityMessagesIconProps) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(initialOpen);
   const [unreadCount, setUnreadCount] = useState(0);
   const [pendingUserId, setPendingUserId] = useState<string | null>(null);
 
@@ -42,6 +44,12 @@ export function CommunityMessagesIcon({
     }, 60000);
     return () => window.clearInterval(interval);
   }, [refreshUnread]);
+
+  useEffect(() => {
+    if (initialOpen) {
+      setOpen(true);
+    }
+  }, [initialOpen]);
 
   useEffect(() => {
     if (!initialUserId) {

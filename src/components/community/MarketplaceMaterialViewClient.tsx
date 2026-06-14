@@ -22,6 +22,7 @@ import {
 } from "@/lib/marketplace/marketplace-download-client";
 import { openMarketplaceMaterialInEditor } from "@/lib/marketplace/marketplace-editor-open";
 import type { MarketplacePreviewKind } from "@/server/marketplace/marketplace-preview";
+import { comunidadeRoutes } from "@/lib/community/docente-utils";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -60,6 +61,9 @@ type MaterialPreviewData = {
 
 type MarketplaceMaterialViewClientProps = {
   materialId: string;
+  embeddedInCommunity?: boolean;
+  variant?: "standalone" | "embedded";
+  backHref?: string;
 };
 
 function formatBytes(value: number) {
@@ -81,7 +85,12 @@ function formatDate(value: string | null) {
   }
 }
 
-export function MarketplaceMaterialViewClient({ materialId }: MarketplaceMaterialViewClientProps) {
+export function MarketplaceMaterialViewClient({
+  materialId,
+  embeddedInCommunity = false,
+  variant = "standalone",
+  backHref,
+}: MarketplaceMaterialViewClientProps) {
   const router = useRouter();
   const [data, setData] = useState<MaterialPreviewData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -161,7 +170,12 @@ export function MarketplaceMaterialViewClient({ materialId }: MarketplaceMateria
         throw new Error(payload?.error?.message || "Não foi possível excluir o material.");
       }
 
-      router.push("/dashboard?secao=marketplace");
+      router.push(
+        backHref ||
+          (embeddedInCommunity || variant === "embedded"
+            ? comunidadeRoutes.homeEmbedded
+            : "/dashboard?secao=marketplace"),
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao excluir material.");
       setActionStatus("");
@@ -297,12 +311,22 @@ export function MarketplaceMaterialViewClient({ materialId }: MarketplaceMateria
     )
   ) : null;
 
+  const isEmbeddedVariant = embeddedInCommunity || variant === "embedded";
+  const resolvedBackHref =
+    backHref || (isEmbeddedVariant ? comunidadeRoutes.homeEmbedded : "/dashboard?secao=marketplace");
+
   return (
     <PlanifyWorkspacePane>
-      <div className="planify-hud pl-hud-hub mx-auto max-w-6xl space-y-3">
+      <div
+        className={[
+          "mx-auto space-y-3",
+          isEmbeddedVariant ? "max-w-4xl" : "planify-hud pl-hud-hub max-w-6xl",
+        ].join(" ")}
+      >
+        {!isEmbeddedVariant ? (
         <div className="flex flex-wrap items-center gap-2 border-b border-cyan-400/10 pb-3">
           <Link
-            href="/dashboard?secao=marketplace"
+            href={resolvedBackHref}
             className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-cyan-400/20 bg-white/80 px-2.5 py-1.5 text-[11px] font-bold text-slate-700 transition hover:border-cyan-300 hover:bg-cyan-50/60"
           >
             <PlanifyIcon name="arrowLeft" className="h-3.5 w-3.5" />
@@ -345,6 +369,7 @@ export function MarketplaceMaterialViewClient({ materialId }: MarketplaceMateria
             <p className="text-sm font-semibold text-slate-600">Material da Comunidade</p>
           )}
         </div>
+        ) : null}
 
         {loading ? (
           <section className="pl-hud-glass flex items-center justify-center rounded-2xl p-12">

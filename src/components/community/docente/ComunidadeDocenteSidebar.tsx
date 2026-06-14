@@ -13,7 +13,7 @@ import {
   IconUsers,
   getDisciplinaIconColor,
 } from "@/components/community/docente/docente-icons";
-import { DOCENTE_DISCIPLINAS } from "@/lib/community/docente-mock-data";
+import { DOCENTE_DISCIPLINAS } from "@/lib/community/docente-utils";
 import type { DocenteDisciplina, DocenteMenuItem } from "@/lib/community/docente-types";
 
 const MENU_ITEMS: { id: DocenteMenuItem; label: string; icon: typeof IconHome }[] = [

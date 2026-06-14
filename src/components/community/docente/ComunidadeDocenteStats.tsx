@@ -1,8 +1,6 @@
 "use client";
 
-import {
-  formatDocenteNumber,
-} from "@/lib/community/docente-mock-data";
+import { formatDocenteNumber } from "@/lib/community/docente-utils";
 import type { DocenteStats } from "@/lib/community/docente-types";
 import {
   IconChat,

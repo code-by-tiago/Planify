@@ -58,9 +58,20 @@ export function IconTrophy({ className = "h-5 w-5", ...props }: IconProps) {
   );
 }
 
-export function IconBookmark({ className = "h-5 w-5", ...props }: IconProps) {
+export function IconBookmark({
+  className = "h-5 w-5",
+  filled = false,
+  ...props
+}: IconProps & { filled?: boolean }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} className={className} {...props}>
+    <svg
+      viewBox="0 0 24 24"
+      fill={filled ? "currentColor" : "none"}
+      stroke="currentColor"
+      strokeWidth={1.75}
+      className={className}
+      {...props}
+    >
       <path strokeLinecap="round" strokeLinejoin="round" d="M6 4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18l-6-3-6 3V4Z" />
     </svg>
   );

@@ -36,12 +36,10 @@ import type {
   DocenteStats,
 } from "@/lib/community/docente-types";
 import {
-  getSavedDiscussionIds,
-  toggleSavedDiscussion,
-} from "@/lib/community/docente-saved-discussions";
+  comunidadeRoutes,
+} from "@/lib/community/docente-utils";
 import { downloadMarketplaceMaterial } from "@/lib/marketplace/marketplace-download-client";
 import { usePersistedSidebarCollapsed } from "@/hooks/usePersistedSidebarCollapsed";
-import { comunidadeRoutes } from "@/lib/community/docente-utils";
 
 const EMPTY_STATS: DocenteStats = {
   activeTeachers: 0,
@@ -114,12 +112,15 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
   const [isAdmin, setIsAdmin] = useState(false);
   const [featuredTeacher, setFeaturedTeacher] = useState<DocenteAuthor | null>(null);
   const [teachers, setTeachers] = useState<DocenteAuthor[]>([]);
+  const [savedDiscussions, setSavedDiscussions] = useState<DocenteDiscussion[]>([]);
+  const [tipoFilter, setTipoFilter] = useState<"todos" | "posts" | "materiais">("todos");
   const { collapsed: communitySidebarCollapsed, toggle: toggleCommunitySidebarCollapsed } =
     usePersistedSidebarCollapsed("planify:community-sidebar-collapsed");
 
   const effectiveSearch = searchQuery || heroSearch;
 
   const filteredDiscussions = useMemo(() => {
+    if (tipoFilter === "materiais") return [];
     let list = discussions;
     if (selectedDisciplina) {
       list = list.filter((d) => d.disciplina === selectedDisciplina);
@@ -129,9 +130,10 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
     return list.filter((d) =>
       `${d.title} ${d.author.name} ${d.disciplina} ${d.tags.join(" ")}`.toLowerCase().includes(q),
     );
-  }, [discussions, effectiveSearch, selectedDisciplina]);
+  }, [discussions, effectiveSearch, selectedDisciplina, tipoFilter]);
 
   const filteredMaterials = useMemo(() => {
+    if (tipoFilter === "posts") return [];
     let list = materials;
     if (selectedDisciplina) {
       list = list.filter((m) => m.disciplina === selectedDisciplina);
@@ -141,7 +143,7 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
     return list.filter((m) =>
       `${m.title} ${m.author.name} ${m.disciplina}`.toLowerCase().includes(q),
     );
-  }, [materials, effectiveSearch, selectedDisciplina]);
+  }, [materials, effectiveSearch, selectedDisciplina, tipoFilter]);
 
   const showToast = useCallback((message: string) => {
     setStatus(message);
@@ -165,12 +167,11 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
       }
 
       setStats(data.stats || EMPTY_STATS);
-      const savedIds = getSavedDiscussionIds();
       const nextDiscussions = (data.discussions || []).map((d: DocenteDiscussion) => ({
         ...d,
-        savedByMe: savedIds.has(d.id) || d.savedByMe,
       }));
       setDiscussions(nextDiscussions);
+      setSavedDiscussions(data.savedDiscussions || []);
       setMaterials(data.materials || []);
       setRecentPublications(data.recentPublications || []);
       setEvents(data.events || []);
@@ -281,17 +282,28 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
 
   const handleSaveDiscussion = useCallback(
     async (id: string) => {
-      if (!isMaterialDiscussion(id)) {
-        const saved = toggleSavedDiscussion(id);
-        setDiscussions((prev) =>
-          prev.map((d) => (d.id === id ? { ...d, savedByMe: saved } : d)),
-        );
-        showToast(saved ? "Discussão salva!" : "Removido dos salvos.");
+      if (isMaterialDiscussion(id)) {
+        await handleSaveMaterial(materialIdFromDiscussion(id));
         return;
       }
-      await handleSaveMaterial(materialIdFromDiscussion(id));
+      const response = await fetch("/api/community/docente/actions", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "save_post", postId: id }),
+      });
+      const data = await response.json();
+      if (response.ok && data.ok) {
+        setDiscussions((prev) =>
+          prev.map((d) => (d.id === id ? { ...d, savedByMe: data.saved } : d)),
+        );
+        showToast(data.saved ? "Discussão salva!" : "Removida dos salvos.");
+        void refreshAfterAction();
+      } else {
+        showToast(data?.error?.message || "Não foi possível salvar.");
+      }
     },
-    [handleSaveMaterial, showToast],
+    [handleSaveMaterial, refreshAfterAction, showToast],
   );
 
   const submitComment = useCallback(
@@ -354,22 +366,25 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
   const handleOpenDiscussion = useCallback(
     (id: string) => {
       if (isMaterialDiscussion(id)) {
-        router.push(comunidadeRoutes.material(materialIdFromDiscussion(id)));
+        router.push(comunidadeRoutes.material(materialIdFromDiscussion(id), embedded));
         return;
       }
-      router.push(comunidadeRoutes.discussao(id));
+      router.push(comunidadeRoutes.discussao(id, embedded));
     },
-    [router],
+    [router, embedded],
   );
 
   const handleShareDiscussion = useCallback(
     (id: string) => {
-      const url = `${window.location.origin}${comunidadeRoutes.discussao(id)}`;
+      const path = isMaterialDiscussion(id)
+        ? comunidadeRoutes.material(materialIdFromDiscussion(id), embedded)
+        : comunidadeRoutes.discussao(id, embedded);
+      const url = `${window.location.origin}${path}`;
       void navigator.clipboard.writeText(url).then(() => {
         showToast("Link copiado para a área de transferência!");
       });
     },
-    [showToast],
+    [embedded, showToast],
   );
 
 
@@ -456,7 +471,11 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
 
       setFeaturedTeacher((prev) => (prev ? updateAuthor(prev) : prev));
       setTeachers((prev) => prev.map(updateAuthor));
-      showToast(data.following ? "Você seguiu o professor!" : "Deixou de seguir.");
+      showToast(
+        data.following
+          ? "Você seguiu o professor! O professor receberá uma notificação."
+          : "Deixou de seguir.",
+      );
     },
     [showToast],
   );
@@ -537,7 +556,7 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
       const data = await response.json();
       if (response.ok && data.ok) {
         showToast("Grupo criado com sucesso!");
-        router.push(comunidadeRoutes.grupo(data.groupId));
+        router.push(comunidadeRoutes.grupo(data.groupId, embedded));
         await loadOverview(effectiveSearch);
       } else {
         showToast(data?.error?.message || "Não foi possível criar o grupo.");
@@ -687,7 +706,7 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
           events={events}
           isAdmin={isAdmin}
           onCreateEvent={() => setCreateEventOpen(true)}
-          onOpenEvent={(id) => router.push(comunidadeRoutes.evento(id))}
+          onOpenEvent={(id) => router.push(comunidadeRoutes.evento(id, embedded))}
         />
       );
     }
@@ -698,7 +717,7 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
           onCreateGroup={() => setCreateGroupOpen(true)}
           onJoinGroup={handleJoinGroup}
           onLeaveGroup={handleLeaveGroup}
-          onOpenGroup={(id) => router.push(comunidadeRoutes.grupo(id))}
+          onOpenGroup={(id) => router.push(comunidadeRoutes.grupo(id, embedded))}
         />
       );
     }
@@ -723,8 +742,11 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
       return (
         <ComunidadeDocenteSalvos
           materials={materials}
+          discussions={savedDiscussions}
           onLike={handleLikeMaterial}
           onSave={handleSaveMaterial}
+          onSaveDiscussion={handleSaveDiscussion}
+          onOpenDiscussion={handleOpenDiscussion}
           onDownload={handleDownloadMaterial}
           downloadingMaterialId={downloadingMaterialId}
           onBrowseMaterials={() => setActiveMenu("materiais")}
@@ -734,6 +756,33 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
 
     return (
       <>
+        {(activeMenu === "discussoes" || activeMenu === "materiais") && (
+          <section className="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+            <span className="text-xs font-bold text-slate-500">Filtrar:</span>
+            {(
+              [
+                ["todos", "Tudo"],
+                ["posts", "Discussões"],
+                ["materiais", "Materiais"],
+              ] as const
+            ).map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setTipoFilter(value)}
+                className={[
+                  "rounded-xl px-3 py-1.5 text-xs font-bold transition",
+                  tipoFilter === value
+                    ? "bg-[#0F172A] text-white"
+                    : "border border-slate-200 bg-white text-slate-600 hover:border-cyan-200",
+                ].join(" ")}
+              >
+                {label}
+              </button>
+            ))}
+          </section>
+        )}
+
         {activeMenu === "inicio" ? (
           <>
             <ComunidadeDocenteHero
@@ -774,6 +823,8 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
     );
   };
 
+  const openMessagesPanel = searchParams.get("painel") === "mensagens";
+
   return (
     <div
       className={[
@@ -789,6 +840,7 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
         }}
         onCreatePost={openCreatePost}
         onOpenMenu={() => setSidebarOpen(true)}
+        initialOpenMessages={openMessagesPanel}
       />
 
       <div className="relative flex min-h-0 flex-1 overflow-hidden">
@@ -842,7 +894,7 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
                 }
                 setActiveMenu(menu);
               }}
-              onOpenEvent={(id) => router.push(comunidadeRoutes.evento(id))}
+              onOpenEvent={(id) => router.push(comunidadeRoutes.evento(id, embedded))}
                 onCreatePost={openCreatePost}
               />
             </div>
@@ -861,7 +913,7 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
                 }
                 setActiveMenu(menu);
               }}
-              onOpenEvent={(id) => router.push(comunidadeRoutes.evento(id))}
+              onOpenEvent={(id) => router.push(comunidadeRoutes.evento(id, embedded))}
               onCreatePost={openCreatePost}
             />
           </div>

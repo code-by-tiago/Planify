@@ -705,6 +705,7 @@ export type Database = {
           likes_count: number;
           comments_count: number;
           is_published: boolean;
+          group_id: string | null;
           created_at: string;
           updated_at: string;
         },
@@ -718,6 +719,7 @@ export type Database = {
           likes_count?: number;
           comments_count?: number;
           is_published?: boolean;
+          group_id?: string | null;
           created_at?: string;
           updated_at?: string;
         },
@@ -731,8 +733,46 @@ export type Database = {
           likes_count?: number;
           comments_count?: number;
           is_published?: boolean;
+          group_id?: string | null;
           created_at?: string;
           updated_at?: string;
+        }
+      >;
+      community_event_participants: TableDefinition<
+        {
+          event_id: string;
+          user_id: string;
+          status: string;
+          created_at: string;
+        },
+        {
+          event_id: string;
+          user_id: string;
+          status?: string;
+          created_at?: string;
+        },
+        {
+          event_id?: string;
+          user_id?: string;
+          status?: string;
+          created_at?: string;
+        }
+      >;
+      community_saved_posts: TableDefinition<
+        {
+          user_id: string;
+          post_id: string;
+          created_at: string;
+        },
+        {
+          user_id: string;
+          post_id: string;
+          created_at?: string;
+        },
+        {
+          user_id?: string;
+          post_id?: string;
+          created_at?: string;
         }
       >;
       community_comments: TableDefinition<

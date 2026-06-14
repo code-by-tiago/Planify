@@ -18,7 +18,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   const { id } = await params;
 
   try {
-    const event = await getCommunityEventDetail({ eventId: id });
+    const event = await getCommunityEventDetail({
+      eventId: id,
+      viewerUserId: access.access.user?.id,
+    });
 
     if (!event) return jsonError("Evento não encontrado.", 404);
 

@@ -24,6 +24,7 @@ type ComunidadeDocenteTopBarProps = {
   onSearchChange: (value: string) => void;
   onCreatePost: () => void;
   onOpenMenu: () => void;
+  initialOpenMessages?: boolean;
 };
 
 export function ComunidadeDocenteTopBar({
@@ -31,6 +32,7 @@ export function ComunidadeDocenteTopBar({
   onSearchChange,
   onCreatePost,
   onOpenMenu,
+  initialOpenMessages = false,
 }: ComunidadeDocenteTopBarProps) {
   const [profile, setProfile] = useState<ViewerProfile | null>(null);
 
@@ -92,7 +94,7 @@ export function ComunidadeDocenteTopBar({
         </button>
 
         <CommunityNotificationsIcon />
-        <CommunityMessagesIcon />
+        <CommunityMessagesIcon initialOpen={initialOpenMessages} />
 
         {profile?.userId ? (
           <Link

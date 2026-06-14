@@ -4,7 +4,7 @@ import {
   getRequestAccessToken,
   requireApiPremiumAccess,
 } from "@/server/auth/api-access";
-import { getCommunityDocenteOverview } from "@/server/community/community-docente-service";
+import { getCommunityDocenteOverview, getSavedDiscussionsForUser } from "@/server/community/community-docente-service";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -27,7 +27,10 @@ export async function GET(request: NextRequest) {
       search,
       isAdmin: adminAccess.isAdmin,
     });
-    return NextResponse.json({ ok: true, ...overview });
+    const savedDiscussions = access.access.user?.id
+      ? await getSavedDiscussionsForUser({ userId: access.access.user.id })
+      : [];
+    return NextResponse.json({ ok: true, ...overview, savedDiscussions });
   } catch (error) {
     return jsonError(
       error instanceof Error ? error.message : "Não foi possível carregar a comunidade.",

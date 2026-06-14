@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { PlanifyModal } from "@/components/ui/PlanifyModal";
 import { ComunidadeDocenteUserPicker } from "@/components/community/docente/ComunidadeDocenteUserPicker";
-import { DOCENTE_DISCIPLINAS } from "@/lib/community/docente-mock-data";
+import { DOCENTE_DISCIPLINAS } from "@/lib/community/docente-utils";
 import type { CommunityProfileSearchResult } from "@/lib/community/types";
 import type { DocenteCreateGroupInput, DocenteDisciplina } from "@/lib/community/docente-types";
 

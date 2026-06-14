@@ -8,7 +8,7 @@ import {
   formatEventShortTime,
   comunidadeRoutes,
 } from "@/lib/community/docente-utils";
-import type { DocenteAuthor, DocenteBadgeProgress, DocenteEvent, DocenteMaterial } from "@/lib/community/docente-types";
+import type { DocenteAuthor, DocenteBadgeProgress, DocenteDiscussion, DocenteEvent, DocenteMaterial } from "@/lib/community/docente-types";
 
 type GroupItem = {
   id: string;
@@ -384,26 +384,33 @@ export function ComunidadeDocenteDesafios({
 
 export function ComunidadeDocenteSalvos({
   materials,
+  discussions = [],
   onLike,
   onSave,
+  onSaveDiscussion,
+  onOpenDiscussion,
   onDownload,
   downloadingMaterialId,
   onBrowseMaterials,
 }: {
   materials: DocenteMaterial[];
+  discussions?: DocenteDiscussion[];
   onLike: (id: string) => void;
   onSave: (id: string) => void;
+  onSaveDiscussion?: (id: string) => void;
+  onOpenDiscussion?: (id: string) => void;
   onDownload?: (id: string) => void;
   downloadingMaterialId?: string | null;
   onBrowseMaterials?: () => void;
 }) {
-  const saved = materials.filter((m) => m.savedByMe);
+  const savedMaterials = materials.filter((m) => m.savedByMe);
+  const savedPosts = discussions.filter((d) => d.savedByMe);
 
-  if (!saved.length) {
+  if (!savedMaterials.length && !savedPosts.length) {
     return (
       <EmptyState
         title="Salvos"
-        message="Você ainda não salvou materiais. Explore a comunidade e salve o que for útil."
+        message="Você ainda não salvou discussões nem materiais. Explore a comunidade e salve o que for útil."
         actionLabel="Ver materiais"
         onAction={onBrowseMaterials}
       />
@@ -411,10 +418,41 @@ export function ComunidadeDocenteSalvos({
   }
 
   return (
-    <section className="space-y-4">
+    <section className="space-y-6">
+      {savedPosts.length > 0 ? (
+        <div className="space-y-4">
+          <h2 className="text-xl font-extrabold text-[#0F172A]">Discussões salvas</h2>
+          <ul className="space-y-2">
+            {savedPosts.map((discussion) => (
+              <li key={discussion.id}>
+                <button
+                  type="button"
+                  onClick={() => onOpenDiscussion?.(discussion.id)}
+                  className="flex w-full items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left transition hover:border-cyan-200"
+                >
+                  <span className="font-semibold text-[#0F172A]">{discussion.title}</span>
+                  <span className="text-xs text-slate-400">{discussion.author.name}</span>
+                </button>
+                {onSaveDiscussion ? (
+                  <button
+                    type="button"
+                    onClick={() => onSaveDiscussion(discussion.id)}
+                    className="mt-1 text-xs font-bold text-cyan-600"
+                  >
+                    Remover
+                  </button>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
+      {savedMaterials.length > 0 ? (
+    <div className="space-y-4">
       <h2 className="text-xl font-extrabold text-[#0F172A]">Materiais salvos</h2>
       <div className="flex gap-3 overflow-x-auto pb-2">
-        {saved.map((material) => (
+        {savedMaterials.map((material) => (
           <article
             key={material.id}
             className="w-[220px] shrink-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
@@ -454,6 +492,8 @@ export function ComunidadeDocenteSalvos({
           </article>
         ))}
       </div>
+    </div>
+      ) : null}
     </section>
   );
 }

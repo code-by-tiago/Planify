@@ -76,13 +76,28 @@ export function getDisciplinaColor(disciplina: DocenteDisciplina): string {
   return DISCIPLINA_COLORS[disciplina] ?? "bg-slate-100 text-slate-700";
 }
 
+export function readEmbedded(searchParams: { get(name: string): string | null }): boolean {
+  return searchParams.get("embedded") === "1";
+}
+
+function withEmbedded(path: string, embedded?: boolean) {
+  if (!embedded) return path;
+  const separator = path.includes("?") ? "&" : "?";
+  return `${path}${separator}embedded=1`;
+}
+
 export const comunidadeRoutes = {
   home: "/comunidade",
-  discussao: (id: string) => `/comunidade/discussao/${id}`,
-  grupo: (id: string) => `/comunidade/grupo/${id}`,
-  professor: (id: string) => `/comunidade/professor/${id}`,
-  evento: (id: string) => `/comunidade/evento/${id}`,
-  material: (id: string) => `/comunidade/material/${id}`,
+  homeEmbedded: "/dashboard?secao=marketplace",
+  discussao: (id: string, embedded?: boolean) =>
+    withEmbedded(`/comunidade/discussao/${id}`, embedded),
+  grupo: (id: string, embedded?: boolean) => withEmbedded(`/comunidade/grupo/${id}`, embedded),
+  professor: (id: string, embedded?: boolean) =>
+    withEmbedded(`/comunidade/professor/${id}`, embedded),
+  evento: (id: string, embedded?: boolean) => withEmbedded(`/comunidade/evento/${id}`, embedded),
+  material: (id: string, embedded?: boolean) =>
+    withEmbedded(`/comunidade/material/${id}`, embedded),
   desafios: "/comunidade/desafios",
   busca: "/comunidade/busca",
+  messages: "/dashboard?secao=marketplace&painel=mensagens",
 };

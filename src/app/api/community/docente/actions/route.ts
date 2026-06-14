@@ -10,11 +10,16 @@ import {
   createCommunityEvent,
   createCommunityGroup,
   createCommunityPost,
+  deleteCommunityPost,
   inviteCommunityGroupMembers,
+  inviteCommunityPostParticipants,
   joinCommunityGroup,
   leaveCommunityGroup,
+  toggleCommunityEventRsvp,
   toggleCommunityFollow,
   toggleCommunityPostLike,
+  toggleSavedPost,
+  updateCommunityPost,
 } from "@/server/community/community-docente-service";
 
 export const runtime = "nodejs";
@@ -46,6 +51,7 @@ export async function POST(request: NextRequest) {
       const participantUserIds = Array.isArray(body.participantUserIds)
         ? body.participantUserIds.map((id: unknown) => String(id).trim()).filter(Boolean)
         : [];
+      const groupId = body.groupId ? String(body.groupId).trim() : null;
 
       if (title.length < 3) return jsonError("Informe um título com pelo menos 3 caracteres.");
 
@@ -56,8 +62,70 @@ export async function POST(request: NextRequest) {
         disciplina,
         tags,
         participantUserIds,
+        groupId,
       });
       return NextResponse.json({ ok: true, postId: post?.id });
+    }
+
+    if (action === "update_post") {
+      const postId = String(body.postId || "").trim();
+      const title = String(body.title || "").trim();
+      const content = String(body.body || "").trim();
+      const disciplina = String(body.disciplina || "Ciências").trim();
+      const tags = Array.isArray(body.tags)
+        ? body.tags.map((t: unknown) => String(t).trim()).filter(Boolean)
+        : [];
+
+      if (!postId) return jsonError("Post não informado.");
+      if (title.length < 3) return jsonError("Informe um título com pelo menos 3 caracteres.");
+
+      await updateCommunityPost({
+        authorId: userId,
+        postId,
+        title,
+        body: content,
+        disciplina,
+        tags,
+      });
+      return NextResponse.json({ ok: true });
+    }
+
+    if (action === "delete_post") {
+      const postId = String(body.postId || "").trim();
+      if (!postId) return jsonError("Post não informado.");
+      await deleteCommunityPost({ authorId: userId, postId });
+      return NextResponse.json({ ok: true });
+    }
+
+    if (action === "invite_post_participants") {
+      const postId = String(body.postId || "").trim();
+      const participantUserIds = Array.isArray(body.participantUserIds)
+        ? body.participantUserIds.map((id: unknown) => String(id).trim()).filter(Boolean)
+        : [];
+      if (!postId) return jsonError("Post não informado.");
+      const result = await inviteCommunityPostParticipants({
+        authorId: userId,
+        postId,
+        participantUserIds,
+      });
+      return NextResponse.json({ ok: true, ...result });
+    }
+
+    if (action === "save_post") {
+      const postId = String(body.postId || "").trim();
+      if (!postId) return jsonError("Post não informado.");
+      const result = await toggleSavedPost({ userId, postId });
+      return NextResponse.json({ ok: true, ...result });
+    }
+
+    if (action === "event_rsvp") {
+      const eventId = String(body.eventId || "").trim();
+      const statusRaw = String(body.status || "going").trim();
+      const status =
+        statusRaw === "interested" ? "interested" : statusRaw === "none" ? "none" : "going";
+      if (!eventId) return jsonError("Evento não informado.");
+      const result = await toggleCommunityEventRsvp({ userId, eventId, status });
+      return NextResponse.json({ ok: true, ...result });
     }
 
     if (action === "create_group") {

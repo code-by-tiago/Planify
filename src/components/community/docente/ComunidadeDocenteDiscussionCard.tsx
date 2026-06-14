@@ -13,7 +13,7 @@ import {
   formatDocenteNumber,
   formatDocenteTimeAgo,
   getDisciplinaColor,
-} from "@/lib/community/docente-mock-data";
+} from "@/lib/community/docente-utils";
 import type { DocenteDiscussion } from "@/lib/community/docente-types";
 
 type ComunidadeDocenteDiscussionCardProps = {

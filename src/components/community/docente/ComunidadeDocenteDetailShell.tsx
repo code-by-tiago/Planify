@@ -1,12 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { ComunidadeDocenteSidebar } from "@/components/community/docente/ComunidadeDocenteSidebar";
 import { ComunidadeDocenteTopBar } from "@/components/community/docente/ComunidadeDocenteTopBar";
 import { IconArrowRight } from "@/components/community/docente/docente-icons";
-import { comunidadeRoutes } from "@/lib/community/docente-utils";
+import { comunidadeRoutes, readEmbedded } from "@/lib/community/docente-utils";
 import type { DocenteDisciplina, DocenteMenuItem } from "@/lib/community/docente-types";
 import { usePersistedSidebarCollapsed } from "@/hooks/usePersistedSidebarCollapsed";
 
@@ -35,6 +35,10 @@ export function ComunidadeDocenteDetailShell({
   actions,
 }: ComunidadeDocenteDetailShellProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const isEmbedded = embedded || readEmbedded(searchParams);
+  const homeHref = isEmbedded ? comunidadeRoutes.homeEmbedded : comunidadeRoutes.home;
+
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDisciplina, setSelectedDisciplina] = useState<DocenteDisciplina | null>(null);
@@ -52,13 +56,13 @@ export function ComunidadeDocenteDetailShell({
     <div
       className={[
         "flex min-h-0 flex-col bg-[#f8fafc]",
-        embedded ? "h-full" : "min-h-[100dvh]",
+        isEmbedded ? "h-full" : "min-h-[100dvh]",
       ].join(" ")}
     >
       <ComunidadeDocenteTopBar
         searchQuery={searchQuery}
         onSearchChange={handleSearch}
-        onCreatePost={() => router.push(comunidadeRoutes.home)}
+        onCreatePost={() => router.push(homeHref)}
         onOpenMenu={() => setSidebarOpen(true)}
       />
 
@@ -85,7 +89,7 @@ export function ComunidadeDocenteDetailShell({
               router.push(comunidadeRoutes.busca);
               return;
             }
-            router.push(comunidadeRoutes.home);
+            router.push(homeHref);
           }}
           onSelectDisciplina={setSelectedDisciplina}
           onClose={() => setSidebarOpen(false)}
@@ -100,7 +104,7 @@ export function ComunidadeDocenteDetailShell({
         <main className="min-h-0 flex-1 overflow-y-auto">
           <div className="mx-auto max-w-4xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
             <nav className="flex flex-wrap items-center gap-1.5 text-xs font-semibold text-slate-400">
-              <Link href={comunidadeRoutes.home} className="transition hover:text-cyan-600">
+              <Link href={homeHref} className="transition hover:text-cyan-600">
                 Comunidade
               </Link>
               {breadcrumbs.map((crumb, index) => (

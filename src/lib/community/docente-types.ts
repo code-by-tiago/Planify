@@ -90,6 +90,7 @@ export type DocenteCreatePostInput = {
   tags: string[];
   files: File[];
   participantUserIds?: string[];
+  groupId?: string;
 };
 
 export type DocenteCreateGroupInput = {

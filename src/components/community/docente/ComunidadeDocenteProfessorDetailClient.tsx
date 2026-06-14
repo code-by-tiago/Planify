@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { CommunityAuthorAvatar } from "@/components/community/CommunityAuthorAvatar";
 import { ComunidadeDocenteDetailShell } from "@/components/community/docente/ComunidadeDocenteDetailShell";
@@ -10,13 +10,20 @@ import {
   comunidadeRoutes,
   formatDocenteNumber,
   formatDocenteTimeAgo,
+  readEmbedded,
 } from "@/lib/community/docente-utils";
 
 export function ComunidadeDocenteProfessorDetailClient({ userId }: { userId: string }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const embedded = readEmbedded(searchParams);
+  const homeHref = embedded ? comunidadeRoutes.homeEmbedded : comunidadeRoutes.busca;
+
   const [teacher, setTeacher] = useState<CommunityTeacherDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [activeTab, setActiveTab] = useState<"materiais" | "discussoes" | "grupos">("materiais");
+  const [messaging, setMessaging] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -70,11 +77,31 @@ export function ComunidadeDocenteProfessorDetailClient({ userId }: { userId: str
     }
   };
 
+  const handleMessage = async () => {
+    if (!teacher || teacher.isOwnProfile || messaging) return;
+    setMessaging(true);
+    try {
+      const response = await fetch("/api/community/messages/conversations", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId }),
+      });
+      const data = await response.json();
+      if (response.ok && data.ok) {
+        router.push(comunidadeRoutes.messages);
+      }
+    } finally {
+      setMessaging(false);
+    }
+  };
+
   if (loading) {
     return (
       <ComunidadeDocenteDetailShell
+        embedded={embedded}
         activeMenu="professores"
-        breadcrumbs={[{ label: "Professores", href: comunidadeRoutes.busca }]}
+        breadcrumbs={[{ label: "Professores", href: homeHref }]}
         title="Carregando…"
       >
         <div className="flex min-h-[200px] items-center justify-center rounded-3xl border border-slate-200 bg-white">
@@ -87,8 +114,9 @@ export function ComunidadeDocenteProfessorDetailClient({ userId }: { userId: str
   if (error || !teacher) {
     return (
       <ComunidadeDocenteDetailShell
+        embedded={embedded}
         activeMenu="professores"
-        breadcrumbs={[{ label: "Professores", href: comunidadeRoutes.busca }]}
+        breadcrumbs={[{ label: "Professores", href: homeHref }]}
         title="Professor"
       >
         <div className="rounded-3xl border border-red-200 bg-red-50 p-6 text-center">
@@ -109,24 +137,35 @@ export function ComunidadeDocenteProfessorDetailClient({ userId }: { userId: str
 
   return (
     <ComunidadeDocenteDetailShell
+      embedded={embedded}
       activeMenu="professores"
-      breadcrumbs={[{ label: "Professores", href: comunidadeRoutes.busca }]}
+      breadcrumbs={[{ label: "Professores", href: homeHref }]}
       title={profile.name}
       subtitle={teacher.schoolName || profile.specialty}
       actions={
         !teacher.isOwnProfile ? (
-          <button
-            type="button"
-            onClick={() => void handleFollow()}
-            className={[
-              "rounded-xl px-4 py-2 text-xs font-bold transition",
-              teacher.isFollowing
-                ? "border border-slate-200 bg-white text-slate-600"
-                : "bg-[#0F172A] text-white hover:bg-slate-800",
-            ].join(" ")}
-          >
-            {teacher.isFollowing ? "Seguindo" : "Seguir"}
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => void handleFollow()}
+              className={[
+                "rounded-xl px-4 py-2 text-xs font-bold transition",
+                teacher.isFollowing
+                  ? "border border-slate-200 bg-white text-slate-600"
+                  : "bg-[#0F172A] text-white hover:bg-slate-800",
+              ].join(" ")}
+            >
+              {teacher.isFollowing ? "Seguindo" : "Seguir"}
+            </button>
+            <button
+              type="button"
+              disabled={messaging}
+              onClick={() => void handleMessage()}
+              className="rounded-xl border border-cyan-200 bg-cyan-50 px-4 py-2 text-xs font-bold text-cyan-700 hover:bg-cyan-100 disabled:opacity-50"
+            >
+              {messaging ? "Abrindo…" : "Enviar mensagem"}
+            </button>
+          </div>
         ) : null
       }
     >
@@ -196,67 +235,94 @@ export function ComunidadeDocenteProfessorDetailClient({ userId }: { userId: str
       ) : null}
 
       <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 className="text-sm font-extrabold text-[#0F172A]">Materiais publicados</h2>
-        {teacher.materials.length === 0 ? (
-          <p className="mt-3 text-sm text-slate-500">Nenhum material publicado ainda.</p>
-        ) : (
-          <ul className="mt-4 space-y-2">
-            {teacher.materials.map((m) => (
-              <li key={m.id}>
-                <Link
-                  href={comunidadeRoutes.material(m.id)}
-                  className="flex items-center justify-between rounded-2xl border border-slate-100 px-4 py-3 transition hover:border-cyan-200 hover:bg-cyan-50/20"
-                >
-                  <span className="font-semibold text-[#0F172A]">{m.title}</span>
-                  <span className="text-xs text-slate-400">
-                    {formatDocenteNumber(m.downloadsCount)} downloads
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
+        <div className="flex flex-wrap gap-2 border-b border-slate-100 pb-3">
+          {(
+            [
+              ["materiais", "Materiais"],
+              ["discussoes", "Discussões"],
+              ["grupos", "Grupos"],
+            ] as const
+          ).map(([tab, label]) => (
+            <button
+              key={tab}
+              type="button"
+              onClick={() => setActiveTab(tab)}
+              className={[
+                "rounded-xl px-4 py-2 text-xs font-bold transition",
+                activeTab === tab
+                  ? "bg-[#0F172A] text-white"
+                  : "border border-slate-200 bg-white text-slate-600",
+              ].join(" ")}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {activeTab === "materiais" ? (
+          teacher.materials.length === 0 ? (
+            <p className="mt-3 text-sm text-slate-500">Nenhum material publicado ainda.</p>
+          ) : (
+            <ul className="mt-4 space-y-2">
+              {teacher.materials.map((m) => (
+                <li key={m.id}>
+                  <Link
+                    href={comunidadeRoutes.material(m.id, embedded)}
+                    className="flex items-center justify-between rounded-2xl border border-slate-100 px-4 py-3 transition hover:border-cyan-200 hover:bg-cyan-50/20"
+                  >
+                    <span className="font-semibold text-[#0F172A]">{m.title}</span>
+                    <span className="text-xs text-slate-400">
+                      {formatDocenteNumber(m.downloadsCount)} downloads
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )
+        ) : null}
+
+        {activeTab === "discussoes" ? (
+          teacher.discussions.length === 0 ? (
+            <p className="mt-3 text-sm text-slate-500">Nenhuma discussão publicada ainda.</p>
+          ) : (
+            <ul className="mt-4 space-y-2">
+              {teacher.discussions.map((d) => (
+                <li key={d.id}>
+                  <Link
+                    href={comunidadeRoutes.discussao(d.id, embedded)}
+                    className="block rounded-2xl border border-slate-100 px-4 py-3 transition hover:border-cyan-200"
+                  >
+                    <p className="font-semibold text-[#0F172A]">{d.title}</p>
+                    <p className="text-xs text-slate-400">{formatDocenteTimeAgo(d.createdAt)}</p>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )
+        ) : null}
+
+        {activeTab === "grupos" ? (
+          teacher.groups.length === 0 ? (
+            <p className="mt-3 text-sm text-slate-500">Não participa de grupos públicos.</p>
+          ) : (
+            <ul className="mt-4 space-y-2">
+              {teacher.groups.map((g) => (
+                <li key={g.id}>
+                  <Link
+                    href={comunidadeRoutes.grupo(g.id, embedded)}
+                    className="block rounded-2xl border border-slate-100 px-4 py-3 transition hover:border-cyan-200"
+                  >
+                    <p className="font-semibold text-[#0F172A]">{g.name}</p>
+                    <p className="text-xs text-slate-400">
+                      {g.disciplina} · {formatDocenteNumber(g.membersCount)} membros
+                    </p>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )
+        ) : null}
       </section>
-
-      {teacher.discussions.length > 0 ? (
-        <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-sm font-extrabold text-[#0F172A]">Discussões recentes</h2>
-          <ul className="mt-4 space-y-2">
-            {teacher.discussions.map((d) => (
-              <li key={d.id}>
-                <Link
-                  href={comunidadeRoutes.discussao(d.id)}
-                  className="block rounded-2xl border border-slate-100 px-4 py-3 transition hover:border-cyan-200"
-                >
-                  <p className="font-semibold text-[#0F172A]">{d.title}</p>
-                  <p className="text-xs text-slate-400">{formatDocenteTimeAgo(d.createdAt)}</p>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
-
-      {teacher.groups.length > 0 ? (
-        <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-sm font-extrabold text-[#0F172A]">Grupos</h2>
-          <ul className="mt-4 space-y-2">
-            {teacher.groups.map((g) => (
-              <li key={g.id}>
-                <Link
-                  href={comunidadeRoutes.grupo(g.id)}
-                  className="block rounded-2xl border border-slate-100 px-4 py-3 transition hover:border-cyan-200"
-                >
-                  <p className="font-semibold text-[#0F172A]">{g.name}</p>
-                  <p className="text-xs text-slate-400">
-                    {g.disciplina} · {formatDocenteNumber(g.membersCount)} membros
-                  </p>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
     </ComunidadeDocenteDetailShell>
   );
 }

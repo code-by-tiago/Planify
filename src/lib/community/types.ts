@@ -49,6 +49,14 @@ export type CommunityNotificationType =
   | "friend_accepted"
   | "message";
 
+export type CommunityNotificationTargetType =
+  | "post"
+  | "group"
+  | "event"
+  | "material"
+  | "professor"
+  | "conversation";
+
 export type CommunityNotification = {
   id: string;
   type: CommunityNotificationType;
@@ -58,6 +66,9 @@ export type CommunityNotification = {
   materialId: string | null;
   conversationId: string | null;
   friendshipId: string | null;
+  targetType: CommunityNotificationTargetType | null;
+  targetId: string | null;
+  href: string | null;
   bodyPreview: string;
   readAt: string | null;
   createdAt: string;

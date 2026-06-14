@@ -1,12 +1,9 @@
 import { getSupabaseAdminClient } from "../supabase/admin-client";
 import { resolveCommunityAuthors } from "./marketplace-social-service";
-
-export type CommunityNotificationType =
-  | "comment"
-  | "like"
-  | "friend_request"
-  | "friend_accepted"
-  | "message";
+import type {
+  CommunityNotificationTargetType,
+  CommunityNotificationType,
+} from "@/lib/community/types";
 
 export type CommunityNotification = {
   id: string;
@@ -17,6 +14,9 @@ export type CommunityNotification = {
   materialId: string | null;
   conversationId: string | null;
   friendshipId: string | null;
+  targetType: CommunityNotificationTargetType | null;
+  targetId: string | null;
+  href: string | null;
   bodyPreview: string;
   readAt: string | null;
   createdAt: string;
@@ -30,6 +30,9 @@ type NotificationRow = {
   material_id: string | null;
   conversation_id: string | null;
   friendship_id: string | null;
+  target_type: string | null;
+  target_id: string | null;
+  href: string | null;
   body_preview: string;
   read_at: string | null;
   created_at: string;
@@ -37,6 +40,10 @@ type NotificationRow = {
 
 function isMissingTableError(message: string): boolean {
   return /schema cache|does not exist|relation.*not found/i.test(message);
+}
+
+function isMissingColumnError(message: string): boolean {
+  return /column.*does not exist|schema cache/i.test(message);
 }
 
 export async function createCommunityNotification(params: {
@@ -47,6 +54,9 @@ export async function createCommunityNotification(params: {
   materialId?: string | null;
   conversationId?: string | null;
   friendshipId?: string | null;
+  targetType?: CommunityNotificationTargetType | null;
+  targetId?: string | null;
+  href?: string | null;
 }): Promise<void> {
   if (params.userId === params.actorUserId) {
     return;
@@ -55,8 +65,7 @@ export async function createCommunityNotification(params: {
   const supabase = getSupabaseAdminClient();
   const preview = params.bodyPreview.trim().slice(0, 280) || "Nova atividade na Comunidade";
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase as any).from("community_notifications").insert({
+  const payload: Record<string, unknown> = {
     user_id: params.userId,
     type: params.type,
     actor_user_id: params.actorUserId,
@@ -64,10 +73,29 @@ export async function createCommunityNotification(params: {
     conversation_id: params.conversationId || null,
     friendship_id: params.friendshipId || null,
     body_preview: preview,
-  });
+  };
 
-  if (error && !isMissingTableError(error.message)) {
+  if (params.targetType) payload.target_type = params.targetType;
+  if (params.targetId) payload.target_id = params.targetId;
+  if (params.href) payload.href = params.href;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any).from("community_notifications").insert(payload);
+
+  if (error && !isMissingTableError(error.message) && !isMissingColumnError(error.message)) {
     console.warn("[community-notifications] create failed:", error.message);
+  } else if (error && isMissingColumnError(error.message)) {
+    // Fallback for databases without deep-link columns yet
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase as any).from("community_notifications").insert({
+      user_id: params.userId,
+      type: params.type,
+      actor_user_id: params.actorUserId,
+      material_id: params.materialId || null,
+      conversation_id: params.conversationId || null,
+      friendship_id: params.friendshipId || null,
+      body_preview: preview,
+    });
   }
 }
 
@@ -81,7 +109,7 @@ export async function listCommunityNotifications(params: {
   const { data, error } = await (supabase as any)
     .from("community_notifications")
     .select(
-      "id,user_id,type,actor_user_id,material_id,conversation_id,friendship_id,body_preview,read_at,created_at",
+      "id,user_id,type,actor_user_id,material_id,conversation_id,friendship_id,target_type,target_id,href,body_preview,read_at,created_at",
     )
     .eq("user_id", params.userId)
     .order("created_at", { ascending: false })
@@ -109,6 +137,9 @@ export async function listCommunityNotifications(params: {
       materialId: row.material_id,
       conversationId: row.conversation_id,
       friendshipId: row.friendship_id,
+      targetType: (row.target_type as CommunityNotificationTargetType | null) || null,
+      targetId: row.target_id,
+      href: row.href,
       bodyPreview: row.body_preview,
       readAt: row.read_at,
       createdAt: row.created_at,

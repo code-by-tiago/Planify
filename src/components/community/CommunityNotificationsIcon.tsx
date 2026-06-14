@@ -38,11 +38,34 @@ function notificationLabel(type: CommunityNotification["type"]): string {
 }
 
 function notificationHref(notification: CommunityNotification): string | null {
+  if (notification.href) {
+    return notification.href;
+  }
+
+  if (notification.targetType === "post" && notification.targetId) {
+    return `/comunidade/discussao/${notification.targetId}`;
+  }
+  if (notification.targetType === "group" && notification.targetId) {
+    return `/comunidade/grupo/${notification.targetId}`;
+  }
+  if (notification.targetType === "event" && notification.targetId) {
+    return `/comunidade/evento/${notification.targetId}`;
+  }
+  if (notification.targetType === "material" && notification.targetId) {
+    return `/comunidade/material/${notification.targetId}`;
+  }
+  if (notification.targetType === "professor" && notification.targetId) {
+    return `/comunidade/professor/${notification.targetId}`;
+  }
+
   if (notification.materialId) {
-    return `/marketplace/material/${notification.materialId}`;
+    return `/comunidade/material/${notification.materialId}`;
+  }
+  if (notification.conversationId) {
+    return "/dashboard?secao=marketplace&painel=mensagens";
   }
   if (notification.type === "friend_request" || notification.type === "friend_accepted") {
-    return `/marketplace/perfil/${notification.actorUserId}`;
+    return `/comunidade/professor/${notification.actorUserId}`;
   }
   if (notification.type === "message") {
     return "/dashboard?secao=marketplace";

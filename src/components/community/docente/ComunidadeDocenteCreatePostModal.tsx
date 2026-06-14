@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import { PlanifyModal } from "@/components/ui/PlanifyModal";
 import { ComunidadeDocenteUserPicker } from "@/components/community/docente/ComunidadeDocenteUserPicker";
 import { IconUpload, IconX } from "@/components/community/docente/docente-icons";
-import { DOCENTE_DISCIPLINAS } from "@/lib/community/docente-mock-data";
+import { DOCENTE_DISCIPLINAS } from "@/lib/community/docente-utils";
 import type { CommunityProfileSearchResult } from "@/lib/community/types";
 import type { DocenteCreatePostInput, DocenteDisciplina } from "@/lib/community/docente-types";
 
@@ -24,17 +24,19 @@ type ComunidadeDocenteCreatePostModalProps = {
   open: boolean;
   onClose: () => void;
   onSubmit: (input: DocenteCreatePostInput) => void | Promise<void>;
+  defaultDisciplina?: DocenteDisciplina;
 };
 
 export function ComunidadeDocenteCreatePostModal({
   open,
   onClose,
   onSubmit,
+  defaultDisciplina = "Ciências",
 }: ComunidadeDocenteCreatePostModalProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
-  const [disciplina, setDisciplina] = useState<DocenteDisciplina>("Ciências");
+  const [disciplina, setDisciplina] = useState<DocenteDisciplina>(defaultDisciplina);
   const [tagsInput, setTagsInput] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const [selectedParticipants, setSelectedParticipants] = useState<CommunityProfileSearchResult[]>([]);
@@ -44,7 +46,7 @@ export function ComunidadeDocenteCreatePostModal({
   function reset() {
     setTitle("");
     setBody("");
-    setDisciplina("Ciências");
+    setDisciplina(defaultDisciplina);
     setTagsInput("");
     setFiles([]);
     setSelectedParticipants([]);

@@ -12,7 +12,7 @@ function jsonError(message: string, status = 400) {
   return NextResponse.json({ ok: false, error: { message } }, { status });
 }
 
-const VALID_TARGETS: CommunityReportTarget[] = ["material", "comment", "user"];
+const VALID_TARGETS: CommunityReportTarget[] = ["material", "comment", "user", "group_message"];
 
 export async function POST(request: NextRequest) {
   const access = await requireApiPremiumAccess(request);

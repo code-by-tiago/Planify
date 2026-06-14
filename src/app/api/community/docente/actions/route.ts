@@ -28,6 +28,7 @@ import {
   updateCommunityEvent,
   updateCommunityPost,
 } from "@/server/community/community-docente-service";
+import { consumeCommunityRateLimit } from "@/server/community/community-rate-limit-service";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -48,6 +49,13 @@ export async function POST(request: NextRequest) {
   const token = getRequestAccessToken(request);
 
   try {
+    await consumeCommunityRateLimit({
+      userId,
+      bucketKey: `docente_action:${action}`,
+      limit: action === "participate_challenge" ? 20 : 90,
+      windowSec: 60,
+    });
+
     if (action === "create_post") {
       const title = String(body.title || "").trim();
       const content = String(body.body || "").trim();

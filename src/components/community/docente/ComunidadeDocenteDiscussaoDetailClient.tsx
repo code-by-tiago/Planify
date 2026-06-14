@@ -443,7 +443,7 @@ export function ComunidadeDocenteDiscussaoDetailClient({
                   href={comunidadeRoutes.professor(p.id, embedded)}
                   className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-cyan-200 hover:text-cyan-700"
                 >
-                  <CommunityAuthorAvatar userId={p.id} name={p.name} avatarUrl={p.avatarUrl} size="sm" />
+                  <CommunityAuthorAvatar userId={p.id} name={p.name} avatarUrl={p.avatarUrl} size="sm" linkable={false} />
                   {p.name}
                 </Link>
               </li>

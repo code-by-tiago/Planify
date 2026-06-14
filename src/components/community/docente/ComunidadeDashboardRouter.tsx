@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import ComunidadeDocenteClient from "@/app/comunidade/ComunidadeDocenteClient";
+import ComunidadeDocenteClient from "@/components/community/docente/ComunidadeDocenteClient";
 import { ComunidadeDocenteBuscaClient } from "@/components/community/docente/ComunidadeDocenteBuscaClient";
 import { ComunidadeDocenteDesafiosPageClient } from "@/components/community/docente/ComunidadeDocenteDesafiosPageClient";
 import { ComunidadeDocenteDiscussaoDetailClient } from "@/components/community/docente/ComunidadeDocenteDiscussaoDetailClient";

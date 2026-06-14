@@ -23,6 +23,7 @@ type ViewerProfile = {
 type ComunidadeDocenteTopBarProps = {
   searchQuery: string;
   onSearchChange: (value: string) => void;
+  onSearchSubmit?: (value: string) => void;
   onCreatePost: () => void;
   onOpenMenu: () => void;
   onOpenProfile?: () => void;
@@ -32,6 +33,7 @@ type ComunidadeDocenteTopBarProps = {
 export function ComunidadeDocenteTopBar({
   searchQuery,
   onSearchChange,
+  onSearchSubmit,
   onCreatePost,
   onOpenMenu,
   onOpenProfile,
@@ -73,6 +75,12 @@ export function ComunidadeDocenteTopBar({
           type="search"
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && onSearchSubmit) {
+              e.preventDefault();
+              onSearchSubmit(searchQuery);
+            }
+          }}
           placeholder="Buscar materiais, professores, temas..."
           className="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50/80 pl-10 pr-4 text-sm font-medium text-[#0F172A] outline-none transition placeholder:text-slate-400 focus:border-cyan-400 focus:bg-white focus:ring-2 focus:ring-cyan-100"
         />

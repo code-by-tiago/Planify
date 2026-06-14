@@ -40,6 +40,12 @@ export function ComunidadeDocenteGrupoDetailClient({
   const [groupTab, setGroupTab] = useState<"discussoes" | "chat">("discussoes");
   const [status, setStatus] = useState("");
 
+  useEffect(() => {
+    if (searchParams.get("tab") === "chat") {
+      setGroupTab("chat");
+    }
+  }, [searchParams]);
+
   const load = useCallback(async () => {
     setLoading(true);
     setError("");
@@ -285,6 +291,7 @@ export function ComunidadeDocenteGrupoDetailClient({
                     name={member.name}
                     avatarUrl={member.avatarUrl}
                     size="sm"
+                    linkable={false}
                   />
                   <div className="min-w-0">
                     <p className="truncate text-sm font-bold text-[#0F172A]">

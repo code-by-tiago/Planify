@@ -139,7 +139,15 @@ export function mapComunidadeHrefToEmbed(href: string): string {
   if (discussao) return comunidadeRoutes.discussao(discussao[1], true);
 
   const grupo = href.match(/^\/comunidade\/grupo\/([^/?#]+)/);
-  if (grupo) return comunidadeRoutes.grupo(grupo[1], true);
+  if (grupo) {
+    try {
+      const url = new URL(href, "https://planify.local");
+      const tab = url.searchParams.get("tab");
+      return comunidadeRoutes.grupo(grupo[1], true, tab || undefined);
+    } catch {
+      return comunidadeRoutes.grupo(grupo[1], true);
+    }
+  }
 
   const professor = href.match(/^\/comunidade\/professor\/([^/?#]+)/);
   if (professor) return comunidadeRoutes.professor(professor[1], true);
@@ -242,8 +250,18 @@ export const comunidadeRoutes = {
   homeEmbedded: "/dashboard?secao=marketplace",
   discussao: (id: string, embedded?: boolean) =>
     embedded ? dashboardView("discussao", id) : `/comunidade/discussao/${id}`,
-  grupo: (id: string, embedded?: boolean) =>
-    embedded ? dashboardView("grupo", id) : `/comunidade/grupo/${id}`,
+  grupo: (id: string, embedded?: boolean, tab?: string) => {
+    if (embedded) {
+      const params = new URLSearchParams({
+        secao: "marketplace",
+        comunidadeView: "grupo",
+        comunidadeId: id,
+      });
+      if (tab) params.set("tab", tab);
+      return `/dashboard?${params.toString()}`;
+    }
+    return tab ? `/comunidade/grupo/${id}?tab=${encodeURIComponent(tab)}` : `/comunidade/grupo/${id}`;
+  },
   professor: (id: string, embedded?: boolean) =>
     embedded ? dashboardView("professor", id) : `/comunidade/professor/${id}`,
   evento: (id: string, embedded?: boolean) =>

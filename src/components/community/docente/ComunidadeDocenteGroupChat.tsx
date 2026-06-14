@@ -25,8 +25,12 @@ export function ComunidadeDocenteGroupChat({
   const [sending, setSending] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState("");
+  const [typingLabel, setTypingLabel] = useState("");
   const listRef = useRef<HTMLDivElement | null>(null);
   const viewerIdRef = useRef<string | null>(null);
+  const channelRef = useRef<ReturnType<ReturnType<typeof getSupabaseBrowserClient>["channel"]> | null>(null);
+  const typingTimerRef = useRef<number | null>(null);
+  const typingHideTimerRef = useRef<number | null>(null);
 
   const scrollToBottom = useCallback(() => {
     const node = listRef.current;
@@ -157,7 +161,15 @@ export function ComunidadeDocenteGroupChat({
               );
             },
           )
+          .on("broadcast", { event: "typing" }, ({ payload }) => {
+            const data = payload as { userId?: string; name?: string };
+            if (!data?.userId || data.userId === viewerIdRef.current || cancelled) return;
+            setTypingLabel(data.name || "Alguém");
+            if (typingHideTimerRef.current) window.clearTimeout(typingHideTimerRef.current);
+            typingHideTimerRef.current = window.setTimeout(() => setTypingLabel(""), 2800);
+          })
           .subscribe();
+        channelRef.current = channel;
       } catch {
         pollTimer = window.setInterval(() => {
           void loadMessages();
@@ -171,8 +183,20 @@ export function ComunidadeDocenteGroupChat({
       cancelled = true;
       if (pollTimer) window.clearInterval(pollTimer);
       if (channel) void channel.unsubscribe();
+      channelRef.current = null;
     };
   }, [enabled, groupId, loadMessages, viewerName]);
+
+  const emitTyping = useCallback(() => {
+    const channel = channelRef.current;
+    const userId = viewerIdRef.current;
+    if (!channel || !userId) return;
+    void channel.send({
+      type: "broadcast",
+      event: "typing",
+      payload: { userId, name: viewerName },
+    });
+  }, [viewerName]);
 
   useEffect(() => {
     scrollToBottom();
@@ -245,6 +269,33 @@ export function ComunidadeDocenteGroupChat({
       setError(err instanceof Error ? err.message : "Erro ao editar mensagem.");
     } finally {
       setSending(false);
+    }
+  };
+
+  const handleReport = async (messageId: string) => {
+    const reason = window.prompt("Descreva o motivo da denúncia (mín. 3 caracteres):");
+    if (!reason || reason.trim().length < 3) return;
+
+    setError("");
+    try {
+      const response = await fetch("/api/community/reports", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          targetType: "group_message",
+          targetId: messageId,
+          reason: reason.trim(),
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.ok) {
+        throw new Error(data?.error?.message || "Não foi possível registrar a denúncia.");
+      }
+      setError("Denúncia registrada. Obrigado por ajudar a manter a comunidade segura.");
+      window.setTimeout(() => setError(""), 3200);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao denunciar mensagem.");
     }
   };
 
@@ -352,7 +403,7 @@ export function ComunidadeDocenteGroupChat({
                       <p className="text-[11px] font-bold opacity-80">
                         {message.isOwn ? viewerName : message.senderName}
                       </p>
-                      {(message.canEdit || message.canDelete) && (
+                      {(message.canEdit || message.canDelete || !message.isOwn) && (
                         <div className="flex gap-1">
                           {message.canEdit ? (
                             <button
@@ -375,6 +426,15 @@ export function ComunidadeDocenteGroupChat({
                               Excluir
                             </button>
                           ) : null}
+                          {!message.isOwn ? (
+                            <button
+                              type="button"
+                              onClick={() => void handleReport(message.id)}
+                              className="min-h-8 rounded-md px-2 py-1 text-[10px] font-bold opacity-80 hover:opacity-100"
+                            >
+                              Denunciar
+                            </button>
+                          ) : null}
                         </div>
                       )}
                     </div>
@@ -389,13 +449,20 @@ export function ComunidadeDocenteGroupChat({
             </div>
           ))
         )}
+        {typingLabel ? (
+          <p className="px-1 text-xs font-medium text-slate-400">{typingLabel} está digitando…</p>
+        ) : null}
       </div>
 
       <div className="border-t border-slate-100 p-3">
         <div className="flex gap-2">
           <textarea
             value={draft}
-            onChange={(event) => setDraft(event.target.value)}
+            onChange={(event) => {
+              setDraft(event.target.value);
+              if (typingTimerRef.current) window.clearTimeout(typingTimerRef.current);
+              typingTimerRef.current = window.setTimeout(() => emitTyping(), 350);
+            }}
             rows={2}
             placeholder="Escreva uma mensagem para o grupo…"
             className="min-h-11 flex-1 resize-none rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-cyan-400"

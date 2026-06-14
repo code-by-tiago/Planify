@@ -139,7 +139,6 @@ export type CommunityDocenteOverview = {
   hiddenMaterialIds: string[];
   isAdmin: boolean;
   featuredTeacher: DocenteAuthor | null;
-  teachers: DocenteAuthor[];
 };
 
 async function resolveAuthorStatsBatch(userIds: string[]): Promise<
@@ -606,38 +605,49 @@ export async function getCommunityDocenteOverview(params: {
   }));
   const badges = (badgesResult.data || []) as BadgeRow[];
 
-  const { data: profileTeachers } = await supabase
-    .from("profiles")
-    .select("id,full_name,avatar_url,bio,community_reputation")
-    .eq("community_public", true)
-    .order("community_reputation", { ascending: false })
-    .limit(8);
-
-  const teacherIds = (profileTeachers || []).map((p) => p.id as string);
-  const teacherAuthorMap = await resolveCommunityAuthors(teacherIds);
-
-  const teacherStatsCache = await resolveAuthorStatsBatch(teacherIds);
-  const teachers: DocenteAuthor[] = await Promise.all(
-    (profileTeachers || []).map(async (p) => {
-      const author = await buildAuthor(p.id as string, teacherAuthorMap, p.full_name, teacherStatsCache);
-      author.specialty = String(p.bio || author.specialty).slice(0, 80);
-      author.reputation = Number(p.community_reputation || 0);
-      if (params.viewerUserId) {
-        author.isFollowing = followingIds.has(author.id);
-      }
-      return author;
-    }),
-  );
-
   const topTeacherId = marketplaceRows[0]?.user_id;
   let featuredTeacher: DocenteAuthor | null = null;
 
   if (topTeacherId) {
     featuredTeacher = await buildAuthor(topTeacherId, authorMap, marketplaceRows[0]?.author_name, authorStatsCache);
-  } else if (teachers.length > 0) {
-    featuredTeacher = { ...teachers[0] };
   } else if (params.viewerUserId) {
-    featuredTeacher = await buildAuthor(params.viewerUserId, authorMap, undefined, authorStatsCache);
+    const { data: viewerProfile } = await supabase
+      .from("profiles")
+      .select("id,full_name,avatar_url,bio,community_reputation,community_public")
+      .eq("id", params.viewerUserId)
+      .maybeSingle();
+    if (viewerProfile?.community_public) {
+      featuredTeacher = await buildAuthor(
+        params.viewerUserId,
+        authorMap,
+        viewerProfile.full_name as string | undefined,
+        authorStatsCache,
+      );
+      featuredTeacher.specialty = String(viewerProfile.bio || featuredTeacher.specialty).slice(0, 80);
+      featuredTeacher.reputation = Number(viewerProfile.community_reputation || 0);
+    }
+  }
+
+  if (!featuredTeacher) {
+    const { data: topProfile } = await supabase
+      .from("profiles")
+      .select("id,full_name,avatar_url,bio,community_reputation")
+      .eq("community_public", true)
+      .order("community_reputation", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (topProfile?.id) {
+      const featuredMap = await resolveCommunityAuthors([topProfile.id as string]);
+      const featuredStats = await resolveAuthorStatsBatch([topProfile.id as string]);
+      featuredTeacher = await buildAuthor(
+        topProfile.id as string,
+        featuredMap,
+        topProfile.full_name as string | undefined,
+        featuredStats,
+      );
+      featuredTeacher.specialty = String(topProfile.bio || featuredTeacher.specialty).slice(0, 80);
+      featuredTeacher.reputation = Number(topProfile.community_reputation || 0);
+    }
   }
 
   if (featuredTeacher && params.viewerUserId) {
@@ -661,7 +671,6 @@ export async function getCommunityDocenteOverview(params: {
     hiddenMaterialIds: [...hiddenMaterialIds],
     isAdmin: Boolean(params.isAdmin),
     featuredTeacher,
-    teachers,
   };
 }
 

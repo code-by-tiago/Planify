@@ -1,4 +1,6 @@
 import { getSupabaseAdminClient } from "../supabase/admin-client";
+import { createCommunityNotification } from "./community-notifications-service";
+import { consumeCommunityRateLimit } from "./community-rate-limit-service";
 import { resolveCommunityAuthors } from "./marketplace-social-service";
 
 const EDIT_WINDOW_MS = 24 * 60 * 60 * 1000;
@@ -116,6 +118,44 @@ export async function listCommunityGroupMessages(params: {
   return rows.map((row) => mapMessageRow(row, authorMap, params.viewerUserId, ownerId));
 }
 
+async function notifyGroupChatMembers(params: {
+  groupId: string;
+  senderId: string;
+  body: string;
+  groupName?: string | null;
+}): Promise<void> {
+  const supabase = getSupabaseAdminClient();
+  const { data: members } = await supabase
+    .from("community_group_members")
+    .select("user_id")
+    .eq("group_id", params.groupId);
+
+  const recipientIds = (members || [])
+    .map((row) => row.user_id as string)
+    .filter((userId) => userId && userId !== params.senderId);
+
+  if (recipientIds.length === 0) return;
+
+  const preview = params.groupName
+    ? `${params.groupName}: ${params.body.slice(0, 120)}`
+    : params.body.slice(0, 160);
+  const href = `/comunidade/grupo/${params.groupId}?tab=chat`;
+
+  await Promise.all(
+    recipientIds.map((userId) =>
+      createCommunityNotification({
+        userId,
+        type: "message",
+        actorUserId: params.senderId,
+        bodyPreview: preview,
+        targetType: "group",
+        targetId: params.groupId,
+        href,
+      }),
+    ),
+  );
+}
+
 export async function sendCommunityGroupMessage(params: {
   groupId: string;
   senderId: string;
@@ -131,8 +171,21 @@ export async function sendCommunityGroupMessage(params: {
 
   await assertGroupMember(params.groupId, params.senderId);
 
+  await consumeCommunityRateLimit({
+    userId: params.senderId,
+    bucketKey: "group_chat_send",
+    limit: 30,
+    windowSec: 60,
+  });
+
   const supabase = getSupabaseAdminClient();
   const ownerId = await getGroupOwnerId(params.groupId);
+
+  const { data: groupRow } = await supabase
+    .from("community_groups")
+    .select("name")
+    .eq("id", params.groupId)
+    .maybeSingle();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase as any)
@@ -154,8 +207,16 @@ export async function sendCommunityGroupMessage(params: {
 
   const row = data as MessageRow;
   const authorMap = await resolveCommunityAuthors([row.sender_id]);
+  const message = mapMessageRow(row, authorMap, params.senderId, ownerId);
 
-  return mapMessageRow(row, authorMap, params.senderId, ownerId);
+  void notifyGroupChatMembers({
+    groupId: params.groupId,
+    senderId: params.senderId,
+    body: row.body,
+    groupName: (groupRow?.name as string | null) || null,
+  });
+
+  return message;
 }
 
 export async function updateCommunityGroupMessage(params: {

@@ -12,6 +12,8 @@ type CommunityAuthorAvatarProps = {
   avatarUrl?: string | null;
   size?: "sm" | "md";
   embedded?: boolean;
+  /** When false, renders a static avatar (use inside an outer Link). */
+  linkable?: boolean;
 };
 
 function owlSizeForAvatar(size: "sm" | "md"): number {
@@ -24,6 +26,7 @@ export function CommunityAuthorAvatar({
   avatarUrl,
   size = "md",
   embedded: embeddedProp,
+  linkable = true,
 }: CommunityAuthorAvatarProps) {
   const embeddedFromContext = useComunidadeEmbedded();
   const embedded = embeddedProp ?? embeddedFromContext;
@@ -53,7 +56,7 @@ export function CommunityAuthorAvatar({
 
   const className = `${dimension} shrink-0 overflow-hidden rounded-full border-2 border-white bg-white shadow-sm`;
 
-  if (!userId) {
+  if (!userId || !linkable) {
     return (
       <div className={className} title={name}>
         {inner}

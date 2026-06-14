@@ -94,7 +94,7 @@ type OverviewPayload = {
   badgeProgress?: DocenteBadgeProgress[];
   isAdmin?: boolean;
   featuredTeacher: DocenteAuthor | null;
-  teachers: DocenteAuthor[];
+  teachers?: DocenteAuthor[];
 };
 
 export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boolean }) {
@@ -138,7 +138,6 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
   const [badgeProgress, setBadgeProgress] = useState<DocenteBadgeProgress[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [featuredTeacher, setFeaturedTeacher] = useState<DocenteAuthor | null>(null);
-  const [teachers, setTeachers] = useState<DocenteAuthor[]>([]);
   const [savedDiscussions, setSavedDiscussions] = useState<DocenteDiscussion[]>([]);
   const [tipoFilter, setTipoFilter] = useState<"todos" | "posts" | "materiais">("todos");
   const { collapsed: communitySidebarCollapsed, toggle: toggleCommunitySidebarCollapsed } =
@@ -243,7 +242,6 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
       setBadgeProgress(data.badgeProgress || []);
       setIsAdmin(Boolean(data.isAdmin));
       setFeaturedTeacher(data.featuredTeacher || null);
-      setTeachers(data.teachers || []);
       const serverHiddenIds = Array.isArray(data.hiddenMaterialIds)
         ? data.hiddenMaterialIds.map((id: unknown) => String(id)).filter(Boolean)
         : [];
@@ -551,7 +549,6 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
           : author;
 
       setFeaturedTeacher((prev) => (prev ? updateAuthor(prev) : prev));
-      setTeachers((prev) => prev.map(updateAuthor));
       showToast(
         data.following
           ? "Você seguiu o professor! O professor receberá uma notificação."
@@ -1008,6 +1005,12 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
         onSearchChange={(value) => {
           setSearchQuery(value);
           if (value.trim()) void loadOverview(value);
+        }}
+        onSearchSubmit={(value) => {
+          const q = value.trim();
+          if (q.length >= 2) {
+            router.push(buscaHref(q, embedded));
+          }
         }}
         onCreatePost={openCreatePost}
         onOpenMenu={() => setSidebarOpen(true)}

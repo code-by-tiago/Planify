@@ -150,6 +150,7 @@ export function ComunidadeDocenteBuscaClient({ forceEmbedded }: { forceEmbedded?
                     name={teacher.displayName}
                     avatarUrl={teacher.avatarUrl}
                     embedded={embedded}
+                    linkable={false}
                   />
                   <div className="min-w-0">
                     <p className="font-bold text-[#0F172A]">{teacher.displayName}</p>

@@ -7,14 +7,22 @@ type ComunidadeDocenteMaterialsProps = {
   materials: DocenteMaterial[];
   onLike: (id: string) => void;
   onSave: (id: string) => void;
+  onComment?: (id: string) => void;
+  onDownload?: (id: string) => void;
+  downloadingMaterialId?: string | null;
   onShowAll?: () => void;
+  onCreateMaterial?: () => void;
 };
 
 export function ComunidadeDocenteMaterials({
   materials,
   onLike,
   onSave,
+  onComment,
+  onDownload,
+  downloadingMaterialId,
   onShowAll,
+  onCreateMaterial,
 }: ComunidadeDocenteMaterialsProps) {
   return (
     <section>
@@ -33,9 +41,18 @@ export function ComunidadeDocenteMaterials({
 
       <div className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-2 scrollbar-thin">
         {materials.length === 0 ? (
-          <p className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-8 text-center text-sm text-slate-500">
-            Nenhum material publicado ainda. Compartilhe o seu!
-          </p>
+          <div className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-8 text-center">
+            <p className="text-sm text-slate-500">Nenhum material publicado ainda.</p>
+            {onCreateMaterial ? (
+              <button
+                type="button"
+                onClick={onCreateMaterial}
+                className="mt-4 rounded-2xl bg-cyan-500 px-5 py-2.5 text-sm font-bold text-white shadow-md transition hover:bg-cyan-600"
+              >
+                Publicar material
+              </button>
+            ) : null}
+          </div>
         ) : (
           materials.map((material) => (
             <ComunidadeDocenteMaterialCard
@@ -43,6 +60,9 @@ export function ComunidadeDocenteMaterials({
               material={material}
               onLike={onLike}
               onSave={onSave}
+              onComment={onComment}
+              onDownload={onDownload}
+              downloading={downloadingMaterialId === material.id}
             />
           ))
         )}

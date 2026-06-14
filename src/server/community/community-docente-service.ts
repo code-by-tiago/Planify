@@ -1,4 +1,10 @@
 import { getSupabaseAdminClient } from "../supabase/admin-client";
+import { createCommunityNotification } from "./community-notifications-service";
+import {
+  awardEligibleBadges,
+  getBadgeProgressForUser,
+  type BadgeProgress,
+} from "./community-badge-service";
 import {
   getMaterialCommentsBatch,
   getMaterialLikesSummary,
@@ -98,6 +104,7 @@ type GroupRow = {
   description: string;
   disciplina: string;
   members_count: number;
+  joinedByMe?: boolean;
 };
 
 type BadgeRow = {
@@ -118,6 +125,8 @@ export type CommunityDocenteOverview = {
   events: DocenteEvent[];
   groups: GroupRow[];
   badges: BadgeRow[];
+  badgeProgress: BadgeProgress[];
+  isAdmin: boolean;
   featuredTeacher: DocenteAuthor | null;
   teachers: DocenteAuthor[];
 };
@@ -168,12 +177,14 @@ function formatEventMonth(iso: string): { day: number; month: string } {
 export async function getCommunityDocenteOverview(params: {
   viewerUserId?: string | null;
   search?: string;
+  isAdmin?: boolean;
 }): Promise<CommunityDocenteOverview> {
   const supabase = getSupabaseAdminClient();
   const search = String(params.search || "").trim().toLowerCase();
 
   const [
     postsResult,
+    invitedPostsResult,
     materialsResult,
     eventsResult,
     groupsResult,
@@ -189,6 +200,14 @@ export async function getCommunityDocenteOverview(params: {
       .eq("is_published", true)
       .order("created_at", { ascending: false })
       .limit(12),
+    params.viewerUserId
+      ? supabase
+          .from("community_post_participants")
+          .select("post_id")
+          .eq("user_id", params.viewerUserId)
+          .order("invited_at", { ascending: false })
+          .limit(8)
+      : Promise.resolve({ data: [], error: null }),
     supabase
       .from("marketplace_materials")
       .select(
@@ -229,10 +248,32 @@ export async function getCommunityDocenteOverview(params: {
   ]);
 
   const posts = (postsResult.data || []) as PostRow[];
+  const invitedPostIds = (invitedPostsResult.data || [])
+    .map((row) => String((row as { post_id?: string }).post_id || ""))
+    .filter(Boolean);
+
+  let invitedPosts: PostRow[] = [];
+  if (invitedPostIds.length > 0) {
+    const { data: invitedPostRows } = await supabase
+      .from("community_posts")
+      .select("id,author_id,title,body,disciplina,tags,likes_count,comments_count,created_at")
+      .in("id", invitedPostIds)
+      .eq("is_published", true);
+    invitedPosts = (invitedPostRows || []) as PostRow[];
+  }
+
+  const postById = new Map<string, PostRow>();
+  for (const post of [...posts, ...invitedPosts]) {
+    postById.set(post.id, post);
+  }
+  const mergedPosts = [...postById.values()].sort(
+    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+  );
+
   const marketplaceRows = (materialsResult.data || []) as MarketplaceRow[];
 
   const userIds = [
-    ...posts.map((p) => p.author_id),
+    ...mergedPosts.map((p) => p.author_id),
     ...marketplaceRows.map((m) => m.user_id).filter(Boolean) as string[],
   ];
   const authorMap = await resolveCommunityAuthors(userIds);
@@ -241,9 +282,11 @@ export async function getCommunityDocenteOverview(params: {
   let likedMaterialIds = new Set<string>();
   let savedMaterialIds = new Set<string>();
   let followingIds = new Set<string>();
+  let joinedGroupIds = new Set<string>();
+  let badgeProgress: BadgeProgress[] = [];
 
   if (params.viewerUserId) {
-    const [likes, matLikes, savedIds, following] = await Promise.all([
+    const [likes, matLikes, savedIds, following, groupMemberships] = await Promise.all([
       supabase
         .from("community_likes")
         .select("post_id")
@@ -259,15 +302,23 @@ export async function getCommunityDocenteOverview(params: {
         .from("community_followers")
         .select("following_id")
         .eq("follower_id", params.viewerUserId),
+      supabase
+        .from("community_group_members")
+        .select("group_id")
+        .eq("user_id", params.viewerUserId),
     ]);
     likedPostIds = new Set((likes.data || []).map((r) => r.post_id as string));
     likedMaterialIds = new Set((matLikes.data || []).map((r) => r.material_id as string));
     savedMaterialIds = new Set(savedIds);
     followingIds = new Set((following.data || []).map((r) => r.following_id as string));
+    joinedGroupIds = new Set((groupMemberships.data || []).map((r) => r.group_id as string));
+
+    await awardEligibleBadges(params.viewerUserId);
+    badgeProgress = await getBadgeProgressForUser(params.viewerUserId);
   }
 
   const discussionsFromPosts: DocenteDiscussion[] = await Promise.all(
-    posts.map(async (post) => ({
+    mergedPosts.map(async (post) => ({
       id: post.id,
       author: await buildAuthor(post.author_id, authorMap),
       title: post.title,
@@ -355,9 +406,9 @@ export async function getCommunityDocenteOverview(params: {
     href: `/marketplace/material/${row.id}`,
   }));
 
-  if (recentPublications.length === 0 && posts.length > 0) {
+  if (recentPublications.length === 0 && mergedPosts.length > 0) {
     recentPublications = await Promise.all(
-      posts.slice(0, 4).map(async (post) => {
+      mergedPosts.slice(0, 4).map(async (post) => {
         const author = await buildAuthor(post.author_id, authorMap);
         return {
           id: post.id,
@@ -384,7 +435,10 @@ export async function getCommunityDocenteOverview(params: {
     };
   });
 
-  const groups = (groupsResult.data || []) as GroupRow[];
+  const groups = ((groupsResult.data || []) as GroupRow[]).map((group) => ({
+    ...group,
+    joinedByMe: joinedGroupIds.has(group.id),
+  }));
   const badges = (badgesResult.data || []) as BadgeRow[];
 
   const { data: profileTeachers } = await supabase
@@ -437,6 +491,8 @@ export async function getCommunityDocenteOverview(params: {
     events,
     groups,
     badges,
+    badgeProgress,
+    isAdmin: Boolean(params.isAdmin),
     featuredTeacher,
     teachers,
   };
@@ -448,6 +504,7 @@ export async function createCommunityPost(params: {
   body: string;
   disciplina: string;
   tags: string[];
+  participantUserIds?: string[];
 }) {
   const supabase = getSupabaseAdminClient();
   const { data, error } = await supabase
@@ -463,6 +520,42 @@ export async function createCommunityPost(params: {
     .single();
 
   if (error) throw new Error(error.message);
+
+  const uniqueParticipants = [
+    ...new Set(
+      (params.participantUserIds || []).filter(
+        (userId) => userId && userId !== params.authorId,
+      ),
+    ),
+  ];
+
+  if (uniqueParticipants.length > 0) {
+    const { error: participantError } = await supabase
+      .from("community_post_participants")
+      .insert(
+        uniqueParticipants.map((userId) => ({
+          post_id: data.id,
+          user_id: userId,
+        })),
+      );
+
+    if (participantError && !/does not exist|schema cache/i.test(participantError.message)) {
+      throw new Error(participantError.message);
+    }
+
+    await Promise.all(
+      uniqueParticipants.map((userId) =>
+        createCommunityNotification({
+          userId,
+          type: "message",
+          actorUserId: params.authorId,
+          bodyPreview: `Você foi convidado(a) para a discussão "${params.title}".`,
+        }),
+      ),
+    );
+  }
+
+  await awardEligibleBadges(params.authorId);
   return data;
 }
 
@@ -523,6 +616,7 @@ export async function addCommunityPostComment(params: {
     .update({ comments_count: count || 0 })
     .eq("id", params.postId);
 
+  await awardEligibleBadges(params.authorId);
   return { commentsCount: count || 0 };
 }
 
@@ -548,4 +642,183 @@ export async function toggleCommunityFollow(params: {
     following_id: params.followingId,
   });
   return { following: true };
+}
+
+export async function createCommunityGroup(params: {
+  ownerId: string;
+  name: string;
+  description: string;
+  disciplina: string;
+  memberUserIds?: string[];
+}) {
+  const supabase = getSupabaseAdminClient();
+  const uniqueMemberIds = [
+    ...new Set(
+      (params.memberUserIds || []).filter((userId) => userId && userId !== params.ownerId),
+    ),
+  ];
+  const membersCount = 1 + uniqueMemberIds.length;
+
+  const { data, error } = await supabase
+    .from("community_groups")
+    .insert({
+      owner_id: params.ownerId,
+      name: params.name,
+      description: params.description,
+      disciplina: params.disciplina,
+      members_count: membersCount,
+      is_public: true,
+    })
+    .select("id")
+    .single();
+
+  if (error) throw new Error(error.message);
+
+  await supabase.from("community_group_members").insert({
+    group_id: data.id,
+    user_id: params.ownerId,
+  });
+
+  if (uniqueMemberIds.length > 0) {
+    const { error: membersError } = await supabase.from("community_group_members").insert(
+      uniqueMemberIds.map((userId) => ({
+        group_id: data.id,
+        user_id: userId,
+      })),
+    );
+
+    if (membersError) throw new Error(membersError.message);
+
+    await Promise.all(
+      uniqueMemberIds.map((userId) =>
+        createCommunityNotification({
+          userId,
+          type: "message",
+          actorUserId: params.ownerId,
+          bodyPreview: `Você foi adicionado(a) ao grupo "${params.name}".`,
+        }),
+      ),
+    );
+  }
+
+  await awardEligibleBadges(params.ownerId);
+  return data;
+}
+
+export async function joinCommunityGroup(params: {
+  userId: string;
+  groupId: string;
+}): Promise<{ joined: boolean; membersCount: number }> {
+  const supabase = getSupabaseAdminClient();
+  const { data: group } = await supabase
+    .from("community_groups")
+    .select("id,members_count,is_public")
+    .eq("id", params.groupId)
+    .maybeSingle();
+
+  if (!group) throw new Error("Grupo não encontrado.");
+
+  const { data: existing } = await supabase
+    .from("community_group_members")
+    .select("id")
+    .eq("group_id", params.groupId)
+    .eq("user_id", params.userId)
+    .maybeSingle();
+
+  if (existing) {
+    return { joined: true, membersCount: group.members_count || 0 };
+  }
+
+  const { error: joinError } = await supabase.from("community_group_members").insert({
+    group_id: params.groupId,
+    user_id: params.userId,
+  });
+  if (joinError) throw new Error(joinError.message);
+
+  const nextCount = (group.members_count || 0) + 1;
+  await supabase
+    .from("community_groups")
+    .update({ members_count: nextCount })
+    .eq("id", params.groupId);
+
+  await awardEligibleBadges(params.userId);
+  return { joined: true, membersCount: nextCount };
+}
+
+export async function leaveCommunityGroup(params: {
+  userId: string;
+  groupId: string;
+}): Promise<{ left: boolean; membersCount: number }> {
+  const supabase = getSupabaseAdminClient();
+  const { data: group } = await supabase
+    .from("community_groups")
+    .select("id,members_count,owner_id")
+    .eq("id", params.groupId)
+    .maybeSingle();
+
+  if (!group) throw new Error("Grupo não encontrado.");
+
+  const { data: existing } = await supabase
+    .from("community_group_members")
+    .select("id")
+    .eq("group_id", params.groupId)
+    .eq("user_id", params.userId)
+    .maybeSingle();
+
+  if (!existing) {
+    return { left: false, membersCount: group.members_count || 0 };
+  }
+
+  if (group.owner_id === params.userId) {
+    const { count: memberCount } = await supabase
+      .from("community_group_members")
+      .select("id", { count: "exact", head: true })
+      .eq("group_id", params.groupId);
+
+    if ((memberCount || 0) > 1) {
+      throw new Error("Como dono(a) do grupo, transfira a liderança antes de sair.");
+    }
+  }
+
+  const { error: leaveError } = await supabase
+    .from("community_group_members")
+    .delete()
+    .eq("id", existing.id);
+  if (leaveError) throw new Error(leaveError.message);
+
+  const nextCount = Math.max(0, (group.members_count || 1) - 1);
+  await supabase
+    .from("community_groups")
+    .update({ members_count: nextCount })
+    .eq("id", params.groupId);
+
+  return { left: true, membersCount: nextCount };
+}
+
+export async function createCommunityEvent(params: {
+  hostId: string;
+  title: string;
+  description: string;
+  presenterName: string;
+  startsAt: string;
+  isOnline: boolean;
+  location?: string | null;
+}) {
+  const supabase = getSupabaseAdminClient();
+  const { data, error } = await supabase
+    .from("community_events")
+    .insert({
+      host_id: params.hostId,
+      title: params.title,
+      description: params.description,
+      presenter_name: params.presenterName,
+      starts_at: params.startsAt,
+      is_online: params.isOnline,
+      location: params.location || null,
+    })
+    .select("id")
+    .single();
+
+  if (error) throw new Error(error.message);
+  return data;
 }

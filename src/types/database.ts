@@ -954,6 +954,7 @@ export type Database = {
           icon: string;
           color: string;
           min_reputation: number;
+          criteria: Json;
           created_at: string;
         },
         {
@@ -964,6 +965,7 @@ export type Database = {
           icon?: string;
           color?: string;
           min_reputation?: number;
+          criteria?: Json;
           created_at?: string;
         },
         {
@@ -974,7 +976,68 @@ export type Database = {
           icon?: string;
           color?: string;
           min_reputation?: number;
+          criteria?: Json;
           created_at?: string;
+        }
+      >;
+      community_group_members: TableDefinition<
+        {
+          id: string;
+          group_id: string;
+          user_id: string;
+          joined_at: string;
+        },
+        {
+          id?: string;
+          group_id: string;
+          user_id: string;
+          joined_at?: string;
+        },
+        {
+          id?: string;
+          group_id?: string;
+          user_id?: string;
+          joined_at?: string;
+        }
+      >;
+      community_post_participants: TableDefinition<
+        {
+          id: string;
+          post_id: string;
+          user_id: string;
+          invited_at: string;
+        },
+        {
+          id?: string;
+          post_id: string;
+          user_id: string;
+          invited_at?: string;
+        },
+        {
+          id?: string;
+          post_id?: string;
+          user_id?: string;
+          invited_at?: string;
+        }
+      >;
+      community_user_challenges: TableDefinition<
+        {
+          id: string;
+          user_id: string;
+          challenge_slug: string;
+          completed_at: string;
+        },
+        {
+          id?: string;
+          user_id: string;
+          challenge_slug: string;
+          completed_at?: string;
+        },
+        {
+          id?: string;
+          user_id?: string;
+          challenge_slug?: string;
+          completed_at?: string;
         }
       >;
       community_user_badges: TableDefinition<

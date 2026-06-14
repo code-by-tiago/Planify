@@ -2,8 +2,10 @@
 
 import { useRef, useState } from "react";
 import { PlanifyModal } from "@/components/ui/PlanifyModal";
+import { ComunidadeDocenteUserPicker } from "@/components/community/docente/ComunidadeDocenteUserPicker";
 import { IconUpload, IconX } from "@/components/community/docente/docente-icons";
 import { DOCENTE_DISCIPLINAS } from "@/lib/community/docente-mock-data";
+import type { CommunityProfileSearchResult } from "@/lib/community/types";
 import type { DocenteCreatePostInput, DocenteDisciplina } from "@/lib/community/docente-types";
 
 const ACCEPTED_FILES = ".pdf,.doc,.docx,.ppt,.pptx,.png,.jpg,.jpeg,.webp";
@@ -21,7 +23,7 @@ const ACCEPTED_MIMES = [
 type ComunidadeDocenteCreatePostModalProps = {
   open: boolean;
   onClose: () => void;
-  onSubmit: (input: DocenteCreatePostInput) => void;
+  onSubmit: (input: DocenteCreatePostInput) => void | Promise<void>;
 };
 
 export function ComunidadeDocenteCreatePostModal({
@@ -35,7 +37,9 @@ export function ComunidadeDocenteCreatePostModal({
   const [disciplina, setDisciplina] = useState<DocenteDisciplina>("Ciências");
   const [tagsInput, setTagsInput] = useState("");
   const [files, setFiles] = useState<File[]>([]);
+  const [selectedParticipants, setSelectedParticipants] = useState<CommunityProfileSearchResult[]>([]);
   const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   function reset() {
     setTitle("");
@@ -43,10 +47,13 @@ export function ComunidadeDocenteCreatePostModal({
     setDisciplina("Ciências");
     setTagsInput("");
     setFiles([]);
+    setSelectedParticipants([]);
     setError("");
+    setSubmitting(false);
   }
 
   function handleClose() {
+    if (submitting) return;
     reset();
     onClose();
   }
@@ -68,7 +75,7 @@ export function ComunidadeDocenteCreatePostModal({
     setFiles((prev) => prev.filter((_, i) => i !== index));
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!title.trim()) {
       setError("Informe um título para a publicação.");
@@ -78,8 +85,24 @@ export function ComunidadeDocenteCreatePostModal({
       .split(",")
       .map((t) => t.trim())
       .filter(Boolean);
-    onSubmit({ title: title.trim(), body: body.trim(), disciplina, tags, files });
-    handleClose();
+
+    setSubmitting(true);
+    setError("");
+    try {
+      await onSubmit({
+        title: title.trim(),
+        body: body.trim(),
+        disciplina,
+        tags,
+        files,
+        participantUserIds: selectedParticipants.map((user) => user.userId),
+      });
+      reset();
+      onClose();
+    } catch {
+      setError("Não foi possível publicar. Tente novamente.");
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -93,7 +116,8 @@ export function ComunidadeDocenteCreatePostModal({
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Ex.: Sequência didática sobre sustentabilidade"
-            className="h-11 w-full rounded-xl border border-slate-200 px-3 text-sm font-semibold text-[#0F172A] outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+            disabled={submitting}
+            className="h-11 w-full rounded-xl border border-slate-200 px-3 text-sm font-semibold text-[#0F172A] outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100 disabled:opacity-60"
           />
         </div>
 
@@ -106,7 +130,8 @@ export function ComunidadeDocenteCreatePostModal({
             onChange={(e) => setBody(e.target.value)}
             rows={4}
             placeholder="Compartilhe sua experiência, dúvida ou material..."
-            className="w-full resize-none rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-medium text-[#0F172A] outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+            disabled={submitting}
+            className="w-full resize-none rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-medium text-[#0F172A] outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100 disabled:opacity-60"
           />
         </div>
 
@@ -118,7 +143,8 @@ export function ComunidadeDocenteCreatePostModal({
             <select
               value={disciplina}
               onChange={(e) => setDisciplina(e.target.value as DocenteDisciplina)}
-              className="h-11 w-full rounded-xl border border-slate-200 px-3 text-sm font-semibold text-[#0F172A] outline-none focus:border-cyan-400"
+              disabled={submitting}
+              className="h-11 w-full rounded-xl border border-slate-200 px-3 text-sm font-semibold text-[#0F172A] outline-none focus:border-cyan-400 disabled:opacity-60"
             >
               {DOCENTE_DISCIPLINAS.map((d) => (
                 <option key={d} value={d}>
@@ -135,10 +161,19 @@ export function ComunidadeDocenteCreatePostModal({
               value={tagsInput}
               onChange={(e) => setTagsInput(e.target.value)}
               placeholder="BNCC, atividade, 6º ano"
-              className="h-11 w-full rounded-xl border border-slate-200 px-3 text-sm font-semibold text-[#0F172A] outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+              disabled={submitting}
+              className="h-11 w-full rounded-xl border border-slate-200 px-3 text-sm font-semibold text-[#0F172A] outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100 disabled:opacity-60"
             />
           </div>
         </div>
+
+        <ComunidadeDocenteUserPicker
+          label="Convidar participantes (opcional)"
+          hint="Professores convidados verão esta discussão no feed."
+          selected={selectedParticipants}
+          onChange={setSelectedParticipants}
+          maxUsers={8}
+        />
 
         <div>
           <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-500">
@@ -150,12 +185,14 @@ export function ComunidadeDocenteCreatePostModal({
             accept={ACCEPTED_FILES}
             multiple
             className="hidden"
+            disabled={submitting}
             onChange={(e) => handleFilesSelected(e.target.files)}
           />
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-200 py-6 text-sm font-semibold text-slate-500 transition hover:border-cyan-300 hover:bg-cyan-50/50 hover:text-cyan-700"
+            disabled={submitting}
+            className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-200 py-6 text-sm font-semibold text-slate-500 transition hover:border-cyan-300 hover:bg-cyan-50/50 hover:text-cyan-700 disabled:opacity-60"
           >
             <IconUpload className="h-5 w-5" />
             Arraste ou clique para enviar arquivos
@@ -171,7 +208,8 @@ export function ComunidadeDocenteCreatePostModal({
                   <button
                     type="button"
                     onClick={() => removeFile(i)}
-                    className="ml-2 shrink-0 text-slate-400 hover:text-red-500"
+                    disabled={submitting}
+                    className="ml-2 shrink-0 text-slate-400 hover:text-red-500 disabled:opacity-60"
                     aria-label="Remover arquivo"
                   >
                     <IconX className="h-4 w-4" />
@@ -192,15 +230,17 @@ export function ComunidadeDocenteCreatePostModal({
           <button
             type="button"
             onClick={handleClose}
-            className="flex-1 rounded-2xl border border-slate-200 py-3 text-sm font-bold text-slate-600 transition hover:bg-slate-50"
+            disabled={submitting}
+            className="flex-1 rounded-2xl border border-slate-200 py-3 text-sm font-bold text-slate-600 transition hover:bg-slate-50 disabled:opacity-60"
           >
             Cancelar
           </button>
           <button
             type="submit"
-            className="flex-1 rounded-2xl bg-cyan-500 py-3 text-sm font-bold text-white shadow-md transition hover:bg-cyan-600"
+            disabled={submitting}
+            className="flex-1 rounded-2xl bg-cyan-500 py-3 text-sm font-bold text-white shadow-md transition hover:bg-cyan-600 disabled:opacity-60"
           >
-            Publicar
+            {submitting ? "Publicando…" : "Publicar"}
           </button>
         </div>
       </form>

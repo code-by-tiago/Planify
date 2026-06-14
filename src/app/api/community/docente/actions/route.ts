@@ -1,8 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireApiPremiumAccess } from "@/server/auth/api-access";
+import { resolveAdminAccess } from "@/server/auth/admin-access";
+import {
+  getRequestAccessToken,
+  requireApiPremiumAccess,
+} from "@/server/auth/api-access";
+import { completeCommunityChallenge } from "@/server/community/community-badge-service";
 import {
   addCommunityPostComment,
+  createCommunityEvent,
+  createCommunityGroup,
   createCommunityPost,
+  joinCommunityGroup,
+  leaveCommunityGroup,
   toggleCommunityFollow,
   toggleCommunityPostLike,
 } from "@/server/community/community-docente-service";
@@ -23,6 +32,7 @@ export async function POST(request: NextRequest) {
 
   const body = await request.json().catch(() => ({}));
   const action = String(body.action || "create_post");
+  const token = getRequestAccessToken(request);
 
   try {
     if (action === "create_post") {
@@ -31,6 +41,9 @@ export async function POST(request: NextRequest) {
       const disciplina = String(body.disciplina || "Ciências").trim();
       const tags = Array.isArray(body.tags)
         ? body.tags.map((t: unknown) => String(t).trim()).filter(Boolean)
+        : [];
+      const participantUserIds = Array.isArray(body.participantUserIds)
+        ? body.participantUserIds.map((id: unknown) => String(id).trim()).filter(Boolean)
         : [];
 
       if (title.length < 3) return jsonError("Informe um título com pelo menos 3 caracteres.");
@@ -41,8 +54,79 @@ export async function POST(request: NextRequest) {
         body: content,
         disciplina,
         tags,
+        participantUserIds,
       });
       return NextResponse.json({ ok: true, postId: post?.id });
+    }
+
+    if (action === "create_group") {
+      const name = String(body.name || "").trim();
+      const description = String(body.description || "").trim();
+      const disciplina = String(body.disciplina || "Ciências").trim();
+      const memberUserIds = Array.isArray(body.memberUserIds)
+        ? body.memberUserIds.map((id: unknown) => String(id).trim()).filter(Boolean)
+        : [];
+
+      if (name.length < 3) return jsonError("Informe um nome com pelo menos 3 caracteres.");
+
+      const group = await createCommunityGroup({
+        ownerId: userId,
+        name,
+        description,
+        disciplina,
+        memberUserIds,
+      });
+      return NextResponse.json({ ok: true, groupId: group?.id });
+    }
+
+    if (action === "create_event") {
+      const admin = await resolveAdminAccess(token);
+      if (!admin.isAdmin) {
+        return jsonError("Apenas administradores podem criar eventos.", 403);
+      }
+
+      const title = String(body.title || "").trim();
+      const description = String(body.description || "").trim();
+      const presenterName = String(body.presenterName || "").trim() || "Equipe Planify";
+      const startsAt = String(body.startsAt || "").trim();
+      const isOnline = body.isOnline !== false;
+      const location = body.location ? String(body.location).trim() : null;
+
+      if (title.length < 3) return jsonError("Informe um título com pelo menos 3 caracteres.");
+      if (!startsAt || Number.isNaN(Date.parse(startsAt))) {
+        return jsonError("Informe uma data e hora válidas.");
+      }
+
+      const event = await createCommunityEvent({
+        hostId: userId,
+        title,
+        description,
+        presenterName,
+        startsAt,
+        isOnline,
+        location,
+      });
+      return NextResponse.json({ ok: true, eventId: event?.id });
+    }
+
+    if (action === "join_group") {
+      const groupId = String(body.groupId || "").trim();
+      if (!groupId) return jsonError("Grupo não informado.");
+      const result = await joinCommunityGroup({ userId, groupId });
+      return NextResponse.json({ ok: true, ...result });
+    }
+
+    if (action === "leave_group") {
+      const groupId = String(body.groupId || "").trim();
+      if (!groupId) return jsonError("Grupo não informado.");
+      const result = await leaveCommunityGroup({ userId, groupId });
+      return NextResponse.json({ ok: true, ...result });
+    }
+
+    if (action === "participate_challenge") {
+      const challengeSlug = String(body.challengeSlug || "desafio-bncc").trim();
+      const result = await completeCommunityChallenge({ userId, challengeSlug });
+      return NextResponse.json({ ok: true, ...result });
     }
 
     if (action === "like_post") {

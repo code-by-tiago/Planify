@@ -15,6 +15,7 @@ type ComunidadeDocenteRightSidebarProps = {
   events: DocenteEvent[];
   onFollow: (authorId: string) => void;
   onSelectMenu?: (menu: DocenteMenuItem) => void;
+  onCreatePost?: () => void;
 };
 
 export function ComunidadeDocenteRightSidebar({
@@ -23,15 +24,27 @@ export function ComunidadeDocenteRightSidebar({
   events,
   onFollow,
   onSelectMenu,
+  onCreatePost,
 }: ComunidadeDocenteRightSidebarProps) {
   return (
     <aside className="flex w-full shrink-0 flex-col gap-5 lg:w-[300px]">
       <section className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
         <h2 className="text-sm font-extrabold text-[#0F172A]">Publicações recentes</h2>
         {recentPublications.length === 0 ? (
-          <p className="mt-3 text-xs font-medium text-slate-500">
-            Nenhuma publicação ainda. Seja o primeiro a compartilhar!
-          </p>
+          <div className="mt-3">
+            <p className="text-xs font-medium text-slate-500">
+              Nenhuma publicação ainda. Seja o primeiro a compartilhar!
+            </p>
+            {onCreatePost ? (
+              <button
+                type="button"
+                onClick={onCreatePost}
+                className="mt-3 w-full rounded-xl bg-cyan-500 py-2 text-xs font-bold text-white transition hover:bg-cyan-600"
+              >
+                Criar publicação
+              </button>
+            ) : null}
+          </div>
         ) : (
           <ul className="mt-4 space-y-3">
             {recentPublications.map((pub) => (

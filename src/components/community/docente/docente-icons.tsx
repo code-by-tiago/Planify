@@ -164,6 +164,14 @@ export function IconX({ className = "h-5 w-5", ...props }: IconProps) {
   );
 }
 
+export function IconDownload({ className = "h-5 w-5", ...props }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} {...props}>
+      <path d="M12 3v12M7 10l5 5 5-5M5 21h14" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 export function IconUpload({ className = "h-5 w-5", ...props }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} className={className} {...props}>

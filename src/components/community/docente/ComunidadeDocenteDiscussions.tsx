@@ -11,6 +11,7 @@ type ComunidadeDocenteDiscussionsProps = {
   onShare: (id: string) => void;
   onOpen?: (id: string) => void;
   onShowMore?: () => void;
+  onCreatePost?: () => void;
 };
 
 export function ComunidadeDocenteDiscussions({
@@ -21,6 +22,7 @@ export function ComunidadeDocenteDiscussions({
   onShare,
   onOpen,
   onShowMore,
+  onCreatePost,
 }: ComunidadeDocenteDiscussionsProps) {
   return (
     <section>
@@ -32,9 +34,18 @@ export function ComunidadeDocenteDiscussions({
 
       <div className="space-y-3">
         {discussions.length === 0 ? (
-          <p className="rounded-2xl border border-slate-200 bg-white px-4 py-8 text-center text-sm text-slate-500">
-            Nenhuma discussão encontrada. Crie a primeira publicação!
-          </p>
+          <div className="rounded-2xl border border-slate-200 bg-white px-4 py-8 text-center">
+            <p className="text-sm text-slate-500">Nenhuma discussão encontrada.</p>
+            {onCreatePost ? (
+              <button
+                type="button"
+                onClick={onCreatePost}
+                className="mt-4 rounded-2xl bg-cyan-500 px-5 py-2.5 text-sm font-bold text-white shadow-md transition hover:bg-cyan-600"
+              >
+                Criar primeira discussão
+              </button>
+            ) : null}
+          </div>
         ) : (
           discussions.map((discussion) => (
             <ComunidadeDocenteDiscussionCard

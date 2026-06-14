@@ -4,7 +4,7 @@ import Link from "next/link";
 import { communityProfileHref } from "@/components/community/CommunityAuthorLink";
 import { CommunityAuthorAvatar } from "@/components/community/CommunityAuthorAvatar";
 import { formatDocenteNumber } from "@/lib/community/docente-mock-data";
-import type { DocenteAuthor, DocenteEvent, DocenteMaterial } from "@/lib/community/docente-types";
+import type { DocenteAuthor, DocenteBadgeProgress, DocenteEvent, DocenteMaterial } from "@/lib/community/docente-types";
 
 type GroupItem = {
   id: string;
@@ -12,29 +12,75 @@ type GroupItem = {
   description: string;
   disciplina: string;
   members_count: number;
+  joinedByMe?: boolean;
 };
 
-type BadgeItem = {
-  id: string;
-  name: string;
-  description: string;
-  color: string;
-  min_reputation: number;
-};
+function EmptyState({
+  title,
+  message,
+  actionLabel,
+  onAction,
+}: {
+  title: string;
+  message: string;
+  actionLabel?: string;
+  onAction?: () => void;
+}) {
+  return (
+    <section className="rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+      <h2 className="text-xl font-extrabold text-[#0F172A]">{title}</h2>
+      <p className="mt-2 text-sm text-slate-500">{message}</p>
+      {actionLabel && onAction ? (
+        <button
+          type="button"
+          onClick={onAction}
+          className="mt-5 rounded-2xl bg-cyan-500 px-5 py-2.5 text-sm font-bold text-white shadow-md transition hover:bg-cyan-600"
+        >
+          {actionLabel}
+        </button>
+      ) : null}
+    </section>
+  );
+}
 
-export function ComunidadeDocenteEventos({ events }: { events: DocenteEvent[] }) {
+export function ComunidadeDocenteEventos({
+  events,
+  isAdmin,
+  onCreateEvent,
+}: {
+  events: DocenteEvent[];
+  isAdmin?: boolean;
+  onCreateEvent?: () => void;
+}) {
   if (!events.length) {
     return (
-      <section className="rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm">
-        <h2 className="text-xl font-extrabold text-[#0F172A]">Próximos eventos</h2>
-        <p className="mt-2 text-sm text-slate-500">Nenhum evento agendado no momento.</p>
-      </section>
+      <EmptyState
+        title="Próximos eventos"
+        message={
+          isAdmin
+            ? "Nenhum evento agendado. Crie o primeiro evento da comunidade."
+            : "Nenhum evento agendado no momento. Novos eventos serão publicados pela equipe Planify."
+        }
+        actionLabel={isAdmin ? "Criar evento" : undefined}
+        onAction={isAdmin ? onCreateEvent : undefined}
+      />
     );
   }
 
   return (
     <section className="space-y-4">
-      <h2 className="text-xl font-extrabold text-[#0F172A]">Próximos eventos</h2>
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-xl font-extrabold text-[#0F172A]">Próximos eventos</h2>
+        {isAdmin && onCreateEvent ? (
+          <button
+            type="button"
+            onClick={onCreateEvent}
+            className="rounded-xl bg-cyan-500 px-4 py-2 text-xs font-bold text-white transition hover:bg-cyan-600"
+          >
+            Criar evento
+          </button>
+        ) : null}
+      </div>
       <div className="grid gap-4 sm:grid-cols-2">
         {events.map((event) => (
           <article
@@ -59,19 +105,42 @@ export function ComunidadeDocenteEventos({ events }: { events: DocenteEvent[] })
   );
 }
 
-export function ComunidadeDocenteGrupos({ groups }: { groups: GroupItem[] }) {
+export function ComunidadeDocenteGrupos({
+  groups,
+  onCreateGroup,
+  onJoinGroup,
+  onLeaveGroup,
+}: {
+  groups: GroupItem[];
+  onCreateGroup?: () => void;
+  onJoinGroup?: (groupId: string) => void;
+  onLeaveGroup?: (groupId: string) => void;
+}) {
   if (!groups.length) {
     return (
-      <section className="rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm">
-        <h2 className="text-xl font-extrabold text-[#0F172A]">Grupos de estudo</h2>
-        <p className="mt-2 text-sm text-slate-500">Nenhum grupo público disponível.</p>
-      </section>
+      <EmptyState
+        title="Grupos de estudo"
+        message="Nenhum grupo público disponível. Crie o primeiro grupo da comunidade."
+        actionLabel="Criar grupo"
+        onAction={onCreateGroup}
+      />
     );
   }
 
   return (
     <section className="space-y-4">
-      <h2 className="text-xl font-extrabold text-[#0F172A]">Grupos de estudo</h2>
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-xl font-extrabold text-[#0F172A]">Grupos de estudo</h2>
+        {onCreateGroup ? (
+          <button
+            type="button"
+            onClick={onCreateGroup}
+            className="rounded-xl bg-cyan-500 px-4 py-2 text-xs font-bold text-white transition hover:bg-cyan-600"
+          >
+            Criar grupo
+          </button>
+        ) : null}
+      </div>
       <div className="grid gap-4 sm:grid-cols-2">
         {groups.map((group) => (
           <article
@@ -86,6 +155,22 @@ export function ComunidadeDocenteGrupos({ groups }: { groups: GroupItem[] }) {
             <p className="mt-3 text-xs font-semibold text-slate-400">
               {formatDocenteNumber(group.members_count)} membros
             </p>
+            {onJoinGroup || onLeaveGroup ? (
+              <button
+                type="button"
+                onClick={() =>
+                  group.joinedByMe ? onLeaveGroup?.(group.id) : onJoinGroup?.(group.id)
+                }
+                className={[
+                  "mt-4 w-full rounded-xl py-2 text-xs font-bold transition",
+                  group.joinedByMe
+                    ? "border border-slate-200 bg-white text-slate-600 hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+                    : "bg-[#0F172A] text-white hover:bg-slate-800",
+                ].join(" ")}
+              >
+                {group.joinedByMe ? "Sair do grupo" : "Entrar no grupo"}
+              </button>
+            ) : null}
           </article>
         ))}
       </div>
@@ -104,7 +189,9 @@ export function ComunidadeDocenteProfessores({
     return (
       <section className="rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm">
         <h2 className="text-xl font-extrabold text-[#0F172A]">Professores</h2>
-        <p className="mt-2 text-sm text-slate-500">Nenhum perfil público encontrado.</p>
+        <p className="mt-2 text-sm text-slate-500">
+          Nenhum perfil público encontrado. Ative seu perfil público nas configurações da comunidade.
+        </p>
       </section>
     );
   }
@@ -158,13 +245,28 @@ export function ComunidadeDocenteProfessores({
   );
 }
 
-export function ComunidadeDocenteDesafios({ badges }: { badges: BadgeItem[] }) {
-  if (!badges.length) {
+function BadgeProgressBar({ current, target }: { current: number; target: number }) {
+  const pct = target > 0 ? Math.min(100, Math.round((current / target) * 100)) : 0;
+  return (
+    <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-100">
+      <div className="h-full rounded-full bg-cyan-500 transition-all" style={{ width: `${pct}%` }} />
+    </div>
+  );
+}
+
+export function ComunidadeDocenteDesafios({
+  badgeProgress,
+  onParticipateChallenge,
+}: {
+  badgeProgress: DocenteBadgeProgress[];
+  onParticipateChallenge?: (slug: string) => void;
+}) {
+  if (!badgeProgress.length) {
     return (
-      <section className="rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm">
-        <h2 className="text-xl font-extrabold text-[#0F172A]">Desafios e badges</h2>
-        <p className="mt-2 text-sm text-slate-500">Desafios em breve.</p>
-      </section>
+      <EmptyState
+        title="Desafios e badges"
+        message="Participe da comunidade para desbloquear selos e acompanhar seu progresso."
+      />
     );
   }
 
@@ -172,21 +274,53 @@ export function ComunidadeDocenteDesafios({ badges }: { badges: BadgeItem[] }) {
     <section className="space-y-4">
       <h2 className="text-xl font-extrabold text-[#0F172A]">Desafios e badges</h2>
       <div className="grid gap-4 sm:grid-cols-2">
-        {badges.map((badge) => (
+        {badgeProgress.map((badge) => (
           <article
             key={badge.id}
-            className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+            className={[
+              "rounded-2xl border bg-white p-5 shadow-sm",
+              badge.earned ? "border-emerald-200" : "border-slate-200",
+            ].join(" ")}
           >
-            <div
-              className="inline-flex rounded-xl px-3 py-1 text-xs font-bold text-white"
-              style={{ backgroundColor: badge.color }}
-            >
-              {badge.name}
+            <div className="flex items-start justify-between gap-2">
+              <div
+                className="inline-flex rounded-xl px-3 py-1 text-xs font-bold text-white"
+                style={{ backgroundColor: badge.color }}
+              >
+                {badge.name}
+              </div>
+              <span
+                className={[
+                  "rounded-full px-2 py-0.5 text-[10px] font-bold uppercase",
+                  badge.earned ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500",
+                ].join(" ")}
+              >
+                {badge.earned ? "Conquistado" : "Em progresso"}
+              </span>
             </div>
             <p className="mt-3 text-sm leading-relaxed text-slate-600">{badge.description}</p>
-            <p className="mt-3 text-xs font-semibold text-slate-400">
-              Reputação mínima: {formatDocenteNumber(badge.min_reputation)}
-            </p>
+            <div className="mt-4 space-y-3">
+              {badge.progress.map((item) => (
+                <div key={item.label}>
+                  <div className="flex items-center justify-between text-[11px] font-semibold text-slate-500">
+                    <span>{item.label}</span>
+                    <span>
+                      {formatDocenteNumber(item.current)} / {formatDocenteNumber(item.target)}
+                    </span>
+                  </div>
+                  <BadgeProgressBar current={item.current} target={item.target} />
+                </div>
+              ))}
+            </div>
+            {!badge.earned && badge.slug === "desafio-bncc" && onParticipateChallenge ? (
+              <button
+                type="button"
+                onClick={() => onParticipateChallenge(badge.slug)}
+                className="mt-4 w-full rounded-xl bg-[#0F172A] py-2 text-xs font-bold text-white transition hover:bg-slate-800"
+              >
+                Participar do desafio BNCC
+              </button>
+            ) : null}
           </article>
         ))}
       </div>
@@ -198,21 +332,27 @@ export function ComunidadeDocenteSalvos({
   materials,
   onLike,
   onSave,
+  onDownload,
+  downloadingMaterialId,
+  onBrowseMaterials,
 }: {
   materials: DocenteMaterial[];
   onLike: (id: string) => void;
   onSave: (id: string) => void;
+  onDownload?: (id: string) => void;
+  downloadingMaterialId?: string | null;
+  onBrowseMaterials?: () => void;
 }) {
   const saved = materials.filter((m) => m.savedByMe);
 
   if (!saved.length) {
     return (
-      <section className="rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm">
-        <h2 className="text-xl font-extrabold text-[#0F172A]">Salvos</h2>
-        <p className="mt-2 text-sm text-slate-500">
-          Você ainda não salvou materiais. Explore a comunidade e salve o que for útil.
-        </p>
-      </section>
+      <EmptyState
+        title="Salvos"
+        message="Você ainda não salvou materiais. Explore a comunidade e salve o que for útil."
+        actionLabel="Ver materiais"
+        onAction={onBrowseMaterials}
+      />
     );
   }
 
@@ -231,7 +371,7 @@ export function ComunidadeDocenteSalvos({
               </h3>
             </Link>
             <p className="mt-1 text-xs text-slate-500">{material.author.name}</p>
-            <div className="mt-3 flex gap-2">
+            <div className="mt-3 flex flex-wrap gap-2">
               <button
                 type="button"
                 onClick={() => onLike(material.id)}
@@ -239,6 +379,16 @@ export function ComunidadeDocenteSalvos({
               >
                 Curtir
               </button>
+              {onDownload ? (
+                <button
+                  type="button"
+                  onClick={() => onDownload(material.id)}
+                  disabled={downloadingMaterialId === material.id}
+                  className="text-xs font-bold text-cyan-600 disabled:opacity-60"
+                >
+                  {downloadingMaterialId === material.id ? "Baixando…" : "Baixar"}
+                </button>
+              ) : null}
               <button
                 type="button"
                 onClick={() => onSave(material.id)}

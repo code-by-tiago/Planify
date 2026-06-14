@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ComunidadeDocenteCommentModal } from "@/components/community/docente/ComunidadeDocenteCommentModal";
+import { ComunidadeDocenteCreateEventModal } from "@/components/community/docente/ComunidadeDocenteCreateEventModal";
+import { ComunidadeDocenteCreateGroupModal } from "@/components/community/docente/ComunidadeDocenteCreateGroupModal";
 import { ComunidadeDocenteCreatePostModal } from "@/components/community/docente/ComunidadeDocenteCreatePostModal";
 import { ComunidadeDocenteDiscussions } from "@/components/community/docente/ComunidadeDocenteDiscussions";
 import { ComunidadeDocenteHero } from "@/components/community/docente/ComunidadeDocenteHero";
@@ -21,6 +23,8 @@ import { ComunidadeDocenteTopBar } from "@/components/community/docente/Comunida
 import { IconX } from "@/components/community/docente/docente-icons";
 import type {
   DocenteAuthor,
+  DocenteBadgeProgress,
+  DocenteCreateGroupInput,
   DocenteCreatePostInput,
   DocenteDiscussion,
   DocenteDisciplina,
@@ -34,6 +38,7 @@ import {
   getSavedDiscussionIds,
   toggleSavedDiscussion,
 } from "@/lib/community/docente-saved-discussions";
+import { downloadMarketplaceMaterial } from "@/lib/marketplace/marketplace-download-client";
 import { usePersistedSidebarCollapsed } from "@/hooks/usePersistedSidebarCollapsed";
 
 const EMPTY_STATS: DocenteStats = {
@@ -63,6 +68,7 @@ type OverviewPayload = {
     description: string;
     disciplina: string;
     members_count: number;
+    joinedByMe?: boolean;
   }>;
   badges: Array<{
     id: string;
@@ -71,6 +77,8 @@ type OverviewPayload = {
     color: string;
     min_reputation: number;
   }>;
+  badgeProgress?: DocenteBadgeProgress[];
+  isAdmin?: boolean;
   featuredTeacher: DocenteAuthor | null;
   teachers: DocenteAuthor[];
 };
@@ -83,8 +91,11 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
   const [heroSearch, setHeroSearch] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [createPostOpen, setCreatePostOpen] = useState(false);
+  const [createGroupOpen, setCreateGroupOpen] = useState(false);
+  const [createEventOpen, setCreateEventOpen] = useState(false);
   const [commentTarget, setCommentTarget] = useState<{ id: string; title: string } | null>(null);
   const [commentLoading, setCommentLoading] = useState(false);
+  const [downloadingMaterialId, setDownloadingMaterialId] = useState<string | null>(null);
   const [viewerName, setViewerName] = useState("Professor(a)");
   const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(true);
@@ -96,7 +107,8 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
   const [recentPublications, setRecentPublications] = useState<DocenteRecentPublication[]>([]);
   const [events, setEvents] = useState<DocenteEvent[]>([]);
   const [groups, setGroups] = useState<OverviewPayload["groups"]>([]);
-  const [badges, setBadges] = useState<OverviewPayload["badges"]>([]);
+  const [badgeProgress, setBadgeProgress] = useState<DocenteBadgeProgress[]>([]);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [featuredTeacher, setFeaturedTeacher] = useState<DocenteAuthor | null>(null);
   const [teachers, setTeachers] = useState<DocenteAuthor[]>([]);
   const { collapsed: communitySidebarCollapsed, toggle: toggleCommunitySidebarCollapsed } =
@@ -136,20 +148,6 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
   const loadOverview = useCallback(async (search = "") => {
     setLoading(true);
     setLoadError("");
-    // #region agent log
-    fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "40dc8d" },
-      body: JSON.stringify({
-        sessionId: "40dc8d",
-        hypothesisId: "D",
-        location: "ComunidadeDocenteClient.tsx:loadOverview:start",
-        message: "Fetching community overview",
-        data: { search, embedded },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
 
     try {
       const params = search ? `?q=${encodeURIComponent(search)}` : "";
@@ -174,68 +172,19 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
       setRecentPublications(data.recentPublications || []);
       setEvents(data.events || []);
       setGroups(data.groups || []);
-      setBadges(data.badges || []);
+      setBadgeProgress(data.badgeProgress || []);
+      setIsAdmin(Boolean(data.isAdmin));
       setFeaturedTeacher(data.featuredTeacher || null);
       setTeachers(data.teachers || []);
-
-      // #region agent log
-      fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "40dc8d" },
-        body: JSON.stringify({
-          sessionId: "40dc8d",
-          hypothesisId: "D",
-          location: "ComunidadeDocenteClient.tsx:loadOverview:success",
-          message: "Overview loaded",
-          data: {
-            discussions: (data.discussions || []).length,
-            materials: (data.materials || []).length,
-            events: (data.events || []).length,
-            groups: (data.groups || []).length,
-            badges: (data.badges || []).length,
-            teachers: (data.teachers || []).length,
-          },
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {});
-      // #endregion
     } catch (error) {
       const message = error instanceof Error ? error.message : "Erro ao carregar comunidade.";
       setLoadError(message);
-      // #region agent log
-      fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "40dc8d" },
-        body: JSON.stringify({
-          sessionId: "40dc8d",
-          hypothesisId: "C",
-          location: "ComunidadeDocenteClient.tsx:loadOverview:error",
-          message: "Overview load failed",
-          data: { error: message },
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {});
-      // #endregion
     } finally {
       setLoading(false);
     }
   }, [embedded]);
 
   useEffect(() => {
-    // #region agent log
-    fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "40dc8d" },
-      body: JSON.stringify({
-        sessionId: "40dc8d",
-        hypothesisId: "A",
-        location: "ComunidadeDocenteClient.tsx:mount",
-        message: "Comunidade Docente mounted",
-        data: { embedded, activeMenu },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
     void loadOverview();
     void fetch("/api/community/profile", { credentials: "include", cache: "no-store" })
       .then((r) => r.json())
@@ -246,6 +195,10 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
       })
       .catch(() => {});
   }, [loadOverview, embedded]);
+
+  const refreshAfterAction = useCallback(async () => {
+    await loadOverview(effectiveSearch);
+  }, [effectiveSearch, loadOverview]);
 
   const handleLikeDiscussion = useCallback(
     async (id: string) => {
@@ -265,6 +218,7 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
                 : d,
             ),
           );
+          void refreshAfterAction();
         } else {
           showToast("Não foi possível curtir.");
         }
@@ -284,11 +238,12 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
             d.id === id ? { ...d, likedByMe: data.liked, likesCount: data.likesCount } : d,
           ),
         );
+        void refreshAfterAction();
       } else {
         showToast(data?.error?.message || "Não foi possível curtir.");
       }
     },
-    [discussions, showToast],
+    [discussions, refreshAfterAction, showToast],
   );
 
   const handleSaveMaterial = useCallback(
@@ -305,12 +260,13 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
           prev.map((m) => (m.id === id ? { ...m, savedByMe: !m.savedByMe } : m)),
         );
         showToast(item?.savedByMe ? "Material removido dos salvos." : "Material salvo!");
+        void refreshAfterAction();
       } else {
         const data = await response.json().catch(() => ({}));
         showToast(data?.error?.message || "Não foi possível salvar o material.");
       }
     },
-    [materials, showToast],
+    [materials, refreshAfterAction, showToast],
   );
 
   const handleSaveDiscussion = useCallback(
@@ -347,6 +303,7 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
               ),
             );
             showToast("Comentário publicado!");
+            void refreshAfterAction();
           } else {
             showToast("Não foi possível comentar.");
           }
@@ -367,6 +324,7 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
             ),
           );
           showToast("Comentário publicado!");
+          void refreshAfterAction();
         } else {
           showToast(data?.error?.message || "Não foi possível comentar.");
         }
@@ -374,7 +332,7 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
         setCommentLoading(false);
       }
     },
-    [showToast],
+    [refreshAfterAction, showToast],
   );
 
   const handleCommentDiscussion = useCallback((id: string) => {
@@ -406,6 +364,43 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
   );
 
 
+  const handleCommentMaterial = useCallback(
+    (id: string) => {
+      const material = materials.find((m) => m.id === id);
+      if (!material) return;
+      setCommentTarget({ id: `mat-disc-${id}`, title: material.title });
+    },
+    [materials],
+  );
+
+  const handleDownloadMaterial = useCallback(
+    async (id: string) => {
+      const material = materials.find((m) => m.id === id);
+      if (!material) return;
+
+      setDownloadingMaterialId(id);
+      try {
+        await downloadMarketplaceMaterial({
+          id,
+          format: "docx",
+          fallbackFileName: `${material.title}.docx`,
+        });
+        setMaterials((prev) =>
+          prev.map((m) => (m.id === id ? { ...m, viewsCount: m.viewsCount + 1 } : m)),
+        );
+        showToast("Download iniciado!");
+        void refreshAfterAction();
+      } catch (error) {
+        showToast(
+          error instanceof Error ? error.message : "Não foi possível baixar o material.",
+        );
+      } finally {
+        setDownloadingMaterialId(null);
+      }
+    },
+    [materials, refreshAfterAction, showToast],
+  );
+
   const handleLikeMaterial = useCallback(async (id: string) => {
     const item = materials.find((m) => m.id === id);
     const response = await fetch(`/api/marketplace/materiais/${id}/likes`, {
@@ -419,10 +414,11 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
           m.id === id ? { ...m, likedByMe: data.likedByMe, likesCount: data.likesCount } : m,
         ),
       );
+      void refreshAfterAction();
     } else {
       showToast("Não foi possível curtir o material.");
     }
-  }, [materials, showToast]);
+  }, [materials, refreshAfterAction, showToast]);
 
   const handleFollowTeacher = useCallback(
     async (authorId: string) => {
@@ -458,21 +454,26 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
 
   const handleCreatePost = useCallback(
     async (input: DocenteCreatePostInput) => {
-      const response = await fetch("/api/community/docente/actions", {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "create_post",
-          title: input.title,
-          body: input.body,
-          disciplina: input.disciplina,
-          tags: input.tags,
-        }),
-      });
-      const data = await response.json();
+      try {
+        const response = await fetch("/api/community/docente/actions", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "create_post",
+            title: input.title,
+            body: input.body,
+            disciplina: input.disciplina,
+            tags: input.tags,
+            participantUserIds: input.participantUserIds || [],
+          }),
+        });
+        const data = await response.json();
 
-      if (response.ok && data.ok) {
+        if (!response.ok || !data.ok) {
+          throw new Error(data?.error?.message || "Não foi possível publicar.");
+        }
+
         if (input.files.length > 0) {
           for (const file of input.files) {
             const form = new FormData();
@@ -487,21 +488,160 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
             form.set("authorName", viewerName);
             form.set("isPublished", "true");
             form.set("file", file);
-            await fetch("/api/marketplace/materiais", {
+            const uploadResponse = await fetch("/api/marketplace/materiais", {
               method: "POST",
               body: form,
               credentials: "include",
             });
+            if (!uploadResponse.ok) {
+              const uploadData = await uploadResponse.json().catch(() => ({}));
+              throw new Error(
+                uploadData?.error?.message || "Não foi possível anexar o material.",
+              );
+            }
           }
         }
+
         showToast("Publicação criada com sucesso!");
         await loadOverview(effectiveSearch);
-      } else {
-        showToast(data?.error?.message || "Não foi possível publicar.");
+      } catch (error) {
+        throw error instanceof Error ? error : new Error("create_post_failed");
       }
     },
     [effectiveSearch, loadOverview, showToast, viewerName],
   );
+
+  const handleCreateGroup = useCallback(
+    async (input: DocenteCreateGroupInput) => {
+      const response = await fetch("/api/community/docente/actions", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "create_group",
+          name: input.name,
+          description: input.description,
+          disciplina: input.disciplina,
+          memberUserIds: input.memberUserIds || [],
+        }),
+      });
+      const data = await response.json();
+      if (response.ok && data.ok) {
+        showToast("Grupo criado com sucesso!");
+        setActiveMenu("grupos");
+        await loadOverview(effectiveSearch);
+      } else {
+        showToast(data?.error?.message || "Não foi possível criar o grupo.");
+        throw new Error(data?.error?.message || "create_group_failed");
+      }
+    },
+    [effectiveSearch, loadOverview, showToast],
+  );
+
+  const handleCreateEvent = useCallback(
+    async (input: {
+      title: string;
+      description: string;
+      presenterName: string;
+      startsAt: string;
+      isOnline: boolean;
+      location: string;
+    }) => {
+      const response = await fetch("/api/community/docente/actions", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "create_event",
+          ...input,
+        }),
+      });
+      const data = await response.json();
+      if (response.ok && data.ok) {
+        showToast("Evento criado com sucesso!");
+        await loadOverview(effectiveSearch);
+      } else {
+        showToast(data?.error?.message || "Não foi possível criar o evento.");
+        throw new Error(data?.error?.message || "create_event_failed");
+      }
+    },
+    [effectiveSearch, loadOverview, showToast],
+  );
+
+  const handleJoinGroup = useCallback(
+    async (groupId: string) => {
+      const response = await fetch("/api/community/docente/actions", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "join_group", groupId }),
+      });
+      const data = await response.json();
+      if (response.ok && data.ok) {
+        setGroups((prev) =>
+          prev.map((group) =>
+            group.id === groupId
+              ? { ...group, joinedByMe: true, members_count: data.membersCount }
+              : group,
+          ),
+        );
+        showToast("Você entrou no grupo!");
+      } else {
+        showToast(data?.error?.message || "Não foi possível entrar no grupo.");
+      }
+    },
+    [showToast],
+  );
+
+  const handleLeaveGroup = useCallback(
+    async (groupId: string) => {
+      const response = await fetch("/api/community/docente/actions", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "leave_group", groupId }),
+      });
+      const data = await response.json();
+      if (response.ok && data.ok) {
+        setGroups((prev) =>
+          prev.map((group) =>
+            group.id === groupId
+              ? { ...group, joinedByMe: false, members_count: data.membersCount }
+              : group,
+          ),
+        );
+        showToast("Você saiu do grupo.");
+      } else {
+        showToast(data?.error?.message || "Não foi possível sair do grupo.");
+      }
+    },
+    [showToast],
+  );
+
+  const handleParticipateChallenge = useCallback(
+    async (challengeSlug: string) => {
+      const response = await fetch("/api/community/docente/actions", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "participate_challenge", challengeSlug }),
+      });
+      const data = await response.json();
+      if (response.ok && data.ok) {
+        showToast(
+          data.newlyAwarded?.length
+            ? `Desafio concluído! Novo selo: ${data.newlyAwarded.join(", ")}`
+            : "Desafio registrado! Continue participando para desbloquear selos.",
+        );
+        await loadOverview(effectiveSearch);
+      } else {
+        showToast(data?.error?.message || "Não foi possível registrar o desafio.");
+      }
+    },
+    [effectiveSearch, loadOverview, showToast],
+  );
+
+  const openCreatePost = useCallback(() => setCreatePostOpen(true), []);
 
   const handleHeroSearch = useCallback(() => {
     setSearchQuery(heroSearch);
@@ -532,26 +672,24 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
       );
     }
 
-    // #region agent log
-    fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "40dc8d" },
-      body: JSON.stringify({
-        sessionId: "40dc8d",
-        hypothesisId: "A",
-        location: "ComunidadeDocenteClient.tsx:renderMainContent",
-        message: "Rendering section",
-        data: { activeMenu, hasPlaceholder: false },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
-
     if (activeMenu === "eventos") {
-      return <ComunidadeDocenteEventos events={events} />;
+      return (
+        <ComunidadeDocenteEventos
+          events={events}
+          isAdmin={isAdmin}
+          onCreateEvent={() => setCreateEventOpen(true)}
+        />
+      );
     }
     if (activeMenu === "grupos") {
-      return <ComunidadeDocenteGrupos groups={groups} />;
+      return (
+        <ComunidadeDocenteGrupos
+          groups={groups}
+          onCreateGroup={() => setCreateGroupOpen(true)}
+          onJoinGroup={handleJoinGroup}
+          onLeaveGroup={handleLeaveGroup}
+        />
+      );
     }
     if (activeMenu === "professores") {
       return (
@@ -559,7 +697,12 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
       );
     }
     if (activeMenu === "desafios") {
-      return <ComunidadeDocenteDesafios badges={badges} />;
+      return (
+        <ComunidadeDocenteDesafios
+          badgeProgress={badgeProgress}
+          onParticipateChallenge={handleParticipateChallenge}
+        />
+      );
     }
     if (activeMenu === "salvos") {
       return (
@@ -567,6 +710,9 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
           materials={materials}
           onLike={handleLikeMaterial}
           onSave={handleSaveMaterial}
+          onDownload={handleDownloadMaterial}
+          downloadingMaterialId={downloadingMaterialId}
+          onBrowseMaterials={() => setActiveMenu("materiais")}
         />
       );
     }
@@ -593,6 +739,7 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
             onShare={handleShareDiscussion}
             onOpen={handleOpenDiscussion}
             onShowMore={() => setActiveMenu("discussoes")}
+            onCreatePost={openCreatePost}
           />
         )}
 
@@ -601,7 +748,11 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
             materials={filteredMaterials}
             onLike={handleLikeMaterial}
             onSave={handleSaveMaterial}
+            onComment={handleCommentMaterial}
+            onDownload={handleDownloadMaterial}
+            downloadingMaterialId={downloadingMaterialId}
             onShowAll={() => setActiveMenu("materiais")}
+            onCreateMaterial={openCreatePost}
           />
         )}
       </>
@@ -621,7 +772,7 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
           setSearchQuery(value);
           if (value.trim()) void loadOverview(value);
         }}
-        onCreatePost={() => setCreatePostOpen(true)}
+        onCreatePost={openCreatePost}
         onOpenMenu={() => setSidebarOpen(true)}
       />
 
@@ -662,6 +813,7 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
                 events={events}
                 onFollow={handleFollowTeacher}
                 onSelectMenu={setActiveMenu}
+                onCreatePost={openCreatePost}
               />
             </div>
           </main>
@@ -673,6 +825,7 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
               events={events}
               onFollow={handleFollowTeacher}
               onSelectMenu={setActiveMenu}
+              onCreatePost={openCreatePost}
             />
           </div>
         </div>
@@ -693,6 +846,18 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
         open={createPostOpen}
         onClose={() => setCreatePostOpen(false)}
         onSubmit={handleCreatePost}
+      />
+
+      <ComunidadeDocenteCreateGroupModal
+        open={createGroupOpen}
+        onClose={() => setCreateGroupOpen(false)}
+        onSubmit={handleCreateGroup}
+      />
+
+      <ComunidadeDocenteCreateEventModal
+        open={createEventOpen}
+        onClose={() => setCreateEventOpen(false)}
+        onSubmit={handleCreateEvent}
       />
 
       {status ? (

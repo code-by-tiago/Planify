@@ -89,4 +89,28 @@ export type DocenteCreatePostInput = {
   disciplina: DocenteDisciplina;
   tags: string[];
   files: File[];
+  participantUserIds?: string[];
+};
+
+export type DocenteCreateGroupInput = {
+  name: string;
+  description: string;
+  disciplina: DocenteDisciplina;
+  memberUserIds?: string[];
+};
+
+export type DocenteBadgeProgress = {
+  id: string;
+  slug: string;
+  name: string;
+  description: string;
+  color: string;
+  minReputation: number;
+  earned: boolean;
+  awardedAt: string | null;
+  progress: {
+    current: number;
+    target: number;
+    label: string;
+  }[];
 };

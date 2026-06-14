@@ -3,6 +3,8 @@
 import Link from "next/link";
 import {
   IconBookmark,
+  IconComment,
+  IconDownload,
   IconEye,
   IconHeart,
 } from "@/components/community/docente/docente-icons";
@@ -16,6 +18,9 @@ type ComunidadeDocenteMaterialCardProps = {
   material: DocenteMaterial;
   onLike: (id: string) => void;
   onSave: (id: string) => void;
+  onComment?: (id: string) => void;
+  onDownload?: (id: string) => void;
+  downloading?: boolean;
 };
 
 const FILE_LABELS: Record<DocenteMaterial["fileType"], string> = {
@@ -29,6 +34,9 @@ export function ComunidadeDocenteMaterialCard({
   material,
   onLike,
   onSave,
+  onComment,
+  onDownload,
+  downloading = false,
 }: ComunidadeDocenteMaterialCardProps) {
   return (
     <Link
@@ -76,26 +84,57 @@ export function ComunidadeDocenteMaterialCard({
         <p className="mt-1 text-xs font-medium text-slate-500">{material.anoSerie}</p>
         <p className="mt-2 text-xs font-semibold text-slate-600">{material.author.name}</p>
 
-        <div className="mt-auto flex items-center justify-between pt-3">
+        <div className="mt-auto flex items-center justify-between gap-2 pt-3">
           <span className="flex items-center gap-1 text-xs font-semibold text-slate-400">
             <IconEye className="h-3.5 w-3.5" />
             {formatDocenteNumber(material.viewsCount)}
           </span>
-          <button
-            type="button"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              onLike(material.id);
-            }}
-            className={[
-              "flex items-center gap-1 text-xs font-bold transition",
-              material.likedByMe ? "text-rose-500" : "text-slate-400 hover:text-rose-500",
-            ].join(" ")}
-          >
-            <IconHeart className="h-3.5 w-3.5" filled={material.likedByMe} />
-            {formatDocenteNumber(material.likesCount)}
-          </button>
+          <div className="flex items-center gap-1">
+            {onComment ? (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onComment(material.id);
+                }}
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-50 hover:text-cyan-600"
+                aria-label="Comentar material"
+              >
+                <IconComment className="h-3.5 w-3.5" />
+              </button>
+            ) : null}
+            {onDownload ? (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onDownload(material.id);
+                }}
+                disabled={downloading}
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-50 hover:text-cyan-600 disabled:opacity-60"
+                aria-label="Baixar material"
+              >
+                <IconDownload className="h-3.5 w-3.5" />
+              </button>
+            ) : null}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onLike(material.id);
+              }}
+              className={[
+                "flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-bold transition",
+                material.likedByMe ? "text-rose-500" : "text-slate-400 hover:text-rose-500",
+              ].join(" ")}
+            >
+              <IconHeart className="h-3.5 w-3.5" filled={material.likedByMe} />
+              {formatDocenteNumber(material.likesCount)}
+            </button>
+          </div>
         </div>
       </div>
     </Link>

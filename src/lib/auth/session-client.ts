@@ -1,8 +1,73 @@
 import { getSupabaseBrowserClient } from "../supabase/browser-client";
 import {
+  checkPremiumAccess,
   clearPremiumAccessCookie,
   syncPremiumAccessCookie,
 } from "./access-client";
+
+const COOKIE_SYNC_COOLDOWN_MS = 12_000;
+let cookieSyncInFlight: Promise<boolean> | null = null;
+let lastCookieSyncAt = 0;
+
+export function markPremiumCookiesSynced(): void {
+  lastCookieSyncAt = Date.now();
+}
+
+async function runPremiumCookieSync(
+  token: string,
+  options?: { force?: boolean },
+): Promise<boolean> {
+  const force = options?.force === true;
+  const now = Date.now();
+
+  if (!force && cookieSyncInFlight) {
+    return cookieSyncInFlight;
+  }
+
+  if (!force && now - lastCookieSyncAt < COOKIE_SYNC_COOLDOWN_MS) {
+    return true;
+  }
+
+  const task = (async () => {
+    try {
+      const cookieResult = await syncPremiumAccessCookie(token);
+      await createOwnerSession(token).catch(() => null);
+
+      if (cookieResult.inviteSyncWarning) {
+        try {
+          sessionStorage.setItem(
+            "planify-invite-sync-warning",
+            cookieResult.inviteSyncWarning,
+          );
+        } catch {
+          /* ignore */
+        }
+      }
+
+      const synced = Boolean(
+        cookieResult?.access?.authenticated || cookieResult?.success,
+      );
+
+      if (synced) {
+        markPremiumCookiesSynced();
+      }
+
+      return synced;
+    } catch {
+      return false;
+    }
+  })();
+
+  cookieSyncInFlight = task;
+
+  try {
+    return await task;
+  } finally {
+    if (cookieSyncInFlight === task) {
+      cookieSyncInFlight = null;
+    }
+  }
+}
 
 export type LoginResult = {
   success: boolean;
@@ -119,37 +184,11 @@ export async function signInAndSyncPremiumAccess(params: {
   requirePremium?: boolean;
 }): Promise<LoginResult> {
   const supabase = getSupabaseBrowserClient();
-  const emailDomain = params.email.split("@")[1] || "unknown";
 
   const { data, error } = await supabase.auth.signInWithPassword({
     email: params.email,
     password: params.password,
   });
-
-  // #region agent log
-  fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Debug-Session-Id": "3ed578",
-    },
-    body: JSON.stringify({
-      sessionId: "3ed578",
-      runId: "checkout-debug",
-      hypothesisId: "H3-H4",
-      location: "session-client.ts:signIn:afterSignIn",
-      message: "signInWithPassword result",
-      data: {
-        emailDomain,
-        hasSession: Boolean(data.session?.access_token),
-        errorStatus: error?.status ?? null,
-        errorCode: error?.code ?? null,
-        errorMessage: error?.message ?? null,
-      },
-      timestamp: Date.now(),
-    }),
-  }).catch(() => {});
-  // #endregion
 
   if (error || !data.session?.access_token) {
     return {
@@ -160,28 +199,44 @@ export async function signInAndSyncPremiumAccess(params: {
     };
   }
 
-  const ownerSession = await createOwnerSession(data.session.access_token);
-  let cookieResult: Awaited<ReturnType<typeof syncPremiumAccessCookie>> | null = null;
+  const accessToken = data.session.access_token;
 
-  try {
-    cookieResult = await syncPremiumAccessCookie(data.session.access_token);
-  } catch (syncError) {
-    if (!ownerSession.success) {
-      return {
-        success: false,
-        premium: false,
-        redirectTo: "/login",
-        message:
-          syncError instanceof Error
-            ? syncError.message
-            : "Não foi possível validar o acesso premium.",
-        accessToken: data.session.access_token,
-      };
+  const [ownerSession, cookieResult] = await Promise.all([
+    createOwnerSession(accessToken),
+    syncPremiumAccessCookie(accessToken).catch(() => null),
+  ]);
+
+  let premiumAuthenticated = Boolean(cookieResult?.access?.authenticated);
+  let premiumAccess = Boolean(cookieResult?.access?.premium);
+  let accessMessage =
+    cookieResult?.access?.message ||
+    "Não foi possível validar o acesso premium.";
+
+  if (!premiumAuthenticated) {
+    try {
+      const fallbackAccess = await checkPremiumAccess(accessToken);
+      premiumAuthenticated = Boolean(fallbackAccess.authenticated);
+      premiumAccess = Boolean(fallbackAccess.premium);
+      accessMessage = fallbackAccess.message || accessMessage;
+      await runPremiumCookieSync(accessToken, { force: true });
+    } catch (syncError) {
+      if (!ownerSession.success) {
+        return {
+          success: false,
+          premium: false,
+          redirectTo: "/login",
+          message:
+            syncError instanceof Error
+              ? syncError.message
+              : "Não foi possível validar o acesso premium.",
+          accessToken,
+        };
+      }
     }
+  } else {
+    markPremiumCookiesSynced();
   }
 
-  const premiumAuthenticated = Boolean(cookieResult?.access.authenticated);
-  const premiumAccess = Boolean(cookieResult?.access.premium);
   const ownerAccess = Boolean(ownerSession.success && ownerSession.isOwner);
 
   if (!premiumAuthenticated && !ownerAccess) {
@@ -190,48 +245,22 @@ export async function signInAndSyncPremiumAccess(params: {
       premium: false,
       redirectTo: "/login",
       message:
-        cookieResult?.access.message ||
+        accessMessage ||
         "Login realizado, mas o acesso premium não foi validado.",
-      accessToken: data.session.access_token,
+      accessToken,
     };
   }
 
   const requirePremium = params.requirePremium !== false;
   const hasPremiumAccess = Boolean(premiumAccess || ownerAccess);
 
-  // #region agent log
-  fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Debug-Session-Id": "3ed578",
-    },
-    body: JSON.stringify({
-      sessionId: "3ed578",
-      runId: "checkout-debug",
-      hypothesisId: "H1-H2",
-      location: "session-client.ts:signIn:afterCookieSync",
-      message: "premium access after login",
-      data: {
-        emailDomain,
-        premiumAuthenticated,
-        premiumAccess,
-        ownerAccess,
-        hasPremiumAccess,
-        requirePremium,
-      },
-      timestamp: Date.now(),
-    }),
-  }).catch(() => {});
-  // #endregion
-
   if (requirePremium && !hasPremiumAccess) {
     return {
       success: true,
       premium: false,
       redirectTo: "/planos?premium=required",
-      message: cookieResult?.access.message || "Plano ativo não encontrado.",
-      accessToken: data.session.access_token,
+      message: accessMessage || "Plano ativo não encontrado.",
+      accessToken,
     };
   }
 
@@ -241,8 +270,8 @@ export async function signInAndSyncPremiumAccess(params: {
     redirectTo: params.redirectTo || "/dashboard",
     message: ownerAccess
       ? "Acesso do proprietário liberado."
-      : cookieResult?.access.message || "Acesso liberado.",
-    accessToken: data.session.access_token,
+      : accessMessage || "Acesso liberado.",
+    accessToken,
   };
 }
 
@@ -312,29 +341,6 @@ export async function activateAccountAfterPayment(params: {
   const statusJson = await statusRes.json().catch(() => null);
   const hasAccount = Boolean(statusJson?.data?.hasAccount);
 
-  // #region agent log
-  fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Debug-Session-Id": "3ed578",
-    },
-    body: JSON.stringify({
-      sessionId: "3ed578",
-      runId: "checkout-activate",
-      hypothesisId: "H1-H6",
-      location: "session-client.ts:activateAccountAfterPayment:start",
-      message: "post-payment activation start",
-      data: {
-        emailDomain: email.split("@")[1] || "unknown",
-        hasAccount,
-        hasActiveSubscription: Boolean(statusJson?.data?.hasActiveSubscription),
-      },
-      timestamp: Date.now(),
-    }),
-  }).catch(() => {});
-  // #endregion
-
   if (hasAccount) {
     return signInAndSyncPremiumAccess({
       email,
@@ -355,29 +361,6 @@ export async function activateAccountAfterPayment(params: {
   });
 
   const activateJson = await activateRes.json().catch(() => null);
-
-  // #region agent log
-  fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Debug-Session-Id": "3ed578",
-    },
-    body: JSON.stringify({
-      sessionId: "3ed578",
-      runId: "checkout-activate",
-      hypothesisId: "H6",
-      location: "session-client.ts:activateAccountAfterPayment:serverActivate",
-      message: "server-side account activation result",
-      data: {
-        httpStatus: activateRes.status,
-        success: Boolean(activateJson?.success),
-        errorCode: activateJson?.error?.code ?? null,
-      },
-      timestamp: Date.now(),
-    }),
-  }).catch(() => {});
-  // #endregion
 
   if (activateJson?.error?.code === "account_exists") {
     return signInAndSyncPremiumAccess({
@@ -509,71 +492,8 @@ export async function ensurePremiumSessionCookies(): Promise<boolean> {
   const token = data.session?.access_token;
 
   if (!token) {
-    // #region agent log
-    fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Debug-Session-Id": "3ed578",
-      },
-      body: JSON.stringify({
-        sessionId: "3ed578",
-        runId: "auth-session-debug",
-        hypothesisId: "H2-H4",
-        location: "session-client.ts:ensurePremiumSessionCookies",
-        message: "no supabase session for cookie sync",
-        data: { hasToken: false },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
     return false;
   }
 
-  try {
-    const cookieResult = await syncPremiumAccessCookie(token);
-    await createOwnerSession(token);
-
-    if (cookieResult.inviteSyncWarning) {
-      try {
-        sessionStorage.setItem(
-          "planify-invite-sync-warning",
-          cookieResult.inviteSyncWarning,
-        );
-      } catch {
-        /* ignore */
-      }
-    }
-
-    const synced = Boolean(
-      cookieResult?.access?.authenticated || cookieResult?.success,
-    );
-
-    // #region agent log
-    fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Debug-Session-Id": "3ed578",
-      },
-      body: JSON.stringify({
-        sessionId: "3ed578",
-        runId: "auth-session-debug",
-        hypothesisId: "H2-H4",
-        location: "session-client.ts:ensurePremiumSessionCookies",
-        message: "cookie sync result",
-        data: {
-          hasToken: true,
-          synced,
-          premium: Boolean(cookieResult?.access?.premium),
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
-
-    return synced;
-  } catch {
-    return false;
-  }
+  return runPremiumCookieSync(token);
 }

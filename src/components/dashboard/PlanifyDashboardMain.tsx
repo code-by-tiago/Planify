@@ -1,7 +1,6 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { ComunidadeDashboardRouter } from "@/components/community/docente/ComunidadeDashboardRouter";
 import TeachyStudioHome from "@/components/dashboard/TeachyStudioHome";
 import { TeachyMateriaisStudio } from "@/components/dashboard/TeachyMateriaisStudio";
 import type { DashboardSectionId } from "@/lib/pro/dashboardViews";
@@ -17,6 +16,14 @@ function PanelLoading() {
     </div>
   );
 }
+
+const ComunidadeDashboardRouter = dynamic(
+  () =>
+    import("@/components/community/docente/ComunidadeDashboardRouter").then(
+      (m) => m.ComunidadeDashboardRouter,
+    ),
+  { ssr: false, loading: PanelLoading },
+);
 
 const InclusaoClient = dynamic(
   () =>

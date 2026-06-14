@@ -17,6 +17,7 @@ const protectedPrefixes = [
   "/historico",
   "/biblioteca",
   "/marketplace",
+  "/comunidade",
 ];
 
 function isProtectedPath(pathname: string) {
@@ -56,35 +57,15 @@ export function PremiumRouteGuard() {
 
         if (!active) return;
 
-        if (!snapshot.authenticated && !snapshot.token) {
-          await new Promise((resolve) => setTimeout(resolve, 800));
+        for (
+          let attempt = 0;
+          attempt < 3 && !snapshot.authenticated && !snapshot.token;
+          attempt += 1
+        ) {
+          await new Promise((resolve) => setTimeout(resolve, 700 * (attempt + 1)));
           if (!active) return;
           snapshot = await resolveClientPlanifyAccess();
         }
-
-        // #region agent log
-        fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Debug-Session-Id": "3ed578",
-          },
-          body: JSON.stringify({
-            sessionId: "3ed578",
-            runId: "auth-session-debug",
-            hypothesisId: "H3-H4",
-            location: "PremiumRouteGuard.tsx:checkAccess",
-            message: "client route guard result",
-            data: {
-              pathname,
-              authenticated: snapshot.authenticated,
-              premium: snapshot.premium,
-              hasToken: Boolean(snapshot.token),
-            },
-            timestamp: Date.now(),
-          }),
-        }).catch(() => {});
-        // #endregion
 
         if (!active) return;
 

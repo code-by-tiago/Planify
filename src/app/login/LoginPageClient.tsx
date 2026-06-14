@@ -14,11 +14,7 @@ import {
   ppTitle,
   ppTitleAccent,
 } from "@/components/public/landing-professor-primeiro/theme";
-import { fetchFullPlanifyAccessStatus } from "@/lib/auth/access-client";
-import {
-  resolvePostLoginRedirect,
-  sanitizeInternalRedirect,
-} from "@/lib/auth/post-login-redirect";
+import { sanitizeInternalRedirect } from "@/lib/auth/post-login-redirect";
 import {
   requestPasswordReset,
   signInAndSyncPremiumAccess,
@@ -180,14 +176,13 @@ export function LoginPageClient({ initialSearchParams }: LoginPageClientProps) {
         return;
       }
 
-      const accessStatus = await fetchFullPlanifyAccessStatus(result.accessToken);
-      const destination = resolvePostLoginRedirect(redirectParam, accessStatus);
+      const destination = safeRedirect || "/dashboard";
+      setMessage("Verificando acesso. Entrando no painel...");
 
-      setMessage("Login validado. Entrando...");
       router.refresh();
       window.setTimeout(() => {
         forceNavigate(destination);
-      }, 350);
+      }, 200);
     } catch (error) {
       setMessage(
         error instanceof Error

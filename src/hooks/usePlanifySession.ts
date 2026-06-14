@@ -6,6 +6,7 @@ import {
   formatPlanLabel,
 } from "@/lib/auth/format-plan-label";
 import { ensurePremiumSessionCookies } from "@/lib/auth/session-client";
+import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 
 export type PlanifySession = {
   loading: boolean;
@@ -36,6 +37,7 @@ export function usePlanifySession() {
 
   useEffect(() => {
     let active = true;
+    const supabase = getSupabaseBrowserClient();
 
     async function load() {
       try {
@@ -91,8 +93,26 @@ export function usePlanifySession() {
     }
 
     void load();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event) => {
+      if (
+        event === "SIGNED_IN" ||
+        event === "SIGNED_OUT" ||
+        event === "TOKEN_REFRESHED"
+      ) {
+        if (!active) {
+          return;
+        }
+        setSession((current) => ({ ...current, loading: true }));
+        void load();
+      }
+    });
+
     return () => {
       active = false;
+      subscription.unsubscribe();
     };
   }, []);
 

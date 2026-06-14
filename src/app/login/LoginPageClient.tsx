@@ -1,8 +1,7 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import type { LoginSearchParams } from "./page";
 import { PublicProfessorPrimeiroLayout } from "@/components/public/PublicProfessorPrimeiroLayout";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
@@ -14,8 +13,13 @@ import {
   ppTitle,
   ppTitleAccent,
 } from "@/components/public/landing-professor-primeiro/theme";
-import { sanitizeInternalRedirect } from "@/lib/auth/post-login-redirect";
+import { fetchFullPlanifyAccessStatus } from "@/lib/auth/access-client";
 import {
+  resolvePostLoginRedirect,
+  sanitizeInternalRedirect,
+} from "@/lib/auth/post-login-redirect";
+import {
+  ensurePremiumSessionCookies,
   requestPasswordReset,
   signInAndSyncPremiumAccess,
 } from "@/lib/auth/session-client";
@@ -79,7 +83,7 @@ const portalCopy: Record<
 };
 
 function forceNavigate(path: string) {
-  window.location.href = path;
+  window.location.replace(path);
 }
 
 function resolvePortal(value: string | null): LoginPortal {
@@ -91,8 +95,6 @@ type LoginPageClientProps = {
 };
 
 export function LoginPageClient({ initialSearchParams }: LoginPageClientProps) {
-  const router = useRouter();
-
   const portal = resolvePortal(initialSearchParams.portal ?? null);
   const copy = portalCopy[portal];
   const redirectParam = initialSearchParams.redirect ?? null;
@@ -121,6 +123,41 @@ export function LoginPageClient({ initialSearchParams }: LoginPageClientProps) {
     }
     return null;
   }, [premiumRequired]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function redirectIfAlreadySignedIn() {
+      try {
+        await ensurePremiumSessionCookies();
+        const accessStatus = await fetchFullPlanifyAccessStatus();
+
+        if (cancelled || !accessStatus.authenticated) {
+          return;
+        }
+
+        const hasAppAccess = Boolean(
+          accessStatus.premium ||
+            accessStatus.isOwner ||
+            accessStatus.isAdmin,
+        );
+
+        if (!hasAppAccess) {
+          return;
+        }
+
+        forceNavigate(resolvePostLoginRedirect(redirectParam, accessStatus));
+      } catch {
+        /* stay on login */
+      }
+    }
+
+    void redirectIfAlreadySignedIn();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [redirectParam]);
 
   async function handleForgotPassword() {
     setMessage("");
@@ -169,20 +206,20 @@ export function LoginPageClient({ initialSearchParams }: LoginPageClientProps) {
       }
 
       if (!result.premium) {
+        const destination = result.redirectTo || "/planos?premium=required";
         setMessage(result.message || copy.noPlanMessage);
         window.setTimeout(() => {
-          forceNavigate(result.redirectTo || "/planos?premium=required");
-        }, 600);
+          forceNavigate(destination);
+        }, 700);
         return;
       }
 
-      const destination = safeRedirect || "/dashboard";
-      setMessage("Verificando acesso. Entrando no painel...");
+      const accessStatus = await fetchFullPlanifyAccessStatus(result.accessToken);
+      const destination = resolvePostLoginRedirect(redirectParam, accessStatus);
 
-      router.refresh();
-      window.setTimeout(() => {
-        forceNavigate(destination);
-      }, 200);
+      setMessage("Acesso confirmado. Entrando no painel...");
+      forceNavigate(destination);
+      return;
     } catch (error) {
       setMessage(
         error instanceof Error

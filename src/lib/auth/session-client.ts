@@ -222,9 +222,18 @@ export async function signInAndSyncPremiumAccess(params: {
   }
 
   const accessToken = data.session.access_token;
+  const ownerSessionPromise = mightBeOwnerToken(accessToken)
+    ? createOwnerSession(accessToken)
+    : Promise.resolve({
+        success: false,
+        isOwner: false,
+        premium: false,
+        email: "",
+        message: "",
+      });
 
   const [ownerSession, cookieResult] = await Promise.all([
-    createOwnerSession(accessToken),
+    ownerSessionPromise,
     syncPremiumAccessCookie(accessToken).catch(() => null),
   ]);
 
@@ -240,7 +249,16 @@ export async function signInAndSyncPremiumAccess(params: {
       premiumAuthenticated = Boolean(fallbackAccess.authenticated);
       premiumAccess = Boolean(fallbackAccess.premium);
       accessMessage = fallbackAccess.message || accessMessage;
-      await runPremiumCookieSync(accessToken, { force: true });
+
+      const cookiesSynced = await runPremiumCookieSync(accessToken, {
+        force: true,
+      });
+
+      if (!cookiesSynced && premiumAuthenticated) {
+        accessMessage =
+          "Login realizado, mas não foi possível sincronizar a sessão. Tente novamente.";
+        premiumAuthenticated = false;
+      }
     } catch (syncError) {
       if (!ownerSession.success) {
         return {
@@ -257,6 +275,9 @@ export async function signInAndSyncPremiumAccess(params: {
     }
   } else {
     markPremiumCookiesSynced();
+    if (mightBeOwnerToken(accessToken)) {
+      await createOwnerSession(accessToken).catch(() => null);
+    }
   }
 
   const ownerAccess = Boolean(ownerSession.success && ownerSession.isOwner);

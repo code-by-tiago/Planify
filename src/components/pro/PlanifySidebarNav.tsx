@@ -32,6 +32,7 @@ type PlanifySidebarNavProps = {
   canViewBnccProgress?: boolean;
   canViewDirectorPanel?: boolean;
   isManagerView?: boolean;
+  collapsed?: boolean;
 };
 
 export function PlanifySidebarNav({
@@ -46,6 +47,7 @@ export function PlanifySidebarNav({
   canViewBnccProgress = false,
   canViewDirectorPanel = false,
   isManagerView = false,
+  collapsed = false,
 }: PlanifySidebarNavProps) {
   const navItems: AppNavItem[] = filterSidebarNavigation({
     canViewBnccProgress,
@@ -76,6 +78,8 @@ export function PlanifySidebarNav({
 
   function navButtonClass(selected: boolean) {
     return `pl-sidebar-nav-item flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition ${
+      collapsed ? "justify-center px-2" : ""
+    } ${
       selected
         ? "is-active bg-gradient-to-r from-cyan-500 to-blue-600 shadow-sm"
         : "hover:bg-cyan-400/10"
@@ -85,16 +89,18 @@ export function PlanifySidebarNav({
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       {primaryAction ? (
-        <div className="shrink-0 px-3 pt-3">{primaryAction}</div>
+        <div className={`shrink-0 pt-3 ${collapsed ? "px-2" : "px-3"}`}>{primaryAction}</div>
       ) : null}
 
       <nav
         aria-label="Navegação principal"
-        className="min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain px-3 py-3"
+        className={`min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain py-3 ${collapsed ? "px-2" : "px-3"}`}
       >
-        <p className="px-1 pb-1 text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-500/90">
-          Menu
-        </p>
+        {!collapsed ? (
+          <p className="pl-sidebar-section-label px-1 pb-1 text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-500/90">
+            Menu
+          </p>
+        ) : null}
         {navItems.map((item) => {
           const selected = isWorkspaceSelected(item);
           const className = navButtonClass(selected);
@@ -106,6 +112,7 @@ export function PlanifySidebarNav({
                 type="button"
                 onClick={() => handleWorkspaceClick(item)}
                 aria-current={selected ? "page" : undefined}
+                title={collapsed ? item.label : undefined}
                 className={className}
               >
                 <PlanifyNavIcon name={item.icon} className="pl-sidebar-nav-icon" />
@@ -120,6 +127,7 @@ export function PlanifySidebarNav({
               href={item.href}
               onClick={() => onActivate?.()}
               aria-current={selected ? "page" : undefined}
+              title={collapsed ? item.label : undefined}
               className={className}
             >
               <PlanifyNavIcon name={item.icon} className="pl-sidebar-nav-icon" />

@@ -21,6 +21,10 @@ type PlanifyShellSidebarProps = {
   alwaysVisible?: boolean;
   showUserFooter?: boolean;
   brandHref?: string;
+  /** Desktop collapse (icon rail) */
+  collapsible?: boolean;
+  collapsed?: boolean;
+  onToggleCollapsed?: () => void;
 };
 
 export function PlanifyShellSidebar({
@@ -32,6 +36,9 @@ export function PlanifyShellSidebar({
   alwaysVisible = false,
   showUserFooter = true,
   brandHref = "/",
+  collapsible = false,
+  collapsed = false,
+  onToggleCollapsed,
 }: PlanifyShellSidebarProps) {
   const isHud = variant === "hud";
 
@@ -72,32 +79,66 @@ export function PlanifyShellSidebar({
     ? "border-slate-200/80"
     : "border-rose-100/50";
   const footer = showUserFooter ? (
-    <PlanifySidebarUser lumiHint={lumiHint} />
+    <PlanifySidebarUser lumiHint={lumiHint} collapsed={collapsed} />
   ) : (
     <div className="border-t border-slate-200/80 px-4 py-3 text-[11px] font-semibold text-slate-500">
       {lumiHint}
     </div>
   );
 
+  const collapseToggle =
+    collapsible && onToggleCollapsed ? (
+      <button
+        type="button"
+        onClick={onToggleCollapsed}
+        aria-label={collapsed ? "Expandir menu" : "Recolher menu"}
+        title={collapsed ? "Expandir menu" : "Recolher menu"}
+        className={[
+          "hidden lg:flex",
+          "mx-auto mb-2 h-9 w-9 shrink-0 items-center justify-center rounded-xl border transition",
+          isHud
+            ? "border-cyan-400/20 text-slate-300 hover:border-cyan-400/40 hover:bg-cyan-400/10 hover:text-white"
+            : "border-slate-200 text-slate-500 hover:border-slate-300 hover:bg-slate-50",
+        ].join(" ")}
+      >
+        <PlanifyIcon
+          name="chevronRight"
+          className={["h-4 w-4 transition-transform", collapsed ? "" : "rotate-180"].join(" ")}
+        />
+      </button>
+    ) : null;
+
   const brandBlock = (
-    <div className={`shrink-0 border-b ${brandBorder} px-4 py-4`}>
-      <PlanifyBrand href={brandHref} dark={isHud} />
-      <p className={`mt-2 text-[11px] font-bold leading-snug ${isHud ? "text-slate-500" : "text-slate-500"}`}>
-        Coruja Planify · IA alinhada à BNCC
-      </p>
+    <div className={`shrink-0 border-b ${brandBorder} px-4 py-4 ${collapsed ? "px-2 py-3" : ""}`}>
+      <PlanifyBrand href={brandHref} dark={isHud} compact={collapsed} hideTagline />
+      {!collapsed ? (
+        <p className={`mt-2 text-[11px] font-bold leading-snug ${isHud ? "text-slate-500" : "text-slate-500"}`}>
+          Coruja Planify · IA alinhada à BNCC
+        </p>
+      ) : null}
     </div>
   );
+
+  const asideClass = [
+    sidebarClass,
+    collapsed ? "pl-sidebar--collapsed" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   if (alwaysVisible) {
     return (
       <aside
-        className={`${sidebarClass} flex h-screen w-[min(18rem,34vw)] min-w-[14.5rem] shrink-0 flex-col border-r`}
+        className={`${asideClass} flex h-screen w-[min(18rem,34vw)] min-w-[14.5rem] shrink-0 flex-col border-r`}
       >
         {brandBlock}
         <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain">
           {children}
         </div>
-        <div className="shrink-0 border-t border-slate-200/60 bg-inherit">{footer}</div>
+        <div className="shrink-0 border-t border-slate-200/60 bg-inherit px-2 py-2">
+          {collapseToggle}
+          {footer}
+        </div>
       </aside>
     );
   }
@@ -105,13 +146,16 @@ export function PlanifyShellSidebar({
   return (
     <>
       <aside
-        className={`${sidebarClass} hidden h-full min-h-0 w-72 shrink-0 flex-col border-r lg:flex`}
+        className={`${asideClass} hidden h-full min-h-0 w-72 shrink-0 flex-col border-r lg:flex`}
       >
         {brandBlock}
         <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain">
           {children}
         </div>
-        <div className="shrink-0 border-t border-slate-200/60 bg-inherit">{footer}</div>
+        <div className="shrink-0 border-t border-slate-200/60 bg-inherit px-2 py-2">
+          {collapseToggle}
+          {footer}
+        </div>
       </aside>
 
       <AnimatePresence>

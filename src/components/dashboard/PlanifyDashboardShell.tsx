@@ -22,6 +22,7 @@ import {
   type PlanifyToolId,
 } from "@/lib/pro/planifyTools";
 import { usePlanifyAccess } from "@/hooks/usePlanifyAccess";
+import { usePersistedSidebarCollapsed } from "@/hooks/usePersistedSidebarCollapsed";
 import { setHistorySupabaseSync, syncLocalHistoryToSupabase } from "@/lib/history/history-storage";
 
 function isValidToolId(value: string | null): value is PlanifyToolId {
@@ -44,6 +45,8 @@ export default function PlanifyDashboardShell() {
   const searchParams = useSearchParams();
   const access = usePlanifyAccess();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { collapsed: sidebarCollapsed, toggle: toggleSidebarCollapsed } =
+    usePersistedSidebarCollapsed("planify:sidebar-collapsed");
 
   useEffect(() => {
     if (!access.loading && access.authenticated) {
@@ -178,10 +181,14 @@ export default function PlanifyDashboardShell() {
     <Link
       href="/gestor"
       onClick={closeSidebar}
-      className="pl-hud-btn flex w-full items-center justify-center gap-2 rounded-xl py-3 text-xs font-semibold"
+      title="Início"
+      className={[
+        "pl-hud-btn flex items-center justify-center gap-2 rounded-xl py-3 text-xs font-semibold",
+        sidebarCollapsed ? "w-full px-0" : "w-full",
+      ].join(" ")}
     >
       <PlanifyIcon name="home" className="h-4 w-4" />
-      Início
+      {!sidebarCollapsed ? "Início" : null}
     </Link>
   ) : (
     <button
@@ -190,10 +197,14 @@ export default function PlanifyDashboardShell() {
         selectInicio();
         closeSidebar();
       }}
-      className="pl-hud-btn flex w-full items-center justify-center gap-2 rounded-xl py-3 text-xs font-semibold"
+      title="Início"
+      className={[
+        "pl-hud-btn flex items-center justify-center gap-2 rounded-xl py-3 text-xs font-semibold",
+        sidebarCollapsed ? "w-full px-0" : "w-full",
+      ].join(" ")}
     >
       <PlanifyIcon name="home" className="h-4 w-4" />
-      Início
+      {!sidebarCollapsed ? "Início" : null}
     </button>
   );
 
@@ -205,6 +216,9 @@ export default function PlanifyDashboardShell() {
         lumiHint="Toque numa ferramenta e crie em segundos."
         open={sidebarOpen}
         onOpenChange={setSidebarOpen}
+        collapsible
+        collapsed={sidebarCollapsed}
+        onToggleCollapsed={toggleSidebarCollapsed}
       >
         <PlanifySidebarNav
           mode="studio"
@@ -217,6 +231,7 @@ export default function PlanifyDashboardShell() {
           canViewBnccProgress={access.canViewBnccProgress}
           canViewDirectorPanel={access.canViewDirectorPanel}
           isManagerView={access.isManagerView}
+          collapsed={sidebarCollapsed}
         />
       </PlanifyShellSidebar>
 

@@ -32,14 +32,20 @@ export function ComunidadeDocenteMaterials({
       </div>
 
       <div className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-2 scrollbar-thin">
-        {materials.map((material) => (
-          <ComunidadeDocenteMaterialCard
-            key={material.id}
-            material={material}
-            onLike={onLike}
-            onSave={onSave}
-          />
-        ))}
+        {materials.length === 0 ? (
+          <p className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-8 text-center text-sm text-slate-500">
+            Nenhum material publicado ainda. Compartilhe o seu!
+          </p>
+        ) : (
+          materials.map((material) => (
+            <ComunidadeDocenteMaterialCard
+              key={material.id}
+              material={material}
+              onLike={onLike}
+              onSave={onSave}
+            />
+          ))
+        )}
       </div>
     </section>
   );

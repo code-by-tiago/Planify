@@ -31,26 +31,34 @@ export function ComunidadeDocenteDiscussions({
       </div>
 
       <div className="space-y-3">
-        {discussions.map((discussion) => (
-          <ComunidadeDocenteDiscussionCard
-            key={discussion.id}
-            discussion={discussion}
-            onLike={onLike}
-            onSave={onSave}
-            onComment={onComment}
-            onShare={onShare}
-            onOpen={onOpen}
-          />
-        ))}
+        {discussions.length === 0 ? (
+          <p className="rounded-2xl border border-slate-200 bg-white px-4 py-8 text-center text-sm text-slate-500">
+            Nenhuma discussão encontrada. Crie a primeira publicação!
+          </p>
+        ) : (
+          discussions.map((discussion) => (
+            <ComunidadeDocenteDiscussionCard
+              key={discussion.id}
+              discussion={discussion}
+              onLike={onLike}
+              onSave={onSave}
+              onComment={onComment}
+              onShare={onShare}
+              onOpen={onOpen}
+            />
+          ))
+        )}
       </div>
 
-      <button
-        type="button"
-        onClick={onShowMore}
-        className="mt-4 w-full rounded-2xl border border-slate-200 bg-white py-3 text-sm font-bold text-cyan-600 transition hover:border-cyan-200 hover:bg-cyan-50"
-      >
-        Ver mais discussões
-      </button>
+      {discussions.length > 0 ? (
+        <button
+          type="button"
+          onClick={onShowMore}
+          className="mt-4 w-full rounded-2xl border border-slate-200 bg-white py-3 text-sm font-bold text-cyan-600 transition hover:border-cyan-200 hover:bg-cyan-50"
+        >
+          Ver mais discussões
+        </button>
+      ) : null}
     </section>
   );
 }

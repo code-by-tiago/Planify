@@ -34,6 +34,7 @@ import {
   getSavedDiscussionIds,
   toggleSavedDiscussion,
 } from "@/lib/community/docente-saved-discussions";
+import { usePersistedSidebarCollapsed } from "@/hooks/usePersistedSidebarCollapsed";
 
 const EMPTY_STATS: DocenteStats = {
   activeTeachers: 0,
@@ -98,6 +99,8 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
   const [badges, setBadges] = useState<OverviewPayload["badges"]>([]);
   const [featuredTeacher, setFeaturedTeacher] = useState<DocenteAuthor | null>(null);
   const [teachers, setTeachers] = useState<DocenteAuthor[]>([]);
+  const { collapsed: communitySidebarCollapsed, toggle: toggleCommunitySidebarCollapsed } =
+    usePersistedSidebarCollapsed("planify:community-sidebar-collapsed");
 
   const effectiveSearch = searchQuery || heroSearch;
 
@@ -302,6 +305,9 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
           prev.map((m) => (m.id === id ? { ...m, savedByMe: !m.savedByMe } : m)),
         );
         showToast(item?.savedByMe ? "Material removido dos salvos." : "Material salvo!");
+      } else {
+        const data = await response.json().catch(() => ({}));
+        showToast(data?.error?.message || "Não foi possível salvar o material.");
       }
     },
     [materials, showToast],
@@ -635,6 +641,8 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
           onSelectItem={setActiveMenu}
           onSelectDisciplina={setSelectedDisciplina}
           onClose={() => setSidebarOpen(false)}
+          collapsed={communitySidebarCollapsed}
+          onToggleCollapsed={toggleCommunitySidebarCollapsed}
           className={[
             "fixed inset-y-0 left-0 z-50 h-full transition-transform duration-300 lg:static lg:translate-x-0",
             sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",

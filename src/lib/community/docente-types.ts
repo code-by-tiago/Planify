@@ -63,6 +63,7 @@ export type DocenteRecentPublication = {
   thumbnailUrl: string;
   authorName: string;
   createdAt: string;
+  href?: string;
 };
 
 export type DocenteEvent = {

@@ -346,13 +346,30 @@ export async function getCommunityDocenteOverview(params: {
     })
     .slice(0, 8);
 
-  const recentPublications: DocenteRecentPublication[] = marketplaceRows.slice(0, 4).map((row) => ({
+  let recentPublications: DocenteRecentPublication[] = marketplaceRows.slice(0, 4).map((row) => ({
     id: row.id,
     title: row.title,
     thumbnailUrl: coverForComponente(row.componente || "Ciências"),
     authorName: row.author_name || "Professor(a)",
     createdAt: row.created_at || new Date().toISOString(),
+    href: `/marketplace/material/${row.id}`,
   }));
+
+  if (recentPublications.length === 0 && posts.length > 0) {
+    recentPublications = await Promise.all(
+      posts.slice(0, 4).map(async (post) => {
+        const author = await buildAuthor(post.author_id, authorMap);
+        return {
+          id: post.id,
+          title: post.title,
+          thumbnailUrl: coverForComponente(post.disciplina),
+          authorName: author.name,
+          createdAt: post.created_at,
+          href: `/comunidade?discussao=${post.id}`,
+        };
+      }),
+    );
+  }
 
   const events: DocenteEvent[] = ((eventsResult.data || []) as EventRow[]).map((e) => {
     const { day, month } = formatEventMonth(e.starts_at);
@@ -370,19 +387,11 @@ export async function getCommunityDocenteOverview(params: {
   const groups = (groupsResult.data || []) as GroupRow[];
   const badges = (badgesResult.data || []) as BadgeRow[];
 
-  const topTeacherId = marketplaceRows[0]?.user_id;
-  const featuredTeacher = topTeacherId
-    ? await buildAuthor(topTeacherId, authorMap, marketplaceRows[0]?.author_name)
-    : null;
-
-  if (featuredTeacher && params.viewerUserId) {
-    featuredTeacher.isFollowing = followingIds.has(featuredTeacher.id);
-  }
-
   const { data: profileTeachers } = await supabase
     .from("profiles")
     .select("id,full_name,avatar_url,bio,community_reputation")
     .eq("community_public", true)
+    .order("community_reputation", { ascending: false })
     .limit(8);
 
   const teacherIds = (profileTeachers || []).map((p) => p.id as string);
@@ -399,6 +408,21 @@ export async function getCommunityDocenteOverview(params: {
       return author;
     }),
   );
+
+  const topTeacherId = marketplaceRows[0]?.user_id;
+  let featuredTeacher: DocenteAuthor | null = null;
+
+  if (topTeacherId) {
+    featuredTeacher = await buildAuthor(topTeacherId, authorMap, marketplaceRows[0]?.author_name);
+  } else if (teachers.length > 0) {
+    featuredTeacher = { ...teachers[0] };
+  } else if (params.viewerUserId) {
+    featuredTeacher = await buildAuthor(params.viewerUserId, authorMap);
+  }
+
+  if (featuredTeacher && params.viewerUserId) {
+    featuredTeacher.isFollowing = followingIds.has(featuredTeacher.id);
+  }
 
   return {
     stats: {

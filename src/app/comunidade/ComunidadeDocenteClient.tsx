@@ -7,6 +7,7 @@ import { ComunidadeDocenteCommentModal } from "@/components/community/docente/Co
 import { ComunidadeDocenteCreateEventModal } from "@/components/community/docente/ComunidadeDocenteCreateEventModal";
 import { ComunidadeDocenteCreateGroupModal } from "@/components/community/docente/ComunidadeDocenteCreateGroupModal";
 import { ComunidadeDocenteCreatePostModal } from "@/components/community/docente/ComunidadeDocenteCreatePostModal";
+import { ComunidadeDocenteBnccChallengeModal } from "@/components/community/docente/ComunidadeDocenteBnccChallengeModal";
 import { ComunidadeDocenteFeedFilters } from "@/components/community/docente/ComunidadeDocenteFeedFilters";
 import { ComunidadeDocenteOnboarding } from "@/components/community/docente/ComunidadeDocenteOnboarding";
 import { ComunidadeDocenteProfileModal } from "@/components/community/docente/ComunidadeDocenteProfileModal";
@@ -18,7 +19,6 @@ import {
   ComunidadeDocenteDesafios,
   ComunidadeDocenteEventos,
   ComunidadeDocenteGrupos,
-  ComunidadeDocenteProfessores,
   ComunidadeDocenteSalvos,
 } from "@/components/community/docente/ComunidadeDocenteSections";
 import { ComunidadeDocenteSidebar } from "@/components/community/docente/ComunidadeDocenteSidebar";
@@ -40,12 +40,20 @@ import type {
 } from "@/lib/community/docente-types";
 import {
   buildOverviewQueryParams,
+  buscaHref,
   comunidadeRoutes,
   homeWithAba,
   parseDocenteMenuItem,
 } from "@/lib/community/docente-utils";
 import { downloadMarketplaceMaterial } from "@/lib/marketplace/marketplace-download-client";
 import { usePersistedSidebarCollapsed } from "@/hooks/usePersistedSidebarCollapsed";
+import {
+  getHiddenFeedMaterialIds,
+  hideFeedMaterialOnServer,
+  migrateLocalHiddenFeedMaterialsToServer,
+  setHiddenFeedMaterialIds,
+  unhideFeedMaterialOnServer,
+} from "@/lib/community/hidden-feed-materials";
 
 const EMPTY_STATS: DocenteStats = {
   activeTeachers: 0,
@@ -104,6 +112,15 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
   const [mineOnly, setMineOnly] = useState(false);
   const [friendsOnly, setFriendsOnly] = useState(false);
   const [savedOnly, setSavedOnly] = useState(false);
+  const [showHidden, setShowHidden] = useState(false);
+  const [etapaFilter, setEtapaFilter] = useState("");
+  const [tipoMaterialFilter, setTipoMaterialFilter] = useState("");
+  const [tagFilter, setTagFilter] = useState("");
+  const [bnccOpen, setBnccOpen] = useState(false);
+  const [hiddenMaterialIds, setHiddenMaterialIdsState] = useState<Set<string>>(() =>
+    getHiddenFeedMaterialIds(),
+  );
+  const [hiddenRevision, setHiddenRevision] = useState(0);
   const [commentTarget, setCommentTarget] = useState<{ id: string; title: string } | null>(null);
   const [commentLoading, setCommentLoading] = useState(false);
   const [downloadingMaterialId, setDownloadingMaterialId] = useState<string | null>(null);
@@ -139,6 +156,11 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
     );
   }, [discussions, effectiveSearch, tipoFilter]);
 
+  const effectiveHiddenMaterialIds = useMemo(() => {
+    void hiddenRevision;
+    return hiddenMaterialIds;
+  }, [hiddenMaterialIds, hiddenRevision]);
+
   const filteredMaterials = useMemo(() => {
     if (tipoFilter === "posts") return [];
     let list = materials;
@@ -165,11 +187,11 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
     (item: DocenteMenuItem) => {
       setActiveMenu(item);
       if (item === "desafios") {
-        router.push(comunidadeRoutes.desafios);
+        router.push(embedded ? comunidadeRoutes.desafiosEmbedded : comunidadeRoutes.desafios);
         return;
       }
       if (item === "professores") {
-        router.push(comunidadeRoutes.busca);
+        router.push(embedded ? comunidadeRoutes.buscaEmbedded : comunidadeRoutes.busca);
         return;
       }
       router.replace(homeWithAba(item, embedded));
@@ -190,9 +212,13 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
       const qs = buildOverviewQueryParams({
         search,
         disciplina: selectedDisciplina,
+        etapa: etapaFilter || null,
+        tipoMaterial: tipoMaterialFilter || null,
+        tag: tagFilter || null,
         mineOnly,
         friendsOnly,
         savedOnly,
+        hiddenOnly: showHidden,
       });
       const response = await fetch(`/api/community/docente${qs}`, {
         cache: "no-store",
@@ -218,21 +244,33 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
       setIsAdmin(Boolean(data.isAdmin));
       setFeaturedTeacher(data.featuredTeacher || null);
       setTeachers(data.teachers || []);
+      const serverHiddenIds = Array.isArray(data.hiddenMaterialIds)
+        ? data.hiddenMaterialIds.map((id: unknown) => String(id)).filter(Boolean)
+        : [];
+      if (serverHiddenIds.length > 0) {
+        setHiddenFeedMaterialIds(serverHiddenIds);
+        setHiddenMaterialIdsState(new Set(serverHiddenIds));
+      }
+      setHiddenRevision((value) => value + 1);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Erro ao carregar comunidade.";
       setLoadError(message);
     } finally {
       setLoading(false);
     }
-  }, [embedded, selectedDisciplina, mineOnly, friendsOnly, savedOnly]);
+  }, [embedded, selectedDisciplina, etapaFilter, tipoMaterialFilter, tagFilter, mineOnly, friendsOnly, savedOnly, showHidden]);
 
   useEffect(() => {
     const aba = parseDocenteMenuItem(searchParams.get("aba"));
     if (aba) setActiveMenu(aba);
-  }, [searchParams]);
+    if (aba === "professores") {
+      router.replace(embedded ? comunidadeRoutes.buscaEmbedded : comunidadeRoutes.busca);
+    }
+  }, [searchParams, embedded, router]);
 
   useEffect(() => {
     void loadOverview();
+    void migrateLocalHiddenFeedMaterialsToServer();
     void fetch("/api/community/profile", { credentials: "include", cache: "no-store" })
       .then((r) => r.json())
       .then((data) => {
@@ -606,7 +644,7 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
         throw new Error(data?.error?.message || "create_group_failed");
       }
     },
-    [effectiveSearch, loadOverview, showToast],
+    [effectiveSearch, embedded, loadOverview, router, showToast],
   );
 
   const handleCreateEvent = useCallback(
@@ -691,6 +729,10 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
 
   const handleParticipateChallenge = useCallback(
     async (challengeSlug: string) => {
+      if (challengeSlug === "desafio-bncc") {
+        setBnccOpen(true);
+        return;
+      }
       const response = await fetch("/api/community/docente/actions", {
         method: "POST",
         credentials: "include",
@@ -711,6 +753,66 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
     },
     [effectiveSearch, loadOverview, showToast],
   );
+
+  const completeBnccChallenge = useCallback(
+    async (reflection: string) => {
+      const response = await fetch("/api/community/docente/actions", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "participate_challenge",
+          challengeSlug: "desafio-bncc",
+          reflection,
+        }),
+      });
+      const data = await response.json();
+      if (response.ok && data.ok) {
+        showToast("Desafio BNCC concluído com sucesso!");
+        await loadOverview(effectiveSearch);
+      } else {
+        showToast(data?.error?.message || "Não foi possível concluir o desafio.");
+        throw new Error("bncc failed");
+      }
+    },
+    [effectiveSearch, loadOverview, showToast],
+  );
+
+  const handleHideMaterial = useCallback(async (id: string) => {
+    setHiddenMaterialIdsState((current) => new Set([...current, id]));
+    setHiddenRevision((v) => v + 1);
+    showToast("Material oculto do seu feed.");
+    try {
+      await hideFeedMaterialOnServer(id);
+      await loadOverview(effectiveSearch);
+    } catch {
+      setHiddenMaterialIdsState((current) => {
+        const next = new Set(current);
+        next.delete(id);
+        return next;
+      });
+      setHiddenRevision((v) => v + 1);
+      showToast("Não foi possível salvar a preferência no servidor.");
+    }
+  }, [effectiveSearch, loadOverview, showToast]);
+
+  const handleUnhideMaterial = useCallback(async (id: string) => {
+    setHiddenMaterialIdsState((current) => {
+      const next = new Set(current);
+      next.delete(id);
+      return next;
+    });
+    setHiddenRevision((v) => v + 1);
+    showToast("Material restaurado no seu feed.");
+    try {
+      await unhideFeedMaterialOnServer(id);
+      await loadOverview(effectiveSearch);
+    } catch {
+      setHiddenMaterialIdsState((current) => new Set([...current, id]));
+      setHiddenRevision((v) => v + 1);
+      showToast("Não foi possível restaurar no servidor.");
+    }
+  }, [effectiveSearch, loadOverview, showToast]);
 
   const openCreatePost = useCallback(() => setCreatePostOpen(true), []);
 
@@ -764,15 +866,6 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
         />
       );
     }
-    if (activeMenu === "professores") {
-      return (
-        <ComunidadeDocenteProfessores
-          teachers={teachers}
-          onFollow={handleFollowTeacher}
-          onBrowseAll={() => router.push(comunidadeRoutes.busca)}
-        />
-      );
-    }
     if (activeMenu === "desafios") {
       return (
         <ComunidadeDocenteDesafios
@@ -806,11 +899,19 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
             mineOnly={mineOnly}
             friendsOnly={friendsOnly}
             savedOnly={savedOnly}
+            showHidden={showHidden}
             selectedDisciplina={selectedDisciplina}
+            etapa={etapaFilter}
+            tipoMaterial={tipoMaterialFilter}
+            tag={tagFilter}
             onToggleMineOnly={() => setMineOnly((v) => !v)}
             onToggleFriendsOnly={() => setFriendsOnly((v) => !v)}
             onToggleSavedOnly={() => setSavedOnly((v) => !v)}
+            onToggleShowHidden={() => setShowHidden((v) => !v)}
             onSelectDisciplina={setSelectedDisciplina}
+            onEtapaChange={setEtapaFilter}
+            onTipoMaterialChange={setTipoMaterialFilter}
+            onTagChange={setTagFilter}
           />
         )}
 
@@ -854,7 +955,7 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
                 onOpenProfile={() => setProfileOpen(true)}
                 onCreatePost={openCreatePost}
                 onCreateGroup={() => setCreateGroupOpen(true)}
-                onBrowseTeachers={() => router.push(comunidadeRoutes.busca)}
+                onBrowseTeachers={() => router.push(buscaHref("", embedded))}
               />
             ) : null}
           </>
@@ -883,6 +984,10 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
             downloadingMaterialId={downloadingMaterialId}
             onShowAll={() => setActiveMenu("materiais")}
             onCreateMaterial={openCreatePost}
+            onHideMaterial={handleHideMaterial}
+            onUnhideMaterial={handleUnhideMaterial}
+            showHidden={showHidden}
+            embedded={embedded}
           />
         )}
       </>
@@ -1018,6 +1123,12 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
       <ComunidadeDocenteProfileModal
         open={profileOpen}
         onClose={() => setProfileOpen(false)}
+      />
+
+      <ComunidadeDocenteBnccChallengeModal
+        open={bnccOpen}
+        onClose={() => setBnccOpen(false)}
+        onComplete={completeBnccChallenge}
       />
 
       {status ? (

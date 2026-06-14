@@ -11,13 +11,19 @@ import {
   comunidadeRoutes,
   formatDocenteNumber,
   homeWithAba,
-  readEmbedded,
+  isComunidadeEmbedded,
 } from "@/lib/community/docente-utils";
 
-export function ComunidadeDocenteEventoDetailClient({ eventId }: { eventId: string }) {
+export function ComunidadeDocenteEventoDetailClient({
+  eventId,
+  forceEmbedded,
+}: {
+  eventId: string;
+  forceEmbedded?: boolean;
+}) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const embedded = readEmbedded(searchParams);
+  const embedded = isComunidadeEmbedded(searchParams, forceEmbedded);
 
   const [event, setEvent] = useState<CommunityEventDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -26,7 +32,6 @@ export function ComunidadeDocenteEventoDetailClient({ eventId }: { eventId: stri
   const [status, setStatus] = useState("");
   const [editOpen, setEditOpen] = useState(false);
 
-  const homeHref = embedded ? comunidadeRoutes.homeEmbedded : comunidadeRoutes.home;
   const eventosHref = homeWithAba("eventos", embedded);
 
   const load = useCallback(async () => {
@@ -130,7 +135,7 @@ export function ComunidadeDocenteEventoDetailClient({ eventId }: { eventId: stri
       const data = await response.json();
       if (response.ok && data.ok) {
         showToast("Evento excluído.");
-        router.push(homeHref);
+        router.push(eventosHref);
       } else {
         showToast(data?.error?.message || "Não foi possível excluir.");
       }
@@ -166,7 +171,7 @@ export function ComunidadeDocenteEventoDetailClient({ eventId }: { eventId: stri
           <p className="text-sm font-semibold text-red-700">{error || "Evento não encontrado."}</p>
           <button
             type="button"
-            onClick={() => router.push(homeHref)}
+            onClick={() => router.push(eventosHref)}
             className="mt-3 rounded-xl bg-[#0F172A] px-4 py-2 text-xs font-bold text-white"
           >
             Voltar à comunidade
@@ -180,7 +185,7 @@ export function ComunidadeDocenteEventoDetailClient({ eventId }: { eventId: stri
     <ComunidadeDocenteDetailShell
       embedded={embedded}
       activeMenu="eventos"
-      breadcrumbs={[{ label: "Eventos", href: homeHref }]}
+      breadcrumbs={[{ label: "Eventos", href: eventosHref }]}
       title={event.title}
       subtitle={event.presenterName}
       actions={
@@ -237,8 +242,8 @@ export function ComunidadeDocenteEventoDetailClient({ eventId }: { eventId: stri
         </div>
       }
     >
-      <div className="flex gap-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="flex h-24 w-24 shrink-0 flex-col items-center justify-center rounded-2xl bg-cyan-50 text-cyan-700">
+      <div className="flex flex-col gap-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:flex-row sm:gap-6">
+        <div className="mx-auto flex h-20 w-20 shrink-0 flex-col items-center justify-center rounded-2xl bg-cyan-50 text-cyan-700 sm:mx-0 sm:h-24 sm:w-24">
           <span className="text-3xl font-extrabold leading-none">{event.day}</span>
           <span className="mt-1 text-xs font-bold uppercase">{event.month}</span>
         </div>
@@ -274,6 +279,45 @@ export function ComunidadeDocenteEventoDetailClient({ eventId }: { eventId: stri
           {event.description || "Detalhes em breve."}
         </p>
       </section>
+
+      {event.participantsGoing.length > 0 || event.participantsInterested.length > 0 ? (
+        <section className="grid gap-4 sm:grid-cols-2">
+          <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+            <h3 className="text-sm font-extrabold text-[#0F172A]">
+              Confirmados ({formatDocenteNumber(event.goingCount)})
+            </h3>
+            <ul className="mt-3 space-y-2">
+              {event.participantsGoing.map((p) => (
+                <li key={p.id}>
+                  <Link
+                    href={comunidadeRoutes.professor(p.id, embedded)}
+                    className="text-sm font-semibold text-cyan-700 hover:underline"
+                  >
+                    {p.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+            <h3 className="text-sm font-extrabold text-[#0F172A]">
+              Interessados ({formatDocenteNumber(event.interestedCount)})
+            </h3>
+            <ul className="mt-3 space-y-2">
+              {event.participantsInterested.map((p) => (
+                <li key={p.id}>
+                  <Link
+                    href={comunidadeRoutes.professor(p.id, embedded)}
+                    className="text-sm font-semibold text-cyan-700 hover:underline"
+                  >
+                    {p.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+      ) : null}
 
       {status ? (
         <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold shadow-xl">

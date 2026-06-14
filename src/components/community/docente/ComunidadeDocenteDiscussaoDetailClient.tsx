@@ -15,13 +15,20 @@ import {
   formatDocenteNumber,
   formatDocenteTimeAgo,
   getDisciplinaColor,
-  readEmbedded,
+  homeWithAba,
+  isComunidadeEmbedded,
 } from "@/lib/community/docente-utils";
 
-export function ComunidadeDocenteDiscussaoDetailClient({ postId }: { postId: string }) {
+export function ComunidadeDocenteDiscussaoDetailClient({
+  postId,
+  forceEmbedded,
+}: {
+  postId: string;
+  forceEmbedded?: boolean;
+}) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const embedded = readEmbedded(searchParams);
+  const embedded = isComunidadeEmbedded(searchParams, forceEmbedded);
   const commentAnchor = searchParams.get("comentario");
 
   const [discussion, setDiscussion] = useState<CommunityDiscussionDetail | null>(null);
@@ -88,6 +95,8 @@ export function ComunidadeDocenteDiscussaoDetailClient({ postId }: { postId: str
         setDiscussion((prev) =>
           prev ? { ...prev, likedByMe: data.liked, likesCount: data.likesCount } : prev,
         );
+      } else {
+        showToast(data?.error?.message || "Não foi possível curtir.");
       }
     } finally {
       setSubmitting(false);
@@ -224,7 +233,7 @@ export function ComunidadeDocenteDiscussaoDetailClient({ postId }: { postId: str
     }
   };
 
-  const homeHref = embedded ? comunidadeRoutes.homeEmbedded : comunidadeRoutes.home;
+  const homeHref = homeWithAba("discussoes", embedded);
 
   if (loading) {
     return (

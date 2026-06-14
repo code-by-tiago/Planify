@@ -282,10 +282,12 @@ export async function getBadgeProgressForUser(userId: string): Promise<BadgeProg
 export async function completeCommunityChallenge(params: {
   userId: string;
   challengeSlug: string;
+  reflection?: string | null;
 }): Promise<{ completed: boolean; newlyAwarded: string[] }> {
   const supabase = getSupabaseAdminClient();
   const slug = String(params.challengeSlug || "").trim();
   if (!slug) throw new Error("Desafio inválido.");
+  const reflection = params.reflection?.trim() || null;
 
   const { data: existing } = await supabase
     .from("community_user_challenges")
@@ -298,7 +300,14 @@ export async function completeCommunityChallenge(params: {
     const { error } = await supabase.from("community_user_challenges").insert({
       user_id: params.userId,
       challenge_slug: slug,
+      reflection,
     });
+    if (error) throw new Error(error.message);
+  } else if (reflection) {
+    const { error } = await supabase
+      .from("community_user_challenges")
+      .update({ reflection })
+      .eq("id", existing.id);
     if (error) throw new Error(error.message);
   }
 

@@ -10,14 +10,21 @@ import {
   comunidadeRoutes,
   formatDocenteNumber,
   formatDocenteTimeAgo,
-  readEmbedded,
+  homeWithAba,
+  isComunidadeEmbedded,
 } from "@/lib/community/docente-utils";
 
-export function ComunidadeDocenteProfessorDetailClient({ userId }: { userId: string }) {
+export function ComunidadeDocenteProfessorDetailClient({
+  userId,
+  forceEmbedded,
+}: {
+  userId: string;
+  forceEmbedded?: boolean;
+}) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const embedded = readEmbedded(searchParams);
-  const homeHref = embedded ? comunidadeRoutes.homeEmbedded : comunidadeRoutes.busca;
+  const embedded = isComunidadeEmbedded(searchParams, forceEmbedded);
+  const homeHref = homeWithAba("professores", embedded);
 
   const [teacher, setTeacher] = useState<CommunityTeacherDetail | null>(null);
   const [loading, setLoading] = useState(true);

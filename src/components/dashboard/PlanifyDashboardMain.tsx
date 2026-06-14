@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { ComunidadeDashboardRouter } from "@/components/community/docente/ComunidadeDashboardRouter";
 import TeachyStudioHome from "@/components/dashboard/TeachyStudioHome";
 import { TeachyMateriaisStudio } from "@/components/dashboard/TeachyMateriaisStudio";
 import type { DashboardSectionId } from "@/lib/pro/dashboardViews";
@@ -66,14 +67,6 @@ const HistoricoClient = dynamic(
 
 const BibliotecaClient = dynamic(
   () => import("@/app/biblioteca/BibliotecaClient").then((m) => m.default),
-  { ssr: false, loading: PanelLoading },
-);
-
-const ComunidadeDocenteClient = dynamic(
-  () =>
-    import("@/app/comunidade/ComunidadeDocenteClient").then(
-      (m) => m.ComunidadeDocenteClient,
-    ),
   { ssr: false, loading: PanelLoading },
 );
 
@@ -219,7 +212,7 @@ export function PlanifyDashboardMain({
   if (sectionId === "marketplace") {
     return (
       <SectionPanel>
-        <ComunidadeDocenteClient embedded />
+        <ComunidadeDashboardRouter />
       </SectionPanel>
     );
   }

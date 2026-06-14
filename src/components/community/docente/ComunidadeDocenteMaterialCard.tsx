@@ -17,10 +17,14 @@ import type { DocenteMaterial } from "@/lib/community/docente-types";
 
 type ComunidadeDocenteMaterialCardProps = {
   material: DocenteMaterial;
+  embedded?: boolean;
   onLike: (id: string) => void;
   onSave: (id: string) => void;
   onComment?: (id: string) => void;
   onDownload?: (id: string) => void;
+  onHide?: (id: string) => void;
+  onUnhide?: (id: string) => void;
+  isHidden?: boolean;
   downloading?: boolean;
 };
 
@@ -33,16 +37,23 @@ const FILE_LABELS: Record<DocenteMaterial["fileType"], string> = {
 
 export function ComunidadeDocenteMaterialCard({
   material,
+  embedded = false,
   onLike,
   onSave,
   onComment,
   onDownload,
+  onHide,
+  onUnhide,
+  isHidden = false,
   downloading = false,
 }: ComunidadeDocenteMaterialCardProps) {
   return (
     <Link
-      href={comunidadeRoutes.material(material.id)}
-      className="group flex w-[220px] shrink-0 flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg sm:w-[240px]"
+      href={comunidadeRoutes.material(material.id, embedded)}
+      className={[
+        "group flex w-[220px] shrink-0 snap-start flex-col overflow-hidden rounded-2xl border bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg sm:w-[240px]",
+        isHidden ? "border-amber-200/80 opacity-90" : "border-slate-200/80",
+      ].join(" ")}
     >
       <div className="relative h-36 overflow-hidden">
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -120,6 +131,34 @@ export function ComunidadeDocenteMaterialCard({
                 <IconDownload className="h-3.5 w-3.5" />
               </button>
             ) : null}
+            {onUnhide ? (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onUnhide(material.id);
+                }}
+                className="min-h-11 rounded-lg px-2 py-1.5 text-[10px] font-bold text-emerald-600 transition hover:bg-emerald-50"
+                aria-label="Restaurar no feed"
+              >
+                Restaurar
+              </button>
+            ) : null}
+            {onHide ? (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onHide(material.id);
+                }}
+                className="min-h-11 rounded-lg px-2 py-1.5 text-[10px] font-bold text-slate-400 transition hover:bg-slate-50 hover:text-slate-600"
+                aria-label="Ocultar do feed"
+              >
+                Ocultar
+              </button>
+            ) : null}
             <button
               type="button"
               onClick={(e) => {
@@ -128,7 +167,7 @@ export function ComunidadeDocenteMaterialCard({
                 onLike(material.id);
               }}
               className={[
-                "flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-bold transition",
+                "flex min-h-11 items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-bold transition",
                 material.likedByMe ? "text-rose-500" : "text-slate-400 hover:text-rose-500",
               ].join(" ")}
             >

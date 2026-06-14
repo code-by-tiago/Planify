@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { CommunityMessagesIcon } from "@/components/community/CommunityMessagesIcon";
 import { CommunityNotificationsIcon } from "@/components/community/CommunityNotificationsIcon";
 import { communityProfileHref } from "@/components/community/CommunityAuthorLink";
+import { useComunidadeEmbedded } from "@/hooks/useComunidadeEmbedded";
 import { PlanifyOwlMark } from "@/components/pro/PlanifyOwlMark";
 import {
   IconChevronDown,
@@ -36,6 +37,7 @@ export function ComunidadeDocenteTopBar({
   onOpenProfile,
   initialOpenMessages = false,
 }: ComunidadeDocenteTopBarProps) {
+  const embedded = useComunidadeEmbedded();
   const [profile, setProfile] = useState<ViewerProfile | null>(null);
 
   useEffect(() => {
@@ -134,7 +136,7 @@ export function ComunidadeDocenteTopBar({
             </button>
           ) : (
             <Link
-              href={communityProfileHref(profile.userId)}
+              href={communityProfileHref(profile.userId, embedded)}
               className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white py-1.5 pl-1.5 pr-3 transition hover:border-slate-300"
             >
               {profile.avatarUrl ? (

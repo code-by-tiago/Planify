@@ -6,7 +6,7 @@ import { useState } from "react";
 import { ComunidadeDocenteSidebar } from "@/components/community/docente/ComunidadeDocenteSidebar";
 import { ComunidadeDocenteTopBar } from "@/components/community/docente/ComunidadeDocenteTopBar";
 import { IconArrowRight } from "@/components/community/docente/docente-icons";
-import { comunidadeRoutes, homeWithAba, readEmbedded } from "@/lib/community/docente-utils";
+import { comunidadeRoutes, homeWithAba, readEmbedded, buscaHref } from "@/lib/community/docente-utils";
 import type { DocenteDisciplina, DocenteMenuItem } from "@/lib/community/docente-types";
 import { usePersistedSidebarCollapsed } from "@/hooks/usePersistedSidebarCollapsed";
 
@@ -48,7 +48,7 @@ export function ComunidadeDocenteDetailShell({
   const handleSearch = (value: string) => {
     setSearchQuery(value);
     if (value.trim().length >= 2) {
-      router.push(`${comunidadeRoutes.busca}?q=${encodeURIComponent(value.trim())}`);
+      router.push(buscaHref(value.trim(), isEmbedded));
     }
   };
 
@@ -82,11 +82,11 @@ export function ComunidadeDocenteDetailShell({
           onSelectItem={(item) => {
             setSidebarOpen(false);
             if (item === "desafios") {
-              router.push(comunidadeRoutes.desafios);
+              router.push(isEmbedded ? comunidadeRoutes.desafiosEmbedded : comunidadeRoutes.desafios);
               return;
             }
             if (item === "professores") {
-              router.push(comunidadeRoutes.busca);
+              router.push(isEmbedded ? comunidadeRoutes.buscaEmbedded : comunidadeRoutes.busca);
               return;
             }
             router.push(homeWithAba(item, isEmbedded));

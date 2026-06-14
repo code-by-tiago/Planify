@@ -98,6 +98,93 @@ export function readEmbedded(searchParams: { get(name: string): string | null })
   return searchParams.get("embedded") === "1";
 }
 
+export function isComunidadeEmbedded(
+  searchParams: { get(name: string): string | null },
+  forceEmbedded?: boolean,
+): boolean {
+  return Boolean(forceEmbedded) || readEmbedded(searchParams);
+}
+
+export function isComunidadeDashboardEmbed(
+  pathname: string,
+  searchParams: { get(name: string): string | null },
+): boolean {
+  return pathname === "/dashboard" && searchParams.get("secao") === "marketplace";
+}
+
+export function resolveComunidadeEmbedFromLocation(
+  pathname: string,
+  searchParams: { get(name: string): string | null },
+  forceEmbedded?: boolean,
+): boolean {
+  return (
+    Boolean(forceEmbedded) ||
+    isComunidadeDashboardEmbed(pathname, searchParams) ||
+    readEmbedded(searchParams)
+  );
+}
+
+export function buscaHref(query: string, embedded?: boolean): string {
+  const base = embedded ? comunidadeRoutes.buscaEmbedded : comunidadeRoutes.busca;
+  const trimmed = query.trim();
+  if (!trimmed) return base;
+  const separator = base.includes("?") ? "&" : "?";
+  return `${base}${separator}q=${encodeURIComponent(trimmed)}`;
+}
+
+export function mapComunidadeHrefToEmbed(href: string): string {
+  if (!href.startsWith("/comunidade")) return href;
+
+  const discussao = href.match(/^\/comunidade\/discussao\/([^/?#]+)/);
+  if (discussao) return comunidadeRoutes.discussao(discussao[1], true);
+
+  const grupo = href.match(/^\/comunidade\/grupo\/([^/?#]+)/);
+  if (grupo) return comunidadeRoutes.grupo(grupo[1], true);
+
+  const professor = href.match(/^\/comunidade\/professor\/([^/?#]+)/);
+  if (professor) return comunidadeRoutes.professor(professor[1], true);
+
+  const evento = href.match(/^\/comunidade\/evento\/([^/?#]+)/);
+  if (evento) return comunidadeRoutes.evento(evento[1], true);
+
+  const material = href.match(/^\/comunidade\/material\/([^/?#]+)/);
+  if (material) return comunidadeRoutes.material(material[1], true);
+
+  if (href.startsWith("/comunidade/busca")) {
+    try {
+      const url = new URL(href, "https://planify.local");
+      return buscaHref(url.searchParams.get("q") || "", true);
+    } catch {
+      return comunidadeRoutes.buscaEmbedded;
+    }
+  }
+
+  if (href === "/comunidade/desafios" || href.startsWith("/comunidade/desafios?")) {
+    return comunidadeRoutes.desafiosEmbedded;
+  }
+
+  if (href === "/comunidade" || href.startsWith("/comunidade?")) {
+    try {
+      const url = new URL(href, "https://planify.local");
+      const aba = parseDocenteMenuItem(url.searchParams.get("aba"));
+      return aba ? homeWithAba(aba, true) : comunidadeRoutes.homeEmbedded;
+    } catch {
+      return comunidadeRoutes.homeEmbedded;
+    }
+  }
+
+  return href;
+}
+
+export function resolveComunidadeNavigationHref(
+  href: string,
+  pathname: string,
+  searchParams: { get(name: string): string | null },
+): string {
+  if (!resolveComunidadeEmbedFromLocation(pathname, searchParams)) return href;
+  return mapComunidadeHrefToEmbed(href);
+}
+
 function withEmbedded(path: string, embedded?: boolean) {
   if (!embedded) return path;
   const separator = path.includes("?") ? "&" : "?";
@@ -105,8 +192,8 @@ function withEmbedded(path: string, embedded?: boolean) {
 }
 
 export function homeWithAba(aba: DocenteMenuItem, embedded?: boolean): string {
-  if (aba === "desafios") return comunidadeRoutes.desafios;
-  if (aba === "professores") return comunidadeRoutes.busca;
+  if (aba === "desafios") return embedded ? comunidadeRoutes.desafiosEmbedded : comunidadeRoutes.desafios;
+  if (aba === "professores") return embedded ? comunidadeRoutes.buscaEmbedded : comunidadeRoutes.busca;
   if (embedded) {
     return aba === "inicio"
       ? comunidadeRoutes.homeEmbedded
@@ -119,9 +206,13 @@ export type DocenteOverviewFilters = {
   search?: string;
   disciplina?: string | null;
   componente?: string | null;
+  etapa?: string | null;
+  tipoMaterial?: string | null;
+  tag?: string | null;
   mineOnly?: boolean;
   friendsOnly?: boolean;
   savedOnly?: boolean;
+  hiddenOnly?: boolean;
 };
 
 export function buildOverviewQueryParams(filters: DocenteOverviewFilters): string {
@@ -129,25 +220,39 @@ export function buildOverviewQueryParams(filters: DocenteOverviewFilters): strin
   if (filters.search?.trim()) params.set("q", filters.search.trim());
   if (filters.disciplina) params.set("disciplina", filters.disciplina);
   if (filters.componente) params.set("componente", filters.componente);
+  if (filters.etapa) params.set("etapa", filters.etapa);
+  if (filters.tipoMaterial) params.set("tipoMaterial", filters.tipoMaterial);
+  if (filters.tag) params.set("tag", filters.tag);
   if (filters.mineOnly) params.set("mine", "true");
   if (filters.friendsOnly) params.set("friendsOnly", "true");
   if (filters.savedOnly) params.set("saved", "true");
+  if (filters.hiddenOnly) params.set("hiddenOnly", "true");
   const qs = params.toString();
   return qs ? `?${qs}` : "";
+}
+
+function dashboardView(view: string, id?: string) {
+  const params = new URLSearchParams({ secao: "marketplace", comunidadeView: view });
+  if (id) params.set("comunidadeId", id);
+  return `/dashboard?${params.toString()}`;
 }
 
 export const comunidadeRoutes = {
   home: "/comunidade",
   homeEmbedded: "/dashboard?secao=marketplace",
   discussao: (id: string, embedded?: boolean) =>
-    withEmbedded(`/comunidade/discussao/${id}`, embedded),
-  grupo: (id: string, embedded?: boolean) => withEmbedded(`/comunidade/grupo/${id}`, embedded),
+    embedded ? dashboardView("discussao", id) : `/comunidade/discussao/${id}`,
+  grupo: (id: string, embedded?: boolean) =>
+    embedded ? dashboardView("grupo", id) : `/comunidade/grupo/${id}`,
   professor: (id: string, embedded?: boolean) =>
-    withEmbedded(`/comunidade/professor/${id}`, embedded),
-  evento: (id: string, embedded?: boolean) => withEmbedded(`/comunidade/evento/${id}`, embedded),
+    embedded ? dashboardView("professor", id) : `/comunidade/professor/${id}`,
+  evento: (id: string, embedded?: boolean) =>
+    embedded ? dashboardView("evento", id) : `/comunidade/evento/${id}`,
   material: (id: string, embedded?: boolean) =>
-    withEmbedded(`/comunidade/material/${id}`, embedded),
+    embedded ? dashboardView("material", id) : `/comunidade/material/${id}`,
   desafios: "/comunidade/desafios",
+  desafiosEmbedded: dashboardView("desafios"),
   busca: "/comunidade/busca",
+  buscaEmbedded: dashboardView("busca"),
   messages: "/dashboard?secao=marketplace&painel=mensagens",
 };

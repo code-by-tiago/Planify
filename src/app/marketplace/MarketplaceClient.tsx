@@ -11,10 +11,12 @@ import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
 import { PlanifyPageHero } from "@/components/pro/PlanifyPageHero";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import {
-  clearHiddenFeedMaterials,
+  fetchHiddenFeedMaterialIds,
   getHiddenFeedMaterialIds,
-  hideFeedMaterial,
-  unhideFeedMaterial,
+  hideFeedMaterialOnServer,
+  migrateLocalHiddenFeedMaterialsToServer,
+  setHiddenFeedMaterialIds,
+  unhideFeedMaterialOnServer,
 } from "@/lib/community/hidden-feed-materials";
 import {
   downloadMarketplaceMaterial,
@@ -210,6 +212,13 @@ export function MarketplaceClient() {
   }
 
   useEffect(() => {
+    void migrateLocalHiddenFeedMaterialsToServer();
+    void fetchHiddenFeedMaterialIds().then(() => {
+      setHiddenFeedRevision((value) => value + 1);
+    });
+  }, []);
+
+  useEffect(() => {
     loadItems(mineOnly);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [componenteFilter, etapaFilter, tipoFilter, tagFilter, friendsOnly, savedOnly, mineOnly]);
@@ -336,15 +345,27 @@ export function MarketplaceClient() {
   }
 
   function hideItemFromFeed(item: MarketplaceItem) {
-    hideFeedMaterial(item.id);
-    setHiddenFeedRevision((value) => value + 1);
-    setStatus(`"${item.title}" oculto do seu feed.`);
+    void (async () => {
+      try {
+        await hideFeedMaterialOnServer(item.id);
+        setHiddenFeedRevision((value) => value + 1);
+        setStatus(`"${item.title}" oculto do seu feed.`);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Não foi possível ocultar o material.");
+      }
+    })();
   }
 
   function restoreItemToFeed(item: MarketplaceItem) {
-    unhideFeedMaterial(item.id);
-    setHiddenFeedRevision((value) => value + 1);
-    setStatus(`"${item.title}" voltou a aparecer no feed.`);
+    void (async () => {
+      try {
+        await unhideFeedMaterialOnServer(item.id);
+        setHiddenFeedRevision((value) => value + 1);
+        setStatus(`"${item.title}" voltou a aparecer no feed.`);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Não foi possível restaurar o material.");
+      }
+    })();
   }
 
   async function removeItem(item: MarketplaceItem) {
@@ -711,9 +732,11 @@ export function MarketplaceClient() {
                     "Restaurar todos os materiais ocultos no feed?",
                   );
                   if (!confirmed) return;
-                  clearHiddenFeedMaterials();
+                  const ids = [...hiddenFeedIds];
+                  setHiddenFeedMaterialIds([]);
                   setHiddenFeedRevision((value) => value + 1);
                   setShowHiddenFeed(false);
+                  void Promise.all(ids.map((id) => unhideFeedMaterialOnServer(id).catch(() => {})));
                   setStatus("Feed restaurado — materiais ocultos voltaram a aparecer.");
                 }}
                 className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-600"

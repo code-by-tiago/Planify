@@ -9,6 +9,10 @@ type ComunidadeDocenteMaterialsProps = {
   onSave: (id: string) => void;
   onComment?: (id: string) => void;
   onDownload?: (id: string) => void;
+  onHideMaterial?: (id: string) => void;
+  onUnhideMaterial?: (id: string) => void;
+  showHidden?: boolean;
+  embedded?: boolean;
   downloadingMaterialId?: string | null;
   onShowAll?: () => void;
   onCreateMaterial?: () => void;
@@ -20,6 +24,10 @@ export function ComunidadeDocenteMaterials({
   onSave,
   onComment,
   onDownload,
+  onHideMaterial,
+  onUnhideMaterial,
+  showHidden = false,
+  embedded = false,
   downloadingMaterialId,
   onShowAll,
   onCreateMaterial,
@@ -39,7 +47,7 @@ export function ComunidadeDocenteMaterials({
         </button>
       </div>
 
-      <div className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-2 scrollbar-thin">
+      <div className="-mx-1 flex snap-x snap-mandatory gap-3 overflow-x-auto px-1 pb-2 scrollbar-thin">
         {materials.length === 0 ? (
           <div className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-8 text-center">
             <p className="text-sm text-slate-500">Nenhum material publicado ainda.</p>
@@ -58,10 +66,14 @@ export function ComunidadeDocenteMaterials({
             <ComunidadeDocenteMaterialCard
               key={material.id}
               material={material}
+              embedded={embedded}
               onLike={onLike}
               onSave={onSave}
               onComment={onComment}
               onDownload={onDownload}
+              onHide={showHidden ? undefined : onHideMaterial}
+              onUnhide={showHidden ? onUnhideMaterial : undefined}
+              isHidden={showHidden}
               downloading={downloadingMaterialId === material.id}
             />
           ))

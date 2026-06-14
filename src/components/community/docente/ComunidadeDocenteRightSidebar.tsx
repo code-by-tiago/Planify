@@ -2,6 +2,7 @@
 
 import { CommunityAuthorAvatar } from "@/components/community/CommunityAuthorAvatar";
 import { communityProfileHref } from "@/components/community/CommunityAuthorLink";
+import { useComunidadeEmbedded } from "@/hooks/useComunidadeEmbedded";
 import Link from "next/link";
 import type { DocenteAuthor, DocenteEvent, DocenteMenuItem, DocenteRecentPublication } from "@/lib/community/docente-types";
 import {
@@ -30,6 +31,8 @@ export function ComunidadeDocenteRightSidebar({
   onCreatePost,
   onOpenEvent,
 }: ComunidadeDocenteRightSidebarProps) {
+  const embedded = useComunidadeEmbedded();
+
   return (
     <aside className="flex w-full shrink-0 flex-col gap-5 lg:w-[300px]">
       <section className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
@@ -138,7 +141,7 @@ export function ComunidadeDocenteRightSidebar({
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <Link
-                    href={communityProfileHref(teacher.id)}
+                    href={communityProfileHref(teacher.id, embedded)}
                     className="text-sm font-bold text-[#0F172A] hover:text-cyan-700"
                   >
                     {teacher.name}

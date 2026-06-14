@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { CommunityAuthorAvatar } from "@/components/community/CommunityAuthorAvatar";
 import { ComunidadeDocenteDetailShell } from "@/components/community/docente/ComunidadeDocenteDetailShell";
-import { DOCENTE_DISCIPLINAS, comunidadeRoutes } from "@/lib/community/docente-utils";
+import { DOCENTE_DISCIPLINAS, buscaHref, comunidadeRoutes, homeWithAba } from "@/lib/community/docente-utils";
 
 type SearchResult = {
   userId: string;
@@ -17,8 +17,9 @@ type SearchResult = {
   materialsCount: number;
 };
 
-export function ComunidadeDocenteBuscaClient() {
+export function ComunidadeDocenteBuscaClient({ forceEmbedded }: { forceEmbedded?: boolean } = {}) {
   const router = useRouter();
+  const embedded = Boolean(forceEmbedded);
   const searchParams = useSearchParams();
   const initialQuery = searchParams.get("q") || "";
 
@@ -27,13 +28,16 @@ export function ComunidadeDocenteBuscaClient() {
   const [component, setComponent] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const search = useCallback(async (q: string, s: string, c: string) => {
     if (q.trim().length < 2 && !s.trim() && !c) {
       setResults([]);
+      setError("");
       return;
     }
     setLoading(true);
+    setError("");
     try {
       const params = new URLSearchParams();
       if (q.trim()) params.set("q", q.trim());
@@ -44,9 +48,13 @@ export function ComunidadeDocenteBuscaClient() {
         cache: "no-store",
       });
       const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data?.error?.message || "Não foi possível buscar professores.");
+      }
       setResults(data.profiles || []);
-    } catch {
+    } catch (err) {
       setResults([]);
+      setError(err instanceof Error ? err.message : "Erro ao buscar professores.");
     } finally {
       setLoading(false);
     }
@@ -60,8 +68,9 @@ export function ComunidadeDocenteBuscaClient() {
 
   return (
     <ComunidadeDocenteDetailShell
+      embedded={embedded}
       activeMenu="professores"
-      breadcrumbs={[]}
+      breadcrumbs={[{ label: "Professores", href: homeWithAba("professores", embedded) }]}
       title="Buscar professores"
       subtitle="Encontre colegas por nome, escola ou componente curricular."
     >
@@ -98,17 +107,28 @@ export function ComunidadeDocenteBuscaClient() {
           type="button"
           onClick={() => {
             const q = query.trim();
-            if (q) router.replace(`${comunidadeRoutes.busca}?q=${encodeURIComponent(q)}`);
+            if (q) router.replace(buscaHref(q, embedded));
             void search(query, school, component);
           }}
-          className="mt-4 rounded-xl bg-[#0F172A] px-5 py-2.5 text-xs font-bold text-white hover:bg-slate-800"
+          className="mt-4 min-h-11 rounded-xl bg-[#0F172A] px-5 py-2.5 text-xs font-bold text-white hover:bg-slate-800"
         >
           Buscar
         </button>
       </section>
 
       <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-        {loading ? (
+        {error ? (
+          <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-center">
+            <p className="text-sm font-semibold text-red-700">{error}</p>
+            <button
+              type="button"
+              onClick={() => void search(query, school, component)}
+              className="mt-3 min-h-11 rounded-xl bg-[#0F172A] px-4 py-2 text-xs font-bold text-white"
+            >
+              Tentar novamente
+            </button>
+          </div>
+        ) : loading ? (
           <div className="flex min-h-[120px] items-center justify-center">
             <span className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-cyan-200 border-t-cyan-500" />
           </div>
@@ -122,13 +142,14 @@ export function ComunidadeDocenteBuscaClient() {
             {results.map((teacher) => (
               <li key={teacher.userId}>
                 <Link
-                  href={comunidadeRoutes.professor(teacher.userId)}
+                  href={comunidadeRoutes.professor(teacher.userId, embedded)}
                   className="flex items-start gap-3 rounded-2xl border border-slate-100 p-4 transition hover:border-cyan-200 hover:bg-cyan-50/20"
                 >
                   <CommunityAuthorAvatar
                     userId={teacher.userId}
                     name={teacher.displayName}
                     avatarUrl={teacher.avatarUrl}
+                    embedded={embedded}
                   />
                   <div className="min-w-0">
                     <p className="font-bold text-[#0F172A]">{teacher.displayName}</p>

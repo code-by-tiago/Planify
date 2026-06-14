@@ -20,11 +20,16 @@ export async function GET(request: NextRequest) {
   const search = request.nextUrl.searchParams.get("q") || "";
   const disciplina = request.nextUrl.searchParams.get("disciplina") || "";
   const componente = request.nextUrl.searchParams.get("componente") || "";
+  const etapa = request.nextUrl.searchParams.get("etapa") || "";
+  const tipoMaterial = request.nextUrl.searchParams.get("tipoMaterial") || "";
+  const tag = request.nextUrl.searchParams.get("tag") || "";
   const mineOnly = request.nextUrl.searchParams.get("mine") === "true";
   const friendsOnly = request.nextUrl.searchParams.get("friendsOnly") === "true";
   const savedOnly = request.nextUrl.searchParams.get("saved") === "true";
   const token = getRequestAccessToken(request);
   const adminAccess = await resolveAdminAccess(token);
+
+  const hiddenOnly = request.nextUrl.searchParams.get("hiddenOnly") === "true";
 
   try {
     const overview = await getCommunityDocenteOverview({
@@ -32,9 +37,13 @@ export async function GET(request: NextRequest) {
       search,
       disciplina: disciplina || null,
       componente: componente || null,
+      etapa: etapa || null,
+      tipoMaterial: tipoMaterial || null,
+      tag: tag || null,
       mineOnly,
       friendsOnly,
       savedOnly,
+      hiddenFeedMode: hiddenOnly ? "only" : "exclude",
       isAdmin: adminAccess.isAdmin,
     });
     const savedDiscussions = access.access.user?.id

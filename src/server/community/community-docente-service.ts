@@ -12,6 +12,7 @@ import {
 } from "./marketplace-social-service";
 import { listSavedMaterialIds } from "./community-saved-materials-service";
 import { listSavedPostIds } from "./community-saved-posts-service";
+import { listHiddenFeedMaterialIds } from "./community-hidden-feed-materials-service";
 import {
   formatEventMonth,
   formatEventDateTime,
@@ -78,6 +79,9 @@ type MarketplaceRow = {
   description: string | null;
   componente: string | null;
   ano_serie: string | null;
+  etapa: string | null;
+  tipo_material: string | null;
+  tags: string[] | null;
   file_mime: string | null;
   downloads_count: number | null;
   created_at: string | null;
@@ -132,43 +136,102 @@ export type CommunityDocenteOverview = {
   groups: GroupRow[];
   badges: BadgeRow[];
   badgeProgress: BadgeProgress[];
+  hiddenMaterialIds: string[];
   isAdmin: boolean;
   featuredTeacher: DocenteAuthor | null;
   teachers: DocenteAuthor[];
 };
 
+async function resolveAuthorStatsBatch(userIds: string[]): Promise<
+  Map<
+    string,
+    {
+      reputation: number;
+      bio: string;
+      materialsCount: number;
+      followersCount: number;
+    }
+  >
+> {
+  const unique = [...new Set(userIds.filter(Boolean))];
+  const stats = new Map<
+    string,
+    { reputation: number; bio: string; materialsCount: number; followersCount: number }
+  >();
+  if (!unique.length) return stats;
+
+  const supabase = getSupabaseAdminClient();
+  const [{ data: profiles }, { data: materials }, { data: followers }] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("id,community_reputation,bio")
+      .in("id", unique),
+    supabase
+      .from("marketplace_materials")
+      .select("user_id")
+      .in("user_id", unique)
+      .eq("is_published", true),
+    supabase.from("community_followers").select("following_id").in("following_id", unique),
+  ]);
+
+  for (const id of unique) {
+    stats.set(id, { reputation: 0, bio: "", materialsCount: 0, followersCount: 0 });
+  }
+
+  for (const row of profiles || []) {
+    const id = row.id as string;
+    const entry = stats.get(id);
+    if (entry) {
+      entry.reputation = Number(row.community_reputation || 0);
+      entry.bio = String(row.bio || "");
+    }
+  }
+
+  for (const row of materials || []) {
+    const id = row.user_id as string;
+    const entry = stats.get(id);
+    if (entry) entry.materialsCount += 1;
+  }
+
+  for (const row of followers || []) {
+    const id = row.following_id as string;
+    const entry = stats.get(id);
+    if (entry) entry.followersCount += 1;
+  }
+
+  return stats;
+}
+
 async function buildAuthor(
   userId: string,
   authorMap: Map<string, { userId: string; displayName: string; avatarUrl: string | null }>,
   fallbackName?: string | null,
+  statsCache?: Map<
+    string,
+    { reputation: number; bio: string; materialsCount: number; followersCount: number }
+  >,
 ): Promise<DocenteAuthor> {
   const summary = authorMap.get(userId);
-  const supabase = getSupabaseAdminClient();
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("community_reputation, bio")
-    .eq("id", userId)
-    .maybeSingle();
+  let stats = statsCache?.get(userId);
 
-  const { count: materialsCount } = await supabase
-    .from("marketplace_materials")
-    .select("id", { count: "exact", head: true })
-    .eq("user_id", userId)
-    .eq("is_published", true);
-
-  const { count: followersCount } = await supabase
-    .from("community_followers")
-    .select("id", { count: "exact", head: true })
-    .eq("following_id", userId);
+  if (!stats) {
+    const batch = await resolveAuthorStatsBatch([userId]);
+    stats = batch.get(userId) || {
+      reputation: 0,
+      bio: "",
+      materialsCount: 0,
+      followersCount: 0,
+    };
+  }
 
   return {
     id: userId,
     name: summary?.displayName || fallbackName || "Professor(a)",
     avatarUrl: summary?.avatarUrl || null,
-    specialty: String(profile?.bio || "Educador(a) Planify").slice(0, 80),
-    materialsCount: materialsCount || 0,
-    followersCount: followersCount || 0,
-    reputation: Number(profile?.community_reputation || 0),
+    specialty: String(stats.bio || "Educador(a) Planify").slice(0, 80),
+    materialsCount: stats.materialsCount,
+    followersCount: stats.followersCount,
+    reputation: stats.reputation,
     badges: [],
     isFollowing: false,
   };
@@ -182,12 +245,26 @@ export async function getCommunityDocenteOverview(params: {
   mineOnly?: boolean;
   friendsOnly?: boolean;
   savedOnly?: boolean;
+  etapa?: string | null;
+  tipoMaterial?: string | null;
+  tag?: string | null;
+  hiddenFeedMode?: "exclude" | "only";
   isAdmin?: boolean;
 }): Promise<CommunityDocenteOverview> {
   const supabase = getSupabaseAdminClient();
   const search = String(params.search || "").trim().toLowerCase();
   const disciplinaFilter = String(params.disciplina || "").trim();
   const componenteFilter = String(params.componente || "").trim();
+  const etapaFilter = String(params.etapa || "").trim();
+  const tipoMaterialFilter = String(params.tipoMaterial || "").trim();
+  const tagFilter = String(params.tag || "").trim().toLowerCase();
+  const hiddenFeedMode = params.hiddenFeedMode || "exclude";
+
+  let hiddenMaterialIds = new Set<string>();
+  if (params.viewerUserId) {
+    const hiddenIds = await listHiddenFeedMaterialIds(params.viewerUserId);
+    hiddenMaterialIds = new Set(hiddenIds);
+  }
 
   let postsQuery = supabase
     .from("community_posts")
@@ -206,7 +283,7 @@ export async function getCommunityDocenteOverview(params: {
   let materialsQuery = supabase
     .from("marketplace_materials")
     .select(
-      "id,user_id,author_name,title,description,componente,ano_serie,file_mime,downloads_count,created_at",
+      "id,user_id,author_name,title,description,componente,ano_serie,etapa,tipo_material,tags,file_mime,downloads_count,created_at",
     )
     .eq("is_published", true)
     .order("downloads_count", { ascending: false })
@@ -219,6 +296,24 @@ export async function getCommunityDocenteOverview(params: {
     materialsQuery = materialsQuery.ilike("componente", `%${componenteFilter}%`);
   } else if (disciplinaFilter) {
     materialsQuery = materialsQuery.ilike("componente", `%${disciplinaFilter}%`);
+  }
+  if (etapaFilter) {
+    materialsQuery = materialsQuery.eq("etapa", etapaFilter);
+  }
+  if (tipoMaterialFilter) {
+    materialsQuery = materialsQuery.ilike("tipo_material", `%${tipoMaterialFilter}%`);
+  }
+
+  if (params.viewerUserId) {
+    const hiddenList = [...hiddenMaterialIds];
+    if (hiddenFeedMode === "only") {
+      materialsQuery = materialsQuery.in(
+        "id",
+        hiddenList.length > 0 ? hiddenList : ["00000000-0000-0000-0000-000000000000"],
+      );
+    } else if (hiddenList.length > 0) {
+      materialsQuery = materialsQuery.not("id", "in", `(${hiddenList.join(",")})`);
+    }
   }
 
   const [
@@ -319,7 +414,8 @@ export async function getCommunityDocenteOverview(params: {
   let badgeProgress: BadgeProgress[] = [];
 
   if (params.viewerUserId) {
-    const [likes, matLikes, savedIds, savedPosts, following, groupMemberships] = await Promise.all([
+    const [likes, matLikes, savedIds, savedPosts, following, groupMemberships] =
+      await Promise.all([
       supabase
         .from("community_likes")
         .select("post_id")
@@ -367,10 +463,29 @@ export async function getCommunityDocenteOverview(params: {
     feedMaterials = feedMaterials.filter((row) => savedMaterialIds.has(row.id));
   }
 
+  if (tagFilter) {
+    feedMaterials = feedMaterials.filter((row) => {
+      const tags = Array.isArray(row.tags) ? row.tags : [];
+      const hay = `${row.title} ${row.description || ""} ${tags.join(" ")}`.toLowerCase();
+      return hay.includes(tagFilter);
+    });
+    feedPosts = feedPosts.filter((post) => {
+      const tags = post.tags || [];
+      const hay = `${post.title} ${post.body || ""} ${tags.join(" ")}`.toLowerCase();
+      return hay.includes(tagFilter);
+    });
+  }
+
+  const allAuthorIds = [
+    ...feedPosts.map((p) => p.author_id),
+    ...feedMaterials.map((m) => m.user_id).filter(Boolean) as string[],
+  ];
+  const authorStatsCache = await resolveAuthorStatsBatch(allAuthorIds);
+
   const discussionsFromPosts: DocenteDiscussion[] = await Promise.all(
     feedPosts.map(async (post) => ({
       id: post.id,
-      author: await buildAuthor(post.author_id, authorMap),
+      author: await buildAuthor(post.author_id, authorMap, undefined, authorStatsCache),
       title: post.title,
       disciplina: asDisciplina(post.disciplina),
       tags: post.tags || [],
@@ -398,7 +513,7 @@ export async function getCommunityDocenteOverview(params: {
       const likes = likesSummary.get(row.id);
       return {
         id: `mat-disc-${row.id}`,
-        author: await buildAuthor(userId, authorMap, row.author_name),
+        author: await buildAuthor(userId, authorMap, row.author_name, authorStatsCache),
         title: row.title,
         disciplina: asDisciplina(row.componente),
         tags: [],
@@ -428,7 +543,7 @@ export async function getCommunityDocenteOverview(params: {
         title: row.title,
         disciplina: asDisciplina(row.componente),
         anoSerie: row.ano_serie || "Geral",
-        author: await buildAuthor(userId, authorMap, row.author_name),
+        author: await buildAuthor(userId, authorMap, row.author_name, authorStatsCache),
         coverUrl: coverForComponente(row.componente || "Ciências"),
         viewsCount: row.downloads_count || 0,
         likesCount: likes?.likesCount || 0,
@@ -459,7 +574,7 @@ export async function getCommunityDocenteOverview(params: {
   if (recentPublications.length === 0 && feedPosts.length > 0) {
     recentPublications = await Promise.all(
       feedPosts.slice(0, 4).map(async (post) => {
-        const author = await buildAuthor(post.author_id, authorMap);
+        const author = await buildAuthor(post.author_id, authorMap, undefined, authorStatsCache);
         return {
           id: post.id,
           title: post.title,
@@ -501,9 +616,10 @@ export async function getCommunityDocenteOverview(params: {
   const teacherIds = (profileTeachers || []).map((p) => p.id as string);
   const teacherAuthorMap = await resolveCommunityAuthors(teacherIds);
 
+  const teacherStatsCache = await resolveAuthorStatsBatch(teacherIds);
   const teachers: DocenteAuthor[] = await Promise.all(
     (profileTeachers || []).map(async (p) => {
-      const author = await buildAuthor(p.id as string, teacherAuthorMap, p.full_name);
+      const author = await buildAuthor(p.id as string, teacherAuthorMap, p.full_name, teacherStatsCache);
       author.specialty = String(p.bio || author.specialty).slice(0, 80);
       author.reputation = Number(p.community_reputation || 0);
       if (params.viewerUserId) {
@@ -517,11 +633,11 @@ export async function getCommunityDocenteOverview(params: {
   let featuredTeacher: DocenteAuthor | null = null;
 
   if (topTeacherId) {
-    featuredTeacher = await buildAuthor(topTeacherId, authorMap, marketplaceRows[0]?.author_name);
+    featuredTeacher = await buildAuthor(topTeacherId, authorMap, marketplaceRows[0]?.author_name, authorStatsCache);
   } else if (teachers.length > 0) {
     featuredTeacher = { ...teachers[0] };
   } else if (params.viewerUserId) {
-    featuredTeacher = await buildAuthor(params.viewerUserId, authorMap);
+    featuredTeacher = await buildAuthor(params.viewerUserId, authorMap, undefined, authorStatsCache);
   }
 
   if (featuredTeacher && params.viewerUserId) {
@@ -542,6 +658,7 @@ export async function getCommunityDocenteOverview(params: {
     groups,
     badges,
     badgeProgress,
+    hiddenMaterialIds: [...hiddenMaterialIds],
     isAdmin: Boolean(params.isAdmin),
     featuredTeacher,
     teachers,
@@ -899,13 +1016,29 @@ export async function leaveCommunityGroup(params: {
   }
 
   if (group.owner_id === params.userId) {
-    const { count: memberCount } = await supabase
+    const { data: otherMembers } = await supabase
       .from("community_group_members")
-      .select("id", { count: "exact", head: true })
-      .eq("group_id", params.groupId);
+      .select("user_id,joined_at")
+      .eq("group_id", params.groupId)
+      .neq("user_id", params.userId)
+      .order("joined_at", { ascending: true })
+      .limit(1);
 
-    if ((memberCount || 0) > 1) {
-      throw new Error("Como dono(a) do grupo, transfira a liderança antes de sair.");
+    if (otherMembers?.length) {
+      const nextOwnerId = otherMembers[0].user_id as string;
+      await supabase
+        .from("community_groups")
+        .update({ owner_id: nextOwnerId })
+        .eq("id", params.groupId);
+      await createCommunityNotification({
+        userId: nextOwnerId,
+        type: "message",
+        actorUserId: params.userId,
+        bodyPreview: `Você agora é o(a) responsável pelo grupo.`,
+        targetType: "group",
+        targetId: params.groupId,
+        href: `/comunidade/grupo/${params.groupId}`,
+      });
     }
   }
 
@@ -922,6 +1055,49 @@ export async function leaveCommunityGroup(params: {
     .eq("id", params.groupId);
 
   return { left: true, membersCount: nextCount };
+}
+
+export async function transferCommunityGroupOwnership(params: {
+  ownerId: string;
+  groupId: string;
+  newOwnerId: string;
+}) {
+  const supabase = getSupabaseAdminClient();
+  const { data: group } = await supabase
+    .from("community_groups")
+    .select("id,owner_id,name")
+    .eq("id", params.groupId)
+    .maybeSingle();
+
+  if (!group || group.owner_id !== params.ownerId) {
+    throw new Error("Apenas o(a) responsável atual pode transferir a liderança.");
+  }
+
+  const { data: membership } = await supabase
+    .from("community_group_members")
+    .select("id")
+    .eq("group_id", params.groupId)
+    .eq("user_id", params.newOwnerId)
+    .maybeSingle();
+
+  if (!membership) {
+    throw new Error("O novo responsável precisa ser membro do grupo.");
+  }
+
+  await supabase
+    .from("community_groups")
+    .update({ owner_id: params.newOwnerId })
+    .eq("id", params.groupId);
+
+  await createCommunityNotification({
+    userId: params.newOwnerId,
+    type: "message",
+    actorUserId: params.ownerId,
+    bodyPreview: `Você foi definido(a) como responsável do grupo "${group.name}".`,
+    targetType: "group",
+    targetId: params.groupId,
+    href: `/comunidade/grupo/${params.groupId}`,
+  });
 }
 
 export async function createCommunityEvent(params: {
@@ -1042,6 +1218,8 @@ export type CommunityEventDetail = {
   userRsvpStatus: "going" | "interested" | null;
   isHost: boolean;
   isAdmin?: boolean;
+  participantsGoing: DocenteAuthor[];
+  participantsInterested: DocenteAuthor[];
 };
 
 export type CommunityTeacherDetail = {
@@ -1302,6 +1480,17 @@ export async function getCommunityEventDetail(params: {
     }
   }
 
+  const goingIds = rows.filter((r) => r.status === "going").map((r) => r.user_id);
+  const interestedIds = rows.filter((r) => r.status === "interested").map((r) => r.user_id);
+  const participantAuthorMap = await resolveCommunityAuthors([...goingIds, ...interestedIds]);
+  const participantStats = await resolveAuthorStatsBatch([...goingIds, ...interestedIds]);
+  const participantsGoing = await Promise.all(
+    goingIds.map((userId) => buildAuthor(userId, participantAuthorMap, undefined, participantStats)),
+  );
+  const participantsInterested = await Promise.all(
+    interestedIds.map((userId) => buildAuthor(userId, participantAuthorMap, undefined, participantStats)),
+  );
+
   return {
     id: event.id as string,
     title: event.title as string,
@@ -1320,6 +1509,8 @@ export async function getCommunityEventDetail(params: {
     userRsvpStatus,
     isHost: params.viewerUserId === event.host_id,
     isAdmin: Boolean(params.isAdmin),
+    participantsGoing,
+    participantsInterested,
   };
 }
 
@@ -1759,6 +1950,24 @@ export async function getSavedDiscussionsForUser(params: {
       savedByMe: true,
     })),
   );
+}
+
+export async function getCommunityMaterialMeta(materialId: string) {
+  const supabase = getSupabaseAdminClient();
+  const { data } = await supabase
+    .from("marketplace_materials")
+    .select("title,componente,description")
+    .eq("id", materialId)
+    .eq("is_published", true)
+    .maybeSingle();
+
+  if (!data) return null;
+
+  return {
+    title: data.title as string,
+    componente: (data.componente as string | null) || null,
+    description: (data.description as string | null) || null,
+  };
 }
 
 export { toggleSavedPost } from "./community-saved-posts-service";

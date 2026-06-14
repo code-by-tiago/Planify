@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { CommunityAuthorAvatar } from "@/components/community/CommunityAuthorAvatar";
 import { ComunidadeDocenteCreatePostModal } from "@/components/community/docente/ComunidadeDocenteCreatePostModal";
+import { ComunidadeDocenteGroupChat } from "@/components/community/docente/ComunidadeDocenteGroupChat";
 import { ComunidadeDocenteDetailShell } from "@/components/community/docente/ComunidadeDocenteDetailShell";
 import { ComunidadeDocenteUserPicker } from "@/components/community/docente/ComunidadeDocenteUserPicker";
 import type { CommunityProfileSearchResult } from "@/lib/community/types";
@@ -14,14 +15,21 @@ import {
   comunidadeRoutes,
   formatDocenteNumber,
   formatDocenteTimeAgo,
-  readEmbedded,
+  homeWithAba,
+  isComunidadeEmbedded,
 } from "@/lib/community/docente-utils";
 
-export function ComunidadeDocenteGrupoDetailClient({ groupId }: { groupId: string }) {
+export function ComunidadeDocenteGrupoDetailClient({
+  groupId,
+  forceEmbedded,
+}: {
+  groupId: string;
+  forceEmbedded?: boolean;
+}) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const embedded = readEmbedded(searchParams);
-  const homeHref = embedded ? comunidadeRoutes.homeEmbedded : comunidadeRoutes.home;
+  const embedded = isComunidadeEmbedded(searchParams, forceEmbedded);
+  const homeHref = homeWithAba("grupos", embedded);
 
   const [group, setGroup] = useState<CommunityGroupDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -29,6 +37,7 @@ export function ComunidadeDocenteGrupoDetailClient({ groupId }: { groupId: strin
   const [inviteOpen, setInviteOpen] = useState(false);
   const [inviteUsers, setInviteUsers] = useState<CommunityProfileSearchResult[]>([]);
   const [createPostOpen, setCreatePostOpen] = useState(false);
+  const [groupTab, setGroupTab] = useState<"discussoes" | "chat">("discussoes");
   const [status, setStatus] = useState("");
 
   const load = useCallback(async () => {
@@ -98,6 +107,29 @@ export function ComunidadeDocenteGrupoDetailClient({ groupId }: { groupId: strin
       await load();
     } else {
       showToast(data?.error?.message || "Não foi possível convidar.");
+    }
+  };
+
+  const handleTransferOwnership = async (newOwnerId: string) => {
+    if (!group || !window.confirm("Transferir a liderança deste grupo para este(a) membro(a)?")) {
+      return;
+    }
+    const response = await fetch("/api/community/docente/actions", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "transfer_group_ownership",
+        groupId,
+        newOwnerId,
+      }),
+    });
+    const data = await response.json();
+    if (response.ok && data.ok) {
+      showToast("Liderança transferida com sucesso.");
+      await load();
+    } else {
+      showToast(data?.error?.message || "Não foi possível transferir a liderança.");
     }
   };
 
@@ -242,68 +274,114 @@ export function ComunidadeDocenteGrupoDetailClient({ groupId }: { groupId: strin
         <h2 className="text-sm font-extrabold text-[#0F172A]">Membros</h2>
         <ul className="mt-4 grid gap-3 sm:grid-cols-2">
           {group.members.map((member) => (
-            <li key={member.id}>
-              <Link
-                href={comunidadeRoutes.professor(member.id, embedded)}
-                className="flex items-center gap-3 rounded-2xl border border-slate-100 p-3 transition hover:border-cyan-200 hover:bg-cyan-50/30"
-              >
-                <CommunityAuthorAvatar
-                  userId={member.id}
-                  name={member.name}
-                  avatarUrl={member.avatarUrl}
-                  size="sm"
-                />
-                <div>
-                  <p className="text-sm font-bold text-[#0F172A]">
-                    {member.name}
-                    {member.id === group.owner.id ? (
-                      <span className="ml-2 rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">
-                        Dono(a)
-                      </span>
-                    ) : null}
-                  </p>
-                  <p className="text-[11px] text-slate-500">{member.specialty}</p>
-                </div>
-              </Link>
+            <li key={member.id} className="rounded-2xl border border-slate-100 p-3">
+              <div className="flex items-center justify-between gap-2">
+                <Link
+                  href={comunidadeRoutes.professor(member.id, embedded)}
+                  className="flex min-w-0 flex-1 items-center gap-3 transition hover:opacity-80"
+                >
+                  <CommunityAuthorAvatar
+                    userId={member.id}
+                    name={member.name}
+                    avatarUrl={member.avatarUrl}
+                    size="sm"
+                  />
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-bold text-[#0F172A]">
+                      {member.name}
+                      {member.id === group.owner.id ? (
+                        <span className="ml-2 rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">
+                          Dono(a)
+                        </span>
+                      ) : null}
+                    </p>
+                    <p className="truncate text-[11px] text-slate-500">{member.specialty}</p>
+                  </div>
+                </Link>
+                {group.isOwner && member.id !== group.owner.id ? (
+                  <button
+                    type="button"
+                    onClick={() => void handleTransferOwnership(member.id)}
+                    className="min-h-11 shrink-0 rounded-lg border border-slate-200 px-3 py-2 text-[10px] font-bold text-slate-600 transition hover:border-amber-200 hover:bg-amber-50 hover:text-amber-800"
+                  >
+                    Tornar responsável
+                  </button>
+                ) : null}
+              </div>
             </li>
           ))}
         </ul>
       </section>
 
       <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 className="text-sm font-extrabold text-[#0F172A]">Discussões do grupo</h2>
-        {group.discussions.length === 0 ? (
-          <div className="mt-3 rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 p-6 text-center">
-            <p className="text-sm text-slate-500">
-              Seja o primeiro(a) a publicar no grupo.
-            </p>
-            {group.joinedByMe ? (
-              <button
-                type="button"
-                onClick={() => setCreatePostOpen(true)}
-                className="mt-4 rounded-xl bg-[#0F172A] px-5 py-2.5 text-xs font-bold text-white"
-              >
-                Criar discussão
-              </button>
-            ) : null}
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setGroupTab("discussoes")}
+            className={[
+              "rounded-xl px-4 py-2 text-xs font-bold transition",
+              groupTab === "discussoes"
+                ? "bg-[#0F172A] text-white"
+                : "border border-slate-200 bg-white text-slate-600 hover:border-cyan-200",
+            ].join(" ")}
+          >
+            Discussões
+          </button>
+          <button
+            type="button"
+            onClick={() => setGroupTab("chat")}
+            className={[
+              "rounded-xl px-4 py-2 text-xs font-bold transition",
+              groupTab === "chat"
+                ? "bg-[#0F172A] text-white"
+                : "border border-slate-200 bg-white text-slate-600 hover:border-cyan-200",
+            ].join(" ")}
+          >
+            Chat do grupo
+          </button>
+        </div>
+
+        {groupTab === "chat" ? (
+          <div className="mt-4">
+            <ComunidadeDocenteGroupChat groupId={groupId} enabled={group.joinedByMe} />
           </div>
         ) : (
-          <ul className="mt-4 space-y-3">
-            {group.discussions.map((d) => (
-              <li key={d.id}>
-                <Link
-                  href={comunidadeRoutes.discussao(d.id, embedded)}
-                  className="block rounded-2xl border border-slate-100 p-4 transition hover:border-cyan-200 hover:bg-cyan-50/20"
-                >
-                  <p className="font-bold text-[#0F172A]">{d.title}</p>
-                  <p className="mt-1 text-xs text-slate-500">
-                    {d.author.name} · {formatDocenteTimeAgo(d.createdAt)} ·{" "}
-                    {formatDocenteNumber(d.commentsCount)} comentários
-                  </p>
-                </Link>
-              </li>
-            ))}
-          </ul>
+          <>
+            <h2 className="mt-4 text-sm font-extrabold text-[#0F172A]">Discussões do grupo</h2>
+            {group.discussions.length === 0 ? (
+              <div className="mt-3 rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 p-6 text-center">
+                <p className="text-sm text-slate-500">
+                  Seja o primeiro(a) a publicar no grupo.
+                </p>
+                {group.joinedByMe ? (
+                  <button
+                    type="button"
+                    onClick={() => setCreatePostOpen(true)}
+                    className="mt-4 rounded-xl bg-[#0F172A] px-5 py-2.5 text-xs font-bold text-white"
+                  >
+                    Criar discussão
+                  </button>
+                ) : null}
+              </div>
+            ) : (
+              <ul className="mt-4 space-y-3">
+                {group.discussions.map((d) => (
+                  <li key={d.id}>
+                    <Link
+                      href={comunidadeRoutes.discussao(d.id, embedded)}
+                      className="block rounded-2xl border border-slate-100 p-4 transition hover:border-cyan-200 hover:bg-cyan-50/20"
+                    >
+                      <p className="font-bold text-[#0F172A]">{d.title}</p>
+                      <p className="mt-1 text-xs text-slate-500">
+                        {d.author.name} · {formatDocenteTimeAgo(d.createdAt)} ·{" "}
+                        {formatDocenteNumber(d.commentsCount)} comentários
+                      </p>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </>
         )}
       </section>
 

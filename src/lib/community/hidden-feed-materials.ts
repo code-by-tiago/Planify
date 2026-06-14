@@ -40,6 +40,10 @@ export function getHiddenFeedMaterialIds(): Set<string> {
   return new Set(readHiddenIds());
 }
 
+export function setHiddenFeedMaterialIds(ids: Iterable<string>): void {
+  writeHiddenIds([...ids]);
+}
+
 export function isFeedMaterialHidden(materialId: string): boolean {
   return getHiddenFeedMaterialIds().has(materialId);
 }
@@ -70,4 +74,70 @@ export function clearHiddenFeedMaterials(): void {
   }
 
   window.localStorage.removeItem(STORAGE_KEY);
+}
+
+export async function fetchHiddenFeedMaterialIds(): Promise<string[]> {
+  const response = await fetch("/api/community/hidden-feed-materials", {
+    credentials: "include",
+    cache: "no-store",
+  });
+  const data = await response.json();
+  if (!response.ok || !data.ok) {
+    return readHiddenIds();
+  }
+  const ids = Array.isArray(data.materialIds)
+    ? data.materialIds.map((id: unknown) => String(id)).filter(Boolean)
+    : [];
+  setHiddenFeedMaterialIds(ids);
+  return ids;
+}
+
+export async function migrateLocalHiddenFeedMaterialsToServer(): Promise<void> {
+  const localIds = readHiddenIds();
+  if (localIds.length === 0) {
+    return;
+  }
+
+  await fetch("/api/community/hidden-feed-materials", {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "sync", materialIds: localIds }),
+  }).catch(() => {});
+}
+
+export async function hideFeedMaterialOnServer(materialId: string): Promise<void> {
+  const id = String(materialId || "").trim();
+  if (!id) return;
+
+  hideFeedMaterial(id);
+
+  const response = await fetch("/api/community/hidden-feed-materials", {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "hide", materialId: id }),
+  });
+  const data = await response.json();
+  if (!response.ok || !data.ok) {
+    throw new Error(data?.error?.message || "Não foi possível ocultar o material.");
+  }
+}
+
+export async function unhideFeedMaterialOnServer(materialId: string): Promise<void> {
+  const id = String(materialId || "").trim();
+  if (!id) return;
+
+  unhideFeedMaterial(id);
+
+  const response = await fetch("/api/community/hidden-feed-materials", {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "unhide", materialId: id }),
+  });
+  const data = await response.json();
+  if (!response.ok || !data.ok) {
+    throw new Error(data?.error?.message || "Não foi possível restaurar o material.");
+  }
 }

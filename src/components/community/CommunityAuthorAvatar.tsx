@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { communityProfileHref } from "@/components/community/CommunityAuthorLink";
 import { PlanifyOwlMark } from "@/components/pro/PlanifyOwlMark";
+import { useComunidadeEmbedded } from "@/hooks/useComunidadeEmbedded";
 import { useEffect, useState } from "react";
 
 type CommunityAuthorAvatarProps = {
@@ -10,6 +11,7 @@ type CommunityAuthorAvatarProps = {
   name: string;
   avatarUrl?: string | null;
   size?: "sm" | "md";
+  embedded?: boolean;
 };
 
 function owlSizeForAvatar(size: "sm" | "md"): number {
@@ -21,7 +23,10 @@ export function CommunityAuthorAvatar({
   name,
   avatarUrl,
   size = "md",
+  embedded: embeddedProp,
 }: CommunityAuthorAvatarProps) {
+  const embeddedFromContext = useComunidadeEmbedded();
+  const embedded = embeddedProp ?? embeddedFromContext;
   const [photoFailed, setPhotoFailed] = useState(false);
   const dimension = size === "sm" ? "h-9 w-9" : "h-11 w-11";
   const profileLabel = userId ? `Ver perfil de ${name}` : undefined;
@@ -58,7 +63,7 @@ export function CommunityAuthorAvatar({
 
   return (
     <Link
-      href={communityProfileHref(userId)}
+      href={communityProfileHref(userId, embedded)}
       title={profileLabel}
       aria-label={profileLabel}
       className={`${className} transition hover:brightness-105`}

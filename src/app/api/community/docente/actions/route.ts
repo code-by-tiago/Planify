@@ -4,6 +4,10 @@ import {
   getRequestAccessToken,
   requireApiPremiumAccess,
 } from "@/server/auth/api-access";
+import {
+  hideCommunityFeedMaterial,
+  unhideCommunityFeedMaterial,
+} from "@/server/community/community-hidden-feed-materials-service";
 import { completeCommunityChallenge } from "@/server/community/community-badge-service";
 import {
   addCommunityPostComment,
@@ -20,6 +24,7 @@ import {
   toggleCommunityFollow,
   toggleCommunityPostLike,
   toggleSavedPost,
+  transferCommunityGroupOwnership,
   updateCommunityEvent,
   updateCommunityPost,
 } from "@/server/community/community-docente-service";
@@ -239,7 +244,8 @@ export async function POST(request: NextRequest) {
 
     if (action === "participate_challenge") {
       const challengeSlug = String(body.challengeSlug || "desafio-bncc").trim();
-      const result = await completeCommunityChallenge({ userId, challengeSlug });
+      const reflection = body.reflection != null ? String(body.reflection) : null;
+      const result = await completeCommunityChallenge({ userId, challengeSlug, reflection });
       return NextResponse.json({ ok: true, ...result });
     }
 
@@ -269,6 +275,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: true, ...result });
     }
 
+    if (action === "transfer_group_ownership") {
+      const groupId = String(body.groupId || "").trim();
+      const newOwnerId = String(body.newOwnerId || "").trim();
+      if (!groupId || !newOwnerId) return jsonError("Grupo e novo responsável são obrigatórios.");
+      await transferCommunityGroupOwnership({ ownerId: userId, groupId, newOwnerId });
+      return NextResponse.json({ ok: true });
+    }
+
     if (action === "invite_group_members") {
       const groupId = String(body.groupId || "").trim();
       const memberUserIds = Array.isArray(body.memberUserIds)
@@ -281,6 +295,20 @@ export async function POST(request: NextRequest) {
         memberUserIds,
       });
       return NextResponse.json({ ok: true, ...result });
+    }
+
+    if (action === "hide_feed_material") {
+      const materialId = String(body.materialId || "").trim();
+      if (!materialId) return jsonError("Material não informado.");
+      await hideCommunityFeedMaterial({ userId, materialId });
+      return NextResponse.json({ ok: true, hidden: true });
+    }
+
+    if (action === "unhide_feed_material") {
+      const materialId = String(body.materialId || "").trim();
+      if (!materialId) return jsonError("Material não informado.");
+      await unhideCommunityFeedMaterial({ userId, materialId });
+      return NextResponse.json({ ok: true, hidden: false });
     }
 
     return jsonError("Ação inválida.", 400);

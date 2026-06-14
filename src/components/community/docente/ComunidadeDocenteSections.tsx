@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { communityProfileHref } from "@/components/community/CommunityAuthorLink";
 import { CommunityAuthorAvatar } from "@/components/community/CommunityAuthorAvatar";
+import { useComunidadeEmbedded } from "@/hooks/useComunidadeEmbedded";
 import {
   formatDocenteNumber,
   formatEventShortTime,
@@ -228,6 +229,8 @@ export function ComunidadeDocenteProfessores({
   onFollow: (id: string) => void;
   onBrowseAll?: () => void;
 }) {
+  const embedded = useComunidadeEmbedded();
+
   if (!teachers.length) {
     return (
       <section className="rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm">
@@ -268,7 +271,7 @@ export function ComunidadeDocenteProfessores({
               />
               <div className="min-w-0 flex-1">
                 <Link
-                  href={communityProfileHref(teacher.id)}
+                  href={communityProfileHref(teacher.id, embedded)}
                   className="font-bold text-[#0F172A] hover:text-cyan-700"
                 >
                   {teacher.name}

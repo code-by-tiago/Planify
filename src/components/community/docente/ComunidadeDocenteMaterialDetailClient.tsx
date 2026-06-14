@@ -2,13 +2,19 @@
 
 import { MarketplaceMaterialViewClient } from "@/components/community/MarketplaceMaterialViewClient";
 import { ComunidadeDocenteDetailShell } from "@/components/community/docente/ComunidadeDocenteDetailShell";
-import { comunidadeRoutes, readEmbedded } from "@/lib/community/docente-utils";
+import { comunidadeRoutes, homeWithAba, isComunidadeEmbedded } from "@/lib/community/docente-utils";
 import { useSearchParams } from "next/navigation";
 
-export function ComunidadeDocenteMaterialDetailClient({ materialId }: { materialId: string }) {
+export function ComunidadeDocenteMaterialDetailClient({
+  materialId,
+  forceEmbedded,
+}: {
+  materialId: string;
+  forceEmbedded?: boolean;
+}) {
   const searchParams = useSearchParams();
-  const embedded = readEmbedded(searchParams);
-  const homeHref = embedded ? comunidadeRoutes.homeEmbedded : comunidadeRoutes.home;
+  const embedded = isComunidadeEmbedded(searchParams, forceEmbedded);
+  const homeHref = homeWithAba("materiais", embedded);
 
   return (
     <ComunidadeDocenteDetailShell

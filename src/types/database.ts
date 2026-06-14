@@ -694,6 +694,46 @@ export type Database = {
           created_at?: string;
         }
       >;
+      community_hidden_feed_materials: TableDefinition<
+        {
+          user_id: string;
+          material_id: string;
+          created_at: string;
+        },
+        {
+          user_id: string;
+          material_id: string;
+          created_at?: string;
+        },
+        {
+          user_id?: string;
+          material_id?: string;
+          created_at?: string;
+        }
+      >;
+      community_group_messages: TableDefinition<
+        {
+          id: string;
+          group_id: string;
+          sender_id: string;
+          body: string;
+          created_at: string;
+        },
+        {
+          id?: string;
+          group_id: string;
+          sender_id: string;
+          body: string;
+          created_at?: string;
+        },
+        {
+          id?: string;
+          group_id?: string;
+          sender_id?: string;
+          body?: string;
+          created_at?: string;
+        }
+      >;
       community_posts: TableDefinition<
         {
           id: string;
@@ -1066,18 +1106,21 @@ export type Database = {
           user_id: string;
           challenge_slug: string;
           completed_at: string;
+          reflection: string | null;
         },
         {
           id?: string;
           user_id: string;
           challenge_slug: string;
           completed_at?: string;
+          reflection?: string | null;
         },
         {
           id?: string;
           user_id?: string;
           challenge_slug?: string;
           completed_at?: string;
+          reflection?: string | null;
         }
       >;
       community_user_badges: TableDefinition<

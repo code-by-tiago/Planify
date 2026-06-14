@@ -5,7 +5,12 @@ import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import type { CommunityNotification } from "@/lib/community/types";
 import { parseJsonResponse } from "@/lib/http/parse-json-response";
 import Link from "next/link";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  resolveComunidadeEmbedFromLocation,
+  resolveComunidadeNavigationHref,
+} from "@/lib/community/docente-utils";
 
 function formatNotificationTime(value: string): string {
   try {
@@ -78,6 +83,8 @@ type CommunityNotificationsIconProps = {
 };
 
 export function CommunityNotificationsIcon({ className }: CommunityNotificationsIconProps) {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<CommunityNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -103,6 +110,16 @@ export function CommunityNotificationsIcon({ className }: CommunityNotifications
       // silencioso — tabela pode não existir ainda
     }
   }, []);
+
+  const resolveHref = useCallback(
+    (notification: CommunityNotification) => {
+      const raw = notificationHref(notification);
+      if (!raw) return null;
+      if (!resolveComunidadeEmbedFromLocation(pathname, searchParams)) return raw;
+      return resolveComunidadeNavigationHref(raw, pathname, searchParams);
+    },
+    [pathname, searchParams],
+  );
 
   useEffect(() => {
     void refresh();
@@ -204,7 +221,7 @@ export function CommunityNotificationsIcon({ className }: CommunityNotifications
             ) : (
               <ul className="divide-y divide-cyan-400/10">
                 {notifications.map((notification) => {
-                  const href = notificationHref(notification);
+                  const href = resolveHref(notification);
                   const content = (
                     <div
                       className={`flex gap-3 px-4 py-3 transition hover:bg-cyan-50/50 ${

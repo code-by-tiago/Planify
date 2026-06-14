@@ -8,7 +8,8 @@ import { GoogleDocumentExportBar } from "@/components/google/GoogleDocumentExpor
 import { MaterialLikeButton } from "@/components/community/MaterialLikeButton";
 import { MarketplaceComments } from "@/components/marketplace/MarketplaceComments";
 import {
-  hideFeedMaterial,
+  fetchHiddenFeedMaterialIds,
+  hideFeedMaterialOnServer,
   isFeedMaterialHidden,
 } from "@/lib/community/hidden-feed-materials";
 import { resolveDocumentTypeFromMarketplaceItem } from "@/lib/documents/document-export-context";
@@ -141,7 +142,9 @@ export function MarketplaceMaterialViewClient({
   }, [load]);
 
   useEffect(() => {
-    setHiddenFromFeed(isFeedMaterialHidden(materialId));
+    void fetchHiddenFeedMaterialIds().then(() => {
+      setHiddenFromFeed(isFeedMaterialHidden(materialId));
+    });
   }, [materialId]);
 
   async function handlePermanentDelete() {
@@ -183,9 +186,15 @@ export function MarketplaceMaterialViewClient({
   }
 
   function handleHideFromFeed() {
-    hideFeedMaterial(materialId);
-    setHiddenFromFeed(true);
-    setActionStatus("Material oculto do seu feed.");
+    void (async () => {
+      try {
+        await hideFeedMaterialOnServer(materialId);
+        setHiddenFromFeed(true);
+        setActionStatus("Material oculto do seu feed.");
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Não foi possível ocultar o material.");
+      }
+    })();
   }
 
   async function handleOpenEditor() {

@@ -84,7 +84,7 @@ export function ComunidadeDocenteDiscussionCard({
               type="button"
               onClick={() => onLike(discussion.id)}
               className={[
-                "flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition",
+                "flex min-h-11 items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold transition",
                 discussion.likedByMe
                   ? "bg-rose-50 text-rose-600"
                   : "text-slate-500 hover:bg-slate-50 hover:text-rose-600",
@@ -96,7 +96,7 @@ export function ComunidadeDocenteDiscussionCard({
             <button
               type="button"
               onClick={() => onComment(discussion.id)}
-              className="flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-500 transition hover:bg-slate-50 hover:text-cyan-600"
+              className="flex min-h-11 items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold text-slate-500 transition hover:bg-slate-50 hover:text-cyan-600"
             >
               <IconComment className="h-4 w-4" />
               {formatDocenteNumber(discussion.commentsCount)}
@@ -105,7 +105,7 @@ export function ComunidadeDocenteDiscussionCard({
               type="button"
               onClick={() => onSave(discussion.id)}
               className={[
-                "flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition",
+                "flex min-h-11 items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold transition",
                 discussion.savedByMe
                   ? "bg-cyan-50 text-cyan-600"
                   : "text-slate-500 hover:bg-slate-50 hover:text-cyan-600",

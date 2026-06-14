@@ -7,12 +7,14 @@ type ComunidadeDocenteMaterialsProps = {
   materials: DocenteMaterial[];
   onLike: (id: string) => void;
   onSave: (id: string) => void;
+  onShowAll?: () => void;
 };
 
 export function ComunidadeDocenteMaterials({
   materials,
   onLike,
   onSave,
+  onShowAll,
 }: ComunidadeDocenteMaterialsProps) {
   return (
     <section>
@@ -22,6 +24,7 @@ export function ComunidadeDocenteMaterials({
         </h2>
         <button
           type="button"
+          onClick={onShowAll}
           className="text-sm font-bold text-cyan-600 hover:text-cyan-700"
         >
           Ver todos

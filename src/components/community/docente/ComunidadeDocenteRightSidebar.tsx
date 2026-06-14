@@ -1,6 +1,8 @@
 "use client";
 
-import type { DocenteAuthor, DocenteEvent, DocenteRecentPublication } from "@/lib/community/docente-types";
+import Link from "next/link";
+import { communityProfileHref } from "@/components/community/CommunityAuthorLink";
+import type { DocenteAuthor, DocenteEvent, DocenteMenuItem, DocenteRecentPublication } from "@/lib/community/docente-types";
 import {
   formatDocenteNumber,
   formatDocenteTimeAgo,
@@ -11,6 +13,7 @@ type ComunidadeDocenteRightSidebarProps = {
   recentPublications: DocenteRecentPublication[];
   events: DocenteEvent[];
   onFollow: (authorId: string) => void;
+  onSelectMenu?: (menu: DocenteMenuItem) => void;
 };
 
 export function ComunidadeDocenteRightSidebar({
@@ -18,6 +21,7 @@ export function ComunidadeDocenteRightSidebar({
   recentPublications,
   events,
   onFollow,
+  onSelectMenu,
 }: ComunidadeDocenteRightSidebarProps) {
   if (!teacher) {
     return (
@@ -36,8 +40,8 @@ export function ComunidadeDocenteRightSidebar({
         <ul className="mt-4 space-y-3">
           {recentPublications.map((pub) => (
             <li key={pub.id}>
-              <button
-                type="button"
+              <Link
+                href={`/marketplace/material/${pub.id}`}
                 className="flex w-full items-start gap-3 rounded-xl p-1 text-left transition hover:bg-slate-50"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -54,7 +58,7 @@ export function ComunidadeDocenteRightSidebar({
                     {pub.authorName} · {formatDocenteTimeAgo(pub.createdAt)}
                   </p>
                 </div>
-              </button>
+              </Link>
             </li>
           ))}
         </ul>
@@ -67,6 +71,7 @@ export function ComunidadeDocenteRightSidebar({
             <li key={event.id}>
               <button
                 type="button"
+                onClick={() => onSelectMenu?.("eventos")}
                 className="flex w-full gap-3 rounded-xl p-1 text-left transition hover:bg-slate-50"
               >
                 <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-xl bg-cyan-50 text-cyan-700">
@@ -104,7 +109,12 @@ export function ComunidadeDocenteRightSidebar({
             />
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <p className="text-sm font-bold text-[#0F172A]">{teacher.name}</p>
+                <Link
+                  href={communityProfileHref(teacher.id)}
+                  className="text-sm font-bold text-[#0F172A] hover:text-cyan-700"
+                >
+                  {teacher.name}
+                </Link>
                 <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700">
                   Em destaque
                 </span>

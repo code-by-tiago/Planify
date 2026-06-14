@@ -7,4 +7,4 @@ export { ComunidadeDocenteDiscussionCard } from "./ComunidadeDocenteDiscussionCa
 export { ComunidadeDocenteMaterials } from "./ComunidadeDocenteMaterials";
 export { ComunidadeDocenteMaterialCard } from "./ComunidadeDocenteMaterialCard";
 export { ComunidadeDocenteRightSidebar } from "./ComunidadeDocenteRightSidebar";
-export { ComunidadeDocenteCreatePostModal } from "./ComunidadeDocenteCreatePostModal";
+export { ComunidadeDocenteCommentModal } from "./ComunidadeDocenteCommentModal";

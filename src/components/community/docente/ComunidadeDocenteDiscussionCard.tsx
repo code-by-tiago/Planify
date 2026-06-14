@@ -1,5 +1,8 @@
 "use client";
 
+import Link from "next/link";
+import { CommunityAuthorLink } from "@/components/community/CommunityAuthorLink";
+import { CommunityAuthorAvatar } from "@/components/community/CommunityAuthorAvatar";
 import {
   IconBookmark,
   IconComment,
@@ -19,6 +22,7 @@ type ComunidadeDocenteDiscussionCardProps = {
   onSave: (id: string) => void;
   onComment: (id: string) => void;
   onShare: (id: string) => void;
+  onOpen?: (id: string) => void;
 };
 
 export function ComunidadeDocenteDiscussionCard({
@@ -27,21 +31,21 @@ export function ComunidadeDocenteDiscussionCard({
   onSave,
   onComment,
   onShare,
+  onOpen,
 }: ComunidadeDocenteDiscussionCardProps) {
   const { author } = discussion;
 
   return (
     <article className="group rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm transition hover:border-slate-300 hover:shadow-md sm:p-5">
       <div className="flex gap-3">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={author.avatarUrl ?? ""}
-          alt=""
-          className="h-11 w-11 shrink-0 rounded-full object-cover ring-2 ring-white"
+        <CommunityAuthorAvatar
+          userId={author.id}
+          name={author.name}
+          avatarUrl={author.avatarUrl}
         />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <p className="text-sm font-bold text-[#0F172A]">{author.name}</p>
+            <CommunityAuthorLink userId={author.id} name={author.name} className="text-sm" />
             <span className="text-xs font-medium text-slate-400">
               {formatDocenteTimeAgo(discussion.createdAt)}
             </span>
@@ -52,9 +56,15 @@ export function ComunidadeDocenteDiscussionCard({
             </span>
           </div>
 
-          <h3 className="mt-2 text-base font-bold leading-snug text-[#0F172A] group-hover:text-cyan-700">
-            {discussion.title}
-          </h3>
+          <button
+            type="button"
+            onClick={() => onOpen?.(discussion.id)}
+            className="mt-2 block w-full text-left"
+          >
+            <h3 className="text-base font-bold leading-snug text-[#0F172A] group-hover:text-cyan-700">
+              {discussion.title}
+            </h3>
+          </button>
 
           {discussion.tags.length > 0 ? (
             <div className="mt-2 flex flex-wrap gap-1.5">

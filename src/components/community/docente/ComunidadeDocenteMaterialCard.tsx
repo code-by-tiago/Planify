@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import {
   IconBookmark,
   IconEye,
@@ -30,7 +31,10 @@ export function ComunidadeDocenteMaterialCard({
   onSave,
 }: ComunidadeDocenteMaterialCardProps) {
   return (
-    <article className="group flex w-[220px] shrink-0 flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg sm:w-[240px]">
+    <Link
+      href={`/marketplace/material/${material.id}`}
+      className="group flex w-[220px] shrink-0 flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg sm:w-[240px]"
+    >
       <div className="relative h-36 overflow-hidden">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -43,7 +47,11 @@ export function ComunidadeDocenteMaterialCard({
         </span>
         <button
           type="button"
-          onClick={() => onSave(material.id)}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onSave(material.id);
+          }}
           className={[
             "absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full backdrop-blur-sm transition",
             material.savedByMe
@@ -75,7 +83,11 @@ export function ComunidadeDocenteMaterialCard({
           </span>
           <button
             type="button"
-            onClick={() => onLike(material.id)}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onLike(material.id);
+            }}
             className={[
               "flex items-center gap-1 text-xs font-bold transition",
               material.likedByMe ? "text-rose-500" : "text-slate-400 hover:text-rose-500",
@@ -86,6 +98,6 @@ export function ComunidadeDocenteMaterialCard({
           </button>
         </div>
       </div>
-    </article>
+    </Link>
   );
 }

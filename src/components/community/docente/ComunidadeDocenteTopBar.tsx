@@ -1,18 +1,20 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
+import { CommunityMessagesIcon } from "@/components/community/CommunityMessagesIcon";
 import { CommunityNotificationsIcon } from "@/components/community/CommunityNotificationsIcon";
+import { communityProfileHref } from "@/components/community/CommunityAuthorLink";
+import { PlanifyOwlMark } from "@/components/pro/PlanifyOwlMark";
 import {
-  IconBell,
   IconChevronDown,
   IconMenu,
-  IconMessage,
   IconPlus,
   IconSearch,
 } from "@/components/community/docente/docente-icons";
-import { DOCENTE_CURRENT_USER } from "@/lib/community/docente-mock-data";
 
-type ProfileSummary = {
+type ViewerProfile = {
+  userId: string;
   displayName: string;
   avatarUrl: string | null;
 };
@@ -22,7 +24,6 @@ type ComunidadeDocenteTopBarProps = {
   onSearchChange: (value: string) => void;
   onCreatePost: () => void;
   onOpenMenu: () => void;
-  notificationCount?: number;
 };
 
 export function ComunidadeDocenteTopBar({
@@ -30,26 +31,43 @@ export function ComunidadeDocenteTopBar({
   onSearchChange,
   onCreatePost,
   onOpenMenu,
-  notificationCount = 3,
 }: ComunidadeDocenteTopBarProps) {
-  const [profile, setProfile] = useState<ProfileSummary>({
-    displayName: DOCENTE_CURRENT_USER.name,
-    avatarUrl: DOCENTE_CURRENT_USER.avatarUrl,
-  });
+  const [profile, setProfile] = useState<ViewerProfile | null>(null);
 
   useEffect(() => {
     void fetch("/api/community/profile", { credentials: "include", cache: "no-store" })
       .then((r) => r.json())
       .then((data) => {
         if (data?.ok && data.profile) {
-          setProfile({
-            displayName: data.profile.displayName || DOCENTE_CURRENT_USER.name,
+          const nextProfile = {
+            userId: String(data.profile.userId || ""),
+            displayName: String(data.profile.fullName || data.profile.email || "Professor(a)"),
             avatarUrl: data.profile.avatarUrl || null,
-          });
+          };
+          setProfile(nextProfile);
+          // #region agent log
+          fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "40dc8d" },
+            body: JSON.stringify({
+              sessionId: "40dc8d",
+              hypothesisId: "F",
+              location: "ComunidadeDocenteTopBar.tsx:profile",
+              message: "Viewer profile loaded",
+              data: {
+                userId: nextProfile.userId,
+                displayName: nextProfile.displayName,
+                hasAvatar: Boolean(nextProfile.avatarUrl),
+              },
+              timestamp: Date.now(),
+            }),
+          }).catch(() => {});
+          // #endregion
         }
       })
       .catch(() => {});
   }, []);
+
   return (
     <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center gap-3 border-b border-slate-200/80 bg-white/95 px-4 backdrop-blur-md lg:px-6">
       <button
@@ -61,7 +79,7 @@ export function ComunidadeDocenteTopBar({
         <IconMenu className="h-5 w-5" />
       </button>
 
-      <div className="relative min-w-0 flex-1 max-w-2xl">
+      <div className="relative min-w-0 max-w-2xl flex-1">
         <IconSearch className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
         <input
           type="search"
@@ -91,46 +109,41 @@ export function ComunidadeDocenteTopBar({
           <IconPlus className="h-5 w-5" />
         </button>
 
-        <div className="hidden sm:block">
-          <CommunityNotificationsIcon />
-        </div>
+        <CommunityNotificationsIcon />
+        <CommunityMessagesIcon />
 
-        <button
-          type="button"
-          className="relative hidden h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition hover:bg-slate-50 sm:flex"
-          aria-label="Notificações"
-        >
-          <IconBell className="h-5 w-5" />
-          {notificationCount > 0 ? (
-            <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
-              {notificationCount}
+        {profile?.userId ? (
+          <Link
+            href={communityProfileHref(profile.userId)}
+            className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white py-1.5 pl-1.5 pr-3 transition hover:border-slate-300"
+          >
+            {profile.avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={profile.avatarUrl}
+                alt=""
+                className="h-8 w-8 rounded-full object-cover"
+              />
+            ) : (
+              <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-slate-100">
+                <PlanifyOwlMark size={28} />
+              </span>
+            )}
+            <span className="hidden text-sm font-semibold text-[#0F172A] lg:inline">
+              {profile.displayName}
             </span>
-          ) : null}
-        </button>
-
-        <button
-          type="button"
-          className="hidden h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition hover:bg-slate-50 md:flex"
-          aria-label="Mensagens"
-        >
-          <IconMessage className="h-5 w-5" />
-        </button>
-
-        <button
-          type="button"
-          className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white py-1.5 pl-1.5 pr-3 transition hover:border-slate-300"
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={profile.avatarUrl ?? DOCENTE_CURRENT_USER.avatarUrl ?? ""}
-            alt=""
-            className="h-8 w-8 rounded-full object-cover"
-          />
-          <span className="hidden text-sm font-semibold text-[#0F172A] lg:inline">
-            {profile.displayName}
-          </span>
-          <IconChevronDown className="hidden h-4 w-4 text-slate-400 lg:block" />
-        </button>
+            <IconChevronDown className="hidden h-4 w-4 text-slate-400 lg:block" />
+          </Link>
+        ) : (
+          <div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white py-1.5 pl-1.5 pr-3">
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100">
+              <PlanifyOwlMark size={28} />
+            </span>
+            <span className="hidden text-sm font-semibold text-slate-400 lg:inline">
+              Carregando…
+            </span>
+          </div>
+        )}
       </div>
     </header>
   );

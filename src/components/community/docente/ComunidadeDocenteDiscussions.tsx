@@ -9,6 +9,8 @@ type ComunidadeDocenteDiscussionsProps = {
   onSave: (id: string) => void;
   onComment: (id: string) => void;
   onShare: (id: string) => void;
+  onOpen?: (id: string) => void;
+  onShowMore?: () => void;
 };
 
 export function ComunidadeDocenteDiscussions({
@@ -17,6 +19,8 @@ export function ComunidadeDocenteDiscussions({
   onSave,
   onComment,
   onShare,
+  onOpen,
+  onShowMore,
 }: ComunidadeDocenteDiscussionsProps) {
   return (
     <section>
@@ -35,12 +39,14 @@ export function ComunidadeDocenteDiscussions({
             onSave={onSave}
             onComment={onComment}
             onShare={onShare}
+            onOpen={onOpen}
           />
         ))}
       </div>
 
       <button
         type="button"
+        onClick={onShowMore}
         className="mt-4 w-full rounded-2xl border border-slate-200 bg-white py-3 text-sm font-bold text-cyan-600 transition hover:border-cyan-200 hover:bg-cyan-50"
       >
         Ver mais discussões

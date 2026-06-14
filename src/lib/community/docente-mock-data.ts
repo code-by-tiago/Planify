@@ -97,8 +97,6 @@ const AUTHORS: Record<string, DocenteAuthor> = {
   },
 };
 
-export const DOCENTE_CURRENT_USER = AUTHORS.juliana;
-
 export const DOCENTE_STATS: DocenteStats = {
   activeTeachers: 18732,
   sharedMaterials: 24815,

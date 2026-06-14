@@ -1,5 +1,8 @@
 "use client";
 
+import Link from "next/link";
+import { communityProfileHref } from "@/components/community/CommunityAuthorLink";
+import { CommunityAuthorAvatar } from "@/components/community/CommunityAuthorAvatar";
 import { formatDocenteNumber } from "@/lib/community/docente-mock-data";
 import type { DocenteAuthor, DocenteEvent, DocenteMaterial } from "@/lib/community/docente-types";
 
@@ -116,14 +119,19 @@ export function ComunidadeDocenteProfessores({
             className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
           >
             <div className="flex items-start gap-3">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={teacher.avatarUrl || ""}
-                alt=""
-                className="h-12 w-12 rounded-full object-cover"
+              <CommunityAuthorAvatar
+                userId={teacher.id}
+                name={teacher.name}
+                avatarUrl={teacher.avatarUrl}
+                size="sm"
               />
               <div className="min-w-0 flex-1">
-                <h3 className="font-bold text-[#0F172A]">{teacher.name}</h3>
+                <Link
+                  href={communityProfileHref(teacher.id)}
+                  className="font-bold text-[#0F172A] hover:text-cyan-700"
+                >
+                  {teacher.name}
+                </Link>
                 <p className="mt-0.5 text-xs text-slate-500">{teacher.specialty}</p>
                 <p className="mt-2 text-xs font-semibold text-slate-400">
                   {formatDocenteNumber(teacher.materialsCount)} materiais ·{" "}
@@ -217,7 +225,11 @@ export function ComunidadeDocenteSalvos({
             key={material.id}
             className="w-[220px] shrink-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
           >
-            <h3 className="line-clamp-2 text-sm font-bold text-[#0F172A]">{material.title}</h3>
+            <Link href={`/marketplace/material/${material.id}`} className="block">
+              <h3 className="line-clamp-2 text-sm font-bold text-[#0F172A] hover:text-cyan-700">
+                {material.title}
+              </h3>
+            </Link>
             <p className="mt-1 text-xs text-slate-500">{material.author.name}</p>
             <div className="mt-3 flex gap-2">
               <button

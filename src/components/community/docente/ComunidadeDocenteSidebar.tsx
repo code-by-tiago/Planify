@@ -13,7 +13,7 @@ import {
   getDisciplinaIconColor,
 } from "@/components/community/docente/docente-icons";
 import { DOCENTE_DISCIPLINAS } from "@/lib/community/docente-mock-data";
-import type { DocenteMenuItem } from "@/lib/community/docente-types";
+import type { DocenteDisciplina, DocenteMenuItem } from "@/lib/community/docente-types";
 
 const MENU_ITEMS: { id: DocenteMenuItem; label: string; icon: typeof IconHome }[] = [
   { id: "inicio", label: "Início", icon: IconHome },
@@ -28,14 +28,18 @@ const MENU_ITEMS: { id: DocenteMenuItem; label: string; icon: typeof IconHome }[
 
 type ComunidadeDocenteSidebarProps = {
   activeItem: DocenteMenuItem;
+  selectedDisciplina: DocenteDisciplina | null;
   onSelectItem: (item: DocenteMenuItem) => void;
+  onSelectDisciplina: (disciplina: DocenteDisciplina | null) => void;
   onClose?: () => void;
   className?: string;
 };
 
 export function ComunidadeDocenteSidebar({
   activeItem,
+  selectedDisciplina,
   onSelectItem,
+  onSelectDisciplina,
   onClose,
   className = "",
 }: ComunidadeDocenteSidebarProps) {
@@ -85,7 +89,17 @@ export function ComunidadeDocenteSidebar({
               <li key={disciplina}>
                 <button
                   type="button"
-                  className="flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left text-xs font-semibold text-slate-600 transition hover:bg-slate-50 hover:text-[#0F172A]"
+                  onClick={() => {
+                    onSelectDisciplina(selectedDisciplina === disciplina ? null : disciplina);
+                    onSelectItem("materiais");
+                    onClose?.();
+                  }}
+                  className={[
+                    "flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left text-xs font-semibold transition",
+                    selectedDisciplina === disciplina
+                      ? "bg-cyan-50 text-cyan-700"
+                      : "text-slate-600 hover:bg-slate-50 hover:text-[#0F172A]",
+                  ].join(" ")}
                 >
                   <span
                     className={`h-2 w-2 shrink-0 rounded-full bg-current ${getDisciplinaIconColor(disciplina)}`}
@@ -97,6 +111,11 @@ export function ComunidadeDocenteSidebar({
             <li>
               <button
                 type="button"
+                onClick={() => {
+                  onSelectDisciplina(null);
+                  onSelectItem("materiais");
+                  onClose?.();
+                }}
                 className="mt-1 px-2 text-xs font-bold text-cyan-600 hover:text-cyan-700"
               >
                 Ver todas

@@ -29,6 +29,10 @@ export function GoogleClassroomPanel({
     courses,
     courseId,
     setCourseId,
+    description,
+    setDescription,
+    publishAsDraft,
+    setPublishAsDraft,
     loading,
     busy,
     error,
@@ -157,6 +161,22 @@ export function GoogleClassroomPanel({
                 ))
               )}
             </select>
+            <input
+              type="text"
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
+              placeholder="Descrição (opcional)"
+              title="Descrição do material no Classroom"
+              className="max-w-[min(220px,45vw)] rounded-xl border border-sky-200 bg-white px-2 py-2 text-xs font-semibold text-slate-900"
+            />
+            <label className="inline-flex items-center gap-1 text-[11px] font-semibold text-sky-900" title="Salvar como rascunho">
+              <input
+                type="checkbox"
+                checked={publishAsDraft}
+                onChange={(event) => setPublishAsDraft(event.target.checked)}
+              />
+              Rascunho
+            </label>
             <button
               type="button"
               disabled={busy || !courseId || courses.length === 0}
@@ -246,6 +266,26 @@ export function GoogleClassroomPanel({
               </select>
             </label>
 
+            <label className="grid w-full min-w-[200px] flex-1 gap-1">
+              <span className="text-xs font-bold text-sky-800">Descrição</span>
+              <textarea
+                value={description}
+                onChange={(event) => setDescription(event.target.value)}
+                rows={2}
+                placeholder="Instruções para a turma (opcional)"
+                className="rounded-xl border border-sky-200 bg-white px-3 py-2 text-sm font-medium text-slate-900"
+              />
+            </label>
+
+            <label className="flex w-full items-center gap-2 text-sm font-semibold text-sky-900">
+              <input
+                type="checkbox"
+                checked={publishAsDraft}
+                onChange={(event) => setPublishAsDraft(event.target.checked)}
+              />
+              Publicar como rascunho (visível só para você até publicar no Classroom)
+            </label>
+
             <button
               type="button"
               disabled={busy || !courseId || courses.length === 0}
@@ -268,7 +308,8 @@ export function GoogleClassroomPanel({
       </div>
 
       <p className="mt-3 text-xs leading-5 text-sky-800/90">
-        O Planify envia o material ao seu Google Drive e cria uma atividade na turma escolhida.
+        O Planify envia o material ao seu Google Drive e cria um material na turma escolhida.
+        Use rascunho para revisar no Classroom antes de liberar aos alunos.
       </p>
     </div>
   );

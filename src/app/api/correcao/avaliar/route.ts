@@ -12,12 +12,16 @@ import {
   type CorrectionAiPayload,
 } from "@/server/correcao/correction-ai-service";
 import { assessCorrectionQuality } from "@/server/correcao/correction-quality";
+import { withOperationalCapture } from "@/server/telemetry/with-operational-capture";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
 
-export async function POST(request: NextRequest) {
+async function handlePost(
+  request: NextRequest,
+  _context: { params: Promise<Record<string, string>> },
+) {
   const auth = await requireApiPremiumAccess(request);
   if (!auth.ok) return auth.response;
 
@@ -34,74 +38,95 @@ export async function POST(request: NextRequest) {
   const tipo = CORRECAO_GENERATION_TYPE;
   let chargedCost = 0;
 
-  if (user?.id) {
-    const spend = await spendCredits(user.id, tipo, user.email);
+  try {
+    if (user?.id) {
+      const spend = await spendCredits(user.id, tipo, user.email);
 
-    if (spend.status === "insufficient") {
+      if (spend.status === "insufficient") {
+        return NextResponse.json(
+          {
+            ok: false,
+            code: "insufficient_credits",
+            message:
+              "Você não tem créditos suficientes neste ciclo. Aguarde a renovação mensal ou fale com o suporte.",
+            balance: spend.balance,
+            cost: spend.cost,
+          },
+          { status: 402 },
+        );
+      }
+
+      if (spend.status === "ok") {
+        chargedCost = spend.cost;
+      }
+    }
+
+    const result = await evaluateCorrectionWithAI(payload);
+
+    if (!result.ok) {
+      if (user?.id && chargedCost > 0) {
+        await refundCredits(user.id, chargedCost, tipo);
+      }
+
       return NextResponse.json(
-        {
-          ok: false,
-          code: "insufficient_credits",
-          message:
-            "Você não tem créditos suficientes neste ciclo. Aguarde a renovação mensal ou fale com o suporte.",
-          balance: spend.balance,
-          cost: spend.cost,
-        },
-        { status: 402 },
+        { ok: false, message: result.message },
+        { status: result.status },
       );
     }
 
-    if (spend.status === "ok") {
-      chargedCost = spend.cost;
+    const quality = assessCorrectionQuality(result.result);
+    if (!quality.pass) {
+      if (user?.id && chargedCost > 0) {
+        await refundCredits(user.id, chargedCost, tipo);
+      }
+
+      return NextResponse.json(
+        {
+          ok: false,
+          code: "quality_gate",
+          message: quality.message,
+          qualityScore: quality.qualityScore,
+          qualityIssues: quality.qualityIssues,
+        },
+        { status: 422 },
+      );
     }
-  }
 
-  const result = await evaluateCorrectionWithAI(payload);
+    logGenerationComplete({
+      surface: "material",
+      tipo,
+      pipeline: "correcao-ai",
+      qualityScoreBucket: bucketQualityScore(quality.qualityScore),
+      elevarQualidade: false,
+      usedAI: true,
+      dailyQuotaConsumed: false,
+    });
 
-  if (!result.ok) {
+    return NextResponse.json({
+      ok: true,
+      result: result.result,
+      qualityScore: quality.qualityScore,
+      qualityIssues: quality.qualityIssues,
+      creditCost: chargedCost || getCreditCost(tipo),
+    });
+  } catch (error) {
     if (user?.id && chargedCost > 0) {
-      await refundCredits(user.id, chargedCost, tipo);
+      await refundCredits(user.id, chargedCost, tipo).catch(() => null);
     }
 
-    return NextResponse.json(
-      { ok: false, message: result.message },
-      { status: result.status },
-    );
-  }
-
-  const quality = assessCorrectionQuality(result.result);
-  if (!quality.pass) {
-    if (user?.id && chargedCost > 0) {
-      await refundCredits(user.id, chargedCost, tipo);
-    }
+    console.error("[correcao/avaliar] unexpected failure:", error);
 
     return NextResponse.json(
       {
         ok: false,
-        code: "quality_gate",
-        message: quality.message,
-        qualityScore: quality.qualityScore,
-        qualityIssues: quality.qualityIssues,
+        message: "Erro inesperado ao corrigir. Seus créditos foram estornados.",
       },
-      { status: 422 },
+      { status: 500 },
     );
   }
-
-  logGenerationComplete({
-    surface: "material",
-    tipo,
-    pipeline: "correcao-ai",
-    qualityScoreBucket: bucketQualityScore(quality.qualityScore),
-    elevarQualidade: false,
-    usedAI: true,
-    dailyQuotaConsumed: false,
-  });
-
-  return NextResponse.json({
-    ok: true,
-    result: result.result,
-    qualityScore: quality.qualityScore,
-    qualityIssues: quality.qualityIssues,
-    creditCost: chargedCost || getCreditCost(tipo),
-  });
 }
+
+export const POST = withOperationalCapture(
+  { eventType: "material_generation_failed", toolTipo: "correcao-ia" },
+  handlePost,
+);

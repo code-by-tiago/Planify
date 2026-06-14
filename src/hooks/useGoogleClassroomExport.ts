@@ -31,6 +31,8 @@ export function useGoogleClassroomExport({
   const [status, setStatus] = useState<GoogleIntegrationStatus | null>(null);
   const [courses, setCourses] = useState<ClassroomCourseOption[]>([]);
   const [courseId, setCourseId] = useState("");
+  const [description, setDescription] = useState("");
+  const [publishAsDraft, setPublishAsDraft] = useState(false);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -141,17 +143,24 @@ export function useGoogleClassroomExport({
         title: title.trim() || "Material Planify",
         html: getHtml(),
         courseId,
-        description: "Material didático enviado pelo Planify.",
+        description:
+          description.trim() ||
+          "Material didático enviado pelo Planify.",
         documentType,
+        publishState: publishAsDraft ? "DRAFT" : "PUBLISHED",
       });
 
       const link =
         result.classroom?.alternateLink || result.drive.webViewLink || "";
 
       notify(
-        link
-          ? "Material publicado no Google Classroom."
-          : "Material enviado ao Drive e publicado na turma.",
+        publishAsDraft
+          ? link
+            ? "Rascunho salvo no Google Classroom."
+            : "Rascunho enviado ao Drive e registrado na turma."
+          : link
+            ? "Material publicado no Google Classroom."
+            : "Material enviado ao Drive e publicado na turma.",
       );
 
       if (link) {
@@ -171,6 +180,10 @@ export function useGoogleClassroomExport({
     courses,
     courseId,
     setCourseId,
+    description,
+    setDescription,
+    publishAsDraft,
+    setPublishAsDraft,
     loading,
     busy,
     error,

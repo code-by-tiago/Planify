@@ -42,8 +42,11 @@
     "verify:custom-template-docx": "node scripts/verify-custom-template-docx.mjs",
     "verify:export-pipeline": "node scripts/verify-export-pipeline.mjs",
     "verify:all": "npm run verify:material-quality && npm run verify:generators && npm run verify:export-pipeline && node scripts/verify-export-motors.mjs && node scripts/verify-forms-export-payload.mjs && npm run verify:planejamento-docx && node scripts/verify-google-export-readiness.mjs",
+    "verify:go-live": "node scripts/verify-go-live.mjs",
+    "test:e2e": "playwright test",
+    "test:e2e:install": "playwright install chromium",
     "bncc:import": "node scripts/bncc/import-bncc-skills.mjs",
-    "render:launch-social": "node scripts/render-launch-social.mjs"
+    "render:launch-social": "node scripts/render-social-pack.mjs"
   },
   "dependencies": {
     "@google/genai": "^2.8.0",
@@ -64,6 +67,7 @@
     "stripe": "22.2.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.60.0",
     "@sentry/nextjs": "^10.57.0",
     "@types/node": "25.9.1",
     "@types/react": "19.2.15",

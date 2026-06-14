@@ -1,5 +1,4 @@
 import PlanifyDashboardShell from "@/components/dashboard/PlanifyDashboardShell";
-import PremiumAccessGate from "@/components/premium/PremiumAccessGate";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { landingPublicToolCount } from "@/lib/pro/teachyLanding";
@@ -14,8 +13,7 @@ export const metadata: Metadata = {
 
 export default function DashboardPage() {
   return (
-    <PremiumAccessGate featureName="o Planify">
-      <Suspense
+    <Suspense
         fallback={
           <div className="planify-hud planify-ui3 planify-hud-app pl-dashboard-root flex h-[100dvh] w-full max-w-[100vw] items-center justify-center overflow-hidden bg-white">
             <p className="text-sm font-bold text-blue-600">
@@ -26,6 +24,5 @@ export default function DashboardPage() {
       >
         <PlanifyDashboardShell />
       </Suspense>
-    </PremiumAccessGate>
   );
 }

@@ -20,7 +20,7 @@ function getSafeRedirectPath(value: FormDataEntryValue | null): string {
  * Compatibilidade para formulários/server actions antigos.
  *
  * O login real do Planify agora é feito no frontend em:
- * src/app/login/LoginClient.tsx
+ * src/app/login/LoginPageClient.tsx
  *
  * Esta função existe para manter exports antigos sem quebrar o build.
  */
@@ -34,7 +34,7 @@ export async function signInWithPassword(formData: FormData) {
  * Compatibilidade para cadastro antigo.
  *
  * O cadastro real do Planify agora é feito no frontend em:
- * src/app/login/LoginClient.tsx
+ * src/app/login/LoginPageClient.tsx
  */
 export async function signUpWithPassword() {
   redirect("/login?cadastro=ok");

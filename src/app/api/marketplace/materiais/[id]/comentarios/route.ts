@@ -1,18 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyPremiumAccess } from "../../../../../../server/auth/premium-access-service";
-import { resolveDisplayNameFromSources } from "../../../../../../server/auth/user-display-name";
-import { getMaterialCommentsBatch } from "../../../../../../server/community/marketplace-social-service";
-import { createCommunityNotification } from "../../../../../../server/community/community-notifications-service";
-import { getSupabaseAdminClient } from "../../../../../../server/supabase/admin-client";
+import { requireApiPremiumAccess } from "@/server/auth/api-access";
+import { resolveDisplayNameFromSources } from "@/server/auth/user-display-name";
+import { getMaterialCommentsBatch } from "@/server/community/marketplace-social-service";
+import { createCommunityNotification } from "@/server/community/community-notifications-service";
+import { getSupabaseAdminClient } from "@/server/supabase/admin-client";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
-function getBearerToken(request: NextRequest): string | null {
-  const header = request.headers.get("authorization") || "";
-  const match = header.match(/^Bearer\s+(.+)$/i);
-  return match?.[1]?.trim() || request.cookies.get("planify_access")?.value || null;
-}
 
 function jsonError(message: string, status = 400) {
   return NextResponse.json({ success: false, error: { message } }, { status });
@@ -43,40 +37,43 @@ export async function GET(
     return jsonError("Material não informado.", 400);
   }
 
-  const commentsMap = await getMaterialCommentsBatch([materialId]);
-  const comments = commentsMap.get(materialId) || [];
+  try {
+    const commentsMap = await getMaterialCommentsBatch([materialId]);
+    const comments = commentsMap.get(materialId) || [];
 
-  return NextResponse.json({
-    success: true,
-    comments: comments.map((comment) => ({
-      id: comment.id,
-      material_id: materialId,
-      user_id: comment.userId,
-      author_name: comment.authorName,
-      author_avatar_url: comment.authorAvatarUrl,
-      body: comment.body,
-      created_at: comment.createdAt,
-    })),
-  });
+    return NextResponse.json({
+      success: true,
+      comments: comments.map((comment) => ({
+        id: comment.id,
+        material_id: materialId,
+        user_id: comment.userId,
+        author_name: comment.authorName,
+        author_avatar_url: comment.authorAvatarUrl,
+        body: comment.body,
+        created_at: comment.createdAt,
+      })),
+    });
+  } catch (error) {
+    console.error("[marketplace/comentarios] GET failed:", error);
+    return jsonError("Não foi possível carregar comentários.", 500);
+  }
 }
 
 export async function POST(
   request: NextRequest,
   context: { params: Promise<{ id: string }> },
 ) {
+  const auth = await requireApiPremiumAccess(request);
+  if (!auth.ok) return auth.response;
+
+  const access = auth.access;
   const { id: materialId } = await context.params;
-  const token = getBearerToken(request);
-  const access = await verifyPremiumAccess(token);
 
-  if (!access.authenticated) {
-    return jsonError("Faça login para comentar.", 401);
+  const payload = (await request.json().catch(() => null)) as { text?: string } | null;
+  if (!payload) {
+    return jsonError("Corpo da requisição inválido.", 400);
   }
 
-  if (!access.premium) {
-    return jsonError("Comentários exigem plano ativo.", 403);
-  }
-
-  const payload = (await request.json()) as { text?: string };
   const text = String(payload.text || "").trim();
 
   if (text.length < 2) {
@@ -87,86 +84,88 @@ export async function POST(
     return jsonError("Comentário muito longo (máx. 2000 caracteres).");
   }
 
-  const supabase = getSupabaseAdminClient();
+  try {
+    const supabase = getSupabaseAdminClient();
 
-  const { data: material } = await supabase
-    .from("marketplace_materials")
-    .select("id,user_id,title")
-    .eq("id", materialId)
-    .maybeSingle();
+    const { data: material } = await supabase
+      .from("marketplace_materials")
+      .select("id,user_id,title")
+      .eq("id", materialId)
+      .maybeSingle();
 
-  if (!material) {
-    return jsonError("Material não encontrado.", 404);
-  }
+    if (!material) {
+      return jsonError("Material não encontrado.", 404);
+    }
 
-  const userId = access.user?.id;
+    const userId = access.user?.id;
 
-  if (!userId) {
-    return jsonError("Faça login para comentar.", 401);
-  }
+    if (!userId) {
+      return jsonError("Faça login para comentar.", 401);
+    }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("full_name,email")
-    .eq("id", userId)
-    .maybeSingle();
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("full_name,email")
+      .eq("id", userId)
+      .maybeSingle();
 
-  const authorName = resolveDisplayNameFromSources({
-    profileFullName: profile?.full_name,
-    email: profile?.email || access.user?.email || null,
-    fallback: "Professor",
-  });
-
-  const row = {
-    material_id: materialId,
-    user_id: userId,
-    author_name: authorName,
-    author_email: access.user?.email || profile?.email || null,
-    body: text,
-  };
-
-  const { data, error } = await commentsTable(supabase)
-    .insert(row)
-    .select("*")
-    .single();
-
-  if (error) {
-    return jsonError(
-      `Não foi possível salvar o comentário. Detalhe: ${error.message}`,
-      500,
-    );
-  }
-
-  const enriched = await getMaterialCommentsBatch([materialId]);
-  const saved = (enriched.get(materialId) || []).find((row) => row.id === String(data.id));
-
-  const ownerUserId = material?.user_id ? String(material.user_id) : null;
-
-  if (ownerUserId) {
-    void createCommunityNotification({
-      userId: ownerUserId,
-      type: "comment",
-      actorUserId: userId,
-      materialId,
-      bodyPreview: text.slice(0, 200),
-      targetType: "material",
-      targetId: materialId,
-      href: `/comunidade/material/${materialId}`,
+    const authorName = resolveDisplayNameFromSources({
+      profileFullName: profile?.full_name,
+      email: profile?.email || access.user?.email || null,
+      fallback: "Professor",
     });
-  }
 
-  return NextResponse.json({
-    success: true,
-    comment: saved
-      ? {
-          id: saved.id,
-          material_id: materialId,
-          user_id: saved.userId,
-          author_name: saved.authorName,
-          author_avatar_url: saved.authorAvatarUrl,
-          body: saved.body,
-          created_at: saved.createdAt,
-        }
-      : (data as CommentRow),
-  });
+    const row = {
+      material_id: materialId,
+      user_id: userId,
+      author_name: authorName,
+      author_email: access.user?.email || profile?.email || null,
+      body: text,
+    };
+
+    const { data, error } = await commentsTable(supabase)
+      .insert(row)
+      .select("*")
+      .single();
+
+    if (error) {
+      return jsonError("Não foi possível salvar o comentário.", 500);
+    }
+
+    const enriched = await getMaterialCommentsBatch([materialId]);
+    const saved = (enriched.get(materialId) || []).find((row) => row.id === String(data.id));
+
+    const ownerUserId = material?.user_id ? String(material.user_id) : null;
+
+    if (ownerUserId) {
+      void createCommunityNotification({
+        userId: ownerUserId,
+        type: "comment",
+        actorUserId: userId,
+        materialId,
+        bodyPreview: text.slice(0, 200),
+        targetType: "material",
+        targetId: materialId,
+        href: `/comunidade/material/${materialId}`,
+      });
+    }
+
+    return NextResponse.json({
+      success: true,
+      comment: saved
+        ? {
+            id: saved.id,
+            material_id: materialId,
+            user_id: saved.userId,
+            author_name: saved.authorName,
+            author_avatar_url: saved.authorAvatarUrl,
+            body: saved.body,
+            created_at: saved.createdAt,
+          }
+        : (data as CommentRow),
+    });
+  } catch (error) {
+    console.error("[marketplace/comentarios] POST failed:", error);
+    return jsonError("Erro inesperado ao salvar comentário.", 500);
+  }
 }

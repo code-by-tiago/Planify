@@ -1,5 +1,8 @@
 "use client";
 
+/**
+ * @deprecated Prefer PremiumAccessGate no layout (app). Mantido para PageShell legado (admin/404).
+ */
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import {

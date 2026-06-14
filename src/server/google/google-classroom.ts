@@ -129,11 +129,12 @@ export async function publishDriveFileToClassroom(params: {
   title: string;
   description?: string;
   driveFileId: string;
+  publishState?: "PUBLISHED" | "DRAFT";
 }): Promise<ClassroomPublishResult> {
   const body = {
     title: params.title,
     description: params.description || "Material enviado pelo Planify.",
-    state: "PUBLISHED",
+    state: params.publishState === "DRAFT" ? "DRAFT" : "PUBLISHED",
     materials: [
       {
         driveFile: {

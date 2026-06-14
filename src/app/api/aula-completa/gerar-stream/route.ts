@@ -11,6 +11,8 @@ import {
 } from "@/server/telemetry/generation-telemetry";
 import { generateLessonBundle } from "@/server/materials/lesson-bundle-orchestrator";
 import type { BundleStreamEvent } from "@/lib/aula-completa/lesson-bundle-stream-types";
+import { withOperationalCapture } from "@/server/telemetry/with-operational-capture";
+
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -19,7 +21,10 @@ function encodeEvent(event: BundleStreamEvent): Uint8Array {
   return new TextEncoder().encode(`${JSON.stringify(event)}\n`);
 }
 
-export async function POST(request: NextRequest) {
+async function handlePost(
+  request: NextRequest,
+  _context: { params: Promise<Record<string, string>> },
+) {
   const prepared = await prepareLessonBundleRequest(request);
   if (!prepared.ok) return prepared.response;
 
@@ -90,3 +95,8 @@ export async function POST(request: NextRequest) {
     },
   });
 }
+
+export const POST = withOperationalCapture(
+  { eventType: "material_generation_failed", toolTipo: "aula-completa-stream" },
+  handlePost,
+);

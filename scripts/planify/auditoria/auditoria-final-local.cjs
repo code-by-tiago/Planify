@@ -8,7 +8,7 @@ const requiredFiles = [
   ".env.local",
   "src/components/PageShell.tsx",
   "src/components/PremiumRouteGuard.tsx",
-  "src/app/login/LoginClient.tsx",
+  "src/app/login/LoginPageClient.tsx",
   "src/app/api/access/status/route.ts",
   "src/app/api/owner/session/route.ts",
   "src/app/api/admin/session/route.ts",

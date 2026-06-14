@@ -463,6 +463,65 @@ async function runSprint1Suite(failures) {
   }
 }
 
+async function runInclusaoLive(failures) {
+  const { generateInclusaoWithAI } = loadTsModule(
+    "src/server/inclusao/inclusao-ai-service.ts",
+  );
+  const { assessInclusaoQuality } = loadTsModule(
+    "src/server/inclusao/inclusao-quality.ts",
+  );
+
+  console.log("\n=== Inclusão live ===");
+  const started = Date.now();
+
+  try {
+    const payload = {
+      modo: "adaptacao",
+      necessidade: "tea",
+      etapaEnsino: "EF II (6º ao 9º ano)",
+      conteudo:
+        "Equações do 1º grau: resolver x + 3 = 10 isolando a incógnita com operações inversas.",
+      observacoes: "Turma do 8º ano, aula de revisão.",
+    };
+
+    const result = await generateInclusaoWithAI(payload, { userId: null });
+
+    if (!result.ok) {
+      failures.push({ tipo: "inclusao", reason: result.message });
+      console.log(`  ✗ inclusao: ${result.message}`);
+      return;
+    }
+
+    const quality = assessInclusaoQuality({
+      modo: payload.modo,
+      markdown: result.markdown,
+      sourceContent: payload.conteudo,
+    });
+
+    const elapsedMs = Date.now() - started;
+
+    if (!quality.pass || String(result.html || "").length < 200) {
+      failures.push({
+        tipo: "inclusao",
+        reason: quality.pass
+          ? "HTML curto demais"
+          : quality.message || "quality gate",
+        elapsedMs,
+      });
+      console.log(`  ✗ inclusao: quality=${quality.pass}, htmlLen=${String(result.html || "").length}`);
+      return;
+    }
+
+    console.log(
+      `  ✓ inclusao: score=${quality.qualityScore}, htmlLen=${String(result.html).length}, ${elapsedMs}ms`,
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    failures.push({ tipo: "inclusao", reason: message });
+    console.log(`  ✗ inclusao: ${message}`);
+  }
+}
+
 async function main() {
   loadEnvLocal();
 
@@ -494,6 +553,8 @@ async function main() {
     if (!inclusaoClient.includes("requestInclusaoGeneration")) {
       failures.push({ tipo: "inclusao", reason: "client ausente" });
     }
+  } else if (suite === "inclusao") {
+    await runInclusaoLive(failures);
   } else {
     const { MATERIAL_ENGINE_TYPES } = loadTsModule(
       "src/server/materials/material-engine-types.ts",
@@ -528,6 +589,9 @@ async function main() {
   } else if (suite === "u2") {
     const total = 1;
     console.log(`\nverify:staging (u2): ${total - failures.length}/${total} OK — ${elapsedMs}ms`);
+  } else if (suite === "inclusao") {
+    const total = 1;
+    console.log(`\nverify:generators-live (inclusao): ${total - failures.length}/${total} OK — ${elapsedMs}ms`);
   }
 
   if (failures.length) {

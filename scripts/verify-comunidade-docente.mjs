@@ -24,7 +24,7 @@ const requiredFiles = [
   "src/app/api/community/docente/grupo/[id]/messages/route.ts",
   "src/app/api/community/docente/challenges/bncc/route.ts",
   "src/app/api/community/hidden-feed-materials/route.ts",
-  "supabase/migrations/20260614_community_docente_v3.sql",
+  "supabase/migrations/20260614060300_community_docente_v3.sql",
   "src/server/community/community-post-attachments-service.ts",
   "src/lib/community/docente-create-post-client.ts",
   "supabase/migrations/20260614160000_community_optional_features.sql",

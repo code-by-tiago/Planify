@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
 
   const response = NextResponse.json(
     {
-      success: access.premium,
+      success: access.authenticated,
       access,
       cookiePayload: payload,
       inviteSyncWarning,

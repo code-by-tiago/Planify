@@ -4,6 +4,7 @@ import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "re
 import Link from "next/link";
 import { GoogleDocumentExportBar } from "@/components/google/GoogleDocumentExportBar";
 import { GoogleSlidesExportButton } from "@/components/google/GoogleSlidesExportButton";
+import { SlidesPptxDownloadButton } from "@/components/documents/SlidesPptxDownloadButton";
 import { SlideAiAdjustPanel } from "@/components/slides/SlideAiAdjustPanel";
 import { MaterialGenerationSummaryPanel } from "@/components/materiais/MaterialGenerationSummary";
 import { MaterialQualityScoreBar } from "@/components/materiais/MaterialQualityScoreBar";
@@ -2292,7 +2293,7 @@ export function MateriaisClient({
                     O Planify converte seus slides (com imagens e sequência pedagógica) em
                     apresentação nativa na sua conta Google.
                   </p>
-                  <div className="mt-3">
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
                     <GoogleSlidesExportButton
                       title={buildTitle(tipo, tema)}
                       html={resultadoHtml}
@@ -2300,6 +2301,16 @@ export function MateriaisClient({
                       theme={resultadoEstrutura?.slideTheme || designSlides}
                       returnTo="/dashboard?tipo=slides"
                       alwaysShowExport
+                      iconOnly={false}
+                    />
+                    <SlidesPptxDownloadButton
+                      title={buildTitle(tipo, tema)}
+                      html={resultadoHtml}
+                      slides={resultadoEstrutura?.slides}
+                      theme={resultadoEstrutura?.slideTheme || designSlides}
+                      documentType="material:slides"
+                      iconOnly={false}
+                      label="Baixar PPTX"
                     />
                   </div>
                 </aside>

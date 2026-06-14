@@ -11,6 +11,7 @@ import type { LessonBundleInput } from "@/server/materials/lesson-bundle-orchest
 import type { LessonBundleItemResult } from "@/server/materials/lesson-bundle-orchestrator";
 import type { PlanifyToolId } from "@/lib/pro/planifyTools";
 import { requireApiPremiumAccess } from "@/server/auth/api-access";
+import { withOperationalCapture } from "@/server/telemetry/with-operational-capture";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -22,7 +23,10 @@ type RegenerarItemBody = LessonBundleInput & {
   completedItems: LessonBundleItemResult[];
 };
 
-export async function POST(request: NextRequest) {
+async function handlePost(
+  request: NextRequest,
+  _context: { params: Promise<Record<string, string>> },
+) {
   const auth = await requireApiPremiumAccess(request);
   if (!auth.ok) return auth.response;
 
@@ -105,3 +109,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: false, message }, { status: 500 });
   }
 }
+
+export const POST = withOperationalCapture(
+  { eventType: "material_generation_failed", toolTipo: "aula-completa-regenerar" },
+  handlePost,
+);

@@ -22,17 +22,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Material quality smoke suite
-        run: npm run verify:material-quality
-
-      - name: Generator fixtures smoke suite
-        run: npm run verify:generators
-
-      - name: Export pipeline smoke suite
-        run: npm run verify:export-pipeline
-
-      - name: Prova engine contract
-        run: npm run verify:prova-engine-contract
+      - name: Go-live verification suite
+        run: npm run verify:go-live
 
       - name: Typecheck
         run: npm run typecheck

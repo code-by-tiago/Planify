@@ -25,6 +25,7 @@ export type GoogleClassroomExportInput = {
   filename?: string;
   /** Tipo salvo no documento (ex.: material:slides) — reforça a detecção no servidor. */
   documentType?: string | null;
+  publishState?: "PUBLISHED" | "DRAFT";
 };
 
 export type GoogleClassroomExportResult = {
@@ -90,6 +91,7 @@ export async function exportMaterialToGoogle(
       title,
       description: input.description,
       driveFileId: drive.fileId,
+      publishState: input.publishState,
     });
   }
 

@@ -553,7 +553,62 @@ function renderMindMap(response: MaterialEngineResponse): string {
   const mindMap = response.mindMap;
   if (!mindMap || !mindMap.branches.length) return "";
 
-  const branchCards = mindMap.branches
+  const branches = mindMap.branches.filter((branch) => branch.title?.trim());
+  if (!branches.length) return "";
+
+  const cx = 320;
+  const cy = 210;
+  const radius = 150;
+  const branchCount = branches.length;
+
+  const branchNodes = branches
+    .map((branch, index) => {
+      const c = FLASHCARD_PALETTE[index % FLASHCARD_PALETTE.length];
+      const angle = (Math.PI * 2 * index) / branchCount - Math.PI / 2;
+      const bx = Math.round(cx + Math.cos(angle) * radius);
+      const by = Math.round(cy + Math.sin(angle) * radius);
+      const items = (branch.items || []).filter((item) => item.trim());
+      const chips = items
+        .map(
+          (item) =>
+            `<span class="planify-mindmap-chip" style="display:inline-block;margin:3px 4px 0 0;padding:5px 11px;border-radius:999px;background:${c.soft};border:1px solid ${c.base}33;font-size:12px;font-weight:600;color:${c.ink};">${escapeHtml(item)}</span>`,
+        )
+        .join("");
+
+      return {
+        c,
+        bx,
+        by,
+        chips,
+        title: escapeHtml(branch.title),
+        index,
+      };
+    });
+
+  const connectors = branchNodes
+    .map(
+      (node) =>
+        `<path d="M ${cx} ${cy} Q ${Math.round((cx + node.bx) / 2)} ${Math.round((cy + node.by) / 2)} ${node.bx} ${node.by}" fill="none" stroke="${node.c.base}55" stroke-width="2.5" stroke-linecap="round"/>`,
+    )
+    .join("");
+
+  const branchCards = branchNodes
+    .map(
+      (node) => `
+        <foreignObject x="${node.bx - 118}" y="${node.by - 58}" width="236" height="116">
+          <div xmlns="http://www.w3.org/1999/xhtml" class="planify-mindmap-branch" style="height:100%;border:1px solid ${node.c.base}33;border-top:4px solid ${node.c.base};border-radius:14px;padding:12px 14px;background:#ffffff;box-shadow:0 10px 26px -20px ${node.c.base};">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+              <span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:999px;background:${node.c.strong};color:#fff;font-size:11px;font-weight:800;">${node.index + 1}</span>
+              <h3 style="margin:0;font-size:14px;font-weight:800;color:#0f172a;line-height:1.25;">${node.title}</h3>
+            </div>
+            <div>${node.chips}</div>
+          </div>
+        </foreignObject>
+      `,
+    )
+    .join("");
+
+  const listFallback = branches
     .map((branch, index) => {
       const c = FLASHCARD_PALETTE[index % FLASHCARD_PALETTE.length];
       const items = (branch.items || []).filter((item) => item.trim());
@@ -564,11 +619,8 @@ function renderMindMap(response: MaterialEngineResponse): string {
         )
         .join("");
       return `
-        <div class="planify-mindmap-branch" style="position:relative;flex:1 1 240px;min-width:220px;border:1px solid ${c.base}33;border-top:4px solid ${c.base};border-radius:14px;padding:14px 16px;background:#ffffff;box-shadow:0 10px 26px -20px ${c.base};">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-            <span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:999px;background:${c.strong};color:#fff;font-size:12px;font-weight:800;">${index + 1}</span>
-            <h3 style="margin:0;font-size:15px;font-weight:800;color:#0f172a;line-height:1.25;">${escapeHtml(branch.title)}</h3>
-          </div>
+        <div class="planify-mindmap-branch" style="flex:1 1 240px;min-width:220px;border:1px solid ${c.base}33;border-top:4px solid ${c.base};border-radius:14px;padding:14px 16px;background:#ffffff;">
+          <h3 style="margin:0 0 8px;font-size:15px;font-weight:800;color:#0f172a;">${escapeHtml(branch.title)}</h3>
           <div>${chips}</div>
         </div>
       `;
@@ -578,14 +630,26 @@ function renderMindMap(response: MaterialEngineResponse): string {
   return `
     <section class="planify-mindmap">
       <h2>Mapa mental</h2>
-      <div style="margin:16px 0;">
-        <div style="max-width:520px;margin:0 auto;text-align:center;padding:22px;border-radius:18px;background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;box-shadow:0 16px 36px -20px #4f46e5;">
-          <p style="margin:0;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;opacity:0.9;">Conceito central</p>
-          <p style="margin:8px 0 0;font-size:24px;font-weight:900;line-height:1.2;">${escapeHtml(mindMap.central)}</p>
-        </div>
-        <div style="display:flex;justify-content:center;margin:6px 0;"><span style="width:2px;height:22px;background:#c7d2fe;"></span></div>
-        <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:stretch;justify-content:center;">
+      <div class="planify-mindmap-radial" style="margin:16px 0;">
+        <svg viewBox="0 0 640 420" role="img" aria-label="Mapa mental radial" style="width:100%;max-width:720px;margin:0 auto;display:block;">
+          <defs>
+            <radialGradient id="planify-mindmap-glow" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="#818cf8" stop-opacity="0.35"/>
+              <stop offset="100%" stop-color="#818cf8" stop-opacity="0"/>
+            </radialGradient>
+          </defs>
+          <circle cx="${cx}" cy="${cy}" r="188" fill="url(#planify-mindmap-glow)"/>
+          ${connectors}
+          <circle cx="${cx}" cy="${cy}" r="72" fill="#4f46e5" stroke="#312e81" stroke-width="2"/>
+          <foreignObject x="${cx - 90}" y="${cy - 36}" width="180" height="72">
+            <div xmlns="http://www.w3.org/1999/xhtml" style="height:100%;display:flex;align-items:center;justify-content:center;text-align:center;padding:8px;">
+              <p style="margin:0;font-size:15px;font-weight:900;line-height:1.2;color:#ffffff;">${escapeHtml(mindMap.central)}</p>
+            </div>
+          </foreignObject>
           ${branchCards}
+        </svg>
+        <div class="planify-mindmap-fallback" style="display:none;flex-wrap:wrap;gap:16px;margin-top:12px;">
+          ${listFallback}
         </div>
       </div>
       <p style="margin:12px 0 0;font-size:13px;color:#64748b;">Cada ramo articula subtópicos ao conceito central — conduza a discussão partindo do centro para as ramificações.</p>

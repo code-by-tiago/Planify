@@ -31,6 +31,10 @@ export function GoogleClassroomPopoverButton({
     courses,
     courseId,
     setCourseId,
+    description,
+    setDescription,
+    publishAsDraft,
+    setPublishAsDraft,
     loading,
     busy,
     error,
@@ -120,6 +124,21 @@ export function GoogleClassroomPopoverButton({
                   ))
                 )}
               </select>
+              <input
+                type="text"
+                value={description}
+                onChange={(event) => setDescription(event.target.value)}
+                placeholder="Descrição (opcional)"
+                className="w-full rounded-lg border border-sky-200 bg-white px-2 py-2 text-xs font-semibold text-slate-900"
+              />
+              <label className="flex items-center gap-2 text-[11px] font-semibold text-sky-900">
+                <input
+                  type="checkbox"
+                  checked={publishAsDraft}
+                  onChange={(event) => setPublishAsDraft(event.target.checked)}
+                />
+                Salvar como rascunho
+              </label>
               <div className="flex gap-2">
                 <button
                   type="button"

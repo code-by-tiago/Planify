@@ -7,6 +7,18 @@ import {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+function isStripeSignatureError(error: unknown): boolean {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+
+  const message = error.message.toLowerCase();
+  return (
+    message.includes("stripe-signature") ||
+    message.includes("assinatura stripe")
+  );
+}
+
 export async function POST(request: NextRequest) {
   try {
     const payload = await request.text();
@@ -29,6 +41,8 @@ export async function POST(request: NextRequest) {
       { status: 200 },
     );
   } catch (error) {
+    const status = isStripeSignatureError(error) ? 400 : 503;
+
     return NextResponse.json(
       {
         received: false,
@@ -39,7 +53,7 @@ export async function POST(request: NextRequest) {
               : "Erro ao processar webhook Stripe.",
         },
       },
-      { status: 400 },
+      { status },
     );
   }
 }

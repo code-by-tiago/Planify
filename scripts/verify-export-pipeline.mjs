@@ -191,10 +191,34 @@ for (const route of [
   "src/app/api/google/forms/export/route.ts",
   "src/app/api/google/slides/export/route.ts",
   "src/app/api/documentos/export/route.ts",
+  "src/app/api/documentos/export-pptx/route.ts",
 ]) {
   const source = readFileSync(join(root, route), "utf8");
   assert.match(source, /export async function POST/, `${route} deve expor POST`);
 }
+
+const pptxSvc = loadTsModule("src/server/materials/slides-pptx-export-service.ts");
+const sampleSlideHtml = `
+<section class="planify-slide-deck" data-planify-slide-theme="moderno">
+  <p>Apresentação · 2 slides · Tema moderno</p>
+  <div class="planify-slide" style="padding:24px;background:#fff;">
+    <h3>Introdução</h3>
+    <ul><li>Ponto 1</li><li>Ponto 2</li></ul>
+  </div>
+  <div class="planify-slide" style="padding:24px;background:#fff;">
+    <h3>Desenvolvimento</h3>
+    <ul><li>Ponto 3</li></ul>
+  </div>
+</section>`;
+
+await pptxSvc.exportSlidesPptxBuffer({
+  title: "Apresentação teste",
+  html: sampleSlideHtml,
+}).then((exported) => {
+  assert.ok(exported.buffer.byteLength > 800, "PPTX de slides não pode ser vazio");
+  assert.match(exported.filename, /\.pptx$/i);
+  assert.equal(exported.slideCount, 2);
+});
 
 console.log("verify-export-pipeline: OK");
 console.log("- Classroom jogo/prova → PDF; apostila → DOCX");
@@ -202,4 +226,5 @@ console.log("- Forms só prova/lista; jogo sem questões parseáveis");
 console.log("- Auto-export: jogo → Docs, prova/lista → Forms");
 console.log("- PDF preserva markup planify-game-*");
 console.log("- Jogos legados sem classes são promovidos na exportação");
-console.log("- 6 rotas de exportação com POST");
+console.log("- 7 rotas de exportação com POST");
+console.log("- PPTX nativo de slides via slides-pptx-export-service");

@@ -1,5 +1,5 @@
 import AppLayoutClient from "@/components/pro/AppLayoutClient";
-import { PremiumRouteGuard } from "@/components/PremiumRouteGuard";
+import PremiumAccessGate from "@/components/premium/PremiumAccessGate";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { PRIVATE_ROBOTS } from "@/lib/seo/metadata";
@@ -12,9 +12,8 @@ export const metadata: Metadata = {
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   return (
-    <>
-      <PremiumRouteGuard />
+    <PremiumAccessGate featureName="o Planify">
       <AppLayoutClient>{children}</AppLayoutClient>
-    </>
+    </PremiumAccessGate>
   );
 }

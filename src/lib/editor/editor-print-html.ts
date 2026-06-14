@@ -362,8 +362,21 @@ export const PLANIFY_EXPORT_DOC_COMPONENT_CSS = `
     color: #ffffff !important;
   }
   .planify-mindmap-branch {
+    break-inside: avoid;
+    page-break-inside: avoid;
     border-radius: 14px;
     background: #ffffff;
+  }
+  .planify-mindmap-radial svg {
+    max-height: 420px;
+  }
+  .planify-mindmap-chip {
+    break-inside: avoid;
+  }
+  @media print {
+    .planify-mindmap-radial svg {
+      max-height: none;
+    }
   }
   .planify-slide-deck {
     display: block;

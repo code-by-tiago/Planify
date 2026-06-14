@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import PremiumAccessGate from "@/components/premium/PremiumAccessGate";
 import { ComunidadeDocenteEventoDetailClient } from "@/components/community/docente/ComunidadeDocenteEventoDetailClient";
 import { getCommunityEventDetail } from "@/server/community/community-docente-service";
 
@@ -30,10 +29,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function EventoDetailPage({ params }: PageProps) {
   const { id } = await params;
   return (
-    <PremiumAccessGate featureName="a Comunidade Docente">
-      <Suspense>
+    <Suspense>
         <ComunidadeDocenteEventoDetailClient eventId={id} />
       </Suspense>
-    </PremiumAccessGate>
   );
 }

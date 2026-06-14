@@ -121,6 +121,7 @@ export async function exportToGoogleClassroom(params: {
   description?: string;
   filename?: string;
   documentType?: string | null;
+  publishState?: "PUBLISHED" | "DRAFT";
 }): Promise<ClassroomExportResult> {
   const response = await fetch("/api/google/classroom/export", {
     method: "POST",

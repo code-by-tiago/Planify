@@ -20,15 +20,23 @@ export async function GET(
     );
   }
 
-  const { id } = await context.params;
-  const job = await getGenerationJobForUser(id, userId);
+  try {
+    const { id } = await context.params;
+    const job = await getGenerationJobForUser(id, userId);
 
-  if (!job) {
+    if (!job) {
+      return NextResponse.json(
+        { ok: false, message: "Job não encontrado." },
+        { status: 404 },
+      );
+    }
+
+    return NextResponse.json({ ok: true, job });
+  } catch (error) {
+    console.error("[generation/jobs] unexpected failure:", error);
     return NextResponse.json(
-      { ok: false, message: "Job não encontrado." },
-      { status: 404 },
+      { ok: false, message: "Erro ao consultar status da geração." },
+      { status: 500 },
     );
   }
-
-  return NextResponse.json({ ok: true, job });
 }

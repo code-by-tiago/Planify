@@ -11,24 +11,6 @@ import {
 } from "./server/auth/api-access";
 import { verifyPremiumAccess } from "./server/auth/premium-access-service";
 
-function debugProxyLog(payload: Record<string, unknown>) {
-  // #region agent log
-  fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Debug-Session-Id": "3ed578",
-    },
-    body: JSON.stringify({
-      sessionId: "3ed578",
-      runId: "auth-session-debug",
-      timestamp: Date.now(),
-      ...payload,
-    }),
-  }).catch(() => {});
-  // #endregion
-}
-
 function redirectToLogin(request: NextRequest) {
   const url = request.nextUrl.clone();
   url.pathname = "/login";
@@ -44,6 +26,20 @@ function redirectToPlans(request: NextRequest) {
   url.searchParams.set("premium", "required");
   url.searchParams.set("redirect", request.nextUrl.pathname + request.nextUrl.search);
   return NextResponse.redirect(url);
+}
+
+function allowGracePass(params: {
+  authOnly: boolean;
+  premiumProtected: boolean;
+  accessPayload: ReturnType<typeof parseAccessCookiePayload>;
+}): boolean {
+  if (params.authOnly) {
+    return true;
+  }
+  if (params.premiumProtected) {
+    return Boolean(params.accessPayload?.premium);
+  }
+  return true;
 }
 
 export async function proxy(request: NextRequest) {
@@ -66,22 +62,12 @@ export async function proxy(request: NextRequest) {
   const hasValidJwt =
     Boolean(token && looksLikeJwt(token) && isJwtNotExpired(token));
 
-  debugProxyLog({
-    hypothesisId: "H1-H2",
-    location: "proxy.ts:authCheck",
-    message: "protected route auth decision",
-    data: {
-      pathname,
-      hasToken: Boolean(token),
-      hasValidJwt,
-      graceOk,
-      gracePremium: Boolean(accessPayload?.premium),
-    },
-  });
-
   if (!hasValidJwt) {
     if (graceOk) {
-      return NextResponse.next();
+      if (allowGracePass({ authOnly, premiumProtected, accessPayload })) {
+        return NextResponse.next();
+      }
+      return redirectToPlans(request);
     }
     return redirectToLogin(request);
   }
@@ -97,7 +83,7 @@ export async function proxy(request: NextRequest) {
   }
 
   if (!access.authenticated) {
-    if (graceOk) {
+    if (graceOk && allowGracePass({ authOnly, premiumProtected, accessPayload })) {
       return NextResponse.next();
     }
     return redirectToLogin(request);
@@ -135,6 +121,8 @@ export const config = {
     "/biblioteca/:path*",
     "/marketplace",
     "/marketplace/:path*",
+    "/comunidade",
+    "/comunidade/:path*",
     "/progresso-bncc",
     "/progresso-bncc/:path*",
     "/bncc",

@@ -6,6 +6,7 @@ import { GoogleDocsExportButton } from "@/components/google/GoogleDocsExportButt
 import { GoogleDriveExportButton } from "@/components/google/GoogleDriveExportButton";
 import { GoogleFormsExportButton } from "@/components/google/GoogleFormsExportButton";
 import { GoogleSlidesExportButton } from "@/components/google/GoogleSlidesExportButton";
+import { SlidesPptxDownloadButton } from "@/components/documents/SlidesPptxDownloadButton";
 import {
   resolveFormsExportCompatible,
   resolveSlideDeck,
@@ -115,14 +116,23 @@ export function GoogleDocumentExportBar({
       title={wrapTitle}
     >
       {showSlidesExport ? (
-        <GoogleSlidesExportButton
-          title={title}
-          getHtml={getHtml}
-          theme={slideTheme ?? undefined}
-          returnTo={returnTo}
-          alwaysShowExport
-          iconOnly
-        />
+        <>
+          <GoogleSlidesExportButton
+            title={title}
+            getHtml={getHtml}
+            theme={slideTheme ?? undefined}
+            returnTo={returnTo}
+            alwaysShowExport
+            iconOnly
+          />
+          <SlidesPptxDownloadButton
+            title={title}
+            getHtml={getHtml}
+            theme={slideTheme ?? undefined}
+            documentType={documentType}
+            iconOnly
+          />
+        </>
       ) : null}
       {!isSlideMaterial ? (
         <>

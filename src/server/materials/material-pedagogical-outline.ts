@@ -13,6 +13,8 @@ const OUTLINE_TYPES = new Set<MaterialEngineType>([
   "resumo",
   "projeto",
   "redacao",
+  "mapa-mental",
+  "flashcards",
 ]);
 
 type OutlineUnit = {

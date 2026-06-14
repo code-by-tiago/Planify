@@ -29,34 +29,6 @@ export function LandingHeader() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  useEffect(() => {
-    if (session.loading) {
-      return;
-    }
-
-    // #region agent log
-    fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Debug-Session-Id": "3ed578",
-      },
-      body: JSON.stringify({
-        sessionId: "3ed578",
-        runId: "auth-session-debug",
-        hypothesisId: "H5",
-        location: "LandingHeader.tsx:session",
-        message: "landing session state",
-        data: {
-          authenticated: session.authenticated,
-          premium: session.premium,
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
-  }, [session.authenticated, session.loading, session.premium]);
-
   const showPainel = !session.loading && session.authenticated;
 
   return (

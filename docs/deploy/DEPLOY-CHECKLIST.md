@@ -2,7 +2,8 @@
 
 ## Antes do GitHub
 
-1. Rodar build local.
+1. Rodar `npm run verify:go-live` (suite completa de smoke + checks estáticos).
+2. Rodar `npm run build` local.
 2. Rodar auditoria anti-vazamento.
 3. Confirmar que .env.local nao aparece no git status.
 4. Confirmar que os modelos DOCX oficiais estao presentes.

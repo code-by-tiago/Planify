@@ -60,6 +60,8 @@ import { useBnccEducationOptions } from "@/hooks/useBnccEducationOptions";
 import type { MaterialEducationFields } from "@/lib/educacao/education-options";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { splitTopicLines } from "@/lib/bncc/split-topic-lines";
+import { TemaCombobox } from "@/components/bncc/TemaCombobox";
+import type { BnccTemaAutocompleteSuggestion } from "@/lib/bncc/bncc-tema-autocomplete";
 
 type TipoPlanejamento = "anual" | "trimestral";
 
@@ -387,6 +389,7 @@ export function PlanejamentosClient() {
   const { embeddedInDashboard } = usePlanifyWorkspace();
   const school = useSchoolClasses();
   const [form, setForm] = useState<FormState>(initialForm);
+  const [temaBusca, setTemaBusca] = useState("");
   const [groups, setGroups] = useState<BnccGroup[]>([]);
   const [selectedSkills, setSelectedSkills] = useState<BnccSkill[]>([]);
   const [generatedPlanning, setGeneratedPlanning] = useState<GeneratedPlanning | null>(null);
@@ -675,6 +678,23 @@ export function PlanejamentosClient() {
       discipline: form.componenteCurricular.trim() || undefined,
       disciplina: form.componenteCurricular.trim() || undefined,
     };
+  }
+
+  function handleTemaSuggestionSelect(suggestion: BnccTemaAutocompleteSuggestion) {
+    const habilidades = suggestion.habilidades.map((skill) =>
+      normalizeSkill(skill, suggestion.tema),
+    );
+
+    setForm((current) =>
+      normalizeEducationalFields(current, { conteudos: suggestion.tema }),
+    );
+    setTemaBusca(suggestion.tema);
+    setGroups([{ conteudo: suggestion.tema, habilidades }]);
+    setSelectedSkills(habilidades.slice(0, 3));
+    setContentRefreshOffsets({});
+    invalidateGenerated();
+    setStatus("Tema BNCC selecionado. Revise as habilidades sugeridas.");
+    setError("");
   }
 
   async function suggestBncc() {
@@ -1540,6 +1560,16 @@ export function PlanejamentosClient() {
             </div>
 
             <div className="mt-5 grid gap-5">
+              <TemaCombobox
+                label="Buscar tema BNCC"
+                value={temaBusca}
+                onChange={setTemaBusca}
+                onSelectSuggestion={handleTemaSuggestionSelect}
+                etapa={form.etapa}
+                anoSerie={form.anoSerie}
+                componente={form.componenteCurricular}
+              />
+
               <label className="grid gap-2">
                 <span className="text-sm font-bold text-slate-500">Conteúdos</span>
                 <textarea

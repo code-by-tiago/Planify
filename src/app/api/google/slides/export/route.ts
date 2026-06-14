@@ -38,12 +38,19 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const body = (await request.json()) as {
+  const body = (await request.json().catch(() => null)) as {
     title?: string;
     html?: string;
     slides?: MaterialEngineResponse["slides"];
     theme?: string;
-  };
+  } | null;
+
+  if (!body) {
+    return NextResponse.json(
+      { success: false, error: { message: "Corpo da requisição inválido." } },
+      { status: 400 },
+    );
+  }
 
   const title = String(body.title || "").trim();
 

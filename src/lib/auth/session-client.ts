@@ -9,6 +9,26 @@ const COOKIE_SYNC_COOLDOWN_MS = 12_000;
 let cookieSyncInFlight: Promise<boolean> | null = null;
 let lastCookieSyncAt = 0;
 
+function decodeJwtEmail(token: string): string {
+  try {
+    const payload = token.split(".")[1];
+    if (!payload) {
+      return "";
+    }
+    const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const json = JSON.parse(atob(normalized)) as { email?: string };
+    return String(json.email || "").trim().toLowerCase();
+  } catch {
+    return "";
+  }
+}
+
+function mightBeOwnerToken(token: string): boolean {
+  const email = decodeJwtEmail(token);
+  const ownerHint = process.env.NEXT_PUBLIC_ADMIN_EMAIL?.trim().toLowerCase();
+  return Boolean(ownerHint && email && email === ownerHint);
+}
+
 export function markPremiumCookiesSynced(): void {
   lastCookieSyncAt = Date.now();
 }
@@ -31,7 +51,9 @@ async function runPremiumCookieSync(
   const task = (async () => {
     try {
       const cookieResult = await syncPremiumAccessCookie(token);
-      await createOwnerSession(token).catch(() => null);
+      if (mightBeOwnerToken(token)) {
+        await createOwnerSession(token).catch(() => null);
+      }
 
       if (cookieResult.inviteSyncWarning) {
         try {

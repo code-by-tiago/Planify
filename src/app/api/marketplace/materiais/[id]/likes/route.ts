@@ -96,6 +96,9 @@ export async function POST(
         actorUserId: userId,
         materialId,
         bodyPreview: `Curtiu "${String(material?.title || "seu material").slice(0, 80)}"`,
+        targetType: "material",
+        targetId: materialId,
+        href: `/comunidade/material/${materialId}`,
       });
     }
 

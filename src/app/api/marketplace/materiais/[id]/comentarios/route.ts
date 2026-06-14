@@ -149,6 +149,9 @@ export async function POST(
       actorUserId: userId,
       materialId,
       bodyPreview: text.slice(0, 200),
+      targetType: "material",
+      targetId: materialId,
+      href: `/comunidade/material/${materialId}`,
     });
   }
 

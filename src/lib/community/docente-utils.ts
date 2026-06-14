@@ -1,4 +1,22 @@
-import type { DocenteDisciplina } from "@/lib/community/docente-types";
+import type { DocenteDisciplina, DocenteMenuItem } from "@/lib/community/docente-types";
+
+const VALID_MENU_ITEMS: DocenteMenuItem[] = [
+  "inicio",
+  "discussoes",
+  "materiais",
+  "eventos",
+  "grupos",
+  "professores",
+  "desafios",
+  "salvos",
+];
+
+export function parseDocenteMenuItem(value: string | null): DocenteMenuItem | null {
+  if (!value) return null;
+  return VALID_MENU_ITEMS.includes(value as DocenteMenuItem)
+    ? (value as DocenteMenuItem)
+    : null;
+}
 
 export function formatDocenteNumber(value: number): string {
   return new Intl.NumberFormat("pt-BR").format(value);
@@ -84,6 +102,38 @@ function withEmbedded(path: string, embedded?: boolean) {
   if (!embedded) return path;
   const separator = path.includes("?") ? "&" : "?";
   return `${path}${separator}embedded=1`;
+}
+
+export function homeWithAba(aba: DocenteMenuItem, embedded?: boolean): string {
+  if (aba === "desafios") return comunidadeRoutes.desafios;
+  if (aba === "professores") return comunidadeRoutes.busca;
+  if (embedded) {
+    return aba === "inicio"
+      ? comunidadeRoutes.homeEmbedded
+      : `${comunidadeRoutes.homeEmbedded}&aba=${aba}`;
+  }
+  return aba === "inicio" ? comunidadeRoutes.home : `${comunidadeRoutes.home}?aba=${aba}`;
+}
+
+export type DocenteOverviewFilters = {
+  search?: string;
+  disciplina?: string | null;
+  componente?: string | null;
+  mineOnly?: boolean;
+  friendsOnly?: boolean;
+  savedOnly?: boolean;
+};
+
+export function buildOverviewQueryParams(filters: DocenteOverviewFilters): string {
+  const params = new URLSearchParams();
+  if (filters.search?.trim()) params.set("q", filters.search.trim());
+  if (filters.disciplina) params.set("disciplina", filters.disciplina);
+  if (filters.componente) params.set("componente", filters.componente);
+  if (filters.mineOnly) params.set("mine", "true");
+  if (filters.friendsOnly) params.set("friendsOnly", "true");
+  if (filters.savedOnly) params.set("saved", "true");
+  const qs = params.toString();
+  return qs ? `?${qs}` : "";
 }
 
 export const comunidadeRoutes = {

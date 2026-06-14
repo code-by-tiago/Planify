@@ -10,6 +10,7 @@ import {
   createCommunityEvent,
   createCommunityGroup,
   createCommunityPost,
+  deleteCommunityEvent,
   deleteCommunityPost,
   inviteCommunityGroupMembers,
   inviteCommunityPostParticipants,
@@ -19,6 +20,7 @@ import {
   toggleCommunityFollow,
   toggleCommunityPostLike,
   toggleSavedPost,
+  updateCommunityEvent,
   updateCommunityPost,
 } from "@/server/community/community-docente-service";
 
@@ -176,6 +178,49 @@ export async function POST(request: NextRequest) {
         location,
       });
       return NextResponse.json({ ok: true, eventId: event?.id });
+    }
+
+    if (action === "update_event") {
+      const admin = await resolveAdminAccess(token);
+      if (!admin.isAdmin) {
+        return jsonError("Apenas administradores podem editar eventos.", 403);
+      }
+      const eventId = String(body.eventId || "").trim();
+      const title = String(body.title || "").trim();
+      const description = String(body.description || "").trim();
+      const presenterName = String(body.presenterName || "").trim() || "Equipe Planify";
+      const startsAt = String(body.startsAt || "").trim();
+      const isOnline = body.isOnline !== false;
+      const location = body.location ? String(body.location).trim() : null;
+
+      if (!eventId) return jsonError("Evento não informado.");
+      if (title.length < 3) return jsonError("Informe um título com pelo menos 3 caracteres.");
+      if (!startsAt || Number.isNaN(Date.parse(startsAt))) {
+        return jsonError("Informe uma data e hora válidas.");
+      }
+
+      await updateCommunityEvent({
+        adminId: userId,
+        eventId,
+        title,
+        description,
+        presenterName,
+        startsAt,
+        isOnline,
+        location,
+      });
+      return NextResponse.json({ ok: true });
+    }
+
+    if (action === "delete_event") {
+      const admin = await resolveAdminAccess(token);
+      if (!admin.isAdmin) {
+        return jsonError("Apenas administradores podem excluir eventos.", 403);
+      }
+      const eventId = String(body.eventId || "").trim();
+      if (!eventId) return jsonError("Evento não informado.");
+      await deleteCommunityEvent({ adminId: userId, eventId });
+      return NextResponse.json({ ok: true });
     }
 
     if (action === "join_group") {

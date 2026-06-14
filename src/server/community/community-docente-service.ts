@@ -177,10 +177,49 @@ async function buildAuthor(
 export async function getCommunityDocenteOverview(params: {
   viewerUserId?: string | null;
   search?: string;
+  disciplina?: string | null;
+  componente?: string | null;
+  mineOnly?: boolean;
+  friendsOnly?: boolean;
+  savedOnly?: boolean;
   isAdmin?: boolean;
 }): Promise<CommunityDocenteOverview> {
   const supabase = getSupabaseAdminClient();
   const search = String(params.search || "").trim().toLowerCase();
+  const disciplinaFilter = String(params.disciplina || "").trim();
+  const componenteFilter = String(params.componente || "").trim();
+
+  let postsQuery = supabase
+    .from("community_posts")
+    .select("id,author_id,title,body,disciplina,tags,likes_count,comments_count,created_at")
+    .eq("is_published", true)
+    .order("created_at", { ascending: false })
+    .limit(24);
+
+  if (params.mineOnly && params.viewerUserId) {
+    postsQuery = postsQuery.eq("author_id", params.viewerUserId);
+  }
+  if (disciplinaFilter) {
+    postsQuery = postsQuery.eq("disciplina", disciplinaFilter);
+  }
+
+  let materialsQuery = supabase
+    .from("marketplace_materials")
+    .select(
+      "id,user_id,author_name,title,description,componente,ano_serie,file_mime,downloads_count,created_at",
+    )
+    .eq("is_published", true)
+    .order("downloads_count", { ascending: false })
+    .limit(24);
+
+  if (params.mineOnly && params.viewerUserId) {
+    materialsQuery = materialsQuery.eq("user_id", params.viewerUserId);
+  }
+  if (componenteFilter) {
+    materialsQuery = materialsQuery.ilike("componente", `%${componenteFilter}%`);
+  } else if (disciplinaFilter) {
+    materialsQuery = materialsQuery.ilike("componente", `%${disciplinaFilter}%`);
+  }
 
   const [
     postsResult,
@@ -194,12 +233,7 @@ export async function getCommunityDocenteOverview(params: {
     postsCount,
     groupsCount,
   ] = await Promise.all([
-    supabase
-      .from("community_posts")
-      .select("id,author_id,title,body,disciplina,tags,likes_count,comments_count,created_at")
-      .eq("is_published", true)
-      .order("created_at", { ascending: false })
-      .limit(12),
+    postsQuery,
     params.viewerUserId
       ? supabase
           .from("community_post_participants")
@@ -208,14 +242,7 @@ export async function getCommunityDocenteOverview(params: {
           .order("invited_at", { ascending: false })
           .limit(8)
       : Promise.resolve({ data: [], error: null }),
-    supabase
-      .from("marketplace_materials")
-      .select(
-        "id,user_id,author_name,title,description,componente,ano_serie,file_mime,downloads_count,created_at",
-      )
-      .eq("is_published", true)
-      .order("downloads_count", { ascending: false })
-      .limit(12),
+    materialsQuery,
     supabase
       .from("community_events")
       .select("id,title,presenter_name,starts_at,is_online")
@@ -233,7 +260,10 @@ export async function getCommunityDocenteOverview(params: {
       .from("community_badges")
       .select("id,slug,name,description,icon,color,min_reputation")
       .order("min_reputation", { ascending: true }),
-    supabase.from("profiles").select("id", { count: "exact", head: true }),
+    supabase
+      .from("profiles")
+      .select("id", { count: "exact", head: true })
+      .eq("community_public", true),
     supabase
       .from("marketplace_materials")
       .select("id", { count: "exact", head: true })
@@ -322,8 +352,23 @@ export async function getCommunityDocenteOverview(params: {
     badgeProgress = await getBadgeProgressForUser(params.viewerUserId);
   }
 
+  let feedPosts = mergedPosts;
+  let feedMaterials = marketplaceRows;
+
+  if (params.friendsOnly && params.viewerUserId) {
+    const allowedAuthors = new Set([...followingIds, params.viewerUserId]);
+    feedPosts = feedPosts.filter((post) => allowedAuthors.has(post.author_id));
+    feedMaterials = feedMaterials.filter(
+      (row) => row.user_id && allowedAuthors.has(row.user_id as string),
+    );
+  }
+
+  if (params.savedOnly && params.viewerUserId) {
+    feedMaterials = feedMaterials.filter((row) => savedMaterialIds.has(row.id));
+  }
+
   const discussionsFromPosts: DocenteDiscussion[] = await Promise.all(
-    mergedPosts.map(async (post) => ({
+    feedPosts.map(async (post) => ({
       id: post.id,
       author: await buildAuthor(post.author_id, authorMap),
       title: post.title,
@@ -337,7 +382,7 @@ export async function getCommunityDocenteOverview(params: {
     })),
   );
 
-  const materialIds = marketplaceRows.map((m) => m.id);
+  const materialIds = feedMaterials.map((m) => m.id);
   const [likesSummary, commentsBatch] = await Promise.all([
     getMaterialLikesSummary({
       materialIds,
@@ -347,7 +392,7 @@ export async function getCommunityDocenteOverview(params: {
   ]);
 
   const discussionsFromMaterials: DocenteDiscussion[] = await Promise.all(
-    marketplaceRows.slice(0, 4).map(async (row) => {
+    feedMaterials.slice(0, 4).map(async (row) => {
       const userId = row.user_id || "unknown";
       const comments = commentsBatch.get(row.id) || [];
       const likes = likesSummary.get(row.id);
@@ -375,7 +420,7 @@ export async function getCommunityDocenteOverview(params: {
     .slice(0, 8);
 
   const materials: DocenteMaterial[] = await Promise.all(
-    marketplaceRows.map(async (row) => {
+    feedMaterials.map(async (row) => {
       const userId = row.user_id || "unknown";
       const likes = likesSummary.get(row.id);
       return {
@@ -402,7 +447,7 @@ export async function getCommunityDocenteOverview(params: {
     })
     .slice(0, 8);
 
-  let recentPublications: DocenteRecentPublication[] = marketplaceRows.slice(0, 4).map((row) => ({
+  let recentPublications: DocenteRecentPublication[] = feedMaterials.slice(0, 4).map((row) => ({
     id: row.id,
     title: row.title,
     thumbnailUrl: coverForComponente(row.componente || "Ciências"),
@@ -411,9 +456,9 @@ export async function getCommunityDocenteOverview(params: {
     href: `/comunidade/material/${row.id}`,
   }));
 
-  if (recentPublications.length === 0 && mergedPosts.length > 0) {
+  if (recentPublications.length === 0 && feedPosts.length > 0) {
     recentPublications = await Promise.all(
-      mergedPosts.slice(0, 4).map(async (post) => {
+      feedPosts.slice(0, 4).map(async (post) => {
         const author = await buildAuthor(post.author_id, authorMap);
         return {
           id: post.id,
@@ -907,6 +952,39 @@ export async function createCommunityEvent(params: {
   return data;
 }
 
+export async function updateCommunityEvent(params: {
+  adminId: string;
+  eventId: string;
+  title: string;
+  description: string;
+  presenterName: string;
+  startsAt: string;
+  isOnline: boolean;
+  location?: string | null;
+}) {
+  const supabase = getSupabaseAdminClient();
+  const { error } = await supabase
+    .from("community_events")
+    .update({
+      title: params.title,
+      description: params.description,
+      presenter_name: params.presenterName,
+      starts_at: params.startsAt,
+      is_online: params.isOnline,
+      location: params.location || null,
+    })
+    .eq("id", params.eventId);
+
+  if (error) throw new Error(error.message);
+}
+
+export async function deleteCommunityEvent(params: { adminId: string; eventId: string }) {
+  const supabase = getSupabaseAdminClient();
+  await supabase.from("community_event_participants").delete().eq("event_id", params.eventId);
+  const { error } = await supabase.from("community_events").delete().eq("id", params.eventId);
+  if (error) throw new Error(error.message);
+}
+
 export type CommunityDiscussionComment = {
   id: string;
   body: string;
@@ -963,6 +1041,7 @@ export type CommunityEventDetail = {
   interestedCount: number;
   userRsvpStatus: "going" | "interested" | null;
   isHost: boolean;
+  isAdmin?: boolean;
 };
 
 export type CommunityTeacherDetail = {
@@ -1184,6 +1263,7 @@ export async function getCommunityGroupDetail(params: {
 export async function getCommunityEventDetail(params: {
   eventId: string;
   viewerUserId?: string | null;
+  isAdmin?: boolean;
 }): Promise<CommunityEventDetail | null> {
   const supabase = getSupabaseAdminClient();
 
@@ -1239,6 +1319,7 @@ export async function getCommunityEventDetail(params: {
     interestedCount,
     userRsvpStatus,
     isHost: params.viewerUserId === event.host_id,
+    isAdmin: Boolean(params.isAdmin),
   };
 }
 

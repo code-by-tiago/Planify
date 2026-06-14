@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { CommunityMessagesIcon } from "@/components/community/CommunityMessagesIcon";
 import { CommunityNotificationsIcon } from "@/components/community/CommunityNotificationsIcon";
 import { communityProfileHref } from "@/components/community/CommunityAuthorLink";
@@ -24,6 +24,7 @@ type ComunidadeDocenteTopBarProps = {
   onSearchChange: (value: string) => void;
   onCreatePost: () => void;
   onOpenMenu: () => void;
+  onOpenProfile?: () => void;
   initialOpenMessages?: boolean;
 };
 
@@ -32,6 +33,7 @@ export function ComunidadeDocenteTopBar({
   onSearchChange,
   onCreatePost,
   onOpenMenu,
+  onOpenProfile,
   initialOpenMessages = false,
 }: ComunidadeDocenteTopBarProps) {
   const [profile, setProfile] = useState<ViewerProfile | null>(null);
@@ -96,28 +98,63 @@ export function ComunidadeDocenteTopBar({
         <CommunityNotificationsIcon />
         <CommunityMessagesIcon initialOpen={initialOpenMessages} />
 
-        {profile?.userId ? (
-          <Link
-            href={communityProfileHref(profile.userId)}
-            className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white py-1.5 pl-1.5 pr-3 transition hover:border-slate-300"
+        {onOpenProfile ? (
+          <button
+            type="button"
+            onClick={onOpenProfile}
+            className="hidden rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600 transition hover:border-cyan-200 hover:text-cyan-700 sm:inline-flex"
           >
-            {profile.avatarUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={profile.avatarUrl}
-                alt=""
-                className="h-8 w-8 rounded-full object-cover"
-              />
-            ) : (
-              <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-slate-100">
-                <PlanifyOwlMark size={28} />
+            Meu perfil
+          </button>
+        ) : null}
+
+        {profile?.userId ? (
+          onOpenProfile ? (
+            <button
+              type="button"
+              onClick={onOpenProfile}
+              className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white py-1.5 pl-1.5 pr-3 transition hover:border-slate-300"
+            >
+              {profile.avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={profile.avatarUrl}
+                  alt=""
+                  className="h-8 w-8 rounded-full object-cover"
+                />
+              ) : (
+                <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-slate-100">
+                  <PlanifyOwlMark size={28} />
+                </span>
+              )}
+              <span className="hidden text-sm font-semibold text-[#0F172A] lg:inline">
+                {profile.displayName}
               </span>
-            )}
-            <span className="hidden text-sm font-semibold text-[#0F172A] lg:inline">
-              {profile.displayName}
-            </span>
-            <IconChevronDown className="hidden h-4 w-4 text-slate-400 lg:block" />
-          </Link>
+              <IconChevronDown className="hidden h-4 w-4 text-slate-400 lg:block" />
+            </button>
+          ) : (
+            <Link
+              href={communityProfileHref(profile.userId)}
+              className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white py-1.5 pl-1.5 pr-3 transition hover:border-slate-300"
+            >
+              {profile.avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={profile.avatarUrl}
+                  alt=""
+                  className="h-8 w-8 rounded-full object-cover"
+                />
+              ) : (
+                <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-slate-100">
+                  <PlanifyOwlMark size={28} />
+                </span>
+              )}
+              <span className="hidden text-sm font-semibold text-[#0F172A] lg:inline">
+                {profile.displayName}
+              </span>
+              <IconChevronDown className="hidden h-4 w-4 text-slate-400 lg:block" />
+            </Link>
+          )
         ) : (
           <div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white py-1.5 pl-1.5 pr-3">
             <span className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100">

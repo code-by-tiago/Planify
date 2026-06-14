@@ -3,11 +3,14 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import { ComunidadeDocenteCreateEventModal } from "@/components/community/docente/ComunidadeDocenteCreateEventModal";
+import type { DocenteCreateEventInput } from "@/components/community/docente/ComunidadeDocenteCreateEventModal";
 import { ComunidadeDocenteDetailShell } from "@/components/community/docente/ComunidadeDocenteDetailShell";
 import type { CommunityEventDetail } from "@/server/community/community-docente-service";
 import {
   comunidadeRoutes,
   formatDocenteNumber,
+  homeWithAba,
   readEmbedded,
 } from "@/lib/community/docente-utils";
 
@@ -21,8 +24,10 @@ export function ComunidadeDocenteEventoDetailClient({ eventId }: { eventId: stri
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [status, setStatus] = useState("");
+  const [editOpen, setEditOpen] = useState(false);
 
   const homeHref = embedded ? comunidadeRoutes.homeEmbedded : comunidadeRoutes.home;
+  const eventosHref = homeWithAba("eventos", embedded);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -90,12 +95,56 @@ export function ComunidadeDocenteEventoDetailClient({ eventId }: { eventId: stri
     }
   };
 
+  const handleUpdateEvent = async (input: DocenteCreateEventInput) => {
+    const response = await fetch("/api/community/docente/actions", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "update_event",
+        eventId,
+        ...input,
+      }),
+    });
+    const data = await response.json();
+    if (response.ok && data.ok) {
+      showToast("Evento atualizado!");
+      setEditOpen(false);
+      await load();
+    } else {
+      showToast(data?.error?.message || "Não foi possível atualizar.");
+      throw new Error("update failed");
+    }
+  };
+
+  const handleDeleteEvent = async () => {
+    if (!event || !window.confirm(`Excluir o evento "${event.title}"?`)) return;
+    setSubmitting(true);
+    try {
+      const response = await fetch("/api/community/docente/actions", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "delete_event", eventId }),
+      });
+      const data = await response.json();
+      if (response.ok && data.ok) {
+        showToast("Evento excluído.");
+        router.push(homeHref);
+      } else {
+        showToast(data?.error?.message || "Não foi possível excluir.");
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   if (loading) {
     return (
       <ComunidadeDocenteDetailShell
         embedded={embedded}
         activeMenu="eventos"
-        breadcrumbs={[{ label: "Eventos", href: homeHref }]}
+        breadcrumbs={[{ label: "Eventos", href: eventosHref }]}
         title="Carregando…"
       >
         <div className="flex min-h-[200px] items-center justify-center rounded-3xl border border-slate-200 bg-white">
@@ -110,7 +159,7 @@ export function ComunidadeDocenteEventoDetailClient({ eventId }: { eventId: stri
       <ComunidadeDocenteDetailShell
         embedded={embedded}
         activeMenu="eventos"
-        breadcrumbs={[{ label: "Eventos", href: homeHref }]}
+        breadcrumbs={[{ label: "Eventos", href: eventosHref }]}
         title="Evento"
       >
         <div className="rounded-3xl border border-red-200 bg-red-50 p-6 text-center">
@@ -136,6 +185,25 @@ export function ComunidadeDocenteEventoDetailClient({ eventId }: { eventId: stri
       subtitle={event.presenterName}
       actions={
         <div className="flex flex-wrap gap-2">
+          {event.isAdmin ? (
+            <>
+              <button
+                type="button"
+                onClick={() => setEditOpen(true)}
+                className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-600 transition hover:border-cyan-200"
+              >
+                Editar
+              </button>
+              <button
+                type="button"
+                disabled={submitting}
+                onClick={() => void handleDeleteEvent()}
+                className="rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-xs font-bold text-red-700 transition hover:bg-red-100 disabled:opacity-60"
+              >
+                Excluir
+              </button>
+            </>
+          ) : null}
           <button
             type="button"
             disabled={submitting}
@@ -212,6 +280,21 @@ export function ComunidadeDocenteEventoDetailClient({ eventId }: { eventId: stri
           {status}
         </div>
       ) : null}
+
+      <ComunidadeDocenteCreateEventModal
+        open={editOpen}
+        onClose={() => setEditOpen(false)}
+        onSubmit={handleUpdateEvent}
+        mode="edit"
+        initialValues={{
+          title: event.title,
+          description: event.description,
+          presenterName: event.presenterName,
+          startsAt: event.startsAt,
+          isOnline: event.isOnline,
+          location: event.location || "",
+        }}
+      />
     </ComunidadeDocenteDetailShell>
   );
 }

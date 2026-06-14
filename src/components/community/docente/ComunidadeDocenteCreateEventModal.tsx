@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { PlanifyModal } from "@/components/ui/PlanifyModal";
 
 export type DocenteCreateEventInput = {
@@ -16,12 +16,26 @@ type ComunidadeDocenteCreateEventModalProps = {
   open: boolean;
   onClose: () => void;
   onSubmit: (input: DocenteCreateEventInput) => void | Promise<void>;
+  mode?: "create" | "edit";
+  initialValues?: Partial<DocenteCreateEventInput>;
 };
+
+function toDatetimeLocalValue(iso: string): string {
+  try {
+    const date = new Date(iso);
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  } catch {
+    return "";
+  }
+}
 
 export function ComunidadeDocenteCreateEventModal({
   open,
   onClose,
   onSubmit,
+  mode = "create",
+  initialValues,
 }: ComunidadeDocenteCreateEventModalProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -31,6 +45,20 @@ export function ComunidadeDocenteCreateEventModal({
   const [location, setLocation] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    setTitle(initialValues?.title || "");
+    setDescription(initialValues?.description || "");
+    setPresenterName(initialValues?.presenterName || "");
+    setStartsAt(
+      initialValues?.startsAt ? toDatetimeLocalValue(initialValues.startsAt) : "",
+    );
+    setIsOnline(initialValues?.isOnline !== false);
+    setLocation(initialValues?.location || "");
+    setError("");
+    setSubmitting(false);
+  }, [open, initialValues, mode]);
 
   function reset() {
     setTitle("");
@@ -76,7 +104,11 @@ export function ComunidadeDocenteCreateEventModal({
   }
 
   return (
-    <PlanifyModal open={open} onClose={handleClose} title="Criar evento">
+    <PlanifyModal
+      open={open}
+      onClose={handleClose}
+      title={mode === "edit" ? "Editar evento" : "Criar evento"}
+    >
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-500">
@@ -171,7 +203,7 @@ export function ComunidadeDocenteCreateEventModal({
             disabled={submitting}
             className="flex-1 rounded-2xl bg-cyan-500 py-3 text-sm font-bold text-white shadow-md transition hover:bg-cyan-600 disabled:opacity-60"
           >
-            {submitting ? "Criando…" : "Publicar evento"}
+            {submitting ? "Salvando…" : mode === "edit" ? "Salvar alterações" : "Publicar evento"}
           </button>
         </div>
       </form>

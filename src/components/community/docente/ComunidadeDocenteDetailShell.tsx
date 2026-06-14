@@ -6,7 +6,7 @@ import { useState } from "react";
 import { ComunidadeDocenteSidebar } from "@/components/community/docente/ComunidadeDocenteSidebar";
 import { ComunidadeDocenteTopBar } from "@/components/community/docente/ComunidadeDocenteTopBar";
 import { IconArrowRight } from "@/components/community/docente/docente-icons";
-import { comunidadeRoutes, readEmbedded } from "@/lib/community/docente-utils";
+import { comunidadeRoutes, homeWithAba, readEmbedded } from "@/lib/community/docente-utils";
 import type { DocenteDisciplina, DocenteMenuItem } from "@/lib/community/docente-types";
 import { usePersistedSidebarCollapsed } from "@/hooks/usePersistedSidebarCollapsed";
 
@@ -89,7 +89,7 @@ export function ComunidadeDocenteDetailShell({
               router.push(comunidadeRoutes.busca);
               return;
             }
-            router.push(homeHref);
+            router.push(homeWithAba(item, isEmbedded));
           }}
           onSelectDisciplina={setSelectedDisciplina}
           onClose={() => setSidebarOpen(false)}

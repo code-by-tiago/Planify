@@ -222,7 +222,7 @@ export function CommunityProfilePanel() {
       return;
     }
 
-    const url = `${window.location.origin}/marketplace/perfil/${profile.userId}`;
+    const url = `${window.location.origin}/comunidade/professor/${profile.userId}`;
     void navigator.clipboard.writeText(url).then(() => {
       setStatus("Link do seu perfil copiado.");
     });

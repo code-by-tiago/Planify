@@ -7,6 +7,9 @@ import { ComunidadeDocenteCommentModal } from "@/components/community/docente/Co
 import { ComunidadeDocenteCreateEventModal } from "@/components/community/docente/ComunidadeDocenteCreateEventModal";
 import { ComunidadeDocenteCreateGroupModal } from "@/components/community/docente/ComunidadeDocenteCreateGroupModal";
 import { ComunidadeDocenteCreatePostModal } from "@/components/community/docente/ComunidadeDocenteCreatePostModal";
+import { ComunidadeDocenteFeedFilters } from "@/components/community/docente/ComunidadeDocenteFeedFilters";
+import { ComunidadeDocenteOnboarding } from "@/components/community/docente/ComunidadeDocenteOnboarding";
+import { ComunidadeDocenteProfileModal } from "@/components/community/docente/ComunidadeDocenteProfileModal";
 import { ComunidadeDocenteDiscussions } from "@/components/community/docente/ComunidadeDocenteDiscussions";
 import { ComunidadeDocenteHero } from "@/components/community/docente/ComunidadeDocenteHero";
 import { ComunidadeDocenteMaterials } from "@/components/community/docente/ComunidadeDocenteMaterials";
@@ -36,7 +39,10 @@ import type {
   DocenteStats,
 } from "@/lib/community/docente-types";
 import {
+  buildOverviewQueryParams,
   comunidadeRoutes,
+  homeWithAba,
+  parseDocenteMenuItem,
 } from "@/lib/community/docente-utils";
 import { downloadMarketplaceMaterial } from "@/lib/marketplace/marketplace-download-client";
 import { usePersistedSidebarCollapsed } from "@/hooks/usePersistedSidebarCollapsed";
@@ -94,6 +100,10 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
   const [createPostOpen, setCreatePostOpen] = useState(false);
   const [createGroupOpen, setCreateGroupOpen] = useState(false);
   const [createEventOpen, setCreateEventOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [mineOnly, setMineOnly] = useState(false);
+  const [friendsOnly, setFriendsOnly] = useState(false);
+  const [savedOnly, setSavedOnly] = useState(false);
   const [commentTarget, setCommentTarget] = useState<{ id: string; title: string } | null>(null);
   const [commentLoading, setCommentLoading] = useState(false);
   const [downloadingMaterialId, setDownloadingMaterialId] = useState<string | null>(null);
@@ -122,28 +132,50 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
   const filteredDiscussions = useMemo(() => {
     if (tipoFilter === "materiais") return [];
     let list = discussions;
-    if (selectedDisciplina) {
-      list = list.filter((d) => d.disciplina === selectedDisciplina);
-    }
     if (!effectiveSearch.trim()) return list;
     const q = effectiveSearch.toLowerCase();
     return list.filter((d) =>
       `${d.title} ${d.author.name} ${d.disciplina} ${d.tags.join(" ")}`.toLowerCase().includes(q),
     );
-  }, [discussions, effectiveSearch, selectedDisciplina, tipoFilter]);
+  }, [discussions, effectiveSearch, tipoFilter]);
 
   const filteredMaterials = useMemo(() => {
     if (tipoFilter === "posts") return [];
     let list = materials;
-    if (selectedDisciplina) {
-      list = list.filter((m) => m.disciplina === selectedDisciplina);
-    }
     if (!effectiveSearch.trim()) return list;
     const q = effectiveSearch.toLowerCase();
     return list.filter((m) =>
       `${m.title} ${m.author.name} ${m.disciplina}`.toLowerCase().includes(q),
     );
-  }, [materials, effectiveSearch, selectedDisciplina, tipoFilter]);
+  }, [materials, effectiveSearch, tipoFilter]);
+
+  const showOnboarding = useMemo(
+    () =>
+      !loading &&
+      !loadError &&
+      activeMenu === "inicio" &&
+      discussions.length === 0 &&
+      materials.length === 0 &&
+      groups.length === 0 &&
+      events.length === 0,
+    [loading, loadError, activeMenu, discussions.length, materials.length, groups.length, events.length],
+  );
+
+  const navigateToMenu = useCallback(
+    (item: DocenteMenuItem) => {
+      setActiveMenu(item);
+      if (item === "desafios") {
+        router.push(comunidadeRoutes.desafios);
+        return;
+      }
+      if (item === "professores") {
+        router.push(comunidadeRoutes.busca);
+        return;
+      }
+      router.replace(homeWithAba(item, embedded));
+    },
+    [embedded, router],
+  );
 
   const showToast = useCallback((message: string) => {
     setStatus(message);
@@ -155,8 +187,14 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
     setLoadError("");
 
     try {
-      const params = search ? `?q=${encodeURIComponent(search)}` : "";
-      const response = await fetch(`/api/community/docente${params}`, {
+      const qs = buildOverviewQueryParams({
+        search,
+        disciplina: selectedDisciplina,
+        mineOnly,
+        friendsOnly,
+        savedOnly,
+      });
+      const response = await fetch(`/api/community/docente${qs}`, {
         cache: "no-store",
         credentials: "include",
       });
@@ -186,7 +224,12 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
     } finally {
       setLoading(false);
     }
-  }, [embedded]);
+  }, [embedded, selectedDisciplina, mineOnly, friendsOnly, savedOnly]);
+
+  useEffect(() => {
+    const aba = parseDocenteMenuItem(searchParams.get("aba"));
+    if (aba) setActiveMenu(aba);
+  }, [searchParams]);
 
   useEffect(() => {
     void loadOverview();
@@ -203,9 +246,9 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
   useEffect(() => {
     const discussaoId = searchParams.get("discussao");
     if (discussaoId) {
-      router.replace(comunidadeRoutes.discussao(discussaoId));
+      router.replace(comunidadeRoutes.discussao(discussaoId, embedded));
     }
-  }, [router, searchParams]);
+  }, [router, searchParams, embedded]);
 
   const refreshAfterAction = useCallback(async () => {
     await loadOverview(effectiveSearch);
@@ -756,6 +799,21 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
 
     return (
       <>
+        {(activeMenu === "inicio" ||
+          activeMenu === "discussoes" ||
+          activeMenu === "materiais") && (
+          <ComunidadeDocenteFeedFilters
+            mineOnly={mineOnly}
+            friendsOnly={friendsOnly}
+            savedOnly={savedOnly}
+            selectedDisciplina={selectedDisciplina}
+            onToggleMineOnly={() => setMineOnly((v) => !v)}
+            onToggleFriendsOnly={() => setFriendsOnly((v) => !v)}
+            onToggleSavedOnly={() => setSavedOnly((v) => !v)}
+            onSelectDisciplina={setSelectedDisciplina}
+          />
+        )}
+
         {(activeMenu === "discussoes" || activeMenu === "materiais") && (
           <section className="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
             <span className="text-xs font-bold text-slate-500">Filtrar:</span>
@@ -791,6 +849,14 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
               onHeroSearch={handleHeroSearch}
             />
             <ComunidadeDocenteStats stats={stats} />
+            {showOnboarding ? (
+              <ComunidadeDocenteOnboarding
+                onOpenProfile={() => setProfileOpen(true)}
+                onCreatePost={openCreatePost}
+                onCreateGroup={() => setCreateGroupOpen(true)}
+                onBrowseTeachers={() => router.push(comunidadeRoutes.busca)}
+              />
+            ) : null}
           </>
         ) : null}
 
@@ -840,6 +906,7 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
         }}
         onCreatePost={openCreatePost}
         onOpenMenu={() => setSidebarOpen(true)}
+        onOpenProfile={() => setProfileOpen(true)}
         initialOpenMessages={openMessagesPanel}
       />
 
@@ -857,15 +924,14 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
           activeItem={activeMenu}
           selectedDisciplina={selectedDisciplina}
           onSelectItem={(item) => {
-            if (item === "desafios") {
-              router.push(comunidadeRoutes.desafios);
-              setSidebarOpen(false);
-              return;
-            }
-            setActiveMenu(item);
+            navigateToMenu(item);
             setSidebarOpen(false);
           }}
-          onSelectDisciplina={setSelectedDisciplina}
+          onSelectDisciplina={(disciplina) => {
+            setSelectedDisciplina(disciplina);
+            navigateToMenu("materiais");
+            setSidebarOpen(false);
+          }}
           onClose={() => setSidebarOpen(false)}
           collapsed={communitySidebarCollapsed}
           onToggleCollapsed={toggleCommunitySidebarCollapsed}
@@ -889,10 +955,10 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
                 onFollow={handleFollowTeacher}
                 onSelectMenu={(menu) => {
                 if (menu === "eventos") {
-                  setActiveMenu("eventos");
+                  navigateToMenu("eventos");
                   return;
                 }
-                setActiveMenu(menu);
+                navigateToMenu(menu);
               }}
               onOpenEvent={(id) => router.push(comunidadeRoutes.evento(id, embedded))}
                 onCreatePost={openCreatePost}
@@ -908,10 +974,10 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
               onFollow={handleFollowTeacher}
               onSelectMenu={(menu) => {
                 if (menu === "eventos") {
-                  setActiveMenu("eventos");
+                  navigateToMenu("eventos");
                   return;
                 }
-                setActiveMenu(menu);
+                navigateToMenu(menu);
               }}
               onOpenEvent={(id) => router.push(comunidadeRoutes.evento(id, embedded))}
               onCreatePost={openCreatePost}
@@ -947,6 +1013,11 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
         open={createEventOpen}
         onClose={() => setCreateEventOpen(false)}
         onSubmit={handleCreateEvent}
+      />
+
+      <ComunidadeDocenteProfileModal
+        open={profileOpen}
+        onClose={() => setProfileOpen(false)}
       />
 
       {status ? (

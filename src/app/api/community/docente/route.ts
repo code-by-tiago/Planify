@@ -18,6 +18,11 @@ export async function GET(request: NextRequest) {
   if (!access.ok) return access.response;
 
   const search = request.nextUrl.searchParams.get("q") || "";
+  const disciplina = request.nextUrl.searchParams.get("disciplina") || "";
+  const componente = request.nextUrl.searchParams.get("componente") || "";
+  const mineOnly = request.nextUrl.searchParams.get("mine") === "true";
+  const friendsOnly = request.nextUrl.searchParams.get("friendsOnly") === "true";
+  const savedOnly = request.nextUrl.searchParams.get("saved") === "true";
   const token = getRequestAccessToken(request);
   const adminAccess = await resolveAdminAccess(token);
 
@@ -25,6 +30,11 @@ export async function GET(request: NextRequest) {
     const overview = await getCommunityDocenteOverview({
       viewerUserId: access.access.user?.id,
       search,
+      disciplina: disciplina || null,
+      componente: componente || null,
+      mineOnly,
+      friendsOnly,
+      savedOnly,
       isAdmin: adminAccess.isAdmin,
     });
     const savedDiscussions = access.access.user?.id

@@ -46,6 +46,7 @@ import {
   parseDocenteMenuItem,
 } from "@/lib/community/docente-utils";
 import { downloadMarketplaceMaterial } from "@/lib/marketplace/marketplace-download-client";
+import { submitDocenteCreatePost } from "@/lib/community/docente-create-post-client";
 import { usePersistedSidebarCollapsed } from "@/hooks/usePersistedSidebarCollapsed";
 import {
   getHiddenFeedMaterialIds,
@@ -561,53 +562,7 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
   const handleCreatePost = useCallback(
     async (input: DocenteCreatePostInput) => {
       try {
-        const response = await fetch("/api/community/docente/actions", {
-          method: "POST",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            action: "create_post",
-            title: input.title,
-            body: input.body,
-            disciplina: input.disciplina,
-            tags: input.tags,
-            participantUserIds: input.participantUserIds || [],
-          }),
-        });
-        const data = await response.json();
-
-        if (!response.ok || !data.ok) {
-          throw new Error(data?.error?.message || "Não foi possível publicar.");
-        }
-
-        if (input.files.length > 0) {
-          for (const file of input.files) {
-            const form = new FormData();
-            form.set("title", input.title);
-            form.set("description", input.body || input.title);
-            form.set("etapa", "Ensino Fundamental");
-            form.set("anoSerie", "Geral");
-            form.set("componente", input.disciplina);
-            form.set("tipoMaterial", "Material de apoio");
-            form.set("tema", input.title);
-            form.set("tags", input.tags.join(", "));
-            form.set("authorName", viewerName);
-            form.set("isPublished", "true");
-            form.set("file", file);
-            const uploadResponse = await fetch("/api/marketplace/materiais", {
-              method: "POST",
-              body: form,
-              credentials: "include",
-            });
-            if (!uploadResponse.ok) {
-              const uploadData = await uploadResponse.json().catch(() => ({}));
-              throw new Error(
-                uploadData?.error?.message || "Não foi possível anexar o material.",
-              );
-            }
-          }
-        }
-
+        await submitDocenteCreatePost({ input, viewerName });
         showToast("Publicação criada com sucesso!");
         await loadOverview(effectiveSearch);
       } catch (error) {
@@ -876,6 +831,7 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
         <ComunidadeDocenteSalvos
           materials={materials}
           discussions={savedDiscussions}
+          embedded={embedded}
           onLike={handleLikeMaterial}
           onSave={handleSaveMaterial}
           onSaveDiscussion={handleSaveDiscussion}

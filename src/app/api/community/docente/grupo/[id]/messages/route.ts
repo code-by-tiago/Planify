@@ -46,10 +46,42 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
   if (!userId) return jsonError("Não foi possível identificar sua conta.", 401);
 
   const { id: groupId } = await params;
-  const body = await request.json().catch(() => ({}));
-  const messageBody = String(body.body || "").trim();
+  const contentType = request.headers.get("content-type") || "";
 
   try {
+    if (contentType.includes("multipart/form-data")) {
+      const form = await request.formData();
+      const messageBody = String(form.get("body") || "").trim();
+      const fileValue = form.get("file");
+
+      let file: {
+        name: string;
+        mime: string;
+        size: number;
+        buffer: Uint8Array;
+      } | null = null;
+
+      if (fileValue instanceof File && fileValue.size > 0) {
+        const arrayBuffer = await fileValue.arrayBuffer();
+        file = {
+          name: fileValue.name,
+          mime: fileValue.type || "application/octet-stream",
+          size: fileValue.size,
+          buffer: new Uint8Array(arrayBuffer),
+        };
+      }
+
+      const message = await sendCommunityGroupMessage({
+        groupId,
+        senderId: userId,
+        body: messageBody,
+        file,
+      });
+      return NextResponse.json({ ok: true, message });
+    }
+
+    const body = await request.json().catch(() => ({}));
+    const messageBody = String(body.body || "").trim();
     const message = await sendCommunityGroupMessage({
       groupId,
       senderId: userId,

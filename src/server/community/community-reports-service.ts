@@ -1,6 +1,6 @@
 import { getSupabaseAdminClient } from "../supabase/admin-client";
 
-export type CommunityReportTarget = "material" | "comment" | "user" | "group_message";
+export type CommunityReportTarget = "material" | "comment" | "user" | "group_message" | "post" | "post_comment";
 
 function isMissingTableError(message: string): boolean {
   return /schema cache|does not exist|relation.*not found/i.test(message);

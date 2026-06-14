@@ -18,6 +18,7 @@ import {
   formatAdminDate,
   type AdminTabId,
 } from "./components/AdminCommandCenterShell";
+import { AdminCommunityModerationPanel } from "./AdminCommunityModerationPanel";
 import { AdminCriticalSettings } from "./components/AdminCriticalSettings";
 import { AdminFinancialCards } from "./components/AdminFinancialCards";
 import { AdminMetricsCharts } from "./components/AdminMetricsCharts";
@@ -1198,6 +1199,7 @@ export function AdminControleClient() {
     if (activeTab === "escolas") return renderSchools();
     if (activeTab === "usuarios") return renderUsers();
     if (activeTab === "materiais") return renderMaterials();
+    if (activeTab === "comunidade") return <AdminCommunityModerationPanel />;
     if (activeTab === "sistema") return renderSystem();
     return renderCommandCenter();
   }

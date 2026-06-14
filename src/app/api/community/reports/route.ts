@@ -4,6 +4,7 @@ import {
   createCommunityReport,
   type CommunityReportTarget,
 } from "../../../../server/community/community-reports-service";
+import { consumeCommunityRateLimit } from "../../../../server/community/community-rate-limit-service";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -12,7 +13,14 @@ function jsonError(message: string, status = 400) {
   return NextResponse.json({ ok: false, error: { message } }, { status });
 }
 
-const VALID_TARGETS: CommunityReportTarget[] = ["material", "comment", "user", "group_message"];
+const VALID_TARGETS: CommunityReportTarget[] = [
+  "material",
+  "comment",
+  "user",
+  "group_message",
+  "post",
+  "post_comment",
+];
 
 export async function POST(request: NextRequest) {
   const access = await requireApiPremiumAccess(request);
@@ -41,6 +49,13 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    await consumeCommunityRateLimit({
+      userId,
+      bucketKey: "community_report",
+      limit: 20,
+      windowSec: 60,
+    });
+
     await createCommunityReport({
       reporterUserId: userId,
       targetType,

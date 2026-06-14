@@ -11,6 +11,7 @@ import {
   resolveCommunityAuthors,
 } from "./marketplace-social-service";
 import { listSavedMaterialIds } from "./community-saved-materials-service";
+import { listPostAttachments, type CommunityPostAttachment } from "./community-post-attachments-service";
 import { listSavedPostIds } from "./community-saved-posts-service";
 import { listHiddenFeedMaterialIds } from "./community-hidden-feed-materials-service";
 import {
@@ -1177,6 +1178,8 @@ export type CommunityDiscussionComment = {
   author: DocenteAuthor;
 };
 
+export type { CommunityPostAttachment } from "./community-post-attachments-service";
+
 export type CommunityDiscussionDetail = {
   id: string;
   title: string;
@@ -1190,10 +1193,12 @@ export type CommunityDiscussionDetail = {
   likedByMe: boolean;
   savedByMe: boolean;
   isAuthor: boolean;
+  viewerUserId: string | null;
   groupId: string | null;
   comments: CommunityDiscussionComment[];
   participants: DocenteAuthor[];
   relatedDiscussions: DocenteDiscussion[];
+  attachments: CommunityPostAttachment[];
 };
 
 export type CommunityGroupDetail = {
@@ -1207,6 +1212,7 @@ export type CommunityGroupDetail = {
   owner: DocenteAuthor;
   members: DocenteAuthor[];
   discussions: DocenteDiscussion[];
+  viewerDisplayName?: string | null;
 };
 
 export type CommunityEventDetail = {
@@ -1344,6 +1350,8 @@ export async function getCommunityDiscussionDetail(params: {
     })),
   );
 
+  const attachments = await listPostAttachments(params.postId);
+
   return {
     id: postRow.id,
     title: postRow.title,
@@ -1357,10 +1365,12 @@ export async function getCommunityDiscussionDetail(params: {
     likedByMe,
     savedByMe,
     isAuthor: params.viewerUserId === postRow.author_id,
+    viewerUserId: params.viewerUserId || null,
     groupId: (postRow.group_id as string | null) || null,
     comments,
     participants,
     relatedDiscussions,
+    attachments,
   };
 }
 
@@ -1444,6 +1454,9 @@ export async function getCommunityGroupDetail(params: {
     owner: await buildAuthor(group.owner_id as string, authorMap),
     members,
     discussions,
+    viewerDisplayName: params.viewerUserId
+      ? (await buildAuthor(params.viewerUserId, authorMap)).name
+      : null,
   };
 }
 

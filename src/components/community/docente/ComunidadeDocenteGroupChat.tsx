@@ -2,9 +2,14 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { CommunityAuthorAvatar } from "@/components/community/CommunityAuthorAvatar";
+import { CommunityReportButton } from "@/components/community/CommunityReportButton";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 import { getCurrentAccessToken } from "@/lib/auth/session-client";
 import { formatDocenteTimeAgo } from "@/lib/community/docente-utils";
+import {
+  readDownloadBlob,
+  triggerBrowserDownload,
+} from "@/lib/downloads/trigger-browser-download";
 import type { CommunityGroupMessage } from "@/server/community/community-group-messages-service";
 
 type ComunidadeDocenteGroupChatProps = {
@@ -26,7 +31,10 @@ export function ComunidadeDocenteGroupChat({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState("");
   const [typingLabel, setTypingLabel] = useState("");
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [downloadingFileId, setDownloadingFileId] = useState<string | null>(null);
   const listRef = useRef<HTMLDivElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const viewerIdRef = useRef<string | null>(null);
   const channelRef = useRef<ReturnType<ReturnType<typeof getSupabaseBrowserClient>["channel"]> | null>(null);
   const typingTimerRef = useRef<number | null>(null);
@@ -106,27 +114,6 @@ export function ComunidadeDocenteGroupChat({
                 deleted_at: string | null;
               };
               if (!row?.id || row.deleted_at || cancelled) return;
-
-              setMessages((current) => {
-                if (current.some((message) => message.id === row.id)) return current;
-                const isOwn = row.sender_id === viewerIdRef.current;
-                return [
-                  ...current,
-                  {
-                    id: row.id,
-                    groupId: row.group_id,
-                    senderId: row.sender_id,
-                    senderName: isOwn ? viewerName : "Professor(a)",
-                    senderAvatarUrl: null,
-                    body: row.body,
-                    createdAt: row.created_at,
-                    editedAt: row.edited_at,
-                    isOwn,
-                    canEdit: isOwn,
-                    canDelete: isOwn,
-                  },
-                ];
-              });
               void loadMessages();
             },
           )
@@ -204,23 +191,36 @@ export function ComunidadeDocenteGroupChat({
 
   const handleSend = async () => {
     const body = draft.trim();
-    if (!body || sending) return;
+    if ((!body && !pendingFile) || sending) return;
 
     setSending(true);
     setError("");
 
     try {
-      const response = await fetch(`/api/community/docente/grupo/${groupId}/messages`, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ body }),
-      });
+      let response: Response;
+      if (pendingFile) {
+        const form = new FormData();
+        form.set("body", body);
+        form.set("file", pendingFile);
+        response = await fetch(`/api/community/docente/grupo/${groupId}/messages`, {
+          method: "POST",
+          credentials: "include",
+          body: form,
+        });
+      } else {
+        response = await fetch(`/api/community/docente/grupo/${groupId}/messages`, {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ body }),
+        });
+      }
       const data = await response.json();
       if (!response.ok || !data.ok) {
         throw new Error(data?.error?.message || "Não foi possível enviar.");
       }
       setDraft("");
+      setPendingFile(null);
       if (data.message) {
         setMessages((current) => {
           if (current.some((message) => message.id === data.message.id)) return current;
@@ -233,6 +233,30 @@ export function ComunidadeDocenteGroupChat({
       setError(err instanceof Error ? err.message : "Erro ao enviar mensagem.");
     } finally {
       setSending(false);
+    }
+  };
+
+  const handleDownloadFile = async (messageId: string, fileName: string) => {
+    setDownloadingFileId(messageId);
+    setError("");
+    try {
+      const response = await fetch(
+        `/api/community/docente/grupo/${groupId}/messages/${messageId}/file`,
+        { method: "GET", credentials: "include" },
+      );
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data?.error?.message || "Não foi possível baixar o arquivo.");
+      }
+      const blob = await readDownloadBlob(response);
+      triggerBrowserDownload(
+        blob,
+        response.headers.get("X-Planify-Filename") || fileName || "arquivo-chat",
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao baixar arquivo.");
+    } finally {
+      setDownloadingFileId(null);
     }
   };
 
@@ -269,33 +293,6 @@ export function ComunidadeDocenteGroupChat({
       setError(err instanceof Error ? err.message : "Erro ao editar mensagem.");
     } finally {
       setSending(false);
-    }
-  };
-
-  const handleReport = async (messageId: string) => {
-    const reason = window.prompt("Descreva o motivo da denúncia (mín. 3 caracteres):");
-    if (!reason || reason.trim().length < 3) return;
-
-    setError("");
-    try {
-      const response = await fetch("/api/community/reports", {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          targetType: "group_message",
-          targetId: messageId,
-          reason: reason.trim(),
-        }),
-      });
-      const data = await response.json();
-      if (!response.ok || !data.ok) {
-        throw new Error(data?.error?.message || "Não foi possível registrar a denúncia.");
-      }
-      setError("Denúncia registrada. Obrigado por ajudar a manter a comunidade segura.");
-      window.setTimeout(() => setError(""), 3200);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao denunciar mensagem.");
     }
   };
 
@@ -427,18 +424,26 @@ export function ComunidadeDocenteGroupChat({
                             </button>
                           ) : null}
                           {!message.isOwn ? (
-                            <button
-                              type="button"
-                              onClick={() => void handleReport(message.id)}
-                              className="min-h-8 rounded-md px-2 py-1 text-[10px] font-bold opacity-80 hover:opacity-100"
-                            >
-                              Denunciar
-                            </button>
+                            <CommunityReportButton
+                              targetType="group_message"
+                              targetId={message.id}
+                              compact
+                            />
                           ) : null}
                         </div>
                       )}
                     </div>
                     <p className="mt-0.5 whitespace-pre-wrap break-words text-left">{message.body}</p>
+                    {message.hasFile && message.fileName ? (
+                      <button
+                        type="button"
+                        disabled={downloadingFileId === message.id}
+                        onClick={() => void handleDownloadFile(message.id, message.fileName!)}
+                        className="mt-2 inline-flex items-center gap-1 rounded-lg bg-white/80 px-2.5 py-1 text-[11px] font-bold text-cyan-700 underline-offset-2 hover:underline disabled:opacity-60"
+                      >
+                        {downloadingFileId === message.id ? "Baixando…" : `📎 ${message.fileName}`}
+                      </button>
+                    ) : null}
                     <p className="mt-1 text-left text-[10px] opacity-70">
                       {formatDocenteTimeAgo(message.createdAt)}
                       {message.editedAt ? " · editada" : ""}
@@ -455,7 +460,38 @@ export function ComunidadeDocenteGroupChat({
       </div>
 
       <div className="border-t border-slate-100 p-3">
+        {pendingFile ? (
+          <div className="mb-2 flex items-center justify-between rounded-xl border border-cyan-100 bg-cyan-50/50 px-3 py-2 text-xs font-semibold text-cyan-800">
+            <span className="truncate">📎 {pendingFile.name}</span>
+            <button
+              type="button"
+              onClick={() => setPendingFile(null)}
+              className="shrink-0 font-bold text-rose-600"
+            >
+              Remover
+            </button>
+          </div>
+        ) : null}
         <div className="flex gap-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            className="hidden"
+            accept=".pdf,.doc,.docx,.ppt,.pptx,.png,.jpg,.jpeg,.webp"
+            onChange={(event) => {
+              const file = event.target.files?.[0] || null;
+              setPendingFile(file);
+              event.target.value = "";
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="min-h-11 shrink-0 rounded-xl border border-slate-200 px-3 text-xs font-bold text-slate-600 hover:border-cyan-300 hover:text-cyan-700"
+            title="Anexar arquivo"
+          >
+            📎
+          </button>
           <textarea
             value={draft}
             onChange={(event) => {
@@ -475,7 +511,7 @@ export function ComunidadeDocenteGroupChat({
           />
           <button
             type="button"
-            disabled={sending || draft.trim().length === 0}
+            disabled={sending || (draft.trim().length === 0 && !pendingFile)}
             onClick={() => void handleSend()}
             className="min-h-11 self-end rounded-xl bg-[#0F172A] px-4 py-2.5 text-xs font-bold text-white disabled:opacity-50"
           >

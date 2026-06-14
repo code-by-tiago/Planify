@@ -25,7 +25,9 @@ const requiredFiles = [
   "src/app/api/community/docente/challenges/bncc/route.ts",
   "src/app/api/community/hidden-feed-materials/route.ts",
   "supabase/migrations/20260614_community_docente_v3.sql",
-  "supabase/migrations/20260614140000_community_confidence.sql",
+  "src/server/community/community-post-attachments-service.ts",
+  "src/lib/community/docente-create-post-client.ts",
+  "supabase/migrations/20260614160000_community_optional_features.sql",
 ];
 
 const requiredSnippets = [
@@ -42,8 +44,24 @@ const requiredSnippets = [
     includes: ["hiddenOnly", "mapComunidadeHrefToEmbed", "resolveComunidadeEmbedFromLocation"],
   },
   {
-    file: "src/components/community/docente/ComunidadeDocenteGroupChat.tsx",
-    includes: ["broadcast", "handleReport", "postgres_changes"],
+    file: "src/lib/community/docente-create-post-client.ts",
+    includes: ["link_post_attachments", "submitDocenteCreatePost"],
+  },
+  {
+    file: "src/server/community/community-post-attachments-service.ts",
+    includes: ["linkPostAttachments", "listPostAttachments"],
+  },
+  {
+    file: "src/server/community/community-group-messages-service.ts",
+    includes: ["downloadCommunityGroupMessageFile", "CHAT_FILES_BUCKET"],
+  },
+  {
+    file: "src/server/community/community-reports-moderation-service.ts",
+    includes: ["listCommunityReportsForAdmin", "updateCommunityReportStatus"],
+  },
+  {
+    file: "src/app/admin/AdminCommunityModerationPanel.tsx",
+    includes: ["Moderação · Comunidade Docente"],
   },
 ];
 

@@ -388,6 +388,7 @@ export function ComunidadeDocenteDesafios({
 export function ComunidadeDocenteSalvos({
   materials,
   discussions = [],
+  embedded = false,
   onLike,
   onSave,
   onSaveDiscussion,
@@ -398,6 +399,7 @@ export function ComunidadeDocenteSalvos({
 }: {
   materials: DocenteMaterial[];
   discussions?: DocenteDiscussion[];
+  embedded?: boolean;
   onLike: (id: string) => void;
   onSave: (id: string) => void;
   onSaveDiscussion?: (id: string) => void;
@@ -460,7 +462,7 @@ export function ComunidadeDocenteSalvos({
             key={material.id}
             className="w-[220px] shrink-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
           >
-            <Link href={comunidadeRoutes.material(material.id)} className="block">
+            <Link href={comunidadeRoutes.material(material.id, embedded)} className="block">
               <h3 className="line-clamp-2 text-sm font-bold text-[#0F172A] hover:text-cyan-700">
                 {material.title}
               </h3>

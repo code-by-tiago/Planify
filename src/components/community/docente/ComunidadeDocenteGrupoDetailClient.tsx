@@ -10,6 +10,7 @@ import { ComunidadeDocenteDetailShell } from "@/components/community/docente/Com
 import { ComunidadeDocenteUserPicker } from "@/components/community/docente/ComunidadeDocenteUserPicker";
 import type { CommunityProfileSearchResult } from "@/lib/community/types";
 import type { DocenteCreatePostInput } from "@/lib/community/docente-types";
+import { submitDocenteCreatePost } from "@/lib/community/docente-create-post-client";
 import type { CommunityGroupDetail } from "@/server/community/community-docente-service";
 import {
   comunidadeRoutes,
@@ -140,27 +141,18 @@ export function ComunidadeDocenteGrupoDetailClient({
   };
 
   const handleCreatePost = async (input: DocenteCreatePostInput) => {
-    const response = await fetch("/api/community/docente/actions", {
-      method: "POST",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "create_post",
-        title: input.title,
-        body: input.body,
-        disciplina: input.disciplina,
-        tags: input.tags,
-        participantUserIds: input.participantUserIds || [],
+    try {
+      await submitDocenteCreatePost({
+        input,
+        viewerName: group?.viewerDisplayName || "Professor(a)",
         groupId,
-      }),
-    });
-    const data = await response.json();
-    if (!response.ok || !data.ok) {
-      throw new Error(data?.error?.message || "Não foi possível publicar.");
+      });
+      showToast("Discussão publicada no grupo!");
+      setCreatePostOpen(false);
+      await load();
+    } catch (error) {
+      throw error instanceof Error ? error : new Error("Não foi possível publicar.");
     }
-    showToast("Discussão publicada no grupo!");
-    setCreatePostOpen(false);
-    await load();
   };
 
   if (loading) {

@@ -28,6 +28,7 @@ import {
   updateCommunityEvent,
   updateCommunityPost,
 } from "@/server/community/community-docente-service";
+import { linkPostAttachments } from "@/server/community/community-post-attachments-service";
 import { consumeCommunityRateLimit } from "@/server/community/community-rate-limit-service";
 
 export const runtime = "nodejs";
@@ -80,6 +81,33 @@ export async function POST(request: NextRequest) {
         groupId,
       });
       return NextResponse.json({ ok: true, postId: post?.id });
+    }
+
+    if (action === "link_post_attachments") {
+      const postId = String(body.postId || "").trim();
+      const attachments = Array.isArray(body.attachments) ? body.attachments : [];
+
+      if (!postId) return jsonError("Post não informado.");
+      if (attachments.length === 0) return jsonError("Nenhum anexo informado.");
+
+      const normalized = attachments
+        .map((item: unknown, index: number) => {
+          const row = item as Record<string, unknown>;
+          return {
+            materialId: String(row.materialId || "").trim(),
+            fileName: String(row.fileName || "anexo").trim(),
+            fileMime: row.fileMime ? String(row.fileMime) : null,
+            sortOrder: typeof row.sortOrder === "number" ? row.sortOrder : index,
+          };
+        })
+        .filter((item: { materialId: string }) => item.materialId);
+
+      const result = await linkPostAttachments({
+        authorId: userId,
+        postId,
+        attachments: normalized,
+      });
+      return NextResponse.json({ ok: true, ...result });
     }
 
     if (action === "update_post") {

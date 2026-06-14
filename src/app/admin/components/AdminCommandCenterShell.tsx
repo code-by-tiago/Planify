@@ -8,6 +8,7 @@ export type AdminTabId =
   | "escolas"
   | "usuarios"
   | "materiais"
+  | "comunidade"
   | "sistema";
 
 type TabDef = { id: AdminTabId; label: string };
@@ -17,6 +18,7 @@ export const adminTabs: TabDef[] = [
   { id: "escolas", label: "Escolas" },
   { id: "usuarios", label: "Usuários" },
   { id: "materiais", label: "Materiais IA" },
+  { id: "comunidade", label: "Comunidade" },
   { id: "qualidade-ia", label: "Qualidade IA" },
   { id: "sistema", label: "Sistema" },
 ];

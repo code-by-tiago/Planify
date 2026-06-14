@@ -4,6 +4,18 @@ import { consumeCommunityRateLimit } from "./community-rate-limit-service";
 import { resolveCommunityAuthors } from "./marketplace-social-service";
 
 const EDIT_WINDOW_MS = 24 * 60 * 60 * 1000;
+const CHAT_FILES_BUCKET = "community-group-files";
+const CHAT_FILE_MAX_BYTES = 10 * 1024 * 1024;
+const CHAT_FILE_MIMES = new Set([
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-powerpoint",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  "image/png",
+  "image/jpeg",
+  "image/webp",
+]);
 
 export type CommunityGroupMessage = {
   id: string;
@@ -17,6 +29,9 @@ export type CommunityGroupMessage = {
   isOwn: boolean;
   canEdit: boolean;
   canDelete: boolean;
+  fileName: string | null;
+  fileMime: string | null;
+  hasFile: boolean;
 };
 
 type MessageRow = {
@@ -27,6 +42,10 @@ type MessageRow = {
   created_at: string;
   edited_at: string | null;
   deleted_at: string | null;
+  file_name?: string | null;
+  file_mime?: string | null;
+  file_path?: string | null;
+  file_size?: number | null;
 };
 
 function isMissingTableError(message: string): boolean {
@@ -79,9 +98,37 @@ function mapMessageRow(
     createdAt: row.created_at,
     editedAt: row.edited_at,
     isOwn,
-    canEdit: isOwn && withinEditWindow,
+    canEdit: isOwn && withinEditWindow && !row.file_path,
     canDelete: isOwn || isOwner,
+    fileName: row.file_name || null,
+    fileMime: row.file_mime || null,
+    hasFile: Boolean(row.file_path),
   };
+}
+
+function safeChatFilename(name: string): string {
+  return name.replace(/[^\w.\-()áàâãéêíóôõúçÁÀÂÃÉÊÍÓÔÕÚÇ ]+/g, "_").slice(0, 120) || "arquivo";
+}
+
+async function ensureChatFilesBucket() {
+  const client = getSupabaseAdminClient();
+  try {
+    const { data } = await client.storage.getBucket(CHAT_FILES_BUCKET);
+    if (data) return client;
+  } catch {
+    // continue
+  }
+
+  const { error } = await client.storage.createBucket(CHAT_FILES_BUCKET, {
+    public: false,
+    fileSizeLimit: "10MB",
+  });
+
+  if (error && !/already exists/i.test(error.message)) {
+    throw new Error(error.message);
+  }
+
+  return client;
 }
 
 export async function listCommunityGroupMessages(params: {
@@ -98,7 +145,9 @@ export async function listCommunityGroupMessages(params: {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase as any)
     .from("community_group_messages")
-    .select("id,group_id,sender_id,body,created_at,edited_at,deleted_at")
+    .select(
+      "id,group_id,sender_id,body,created_at,edited_at,deleted_at,file_name,file_mime,file_path,file_size",
+    )
     .eq("group_id", params.groupId)
     .is("deleted_at", null)
     .order("created_at", { ascending: true })
@@ -160,13 +209,29 @@ export async function sendCommunityGroupMessage(params: {
   groupId: string;
   senderId: string;
   body: string;
+  file?: {
+    name: string;
+    mime: string;
+    size: number;
+    buffer: Uint8Array;
+  } | null;
 }): Promise<CommunityGroupMessage> {
   const body = String(params.body || "").trim();
-  if (body.length < 1) {
-    throw new Error("Digite uma mensagem.");
+  const file = params.file || null;
+
+  if (!body && !file) {
+    throw new Error("Digite uma mensagem ou anexe um arquivo.");
   }
   if (body.length > 4000) {
     throw new Error("Mensagem muito longa (máximo 4000 caracteres).");
+  }
+  if (file) {
+    if (file.size <= 0 || file.size > CHAT_FILE_MAX_BYTES) {
+      throw new Error("Arquivo inválido (máximo 10 MB).");
+    }
+    if (!CHAT_FILE_MIMES.has(file.mime)) {
+      throw new Error("Formato de arquivo não suportado no chat.");
+    }
   }
 
   await assertGroupMember(params.groupId, params.senderId);
@@ -187,18 +252,54 @@ export async function sendCommunityGroupMessage(params: {
     .eq("id", params.groupId)
     .maybeSingle();
 
+  const messageId = crypto.randomUUID();
+  let filePath: string | null = null;
+  let fileName: string | null = null;
+  let fileMime: string | null = null;
+  let fileSize: number | null = null;
+
+  if (file) {
+    const client = await ensureChatFilesBucket();
+    fileName = safeChatFilename(file.name);
+    fileMime = file.mime;
+    fileSize = file.size;
+    const extension = fileName.includes(".") ? fileName.split(".").pop() : "bin";
+    filePath = `${params.groupId}/${messageId}/${messageId}.${extension}`;
+
+    const { error: uploadError } = await client.storage
+      .from(CHAT_FILES_BUCKET)
+      .upload(filePath, file.buffer, {
+        contentType: file.mime,
+        upsert: false,
+      });
+
+    if (uploadError) {
+      throw new Error(uploadError.message || "Não foi possível enviar o arquivo.");
+    }
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase as any)
     .from("community_group_messages")
     .insert({
+      id: messageId,
       group_id: params.groupId,
       sender_id: params.senderId,
-      body,
+      body: body || "📎 Arquivo anexado",
+      file_name: fileName,
+      file_mime: fileMime,
+      file_path: filePath,
+      file_size: fileSize,
     })
-    .select("id,group_id,sender_id,body,created_at,edited_at,deleted_at")
+    .select(
+      "id,group_id,sender_id,body,created_at,edited_at,deleted_at,file_name,file_mime,file_path,file_size",
+    )
     .single();
 
   if (error || !data) {
+    if (filePath) {
+      await supabase.storage.from(CHAT_FILES_BUCKET).remove([filePath]);
+    }
     if (isMissingTableError(error?.message || "")) {
       throw new Error("Chat do grupo em atualização. Tente novamente em instantes.");
     }
@@ -209,14 +310,54 @@ export async function sendCommunityGroupMessage(params: {
   const authorMap = await resolveCommunityAuthors([row.sender_id]);
   const message = mapMessageRow(row, authorMap, params.senderId, ownerId);
 
+  const notifyBody = row.file_path
+    ? `${body || "Arquivo"} 📎 ${row.file_name || "anexo"}`
+    : row.body;
+
   void notifyGroupChatMembers({
     groupId: params.groupId,
     senderId: params.senderId,
-    body: row.body,
+    body: notifyBody,
     groupName: (groupRow?.name as string | null) || null,
   });
 
   return message;
+}
+
+export async function downloadCommunityGroupMessageFile(params: {
+  groupId: string;
+  messageId: string;
+  viewerUserId: string;
+}): Promise<{ buffer: Buffer; fileName: string; mime: string }> {
+  await assertGroupMember(params.groupId, params.viewerUserId);
+
+  const supabase = getSupabaseAdminClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: row, error } = await (supabase as any)
+    .from("community_group_messages")
+    .select("id,group_id,file_name,file_mime,file_path,deleted_at")
+    .eq("id", params.messageId)
+    .eq("group_id", params.groupId)
+    .maybeSingle();
+
+  if (error || !row || row.deleted_at || !row.file_path) {
+    throw new Error("Arquivo não encontrado.");
+  }
+
+  const { data: fileData, error: downloadError } = await supabase.storage
+    .from(CHAT_FILES_BUCKET)
+    .download(row.file_path as string);
+
+  if (downloadError || !fileData) {
+    throw new Error(downloadError?.message || "Não foi possível baixar o arquivo.");
+  }
+
+  const arrayBuffer = await fileData.arrayBuffer();
+  return {
+    buffer: Buffer.from(arrayBuffer),
+    fileName: (row.file_name as string) || "arquivo-chat",
+    mime: (row.file_mime as string) || "application/octet-stream",
+  };
 }
 
 export async function updateCommunityGroupMessage(params: {
@@ -241,7 +382,9 @@ export async function updateCommunityGroupMessage(params: {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: existing, error: fetchError } = await (supabase as any)
     .from("community_group_messages")
-    .select("id,group_id,sender_id,body,created_at,edited_at,deleted_at")
+    .select(
+      "id,group_id,sender_id,body,created_at,edited_at,deleted_at,file_name,file_mime,file_path,file_size",
+    )
     .eq("id", params.messageId)
     .eq("group_id", params.groupId)
     .maybeSingle();
@@ -267,7 +410,9 @@ export async function updateCommunityGroupMessage(params: {
     .update({ body, edited_at: new Date().toISOString() })
     .eq("id", params.messageId)
     .eq("group_id", params.groupId)
-    .select("id,group_id,sender_id,body,created_at,edited_at,deleted_at")
+    .select(
+      "id,group_id,sender_id,body,created_at,edited_at,deleted_at,file_name,file_mime,file_path,file_size",
+    )
     .single();
 
   if (error || !data) {

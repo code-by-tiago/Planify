@@ -5,7 +5,7 @@ import { parseJsonResponse } from "@/lib/http/parse-json-response";
 import { useState } from "react";
 
 type CommunityReportButtonProps = {
-  targetType: "material" | "comment" | "user";
+  targetType: "material" | "comment" | "user" | "post" | "post_comment" | "group_message";
   targetId: string;
   compact?: boolean;
 };

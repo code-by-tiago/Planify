@@ -7,7 +7,9 @@ import type { DocenteAuthor, DocenteEvent, DocenteMenuItem, DocenteRecentPublica
 import {
   formatDocenteNumber,
   formatDocenteTimeAgo,
-} from "@/lib/community/docente-mock-data";
+  formatEventShortTime,
+  comunidadeRoutes,
+} from "@/lib/community/docente-utils";
 
 type ComunidadeDocenteRightSidebarProps = {
   featuredTeacher: DocenteAuthor | null;
@@ -16,6 +18,7 @@ type ComunidadeDocenteRightSidebarProps = {
   onFollow: (authorId: string) => void;
   onSelectMenu?: (menu: DocenteMenuItem) => void;
   onCreatePost?: () => void;
+  onOpenEvent?: (id: string) => void;
 };
 
 export function ComunidadeDocenteRightSidebar({
@@ -25,6 +28,7 @@ export function ComunidadeDocenteRightSidebar({
   onFollow,
   onSelectMenu,
   onCreatePost,
+  onOpenEvent,
 }: ComunidadeDocenteRightSidebarProps) {
   return (
     <aside className="flex w-full shrink-0 flex-col gap-5 lg:w-[300px]">
@@ -86,7 +90,9 @@ export function ComunidadeDocenteRightSidebar({
               <li key={event.id}>
                 <button
                   type="button"
-                  onClick={() => onSelectMenu?.("eventos")}
+                  onClick={() =>
+                    onOpenEvent ? onOpenEvent(event.id) : onSelectMenu?.("eventos")
+                  }
                   className="flex w-full gap-3 rounded-xl p-1 text-left transition hover:bg-slate-50"
                 >
                   <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-xl bg-cyan-50 text-cyan-700">
@@ -103,7 +109,8 @@ export function ComunidadeDocenteRightSidebar({
                       {event.presenterName}
                     </p>
                     <p className="mt-0.5 text-[11px] font-semibold text-cyan-600">
-                      19h00 · {event.isOnline ? "Online" : "Presencial"}
+                      {formatEventShortTime(event.startsAt)} ·{" "}
+                      {event.isOnline ? "Online" : "Presencial"}
                     </p>
                   </div>
                 </button>

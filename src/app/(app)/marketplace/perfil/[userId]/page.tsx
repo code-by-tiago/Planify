@@ -1,18 +1,8 @@
-export const dynamic = "force-dynamic";
+import { redirect } from "next/navigation";
 
-import PremiumAccessGate from "@/components/premium/PremiumAccessGate";
-import { PublicProfileClient } from "@/components/community/PublicProfileClient";
+type PageProps = { params: Promise<{ userId: string }> };
 
-type PublicProfilePageProps = {
-  params: Promise<{ userId: string }>;
-};
-
-export default async function PublicProfilePage({ params }: PublicProfilePageProps) {
+export default async function MarketplaceProfileRedirectPage({ params }: PageProps) {
   const { userId } = await params;
-
-  return (
-    <PremiumAccessGate featureName="a Comunidade">
-      <PublicProfileClient userId={userId} />
-    </PremiumAccessGate>
-  );
+  redirect(`/comunidade/professor/${userId}`);
 }

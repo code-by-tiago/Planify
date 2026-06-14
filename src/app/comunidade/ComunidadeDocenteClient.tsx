@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import { ComunidadeDocenteCommentModal } from "@/components/community/docente/ComunidadeDocenteCommentModal";
 import { ComunidadeDocenteCreateEventModal } from "@/components/community/docente/ComunidadeDocenteCreateEventModal";
 import { ComunidadeDocenteCreateGroupModal } from "@/components/community/docente/ComunidadeDocenteCreateGroupModal";
@@ -40,6 +41,7 @@ import {
 } from "@/lib/community/docente-saved-discussions";
 import { downloadMarketplaceMaterial } from "@/lib/marketplace/marketplace-download-client";
 import { usePersistedSidebarCollapsed } from "@/hooks/usePersistedSidebarCollapsed";
+import { comunidadeRoutes } from "@/lib/community/docente-utils";
 
 const EMPTY_STATS: DocenteStats = {
   activeTeachers: 0,
@@ -85,6 +87,7 @@ type OverviewPayload = {
 
 export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boolean }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [activeMenu, setActiveMenu] = useState<DocenteMenuItem>("inicio");
   const [selectedDisciplina, setSelectedDisciplina] = useState<DocenteDisciplina | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -194,7 +197,14 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
         }
       })
       .catch(() => {});
-  }, [loadOverview, embedded]);
+  }, [loadOverview]);
+
+  useEffect(() => {
+    const discussaoId = searchParams.get("discussao");
+    if (discussaoId) {
+      router.replace(comunidadeRoutes.discussao(discussaoId));
+    }
+  }, [router, searchParams]);
 
   const refreshAfterAction = useCallback(async () => {
     await loadOverview(effectiveSearch);
@@ -344,18 +354,17 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
   const handleOpenDiscussion = useCallback(
     (id: string) => {
       if (isMaterialDiscussion(id)) {
-        router.push(`/marketplace/material/${materialIdFromDiscussion(id)}`);
+        router.push(comunidadeRoutes.material(materialIdFromDiscussion(id)));
         return;
       }
-      setActiveMenu("discussoes");
-      showToast("Discussão aberta.");
+      router.push(comunidadeRoutes.discussao(id));
     },
-    [router, showToast],
+    [router],
   );
 
   const handleShareDiscussion = useCallback(
     (id: string) => {
-      const url = `${window.location.origin}/comunidade?discussao=${id}`;
+      const url = `${window.location.origin}${comunidadeRoutes.discussao(id)}`;
       void navigator.clipboard.writeText(url).then(() => {
         showToast("Link copiado para a área de transferência!");
       });
@@ -528,7 +537,7 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
       const data = await response.json();
       if (response.ok && data.ok) {
         showToast("Grupo criado com sucesso!");
-        setActiveMenu("grupos");
+        router.push(comunidadeRoutes.grupo(data.groupId));
         await loadOverview(effectiveSearch);
       } else {
         showToast(data?.error?.message || "Não foi possível criar o grupo.");
@@ -678,6 +687,7 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
           events={events}
           isAdmin={isAdmin}
           onCreateEvent={() => setCreateEventOpen(true)}
+          onOpenEvent={(id) => router.push(comunidadeRoutes.evento(id))}
         />
       );
     }
@@ -688,12 +698,17 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
           onCreateGroup={() => setCreateGroupOpen(true)}
           onJoinGroup={handleJoinGroup}
           onLeaveGroup={handleLeaveGroup}
+          onOpenGroup={(id) => router.push(comunidadeRoutes.grupo(id))}
         />
       );
     }
     if (activeMenu === "professores") {
       return (
-        <ComunidadeDocenteProfessores teachers={teachers} onFollow={handleFollowTeacher} />
+        <ComunidadeDocenteProfessores
+          teachers={teachers}
+          onFollow={handleFollowTeacher}
+          onBrowseAll={() => router.push(comunidadeRoutes.busca)}
+        />
       );
     }
     if (activeMenu === "desafios") {
@@ -789,7 +804,15 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
         <ComunidadeDocenteSidebar
           activeItem={activeMenu}
           selectedDisciplina={selectedDisciplina}
-          onSelectItem={setActiveMenu}
+          onSelectItem={(item) => {
+            if (item === "desafios") {
+              router.push(comunidadeRoutes.desafios);
+              setSidebarOpen(false);
+              return;
+            }
+            setActiveMenu(item);
+            setSidebarOpen(false);
+          }}
           onSelectDisciplina={setSelectedDisciplina}
           onClose={() => setSidebarOpen(false)}
           collapsed={communitySidebarCollapsed}
@@ -812,7 +835,14 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
                 recentPublications={recentPublications}
                 events={events}
                 onFollow={handleFollowTeacher}
-                onSelectMenu={setActiveMenu}
+                onSelectMenu={(menu) => {
+                if (menu === "eventos") {
+                  setActiveMenu("eventos");
+                  return;
+                }
+                setActiveMenu(menu);
+              }}
+              onOpenEvent={(id) => router.push(comunidadeRoutes.evento(id))}
                 onCreatePost={openCreatePost}
               />
             </div>
@@ -824,7 +854,14 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
               recentPublications={recentPublications}
               events={events}
               onFollow={handleFollowTeacher}
-              onSelectMenu={setActiveMenu}
+              onSelectMenu={(menu) => {
+                if (menu === "eventos") {
+                  setActiveMenu("eventos");
+                  return;
+                }
+                setActiveMenu(menu);
+              }}
+              onOpenEvent={(id) => router.push(comunidadeRoutes.evento(id))}
               onCreatePost={openCreatePost}
             />
           </div>

@@ -3,7 +3,11 @@
 import Link from "next/link";
 import { communityProfileHref } from "@/components/community/CommunityAuthorLink";
 import { CommunityAuthorAvatar } from "@/components/community/CommunityAuthorAvatar";
-import { formatDocenteNumber } from "@/lib/community/docente-mock-data";
+import {
+  formatDocenteNumber,
+  formatEventShortTime,
+  comunidadeRoutes,
+} from "@/lib/community/docente-utils";
 import type { DocenteAuthor, DocenteBadgeProgress, DocenteEvent, DocenteMaterial } from "@/lib/community/docente-types";
 
 type GroupItem = {
@@ -47,10 +51,12 @@ export function ComunidadeDocenteEventos({
   events,
   isAdmin,
   onCreateEvent,
+  onOpenEvent,
 }: {
   events: DocenteEvent[];
   isAdmin?: boolean;
   onCreateEvent?: () => void;
+  onOpenEvent?: (id: string) => void;
 }) {
   if (!events.length) {
     return (
@@ -85,7 +91,16 @@ export function ComunidadeDocenteEventos({
         {events.map((event) => (
           <article
             key={event.id}
-            className="flex gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md"
+            role={onOpenEvent ? "button" : undefined}
+            tabIndex={onOpenEvent ? 0 : undefined}
+            onClick={() => onOpenEvent?.(event.id)}
+            onKeyDown={(e) => {
+              if (onOpenEvent && (e.key === "Enter" || e.key === " ")) {
+                e.preventDefault();
+                onOpenEvent(event.id);
+              }
+            }}
+            className="flex cursor-pointer gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-cyan-200 hover:shadow-md"
           >
             <div className="flex h-16 w-16 shrink-0 flex-col items-center justify-center rounded-xl bg-cyan-50 text-cyan-700">
               <span className="text-xl font-extrabold leading-none">{event.day}</span>
@@ -95,7 +110,7 @@ export function ComunidadeDocenteEventos({
               <h3 className="font-bold text-[#0F172A]">{event.title}</h3>
               <p className="mt-1 text-sm text-slate-500">{event.presenterName}</p>
               <p className="mt-2 text-xs font-semibold text-cyan-600">
-                19h00 · {event.isOnline ? "Online" : "Presencial"}
+                {formatEventShortTime(event.startsAt)} · {event.isOnline ? "Online" : "Presencial"}
               </p>
             </div>
           </article>
@@ -110,11 +125,13 @@ export function ComunidadeDocenteGrupos({
   onCreateGroup,
   onJoinGroup,
   onLeaveGroup,
+  onOpenGroup,
 }: {
   groups: GroupItem[];
   onCreateGroup?: () => void;
   onJoinGroup?: (groupId: string) => void;
   onLeaveGroup?: (groupId: string) => void;
+  onOpenGroup?: (groupId: string) => void;
 }) {
   if (!groups.length) {
     return (
@@ -150,27 +167,51 @@ export function ComunidadeDocenteGrupos({
             <p className="text-xs font-bold uppercase tracking-wide text-cyan-600">
               {group.disciplina}
             </p>
-            <h3 className="mt-1 font-bold text-[#0F172A]">{group.name}</h3>
+            <h3 className="mt-1 font-bold text-[#0F172A]">
+              {onOpenGroup ? (
+                <button
+                  type="button"
+                  onClick={() => onOpenGroup(group.id)}
+                  className="text-left hover:text-cyan-700"
+                >
+                  {group.name}
+                </button>
+              ) : (
+                group.name
+              )}
+            </h3>
             <p className="mt-2 text-sm leading-relaxed text-slate-500">{group.description}</p>
             <p className="mt-3 text-xs font-semibold text-slate-400">
               {formatDocenteNumber(group.members_count)} membros
             </p>
-            {onJoinGroup || onLeaveGroup ? (
-              <button
-                type="button"
-                onClick={() =>
-                  group.joinedByMe ? onLeaveGroup?.(group.id) : onJoinGroup?.(group.id)
-                }
-                className={[
-                  "mt-4 w-full rounded-xl py-2 text-xs font-bold transition",
-                  group.joinedByMe
-                    ? "border border-slate-200 bg-white text-slate-600 hover:border-red-200 hover:bg-red-50 hover:text-red-600"
-                    : "bg-[#0F172A] text-white hover:bg-slate-800",
-                ].join(" ")}
-              >
-                {group.joinedByMe ? "Sair do grupo" : "Entrar no grupo"}
-              </button>
-            ) : null}
+            <div className="mt-4 flex flex-col gap-2">
+              {onOpenGroup ? (
+                <button
+                  type="button"
+                  onClick={() => onOpenGroup(group.id)}
+                  className="w-full rounded-xl border border-slate-200 bg-white py-2 text-xs font-bold text-slate-600 transition hover:border-cyan-200 hover:text-cyan-700"
+                >
+                  Ver grupo
+                </button>
+              ) : null}
+              {onJoinGroup || onLeaveGroup ? (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    group.joinedByMe ? onLeaveGroup?.(group.id) : onJoinGroup?.(group.id);
+                  }}
+                  className={[
+                    "w-full rounded-xl py-2 text-xs font-bold transition",
+                    group.joinedByMe
+                      ? "border border-slate-200 bg-white text-slate-600 hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+                      : "bg-[#0F172A] text-white hover:bg-slate-800",
+                  ].join(" ")}
+                >
+                  {group.joinedByMe ? "Sair do grupo" : "Entrar no grupo"}
+                </button>
+              ) : null}
+            </div>
           </article>
         ))}
       </div>
@@ -181,9 +222,11 @@ export function ComunidadeDocenteGrupos({
 export function ComunidadeDocenteProfessores({
   teachers,
   onFollow,
+  onBrowseAll,
 }: {
   teachers: DocenteAuthor[];
   onFollow: (id: string) => void;
+  onBrowseAll?: () => void;
 }) {
   if (!teachers.length) {
     return (
@@ -198,7 +241,18 @@ export function ComunidadeDocenteProfessores({
 
   return (
     <section className="space-y-4">
-      <h2 className="text-xl font-extrabold text-[#0F172A]">Professores da comunidade</h2>
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-xl font-extrabold text-[#0F172A]">Professores da comunidade</h2>
+        {onBrowseAll ? (
+          <button
+            type="button"
+            onClick={onBrowseAll}
+            className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-600 transition hover:border-cyan-200 hover:text-cyan-700"
+          >
+            Buscar professores
+          </button>
+        ) : null}
+      </div>
       <div className="grid gap-4 sm:grid-cols-2">
         {teachers.map((teacher) => (
           <article
@@ -365,7 +419,7 @@ export function ComunidadeDocenteSalvos({
             key={material.id}
             className="w-[220px] shrink-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
           >
-            <Link href={`/marketplace/material/${material.id}`} className="block">
+            <Link href={comunidadeRoutes.material(material.id)} className="block">
               <h3 className="line-clamp-2 text-sm font-bold text-[#0F172A] hover:text-cyan-700">
                 {material.title}
               </h3>

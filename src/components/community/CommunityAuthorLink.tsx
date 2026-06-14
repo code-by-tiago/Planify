@@ -9,7 +9,7 @@ type CommunityAuthorLinkProps = {
 };
 
 export function communityProfileHref(userId: string) {
-  return `/marketplace/perfil/${userId}`;
+  return `/comunidade/professor/${userId}`;
 }
 
 export function CommunityAuthorLink({

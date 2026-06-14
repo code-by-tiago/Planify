@@ -10,6 +10,7 @@ import {
   createCommunityEvent,
   createCommunityGroup,
   createCommunityPost,
+  inviteCommunityGroupMembers,
   joinCommunityGroup,
   leaveCommunityGroup,
   toggleCommunityFollow,
@@ -152,6 +153,20 @@ export async function POST(request: NextRequest) {
       const followingId = String(body.followingId || "").trim();
       if (!followingId) return jsonError("Professor não informado.");
       const result = await toggleCommunityFollow({ followerId: userId, followingId });
+      return NextResponse.json({ ok: true, ...result });
+    }
+
+    if (action === "invite_group_members") {
+      const groupId = String(body.groupId || "").trim();
+      const memberUserIds = Array.isArray(body.memberUserIds)
+        ? body.memberUserIds.map((id: unknown) => String(id).trim()).filter(Boolean)
+        : [];
+      if (!groupId) return jsonError("Grupo não informado.");
+      const result = await inviteCommunityGroupMembers({
+        ownerId: userId,
+        groupId,
+        memberUserIds,
+      });
       return NextResponse.json({ ok: true, ...result });
     }
 

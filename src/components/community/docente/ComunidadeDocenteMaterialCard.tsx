@@ -11,7 +11,8 @@ import {
 import {
   formatDocenteNumber,
   getDisciplinaColor,
-} from "@/lib/community/docente-mock-data";
+  comunidadeRoutes,
+} from "@/lib/community/docente-utils";
 import type { DocenteMaterial } from "@/lib/community/docente-types";
 
 type ComunidadeDocenteMaterialCardProps = {
@@ -40,7 +41,7 @@ export function ComunidadeDocenteMaterialCard({
 }: ComunidadeDocenteMaterialCardProps) {
   return (
     <Link
-      href={`/marketplace/material/${material.id}`}
+      href={comunidadeRoutes.material(material.id)}
       className="group flex w-[220px] shrink-0 flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg sm:w-[240px]"
     >
       <div className="relative h-36 overflow-hidden">

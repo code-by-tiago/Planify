@@ -1090,6 +1090,7 @@ body .planify-hud.pl-hud-shell .pl-sidebar nav .pl-sidebar-nav-icon svg {
 .pl-sidebar.pl-sidebar--collapsed {
   width: 4.5rem !important;
   min-width: 4.5rem !important;
+  max-width: 4.5rem !important;
 }
 
 .pl-sidebar.pl-sidebar--collapsed .pl-sidebar-nav-label,
@@ -1106,6 +1107,40 @@ body .planify-hud.pl-hud-shell .pl-sidebar nav .pl-sidebar-nav-icon svg {
 
 .pl-sidebar.pl-sidebar--collapsed .pl-hud-btn {
   justify-content: center !important;
+  padding-left: 0.5rem !important;
+  padding-right: 0.5rem !important;
+}
+
+/* HUD shell: collapsed overrides must beat nav label visibility rules above */
+body .planify-hud.pl-hud-shell .pl-sidebar.pl-sidebar--collapsed nav .pl-sidebar-nav-label,
+body .planify-hud.pl-hud-shell .pl-sidebar.pl-sidebar--collapsed .pl-sidebar-section-label {
+  display: none !important;
+  visibility: hidden !important;
+  width: 0 !important;
+  max-width: 0 !important;
+  height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  opacity: 0 !important;
+  position: absolute !important;
+  pointer-events: none !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+}
+
+body .planify-hud.pl-hud-shell .pl-sidebar.pl-sidebar--collapsed nav .pl-sidebar-nav-item,
+body .planify-hud.pl-hud-shell .pl-sidebar.pl-sidebar--collapsed nav a.pl-sidebar-nav-item,
+body .planify-hud.pl-hud-shell .pl-sidebar.pl-sidebar--collapsed nav button.pl-sidebar-nav-item {
+  justify-content: center !important;
+  gap: 0 !important;
+  padding-left: 0.5rem !important;
+  padding-right: 0.5rem !important;
+}
+
+body .planify-hud.pl-hud-shell .pl-sidebar.pl-sidebar--collapsed .pl-hud-btn {
+  justify-content: center !important;
+  gap: 0 !important;
   padding-left: 0.5rem !important;
   padding-right: 0.5rem !important;
 }

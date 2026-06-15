@@ -94,7 +94,7 @@ export function PlanifySidebarNav({
 
       <nav
         aria-label="Navegação principal"
-        className={`min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain py-3 ${collapsed ? "px-2" : "px-3"}`}
+        className={`min-h-0 flex-1 space-y-1 overflow-x-hidden overflow-y-auto overscroll-contain py-3 ${collapsed ? "px-2" : "px-3"}`}
       >
         {!collapsed ? (
           <p className="pl-sidebar-section-label px-1 pb-1 text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-500/90">
@@ -116,7 +116,9 @@ export function PlanifySidebarNav({
                 className={className}
               >
                 <PlanifyNavIcon name={item.icon} className="pl-sidebar-nav-icon" />
-                <span className="pl-sidebar-nav-label">{item.label}</span>
+                {!collapsed ? (
+                  <span className="pl-sidebar-nav-label">{item.label}</span>
+                ) : null}
               </button>
             );
           }
@@ -131,7 +133,9 @@ export function PlanifySidebarNav({
               className={className}
             >
               <PlanifyNavIcon name={item.icon} className="pl-sidebar-nav-icon" />
-              <span className="pl-sidebar-nav-label">{item.label}</span>
+              {!collapsed ? (
+                <span className="pl-sidebar-nav-label">{item.label}</span>
+              ) : null}
             </Link>
           );
         })}

@@ -129,7 +129,13 @@ export function PlanifyShellSidebar({
   if (alwaysVisible) {
     return (
       <aside
-        className={`${asideClass} flex h-screen w-[min(18rem,34vw)] min-w-[14.5rem] shrink-0 flex-col border-r`}
+        className={[
+          asideClass,
+          "flex h-screen shrink-0 flex-col border-r transition-[width] duration-200",
+          collapsed
+            ? "w-[4.5rem] min-w-[4.5rem] max-w-[4.5rem]"
+            : "w-[min(18rem,34vw)] min-w-[14.5rem]",
+        ].join(" ")}
       >
         {brandBlock}
         <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain">
@@ -146,7 +152,11 @@ export function PlanifyShellSidebar({
   return (
     <>
       <aside
-        className={`${asideClass} hidden h-full min-h-0 w-72 shrink-0 flex-col border-r lg:flex`}
+        className={[
+          asideClass,
+          "hidden h-full min-h-0 shrink-0 flex-col border-r transition-[width] duration-200 lg:flex",
+          collapsed ? "w-[4.5rem] min-w-[4.5rem] max-w-[4.5rem]" : "w-72 min-w-[18rem]",
+        ].join(" ")}
       >
         {brandBlock}
         <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain">

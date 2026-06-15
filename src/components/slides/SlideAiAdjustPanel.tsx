@@ -161,7 +161,7 @@ export function SlideAiAdjustPanel({
               {busy ? "Aplicando…" : retrying ? "Tentando novamente…" : "Aplicar com IA"}
             </button>
             <span className="text-[10px] font-semibold text-violet-800/80">
-              Consome créditos como uma nova geração.
+              Gera uma nova versão do slide com IA.
             </span>
           </div>
           {busy || retrying ? <MaterialPreviewSkeleton /> : null}

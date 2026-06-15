@@ -48,8 +48,7 @@ export default function PrivacidadePage() {
           </li>
           <li>
             <strong>Uso do serviço:</strong> materiais gerados, histórico, documentos
-            salvos no editor, preferências de ferramentas e consumo de créditos do
-            plano.
+            salvos no editor e preferências de ferramentas.
           </li>
           <li>
             <strong>Pagamentos:</strong> dados de assinatura processados pelo{" "}
@@ -75,7 +74,7 @@ export default function PrivacidadePage() {
           <li>Autenticar você e liberar o acesso conforme seu plano ativo.</li>
           <li>Gerar materiais pedagógicos com IA (Google Gemini) a partir dos dados que
             você informa (tema, disciplina, ano/série, objetivos).</li>
-          <li>Debitar créditos do plano, exibir saldo e histórico de uso.</li>
+          <li>Registrar histórico de gerações e materiais salvos.</li>
           <li>Exportar documentos para Google Apresentações e Classroom, quando
             solicitado por você.</li>
           <li>Melhorar estabilidade, segurança e suporte ao usuário.</li>

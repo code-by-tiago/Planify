@@ -7,6 +7,7 @@ import {
 } from "../../../../server/credits/credit-subscription-sync";
 import { getDailyGenerationStatus } from "../../../../server/credits/daily-generation-service";
 import { hasUnlimitedQuota } from "../../../../server/auth/courtesy-emails";
+import { shouldSkipUsageQuotas } from "../../../../server/generation/usage-quota-policy";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -38,12 +39,16 @@ export async function GET(request: NextRequest) {
     planKey,
   });
 
-  const unlimitedQuota = hasUnlimitedQuota(user.email);
+  const usageUnlimited =
+    hasUnlimitedQuota(user.email) ||
+    Boolean(planKey) ||
+    (await shouldSkipUsageQuotas({ userId: user.id, email: user.email }));
 
   return NextResponse.json({
     ok: true,
     wallet,
     daily,
-    unlimitedQuota,
+    unlimitedQuota: usageUnlimited,
+    usageUnlimited,
   });
 }

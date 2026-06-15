@@ -186,6 +186,8 @@ export function AulaCompletaClient({
   }
 
   async function executarGeracao() {
+    if (loading) return;
+
     setErro("");
     setErroCta(null);
     setErroRetryable(false);

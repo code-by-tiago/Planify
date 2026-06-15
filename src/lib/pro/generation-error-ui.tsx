@@ -14,10 +14,13 @@ import { CorrectionOcrError } from "@/lib/correcao/correcao-ocr-client";
 export type GenerationErrorCode =
   | "insufficient_credits"
   | "daily_limit_reached"
+  | "generation_in_progress"
   | "offline"
   | "timeout"
   | "server_error"
-  | "quality_gate_failed";
+  | "quality_gate_failed"
+  | "ai_unavailable"
+  | "ai_billing";
 
 export type FormattedGenerationError = {
   message: string;
@@ -90,6 +93,42 @@ export function formatGenerationError(error: unknown): FormattedGenerationError 
       message: DAILY_LIMIT_MESSAGE,
       code: "daily_limit_reached",
       retryable: false,
+    };
+  }
+
+  if (code === "generation_in_progress" || status === 409) {
+    const rawMessage =
+      error instanceof Error ? error.message.trim() : "";
+    return {
+      message:
+        rawMessage ||
+        "Já existe uma geração em andamento. Aguarde a conclusão antes de tentar de novo.",
+      code: "generation_in_progress",
+      retryable: false,
+    };
+  }
+
+  if (code === "ai_billing") {
+    const rawMessage =
+      error instanceof Error ? error.message.trim() : "";
+    return {
+      message:
+        rawMessage ||
+        "Créditos de IA esgotados no Google AI Studio. Recarregue o saldo ou habilite faturação e tente novamente.",
+      code: "ai_billing",
+      retryable: false,
+    };
+  }
+
+  if (code === "ai_unavailable") {
+    const rawMessage =
+      error instanceof Error ? error.message.trim() : "";
+    return {
+      message:
+        rawMessage ||
+        "A IA está indisponível no momento. Aguarde alguns instantes e tente novamente.",
+      code: "ai_unavailable",
+      retryable: true,
     };
   }
 

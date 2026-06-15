@@ -30,7 +30,7 @@ ${input.rawText.slice(0, 3000)}`;
     systemInstruction:
       "Você formata textos didáticos em Markdown. Responda apenas com Markdown, sem explicações.",
     prompt,
-    model: "gemini-2.5-flash-lite",
+    model: "gemini-2.5-flash",
     maxOutputTokens: 512,
     temperature: 0.2,
   });

@@ -985,6 +985,8 @@ export function PlanejamentosClient() {
   }
 
   async function generatePlanning() {
+    if (loadingPlan) return;
+
     setError("");
 
     const conteudosText = form.conteudos.trim();
@@ -1002,6 +1004,8 @@ export function PlanejamentosClient() {
     setLoadingPlan(true);
     setStatus("Gerando matriz pedagógica com IA...");
 
+    const idempotencyKey = crypto.randomUUID();
+
     try {
       const turma = school.turmaPayload;
       if (turma.className) {
@@ -1011,7 +1015,7 @@ export function PlanejamentosClient() {
       const payload = {
         ...buildBasePayload(),
         conteudos: conteudosText,
-        idempotencyKey: crypto.randomUUID(),
+        idempotencyKey,
       };
       const data = await requestPlanningGeneration(payload);
 

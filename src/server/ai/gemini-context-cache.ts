@@ -1,5 +1,7 @@
 import { getGeminiApiKey, getGeminiSdk } from "./gemini-sdk";
 
+const CACHE_CREATE_TIMEOUT_MS = 20_000;
+
 type GeminiCacheRecord = {
   name: string;
   model: string;
@@ -33,24 +35,31 @@ async function createCachedContent(
   bundle: GeminiCacheBundle,
 ): Promise<string | null> {
   try {
-    const created = await getGeminiSdk().caches.create({
-      model: model.startsWith("models/") ? model : `models/${model}`,
-      config: {
-        displayName: `planify-${profile}`.slice(0, 120),
-        ttl: `${cacheTtlSeconds()}s`,
-        systemInstruction: bundle.systemInstruction,
-        ...(bundle.staticContext?.trim()
-          ? {
-              contents: [
-                {
-                  role: "user",
-                  parts: [{ text: bundle.staticContext.trim() }],
-                },
-              ],
-            }
-          : {}),
-      },
-    });
+    const created = await Promise.race([
+      getGeminiSdk().caches.create({
+        model: model.startsWith("models/") ? model : `models/${model}`,
+        config: {
+          displayName: `planify-${profile}`.slice(0, 120),
+          ttl: `${cacheTtlSeconds()}s`,
+          systemInstruction: bundle.systemInstruction,
+          ...(bundle.staticContext?.trim()
+            ? {
+                contents: [
+                  {
+                    role: "user",
+                    parts: [{ text: bundle.staticContext.trim() }],
+                  },
+                ],
+              }
+            : {}),
+        },
+      }),
+      new Promise<never>((_, reject) => {
+        setTimeout(() => {
+          reject(new Error("Timeout ao preparar cache de contexto da IA."));
+        }, CACHE_CREATE_TIMEOUT_MS);
+      }),
+    ]);
 
     return created.name ?? null;
   } catch {

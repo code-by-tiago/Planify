@@ -133,17 +133,12 @@ const planFaq = [
   {
     question: "O plano é realmente ilimitado?",
     answer:
-      "O Planify Professor inclui uso generoso para o dia a dia docente: até 5 gerações profundas por dia (materiais e planejamentos) e créditos mensais amplos. Isso cobre a rotina da grande maioria dos professores. Para uso automatizado ou em volume extremo, aplicamos política de uso justo.",
+      "Sim. Assinantes usam todas as ferramentas com IA sem contar créditos ou cotas diárias. Para proteger a qualidade do serviço, bloqueamos cliques repetidos na mesma geração e uso automatizado em massa (política de uso justo).",
   },
   {
-    question: "Por que existe limite diário de gerações?",
+    question: "Existe algum limite de uso?",
     answer:
-      "Provas, apostilas, planos de aula e materiais extensos usam IA avançada para entregar profundidade pedagógica. Cada geração exige processamento intenso — preferimos poucos materiais excelentes por dia a dezenas de rascunhos rasos. A cota reinicia à meia-noite (horário de Brasília).",
-  },
-  {
-    question: "Como funcionam os créditos?",
-    answer:
-      "Materiais completos (provas, apostilas, slides) consomem mais créditos que flashcards e resumos. Você acompanha o saldo no painel; ele renova a cada ciclo mensal da assinatura.",
+      "Não há teto de créditos nem cota diária para o professor assinante. Apenas evite disparar várias gerações idênticas ao mesmo tempo — o sistema aguarda a conclusão da anterior antes de iniciar outra.",
   },
   {
     question: "Já assinei Pro, Premium ou Anual — o que muda?",

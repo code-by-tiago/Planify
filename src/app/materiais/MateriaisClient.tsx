@@ -1105,6 +1105,8 @@ export function MateriaisClient({
   async function executarGeracao(
     overrides: Partial<MaterialEngineInput> = {},
   ) {
+    if (loading || retryingGeneration) return;
+
     setErro("");
     setErroCta(null);
     setErroRetryable(false);
@@ -1159,6 +1161,8 @@ export function MateriaisClient({
       }, PATIENCE_THRESHOLD_MS);
     }
 
+    const idempotencyKey = crypto.randomUUID();
+
     try {
       await runWithRetry(async () => {
       const turma = school.turmaPayload;
@@ -1168,7 +1172,7 @@ export function MateriaisClient({
 
       const payload = {
         ...buildGenerationPayload(overrides),
-        idempotencyKey: crypto.randomUUID(),
+        idempotencyKey,
       };
       rememberSlideGenerationPayload(payload);
 

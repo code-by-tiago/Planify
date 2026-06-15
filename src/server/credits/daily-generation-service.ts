@@ -76,11 +76,11 @@ export async function getDailyGenerationStatus(params: {
   });
   const limit = getDailyDeepGenerationLimit(resolvedPlanKey);
 
-  if (hasUnlimitedQuota(params.email)) {
+  if (hasUnlimitedQuota(params.email) || resolvedPlanKey) {
     return {
       used: 0,
-      limit,
-      remaining: limit,
+      limit: 0,
+      remaining: 0,
       resetsAt: nextBrazilMidnightIso(),
       appliesToType,
     };
@@ -137,8 +137,13 @@ export async function consumeDeepGeneration(params: {
     userId: params.userId,
     email: params.email,
   });
+
+  if (resolvedPlanKey) {
+    return { status: "skipped" };
+  }
+
   const limit = getDailyDeepGenerationLimit(resolvedPlanKey);
-  const mustEnforceDaily = Boolean(resolvedPlanKey);
+  const mustEnforceDaily = false;
 
   try {
     const { data, error } = await db().rpc("planify_consume_deep_generation", {

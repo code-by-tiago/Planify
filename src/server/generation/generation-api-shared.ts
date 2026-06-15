@@ -23,6 +23,14 @@ import {
   jsonGenerationValidationError,
   type GenerationErrorCode,
 } from "./generation-api-contract";
+import {
+  assertGenerationSlotAvailable,
+  GenerationInflightError,
+} from "./generation-inflight-guard";
+import {
+  extractIdempotencyKey,
+  shouldSkipUsageQuotas,
+} from "./usage-quota-policy";
 
 export type GenerationApiUser = {
   id: string;
@@ -79,7 +87,42 @@ export async function prepareGenerationRequest<TPayload>(
   let chargedCost = 0;
   let chargedDeepDaily = false;
 
-  if (user?.id && isDeepGenerationType(tipo) && !options.skipDailyQuota) {
+  if (user?.id) {
+    try {
+      await assertGenerationSlotAvailable({
+        userId: user.id,
+        idempotencyKey: extractIdempotencyKey(payload),
+      });
+    } catch (error) {
+      if (error instanceof GenerationInflightError) {
+        return {
+          ok: false,
+          response: NextResponse.json(
+            {
+              ok: false,
+              code: "generation_in_progress" satisfies GenerationErrorCode,
+              message: error.message,
+              retryable: false,
+            },
+            { status: error.status },
+          ),
+        };
+      }
+      throw error;
+    }
+  }
+
+  const skipQuotas =
+    user?.id != null
+      ? await shouldSkipUsageQuotas({ userId: user.id, email: user.email })
+      : true;
+
+  if (
+    !skipQuotas &&
+    user?.id &&
+    isDeepGenerationType(tipo) &&
+    !options.skipDailyQuota
+  ) {
     const daily = await consumeDeepGeneration({
       userId: user.id,
       tipo,
@@ -112,7 +155,7 @@ export async function prepareGenerationRequest<TPayload>(
     }
   }
 
-  if (user?.id && !options.skipCreditCharge) {
+  if (!skipQuotas && user?.id && !options.skipCreditCharge) {
     const spend = await spendCredits(
       user.id,
       tipo,

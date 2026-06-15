@@ -15,6 +15,14 @@ import {
   refundCredits,
   spendCredits,
 } from "@/server/credits/credit-service";
+import {
+  assertGenerationSlotAvailable,
+  GenerationInflightError,
+} from "@/server/generation/generation-inflight-guard";
+import {
+  extractIdempotencyKey,
+  shouldSkipUsageQuotas,
+} from "@/server/generation/usage-quota-policy";
 import { persistGeneratedMaterialBestEffort } from "@/server/materials/persist-generated-material";
 import type { LessonBundleInput } from "@/server/materials/lesson-bundle-orchestrator";
 import type { PlanifyToolId } from "@/lib/pro/planifyTools";
@@ -72,7 +80,41 @@ export async function prepareLessonBundleRequest(
   let chargedCost = 0;
   let chargedDeepDaily = false;
 
-  if (user?.id && isDeepGenerationType(tipo) && !options?.skipDailyQuota) {
+  if (user?.id) {
+    try {
+      await assertGenerationSlotAvailable({
+        userId: user.id,
+        idempotencyKey: extractIdempotencyKey(payload),
+      });
+    } catch (error) {
+      if (error instanceof GenerationInflightError) {
+        return {
+          ok: false,
+          response: NextResponse.json(
+            {
+              ok: false,
+              code: "generation_in_progress",
+              message: error.message,
+              retryable: false,
+            },
+            { status: error.status },
+          ),
+        };
+      }
+      throw error;
+    }
+  }
+
+  const skipQuotas = user?.id
+    ? await shouldSkipUsageQuotas({ userId: user.id, email: user.email })
+    : true;
+
+  if (
+    !skipQuotas &&
+    user?.id &&
+    isDeepGenerationType(tipo) &&
+    !options?.skipDailyQuota
+  ) {
     const daily = await consumeDeepGeneration({
       userId: user.id,
       tipo,
@@ -101,7 +143,7 @@ export async function prepareLessonBundleRequest(
     }
   }
 
-  if (user?.id) {
+  if (!skipQuotas && user?.id) {
     const spend = await spendCredits(user.id, tipo, user.email, bundleCost);
 
     if (spend.status === "insufficient") {

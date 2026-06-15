@@ -29,7 +29,7 @@ export function isCourtesyEmail(email: string | null | undefined): boolean {
   return getCourtesyEmails().includes(normalized);
 }
 
-/** Owners e contas cortesia não têm limites de créditos nem gerações profundas diárias. */
+/** Owners, cortesia e assinantes ativos não têm limites de créditos nem cotas diárias. */
 export function hasUnlimitedQuota(email: string | null | undefined): boolean {
   return isOwnerEmail(email) || isCourtesyEmail(email);
 }

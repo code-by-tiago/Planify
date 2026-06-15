@@ -11,7 +11,7 @@ import {
   renderQuestionCard,
   wrapProfessionalDocument,
 } from "@/lib/materiais/material-document-layout";
-import { generateGeminiJSON, isGeminiQuotaError } from "../ai/gemini-client";
+import { generateGeminiJSON, isGeminiQuotaError, resolveGeminiFailureCode } from "../ai/gemini-client";
 import {
   usesDedicatedEngineRenderer,
   usesPlanifyMaterialEngine,
@@ -1265,15 +1265,21 @@ export async function generateMaterialByEngine(input: MaterialEngineInput) {
       if (isGeminiQuotaError(message)) {
         break;
       }
+      if (message.includes("Créditos de IA esgotados") || message.includes("GEMINI_API_KEY")) {
+        break;
+      }
     }
   }
+
+  const failureMessage =
+    lastError instanceof Error
+      ? lastError.message
+      : "A IA não conseguiu gerar o material. Tente novamente.";
 
   return {
     ok: false as const,
     status: 502,
-    message:
-      lastError instanceof Error
-        ? lastError.message
-        : "A IA não conseguiu gerar o material. Tente novamente.",
+    message: failureMessage,
+    errorCode: resolveGeminiFailureCode(failureMessage),
   };
 }

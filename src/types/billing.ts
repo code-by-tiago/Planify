@@ -26,7 +26,7 @@ export const billingPlans: BillingPlan[] = [
       "Um único plano com tudo que você precisa: geradores com IA, planejamentos BNCC, editor, exportação e biblioteca premium.",
     priceLabel: "R$ 24,90",
     recurrenceLabel: "por mês",
-    creditsLabel: "Uso generoso — ideal para o ano letivo",
+    creditsLabel: "Uso ilimitado no plano",
     creditsPerCycle: 800,
     envPriceKeys: [
       "STRIPE_PRICE_PRO_MONTHLY",
@@ -37,12 +37,11 @@ export const billingPlans: BillingPlan[] = [
     badgeLabel: "Preço de lançamento",
     highlighted: true,
     features: [
-      "Até 5 gerações profundas por dia (materiais + planejamentos)",
-      "Créditos generosos por mês para provas, apostilas e planos",
-      "Todas as ferramentas com IA e planejamentos BNCC",
+      "Uso ilimitado de todas as ferramentas com IA",
+      "Todas as ferramentas e planejamentos BNCC",
       "Editor, histórico e exportação Google Docs/PDF",
       "Biblioteca premium e Comunidade",
-      "Uso pessoal com política de uso justo",
+      "Política de uso justo contra automação abusiva",
     ],
   },
 ];

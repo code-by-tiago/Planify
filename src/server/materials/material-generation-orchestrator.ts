@@ -42,6 +42,13 @@ type GenerationFailure = {
   qualityIssues?: string[];
 };
 
+const GENERATE_HEARTBEAT_MS = 12_000;
+const GENERATE_HEARTBEAT_MESSAGES = [
+  "Gerando conteúdo…",
+  "A IA está elaborando o material…",
+  "Finalizando a geração…",
+];
+
 function enforceUnifiedQualityGate(
   delivery: UnifiedMaterialDelivery,
 ): GenerationSuccess | GenerationFailure {
@@ -165,7 +172,25 @@ async function runEngineDelivery(
   options?: MaterialGenerationOptions,
 ): Promise<GenerationSuccess | GenerationFailure> {
   emitStage(options, "generate");
-  const firstPass = await generateMaterialByEngine(input);
+
+  let heartbeatTick = 0;
+  const heartbeat = setInterval(() => {
+    heartbeatTick += 1;
+    emitStage(
+      options,
+      "generate",
+      GENERATE_HEARTBEAT_MESSAGES[
+        heartbeatTick % GENERATE_HEARTBEAT_MESSAGES.length
+      ],
+    );
+  }, GENERATE_HEARTBEAT_MS);
+
+  let firstPass: Awaited<ReturnType<typeof generateMaterialByEngine>>;
+  try {
+    firstPass = await generateMaterialByEngine(input);
+  } finally {
+    clearInterval(heartbeat);
+  }
 
   if (!firstPass.ok) {
     return firstPass;

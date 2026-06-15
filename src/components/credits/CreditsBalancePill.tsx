@@ -12,11 +12,11 @@ type Wallet = {
 
 /**
  * Indicador compacto do saldo de créditos do ciclo.
- * Só aparece quando o usuário tem carteira provisionada (plano ativo).
- * Atualiza ao montar e quando recebe o evento "planify:credits-changed".
+ * Oculto para assinantes com uso ilimitado (política de lançamento).
  */
 export function CreditsBalancePill() {
   const [wallet, setWallet] = useState<Wallet | null>(null);
+  const [usageUnlimited, setUsageUnlimited] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
   async function load() {
@@ -26,9 +26,13 @@ export function CreditsBalancePill() {
         cache: "no-store",
       });
       const data = await res.json().catch(() => null);
+      setUsageUnlimited(
+        Boolean(data?.usageUnlimited ?? data?.unlimitedQuota),
+      );
       setWallet(data?.wallet ?? null);
     } catch {
       setWallet(null);
+      setUsageUnlimited(false);
     } finally {
       setLoaded(true);
     }
@@ -41,7 +45,7 @@ export function CreditsBalancePill() {
     return () => window.removeEventListener("planify:credits-changed", handler);
   }, []);
 
-  if (!loaded || !wallet) return null;
+  if (!loaded || usageUnlimited || !wallet) return null;
 
   const limit = wallet.monthlyLimit || 0;
   const ratio = limit > 0 ? wallet.balance / limit : 1;

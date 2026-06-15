@@ -35,15 +35,9 @@ const LEGACY_MODEL_MAP: Record<string, string> = {
   "gemini-2.0-flash-lite-001": "gemini-2.5-flash",
 };
 
-const DEFAULT_MODEL_FALLBACKS = [
-  "gemini-2.5-flash",
-  "gemini-2.5-flash-lite",
-] as const;
+const DEFAULT_MODEL_FALLBACKS = ["gemini-2.5-flash"] as const;
 
-const ADVANCED_MODEL_FALLBACKS = [
-  "gemini-2.5-pro",
-  "gemini-2.5-flash",
-] as const;
+const ADVANCED_MODEL_FALLBACKS = ["gemini-2.5-flash"] as const;
 
 function normalizeModelName(model: string): string {
   const trimmed = model.trim();
@@ -54,7 +48,7 @@ function normalizeModelName(model: string): string {
  * Resolve o nome do modelo a partir do tier solicitado.
  *
  * Cadeia de fallback (retrocompatibilidade preservada):
- *   tier "advanced" → GEMINI_MODEL_ADVANCED → "gemini-2.5-pro"
+ *   tier "advanced" → GEMINI_MODEL_ADVANCED → "gemini-2.5-flash"
  *   tier "default"  → GEMINI_MODEL_DEFAULT  → GEMINI_MODEL (legado) → "gemini-2.5-flash"
  *   model literal   → valor passado diretamente (uso legado)
  */
@@ -64,7 +58,7 @@ function resolveModel(
 ): string {
   if (tier === "advanced") {
     return normalizeModelName(
-      process.env.GEMINI_MODEL_ADVANCED ?? "gemini-2.5-pro",
+      process.env.GEMINI_MODEL_ADVANCED ?? "gemini-2.5-flash",
     );
   }
 
@@ -95,7 +89,39 @@ function resolveModelCandidates(
   return [...new Set([primary, ...pool])];
 }
 
+export function isGeminiBillingDepletedError(message: string): boolean {
+  return /prepayment credits are depleted|billing.*depleted|credits are depleted|enable billing|insufficient.*billing|recarregue.*saldo/i.test(
+    message,
+  );
+}
+
+export function isGeminiAuthError(message: string): boolean {
+  return (
+    /GEMINI_API_KEY/i.test(message) ||
+    /API key not valid|API_KEY_INVALID|invalid api key|permission denied|unauthorized|invalid authentication credentials|ACCESS_TOKEN_TYPE_UNSUPPORTED/i.test(
+      message,
+    )
+  );
+}
+
+export function isGeminiNonRetryableError(message: string, status = 0): boolean {
+  return (
+    isGeminiBillingDepletedError(message) ||
+    isGeminiAuthError(message) ||
+    status === 403
+  );
+}
+
+export function resolveGeminiFailureCode(
+  message: string,
+): "ai_billing" | "ai_unavailable" {
+  if (isGeminiBillingDepletedError(message)) return "ai_billing";
+  return "ai_unavailable";
+}
+
 export function isGeminiQuotaError(message: string, status = 0): boolean {
+  if (isGeminiNonRetryableError(message, status)) return false;
+
   return (
     status === 429 ||
     /quota exceeded|rate limit|resource exhausted|too many requests/i.test(
@@ -129,6 +155,13 @@ export function isGeminiTransientOverloadError(
 }
 
 export function humanizeGeminiError(message: string): string {
+  if (isGeminiBillingDepletedError(message)) {
+    return (
+      "Créditos de IA esgotados no Google AI Studio. Recarregue o saldo ou habilite faturação em ai.google.dev " +
+      "e tente novamente em alguns minutos."
+    );
+  }
+
   if (isGeminiQuotaError(message)) {
     const retry = message.match(/retry in ([\d.]+)s/i);
     const wait = retry ? ` Aguarde cerca de ${Math.ceil(parseFloat(retry[1]))} segundos` : "";
@@ -146,15 +179,11 @@ export function humanizeGeminiError(message: string): string {
     );
   }
 
-  if (/GEMINI_API_KEY/i.test(message)) {
-    return "Chave GEMINI_API_KEY ausente ou inválida no servidor.";
-  }
+  if (isGeminiAuthError(message)) {
+    if (/GEMINI_API_KEY/i.test(message)) {
+      return "Chave GEMINI_API_KEY ausente ou inválida no servidor.";
+    }
 
-  if (
-    /API key not valid|API_KEY_INVALID|invalid api key|permission denied|unauthorized|invalid authentication credentials|ACCESS_TOKEN_TYPE_UNSUPPORTED/i.test(
-      message,
-    )
-  ) {
     return (
       "Chave GEMINI_API_KEY rejeitada pelo Google. No AI Studio, use o botão Copiar na chave (formato AQ. ou AIza), cole sem espaços na Vercel, confira restrições da chave e faça redeploy."
     );
@@ -210,6 +239,10 @@ async function withGeminiCallTimeout<T>(
 }
 
 function shouldRetryGeminiCall(message: string, status: number): boolean {
+  if (isGeminiNonRetryableError(message, status)) {
+    return false;
+  }
+
   return (
     isGeminiQuotaError(message, status) ||
     isGeminiTransientOverloadError(message, status)
@@ -362,6 +395,29 @@ async function callGeminiGenerateContent(
   }
 }
 
+function handleGeminiCallFailure(
+  message: string,
+  httpStatus: number,
+  attempt: number,
+): "retry" | "next_model" | "fail" {
+  if (isGeminiNonRetryableError(message, httpStatus)) {
+    throw new Error(humanizeGeminiError(message));
+  }
+
+  if (isGeminiModelUnavailableError(message, httpStatus)) {
+    return "next_model";
+  }
+
+  if (
+    shouldRetryGeminiCall(message, httpStatus) &&
+    attempt < MAX_RETRIES_PER_MODEL - 1
+  ) {
+    return "retry";
+  }
+
+  return "next_model";
+}
+
 export async function generateGeminiJSON<T>(
   options: GeminiGenerateJSONOptions,
 ): Promise<T> {
@@ -396,14 +452,13 @@ export async function generateGeminiJSON<T>(
 
       lastError = message;
 
-      if (isGeminiModelUnavailableError(message, json.httpStatus)) {
-        break;
-      }
+      const failureAction = handleGeminiCallFailure(
+        message,
+        json.httpStatus,
+        attempt,
+      );
 
-      if (
-        shouldRetryGeminiCall(message, json.httpStatus) &&
-        attempt < MAX_RETRIES_PER_MODEL - 1
-      ) {
+      if (failureAction === "retry") {
         await sleep(parseRetryDelayMs(message, attempt));
         continue;
       }
@@ -520,14 +575,13 @@ export async function generateGeminiTextFromMedia(options: {
 
       lastError = message;
 
-      if (isGeminiModelUnavailableError(message, json.httpStatus)) {
-        break;
-      }
+      const failureAction = handleGeminiCallFailure(
+        message,
+        json.httpStatus,
+        attempt,
+      );
 
-      if (
-        shouldRetryGeminiCall(message, json.httpStatus) &&
-        attempt < MAX_RETRIES_PER_MODEL - 1
-      ) {
+      if (failureAction === "retry") {
         await sleep(parseRetryDelayMs(message, attempt));
         continue;
       }
@@ -579,14 +633,13 @@ export async function generateGeminiText(options: {
 
       lastError = message;
 
-      if (isGeminiModelUnavailableError(message, json.httpStatus)) {
-        break;
-      }
+      const failureAction = handleGeminiCallFailure(
+        message,
+        json.httpStatus,
+        attempt,
+      );
 
-      if (
-        shouldRetryGeminiCall(message, json.httpStatus) &&
-        attempt < MAX_RETRIES_PER_MODEL - 1
-      ) {
+      if (failureAction === "retry") {
         await sleep(parseRetryDelayMs(message, attempt));
         continue;
       }

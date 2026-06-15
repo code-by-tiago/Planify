@@ -13,6 +13,11 @@ import {
   finalizeGenerationFailure,
   logGenerationSuccessEvent,
 } from "@/server/generation/generation-api-shared";
+import {
+  assertGenerationSlotAvailable,
+  GenerationInflightError,
+} from "@/server/generation/generation-inflight-guard";
+import { extractIdempotencyKey } from "@/server/generation/usage-quota-policy";
 import { UnifiedQualityGateError } from "@/lib/materiais/unified-quality-gate";
 import { jsonPlanningError } from "@/server/generation/generation-api-contract";
 import { withOperationalCapture } from "@/server/telemetry/with-operational-capture";
@@ -30,6 +35,27 @@ async function handlePost(request: NextRequest, _context: { params: Promise<Reco
 
   const user = auth.access.user;
   const tipo = PLANNING_DEEP_GENERATION_TYPE;
+
+  const payload = (await request.json().catch(() => null)) as PlanningAiPayload | null;
+
+  if (!payload || typeof payload !== "object") {
+    return jsonPlanningError("Corpo da requisição inválido.", 400);
+  }
+
+  if (user?.id) {
+    try {
+      await assertGenerationSlotAvailable({
+        userId: user.id,
+        idempotencyKey: extractIdempotencyKey(payload),
+      });
+    } catch (error) {
+      if (error instanceof GenerationInflightError) {
+        return jsonPlanningError(error.message, error.status, "generation_in_progress");
+      }
+      throw error;
+    }
+  }
+
   let chargedDeepDaily = false;
 
   if (user?.id && process.env.GEMINI_API_KEY) {
@@ -59,17 +85,6 @@ async function handlePost(request: NextRequest, _context: { params: Promise<Reco
   const charge = { chargedCost: 0, chargedDeepDaily };
 
   try {
-    const payload = (await request.json().catch(() => null)) as PlanningAiPayload | null;
-
-    if (!payload || typeof payload !== "object") {
-      await finalizeGenerationFailure(user?.id, tipo, charge, {
-        eventType: "planning_generation_failed",
-        errorCode: "validation_error",
-      });
-
-      return jsonPlanningError("Corpo da requisição inválido.", 400);
-    }
-
     const validationError = validatePlanningPayload(payload);
 
     if (validationError) {

@@ -58,7 +58,9 @@ async function handlePost(request: NextRequest, _context: { params: Promise<Reco
         {
           ok: false,
           message: result.message,
-          code: result.errorCode ?? "quality_gate_failed",
+          code:
+            result.errorCode ??
+            (result.status === 422 ? "quality_gate_failed" : "ai_unavailable"),
           qualityScore: result.qualityScore,
           qualityIssues: result.qualityIssues,
           retryable: result.status === 422,

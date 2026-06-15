@@ -154,16 +154,11 @@ export async function spendCredits(
 
   const wallet = await getCreditWallet(userId);
   const billedPlanKey = await resolveUserBillingPlanKey({ userId, email });
-  if (hasUnlimitedQuota(email)) {
+  if (hasUnlimitedQuota(email) || billedPlanKey) {
     return { status: "skipped" };
   }
 
-  const mustEnforceCredits = Boolean(billedPlanKey);
-
   if (!wallet) {
-    if (mustEnforceCredits) {
-      return { status: "insufficient", balance: 0, cost };
-    }
     return { status: "skipped" };
   }
 
@@ -175,9 +170,6 @@ export async function spendCredits(
     });
 
     if (error) {
-      if (mustEnforceCredits) {
-        return { status: "insufficient", balance: wallet.balance, cost };
-      }
       return { status: "skipped" };
     }
 

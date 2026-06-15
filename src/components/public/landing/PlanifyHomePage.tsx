@@ -27,7 +27,7 @@ const faqItems = [
   {
     question: "Como começo?",
     answer:
-      "Crie sua conta, escolha um plano e libere os geradores premium com créditos claros por ciclo.",
+      "Crie sua conta, escolha um plano e libere os geradores premium com uso ilimitado.",
   },
 ];
 

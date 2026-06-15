@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = buildPageMetadata({
   title: "Termos de uso",
   description:
-    "Condições de uso do Planify IA Educacional: planos, créditos, ferramentas de IA pedagógica e responsabilidades do professor.",
+    "Condições de uso do Planify IA Educacional: planos, ferramentas de IA pedagógica e responsabilidades do professor.",
   path: "/termos",
 });
 
@@ -43,21 +43,24 @@ export default function TermosPage() {
       </section>
 
       <section>
-        <h2 className="text-lg font-black text-slate-900">3. Planos, créditos e pagamento</h2>
+        <h2 className="text-lg font-black text-slate-900">3. Planos e pagamento</h2>
         <ul className="mt-2 list-disc space-y-2 pl-5">
           <li>
             O acesso às ferramentas de IA está vinculado a <strong>planos pagos</strong>{" "}
-            com créditos por ciclo (mensal ou anual), conforme descrito em{" "}
+            com uso ilimitado para o professor assinante, conforme descrito em{" "}
             <Link href="/planos" className="font-bold text-cyan-700 hover:underline">
               Planos
             </Link>
             .
           </li>
-          <li>Cada geração consome créditos conforme o tipo de ferramenta.</li>
-          <li>Pagamentos são processados pelo Stripe; renovações seguem as regras do
-            plano escolhido.</li>
-          <li>Não há freemium diário: sem plano ativo ou créditos, a geração é
-            bloqueada.</li>
+          <li>
+            Pagamentos são processados pelo Stripe; renovações seguem as regras do
+            plano escolhido.
+          </li>
+          <li>
+            Sem plano ativo, a geração com IA fica bloqueada. Aplicamos proteção
+            contra cliques repetidos e uso automatizado abusivo.
+          </li>
         </ul>
       </section>
 
@@ -68,7 +71,7 @@ export default function TermosPage() {
           <li>usar o Planify para conteúdo ilegal, discriminatório ou que viole direitos
             de terceiros;</li>
           <li>inserir dados pessoais sensíveis de alunos nos geradores de IA;</li>
-          <li>tentar burlar limites de créditos, acesso ou segurança;</li>
+          <li>tentar burlar limites de acesso, segurança ou automação em massa;</li>
           <li>fazer engenharia reversa ou sobrecarga intencional dos sistemas.</li>
         </ul>
       </section>
@@ -122,7 +125,7 @@ export default function TermosPage() {
         <h2 className="text-lg font-black text-slate-900">9. Cancelamento</h2>
         <p className="mt-2">
           Você pode cancelar a assinatura conforme as opções do Stripe e do painel de
-          planos. O cancelamento interrompe novas cobranças; créditos e acesso seguem as
+          planos. O cancelamento interrompe novas cobranças; o acesso premium segue as
           regras do ciclo já pago. Podemos suspender contas que violem estes termos.
         </p>
       </section>

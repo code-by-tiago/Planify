@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 export type GenerationErrorCode =
   | "insufficient_credits"
   | "daily_limit_reached"
+  | "generation_in_progress"
   | "offline"
   | "server_error"
   | "timeout"

@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { isDeepGenerationType } from "@/lib/ai/material-generation-policy";
 
@@ -22,6 +21,7 @@ export function DailyGenerationsBar({
   compact = false,
 }: DailyGenerationsBarProps) {
   const [daily, setDaily] = useState<DailyStatus | null>(null);
+  const [usageUnlimited, setUsageUnlimited] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const applies = isDeepGenerationType(tipoMaterial);
 
@@ -35,9 +35,13 @@ export function DailyGenerationsBar({
         cache: "no-store",
       });
       const data = await res.json().catch(() => null);
+      setUsageUnlimited(
+        Boolean(data?.usageUnlimited ?? data?.unlimitedQuota),
+      );
       setDaily(data?.daily ?? null);
     } catch {
       setDaily(null);
+      setUsageUnlimited(false);
     } finally {
       setLoaded(true);
     }
@@ -50,7 +54,7 @@ export function DailyGenerationsBar({
     return () => window.removeEventListener("planify:credits-changed", handler);
   }, [load]);
 
-  if (!loaded || !daily || daily.limit <= 0) return null;
+  if (!loaded || usageUnlimited || !daily || daily.limit <= 0) return null;
 
   const ratio = daily.limit > 0 ? daily.used / daily.limit : 0;
   const exhausted = daily.remaining <= 0;
@@ -75,14 +79,6 @@ export function DailyGenerationsBar({
             {daily.used} de {daily.limit}
           </span>
         </p>
-        {!compact && daily.limit < 5 ? (
-          <Link
-            href="/planos"
-            className="text-[11px] font-black text-indigo-700 underline"
-          >
-            Premium: até 5/dia
-          </Link>
-        ) : null}
       </div>
 
       <div
@@ -101,30 +97,15 @@ export function DailyGenerationsBar({
 
       {!compact ? (
         <p className="mt-2 text-[11px] font-semibold leading-5 text-slate-600">
-          Usamos IA avançada para materiais profundos, planejamentos anuais e
-          trimestrais — cada geração exige processamento intenso. Por isso
-          priorizamos <strong>qualidade, não quantidade</strong>.
-          {applies ? (
-            <>
-              {" "}
-              Este tipo conta na cota diária. Flashcards e resumos não contam.
-            </>
-          ) : (
-            <>
-              {" "}
-              Provas, apostilas, listas e planejamentos contam na cota; flashcards,
-              resumos e jogos não.
-            </>
-          )}
+          {applies
+            ? "Este tipo conta na cota diária de gerações profundas."
+            : "Provas, apostilas e planejamentos contam na cota diária."}
         </p>
       ) : null}
 
       {exhausted ? (
         <p className="mt-2 text-[11px] font-bold text-rose-700">
-          Cota esgotada — reinicia à meia-noite (Brasília).{" "}
-          <Link href="/planos" className="underline">
-            Ver planos
-          </Link>
+          Cota esgotada — reinicia à meia-noite (Brasília).
         </p>
       ) : null}
     </div>

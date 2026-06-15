@@ -23,9 +23,9 @@ export const billingPlans: BillingPlan[] = [
     stripePlanKey: "professor_pro",
     name: "Planify Professor",
     description:
-      "Acesso completo à plataforma para criar, editar e exportar materiais pedagógicos com IA — um plano, sem comparar pacotes.",
+      "Geradores com IA, planejamentos BNCC, editor e exportação — tudo em um plano.",
     priceLabel: "R$ 24,90",
-    recurrenceLabel: "por mês",
+    recurrenceLabel: "/ mês",
     creditsLabel: "Uso ilimitado",
     creditsPerCycle: 800,
     envPriceKeys: [
@@ -37,11 +37,10 @@ export const billingPlans: BillingPlan[] = [
     badgeLabel: "Preço de lançamento",
     highlighted: true,
     features: [
-      "Todas as ferramentas com IA incluídas",
-      "Planejamentos BNCC anuais e trimestrais",
-      "Editor, histórico e biblioteca premium",
-      "Exportação Google Docs, PDF e Classroom",
-      "Comunidade docente e progresso BNCC",
+      "Todas as ferramentas com IA",
+      "Planejamentos BNCC",
+      "Editor, biblioteca e exportação",
+      "Comunidade docente",
     ],
   },
 ];

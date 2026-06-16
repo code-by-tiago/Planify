@@ -839,29 +839,10 @@ export function BancoQuestoesClient() {
         />
       }
     >
-      <div className="space-y-6 px-4 py-6 sm:px-6">
-        <details className="rounded-2xl border border-cyan-400/20 bg-cyan-50/40 px-4 py-3">
-          <summary className="cursor-pointer text-sm font-bold text-cyan-900">
-            Como o ecossistema Planify se conecta
-          </summary>
-          <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm font-medium text-slate-700">
-            <li>
-              <strong>Meus materiais</strong> — todas as ferramentas usam a mesma entrega:
-              banco → contexto pedagógico → motor com qualidade máxima (score verificado).
-            </li>
-            <li>
-              <strong>Banco de questões</strong> — navegue, selecione e remixe questões da
-              comunidade, da escola ou suas.
-            </li>
-            <li>
-              <strong>Montar prova</strong> — leva as questões selecionadas para o gerador de
-              prova com um clique.
-            </li>
-            <li>
-              <strong>Editor</strong> — ajuste o material; exporte para Google só quando quiser.
-            </li>
-          </ol>
-        </details>
+      <div className={`space-y-6 px-4 py-6 sm:px-6${selectedItems.length > 0 ? " pb-28" : ""}`}>
+        <p className="rounded-xl border border-cyan-400/15 bg-cyan-50/30 px-4 py-2.5 text-sm font-medium text-slate-600">
+          Selecione questões e monte prova ou lista em um clique — ou importe do histórico.
+        </p>
 
         <fieldset className="space-y-3">
           <legend className="sr-only">Filtros do banco de questões</legend>
@@ -1191,9 +1172,9 @@ export function BancoQuestoesClient() {
                       <button
                         type="button"
                         onClick={() => toggleSelect(item.id)}
-                        className={
+                        className={`min-h-[2.75rem] px-3 py-2 ${
                           selected ? HUD_FILTER_CHIP_ACTIVE : HUD_FILTER_CHIP_INACTIVE
-                        }
+                        }`}
                       >
                         {selected ? "Selecionada" : "Selecionar"}
                       </button>
@@ -1569,6 +1550,41 @@ export function BancoQuestoesClient() {
           </div>
         ) : null}
       </div>
+
+      {selectedItems.length > 0 ? (
+        <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 flex justify-center px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+          <div className="pointer-events-auto flex w-full max-w-2xl flex-wrap items-center justify-between gap-3 rounded-2xl border border-cyan-400/30 bg-white/95 px-4 py-3 shadow-lg backdrop-blur">
+            <p className="text-sm font-bold text-slate-800">
+              {selectedItems.length} questão(ões) na cesta
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={clearSelection}
+                className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                Limpar
+              </button>
+              <button
+                type="button"
+                onClick={() => void montarAvaliacao("lista")}
+                disabled={assembling}
+                className="rounded-xl border border-cyan-400/40 bg-white px-3 py-2 text-xs font-semibold text-cyan-900 hover:bg-cyan-50 disabled:opacity-50"
+              >
+                Montar lista
+              </button>
+              <button
+                type="button"
+                onClick={() => void montarAvaliacao("prova")}
+                disabled={assembling}
+                className="pl-hud-btn rounded-xl px-4 py-2 text-xs font-semibold disabled:opacity-50"
+              >
+                {assembling ? "Montando…" : "Montar prova"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </PlanifyWorkspacePane>
   );
 }

@@ -8,7 +8,7 @@ import { SlidesPptxDownloadButton } from "@/components/documents/SlidesPptxDownl
 import { SlideAiAdjustPanel } from "@/components/slides/SlideAiAdjustPanel";
 import { MaterialGenerationSummaryPanel } from "@/components/materiais/MaterialGenerationSummary";
 import { MaterialQualityScoreBar } from "@/components/materiais/MaterialQualityScoreBar";
-import { MaterialDocumentPreview } from "@/components/materiais/MaterialDocumentPreview";
+import { MaterialTypedPreview } from "@/components/materiais/preview/MaterialTypedPreview";
 import {
   buildElevatePayload,
   requestMaterialGeneration,
@@ -28,6 +28,7 @@ import { GenerationCostHint } from "@/components/credits/GenerationCostHint";
 import { DailyGenerationsBar } from "@/components/credits/DailyGenerationsBar";
 import { MaterialPreviewSkeleton } from "@/components/materiais/MaterialPreviewSkeleton";
 import { MaterialToolPageShell } from "@/components/pro/MaterialToolPageShell";
+import { MaterialToolMobileSubmitBar } from "@/components/pro/MaterialToolMobileSubmitBar";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { PlanifyOwlGenerationCoach } from "@/components/pro/PlanifyOwlGenerationCoach";
 import { PlanifyOwlMark } from "@/components/pro/PlanifyOwlMark";
@@ -1529,8 +1530,10 @@ export function MateriaisClient({
       backLabel={studioMode ? "Início" : "Catálogo"}
       formScrollAttr={studioMode}
       previewScrollAttr={studioMode}
+      previewReady={Boolean(resultadoHtml)}
+      previewLoading={loading}
       form={
-        <form onSubmit={gerarMaterial} className="space-y-1">
+        <form onSubmit={gerarMaterial} className="space-y-1 max-lg:pb-2">
           <div className="flex flex-wrap items-start justify-between gap-3">
             {studioMode ? (
               <p className="text-[10px] font-bold uppercase tracking-wide text-cyan-600">
@@ -2150,6 +2153,7 @@ export function MateriaisClient({
             className="mt-4"
           />
 
+          <div className="hidden lg:block">
           <button
             type="submit"
             disabled={loading}
@@ -2164,6 +2168,18 @@ export function MateriaisClient({
               </>
             )}
           </button>
+          </div>
+
+          <MaterialToolMobileSubmitBar>
+            <button
+              type="submit"
+              disabled={loading}
+              className="pl-hud-btn flex-1 rounded-xl px-5 py-3 text-sm font-bold disabled:opacity-60"
+            >
+              {loading ? "Gerando…" : `Criar ${mode.shortTitle}`}
+            </button>
+            <CreditsBalancePill />
+          </MaterialToolMobileSubmitBar>
         </form>
       }
       preview={
@@ -2366,7 +2382,7 @@ export function MateriaisClient({
                   Histórico
                 </Link>
               </div>
-              <MaterialDocumentPreview html={resultadoHtml} tipoMaterial={tipo} />
+              <MaterialTypedPreview html={resultadoHtml} tipoMaterial={tipo} />
             </div>
           ) : (
             <div className="flex h-full min-h-[280px] flex-col items-center justify-center px-4 py-8 text-center">

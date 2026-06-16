@@ -4,9 +4,10 @@ import { FormEvent, useMemo, useRef, useState } from "react";
 import { CreditsBalancePill } from "@/components/credits/CreditsBalancePill";
 import { DailyGenerationsBar } from "@/components/credits/DailyGenerationsBar";
 import { GenerationCostHint } from "@/components/credits/GenerationCostHint";
-import { MaterialDocumentPreview } from "@/components/materiais/MaterialDocumentPreview";
+import { MaterialTypedPreview } from "@/components/materiais/preview/MaterialTypedPreview";
 import { MaterialPreviewSkeleton } from "@/components/materiais/MaterialPreviewSkeleton";
 import { MaterialToolPageShell } from "@/components/pro/MaterialToolPageShell";
+import { MaterialToolMobileSubmitBar } from "@/components/pro/MaterialToolMobileSubmitBar";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { PlanifyOwlGenerationCoach } from "@/components/pro/PlanifyOwlGenerationCoach";
 import { PlanifyOwlMark } from "@/components/pro/PlanifyOwlMark";
@@ -222,8 +223,10 @@ export function InclusaoClient({
       backLabel={studioMode ? "Início" : "Catálogo"}
       formScrollAttr={studioMode}
       previewScrollAttr={studioMode}
+      previewReady={Boolean(resultadoHtml)}
+      previewLoading={loading}
       form={
-        <form onSubmit={gerarMaterial} className="space-y-4">
+        <form onSubmit={gerarMaterial} className="space-y-4 max-lg:pb-2">
           <div>
             <p className={HUD_SECTION_LABEL}>Modo</p>
             <div className="flex flex-wrap gap-2">
@@ -338,7 +341,7 @@ export function InclusaoClient({
             className="mt-2"
           />
 
-          <div className="flex flex-wrap items-center gap-3 pt-1">
+          <div className="hidden flex-wrap items-center gap-3 pt-1 lg:flex">
             <button
               type="submit"
               disabled={loading}
@@ -349,6 +352,17 @@ export function InclusaoClient({
             </button>
             <CreditsBalancePill />
           </div>
+
+          <MaterialToolMobileSubmitBar>
+            <button
+              type="submit"
+              disabled={loading}
+              className="pl-hud-btn flex-1 rounded-xl px-5 py-3 text-sm font-bold disabled:opacity-60"
+            >
+              {loading ? "Adaptando…" : "Adaptar com IA"}
+            </button>
+            <CreditsBalancePill />
+          </MaterialToolMobileSubmitBar>
         </form>
       }
       preview={
@@ -396,7 +410,7 @@ export function InclusaoClient({
                   Regenerar
                 </button>
               </div>
-              <MaterialDocumentPreview html={resultadoHtml} />
+              <MaterialTypedPreview html={resultadoHtml} tipoMaterial="inclusao" />
             </div>
           ) : (
             <div className="flex h-full min-h-[280px] flex-col items-center justify-center px-4 py-8 text-center">

@@ -1,8 +1,10 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import type { PlanifyTool } from "@/lib/pro/planifyTools";
+
+type MobilePanel = "form" | "preview";
 
 type MaterialToolPageShellProps = {
   tool: PlanifyTool;
@@ -13,11 +15,14 @@ type MaterialToolPageShellProps = {
   preview: ReactNode;
   formScrollAttr?: boolean;
   previewScrollAttr?: boolean;
+  /** When true on mobile, switches to the preview tab (e.g. after generation). */
+  previewReady?: boolean;
+  previewLoading?: boolean;
 };
 
 /**
  * Split layout chrome for material IA tools — form left, preview right.
- * Hero for dashboard studio mode lives in TeachyMateriaisStudio.
+ * On mobile: tabbed panels (Configurar | Resultado) for full-height usability.
  */
 export function MaterialToolPageShell({
   tool,
@@ -28,7 +33,23 @@ export function MaterialToolPageShell({
   preview,
   formScrollAttr = false,
   previewScrollAttr = false,
+  previewReady = false,
+  previewLoading = false,
 }: MaterialToolPageShellProps) {
+  const [mobilePanel, setMobilePanel] = useState<MobilePanel>("form");
+
+  useEffect(() => {
+    if (previewReady) {
+      setMobilePanel("preview");
+    }
+  }, [previewReady]);
+
+  useEffect(() => {
+    if (previewLoading) {
+      setMobilePanel("preview");
+    }
+  }, [previewLoading]);
+
   return (
     <div
       className={`planify-hud flex h-full min-h-0 flex-col overflow-hidden ${
@@ -69,21 +90,58 @@ export function MaterialToolPageShell({
       ) : null}
 
       <div
-        className={`grid min-h-0 flex-1 max-lg:grid-cols-1 lg:grid-cols-[0.92fr_1.08fr] ${
+        className="flex shrink-0 gap-2 border-b border-cyan-400/10 bg-white/90 px-3 py-2 lg:hidden"
+        role="tablist"
+        aria-label="Painel da ferramenta"
+      >
+        <button
+          type="button"
+          role="tab"
+          aria-selected={mobilePanel === "form"}
+          onClick={() => setMobilePanel("form")}
+          className={`flex-1 rounded-xl px-3 py-2.5 text-sm font-bold transition ${
+            mobilePanel === "form"
+              ? "bg-cyan-600 text-white shadow-sm"
+              : "bg-slate-100 text-slate-700"
+          }`}
+        >
+          Configurar
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={mobilePanel === "preview"}
+          onClick={() => setMobilePanel("preview")}
+          className={`flex-1 rounded-xl px-3 py-2.5 text-sm font-bold transition ${
+            mobilePanel === "preview"
+              ? "bg-cyan-600 text-white shadow-sm"
+              : "bg-slate-100 text-slate-700"
+          }`}
+        >
+          {previewLoading ? "Gerando…" : previewReady ? "Resultado" : "Prévia"}
+        </button>
+      </div>
+
+      <div
+        className={`grid min-h-0 flex-1 max-lg:grid-cols-1 lg:grid-cols-[0.88fr_1.12fr] ${
           studioMode ? "min-h-0" : "min-h-0 lg:min-h-[680px]"
         }`}
       >
         <div
           {...(formScrollAttr ? { "data-planify-scroll": "" } : {})}
-          className="min-h-0 overflow-y-auto overscroll-contain bg-white/50 p-4 max-lg:max-h-[min(58vh,560px)] max-lg:border-b max-lg:border-cyan-400/10 sm:p-5 lg:max-h-none lg:border-r lg:border-cyan-400/10"
+          className={`min-h-0 overflow-y-auto overscroll-contain bg-white/50 p-4 sm:p-5 lg:border-r lg:border-cyan-400/10 lg:max-h-none ${
+            mobilePanel === "form" ? "max-lg:flex max-lg:flex-1 max-lg:flex-col" : "max-lg:hidden"
+          }`}
         >
-          {form}
+          <div className="max-lg:pb-[max(5.5rem,env(safe-area-inset-bottom))]">{form}</div>
         </div>
         <div
           {...(previewScrollAttr ? { "data-planify-scroll": "" } : {})}
-          className="min-h-0 overflow-y-auto overscroll-contain bg-gradient-to-br from-cyan-50/30 via-white/70 to-white p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:p-5"
+          className={`min-h-0 overflow-y-auto overscroll-contain bg-gradient-to-br from-cyan-50/30 via-white/70 to-white p-3 pb-[max(1rem,env(safe-area-inset-bottom))] sm:p-5 ${
+            mobilePanel === "preview" ? "max-lg:flex max-lg:flex-1 max-lg:flex-col" : "max-lg:hidden"
+          }`}
         >
-          <div className="pl-hud-glass min-h-[280px] rounded-2xl p-4 sm:p-5">
+          <div className="pl-hud-glass min-h-[min(50vh,280px)] flex-1 rounded-2xl p-3 sm:min-h-[280px] sm:p-5">
             {preview}
           </div>
         </div>

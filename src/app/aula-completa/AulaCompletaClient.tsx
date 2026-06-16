@@ -11,7 +11,7 @@ import {
 import { CreditsBalancePill } from "@/components/credits/CreditsBalancePill";
 import { GenerationCostHint } from "@/components/credits/GenerationCostHint";
 import { DailyGenerationsBar } from "@/components/credits/DailyGenerationsBar";
-import { MaterialDocumentPreview } from "@/components/materiais/MaterialDocumentPreview";
+import { MaterialTypedPreview } from "@/components/materiais/preview/MaterialTypedPreview";
 import { MaterialPreviewSkeleton } from "@/components/materiais/MaterialPreviewSkeleton";
 import { MaterialToolPageShell } from "@/components/pro/MaterialToolPageShell";
 import { SwipeTabPanel } from "@/components/pro/SwipeTabPanel";
@@ -342,7 +342,7 @@ export function AulaCompletaClient({
       </button>
     ),
     content: item.html ? (
-      <MaterialDocumentPreview html={item.html} tipoMaterial={item.toolId} />
+      <MaterialTypedPreview html={item.html} tipoMaterial={item.toolId} />
     ) : (
       <MaterialPreviewSkeleton />
     ),
@@ -409,6 +409,8 @@ export function AulaCompletaClient({
       backLabel={studioMode ? "Início" : "Catálogo"}
       formScrollAttr={studioMode}
       previewScrollAttr={studioMode}
+      previewReady={successItems.length > 0}
+      previewLoading={loading}
       form={
         <form onSubmit={gerarPacote} className="space-y-4 pb-20 max-lg:pb-24">
           <div>
@@ -585,7 +587,7 @@ export function AulaCompletaClient({
                       Abrir no editor
                     </button>
                   </div>
-                  <MaterialDocumentPreview
+                  <MaterialTypedPreview
                     html={activeItem.html}
                     tipoMaterial={activeItem.toolId}
                   />

@@ -50,6 +50,10 @@ import type {
 } from "@/server/planejamentos/planning-ai-service";
 import { readPlanejamentoPrefill } from "@/lib/planejamentos/planejamento-prefill";
 import { PlanningOfficialExportBar } from "@/components/planejamentos/PlanningOfficialExportBar";
+import {
+  PlanningWizardStepper,
+  type PlanningWizardStep,
+} from "@/components/planejamentos/PlanningWizardStepper";
 import { buildOfficialPlanningPayloadFromGeneration } from "@/lib/planejamentos/planning-google-export-payload";
 import {
   buildTrimestralPlansFromAnnual,
@@ -415,6 +419,7 @@ export function PlanejamentosClient() {
   const [errorCta, setErrorCta] = useState<ReturnType<typeof formatGenerationError>["cta"]>(null);
   const [errorRetryable, setErrorRetryable] = useState(false);
   const [abrirEditorAutomatico, setAbrirEditorAutomatico] = useState(true);
+  const [wizardStep, setWizardStep] = useState<PlanningWizardStep>(1);
 
   useEffect(() => {
     setAbrirEditorAutomatico(readAutoOpenPlanningEditorPreference());
@@ -490,6 +495,19 @@ export function PlanejamentosClient() {
     }),
     [conteudosPreenchido, groups, selectedSkills.length, generatedPlanning],
   );
+
+  const canGoToWizardStep2 = conteudosPreenchido;
+  const canGoToWizardStep3 = Boolean(generatedPlanning);
+
+  useEffect(() => {
+    if (generatedPlanning) {
+      setWizardStep(3);
+      return;
+    }
+    if (groups.length > 0 || selectedSkills.length > 0) {
+      setWizardStep((current) => (current < 2 ? 2 : current));
+    }
+  }, [generatedPlanning, groups.length, selectedSkills.length]);
 
   function invalidateGenerated() {
     setGeneratedPlanning(null);
@@ -1222,7 +1240,7 @@ export function PlanejamentosClient() {
 
   return (
     <PlanifyWorkspacePane>
-      <div className="planify-hud pl-hud-hub mx-auto max-w-7xl space-y-5">
+      <div className="planify-hud pl-hud-hub mx-auto max-w-7xl space-y-5 px-3 sm:px-4 lg:px-0">
         {!embeddedInDashboard ? (
           <div className="pl-hud-page-hero overflow-hidden rounded-2xl border border-cyan-400/15">
             <PlanifyPageHero
@@ -1233,126 +1251,22 @@ export function PlanejamentosClient() {
             />
           </div>
         ) : null}
-      <section className="grid gap-5 lg:grid-cols-[0.78fr_1.22fr]">
-        <aside className="space-y-6">
-          <div className="pl-hud-glass rounded-2xl p-5 sm:p-6">
-            <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-cyan-600">
-              Fluxo correto
-            </p>
-            <h2 className="mt-3 text-2xl font-black tracking-tight text-slate-950">
-              Seu planejamento em 3 passos
-            </h2>
-            <p className="mt-3 text-sm leading-7 text-slate-500/90">
-              BNCC, matriz com IA e exportação Google Docs — modelos oficiais preservados.
-            </p>
 
-            <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
-              <div className="rounded-2xl border border-slate-200/80 bg-white/80 p-4">
-                <p className="text-xs font-black uppercase tracking-[0.25em] text-slate-400">Conteúdos</p>
-                <p className="mt-2 text-3xl font-black text-slate-950">{stats.conteudos}</p>
-              </div>
-              <div className="rounded-2xl border border-slate-200/80 bg-white/80 p-4">
-                <p className="text-xs font-black uppercase tracking-[0.25em] text-slate-400">Selecionadas</p>
-                <p className="mt-2 text-3xl font-black text-slate-950">{stats.selecionadas}</p>
-              </div>
-              <div className="rounded-2xl border border-slate-200/80 bg-white/80 p-4">
-                <p className="text-xs font-black uppercase tracking-[0.25em] text-slate-400">Matriz IA</p>
-                <p className="mt-2 text-3xl font-black text-slate-950">{stats.matriz}</p>
-              </div>
-              <div className="rounded-2xl border border-slate-200/80 bg-white/80 p-4">
-                <p className="text-xs font-black uppercase tracking-[0.25em] text-slate-400">Status</p>
-                <p className="mt-2 text-lg font-black text-slate-950">{status}</p>
-              </div>
-            </div>
+        <PlanningWizardStepper
+          step={wizardStep}
+          onStepChange={setWizardStep}
+          stats={{
+            conteudos: stats.conteudos,
+            selecionadas: stats.selecionadas,
+            matriz: stats.matriz,
+          }}
+          canGoToStep2={canGoToWizardStep2}
+          canGoToStep3={canGoToWizardStep3}
+        />
 
-            {generatedPlanning && form.tipoPlanejamento === "anual" ? (
-              <div className="mt-6 rounded-[1.75rem] border border-emerald-200/80 bg-emerald-50/80 p-5">
-                <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                  <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.28em] text-emerald-600">
-                      Matriz anual aprovada
-                    </p>
-                    <h3 className="mt-2 text-2xl font-black text-slate-950">
-                      Exportar anual e trimestrais ao Google Docs
-                    </h3>
-                    <p className="mt-2 text-sm leading-7 text-emerald-700/90">
-                      Os trimestrais usam a mesma matriz anual e os modelos oficiais
-                      Planify (anual/trimestral). Exportação sempre pelo motor oficial.
-                    </p>
-                  </div>
-
-                  <Pill tone="emerald">Baseado no anual</Pill>
-                </div>
-
-                <div className="mt-5 space-y-3">
-                  <div className="rounded-xl border border-white/80 bg-white/90 px-4 py-3">
-                    <p className="text-[10px] font-black uppercase tracking-wide text-slate-500">
-                      Anual
-                    </p>
-                    <div className="mt-2">
-                      <PlanningOfficialExportBar
-                        title={generatedPlanning.titulo || "Planejamento anual"}
-                        form={form}
-                        mode="anual"
-                        matriz={generatedPlanning}
-                        qualityScore={qualityScore}
-                        qualityIssues={qualityIssues}
-                        onStatus={(message) => setStatus(message)}
-                      />
-                    </div>
-                  </div>
-                  {trimestresDisponiveisDownload.map((trimestre) => {
-                    const trimPlan = generatedTrimestralPlans?.[trimestre];
-                    if (!trimPlan) return null;
-                    return (
-                      <div
-                        key={`export-trim-${trimestre}`}
-                        className="rounded-xl border border-white/80 bg-white/90 px-4 py-3"
-                      >
-                        <p className="text-[10px] font-black uppercase tracking-wide text-slate-500">
-                          {trimestre}º trimestre ✓
-                        </p>
-                        <div className="mt-2">
-                          <PlanningOfficialExportBar
-                            title={trimPlan.titulo || `${trimestre}º trimestre`}
-                            form={form}
-                            mode="trimestral"
-                            trimestre={trimestre}
-                            matriz={trimPlan}
-                            qualityScore={qualityScore}
-                            qualityIssues={qualityIssues}
-                            onStatus={(message) => setStatus(message)}
-                          />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-                {form.pacoteTrimestralAnual !== "nenhum" ? (
-                  <p className="mt-3 text-xs font-semibold text-emerald-700/90">
-                    Trimestrais marcados com ✓ foram extraídos do anual gerado — idênticos ao
-                    bloco correspondente na matriz anual.
-                  </p>
-                ) : null}
-              </div>
-            ) : null}
-          </div>
-
-          <div className="pl-hud-glass rounded-2xl p-5 sm:p-6">
-            <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-cyan-600">Exemplos</p>
-            <h2 className="mt-4 text-2xl font-black">Preenchimento ideal</h2>
-            <div className="mt-6 grid gap-3">
-              <button type="button" onClick={() => applyExample("fundamental")} className="pl-hud-btn-secondary rounded-xl px-5 py-3.5 text-sm font-semibold">
-                Exemplo Fundamental
-              </button>
-              <button type="button" onClick={() => applyExample("medio")} className="pl-hud-btn-secondary rounded-xl px-5 py-3.5 text-sm font-semibold">
-                Exemplo Ensino Médio
-              </button>
-            </div>
-          </div>
-        </aside>
-
-        <section className="space-y-6">
+      <section className="space-y-6">
+          {wizardStep < 3 ? (
+          <>
           <div className="pl-hud-glass rounded-2xl border border-cyan-400/20 p-5 sm:p-6">
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-600">
               Escolha o tipo
@@ -1549,6 +1463,7 @@ export function PlanejamentosClient() {
               </p>
             )}
 
+            {wizardStep >= 2 ? (
             <div className="mt-8 rounded-2xl border border-cyan-400/20 bg-white/70 p-5">
               <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-cyan-600">
                 Modelo oficial
@@ -1562,6 +1477,7 @@ export function PlanejamentosClient() {
                 customizados nem layout genérico.
               </p>
             </div>
+            ) : null}
 
             <div className="mt-5 grid gap-5">
               <TemaCombobox
@@ -1606,6 +1522,35 @@ export function PlanejamentosClient() {
               </label>
             </div>
 
+            {wizardStep === 1 ? (
+              <div className="mt-8 flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => applyExample("fundamental")}
+                  className="pl-hud-btn-secondary rounded-xl px-4 py-2.5 text-sm font-semibold"
+                >
+                  Exemplo Fundamental
+                </button>
+                <button
+                  type="button"
+                  onClick={() => applyExample("medio")}
+                  className="pl-hud-btn-secondary rounded-xl px-4 py-2.5 text-sm font-semibold"
+                >
+                  Exemplo Ensino Médio
+                </button>
+                <button
+                  type="button"
+                  disabled={!conteudosPreenchido}
+                  onClick={() => setWizardStep(2)}
+                  className="pl-hud-btn rounded-xl px-5 py-2.5 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Continuar para BNCC
+                </button>
+              </div>
+            ) : null}
+
+            {wizardStep >= 2 ? (
+              <>
             {error ? (
               <GenerationErrorBanner
                 message={error}
@@ -1654,26 +1599,6 @@ export function PlanejamentosClient() {
               </button>
             </div>
 
-            {generatedPlanning && form.tipoPlanejamento === "trimestral" ? (
-              <div className="mt-6 rounded-2xl border border-emerald-200/80 bg-emerald-50/80 p-5">
-                <p className="text-[10px] font-black uppercase tracking-[0.28em] text-emerald-600">
-                  Exportar ao Google Docs
-                </p>
-                <div className="mt-3">
-                  <PlanningOfficialExportBar
-                    title={generatedPlanning.titulo || "Planejamento trimestral"}
-                    form={form}
-                    mode="trimestral"
-                    trimestre={Number(form.trimestre || 1)}
-                    matriz={generatedPlanning}
-                    qualityScore={qualityScore}
-                    qualityIssues={qualityIssues}
-                    onStatus={(message) => setStatus(message)}
-                  />
-                </div>
-              </div>
-            ) : null}
-
             {loadingBncc || loadingPlan ? (
               <PlanningGenerationPanel
                 label={
@@ -1684,127 +1609,13 @@ export function PlanejamentosClient() {
                 context={loadingBncc ? "bncc" : "planejamento"}
               />
             ) : null}
-
-            {generatedPlanning ? (
-              <div className="mt-6 flex flex-wrap items-center gap-3">
-                <MarketplacePublishButton
-                  title={activePreviewPlanning?.titulo || generatedPlanning.titulo || "Planejamento"}
-                  getHtml={() => {
-                    const planning = activePreviewPlanning || generatedPlanning;
-                    const editorForm =
-                      previewMatrizKey !== "anual"
-                        ? {
-                            ...form,
-                            tipoPlanejamento: "trimestral" as const,
-                            trimestre: String(previewMatrizKey),
-                            cargaHoraria: trimestralCargaHorariaLabel(planning.conteudos),
-                          }
-                        : form;
-                    return buildPlanningEditorHtml(editorForm, planning);
-                  }}
-                  getPlanningPayload={() => {
-                    const planning = activePreviewPlanning || generatedPlanning;
-                    const mode =
-                      previewMatrizKey !== "anual" ? ("trimestral" as const) : ("anual" as const);
-                    return buildOfficialPlanningPayloadFromGeneration({
-                      tipoPlanejamento: mode,
-                      escola: form.escola,
-                      professor: form.professor,
-                      etapa: form.etapa,
-                      anoSerie: form.anoSerie,
-                      areaConhecimento: form.areaConhecimento,
-                      componenteCurricular: form.componenteCurricular,
-                      cargaHoraria:
-                        mode === "trimestral"
-                          ? trimestralCargaHorariaLabel(planning.conteudos)
-                          : form.cargaHoraria,
-                      trimestre:
-                        mode === "trimestral" ? String(previewMatrizKey) : form.trimestre,
-                      matrizPlanejamento: planning,
-                    });
-                  }}
-                  tipoMaterial="Planejamento"
-                  tema={form.componenteCurricular}
-                  componente={form.componenteCurricular}
-                  etapa={form.etapa}
-                  anoSerie={form.anoSerie}
-                />
-              </div>
-            ) : null}
-
-            {generatedPlanning && form.tipoPlanejamento === "anual" ? (
-              <div className="mt-6 rounded-[1.75rem] border border-emerald-200/80 bg-emerald-50/80 p-5">
-                <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                  <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.28em] text-emerald-600">
-                      Matriz anual aprovada
-                    </p>
-                    <h3 className="mt-2 text-2xl font-black text-slate-950">
-                      Exportar anual e trimestrais ao Google Docs
-                    </h3>
-                    <p className="mt-2 text-sm leading-7 text-emerald-700/90">
-                      Os trimestrais usam a mesma matriz anual e os modelos oficiais
-                      Planify (anual/trimestral). Exportação sempre pelo motor oficial.
-                    </p>
-                  </div>
-
-                  <Pill tone="emerald">Baseado no anual</Pill>
-                </div>
-
-                <div className="mt-5 space-y-3">
-                  <div className="rounded-xl border border-white/80 bg-white/90 px-4 py-3">
-                    <p className="text-[10px] font-black uppercase tracking-wide text-slate-500">
-                      Anual
-                    </p>
-                    <div className="mt-2">
-                      <PlanningOfficialExportBar
-                        title={generatedPlanning.titulo || "Planejamento anual"}
-                        form={form}
-                        mode="anual"
-                        matriz={generatedPlanning}
-                        qualityScore={qualityScore}
-                        qualityIssues={qualityIssues}
-                        onStatus={(message) => setStatus(message)}
-                      />
-                    </div>
-                  </div>
-                  {trimestresDisponiveisDownload.map((trimestre) => {
-                    const trimPlan = generatedTrimestralPlans?.[trimestre];
-                    if (!trimPlan) return null;
-                    return (
-                      <div
-                        key={`export-trim-${trimestre}`}
-                        className="rounded-xl border border-white/80 bg-white/90 px-4 py-3"
-                      >
-                        <p className="text-[10px] font-black uppercase tracking-wide text-slate-500">
-                          {trimestre}º trimestre ✓
-                        </p>
-                        <div className="mt-2">
-                          <PlanningOfficialExportBar
-                            title={trimPlan.titulo || `${trimestre}º trimestre`}
-                            form={form}
-                            mode="trimestral"
-                            trimestre={trimestre}
-                            matriz={trimPlan}
-                            qualityScore={qualityScore}
-                            qualityIssues={qualityIssues}
-                            onStatus={(message) => setStatus(message)}
-                          />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-                {form.pacoteTrimestralAnual !== "nenhum" ? (
-                  <p className="mt-3 text-xs font-semibold text-emerald-700/90">
-                    Trimestrais marcados com ✓ foram extraídos do anual gerado — idênticos ao
-                    bloco correspondente na matriz anual.
-                  </p>
-                ) : null}
-              </div>
+              </>
             ) : null}
           </div>
+          </>
+          ) : null}
 
+          {wizardStep === 2 ? (
           <div className="pl-hud-glass rounded-2xl p-5 sm:p-6">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
               <div>
@@ -1959,8 +1770,221 @@ export function PlanejamentosClient() {
               </div>
             ) : null}
           </div>
+          ) : null}
+
+          {wizardStep === 3 && generatedPlanning ? (
+            <div className="space-y-6">
+              <div className="pl-hud-glass rounded-2xl border border-emerald-200/60 p-5 sm:p-6">
+                <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-emerald-600">
+                  Matriz pronta
+                </p>
+                <h2 className="mt-2 text-2xl font-black text-slate-950 sm:text-3xl">
+                  Exportar ao Google Docs
+                </h2>
+                <p className="mt-2 max-w-2xl text-sm leading-7 text-slate-600">
+                  Modelos oficiais Planify — anual e trimestral. Revise a matriz abaixo antes de exportar.
+                </p>
+
+                <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+                  <button
+                    type="button"
+                    onClick={sendToEditor}
+                    className="pl-hud-btn-secondary rounded-xl px-5 py-3 text-sm font-semibold"
+                  >
+                    Editar no editor
+                  </button>
+                  <MarketplacePublishButton
+                    title={activePreviewPlanning?.titulo || generatedPlanning.titulo || "Planejamento"}
+                    getHtml={() => {
+                      const planning = activePreviewPlanning || generatedPlanning;
+                      const editorForm =
+                        previewMatrizKey !== "anual"
+                          ? {
+                              ...form,
+                              tipoPlanejamento: "trimestral" as const,
+                              trimestre: String(previewMatrizKey),
+                              cargaHoraria: trimestralCargaHorariaLabel(planning.conteudos),
+                            }
+                          : form;
+                      return buildPlanningEditorHtml(editorForm, planning);
+                    }}
+                    getPlanningPayload={() => {
+                      const planning = activePreviewPlanning || generatedPlanning;
+                      const mode =
+                        previewMatrizKey !== "anual" ? ("trimestral" as const) : ("anual" as const);
+                      return buildOfficialPlanningPayloadFromGeneration({
+                        tipoPlanejamento: mode,
+                        escola: form.escola,
+                        professor: form.professor,
+                        etapa: form.etapa,
+                        anoSerie: form.anoSerie,
+                        areaConhecimento: form.areaConhecimento,
+                        componenteCurricular: form.componenteCurricular,
+                        cargaHoraria:
+                          mode === "trimestral"
+                            ? trimestralCargaHorariaLabel(planning.conteudos)
+                            : form.cargaHoraria,
+                        trimestre:
+                          mode === "trimestral" ? String(previewMatrizKey) : form.trimestre,
+                        matrizPlanejamento: planning,
+                      });
+                    }}
+                    tipoMaterial="Planejamento"
+                    tema={form.componenteCurricular}
+                    componente={form.componenteCurricular}
+                    etapa={form.etapa}
+                    anoSerie={form.anoSerie}
+                  />
+                </div>
+
+                {form.tipoPlanejamento === "trimestral" ? (
+                  <div className="mt-6 rounded-xl border border-white/80 bg-white/90 px-4 py-3">
+                    <PlanningOfficialExportBar
+                      title={generatedPlanning.titulo || "Planejamento trimestral"}
+                      form={form}
+                      mode="trimestral"
+                      trimestre={Number(form.trimestre || 1)}
+                      matriz={generatedPlanning}
+                      qualityScore={qualityScore}
+                      qualityIssues={qualityIssues}
+                      onStatus={(message) => setStatus(message)}
+                    />
+                  </div>
+                ) : null}
+
+                {form.tipoPlanejamento === "anual" ? (
+                  <div className="mt-6 space-y-3">
+                    <div className="rounded-xl border border-white/80 bg-white/90 px-4 py-3">
+                      <p className="text-[10px] font-black uppercase tracking-wide text-slate-500">
+                        Anual
+                      </p>
+                      <div className="mt-2">
+                        <PlanningOfficialExportBar
+                          title={generatedPlanning.titulo || "Planejamento anual"}
+                          form={form}
+                          mode="anual"
+                          matriz={generatedPlanning}
+                          qualityScore={qualityScore}
+                          qualityIssues={qualityIssues}
+                          onStatus={(message) => setStatus(message)}
+                        />
+                      </div>
+                    </div>
+                    {trimestresDisponiveisDownload.map((trimestre) => {
+                      const trimPlan = generatedTrimestralPlans?.[trimestre];
+                      if (!trimPlan) return null;
+                      return (
+                        <div
+                          key={`export-step3-trim-${trimestre}`}
+                          className="rounded-xl border border-white/80 bg-white/90 px-4 py-3"
+                        >
+                          <p className="text-[10px] font-black uppercase tracking-wide text-slate-500">
+                            {trimestre}º trimestre ✓
+                          </p>
+                          <div className="mt-2">
+                            <PlanningOfficialExportBar
+                              title={trimPlan.titulo || `${trimestre}º trimestre`}
+                              form={form}
+                              mode="trimestral"
+                              trimestre={trimestre}
+                              matriz={trimPlan}
+                              qualityScore={qualityScore}
+                              qualityIssues={qualityIssues}
+                              onStatus={(message) => setStatus(message)}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : null}
+              </div>
+
+              {activePreviewPlanning ? (
+                <div className="pl-hud-glass rounded-2xl border border-emerald-200/50 p-5 sm:p-6">
+                  {typeof qualityScore === "number" ? (
+                    <MaterialQualityScoreBar
+                      score={qualityScore}
+                      issues={qualityIssues}
+                      compact
+                      onElevate={
+                        lastGenerationPayload
+                          ? () => void elevarQualidadePlanejamento()
+                          : undefined
+                      }
+                      elevating={elevatingQuality}
+                    />
+                  ) : null}
+                  {generatedTrimestralPlans &&
+                  Object.keys(generatedTrimestralPlans).length > 0 ? (
+                    <div className="mb-4 flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setPreviewMatrizKey("anual")}
+                        className={`rounded-xl px-4 py-2 text-xs font-black transition ${
+                          previewMatrizKey === "anual"
+                            ? "bg-emerald-600 text-white"
+                            : "bg-white text-slate-700 hover:bg-emerald-100"
+                        }`}
+                      >
+                        Anual
+                      </button>
+                      {Object.keys(generatedTrimestralPlans)
+                        .map(Number)
+                        .sort((a, b) => a - b)
+                        .map((trimestre) => (
+                          <button
+                            key={`preview-step3-trim-${trimestre}`}
+                            type="button"
+                            onClick={() => setPreviewMatrizKey(trimestre as MatrizPreviewKey)}
+                            className={`rounded-xl px-4 py-2 text-xs font-black transition ${
+                              previewMatrizKey === trimestre
+                                ? "bg-emerald-600 text-white"
+                                : "bg-white text-slate-700 hover:bg-emerald-100"
+                            }`}
+                          >
+                            {trimestre}º trimestre
+                          </button>
+                        ))}
+                    </div>
+                  ) : null}
+                  <h3 className="text-xl font-black text-slate-950 sm:text-2xl">
+                    {activePreviewPlanning.titulo}
+                  </h3>
+                  <p className="mt-2 text-sm leading-7 text-slate-600">
+                    {activePreviewPlanning.resumo}
+                  </p>
+                  <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                    {activePreviewPlanning.conteudos.map((item: PlanningMatrixItem) => {
+                      const numeroAula =
+                        Number.isFinite(Number(item.numeroAula)) && Number(item.numeroAula) > 0
+                          ? Number(item.numeroAula)
+                          : item.aulaInicio;
+                      const periodos =
+                        Number.isFinite(Number(item.periodos)) && Number(item.periodos) > 0
+                          ? Number(item.periodos)
+                          : Math.max(1, item.aulaFim - item.aulaInicio + 1);
+                      const periodosLabel =
+                        periodos === 1 ? "1 período" : `${periodos} período(s)`;
+
+                      return (
+                        <div
+                          key={`step3-${item.conteudo}-${numeroAula}`}
+                          className="rounded-xl border border-slate-200/80 bg-white/90 p-4"
+                        >
+                          <p className="font-black text-slate-950">{item.conteudo}</p>
+                          <p className="mt-1 text-sm text-slate-500">
+                            Aula {numeroAula} · {periodosLabel} · {item.habilidades.length} habilidade(s)
+                          </p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
         </section>
-      </section>
       </div>
     </PlanifyWorkspacePane>
   );

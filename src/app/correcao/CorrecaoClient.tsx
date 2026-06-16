@@ -6,6 +6,7 @@ import { CreditsBalancePill } from "@/components/credits/CreditsBalancePill";
 import { GenerationCostHint } from "@/components/credits/GenerationCostHint";
 import { MaterialPreviewSkeleton } from "@/components/materiais/MaterialPreviewSkeleton";
 import { MaterialToolPageShell } from "@/components/pro/MaterialToolPageShell";
+import { MaterialToolMobileSubmitBar } from "@/components/pro/MaterialToolMobileSubmitBar";
 import { planifyAuthenticatedFetch } from "@/lib/auth/authenticated-fetch";
 import { getClientCreditCost } from "@/lib/credits/credit-costs";
 import {
@@ -381,73 +382,10 @@ export function CorrecaoClient({
       backLabel={studioMode ? "Início" : "Catálogo"}
       formScrollAttr={studioMode}
       previewScrollAttr={studioMode}
+      previewReady={Boolean(resultado || resultadosLote.length)}
+      previewLoading={loading}
       form={
-        <form onSubmit={corrigir} className="space-y-4">
-          <div className="rounded-xl border border-cyan-400/20 bg-cyan-50/50 px-3 py-3">
-            <p className="text-xs font-bold uppercase tracking-wide text-cyan-700">
-              Perfil do professor
-            </p>
-            <p className="mt-1 text-xs font-medium text-slate-600">
-              A IA aprende seu estilo de devolutiva a cada correção.
-            </p>
-            <div className="mt-3 space-y-3">
-              <div>
-                <p className={HUD_SECTION_LABEL}>Tom</p>
-                <div className="flex flex-wrap gap-2">
-                  {TONE_OPTIONS.map((item) => (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => updateProfile({ tom: item.id })}
-                      className={
-                        profile.tom === item.id
-                          ? HUD_FILTER_CHIP_ACTIVE
-                          : HUD_FILTER_CHIP_INACTIVE
-                      }
-                    >
-                      {item.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <p className={HUD_SECTION_LABEL}>Rigor</p>
-                <div className="flex flex-wrap gap-2">
-                  {RIGOR_OPTIONS.map((item) => (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => updateProfile({ rigor: item.id })}
-                      className={
-                        profile.rigor === item.id
-                          ? HUD_FILTER_CHIP_ACTIVE
-                          : HUD_FILTER_CHIP_INACTIVE
-                      }
-                    >
-                      {item.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <TurmaCombobox school={school} />
-
-          <div>
-            <label className={HUD_SECTION_LABEL} htmlFor="corr-enunciado">
-              Enunciado / questão (opcional)
-            </label>
-            <textarea
-              id="corr-enunciado"
-              value={enunciado}
-              onChange={(event) => setEnunciado(event.target.value)}
-              rows={3}
-              className={HUD_TEXTAREA_CLASS}
-              placeholder="Cole o enunciado ou descreva a tarefa avaliada…"
-            />
-          </div>
-
+        <form onSubmit={corrigir} className="space-y-4 max-lg:pb-2">
           <div
             className="flex flex-wrap gap-2"
             role="tablist"
@@ -493,13 +431,12 @@ export function CorrecaoClient({
           </div>
 
           {inputMode === "upload" ? (
-            <div className="rounded-xl border border-cyan-400/35 bg-gradient-to-br from-cyan-50/90 to-white px-4 py-4 shadow-sm">
+            <div className="rounded-2xl border-2 border-dashed border-cyan-400/50 bg-gradient-to-br from-cyan-50/90 to-white px-5 py-6 text-center shadow-sm">
               <p className="text-[11px] font-black uppercase tracking-[0.18em] text-cyan-700">
-                Corretor de provas em papel
+                Envie a prova ou redação
               </p>
-              <p className="mt-1 text-sm font-semibold text-slate-700">
-                Fotografe a prova, redação ou folha de respostas — o OCR extrai o
-                texto automaticamente.
+              <p className="mx-auto mt-2 max-w-sm text-sm font-semibold text-slate-700">
+                Fotografe ou envie PDF — o OCR extrai o texto para correção automática.
               </p>
               <input
                 ref={fileInputRef}
@@ -513,12 +450,12 @@ export function CorrecaoClient({
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={ocrLoading}
-                className="pl-hud-btn mt-3 rounded-xl px-5 py-2.5 text-sm font-bold disabled:opacity-60"
+                className="pl-hud-btn mt-4 rounded-xl px-6 py-3 text-sm font-bold disabled:opacity-60"
               >
                 {ocrLoading ? "Lendo arquivo…" : "Escolher foto ou PDF"}
               </button>
               {uploadFileName ? (
-                <p className="mt-2 text-xs font-medium text-slate-600">
+                <p className="mt-3 text-xs font-medium text-slate-600">
                   Arquivo: {uploadFileName}
                   {detectedStudents > 1
                     ? ` · ${detectedStudents} estudantes detectados`
@@ -532,14 +469,10 @@ export function CorrecaoClient({
               >
                 {ocrLoading ? "Extraindo texto com IA…" : ocrStatus}
               </p>
-              <p className="mt-2 text-xs text-slate-500">
-                Formatos: JPG, PNG, WebP ou PDF (até 8 MB por foto, 15 MB por PDF).
-                No celular, use a câmera. Para várias folhas de alunos, ative{" "}
-                <span className="font-semibold text-slate-600">Várias respostas</span>{" "}
-                antes de enviar.
-              </p>
             </div>
           ) : null}
+
+          <TurmaCombobox school={school} />
 
           <div>
             <label className={HUD_SECTION_LABEL} htmlFor="corr-resposta">
@@ -562,9 +495,7 @@ export function CorrecaoClient({
             />
             {batchMode ? (
               <p className="mt-1 text-xs font-medium text-slate-500">
-                Separe cada aluno com uma linha contendo apenas ---. Upload de
-                prova completa detecta Aluno:, Nome: ou folhas separadas
-                automaticamente.
+                Separe cada aluno com uma linha contendo apenas ---.
                 {detectedStudents > 1
                   ? ` ${detectedStudents} blocos prontos para correção.`
                   : null}
@@ -572,6 +503,25 @@ export function CorrecaoClient({
             ) : null}
           </div>
 
+          <div>
+            <label className={HUD_SECTION_LABEL} htmlFor="corr-enunciado">
+              Enunciado / questão (opcional)
+            </label>
+            <textarea
+              id="corr-enunciado"
+              value={enunciado}
+              onChange={(event) => setEnunciado(event.target.value)}
+              rows={3}
+              className={HUD_TEXTAREA_CLASS}
+              placeholder="Cole o enunciado ou descreva a tarefa avaliada…"
+            />
+          </div>
+
+          <details className="rounded-xl border border-slate-200 bg-slate-50/60 px-4 py-3">
+            <summary className="cursor-pointer text-sm font-bold text-slate-800">
+              Gabarito, rubrica e nota máxima
+            </summary>
+            <div className="mt-4 space-y-4">
           <div>
             <label className={HUD_SECTION_LABEL} htmlFor="corr-gabarito">
               Gabarito / resposta esperada (opcional)
@@ -613,13 +563,61 @@ export function CorrecaoClient({
               className={HUD_FIELD_CLASS}
             />
           </div>
+            </div>
+          </details>
+
+          <details className="rounded-xl border border-cyan-400/20 bg-cyan-50/40 px-4 py-3">
+            <summary className="cursor-pointer text-sm font-bold text-cyan-900">
+              Perfil de correção (tom e rigor)
+            </summary>
+            <div className="mt-4 space-y-3">
+              <div>
+                <p className={HUD_SECTION_LABEL}>Tom</p>
+                <div className="flex flex-wrap gap-2">
+                  {TONE_OPTIONS.map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => updateProfile({ tom: item.id })}
+                      className={
+                        profile.tom === item.id
+                          ? HUD_FILTER_CHIP_ACTIVE
+                          : HUD_FILTER_CHIP_INACTIVE
+                      }
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <p className={HUD_SECTION_LABEL}>Rigor</p>
+                <div className="flex flex-wrap gap-2">
+                  {RIGOR_OPTIONS.map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => updateProfile({ rigor: item.id })}
+                      className={
+                        profile.rigor === item.id
+                          ? HUD_FILTER_CHIP_ACTIVE
+                          : HUD_FILTER_CHIP_INACTIVE
+                      }
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </details>
 
           <GenerationCostHint
             creditCost={getClientCreditCost("correcao-ia")}
             className="mt-2"
           />
 
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="hidden flex-wrap items-center gap-3 lg:flex">
             <button
               type="submit"
               disabled={loading || ocrLoading}
@@ -633,6 +631,21 @@ export function CorrecaoClient({
             </button>
             <CreditsBalancePill />
           </div>
+
+          <MaterialToolMobileSubmitBar>
+            <button
+              type="submit"
+              disabled={loading || ocrLoading}
+              className="pl-hud-btn flex-1 rounded-xl px-5 py-3 text-sm font-bold disabled:opacity-60"
+            >
+              {loading
+                ? "Corrigindo…"
+                : batchMode
+                  ? "Corrigir lote"
+                  : "Corrigir com IA"}
+            </button>
+            <CreditsBalancePill />
+          </MaterialToolMobileSubmitBar>
           <GenerationErrorBanner
             message={erro}
             cta={erroCta}

@@ -1,8 +1,11 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import type { ReactNode } from "react";
+import { ComunidadeDashboardRouter } from "@/components/community/docente/ComunidadeDashboardRouter";
 import TeachyStudioHome from "@/components/dashboard/TeachyStudioHome";
 import { TeachyMateriaisStudio } from "@/components/dashboard/TeachyMateriaisStudio";
+import { PlanifyWorkspaceProvider } from "@/components/pro/planify-workspace-context";
 import type { DashboardSectionId } from "@/lib/pro/dashboardViews";
 import type { PlanifyToolId } from "@/lib/pro/planifyTools";
 
@@ -16,14 +19,6 @@ function PanelLoading() {
     </div>
   );
 }
-
-const ComunidadeDashboardRouter = dynamic(
-  () =>
-    import("@/components/community/docente/ComunidadeDashboardRouter").then(
-      (m) => m.ComunidadeDashboardRouter,
-    ),
-  { ssr: false, loading: PanelLoading },
-);
 
 const InclusaoClient = dynamic(
   () =>
@@ -92,9 +87,6 @@ const DirectorPanelClient = dynamic(
     ),
   { ssr: false, loading: PanelLoading },
 );
-
-import type { ReactNode } from "react";
-import { PlanifyWorkspaceProvider } from "@/components/pro/planify-workspace-context";
 
 function SectionPanel({ children }: { children: ReactNode }) {
   return (

@@ -201,6 +201,37 @@ export function rebalanceMatrixPeriods<T extends MatrixLessonAllocatable>(
   });
 }
 
+/**
+ * Garante que planejamentos anuais cubram os três trimestres quando há conteúdo
+ * suficiente. A IA às vezes marca só o 1º e o 2º, deixando o 3º vazio no DOCX.
+ */
+export function ensureAnnualTrimesterDistribution<T extends MatrixLessonAllocatable>(
+  items: T[],
+): T[] {
+  if (items.length < 3) {
+    return items;
+  }
+
+  const present = new Set<number>();
+  for (const item of items) {
+    const trimestre = Number(item.trimestre);
+    if (Number.isFinite(trimestre) && trimestre >= 1 && trimestre <= 3) {
+      present.add(trimestre);
+    }
+  }
+
+  if (present.has(1) && present.has(2) && present.has(3)) {
+    return items;
+  }
+
+  const chunkSize = Math.max(1, Math.ceil(items.length / 3));
+
+  return items.map((item, index) => ({
+    ...item,
+    trimestre: Math.min(3, Math.floor(index / chunkSize) + 1),
+  }));
+}
+
 export function finalizeMatrixLessonAllocation<T extends MatrixLessonAllocatable>(
   items: T[],
   payload: PlanningAllocationPayload,
@@ -236,7 +267,7 @@ export function finalizeMatrixLessonAllocation<T extends MatrixLessonAllocatable
 
   let cumulative = 0;
 
-  return base.map((item, index) => {
+  const allocated = base.map((item, index) => {
     const periodos = Math.max(1, item.periodos || 1);
     const aulaInicio = cumulative + 1;
     const aulaFim = cumulative + periodos;
@@ -250,6 +281,12 @@ export function finalizeMatrixLessonAllocation<T extends MatrixLessonAllocatable
       aulaFim,
     };
   });
+
+  if (tipo === "anual") {
+    return ensureAnnualTrimesterDistribution(allocated);
+  }
+
+  return allocated;
 }
 
 export function matrixPeriodsTotal(items: MatrixLessonAllocatable[]): number {

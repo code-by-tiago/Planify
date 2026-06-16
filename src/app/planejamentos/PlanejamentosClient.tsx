@@ -1761,6 +1761,9 @@ export function PlanejamentosClient() {
                       >
                         <p className="font-black text-slate-950">{item.conteudo}</p>
                         <p className="mt-1 text-sm text-slate-400">
+                          {Number(item.trimestre) >= 1 && Number(item.trimestre) <= 3
+                            ? `${item.trimestre}º trimestre · `
+                            : ""}
                           Aula {numeroAula} · {periodosLabel} · {item.habilidades.length} habilidade(s)
                         </p>
                       </div>
@@ -1974,6 +1977,9 @@ export function PlanejamentosClient() {
                         >
                           <p className="font-black text-slate-950">{item.conteudo}</p>
                           <p className="mt-1 text-sm text-slate-500">
+                            {Number(item.trimestre) >= 1 && Number(item.trimestre) <= 3
+                              ? `${item.trimestre}º trimestre · `
+                              : ""}
                             Aula {numeroAula} · {periodosLabel} · {item.habilidades.length} habilidade(s)
                           </p>
                         </div>

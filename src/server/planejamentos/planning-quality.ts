@@ -164,8 +164,16 @@ export function getPlanningOutputIssues(
     }
   }
 
-  const trimesters = new Set(items.map((item) => item.trimestre));
-  if (tipo === "anual" && trimesters.size < 2 && items.length >= 6) {
+  const trimesters = new Set(
+    items
+      .map((item) => Number(item.trimestre))
+      .filter((value) => Number.isFinite(value) && value >= 1 && value <= 3),
+  );
+  if (tipo === "anual" && items.length >= 3 && !trimesters.has(3)) {
+    issues.push(
+      "Planejamento anual: distribua conteúdos também no 3º trimestre.",
+    );
+  } else if (tipo === "anual" && trimesters.size < 2 && items.length >= 6) {
     issues.push(
       "Planejamento anual: distribua conteúdos entre mais de um trimestre.",
     );

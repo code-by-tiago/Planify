@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import { inflateRawSync } from "node:zlib";
+import { ensureAnnualTrimesterDistribution } from "../src/server/planejamentos/planning-lesson-allocation";
 import { buildTrimestralPlansFromAnnual } from "../src/lib/planejamentos/planning-trimestral-from-annual";
 import { buildOfficialPlanningDocx } from "../src/server/planejamentos/official-planning-docx";
 import type { OfficialPlanningPayload } from "../src/server/planejamentos/official-planning-docx";
@@ -50,6 +51,15 @@ function readZipDocxText(buffer: Buffer): string {
   }
 
   throw new Error("word/document.xml não encontrado");
+}
+
+function normalizeSearch(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function verifyAnnualConsonance(): void {
@@ -119,6 +129,74 @@ function verifyAnnualConsonance(): void {
   console.log("OK: trimestral extraído em consonância com o planejamento anual.");
 }
 
+function verifyAnnualThirdTrimesterCoverage(): void {
+  const onlyFirstTwoTrimesters: PlanningMatrixItem[] = Array.from({ length: 6 }, (_, index) => ({
+    conteudo: `Conteúdo ${index + 1}`,
+    trimestre: index < 3 ? 1 : 2,
+    numeroAula: index + 1,
+    periodos: 2,
+    aulaInicio: index * 2 + 1,
+    aulaFim: index * 2 + 2,
+    habilidades: [{ codigo: `EF05HI0${index + 1}`, descricao: `Habilidade ${index + 1}` }],
+    objetivos: `Objetivo ${index + 1}`,
+    metodologia: `Metodologia ${index + 1}`,
+    materiais: "Caderno",
+    recursos: "Quadro",
+    etapas: "Etapas",
+    evidencias: "Evidências",
+    avaliacao: "Avaliação",
+  }));
+
+  const balanced = ensureAnnualTrimesterDistribution(onlyFirstTwoTrimesters);
+  const trimesters = new Set(balanced.map((item) => item.trimestre));
+
+  if (!trimesters.has(1) || !trimesters.has(2) || !trimesters.has(3)) {
+    throw new Error("Distribuição anual deveria cobrir os três trimestres.");
+  }
+
+  const annualBuffer = buildOfficialPlanningDocx({
+    tipoPlanejamento: "anual",
+    escola: "Escola Teste",
+    professor: "Prof. Teste",
+    etapa: "Ensino Fundamental",
+    anoSerie: "5º ano",
+    areaConhecimento: "Ciências Humanas",
+    componenteCurricular: "História",
+    cargaHoraria: "12",
+    matrizPlanejamento: {
+      conteudos: balanced,
+    },
+  });
+
+  const annualText = normalizeSearch(readZipDocxText(annualBuffer));
+  const thirdTrimesterMarkers = ["3 trimestre", "3º trimestre"];
+  const hasThirdTrimesterSection = thirdTrimesterMarkers.some((marker) =>
+    annualText.includes(normalizeSearch(marker)),
+  );
+  const hasThirdContent = annualText.includes(normalizeSearch("conteudo 5"));
+
+  if (!hasThirdTrimesterSection || !hasThirdContent) {
+    throw new Error("DOCX anual deveria preencher o 3º trimestre quando a matriz cobre T1–T3.");
+  }
+
+  const trimestralBundle = buildTrimestralPlansFromAnnual(
+    {
+      titulo: "Planejamento anual",
+      resumo: "Resumo anual",
+      conteudos: balanced,
+    },
+    [1, 2, 3],
+  );
+
+  if (!trimestralBundle[3]?.conteudos.length) {
+    throw new Error("Extração do 3º trimestre deveria retornar conteúdos.");
+  }
+
+  console.log("OK: planejamento anual cobre e exporta o 3º trimestre.");
+}
+
+verifyAnnualThirdTrimesterCoverage();
+
 verifyAnnualConsonance();
 
 const payload: OfficialPlanningPayload = {
@@ -161,14 +239,6 @@ const payload: OfficialPlanningPayload = {
 };
 
 const buffer = buildOfficialPlanningDocx(payload);
-function normalizeSearch(value: string): string {
-  return value
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/\p{Diacritic}/gu, "")
-    .replace(/\s+/g, " ")
-    .trim();
-}
 
 const text = normalizeSearch(readZipDocxText(buffer));
 

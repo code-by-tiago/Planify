@@ -225,11 +225,35 @@ export function ensureAnnualTrimesterDistribution<T extends MatrixLessonAllocata
   }
 
   const chunkSize = Math.max(1, Math.ceil(items.length / 3));
-
-  return items.map((item, index) => ({
+  const redistributed = items.map((item, index) => ({
     ...item,
     trimestre: Math.min(3, Math.floor(index / chunkSize) + 1),
   }));
+
+  // #region agent log
+  fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Debug-Session-Id": "4ba21b",
+    },
+    body: JSON.stringify({
+      sessionId: "4ba21b",
+      runId: "audit-system-health",
+      hypothesisId: "B",
+      location: "planning-lesson-allocation.ts:ensureAnnualTrimesterDistribution",
+      message: "Annual trimester redistribution applied",
+      data: {
+        itemCount: items.length,
+        before: [...present],
+        after: [...new Set(redistributed.map((item) => item.trimestre))],
+      },
+      timestamp: Date.now(),
+    }),
+  }).catch(() => {});
+  // #endregion
+
+  return redistributed;
 }
 
 export function finalizeMatrixLessonAllocation<T extends MatrixLessonAllocatable>(

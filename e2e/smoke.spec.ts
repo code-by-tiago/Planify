@@ -19,4 +19,23 @@ test.describe("Planify smoke", () => {
     expect(response?.status()).toBeLessThan(500);
     await expect(page).toHaveURL(/login/);
   });
+
+  test("public SEO and tool routes respond without server error", async ({ page }) => {
+    const paths = [
+      "/planos",
+      "/robots.txt",
+      "/sitemap.xml",
+      "/materiais",
+      "/planejamentos",
+      "/inclusao",
+      "/aula-completa",
+      "/correcao",
+      "/banco-questoes",
+    ];
+
+    for (const path of paths) {
+      const response = await page.goto(path);
+      expect(response?.status(), `${path} should not 500`).toBeLessThan(500);
+    }
+  });
 });

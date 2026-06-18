@@ -1226,10 +1226,12 @@ export async function generateMaterialByEngine(input: MaterialEngineInput) {
           });
         }
         assignSlideSequenceLabels(normalized.slides);
-        await enrichSlidesWithImages(normalized.slides, {
-          tema: request.tema,
-          componente: request.componenteCurricular,
-        });
+        if (!fastMode) {
+          await enrichSlidesWithImages(normalized.slides, {
+            tema: request.tema,
+            componente: request.componenteCurricular,
+          });
+        }
       }
 
       const issues = [...layoutIssues, ...getEngineOutputIssues(request, normalized)];
@@ -1248,7 +1250,18 @@ export async function generateMaterialByEngine(input: MaterialEngineInput) {
 
       const html = renderDocumentHtml(request, normalized);
       const isFinalAttempt = attempt >= maxAttempts - 1;
-      const alertas = buildDeliveryAlertas(request, issues, isFinalAttempt);
+      let alertas = buildDeliveryAlertas(request, issues, isFinalAttempt);
+      if (
+        fastMode &&
+        request.tipoMaterial === "slides" &&
+        normalized.slides?.some(
+          (slide) => slide.layout !== "fechamento" && !slide.imageUrl?.trim(),
+        )
+      ) {
+        const imageNote =
+          'Modo rápido: imagens pendentes — use "Resolver imagens pendentes" no preview.';
+        alertas = alertas ? [imageNote, ...alertas] : [imageNote];
+      }
       const qualityScore = computeQualityScore(issues, alertas ?? []);
 
       lastBestEffort = {

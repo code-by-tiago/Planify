@@ -1131,10 +1131,6 @@ export function PlanejamentosClient() {
           ? `Planejamento gerado (anual + ${trimestresExtraidos}). Salvo no histórico.`
           : "Planejamento gerado e salvo no histórico. Exporte ao Google Docs ou edite no editor.",
       );
-
-      if (data.warning) {
-        setError(data.warning);
-      }
     };
 
     try {
@@ -1216,10 +1212,6 @@ export function PlanejamentosClient() {
       });
 
       setStatus("Planejamento atualizado com foco em qualidade.");
-
-      if (data.warning) {
-        setError(data.warning);
-      }
     } catch (err) {
       const code =
         err instanceof Error && "code" in err
@@ -1753,6 +1745,17 @@ export function PlanejamentosClient() {
 
             {activePreviewPlanning ? (
               <div className="mt-7 rounded-[1.75rem] border border-emerald-200/80 bg-emerald-50/80 p-5">
+                {usedAI === false ? (
+                  <aside className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+                    <p className="font-black">Matriz montada sem IA</p>
+                    <p className="mt-1 font-semibold leading-6">
+                      A geração por IA não respondeu a tempo ou falhou. Usamos a matriz BNCC
+                      automática — revise conteúdos, habilidades e períodos antes de exportar.
+                      Gere novamente quando a IA estiver disponível ou use Elevar qualidade após
+                      uma geração completa.
+                    </p>
+                  </aside>
+                ) : null}
                 {typeof qualityScore === "number" ? (
                   <MaterialQualityScoreBar
                     score={qualityScore}
@@ -1966,6 +1969,14 @@ export function PlanejamentosClient() {
 
               {activePreviewPlanning ? (
                 <div className="pl-hud-glass rounded-2xl border border-emerald-200/50 p-5 sm:p-6">
+                  {usedAI === false ? (
+                    <aside className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+                      <p className="font-black">Matriz montada sem IA</p>
+                      <p className="mt-1 font-semibold leading-6">
+                        Revise a matriz BNCC automática antes de exportar o DOCX oficial.
+                      </p>
+                    </aside>
+                  ) : null}
                   {typeof qualityScore === "number" ? (
                     <MaterialQualityScoreBar
                       score={qualityScore}

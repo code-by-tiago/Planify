@@ -79,7 +79,8 @@ export function getCreditCost(tipo: string): number {
 type SpendResult =
   | { status: "ok"; balance: number; cost: number }
   | { status: "insufficient"; balance: number; cost: number }
-  | { status: "skipped" };
+  | { status: "skipped" }
+  | { status: "unavailable"; message: string };
 
 async function readCreditWalletRow(
   userId: string,
@@ -170,7 +171,12 @@ export async function spendCredits(
     });
 
     if (error) {
-      return { status: "skipped" };
+      console.error("[credits] planify_spend_credits failed:", error);
+      return {
+        status: "unavailable",
+        message:
+          "Não foi possível validar seus créditos agora. Tente novamente em instantes.",
+      };
     }
 
     const newBalance = Number(data);
@@ -180,8 +186,13 @@ export async function spendCredits(
     }
 
     return { status: "ok", balance: newBalance, cost };
-  } catch {
-    return { status: "skipped" };
+  } catch (error) {
+    console.error("[credits] spendCredits exception:", error);
+    return {
+      status: "unavailable",
+      message:
+        "Não foi possível validar seus créditos agora. Tente novamente em instantes.",
+    };
   }
 }
 

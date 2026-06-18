@@ -245,10 +245,14 @@ function fallbackPlanning(payload: PlanningAiPayload, warning?: string): Plannin
   const trimestres = Array.isArray(payload.trimestresNoPacote)
     ? payload.trimestresNoPacote
     : [];
+  const detail = warning?.trim();
+  const userWarning = detail
+    ? `A IA não completou a geração (${detail}). Montamos a matriz BNCC automaticamente — revise conteúdos, habilidades e períodos antes de exportar.`
+    : "Montamos a matriz BNCC automaticamente — revise conteúdos, habilidades e períodos antes de exportar.";
   const result = runPlanningMatrixEngine(payload, {
     trimestres,
     engineMode: "ai-fallback",
-    warning,
+    warning: userWarning,
   });
   const { engineMode: _engineMode, package: _package, ...planningResult } = result;
   return planningResult;

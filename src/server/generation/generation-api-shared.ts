@@ -180,6 +180,19 @@ export async function prepareGenerationRequest<TPayload>(
       };
     }
 
+    if (spend.status === "unavailable") {
+      if (chargedDeepDaily) {
+        await refundDeepGeneration(user.id);
+      }
+
+      return {
+        ok: false,
+        response: jsonGenerationError("server_error", spend.message, 503, {
+          retryable: true,
+        }),
+      };
+    }
+
     if (spend.status === "ok") {
       chargedCost = spend.cost;
     }

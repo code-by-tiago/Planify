@@ -29,7 +29,9 @@ export async function assertGenerationSlotAvailable(params: {
 
   if (inflightError) {
     console.warn("[generation-inflight] check failed:", inflightError.message);
-    return;
+    throw new GenerationInflightError(
+      "Não foi possível verificar gerações em andamento. Aguarde alguns segundos e tente novamente.",
+    );
   }
 
   if (count && count > 0) {
@@ -52,7 +54,9 @@ export async function assertGenerationSlotAvailable(params: {
 
   if (dedupError) {
     console.warn("[generation-inflight] idempotency check failed:", dedupError.message);
-    return;
+    throw new GenerationInflightError(
+      "Não foi possível validar esta geração. Aguarde alguns segundos e tente novamente.",
+    );
   }
 
   if (existing) {

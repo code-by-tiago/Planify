@@ -133,7 +133,7 @@ function buildDeliveryAlertas(
   if (!issues.length) return undefined;
 
   if (CRITICAL_QUALITY_TYPES.has(request.tipoMaterial) && isFinalAttempt) {
-    const attempts = maxAttemptsFor(request.tipoMaterial, request.elevarQualidade);
+    const attempts = maxAttemptsFor(request.tipoMaterial, Boolean(request.elevarQualidade));
     return [
       `Passo crítico: a IA não resolveu todos os critérios após ${attempts} tentativas.`,
       "Regenere o material ou use Elevar qualidade antes de imprimir ou aplicar em sala.",
@@ -1147,7 +1147,7 @@ export async function generateMaterialByEngine(input: MaterialEngineInput) {
     alertas?: string[];
   } | null = null;
 
-  const maxAttempts = maxAttemptsFor(request.tipoMaterial, request.elevarQualidade);
+  const maxAttempts = maxAttemptsFor(request.tipoMaterial, Boolean(request.elevarQualidade));
   const generationStartedAt = Date.now();
   const generationBudgetMs = fastMode
     ? GENERATION_FAST_DEADLINE_MS

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { LandingHeroLiveDashboard } from "./LandingHeroLiveDashboard";
+import { LandingHeroVideo } from "./LandingHeroVideo";
 import { ppBtnPrimary, ppBtnSecondary } from "./theme";
 
 export function LandingHero() {
@@ -20,30 +20,47 @@ export function LandingHero() {
       <div className="relative mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-2 lg:gap-16">
         <div>
           <span className="inline-flex items-center rounded-full border border-cyan-200 bg-cyan-50 px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-cyan-800">
-            Plataforma inteligente para planejamento com IA
+            IA feita para professores
           </span>
 
-          <h1 className="mt-6 font-[family-name:var(--font-display)] text-4xl font-extrabold leading-[1.08] tracking-tight text-slate-900 sm:text-5xl lg:text-[3.25rem]">
-            Menos horas planejando.{" "}
-            <span className="text-cyan-600">Mais qualidade ensinando.</span>
+          <h1 className="mt-6 font-[family-name:var(--font-display)] text-4xl font-extrabold leading-[1.06] tracking-tight text-slate-900 sm:text-5xl lg:text-[3.35rem]">
+            Pare de perder horas com{" "}
+            <span className="text-cyan-600">burocracia.</span>
           </h1>
 
           <p className="mt-5 max-w-xl text-lg font-medium leading-8 text-slate-600">
-            O Planify transforma suas ideias em planejamentos, provas, slides e materiais
-            pedagógicos alinhados à BNCC — com IA que entende o contexto da sala de aula.
+            Crie planejamentos alinhados à BNCC, materiais didáticos, avaliações e envie tudo
+            para sua turma em uma única plataforma.
           </p>
 
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
-            <Link href="/planos" className={ppBtnPrimary}>
-              Assinar por R$ 24,90/mês
+            <Link href="/planos" className={`${ppBtnPrimary} px-8 py-4 text-base`}>
+              Começar agora
             </Link>
-            <Link href="/#recursos" className={ppBtnSecondary}>
-              Conhecer recursos
+            <Link href="/#como-funciona" className={`${ppBtnSecondary} px-8 py-4 text-base`}>
+              Ver demonstração
             </Link>
+          </div>
+
+          <div className="mt-8 flex items-center gap-3">
+            <div className="flex -space-x-2">
+              {["MC", "RA", "FL", "JP"].map((initials) => (
+                <span
+                  key={initials}
+                  className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-white bg-gradient-to-br from-cyan-500 to-blue-600 text-[10px] font-bold text-white shadow-sm"
+                >
+                  {initials}
+                </span>
+              ))}
+            </div>
+            <div>
+              <p className="text-sm font-bold text-slate-800">+2.500 professores(as) já usam</p>
+              <p className="text-xs font-medium text-amber-500">★★★★★</p>
+            </div>
           </div>
         </div>
 
-        <LandingHeroLiveDashboard />
+        <LandingHeroVideo />
       </div>
     </section>
   );

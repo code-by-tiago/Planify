@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, useReducedMotion } from "framer-motion";
-import { STATS } from "./constants";
+import { SOCIAL_PROOF_STATS } from "./constants";
 import { ppEyebrow } from "./theme";
 import { useLandingMobileStatic } from "./useLandingMobileStatic";
 
@@ -22,7 +22,7 @@ export function LandingStats() {
         </h2>
 
         <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {STATS.map((stat, index) => {
+          {SOCIAL_PROOF_STATS.map((stat, index) => {
             const content = (
               <>
                 <div
@@ -30,12 +30,11 @@ export function LandingStats() {
                   aria-hidden
                 />
                 <p className="font-[family-name:var(--font-display)] text-3xl font-extrabold tracking-tight text-cyan-600 sm:text-4xl">
-                  {stat.value}
+                  {new Intl.NumberFormat("pt-BR").format(stat.value)}
                 </p>
                 <p className="mt-1 text-sm font-extrabold uppercase tracking-wide text-slate-800">
                   {stat.label}
                 </p>
-                <p className="mt-3 text-xs font-medium leading-5 text-slate-500">{stat.detail}</p>
               </>
             );
 

@@ -1,29 +1,33 @@
+import { InclusionFocusSection } from "@/components/public/landing/InclusionFocusSection";
+import { LandingComunidadeDocente } from "./LandingComunidadeDocente";
 import { LandingComparison } from "./LandingComparison";
-import { LandingCreateBlock } from "./LandingCreateBlock";
+import { LandingCorrecaoSection } from "./LandingCorrecaoSection";
+import { LandingEditorSection } from "./LandingEditorSection";
 import { LandingFinalCta } from "./LandingFinalCta";
 import { LandingFooter } from "./LandingFooter";
 import { LandingHeader } from "./LandingHeader";
 import { LandingHero } from "./LandingHero";
 import { LandingHowItWorks } from "./LandingHowItWorks";
-import { LandingResources } from "./LandingResources";
-import { LandingSolutions } from "./LandingSolutions";
-import { LandingStats } from "./LandingStats";
-import { LandingTools } from "./LandingTools";
-import { LandingTrustBar } from "./LandingTrustBar";
+import { LandingMateriaisDidaticos } from "./LandingMateriaisDidaticos";
+import { LandingPlanejamentosBncc } from "./LandingPlanejamentosBncc";
+import { LandingSocialProof } from "./LandingSocialProof";
+import { LandingTestimonials } from "./LandingTestimonials";
 
 export function LandingProfessorPrimeiroPage() {
   return (
     <>
       <LandingHeader />
       <LandingHero />
-      <LandingTrustBar />
-      <LandingStats />
-      <LandingCreateBlock />
-      <LandingTools />
-      <LandingResources />
-      <LandingSolutions />
+      <LandingSocialProof />
       <LandingHowItWorks />
       <LandingComparison />
+      <LandingPlanejamentosBncc />
+      <LandingMateriaisDidaticos />
+      <LandingEditorSection />
+      <LandingCorrecaoSection />
+      <InclusionFocusSection />
+      <LandingComunidadeDocente />
+      <LandingTestimonials />
       <LandingFinalCta />
       <LandingFooter />
     </>

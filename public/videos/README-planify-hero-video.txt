@@ -1,11 +1,8 @@
 Planify hero video
 
-Coloque aqui, se desejar, um vídeo chamado:
+Arquivos usados na landing:
 
-planify-hero.mp4
+- public/videos/planify-hero.mp4 — demonstração (~22s, loop no hero)
+- public/videos/planify-hero-poster.jpg — poster enquanto o vídeo carrega
 
-Caminho esperado:
-
-public/videos/planify-hero.mp4
-
-A landing 9.20.6 já possui fallback visual animado, então o site funciona mesmo sem o vídeo real.
+Se os arquivos não existirem, a landing usa o dashboard animado (LandingHeroLiveDashboard) como fallback.

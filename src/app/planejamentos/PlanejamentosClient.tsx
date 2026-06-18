@@ -56,6 +56,10 @@ import {
 } from "@/components/planejamentos/PlanningWizardStepper";
 import { buildOfficialPlanningPayloadFromGeneration } from "@/lib/planejamentos/planning-google-export-payload";
 import {
+  assembleClientPlanningPackage,
+  resolveBundleActiveIndex,
+} from "@/lib/planejamentos/planning-package-assembler";
+import {
   buildTrimestralPlansFromAnnual,
   trimestralCargaHorariaLabel,
   type TrimestralPlanningLike,
@@ -295,10 +299,6 @@ const PACOTE_TRIMESTRAL_OPTIONS: Array<{
   { value: "1", label: "Planejamento anual + 1º trimestre" },
   { value: "2", label: "Planejamento anual + 2º trimestre" },
   { value: "3", label: "Planejamento anual + 3º trimestre" },
-  {
-    value: "todos",
-    label: "Planejamento anual + 1º, 2º e 3º trimestres juntos",
-  },
 ];
 
 function normalizeSkill(skill: any, fallbackConteudo = ""): BnccSkill {
@@ -521,27 +521,21 @@ export function PlanejamentosClient() {
 
   const syncTrimestralPlansFromAnnual = useCallback(
     (annual: GeneratedPlanning | null, nextForm: FormState) => {
-      if (
-        !annual ||
-        nextForm.tipoPlanejamento !== "anual" ||
-        nextForm.pacoteTrimestralAnual === "nenhum"
-      ) {
+      if (!annual || nextForm.tipoPlanejamento !== "anual") {
         setGeneratedTrimestralPlans(null);
         setPreviewMatrizKey("anual");
         return;
       }
 
-      const trimestres = pacoteTrimestralAnualToTrimestres(nextForm.pacoteTrimestralAnual);
+      const snapshot = assembleClientPlanningPackage(annual, nextForm.pacoteTrimestralAnual);
 
-      if (!trimestres.length) {
+      if (!snapshot.trimestres.length) {
         setGeneratedTrimestralPlans(null);
         setPreviewMatrizKey("anual");
         return;
       }
 
-      setGeneratedTrimestralPlans(
-        buildTrimestralPlansFromAnnual(annual, trimestres),
-      );
+      setGeneratedTrimestralPlans(snapshot.trimestrais);
     },
     [],
   );
@@ -1002,12 +996,15 @@ export function PlanejamentosClient() {
     return documents;
   }
 
-  async function generatePlanning() {
+  async function generatePlanning(options?: { modoMatrizBncc?: boolean }) {
     if (loadingPlan) return;
 
     setError("");
+    setErrorCta(null);
+    setErrorRetryable(false);
 
     const conteudosText = form.conteudos.trim();
+    const modoMatrizBncc = options?.modoMatrizBncc === true;
 
     if (!conteudosText) {
       setError("Informe os conteúdos antes de gerar o planejamento.");
@@ -1020,11 +1017,15 @@ export function PlanejamentosClient() {
     }
 
     setLoadingPlan(true);
-    setStatus("Gerando matriz pedagógica com IA...");
+    setStatus(
+      modoMatrizBncc
+        ? "Montando matriz a partir das habilidades BNCC..."
+        : "Gerando matriz pedagógica com IA...",
+    );
 
     const idempotencyKey = crypto.randomUUID();
 
-    try {
+    const runGeneration = async (useBnccMode: boolean) => {
       const turma = school.turmaPayload;
       if (turma.className) {
         await school.rememberPersonalClass(turma.className);
@@ -1034,10 +1035,21 @@ export function PlanejamentosClient() {
         ...buildBasePayload(),
         conteudos: conteudosText,
         idempotencyKey,
+        ...(useBnccMode
+          ? {
+              modoMatrizBncc: true as const,
+              trimestresNoPacote:
+                form.tipoPlanejamento === "anual"
+                  ? pacoteTrimestralAnualToTrimestres(form.pacoteTrimestralAnual)
+                  : [],
+            }
+          : {}),
       };
       const data = await requestPlanningGeneration(payload);
 
-      window.dispatchEvent(new Event("planify:credits-changed"));
+      if (!useBnccMode) {
+        window.dispatchEvent(new Event("planify:credits-changed"));
+      }
 
       const serverMaterialId =
         typeof data.materialId === "string" && data.materialId.trim()
@@ -1045,14 +1057,22 @@ export function PlanejamentosClient() {
           : undefined;
 
       const planning = data.planejamento as GeneratedPlanning;
-      const trimestresSelecionados =
-        form.tipoPlanejamento === "anual"
-          ? pacoteTrimestralAnualToTrimestres(form.pacoteTrimestralAnual)
-          : [];
-      const trimestralPlans =
-        trimestresSelecionados.length > 0
-          ? buildTrimestralPlansFromAnnual(planning, trimestresSelecionados)
+      const serverPackage =
+        data.package &&
+        typeof data.package === "object" &&
+        data.package !== null &&
+        !Array.isArray(data.package)
+          ? (data.package as ReturnType<typeof assembleClientPlanningPackage>)
           : null;
+      const packageSnapshot =
+        serverPackage ??
+        assembleClientPlanningPackage(
+          planning,
+          form.tipoPlanejamento === "anual" ? form.pacoteTrimestralAnual : "nenhum",
+        );
+      const usedServerIaPackage = Boolean(serverPackage && data.usedAI);
+      const trimestresSelecionados = packageSnapshot.trimestres;
+      const trimestralPlans = packageSnapshot.trimestrais;
 
       setGeneratedPlanning(planning);
       setGeneratedTrimestralPlans(trimestralPlans);
@@ -1078,6 +1098,10 @@ export function PlanejamentosClient() {
               trimestralPlans,
             )
           : null;
+
+      const trimestresExtraidos = trimestresSelecionados
+        .map((value) => `${value}º`)
+        .join(", ");
 
       if (abrirEditorAutomatico) {
         if (bundleDocuments && bundleDocuments.length > 1) {
@@ -1112,24 +1136,55 @@ export function PlanejamentosClient() {
         });
       }
 
-      const trimestresExtraidos = trimestresSelecionados
-        .map((value) => `${value}º`)
-        .join(", ");
+      if (useBnccMode) {
+        setStatus(
+          trimestresExtraidos
+            ? `Matriz BNCC montada. Trimestrais ${trimestresExtraidos} extraídos do anual (sem IA, sem créditos).`
+            : "Matriz BNCC montada a partir dos conteúdos e habilidades selecionadas.",
+        );
+      } else {
+        setStatus(
+          data.usedAI
+            ? trimestresExtraidos
+              ? usedServerIaPackage
+                ? `Matriz anual gerada. Trimestral ${trimestresExtraidos} expandido com IA pedagógica e salvo no histórico.`
+                : `Matriz anual gerada. Trimestrais ${trimestresExtraidos} extraídos e salvos no histórico.`
+              : "Matriz gerada e salva no histórico. Exporte ao Google Docs ou edite no editor."
+            : trimestresExtraidos
+              ? `Matriz anual (modo seguro). Trimestrais ${trimestresExtraidos} extraídos e salvos no histórico.`
+              : "Matriz em modo seguro salva no histórico. Exporte ao Google Docs ou edite no editor.",
+        );
+      }
 
-      setStatus(
-        data.usedAI
-          ? trimestresExtraidos
-            ? `Matriz anual gerada. Trimestrais ${trimestresExtraidos} extraídos e salvos no histórico.`
-            : "Matriz gerada e salva no histórico. Exporte ao Google Docs ou edite no editor."
-          : trimestresExtraidos
-            ? `Matriz anual (modo seguro). Trimestrais ${trimestresExtraidos} extraídos e salvos no histórico.`
-            : "Matriz em modo seguro salva no histórico. Exporte ao Google Docs ou edite no editor.",
-      );
-
-      if (data.warning) {
+      if (data.warning && !useBnccMode) {
         setError(data.warning);
       }
+    };
+
+    try {
+      await runGeneration(modoMatrizBncc);
     } catch (err) {
+      const code =
+        err instanceof Error && "code" in err
+          ? String((err as Error & { code?: string }).code || "")
+          : "";
+
+      if (!modoMatrizBncc && code === "daily_limit_reached") {
+        setStatus("Sem cota de IA hoje. Montando matriz BNCC automaticamente (sem créditos)...");
+        try {
+          await runGeneration(true);
+          return;
+        } catch (fallbackErr) {
+          dispatchCreditsChangedIfNeeded(fallbackErr);
+          const formatted = formatGenerationError(fallbackErr);
+          setError(formatted.message);
+          setErrorCta(formatted.cta ?? null);
+          setErrorRetryable(formatted.retryable);
+          setStatus("Erro ao montar matriz BNCC");
+          return;
+        }
+      }
+
       dispatchCreditsChangedIfNeeded(err);
       const formatted = formatGenerationError(err);
       setError(formatted.message);
@@ -1169,6 +1224,11 @@ export function PlanejamentosClient() {
 
       const planning = data.planejamento as GeneratedPlanning;
       setGeneratedPlanning(planning);
+      const elevatePackage = assembleClientPlanningPackage(
+        planning,
+        form.tipoPlanejamento === "anual" ? form.pacoteTrimestralAnual : "nenhum",
+      );
+      setGeneratedTrimestralPlans(elevatePackage.trimestrais);
       saveAnnualMatrixSnapshot(form, planning);
       setUsedAI(Boolean(data.usedAI));
       const issues = applyQualityFromResponse(data);
@@ -1209,13 +1269,47 @@ export function PlanejamentosClient() {
   }
 
   function sendToEditor() {
-    if (!activePreviewPlanning) {
-      setError("Gere o planejamento com IA antes de enviar para o Editor.");
+    if (!generatedPlanning) {
+      setError("Gere o planejamento antes de enviar para o Editor.");
       return;
     }
 
+    const trimestresSelecionados =
+      form.tipoPlanejamento === "anual"
+        ? pacoteTrimestralAnualToTrimestres(form.pacoteTrimestralAnual)
+        : [];
+
+    if (
+      trimestresSelecionados.length > 0 &&
+      generatedTrimestralPlans &&
+      lastGenerationPayload
+    ) {
+      const trimestralPlans = generatedTrimestralPlans;
+      const qualityContext = {
+        qualityScore,
+        qualityIssues,
+        serverMaterialId: undefined,
+      };
+      const bundleDocuments = buildPlanningBundleDocuments(
+        generatedPlanning,
+        trimestresSelecionados,
+        lastGenerationPayload,
+        qualityContext,
+        trimestralPlans,
+      );
+
+      if (bundleDocuments.length > 1) {
+        const activeIndex = resolveBundleActiveIndex(
+          trimestresSelecionados,
+          previewMatrizKey,
+        );
+        openPlanningBundleInEditor(bundleDocuments, activeIndex);
+        return;
+      }
+    }
+
     const editorForm =
-      previewMatrizKey !== "anual"
+      previewMatrizKey !== "anual" && activePreviewPlanning
         ? {
             ...form,
             tipoPlanejamento: "trimestral" as const,
@@ -1224,17 +1318,18 @@ export function PlanejamentosClient() {
           }
         : form;
 
-    const html = buildPlanningEditorHtml(editorForm, activePreviewPlanning);
+    const planning = activePreviewPlanning || generatedPlanning;
+    const html = buildPlanningEditorHtml(editorForm, planning);
     openPlanningInEditor(
       html,
-      activePreviewPlanning.titulo || "Planejamento",
+      planning.titulo || "Planejamento",
       buildPlanningEditorMeta({
         tipoPlanejamento:
           previewMatrizKey === "anual" ? "anual" : "trimestral",
         trimestre:
           previewMatrizKey !== "anual" ? String(previewMatrizKey) : undefined,
       }),
-      activePreviewPlanning,
+      planning,
     );
   }
 
@@ -1429,8 +1524,9 @@ export function PlanejamentosClient() {
                   Extrair trimestres do anual
                 </legend>
                 <p className="mt-1 text-sm font-medium leading-6 text-slate-600">
-                  Após a IA montar o anual, os trimestres escolhidos serão extraídos da mesma
-                  matriz — mesmos conteúdos, habilidades e períodos, sem nova geração.
+                  Após montar o anual, os trimestres escolhidos são extraídos da mesma
+                  matriz — mesmos conteúdos, habilidades e períodos. Não consome créditos
+                  extras nem nova geração de IA.
                 </p>
 
                 <div className="mt-4 space-y-2">
@@ -1587,24 +1683,40 @@ export function PlanejamentosClient() {
               <DailyGenerationsBar tipoMaterial={PLANNING_DEEP_GENERATION_TYPE} />
             </div>
 
-            <div className="mt-7 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="mt-7 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               <button type="button" onClick={suggestBncc} disabled={loadingBncc} className="pl-hud-btn-secondary rounded-xl px-5 py-3.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60">
                 {loadingBncc ? "Sugerindo BNCC..." : "1. Sugerir BNCC"}
               </button>
-              <button type="button" onClick={generatePlanning} disabled={loadingPlan} className="pl-hud-btn-generate rounded-full px-6 py-4 text-sm transition disabled:cursor-not-allowed">
-                {loadingPlan ? "Gerando com IA..." : "2. Gerar planejamento com IA"}
+              <button
+                type="button"
+                onClick={() => void generatePlanning({ modoMatrizBncc: true })}
+                disabled={loadingPlan}
+                className="pl-hud-btn rounded-xl px-5 py-3.5 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {loadingPlan ? "Montando matriz..." : "2. Montar matriz BNCC"}
+              </button>
+              <button type="button" onClick={() => void generatePlanning()} disabled={loadingPlan} className="pl-hud-btn-generate rounded-full px-6 py-4 text-sm transition disabled:cursor-not-allowed">
+                {loadingPlan ? "Gerando com IA..." : "Gerar com IA (opcional)"}
               </button>
               <button type="button" onClick={sendToEditor} disabled={!generatedPlanning} className="pl-hud-btn-secondary rounded-xl px-5 py-3.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50">
                 Editar no editor
               </button>
             </div>
+            <p className="mt-3 text-xs font-medium leading-6 text-slate-500">
+              Use <strong className="text-slate-700">Montar matriz BNCC</strong> para entregar anual
+              e trimestres sem créditos de IA. A opção com IA enriquece metodologias quando houver cota.
+            </p>
 
             {loadingBncc || loadingPlan ? (
               <PlanningGenerationPanel
                 label={
                   loadingBncc
                     ? "Buscando habilidades compatíveis"
-                    : "Gerando planejamento com IA"
+                    : loadingPlan && form.conteudos
+                      ? status.includes("BNCC")
+                        ? "Montando matriz BNCC"
+                        : "Gerando planejamento com IA"
+                      : "Gerando planejamento"
                 }
                 context={loadingBncc ? "bncc" : "planejamento"}
               />
@@ -1698,7 +1810,7 @@ export function PlanejamentosClient() {
                     issues={qualityIssues}
                     compact
                     onElevate={
-                      lastGenerationPayload
+                      lastGenerationPayload && usedAI === true
                         ? () => void elevarQualidadePlanejamento()
                         : undefined
                     }
@@ -1911,7 +2023,7 @@ export function PlanejamentosClient() {
                       issues={qualityIssues}
                       compact
                       onElevate={
-                        lastGenerationPayload
+                        lastGenerationPayload && usedAI === true
                           ? () => void elevarQualidadePlanejamento()
                           : undefined
                       }

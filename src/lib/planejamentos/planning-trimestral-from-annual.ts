@@ -1,5 +1,10 @@
-import { enrichTrimestralMatrixItem } from "@/lib/planejamentos/planning-trimestral-fields";
 import type { PlanningMatrixItem } from "@/server/planejamentos/planning-ai-service";
+import {
+  matrixItemsFromTrimestralPlano,
+  runTrimestralPipeline,
+  runTrimestralPipelineAsync,
+  type TrimestralPipelineOptions,
+} from "@/lib/planejamentos/planning-trimestral-pipeline";
 
 export type AnnualPlanningLike = {
   tipoPlanejamento?: string;
@@ -20,13 +25,12 @@ export function extractAnnualItemsForTrimester(
   matrix: PlanningMatrixItem[],
   trimestre: number,
 ): PlanningMatrixItem[] {
-  const explicitTrimesters = new Set(
-    matrix
-      .map((item) => Number(item.trimestre))
-      .filter((value) => Number.isFinite(value) && value >= 1 && value <= 3),
-  );
+  const hasExplicitTrimestre = matrix.some((item) => {
+    const value = Number(item.trimestre);
+    return Number.isFinite(value) && value >= 1 && value <= 3;
+  });
 
-  if (explicitTrimesters.size >= 2) {
+  if (hasExplicitTrimestre) {
     const explicit = matrix.filter((item) => Number(item.trimestre) === trimestre);
 
     if (explicit.length > 0) {
@@ -62,14 +66,14 @@ export function renumberTrimestralMatrixItems(
     const aulaFim = cumulative + periodos;
     cumulative = aulaFim;
 
-    return enrichTrimestralMatrixItem({
+    return {
       ...item,
       trimestre,
       numeroAula: index + 1,
       periodos,
       aulaInicio,
       aulaFim,
-    });
+    };
   });
 }
 
@@ -78,12 +82,13 @@ export function trimestralCargaHorariaLabel(items: PlanningMatrixItem[]): string
   return total === 1 ? "1 período" : `${total} períodos`;
 }
 
-export function buildTrimestralPlanningFromAnnual(
+export type BuildTrimestralOptions = TrimestralPipelineOptions;
+
+function trimestralFromPlano(
   annual: AnnualPlanningLike,
   trimestre: number,
+  conteudos: PlanningMatrixItem[],
 ): TrimestralPlanningLike {
-  const extracted = extractAnnualItemsForTrimester(annual.conteudos, trimestre);
-  const conteudos = renumberTrimestralMatrixItems(extracted, trimestre);
   const cargaLabel = trimestralCargaHorariaLabel(conteudos);
 
   return {
@@ -96,9 +101,48 @@ export function buildTrimestralPlanningFromAnnual(
   };
 }
 
+export async function buildTrimestralPlanningFromAnnualAsync(
+  annual: AnnualPlanningLike,
+  trimestre: number,
+  options?: BuildTrimestralOptions,
+): Promise<TrimestralPlanningLike> {
+  const plano = await runTrimestralPipelineAsync(annual, trimestre, options);
+  const conteudos = matrixItemsFromTrimestralPlano(plano, trimestre);
+  return trimestralFromPlano(annual, trimestre, conteudos);
+}
+
+export async function buildTrimestralPlansFromAnnualAsync(
+  annual: AnnualPlanningLike,
+  trimestres: number[],
+  options?: BuildTrimestralOptions,
+): Promise<Partial<Record<number, TrimestralPlanningLike>>> {
+  const unique = Array.from(
+    new Set(trimestres.filter((value) => value >= 1 && value <= 3)),
+  ).sort((a, b) => a - b);
+
+  const result: Partial<Record<number, TrimestralPlanningLike>> = {};
+
+  for (const trimestre of unique) {
+    result[trimestre] = await buildTrimestralPlanningFromAnnualAsync(annual, trimestre, options);
+  }
+
+  return result;
+}
+
+export function buildTrimestralPlanningFromAnnual(
+  annual: AnnualPlanningLike,
+  trimestre: number,
+  options?: BuildTrimestralOptions,
+): TrimestralPlanningLike {
+  const plano = runTrimestralPipeline(annual, trimestre, options);
+  const conteudos = matrixItemsFromTrimestralPlano(plano, trimestre);
+  return trimestralFromPlano(annual, trimestre, conteudos);
+}
+
 export function buildTrimestralPlansFromAnnual(
   annual: AnnualPlanningLike,
   trimestres: number[],
+  options?: BuildTrimestralOptions,
 ): Partial<Record<number, TrimestralPlanningLike>> {
   const unique = Array.from(
     new Set(trimestres.filter((value) => value >= 1 && value <= 3)),
@@ -107,7 +151,7 @@ export function buildTrimestralPlansFromAnnual(
   const result: Partial<Record<number, TrimestralPlanningLike>> = {};
 
   for (const trimestre of unique) {
-    result[trimestre] = buildTrimestralPlanningFromAnnual(annual, trimestre);
+    result[trimestre] = buildTrimestralPlanningFromAnnual(annual, trimestre, options);
   }
 
   return result;

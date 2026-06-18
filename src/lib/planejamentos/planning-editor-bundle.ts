@@ -7,7 +7,7 @@ import type { PlanningEditorMeta } from "@/lib/planejamentos/planning-editor-flo
 
 export const PLANNING_EDITOR_BUNDLE_KEY = "planify:planejamentos:editor-bundle";
 
-export type PacoteTrimestralAnual = "nenhum" | "1" | "2" | "3" | "todos";
+export type PacoteTrimestralAnual = "nenhum" | "1" | "2" | "3";
 
 export type PlanningBundleTab = {
   id: string;
@@ -43,8 +43,6 @@ export function pacoteTrimestralAnualToTrimestres(
       return [2];
     case "3":
       return [3];
-    case "todos":
-      return [1, 2, 3];
     default:
       return [];
   }

@@ -57,8 +57,9 @@ async function handlePost(request: NextRequest, _context: { params: Promise<Reco
   }
 
   let chargedDeepDaily = false;
+  const modoMatrizBncc = payload.modoMatrizBncc === true;
 
-  if (user?.id && process.env.GEMINI_API_KEY) {
+  if (user?.id && process.env.GEMINI_API_KEY && !modoMatrizBncc) {
     const daily = await consumeDeepGeneration({
       userId: user.id,
       tipo,

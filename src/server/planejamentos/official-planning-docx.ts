@@ -4,15 +4,25 @@ import { deflateRawSync, inflateRawSync } from "node:zlib";
 import type { PlanningAiResult, PlanningMatrixItem, PlanningSkill } from "./planning-ai-service";
 import { extractAnnualItemsForTrimester } from "@/lib/planejamentos/planning-trimestral-from-annual";
 import {
-  enrichTrimestralMatrixItem,
-  formatExperienciasAprendizagem,
-  formatMateriaisRecursosNecessarios,
-} from "@/lib/planejamentos/planning-trimestral-fields";
+  matrixItemsFromTrimestralPlano,
+  runTrimestralPipelineOnItems,
+} from "@/lib/planejamentos/planning-trimestral-pipeline";
+import {
+  deriveExpectativaAprendizagem,
+  enrichObjetoConhecimento,
+  enrichUnidadeTematica,
+  formatHabilidadesBnccAnual,
+  resolveWeeklyPeriodsFromPayload,
+} from "@/lib/planejamentos/planning-annual-field-enrichment";
 import {
   finalizeMatrixLessonAllocation,
   formatMatrixAulaLabel,
   formatMatrixPeriodosLabel,
 } from "./planning-lesson-allocation";
+import {
+  getOfficialPlanningTemplatePath,
+  type OfficialPlanningTemplateTipo,
+} from "./official-planning-templates";
 
 type Primitive = string | number | boolean | null | undefined;
 type UnknownRecord = Record<string, unknown>;
@@ -37,8 +47,10 @@ export type OfficialPlanningPayload = {
   objetivosGerais?: string;
   objetivos?: string;
   observacoes?: string;
+  turma?: string;
+  className?: string;
   matrizPlanejamento?: PlanningAiResult["planejamento"] | { conteudos?: PlanningMatrixItem[] };
-  /** Pacote ZIP: trimestres a incluir (1–3). Omitido = os três. */
+  /** Pacote ZIP: um trimestre a incluir (1–3). Omitido = 1º trimestre. */
   trimestresExtraidos?: number[];
   /** Pacote ZIP: matrizes trimestrais já extraídas do anual (chave "1" | "2" | "3"). */
   matrizesTrimestrais?: Record<
@@ -387,21 +399,8 @@ function splitContents(value: unknown): string[] {
     .filter(Boolean);
 }
 
-function getOfficialTemplatePath(tipo: "anual" | "trimestral"): string {
-  const file = path.join(
-    process.cwd(),
-    "data",
-    "modelos-oficiais",
-    tipo === "anual" ? "modelo-anual.docx" : "modelo-trimestral.docx",
-  );
-
-  if (!fs.existsSync(file)) {
-    throw new Error(
-      `Modelo oficial ${tipo} não encontrado em data/modelos-oficiais (${file}).`,
-    );
-  }
-
-  return file;
+function getOfficialTemplatePath(tipo: OfficialPlanningTemplateTipo): string {
+  return getOfficialPlanningTemplatePath(tipo);
 }
 
 function findRanges(xml: string, tag: string): XmlRange[] {
@@ -629,45 +628,41 @@ function expandTableDataRows(
 }
 
 function unitFor(payload: OfficialPlanningPayload, item: PlanningMatrixItem): string {
-  const component = normalizeSearch(getString(payload, ["componenteCurricular", "componente"]));
-  const content = normalizeSearch(item.conteudo);
+  const component = getString(payload, ["componenteCurricular", "componente"]);
+  return enrichUnidadeTematica(item.conteudo, component, item.habilidades || []);
+}
 
-  if (component.includes("lingua portuguesa") || component.includes("portugues")) {
-    if (content.includes("texto") || content.includes("dissert") || content.includes("argument")) {
-      return "Produção textual e análise linguística";
-    }
+function formatExpectativasAprendizagem(item: PlanningMatrixItem): string {
+  return deriveExpectativaAprendizagem(item.conteudo, item.habilidades || []);
+}
 
-    if (content.includes("leitura") || content.includes("interpret")) {
-      return "Leitura e interpretação";
-    }
-
-    return "Leitura, produção textual e oralidade";
-  }
-
-  if (component.includes("historia")) {
-    return "Tempo, memória, cultura e sociedade";
-  }
-
-  if (component.includes("geografia")) {
-    return "O sujeito e seu lugar no mundo";
-  }
-
-  if (component.includes("matematica")) {
-    return "Números, álgebra, geometria e grandezas";
-  }
-
-  if (component.includes("ciencias")) {
-    return "Matéria, energia, vida e evolução";
-  }
-
-  return getString(payload, ["areaConhecimento"], "Unidade temática");
+function weeklyPeriodsForPayload(payload: OfficialPlanningPayload): number {
+  return resolveWeeklyPeriodsFromPayload(getString(payload, ["cargaHoraria"], ""));
 }
 
 function projectText(payload: OfficialPlanningPayload, items: PlanningMatrixItem[]): string {
   const contentList = items.map((item) => item.conteudo).join("; ");
   const custom = getString(payload, ["observacoes"], "");
 
-  return custom || `Integração entre os conteúdos do período (${contentList}) por meio de leitura, pesquisa, produção, socialização, resolução de problemas e participação coletiva.`;
+  if (items.length === 1) {
+    const conteudo = normalizeText(items[0].conteudo);
+
+    if (custom) {
+      return `Projetos e integração vinculados a ${conteudo}: ${custom}`;
+    }
+
+    return `Atividades integradoras relacionadas a ${conteudo}: leitura, pesquisa, produção, socialização e participação coletiva.`;
+  }
+
+  if (custom && contentList) {
+    return `Projetos e integração vinculados a ${contentList}: ${custom}`;
+  }
+
+  if (custom) {
+    return custom;
+  }
+
+  return `Integração entre os conteúdos do período (${contentList}) por meio de leitura, pesquisa, produção, socialização, resolução de problemas e participação coletiva.`;
 }
 
 function evaluationText(items: PlanningMatrixItem[]): string {
@@ -684,71 +679,186 @@ function evaluationText(items: PlanningMatrixItem[]): string {
     : "Observação contínua, registros, atividades concluídas, participação, produções individuais/coletivas e devolutivas do professor.";
 }
 
-function fieldValueForText(text: string, payload: OfficialPlanningPayload): string | null {
-  const normalized = normalizeSearch(text);
+function sumMatrixPeriodos(items: PlanningMatrixItem[]): number {
+  return items.reduce((total, item) => total + Math.max(0, Number(item.periodos) || 0), 0);
+}
 
-  if (normalized.includes("escola") || normalized.includes("unidade escolar")) {
-    return getString(payload, ["escola"], "Escola não informada");
+function formatTrimestralCargaHoraria(matrix: PlanningMatrixItem[]): string {
+  const byTrimester = [1, 2, 3].map((trimestre) =>
+    sumMatrixPeriodos(extractAnnualItemsForTrimester(matrix, trimestre)),
+  );
+  const nonZero = byTrimester.filter((value) => value > 0);
+
+  if (nonZero.length === 0) {
+    return "";
   }
 
-  if (normalized.includes("professor")) {
-    return getString(payload, ["professor"], "Professor(a) não informado(a)");
+  if (nonZero.every((value) => value === nonZero[0])) {
+    return `${nonZero[0]} períodos`;
   }
 
-  if (normalized.includes("componente") || normalized.includes("disciplina")) {
-    return getString(payload, ["componenteCurricular", "componente"], "Componente curricular");
+  return byTrimester
+    .map((value, index) => (value > 0 ? `${index + 1}º: ${value} períodos` : ""))
+    .filter(Boolean)
+    .join(" · ");
+}
+
+function identificationValueForLabel(
+  labelText: string,
+  payload: OfficialPlanningPayload,
+  matrix: PlanningMatrixItem[],
+): string | null {
+  const normalized = normalizeSearch(labelText);
+
+  if (!normalized) {
+    return null;
   }
 
-  if (normalized.includes("area do conhecimento") || normalized === "area") {
-    return getString(payload, ["areaConhecimento"], "Área do conhecimento");
+  if (normalized === "componente" || normalized.includes("componente curricular")) {
+    return getString(payload, ["componenteCurricular", "componente"], "");
   }
 
   if (
-    normalized.includes("serie") ||
-    normalized.includes("ano/turma") ||
+    normalized.includes("ano/serie") ||
     normalized.includes("ano serie") ||
-    normalized.includes("turma")
+    (normalized.includes("ano") && normalized.includes("serie"))
   ) {
-    return getString(payload, ["anoSerie", "serie", "ano"], "Ano/Série");
+    return getString(payload, ["anoSerie", "serie", "ano"], "");
+  }
+
+  if (normalized.includes("professor")) {
+    return getString(payload, ["professor"], "");
+  }
+
+  if (normalized === "turma" || normalized.endsWith(" turma")) {
+    return getString(payload, ["turma", "className", "anoSerie", "serie"], "");
+  }
+
+  if (normalized.includes("periodo de desenvolvimento")) {
+    return `${getTrimestre(payload)}º trimestre`;
+  }
+
+  if (normalized.includes("data de inicio") || normalized.includes("data de fim")) {
+    return `${getTrimestre(payload)}º trimestre`;
+  }
+
+  if (normalized.includes("carga horaria anual")) {
+    const total = sumMatrixPeriodos(matrix);
+    if (total > 0) {
+      return `${total} períodos`;
+    }
+
+    const parsed = normalizeText(getString(payload, ["cargaHoraria"], "")).match(/\d+/);
+    return parsed ? `${parsed[0]} períodos` : null;
+  }
+
+  if (normalized.includes("carga horaria trimestral")) {
+    if (getTipo(payload) === "trimestral") {
+      const total = sumMatrixPeriodos(matrix);
+      return total > 0 ? `${total} períodos` : null;
+    }
+
+    const formatted = formatTrimestralCargaHoraria(matrix);
+    return formatted || null;
+  }
+
+  if (normalized.includes("carga horaria semanal")) {
+    const annualTotal = sumMatrixPeriodos(matrix);
+    if (annualTotal > 0) {
+      const weekly = Math.max(1, Math.round(annualTotal / 40));
+      return `${weekly} períodos`;
+    }
+
+    const weekly = resolveWeeklyPeriodsFromPayload(getString(payload, ["cargaHoraria"], ""));
+    return weekly > 0 ? `${weekly} períodos` : null;
+  }
+
+  if (normalized.includes("escola") || normalized.includes("unidade escolar")) {
+    return getString(payload, ["escola"], "");
   }
 
   if (normalized.includes("etapa")) {
-    return getString(payload, ["etapa"], "Etapa não informada");
-  }
-
-  if (normalized.includes("carga horaria")) {
-    return getString(payload, ["cargaHoraria"], "Carga horária");
-  }
-
-  if (normalized.includes("trimestre")) {
-    return `${getTrimestre(payload)}º trimestre`;
+    return getString(payload, ["etapa"], "");
   }
 
   return null;
 }
 
+function isIdentificationTable(table: TableInfo): boolean {
+  const text = normalizeSearch(table.text);
+
+  return (
+    table.rows.length <= 3 &&
+    text.includes("componente") &&
+    (text.includes("professor") || text.includes("turma") || text.includes("carga horaria"))
+  );
+}
+
+function fillLabelCellValue(label: string, value: string): string {
+  const safeLabel = label.trim();
+  const safeValue = value.trim();
+
+  if (!safeLabel) {
+    return safeValue;
+  }
+
+  if (!safeValue) {
+    return safeLabel;
+  }
+
+  return `${safeLabel}\n${safeValue}`;
+}
+
 function fillIdentificationTables(documentXml: string, payload: OfficialPlanningPayload): string {
+  const matrix = getMatrix(payload);
   const tables = parseTables(documentXml);
+  const identificationSummary: Record<string, string> = {};
+
   const replacements = tables.map((table) => {
+    if (!isIdentificationTable(table)) {
+      return table.xml;
+    }
+
     const rowReplacements = table.rows.map((row) => {
-      if (row.cells.length < 2) {
+      if (row.cells.length >= 6 && row.cells.length % 2 === 0) {
+        const pairedValues = row.cells.map((cell, index) => {
+          if (index % 2 === 1) {
+            const label = row.cells[index - 1]?.text?.trim() || "";
+            const value = identificationValueForLabel(label, payload, matrix);
+            if (!value) {
+              return null;
+            }
+            identificationSummary[label.slice(0, 40)] = value;
+            return value;
+          }
+          return null;
+        });
+
+        if (pairedValues.some((value) => value !== null)) {
+          return replaceCellsInRow(row.xml, pairedValues);
+        }
+      }
+
+      const values = row.cells.map((cell) => {
+        const label = cell.text.trim();
+        if (!label) {
+          return null;
+        }
+
+        const value = identificationValueForLabel(label, payload, matrix);
+        if (!value) {
+          return null;
+        }
+
+        identificationSummary[label.slice(0, 40)] = value;
+        return fillLabelCellValue(label, value);
+      });
+
+      if (values.every((value) => value === null)) {
         return row.xml;
       }
 
-      const firstText = row.cells[0]?.text || "";
-      const secondText = row.cells[1]?.text || "";
-      const byFirst = fieldValueForText(firstText, payload);
-      const bySecond = fieldValueForText(secondText, payload);
-
-      if (byFirst) {
-        return replaceCellsInRow(row.xml, [null, byFirst]);
-      }
-
-      if (bySecond) {
-        return replaceCellsInRow(row.xml, [bySecond, null]);
-      }
-
-      return row.xml;
+      return replaceCellsInRow(row.xml, values);
     });
 
     return replaceInXml(
@@ -796,6 +906,10 @@ function findHeaderRow(table: TableInfo): RowInfo {
       const text = normalizeSearch(row.text);
       let score = row.cells.length;
 
+      if (isWeekDistributionRow(row)) {
+        score -= 1000;
+      }
+
       if (text.includes("unidade")) score += 8;
       if (text.includes("objeto") || text.includes("conteudo")) score += 8;
       if (text.includes("habilidade")) score += 8;
@@ -810,6 +924,95 @@ function findHeaderRow(table: TableInfo): RowInfo {
   return candidates[0]?.row || table.rows[0];
 }
 
+function findTrimestralTableHeaderRow(table: TableInfo): RowInfo {
+  const tableText = normalizeSearch(table.text);
+
+  if (tableText.includes("experiencias de aprendizagem")) {
+    const sectionHeader = table.rows.find(
+      (row) => normalizeSearch(row.text) === "experiencias de aprendizagem",
+    );
+
+    if (sectionHeader) {
+      return sectionHeader;
+    }
+  }
+
+  return findHeaderRow(table);
+}
+
+function isWeekDistributionRow(row: RowInfo): boolean {
+  const normalized = normalizeSearch(row.text);
+
+  return (
+    normalized.includes("semana") &&
+    normalized.includes("data") &&
+    row.cells.length >= 6
+  );
+}
+
+function isTemplatePlaceholderText(text: string): boolean {
+  return normalizeText(text).startsWith("[");
+}
+
+function resolvePlaceholderFieldValue(
+  placeholder: string,
+  item: PlanningMatrixItem,
+  payload: OfficialPlanningPayload,
+  items: PlanningMatrixItem[],
+): string | null {
+  const normalized = normalizeSearch(placeholder);
+  const trimItem = trimestralMatrixItem(item);
+  const scope = items.length > 0 ? items : [item];
+
+  if (normalized.includes("data de inicio") || normalized.includes("data de fim")) {
+    return `${getTrimestre(payload)}º trimestre`;
+  }
+
+  if (
+    normalized.includes("descreva os instrumentos") ||
+    normalized.includes("descreva aqui quais instrumentos") ||
+    (normalized.includes("instrumento") && normalized.includes("coletar"))
+  ) {
+    return trimItem.avaliacao || evaluationText(scope);
+  }
+
+  if (
+    normalized.includes("descreva aqui caso") ||
+    normalized.includes("indique os projetos")
+  ) {
+    return projectText(payload, scope);
+  }
+
+  if (normalized.includes("observar na atividade") || normalized.includes("identificar a aprendizagem")) {
+    return trimItem.evidencias;
+  }
+
+  if (normalized.includes("trabalho em grupo") || normalized.includes("plenaria")) {
+    return trimItem.metodologia;
+  }
+
+  if (normalized.includes("livros, impressos") || normalized.includes("links e etc")) {
+    return trimestralMateriaisRecursosValue(trimItem) || null;
+  }
+
+  if (normalized.includes("atividades planejadas") || normalized.includes("encontro")) {
+    return trimItem.etapas || trimItem.metodologia || null;
+  }
+
+  if (normalized.includes("de acordo com a matriz")) {
+    return (
+      formatExpectativasAprendizagem(trimItem) ||
+      enrichObjetoConhecimento(trimItem.conteudo, trimItem.habilidades || [])
+    );
+  }
+
+  if (normalized.includes("a partir da matriz")) {
+    return formatExpectativasAprendizagem(trimItem);
+  }
+
+  return null;
+}
+
 function isProjectOrEvaluationRow(row: RowInfo): boolean {
   const text = normalizeSearch(row.text);
 
@@ -819,8 +1022,37 @@ function isProjectOrEvaluationRow(row: RowInfo): boolean {
     text.includes("tema integrador") ||
     text.includes("instrumento") ||
     text.includes("avaliacao") ||
-    text.includes("observacao")
+    text.includes("observacao") ||
+    text.includes("indique os projetos") ||
+    text.includes("descreva os instrumentos")
   );
+}
+
+function isProjectOrEvaluationContentRow(row: RowInfo): boolean {
+  const label = normalizeText(row.cells[0]?.text || "");
+  const normalized = normalizeSearch(label);
+
+  if (
+    normalized.includes("indique os projetos") ||
+    normalized.includes("descreva os instrumentos") ||
+    normalized.includes("descreva aqui caso") ||
+    normalized.includes("descreva aqui quais instrumentos")
+  ) {
+    return true;
+  }
+
+  if (label.startsWith("[")) {
+    return (
+      normalized.includes("projeto") ||
+      normalized.includes("instrumento") ||
+      normalized.includes("avaliacao") ||
+      normalized.includes("interdisciplinar") ||
+      normalized.includes("observar") ||
+      normalized.includes("descreva")
+    );
+  }
+
+  return row.cells.some((cell) => isTemplatePlaceholderText(cell.text));
 }
 
 function isDataRowAfterHeader(row: RowInfo, header: RowInfo): boolean {
@@ -852,12 +1084,51 @@ function classifyColumn(headerText: string, index: number): string {
   return fallback[index] || "extra";
 }
 
+function isInstructionPlaceholderRow(row: RowInfo): boolean {
+  const text = row.text;
+
+  return (
+    text.includes("[de acordo com") ||
+    text.includes("[indique a carga") ||
+    text.includes("[numere a aula") ||
+    text.includes("[a partir da Matriz")
+  );
+}
+
+function fillTrimesterSummaryRow(
+  row: RowInfo,
+  items: PlanningMatrixItem[],
+): string {
+  const total = sumMatrixPeriodos(items);
+  if (total <= 0) {
+    return row.xml;
+  }
+
+  const totalLabel = `${total} períodos`;
+  const values = row.cells.map((cell, index) => {
+    if (row.cells.length >= 6 && (index === 4 || index === 5)) {
+      return totalLabel;
+    }
+
+    if (isInstructionPlaceholderRow({ ...row, text: cell.text })) {
+      return "";
+    }
+
+    return null;
+  });
+
+  return replaceCellsInRow(row.xml, values);
+}
+
 function valuesForPlanningRow(
   payload: OfficialPlanningPayload,
   item: PlanningMatrixItem,
   headerCells: CellInfo[],
   compactSkills: boolean,
 ): Array<string | null> {
+  const weeklyPeriods = weeklyPeriodsForPayload(payload);
+  const objeto = enrichObjetoConhecimento(item.conteudo, item.habilidades || []);
+
   return headerCells.map((cell, index) => {
     const kind = classifyColumn(cell.text, index);
 
@@ -865,13 +1136,15 @@ function valuesForPlanningRow(
       case "unidade":
         return unitFor(payload, item);
       case "conteudo":
-        return item.conteudo;
+        return objeto;
       case "habilidades":
-        return codesWithShortDescriptions(item.habilidades);
+        return compactSkills
+          ? codesWithShortDescriptions(item.habilidades)
+          : formatHabilidadesBnccAnual(item.habilidades || []);
       case "expectativas":
-        return shortText(item.objetivos, 320);
+        return formatExpectativasAprendizagem(item);
       case "carga":
-        return formatMatrixPeriodosLabel(item);
+        return formatMatrixPeriodosLabel(item, weeklyPeriods);
       case "aula":
         return formatMatrixAulaLabel(item);
       case "metodologia":
@@ -891,32 +1164,87 @@ function fillProjectAndEvaluationRows(
   items: PlanningMatrixItem[],
   payload: OfficialPlanningPayload,
 ): string {
-  const text = normalizeSearch(row.text);
-
-  let value: string | null = null;
-
-  if (
-    text.includes("projeto interdisciplinar") ||
-    text.includes("temas integradores") ||
-    text.includes("tema integrador") ||
-    text.includes("observacao")
-  ) {
-    value = projectText(payload, items);
-  }
-
-  if (text.includes("instrumento") || text.includes("avaliacao")) {
-    value = evaluationText(items);
-  }
-
-  if (!value) {
+  if (!isProjectOrEvaluationContentRow(row)) {
     return row.xml;
   }
 
+  const labelNormalized = normalizeSearch(row.cells[0]?.text || "");
+  const rowNormalized = normalizeSearch(row.text);
+  const isInstrumentRow =
+    (labelNormalized.includes("instrumento") && !isTemplatePlaceholderText(row.cells[0]?.text || "")) ||
+    rowNormalized.includes("descreva aqui quais instrumentos") ||
+    rowNormalized.includes("descreva os instrumentos");
+
+  const value = isInstrumentRow ? evaluationText(items) : projectText(payload, items);
+
+  if (row.cells.length === 1 && isTemplatePlaceholderText(row.cells[0]?.text || "")) {
+    return replaceCellsInRow(row.xml, [value]);
+  }
+
   if (row.cells.length >= 2) {
-    return replaceCellsInRow(row.xml, [null, value]);
+    const values = row.cells.map((cell, index) => {
+      if (index === 1) {
+        return value;
+      }
+
+      if (isTemplatePlaceholderText(cell.text)) {
+        return "";
+      }
+
+      return null;
+    });
+
+    return replaceCellsInRow(row.xml, values);
   }
 
   return replaceCellsInRow(row.xml, [value]);
+}
+
+type TrimestralPlanningBlock = {
+  start: number;
+  end: number;
+  tables: TableInfo[];
+};
+
+function chooseTrimestralPlanningBlock(tables: TableInfo[]): TrimestralPlanningBlock | null {
+  if (tables.length >= 4) {
+    const planningTables = tables.slice(1, 4);
+    const combined = normalizeSearch(planningTables.map((table) => table.text).join(" "));
+
+    if (
+      combined.includes("unidade") &&
+      combined.includes("objeto") &&
+      combined.includes("experiencia") &&
+      combined.includes("projeto interdisciplinar")
+    ) {
+      return {
+        start: planningTables[0].start,
+        end: planningTables[planningTables.length - 1].end,
+        tables: planningTables,
+      };
+    }
+  }
+
+  const single = chooseTrimestralPlanningTable(tables);
+  if (!single) {
+    return null;
+  }
+
+  return {
+    start: single.start,
+    end: single.end,
+    tables: [single],
+  };
+}
+
+function fillOneTrimestralBlock(
+  block: TrimestralPlanningBlock,
+  item: PlanningMatrixItem,
+  payload: OfficialPlanningPayload,
+): string {
+  const filledTables = block.tables.map((table) => fillOneTrimestralTable(table, item, payload));
+
+  return filledTables.join("<w:p><w:r><w:t xml:space=\"preserve\"> </w:t></w:r></w:p>");
 }
 
 function fillAnnualPlanningTables(documentXml: string, payload: OfficialPlanningPayload): string {
@@ -935,24 +1263,64 @@ function fillAnnualPlanningTables(documentXml: string, payload: OfficialPlanning
     const header = findHeaderRow(table);
     const initialDataRows = table.rows.filter((row) => isDataRowAfterHeader(row, header));
     const items = extractAnnualItemsForTrimester(matrix, trimester);
-    const expanded = expandTableDataRows(table, header, initialDataRows, items.length);
+    const includeSummaryRow = items.length > 0;
+    const expanded = expandTableDataRows(
+      table,
+      header,
+      initialDataRows,
+      items.length + (includeSummaryRow ? 1 : 0),
+    );
     const dataRows = expanded.dataRows;
 
     const rowReplacements = expanded.rows.map((row) => {
       const dataIndex = dataRows.findIndex((dataRow) => dataRow.start === row.start);
 
-      if (dataIndex >= 0) {
+      if (dataIndex === 0 && includeSummaryRow) {
+        if (isInstructionPlaceholderRow(row)) {
+          return fillTrimesterSummaryRow(row, items);
+        }
+        return fillTrimesterSummaryRow(row, items);
+      }
+
+      if (dataIndex > 0 && includeSummaryRow) {
+        const item = items[dataIndex - 1];
+
+        if (!item) {
+          return clearCellsInRow(row.xml);
+        }
+
+        return replaceCellsInRow(
+          row.xml,
+          valuesForPlanningRow(payload, item, header.cells, false),
+        );
+      }
+
+      if (dataIndex >= 0 && !includeSummaryRow) {
         const item = items[dataIndex];
 
         if (!item) {
           return clearCellsInRow(row.xml);
         }
 
-        return replaceCellsInRow(row.xml, valuesForPlanningRow(payload, item, header.cells, true));
+        return replaceCellsInRow(
+          row.xml,
+          valuesForPlanningRow(payload, item, header.cells, false),
+        );
       }
 
-      if (row.start > header.start && isProjectOrEvaluationRow(row)) {
+      if (row.start > header.start && isProjectOrEvaluationContentRow(row)) {
         return fillProjectAndEvaluationRows(row, items, payload);
+      }
+
+      if (row.start > header.start) {
+        const footerFill = fillTrimestralLabelRow(
+          row,
+          items[0] || items[items.length - 1],
+          payload,
+        );
+        if (footerFill !== row.xml) {
+          return footerFill;
+        }
       }
 
       return row.xml;
@@ -1005,8 +1373,20 @@ function chooseTrimestralPlanningTable(tables: TableInfo[]): TableInfo | null {
   return candidates[0]?.table || null;
 }
 
+function trimestralMateriaisRecursosValue(item: PlanningMatrixItem): string {
+  const materiais = normalizeText(item.materiais || "");
+  const recursos = normalizeText(item.recursos || "");
+
+  if (materiais && recursos) {
+    return `${materiais} ${recursos}`;
+  }
+
+  return materiais || recursos;
+}
+
+/** Trimestral usa os mesmos valores da matriz anual — sem re-enriquecimento. */
 function trimestralMatrixItem(item: PlanningMatrixItem): PlanningMatrixItem {
-  return enrichTrimestralMatrixItem(item);
+  return item;
 }
 
 function labelValue(label: string, item: PlanningMatrixItem, payload: OfficialPlanningPayload): string | null {
@@ -1014,7 +1394,8 @@ function labelValue(label: string, item: PlanningMatrixItem, payload: OfficialPl
   const trimItem = trimestralMatrixItem(item);
 
   if (text.includes("trimestre") && text.includes("aula")) {
-    return `${getTrimestre(payload)}º trimestre — Aula ${formatMatrixAulaLabel(trimItem)} · ${formatMatrixPeriodosLabel(trimItem)}`;
+    const weeklyPeriods = weeklyPeriodsForPayload(payload);
+    return `${getTrimestre(payload)}º trimestre — Aula ${formatMatrixAulaLabel(trimItem)} · ${formatMatrixPeriodosLabel(trimItem, weeklyPeriods)}`;
   }
 
   if (text.includes("aula")) {
@@ -1022,7 +1403,7 @@ function labelValue(label: string, item: PlanningMatrixItem, payload: OfficialPl
   }
 
   if (text.includes("carga") || text.includes("periodo")) {
-    return formatMatrixPeriodosLabel(trimItem);
+    return formatMatrixPeriodosLabel(trimItem, weeklyPeriodsForPayload(payload));
   }
 
   if (text.includes("unidade")) {
@@ -1030,55 +1411,55 @@ function labelValue(label: string, item: PlanningMatrixItem, payload: OfficialPl
   }
 
   if (text.includes("objeto") || text.includes("conteudo") || text.includes("conhecimento")) {
-    return trimItem.conteudo;
+    return enrichObjetoConhecimento(trimItem.conteudo, trimItem.habilidades || []);
   }
 
   if (text.includes("habilidade")) {
-    return codesWithShortDescriptions(trimItem.habilidades);
+    return formatHabilidadesBnccAnual(trimItem.habilidades || []);
   }
 
   if (text.includes("expectativa")) {
-    return trimItem.objetivos;
+    return formatExpectativasAprendizagem(trimItem);
   }
 
   if (text.includes("objetivo") && !text.includes("expectativa")) {
-    return trimItem.objetivos;
+    return formatExpectativasAprendizagem(trimItem);
   }
 
   if (text.includes("experiencia") && text.includes("aprendizagem")) {
-    return formatExperienciasAprendizagem(trimItem);
+    return null;
   }
 
   if (text.includes("organizacao") && text.includes("metodologia")) {
-    return trimItem.metodologia;
+    return trimItem.metodologia || null;
   }
 
   if (text.includes("metodologia") || text.includes("procedimento")) {
-    return trimItem.metodologia;
+    return trimItem.metodologia || null;
   }
 
   if (text.includes("materiais") && text.includes("recursos")) {
-    return formatMateriaisRecursosNecessarios(trimItem);
+    return trimestralMateriaisRecursosValue(trimItem) || null;
   }
 
   if (text.includes("materiais")) {
-    return trimItem.materiais || "";
+    return trimItem.materiais || null;
   }
 
   if (text.includes("recursos")) {
-    return trimItem.recursos;
+    return trimItem.recursos || null;
   }
 
   if (text.includes("momento") || text.includes("etapa")) {
-    return trimItem.etapas || "";
+    return trimItem.etapas || null;
   }
 
   if (text.includes("evidencia")) {
-    return trimItem.evidencias;
+    return trimItem.evidencias || null;
   }
 
   if (text.includes("instrumento") || text.includes("avaliacao")) {
-    return trimItem.avaliacao;
+    return trimItem.avaliacao || null;
   }
 
   if (text.includes("projeto interdisciplinar") || text.includes("tema integrador") || text.includes("temas integradores")) {
@@ -1086,6 +1467,126 @@ function labelValue(label: string, item: PlanningMatrixItem, payload: OfficialPl
   }
 
   return null;
+}
+
+function isTrimestralSectionHeader(text: string): boolean {
+  const normalized = normalizeSearch(text);
+
+  return normalized === "experiencias de aprendizagem";
+}
+
+type TrimestralExperienciasField =
+  | "semana"
+  | "metodologia"
+  | "materiais"
+  | "etapas"
+  | "evidencias"
+  | "instrumentos";
+
+const TRIMESTRAL_EXPERIENCIAS_WEEK_COLUMNS = 5;
+
+function weekFieldFromPipeline(
+  item: PlanningMatrixItem,
+  weekIndex: number,
+  field: TrimestralExperienciasField,
+): string {
+  const semana = item.semanas?.[weekIndex];
+  if (!semana) {
+    return "";
+  }
+
+  switch (field) {
+    case "semana":
+      return "";
+    case "metodologia":
+      return semana.metodologia;
+    case "materiais":
+      return semana.materiais;
+    case "etapas":
+      return semana.etapas;
+    case "evidencias":
+      return semana.evidencias;
+    case "instrumentos":
+      return semana.instrumentos;
+    default:
+      return "";
+  }
+}
+
+function classifyTrimestralExperienciasRow(row: RowInfo): TrimestralExperienciasField | null {
+  if (isWeekDistributionRow(row)) {
+    return "semana";
+  }
+
+  if (row.cells.length < 6) {
+    return null;
+  }
+
+  const label = normalizeSearch(row.cells[0]?.text || "");
+
+  if (label.includes("organizacao") && label.includes("metodologia")) {
+    return "metodologia";
+  }
+
+  if (label.includes("materiais") && label.includes("recursos")) {
+    return "materiais";
+  }
+
+  if (label.includes("momento") || label.includes("etapa")) {
+    return "etapas";
+  }
+
+  if (label.includes("evidencia")) {
+    return "evidencias";
+  }
+
+  if (label.includes("instrumento") && label.includes("avaliacao")) {
+    return "instrumentos";
+  }
+
+  return null;
+}
+
+function fillTrimestralExperienciasRow(
+  row: RowInfo,
+  item: PlanningMatrixItem,
+  _weeklyPeriods: number,
+): string {
+  const field = classifyTrimestralExperienciasRow(row);
+  if (!field) {
+    return row.xml;
+  }
+
+  const values: Array<Primitive | null> = [null, null, null, null, null, null];
+
+  for (let weekIndex = 0; weekIndex < TRIMESTRAL_EXPERIENCIAS_WEEK_COLUMNS; weekIndex += 1) {
+    const col = weekIndex + 1;
+    const value = normalizeText(weekFieldFromPipeline(item, weekIndex, field));
+
+    if (value) {
+      values[col] = value;
+    } else if (isTemplatePlaceholderText(row.cells[col]?.text || "")) {
+      values[col] = "";
+    }
+  }
+
+  return replaceCellsInRow(row.xml, values);
+}
+
+function isTrimestralExperienciasTable(table: TableInfo): boolean {
+  return normalizeSearch(table.text).includes("experiencias de aprendizagem");
+}
+
+function isTrimestralAulaTitleRow(row: RowInfo): boolean {
+  const text = normalizeSearch(row.text);
+
+  return (
+    row.cells.length <= 2 &&
+    text.includes("trimestre") &&
+    /\baula\s*n/.test(text) &&
+    !text.includes("[") &&
+    !text.includes("descreva")
+  );
 }
 
 function fillTrimestralLabelRow(
@@ -1096,19 +1597,95 @@ function fillTrimestralLabelRow(
   const cellCount = row.cells.length;
 
   if (cellCount === 1) {
-    const value = labelValue(row.cells[0]?.text || "", item, payload);
-    return value ? replaceCellsInRow(row.xml, [value]) : row.xml;
+    const labelText = row.cells[0]?.text || "";
+    const normalizedLabel = normalizeSearch(labelText);
+
+    if (isTrimestralSectionHeader(labelText)) {
+      return row.xml;
+    }
+
+    if (
+      !labelText.trim().startsWith("[") &&
+      (normalizedLabel.includes("projeto interdisciplinar") ||
+        normalizedLabel.includes("temas integradores") ||
+        normalizedLabel.includes("temas integradores e competencias") ||
+        (normalizedLabel.includes("instrumentos de avaliacao") && !labelText.trim().startsWith("[")) ||
+        (normalizedLabel.includes("instrumento") &&
+          normalizedLabel.includes("avaliacao") &&
+          !labelText.trim().startsWith("[")))
+    ) {
+      return row.xml;
+    }
+
+    if (labelText.trim().startsWith("[")) {
+      const placeholderValue = resolvePlaceholderFieldValue(
+        labelText,
+        item,
+        payload,
+        [item],
+      );
+      if (placeholderValue) {
+        return replaceCellsInRow(row.xml, [placeholderValue]);
+      }
+    }
+
+    const value = labelValue(labelText, item, payload);
+    if (!value) {
+      return row.xml;
+    }
+
+    if (normalizedLabel.includes("trimestre") && normalizedLabel.includes("aula")) {
+      return replaceCellsInRow(row.xml, [value]);
+    }
+
+    if (
+      normalizedLabel.includes("projeto interdisciplinar") ||
+      normalizedLabel.includes("tema integrador") ||
+      normalizedLabel.includes("temas integradores") ||
+      labelText.trim().startsWith("[")
+    ) {
+      return replaceCellsInRow(row.xml, [value]);
+    }
+
+    return row.xml;
   }
 
   if (cellCount === 2) {
-    const value = labelValue(row.cells[0]?.text || "", item, payload);
+    const labelText = row.cells[0]?.text || "";
+    const rightText = row.cells[1]?.text || "";
+    let value =
+      labelValue(labelText, item, payload) ||
+      (isTemplatePlaceholderText(rightText)
+        ? resolvePlaceholderFieldValue(rightText, item, payload, [item])
+        : null) ||
+      (isTemplatePlaceholderText(labelText)
+        ? resolvePlaceholderFieldValue(labelText, item, payload, [item])
+        : null);
+
+    if (value && isTemplatePlaceholderText(rightText)) {
+      return replaceCellsInRow(row.xml, [null, value]);
+    }
+
     return value ? replaceCellsInRow(row.xml, [null, value]) : row.xml;
   }
 
   if (cellCount === 4) {
     const values: Array<Primitive | null> = [null, null, null, null];
-    const leftValue = labelValue(row.cells[0]?.text || "", item, payload);
-    const rightValue = labelValue(row.cells[2]?.text || "", item, payload);
+    const leftLabel = row.cells[0]?.text || "";
+    const rightLabel = row.cells[2]?.text || "";
+    const leftPlaceholder = row.cells[1]?.text || "";
+    const rightPlaceholder = row.cells[3]?.text || "";
+
+    const leftValue =
+      labelValue(leftLabel, item, payload) ||
+      (isTemplatePlaceholderText(leftPlaceholder)
+        ? resolvePlaceholderFieldValue(leftPlaceholder, item, payload, [item])
+        : null);
+    const rightValue =
+      labelValue(rightLabel, item, payload) ||
+      (isTemplatePlaceholderText(rightPlaceholder)
+        ? resolvePlaceholderFieldValue(rightPlaceholder, item, payload, [item])
+        : null);
 
     if (leftValue) values[1] = leftValue;
     if (rightValue) values[3] = rightValue;
@@ -1122,29 +1699,57 @@ function fillTrimestralLabelRow(
 
   if (cellCount >= 6) {
     const label = row.cells[0]?.text || "";
-    const rowText = normalizeSearch(row.text);
-
-    if (!label.trim() && rowText.includes("semana")) {
-      const trimItem = trimestralMatrixItem(item);
-      const periodos = Math.max(1, Number(trimItem.periodos) || 1);
-      const periodoLabel = periodos === 1 ? "período" : "períodos";
-      const values = row.cells.map((_, index) =>
-        index === 0 ? `Semana 1 (${periodos} ${periodoLabel})` : null,
-      );
-      return replaceCellsInRow(row.xml, values);
-    }
-
-    const value = labelValue(label, item, payload);
+    const value =
+      labelValue(label, item, payload) ||
+      row.cells
+        .map((cell) => cell.text)
+        .filter((text) => isTemplatePlaceholderText(text))
+        .map((text) => resolvePlaceholderFieldValue(text, item, payload, [item]))
+        .find(Boolean) ||
+      null;
 
     if (!value) {
       return row.xml;
     }
 
-    const values = row.cells.map((_, index) => (index === 1 ? value : null));
+    const values = row.cells.map((cell, index) => {
+      if (index === 1) {
+        return value;
+      }
+      const cellText = cell.text.trim();
+      if (cellText.startsWith("[")) {
+        return "";
+      }
+      return null;
+    });
     return replaceCellsInRow(row.xml, values);
   }
 
   return row.xml;
+}
+
+function isTrimestralUnidadeObjetoRow(row: RowInfo): boolean {
+  const text = normalizeSearch(row.text);
+
+  return (
+    row.cells.length === 4 &&
+    text.includes("unidade") &&
+    (text.includes("objeto") || text.includes("conhecimento"))
+  );
+}
+
+function isTrimestralMatrixLabelDataRow(row: RowInfo): boolean {
+  const label = normalizeSearch(row.cells[0]?.text || "");
+
+  if (row.cells.length === 2 && label.includes("habilidade")) {
+    return true;
+  }
+
+  if (row.cells.length === 2 && (label.includes("expectativa") || label.includes("objetivo"))) {
+    return true;
+  }
+
+  return isTrimestralUnidadeObjetoRow(row);
 }
 
 function fillOneTrimestralTable(
@@ -1152,13 +1757,31 @@ function fillOneTrimestralTable(
   item: PlanningMatrixItem,
   payload: OfficialPlanningPayload,
 ): string {
-  const header = findHeaderRow(table);
+  const header = findTrimestralTableHeaderRow(table);
   const hasColumnHeader = isPlanningHeaderText(header.text);
   const dataRows = hasColumnHeader
     ? table.rows.filter((row) => isDataRowAfterHeader(row, header))
     : [];
+  const isExperiencias = isTrimestralExperienciasTable(table);
 
   const rowReplacements = table.rows.map((row) => {
+    if (isTrimestralAulaTitleRow(row)) {
+      const trimItem = trimestralMatrixItem(item);
+      const value = `${getTrimestre(payload)}º trimestre — Aula ${formatMatrixAulaLabel(trimItem)}`;
+      return replaceCellsInRow(row.xml, [value]);
+    }
+
+    if (isExperiencias && classifyTrimestralExperienciasRow(row)) {
+      return fillTrimestralExperienciasRow(row, item, weeklyPeriodsForPayload(payload));
+    }
+
+    if (isTrimestralMatrixLabelDataRow(row)) {
+      const labelFill = fillTrimestralLabelRow(row, item, payload);
+      if (labelFill !== row.xml) {
+        return labelFill;
+      }
+    }
+
     const dataIndex = dataRows.findIndex((dataRow) => dataRow.start === row.start);
 
     if (dataIndex === 0) {
@@ -1169,11 +1792,18 @@ function fillOneTrimestralTable(
       return clearCellsInRow(row.xml);
     }
 
-    if (row.start > header.start && isProjectOrEvaluationRow(row)) {
+    if (row.start > header.start) {
+      const labelFill = fillTrimestralLabelRow(row, item, payload);
+      if (labelFill !== row.xml) {
+        return labelFill;
+      }
+    }
+
+    if (row.start > header.start && isProjectOrEvaluationContentRow(row)) {
       return fillProjectAndEvaluationRows(row, [item], payload);
     }
 
-    return fillTrimestralLabelRow(row, item, payload);
+    return row.xml;
   });
 
   return replaceInXml(
@@ -1211,19 +1841,83 @@ function fillTrimestralPlanningTable(documentXml: string, payload: OfficialPlann
   const baseItems = resolveTrimestralMatrixItems(matrix, trimester);
 
   const tables = parseTables(documentXml);
-  const table = chooseTrimestralPlanningTable(tables);
+  const block = chooseTrimestralPlanningBlock(tables);
 
-  if (!table) {
+  if (!block) {
     throw new Error(
       "Não localizei no modelo trimestral a tabela de Objetos de Conhecimento, Habilidades, Metodologia, Recursos e Avaliação.",
     );
   }
 
-  const filledTables = baseItems
-    .map((item) => fillOneTrimestralTable(table, item, payload))
+  const filledBlocks = baseItems
+    .map((item) => fillOneTrimestralBlock(block, item, payload))
     .join("<w:p><w:r><w:t xml:space=\"preserve\"> </w:t></w:r></w:p>");
 
-  return documentXml.slice(0, table.start) + filledTables + documentXml.slice(table.end);
+  const merged = documentXml.slice(0, block.start) + filledBlocks + documentXml.slice(block.end);
+
+  return sweepUnresolvedPlaceholders(merged, baseItems, payload);
+}
+
+function sweepUnresolvedPlaceholders(
+  documentXml: string,
+  items: PlanningMatrixItem[],
+  payload: OfficialPlanningPayload,
+): string {
+  const item = items[0] || items[items.length - 1];
+  const tables = parseTables(documentXml);
+
+  const tableReplacements = tables.map((table) => {
+    const rowReplacements = table.rows.map((row) => {
+      if (isWeekDistributionRow(row) || classifyTrimestralExperienciasRow(row)) {
+        return row.xml;
+      }
+
+      const hasPlaceholder = row.cells.some((cell) => isTemplatePlaceholderText(cell.text));
+
+      if (!hasPlaceholder) {
+        return row.xml;
+      }
+
+      const labelFill = fillTrimestralLabelRow(row, item, payload);
+      if (labelFill !== row.xml) {
+        return labelFill;
+      }
+
+      if (isProjectOrEvaluationContentRow(row)) {
+        return fillProjectAndEvaluationRows(row, [item], payload);
+      }
+
+      return row.xml;
+    });
+
+    if (rowReplacements.every((xml, index) => xml === table.rows[index]?.xml)) {
+      return table.xml;
+    }
+
+    return replaceInXml(
+      table.xml,
+      table.rows.map((row) => ({
+        start: row.start - table.start,
+        end: row.end - table.start,
+        xml: row.xml,
+      })),
+      rowReplacements,
+    );
+  });
+
+  if (tableReplacements.every((xml, index) => xml === tables[index]?.xml)) {
+    return documentXml;
+  }
+
+  return replaceInXml(
+    documentXml,
+    tables.map((table) => ({
+      start: table.start,
+      end: table.end,
+      xml: table.xml,
+    })),
+    tableReplacements,
+  );
 }
 
 function removeRedInstructionFormatting(documentXml: string): string {
@@ -1247,6 +1941,7 @@ function replaceKnownOldSchoolName(documentXml: string, payload: OfficialPlannin
 
 function fillOfficialTemplateXml(documentXml: string, payload: OfficialPlanningPayload): string {
   let output = documentXml;
+  const matrix = getMatrix(payload);
 
   output = fillIdentificationTables(output, payload);
 
@@ -1254,6 +1949,7 @@ function fillOfficialTemplateXml(documentXml: string, payload: OfficialPlanningP
     output = fillTrimestralPlanningTable(output, payload);
   } else {
     output = fillAnnualPlanningTables(output, payload);
+    output = sweepUnresolvedPlaceholders(output, matrix, payload);
   }
 
   output = replaceKnownOldSchoolName(output, payload);
@@ -1283,14 +1979,52 @@ export function getOfficialPlanningFilename(payload: OfficialPlanningPayload): s
   );
 }
 
+function trimestralMatrizHasPipeline(matriz: PlanningAiResult["planejamento"] | undefined): boolean {
+  return Boolean(
+    matriz?.conteudos?.some((item) =>
+      item.semanas?.some((semana) => Boolean(semana.etapas?.trim())),
+    ),
+  );
+}
+
+function ensureTrimestralPipelineMatriz(
+  payload: OfficialPlanningPayload,
+): OfficialPlanningPayload {
+  if (getTipo(payload) !== "trimestral") {
+    return payload;
+  }
+
+  const matriz = payload.matrizPlanejamento;
+  if (!matriz?.conteudos?.length || trimestralMatrizHasPipeline(matriz)) {
+    return payload;
+  }
+
+  const trimestre = Number(getTrimestre(payload)) || 1;
+
+  const plano = runTrimestralPipelineOnItems(matriz.conteudos, trimestre, {
+    cargaHoraria: getString(payload, ["cargaHoraria"], ""),
+    componenteCurricular: getString(payload, ["componenteCurricular", "componente"], ""),
+  });
+
+  return {
+    ...payload,
+    matrizPlanejamento: {
+      ...matriz,
+      conteudos: matrixItemsFromTrimestralPlano(plano, trimestre),
+    },
+  };
+}
+
 export function buildOfficialPlanningDocx(
   payload: OfficialPlanningPayload,
   options?: { documentType?: string | null; documentId?: string | null },
 ): Buffer {
-  const normalizedPayload = normalizeOfficialPlanningPayload(
-    payload,
-    options?.documentType,
-    options?.documentId,
+  const normalizedPayload = ensureTrimestralPipelineMatriz(
+    normalizeOfficialPlanningPayload(
+      payload,
+      options?.documentType,
+      options?.documentId,
+    ),
   );
 
   if (!normalizedPayload.matrizPlanejamento?.conteudos?.length) {
@@ -1313,10 +2047,7 @@ export function buildOfficialPlanningDocx(
     ? documentXml.toString("utf8")
     : String(documentXml);
 
-  entries.set(
-    "word/document.xml",
-    fillOfficialTemplateXml(originalXml, normalizedPayload),
-  );
+  entries.set("word/document.xml", fillOfficialTemplateXml(originalXml, normalizedPayload));
 
   return buildZipFromEntries(entries);
 }

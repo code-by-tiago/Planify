@@ -1,3 +1,5 @@
+import { formatPeriodosComSemanas } from "@/lib/planejamentos/planning-annual-field-enrichment";
+
 export type PlanningAllocationPayload = {
   tipoPlanejamento?: string;
   cargaHoraria?: string | number;
@@ -230,29 +232,6 @@ export function ensureAnnualTrimesterDistribution<T extends MatrixLessonAllocata
     trimestre: Math.min(3, Math.floor(index / chunkSize) + 1),
   }));
 
-  // #region agent log
-  fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Debug-Session-Id": "4ba21b",
-    },
-    body: JSON.stringify({
-      sessionId: "4ba21b",
-      runId: "audit-system-health",
-      hypothesisId: "B",
-      location: "planning-lesson-allocation.ts:ensureAnnualTrimesterDistribution",
-      message: "Annual trimester redistribution applied",
-      data: {
-        itemCount: items.length,
-        before: [...present],
-        after: [...new Set(redistributed.map((item) => item.trimestre))],
-      },
-      timestamp: Date.now(),
-    }),
-  }).catch(() => {});
-  // #endregion
-
   return redistributed;
 }
 
@@ -327,9 +306,16 @@ export function resolveMatrixPeriodos(item: MatrixLessonAllocatable): number {
   return range > 0 ? range : 1;
 }
 
-export function formatMatrixPeriodosLabel(item: MatrixLessonAllocatable): string {
+export function formatMatrixPeriodosLabel(
+  item: MatrixLessonAllocatable,
+  weeklyPeriods = 0,
+): string {
   const periodos = resolveMatrixPeriodos(item);
-  return periodos === 1 ? "1 período" : `${periodos} período(s)`;
+  if (weeklyPeriods > 0) {
+    return formatPeriodosComSemanas(periodos, weeklyPeriods);
+  }
+
+  return periodos === 1 ? "1 período" : `${periodos} períodos`;
 }
 
 export function formatMatrixAulaLabel(item: MatrixLessonAllocatable): string {

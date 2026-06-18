@@ -46,7 +46,7 @@ export function LandingHeroVideo() {
 
         <video
           ref={videoRef}
-          className="aspect-[16/10] w-full bg-slate-900 object-cover object-top"
+          className="aspect-[16/10] w-full bg-slate-900 object-cover object-[center_top]"
           autoPlay
           muted
           loop

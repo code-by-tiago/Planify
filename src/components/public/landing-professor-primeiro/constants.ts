@@ -1,12 +1,3 @@
-export const LANDING_NAV = [
-  { href: "/#como-funciona", label: "Recursos" },
-  { href: "/#recursos", label: "Soluções" },
-  { href: "/planos", label: "Planos" },
-  { href: "/#comunidade", label: "Comunidade" },
-  { href: "/contato", label: "Blog" },
-  { href: "/escolas", label: "Sobre" },
-] as const;
-
 export const TRUST_ITEMS = [
   { label: "Alinhado à BNCC", icon: "checkCircle" as const },
   { label: "Exportação Google Docs", icon: "download" as const },

@@ -84,12 +84,23 @@ export function MaterialBnccSkillsPanel({
               ) : null}
             </h3>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-              Selecione as habilidades que este material deve cobrir. Elas entram no
-              seu{" "}
-              <strong className="font-bold text-slate-800">Progresso BNCC</strong> e
-              servem como referência de alinhamento na geração — o conteúdo continua
-              centrado no tema e nos conteúdos que você definiu. Sem seleção, o
-              sistema estima automaticamente pelo tema.
+              {optional ? (
+                <>
+                  Selecione as habilidades que este material deve cobrir. Elas entram no
+                  seu{" "}
+                  <strong className="font-bold text-slate-800">Progresso BNCC</strong> e
+                  servem como referência de alinhamento na geração — o conteúdo continua
+                  centrado no tema e nos conteúdos que você definiu. Sem seleção, o
+                  sistema estima automaticamente pelo tema.
+                </>
+              ) : (
+                <>
+                  Em provas e listas, alinhe o material à BNCC escolhendo o tema no
+                  autocomplete acima ou selecionando habilidades aqui. Elas orientam a
+                  geração e entram no seu{" "}
+                  <strong className="font-bold text-slate-800">Progresso BNCC</strong>.
+                </>
+              )}
             </p>
           </div>
 

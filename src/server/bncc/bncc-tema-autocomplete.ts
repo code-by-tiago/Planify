@@ -170,6 +170,101 @@ function buildGroupKey(
     .join("::");
 }
 
+function mapSuggestionGroups(
+  groups: Map<
+    string,
+    {
+      primary: string;
+      secondary?: string;
+      componente?: string;
+      score: number;
+      skills: BNCCSkill[];
+    }
+  >,
+  context: SearchContext,
+  limit: number,
+): BnccTemaAutocompleteSuggestion[] {
+  return Array.from(groups.values())
+    .sort(
+      (a, b) =>
+        b.score - a.score || a.primary.localeCompare(b.primary, "pt-BR"),
+    )
+    .slice(0, limit)
+    .map((group) => {
+      const tema = group.secondary
+        ? `${group.primary}: ${group.secondary}`
+        : group.primary;
+      const label = formatSuggestionLabel(
+        group.primary,
+        group.secondary,
+        group.componente,
+      );
+
+      return {
+        id: buildGroupKey(group.primary, group.secondary, group.componente),
+        label,
+        tema,
+        unidadeTematica: group.primary,
+        objetoConhecimento: group.secondary,
+        componente: group.componente,
+        score: group.score,
+        habilidades: group.skills
+          .slice(0, 3)
+          .map((skill) => skillToAutocompleteSkill(skill, tema)),
+      };
+    });
+}
+
+/** Temas BNCC frequentes no contexto — prefetch ao focar o campo (lista/prova). */
+export async function browseBnccTemaSuggestions(
+  context: SearchContext = {},
+  limit = 8,
+): Promise<BnccTemaAutocompleteSuggestion[]> {
+  const catalog = await readBNCCSkills();
+  const filtered = filterBnccSkillsByContext(catalog, {
+    etapa: context.etapa,
+    anoSerie: context.anoSerie,
+    componenteCurricular: context.componente,
+  });
+
+  const groups = new Map<
+    string,
+    {
+      primary: string;
+      secondary?: string;
+      componente?: string;
+      score: number;
+      skills: BNCCSkill[];
+    }
+  >();
+
+  for (const skill of filtered) {
+    const { primary, secondary } = deriveTopicParts(skill, []);
+    const componente = skill.componente?.trim() || context.componente?.trim();
+    const key = buildGroupKey(primary, secondary, componente);
+    const current = groups.get(key);
+
+    if (!current) {
+      groups.set(key, {
+        primary,
+        secondary,
+        componente,
+        score: 1,
+        skills: [skill],
+      });
+      continue;
+    }
+
+    current.score += 1;
+
+    if (!current.skills.some((item) => item.codigo === skill.codigo)) {
+      current.skills.push(skill);
+    }
+  }
+
+  return mapSuggestionGroups(groups, context, limit);
+}
+
 export async function searchBnccTemaSuggestions(
   query: string,
   context: SearchContext = {},
@@ -236,30 +331,5 @@ export async function searchBnccTemaSuggestions(
     }
   }
 
-  return Array.from(groups.values())
-    .sort((a, b) => b.score - a.score)
-    .slice(0, limit)
-    .map((group) => {
-      const tema = group.secondary
-        ? `${group.primary}: ${group.secondary}`
-        : group.primary;
-      const label = formatSuggestionLabel(
-        group.primary,
-        group.secondary,
-        group.componente,
-      );
-
-      return {
-        id: buildGroupKey(group.primary, group.secondary, group.componente),
-        label,
-        tema,
-        unidadeTematica: group.primary,
-        objetoConhecimento: group.secondary,
-        componente: group.componente,
-        score: group.score,
-        habilidades: group.skills
-          .slice(0, 3)
-          .map((skill) => skillToAutocompleteSkill(skill, tema)),
-      };
-    });
+  return mapSuggestionGroups(groups, context, limit);
 }

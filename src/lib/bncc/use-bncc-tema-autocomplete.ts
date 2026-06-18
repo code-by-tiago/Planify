@@ -12,6 +12,8 @@ type UseBnccTemaAutocompleteOptions = {
   anoSerie?: string;
   componente?: string;
   enabled?: boolean;
+  /** Prefetch temas BNCC do contexto ao focar (query vazia). */
+  prefetchOnFocus?: boolean;
   debounceMs?: number;
   minQueryLength?: number;
 };
@@ -22,6 +24,7 @@ export function useBnccTemaAutocomplete({
   anoSerie,
   componente,
   enabled = true,
+  prefetchOnFocus = false,
   debounceMs = 300,
   minQueryLength = 2,
 }: UseBnccTemaAutocompleteOptions) {
@@ -32,7 +35,15 @@ export function useBnccTemaAutocomplete({
   const [error, setError] = useState("");
 
   const trimmedQuery = query.trim();
-  const canSearch = enabled && trimmedQuery.length >= minQueryLength;
+  const contextReady = Boolean(
+    componente?.trim() && (anoSerie?.trim() || etapa?.trim()),
+  );
+  const browseMode =
+    prefetchOnFocus && contextReady && trimmedQuery.length < minQueryLength;
+  const canSearch =
+    enabled &&
+    (trimmedQuery.length >= minQueryLength ||
+      (browseMode && trimmedQuery.length === 0));
 
   const search = useCallback(async () => {
     if (!canSearch) {
@@ -50,6 +61,7 @@ export function useBnccTemaAutocomplete({
         etapa,
         anoSerie,
         componente,
+        browse: browseMode,
       });
       setSuggestions(nextSuggestions);
     } catch (err) {
@@ -62,7 +74,14 @@ export function useBnccTemaAutocomplete({
     } finally {
       setLoading(false);
     }
-  }, [anoSerie, canSearch, componente, etapa, trimmedQuery]);
+  }, [
+    anoSerie,
+    browseMode,
+    canSearch,
+    componente,
+    etapa,
+    trimmedQuery,
+  ]);
 
   useEffect(() => {
     if (!enabled) {
@@ -81,6 +100,7 @@ export function useBnccTemaAutocomplete({
   return {
     trimmedQuery,
     canSearch,
+    browseMode,
     suggestions,
     loading,
     error,

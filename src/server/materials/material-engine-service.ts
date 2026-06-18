@@ -6,6 +6,7 @@ import { isGenericEducationalText } from "@/lib/materiais/material-semantic-qual
 import {
   normalizeQuestionOptions,
   trimTeachyStatement,
+  trimTeachyGabaritoAnswer,
   renderCronogramaTables,
   renderGabaritoTable,
   renderQuestionCard,
@@ -662,24 +663,18 @@ function renderMindMap(response: MaterialEngineResponse): string {
   `;
 }
 
-function conciseGabaritoAnswer(text: string, maxLen = 180): string {
-  const trimmed = String(text || "").replace(/\s+/g, " ").trim();
-  if (!trimmed) return "";
-  if (trimmed.length <= maxLen) return trimmed;
-  const slice = trimmed.slice(0, maxLen);
-  const lastSpace = slice.lastIndexOf(" ");
-  return `${(lastSpace > 60 ? slice.slice(0, lastSpace) : slice).trim()}…`;
-}
-
 function parseGabaritoEntry(
   line: string,
   fallbackNumber: number,
 ): { number: number | string; answer: string } {
   const match = line.match(/^(?:exerc[ií]cio|quest[aã]o)\s*(\d+)\s*:\s*(.+)$/i);
   if (match) {
-    return { number: Number(match[1]), answer: conciseGabaritoAnswer(match[2]) };
+    return {
+      number: Number(match[1]),
+      answer: trimTeachyGabaritoAnswer(match[2]),
+    };
   }
-  return { number: fallbackNumber, answer: conciseGabaritoAnswer(line) };
+  return { number: fallbackNumber, answer: trimTeachyGabaritoAnswer(line) };
 }
 
 function renderAnswerKey(response: MaterialEngineResponse, ctx?: RenderContext): string {
@@ -688,7 +683,7 @@ function renderAnswerKey(response: MaterialEngineResponse, ctx?: RenderContext):
   const byNumber = new Map<number, string>();
 
   for (const question of response.exam?.questions ?? []) {
-    const answer = conciseGabaritoAnswer(question.answer || "");
+    const answer = trimTeachyGabaritoAnswer(question.answer || "");
     if (!answer) continue;
     byNumber.set(Number(question.number), answer);
   }
@@ -1011,7 +1006,7 @@ function normalizeOutput(
           ...question,
           statement,
           answer: request.incluirGabarito
-            ? conciseGabaritoAnswer(question.answer)
+            ? trimTeachyGabaritoAnswer(question.answer)
             : "",
         };
       });

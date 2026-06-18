@@ -404,6 +404,7 @@ export function MateriaisClient({
   const [pedagogicalExpanded, setPedagogicalExpanded] = useState(true);
   const [usePedagogicalOnly, setUsePedagogicalOnly] = useState(false);
   const pedagogicalDebounceRef = useRef<number | null>(null);
+  const examBnccAutoSuggestedRef = useRef(false);
 
   function rememberSlideGenerationPayload(payload: MaterialEngineInput | null) {
     setLastGenerationPayload(payload);
@@ -936,7 +937,33 @@ export function MateriaisClient({
     ]);
     setSelectedBnccSkills(habilidades.slice(0, 3));
     setBnccRegistroFeedback(null);
+    examBnccAutoSuggestedRef.current = true;
   }
+
+  useEffect(() => {
+    examBnccAutoSuggestedRef.current = false;
+  }, [tipo, tema, componente, anoSerie, etapa]);
+
+  useEffect(() => {
+    if (tipo !== "lista" && tipo !== "prova") return;
+    if (!suggestContextReady || bnccGroups.length > 0) return;
+    if (examBnccAutoSuggestedRef.current || loadingBncc) return;
+
+    examBnccAutoSuggestedRef.current = true;
+    const timer = window.setTimeout(() => {
+      void sugerirHabilidadesBncc();
+    }, 700);
+
+    return () => window.clearTimeout(timer);
+  }, [
+    tipo,
+    suggestContextReady,
+    bnccGroups.length,
+    loadingBncc,
+    tema,
+    componente,
+    anoSerie,
+  ]);
 
   function toggleBnccSkill(skill: BnccSkillOption) {
     setSelectedBnccSkills((current) => {
@@ -1757,6 +1784,7 @@ export function MateriaisClient({
             etapa={etapa}
             anoSerie={anoSerie}
             componente={componente}
+            prefetchOnFocus={isExamTool}
           />
 
           {(loadingPedagogical || pedagogicalEntries.length > 0) ? (
@@ -1954,7 +1982,7 @@ export function MateriaisClient({
               selectedSkills={selectedBnccSkills}
               loading={loadingBncc}
               temaReady={suggestContextReady}
-              optional
+              optional={!isExamTool}
               onSuggest={() => void sugerirHabilidadesBncc()}
               onToggleSkill={toggleBnccSkill}
               onSelectGroup={selectBnccGroup}

@@ -28,19 +28,30 @@ export type BnccTemaAutocompleteQuery = {
   anoSerie?: string;
   componente?: string;
   limit?: number;
+  /** Lista temas BNCC do contexto quando query < 2 chars (prefetch ao focar). */
+  browse?: boolean;
 };
 
 export async function fetchBnccTemaSuggestions(
   input: BnccTemaAutocompleteQuery,
 ): Promise<BnccTemaAutocompleteSuggestion[]> {
   const trimmedQuery = input.query.trim();
+  const canBrowse =
+    Boolean(input.browse) &&
+    trimmedQuery.length < 2 &&
+    Boolean(input.componente?.trim()) &&
+    Boolean((input.anoSerie || input.etapa)?.trim());
 
-  if (trimmedQuery.length < 2) {
+  if (!canBrowse && trimmedQuery.length < 2) {
     return [];
   }
 
   const params = new URLSearchParams();
-  params.set("q", trimmedQuery);
+  if (trimmedQuery.length >= 2) {
+    params.set("q", trimmedQuery);
+  } else if (canBrowse) {
+    params.set("q", "");
+  }
 
   if (input.etapa?.trim()) params.set("etapa", input.etapa.trim());
   if (input.anoSerie?.trim()) params.set("anoSerie", input.anoSerie.trim());

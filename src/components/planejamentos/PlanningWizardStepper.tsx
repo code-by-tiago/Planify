@@ -16,8 +16,8 @@ type PlanningWizardStepperProps = {
 
 const STEPS: { id: PlanningWizardStep; label: string; hint: string }[] = [
   { id: 1, label: "Conteúdos", hint: "Dados e temas" },
-  { id: 2, label: "BNCC e IA", hint: "Habilidades e matriz" },
-  { id: 3, label: "Exportar", hint: "Google Docs oficial" },
+  { id: 2, label: "Habilidades", hint: "Selecionar e gerar" },
+  { id: 3, label: "Exportar", hint: "Prévia e download" },
 ];
 
 export function PlanningWizardStepper({
@@ -89,10 +89,10 @@ export function PlanningWizardStepper({
           {stats.conteudos} conteúdo(s)
         </span>
         <span className="rounded-full border border-slate-200 bg-white px-3 py-1">
-          {stats.selecionadas} BNCC
+          {stats.selecionadas} habilidade(s)
         </span>
         <span className="rounded-full border border-slate-200 bg-white px-3 py-1">
-          {stats.matriz} na matriz
+          {stats.matriz} item(ns) no plano
         </span>
       </div>
     </nav>

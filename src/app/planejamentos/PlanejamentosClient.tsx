@@ -1,11 +1,7 @@
 "use client";
 
-import { DailyGenerationsBar } from "@/components/credits/DailyGenerationsBar";
-import { GenerationCostHint } from "@/components/credits/GenerationCostHint";
 import { MaterialPreviewSkeleton } from "@/components/materiais/MaterialPreviewSkeleton";
 import { MaterialQualityScoreBar } from "@/components/materiais/MaterialQualityScoreBar";
-import { PLANNING_DEEP_GENERATION_TYPE } from "@/lib/ai/material-generation-policy";
-import { getClientCreditCost } from "@/lib/credits/credit-costs";
 import {
   dispatchCreditsChangedIfNeeded,
   formatGenerationError,
@@ -996,7 +992,7 @@ export function PlanejamentosClient() {
     return documents;
   }
 
-  async function generatePlanning(options?: { modoMatrizBncc?: boolean }) {
+  async function generatePlanning() {
     if (loadingPlan) return;
 
     setError("");
@@ -1004,7 +1000,6 @@ export function PlanejamentosClient() {
     setErrorRetryable(false);
 
     const conteudosText = form.conteudos.trim();
-    const modoMatrizBncc = options?.modoMatrizBncc === true;
 
     if (!conteudosText) {
       setError("Informe os conteúdos antes de gerar o planejamento.");
@@ -1017,11 +1012,7 @@ export function PlanejamentosClient() {
     }
 
     setLoadingPlan(true);
-    setStatus(
-      modoMatrizBncc
-        ? "Montando matriz a partir das habilidades BNCC..."
-        : "Gerando matriz pedagógica com IA...",
-    );
+    setStatus("Gerando planejamento com IA...");
 
     const idempotencyKey = crypto.randomUUID();
 
@@ -1070,7 +1061,6 @@ export function PlanejamentosClient() {
           planning,
           form.tipoPlanejamento === "anual" ? form.pacoteTrimestralAnual : "nenhum",
         );
-      const usedServerIaPackage = Boolean(serverPackage && data.usedAI);
       const trimestresSelecionados = packageSnapshot.trimestres;
       const trimestralPlans = packageSnapshot.trimestrais;
 
@@ -1136,41 +1126,26 @@ export function PlanejamentosClient() {
         });
       }
 
-      if (useBnccMode) {
-        setStatus(
-          trimestresExtraidos
-            ? `Matriz BNCC montada. Trimestrais ${trimestresExtraidos} extraídos do anual (sem IA, sem créditos).`
-            : "Matriz BNCC montada a partir dos conteúdos e habilidades selecionadas.",
-        );
-      } else {
-        setStatus(
-          data.usedAI
-            ? trimestresExtraidos
-              ? usedServerIaPackage
-                ? `Matriz anual gerada. Trimestral ${trimestresExtraidos} expandido com IA pedagógica e salvo no histórico.`
-                : `Matriz anual gerada. Trimestrais ${trimestresExtraidos} extraídos e salvos no histórico.`
-              : "Matriz gerada e salva no histórico. Exporte ao Google Docs ou edite no editor."
-            : trimestresExtraidos
-              ? `Matriz anual (modo seguro). Trimestrais ${trimestresExtraidos} extraídos e salvos no histórico.`
-              : "Matriz em modo seguro salva no histórico. Exporte ao Google Docs ou edite no editor.",
-        );
-      }
+      setStatus(
+        trimestresExtraidos
+          ? `Planejamento gerado (anual + ${trimestresExtraidos}). Salvo no histórico.`
+          : "Planejamento gerado e salvo no histórico. Exporte ao Google Docs ou edite no editor.",
+      );
 
-      if (data.warning && !useBnccMode) {
+      if (data.warning) {
         setError(data.warning);
       }
     };
 
     try {
-      await runGeneration(modoMatrizBncc);
+      await runGeneration(false);
     } catch (err) {
       const code =
         err instanceof Error && "code" in err
           ? String((err as Error & { code?: string }).code || "")
           : "";
 
-      if (!modoMatrizBncc && code === "daily_limit_reached") {
-        setStatus("Sem cota de IA hoje. Montando matriz BNCC automaticamente (sem créditos)...");
+      if (code === "daily_limit_reached") {
         try {
           await runGeneration(true);
           return;
@@ -1180,7 +1155,7 @@ export function PlanejamentosClient() {
           setError(formatted.message);
           setErrorCta(formatted.cta ?? null);
           setErrorRetryable(formatted.retryable);
-          setStatus("Erro ao montar matriz BNCC");
+          setStatus("Erro ao gerar planejamento");
           return;
         }
       }
@@ -1240,11 +1215,7 @@ export function PlanejamentosClient() {
         serverMaterialId,
       });
 
-      setStatus(
-        data.usedAI
-          ? "Matriz regenerada com foco em qualidade."
-          : "Matriz atualizada em modo seguro.",
-      );
+      setStatus("Planejamento atualizado com foco em qualidade.");
 
       if (data.warning) {
         setError(data.warning);
@@ -1341,8 +1312,8 @@ export function PlanejamentosClient() {
             <PlanifyPageHero
               badge="Planejamentos"
               icon="clipboard"
-              title="BNCC → IA → Google Docs oficial"
-              description="Sugira habilidades por conteúdo, gere a matriz pedagógica com IA e exporte com os modelos oficiais anual/trimestral."
+              title="Planejamentos com IA"
+              description="Informe os conteúdos, selecione as habilidades BNCC e gere seu planejamento pronto para exportar nos modelos oficiais."
             />
           </div>
         ) : null}
@@ -1370,9 +1341,8 @@ export function PlanejamentosClient() {
               Planejamento anual ou trimestral
             </h2>
             <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-slate-600">
-              Informe os conteúdos, deixe a IA montar a matriz BNCC e exporte ao
-              Google Docs com os modelos oficiais. O trimestral usa a mesma base do
-              anual — sem retrabalho.
+              Informe os conteúdos, selecione as habilidades e gere o planejamento com IA.
+              Exporte ao Google Docs nos modelos oficiais — anual e trimestral na mesma base.
             </p>
             <div className="mt-5 grid gap-3 sm:grid-cols-2">
               <button
@@ -1658,11 +1628,6 @@ export function PlanejamentosClient() {
               />
             ) : null}
 
-            <GenerationCostHint
-              creditCost={getClientCreditCost(PLANNING_DEEP_GENERATION_TYPE)}
-              className="mt-4"
-            />
-
             <label className="mt-6 flex cursor-pointer items-center gap-3 rounded-xl border border-cyan-400/20 bg-cyan-50/50 px-5 py-3">
               <input
                 type="checkbox"
@@ -1679,44 +1644,29 @@ export function PlanejamentosClient() {
               </span>
             </label>
 
-            <div className="mt-6">
-              <DailyGenerationsBar tipoMaterial={PLANNING_DEEP_GENERATION_TYPE} />
-            </div>
-
-            <div className="mt-7 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="mt-7 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
               <button type="button" onClick={suggestBncc} disabled={loadingBncc} className="pl-hud-btn-secondary rounded-xl px-5 py-3.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60">
                 {loadingBncc ? "Sugerindo BNCC..." : "1. Sugerir BNCC"}
               </button>
               <button
                 type="button"
-                onClick={() => void generatePlanning({ modoMatrizBncc: true })}
+                onClick={() => void generatePlanning()}
                 disabled={loadingPlan}
-                className="pl-hud-btn rounded-xl px-5 py-3.5 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-60"
+                className="pl-hud-btn-generate rounded-full px-6 py-4 text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {loadingPlan ? "Montando matriz..." : "2. Montar matriz BNCC"}
-              </button>
-              <button type="button" onClick={() => void generatePlanning()} disabled={loadingPlan} className="pl-hud-btn-generate rounded-full px-6 py-4 text-sm transition disabled:cursor-not-allowed">
-                {loadingPlan ? "Gerando com IA..." : "Gerar com IA (opcional)"}
+                {loadingPlan ? "Gerando planejamento..." : "Gerar planejamento com IA"}
               </button>
               <button type="button" onClick={sendToEditor} disabled={!generatedPlanning} className="pl-hud-btn-secondary rounded-xl px-5 py-3.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50">
                 Editar no editor
               </button>
             </div>
-            <p className="mt-3 text-xs font-medium leading-6 text-slate-500">
-              Use <strong className="text-slate-700">Montar matriz BNCC</strong> para entregar anual
-              e trimestres sem créditos de IA. A opção com IA enriquece metodologias quando houver cota.
-            </p>
 
             {loadingBncc || loadingPlan ? (
               <PlanningGenerationPanel
                 label={
                   loadingBncc
                     ? "Buscando habilidades compatíveis"
-                    : loadingPlan && form.conteudos
-                      ? status.includes("BNCC")
-                        ? "Montando matriz BNCC"
-                        : "Gerando planejamento com IA"
-                      : "Gerando planejamento"
+                    : "Gerando planejamento com IA"
                 }
                 context={loadingBncc ? "bncc" : "planejamento"}
               />
@@ -1742,7 +1692,6 @@ export function PlanejamentosClient() {
               <div className="flex flex-wrap gap-2">
                 <Pill tone="cyan">{stats.sugeridas} sugeridas</Pill>
                 <Pill tone="emerald">{stats.selecionadas} selecionadas</Pill>
-                {usedAI !== null ? <Pill tone={usedAI ? "emerald" : "amber"}>{usedAI ? "IA usada" : "Modo seguro"}</Pill> : null}
               </div>
             </div>
 

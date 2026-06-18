@@ -13,54 +13,58 @@ export function LandingComparison() {
 
   const content = (
     <div className="mt-12 grid gap-6 lg:grid-cols-2">
-      <article className="overflow-hidden rounded-3xl border border-red-200/80 bg-gradient-to-br from-red-50/80 to-white p-6 shadow-sm sm:p-8">
-        <div className="flex items-center gap-3">
-          <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-red-100 text-2xl">
+      <article className="overflow-hidden rounded-3xl border border-red-200/60 bg-white shadow-sm">
+        <div className="flex h-44 items-center justify-center bg-gradient-to-br from-slate-200 to-slate-300">
+          <span className="text-6xl" aria-hidden>
             😩
           </span>
-          <div>
-            <p className="text-xs font-extrabold uppercase tracking-wider text-red-600">Sem Planify</p>
-            <h3 className="text-xl font-extrabold text-slate-900">Horas perdidas em burocracia</h3>
-          </div>
         </div>
-        <ul className="mt-6 space-y-3" role="list">
-          {BEFORE_ITEMS.map((item) => (
-            <li key={item} className="flex gap-3 text-sm font-medium leading-6 text-slate-600">
-              <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-red-100 text-red-500">
-                <PlanifyIcon name="close" className="h-3.5 w-3.5" />
-              </span>
-              {item}
-            </li>
-          ))}
-        </ul>
+        <div className="p-6 sm:p-8">
+          <p className="text-xs font-extrabold uppercase tracking-wider text-red-600">Sem Planify</p>
+          <h3 className="mt-2 text-xl font-extrabold text-slate-900">
+            Horas perdidas com tarefas que não são o seu foco
+          </h3>
+          <ul className="mt-5 space-y-3" role="list">
+            {BEFORE_ITEMS.map((item) => (
+              <li key={item} className="flex gap-3 text-sm font-medium leading-6 text-slate-600">
+                <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-red-100 text-red-500">
+                  <PlanifyIcon name="close" className="h-3.5 w-3.5" />
+                </span>
+                {item}
+              </li>
+            ))}
+          </ul>
+        </div>
       </article>
 
-      <article className="overflow-hidden rounded-3xl border border-cyan-200/80 bg-gradient-to-br from-cyan-50/80 to-white p-6 shadow-md shadow-cyan-500/5 sm:p-8">
-        <div className="flex items-center gap-3">
-          <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-100 text-2xl">
+      <article className="overflow-hidden rounded-3xl border border-cyan-200/80 bg-white shadow-md shadow-cyan-500/5">
+        <div className="flex h-44 items-center justify-center bg-gradient-to-br from-cyan-100 to-blue-200">
+          <span className="text-6xl" aria-hidden>
             😊
           </span>
-          <div>
-            <p className="text-xs font-extrabold uppercase tracking-wider text-cyan-700">Com Planify</p>
-            <h3 className="text-xl font-extrabold text-slate-900">Mais tempo para ensinar</h3>
-          </div>
         </div>
-        <ul className="mt-6 space-y-3" role="list">
-          {AFTER_ITEMS.map((item) => (
-            <li key={item} className="flex gap-3 text-sm font-medium leading-6 text-slate-700">
-              <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-cyan-100 text-cyan-600">
-                <PlanifyIcon name="checkCircle" className="h-3.5 w-3.5" />
-              </span>
-              {item}
-            </li>
-          ))}
-        </ul>
+        <div className="p-6 sm:p-8">
+          <p className="text-xs font-extrabold uppercase tracking-wider text-cyan-700">Com Planify</p>
+          <h3 className="mt-2 text-xl font-extrabold text-slate-900">
+            Mais tempo para ensinar. Menos tempo com burocracia
+          </h3>
+          <ul className="mt-5 space-y-3" role="list">
+            {AFTER_ITEMS.map((item) => (
+              <li key={item} className="flex gap-3 text-sm font-medium leading-6 text-slate-700">
+                <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-cyan-100 text-cyan-600">
+                  <PlanifyIcon name="checkCircle" className="h-3.5 w-3.5" />
+                </span>
+                {item}
+              </li>
+            ))}
+          </ul>
+        </div>
       </article>
     </div>
   );
 
   return (
-    <section className="bg-slate-50/80 px-5 py-16 sm:px-8 sm:py-20">
+    <section className="bg-white px-5 py-16 sm:px-8 sm:py-24">
       <div className="mx-auto max-w-7xl">
         <div className="mx-auto max-w-2xl text-center">
           <p className={ppEyebrow}>Antes e depois</p>

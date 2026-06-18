@@ -15,7 +15,6 @@ export function LandingHeroVideo() {
     if (!video) return;
 
     const onError = () => setUseFallback(true);
-
     video.addEventListener("error", onError);
     return () => video.removeEventListener("error", onError);
   }, []);
@@ -40,19 +39,21 @@ export function LandingHeroVideo() {
           <span className="h-2.5 w-2.5 rounded-full bg-red-400" aria-hidden />
           <span className="h-2.5 w-2.5 rounded-full bg-amber-400" aria-hidden />
           <span className="h-2.5 w-2.5 rounded-full bg-emerald-400" aria-hidden />
-          <span className="ml-2 text-[11px] font-semibold text-slate-400">Planify — demonstração</span>
+          <span className="ml-2 text-[11px] font-semibold text-slate-400">
+            Planejamentos · BNCC · Geração com IA
+          </span>
         </div>
 
         <video
           ref={videoRef}
-          className="aspect-[16/10] w-full bg-slate-900 object-cover"
+          className="aspect-[16/10] w-full bg-slate-900 object-cover object-top"
           autoPlay
           muted
           loop
           playsInline
-          preload="metadata"
+          preload="auto"
           poster={HERO_POSTER_SRC}
-          aria-label="Demonstração do fluxo Planify: conteúdos, BNCC, planejamento, editor e Classroom"
+          aria-label="Demonstração: página de planejamentos, sugestão de habilidades BNCC e geração com IA"
         >
           <source src={HERO_VIDEO_SRC} type="video/mp4" />
         </video>

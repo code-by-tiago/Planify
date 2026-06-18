@@ -1,6 +1,6 @@
 export const LANDING_NAV = [
   { href: "/#como-funciona", label: "Recursos" },
-  { href: "/#planejamentos", label: "Soluções" },
+  { href: "/#recursos", label: "Soluções" },
   { href: "/planos", label: "Planos" },
   { href: "/#comunidade", label: "Comunidade" },
   { href: "/contato", label: "Blog" },
@@ -13,6 +13,39 @@ export const TRUST_ITEMS = [
   { label: "Editor integrado", icon: "editor" as const },
   { label: "Google Classroom", icon: "externalLink" as const },
 ];
+
+export const FEATURE_GRID = [
+  {
+    title: "Planejamentos",
+    description: "Anual e trimestral alinhados à BNCC com modelos oficiais.",
+    icon: "clipboard" as const,
+    href: "/planejamento-escolar-com-ia",
+  },
+  {
+    title: "Materiais didáticos",
+    description: "Atividades, apostilas, jogos e sequências em minutos.",
+    icon: "layers" as const,
+    href: "/gerador-de-atividades-com-ia",
+  },
+  {
+    title: "Avaliações",
+    description: "Provas e listas com gabarito e critérios pedagógicos.",
+    icon: "listChecks" as const,
+    href: "/gerador-de-provas-com-ia",
+  },
+  {
+    title: "Editor integrado",
+    description: "Gerou, editou e finalizou no mesmo painel.",
+    icon: "editor" as const,
+    href: "/editor-de-documentos-para-professores",
+  },
+  {
+    title: "Envio facilitado",
+    description: "Google Docs, Drive e Classroom em um clique.",
+    icon: "externalLink" as const,
+    href: "/login",
+  },
+] as const;
 
 export const SOCIAL_PROOF_STATS = [
   {

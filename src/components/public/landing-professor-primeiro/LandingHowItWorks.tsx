@@ -17,30 +17,22 @@ export function LandingHowItWorks() {
           <h2 className="mt-3 font-[family-name:var(--font-display)] text-3xl font-extrabold text-slate-900 sm:text-4xl">
             Do conteúdo ao planejamento em minutos
           </h2>
-          <p className="mt-4 text-base font-medium leading-7 text-slate-600">
-            Cinco passos simples — da ideia à turma, sem sair do Planify.
-          </p>
         </div>
 
-        <div className="mt-14 hidden lg:block">
-          <div className="relative flex items-start justify-between gap-2">
-            <div
-              aria-hidden
-              className="absolute left-[10%] right-[10%] top-7 h-0.5 bg-gradient-to-r from-cyan-200 via-cyan-400 to-cyan-200"
-            />
-            {HOW_IT_WORKS.map((item, index) => (
+        <div className="mt-14 hidden items-start lg:flex">
+          {HOW_IT_WORKS.map((item, index) => (
+            <div key={item.step} className="flex flex-1 items-start">
               <motion.article
-                key={item.step}
-                className="relative z-[1] flex max-w-[11rem] flex-1 flex-col items-center text-center"
+                className="flex flex-1 flex-col items-center px-2 text-center"
                 initial={reduce ? false : { opacity: 0, y: 16 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "-40px" }}
-                transition={{ duration: 0.45, delay: index * 0.08 }}
+                transition={{ duration: 0.45, delay: index * 0.07 }}
               >
                 <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 text-white shadow-lg shadow-cyan-500/25">
                   <PlanifyIcon name={item.icon as PlanifyIconName} className="h-6 w-6" />
                 </span>
-                <span className="mt-3 flex h-7 w-7 items-center justify-center rounded-full bg-white text-xs font-black text-cyan-700 ring-2 ring-cyan-200">
+                <span className="mt-3 flex h-7 w-7 items-center justify-center rounded-full bg-cyan-50 text-xs font-black text-cyan-800 ring-2 ring-cyan-100">
                   {item.step}
                 </span>
                 <h3 className="mt-3 text-sm font-extrabold text-slate-900">{item.title}</h3>
@@ -48,8 +40,13 @@ export function LandingHowItWorks() {
                   {item.description}
                 </p>
               </motion.article>
-            ))}
-          </div>
+              {index < HOW_IT_WORKS.length - 1 ? (
+                <div className="flex shrink-0 items-center px-1 pt-7 text-cyan-300" aria-hidden>
+                  <PlanifyIcon name="arrowRight" className="h-5 w-5" />
+                </div>
+              ) : null}
+            </div>
+          ))}
         </div>
 
         <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:hidden">

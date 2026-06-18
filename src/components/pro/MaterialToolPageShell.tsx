@@ -6,7 +6,7 @@ import type { PlanifyTool } from "@/lib/pro/planifyTools";
 
 type MobilePanel = "form" | "preview";
 
-type MaterialToolPageShellProps = {
+export type MaterialToolPageShellProps = {
   tool: PlanifyTool;
   studioMode?: boolean;
   onBack?: () => void;
@@ -15,9 +15,11 @@ type MaterialToolPageShellProps = {
   preview: ReactNode;
   formScrollAttr?: boolean;
   previewScrollAttr?: boolean;
-  /** When true on mobile, switches to the preview tab (e.g. after generation). */
   previewReady?: boolean;
   previewLoading?: boolean;
+  /** Ignorado — só ToolStudioShell */
+  legacyLayout?: boolean;
+  exportDock?: ReactNode;
 };
 
 /**

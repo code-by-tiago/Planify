@@ -3,69 +3,13 @@
  * Run: npm run verify:planejamento-docx
  */
 import assert from "node:assert/strict";
-import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { writeFileSync, mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { createRequire } from "node:module";
+import { loadTsModule } from "./lib/load-ts-module.mjs";
 
-const require = createRequire(import.meta.url);
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const outputDir = join(root, "tmp", "verify-planejamento-docx");
-const moduleCache = new Map();
-
-function loadTsModule(relativePath) {
-  const normalized = relativePath.replace(/\\/g, "/");
-  if (moduleCache.has(normalized)) return moduleCache.get(normalized);
-
-  const ts = require("typescript");
-  const sourcePath = join(root, relativePath);
-  const source = readFileSync(sourcePath, "utf8");
-  const transpiled = ts.transpileModule(source, {
-    compilerOptions: {
-      module: ts.ModuleKind.CommonJS,
-      target: ts.ScriptTarget.ES2020,
-      esModuleInterop: true,
-    },
-    fileName: sourcePath,
-  }).outputText;
-
-  const module = { exports: {} };
-  const localRequire = (specifier) => {
-    if (specifier.startsWith(".")) {
-      const resolved = join(dirname(sourcePath), specifier);
-      for (const candidate of [`${resolved}.ts`, `${resolved}.js`]) {
-        if (candidate.endsWith(".ts")) {
-          const rel = candidate.slice(root.length + 1).replace(/\\/g, "/");
-          return loadTsModule(rel);
-        }
-      }
-    }
-    if (specifier.startsWith("@/")) {
-      const rel = `src/${specifier.slice(2)}`;
-      for (const candidate of [`${rel}.ts`, `${rel}.tsx`]) {
-        try {
-          readFileSync(join(root, candidate));
-          return loadTsModule(candidate.replace(/\\/g, "/"));
-        } catch {
-          // continue
-        }
-      }
-    }
-    return require(specifier);
-  };
-
-  const evaluator = new Function(
-    "exports",
-    "require",
-    "module",
-    "__dirname",
-    "__filename",
-    transpiled,
-  );
-  evaluator(module.exports, localRequire, module, dirname(sourcePath), sourcePath);
-  moduleCache.set(normalized, module.exports);
-  return module.exports;
-}
 
 const HABILIDADES = [
   {

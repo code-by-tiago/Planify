@@ -28,6 +28,8 @@ import { GenerationCostHint } from "@/components/credits/GenerationCostHint";
 import { DailyGenerationsBar } from "@/components/credits/DailyGenerationsBar";
 import { MaterialPreviewSkeleton } from "@/components/materiais/MaterialPreviewSkeleton";
 import { MaterialToolPageShell } from "@/components/pro/MaterialToolPageShell";
+import { ToolStudioShell } from "@/components/studio/ToolStudioShell";
+import { ExportDock } from "@/components/studio/ExportDock";
 import { MaterialToolMobileSubmitBar } from "@/components/pro/MaterialToolMobileSubmitBar";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { PlanifyOwlGenerationCoach } from "@/components/pro/PlanifyOwlGenerationCoach";
@@ -307,6 +309,8 @@ type MateriaisClientProps = {
   initialTema?: string;
   onStudioClose?: () => void;
   onOpenRelatedTool?: (toolId: PlanifyToolId) => void;
+  /** Rollback: layout anterior sem ExportDock fixo. */
+  legacyLayout?: boolean;
 };
 
 export function MateriaisClient({
@@ -315,7 +319,9 @@ export function MateriaisClient({
   initialTema = "",
   onStudioClose,
   onOpenRelatedTool,
+  legacyLayout = false,
 }: MateriaisClientProps = {}) {
+  const useStudioExportDock = studioMode && !legacyLayout;
   const school = useSchoolClasses();
   const [categoria, setCategoria] = useState<ToolCategoryId>("todos");
   const [tipo, setTipo] = useState<PlanifyToolId>(initialTipo ?? "slides");
@@ -1535,8 +1541,94 @@ export function MateriaisClient({
     setModalAberto(false);
   }
 
+  const exportDockStatusMessage =
+    useStudioExportDock &&
+    typeof qualityScore === "number" &&
+    qualityScore < UNIFIED_ELEVATE_BANNER_THRESHOLD
+      ? "Score abaixo do ideal — revise ou use Elevar qualidade antes de exportar."
+      : null;
+
+  const studioExportDock =
+    useStudioExportDock && resultadoHtml ? (
+      <ExportDock
+        visible
+        disabled={!resultadoHtml}
+        statusMessage={exportDockStatusMessage}
+      >
+        {tipo === "slides" ? (
+          <>
+            <GoogleSlidesExportButton
+              title={buildTitle(tipo, tema)}
+              html={resultadoHtml}
+              slides={resultadoEstrutura?.slides}
+              theme={resultadoEstrutura?.slideTheme || designSlides}
+              returnTo="/dashboard?tipo=slides"
+              alwaysShowExport
+              iconOnly={false}
+            />
+            <SlidesPptxDownloadButton
+              title={buildTitle(tipo, tema)}
+              html={resultadoHtml}
+              slides={resultadoEstrutura?.slides}
+              theme={resultadoEstrutura?.slideTheme || designSlides}
+              documentType="material:slides"
+              iconOnly={false}
+              label="Baixar PPTX"
+            />
+          </>
+        ) : null}
+        <GoogleDocumentExportBar
+          title={buildTitle(tipo, tema)}
+          getHtml={() => resultadoHtml}
+          documentType={`material:${tipo}`}
+          isSlideDeck={tipo === "slides"}
+          returnTo="/dashboard"
+          compact
+          classroomMode="popover"
+          disabled={!resultadoHtml}
+        />
+        <button
+          type="button"
+          onClick={abrirNoEditor}
+          className="pl-hud-btn inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold"
+        >
+          <PlanifyIcon name="editor" className="h-4 w-4" />
+          Editor
+        </button>
+        <button
+          type="button"
+          onClick={() => void executarGeracao()}
+          disabled={loading}
+          className="pl-hud-btn-secondary inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          <PlanifyIcon name="spark" className="h-4 w-4" />
+          Regenerar
+        </button>
+        <MarketplacePublishButton
+          title={buildTitle(tipo, tema)}
+          getHtml={() => resultadoHtml}
+          tipoMaterial={mode.title}
+          tema={tema}
+          componente={componente}
+          etapa={etapa}
+          anoSerie={anoSerie}
+          disabled={!resultadoHtml}
+          className="pl-hud-btn-secondary inline-flex items-center gap-2 rounded-xl border border-cyan-400/25 bg-cyan-50 px-4 py-2.5 text-sm font-bold text-cyan-900 transition hover:bg-cyan-100"
+        />
+        <Link
+          href="/historico"
+          className="pl-hud-btn-secondary inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold"
+        >
+          <PlanifyIcon name="history" className="h-4 w-4" />
+          Histórico
+        </Link>
+      </ExportDock>
+    ) : null;
+
+  const ToolShell = studioMode ? ToolStudioShell : MaterialToolPageShell;
+
   const painelCriacao = modalAberto ? (
-    <MaterialToolPageShell
+      <ToolShell
       tool={mode}
       studioMode={studioMode}
       onBack={fecharPainel}
@@ -1545,6 +1637,7 @@ export function MateriaisClient({
       previewScrollAttr={studioMode}
       previewReady={Boolean(resultadoHtml)}
       previewLoading={loading}
+      {...(studioMode ? { legacyLayout, exportDock: studioExportDock } : {})}
       form={
         <form onSubmit={gerarMaterial} className="space-y-1 max-lg:pb-2">
           <div className="flex flex-wrap items-start justify-between gap-3">
@@ -2327,7 +2420,7 @@ export function MateriaisClient({
                   onError={setErro}
                 />
               ) : null}
-              {tipo === "slides" ? (
+              {tipo === "slides" && !useStudioExportDock ? (
                 <aside className="mb-4 rounded-xl border border-cyan-400/20 bg-gradient-to-r from-cyan-50/80 to-emerald-50/60 px-4 py-3">
                   <p className="text-sm font-bold text-cyan-900">
                     Abrir no Google Apresentações
@@ -2358,6 +2451,7 @@ export function MateriaisClient({
                   </div>
                 </aside>
               ) : null}
+              {!useStudioExportDock ? (
               <div className="mb-4 flex flex-wrap justify-end gap-2">
                 <button
                   type="button"
@@ -2405,6 +2499,7 @@ export function MateriaisClient({
                   Histórico
                 </Link>
               </div>
+              ) : null}
               <MaterialTypedPreview html={resultadoHtml} tipoMaterial={tipo} />
             </div>
           ) : (

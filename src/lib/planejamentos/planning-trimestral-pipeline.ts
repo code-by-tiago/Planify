@@ -6,7 +6,7 @@ import {
   formatHabilidadesBnccAnual,
   resolveWeeklyPeriodsFromPayload,
 } from "@/lib/planejamentos/planning-annual-field-enrichment";
-import { extractAnnualItemsForTrimester } from "@/lib/planejamentos/planning-trimestral-from-annual";
+import { extractAnnualItemsForTrimester } from "@/lib/planejamentos/planning-trimestral-annual-split";
 import { deduplicateWeekFields } from "@/lib/planejamentos/planning-trimestral-similarity";
 import type {
   PlanningMatrixItemWithSemanas,
@@ -14,7 +14,7 @@ import type {
   TrimestralPlanoValidado,
   TrimestralSemanaPlan,
 } from "@/lib/planejamentos/planning-trimestral-types";
-import type { AnnualPlanningLike } from "@/lib/planejamentos/planning-trimestral-from-annual";
+import type { AnnualPlanningLike } from "@/lib/planejamentos/planning-trimestral-annual-split";
 
 const AULA_FUNCOES = [
   "introdução",

@@ -205,6 +205,12 @@ function parseRetryDelayMs(message: string, attempt = 0): number {
 
 const MAX_RETRIES_PER_MODEL = 3;
 const GEMINI_CALL_TIMEOUT_MS = 120_000;
+const DEADLINE_RETRY_BUFFER_MS = 10_000;
+
+function remainingMsUntil(deadlineAt?: number): number | undefined {
+  if (deadlineAt == null) return undefined;
+  return deadlineAt - Date.now();
+}
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => {
@@ -212,9 +218,19 @@ function sleep(ms: number): Promise<void> {
   });
 }
 
+function resolveCallTimeoutMs(deadlineAt?: number): number {
+  if (!deadlineAt) return GEMINI_CALL_TIMEOUT_MS;
+  const remaining = deadlineAt - Date.now();
+  if (remaining <= 5_000) {
+    return Math.max(3_000, remaining - 500);
+  }
+  return Math.min(GEMINI_CALL_TIMEOUT_MS, remaining - 2_000);
+}
+
 async function withGeminiCallTimeout<T>(
   promise: Promise<T>,
   label = "Chamada à IA",
+  timeoutMs = GEMINI_CALL_TIMEOUT_MS,
 ): Promise<T> {
   let timeoutId: ReturnType<typeof setTimeout> | undefined;
 
@@ -225,10 +241,10 @@ async function withGeminiCallTimeout<T>(
         timeoutId = setTimeout(() => {
           reject(
             new Error(
-              `${label} passou do tempo limite (${Math.round(GEMINI_CALL_TIMEOUT_MS / 1000)}s). Tente novamente.`,
+              `${label} passou do tempo limite (${Math.round(timeoutMs / 1000)}s). Tente novamente.`,
             ),
           );
-        }, GEMINI_CALL_TIMEOUT_MS);
+        }, timeoutMs);
       }),
     ]);
   } finally {
@@ -355,6 +371,7 @@ async function buildGeneratePlan(
 async function callGeminiGenerateContent(
   model: string,
   plan: GenerateContentPlan,
+  callTimeoutMs?: number,
 ): Promise<GeminiCallResult> {
   try {
     const response = await withGeminiCallTimeout(
@@ -364,6 +381,7 @@ async function callGeminiGenerateContent(
         config: plan.config,
       }),
       "Geração de conteúdo",
+      callTimeoutMs ?? GEMINI_CALL_TIMEOUT_MS,
     );
 
     const text = response.text?.trim() ?? "";
@@ -418,15 +436,29 @@ function handleGeminiCallFailure(
   return "next_model";
 }
 
+function maxRetriesForDeadline(deadlineAt?: number): number {
+  const remaining = remainingMsUntil(deadlineAt);
+  if (remaining == null) return MAX_RETRIES_PER_MODEL;
+  if (remaining < 30_000) return 1;
+  if (remaining < 90_000) return 2;
+  return MAX_RETRIES_PER_MODEL;
+}
+
 export async function generateGeminiJSON<T>(
   options: GeminiGenerateJSONOptions,
 ): Promise<T> {
   const models = resolveModelCandidates(options.tier, options.model);
+  const maxRetries = maxRetriesForDeadline(options.deadlineAt);
 
   let lastError = "Erro ao chamar a IA.";
 
   for (const model of models) {
-    for (let attempt = 0; attempt < MAX_RETRIES_PER_MODEL; attempt += 1) {
+    for (let attempt = 0; attempt < maxRetries; attempt += 1) {
+      const remaining = remainingMsUntil(options.deadlineAt);
+      if (remaining != null && remaining < DEADLINE_RETRY_BUFFER_MS) {
+        break;
+      }
+
       const plan = await buildGeneratePlan(
         {
           ...options,
@@ -434,7 +466,11 @@ export async function generateGeminiJSON<T>(
         },
         model,
       );
-      const json = await callGeminiGenerateContent(model, plan);
+      const json = await callGeminiGenerateContent(
+        model,
+        plan,
+        resolveCallTimeoutMs(options.deadlineAt),
+      );
 
       if (json.httpStatus >= 200 && json.httpStatus < 300 && !json.error) {
         const cleaned = stripJsonFence(json.text);
@@ -459,6 +495,13 @@ export async function generateGeminiJSON<T>(
       );
 
       if (failureAction === "retry") {
+        const remainingAfter = remainingMsUntil(options.deadlineAt);
+        if (
+          remainingAfter != null &&
+          remainingAfter < DEADLINE_RETRY_BUFFER_MS
+        ) {
+          break;
+        }
         await sleep(parseRetryDelayMs(message, attempt));
         continue;
       }

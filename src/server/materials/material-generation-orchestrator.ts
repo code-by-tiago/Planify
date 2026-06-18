@@ -1,5 +1,6 @@
 import { buildStageEvent } from "@/lib/generation/generation-pipeline-stages";
 import type { GenerationStageEvent } from "@/lib/generation/generation-job-types";
+import { humanizeGeminiError } from "@/server/ai/gemini-client";
 import {
   prefetchQuestionBankContext,
   tryAssembleExamFromBank,
@@ -43,6 +44,7 @@ type GenerationFailure = {
 };
 
 const GENERATE_HEARTBEAT_MS = 12_000;
+const AUTO_ELEVATE_SKIP_MS = 200_000;
 const GENERATE_HEARTBEAT_MESSAGES = [
   "Gerando conteúdo…",
   "A IA está elaborando o material…",
@@ -83,26 +85,34 @@ async function enrichInputWithPedagogicalContext(
   input: MaterialEngineInput,
   userId?: string | null,
 ): Promise<MaterialEngineInput> {
-  const { enrichWithPedagogicalContext } = await import(
-    "@/server/pedagogical-cache/enrich-with-pedagogical-context"
-  );
+  try {
+    const { enrichWithPedagogicalContext } = await import(
+      "@/server/pedagogical-cache/enrich-with-pedagogical-context"
+    );
 
-  return enrichWithPedagogicalContext(
-    input,
-    {
-      tema: String(input.tema || input.temaCentral || "").trim(),
-      componenteCurricular: input.componenteCurricular || input.componente,
-      etapa: input.etapa,
-      anoSerie: input.anoSerie,
-      habilidadesSelecionadas: input.habilidadesSelecionadas,
-      habilidadesBncc: input.habilidadesBncc,
-    },
-    {
-      userId: userId ?? null,
-      toolTipo: input.tipoMaterial || input.tipo || "material",
-      allowScrape: true,
-    },
-  );
+    return enrichWithPedagogicalContext(
+      input,
+      {
+        tema: String(input.tema || input.temaCentral || "").trim(),
+        componenteCurricular: input.componenteCurricular || input.componente,
+        etapa: input.etapa,
+        anoSerie: input.anoSerie,
+        habilidadesSelecionadas: input.habilidadesSelecionadas,
+        habilidadesBncc: input.habilidadesBncc,
+      },
+      {
+        userId: userId ?? null,
+        toolTipo: input.tipoMaterial || input.tipo || "material",
+        allowScrape: true,
+      },
+    );
+  } catch (error) {
+    console.warn(
+      "[material-orchestrator] pedagogical context enrich failed:",
+      error instanceof Error ? error.message : error,
+    );
+    return input;
+  }
 }
 
 async function tryBankFullDelivery(
@@ -115,9 +125,18 @@ async function tryBankFullDelivery(
   }
 
   emitStage(options, "bank", "Buscando questões no banco Planify…");
-  const bank = await tryAssembleExamFromBank(input, {
-    userId: options?.userId,
-  });
+  let bank: Awaited<ReturnType<typeof tryAssembleExamFromBank>>;
+  try {
+    bank = await tryAssembleExamFromBank(input, {
+      userId: options?.userId,
+    });
+  } catch (error) {
+    console.warn(
+      "[material-orchestrator] bank delivery failed:",
+      error instanceof Error ? error.message : error,
+    );
+    return null;
+  }
 
   if (!bank.ok) {
     return null;
@@ -172,6 +191,7 @@ async function runEngineDelivery(
   options?: MaterialGenerationOptions,
 ): Promise<GenerationSuccess | GenerationFailure> {
   emitStage(options, "generate");
+  const generateStartedAt = Date.now();
 
   let heartbeatTick = 0;
   const heartbeat = setInterval(() => {
@@ -204,7 +224,10 @@ async function runEngineDelivery(
   const firstScore = result.data.qualityScore ?? 0;
   const firstIssues = result.data.qualityIssues ?? [];
 
-  if (shouldAutoElevateQuality(firstScore, Boolean(request.elevarQualidade))) {
+  if (
+    shouldAutoElevateQuality(firstScore, Boolean(request.elevarQualidade)) &&
+    Date.now() - generateStartedAt < AUTO_ELEVATE_SKIP_MS
+  ) {
     emitStage(options, "generate", "Reforçando qualidade automaticamente…");
     const elevated = await generateMaterialByEngine({
       ...input,
@@ -246,30 +269,42 @@ export async function generatePlanifyMaterial(
   input: MaterialEngineInput,
   options?: MaterialGenerationOptions,
 ): Promise<GenerationSuccess | GenerationFailure> {
-  const request = normalizeMaterialEngineRequest(input);
-  const errors = validateMaterialEngineRequest(request);
+  try {
+    const request = normalizeMaterialEngineRequest(input);
+    const errors = validateMaterialEngineRequest(request);
 
-  if (errors.length > 0) {
+    if (errors.length > 0) {
+      return {
+        ok: false,
+        status: 400,
+        message: errors[0],
+      };
+    }
+
+    emitStage(options, "prepare", "Preparando entrega unificada…");
+
+    const bankDelivery = await tryBankFullDelivery(input, request, options);
+    if (bankDelivery?.ok) {
+      return bankDelivery;
+    }
+
+    emitStage(options, "context", "Enriquecendo contexto pedagógico…");
+    const withBank = await enrichInputWithBankPrefetch(input, request, options);
+    const enrichedInput = await enrichInputWithPedagogicalContext(
+      withBank,
+      options?.userId,
+    );
+
+    return runEngineDelivery(enrichedInput, request, options);
+  } catch (error) {
+    const message = humanizeGeminiError(
+      error instanceof Error ? error.message : "Erro inesperado ao gerar material.",
+    );
+    console.warn("[material-orchestrator] generatePlanifyMaterial failed:", message);
     return {
       ok: false,
-      status: 400,
-      message: errors[0],
+      status: 502,
+      message,
     };
   }
-
-  emitStage(options, "prepare", "Preparando entrega unificada…");
-
-  const bankDelivery = await tryBankFullDelivery(input, request, options);
-  if (bankDelivery?.ok) {
-    return bankDelivery;
-  }
-
-  emitStage(options, "context", "Enriquecendo contexto pedagógico…");
-  const withBank = await enrichInputWithBankPrefetch(input, request, options);
-  const enrichedInput = await enrichInputWithPedagogicalContext(
-    withBank,
-    options?.userId,
-  );
-
-  return runEngineDelivery(enrichedInput, request, options);
 }

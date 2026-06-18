@@ -1,6 +1,6 @@
 import { buildVisualGameMaterial } from "@/lib/materiais/game-builder";
 import { getModelTierForMaterialRequest } from "@/lib/ai/material-generation-policy";
-import { GENERATION_SERVER_DEADLINE_MS } from "@/lib/pro/generation-timeout";
+import { GENERATION_SERVER_DEADLINE_MS, createGenerationTimeoutError } from "@/lib/pro/generation-timeout";
 import { computeQualityScore } from "@/lib/materiais/material-quality-score";
 import { isGenericEducationalText } from "@/lib/materiais/material-semantic-quality";
 import {
@@ -1067,11 +1067,16 @@ function renderDocumentHtml(
   return base;
 }
 
-function maxOutputTokensFor(type: MaterialEngineType): number {
+function maxOutputTokensFor(
+  type: MaterialEngineType,
+  quantidade = 10,
+): number {
   if (type === "slides") return 24000;
   if (type === "flashcards" || type === "mapa-mental") return 14000;
   if (type === "resumo" || type === "atividade" || type === "jogo") return 16000;
-  if (type === "prova" || type === "lista" || type === "apostila") return 16000;
+  if (type === "prova" || type === "lista" || type === "apostila") {
+    return Math.min(32_000, 8_000 + Math.max(1, quantidade) * 600);
+  }
   return 12000;
 }
 
@@ -1115,17 +1120,52 @@ export async function generateMaterialByEngine(input: MaterialEngineInput) {
   const basePrompt = outlineBlock
     ? `${userPrompt}\n\n${outlineBlock}`
     : userPrompt;
-  const maxOutputTokens = maxOutputTokensFor(request.tipoMaterial);
+  const maxOutputTokens = maxOutputTokensFor(
+    request.tipoMaterial,
+    request.quantidade,
+  );
 
   let activePrompt = basePrompt;
   let lastError: unknown = null;
+  let lastBestEffort: {
+    html: string;
+    normalized: MaterialEngineResponse;
+    issues: string[];
+    qualityScore: number;
+    alertas?: string[];
+  } | null = null;
 
   const maxAttempts = maxAttemptsFor(request.tipoMaterial);
   const generationStartedAt = Date.now();
-  const isPastGenerationDeadline = () =>
-    Date.now() - generationStartedAt > GENERATION_DEADLINE_MS;
+  const generationDeadlineAt = generationStartedAt + GENERATION_DEADLINE_MS;
+  const isPastGenerationDeadline = () => Date.now() >= generationDeadlineAt;
 
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    if (isPastGenerationDeadline()) {
+      if (lastBestEffort) {
+        return {
+          ok: true as const,
+          status: 200,
+          data: {
+            tipoMaterial: request.tipoMaterial,
+            html: lastBestEffort.html,
+            estrutura: lastBestEffort.normalized,
+            qualityScore: lastBestEffort.qualityScore,
+            qualityIssues: lastBestEffort.issues,
+            pipeline: request.elevarQualidade ? "engine-elevated" : "engine",
+            ...(lastBestEffort.alertas ? { alertas: lastBestEffort.alertas } : {}),
+          },
+        };
+      }
+
+      return {
+        ok: false as const,
+        status: 504,
+        message: createGenerationTimeoutError("material").message,
+        errorCode: "timeout",
+      };
+    }
+
     try {
       const modelTier =
         request.elevarQualidade || attempt > 0
@@ -1140,6 +1180,7 @@ export async function generateMaterialByEngine(input: MaterialEngineInput) {
         topP: modelTier === "advanced" ? 0.82 : 0.86,
         maxOutputTokens,
         responseSchema: schema,
+        deadlineAt: generationDeadlineAt,
       });
 
       const layoutIssues = validateMaterialLayout(promptInput, layoutRaw);
@@ -1192,6 +1233,14 @@ export async function generateMaterialByEngine(input: MaterialEngineInput) {
       const alertas = buildDeliveryAlertas(request, issues, isFinalAttempt);
       const qualityScore = computeQualityScore(issues, alertas ?? []);
 
+      lastBestEffort = {
+        html,
+        normalized,
+        issues,
+        qualityScore,
+        alertas: alertas ?? undefined,
+      };
+
       if (
         P0_QUALITY_GATE_TYPES.has(request.tipoMaterial) &&
         qualityScore < MIN_P0_QUALITY_SCORE &&
@@ -1222,25 +1271,32 @@ export async function generateMaterialByEngine(input: MaterialEngineInput) {
       ) {
         const { regenerateWeakExamQuestions } = await import("./exam-questions-retry");
         if (!isPastGenerationDeadline()) {
-          for (
-            let repairPass = 0;
-            repairPass < MAX_EXAM_REPAIR_PASSES;
-            repairPass += 1
-          ) {
-            const repaired = await regenerateWeakExamQuestions(input, finalNormalized);
-            finalNormalized = repaired.estrutura;
-            finalIssues = repaired.qualityIssues;
-            finalHtml = repaired.html;
-            finalScore = repaired.qualityScore;
-            finalAlertas = buildDeliveryAlertas(
-              request,
-              finalIssues,
-              isFinalAttempt,
-            );
+          try {
+            for (
+              let repairPass = 0;
+              repairPass < MAX_EXAM_REPAIR_PASSES;
+              repairPass += 1
+            ) {
+              const repaired = await regenerateWeakExamQuestions(input, finalNormalized);
+              finalNormalized = repaired.estrutura;
+              finalIssues = repaired.qualityIssues;
+              finalHtml = repaired.html;
+              finalScore = repaired.qualityScore;
+              finalAlertas = buildDeliveryAlertas(
+                request,
+                finalIssues,
+                isFinalAttempt,
+              );
 
-            if (!finalIssues.length || finalScore >= MIN_P0_QUALITY_SCORE) {
-              break;
+              if (!finalIssues.length || finalScore >= MIN_P0_QUALITY_SCORE) {
+                break;
+              }
             }
+          } catch (repairError) {
+            console.warn(
+              "[material-engine] exam repair failed:",
+              repairError instanceof Error ? repairError.message : repairError,
+            );
           }
         }
       }
@@ -1268,18 +1324,25 @@ export async function generateMaterialByEngine(input: MaterialEngineInput) {
       if (message.includes("Créditos de IA esgotados") || message.includes("GEMINI_API_KEY")) {
         break;
       }
+      if (isPastGenerationDeadline()) {
+        break;
+      }
     }
   }
 
   const failureMessage =
     lastError instanceof Error
       ? lastError.message
-      : "A IA não conseguiu gerar o material. Tente novamente.";
+      : isPastGenerationDeadline()
+        ? createGenerationTimeoutError("material").message
+        : "A IA não conseguiu gerar o material. Tente novamente.";
 
   return {
     ok: false as const,
-    status: 502,
+    status: isPastGenerationDeadline() ? 504 : 502,
     message: failureMessage,
-    errorCode: resolveGeminiFailureCode(failureMessage),
+    errorCode: isPastGenerationDeadline()
+      ? "timeout"
+      : resolveGeminiFailureCode(failureMessage),
   };
 }

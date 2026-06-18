@@ -1979,7 +1979,9 @@ export function getOfficialPlanningFilename(payload: OfficialPlanningPayload): s
   );
 }
 
-function trimestralMatrizHasPipeline(matriz: PlanningAiResult["planejamento"] | undefined): boolean {
+function trimestralMatrizHasPipeline(
+  matriz: { conteudos?: PlanningMatrixItem[] } | undefined,
+): boolean {
   return Boolean(
     matriz?.conteudos?.some((item) =>
       item.semanas?.some((semana) => Boolean(semana.etapas?.trim())),

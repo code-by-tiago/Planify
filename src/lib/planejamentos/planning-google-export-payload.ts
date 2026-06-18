@@ -6,6 +6,8 @@ const EDITOR_DOCUMENT_KEY = "planify_editor_document";
 
 type PlanningEditorRawMeta = PlanningEditorMeta & {
   matrizPlanejamento?: unknown;
+  turma?: string;
+  className?: string;
 };
 
 export type PlanningExportContext = {

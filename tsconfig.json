@@ -46,6 +46,8 @@
     "tmp",
     "tmp/**/*",
     "marketing",
-    "marketing/**/*"
+    "marketing/**/*",
+    "scripts",
+    "scripts/**/*"
   ]
 }

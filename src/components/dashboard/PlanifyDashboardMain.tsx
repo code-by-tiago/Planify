@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import { ComunidadeDashboardRouter } from "@/components/community/docente/ComunidadeDashboardRouter";
 import TeachyStudioHome from "@/components/dashboard/TeachyStudioHome";
 import { TeachyMateriaisStudio } from "@/components/dashboard/TeachyMateriaisStudio";
@@ -117,27 +117,6 @@ export function PlanifyDashboardMain({
   onSelectSection,
   onClosePanel,
 }: PlanifyDashboardMainProps) {
-  // #region agent log
-  useEffect(() => {
-    fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Debug-Session-Id": "4ba21b",
-      },
-      body: JSON.stringify({
-        sessionId: "4ba21b",
-        runId: "audit-system-health",
-        hypothesisId: "A",
-        location: "PlanifyDashboardMain.tsx:mount",
-        message: "Dashboard panel mounted",
-        data: { toolId, sectionId },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-  }, [toolId, sectionId]);
-  // #endregion
-
   if (toolId) {
     if (toolId === "inclusao") {
       return (

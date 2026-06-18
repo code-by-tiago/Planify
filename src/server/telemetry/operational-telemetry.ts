@@ -13,7 +13,8 @@ export type OperationalEventType =
   | "pedagogical_cache_hit"
   | "pedagogical_cache_miss"
   | "pedagogical_inject_skipped"
-  | "pedagogical_format_only";
+  | "pedagogical_format_only"
+  | "contact_submission";
 
 export function logOperationalEvent(event: {
   eventType: OperationalEventType;

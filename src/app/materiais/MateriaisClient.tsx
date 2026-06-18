@@ -87,7 +87,11 @@ import {
   useRetryableAction,
 } from "@/lib/pro/generation-error-ui";
 import { readProvaInjectObservacoes } from "@/lib/banco-questoes/question-bank-storage";
-import { resolveUnifiedPipelineLabel } from "@/lib/materiais/unified-pipeline-labels";
+import {
+  isFastDeliveryPipeline,
+  resolveUnifiedPipelineLabel,
+} from "@/lib/materiais/unified-pipeline-labels";
+import { UNIFIED_ELEVATE_BANNER_THRESHOLD } from "@/lib/materiais/unified-quality-gate";
 import {
   buildPedagogicalObservacoes,
   fetchPedagogicalContext,
@@ -590,6 +594,15 @@ export function MateriaisClient({
       incluirGabarito,
     ],
   );
+  const pipelineDisplayLabel = useMemo(
+    () => resolveUnifiedPipelineLabel(pipelineGeracao),
+    [pipelineGeracao],
+  );
+  const showFastDraftBanner = useMemo(() => {
+    if (typeof qualityScore !== "number") return false;
+    if (qualityScore >= UNIFIED_ELEVATE_BANNER_THRESHOLD) return false;
+    return isFastDeliveryPipeline(pipelineGeracao);
+  }, [qualityScore, pipelineGeracao]);
   const isJogo = tipo === "jogo";
   const isRedacao = tipo === "redacao";
   const isExamTool = tipo === "lista" || tipo === "prova";
@@ -1248,7 +1261,7 @@ export function MateriaisClient({
 
         if (typeof record.pipeline === "string") {
           pipelineLabel = resolveUnifiedPipelineLabel(record.pipeline);
-          setPipelineGeracao(pipelineLabel);
+          setPipelineGeracao(record.pipeline);
         }
 
         if (typeof record.qualityScore === "number") {
@@ -2208,6 +2221,16 @@ export function MateriaisClient({
               {generationSummary ? (
                 <MaterialGenerationSummaryPanel summary={generationSummary} />
               ) : null}
+              {showFastDraftBanner ? (
+                <aside className="mb-4 rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-950">
+                  <p className="font-black">Rascunho rápido</p>
+                  <p className="mt-1 font-semibold leading-6">
+                    Gerado no modo rápido para você revisar em segundos. Antes de exportar
+                    para a turma, use &quot;Elevar qualidade&quot; se o score estiver abaixo de{" "}
+                    {UNIFIED_ELEVATE_BANNER_THRESHOLD}.
+                  </p>
+                </aside>
+              ) : null}
               {typeof qualityScore === "number" ? (
                 <MaterialQualityScoreBar
                   score={qualityScore}
@@ -2248,7 +2271,7 @@ export function MateriaisClient({
                     <p className="text-xs font-bold text-slate-500">
                       Origem:{" "}
                       <span className="inline-flex rounded-full border border-cyan-200 bg-cyan-50 px-2.5 py-0.5 text-[11px] font-black uppercase tracking-wide text-cyan-800">
-                        {pipelineGeracao}
+                        {pipelineDisplayLabel}
                       </span>
                     </p>
                   ) : null}

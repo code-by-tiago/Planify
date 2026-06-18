@@ -255,7 +255,6 @@ export async function generatePlanifyMaterial(
   input: MaterialEngineInput,
   options?: MaterialGenerationOptions,
 ): Promise<GenerationSuccess | GenerationFailure> {
-  const pipelineStartedAt = Date.now();
   try {
     const request = normalizeMaterialEngineRequest(input);
     const errors = validateMaterialEngineRequest(request);
@@ -268,94 +267,21 @@ export async function generatePlanifyMaterial(
       };
     }
 
-    // #region agent log
-    fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "1f000c" },
-      body: JSON.stringify({
-        sessionId: "1f000c",
-        runId: "fast-path",
-        hypothesisId: "H-speed",
-        location: "material-generation-orchestrator.ts:generatePlanifyMaterial",
-        message: "pipeline start",
-        data: {
-          tipo: request.tipoMaterial,
-          quantidade: request.quantidade,
-          elevarQualidade: request.elevarQualidade,
-          fastMode: !request.elevarQualidade,
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
-
     emitStage(options, "prepare", "Preparando entrega unificada…");
 
     const bankDelivery = await tryBankFullDelivery(input, request, options);
     if (bankDelivery?.ok) {
-      // #region agent log
-      fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "1f000c" },
-        body: JSON.stringify({
-          sessionId: "1f000c",
-          runId: "fast-path",
-          hypothesisId: "H-bank",
-          location: "material-generation-orchestrator.ts:generatePlanifyMaterial",
-          message: "bank delivery complete",
-          data: { elapsedMs: Date.now() - pipelineStartedAt, ok: true },
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {});
-      // #endregion
       return bankDelivery;
     }
 
     emitStage(options, "context", "Enriquecendo contexto pedagógico…");
-    const contextStartedAt = Date.now();
     const withBank = await enrichInputWithBankPrefetch(input, request, options);
     const enrichedInput = await enrichInputWithPedagogicalContext(
       withBank,
       options?.userId,
     );
-    // #region agent log
-    fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "1f000c" },
-      body: JSON.stringify({
-        sessionId: "1f000c",
-        runId: "fast-path",
-        hypothesisId: "H-context",
-        location: "material-generation-orchestrator.ts:generatePlanifyMaterial",
-        message: "context enrich done",
-        data: { elapsedMs: Date.now() - contextStartedAt },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
 
-    const engineStartedAt = Date.now();
     const engineResult = await runEngineDelivery(enrichedInput, request, options);
-    // #region agent log
-    fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "1f000c" },
-      body: JSON.stringify({
-        sessionId: "1f000c",
-        runId: "fast-path",
-        hypothesisId: "H-engine",
-        location: "material-generation-orchestrator.ts:generatePlanifyMaterial",
-        message: "engine delivery complete",
-        data: {
-          elapsedMs: Date.now() - engineStartedAt,
-          totalMs: Date.now() - pipelineStartedAt,
-          ok: engineResult.ok,
-          status: engineResult.ok ? 200 : engineResult.status,
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
     return engineResult;
   } catch (error) {
     const message = humanizeGeminiError(

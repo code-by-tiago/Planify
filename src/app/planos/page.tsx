@@ -19,7 +19,7 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = buildPageMetadata({
   title: "Plano Professor — R$ 24,90/mês",
   description:
-    "Plano único Planify Professor: geradores com IA, planejamentos BNCC, editor e exportação. Uso ilimitado por R$ 24,90/mês.",
+    "Plano único Planify Professor: geradores com IA, planejamentos BNCC, editor e exportação. Acesso completo com cota diária de gerações profundas.",
   path: "/planos",
 });
 
@@ -87,7 +87,7 @@ const planFaq = [
   {
     question: "O uso é ilimitado?",
     answer:
-      "Sim — todas as ferramentas premium, sem créditos ou cotas diárias. Uso pessoal docente, conforme nossos termos.",
+      "Você tem acesso a todas as ferramentas premium. Gerações profundas (listas, provas, slides, planejamentos etc.) têm cota diária — 5 por dia no plano Professor, com reinício à meia-noite (horário de Brasília). Exportação, editor e revisão não consomem essa cota.",
   },
   {
     question: "Como começo depois de assinar?",
@@ -131,10 +131,10 @@ export default async function PlanosPage({ searchParams }: PlanosPageProps) {
             <p className={ppEyebrow}>{plan.name}</p>
             <h1 className="mt-4 font-[family-name:var(--font-display)] text-3xl font-extrabold leading-tight tracking-tight text-slate-950 sm:text-4xl">
               IA pedagógica,{" "}
-              <span className={ppTitleAccent}>uso ilimitado.</span>
+              <span className={ppTitleAccent}>acesso completo.</span>
             </h1>
             <p className="mx-auto mt-3 max-w-sm text-base font-medium leading-7 text-slate-600">
-              Um plano, acesso completo. Sem comparar pacotes.
+              Um plano, todas as ferramentas. Cota diária clara nas gerações profundas.
             </p>
           </header>
 

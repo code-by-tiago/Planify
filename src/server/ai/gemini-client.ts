@@ -218,13 +218,17 @@ function sleep(ms: number): Promise<void> {
   });
 }
 
-function resolveCallTimeoutMs(deadlineAt?: number): number {
-  if (!deadlineAt) return GEMINI_CALL_TIMEOUT_MS;
+function resolveCallTimeoutMs(
+  deadlineAt?: number,
+  callTimeoutMs?: number,
+): number {
+  const base = callTimeoutMs ?? GEMINI_CALL_TIMEOUT_MS;
+  if (!deadlineAt) return base;
   const remaining = deadlineAt - Date.now();
   if (remaining <= 5_000) {
     return Math.max(3_000, remaining - 500);
   }
-  return Math.min(GEMINI_CALL_TIMEOUT_MS, remaining - 2_000);
+  return Math.min(base, remaining - 2_000);
 }
 
 async function withGeminiCallTimeout<T>(
@@ -436,7 +440,13 @@ function handleGeminiCallFailure(
   return "next_model";
 }
 
-function maxRetriesForDeadline(deadlineAt?: number): number {
+function maxRetriesForDeadline(
+  deadlineAt?: number,
+  callTimeoutMs?: number,
+): number {
+  if (callTimeoutMs != null && callTimeoutMs <= 60_000) {
+    return 1;
+  }
   const remaining = remainingMsUntil(deadlineAt);
   if (remaining == null) return MAX_RETRIES_PER_MODEL;
   if (remaining < 30_000) return 1;
@@ -448,7 +458,10 @@ export async function generateGeminiJSON<T>(
   options: GeminiGenerateJSONOptions,
 ): Promise<T> {
   const models = resolveModelCandidates(options.tier, options.model);
-  const maxRetries = maxRetriesForDeadline(options.deadlineAt);
+  const maxRetries = maxRetriesForDeadline(
+    options.deadlineAt,
+    options.callTimeoutMs,
+  );
 
   let lastError = "Erro ao chamar a IA.";
 
@@ -469,7 +482,7 @@ export async function generateGeminiJSON<T>(
       const json = await callGeminiGenerateContent(
         model,
         plan,
-        resolveCallTimeoutMs(options.deadlineAt),
+        resolveCallTimeoutMs(options.deadlineAt, options.callTimeoutMs),
       );
 
       if (json.httpStatus >= 200 && json.httpStatus < 300 && !json.error) {

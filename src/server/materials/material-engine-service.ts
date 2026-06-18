@@ -1,6 +1,6 @@
 import { buildVisualGameMaterial } from "@/lib/materiais/game-builder";
 import { getModelTierForMaterialRequest } from "@/lib/ai/material-generation-policy";
-import { GENERATION_SERVER_DEADLINE_MS, createGenerationTimeoutError } from "@/lib/pro/generation-timeout";
+import { GENERATION_SERVER_DEADLINE_MS, GENERATION_FAST_DEADLINE_MS, MATERIAL_GEMINI_CALL_TIMEOUT_MS, createGenerationTimeoutError } from "@/lib/pro/generation-timeout";
 import { computeQualityScore } from "@/lib/materiais/material-quality-score";
 import { isGenericEducationalText } from "@/lib/materiais/material-semantic-quality";
 import {
@@ -104,7 +104,12 @@ const CRITICAL_RETRY_TYPES = new Set<MaterialEngineType>([
   "resumo",
 ]);
 
-function maxAttemptsFor(type: MaterialEngineType): number {
+function maxAttemptsFor(
+  type: MaterialEngineType,
+  elevarQualidade: boolean,
+): number {
+  if (!elevarQualidade) return 1;
+
   switch (type) {
     case "prova":
     case "lista":
@@ -128,7 +133,7 @@ function buildDeliveryAlertas(
   if (!issues.length) return undefined;
 
   if (CRITICAL_QUALITY_TYPES.has(request.tipoMaterial) && isFinalAttempt) {
-    const attempts = maxAttemptsFor(request.tipoMaterial);
+    const attempts = maxAttemptsFor(request.tipoMaterial, request.elevarQualidade);
     return [
       `Passo crítico: a IA não resolveu todos os critérios após ${attempts} tentativas.`,
       "Regenere o material ou use Elevar qualidade antes de imprimir ou aplicar em sala.",
@@ -1102,14 +1107,21 @@ export async function generateMaterialByEngine(input: MaterialEngineInput) {
     };
   }
 
-  const modelTier = getModelTierForMaterialRequest(request.tipoMaterial, request);
+  const fastMode = !request.elevarQualidade;
+  const modelTier = request.elevarQualidade
+    ? getModelTierForMaterialRequest(request.tipoMaterial, request)
+    : "default";
 
   const promptInput = toPromptEngineInput(request);
   const { systemInstruction, userPrompt } = buildPromptEngine(promptInput);
   const schema = getMaterialLayoutSchema();
   let outlineBlock = "";
 
-  if (modelTier === "advanced" && usesPedagogicalOutline(request.tipoMaterial)) {
+  if (
+    !fastMode &&
+    modelTier === "advanced" &&
+    usesPedagogicalOutline(request.tipoMaterial)
+  ) {
     try {
       outlineBlock = await buildPedagogicalOutlinePromptBlock(request);
     } catch {
@@ -1135,9 +1147,15 @@ export async function generateMaterialByEngine(input: MaterialEngineInput) {
     alertas?: string[];
   } | null = null;
 
-  const maxAttempts = maxAttemptsFor(request.tipoMaterial);
+  const maxAttempts = maxAttemptsFor(request.tipoMaterial, request.elevarQualidade);
   const generationStartedAt = Date.now();
-  const generationDeadlineAt = generationStartedAt + GENERATION_DEADLINE_MS;
+  const generationBudgetMs = fastMode
+    ? GENERATION_FAST_DEADLINE_MS
+    : GENERATION_DEADLINE_MS;
+  const generationDeadlineAt = generationStartedAt + generationBudgetMs;
+  const geminiCallTimeoutMs = fastMode
+    ? MATERIAL_GEMINI_CALL_TIMEOUT_MS
+    : undefined;
   const isPastGenerationDeadline = () => Date.now() >= generationDeadlineAt;
 
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
@@ -1167,24 +1185,23 @@ export async function generateMaterialByEngine(input: MaterialEngineInput) {
     }
 
     try {
-      const modelTier =
-        request.elevarQualidade || attempt > 0
-          ? "advanced"
-          : "default";
+      const attemptTier = request.elevarQualidade ? "advanced" : "default";
       const layoutRaw = await generateGeminiJSON<MaterialLayout>({
         systemInstruction,
         prompt: activePrompt,
         cacheProfile: `material-engine:${request.tipoMaterial}`,
-        tier: modelTier,
-        temperature: modelTier === "advanced" ? 0.22 : 0.32,
-        topP: modelTier === "advanced" ? 0.82 : 0.86,
+        tier: attemptTier,
+        temperature: attemptTier === "advanced" ? 0.22 : 0.32,
+        topP: attemptTier === "advanced" ? 0.82 : 0.86,
         maxOutputTokens,
         responseSchema: schema,
         deadlineAt: generationDeadlineAt,
+        callTimeoutMs: geminiCallTimeoutMs,
       });
 
       const layoutIssues = validateMaterialLayout(promptInput, layoutRaw);
       if (
+        !fastMode &&
         layoutIssues.length &&
         attempt < maxAttempts - 1 &&
         !isPastGenerationDeadline()
@@ -1218,6 +1235,7 @@ export async function generateMaterialByEngine(input: MaterialEngineInput) {
       const issues = [...layoutIssues, ...getEngineOutputIssues(request, normalized)];
 
       if (
+        !fastMode &&
         issues.length &&
         attempt < maxAttempts - 1 &&
         !isPastGenerationDeadline()
@@ -1242,6 +1260,7 @@ export async function generateMaterialByEngine(input: MaterialEngineInput) {
       };
 
       if (
+        !fastMode &&
         P0_QUALITY_GATE_TYPES.has(request.tipoMaterial) &&
         qualityScore < MIN_P0_QUALITY_SCORE &&
         attempt < maxAttempts - 1 &&
@@ -1265,6 +1284,7 @@ export async function generateMaterialByEngine(input: MaterialEngineInput) {
       let finalAlertas = alertas;
 
       if (
+        !fastMode &&
         shouldRepairExamAfterEngine(request) &&
         finalIssues.length > 0 &&
         (finalNormalized.exam?.questions?.length ?? 0) > 0

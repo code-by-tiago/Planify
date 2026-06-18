@@ -494,7 +494,7 @@ export async function tryAssembleExamFromBank(
     pipeline,
     alertas,
     usedIds,
-    !iaFilled,
+    request.elevarQualidade && !iaFilled,
   );
 }
 

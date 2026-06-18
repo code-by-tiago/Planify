@@ -10,10 +10,12 @@ import {
   resolveQuestionBankFirstMode,
 } from "./question-bank-first-policy";
 import { generateMaterialByEngine } from "./material-engine-service";
-import { assessUnifiedQualityGate } from "@/lib/materiais/unified-quality-gate";
+import {
+  assessUnifiedQualityGate,
+  hasCriticalQualityIssues,
+} from "@/lib/materiais/unified-quality-gate";
 import {
   finalizeUnifiedDelivery,
-  shouldAutoElevateQuality,
   type UnifiedDeliveryPipeline,
   type UnifiedMaterialDelivery,
 } from "./material-unified-delivery";
@@ -44,7 +46,6 @@ type GenerationFailure = {
 };
 
 const GENERATE_HEARTBEAT_MS = 12_000;
-const AUTO_ELEVATE_SKIP_MS = 200_000;
 const GENERATE_HEARTBEAT_MESSAGES = [
   "Gerando conteúdo…",
   "A IA está elaborando o material…",
@@ -53,7 +54,15 @@ const GENERATE_HEARTBEAT_MESSAGES = [
 
 function enforceUnifiedQualityGate(
   delivery: UnifiedMaterialDelivery,
+  strict = false,
 ): GenerationSuccess | GenerationFailure {
+  if (
+    !strict &&
+    !hasCriticalQualityIssues(delivery.qualityIssues ?? [])
+  ) {
+    return { ok: true, status: 200, data: delivery };
+  }
+
   const gate = assessUnifiedQualityGate({
     qualityScore: delivery.qualityScore,
     qualityIssues: delivery.qualityIssues,
@@ -103,7 +112,7 @@ async function enrichInputWithPedagogicalContext(
       {
         userId: userId ?? null,
         toolTipo: input.tipoMaterial || input.tipo || "material",
-        allowScrape: true,
+        allowScrape: false,
       },
     );
   } catch (error) {
@@ -156,6 +165,7 @@ async function tryBankFullDelivery(
       bank.pipeline as UnifiedDeliveryPipeline,
       request,
     ),
+    Boolean(request.elevarQualidade),
   );
 }
 
@@ -191,7 +201,6 @@ async function runEngineDelivery(
   options?: MaterialGenerationOptions,
 ): Promise<GenerationSuccess | GenerationFailure> {
   emitStage(options, "generate");
-  const generateStartedAt = Date.now();
 
   let heartbeatTick = 0;
   const heartbeat = setInterval(() => {
@@ -205,44 +214,20 @@ async function runEngineDelivery(
     );
   }, GENERATE_HEARTBEAT_MS);
 
-  let firstPass: Awaited<ReturnType<typeof generateMaterialByEngine>>;
+  let result: Awaited<ReturnType<typeof generateMaterialByEngine>>;
   try {
-    firstPass = await generateMaterialByEngine(input);
+    result = await generateMaterialByEngine(input);
   } finally {
     clearInterval(heartbeat);
   }
 
-  if (!firstPass.ok) {
-    return firstPass;
+  if (!result.ok) {
+    return result;
   }
 
-  let result = firstPass;
-  let pipeline: UnifiedDeliveryPipeline = request.elevarQualidade
+  const pipeline: UnifiedDeliveryPipeline = request.elevarQualidade
     ? "engine-elevated"
     : "engine";
-
-  const firstScore = result.data.qualityScore ?? 0;
-  const firstIssues = result.data.qualityIssues ?? [];
-
-  if (
-    shouldAutoElevateQuality(firstScore, Boolean(request.elevarQualidade)) &&
-    Date.now() - generateStartedAt < AUTO_ELEVATE_SKIP_MS
-  ) {
-    emitStage(options, "generate", "Reforçando qualidade automaticamente…");
-    const elevated = await generateMaterialByEngine({
-      ...input,
-      elevarQualidade: true,
-      problemasQualidade: firstIssues,
-    });
-
-    if (elevated.ok) {
-      const elevatedScore = elevated.data.qualityScore ?? 0;
-      if (elevatedScore >= firstScore) {
-        result = elevated;
-        pipeline = "engine-elevated";
-      }
-    }
-  }
 
   emitStage(options, "quality");
   return enforceUnifiedQualityGate(
@@ -258,6 +243,7 @@ async function runEngineDelivery(
       pipeline,
       request,
     ),
+    Boolean(request.elevarQualidade),
   );
 }
 
@@ -269,6 +255,7 @@ export async function generatePlanifyMaterial(
   input: MaterialEngineInput,
   options?: MaterialGenerationOptions,
 ): Promise<GenerationSuccess | GenerationFailure> {
+  const pipelineStartedAt = Date.now();
   try {
     const request = normalizeMaterialEngineRequest(input);
     const errors = validateMaterialEngineRequest(request);
@@ -281,21 +268,95 @@ export async function generatePlanifyMaterial(
       };
     }
 
+    // #region agent log
+    fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "1f000c" },
+      body: JSON.stringify({
+        sessionId: "1f000c",
+        runId: "fast-path",
+        hypothesisId: "H-speed",
+        location: "material-generation-orchestrator.ts:generatePlanifyMaterial",
+        message: "pipeline start",
+        data: {
+          tipo: request.tipoMaterial,
+          quantidade: request.quantidade,
+          elevarQualidade: request.elevarQualidade,
+          fastMode: !request.elevarQualidade,
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
+
     emitStage(options, "prepare", "Preparando entrega unificada…");
 
     const bankDelivery = await tryBankFullDelivery(input, request, options);
     if (bankDelivery?.ok) {
+      // #region agent log
+      fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "1f000c" },
+        body: JSON.stringify({
+          sessionId: "1f000c",
+          runId: "fast-path",
+          hypothesisId: "H-bank",
+          location: "material-generation-orchestrator.ts:generatePlanifyMaterial",
+          message: "bank delivery complete",
+          data: { elapsedMs: Date.now() - pipelineStartedAt, ok: true },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {});
+      // #endregion
       return bankDelivery;
     }
 
     emitStage(options, "context", "Enriquecendo contexto pedagógico…");
+    const contextStartedAt = Date.now();
     const withBank = await enrichInputWithBankPrefetch(input, request, options);
     const enrichedInput = await enrichInputWithPedagogicalContext(
       withBank,
       options?.userId,
     );
+    // #region agent log
+    fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "1f000c" },
+      body: JSON.stringify({
+        sessionId: "1f000c",
+        runId: "fast-path",
+        hypothesisId: "H-context",
+        location: "material-generation-orchestrator.ts:generatePlanifyMaterial",
+        message: "context enrich done",
+        data: { elapsedMs: Date.now() - contextStartedAt },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
 
-    return runEngineDelivery(enrichedInput, request, options);
+    const engineStartedAt = Date.now();
+    const engineResult = await runEngineDelivery(enrichedInput, request, options);
+    // #region agent log
+    fetch("http://127.0.0.1:7616/ingest/e1530077-9aac-4460-b700-4c831c23c281", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "1f000c" },
+      body: JSON.stringify({
+        sessionId: "1f000c",
+        runId: "fast-path",
+        hypothesisId: "H-engine",
+        location: "material-generation-orchestrator.ts:generatePlanifyMaterial",
+        message: "engine delivery complete",
+        data: {
+          elapsedMs: Date.now() - engineStartedAt,
+          totalMs: Date.now() - pipelineStartedAt,
+          ok: engineResult.ok,
+          status: engineResult.ok ? 200 : engineResult.status,
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
+    return engineResult;
   } catch (error) {
     const message = humanizeGeminiError(
       error instanceof Error ? error.message : "Erro inesperado ao gerar material.",

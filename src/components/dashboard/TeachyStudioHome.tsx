@@ -25,6 +25,49 @@ type TeachyStudioHomeProps = {
   onSelectCategory?: (category: ToolCategoryId) => void;
 };
 
+const START_HERE_CARDS = [
+  {
+    id: "anual",
+    label: "Planejamento Anual",
+    icon: "clipboard" as const,
+    action: "planejamentos" as const,
+    actionType: "section" as const,
+    accent: "from-blue-500 to-blue-600",
+  },
+  {
+    id: "trimestral",
+    label: "Planejamento Trimestral",
+    icon: "calendar" as const,
+    action: "planejamentos" as const,
+    actionType: "section" as const,
+    accent: "from-violet-500 to-violet-600",
+  },
+  {
+    id: "material",
+    label: "Novo Material",
+    icon: "layers" as const,
+    action: "slides" as const,
+    actionType: "tool" as const,
+    accent: "from-emerald-500 to-emerald-600",
+  },
+  {
+    id: "editor",
+    label: "Abrir Editor",
+    icon: "editor" as const,
+    action: "editor" as const,
+    actionType: "section" as const,
+    accent: "from-orange-500 to-orange-600",
+  },
+  {
+    id: "correcao",
+    label: "Correção com IA",
+    icon: "pen" as const,
+    action: "correcao-ia" as const,
+    actionType: "tool" as const,
+    accent: "from-rose-500 to-rose-600",
+  },
+] as const;
+
 const JOURNEY_CARDS = [
   {
     id: "planeje",
@@ -60,12 +103,6 @@ const JOURNEY_CARDS = [
   },
 ] as const;
 
-function getGreeting(): string {
-  const hour = new Date().getHours();
-  if (hour < 12) return "Bom dia";
-  if (hour < 18) return "Boa tarde";
-  return "Boa noite";
-}
 
 function filterTools(query: string, category: ToolCategoryId): PlanifyTool[] {
   const term = query.trim().toLowerCase();
@@ -129,6 +166,14 @@ export default function TeachyStudioHome({
     onSelectSection?.(sectionId);
   }
 
+  function handleStartCard(card: (typeof START_HERE_CARDS)[number]) {
+    if (card.actionType === "section") {
+      openSection(card.action);
+      return;
+    }
+    openTool(card.action);
+  }
+
   function handleJourneyCard(card: (typeof JOURNEY_CARDS)[number]) {
     if (card.actionType === "section") {
       openSection(card.action);
@@ -174,48 +219,44 @@ export default function TeachyStudioHome({
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
         <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
           <section className="pf-surface p-6 sm:p-8">
-            <p className="pf-eyebrow">{getGreeting()}</p>
-            <h1 className="mt-2 text-2xl font-extrabold tracking-tight text-slate-950 sm:text-3xl">
-              Seu centro pedagógico
-            </h1>
-            <p className="mt-2 max-w-2xl text-sm font-medium leading-relaxed text-slate-600 sm:text-base">
-              Planeje, crie, revise e compartilhe — tudo conectado com BNCC, editor e
-              Google Docs.
-            </p>
-
-            <div className="mt-6 flex flex-wrap gap-2">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <h1 className="text-2xl font-extrabold tracking-tight text-slate-950 sm:text-3xl">
+                  Olá, Professor! 👋
+                </h1>
+                <p className="mt-2 max-w-2xl text-sm font-medium leading-relaxed text-slate-600 sm:text-base">
+                  Pronto para transformar seu planejamento hoje?
+                </p>
+              </div>
               <button
                 type="button"
                 onClick={() => openSection("planejamentos")}
-                className="pf-quick-action pf-quick-action--primary"
+                className="pf-quick-action pf-quick-action--primary shrink-0"
               >
-                <PlanifyIcon name="clipboard" className="h-4 w-4" />
-                Novo Planejamento
+                <PlanifyIcon name="plus" className="h-4 w-4" />
+                Novo planejamento
               </button>
-              <button
-                type="button"
-                onClick={() => openTool("slides")}
-                className="pf-quick-action"
-              >
-                <PlanifyIcon name="presentation" className="h-4 w-4" />
-                Novo Material
-              </button>
-              <button
-                type="button"
-                onClick={() => openSection("editor")}
-                className="pf-quick-action"
-              >
-                <PlanifyIcon name="editor" className="h-4 w-4" />
-                Abrir Editor
-              </button>
-              <button
-                type="button"
-                onClick={() => openTool("correcao-ia")}
-                className="pf-quick-action"
-              >
-                <PlanifyIcon name="pen" className="h-4 w-4" />
-                Corrigir Atividade
-              </button>
+            </div>
+
+            <div className="mt-8">
+              <p className="pf-eyebrow">Comece por aqui</p>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+                {START_HERE_CARDS.map((card) => (
+                  <button
+                    key={card.id}
+                    type="button"
+                    onClick={() => handleStartCard(card)}
+                    className="pf-dashboard-journey-card group text-left"
+                  >
+                    <span
+                      className={`flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${card.accent} text-white shadow-sm`}
+                    >
+                      <PlanifyIcon name={card.icon} className="h-4 w-4" />
+                    </span>
+                    <span className="text-sm font-extrabold text-slate-950">{card.label}</span>
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div className="mt-6 grid gap-3 sm:grid-cols-2">

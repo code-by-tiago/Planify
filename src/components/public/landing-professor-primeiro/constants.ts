@@ -38,18 +38,20 @@ export const FEATURE_GRID = [
   },
 ] as const;
 
-export const SOCIAL_PROOF_STATS = [
+export const HERO_STATS = [
   {
     value: 128764,
-    suffix: "",
+    suffix: "+",
     label: "Planejamentos gerados",
     icon: "clipboard" as const,
+    color: "purple" as const,
   },
   {
     value: 956231,
-    suffix: "",
+    suffix: "+",
     label: "Materiais criados",
     icon: "layers" as const,
+    color: "green" as const,
   },
   {
     value: 2500,
@@ -57,14 +59,25 @@ export const SOCIAL_PROOF_STATS = [
     suffix: "",
     label: "Professores ativos",
     icon: "user" as const,
+    color: "blue" as const,
   },
   {
     value: 2384650,
-    suffix: "",
-    label: "Habilidades BNCC utilizadas",
+    suffix: "+",
+    label: "Alunos impactados",
+    icon: "spark" as const,
+    color: "orange" as const,
+  },
+  {
+    value: 100,
+    suffix: "%",
+    label: "Alinhado à BNCC",
     icon: "checkCircle" as const,
+    color: "green" as const,
   },
 ] as const;
+
+export const SOCIAL_PROOF_STATS = HERO_STATS.slice(0, 4);
 
 export const HOW_IT_WORKS = [
   {

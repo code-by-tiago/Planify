@@ -11,7 +11,7 @@ export function LandingTestimonials() {
   const staticRender = reduce || mobileStatic;
 
   return (
-    <section className="pf-marketing-section scroll-mt-24 bg-white">
+    <section id="depoimentos" className="pf-marketing-section scroll-mt-24 bg-white">
       <div className="mx-auto max-w-7xl">
         <div className="mx-auto max-w-2xl text-center">
           <p className={ppEyebrow}>Depoimentos</p>

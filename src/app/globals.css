@@ -3524,22 +3524,24 @@ body {
 
 /* PLANIFY_ENTERPRISE_REDESIGN_2026_START */
 :root {
-  --plx-navy-950: #03191f;
-  --plx-navy-900: #062a33;
-  --plx-navy-800: #0a3b45;
-  --plx-ink: #092c34;
-  --plx-muted: #5d7378;
-  --plx-paper: #f6fbfa;
-  --plx-paper-strong: #edf7f5;
-  --plx-line: #d5e9e5;
-  --plx-teal: #12b8a6;
-  --plx-teal-dark: #087d75;
-  --plx-mint: #dff7f2;
-  --plx-sun: #f6c65b;
+  --plx-primary: #3b82f6;
+  --plx-navy: #0f172a;
+  --plx-navy-950: #0f172a;
+  --plx-navy-900: #1e293b;
+  --plx-navy-800: #334155;
+  --plx-ink: #0f172a;
+  --plx-muted: #64748b;
+  --plx-paper: #f9fafb;
+  --plx-paper-strong: #f1f5f9;
+  --plx-line: #e2e8f0;
+  --plx-teal: #3b82f6;
+  --plx-teal-dark: #2563eb;
+  --plx-mint: #eff6ff;
+  --plx-sun: #3b82f6;
   --plx-coral: #f26d5b;
-  --plx-shadow-sm: 0 1px 2px rgba(3, 25, 31, 0.06);
-  --plx-shadow-md: 0 18px 48px rgba(3, 25, 31, 0.1);
-  --plx-shadow-lg: 0 30px 80px rgba(3, 25, 31, 0.16);
+  --plx-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --plx-shadow-md: 0 18px 48px rgba(15, 23, 42, 0.1);
+  --plx-shadow-lg: 0 30px 80px rgba(15, 23, 42, 0.14);
 }
 
 body {
@@ -3563,10 +3565,15 @@ body {
 .pf-marketing-nav,
 .planify-public > header {
   min-height: 72px;
-  background:
-    linear-gradient(180deg, rgba(6, 42, 51, 0.96), rgba(6, 42, 51, 0.9)) !important;
-  border-bottom: 1px solid rgba(223, 247, 242, 0.16) !important;
-  box-shadow: 0 12px 40px rgba(3, 25, 31, 0.18) !important;
+  background: #ffffff !important;
+  border-bottom: 1px solid transparent !important;
+  box-shadow: none !important;
+}
+
+.pf-marketing-nav.is-scrolled,
+.planify-public > header.is-scrolled {
+  border-bottom-color: #e2e8f0 !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06) !important;
 }
 
 .pf-marketing-nav > div,
@@ -3579,14 +3586,14 @@ body {
 .planify-public > header a:not(.pf-marketing-btn--primary-sm) {
   min-height: 42px;
   border-radius: 8px !important;
-  color: rgba(255, 255, 255, 0.82) !important;
+  color: #64748b !important;
 }
 
 .pf-marketing-nav-link:hover,
 .pf-marketing-btn--ghost:hover,
 .planify-public > header a:not(.pf-marketing-btn--primary-sm):hover {
-  background: rgba(255, 255, 255, 0.1) !important;
-  color: #ffffff !important;
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
 }
 
 .pf-marketing-btn--primary,
@@ -3596,10 +3603,10 @@ body {
 .pl-hud-btn-generate,
 .pl-hud-btn,
 .pl-btn-primary {
-  border-radius: 8px !important;
-  background: var(--plx-sun) !important;
-  color: var(--plx-navy-950) !important;
-  box-shadow: 0 16px 36px rgba(246, 198, 91, 0.26) !important;
+  border-radius: 999px !important;
+  background: var(--plx-primary) !important;
+  color: #ffffff !important;
+  box-shadow: 0 8px 24px rgba(59, 130, 246, 0.28) !important;
 }
 
 .pf-marketing-btn--primary:hover,
@@ -3608,8 +3615,8 @@ body {
 .pl-btn-brand:hover,
 .pl-hud-btn-generate:hover:not(:disabled),
 .pl-hud-btn:hover {
-  background: #ffdc7c !important;
-  color: var(--plx-navy-950) !important;
+  background: #2563eb !important;
+  color: #ffffff !important;
   transform: translateY(-1px);
 }
 
@@ -3623,15 +3630,13 @@ body {
   backdrop-filter: none;
 }
 
-.pf-marketing-hero {
-  min-height: 92svh !important;
+.pf-marketing-hero.pf-marketing-hero--light {
+  min-height: auto !important;
   width: 100% !important;
-  display: grid !important;
-  background: var(--plx-navy-950) !important;
-  grid-template-columns: minmax(0, 1fr) !important;
-  justify-content: start !important;
-  justify-items: start !important;
-  align-items: center !important;
+  display: block !important;
+  background: #ffffff !important;
+  color: #0f172a !important;
+  grid-template-columns: unset !important;
 }
 
 .pf-marketing-hero-video {
@@ -3938,9 +3943,8 @@ body {
 
 .pl-sidebar,
 .pl-sidebar.pl-sidebar-hud {
-  background:
-    linear-gradient(180deg, var(--plx-navy-900) 0%, var(--plx-navy-950) 100%) !important;
-  border-color: rgba(223, 247, 242, 0.14) !important;
+  background: var(--plx-navy, #0f172a) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
 }
 
 .pl-sidebar .planify-brand-mark {
@@ -3964,8 +3968,8 @@ body {
 .pl-sidebar-nav-item.is-active,
 .pf-sidebar-category.is-active,
 .pf-sidebar-tool.is-active {
-  background: var(--plx-sun) !important;
-  color: var(--plx-navy-950) !important;
+  background: rgba(56, 189, 248, 0.22) !important;
+  color: #e0f2fe !important;
 }
 
 .pl-dashboard-welcome {

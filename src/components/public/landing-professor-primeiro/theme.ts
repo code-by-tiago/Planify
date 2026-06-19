@@ -16,10 +16,10 @@ export const ppCard = "pf-marketing-card";
 export const ppCardLg = "pf-marketing-card";
 
 export const ppBadge =
-  "inline-flex items-center gap-1.5 rounded-full border border-cyan-100 bg-cyan-50 px-3 py-1.5 text-xs font-bold text-cyan-800";
+  "inline-flex items-center gap-1.5 rounded-full border border-blue-100 bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-800";
 
 export const ppIconBox =
-  "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-cyan-50 text-cyan-600";
+  "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-[#3B82F6]";
 
 export const ppBtnPrimary = "pf-marketing-btn pf-marketing-btn--primary";
 
@@ -36,7 +36,7 @@ export const ppBtnOnDark =
   "inline-flex items-center justify-center rounded-lg border border-white/15 bg-white px-6 py-3.5 text-sm font-bold text-[#071018] shadow-sm shadow-black/10 transition hover:bg-slate-50";
 
 export const ppLink =
-  "font-bold text-cyan-700 transition hover:text-cyan-900";
+  "font-bold text-[#3B82F6] transition hover:text-blue-800";
 
 export const ppInput =
   "w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm font-semibold text-slate-950 outline-none transition focus:border-cyan-400 focus:bg-white focus:ring-4 focus:ring-cyan-100";

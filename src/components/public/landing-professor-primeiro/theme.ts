@@ -53,6 +53,12 @@ export const ppCtaTitle = "font-extrabold !text-white";
 export const ppCtaLinkOnDark =
   "inline-flex items-center gap-2 text-sm font-semibold text-[#bae6fd] underline-offset-4 transition hover:text-white hover:underline";
 
+/** Dark gradient band on marketing pages (bypasses global text-white → dark overrides). */
+export const ppDarkBand = "pf-marketing-dark-band";
+
+export const ppDarkBandTitle =
+  "font-[family-name:var(--font-display)] font-extrabold !text-white";
+
 export const ppSectionAlt = "pf-marketing-section--alt";
 
 export const ppPlanHighlight =

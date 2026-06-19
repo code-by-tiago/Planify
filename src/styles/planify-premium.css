@@ -1615,6 +1615,38 @@
   box-shadow: 0 16px 48px rgba(7, 16, 24, 0.25) !important;
 }
 
+.pf-ecosystem-scope.pf-marketing-shell .pf-marketing-dark-band {
+  background: linear-gradient(135deg, #0f172a 0%, #0c2a3a 50%, #071018 100%) !important;
+  color: #fff !important;
+}
+
+.pf-ecosystem-scope.pf-marketing-shell .pf-marketing-dark-band [class*="text-white"],
+.pf-ecosystem-scope.pf-marketing-shell .pf-marketing-dark-band h2,
+.pf-ecosystem-scope.pf-marketing-shell .pf-marketing-dark-band .font-bold {
+  color: #fff !important;
+}
+
+.pf-ecosystem-scope.pf-marketing-shell .pf-marketing-dark-band [class*="text-cyan-100"],
+.pf-ecosystem-scope.pf-marketing-shell .pf-marketing-dark-band [class*="text-cyan-200"],
+.pf-ecosystem-scope.pf-marketing-shell .pf-marketing-dark-band [class*="text-cyan-300"] {
+  color: #a5f3fc !important;
+}
+
+.pf-ecosystem-scope.pf-marketing-shell .pf-marketing-dark-band [class*="bg-white/"] {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.pf-ecosystem-scope.pf-marketing-shell .pf-marketing-dark-band [class*="border-white/"] {
+  border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+.pf-ecosystem-scope.pf-marketing-shell .pf-marketing-dark-band .pf-demo-mock {
+  background: #fff !important;
+  border-color: rgba(15, 21, 26, 0.08) !important;
+  box-shadow: 0 4px 24px rgba(15, 21, 26, 0.07) !important;
+  color: #0f151a !important;
+}
+
 .pf-ecosystem-scope.pf-marketing-shell .pf-marketing-footer {
   background: #fff !important;
   border-top: 1px solid rgba(15, 21, 26, 0.08) !important;

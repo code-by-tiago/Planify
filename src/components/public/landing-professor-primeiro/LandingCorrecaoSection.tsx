@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
-import { ppBtnSecondary, ppEyebrow } from "./theme";
+import { ppBtnSecondary, ppDarkBand, ppDarkBandTitle } from "./theme";
 
 const STEPS = [
   {
@@ -21,12 +21,12 @@ export function LandingCorrecaoSection() {
   return (
     <section
       id="correcao"
-      className="scroll-mt-24 border-y border-slate-200/80 bg-gradient-to-br from-slate-900 via-[#0c2a3a] to-[#071018] px-5 py-16 text-white sm:px-8 sm:py-24"
+      className={`${ppDarkBand} scroll-mt-24 border-y border-slate-200/80 bg-gradient-to-br from-slate-900 via-[#0c2a3a] to-[#071018] px-5 py-16 text-white sm:px-8 sm:py-24`}
     >
       <div className="mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-2 lg:gap-16">
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-300">Correção com IA</p>
-          <h2 className="mt-3 font-[family-name:var(--font-display)] text-3xl font-extrabold sm:text-4xl">
+          <h2 className={`${ppDarkBandTitle} mt-3 text-3xl sm:text-4xl`}>
             Corrija provas e atividades em segundos
           </h2>
           <p className="mt-4 text-base font-medium leading-7 text-cyan-100/80">
@@ -41,7 +41,7 @@ export function LandingCorrecaoSection() {
                   {index + 1}
                 </span>
                 <div>
-                  <p className="font-bold text-white">{step.title}</p>
+                  <p className="font-bold !text-white">{step.title}</p>
                   <p className="mt-1 text-sm font-medium text-cyan-100/70">{step.description}</p>
                 </div>
               </div>
@@ -53,15 +53,15 @@ export function LandingCorrecaoSection() {
           </Link>
         </div>
 
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm">
-          <div className="flex items-center justify-between gap-3 border-b border-white/10 pb-4">
+        <div className="pf-demo-mock p-6">
+          <div className="flex items-center justify-between gap-3 border-b border-slate-100 pb-4">
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-cyan-300/80">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-cyan-700">
                 Correção · 9º ano
               </p>
-              <p className="mt-1 text-lg font-extrabold">Prova de Ciências — Biomas</p>
+              <p className="mt-1 text-lg font-extrabold text-slate-900">Prova de Ciências — Biomas</p>
             </div>
-            <span className="rounded-xl bg-emerald-500/20 px-3 py-1.5 text-sm font-black text-emerald-300 ring-1 ring-emerald-400/30">
+            <span className="rounded-xl bg-emerald-100 px-3 py-1.5 text-sm font-black text-emerald-700 ring-1 ring-emerald-200">
               9,2
             </span>
           </div>
@@ -71,17 +71,17 @@ export function LandingCorrecaoSection() {
               (line) => (
                 <div
                   key={line}
-                  className="flex items-start gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm font-medium text-cyan-50/90"
+                  className="flex items-start gap-2 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5 text-sm font-medium text-slate-700"
                 >
-                  <PlanifyIcon name="checkCircle" className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
+                  <PlanifyIcon name="checkCircle" className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
                   {line}
                 </div>
               ),
             )}
           </div>
 
-          <div className="mt-5 rounded-xl border border-cyan-400/20 bg-cyan-500/10 p-4">
-            <p className="text-xs font-bold uppercase tracking-wider text-cyan-200/80">
+          <div className="mt-5 rounded-xl border border-cyan-100 bg-cyan-50 p-4">
+            <p className="text-xs font-bold uppercase tracking-wider text-cyan-700">
               Relatório da turma
             </p>
             <div className="mt-3 flex h-24 items-end gap-2">

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 
 const VIDEO_SRC = "/videos/planify-planejamento-hero.mp4";
 const VIDEO_POSTER_SRC = "/videos/planify-planejamento-hero-poster.jpg";
+const PLANNING_FLOW = ["Conteúdo", "BNCC", "Planejamento", "Editor", "Classroom"];
 
 /** Vídeo do fluxo real de planejamento usado no hero público. */
 export function LandingHeroVideo() {
@@ -39,35 +40,76 @@ export function LandingHeroVideo() {
               <i className="h-2.5 w-2.5 rounded-full bg-emerald-400 shadow-[0_0_0_1px_rgba(255,255,255,0.08)]" />
             </span>
             <span className="min-w-0 truncate text-[11px] font-bold tracking-[0.015em] sm:text-xs">
-              Planejamento com IA
+              Planejamento BNCC
             </span>
             <span className="ml-auto inline-flex shrink-0 items-center gap-1.5 rounded-full border border-cyan-300/25 bg-cyan-400/10 px-2 py-1 text-[9px] font-extrabold uppercase tracking-[0.09em] text-cyan-100 sm:px-2.5">
               <i className="h-1.5 w-1.5 rounded-full bg-teal-300 shadow-[0_0_0_3px_rgba(94,234,212,0.12)]" />
-              Em ação
+              Fluxo guiado
             </span>
           </div>
 
-          {showPoster ? (
-            <img
-              src={VIDEO_POSTER_SRC}
-              className="block aspect-[1.702/1] w-full bg-slate-100 object-contain object-top"
-              alt="Tela do Planify mostrando o fluxo de planejamento com BNCC e inteligência artificial"
-            />
-          ) : (
-            <video
-              ref={videoRef}
-              className="block aspect-[1.702/1] w-full bg-slate-100 object-contain object-top"
-              autoPlay
-              muted
-              loop
-              playsInline
-              preload="metadata"
-              poster={VIDEO_POSTER_SRC}
-              aria-label="Vídeo demonstrando a criação de um planejamento no Planify"
+          <div className="border-b border-slate-200 bg-white px-3 py-2.5 sm:px-4">
+            <div
+              aria-label="Fluxo do planejamento: conteúdo, BNCC, planejamento, editor e Classroom"
+              className="flex items-center gap-1 overflow-x-auto whitespace-nowrap pb-0.5 text-[8px] font-extrabold uppercase tracking-[0.04em] text-slate-500 sm:gap-1.5 sm:text-[9px]"
             >
-              <source src={VIDEO_SRC} type="video/mp4" />
-            </video>
-          )}
+              {PLANNING_FLOW.map((step, index) => (
+                <span key={step} className="inline-flex items-center gap-1 sm:gap-1.5">
+                  <span className={index === 1 ? "text-cyan-700" : undefined}>{step}</span>
+                  {index < PLANNING_FLOW.length - 1 ? (
+                    <span aria-hidden className="text-slate-300">
+                      →
+                    </span>
+                  ) : null}
+                </span>
+              ))}
+            </div>
+
+            <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[8px] font-bold sm:text-[9px]">
+              <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-1.5 py-1 text-emerald-800">
+                <i className="flex h-3 w-3 items-center justify-center rounded-full bg-emerald-500 text-[8px] not-italic text-white">
+                  ✓
+                </i>
+                Conteúdos informados
+              </span>
+              <span className="rounded-md bg-cyan-50 px-1.5 py-1 text-cyan-800">
+                Habilidades BNCC sugeridas
+              </span>
+              <span className="rounded-md border border-cyan-200 bg-white px-1.5 py-1 text-cyan-800">
+                Aprovar habilidades
+              </span>
+              <span className="rounded-md bg-cyan-600 px-1.5 py-1 text-white shadow-sm">
+                Gerar planejamento
+              </span>
+              <span className="rounded-md bg-slate-100 px-1.5 py-1 text-slate-700">
+                Abrir no editor
+              </span>
+            </div>
+          </div>
+
+          <div className="relative aspect-[2.075/1] overflow-hidden bg-slate-100">
+            {showPoster ? (
+              <img
+                src={VIDEO_POSTER_SRC}
+                className="absolute -top-[22%] block h-auto w-full max-w-none"
+                alt="Tela do Planify mostrando o fluxo de planejamento com BNCC e inteligência artificial"
+              />
+            ) : (
+              <video
+                ref={videoRef}
+                className="absolute -top-[22%] block h-auto w-full max-w-none"
+                autoPlay
+                muted
+                loop
+                playsInline
+                preload="metadata"
+                poster={VIDEO_POSTER_SRC}
+                aria-label="Vídeo demonstrando a criação de um planejamento no Planify"
+              >
+                <source src={VIDEO_SRC} type="video/mp4" />
+              </video>
+            )}
+          </div>
         </div>
       </div>
     </div>

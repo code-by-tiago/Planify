@@ -20,25 +20,25 @@ export function LandingHero() {
       <div className="relative mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-2 lg:gap-16">
         <div>
           <span className="inline-flex items-center rounded-full border border-cyan-200 bg-cyan-50 px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-cyan-800">
-            Plataforma inteligente para planejamento com IA
+            Planejamento BNCC com IA
           </span>
 
           <h1 className="mt-6 font-[family-name:var(--font-display)] text-4xl font-extrabold leading-[1.08] tracking-tight text-slate-900 sm:text-5xl lg:text-[3.25rem]">
-            Menos horas planejando.{" "}
-            <span className="text-cyan-600">Mais qualidade ensinando.</span>
+            Planejamento BNCC{" "}
+            <span className="text-cyan-600">pronto em minutos.</span>
           </h1>
 
           <p className="mt-5 max-w-xl text-lg font-medium leading-8 text-slate-600">
-            O Planify transforma suas ideias em planejamentos, provas, slides e materiais
-            pedagógicos alinhados à BNCC — com IA que entende o contexto da sala de aula.
+            Informe os conteúdos, aprove as habilidades BNCC sugeridas e gere planejamentos
+            anuais ou trimestrais completos, prontos para editar, exportar ou enviar.
           </p>
 
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
             <Link href="/planos" className={ppBtnPrimary}>
-              Assinar por R$ 24,90/mês
+              Criar meu planejamento BNCC
             </Link>
             <Link href="/#recursos" className={ppBtnSecondary}>
-              Conhecer recursos
+              Ver como funciona
             </Link>
           </div>
         </div>

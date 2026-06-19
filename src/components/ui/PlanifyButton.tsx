@@ -13,19 +13,19 @@ type PlanifyButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 
 const variantClasses: Record<ButtonVariant, string> = {
   primary:
-    "bg-slate-950 text-white shadow-lg shadow-slate-200 hover:-translate-y-0.5 hover:bg-slate-800 active:translate-y-0",
+    "bg-[var(--pl-sun)] text-[var(--pl-navy)] shadow-lg shadow-[var(--pl-sun)]/20 hover:-translate-y-0.5 hover:bg-[var(--pl-sun-light)] active:translate-y-0",
   secondary:
-    "border border-slate-200 bg-white text-slate-700 hover:border-slate-950 hover:text-slate-950",
+    "border border-[var(--pl-border-teal)] bg-white text-[var(--pl-navy-soft)] hover:border-[var(--pl-teal)] hover:text-[var(--pl-navy)]",
   ghost:
-    "text-slate-600 hover:bg-slate-100 hover:text-slate-950",
+    "text-[#5b6f75] hover:bg-[var(--pl-surface-teal)] hover:text-[var(--pl-navy)]",
   danger:
-    "bg-red-600 text-white shadow-lg shadow-red-100 hover:-translate-y-0.5 hover:bg-red-500 active:translate-y-0",
+    "bg-[#f26d5b] text-white shadow-lg shadow-[#f26d5b]/20 hover:-translate-y-0.5 hover:bg-[#df5948] active:translate-y-0",
 };
 
 const sizeClasses: Record<ButtonSize, string> = {
-  sm: "rounded-xl px-3 py-2 text-xs",
-  md: "rounded-2xl px-4 py-2.5 text-sm",
-  lg: "rounded-2xl px-5 py-3 text-sm",
+  sm: "rounded-lg px-3 py-2 text-xs",
+  md: "rounded-lg px-4 py-2.5 text-sm",
+  lg: "rounded-lg px-5 py-3 text-sm",
 };
 
 export const PlanifyButton = forwardRef<

@@ -1,26 +1,37 @@
 import { PlanifyMarketingLayout } from "@/components/planify-layout";
-import { LandingEcosystem } from "./LandingEcosystem";
+import { LandingComparison } from "./LandingComparison";
+import { LandingComunidadeDocente } from "./LandingComunidadeDocente";
+import { LandingCorrecaoSection } from "./LandingCorrecaoSection";
+import { LandingEditorSection } from "./LandingEditorSection";
 import { LandingFinalCta } from "./LandingFinalCta";
 import { LandingHero } from "./LandingHero";
-import { LandingIntegratedSystem } from "./LandingIntegratedSystem";
+import { LandingHeroLiveDashboard } from "./LandingHeroLiveDashboard";
+import { LandingHowItWorks } from "./LandingHowItWorks";
+import { LandingJourneySection } from "./LandingJourneySection";
+import { LandingMateriaisDidaticos } from "./LandingMateriaisDidaticos";
+import { LandingPlanejamentosBncc } from "./LandingPlanejamentosBncc";
 import { LandingSocialProof } from "./LandingSocialProof";
-import { LandingStudioFeatures } from "./LandingStudioFeatures";
 import { LandingTestimonials } from "./LandingTestimonials";
-import { LandingTools } from "./LandingTools";
 
 /**
- * Homepage pública — arquitetura marketing premium:
- * Hero → Sistema integrado → Stats → Studio → Ecossistema → Ferramentas → Depoimentos → CTA
+ * Homepage pública — jornada pedagógica premium:
+ * Hero → Demo → Prova social → Como funciona → Antes/depois → Jornada →
+ * Planeje/Crie/Revise/Compartilhe → Comunidade → Depoimentos → CTA
  */
 export function LandingProfessorPrimeiroPage() {
   return (
     <PlanifyMarketingLayout>
       <LandingHero />
-      <LandingIntegratedSystem />
+      <LandingHeroLiveDashboard />
       <LandingSocialProof />
-      <LandingStudioFeatures />
-      <LandingEcosystem />
-      <LandingTools />
+      <LandingHowItWorks />
+      <LandingComparison />
+      <LandingJourneySection />
+      <LandingPlanejamentosBncc />
+      <LandingMateriaisDidaticos />
+      <LandingEditorSection />
+      <LandingCorrecaoSection />
+      <LandingComunidadeDocente />
       <LandingTestimonials />
       <LandingFinalCta />
     </PlanifyMarketingLayout>

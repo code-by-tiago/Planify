@@ -7,9 +7,11 @@ import { PlanifyNavIcon } from "@/components/pro/PlanifyNavIcon";
 import { PlanifySidebarRecents } from "@/components/pro/PlanifySidebarRecents";
 import type { DashboardSectionId } from "@/lib/pro/dashboardViews";
 import {
+  filterJourneyGroups,
   filterToolsForSidebar,
+  getJourneyCuratedToolIds,
   isDashboardRouteActive,
-  sidebarWorkspaceGroups,
+  type JourneyNavTarget,
 } from "@/lib/pro/dashboardNav";
 import {
   filterSidebarNavigation,
@@ -42,6 +44,7 @@ type PlanifySidebarNavProps = {
   canViewBnccProgress?: boolean;
   canViewDirectorPanel?: boolean;
   isManagerView?: boolean;
+  isSiteAdmin?: boolean;
   collapsed?: boolean;
 };
 
@@ -148,10 +151,11 @@ export function PlanifySidebarNav({
   canViewBnccProgress = false,
   canViewDirectorPanel = false,
   isManagerView = false,
+  isSiteAdmin = false,
   collapsed = false,
 }: PlanifySidebarNavProps) {
   const [toolQuery, setToolQuery] = useState("");
-  const [criarExpanded, setCriarExpanded] = useState(true);
+  const [maisExpanded, setMaisExpanded] = useState(false);
 
   const navItems: AppNavItem[] = filterSidebarNavigation({
     canViewBnccProgress,
@@ -159,17 +163,74 @@ export function PlanifySidebarNav({
     isManagerView,
   });
 
+  const journeyGroups = useMemo(
+    () =>
+      filterJourneyGroups({
+        canViewBnccProgress,
+        isSiteAdmin,
+      }),
+    [canViewBnccProgress, isSiteAdmin],
+  );
+
+  const curatedToolIds = useMemo(() => getJourneyCuratedToolIds(), []);
+
   const filteredTools = useMemo(
     () =>
       filterToolsForSidebar({
         query: toolQuery,
         category: activeCategory,
-        limit: collapsed ? 8 : 12,
+        limit: collapsed ? 8 : 16,
+        excludeToolIds: curatedToolIds,
       }),
-    [activeCategory, collapsed, toolQuery],
+    [activeCategory, collapsed, curatedToolIds, toolQuery],
   );
 
   const categoryTabs = toolCategories.filter((c) => c.id !== "todos");
+
+  function isSectionSelected(sectionId: DashboardSectionId, label?: string): boolean {
+    if (mode !== "studio") return false;
+    if (selectedToolId) return false;
+    if (selectedSectionId !== sectionId) return false;
+    if (sectionId === "editor" && label === "Classroom") {
+      return selectedSectionId === "editor";
+    }
+    if (sectionId === "editor" && label === "Editor") {
+      return selectedSectionId === "editor";
+    }
+    return true;
+  }
+
+  function isToolSelected(toolId: PlanifyToolId): boolean {
+    return mode === "studio" && selectedToolId === toolId;
+  }
+
+  function handleToolClick(toolId: PlanifyToolId) {
+    onActivate?.();
+    if (mode === "studio") {
+      onSelectTool?.(toolId);
+    }
+  }
+
+  function handleSectionClick(sectionId: DashboardSectionId) {
+    onActivate?.();
+    if (mode === "studio") {
+      onSelectSection?.(sectionId);
+    }
+  }
+
+  function handleWorkspaceClick(item: AppNavItem) {
+    onActivate?.();
+    if (mode !== "studio") return;
+
+    if (item.panel === "inicio") {
+      onSelectInicio?.();
+      return;
+    }
+
+    if (item.panel !== "external") {
+      onSelectSection?.(item.panel);
+    }
+  }
 
   function isWorkspaceSelected(item: AppNavItem): boolean {
     if (mode === "studio") {
@@ -192,66 +253,87 @@ export function PlanifySidebarNav({
     });
   }
 
-  function isToolSelected(toolId: PlanifyToolId): boolean {
-    return mode === "studio" && selectedToolId === toolId;
-  }
-
-  function handleWorkspaceClick(item: AppNavItem) {
-    onActivate?.();
-    if (mode !== "studio") return;
-
-    if (item.panel === "inicio") {
-      onSelectInicio?.();
-      return;
+  function renderJourneyItem(item: JourneyNavTarget, key: string) {
+    if (item.type === "tool") {
+      const selected = isToolSelected(item.toolId);
+      return (
+        <button
+          key={key}
+          type="button"
+          title={collapsed ? item.label : undefined}
+          onClick={() => handleToolClick(item.toolId)}
+          className={toolButtonClass(selected, collapsed)}
+        >
+          <span className="pf-sidebar-tool-icon flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-[#bfece5] bg-[#dff7f2] text-[#082f3a]">
+            <PlanifyIcon name={item.icon} className="h-3.5 w-3.5" />
+          </span>
+          {!collapsed ? (
+            <span className="min-w-0 flex-1 truncate text-xs font-bold">{item.label}</span>
+          ) : null}
+        </button>
+      );
     }
 
-    if (item.panel !== "external") {
-      onSelectSection?.(item.panel);
+    if (item.type === "section") {
+      const selected = isSectionSelected(item.sectionId, item.label);
+      return (
+        <button
+          key={key}
+          type="button"
+          title={collapsed ? item.label : undefined}
+          onClick={() => handleSectionClick(item.sectionId)}
+          aria-current={selected ? "page" : undefined}
+          className={navButtonClass(selected, collapsed)}
+        >
+          <PlanifyNavIcon name={item.icon} className="pl-sidebar-nav-icon" />
+          {!collapsed ? <span className="pl-sidebar-nav-label">{item.label}</span> : null}
+        </button>
+      );
     }
-  }
 
-  function handleToolClick(toolId: PlanifyToolId) {
-    onActivate?.();
-    if (mode === "studio") {
-      onSelectTool?.(toolId);
-    }
-  }
+    const selected = isNavActive
+      ? isNavActive(item.href)
+      : pathname === item.href || pathname.startsWith(`${item.href}/`);
 
-  function resolveGroupItems(groupSectionIds: DashboardSectionId[]): AppNavItem[] {
-    return navItems.filter(
-      (item) =>
-        item.panel !== "external" &&
-        item.panel !== "inicio" &&
-        item.panel !== "diretor" &&
-        groupSectionIds.includes(item.panel as DashboardSectionId),
+    return (
+      <Link
+        key={key}
+        href={item.href}
+        onClick={() => onActivate?.()}
+        aria-current={selected ? "page" : undefined}
+        title={collapsed ? item.label : undefined}
+        className={navButtonClass(selected, collapsed)}
+      >
+        <PlanifyNavIcon name={item.icon} className="pl-sidebar-nav-icon" />
+        {!collapsed ? <span className="pl-sidebar-nav-label">{item.label}</span> : null}
+      </Link>
     );
   }
 
-  const externalItems = navItems.filter((item) => item.panel === "external");
   const directorItems = navItems.filter((item) => item.panel === "diretor");
   const padX = collapsed ? "px-2" : "px-3";
 
-  const criarSection =
+  const maisSection =
     mode === "studio" && !isManagerView ? (
-      <SidebarSection label="Criar" collapsed={collapsed} className="pl-sidebar-section--criar">
+      <SidebarSection label="Mais ferramentas" collapsed={collapsed} className="pl-sidebar-section--criar">
         {!collapsed ? (
           <button
             type="button"
-            onClick={() => setCriarExpanded((current) => !current)}
-            aria-expanded={criarExpanded}
+            onClick={() => setMaisExpanded((current) => !current)}
+            aria-expanded={maisExpanded}
             className="pl-sidebar-section-toggle mb-1.5"
           >
             <span className="text-[11px] font-semibold text-slate-400">
-              {filteredTools.length} geradores IA
+              {filteredTools.length} geradores extras
             </span>
             <PlanifyIcon
               name="chevronDown"
-              className={`h-3.5 w-3.5 text-slate-400 transition ${criarExpanded ? "rotate-180" : ""}`}
+              className={`h-3.5 w-3.5 text-slate-400 transition ${maisExpanded ? "rotate-180" : ""}`}
             />
           </button>
         ) : null}
 
-        {!collapsed && criarExpanded ? (
+        {!collapsed && maisExpanded ? (
           <>
             <div className="relative mb-2">
               <PlanifyIcon
@@ -302,7 +384,7 @@ export function PlanifySidebarNav({
           </>
         ) : null}
 
-        {(collapsed || criarExpanded) && (
+        {(collapsed || maisExpanded) && (
           <div
             className={`pl-sidebar-tool-list space-y-0.5 ${collapsed ? "max-h-[36vh] overflow-y-auto" : "max-h-44 overflow-y-auto"}`}
           >
@@ -368,44 +450,19 @@ export function PlanifySidebarNav({
           </SidebarSection>
         ) : null}
 
-        {sidebarWorkspaceGroups.map((group) => {
-          const groupItems = resolveGroupItems(group.sectionIds);
-          if (groupItems.length === 0) return null;
+        {!isManagerView
+          ? journeyGroups.map((group) => (
+              <SidebarSection key={group.id} label={group.label} collapsed={collapsed}>
+                <div className="pl-sidebar-nav-group space-y-0.5">
+                  {group.items.map((item, index) =>
+                    renderJourneyItem(item, `${group.id}-${index}`),
+                  )}
+                </div>
+              </SidebarSection>
+            ))
+          : null}
 
-          return (
-            <SidebarSection key={group.id} label={group.label} collapsed={collapsed}>
-              <div className="pl-sidebar-nav-group">
-                {groupItems.map((item) =>
-                  renderNavItem(item, {
-                    selected: isWorkspaceSelected(item),
-                    collapsed,
-                    mode,
-                    onActivate,
-                    handleWorkspaceClick,
-                  }),
-                )}
-              </div>
-            </SidebarSection>
-          );
-        })}
-
-        {externalItems.length > 0 ? (
-          <SidebarSection label="Conta" collapsed={collapsed}>
-            <div className="pl-sidebar-nav-group">
-              {externalItems.map((item) =>
-                renderNavItem(item, {
-                  selected: isWorkspaceSelected(item),
-                  collapsed,
-                  mode,
-                  onActivate,
-                  handleWorkspaceClick,
-                }),
-              )}
-            </div>
-          </SidebarSection>
-        ) : null}
-
-        {criarSection}
+        {maisSection}
 
         {mode === "studio" && onSelectSection && !isManagerView ? (
           <PlanifySidebarRecents

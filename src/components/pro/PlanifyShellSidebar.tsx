@@ -109,7 +109,7 @@ export function PlanifyShellSidebar({
       {collapseToggle}
       {!collapsed ? (
         <p className="pl-sidebar-brand-tagline">
-          Produção pedagógica com IA · BNCC
+          Planeje · Crie · Revise · Compartilhe
         </p>
       ) : null}
     </div>

@@ -1972,16 +1972,18 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
               >
                 ⋯
               </button>
-              <EditorShareBar
-                compact
-                title={title}
-                getHtml={getEditorHtml}
-                getPlanningPayload={getPlanningPayloadForExport}
-                onStatus={setStatus}
-                documentType={exportDocumentType}
-                isSlideDeck={isSlideDeck}
-                slideTheme={slideTheme}
-              />
+              <div className="pf-editor-share-prominent min-w-0 flex-1 rounded-lg border border-cyan-200/60 bg-cyan-50/40 px-1 py-0.5">
+                <EditorShareBar
+                  compact
+                  title={title}
+                  getHtml={getEditorHtml}
+                  getPlanningPayload={getPlanningPayloadForExport}
+                  onStatus={setStatus}
+                  documentType={exportDocumentType}
+                  isSlideDeck={isSlideDeck}
+                  slideTheme={slideTheme}
+                />
+              </div>
               <span className="shrink-0 text-[10px] font-bold text-slate-500">
                 {wordCount} pal.
               </span>

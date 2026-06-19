@@ -263,6 +263,7 @@ export default function PlanifyDashboardShell() {
           canViewBnccProgress={access.canViewBnccProgress}
           canViewDirectorPanel={access.canViewDirectorPanel}
           isManagerView={access.isManagerView}
+          isSiteAdmin={access.isSiteAdmin}
           collapsed={sidebarCollapsed}
         />
       </PlanifyShellSidebar>
@@ -342,12 +343,12 @@ export default function PlanifyDashboardShell() {
                   <PlanifyIcon name="menu" className="h-5 w-5" />
                 </button>
                 <div className="min-w-0">
-                  <p className="pf-eyebrow">Estúdio Planify</p>
+                  <p className="pf-eyebrow">Centro operacional</p>
                   <h1 className="truncate text-lg font-extrabold tracking-tight text-slate-950 sm:text-xl">
-                    O que vamos criar hoje?
+                    Planeje · Crie · Revise · Compartilhe
                   </h1>
                   <p className="hidden text-xs font-medium text-slate-500 sm:block">
-                    {planifyToolCount + 1} geradores · BNCC · Google Docs
+                    {planifyToolCount} geradores · BNCC · Google Docs · Classroom
                   </p>
                 </div>
               </div>

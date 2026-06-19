@@ -29,6 +29,7 @@ import { CreditsBalancePill } from "@/components/credits/CreditsBalancePill";
 import { GenerationCostHint } from "@/components/credits/GenerationCostHint";
 import { DailyGenerationsBar } from "@/components/credits/DailyGenerationsBar";
 import { MaterialPreviewSkeleton } from "@/components/materiais/MaterialPreviewSkeleton";
+import { MaterialStudioStepHeader } from "@/components/materiais/MaterialStudioStepHeader";
 import { MaterialToolPageShell } from "@/components/pro/MaterialToolPageShell";
 import { ToolStudioShell } from "@/components/studio/ToolStudioShell";
 import { ExportDock } from "@/components/studio/ExportDock";
@@ -1825,6 +1826,13 @@ export function MateriaisClient({
       {...(studioMode ? { legacyLayout, exportDock: studioExportDock } : {})}
       form={
         <form onSubmit={gerarMaterial} className="space-y-1 max-lg:pb-2">
+          {studioMode ? (
+            <MaterialStudioStepHeader
+              tool={mode}
+              hasResult={Boolean(resultadoHtml)}
+              isGenerating={loading}
+            />
+          ) : null}
           <div className="flex flex-wrap items-start justify-between gap-3">
             {studioMode ? (
               <p className="text-[10px] font-bold uppercase tracking-wide text-cyan-600">

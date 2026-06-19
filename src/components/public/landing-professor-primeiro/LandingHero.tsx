@@ -36,12 +36,12 @@ export function LandingHero() {
 
         <div className="pf-marketing-hero-inner">
           <div className="pf-marketing-hero-copy flex max-w-[480px] flex-col items-start text-left">
-            <p className="pf-marketing-hero-eyebrow">Sistema operacional pedagógico com IA</p>
-            <h1 className="pf-marketing-hero-title">IA Planify</h1>
+            <p className="pf-marketing-hero-eyebrow">Planeje · Crie · Revise · Compartilhe</p>
+            <h1 className="pf-marketing-hero-title">Conteúdo → BNCC → Planejamento → Editor → Classroom</h1>
 
             <p className="pf-marketing-lead pf-marketing-lead--hero mt-6 max-w-[480px]">
-              Uma plataforma SaaS completa para planejar aulas, criar materiais, avaliar, corrigir
-              e exportar documentos editáveis com padrão profissional, BNCC e fluxo real de escola.
+              A plataforma pedagógica com IA que conecta planejamento, materiais, revisão e
+              publicação na turma — sem retrabalho entre ferramentas.
             </p>
 
             <div className="pf-marketing-hero-actions mt-8 flex flex-wrap gap-3">
@@ -50,10 +50,10 @@ export function LandingHero() {
                 <PlanifyIcon name="arrowRight" className="h-5 w-5" />
               </Link>
               <Link
-                href="/#ferramentas"
+                href="/#jornada"
                 className={`${ppBtnSecondary} pf-marketing-hero-outline px-6 py-3`}
               >
-                Ver ferramentas
+                Ver a jornada
               </Link>
             </div>
 

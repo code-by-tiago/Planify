@@ -21,6 +21,19 @@
   --planify-studio-gap: 1rem;
   --planify-studio-export-bg: rgba(255, 255, 255, 0.97);
 
+  /* Journey tokens — navy / teal / cyan / sun */
+  --pl-navy: #082f3a;
+  --pl-navy-soft: #12323a;
+  --pl-teal: #12b8a6;
+  --pl-teal-deep: #0b8f85;
+  --pl-cyan: #22d3ee;
+  --pl-sun: #f6c65b;
+  --pl-sun-light: #ffd878;
+  --pl-surface-teal: #dff7f2;
+  --pl-border-teal: #d9e8e6;
+  --pl-shadow-soft: 0 14px 34px rgba(13, 67, 82, 0.06);
+  --pl-shadow-teal: 0 22px 50px rgba(18, 184, 166, 0.16);
+
   /* Studio Pro — Teachy-grade tokens (Planify cyan/indigo/violet) */
   --ps-pro-canvas: #f0f4f8;
   --ps-pro-surface: #ffffff;

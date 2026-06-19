@@ -56,6 +56,7 @@ import {
   PlanningWizardStepper,
   type PlanningWizardStep,
 } from "@/components/planejamentos/PlanningWizardStepper";
+import { PlanningJourneyStrip } from "@/components/planejamentos/PlanningJourneyStrip";
 import { buildOfficialPlanningPayloadFromGeneration } from "@/lib/planejamentos/planning-google-export-payload";
 import {
   assembleClientPlanningPackage,
@@ -1541,6 +1542,8 @@ export function PlanejamentosClient() {
             />
           </div>
         ) : null}
+
+        <PlanningJourneyStrip wizardStep={wizardStep} />
 
         <PlanningWizardStepper
           step={wizardStep}

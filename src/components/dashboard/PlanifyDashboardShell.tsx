@@ -235,32 +235,39 @@ export default function PlanifyDashboardShell() {
         />
       </PlanifyShellSidebar>
 
-      <main className="pl-hud-main flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-white">
+      <main className="pl-hud-main flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-[var(--ps-pro-canvas)]">
         {hasPanel ? (
-          <header className="flex shrink-0 flex-col gap-2 border-b border-cyan-400/15 bg-white/95 px-3 py-2.5 pt-[max(0.625rem,env(safe-area-inset-top))] sm:px-5">
+          <header className="ps-pro-header flex shrink-0 flex-col gap-2 border-b px-3 py-2.5 pt-[max(0.625rem,env(safe-area-inset-top))] sm:px-5">
             <div className="flex items-center justify-between gap-2 sm:gap-3">
               <div className="flex min-w-0 flex-1 items-center gap-2">
                 <button
                   type="button"
                   onClick={() => setSidebarOpen(true)}
                   aria-label="Abrir menu"
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-slate-600 transition hover:bg-slate-50 lg:hidden"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-slate-600 transition hover:bg-white/80 lg:hidden"
                 >
                   <PlanifyIcon name="menu" className="h-5 w-5" />
                 </button>
                 <button
                   type="button"
                   onClick={selectInicio}
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-slate-600 transition hover:bg-slate-50"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-slate-600 transition hover:bg-white/80"
                   aria-label="Voltar ao início"
                 >
                   <PlanifyIcon name="arrowLeft" className="h-5 w-5" />
                 </button>
+                {activeTool ? (
+                  <div
+                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${activeTool.accent} text-white shadow-sm`}
+                  >
+                    <PlanifyIcon name={activeTool.icon} className="h-5 w-5" />
+                  </div>
+                ) : null}
                 <div className="min-w-0">
                   <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-cyan-600">
                     {selectedToolId ? "Ferramenta IA · BNCC" : "Espaço de trabalho"}
                   </p>
-                  <h1 className="truncate text-base font-extrabold text-slate-950">
+                  <h1 className="truncate text-base font-extrabold text-slate-950 sm:text-lg">
                     {panelTitle}
                   </h1>
                   {panelSubtitle ? (

@@ -149,19 +149,22 @@ export default function PlanifyAppFrame({
         />
       </PlanifyShellSidebar>
 
-      <section className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-white">
-        <header className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-cyan-400/15 bg-white/95 px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] sm:gap-3 sm:px-5">
+      <section className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-[var(--ps-pro-canvas)]">
+        <header className="ps-pro-header flex shrink-0 flex-wrap items-center justify-between gap-2 border-b px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] sm:gap-3 sm:px-5">
           <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
             <button
               type="button"
               onClick={() => setSidebarOpen(true)}
               aria-label="Abrir menu"
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-slate-600 transition hover:bg-slate-100 lg:hidden"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-slate-600 transition hover:bg-white/80 lg:hidden"
             >
               <PlanifyIcon name="menu" className="h-5 w-5" />
             </button>
             {!compact ? (
               <div className="min-w-0">
+                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-cyan-600">
+                  Estúdio Planify
+                </p>
                 <h1 className="truncate text-sm font-black tracking-tight text-slate-950 sm:text-lg">
                   {pageMeta.title}
                 </h1>
@@ -191,7 +194,7 @@ export default function PlanifyAppFrame({
 
         <div
           key={pathname}
-          className="pl-main-pane pl-fade-rise min-h-0 flex-1 overflow-x-hidden overflow-y-auto pb-[max(0.75rem,env(safe-area-inset-bottom))]"
+          className="planify-studio-pro ps-pro-shell pl-main-pane pl-fade-rise min-h-0 flex-1 overflow-x-hidden overflow-y-auto pb-[max(0.75rem,env(safe-area-inset-bottom))]"
         >
           {children}
         </div>

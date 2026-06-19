@@ -91,8 +91,8 @@ const DirectorPanelClient = dynamic(
 function SectionPanel({ children }: { children: ReactNode }) {
   return (
     <PlanifyWorkspaceProvider embeddedInDashboard>
-      <div className="pl-hud-board flex h-full min-h-0 w-full flex-col overflow-hidden bg-[var(--planify-canvas)]">
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">{children}</div>
+      <div className="planify-studio-pro ps-pro-shell flex h-full min-h-0 w-full flex-col overflow-hidden">
+        <div className="ps-pro-config min-h-0 flex-1 overflow-hidden">{children}</div>
       </div>
     </PlanifyWorkspaceProvider>
   );
@@ -121,7 +121,7 @@ export function PlanifyDashboardMain({
     if (toolId === "inclusao") {
       return (
         <PlanifyWorkspaceProvider embeddedInDashboard>
-          <div className="planify-hud planify-materiais-studio flex h-full min-h-0 w-full flex-col overflow-hidden bg-[var(--planify-canvas)]">
+          <div className="planify-hud planify-materiais-studio planify-studio-pro flex h-full min-h-0 w-full flex-col overflow-hidden">
             <div className="min-h-0 flex-1 overflow-hidden">
               <InclusaoClient studioMode onStudioClose={onClosePanel} />
             </div>
@@ -133,7 +133,7 @@ export function PlanifyDashboardMain({
     if (toolId === "aula-completa") {
       return (
         <PlanifyWorkspaceProvider embeddedInDashboard>
-          <div className="planify-hud planify-materiais-studio flex h-full min-h-0 w-full flex-col overflow-hidden bg-[var(--planify-canvas)]">
+          <div className="planify-hud planify-materiais-studio planify-studio-pro flex h-full min-h-0 w-full flex-col overflow-hidden">
             <div className="min-h-0 flex-1 overflow-hidden">
               <AulaCompletaClient
                 studioMode
@@ -149,7 +149,7 @@ export function PlanifyDashboardMain({
     if (toolId === "correcao-ia") {
       return (
         <PlanifyWorkspaceProvider embeddedInDashboard>
-          <div className="planify-hud planify-materiais-studio flex h-full min-h-0 w-full flex-col overflow-hidden bg-[var(--planify-canvas)]">
+          <div className="planify-hud planify-materiais-studio planify-studio-pro flex h-full min-h-0 w-full flex-col overflow-hidden">
             <div className="min-h-0 flex-1 overflow-hidden">
               <CorrecaoClient studioMode onStudioClose={onClosePanel} />
             </div>

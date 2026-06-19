@@ -1,6 +1,8 @@
 "use client";
 
 import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
+import { usePlanifyWorkspace } from "@/components/pro/planify-workspace-context";
+import { StudioSectionFrame } from "@/components/studio/StudioSectionFrame";
 import { PlanifyPageHero } from "@/components/pro/PlanifyPageHero";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import Link from "next/link";
@@ -144,6 +146,7 @@ function resolveMarketplaceTipo(item: HistoryItem): string {
 
 export function HistoricoClient() {
   const router = useRouter();
+  const { embeddedInDashboard } = usePlanifyWorkspace();
   const [items, setItems] = useState<HistoryItem[]>([]);
   const [filter, setFilter] = useState<HistoryFilter>(initialFilter);
   const [selectedItem, setSelectedItem] = useState<HistoryItem | null>(null);
@@ -373,18 +376,102 @@ export function HistoricoClient() {
     });
   }
 
-  return (
-    <PlanifyWorkspacePane
-      header={
-        <PlanifyPageHero
-          badge="Meus materiais"
-          icon="history"
-          title="Tudo que você gerou"
-          description="Planejamentos, materiais e rascunhos do editor — sincronizados com sua conta."
-        />
-      }
-    >
-      <div className="grid gap-6">
+  const detailPanel = selectedItem ? (
+    <div className="ps-pro-section-card p-5 sm:p-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <span
+            className={`inline-flex rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${getSourceBadgeClass(selectedItem.source)}`}
+          >
+            {sourceLabels[selectedItem.source] || selectedItem.source}
+          </span>
+          <h2 className="mt-3 text-2xl font-extrabold text-slate-950">{selectedItem.title}</h2>
+          {selectedItem.subtitle ? (
+            <p className="mt-1 text-sm font-semibold text-cyan-700">{selectedItem.subtitle}</p>
+          ) : null}
+          <p className="mt-2 text-xs text-slate-500">
+            Atualizado em {formatDate(selectedItem.updatedAt)}
+          </p>
+        </div>
+        <div className="flex shrink-0 flex-col items-end gap-3">
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <MarketplacePublishButton
+              title={selectedItem.title}
+              getHtml={getSelectedHtml}
+              getPlanningPayload={
+                String(selectedItem.type || "").includes("planejamento")
+                  ? () => getHistoryPlanningPayload(selectedItem)
+                  : undefined
+              }
+              tipoMaterial={resolveMarketplaceTipo(selectedItem)}
+              tema={selectedItem.subtitle || selectedItem.title}
+              label="Comunidade"
+              compact
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-fuchsia-200 bg-fuchsia-50 px-3 py-2 text-xs font-black text-fuchsia-800 transition hover:bg-fuchsia-100"
+            />
+            <button
+              type="button"
+              onClick={() => openInEditor(selectedItem)}
+              className="pl-hud-btn rounded-xl px-4 py-2 text-xs font-semibold"
+            >
+              Abrir no Editor
+            </button>
+            {resolveMaterialRegenerateMeta(selectedItem) ? (
+              <button
+                type="button"
+                onClick={() => handleRegenerateMaterial(selectedItem, router)}
+                className="pl-hud-btn-secondary rounded-xl px-4 py-2 text-xs font-semibold"
+              >
+                Gerar de novo
+              </button>
+            ) : null}
+            <button
+              type="button"
+              onClick={() => removeItem(selectedItem)}
+              className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-xs font-semibold text-rose-700"
+            >
+              Excluir permanentemente
+            </button>
+          </div>
+          <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+            <p className="text-[10px] font-black uppercase tracking-wide text-slate-500">Exportar</p>
+            <div className="mt-1.5">
+              <HistoryDocumentExportBar
+                item={selectedItem}
+                classroomMode="popover"
+                onStatus={handleExportStatus}
+                onError={handleExportError}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-5 max-h-[min(60vh,480px)] overflow-auto rounded-xl border border-slate-200 bg-slate-50 p-4">
+        {isHistoryHtmlContent(selectedItem.content) ? (
+          <article
+            className="planify-history-preview text-sm leading-7 text-slate-800 [&_.planify-flashcards]:flex [&_.planify-flashcards]:flex-wrap [&_.planify-flashcards]:gap-4 [&_h1]:text-2xl [&_h1]:font-black [&_h2]:mt-4 [&_h2]:text-lg [&_h2]:font-black [&_h3]:mt-3 [&_h3]:font-black [&_li]:ml-5 [&_ol]:list-decimal [&_p]:my-2 [&_table]:w-full [&_table]:border-collapse [&_td]:border [&_td]:border-slate-200 [&_td]:p-2 [&_th]:border [&_th]:border-slate-200 [&_th]:p-2 [&_ul]:list-disc"
+            dangerouslySetInnerHTML={{ __html: selectedItem.content }}
+          />
+        ) : (
+          <p className="whitespace-pre-wrap text-sm leading-7 text-slate-700">
+            {selectedItem.content}
+          </p>
+        )}
+      </div>
+    </div>
+  ) : (
+    <div className="flex h-full min-h-[240px] flex-col items-center justify-center rounded-2xl border border-dashed border-cyan-400/25 bg-white/60 p-8 text-center">
+      <p className="text-xs font-bold uppercase tracking-wide text-cyan-600">Prévia</p>
+      <h3 className="mt-2 text-lg font-extrabold text-slate-950">Selecione um material</h3>
+      <p className="mt-2 text-sm font-medium text-slate-600">
+        Clique em um item da lista para ver detalhes, exportar ou abrir no editor.
+      </p>
+    </div>
+  );
+
+  const listPanel = (
+    <div className="grid gap-6">
         <div className="flex flex-wrap items-center gap-3">
           {[
             ["Total", totals.todos],
@@ -523,7 +610,9 @@ export function HistoricoClient() {
         </div>
 
         {filteredItems.length > 0 ? (
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <div
+            className={`grid gap-4 ${embeddedInDashboard ? "sm:grid-cols-1" : "sm:grid-cols-2 xl:grid-cols-3"}`}
+          >
             {filteredItems.map((item) => {
               const selected = selectedItem?.id === item.id;
               const checked = selectedIds.has(item.id);
@@ -615,98 +704,26 @@ export function HistoricoClient() {
           </div>
         )}
 
-        {selectedItem ? (
-          <div className="rounded-2xl border border-cyan-400/20 bg-white p-5 sm:p-6">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-              <div className="min-w-0">
-                <span
-                  className={`inline-flex rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${getSourceBadgeClass(selectedItem.source)}`}
-                >
-                  {sourceLabels[selectedItem.source] || selectedItem.source}
-                </span>
-                <h2 className="mt-3 text-2xl font-extrabold text-slate-950">
-                  {selectedItem.title}
-                </h2>
-                {selectedItem.subtitle ? (
-                  <p className="mt-1 text-sm font-semibold text-cyan-700">
-                    {selectedItem.subtitle}
-                  </p>
-                ) : null}
-                <p className="mt-2 text-xs text-slate-500">
-                  Atualizado em {formatDate(selectedItem.updatedAt)}
-                </p>
-              </div>
-              <div className="flex shrink-0 flex-col items-end gap-3">
-                <div className="flex flex-wrap items-center justify-end gap-2">
-                  <MarketplacePublishButton
-                    title={selectedItem.title}
-                    getHtml={getSelectedHtml}
-                    getPlanningPayload={
-                      String(selectedItem.type || "").includes("planejamento")
-                        ? () => getHistoryPlanningPayload(selectedItem)
-                        : undefined
-                    }
-                    tipoMaterial={resolveMarketplaceTipo(selectedItem)}
-                    tema={selectedItem.subtitle || selectedItem.title}
-                    label="Comunidade"
-                    compact
-                    className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-fuchsia-200 bg-fuchsia-50 px-3 py-2 text-xs font-black text-fuchsia-800 transition hover:bg-fuchsia-100"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => openInEditor(selectedItem)}
-                    className="pl-hud-btn rounded-xl px-4 py-2 text-xs font-semibold"
-                  >
-                    Abrir no Editor
-                  </button>
-                  {resolveMaterialRegenerateMeta(selectedItem) ? (
-                    <button
-                      type="button"
-                      onClick={() => handleRegenerateMaterial(selectedItem, router)}
-                      className="pl-hud-btn-secondary rounded-xl px-4 py-2 text-xs font-semibold"
-                    >
-                      Gerar de novo
-                    </button>
-                  ) : null}
-                  <button
-                    type="button"
-                    onClick={() => removeItem(selectedItem)}
-                    className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-xs font-semibold text-rose-700"
-                  >
-                    Excluir permanentemente
-                  </button>
-                </div>
-                <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-                  <p className="text-[10px] font-black uppercase tracking-wide text-slate-500">
-                    Exportar
-                  </p>
-                  <div className="mt-1.5">
-                    <HistoryDocumentExportBar
-                      item={selectedItem}
-                      classroomMode="popover"
-                      onStatus={handleExportStatus}
-                      onError={handleExportError}
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-5 max-h-[360px] overflow-auto rounded-xl border border-slate-200 bg-slate-50 p-4">
-              {isHistoryHtmlContent(selectedItem.content) ? (
-                <article
-                  className="planify-history-preview text-sm leading-7 text-slate-800 [&_.planify-flashcards]:flex [&_.planify-flashcards]:flex-wrap [&_.planify-flashcards]:gap-4 [&_h1]:text-2xl [&_h1]:font-black [&_h2]:mt-4 [&_h2]:text-lg [&_h2]:font-black [&_h3]:mt-3 [&_h3]:font-black [&_li]:ml-5 [&_ol]:list-decimal [&_p]:my-2 [&_table]:w-full [&_table]:border-collapse [&_td]:border [&_td]:border-slate-200 [&_td]:p-2 [&_th]:border [&_th]:border-slate-200 [&_th]:p-2 [&_ul]:list-disc"
-                  dangerouslySetInnerHTML={{ __html: selectedItem.content }}
-                />
-              ) : (
-                <p className="whitespace-pre-wrap text-sm leading-7 text-slate-700">
-                  {selectedItem.content}
-                </p>
-              )}
-            </div>
-          </div>
-        ) : null}
+        {!embeddedInDashboard ? detailPanel : null}
       </div>
+  );
+
+  if (embeddedInDashboard) {
+    return <StudioSectionFrame config={listPanel} preview={detailPanel} />;
+  }
+
+  return (
+    <PlanifyWorkspacePane
+      header={
+        <PlanifyPageHero
+          badge="Meus materiais"
+          icon="history"
+          title="Tudo que você gerou"
+          description="Planejamentos, materiais e rascunhos do editor — sincronizados com sua conta."
+        />
+      }
+    >
+      {listPanel}
     </PlanifyWorkspacePane>
   );
 }

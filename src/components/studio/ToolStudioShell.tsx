@@ -5,6 +5,7 @@ import {
   MaterialToolPageShell,
   type MaterialToolPageShellProps,
 } from "@/components/pro/MaterialToolPageShell";
+import { PlanifyStudioShell } from "@/components/studio/PlanifyStudioShell";
 
 export type ToolStudioShellProps = MaterialToolPageShellProps & {
   exportDock?: ReactNode;
@@ -18,19 +19,31 @@ export type ToolStudioShellProps = MaterialToolPageShellProps & {
 export function ToolStudioShell({
   exportDock,
   legacyLayout = false,
+  tool,
   ...shellProps
 }: ToolStudioShellProps) {
   if (legacyLayout) {
-    return <MaterialToolPageShell {...shellProps} />;
+    return <MaterialToolPageShell tool={tool} {...shellProps} />;
   }
 
   return (
-    <div className="planify-tool-studio flex h-full min-h-0 w-full flex-col overflow-hidden">
-      <div className="min-h-0 flex-1 overflow-hidden">
-        <MaterialToolPageShell {...shellProps} studioMode />
-      </div>
-      {exportDock}
-    </div>
+    <PlanifyStudioShell
+      icon={tool.icon}
+      iconAccent={tool.accent}
+      title={tool.title}
+      subtitle={tool.description}
+      eyebrow={tool.shortTitle}
+      onBack={shellProps.onBack}
+      backLabel={shellProps.backLabel}
+      form={shellProps.form}
+      preview={shellProps.preview}
+      exportDock={exportDock}
+      previewReady={shellProps.previewReady}
+      previewLoading={shellProps.previewLoading}
+      formScrollAttr={shellProps.formScrollAttr}
+      previewScrollAttr={shellProps.previewScrollAttr}
+      showHeader
+    />
   );
 }
 

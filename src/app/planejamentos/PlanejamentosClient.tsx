@@ -1377,7 +1377,13 @@ export function PlanejamentosClient() {
 
   return (
     <PlanifyWorkspacePane>
-      <div className="planify-hud pl-hud-hub mx-auto max-w-7xl space-y-5 px-3 sm:px-4 lg:px-0">
+      <div
+        className={
+          embeddedInDashboard
+            ? "planify-studio-pro space-y-5"
+            : "planify-hud pl-hud-hub mx-auto max-w-7xl space-y-5 px-3 sm:px-4 lg:px-0"
+        }
+      >
         {!embeddedInDashboard ? (
           <div className="pl-hud-page-hero overflow-hidden rounded-2xl border border-cyan-400/15">
             <PlanifyPageHero

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { DashboardSectionId } from "@/lib/pro/dashboardViews";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
+import { ReferralInvitePanel } from "@/components/referral/ReferralInvitePanel";
 import {
   planifyToolCount,
   planifyTools,
@@ -114,10 +115,10 @@ export default function TeachyStudioHome({
         key={tool.id}
         type="button"
         onClick={() => openTool(tool.id)}
-        className="pl-hud-hub-app group flex min-h-[10rem] flex-col rounded-2xl p-5 text-left sm:min-h-[10.5rem]"
+        className="ps-pro-tool-card group flex min-h-[10rem] flex-col p-5 text-left sm:min-h-[10.5rem]"
       >
         <span
-          className={`pl-hud-hub-tool-icon bg-gradient-to-br ${tool.accent} h-11 w-11`}
+          className={`ps-pro-tool-card-icon bg-gradient-to-br ${tool.accent}`}
         >
           <PlanifyIcon name={tool.icon} className="h-5 w-5" />
         </span>
@@ -145,9 +146,9 @@ export default function TeachyStudioHome({
       <button
         type="button"
         onClick={openBancoQuestoes}
-        className="pl-hud-hub-app group flex min-h-[10rem] flex-col rounded-2xl p-5 text-left sm:min-h-[10.5rem]"
+        className="ps-pro-tool-card group flex min-h-[10rem] flex-col p-5 text-left sm:min-h-[10.5rem]"
       >
-        <span className="pl-hud-hub-tool-icon flex h-11 w-11 items-center justify-center bg-gradient-to-br from-emerald-500 to-teal-500">
+        <span className="ps-pro-tool-card-icon bg-gradient-to-br from-emerald-500 to-teal-500">
           <PlanifyIcon name="library" className="h-5 w-5" />
         </span>
         <span className="relative mt-4 text-lg font-extrabold text-slate-950">
@@ -169,9 +170,9 @@ export default function TeachyStudioHome({
       <button
         type="button"
         onClick={openPlanejamentos}
-        className="pl-hud-hub-app group flex min-h-[10rem] flex-col rounded-2xl p-5 text-left sm:min-h-[10.5rem]"
+        className="ps-pro-tool-card group flex min-h-[10rem] flex-col p-5 text-left sm:min-h-[10.5rem]"
       >
-        <span className="pl-hud-hub-tool-icon flex h-11 w-11 items-center justify-center bg-gradient-to-br from-cyan-500 to-blue-600">
+        <span className="ps-pro-tool-card-icon bg-gradient-to-br from-cyan-500 to-indigo-600">
           <PlanifyIcon name="clipboard" className="h-5 w-5" />
         </span>
         <span className="relative mt-4 text-lg font-extrabold text-slate-950">Planejamentos</span>
@@ -187,10 +188,10 @@ export default function TeachyStudioHome({
   }
 
   return (
-    <div className="pl-hud-hub pl-hud-board pl-hud-home flex h-full min-h-0 w-full flex-col overflow-hidden">
+    <div className="planify-studio-pro ps-pro-shell pl-hud-hub pl-hud-board pl-hud-home flex h-full min-h-0 w-full flex-col overflow-hidden">
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
         <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:py-10">
-          <section className="pl-hud-hub-hero pl-hud-hub-reveal p-6 sm:p-8 lg:p-10">
+          <section className="ps-pro-section-card pl-hud-hub-hero pl-hud-hub-reveal p-6 sm:p-8 lg:p-10">
             <div className="pl-hud-hub-mesh" aria-hidden />
             <div className="pl-hud-hub-grid-bg" aria-hidden />
 
@@ -327,6 +328,10 @@ export default function TeachyStudioHome({
                 </button>
               </div>
             ) : null}
+          </section>
+
+          <section className="pl-hud-hub-reveal mt-8" style={{ animationDelay: "120ms" }}>
+            <ReferralInvitePanel />
           </section>
         </div>
       </div>

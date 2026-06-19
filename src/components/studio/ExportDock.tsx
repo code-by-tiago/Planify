@@ -24,7 +24,7 @@ export function ExportDock({
 
   return (
     <div
-      className={`planify-studio-export-dock shrink-0 border-t border-cyan-400/15 bg-white/95 px-3 py-3 backdrop-blur-md sm:px-5 ${className}`}
+      className={`planify-studio-export-dock ps-pro-export-dock shrink-0 border-t border-cyan-400/15 px-3 py-3 sm:px-5 ${className}`}
       aria-label="Exportar material"
     >
       {statusMessage ? (

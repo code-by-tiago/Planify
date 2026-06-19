@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { LandingHeroLiveDashboard } from "./LandingHeroLiveDashboard";
+import { LandingHeroVideo } from "./LandingHeroVideo";
 import { ppBtnPrimary, ppBtnSecondary } from "./theme";
 
 export function LandingHero() {
@@ -43,7 +43,7 @@ export function LandingHero() {
           </div>
         </div>
 
-        <LandingHeroLiveDashboard />
+        <LandingHeroVideo />
       </div>
     </section>
   );

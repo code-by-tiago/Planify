@@ -35,6 +35,7 @@ export type Database = {
           plan: string | null;
           last_login_at: string | null;
           correction_profile: Json | null;
+          teaching_context: Json | null;
           created_at: string;
           updated_at: string;
         },
@@ -56,6 +57,7 @@ export type Database = {
           plan?: string | null;
           last_login_at?: string | null;
           correction_profile?: Json | null;
+          teaching_context?: Json | null;
           created_at?: string;
           updated_at?: string;
         },
@@ -77,6 +79,7 @@ export type Database = {
           plan?: string | null;
           last_login_at?: string | null;
           correction_profile?: Json | null;
+          teaching_context?: Json | null;
           created_at?: string;
           updated_at?: string;
         }

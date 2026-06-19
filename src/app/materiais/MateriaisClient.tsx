@@ -3,6 +3,8 @@
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { GoogleDocumentExportBar } from "@/components/google/GoogleDocumentExportBar";
+import { GoogleClassroomDockButton } from "@/components/google/GoogleClassroomDockButton";
+import { MaterialWhatsAppShareButton } from "@/components/share/MaterialWhatsAppShareButton";
 import { GoogleSlidesExportButton } from "@/components/google/GoogleSlidesExportButton";
 import { SlidesPptxDownloadButton } from "@/components/documents/SlidesPptxDownloadButton";
 import { SlideAiAdjustPanel } from "@/components/slides/SlideAiAdjustPanel";
@@ -65,6 +67,7 @@ import {
   openMaterialInEditor,
   persistGeneratedMaterial,
   clearSlideGenerationPayload,
+  consumeMaterialRegenerateContext,
   persistSlideGenerationPayload,
   readAutoOpenEditorPreference,
   readSlideGenerationPayload,
@@ -101,6 +104,8 @@ import {
 } from "@/lib/pedagogical-cache/pedagogical-context-client";
 import { lessonBundleFollowUp } from "@/lib/pro/teachyStudio";
 import { useSchoolClasses } from "@/hooks/useSchoolClasses";
+import { useTeacherTeachingContext } from "@/hooks/useTeacherTeachingContext";
+import { MinhaTurmaChip } from "@/components/teacher/MinhaTurmaChip";
 import { TurmaCombobox } from "@/components/school/TurmaCombobox";
 import { MaterialBnccSkillsPanel } from "@/components/bncc/MaterialBnccSkillsPanel";
 import { TemaCombobox } from "@/components/bncc/TemaCombobox";
@@ -323,6 +328,9 @@ export function MateriaisClient({
 }: MateriaisClientProps = {}) {
   const useStudioExportDock = studioMode && !legacyLayout;
   const school = useSchoolClasses();
+  const teachingContext = useTeacherTeachingContext();
+  const autoAppliedTeachingContextRef = useRef(false);
+  const [exportShareStatus, setExportShareStatus] = useState<string | null>(null);
   const [categoria, setCategoria] = useState<ToolCategoryId>("todos");
   const [tipo, setTipo] = useState<PlanifyToolId>(initialTipo ?? "slides");
   const [modalAberto, setModalAberto] = useState(studioMode);
@@ -657,7 +665,92 @@ export function MateriaisClient({
     setAnoSerie(next.anoSerie);
     setAreaConhecimento(next.areaConhecimento);
     setComponente(next.componente);
+    teachingContext.resetApplied();
   });
+
+  const applyTeachingContextFields = useCallback(
+    (fields: {
+      etapa: string;
+      anoSerie: string;
+      areaConhecimento: string;
+      componente: string;
+      turma: string;
+      classId: string | null;
+      observacoesTurma: string;
+    }) => {
+      applyEducation({
+        etapa: fields.etapa,
+        anoSerie: fields.anoSerie,
+        areaConhecimento: fields.areaConhecimento,
+        componente: fields.componente,
+      });
+      if (fields.turma) {
+        school.setTurmaInput(fields.turma);
+      } else if (fields.classId) {
+        school.setClassId(fields.classId);
+      }
+      if (fields.observacoesTurma && !observacoes.trim()) {
+        setObservacoes(fields.observacoesTurma);
+      }
+    },
+    [applyEducation, observacoes, school],
+  );
+
+  const currentTeachingFields = useCallback(
+    () => ({
+      etapa,
+      anoSerie,
+      areaConhecimento,
+      componente,
+      turma: school.turmaDisplayValue,
+      classId: school.classId,
+      observacoesTurma: observacoes,
+    }),
+    [
+      anoSerie,
+      areaConhecimento,
+      componente,
+      etapa,
+      observacoes,
+      school.classId,
+      school.turmaDisplayValue,
+    ],
+  );
+
+  const saveTeachingContextDefaults = useCallback(() => {
+    teachingContext.saveCurrentAsDefault(currentTeachingFields());
+  }, [currentTeachingFields, teachingContext]);
+
+  useEffect(() => {
+    if (teachingContext.loading || autoAppliedTeachingContextRef.current) return;
+
+    const regenerate = consumeMaterialRegenerateContext();
+    autoAppliedTeachingContextRef.current = true;
+
+    if (regenerate) {
+      if (regenerate.toolId) {
+        setTipo(regenerate.toolId);
+      }
+      if (regenerate.tema) {
+        setTema(regenerate.tema);
+      }
+      applyTeachingContextFields({
+        etapa: regenerate.etapa || etapa,
+        anoSerie: regenerate.anoSerie || anoSerie,
+        areaConhecimento: regenerate.areaConhecimento || areaConhecimento,
+        componente: regenerate.componente || componente,
+        turma: "",
+        classId: null,
+        observacoesTurma: "",
+      });
+      return;
+    }
+
+    if (teachingContext.configured) {
+      teachingContext.applyToForm(applyTeachingContextFields);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- auto-apply once on mount
+  }, [teachingContext.loading, teachingContext.configured]);
 
   const quantityPresets = useMemo(() => getQuantityPresets(tipo), [tipo]);
 
@@ -1336,6 +1429,7 @@ export function MateriaisClient({
         });
         setHistorico(loadMaterialHistoryPreview());
         setMaterialSalvo(true);
+        saveTeachingContextDefaults();
         return;
       }
 
@@ -1343,6 +1437,7 @@ export function MateriaisClient({
       setHistorico(loadMaterialHistoryPreview());
       setMaterialSalvo(true);
       setResultadoHtml(html);
+      saveTeachingContextDefaults();
       }, { onError: dispatchCreditsChangedIfNeeded });
     } catch (error) {
       dispatchCreditsChangedIfNeeded(error);
@@ -1568,12 +1663,13 @@ export function MateriaisClient({
     setModalAberto(false);
   }
 
-  const exportDockStatusMessage =
-    useStudioExportDock &&
-    typeof qualityScore === "number" &&
-    qualityScore < UNIFIED_ELEVATE_BANNER_THRESHOLD
-      ? "Score abaixo do ideal — revise ou use Elevar qualidade antes de exportar."
-      : null;
+  const exportDockStatusMessage = useStudioExportDock
+    ? exportShareStatus ||
+      (typeof qualityScore === "number" &&
+      qualityScore < UNIFIED_ELEVATE_BANNER_THRESHOLD
+        ? "Score abaixo do ideal — revise ou use Elevar qualidade antes de exportar."
+        : null)
+    : null;
 
   const studioExportDock =
     useStudioExportDock && resultadoHtml ? (
@@ -1604,6 +1700,21 @@ export function MateriaisClient({
             />
           </>
         ) : null}
+        <GoogleClassroomDockButton
+          title={buildTitle(tipo, tema)}
+          getHtml={() => resultadoHtml}
+          documentType={`material:${tipo}`}
+          returnTo="/dashboard"
+          onStatus={setExportShareStatus}
+        />
+        <MaterialWhatsAppShareButton
+          title={buildTitle(tipo, tema)}
+          tipoLabel={mode.shortTitle || mode.title}
+          componente={componente}
+          anoSerie={anoSerie}
+          turma={school.turmaDisplayValue || undefined}
+          onStatus={setExportShareStatus}
+        />
         <GoogleDocumentExportBar
           title={buildTitle(tipo, tema)}
           getHtml={() => resultadoHtml}
@@ -1698,6 +1809,19 @@ export function MateriaisClient({
           ) : null}
 
           <div className="mt-5 grid gap-4 md:grid-cols-2">
+            <div className="md:col-span-2">
+              <MinhaTurmaChip
+                configured={teachingContext.configured}
+                applied={teachingContext.applied}
+                loading={teachingContext.loading}
+                turmaLabel={teachingContext.context.turma || school.turmaDisplayValue}
+                onApply={() =>
+                  teachingContext.applyToForm(applyTeachingContextFields)
+                }
+                onSave={saveTeachingContextDefaults}
+              />
+            </div>
+
             <label>
               <span className={HUD_SECTION_LABEL}>
                 Etapa de ensino

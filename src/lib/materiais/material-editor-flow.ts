@@ -167,6 +167,38 @@ export function loadMaterialMetaFromHistoryId(
 }
 
 const SLIDE_PAYLOAD_SESSION_KEY = "planify:slides:last-generation-payload";
+const REGENERATE_CONTEXT_SESSION_KEY = "planify:materiais:regenerate-context";
+
+export function storeMaterialRegenerateContext(meta: MaterialEditorMeta): void {
+  if (typeof window === "undefined") return;
+  try {
+    sessionStorage.setItem(REGENERATE_CONTEXT_SESSION_KEY, JSON.stringify(meta));
+  } catch {
+    /* ignore */
+  }
+}
+
+export function consumeMaterialRegenerateContext(): MaterialEditorMeta | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = sessionStorage.getItem(REGENERATE_CONTEXT_SESSION_KEY);
+    sessionStorage.removeItem(REGENERATE_CONTEXT_SESSION_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as MaterialEditorMeta;
+  } catch {
+    return null;
+  }
+}
+
+export function buildDashboardRegenerateHref(meta: MaterialEditorMeta): string {
+  storeMaterialRegenerateContext(meta);
+  const params = new URLSearchParams();
+  params.set("tipo", meta.toolId);
+  if (meta.tema.trim()) {
+    params.set("tema", meta.tema.trim());
+  }
+  return `/dashboard?${params.toString()}`;
+}
 
 export function persistSlideGenerationPayload(
   payload: MaterialEngineInput,

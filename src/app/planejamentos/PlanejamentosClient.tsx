@@ -11,6 +11,8 @@ import { MarketplacePublishButton } from "@/components/marketplace/MarketplacePu
 import { PlanifyOwlGenerationCoach } from "@/components/pro/PlanifyOwlGenerationCoach";
 import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
 import { useSchoolClasses } from "@/hooks/useSchoolClasses";
+import { useTeacherTeachingContext } from "@/hooks/useTeacherTeachingContext";
+import { MinhaTurmaChip } from "@/components/teacher/MinhaTurmaChip";
 import { TurmaCombobox } from "@/components/school/TurmaCombobox";
 import { PlanifyPageHero } from "@/components/pro/PlanifyPageHero";
 import { usePlanifyWorkspace } from "@/components/pro/planify-workspace-context";
@@ -62,7 +64,7 @@ import {
 } from "@/lib/planejamentos/planning-trimestral-from-annual";
 import { useBnccEducationOptions } from "@/hooks/useBnccEducationOptions";
 import type { MaterialEducationFields } from "@/lib/educacao/education-options";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { splitTopicLines } from "@/lib/bncc/split-topic-lines";
 import { TemaCombobox } from "@/components/bncc/TemaCombobox";
 import type { BnccTemaAutocompleteSuggestion } from "@/lib/bncc/bncc-tema-autocomplete";
@@ -388,6 +390,8 @@ function saveAnnualMatrixSnapshot(form: FormState, planning: GeneratedPlanning) 
 export function PlanejamentosClient() {
   const { embeddedInDashboard } = usePlanifyWorkspace();
   const school = useSchoolClasses();
+  const teachingContext = useTeacherTeachingContext();
+  const autoAppliedTeachingContextRef = useRef(false);
   const [form, setForm] = useState<FormState>(initialForm);
   const [temaBusca, setTemaBusca] = useState("");
   const [groups, setGroups] = useState<BnccGroup[]>([]);
@@ -478,9 +482,75 @@ export function PlanejamentosClient() {
       invalidateGenerated();
       setStatus("Aguardando nova sugestão");
       setError("");
+      teachingContext.resetApplied();
     },
-    [applyBnccEducation],
+    [applyBnccEducation, teachingContext],
   );
+
+  const applyTeachingContextFields = useCallback(
+    (fields: {
+      etapa: string;
+      anoSerie: string;
+      areaConhecimento: string;
+      componente: string;
+      turma: string;
+      classId: string | null;
+      observacoesTurma: string;
+    }) => {
+      applyEducationFields({
+        etapa: fields.etapa,
+        anoSerie: fields.anoSerie,
+        areaConhecimento: fields.areaConhecimento,
+        componente: fields.componente,
+      });
+      if (fields.turma) {
+        school.setTurmaInput(fields.turma);
+      } else if (fields.classId) {
+        school.setClassId(fields.classId);
+      }
+      if (fields.observacoesTurma && !form.observacoes.trim()) {
+        setForm((current) => ({
+          ...current,
+          observacoes: fields.observacoesTurma,
+        }));
+      }
+    },
+    [applyEducationFields, form.observacoes, school],
+  );
+
+  const currentTeachingFields = useCallback(
+    () => ({
+      etapa: form.etapa,
+      anoSerie: form.anoSerie,
+      areaConhecimento: form.areaConhecimento,
+      componente: form.componenteCurricular,
+      turma: school.turmaDisplayValue,
+      classId: school.classId,
+      observacoesTurma: form.observacoes,
+    }),
+    [
+      form.anoSerie,
+      form.areaConhecimento,
+      form.componenteCurricular,
+      form.etapa,
+      form.observacoes,
+      school.classId,
+      school.turmaDisplayValue,
+    ],
+  );
+
+  const saveTeachingContextDefaults = useCallback(() => {
+    teachingContext.saveCurrentAsDefault(currentTeachingFields());
+  }, [currentTeachingFields, teachingContext]);
+
+  useEffect(() => {
+    if (teachingContext.loading || autoAppliedTeachingContextRef.current) return;
+    if (!teachingContext.configured) return;
+
+    autoAppliedTeachingContextRef.current = true;
+    teachingContext.applyToForm(applyTeachingContextFields);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- auto-apply once on mount
+  }, [teachingContext.loading, teachingContext.configured]);
 
   const stats = useMemo(
     () => ({
@@ -1070,6 +1140,7 @@ export function PlanejamentosClient() {
       setUsedAI(Boolean(data.usedAI));
       const issues = applyQualityFromResponse(data);
       setLastGenerationPayload(payload);
+      saveTeachingContextDefaults();
 
       const qualityContext = {
         qualityScore:
@@ -1204,6 +1275,7 @@ export function PlanejamentosClient() {
       setUsedAI(Boolean(data.usedAI));
       const issues = applyQualityFromResponse(data);
       setLastGenerationPayload(payload);
+      saveTeachingContextDefaults();
 
       persistGeneratedPlanning(planning, payload, {
         qualityScore: data.qualityScore,
@@ -1392,6 +1464,18 @@ export function PlanejamentosClient() {
             </div>
 
             <div className="mt-8 grid gap-5 md:grid-cols-2">
+              <div className="md:col-span-2">
+                <MinhaTurmaChip
+                  configured={teachingContext.configured}
+                  applied={teachingContext.applied}
+                  loading={teachingContext.loading}
+                  turmaLabel={teachingContext.context.turma || school.turmaDisplayValue}
+                  onApply={() =>
+                    teachingContext.applyToForm(applyTeachingContextFields)
+                  }
+                  onSave={saveTeachingContextDefaults}
+                />
+              </div>
               <label className="grid gap-2">
                 <span className="text-sm font-bold text-slate-500">Escola</span>
                 <input value={form.escola} onChange={(event) => updateField("escola", event.target.value)} placeholder="Nome da escola" className={HUD_FIELD_CLASS} />

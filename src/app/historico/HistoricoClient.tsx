@@ -18,6 +18,10 @@ import {
   isHistoryHtmlContent,
   resolveHistoryTypeLabel,
 } from "../../lib/history/history-preview";
+import {
+  buildDashboardRegenerateHref,
+  type MaterialEditorMeta,
+} from "@/lib/materiais/material-editor-flow";
 import { removeHistoryItemFromAPI } from "../../lib/history/history-api-client";
 import {
   clearHistoryItems,
@@ -108,6 +112,28 @@ function getSourceBadgeClass(source: string): string {
     return "border-emerald-200 bg-emerald-50 text-emerald-700";
   }
   return "border-slate-200 bg-slate-50 text-slate-700";
+}
+
+function resolveMaterialRegenerateMeta(item: HistoryItem): MaterialEditorMeta | null {
+  if (item.source !== "material") return null;
+  const raw = item.raw as MaterialEditorMeta | undefined;
+  if (!raw?.toolId) return null;
+  return {
+    ...raw,
+    toolId: raw.toolId,
+    tema: raw.tema || item.title,
+    componente: raw.componente || item.subtitle?.split("·")[0]?.trim() || "",
+    anoSerie: raw.anoSerie || "",
+  };
+}
+
+function handleRegenerateMaterial(item: HistoryItem, router: ReturnType<typeof useRouter>) {
+  const meta = resolveMaterialRegenerateMeta(item);
+  if (!meta) {
+    return false;
+  }
+  router.push(buildDashboardRegenerateHref(meta));
+  return true;
 }
 
 function resolveMarketplaceTipo(item: HistoryItem): string {
@@ -524,6 +550,18 @@ export function HistoricoClient() {
                         classroomMode="popover"
                       />
                       <div className="flex gap-1.5">
+                        {resolveMaterialRegenerateMeta(item) ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              handleRegenerateMaterial(item, router);
+                            }}
+                            disabled={selectionMode}
+                            className="pl-hud-btn-secondary min-h-9 flex-1 rounded-xl py-1.5 text-[10px] font-bold disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            Gerar de novo
+                          </button>
+                        ) : null}
                         <button
                           type="button"
                           onClick={() => openInEditor(item)}
@@ -621,6 +659,15 @@ export function HistoricoClient() {
                   >
                     Abrir no Editor
                   </button>
+                  {resolveMaterialRegenerateMeta(selectedItem) ? (
+                    <button
+                      type="button"
+                      onClick={() => handleRegenerateMaterial(selectedItem, router)}
+                      className="pl-hud-btn-secondary rounded-xl px-4 py-2 text-xs font-semibold"
+                    >
+                      Gerar de novo
+                    </button>
+                  ) : null}
                   <button
                     type="button"
                     onClick={() => removeItem(selectedItem)}

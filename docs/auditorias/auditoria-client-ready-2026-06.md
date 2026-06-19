@@ -1,8 +1,9 @@
-# Planify — Auditoria client-ready (Fases 0–4)
+# Planify — Auditoria client-ready (Fases 0–5)
 
 Data: 18/06/2026  
 Commit base pós-Fase 3: `8b4ff103`  
-Fase 4: E2E, CI e auditoria RLS
+Fase 4: E2E, CI e auditoria RLS  
+Fase 5: Diferenciação docente (professor-first)
 
 ## Resumo executivo
 
@@ -13,6 +14,39 @@ Fase 4: E2E, CI e auditoria RLS
 | **2** | Ecossistema pedagógico (BNCC, comunidade, banco) | Concluída |
 | **3** | Paridade Teachy P0 (studio, export dock, dashboard hub) | Concluída (`8b4ff103`) |
 | **4** | Produção client-ready (E2E, CI, RLS, docs) | Concluída |
+| **5** | Diferenciação docente (contexto, distribuição, histórico) | Concluída |
+
+## Fase 5 — Entregas (professor-only)
+
+### 5A — Contexto docente persistente
+
+- Coluna `profiles.teaching_context` (jsonb) + API `GET/PUT /api/me/teaching-context`
+- Sincronização local (`localStorage`) + Supabase, padrão igual a `correction_profile`
+- Chip **Minha turma** em `MateriaisClient` e `PlanejamentosClient` — pré-preenche etapa, série, componente e turma
+- Auto-aplicação no primeiro carregamento quando o professor já tem contexto salvo
+- Salvamento automático após geração bem-sucedida
+
+### 5B — Distribuição (ações do professor)
+
+- **5B.1** Botão **Publicar na turma** (`GoogleClassroomDockButton`) em destaque no ExportDock de materiais
+- **5B.2** Compartilhamento **WhatsApp** + copiar resumo (`MaterialWhatsAppShareButton`) — professor envia externamente via `wa.me/?text=…`
+- **5B.3 omitido de propósito:** sem link público read-only para alunos, sem `shareToken`, sem portal aluno no Planify
+
+### 5C — Histórico inteligente
+
+- **Gerar de novo** no histórico — reabre o studio com tipo, tema e campos pedagógicos pré-preenchidos (`buildDashboardRegenerateHref`)
+
+### Explicitamente fora do escopo (Fase 5 neste commit)
+
+- Wizard de primeiro login (deferido — risco no fluxo de auth)
+- 5D OCR / relatório turma correção
+- 5E publish comunidade 1-clique além do existente
+- 5F admin health / WCAG
+- 5G referral / PWA
+
+### Restrição de produto (mantida)
+
+**Planify é plataforma exclusiva para professores.** Alunos não fazem login nem acessam materiais via Planify; o professor distribui por Classroom, WhatsApp ou impressão.
 
 ## Fase 4 — Entregas
 
@@ -69,7 +103,7 @@ Relatório: docs/auditorias/auditoria-anti-vazamento-9-21-0-2026-06-18T23-47-37-
 - Nenhum secret hardcoded no scan
 - Referências a chaves públicas via `NEXT_PUBLIC_*` conforme esperado
 
-## Verificações locais (Fase 4)
+## Verificações locais (Fases 4–5)
 
 ```bash
 npm run verify:go-live

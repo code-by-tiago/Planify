@@ -30,10 +30,7 @@ npm run verify:go-live
 
 ## Deploy
 
-1. **Aplicar migrations Supabase pendentes** (SQL Editor ou `supabase db push`):
-   - `supabase/migrations/20260618_teacher_teaching_context.sql`
-   - `supabase/migrations/20260618_teacher_correction_profile.sql`
-   - Demais arquivos em `supabase/migrations/` ainda não aplicados no projeto remoto.
+1. **Migrations Supabase docentes** — aplicadas em produção (19/06/2026): `teaching_context`, `correction_profile`, `teacher_referrals`. Novas migrations futuras: `supabase db push` ou SQL Editor.
 2. Configurar variáveis de ambiente no painel do provedor.
 3. Configurar Supabase URLs, service role e anon key.
 4. Configurar Stripe keys, prices e webhook.

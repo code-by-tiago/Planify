@@ -32,16 +32,15 @@ npm run build
 npm run test:e2e             # smoke + responsivo (+ autenticado se secrets)
 ```
 
-## Migrations pendentes (aplicar antes do deploy)
+## Migrations Supabase (produção)
 
-```bash
-# Via Supabase CLI ou SQL Editor
-supabase db push
-# ou aplicar manualmente:
-# - supabase/migrations/20260618_teacher_teaching_context.sql
-# supabase/migrations/20260618_teacher_correction_profile.sql
-# - supabase/migrations/20260628_teacher_referrals.sql
-```
+| Migration | Status | Aplicada em |
+|-----------|--------|-------------|
+| `20260618_teacher_correction_profile` | ✅ | remoto (20260618) |
+| `teacher_teaching_context` | ✅ | remoto (20260619) |
+| `teacher_referrals` | ✅ | remoto (20260619) |
+
+Projeto: `zvhdqdtrhmvdadbbucey`. Demais migrations do repositório já estavam sincronizadas antes deste sprint.
 
 Ver também `docs/deploy/DEPLOY-CHECKLIST.md`.
 

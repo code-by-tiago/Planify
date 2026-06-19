@@ -159,6 +159,17 @@ npm run test:e2e
 npm run test:e2e:install   # primeira vez / CI
 ```
 
+## Deploy produção (19/06/2026)
+
+Migrations aplicadas no projeto Supabase `zvhdqdtrhmvdadbbucey`:
+
+- `teacher_teaching_context` — coluna `profiles.teaching_context`
+- `teacher_referrals` — `referral_code`, tabela `teacher_referrals`, backfill códigos
+
+Verificação: `teacher_referrals` existe; trigger `on_auth_user_created` ativo.
+
+Checklist de testes manual: `docs/deploy/TESTING-CHECKLIST-PROFESSOR.md`
+
 ## Pendências / secrets opcionais
 
 | Item | Requer secret? |

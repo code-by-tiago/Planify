@@ -181,6 +181,7 @@ if (deployChecklist.toLowerCase().includes("rollback")) {
 for (const migration of [
   "supabase/migrations/20260618_teacher_teaching_context.sql",
   "supabase/migrations/20260618_teacher_correction_profile.sql",
+  "supabase/migrations/20260628_teacher_referrals.sql",
 ]) {
   if (existsSync(migration)) {
     ok(`Migration: ${migration}`);

@@ -925,6 +925,10 @@
   overflow: hidden;
 }
 
+.pf-demo-video-frame {
+  border-radius: var(--pf-mkt-radius-lg, var(--pf-radius-xl));
+}
+
 .pf-sidebar-category {
   display: flex;
   width: 100%;

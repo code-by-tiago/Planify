@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { DashboardSectionId } from "@/lib/pro/dashboardViews";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { ReferralInvitePanel } from "@/components/referral/ReferralInvitePanel";
+import { PlanifyHubRecentStrip } from "@/components/dashboard/PlanifyHubRecentStrip";
 import {
   planifyToolCount,
   planifyTools,
@@ -17,7 +18,9 @@ type TeachyStudioHomeProps = {
   onSelectTool: (toolId: PlanifyToolId) => void;
   onSelectSection?: (sectionId: DashboardSectionId) => void;
   initialTopic?: string;
+  initialCategory?: ToolCategoryId | null;
   onTopicChange?: (topic: string) => void;
+  onSelectCategory?: (category: ToolCategoryId) => void;
 };
 
 const trustStats = [
@@ -57,15 +60,21 @@ export default function TeachyStudioHome({
   onSelectTool,
   onSelectSection,
   initialTopic = "",
+  initialCategory = null,
   onTopicChange,
+  onSelectCategory,
 }: TeachyStudioHomeProps) {
   const [topic, setTopic] = useState(initialTopic);
   const [query, setQuery] = useState("");
-  const [category, setCategory] = useState<ToolCategoryId>("todos");
+  const [category, setCategory] = useState<ToolCategoryId>(initialCategory ?? "todos");
 
   useEffect(() => {
     setTopic(initialTopic);
   }, [initialTopic]);
+
+  useEffect(() => {
+    if (initialCategory) setCategory(initialCategory);
+  }, [initialCategory]);
 
   const hasActiveFilter = query.trim() !== "" || category !== "todos";
   const filteredTools = useMemo(
@@ -271,7 +280,10 @@ export default function TeachyStudioHome({
                 <div className="pl-hud-hub-category-scroll-inner">
                   <button
                     type="button"
-                    onClick={() => setCategory("todos")}
+                    onClick={() => {
+                      setCategory("todos");
+                      onSelectCategory?.("todos");
+                    }}
                     className={`pl-hud-hub-category-pill shrink-0 ${
                       category === "todos" ? "pl-hud-hub-category-pill--active" : ""
                     }`}
@@ -285,7 +297,10 @@ export default function TeachyStudioHome({
                       <button
                         key={cat.id}
                         type="button"
-                        onClick={() => setCategory(cat.id)}
+                        onClick={() => {
+                          setCategory(cat.id);
+                          onSelectCategory?.(cat.id);
+                        }}
                         className={`pl-hud-hub-category-pill shrink-0 ${
                           active ? "pl-hud-hub-category-pill--active" : ""
                         }`}
@@ -328,6 +343,13 @@ export default function TeachyStudioHome({
                 </button>
               </div>
             ) : null}
+          </section>
+
+          <section
+            className="pl-hud-hub-reveal mt-8"
+            style={{ animationDelay: "100ms" }}
+          >
+            <PlanifyHubRecentStrip onOpenHistorico={() => onSelectSection?.("historico")} />
           </section>
 
           <section className="pl-hud-hub-reveal mt-8" style={{ animationDelay: "120ms" }}>

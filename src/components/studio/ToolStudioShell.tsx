@@ -5,7 +5,7 @@ import {
   MaterialToolPageShell,
   type MaterialToolPageShellProps,
 } from "@/components/pro/MaterialToolPageShell";
-import { PlanifyStudioShell } from "@/components/studio/PlanifyStudioShell";
+import { TeachyToolStudioPage } from "@/components/teachy-layout/TeachyToolStudioPage";
 
 export type ToolStudioShellProps = MaterialToolPageShellProps & {
   exportDock?: ReactNode;
@@ -27,7 +27,7 @@ export function ToolStudioShell({
   }
 
   return (
-    <PlanifyStudioShell
+    <TeachyToolStudioPage
       icon={tool.icon}
       iconAccent={tool.accent}
       title={tool.title}

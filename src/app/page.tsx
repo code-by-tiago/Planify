@@ -45,9 +45,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   return (
     <>
       <StructuredData />
-      <main className="planify-hud planify-ui3 planify-hud-landing planify-public flex min-h-screen flex-col overflow-x-hidden bg-white sm:overflow-x-clip sm:bg-gradient-to-b sm:from-white sm:via-sky-50/60 sm:to-[var(--planify-canvas)]">
-        <LandingProfessorPrimeiroPage />
-      </main>
+      <LandingProfessorPrimeiroPage />
     </>
   );
 }

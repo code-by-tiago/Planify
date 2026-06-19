@@ -35,7 +35,7 @@ export function ComunidadeDocenteRightSidebar({
 
   return (
     <aside className="flex w-full shrink-0 flex-col gap-5 lg:w-[300px]">
-      <section className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
+      <section className="pf-docente-card rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
         <h2 className="text-sm font-extrabold text-[#0F172A]">Publicações recentes</h2>
         {recentPublications.length === 0 ? (
           <div className="mt-3">
@@ -81,7 +81,7 @@ export function ComunidadeDocenteRightSidebar({
         )}
       </section>
 
-      <section className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
+      <section className="pf-docente-card rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
         <h2 className="text-sm font-extrabold text-[#0F172A]">Próximos eventos</h2>
         {events.length === 0 ? (
           <p className="mt-3 text-xs font-medium text-slate-500">
@@ -123,7 +123,7 @@ export function ComunidadeDocenteRightSidebar({
         )}
       </section>
 
-      <section className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
+      <section className="pf-docente-card rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
         <h2 className="text-sm font-extrabold text-[#0F172A]">Professores em destaque</h2>
         {!teacher ? (
           <p className="mt-3 text-xs font-medium text-slate-500">

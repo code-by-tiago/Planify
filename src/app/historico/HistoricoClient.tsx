@@ -2,7 +2,7 @@
 
 import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
 import { usePlanifyWorkspace } from "@/components/pro/planify-workspace-context";
-import { StudioSectionFrame } from "@/components/studio/StudioSectionFrame";
+import { TeachySectionHub } from "@/components/teachy-layout";
 import { PlanifyPageHero } from "@/components/pro/PlanifyPageHero";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import Link from "next/link";
@@ -709,7 +709,7 @@ export function HistoricoClient() {
   );
 
   if (embeddedInDashboard) {
-    return <StudioSectionFrame config={listPanel} preview={detailPanel} />;
+    return <TeachySectionHub config={listPanel} preview={detailPanel} />;
   }
 
   return (

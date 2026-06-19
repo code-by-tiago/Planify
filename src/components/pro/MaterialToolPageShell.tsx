@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
-import { StudioToolHeader } from "@/components/studio/StudioToolHeader";
+import { TeachyToolStudioPage } from "@/components/teachy-layout";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import type { PlanifyTool } from "@/lib/pro/planifyTools";
 
@@ -40,6 +40,27 @@ export function MaterialToolPageShell({
   previewLoading = false,
   exportDock,
 }: MaterialToolPageShellProps) {
+  if (studioMode) {
+    return (
+      <TeachyToolStudioPage
+        icon={tool.icon}
+        iconAccent={tool.accent}
+        eyebrow={tool.shortTitle}
+        title={tool.title}
+        subtitle={tool.description}
+        onBack={onBack}
+        backLabel={backLabel}
+        form={form}
+        preview={preview}
+        exportDock={exportDock}
+        previewReady={previewReady}
+        previewLoading={previewLoading}
+        formScrollAttr={formScrollAttr}
+        previewScrollAttr={previewScrollAttr}
+      />
+    );
+  }
+
   const [mobilePanel, setMobilePanel] = useState<MobilePanel>("form");
 
   useEffect(() => {
@@ -54,23 +75,11 @@ export function MaterialToolPageShell({
     }
   }, [previewLoading]);
 
-  const shellClass = studioMode
-    ? "planify-studio-pro ps-pro-shell"
-    : "rounded-[2rem] border border-slate-200 bg-white shadow-sm";
+  const shellClass = "rounded-[2rem] border border-slate-200 bg-white shadow-sm";
 
   return (
     <div className={`planify-hud flex h-full min-h-0 flex-col overflow-hidden ${shellClass}`}>
-      {studioMode ? (
-        <StudioToolHeader
-          icon={tool.icon}
-          iconAccent={tool.accent}
-          eyebrow={tool.shortTitle}
-          title={tool.title}
-          subtitle={tool.description}
-          onBack={onBack}
-          backLabel={backLabel}
-        />
-      ) : onBack ? (
+      {onBack ? (
         <div className="ps-pro-header flex shrink-0 flex-wrap items-center justify-between gap-3 border-b px-4 py-3 sm:gap-4 sm:px-5 sm:py-4">
           <div className="flex min-w-0 items-center gap-3">
             <div
@@ -128,30 +137,22 @@ export function MaterialToolPageShell({
         </button>
       </div>
 
-      <div
-        className={`grid min-h-0 flex-1 max-lg:grid-cols-1 lg:grid-cols-[0.88fr_1.12fr] ${
-          studioMode ? "min-h-0" : "min-h-0 lg:min-h-[680px]"
-        }`}
-      >
+      <div className="grid min-h-0 flex-1 min-h-0 max-lg:grid-cols-1 lg:min-h-[680px] lg:grid-cols-[0.88fr_1.12fr]">
         <div
           {...(formScrollAttr ? { "data-planify-scroll": "" } : {})}
-          className={`ps-pro-config min-h-0 overflow-y-auto overscroll-contain p-4 sm:p-5 lg:max-h-none ${
-            studioMode ? "lg:border-r" : "bg-white/50 lg:border-r lg:border-cyan-400/10"
-          } ${mobilePanel === "form" ? "max-lg:flex max-lg:flex-1 max-lg:flex-col" : "max-lg:hidden"}`}
+          className={`ps-pro-config min-h-0 overflow-y-auto overscroll-contain bg-white/50 p-4 sm:p-5 lg:max-h-none lg:border-r lg:border-cyan-400/10 ${
+            mobilePanel === "form" ? "max-lg:flex max-lg:flex-1 max-lg:flex-col" : "max-lg:hidden"
+          }`}
         >
           <div className="max-lg:pb-[max(5.5rem,env(safe-area-inset-bottom))]">{form}</div>
         </div>
         <div
           {...(previewScrollAttr ? { "data-planify-scroll": "" } : {})}
-          className={`ps-pro-preview min-h-0 overflow-y-auto overscroll-contain p-3 pb-[max(1rem,env(safe-area-inset-bottom))] sm:p-5 ${
-            !studioMode ? "bg-gradient-to-br from-cyan-50/30 via-white/70 to-white" : ""
-          } ${mobilePanel === "preview" ? "max-lg:flex max-lg:flex-1 max-lg:flex-col" : "max-lg:hidden"}`}
+          className={`ps-pro-preview min-h-0 overflow-y-auto overscroll-contain bg-gradient-to-br from-cyan-50/30 via-white/70 to-white p-3 pb-[max(1rem,env(safe-area-inset-bottom))] sm:p-5 ${
+            mobilePanel === "preview" ? "max-lg:flex max-lg:flex-1 max-lg:flex-col" : "max-lg:hidden"
+          }`}
         >
-          <div
-            className={`${
-              studioMode ? "ps-pro-preview-glass" : "pl-hud-glass"
-            } min-h-[min(50vh,280px)] flex-1 rounded-2xl p-3 sm:min-h-[280px] sm:p-5`}
-          >
+          <div className="pl-hud-glass min-h-[min(50vh,280px)] flex-1 rounded-2xl p-3 sm:min-h-[280px] sm:p-5">
             {preview}
           </div>
         </div>

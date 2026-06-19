@@ -6,8 +6,10 @@ import { PlanifyNavIcon } from "@/components/pro/PlanifyNavIcon";
 import type { DashboardSectionId } from "@/lib/pro/dashboardViews";
 import {
   filterSidebarNavigation,
+  toolCategories,
   type AppNavItem,
   type PlanifyToolId,
+  type ToolCategoryId,
 } from "@/lib/pro/planifyTools";
 
 export type SidebarNavMode = "studio" | "routes" | "public";
@@ -21,6 +23,9 @@ type PlanifySidebarNavProps = {
   selectedSectionId?: DashboardSectionId | null;
   onSelectSection?: (sectionId: DashboardSectionId) => void;
   onSelectInicio?: () => void;
+  /** Highlight tool category on dashboard home (studio mode) */
+  activeCategory?: ToolCategoryId | null;
+  onSelectCategory?: (category: ToolCategoryId) => void;
   pathname?: string;
   activeTipo?: string | null;
   isNavActive?: (href: string) => boolean;
@@ -42,6 +47,8 @@ export function PlanifySidebarNav({
   selectedToolId = null,
   selectedSectionId = null,
   onSelectSection,
+  activeCategory = null,
+  onSelectCategory,
   pathname = "",
   isNavActive,
   canViewBnccProgress = false,
@@ -86,10 +93,47 @@ export function PlanifySidebarNav({
     }`;
   }
 
+  const categoryTabs = toolCategories.filter((c) => c.id !== "todos");
+
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       {primaryAction ? (
         <div className={`shrink-0 pt-3 ${collapsed ? "px-2" : "px-3"}`}>{primaryAction}</div>
+      ) : null}
+
+      {mode === "studio" && !collapsed && onSelectCategory ? (
+        <div className="shrink-0 px-3 pb-2">
+          <p className="pl-sidebar-section-label px-1 pb-1 text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-500/90">
+            Categorias
+          </p>
+          <div className="space-y-0.5">
+            <button
+              type="button"
+              onClick={() => {
+                onSelectCategory("todos");
+                onActivate?.();
+              }}
+              className={`pf-sidebar-category ${!activeCategory || activeCategory === "todos" ? "is-active" : ""}`}
+            >
+              <PlanifyNavIcon name="spark" className="h-4 w-4 shrink-0" />
+              Todos
+            </button>
+            {categoryTabs.map((cat) => (
+              <button
+                key={cat.id}
+                type="button"
+                onClick={() => {
+                  onSelectCategory(cat.id);
+                  onActivate?.();
+                }}
+                className={`pf-sidebar-category ${activeCategory === cat.id ? "is-active" : ""}`}
+              >
+                <PlanifyNavIcon name={cat.icon} className="h-4 w-4 shrink-0" />
+                {cat.label}
+              </button>
+            ))}
+          </div>
+        </div>
       ) : null}
 
       <nav

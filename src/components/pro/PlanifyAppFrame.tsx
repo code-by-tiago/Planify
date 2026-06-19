@@ -129,7 +129,7 @@ export default function PlanifyAppFrame({
   );
 
   return (
-    <main className="planify-hud planify-ui3 planify-hud-app pl-shell-root pl-hud-shell pl-app-bg flex h-[100dvh] w-full max-w-[100vw] overflow-hidden text-slate-950">
+    <main className="pf-ecosystem-scope planify-hud planify-ui3 planify-hud-app pl-shell-root pl-hud-shell pl-app-bg flex h-[100dvh] w-full max-w-[100vw] overflow-hidden text-slate-950">
       <PlanifyShellSidebar
         variant="hud"
         brandHref="/"

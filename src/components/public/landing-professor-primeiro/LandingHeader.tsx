@@ -33,6 +33,12 @@ export function LandingHeader() {
         <PlanifyBrand href="/" hideTagline />
 
         <div className="flex items-center gap-2 sm:gap-2.5">
+          <Link
+            href="/ferramentas"
+            className="hidden rounded-xl px-3 py-2 text-sm font-semibold text-slate-700 transition hover:text-cyan-700 sm:inline-flex sm:px-4"
+          >
+            Ferramentas
+          </Link>
           {showPainel ? (
             <Link
               href="/dashboard"

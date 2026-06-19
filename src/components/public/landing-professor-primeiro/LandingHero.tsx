@@ -1,13 +1,13 @@
 import Link from "next/link";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
-import { LandingHeroVideo } from "./LandingHeroVideo";
+import { LandingProductDemoTabs } from "./LandingProductDemoTabs";
 import { ppBtnPrimary, ppBtnSecondary } from "./theme";
 
 export function LandingHero() {
   return (
     <section
       id="professores"
-      className="relative scroll-mt-24 overflow-hidden px-5 pb-16 pt-10 sm:px-8 sm:pb-20 sm:pt-14"
+      className="pf-marketing-hero relative scroll-mt-24 overflow-hidden px-5 pb-16 pt-10 sm:px-8 sm:pb-20 sm:pt-14"
     >
       <div
         aria-hidden
@@ -20,34 +20,23 @@ export function LandingHero() {
             IA feita para professores
           </span>
 
-          <h1 className="mt-6 font-[family-name:var(--font-display)] text-4xl font-extrabold uppercase leading-[1.04] tracking-tight text-slate-900 sm:text-5xl lg:text-[3.1rem]">
-            Pare de perder horas com{" "}
-            <span className="text-cyan-600">burocracia.</span>
+          <h1 className="pf-headline mt-6 text-4xl font-extrabold uppercase leading-[1.04] tracking-tight sm:text-5xl lg:text-[3.1rem]">
+            Menos tempo planejando.{" "}
+            <span className="text-cyan-600">Mais qualidade ensinando.</span>
           </h1>
 
           <p className="mt-5 max-w-xl text-lg font-medium leading-8 text-slate-600">
-            Crie planejamentos alinhados à BNCC, materiais didáticos, avaliações e envie tudo
-            para sua turma em uma única plataforma.
+            Ecossistema professor-only: planejamentos BNCC, materiais com IA, correção e exportação
+            oficial — tudo num só lugar, com a identidade Planify.
           </p>
 
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
-            <Link
-              href="/planos"
-              className={`${ppBtnPrimary} gap-2 px-8 py-4 text-base`}
-            >
-              Começar agora
+            <Link href="/planos" className={`${ppBtnPrimary} gap-2 px-8 py-4 text-base`}>
+              Começar grátis
               <PlanifyIcon name="arrowRight" className="h-4 w-4" />
             </Link>
-            <Link
-              href="/#como-funciona"
-              className={`${ppBtnSecondary} gap-2 px-8 py-4 text-base`}
-            >
-              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-cyan-50 text-cyan-700 ring-1 ring-cyan-100">
-                <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 fill-current" aria-hidden>
-                  <path d="M8 5v14l11-7z" />
-                </svg>
-              </span>
-              Ver demonstração
+            <Link href="/ferramentas" className={`${ppBtnSecondary} gap-2 px-8 py-4 text-base`}>
+              Ver ferramentas
             </Link>
           </div>
 
@@ -71,7 +60,7 @@ export function LandingHero() {
           </div>
         </div>
 
-        <LandingHeroVideo />
+        <LandingProductDemoTabs />
       </div>
     </section>
   );

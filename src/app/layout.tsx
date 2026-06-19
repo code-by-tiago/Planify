@@ -3,6 +3,7 @@ import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 import { PlanifySessionSync } from "@/components/auth/PlanifySessionSync";
 import { buildGlobalMetadata } from "@/lib/seo/metadata";
 import "./planify-hud.css";
+import "../styles/planify-premium.css";
 import "./globals.css";
 import "./responsive-nav.css";
 

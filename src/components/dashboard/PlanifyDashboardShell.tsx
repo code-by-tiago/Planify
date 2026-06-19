@@ -19,7 +19,9 @@ import {
   getPlanifyTool,
   planifyToolCount,
   planifyTools,
+  toolCategories,
   type PlanifyToolId,
+  type ToolCategoryId,
 } from "@/lib/pro/planifyTools";
 import { usePlanifyAccess } from "@/hooks/usePlanifyAccess";
 import { usePersistedSidebarCollapsed } from "@/hooks/usePersistedSidebarCollapsed";
@@ -27,6 +29,10 @@ import { setHistorySupabaseSync, syncLocalHistoryToSupabase } from "@/lib/histor
 
 function isValidToolId(value: string | null): value is PlanifyToolId {
   return planifyTools.some((tool) => tool.id === value);
+}
+
+function isValidCategory(value: string | null): value is ToolCategoryId {
+  return toolCategories.some((c) => c.id === value);
 }
 
 function readTemaParam(searchParams: URLSearchParams): string {
@@ -68,6 +74,11 @@ export default function PlanifyDashboardShell() {
     return isDashboardSection(secao) ? secao : null;
   }, [searchParams, selectedToolId]);
 
+  const activeCategory = useMemo(() => {
+    const cat = searchParams.get("categoria");
+    return isValidCategory(cat) ? cat : null;
+  }, [searchParams]);
+
   const initialTopic = useMemo(
     () => readTemaParam(searchParams),
     [searchParams],
@@ -101,10 +112,23 @@ export default function PlanifyDashboardShell() {
     [router, searchParams],
   );
 
+  const selectCategory = useCallback(
+    (categoryId: ToolCategoryId) => {
+      replaceDashboardUrl((params) => {
+        params.delete("tipo");
+        params.delete("secao");
+        if (categoryId === "todos") params.delete("categoria");
+        else params.set("categoria", categoryId);
+      });
+    },
+    [replaceDashboardUrl],
+  );
+
   const selectInicio = useCallback(() => {
     replaceDashboardUrl((params) => {
       params.delete("tipo");
       params.delete("secao");
+      params.delete("categoria");
     });
   }, [replaceDashboardUrl]);
 
@@ -209,7 +233,7 @@ export default function PlanifyDashboardShell() {
   );
 
   return (
-    <div className="planify-hud planify-ui3 planify-hud-app pl-hud-shell pl-dashboard-root pl-app-bg flex h-[100dvh] w-full max-w-[100vw] overflow-hidden text-slate-950">
+    <div className="pf-ecosystem-scope planify-hud planify-ui3 planify-hud-app pl-hud-shell pl-dashboard-root pl-app-bg flex h-[100dvh] w-full max-w-[100vw] overflow-hidden text-slate-950">
       <PlanifyShellSidebar
         variant="hud"
         brandHref="/"
@@ -226,6 +250,8 @@ export default function PlanifyDashboardShell() {
           selectedToolId={selectedToolId}
           selectedSectionId={selectedSectionId}
           onSelectSection={selectSection}
+          activeCategory={activeCategory}
+          onSelectCategory={selectCategory}
           onActivate={closeSidebar}
           pathname="/dashboard"
           canViewBnccProgress={access.canViewBnccProgress}
@@ -348,9 +374,11 @@ export default function PlanifyDashboardShell() {
             toolId={selectedToolId}
             sectionId={selectedSectionId}
             initialTopic={initialTopic}
+            initialCategory={activeCategory}
             onTopicChange={setTopic}
             onSelectTool={selectTool}
             onSelectSection={selectSection}
+            onSelectCategory={selectCategory}
             onClosePanel={selectInicio}
           />
         </div>

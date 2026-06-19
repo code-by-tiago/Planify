@@ -28,11 +28,11 @@ const RESOURCE_LINKS = [
 
 export function LandingFooter() {
   return (
-    <footer className="border-t border-slate-200 bg-white px-5 py-12 pb-[max(3rem,env(safe-area-inset-bottom))] sm:px-8">
+    <footer className="pf-marketing-footer px-5 py-12 pb-[max(3rem,env(safe-area-inset-bottom))] sm:px-8">
       <div className="mx-auto grid max-w-7xl gap-10 sm:grid-cols-2 lg:grid-cols-5">
         <div className="sm:col-span-2 lg:col-span-1">
           <PlanifyBrand href="/" hideTagline />
-          <p className="mt-4 max-w-xs text-sm font-medium leading-7 text-slate-500">
+          <p className="mt-4 max-w-xs text-sm font-normal leading-7 text-slate-500">
             Planify IA Educacional — plataforma educacional com IA para professores criarem
             planejamentos, atividades, provas e documentos editáveis.
           </p>

@@ -5,7 +5,10 @@ import { motion, useInView, useReducedMotion } from "framer-motion";
 import { SOCIAL_PROOF_STATS } from "./constants";
 
 function formatStatValue(value: number, prefix = "", suffix = ""): string {
-  const formatted = new Intl.NumberFormat("pt-BR", { notation: "compact", maximumFractionDigits: 1 }).format(value);
+  const formatted = new Intl.NumberFormat("pt-BR", {
+    notation: "compact",
+    maximumFractionDigits: 1,
+  }).format(value);
   return `${prefix}${formatted}${suffix}`;
 }
 
@@ -46,7 +49,7 @@ function AnimatedNumber({
   }, [inView, staticRender, target]);
 
   return (
-    <span ref={ref} className="font-[family-name:var(--font-display)] text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+    <span ref={ref} className="pf-marketing-stat-value">
       {formatStatValue(display, prefix, suffix)}
     </span>
   );
@@ -56,14 +59,16 @@ export function LandingSocialProof() {
   const reduce = useReducedMotion() ?? false;
 
   return (
-    <section className="pf-marketing-stats border-y border-slate-200/80 bg-white px-5 py-14 sm:px-8 sm:py-16">
-      <div className="mx-auto max-w-7xl">
-        <p className="text-center text-lg font-extrabold text-slate-900 sm:text-xl">
-          Amada por{" "}
-          <span className="text-cyan-600">+2.500 educadores</span>
-        </p>
+    <section className="pf-marketing-stats pf-marketing-section">
+      <div className="mx-auto max-w-[1120px]">
+        <div className="pf-marketing-stats-banner">
+          <p className="pf-marketing-stats-headline">
+            Amada por{" "}
+            <span className="pf-marketing-gradient-word">+2.500</span> educadores.
+          </p>
+        </div>
 
-        <div className="mt-10 grid grid-cols-2 gap-8 lg:grid-cols-4 lg:gap-6">
+        <div className="mt-12 grid grid-cols-2 gap-8 lg:grid-cols-4 lg:gap-6">
           {SOCIAL_PROOF_STATS.map((stat, index) => {
             const content = (
               <div className="text-center">
@@ -73,7 +78,7 @@ export function LandingSocialProof() {
                   suffix={stat.suffix}
                   staticRender={reduce}
                 />
-                <p className="mt-1 text-xs font-bold text-slate-500 sm:text-sm">{stat.label}</p>
+                <p className="pf-marketing-stat-label">{stat.label}</p>
               </div>
             );
 

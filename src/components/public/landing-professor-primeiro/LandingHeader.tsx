@@ -12,7 +12,7 @@ export function LandingHeader() {
 
   useEffect(() => {
     function onScroll() {
-      setScrolled(window.scrollY > 12);
+      setScrolled(window.scrollY > 8);
     }
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
@@ -23,44 +23,39 @@ export function LandingHeader() {
 
   return (
     <header
-      className={`sticky top-0 z-50 border-b bg-white pt-[env(safe-area-inset-top)] transition-all duration-300 max-sm:backdrop-blur-none sm:backdrop-blur-md ${
-        scrolled
-          ? "border-slate-200/80 shadow-sm sm:bg-white/90"
-          : "border-transparent sm:bg-white/70"
+      className={`pf-marketing-nav sticky top-0 z-50 pt-[env(safe-area-inset-top)] ${
+        scrolled ? "is-scrolled" : ""
       }`}
     >
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-8 sm:py-4">
+      <div className="mx-auto flex max-w-[1440px] items-center justify-between gap-3 px-6 py-3 md:px-10 md:py-3.5">
         <PlanifyBrand href="/" hideTagline />
 
-        <nav className="flex items-center gap-1 sm:gap-2" aria-label="Navegação principal">
-          <Link
-            href="/ferramentas"
-            className="hidden rounded-xl px-3 py-2 text-sm font-semibold text-slate-700 transition hover:text-cyan-700 md:inline-flex md:px-4"
-          >
-            Ferramentas
+        <nav className="flex items-center gap-0.5 sm:gap-1" aria-label="Navegação principal">
+          <Link href="/#solucoes" className="pf-marketing-nav-link pf-marketing-nav-link--pill hidden md:inline-flex">
+            Ecossistema
           </Link>
-          <Link
-            href="/planos"
-            className="hidden rounded-xl px-3 py-2 text-sm font-semibold text-slate-700 transition hover:text-cyan-700 md:inline-flex md:px-4"
-          >
+          <Link href="/#recursos" className="pf-marketing-nav-link hidden lg:inline-flex">
+            Planify Studio
+          </Link>
+          <Link href="/ferramentas" className="pf-marketing-nav-link hidden md:inline-flex">
+            Soluções
+          </Link>
+          <Link href="/escolas" className="pf-marketing-nav-link hidden xl:inline-flex">
+            Para escolas
+          </Link>
+          <Link href="/planos" className="pf-marketing-nav-link hidden md:inline-flex">
             Planos
           </Link>
           {showPainel ? (
-            <Link
-              href="/dashboard"
-              className={`${ppBtnPrimarySm} whitespace-nowrap`}
-            >
+            <Link href="/dashboard" className={`${ppBtnPrimarySm} ml-1 whitespace-nowrap`}>
               Painel
             </Link>
           ) : (
             <>
-              <Link
-                href="/login"
-                className="rounded-xl px-3 py-2 text-sm font-semibold text-slate-700 transition hover:text-cyan-700 sm:px-4 sm:py-2.5"
-              >
+              <Link href="/login" className="pf-marketing-btn pf-marketing-btn--ghost">
                 Entrar
               </Link>
-              <Link href="/cadastro" className={`${ppBtnPrimarySm} whitespace-nowrap`}>
+              <Link href="/cadastro" className={`${ppBtnPrimarySm} ml-0.5 whitespace-nowrap`}>
                 Acesse grátis
               </Link>
             </>

@@ -1,37 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
-import { LandingFooter } from "@/components/public/landing-professor-primeiro/LandingFooter";
-import { LandingHeader } from "@/components/public/landing-professor-primeiro/LandingHeader";
+export { PlanifyMarketingLayout, PlanifyMarketingLayout as default } from "@/components/planify-layout/PlanifyMarketingLayout";
 
-type TeachyMarketingLayoutProps = {
-  children: ReactNode;
-  /** Hide default header (e.g. login pages with custom chrome) */
-  hideHeader?: boolean;
-  /** Hide default footer */
-  hideFooter?: boolean;
-  className?: string;
-};
-
-/**
- * Public marketing shell — hero, stats, ecosystem, footer.
- * Planify brand (blue/cyan, coruja) — not Teachy purple.
- */
-export function TeachyMarketingLayout({
-  children,
-  hideHeader = false,
-  hideFooter = false,
-  className = "",
-}: TeachyMarketingLayoutProps) {
-  return (
-    <div
-      className={`pf-scope pf-marketing-shell flex min-h-screen flex-col overflow-x-hidden bg-white ${className}`}
-    >
-      {!hideHeader ? <LandingHeader /> : null}
-      <div className="flex-1">{children}</div>
-      {!hideFooter ? <LandingFooter /> : null}
-    </div>
-  );
-}
-
-export default TeachyMarketingLayout;
+/** @deprecated Use PlanifyMarketingLayout */
+export { PlanifyMarketingLayout as TeachyMarketingLayout } from "@/components/planify-layout/PlanifyMarketingLayout";

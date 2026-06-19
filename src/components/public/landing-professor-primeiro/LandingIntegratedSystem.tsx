@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import type { PlanifyIconName } from "@/lib/pro/planifyTools";
-import { ppEyebrow } from "./theme";
 
 type SystemModule = {
   id: string;
@@ -155,23 +154,16 @@ export function LandingIntegratedSystem() {
   const current = MODULES.find((m) => m.id === active) ?? MODULES[0];
 
   return (
-    <section id="solucoes" className="pf-marketing-integrated scroll-mt-24 px-5 py-16 sm:px-8 sm:py-24">
-      <div className="mx-auto max-w-7xl">
-        <div className="mx-auto max-w-3xl text-center">
-          <p className={ppEyebrow}>Ecossistema integrado</p>
-          <h2 className="pf-headline mt-3 text-3xl sm:text-4xl lg:text-[2.75rem]">
-            Um único sistema
-            <br className="hidden sm:block" />
-            <span className="text-cyan-600"> de IA integrado.</span>
-          </h2>
-        </div>
+    <section id="solucoes" className="pf-marketing-integrated pf-marketing-section scroll-mt-24">
+      <div className="mx-auto max-w-[1120px]">
+        <h2 className="pf-marketing-display pf-marketing-display--section max-w-4xl">
+          Um único sistema
+          <br />
+          de <span className="pf-marketing-gradient-word">IA</span> integrado.
+        </h2>
 
-        <div className="mt-12 grid gap-8 lg:grid-cols-[minmax(0,280px)_1fr] lg:gap-10">
-          <nav
-            className="flex gap-2 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible lg:pb-0"
-            role="tablist"
-            aria-label="Módulos do ecossistema Planify"
-          >
+        <div className="mt-14 grid gap-10 lg:grid-cols-[minmax(0,320px)_1fr] lg:gap-16">
+          <nav className="pf-marketing-module-nav" role="tablist" aria-label="Módulos do ecossistema Planify">
             {MODULES.map((mod) => {
               const isActive = mod.id === active;
               return (
@@ -181,51 +173,33 @@ export function LandingIntegratedSystem() {
                   role="tab"
                   aria-selected={isActive}
                   onClick={() => setActive(mod.id)}
-                  className={`flex shrink-0 items-center gap-2.5 rounded-xl px-4 py-3 text-left text-sm font-bold transition lg:w-full ${
-                    isActive
-                      ? "bg-white text-cyan-800 shadow-sm ring-1 ring-cyan-200"
-                      : "text-slate-600 hover:bg-white/70 hover:text-slate-900"
-                  }`}
+                  className={`pf-marketing-module-tab ${isActive ? "is-active" : ""}`}
                 >
-                  <span
-                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
-                      isActive
-                        ? "bg-gradient-to-br from-cyan-500 to-blue-600 text-white"
-                        : "bg-slate-100 text-slate-500"
-                    }`}
-                  >
-                    <PlanifyIcon name={mod.icon} className="h-4 w-4" />
-                  </span>
                   {mod.label}
                 </button>
               );
             })}
           </nav>
 
-          <div
-            key={animKey}
-            className="pf-demo-mock flex flex-col"
-            role="tabpanel"
-            aria-label={current.label}
-          >
-            <div className="border-b border-slate-100 bg-slate-50/80 px-5 py-4 sm:px-6">
-              <h3 className="text-xl font-extrabold text-slate-900 sm:text-2xl">{current.headline}</h3>
-              <p className="mt-2 max-w-xl text-sm font-medium leading-6 text-slate-600">
+          <div key={animKey} className="pf-demo-mock pf-marketing-card flex flex-col" role="tabpanel" aria-label={current.label}>
+            <div className="border-b border-slate-100 px-6 py-5 sm:px-8 sm:py-6">
+              <h3 className="text-xl font-bold text-slate-900 sm:text-2xl">{current.headline}</h3>
+              <p className="mt-2 max-w-xl text-base font-normal leading-7 text-slate-600">
                 {current.description}
               </p>
               {current.mockBadge ? (
-                <p className="mt-3 font-mono text-[11px] font-semibold text-cyan-600/80">
+                <p className="mt-3 font-mono text-xs font-semibold text-cyan-600/80">
                   {current.mockBadge}
                 </p>
               ) : null}
             </div>
 
-            <div className="flex flex-1 flex-col p-5 sm:p-6">
-              <ul className="space-y-2.5">
+            <div className="flex flex-1 flex-col p-6 sm:p-8">
+              <ul className="space-y-2">
                 {current.mockLines.map((line, i) => (
                   <li
                     key={line}
-                    className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50/60 px-4 py-3 text-sm font-medium text-slate-700"
+                    className="flex items-center gap-3 rounded-lg border border-slate-100 bg-slate-50/80 px-4 py-3 text-sm font-medium text-slate-700"
                     style={{ animationDelay: `${i * 50}ms` }}
                   >
                     <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-cyan-100 text-[10px] font-bold text-cyan-700">

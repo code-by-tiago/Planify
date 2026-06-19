@@ -1,56 +1,48 @@
-/** Design tokens — cyan/indigo HUD (public pages + landing structure). */
+/** Design tokens — public marketing pages (Planify cyan/blue). */
 
-export const ppPage =
-  "pf-scope pf-marketing-shell flex min-h-screen flex-col overflow-x-hidden bg-white";
+export const ppPage = "pf-scope pf-marketing-shell flex min-h-screen flex-col overflow-x-hidden bg-white";
 
-export const ppEyebrow =
-  "text-xs font-bold uppercase tracking-[0.2em] text-cyan-700";
+export const ppEyebrow = "pf-marketing-eyebrow";
 
 export const ppTitle =
-  "font-[family-name:var(--font-display)] text-4xl font-extrabold leading-[1.08] tracking-tight text-slate-900 sm:text-5xl";
+  "pf-marketing-display pf-marketing-display--section";
 
-export const ppTitleAccent = "text-cyan-600";
+export const ppTitleAccent = "pf-marketing-gradient-word";
 
-export const ppLead = "text-lg font-medium leading-8 text-slate-600";
+export const ppLead = "pf-marketing-lead pf-marketing-lead--section";
 
-export const ppCard =
-  "rounded-2xl border border-slate-200/80 bg-white shadow-sm";
+export const ppCard = "pf-marketing-card";
 
-export const ppCardLg =
-  "rounded-3xl border border-slate-200 bg-white shadow-sm";
+export const ppCardLg = "pf-marketing-card";
 
 export const ppBadge =
   "inline-flex items-center gap-1.5 rounded-full border border-cyan-100 bg-cyan-50 px-3 py-1.5 text-xs font-bold text-cyan-800";
 
 export const ppIconBox =
-  "flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-cyan-50 text-cyan-600";
+  "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-cyan-50 text-cyan-600";
 
-export const ppBtnPrimary =
-  "inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 px-6 py-3.5 text-sm font-bold text-white shadow-md shadow-cyan-500/20 transition hover:from-cyan-600 hover:to-blue-700";
+export const ppBtnPrimary = "pf-marketing-btn pf-marketing-btn--primary";
 
-export const ppBtnPrimarySm =
-  "inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 px-5 py-2.5 text-sm font-bold text-white shadow-md shadow-cyan-500/20 transition hover:from-cyan-600 hover:to-blue-700";
+export const ppBtnPrimarySm = "pf-marketing-btn pf-marketing-btn--primary-sm";
 
 export const ppBtnSecondary =
-  "inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-6 py-3.5 text-sm font-bold text-slate-800 shadow-sm transition hover:border-cyan-200 hover:bg-cyan-50/50";
+  "pf-marketing-btn pf-marketing-btn--outline";
 
 export const ppBtnGhost =
-  "inline-flex items-center justify-center gap-2 rounded-xl border border-white/20 px-7 py-3.5 text-sm font-semibold text-white transition hover:bg-white/10";
+  "inline-flex items-center justify-center gap-2 rounded-lg border border-white/20 px-7 py-3.5 text-sm font-semibold text-white transition hover:bg-white/10";
 
 /** Secondary CTA on dark bands — white fill, navy label (bypasses global text-* overrides). */
 export const ppBtnOnDark =
-  "inline-flex items-center justify-center rounded-xl border border-white/15 bg-white px-6 py-3.5 text-sm font-bold text-[#071018] shadow-sm shadow-black/10 transition hover:bg-slate-50";
+  "inline-flex items-center justify-center rounded-lg border border-white/15 bg-white px-6 py-3.5 text-sm font-bold text-[#071018] shadow-sm shadow-black/10 transition hover:bg-slate-50";
 
 export const ppLink =
   "font-bold text-cyan-700 transition hover:text-cyan-900";
 
 export const ppInput =
-  "w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm font-semibold text-slate-950 outline-none transition focus:border-cyan-400 focus:bg-white focus:ring-4 focus:ring-cyan-100";
+  "w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm font-semibold text-slate-950 outline-none transition focus:border-cyan-400 focus:bg-white focus:ring-4 focus:ring-cyan-100";
 
-export const ppCtaBand =
-  "overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-[#0c2a3a] to-[#071018] px-8 py-10 text-center shadow-2xl sm:px-12";
+export const ppCtaBand = "pf-marketing-cta-band px-8 py-10 text-center sm:px-12";
 
-/** Dark-band copy — hex bypasses global text-slate/cyan overrides on public pages. */
 export const ppCtaEyebrow =
   "text-[10px] font-bold uppercase tracking-[0.22em] text-[#a5f3fc]";
 
@@ -61,7 +53,7 @@ export const ppCtaTitle = "font-extrabold !text-white";
 export const ppCtaLinkOnDark =
   "inline-flex items-center gap-2 text-sm font-semibold text-[#bae6fd] underline-offset-4 transition hover:text-white hover:underline";
 
-export const ppSectionAlt = "border-y border-slate-200/80 bg-slate-50/80";
+export const ppSectionAlt = "pf-marketing-section--alt";
 
 export const ppPlanHighlight =
   "border-cyan-300 bg-white shadow-md ring-2 ring-cyan-500/20 lg:scale-[1.02]";

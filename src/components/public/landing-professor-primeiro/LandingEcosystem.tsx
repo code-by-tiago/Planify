@@ -1,7 +1,10 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import type { PlanifyIconName } from "@/lib/pro/planifyTools";
-import { ppBtnSecondary, ppEyebrow } from "./theme";
+import { ppBtnSecondary } from "./theme";
 
 type EcosystemCard = {
   id: string;
@@ -46,44 +49,58 @@ const CARDS: EcosystemCard[] = [
 ];
 
 export function LandingEcosystem() {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const visibleCards = CARDS.slice(activeIndex, activeIndex + 2);
+  const canPrev = activeIndex > 0;
+  const canNext = activeIndex + 2 < CARDS.length;
+
   return (
-    <section className="pf-marketing-ecosystem border-y border-slate-100 bg-slate-50/60 px-5 py-16 sm:px-8 sm:py-24">
-      <div className="mx-auto max-w-7xl">
-        <div className="mx-auto max-w-3xl text-center">
-          <p className={ppEyebrow}>Em um ambiente integrado</p>
-          <h2 className="pf-headline mt-3 text-3xl sm:text-4xl">
-            Toda a sua rotina.
-            <br />
-            <span className="text-cyan-600">Um ecossistema.</span>
+    <section id="perfis" className="pf-marketing-ecosystem pf-marketing-section scroll-mt-24">
+      <div className="mx-auto max-w-[1440px]">
+        <div className="flex items-center justify-between gap-4">
+          <h2 className="pf-marketing-display pf-marketing-display--section max-w-3xl">
+            Conheça mais por perfil
           </h2>
-          <p className="mt-4 text-sm font-medium leading-7 text-slate-600 sm:text-base">
-            Planify é professor-only — sem portal de alunos ou famílias. Tudo pensado para quem
-            planeja, ensina e avalia em sala.
-          </p>
+          <div className="hidden items-center gap-2 sm:flex">
+            <button
+              type="button"
+              aria-label="Perfil anterior"
+              disabled={!canPrev}
+              onClick={() => setActiveIndex((i) => Math.max(0, i - 1))}
+              className="pf-marketing-carousel-btn"
+            >
+              <PlanifyIcon name="arrowLeft" className="h-5 w-5" />
+            </button>
+            <button
+              type="button"
+              aria-label="Próximo perfil"
+              disabled={!canNext}
+              onClick={() => setActiveIndex((i) => Math.min(CARDS.length - 2, i + 1))}
+              className="pf-marketing-carousel-btn"
+            >
+              <PlanifyIcon name="arrowRight" className="h-5 w-5" />
+            </button>
+          </div>
         </div>
 
         <div className="mt-12 grid gap-6 sm:grid-cols-2">
-          {CARDS.map((card) => (
+          {visibleCards.map((card) => (
             <article
               key={card.id}
-              className={`flex flex-col rounded-3xl border p-6 sm:p-8 ${
-                card.featured
-                  ? "border-cyan-200 bg-white shadow-lg shadow-cyan-500/5 ring-1 ring-cyan-100"
-                  : "border-slate-200/80 bg-white shadow-sm"
-              }`}
+              className={`pf-marketing-eco-card ${card.featured ? "is-featured" : ""}`}
             >
               <span
-                className={`flex h-12 w-12 items-center justify-center rounded-2xl ${
+                className={`flex h-12 w-12 items-center justify-center rounded-xl ${
                   card.featured
-                    ? "bg-gradient-to-br from-cyan-500 to-blue-600 text-white shadow-md"
+                    ? "bg-gradient-to-br from-cyan-500 to-blue-600 text-white"
                     : "bg-slate-100 text-slate-600"
                 }`}
               >
                 <PlanifyIcon name={card.icon} className="h-6 w-6" />
               </span>
 
-              <h3 className="mt-5 text-xl font-extrabold text-slate-900 sm:text-2xl">{card.title}</h3>
-              <p className="mt-2 flex-1 text-sm font-medium leading-6 text-slate-600">
+              <h3 className="mt-5 text-xl font-bold text-slate-900 sm:text-2xl">{card.title}</h3>
+              <p className="mt-2 flex-1 text-sm font-normal leading-6 text-slate-600">
                 {card.description}
               </p>
 
@@ -99,10 +116,7 @@ export function LandingEcosystem() {
                 ))}
               </ul>
 
-              <Link
-                href={card.href}
-                className={`${ppBtnSecondary} mt-6 inline-flex w-fit gap-2`}
-              >
+              <Link href={card.href} className={`${ppBtnSecondary} mt-6 inline-flex w-fit gap-2`}>
                 Saiba mais
                 <PlanifyIcon name="arrowRight" className="h-4 w-4" />
               </Link>

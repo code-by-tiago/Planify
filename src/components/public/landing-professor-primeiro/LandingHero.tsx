@@ -1,67 +1,97 @@
 import Link from "next/link";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
-import { LandingProductDemoTabs } from "./LandingProductDemoTabs";
-import { ppBtnPrimary, ppBtnSecondary } from "./theme";
+import { landingPartnerLabels } from "@/lib/pro/planifyLanding";
+import { ppBtnPrimary } from "./theme";
+
+const AUDIENCE_PILLS = [
+  {
+    id: "professores",
+    label: "Professores",
+    description: "Planeje, crie e corrija com IA",
+    href: "/cadastro",
+    active: true,
+    icon: "user" as const,
+  },
+  {
+    id: "escolas",
+    label: "Escolas & gestores",
+    description: "Padronize equipes e modelos oficiais",
+    href: "/escolas",
+    active: false,
+    icon: "clipboard" as const,
+  },
+] as const;
 
 export function LandingHero() {
   return (
-    <section
-      id="professores"
-      className="pf-marketing-hero relative scroll-mt-24 overflow-hidden px-5 pb-16 pt-10 sm:px-8 sm:pb-20 sm:pt-14"
-    >
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 hidden bg-[radial-gradient(ellipse_80%_60%_at_80%_15%,rgba(8,145,178,0.06),transparent_50%)] sm:block"
-      />
+    <>
+      <section id="professores" className="pf-marketing-hero scroll-mt-24">
+        <div className="pf-marketing-hero-bg" aria-hidden />
 
-      <div className="relative mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-2 lg:gap-16">
-        <div>
-          <span className="inline-flex items-center rounded-full border border-cyan-200 bg-cyan-50 px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.14em] text-cyan-800">
-            IA feita para professores
-          </span>
+        <div className="pf-marketing-hero-inner">
+          <div className="mx-auto flex max-w-[1120px] flex-col items-center text-center">
+            <h1 className="pf-marketing-hero-title">
+              <span className="block">All-in-one </span>
+              <span className="pf-marketing-gradient-word pf-marketing-hero-title-accent">IA</span>
+              <br />
+              <span className="block">Learning System</span>
+            </h1>
 
-          <h1 className="pf-headline mt-6 text-4xl font-extrabold uppercase leading-[1.04] tracking-tight sm:text-5xl lg:text-[3.1rem]">
-            Sistema completo de IA{" "}
-            <span className="text-cyan-600">para professores</span>
-          </h1>
+            <p className="pf-marketing-lead pf-marketing-lead--hero mx-auto mt-6 max-w-2xl">
+              Junte-se a milhares de educadores com planejamentos BNCC, materiais com IA, correção e
+              exportação Google — tudo num só lugar, feito para o docente brasileiro.
+            </p>
 
-          <p className="mt-5 max-w-xl text-lg font-medium leading-8 text-slate-600">
-            Junte-se a milhares de educadores com planejamentos BNCC, materiais com IA, correção e
-            exportação Google — tudo num só lugar, feito para o docente brasileiro.
-          </p>
-
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
-            <Link href="/cadastro" className={`${ppBtnPrimary} gap-2 px-8 py-4 text-base`}>
-              Acesse grátis
-              <PlanifyIcon name="arrowRight" className="h-4 w-4" />
-            </Link>
-            <Link href="/ferramentas" className={`${ppBtnSecondary} gap-2 px-8 py-4 text-base`}>
-              Ver ferramentas
-            </Link>
-          </div>
-
-          <div className="mt-8 flex items-center gap-3">
-            <div className="flex -space-x-2">
-              {["MC", "RA", "FL", "JP"].map((initials) => (
-                <span
-                  key={initials}
-                  className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-white bg-gradient-to-br from-cyan-500 to-blue-600 text-[10px] font-bold text-white shadow-sm"
+            <nav
+              className="pf-marketing-audience-nav mt-10 hidden lg:flex"
+              aria-label="Planify para"
+            >
+              {AUDIENCE_PILLS.map((pill) => (
+                <Link
+                  key={pill.id}
+                  href={pill.href}
+                  className={`pf-marketing-audience-card ${pill.active ? "is-active" : ""}`}
                 >
-                  {initials}
-                </span>
+                  <span className="pf-marketing-audience-card-icon">
+                    <PlanifyIcon name={pill.icon} className="h-6 w-6" />
+                  </span>
+                  <span className="text-left">
+                    <span className="block text-sm font-bold">{pill.label}</span>
+                    <span className="block text-xs font-normal opacity-80">{pill.description}</span>
+                  </span>
+                </Link>
+              ))}
+            </nav>
+
+            <div className="pf-marketing-audience-pills mt-8 lg:hidden">
+              {AUDIENCE_PILLS.map((pill) => (
+                <Link
+                  key={pill.id}
+                  href={pill.href}
+                  className={`pf-marketing-audience-pill ${pill.active ? "is-active" : ""}`}
+                >
+                  {pill.label}
+                </Link>
               ))}
             </div>
-            <div>
-              <p className="text-sm font-bold text-slate-800">
-                +2.500 professores(as) já usam e recomendam
-              </p>
-              <p className="text-xs font-medium text-amber-500">★★★★★</p>
-            </div>
+
+            <Link href="/cadastro" className={`${ppBtnPrimary} mt-8 gap-2 px-6 py-3`}>
+              Acesse grátis
+              <PlanifyIcon name="arrowRight" className="h-5 w-5" />
+            </Link>
           </div>
         </div>
+      </section>
 
-        <LandingProductDemoTabs />
+      <div className="pf-marketing-trust-strip">
+        <div className="pf-marketing-trust-strip-inner">
+          {landingPartnerLabels.map((label) => (
+            <span key={label} className="pf-marketing-trust-item">
+              {label}
+            </span>
+          ))}
+        </div>
       </div>
-    </section>
+    </>
   );
 }

@@ -139,25 +139,543 @@
   color: var(--pf-text);
 }
 
-.pf-marketing-hero {
-  background: linear-gradient(180deg, #fff 0%, rgba(240, 244, 248, 0.5) 100%);
-}
+/* ─── Public marketing landing (Teachy rhythm · Planify cyan/blue) ─── */
 
 .pf-marketing-shell {
+  --pf-mkt-text: #0f151a;
+  --pf-mkt-muted: #64748b;
+  --pf-mkt-faint: #d1d5db;
+  --pf-mkt-primary: #2563eb;
+  --pf-mkt-primary-hover: #1d4ed8;
+  --pf-mkt-accent: #0891b2;
+  --pf-mkt-surface-alt: #f8fafc;
+  --pf-mkt-radius-btn: 8px;
+  --pf-mkt-radius-card: 12px;
+  --pf-mkt-radius-lg: 16px;
+  --pf-mkt-shadow-card: 0 4px 24px rgba(15, 21, 26, 0.07);
+  --pf-mkt-shadow-soft: 0 1px 3px rgba(15, 21, 26, 0.06);
   background: #fff;
-  color: var(--pf-text);
+  color: var(--pf-mkt-text);
+}
+
+.pf-marketing-shell [class*="backdrop-blur"] {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.pf-marketing-nav {
+  background: #fff;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.pf-marketing-nav.is-scrolled {
+  border-bottom-color: rgba(15, 21, 26, 0.08);
+  box-shadow: var(--pf-mkt-shadow-soft);
+}
+
+.pf-marketing-nav-link {
+  border-radius: 9999px;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--pf-mkt-text);
+  transition: color 0.15s, background 0.15s;
+}
+
+.pf-marketing-nav-link:hover {
+  color: var(--pf-mkt-accent);
+}
+
+.pf-marketing-nav-link--pill {
+  border: 1px solid rgba(37, 99, 235, 0.35);
+  color: var(--pf-mkt-primary);
+}
+
+.pf-marketing-nav-link--pill:hover {
+  background: rgba(37, 99, 235, 0.06);
+  color: var(--pf-mkt-primary-hover);
+}
+
+.pf-marketing-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: var(--pf-mkt-radius-btn);
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.25;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.pf-marketing-btn--primary {
+  background: var(--pf-mkt-primary);
+  color: #fff;
+  padding: 0.875rem 1.25rem;
+}
+
+.pf-marketing-btn--primary:hover {
+  background: var(--pf-mkt-primary-hover);
+}
+
+.pf-marketing-btn--primary-sm {
+  background: var(--pf-mkt-primary);
+  color: #fff;
+  padding: 0.625rem 1.125rem;
+  font-size: 0.875rem;
+}
+
+.pf-marketing-btn--primary-sm:hover {
+  background: var(--pf-mkt-primary-hover);
+}
+
+.pf-marketing-btn--ghost {
+  background: transparent;
+  color: var(--pf-mkt-text);
+  padding: 0.625rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.pf-marketing-btn--ghost:hover {
+  color: var(--pf-mkt-accent);
+}
+
+.pf-marketing-btn--outline {
+  border: 1px solid rgba(15, 21, 26, 0.12);
+  background: #fff;
+  color: var(--pf-mkt-text);
+  padding: 0.625rem 1.125rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.pf-marketing-btn--outline:hover {
+  border-color: rgba(8, 145, 178, 0.35);
+  color: var(--pf-mkt-accent);
+}
+
+.pf-marketing-display {
+  font-family: var(--font-display, ui-sans-serif, system-ui, sans-serif);
+  font-weight: 500;
+  letter-spacing: -0.015em;
+  line-height: 1.05;
+}
+
+.pf-marketing-display--hero {
+  font-family: var(--font-hero-display, var(--font-display)), ui-sans-serif, system-ui, sans-serif;
+  font-size: clamp(2.25rem, 6.5vw, 6rem);
+  font-weight: 400;
+  text-transform: uppercase;
+  color: #fff;
+}
+
+.pf-marketing-display--section {
+  font-size: clamp(2rem, 4.8vw, 4rem);
+  color: var(--pf-mkt-text);
+  line-height: 1.08;
+}
+
+.pf-marketing-gradient-word {
+  background: linear-gradient(135deg, #22d3ee 0%, #2563eb 55%, #0891b2 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.pf-marketing-lead {
+  font-size: 1.125rem;
+  font-weight: 400;
+  line-height: 1.6;
+  letter-spacing: -0.01em;
+}
+
+.pf-marketing-lead--hero {
+  color: rgba(255, 255, 255, 0.92);
+  max-width: 42rem;
+}
+
+.pf-marketing-lead--section {
+  color: var(--pf-mkt-muted);
+}
+
+.pf-marketing-eyebrow {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--pf-mkt-accent);
+}
+
+.pf-marketing-hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  min-height: min(92vh, 860px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  background: #0a1018;
+  color: #fff;
+}
+
+.pf-marketing-hero-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background:
+    linear-gradient(
+      to top,
+      rgba(10, 16, 24, 0.92) 0%,
+      rgba(10, 16, 24, 0.55) 45%,
+      rgba(10, 16, 24, 0.35) 100%
+    ),
+    radial-gradient(ellipse 90% 70% at 75% 15%, rgba(8, 145, 178, 0.35), transparent 55%),
+    radial-gradient(ellipse 60% 50% at 15% 85%, rgba(37, 99, 235, 0.22), transparent 50%),
+    linear-gradient(135deg, #0c1824 0%, #0a1018 40%, #071018 100%);
+}
+
+.pf-marketing-hero-bg::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0.35;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.pf-marketing-hero-inner {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 80rem;
+  margin: 0 auto;
+  padding: 6rem 1.5rem 3.5rem;
+}
+
+@media (min-width: 640px) {
+  .pf-marketing-hero-inner {
+    padding: 7rem 2.5rem 4rem;
+  }
+}
+
+.pf-marketing-hero-title {
+  font-family: var(--font-hero-display, Anton, Impact, sans-serif);
+  font-weight: 400;
+  font-size: clamp(3rem, 10vw, 6rem);
+  line-height: 1.12;
+  letter-spacing: -0.01em;
+  text-transform: none;
+  color: #fff;
+}
+
+.pf-marketing-hero-title-accent {
+  display: inline;
+}
+
+.pf-marketing-audience-nav {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.pf-marketing-audience-card {
+  display: flex;
+  width: min(100%, 216px);
+  align-items: center;
+  gap: 0.625rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  background: rgba(251, 252, 255, 0.1);
+  padding: 0.5rem;
+  color: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.pf-marketing-audience-card:hover,
+.pf-marketing-audience-card.is-active {
+  background: rgba(251, 252, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.55);
+}
+
+.pf-marketing-audience-card-icon {
+  display: flex;
+  height: 3rem;
+  width: 3rem;
+  shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.pf-marketing-audience-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.625rem;
+}
+
+.pf-marketing-audience-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.08);
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.88);
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.pf-marketing-audience-pill:hover {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+.pf-marketing-audience-pill.is-active {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.28);
+  color: #fff;
+}
+
+.pf-marketing-trust-strip {
+  position: relative;
+  z-index: 2;
+  border-top: 1px solid rgba(15, 21, 26, 0.06);
+  background: #fff;
+  padding: 1.25rem 0;
+}
+
+.pf-marketing-trust-strip-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 1.25rem 2rem;
+  max-width: 80rem;
+  margin: 0 auto;
+  padding: 0 1.25rem;
+}
+
+@media (min-width: 640px) {
+  .pf-marketing-trust-strip-inner {
+    justify-content: space-between;
+    padding: 0 2rem;
+  }
+}
+
+.pf-marketing-trust-item {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #94a3b8;
+  white-space: nowrap;
+}
+
+.pf-marketing-section {
+  padding: 4rem 1.25rem;
+}
+
+@media (min-width: 640px) {
+  .pf-marketing-section {
+    padding: 6rem 2rem;
+  }
 }
 
 .pf-marketing-integrated {
-  background: linear-gradient(180deg, rgba(240, 244, 248, 0.4) 0%, #fff 100%);
+  background: #fff;
 }
 
 .pf-marketing-stats {
   background: #fff;
+  border-top: 1px solid rgba(15, 21, 26, 0.06);
+  border-bottom: 1px solid rgba(15, 21, 26, 0.06);
+}
+
+.pf-marketing-stats-banner {
+  margin: 0 auto;
+  max-width: min(826px, 100%);
+  background: #edf2ff;
+  padding: 1.5rem 2rem;
+  text-align: center;
+}
+
+@media (min-width: 768px) {
+  .pf-marketing-stats-banner {
+    padding: 1.5rem 3rem;
+  }
+}
+
+.pf-marketing-stats-headline {
+  font-family: var(--font-inter, ui-sans-serif, system-ui, sans-serif);
+  font-size: clamp(1.75rem, 4vw, 3rem);
+  font-weight: 500;
+  letter-spacing: -0.015em;
+  line-height: 1.15;
+  color: #0f151a;
+}
+
+.pf-marketing-carousel-btn {
+  display: flex;
+  height: 3rem;
+  width: 3rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  border: 1px solid #d5e1ed;
+  background: #fff;
+  color: #0f151a;
+  transition: background 0.15s;
+}
+
+.pf-marketing-carousel-btn:hover:not(:disabled) {
+  background: #f8fafc;
+}
+
+.pf-marketing-carousel-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.35;
 }
 
 .pf-marketing-ecosystem {
-  background: rgba(248, 250, 252, 0.9);
+  background: var(--pf-mkt-surface-alt);
+}
+
+.pf-marketing-section--alt {
+  background: var(--pf-mkt-surface-alt);
+  border-top: 1px solid rgba(15, 21, 26, 0.05);
+  border-bottom: 1px solid rgba(15, 21, 26, 0.05);
+}
+
+.pf-marketing-module-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.pf-marketing-module-tab {
+  display: block;
+  width: 100%;
+  border: none;
+  background: transparent;
+  text-align: left;
+  padding: 0.375rem 0;
+  font-family: var(--font-display, ui-sans-serif, system-ui, sans-serif);
+  font-size: 1.375rem;
+  font-weight: 500;
+  line-height: 1.2;
+  color: var(--pf-mkt-faint);
+  cursor: pointer;
+  transition: color 0.2s, font-size 0.2s, font-weight 0.2s;
+}
+
+.pf-marketing-module-tab:hover {
+  color: #94a3b8;
+}
+
+.pf-marketing-module-tab.is-active {
+  font-size: clamp(1.75rem, 3vw, 2.25rem);
+  font-weight: 700;
+  color: var(--pf-mkt-text);
+}
+
+.pf-marketing-module-tab.is-active:hover {
+  color: var(--pf-mkt-text);
+}
+
+.pf-marketing-card {
+  border-radius: var(--pf-mkt-radius-lg);
+  border: 1px solid rgba(15, 21, 26, 0.08);
+  background: #fff;
+  box-shadow: var(--pf-mkt-shadow-card);
+}
+
+.pf-marketing-stat-value {
+  font-family: var(--font-display, ui-sans-serif, system-ui, sans-serif);
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  color: var(--pf-mkt-text);
+}
+
+.pf-marketing-stat-label {
+  margin-top: 0.375rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--pf-mkt-muted);
+}
+
+.pf-marketing-tool-grid {
+  display: grid;
+  gap: 0.875rem;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr));
+}
+
+.pf-marketing-tool-card {
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--pf-mkt-radius-card);
+  border: 1px solid rgba(15, 21, 26, 0.08);
+  background: #fff;
+  padding: 1.125rem;
+  box-shadow: var(--pf-mkt-shadow-soft);
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+}
+
+.pf-marketing-tool-card:hover {
+  border-color: rgba(8, 145, 178, 0.25);
+  box-shadow: var(--pf-mkt-shadow-card);
+  transform: translateY(-1px);
+}
+
+.pf-marketing-eco-card {
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--pf-mkt-radius-lg);
+  border: 1px solid rgba(15, 21, 26, 0.08);
+  background: #fff;
+  padding: 1.75rem;
+  box-shadow: var(--pf-mkt-shadow-soft);
+  transition: box-shadow 0.15s;
+}
+
+.pf-marketing-eco-card:hover {
+  box-shadow: var(--pf-mkt-shadow-card);
+}
+
+.pf-marketing-eco-card.is-featured {
+  border-color: rgba(8, 145, 178, 0.22);
+  box-shadow: 0 8px 32px rgba(8, 145, 178, 0.08);
+}
+
+.pf-marketing-testimonial {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  border-radius: var(--pf-mkt-radius-lg);
+  border: 1px solid rgba(15, 21, 26, 0.08);
+  background: #fff;
+  padding: 1.5rem;
+  box-shadow: var(--pf-mkt-shadow-soft);
+}
+
+.pf-marketing-cta-band {
+  overflow: hidden;
+  border-radius: var(--pf-mkt-radius-lg);
+  background: linear-gradient(135deg, #0f172a 0%, #0c2a3a 50%, #071018 100%);
+  box-shadow: 0 16px 48px rgba(7, 16, 24, 0.25);
+}
+
+.pf-marketing-footer {
+  border-top: 1px solid rgba(15, 21, 26, 0.08);
+  background: #fff;
 }
 
 .pf-catalog-grid {
@@ -270,10 +788,10 @@
 }
 
 .pf-demo-mock {
-  border-radius: var(--pf-radius-xl);
-  border: 1px solid var(--pf-border);
-  background: var(--pf-surface);
-  box-shadow: var(--pf-shadow-md);
+  border-radius: var(--pf-mkt-radius-lg, var(--pf-radius-xl));
+  border: 1px solid rgba(15, 21, 26, 0.08);
+  background: #fff;
+  box-shadow: var(--pf-mkt-shadow-card, var(--pf-shadow-md));
   overflow: hidden;
 }
 
@@ -534,3 +1052,154 @@
 .pf-ecosystem-scope .pf-surface {
   box-shadow: var(--pf-shadow-sm);
 }
+
+/* ─── Marketing landing: neutralize globals.css internal overrides ─── */
+
+.pf-ecosystem-scope.pf-marketing-shell {
+  background: #fff !important;
+  color: #0f151a !important;
+}
+
+.pf-ecosystem-scope.pf-marketing-shell .pf-marketing-nav {
+  background: #fff !important;
+  border-bottom: 1px solid transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.pf-ecosystem-scope.pf-marketing-shell .pf-marketing-nav.is-scrolled {
+  border-bottom-color: rgba(15, 21, 26, 0.08) !important;
+  box-shadow: 0 1px 3px rgba(15, 21, 26, 0.06) !important;
+}
+
+.pf-ecosystem-scope.pf-marketing-shell .pf-marketing-nav nav,
+.pf-ecosystem-scope.pf-marketing-shell .pf-marketing-nav [class*="rounded-full"],
+.pf-ecosystem-scope.pf-marketing-shell .pf-marketing-nav [class*="rounded-2xl"] {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+.pf-ecosystem-scope.pf-marketing-shell .pf-marketing-hero {
+  background: #0a1018 !important;
+  color: #fff !important;
+}
+
+.pf-ecosystem-scope.pf-marketing-shell .pf-marketing-hero [class*="text-white"],
+.pf-ecosystem-scope.pf-marketing-shell .pf-marketing-hero-title,
+.pf-ecosystem-scope.pf-marketing-shell .pf-marketing-lead--hero {
+  color: rgba(255, 255, 255, 0.92) !important;
+}
+
+.pf-ecosystem-scope.pf-marketing-shell .pf-marketing-hero-title {
+  color: #fff !important;
+}
+
+.pf-ecosystem-scope.pf-marketing-shell .pf-marketing-gradient-word {
+  background: linear-gradient(135deg, #22d3ee 0%, #2563eb 55%, #0891b2 100%) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  color: transparent !important;
+  -webkit-text-fill-color: transparent !important;
+}
+
+.pf-ecosystem-scope.pf-marketing-shell .pf-marketing-cta-band [class*="text-white"],
+.pf-ecosystem-scope.pf-marketing-shell .pf-marketing-cta-band .pf-marketing-display {
+  color: #fff !important;
+}
+
+.pf-ecosystem-scope.pf-marketing-shell .pf-marketing-cta-band [class*="text-cyan-100"],
+.pf-ecosystem-scope.pf-marketing-shell .pf-marketing-cta-band [class*="text-cyan-300"] {
+  color: #a5f3fc !important;
+}
+
+.pf-ecosystem-scope.pf-marketing-shell .pf-marketing-btn--primary,
+.pf-ecosystem-scope.pf-marketing-shell .pf-marketing-btn--primary-sm {
+  background: #2563eb !important;
+  color: #fff !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.pf-ecosystem-scope.pf-marketing-shell .pf-marketing-btn--primary:hover,
+.pf-ecosystem-scope.pf-marketing-shell .pf-marketing-btn--primary-sm:hover {
+  background: #1d4ed8 !important;
+  color: #fff !important;
+}
+
+.pf-ecosystem-scope.pf-marketing-shell .pf-marketing-btn--ghost {
+  background: transparent !important;
+  color: #0f151a !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.pf-ecosystem-scope.pf-marketing-shell .pf-marketing-stats-banner {
+  background: #edf2ff !important;
+}
+
+.pf-ecosystem-scope.pf-marketing-shell .pf-marketing-eco-card,
+.pf-ecosystem-scope.pf-marketing-shell .pf-marketing-tool-card,
+.pf-ecosystem-scope.pf-marketing-shell .pf-marketing-card,
+.pf-ecosystem-scope.pf-marketing-shell .pf-marketing-testimonial {
+  background: #fff !important;
+  border-color: rgba(15, 21, 26, 0.08) !important;
+}
+
+.pf-ecosystem-scope.pf-marketing-shell .pf-marketing-section--alt {
+  background: #f8fafc !important;
+}
+
+.pf-ecosystem-scope.pf-marketing-shell .pf-marketing-ecosystem {
+  background: #f8fafc !important;
+}
+
+.pf-ecosystem-scope.pf-marketing-shell main h1.pf-marketing-hero-title {
+  font-size: clamp(3rem, 10vw, 6rem) !important;
+  line-height: 1.12 !important;
+  letter-spacing: -0.01em !important;
+}
+
+.pf-ecosystem-scope.pf-marketing-shell .pf-marketing-display--section {
+  font-size: clamp(2rem, 4.8vw, 4rem) !important;
+  color: #0f151a !important;
+}
+
+.pf-ecosystem-scope.pf-marketing-shell .pf-marketing-nav-link--pill {
+  border: 1px solid rgba(37, 99, 235, 0.35) !important;
+  color: #2563eb !important;
+  background: transparent !important;
+}
+
+.pf-ecosystem-scope.pf-marketing-shell [class*="from-cyan-500"][class*="to-blue-600"] {
+  background: linear-gradient(to bottom right, #06b6d4, #2563eb) !important;
+  color: #fff !important;
+}
+
+.pf-ecosystem-scope.pf-marketing-shell .pf-marketing-cta-band {
+  background: linear-gradient(135deg, #0f172a 0%, #0c2a3a 50%, #071018 100%) !important;
+  box-shadow: 0 16px 48px rgba(7, 16, 24, 0.25) !important;
+}
+
+.pf-ecosystem-scope.pf-marketing-shell .pf-marketing-footer {
+  background: #fff !important;
+  border-top: 1px solid rgba(15, 21, 26, 0.08) !important;
+}
+
+.pf-ecosystem-scope.pf-marketing-shell .pf-demo-mock {
+  background: #fff !important;
+  box-shadow: 0 4px 24px rgba(15, 21, 26, 0.07) !important;
+}
+
+.pf-ecosystem-scope.pf-marketing-shell .pf-marketing-module-tab.is-active {
+  color: #0f151a !important;
+}
+
+.pf-ecosystem-scope.pf-marketing-shell .pf-marketing-carousel-btn {
+  background: #fff !important;
+  border-color: #d5e1ed !important;
+  color: #0f151a !important;
+  box-shadow: none !important;
+}
+

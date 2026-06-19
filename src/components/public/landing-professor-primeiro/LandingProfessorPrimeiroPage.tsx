@@ -1,4 +1,4 @@
-import { TeachyMarketingLayout } from "@/components/teachy-layout";
+import { PlanifyMarketingLayout } from "@/components/planify-layout";
 import { LandingEcosystem } from "./LandingEcosystem";
 import { LandingFinalCta } from "./LandingFinalCta";
 import { LandingHero } from "./LandingHero";
@@ -14,7 +14,7 @@ import { LandingTools } from "./LandingTools";
  */
 export function LandingProfessorPrimeiroPage() {
   return (
-    <TeachyMarketingLayout>
+    <PlanifyMarketingLayout>
       <LandingHero />
       <LandingIntegratedSystem />
       <LandingEcosystem />
@@ -23,6 +23,6 @@ export function LandingProfessorPrimeiroPage() {
       <LandingTools />
       <LandingTestimonials />
       <LandingFinalCta />
-    </TeachyMarketingLayout>
+    </PlanifyMarketingLayout>
   );
 }

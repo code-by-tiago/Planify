@@ -1751,7 +1751,9 @@ export function MateriaisClient({
           etapa={etapa}
           anoSerie={anoSerie}
           disabled={!resultadoHtml}
-          className="pl-hud-btn-secondary inline-flex items-center gap-2 rounded-xl border border-cyan-400/25 bg-cyan-50 px-4 py-2.5 text-sm font-bold text-cyan-900 transition hover:bg-cyan-100"
+          label="Publicar na comunidade"
+          compact
+          className="pl-hud-btn-secondary inline-flex items-center gap-2 rounded-xl border border-fuchsia-200/80 bg-fuchsia-50 px-4 py-2.5 text-sm font-bold text-fuchsia-900 transition hover:bg-fuchsia-100"
         />
         <Link
           href="/historico"

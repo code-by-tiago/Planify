@@ -15,6 +15,9 @@ Fase 5: Diferenciação docente (professor-first)
 | **3** | Paridade Teachy P0 (studio, export dock, dashboard hub) | Concluída (`8b4ff103`) |
 | **4** | Produção client-ready (E2E, CI, RLS, docs) | Concluída |
 | **5** | Diferenciação docente (contexto, distribuição, histórico) | Concluída |
+| **Gate Launch** | Checklist pré-produção (10 itens) | Concluída |
+| **5D** | Relatório turma (correção lote) | Concluída |
+| **5E** | Comunidade 1-clique no ExportDock | Concluída |
 
 ## Fase 5 — Entregas (professor-only)
 
@@ -39,10 +42,41 @@ Fase 5: Diferenciação docente (professor-first)
 ### Explicitamente fora do escopo (Fase 5 neste commit)
 
 - Wizard de primeiro login (deferido — risco no fluxo de auth)
-- 5D OCR / relatório turma correção
-- 5E publish comunidade 1-clique além do existente
 - 5F admin health / WCAG
 - 5G referral / PWA
+
+### Gate Launch (pós-Fase 5)
+
+Checklist acionável em `docs/deploy/GATE-LAUNCH-CHECKLIST.md` — 10 itens com owner code/ops:
+
+1. Gemini/Vercel billing — manual ops
+2. Sem debug localhost em `src/` — ✅ (`npm run verify:gate-launch`)
+3. Créditos fail-closed — ✅
+4. ToolStudioShell + ExportDock lista/prova — ✅
+5. Export audit scripts — ✅ (incluídos em `verify:go-live`)
+6. Stripe E2E — manual (docs em `docs/9-17-0-auditoria-stripe-assinaturas.md`)
+7. Login/signup + proxy — ✅
+8. E2E responsivo — ✅ (`e2e/responsive.spec.ts`)
+9. Privacidade/termos — ✅
+10. Rollback < 15 min — ✅ (`docs/deploy/DEPLOY-CHECKLIST.md`)
+
+Automação: `npm run verify:gate-launch`
+
+Migrations deploy: `20260618_teacher_teaching_context.sql`, `20260618_teacher_correction_profile.sql`
+
+### 5D — Relatório turma (correção)
+
+- Em `CorrecaoClient.tsx`, quando há **2+ resultados** de correção em lote:
+  - **Exportar relatório da turma** (copiar texto)
+  - **Baixar .txt** e **Imprimir (HTML)** — resumo com índice do aluno, nota, percentual, feedback e principais melhorias
+  - Média da turma no cabeçalho
+- Teacher-only: professor analisa trabalhos colados/enviados; sem contas de aluno
+
+### 5E — Comunidade 1-clique
+
+- `MarketplacePublishButton` no **ExportDock** (studio mode) com label **Publicar na comunidade**
+- Visível após material gerado; modal docente (“Publicar para outras professoras”)
+- Sem páginas públicas de comunidade para alunos
 
 ### Restrição de produto (mantida)
 
@@ -106,6 +140,7 @@ Relatório: docs/auditorias/auditoria-anti-vazamento-9-21-0-2026-06-18T23-47-37-
 ## Verificações locais (Fases 4–5)
 
 ```bash
+npm run verify:gate-launch
 npm run verify:go-live
 npm run typecheck
 npm run build
@@ -124,5 +159,6 @@ npm run test:e2e:install   # primeira vez / CI
 
 ## Documentação atualizada
 
-- `docs/deploy/DEPLOY-CHECKLIST.md` — passos E2E e job CI
+- `docs/deploy/DEPLOY-CHECKLIST.md` — passos E2E, job CI, migrations, rollback
+- `docs/deploy/GATE-LAUNCH-CHECKLIST.md` — gate pré-produção (10 itens)
 - `.env.example` — variáveis `PLANIFY_E2E_*`

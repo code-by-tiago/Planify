@@ -18,14 +18,40 @@
 4. Para E2E autenticado no CI, configurar secrets `PLANIFY_E2E_EMAIL` e `PLANIFY_E2E_PASSWORD` (conta com plano ativo).
 5. Nunca subir `.env.local` nem secrets no repositório.
 
+## Gate Launch
+
+Antes do primeiro deploy de produção (ou release major), percorrer os 10 itens em
+`docs/deploy/GATE-LAUNCH-CHECKLIST.md` e rodar:
+
+```bash
+npm run verify:gate-launch
+npm run verify:go-live
+```
+
 ## Deploy
 
-1. Configurar variáveis de ambiente no painel do provedor.
-2. Configurar Supabase URLs, service role e anon key.
-3. Configurar Stripe keys, prices e webhook.
-4. Configurar admin email.
-5. Rodar build no deploy.
-6. Testar login, planos, premium gate, planejamentos, biblioteca, marketplace e editor.
+1. **Aplicar migrations Supabase pendentes** (SQL Editor ou `supabase db push`):
+   - `supabase/migrations/20260618_teacher_teaching_context.sql`
+   - `supabase/migrations/20260618_teacher_correction_profile.sql`
+   - Demais arquivos em `supabase/migrations/` ainda não aplicados no projeto remoto.
+2. Configurar variáveis de ambiente no painel do provedor.
+3. Configurar Supabase URLs, service role e anon key.
+4. Configurar Stripe keys, prices e webhook.
+5. Configurar admin email.
+6. Rodar build no deploy.
+7. Testar login, planos, premium gate, planejamentos, biblioteca, marketplace e editor.
+
+## Rollback (< 15 min)
+
+Se o deploy introduzir regressão crítica:
+
+1. **Vercel:** Deployments → selecionar o deployment anterior estável → **Promote to Production** (≈ 2–5 min para propagar).
+2. **Variáveis de ambiente:** se a regressão veio de env nova, reverter no painel e redeploy (≈ 5 min).
+3. **Supabase migrations:** as migrations docentes são aditivas (`teaching_context`, `correction_profile` jsonb). Rollback de app **não exige** reverter SQL imediato; colunas extras são inofensivas para versões anteriores.
+4. **Stripe webhook:** endpoint permanece o mesmo; não é necessário alterar em rollback de frontend.
+5. **Validação pós-rollback:** smoke em `/`, `/login`, `/dashboard` (conta teste), uma geração de material.
+
+Tempo alvo total: **menos de 15 minutos** (promote + smoke).
 
 ## Google Drive/Classroom
 

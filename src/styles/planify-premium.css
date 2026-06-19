@@ -1555,15 +1555,15 @@
 
 .pf-ecosystem-scope.pf-marketing-shell .pf-marketing-btn--primary,
 .pf-ecosystem-scope.pf-marketing-shell .pf-marketing-btn--primary-sm {
-  background: #2563eb !important;
+  background: var(--plx-primary, #3b82f6) !important;
   color: #fff !important;
   border: none !important;
-  box-shadow: none !important;
+  box-shadow: 0 8px 24px rgba(59, 130, 246, 0.28) !important;
 }
 
 .pf-ecosystem-scope.pf-marketing-shell .pf-marketing-btn--primary:hover,
 .pf-ecosystem-scope.pf-marketing-shell .pf-marketing-btn--primary-sm:hover {
-  background: #1d4ed8 !important;
+  background: #2563eb !important;
   color: #fff !important;
 }
 
@@ -1594,7 +1594,7 @@
   background: #f8fafc !important;
 }
 
-.pf-ecosystem-scope.pf-marketing-shell main h1.pf-marketing-hero-title {
+.pf-ecosystem-scope.pf-marketing-shell main h1.pf-marketing-hero-title:not(.pf-marketing-hero-title--light) {
   font-size: clamp(3rem, 10vw, 6rem) !important;
   line-height: 1.12 !important;
   letter-spacing: -0.01em !important;

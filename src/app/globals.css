@@ -2964,7 +2964,7 @@ body {
   opacity: 0.72;
 }
 
-.pf-marketing-hero-inner {
+.pf-marketing-hero-inner:not(.pf-marketing-hero-inner--split) {
   position: relative;
   z-index: 3;
   width: min(480px, calc(100% - 48px));
@@ -3014,8 +3014,8 @@ body {
   background: var(--planify-teal);
 }
 
-.pf-ecosystem-scope.pf-marketing-shell main h1.pf-marketing-hero-title,
-.pf-marketing-hero-title {
+.pf-ecosystem-scope.pf-marketing-shell main h1.pf-marketing-hero-title:not(.pf-marketing-hero-title--light),
+.pf-marketing-hero:not(.pf-marketing-hero--light) .pf-marketing-hero-title {
   margin: 0 !important;
   color: #ffffff !important;
   font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif !important;
@@ -3026,7 +3026,7 @@ body {
   text-transform: none !important;
 }
 
-.pf-marketing-lead--hero {
+.pf-marketing-hero:not(.pf-marketing-hero--light) .pf-marketing-lead--hero {
   color: rgba(255, 255, 255, 0.88) !important;
   font-size: clamp(1.08rem, 2vw, 1.34rem) !important;
   line-height: 1.5 !important;
@@ -3037,13 +3037,13 @@ body {
   margin-right: 0 !important;
 }
 
-.pf-marketing-hero-outline {
+.pf-marketing-hero:not(.pf-marketing-hero--light) .pf-marketing-hero-outline {
   background: rgba(255, 255, 255, 0.08) !important;
   border-color: rgba(255, 255, 255, 0.42) !important;
   color: #ffffff !important;
 }
 
-.pf-marketing-hero-outline:hover {
+.pf-marketing-hero:not(.pf-marketing-hero--light) .pf-marketing-hero-outline:hover {
   background: rgba(255, 255, 255, 0.16) !important;
   color: #ffffff !important;
 }
@@ -3211,12 +3211,12 @@ body {
   color: var(--planify-teal-dark) !important;
 }
 
-.pf-marketing-shell .pf-marketing-btn--primary:hover,
-.pf-marketing-shell .pf-marketing-btn--primary-sm:hover {
+.pf-marketing-shell .pf-marketing-hero:not(.pf-marketing-hero--light) .pf-marketing-btn--primary:hover,
+.pf-marketing-shell .pf-marketing-hero:not(.pf-marketing-hero--light) .pf-marketing-btn--primary-sm:hover {
   color: var(--planify-navy) !important;
 }
 
-.pf-marketing-shell .pf-marketing-hero-outline:hover {
+.pf-marketing-shell .pf-marketing-hero:not(.pf-marketing-hero--light) .pf-marketing-hero-outline:hover {
   color: #ffffff !important;
 }
 
@@ -3495,18 +3495,18 @@ body {
     display: none !important;
   }
 
-  .pf-marketing-hero {
+  .pf-marketing-hero:not(.pf-marketing-hero--light) {
     min-height: 78svh !important;
   }
 
-  .pf-marketing-hero-inner {
+  .pf-marketing-hero:not(.pf-marketing-hero--light) .pf-marketing-hero-inner:not(.pf-marketing-hero-inner--split) {
     width: min(100% - 48px, 480px) !important;
     max-width: none !important;
     margin-left: 24px !important;
     padding: 96px 0 58px !important;
   }
 
-  .pf-marketing-hero-title {
+  .pf-marketing-hero:not(.pf-marketing-hero--light) .pf-marketing-hero-title {
     font-size: clamp(3rem, 17vw, 4.7rem) !important;
   }
 
@@ -3666,7 +3666,7 @@ body {
   background: linear-gradient(180deg, rgba(246, 251, 250, 0), var(--plx-paper) 88%) !important;
 }
 
-.pf-marketing-hero-inner {
+.pf-marketing-hero:not(.pf-marketing-hero--light) .pf-marketing-hero-inner:not(.pf-marketing-hero-inner--split) {
   width: min(480px, calc(100% - 48px)) !important;
   max-width: 480px !important;
   padding: 132px 0 94px !important;
@@ -3676,7 +3676,7 @@ body {
   justify-self: start !important;
 }
 
-.pf-marketing-hero-copy {
+.pf-marketing-hero:not(.pf-marketing-hero--light) .pf-marketing-hero-copy {
   width: min(480px, 100%) !important;
   max-width: 100% !important;
 }
@@ -3691,13 +3691,13 @@ body {
   letter-spacing: 0.08em !important;
 }
 
-.pf-marketing-hero-title {
+.pf-marketing-hero:not(.pf-marketing-hero--light) .pf-marketing-hero-title {
   font-size: 4.4rem !important;
   line-height: 0.92 !important;
   letter-spacing: 0 !important;
 }
 
-.pf-marketing-lead--hero {
+.pf-marketing-hero:not(.pf-marketing-hero--light) .pf-marketing-lead--hero {
   max-width: 480px !important;
   color: rgba(255, 255, 255, 0.88) !important;
   font-size: 1.2rem !important;
@@ -3710,7 +3710,7 @@ body {
   padding-right: 22px !important;
 }
 
-.pf-marketing-hero-outline {
+.pf-marketing-hero:not(.pf-marketing-hero--light) .pf-marketing-hero-outline {
   background: rgba(255, 255, 255, 0.08) !important;
   border-color: rgba(255, 255, 255, 0.32) !important;
   color: #ffffff !important;
@@ -4090,7 +4090,7 @@ body {
 }
 
 @media (max-width: 620px) {
-  .pf-marketing-hero-inner {
+  .pf-marketing-hero:not(.pf-marketing-hero--light) .pf-marketing-hero-inner:not(.pf-marketing-hero-inner--split) {
     width: min(100% - 48px, 480px) !important;
     max-width: none !important;
     margin-left: 24px !important;
@@ -4098,11 +4098,11 @@ body {
     padding-bottom: 64px !important;
   }
 
-  .pf-marketing-hero-title {
+  .pf-marketing-hero:not(.pf-marketing-hero--light) .pf-marketing-hero-title {
     font-size: 4.6rem !important;
   }
 
-  .pf-marketing-lead--hero {
+  .pf-marketing-hero:not(.pf-marketing-hero--light) .pf-marketing-lead--hero {
     font-size: 1.04rem !important;
   }
 
@@ -4112,6 +4112,165 @@ body {
 
   .pl-catalog-hero {
     padding-top: 96px !important;
+  }
+}
+
+/* Light hero + light nav: undo legacy dark-era global overrides */
+.pf-ecosystem-scope.pf-marketing-shell .pf-marketing-nav.pf-marketing-nav--light {
+  position: sticky !important;
+  inset: auto !important;
+  background: #ffffff !important;
+  border-bottom: 1px solid transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: none !important;
+}
+
+.pf-ecosystem-scope.pf-marketing-shell .pf-marketing-nav.pf-marketing-nav--light.is-scrolled {
+  border-bottom-color: #e2e8f0 !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06) !important;
+}
+
+.pf-ecosystem-scope.pf-marketing-shell .pf-marketing-nav.pf-marketing-nav--light .text-slate-950,
+.pf-ecosystem-scope.pf-marketing-shell .pf-marketing-nav.pf-marketing-nav--light .text-xl {
+  color: #0f172a !important;
+}
+
+.pf-ecosystem-scope.pf-marketing-shell .pf-marketing-nav.pf-marketing-nav--light .text-cyan-600 {
+  color: #0891b2 !important;
+}
+
+.pf-ecosystem-scope.pf-marketing-shell .pf-marketing-nav.pf-marketing-nav--light .pf-marketing-nav-link,
+.pf-ecosystem-scope.pf-marketing-shell .pf-marketing-nav.pf-marketing-nav--light .pf-marketing-nav-dropdown-trigger,
+.pf-ecosystem-scope.pf-marketing-shell .pf-marketing-nav.pf-marketing-nav--light .pf-marketing-btn--ghost {
+  color: #64748b !important;
+  background: transparent !important;
+}
+
+.pf-ecosystem-scope.pf-marketing-shell .pf-marketing-nav.pf-marketing-nav--light .pf-marketing-nav-link:hover,
+.pf-ecosystem-scope.pf-marketing-shell .pf-marketing-nav.pf-marketing-nav--light .pf-marketing-nav-dropdown-trigger:hover,
+.pf-ecosystem-scope.pf-marketing-shell .pf-marketing-nav.pf-marketing-nav--light .pf-marketing-btn--ghost:hover {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+.pf-ecosystem-scope.pf-marketing-shell .pf-marketing-nav.pf-marketing-nav--light .pf-marketing-btn--primary-sm {
+  background: var(--plx-primary, #3b82f6) !important;
+  color: #ffffff !important;
+  box-shadow: 0 8px 24px rgba(59, 130, 246, 0.28) !important;
+}
+
+.pf-ecosystem-scope.pf-marketing-shell .pf-marketing-hero.pf-marketing-hero--light .pf-marketing-btn--primary {
+  background: var(--plx-primary, #3b82f6) !important;
+  color: #ffffff !important;
+  box-shadow: 0 8px 24px rgba(59, 130, 246, 0.28) !important;
+}
+
+.pf-ecosystem-scope.pf-marketing-shell .pf-marketing-hero.pf-marketing-hero--light .pf-marketing-btn--primary:hover,
+.pf-ecosystem-scope.pf-marketing-shell .pf-marketing-nav.pf-marketing-nav--light .pf-marketing-btn--primary-sm:hover {
+  background: #2563eb !important;
+  color: #ffffff !important;
+}
+
+.pf-marketing-nav.pf-marketing-nav--light {
+  position: sticky !important;
+  inset: auto !important;
+  background: #ffffff !important;
+  border-bottom: 1px solid transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.pf-marketing-nav.pf-marketing-nav--light.is-scrolled {
+  border-bottom-color: #e2e8f0 !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06) !important;
+}
+
+.pf-marketing-nav.pf-marketing-nav--light .text-slate-950,
+.pf-marketing-nav.pf-marketing-nav--light .text-xl {
+  color: #0f172a !important;
+}
+
+.pf-marketing-nav.pf-marketing-nav--light .text-cyan-600 {
+  color: #0891b2 !important;
+}
+
+.pf-marketing-nav.pf-marketing-nav--light .pf-marketing-nav-link,
+.pf-marketing-nav.pf-marketing-nav--light .pf-marketing-nav-dropdown-trigger,
+.pf-marketing-nav.pf-marketing-nav--light .pf-marketing-btn--ghost {
+  color: #64748b !important;
+}
+
+.pf-marketing-nav.pf-marketing-nav--light .pf-marketing-nav-link:hover,
+.pf-marketing-nav.pf-marketing-nav--light .pf-marketing-nav-dropdown-trigger:hover,
+.pf-marketing-nav.pf-marketing-nav--light .pf-marketing-btn--ghost:hover {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+.pf-marketing-hero.pf-marketing-hero--light::after {
+  display: none !important;
+  content: none !important;
+}
+
+.pf-ecosystem-scope.pf-marketing-shell .pf-marketing-hero.pf-marketing-hero--light .pf-marketing-hero-inner--split,
+.pf-marketing-hero.pf-marketing-hero--light .pf-marketing-hero-inner--split {
+  width: min(1320px, calc(100% - 48px)) !important;
+  max-width: 1320px !important;
+  margin: 0 auto !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  padding: 48px 0 32px !important;
+}
+
+.pf-marketing-hero.pf-marketing-hero--light .pf-marketing-hero-copy {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+.pf-ecosystem-scope.pf-marketing-shell main h1.pf-marketing-hero-title.pf-marketing-hero-title--light,
+.pf-marketing-hero.pf-marketing-hero--light .pf-marketing-hero-title--light {
+  color: #0f172a !important;
+  font-size: clamp(2.5rem, 5.5vw, 3.75rem) !important;
+  font-weight: 800 !important;
+  line-height: 1.05 !important;
+  letter-spacing: -0.02em !important;
+}
+
+.pf-marketing-hero.pf-marketing-hero--light .pf-marketing-hero-title-accent {
+  color: var(--plx-primary, #3b82f6) !important;
+  -webkit-text-fill-color: var(--plx-primary, #3b82f6) !important;
+}
+
+.pf-ecosystem-scope.pf-marketing-shell .pf-marketing-hero.pf-marketing-hero--light .pf-marketing-lead--hero,
+.pf-marketing-hero.pf-marketing-hero--light .pf-marketing-lead--hero {
+  max-width: 36rem !important;
+  color: #64748b !important;
+  font-size: clamp(1.05rem, 1.8vw, 1.2rem) !important;
+}
+
+.pf-marketing-hero.pf-marketing-hero--light .pf-marketing-hero-outline {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #334155 !important;
+}
+
+.pf-marketing-hero.pf-marketing-hero--light .pf-marketing-hero-outline:hover {
+  background: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+@media (max-width: 1024px) {
+  .pf-marketing-hero.pf-marketing-hero--light .pf-marketing-hero-inner--split {
+    width: min(100% - 32px, 1320px) !important;
+    padding-top: 32px !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .pf-marketing-hero.pf-marketing-hero--light .pf-marketing-hero-title--light {
+    font-size: 2.25rem !important;
   }
 }
 /* PLANIFY_ENTERPRISE_REDESIGN_2026_END */

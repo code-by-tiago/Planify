@@ -77,6 +77,7 @@ function NavDropdown({
 
 export function LandingHeader() {
   const [scrolled, setScrolled] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const session = usePlanifySession();
 
   useEffect(() => {
@@ -88,7 +89,28 @@ export function LandingHeader() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMobileOpen(false);
+    };
+    document.body.style.overflow = "hidden";
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = "";
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [mobileOpen]);
+
   const showPainel = !session.loading && session.authenticated;
+
+  const mobileLinks = [
+    ...SOLUCOES_LINKS,
+    ...RECURSOS_LINKS,
+    { label: "Para escolas", href: "/escolas" },
+    { label: "Preços", href: "/planos" },
+    { label: "Sobre", href: "/contato" },
+  ];
 
   return (
     <header
@@ -117,6 +139,16 @@ export function LandingHeader() {
         </nav>
 
         <div className="flex items-center gap-1 sm:gap-2">
+          <button
+            type="button"
+            className="pf-marketing-nav-mobile-toggle inline-flex h-10 w-10 items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100 md:hidden"
+            aria-expanded={mobileOpen}
+            aria-controls="pf-marketing-mobile-nav"
+            aria-label={mobileOpen ? "Fechar menu" : "Abrir menu"}
+            onClick={() => setMobileOpen((open) => !open)}
+          >
+            <PlanifyIcon name={mobileOpen ? "close" : "menu"} className="h-5 w-5" />
+          </button>
           {showPainel ? (
             <Link href="/dashboard" className={`${ppBtnPrimarySm} whitespace-nowrap`}>
               Painel
@@ -133,6 +165,35 @@ export function LandingHeader() {
           )}
         </div>
       </div>
+
+      {mobileOpen ? (
+        <div
+          id="pf-marketing-mobile-nav"
+          className="pf-marketing-mobile-nav border-t border-slate-200 bg-white px-6 py-4 md:hidden"
+        >
+          <nav className="flex flex-col gap-1" aria-label="Navegação mobile">
+            {mobileLinks.map((link) => (
+              <Link
+                key={link.href + link.label}
+                href={link.href}
+                className="rounded-lg px-3 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                onClick={() => setMobileOpen(false)}
+              >
+                {link.label}
+              </Link>
+            ))}
+            {!showPainel ? (
+              <Link
+                href="/login"
+                className="mt-2 rounded-lg px-3 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 sm:hidden"
+                onClick={() => setMobileOpen(false)}
+              >
+                Entrar
+              </Link>
+            ) : null}
+          </nav>
+        </div>
+      ) : null}
     </header>
   );
 }

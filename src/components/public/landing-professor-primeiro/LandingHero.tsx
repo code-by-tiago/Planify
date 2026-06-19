@@ -35,11 +35,11 @@ export function LandingHero() {
         />
 
         <div className="pf-marketing-hero-inner">
-          <div className="pf-marketing-hero-copy flex max-w-[520px] flex-col items-start text-left">
+          <div className="pf-marketing-hero-copy flex max-w-[480px] flex-col items-start text-left">
             <p className="pf-marketing-hero-eyebrow">Sistema operacional pedagógico com IA</p>
             <h1 className="pf-marketing-hero-title">IA Planify</h1>
 
-            <p className="pf-marketing-lead pf-marketing-lead--hero mt-6 max-w-xl">
+            <p className="pf-marketing-lead pf-marketing-lead--hero mt-6 max-w-[480px]">
               Uma plataforma SaaS completa para planejar aulas, criar materiais, avaliar, corrigir
               e exportar documentos editáveis com padrão profissional, BNCC e fluxo real de escola.
             </p>

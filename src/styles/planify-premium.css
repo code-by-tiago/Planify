@@ -313,9 +313,12 @@
   isolation: isolate;
   overflow: hidden;
   min-height: min(92vh, 860px);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  justify-content: start;
+  justify-items: start;
+  align-items: center;
   background: #0a1018;
   color: #fff;
 }
@@ -348,15 +351,18 @@
 .pf-marketing-hero-inner {
   position: relative;
   z-index: 1;
-  width: 100%;
-  max-width: 80rem;
-  margin: 0 auto;
-  padding: 6rem 1.5rem 3.5rem;
+  width: min(480px, calc(100% - 48px));
+  max-width: 480px;
+  margin: 0;
+  margin-left: clamp(20px, 3vw, 40px);
+  margin-right: 0;
+  justify-self: start;
+  padding: 6rem 0 3.5rem;
 }
 
 @media (min-width: 640px) {
   .pf-marketing-hero-inner {
-    padding: 7rem 2.5rem 4rem;
+    padding: 7rem 0 4rem;
   }
 }
 

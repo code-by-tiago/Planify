@@ -89,6 +89,16 @@ const DirectorPanelClient = dynamic(
   { ssr: false, loading: PanelLoading },
 );
 
+function EmbeddedSection({ children }: { children: ReactNode }) {
+  return (
+    <PlanifyWorkspaceProvider embeddedInDashboard>
+      <div className="pf-scope flex h-full min-h-0 w-full flex-col overflow-hidden">
+        {children}
+      </div>
+    </PlanifyWorkspaceProvider>
+  );
+}
+
 function SectionPanel({ children }: { children: ReactNode }) {
   return (
     <PlanifyWorkspaceProvider embeddedInDashboard>
@@ -167,35 +177,33 @@ export function PlanifyDashboardMain({
 
   if (sectionId === "planejamentos") {
     return (
-      <PlanifyWorkspaceProvider embeddedInDashboard>
-        <div className="pf-scope flex h-full min-h-0 w-full flex-col overflow-hidden">
-          <PlanejamentosClient />
-        </div>
-      </PlanifyWorkspaceProvider>
+      <EmbeddedSection>
+        <PlanejamentosClient />
+      </EmbeddedSection>
     );
   }
 
   if (sectionId === "banco-questoes") {
     return (
-      <SectionPanel>
+      <EmbeddedSection>
         <BancoQuestoesClient />
-      </SectionPanel>
+      </EmbeddedSection>
     );
   }
 
   if (sectionId === "editor") {
     return (
-      <SectionPanel>
+      <EmbeddedSection>
         <EditorClient embedded />
-      </SectionPanel>
+      </EmbeddedSection>
     );
   }
 
   if (sectionId === "historico") {
     return (
-      <SectionPanel>
+      <EmbeddedSection>
         <HistoricoClient />
-      </SectionPanel>
+      </EmbeddedSection>
     );
   }
 

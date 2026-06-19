@@ -6,6 +6,8 @@ import { PlanifyPageHero } from "@/components/pro/PlanifyPageHero";
 import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
 import { usePlanifyWorkspace } from "@/components/pro/planify-workspace-context";
 import { TeachySectionHub } from "@/components/teachy-layout";
+import { PlanifyDashboardBreadcrumb } from "@/components/pro/PlanifyDashboardBreadcrumb";
+import { StudioToolHeader } from "@/components/studio/StudioToolHeader";
 import { MaterialBnccSkillsPanel } from "@/components/bncc/MaterialBnccSkillsPanel";
 import { planifyAuthenticatedFetch } from "@/lib/auth/authenticated-fetch";
 import {
@@ -27,6 +29,7 @@ import {
   isQuestionBankFilterActive,
   isQuestionBankSearchActive,
   searchQuestionBankItems,
+  type RankedQuestionBankItem,
 } from "@/lib/banco-questoes/question-bank-match";
 import {
   stashQuestionsForProva,
@@ -139,6 +142,7 @@ export function BancoQuestoesClient() {
   const [schoolItems, setSchoolItems] = useState<QuestionBankItem[]>([]);
   const [syncing, setSyncing] = useState(true);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [previewId, setPreviewId] = useState<string | null>(null);
   const [filter, setFilter] = useState<QuestionBankFilter>(DEFAULT_QUESTION_BANK_FILTER);
   const [draftQuery, setDraftQuery] = useState("");
   const [manualBncc, setManualBncc] = useState("");
@@ -241,6 +245,22 @@ export function BancoQuestoesClient() {
     () => [...filtered, ...relatedItems],
     [filtered, relatedItems],
   );
+
+  const previewItem = useMemo(() => {
+    if (!previewId) return filtered[0] ?? relatedItems[0] ?? null;
+    return (
+      allItems.find((item) => item.id === previewId) ??
+      filtered[0] ??
+      relatedItems[0] ??
+      null
+    );
+  }, [allItems, filtered, previewId, relatedItems]);
+
+  useEffect(() => {
+    if (!previewId && filtered.length > 0) {
+      setPreviewId(filtered[0].id);
+    }
+  }, [filtered, previewId]);
 
   const bnccTemaReady =
     Boolean(draftQuery.trim()) &&
@@ -832,15 +852,90 @@ export function BancoQuestoesClient() {
   const showCommunityEmpty =
     filter.source === "comunidade" && !syncing && filtered.length === 0;
 
-  const hubBody = (
-    <>
-      <div className={`space-y-6 ${embeddedInDashboard ? "" : "px-4 py-6 sm:px-6"}${selectedItems.length > 0 ? " pb-28" : ""}`}>
-        <p className="rounded-xl border border-cyan-400/15 bg-cyan-50/30 px-4 py-2.5 text-sm font-medium text-slate-600">
-          Selecione questões e monte prova ou lista em um clique — ou importe do histórico.
-        </p>
+  function renderQuestionListCard(item: QuestionBankItem & { matchScore?: number }, related = false) {
+    const selected = selectedIds.has(item.id);
+    const isPreview = previewItem?.id === item.id;
+    const display = resolveQuestionDisplay(item);
 
-        <fieldset className="space-y-3">
-          <legend className="sr-only">Filtros do banco de questões</legend>
+    return (
+      <button
+        key={related ? `related-${item.id}` : item.id}
+        type="button"
+        onClick={() => setPreviewId(item.id)}
+        className={`pf-qb-card w-full p-3 text-left transition ${
+          selected ? "is-selected" : ""
+        } ${isPreview ? "is-preview" : ""} ${related ? "border-amber-200/60 bg-amber-50/30" : ""}`}
+      >
+        <div className="flex items-start gap-3">
+          <span
+            role="checkbox"
+            aria-checked={selected}
+            tabIndex={0}
+            onClick={(event) => {
+              event.stopPropagation();
+              toggleSelect(item.id);
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                event.stopPropagation();
+                toggleSelect(item.id);
+              }
+            }}
+            className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border ${
+              selected
+                ? "border-cyan-500 bg-cyan-500 text-white"
+                : "border-slate-300 bg-white"
+            }`}
+          >
+            {selected ? <PlanifyIcon name="checkCircle" className="h-3.5 w-3.5" /> : null}
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="flex flex-wrap items-center gap-1.5">
+              <span className="text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                {item.componente} · {item.anoSerie}
+              </span>
+              {typeof item.matchScore === "number" && item.matchScore >= 8 ? (
+                <span className="rounded-full bg-emerald-100 px-1.5 py-0.5 text-[9px] font-bold uppercase text-emerald-800">
+                  Alta
+                </span>
+              ) : null}
+              {item.isCommunity ? (
+                <span className="rounded-full bg-violet-100 px-1.5 py-0.5 text-[9px] font-bold uppercase text-violet-700">
+                  Comunidade
+                </span>
+              ) : null}
+              {item.isSchool ? (
+                <span className="rounded-full bg-emerald-100 px-1.5 py-0.5 text-[9px] font-bold uppercase text-emerald-700">
+                  Escola
+                </span>
+              ) : null}
+            </span>
+            <p className="mt-1 line-clamp-2 text-sm font-semibold leading-snug text-slate-800">
+              {display.enunciado}
+            </p>
+            <span className="mt-1.5 flex flex-wrap gap-1 text-[10px] font-semibold text-slate-500">
+              <span>{item.tipo}</span>
+              {item.bnccCodigos.slice(0, 2).map((code) => (
+                <span key={code} className="rounded bg-cyan-50 px-1 py-0.5 text-cyan-800">
+                  {code}
+                </span>
+              ))}
+            </span>
+          </span>
+        </div>
+      </button>
+    );
+  }
+
+  const filterPanel = (
+    <div className="space-y-4">
+      <p className="rounded-xl border border-cyan-400/15 bg-cyan-50/30 px-4 py-2.5 text-sm font-medium text-slate-600">
+        Filtre por disciplina e série, busque por tema ou BNCC e monte prova ou lista.
+      </p>
+
+      <fieldset className="pf-config-panel space-y-3">
+        <legend className="sr-only">Filtros do banco de questões</legend>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <div>
               <label className={HUD_SECTION_LABEL} htmlFor="qb-etapa">
@@ -1051,273 +1146,252 @@ export function BancoQuestoesClient() {
 
         </fieldset>
 
-        <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => void importFromHistory()}
+          className="pl-hud-btn rounded-xl px-3 py-2 text-xs font-semibold"
+        >
+          Importar histórico
+        </button>
+        <button
+          type="button"
+          onClick={() => void openServerImportModal()}
+          className="pl-hud-btn rounded-xl px-3 py-2 text-xs font-semibold"
+        >
+          Importar servidor
+        </button>
+        {visibleItems.length > 0 ? (
           <button
             type="button"
-            onClick={() => void importFromHistory()}
-            className="pl-hud-btn rounded-xl px-4 py-2 text-xs font-semibold"
+            onClick={selectAllVisible}
+            className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
           >
-            Importar do histórico
+            Selecionar todas ({visibleItems.length})
           </button>
-          <button
-            type="button"
-            onClick={() => void openServerImportModal()}
-            className="pl-hud-btn rounded-xl px-4 py-2 text-xs font-semibold"
-          >
-            Importar do servidor
-          </button>
-          {visibleItems.length > 0 ? (
-            <button
-              type="button"
-              onClick={selectAllVisible}
-              className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-            >
-              Selecionar todas visíveis ({visibleItems.length})
-            </button>
-          ) : null}
-          {selectedItems.length > 0 ? (
-            <button
-              type="button"
-              onClick={clearSelection}
-              className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-            >
-              Limpar seleção
-            </button>
-          ) : null}
-          <button
-            type="button"
-            onClick={() => void montarAvaliacao("prova")}
-            disabled={assembling || selectedItems.length === 0}
-            className="pl-hud-btn rounded-xl px-4 py-2 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {assembling
-              ? "Montando…"
-              : `Montar prova (${selectedItems.length})`}
-          </button>
-          <button
-            type="button"
-            onClick={() => void montarAvaliacao("lista")}
-            disabled={assembling || selectedItems.length === 0}
-            className="rounded-xl border border-cyan-400/40 bg-white px-4 py-2 text-xs font-semibold text-cyan-900 hover:bg-cyan-50 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {assembling
-              ? "Montando…"
-              : `Montar lista (${selectedItems.length})`}
-          </button>
-        </div>
-
-        {selectedItems.length > 0 ? (
-          <p className="text-sm font-semibold text-cyan-800">
-            {selectedItems.length} questão(ões) selecionada(s) — clique em Montar prova ou
-            Montar lista para enviar ao editor.
-          </p>
         ) : null}
+      </div>
 
-        {importStatus ? (
-          <p className="text-sm font-medium text-cyan-800">{importStatus}</p>
-        ) : null}
+      {importStatus ? (
+        <p className="text-sm font-medium text-cyan-800">{importStatus}</p>
+      ) : null}
 
-        <GenerationErrorBanner
-          message={importError}
-          retryable={importRetryable}
-          onRetry={() => {
-            setImportError("");
-            void openServerImportModal();
-          }}
-        />
+      <GenerationErrorBanner
+        message={importError}
+        retryable={importRetryable}
+        onRetry={() => {
+          setImportError("");
+          void openServerImportModal();
+        }}
+      />
+    </div>
+  );
 
-        {syncing ? (
-          <p className="text-sm font-medium text-slate-500">Sincronizando banco…</p>
-        ) : searchMode === "browse" ? (
-          <p className="text-sm font-semibold text-slate-600">
-            {filtered.length} questão(ões) no acervo
-            {filterActive ? " com os filtros atuais" : ""}
-            {" — use Buscar para pesquisar por tema e BNCC."}
-          </p>
-        ) : (
-          <p className="text-sm font-semibold text-slate-600">
-            {filtered.length} compatível(is)
-            {relatedItems.length > 0 ? ` · ${relatedItems.length} relacionada(s)` : ""}
-            {effectiveFilter.etapa !== "todos" ? ` · ${effectiveFilter.etapa}` : ""}
-            {effectiveFilter.componente !== "todos"
-              ? ` · ${effectiveFilter.componente}`
-              : ""}
-            {effectiveFilter.anoSerie !== "todos" ? ` · ${effectiveFilter.anoSerie}` : ""}
-            {effectiveFilter.query.trim()
-              ? ` · tema “${effectiveFilter.query.trim()}”`
-              : ""}
-          </p>
-        )}
+  const resultsPanel = (
+    <div className="space-y-3">
+      {syncing ? (
+        <p className="text-sm font-medium text-slate-500">Sincronizando banco…</p>
+      ) : searchMode === "browse" ? (
+        <p className="text-sm font-semibold text-slate-600">
+          {filtered.length} questão(ões) no acervo
+          {filterActive ? " com os filtros atuais" : ""}
+        </p>
+      ) : (
+        <p className="text-sm font-semibold text-slate-600">
+          {filtered.length} compatível(is)
+          {relatedItems.length > 0 ? ` · ${relatedItems.length} relacionada(s)` : ""}
+        </p>
+      )}
 
-        <div className="space-y-3">
-          {filtered.length > 0
-            ? filtered.map((item) => {
-            const selected = selectedIds.has(item.id);
-            const display = resolveQuestionDisplay(item);
-            return (
-              <article
-                key={item.id}
-                className={`rounded-2xl border bg-white p-4 shadow-sm transition ${
-                  selected ? "border-cyan-500 ring-1 ring-cyan-200" : "border-slate-200"
-                }`}
-              >
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => toggleSelect(item.id)}
-                        className={`min-h-[2.75rem] px-3 py-2 ${
-                          selected ? HUD_FILTER_CHIP_ACTIVE : HUD_FILTER_CHIP_INACTIVE
-                        }`}
-                      >
-                        {selected ? "Selecionada" : "Selecionar"}
-                      </button>
-                      <span className="text-[10px] font-bold uppercase tracking-wide text-slate-500">
-                        {item.componente} · {item.anoSerie}
-                      </span>
-                      {item.matchScore >= 8 ? (
-                        <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold uppercase text-emerald-800">
-                          Alta compatibilidade
-                        </span>
-                      ) : null}
-                      {item.isCommunity ? (
-                        <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-bold uppercase text-violet-700">
-                          Comunidade
-                        </span>
-                      ) : null}
-                      {item.isSchool ? (
-                        <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold uppercase text-emerald-700">
-                          Escola
-                        </span>
-                      ) : null}
-                      {(item.isCommunity || item.isSchool) && item.authorName ? (
-                        <span className="text-[10px] font-semibold text-slate-600">
-                          por {item.authorName}
-                        </span>
-                      ) : null}
-                      {typeof item.usageCount === "number" && item.usageCount > 0 ? (
-                        <span className="text-[10px] font-semibold text-slate-500">
-                          Usada {item.usageCount}×
-                        </span>
-                      ) : null}
-                    </div>
-                    {display.textoApoio ? (
-                      <details className="mt-2 rounded-lg border border-slate-100 bg-slate-50/80 px-3 py-2">
-                        <summary className="cursor-pointer text-xs font-semibold text-slate-600">
-                          Texto de apoio
-                        </summary>
-                        <p className="mt-2 whitespace-pre-wrap text-xs leading-relaxed text-slate-600">
-                          {display.textoApoio}
-                        </p>
-                      </details>
-                    ) : null}
-                    <p className="mt-2 text-sm font-medium leading-relaxed text-slate-800">
-                      {display.enunciado}
-                    </p>
-                    <div className="mt-2 flex flex-wrap gap-2 text-[11px] font-semibold text-slate-500">
-                      <span>{item.tipo}</span>
-                      {item.bnccCodigos.map((code) => (
-                        <span key={code} className="rounded bg-cyan-50 px-1.5 py-0.5 text-cyan-800">
-                          {code}
-                        </span>
-                      ))}
-                      {item.tags.map((tag) => (
-                        <span key={tag} className="rounded bg-slate-100 px-1.5 py-0.5">
-                          #{tag}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="flex shrink-0 flex-col gap-2">
-                    <button
-                      type="button"
-                      onClick={() => openRemixModal(item)}
-                      className="inline-flex items-center gap-1 rounded-lg border border-cyan-400/25 px-3 py-1.5 text-xs font-semibold text-cyan-800 hover:bg-cyan-50"
-                    >
-                      <PlanifyIcon name="spark" className="h-3.5 w-3.5" />
-                      Remixar
-                    </button>
-                    {!item.isCommunity && !item.isSchool ? (
-                      <>
-                        {school.hasSchool ? (
-                          <button
-                            type="button"
-                            onClick={() => void compartilharComEscola(item)}
-                            disabled={publishingId === item.id}
-                            className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 px-3 py-1.5 text-xs font-semibold text-emerald-800 hover:bg-emerald-50 disabled:opacity-50"
-                          >
-                            Compartilhar com a escola
-                          </button>
-                        ) : null}
-                        <button
-                          type="button"
-                          onClick={() => void publicarNaComunidade(item)}
-                          disabled={publishingId === item.id}
-                          className="inline-flex items-center gap-1 rounded-lg border border-violet-200 px-3 py-1.5 text-xs font-semibold text-violet-800 hover:bg-violet-50 disabled:opacity-50"
-                        >
-                          Publicar na comunidade
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => void excluirItem(item.id)}
-                          className="inline-flex items-center gap-1 rounded-lg border border-rose-200 px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-50"
-                        >
-                          <PlanifyIcon name="trash" className="h-3.5 w-3.5" />
-                          Excluir
-                        </button>
-                      </>
-                    ) : null}
-                  </div>
-                </div>
-              </article>
-            );
-          })
-            : null}
+      {filtered.length > 0 ? (
+        <div className="space-y-2">
+          {filtered.map((item) => renderQuestionListCard(item))}
         </div>
+      ) : null}
 
-        {!syncing && searchActive && relatedItems.length > 0 && filtered.length === 0 ? (
-          <div className="space-y-3">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-wide text-amber-700">
-                Relacionadas
+      {!syncing && searchActive && relatedItems.length > 0 && filtered.length === 0 ? (
+        <div className="space-y-2">
+          <p className="text-xs font-bold uppercase tracking-wide text-amber-700">
+            Relacionadas
+          </p>
+          {relatedItems.map((item) => renderQuestionListCard(item, true))}
+        </div>
+      ) : null}
+
+      {showCommunityEmpty ? (
+        <div className="rounded-2xl border border-dashed border-violet-300/40 bg-violet-50/50 px-6 py-10 text-center">
+          <p className="text-xs font-bold uppercase tracking-wide text-violet-700">Comunidade</p>
+          <h3 className="mt-2 text-lg font-extrabold text-slate-950">Seja o primeiro a publicar</h3>
+          <p className="mt-2 text-sm font-medium text-slate-600">
+            Publique uma questão pessoal para compartilhar com outros professores.
+          </p>
+        </div>
+      ) : null}
+
+      {!syncing && filtered.length === 0 && relatedItems.length === 0 && filter.source !== "comunidade" ? (
+        <div className="rounded-2xl border border-dashed border-cyan-400/25 bg-white/70 px-6 py-10 text-center">
+          {allItems.length === 0 ? (
+            <>
+              <p className="text-xs font-bold uppercase tracking-wide text-cyan-600">Banco vazio</p>
+              <h3 className="mt-2 text-lg font-extrabold text-slate-950">Comece importando suas provas</h3>
+              <p className="mt-2 text-sm font-medium text-slate-600">
+                Gere uma prova ou lista em Meus materiais, ou importe do histórico.
               </p>
-              <p className="mt-1 text-sm font-medium text-slate-600">
-                Nenhuma exata para este tema e série — opções no mesmo nível escolar com tema
-                parecido ou área BNCC compatível.
+            </>
+          ) : searchActive ? (
+            <>
+              <p className="text-xs font-bold uppercase tracking-wide text-cyan-600">Nenhuma compatível</p>
+              <h3 className="mt-2 text-lg font-extrabold text-slate-950">Ajuste disciplina, série ou tema</h3>
+              <p className="mt-2 text-sm font-medium text-slate-600">
+                Sugira habilidades BNCC, selecione as compatíveis e clique em Buscar.
               </p>
+            </>
+          ) : filterActive ? (
+            <>
+              <p className="text-xs font-bold uppercase tracking-wide text-cyan-600">Nenhuma neste recorte</p>
+              <h3 className="mt-2 text-lg font-extrabold text-slate-950">Amplie os filtros</h3>
+              <p className="mt-2 text-sm font-medium text-slate-600">
+                Tente outro nível, disciplina ou série — ou limpe os filtros.
+              </p>
+            </>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  );
+
+  const previewPanel = previewItem ? (() => {
+    const display = resolveQuestionDisplay(previewItem);
+    const selected = selectedIds.has(previewItem.id);
+    return (
+      <div className="space-y-4">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0">
+            <span className="text-[10px] font-bold uppercase tracking-wide text-cyan-600">
+              Prévia da questão
+            </span>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <span className="text-xs font-bold text-slate-500">
+                {previewItem.componente} · {previewItem.anoSerie}
+              </span>
+              {previewItem.isCommunity ? (
+                <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-bold uppercase text-violet-700">
+                  Comunidade
+                </span>
+              ) : null}
+              {previewItem.isSchool ? (
+                <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold uppercase text-emerald-700">
+                  Escola
+                </span>
+              ) : null}
             </div>
-            {relatedItems.map((item) => {
-              const display = resolveQuestionDisplay(item);
-              return (
-                <article
-                  key={`related-${item.id}`}
-                  className="rounded-2xl border border-amber-200/60 bg-amber-50/30 p-4"
-                >
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-[10px] font-bold uppercase tracking-wide text-slate-500">
-                      {item.componente} · {item.anoSerie}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => toggleSelect(item.id)}
-                      className={
-                        selectedIds.has(item.id)
-                          ? HUD_FILTER_CHIP_ACTIVE
-                          : HUD_FILTER_CHIP_INACTIVE
-                      }
-                    >
-                      {selectedIds.has(item.id) ? "Selecionada" : "Selecionar"}
-                    </button>
-                  </div>
-                  <p className="mt-2 text-sm font-medium text-slate-800">{display.enunciado}</p>
-                </article>
-              );
-            })}
+          </div>
+          <button
+            type="button"
+            onClick={() => toggleSelect(previewItem.id)}
+            className={`rounded-xl px-3 py-2 text-xs font-bold ${
+              selected ? HUD_FILTER_CHIP_ACTIVE : HUD_FILTER_CHIP_INACTIVE
+            }`}
+          >
+            {selected ? "Selecionada" : "Selecionar"}
+          </button>
+        </div>
+
+        {display.textoApoio ? (
+          <div className="rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3">
+            <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">
+              Texto de apoio
+            </p>
+            <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-slate-700">
+              {display.textoApoio}
+            </p>
           </div>
         ) : null}
 
-        {remixSource && remixDraft ? (
+        <p className="text-base font-medium leading-relaxed text-slate-900">{display.enunciado}</p>
+
+        {previewItem.alternativas.length > 0 ? (
+          <ul className="space-y-2">
+            {previewItem.alternativas.map((alt, index) => (
+              <li
+                key={`${previewItem.id}-alt-${index}`}
+                className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700"
+              >
+                {alt}
+              </li>
+            ))}
+          </ul>
+        ) : null}
+
+        <div className="flex flex-wrap gap-2 text-[11px] font-semibold text-slate-500">
+          <span>{previewItem.tipo}</span>
+          {previewItem.bnccCodigos.map((code) => (
+            <span key={code} className="rounded bg-cyan-50 px-1.5 py-0.5 text-cyan-800">
+              {code}
+            </span>
+          ))}
+          {previewItem.tags.map((tag) => (
+            <span key={tag} className="rounded bg-slate-100 px-1.5 py-0.5">
+              #{tag}
+            </span>
+          ))}
+        </div>
+
+        <div className="flex flex-wrap gap-2 border-t border-slate-100 pt-4">
+          <button
+            type="button"
+            onClick={() => openRemixModal(previewItem)}
+            className="inline-flex items-center gap-1 rounded-lg border border-cyan-400/25 px-3 py-2 text-xs font-semibold text-cyan-800 hover:bg-cyan-50"
+          >
+            <PlanifyIcon name="spark" className="h-3.5 w-3.5" />
+            Remixar
+          </button>
+          {!previewItem.isCommunity && !previewItem.isSchool ? (
+            <>
+              {school.hasSchool ? (
+                <button
+                  type="button"
+                  onClick={() => void compartilharComEscola(previewItem)}
+                  disabled={publishingId === previewItem.id}
+                  className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 px-3 py-2 text-xs font-semibold text-emerald-800 hover:bg-emerald-50 disabled:opacity-50"
+                >
+                  Compartilhar escola
+                </button>
+              ) : null}
+              <button
+                type="button"
+                onClick={() => void publicarNaComunidade(previewItem)}
+                disabled={publishingId === previewItem.id}
+                className="inline-flex items-center gap-1 rounded-lg border border-violet-200 px-3 py-2 text-xs font-semibold text-violet-800 hover:bg-violet-50 disabled:opacity-50"
+              >
+                Publicar comunidade
+              </button>
+              <button
+                type="button"
+                onClick={() => void excluirItem(previewItem.id)}
+                className="inline-flex items-center gap-1 rounded-lg border border-rose-200 px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-50"
+              >
+                <PlanifyIcon name="trash" className="h-3.5 w-3.5" />
+                Excluir
+              </button>
+            </>
+          ) : null}
+        </div>
+      </div>
+    );
+  })() : (
+    <div className="flex h-full min-h-[240px] flex-col items-center justify-center rounded-2xl border border-dashed border-cyan-400/25 bg-white/60 p-8 text-center">
+      <p className="text-xs font-bold uppercase tracking-wide text-cyan-600">Prévia</p>
+      <h3 className="mt-2 text-lg font-extrabold text-slate-950">Selecione uma questão</h3>
+      <p className="mt-2 text-sm font-medium text-slate-600">
+        Clique em um item da lista para ver enunciado, alternativas e ações.
+      </p>
+    </div>
+  );
+
+  const modals = (
+    <>
+      {remixSource && remixDraft ? (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4">
             <div className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-5 shadow-xl">
               <h3 className="text-base font-extrabold text-slate-950">Remixar questão</h3>
@@ -1482,109 +1556,75 @@ export function BancoQuestoesClient() {
             </div>
           </div>
         ) : null}
+    </>
+  );
 
-        {showCommunityEmpty ? (
-          <div className="rounded-2xl border border-dashed border-violet-300/40 bg-violet-50/50 px-6 py-12 text-center">
-            <p className="text-xs font-bold uppercase tracking-wide text-violet-700">
-              Comunidade
-            </p>
-            <h3 className="mt-2 text-lg font-extrabold text-slate-950">
-              Seja o primeiro a publicar
-            </h3>
-            <p className="mt-2 text-sm font-medium text-slate-600">
-              Publique uma questão pessoal para compartilhar com outros professores.
-            </p>
-          </div>
-        ) : null}
-
-        {!syncing &&
-        filtered.length === 0 &&
-        relatedItems.length === 0 &&
-        filter.source !== "comunidade" ? (
-          <div className="rounded-2xl border border-dashed border-cyan-400/25 bg-white/70 px-6 py-12 text-center">
-            {allItems.length === 0 ? (
-              <>
-                <p className="text-xs font-bold uppercase tracking-wide text-cyan-600">
-                  Banco vazio
-                </p>
-                <h3 className="mt-2 text-lg font-extrabold text-slate-950">
-                  Comece importando suas provas
-                </h3>
-                <p className="mt-2 text-sm font-medium text-slate-600">
-                  Gere uma prova ou lista em Meus materiais, ou aguarde o acervo da comunidade
-                  crescer.
-                </p>
-              </>
-            ) : searchActive ? (
-              <>
-                <p className="text-xs font-bold uppercase tracking-wide text-cyan-600">
-                  Nenhuma compatível
-                </p>
-                <h3 className="mt-2 text-lg font-extrabold text-slate-950">
-                  Ajuste disciplina, série ou tema
-                </h3>
-                <p className="mt-2 text-sm font-medium text-slate-600">
-                  Sugira habilidades BNCC pelo tema, selecione as compatíveis e clique em Buscar.
-                  Questões de outro nível ou série não aparecem nesta busca.
-                </p>
-              </>
-            ) : filterActive ? (
-              <>
-                <p className="text-xs font-bold uppercase tracking-wide text-cyan-600">
-                  Nenhuma neste recorte
-                </p>
-                <h3 className="mt-2 text-lg font-extrabold text-slate-950">
-                  Amplie os filtros para ver mais questões
-                </h3>
-                <p className="mt-2 text-sm font-medium text-slate-600">
-                  Tente outro nível, disciplina ou série — ou limpe os filtros para ver todo o
-                  acervo disponível.
-                </p>
-              </>
-            ) : null}
-          </div>
-        ) : null}
-      </div>
-
-      {selectedItems.length > 0 ? (
-        <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 flex justify-center px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-          <div className="pointer-events-auto flex w-full max-w-2xl flex-wrap items-center justify-between gap-3 rounded-2xl border border-cyan-400/30 bg-white/95 px-4 py-3 shadow-lg backdrop-blur">
-            <p className="text-sm font-bold text-slate-800">
-              {selectedItems.length} questão(ões) na cesta
-            </p>
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={clearSelection}
-                className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-              >
-                Limpar
-              </button>
-              <button
-                type="button"
-                onClick={() => void montarAvaliacao("lista")}
-                disabled={assembling}
-                className="rounded-xl border border-cyan-400/40 bg-white px-3 py-2 text-xs font-semibold text-cyan-900 hover:bg-cyan-50 disabled:opacity-50"
-              >
-                Montar lista
-              </button>
-              <button
-                type="button"
-                onClick={() => void montarAvaliacao("prova")}
-                disabled={assembling}
-                className="pl-hud-btn rounded-xl px-4 py-2 text-xs font-semibold disabled:opacity-50"
-              >
-                {assembling ? "Montando…" : "Montar prova"}
-              </button>
-            </div>
-          </div>
+  const selectionBar =
+    selectedItems.length > 0 ? (
+      <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+        <p className="text-sm font-bold text-slate-800">
+          {selectedItems.length} questão(ões) na cesta
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={clearSelection}
+            className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+          >
+            Limpar
+          </button>
+          <button
+            type="button"
+            onClick={() => void montarAvaliacao("lista")}
+            disabled={assembling}
+            className="rounded-xl border border-cyan-400/40 bg-white px-3 py-2 text-xs font-semibold text-cyan-900 hover:bg-cyan-50 disabled:opacity-50"
+          >
+            Montar lista
+          </button>
+          <button
+            type="button"
+            onClick={() => void montarAvaliacao("prova")}
+            disabled={assembling}
+            className="pl-hud-btn rounded-xl px-4 py-2 text-xs font-semibold disabled:opacity-50"
+          >
+            {assembling ? "Montando…" : "Montar prova"}
+          </button>
         </div>
-      ) : null}
+      </div>
+    ) : null;
+
+  const hubContent = (
+    <>
+      <TeachySectionHub
+        config={
+          <>
+            {filterPanel}
+            {resultsPanel}
+          </>
+        }
+        preview={previewPanel}
+        stickyBar={selectionBar}
+      />
+      {modals}
     </>
   );
 
   if (embeddedInDashboard) {
-    return <TeachySectionHub singleColumn>{hubBody}</TeachySectionHub>;
+    return (
+      <div className="flex h-full min-h-0 flex-col overflow-hidden">
+        <StudioToolHeader
+          icon="library"
+          iconAccent="from-emerald-500 to-teal-500"
+          eyebrow="Revise · Avaliações"
+          title="Banco de questões"
+          subtitle="Busque por BNCC, disciplina e série — monte prova ou lista."
+          breadcrumb={
+            <PlanifyDashboardBreadcrumb sectionId="banco-questoes" />
+          }
+        />
+        <div className="min-h-0 flex-1">{hubContent}</div>
+      </div>
+    );
   }
 
   return (
@@ -1597,7 +1637,7 @@ export function BancoQuestoesClient() {
         />
       }
     >
-      {hubBody}
+      {hubContent}
     </PlanifyWorkspacePane>
   );
 }

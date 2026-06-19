@@ -15,6 +15,7 @@ import {
   isDashboardSection,
   type DashboardSectionId,
 } from "@/lib/pro/dashboardViews";
+import { sectionHasOwnLayout } from "@/lib/pro/dashboardNav";
 import {
   getPlanifyTool,
   planifyToolCount,
@@ -172,11 +173,9 @@ export default function PlanifyDashboardShell() {
 
   const activeTool = selectedToolId ? getPlanifyTool(selectedToolId) : null;
   const hasPanel = Boolean(selectedToolId || selectedSectionId);
-  /** Ferramentas, planejamentos e histórico trazem layout próprio (Teachy studio/hub). */
+  /** Ferramentas e hubs com layout próprio — evita header duplicado com o sidebar. */
   const panelHasOwnHeader =
-    Boolean(selectedToolId) ||
-    selectedSectionId === "planejamentos" ||
-    selectedSectionId === "historico";
+    Boolean(selectedToolId) || sectionHasOwnLayout(selectedSectionId);
 
   const panelTitle = useMemo(() => {
     if (activeTool) return activeTool.title;
@@ -254,7 +253,9 @@ export default function PlanifyDashboardShell() {
           primaryAction={primaryAction}
           selectedToolId={selectedToolId}
           selectedSectionId={selectedSectionId}
+          onSelectTool={selectTool}
           onSelectSection={selectSection}
+          onSelectInicio={selectInicio}
           activeCategory={activeCategory}
           onSelectCategory={selectCategory}
           onActivate={closeSidebar}

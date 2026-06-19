@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { PlanifyPageHero } from "@/components/pro/PlanifyPageHero";
 import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
+import { usePlanifyWorkspace } from "@/components/pro/planify-workspace-context";
+import { TeachySectionHub } from "@/components/teachy-layout";
 import { MaterialBnccSkillsPanel } from "@/components/bncc/MaterialBnccSkillsPanel";
 import { planifyAuthenticatedFetch } from "@/lib/auth/authenticated-fetch";
 import {
@@ -129,6 +131,7 @@ const EMPTY_APPLIED_SEARCH: AppliedQuestionBankSearch = {
 };
 
 export function BancoQuestoesClient() {
+  const { embeddedInDashboard } = usePlanifyWorkspace();
   const router = useRouter();
   const school = useSchoolClasses();
   const [items, setItems] = useState<QuestionBankItem[]>([]);
@@ -829,17 +832,9 @@ export function BancoQuestoesClient() {
   const showCommunityEmpty =
     filter.source === "comunidade" && !syncing && filtered.length === 0;
 
-  return (
-    <PlanifyWorkspacePane
-      header={
-        <PlanifyPageHero
-          title="Banco de questões"
-          description="Navegue pelo acervo completo ou refine por nível, disciplina, série e tema."
-          icon="library"
-        />
-      }
-    >
-      <div className={`space-y-6 px-4 py-6 sm:px-6${selectedItems.length > 0 ? " pb-28" : ""}`}>
+  const hubBody = (
+    <>
+      <div className={`space-y-6 ${embeddedInDashboard ? "" : "px-4 py-6 sm:px-6"}${selectedItems.length > 0 ? " pb-28" : ""}`}>
         <p className="rounded-xl border border-cyan-400/15 bg-cyan-50/30 px-4 py-2.5 text-sm font-medium text-slate-600">
           Selecione questões e monte prova ou lista em um clique — ou importe do histórico.
         </p>
@@ -1585,6 +1580,24 @@ export function BancoQuestoesClient() {
           </div>
         </div>
       ) : null}
+    </>
+  );
+
+  if (embeddedInDashboard) {
+    return <TeachySectionHub singleColumn>{hubBody}</TeachySectionHub>;
+  }
+
+  return (
+    <PlanifyWorkspacePane
+      header={
+        <PlanifyPageHero
+          title="Banco de questões"
+          description="Navegue pelo acervo completo ou refine por nível, disciplina, série e tema."
+          icon="library"
+        />
+      }
+    >
+      {hubBody}
     </PlanifyWorkspacePane>
   );
 }

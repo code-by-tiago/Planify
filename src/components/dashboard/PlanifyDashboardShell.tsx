@@ -172,6 +172,11 @@ export default function PlanifyDashboardShell() {
 
   const activeTool = selectedToolId ? getPlanifyTool(selectedToolId) : null;
   const hasPanel = Boolean(selectedToolId || selectedSectionId);
+  /** Ferramentas, planejamentos e histórico trazem layout próprio (Teachy studio/hub). */
+  const panelHasOwnHeader =
+    Boolean(selectedToolId) ||
+    selectedSectionId === "planejamentos" ||
+    selectedSectionId === "historico";
 
   const panelTitle = useMemo(() => {
     if (activeTool) return activeTool.title;
@@ -262,7 +267,7 @@ export default function PlanifyDashboardShell() {
       </PlanifyShellSidebar>
 
       <main className="pl-hud-main flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-[var(--ps-pro-canvas)]">
-        {hasPanel ? (
+        {hasPanel && !panelHasOwnHeader ? (
           <header className="ps-pro-header flex shrink-0 flex-col gap-2 border-b px-3 py-2.5 pt-[max(0.625rem,env(safe-area-inset-top))] sm:px-5">
             <div className="flex items-center justify-between gap-2 sm:gap-3">
               <div className="flex min-w-0 flex-1 items-center gap-2">
@@ -323,33 +328,25 @@ export default function PlanifyDashboardShell() {
               onSelectSection={selectSection}
             />
           </header>
-        ) : (
-          <header className="pl-hud-hub-shell-header relative shrink-0 overflow-hidden border-b px-3 py-3 pt-[max(0.5rem,env(safe-area-inset-top))] sm:px-5 sm:py-4">
-            <div className="pl-hud-hub-mesh pointer-events-none absolute inset-0 opacity-40" aria-hidden />
-            <div className="pl-hud-hub-grid-bg pointer-events-none absolute inset-0 opacity-25" aria-hidden />
-            <div className="relative flex flex-wrap items-center justify-between gap-3">
+        ) : !hasPanel ? (
+          <header className="pf-studio-header shrink-0 border-b border-[var(--pf-border)] bg-white/95 px-3 py-3 pt-[max(0.5rem,env(safe-area-inset-top))] backdrop-blur-sm sm:px-5 sm:py-3.5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex min-w-0 items-center gap-2 sm:gap-3">
                 <button
                   type="button"
                   onClick={() => setSidebarOpen(true)}
                   aria-label="Abrir menu"
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-cyan-400/15 bg-white/80 text-slate-600 transition hover:border-cyan-400/35 lg:hidden"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[var(--pf-border)] bg-white text-slate-600 transition hover:border-[var(--pf-border-strong)] lg:hidden"
                 >
                   <PlanifyIcon name="menu" className="h-5 w-5" />
                 </button>
                 <div className="min-w-0">
-                  <span className="pl-hud-badge">
-                    <PlanifyIcon name="spark" className="h-3 w-3" />
-                    Estúdio Planify
-                  </span>
-                  <h1 className="mt-1.5 truncate text-lg font-extrabold tracking-tight text-slate-950 sm:text-xl">
-                    O que vamos{" "}
-                    <span className="bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent">
-                      criar hoje?
-                    </span>
+                  <p className="pf-eyebrow">Estúdio Planify</p>
+                  <h1 className="truncate text-lg font-extrabold tracking-tight text-slate-950 sm:text-xl">
+                    O que vamos criar hoje?
                   </h1>
                   <p className="hidden text-xs font-medium text-slate-500 sm:block">
-                    {planifyToolCount + 1} geradores · BNCC · Google Docs · Comunidade
+                    {planifyToolCount + 1} geradores · BNCC · Google Docs
                   </p>
                 </div>
               </div>
@@ -360,14 +357,14 @@ export default function PlanifyDashboardShell() {
                 <CreditsBalancePill />
                 <Link
                   href="/planos"
-                  className="pl-hud-btn rounded-xl px-3 py-1.5 text-xs font-semibold sm:px-4"
+                  className="pf-btn-secondary min-h-11 px-3 py-2 text-xs sm:min-h-0 sm:px-4"
                 >
                   Planos
                 </Link>
               </div>
             </div>
           </header>
-        )}
+        ) : null}
 
         <div className="min-h-0 flex-1 overflow-hidden">
           <PlanifyDashboardMain

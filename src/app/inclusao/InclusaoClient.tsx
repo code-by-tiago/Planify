@@ -6,7 +6,7 @@ import { DailyGenerationsBar } from "@/components/credits/DailyGenerationsBar";
 import { GenerationCostHint } from "@/components/credits/GenerationCostHint";
 import { MaterialTypedPreview } from "@/components/materiais/preview/MaterialTypedPreview";
 import { MaterialPreviewSkeleton } from "@/components/materiais/MaterialPreviewSkeleton";
-import { MaterialToolPageShell } from "@/components/pro/MaterialToolPageShell";
+import { ToolStudioShell } from "@/components/studio/ToolStudioShell";
 import { MaterialToolMobileSubmitBar } from "@/components/pro/MaterialToolMobileSubmitBar";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { PlanifyOwlGenerationCoach } from "@/components/pro/PlanifyOwlGenerationCoach";
@@ -216,9 +216,8 @@ export function InclusaoClient({
   }
 
   const painelCriacao = modalAberto ? (
-    <MaterialToolPageShell
+    <ToolStudioShell
       tool={tool}
-      studioMode={studioMode}
       onBack={fecharPainel}
       backLabel={studioMode ? "Início" : "Catálogo"}
       formScrollAttr={studioMode}

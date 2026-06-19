@@ -124,10 +124,8 @@ export function PlanifyDashboardMain({
     if (toolId === "inclusao") {
       return (
         <PlanifyWorkspaceProvider embeddedInDashboard>
-          <div className="planify-hud planify-materiais-studio planify-studio-pro flex h-full min-h-0 w-full flex-col overflow-hidden">
-            <div className="min-h-0 flex-1 overflow-hidden">
-              <InclusaoClient studioMode onStudioClose={onClosePanel} />
-            </div>
+          <div className="pf-scope flex h-full min-h-0 w-full flex-col overflow-hidden">
+            <InclusaoClient studioMode onStudioClose={onClosePanel} />
           </div>
         </PlanifyWorkspaceProvider>
       );
@@ -136,14 +134,12 @@ export function PlanifyDashboardMain({
     if (toolId === "aula-completa") {
       return (
         <PlanifyWorkspaceProvider embeddedInDashboard>
-          <div className="planify-hud planify-materiais-studio planify-studio-pro flex h-full min-h-0 w-full flex-col overflow-hidden">
-            <div className="min-h-0 flex-1 overflow-hidden">
-              <AulaCompletaClient
-                studioMode
-                onStudioClose={onClosePanel}
-                initialTema={initialTopic}
-              />
-            </div>
+          <div className="pf-scope flex h-full min-h-0 w-full flex-col overflow-hidden">
+            <AulaCompletaClient
+              studioMode
+              onStudioClose={onClosePanel}
+              initialTema={initialTopic}
+            />
           </div>
         </PlanifyWorkspaceProvider>
       );
@@ -152,10 +148,8 @@ export function PlanifyDashboardMain({
     if (toolId === "correcao-ia") {
       return (
         <PlanifyWorkspaceProvider embeddedInDashboard>
-          <div className="planify-hud planify-materiais-studio planify-studio-pro flex h-full min-h-0 w-full flex-col overflow-hidden">
-            <div className="min-h-0 flex-1 overflow-hidden">
-              <CorrecaoClient studioMode onStudioClose={onClosePanel} />
-            </div>
+          <div className="pf-scope flex h-full min-h-0 w-full flex-col overflow-hidden">
+            <CorrecaoClient studioMode onStudioClose={onClosePanel} />
           </div>
         </PlanifyWorkspaceProvider>
       );
@@ -173,9 +167,11 @@ export function PlanifyDashboardMain({
 
   if (sectionId === "planejamentos") {
     return (
-      <SectionPanel>
-        <PlanejamentosClient />
-      </SectionPanel>
+      <PlanifyWorkspaceProvider embeddedInDashboard>
+        <div className="pf-scope flex h-full min-h-0 w-full flex-col overflow-hidden">
+          <PlanejamentosClient />
+        </div>
+      </PlanifyWorkspaceProvider>
     );
   }
 

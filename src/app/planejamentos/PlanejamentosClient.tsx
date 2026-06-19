@@ -16,6 +16,10 @@ import { MinhaTurmaChip } from "@/components/teacher/MinhaTurmaChip";
 import { TurmaCombobox } from "@/components/school/TurmaCombobox";
 import { PlanifyPageHero } from "@/components/pro/PlanifyPageHero";
 import { usePlanifyWorkspace } from "@/components/pro/planify-workspace-context";
+import { TeachyToolStudioPage } from "@/components/teachy-layout";
+import { ExportDock } from "@/components/studio/ExportDock";
+import { PlanifyOwlMark } from "@/components/pro/PlanifyOwlMark";
+import { useRouter } from "next/navigation";
 import {
   HUD_FIELD_CLASS,
   HUD_SCROLLABLE_TEXTAREA_CLASS,
@@ -389,6 +393,7 @@ function saveAnnualMatrixSnapshot(form: FormState, planning: GeneratedPlanning) 
 
 export function PlanejamentosClient() {
   const { embeddedInDashboard } = usePlanifyWorkspace();
+  const router = useRouter();
   const school = useSchoolClasses();
   const teachingContext = useTeacherTeachingContext();
   const autoAppliedTeachingContextRef = useRef(false);
@@ -1375,15 +1380,157 @@ export function PlanejamentosClient() {
     );
   }
 
-  return (
-    <PlanifyWorkspacePane>
-      <div
-        className={
-          embeddedInDashboard
-            ? "planify-studio-pro space-y-5"
-            : "planify-hud pl-hud-hub mx-auto max-w-7xl space-y-5 px-3 sm:px-4 lg:px-0"
-        }
-      >
+  const matrizPreviewPanel = loadingPlan ? (
+    <>
+      <PlanifyOwlGenerationCoach
+        active={loadingPlan}
+        title="Gerando planejamento"
+        description="Montando matriz pedagógica com IA…"
+        toolId="planejamentos"
+      />
+      <MaterialPreviewSkeleton />
+    </>
+  ) : activePreviewPlanning ? (
+    <div className="space-y-4">
+      {usedAI === false ? (
+        <aside className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+          <p className="font-black">Matriz montada sem IA</p>
+          <p className="mt-1 font-semibold leading-6">
+            Revise conteúdos, habilidades e períodos antes de exportar.
+          </p>
+        </aside>
+      ) : null}
+      {typeof qualityScore === "number" ? (
+        <MaterialQualityScoreBar
+          score={qualityScore}
+          issues={qualityIssues}
+          compact
+          onElevate={
+            lastGenerationPayload && usedAI === true
+              ? () => void elevarQualidadePlanejamento()
+              : undefined
+          }
+          elevating={elevatingQuality}
+        />
+      ) : null}
+      {generatedTrimestralPlans && Object.keys(generatedTrimestralPlans).length > 0 ? (
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => setPreviewMatrizKey("anual")}
+            className={`rounded-xl px-4 py-2 text-xs font-black transition ${
+              previewMatrizKey === "anual"
+                ? "bg-emerald-600 text-white"
+                : "bg-white text-slate-700 hover:bg-emerald-100"
+            }`}
+          >
+            Anual
+          </button>
+          {Object.keys(generatedTrimestralPlans)
+            .map(Number)
+            .sort((a, b) => a - b)
+            .map((trimestre) => (
+              <button
+                key={`studio-preview-trim-${trimestre}`}
+                type="button"
+                onClick={() => setPreviewMatrizKey(trimestre as MatrizPreviewKey)}
+                className={`rounded-xl px-4 py-2 text-xs font-black transition ${
+                  previewMatrizKey === trimestre
+                    ? "bg-emerald-600 text-white"
+                    : "bg-white text-slate-700 hover:bg-emerald-100"
+                }`}
+              >
+                {trimestre}º trimestre
+              </button>
+            ))}
+        </div>
+      ) : null}
+      <p className="text-[10px] font-black uppercase tracking-[0.28em] text-emerald-600">
+        Matriz gerada
+      </p>
+      <h3 className="text-xl font-black text-slate-950 sm:text-2xl">
+        {activePreviewPlanning.titulo}
+      </h3>
+      <p className="text-sm leading-7 text-slate-600">{activePreviewPlanning.resumo}</p>
+      <div className="grid gap-2">
+        {activePreviewPlanning.conteudos.map((item: PlanningMatrixItem) => {
+          const numeroAula =
+            Number.isFinite(Number(item.numeroAula)) && Number(item.numeroAula) > 0
+              ? Number(item.numeroAula)
+              : item.aulaInicio;
+          const periodos =
+            Number.isFinite(Number(item.periodos)) && Number(item.periodos) > 0
+              ? Number(item.periodos)
+              : Math.max(1, item.aulaFim - item.aulaInicio + 1);
+          const periodosLabel = periodos === 1 ? "1 período" : `${periodos} período(s)`;
+
+          return (
+            <div
+              key={`studio-${item.conteudo}-${numeroAula}`}
+              className="rounded-2xl border border-slate-200/80 bg-white p-4"
+            >
+              <p className="font-black text-slate-950">{item.conteudo}</p>
+              <p className="mt-1 text-sm text-slate-500">
+                {Number(item.trimestre) >= 1 && Number(item.trimestre) <= 3
+                  ? `${item.trimestre}º trimestre · `
+                  : ""}
+                Aula {numeroAula} · {periodosLabel} · {item.habilidades.length} habilidade(s)
+              </p>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  ) : (
+    <div className="flex h-full min-h-[280px] flex-col items-center justify-center px-4 py-8 text-center">
+      <PlanifyOwlMark size={72} glow />
+      <p className="mt-4 text-[10px] font-bold uppercase tracking-wide text-cyan-600">
+        Pré-visualização
+      </p>
+      <h3 className="mt-2 text-xl font-extrabold text-slate-950">Matriz pedagógica</h3>
+      <p className="mt-2 max-w-sm text-sm font-semibold leading-6 text-slate-500">
+        Preencha os dados, sugira habilidades BNCC e gere o planejamento. A matriz aparece aqui.
+      </p>
+    </div>
+  );
+
+  const planningExportDock =
+    embeddedInDashboard && wizardStep === 3 && generatedPlanning ? (
+      <ExportDock statusMessage={status !== "Aguardando" ? status : null}>
+        <button
+          type="button"
+          onClick={sendToEditor}
+          className="pl-hud-btn-secondary rounded-xl px-4 py-2 text-sm font-semibold"
+        >
+          Editar no editor
+        </button>
+        {form.tipoPlanejamento === "trimestral" ? (
+          <PlanningOfficialExportBar
+            title={generatedPlanning.titulo || "Planejamento trimestral"}
+            form={form}
+            mode="trimestral"
+            trimestre={Number(form.trimestre || 1)}
+            matriz={generatedPlanning}
+            qualityScore={qualityScore}
+            qualityIssues={qualityIssues}
+            onStatus={(message) => setStatus(message)}
+          />
+        ) : (
+          <PlanningOfficialExportBar
+            title={generatedPlanning.titulo || "Planejamento anual"}
+            form={form}
+            mode="anual"
+            matriz={generatedPlanning}
+            qualityScore={qualityScore}
+            qualityIssues={qualityIssues}
+            onStatus={(message) => setStatus(message)}
+          />
+        )}
+      </ExportDock>
+    ) : null;
+
+  const planningWorkspace = (
+    <>
         {!embeddedInDashboard ? (
           <div className="pl-hud-page-hero overflow-hidden rounded-2xl border border-cyan-400/15">
             <PlanifyPageHero
@@ -1410,7 +1557,7 @@ export function PlanejamentosClient() {
       <section className="space-y-6">
           {wizardStep < 3 ? (
           <>
-          <div className="pl-hud-glass rounded-2xl border border-cyan-400/20 p-5 sm:p-6">
+          <div className="pf-config-panel space-y-5">
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-600">
               Escolha o tipo
             </p>
@@ -1878,7 +2025,7 @@ export function PlanejamentosClient() {
               </div>
             )}
 
-            {activePreviewPlanning ? (
+            {activePreviewPlanning && !embeddedInDashboard ? (
               <div className="mt-7 rounded-[1.75rem] border border-emerald-200/80 bg-emerald-50/80 p-5">
                 {usedAI === false ? (
                   <aside className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
@@ -1974,7 +2121,7 @@ export function PlanejamentosClient() {
           </div>
           ) : null}
 
-          {wizardStep === 3 && generatedPlanning ? (
+          {wizardStep === 3 && generatedPlanning && !embeddedInDashboard ? (
             <div className="space-y-6">
               <div className="pl-hud-glass rounded-2xl border border-emerald-200/60 p-5 sm:p-6">
                 <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-emerald-600">
@@ -2198,6 +2345,33 @@ export function PlanejamentosClient() {
             </div>
           ) : null}
         </section>
+    </>
+  );
+
+  if (embeddedInDashboard) {
+    return (
+      <TeachyToolStudioPage
+        icon="clipboard"
+        iconAccent="from-cyan-500 to-indigo-600"
+        title="Planejamentos com IA"
+        subtitle="Informe conteúdos, selecione habilidades BNCC e exporte nos modelos oficiais."
+        onBack={() => router.replace("/dashboard", { scroll: false })}
+        backLabel="Início"
+        form={planningWorkspace}
+        preview={matrizPreviewPanel}
+        exportDock={planningExportDock}
+        previewReady={Boolean(activePreviewPlanning)}
+        previewLoading={loadingPlan}
+        formScrollAttr
+        previewScrollAttr
+      />
+    );
+  }
+
+  return (
+    <PlanifyWorkspacePane>
+      <div className="planify-hud pl-hud-hub mx-auto max-w-7xl space-y-5 px-3 sm:px-4 lg:px-0">
+        {planningWorkspace}
       </div>
     </PlanifyWorkspacePane>
   );

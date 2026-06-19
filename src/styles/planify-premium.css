@@ -293,3 +293,187 @@
   background: var(--pf-surface);
   box-shadow: var(--pf-shadow-sm);
 }
+
+/* ─── Ecosystem scope: neutralize legacy HUD glass inside logged-in app ─── */
+
+.pf-ecosystem-scope.planify-hud,
+.pf-ecosystem-scope.planify-hud-app {
+  --planify-glass-bg: #ffffff;
+  --planify-glass-border: rgba(8, 145, 178, 0.12);
+  --planify-glass-blur: none;
+  --planify-canvas: var(--pf-canvas);
+  --ps-pro-canvas: var(--pf-canvas);
+  background: var(--pf-canvas) !important;
+}
+
+.pf-ecosystem-scope .pl-hud-glass,
+.pf-ecosystem-scope .pl-hud-glass-band,
+.pf-ecosystem-scope .ps-pro-section-card {
+  background: var(--pf-surface) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: 1px solid var(--pf-border) !important;
+  box-shadow: var(--pf-shadow-sm) !important;
+}
+
+.pf-ecosystem-scope .pl-hud-hub-mesh,
+.pf-ecosystem-scope .pl-hud-hub-grid-bg,
+.pf-ecosystem-scope .pl-hud-hub-reveal::before {
+  display: none !important;
+}
+
+.pf-ecosystem-scope .pl-hud-hub-hero,
+.pf-ecosystem-scope .pl-hud-hub-shell-header {
+  background: var(--pf-surface) !important;
+  border-color: var(--pf-border) !important;
+}
+
+.pf-ecosystem-scope .pl-hud-hub-command {
+  background: var(--pf-surface) !important;
+  border: 1px solid var(--pf-border) !important;
+  box-shadow: var(--pf-shadow-sm) !important;
+}
+
+.pf-ecosystem-scope .pl-hud-hub-category-pill {
+  background: var(--pf-surface);
+  border: 1px solid var(--pf-border);
+}
+
+.pf-ecosystem-scope .pl-hud-hub-category-pill--active {
+  background: rgba(8, 145, 178, 0.08);
+  border-color: var(--pf-accent);
+  color: var(--pf-accent-deep);
+}
+
+.pf-ecosystem-scope .ps-pro-tool-card {
+  border-radius: var(--pf-radius-lg);
+  border: 1px solid var(--pf-border);
+  background: var(--pf-surface);
+  box-shadow: var(--pf-shadow-sm);
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+}
+
+.pf-ecosystem-scope .ps-pro-tool-card:hover {
+  border-color: var(--pf-border-strong);
+  box-shadow: var(--pf-shadow-md);
+  transform: translateY(-2px);
+}
+
+.pf-ecosystem-scope .pl-hud-main,
+.pf-ecosystem-scope .pl-hud-hub,
+.pf-ecosystem-scope .pl-hud-board {
+  background: var(--pf-canvas) !important;
+}
+
+.pf-ecosystem-scope .pf-studio-shell {
+  background: var(--pf-canvas);
+}
+
+.pf-ecosystem-scope .planify-studio-export-dock,
+.pf-ecosystem-scope .ps-pro-export-dock,
+.pf-ecosystem-scope .pf-export-dock {
+  background: var(--pf-surface);
+  border-top: 1px solid var(--pf-border);
+}
+
+.pf-ecosystem-scope .pf-config-panel {
+  background: var(--pf-surface);
+  border: 1px solid var(--pf-border);
+  border-radius: var(--pf-radius-lg);
+  padding: 1.25rem;
+}
+
+.pf-ecosystem-scope .pl-hud-page-hero {
+  display: none !important;
+}
+
+/* Flatten legacy HUD chrome — logged-in app must look like Teachy canvas */
+.pf-ecosystem-scope .pl-app-bg,
+.pf-ecosystem-scope.pl-app-bg {
+  background: var(--pf-canvas) !important;
+}
+
+.pf-ecosystem-scope .pl-hud-shell,
+.pf-ecosystem-scope .pl-dashboard-root {
+  background: var(--pf-canvas) !important;
+}
+
+.pf-ecosystem-scope .pl-hud-hub-app,
+.pf-ecosystem-scope .pl-hud-hub-reveal {
+  animation: none !important;
+}
+
+.pf-ecosystem-scope .ps-pro-header {
+  background: rgba(255, 255, 255, 0.98) !important;
+  border-bottom: 1px solid var(--pf-border) !important;
+  backdrop-filter: blur(8px);
+}
+
+.pf-ecosystem-scope .ps-pro-config {
+  background: var(--pf-canvas) !important;
+  border-color: var(--pf-border) !important;
+}
+
+.pf-ecosystem-scope .ps-pro-preview {
+  background: var(--pf-canvas) !important;
+}
+
+.pf-ecosystem-scope .ps-pro-preview-glass,
+.pf-ecosystem-scope .pf-studio-preview-glass {
+  background: var(--pf-surface) !important;
+  border: 1px solid var(--pf-border) !important;
+  box-shadow: var(--pf-shadow-sm) !important;
+  backdrop-filter: none !important;
+}
+
+.pf-ecosystem-scope .pl-hud-btn {
+  background: var(--pf-gradient) !important;
+  border: none !important;
+  color: #fff !important;
+}
+
+.pf-ecosystem-scope .pl-hud-btn-secondary {
+  background: var(--pf-surface) !important;
+  border: 1px solid var(--pf-border-strong) !important;
+  backdrop-filter: none !important;
+}
+
+.pf-ecosystem-scope .pl-hud-badge {
+  background: rgba(8, 145, 178, 0.08) !important;
+  border: 1px solid var(--pf-border) !important;
+  color: var(--pf-accent-deep) !important;
+}
+
+.pf-ecosystem-scope .pl-hud-hub-trust {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.pf-ecosystem-scope .pl-hud-hub-trust-item {
+  border-right-color: var(--pf-border) !important;
+}
+
+.pf-ecosystem-scope .pf-tool-card {
+  cursor: pointer;
+  border: 1px solid var(--pf-border);
+  background: var(--pf-surface);
+  border-radius: var(--pf-radius-lg);
+  padding: 1.25rem;
+  box-shadow: var(--pf-shadow-sm);
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+}
+
+.pf-ecosystem-scope .pf-tool-card:hover {
+  border-color: var(--pf-border-strong);
+  box-shadow: var(--pf-shadow-md);
+  transform: translateY(-2px);
+}
+
+.pf-ecosystem-scope .pf-app-home {
+  background: var(--pf-canvas);
+}
+
+.pf-ecosystem-scope .pf-surface {
+  box-shadow: var(--pf-shadow-sm);
+}

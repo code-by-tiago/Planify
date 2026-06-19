@@ -8,6 +8,8 @@ import { CommunityPolicyLink } from "@/components/community/CommunityPolicyModal
 import { CommunityProfilePanel } from "@/components/community/CommunityProfilePanel";
 import type { CommunityFeedItem } from "@/lib/community/types";
 import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
+import { usePlanifyWorkspace } from "@/components/pro/planify-workspace-context";
+import { TeachySectionHub } from "@/components/teachy-layout";
 import { PlanifyPageHero } from "@/components/pro/PlanifyPageHero";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import {
@@ -128,6 +130,7 @@ function formatBytes(value: number) {
 }
 
 export function MarketplaceClient() {
+  const { embeddedInDashboard } = usePlanifyWorkspace();
   const [form, setForm] = useState<FormState>(() => createInitialForm());
   const [file, setFile] = useState<File | null>(null);
   const [items, setItems] = useState<MarketplaceItem[]>([]);
@@ -440,31 +443,21 @@ export function MarketplaceClient() {
     setMineOnly(next);
   }
 
-  return (
-    <PlanifyWorkspacePane
-      header={
-        <PlanifyPageHero
-          badge="Comunidade"
-          icon="market"
-          title="Materiais compartilhados por professores"
-          description="Exporte ao Google Docs ou baixe PDF — publique o que você cria e reutilize modelos alinhados à BNCC."
-          action={
-            <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center">
-              <CommunityNotificationsIcon className="col-span-1 w-full justify-center sm:w-auto" />
-              <CommunityMessagesIcon className="col-span-1 w-full justify-center sm:w-auto" />
-              <button
-                type="button"
-                onClick={() => setPublishOpen((open) => !open)}
-                className="pl-hud-btn col-span-2 rounded-xl px-4 py-2 text-xs font-semibold sm:col-span-1"
-              >
-                {publishOpen ? "Fechar publicação" : "Publicar material"}
-              </button>
-            </div>
-          }
-        />
-      }
-    >
-      <div className="planify-hud pl-hud-hub mx-auto max-w-6xl space-y-5 px-4 py-5 sm:px-6">
+  const hubBody = (
+      <div className={`mx-auto max-w-6xl space-y-5 ${embeddedInDashboard ? "px-0 py-0" : "planify-hud pl-hud-hub px-4 py-5 sm:px-6"}`}>
+        {embeddedInDashboard ? (
+          <div className="flex flex-wrap items-center justify-end gap-2 pb-2">
+            <CommunityNotificationsIcon />
+            <CommunityMessagesIcon />
+            <button
+              type="button"
+              onClick={() => setPublishOpen((open) => !open)}
+              className="pl-hud-btn rounded-xl px-4 py-2 text-xs font-semibold"
+            >
+              {publishOpen ? "Fechar publicação" : "Publicar material"}
+            </button>
+          </div>
+        ) : null}
         <CommunityProfilePanel />
         <CommunityFriendsPanel />
 
@@ -779,6 +772,37 @@ export function MarketplaceClient() {
           />
         ) : null}
       </div>
+  );
+
+  if (embeddedInDashboard) {
+    return <TeachySectionHub singleColumn>{hubBody}</TeachySectionHub>;
+  }
+
+  return (
+    <PlanifyWorkspacePane
+      header={
+        <PlanifyPageHero
+          badge="Comunidade"
+          icon="market"
+          title="Materiais compartilhados por professores"
+          description="Exporte ao Google Docs ou baixe PDF — publique o que você cria e reutilize modelos alinhados à BNCC."
+          action={
+            <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center">
+              <CommunityNotificationsIcon className="col-span-1 w-full justify-center sm:w-auto" />
+              <CommunityMessagesIcon className="col-span-1 w-full justify-center sm:w-auto" />
+              <button
+                type="button"
+                onClick={() => setPublishOpen((open) => !open)}
+                className="pl-hud-btn col-span-2 rounded-xl px-4 py-2 text-xs font-semibold sm:col-span-1"
+              >
+                {publishOpen ? "Fechar publicação" : "Publicar material"}
+              </button>
+            </div>
+          }
+        />
+      }
+    >
+      {hubBody}
     </PlanifyWorkspacePane>
   );
 }

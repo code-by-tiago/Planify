@@ -5,7 +5,8 @@ import { useSearchParams } from "next/navigation";
 import { CreditsBalancePill } from "@/components/credits/CreditsBalancePill";
 import { GenerationCostHint } from "@/components/credits/GenerationCostHint";
 import { MaterialPreviewSkeleton } from "@/components/materiais/MaterialPreviewSkeleton";
-import { MaterialToolPageShell } from "@/components/pro/MaterialToolPageShell";
+import { ToolStudioShell } from "@/components/studio/ToolStudioShell";
+import { ExportDock } from "@/components/studio/ExportDock";
 import { MaterialToolMobileSubmitBar } from "@/components/pro/MaterialToolMobileSubmitBar";
 import { planifyAuthenticatedFetch } from "@/lib/auth/authenticated-fetch";
 import { getClientCreditCost } from "@/lib/credits/credit-costs";
@@ -522,15 +523,60 @@ export function CorrecaoClient({
   }
 
   const painelCriacao = modalAberto ? (
-    <MaterialToolPageShell
+    <ToolStudioShell
       tool={tool}
-      studioMode={studioMode}
       onBack={fecharPainel}
       backLabel={studioMode ? "Início" : "Catálogo"}
       formScrollAttr={studioMode}
       previewScrollAttr={studioMode}
       previewReady={Boolean(resultado || resultadosLote.length)}
       previewLoading={loading}
+      exportDock={
+        resultado || resultadosLote.length ? (
+          <ExportDock>
+            <button
+              type="button"
+              onClick={() => void copiarFeedback()}
+              className="pl-hud-btn rounded-xl px-4 py-2 text-xs font-semibold"
+            >
+              {resultadosLote.length ? "Copiar devolutivas" : "Copiar devolutiva"}
+            </button>
+            {relatorioTurmaText ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => void copiarRelatorioTurma()}
+                  className="pl-hud-btn rounded-xl px-4 py-2 text-xs font-semibold"
+                >
+                  Relatório da turma
+                </button>
+                <button
+                  type="button"
+                  onClick={baixarRelatorioTurmaTxt}
+                  className="pl-hud-btn-secondary rounded-xl px-4 py-2 text-xs font-semibold"
+                >
+                  Baixar .txt
+                </button>
+                <button
+                  type="button"
+                  onClick={baixarRelatorioTurmaHtml}
+                  className="pl-hud-btn-secondary rounded-xl px-4 py-2 text-xs font-semibold"
+                >
+                  Imprimir (HTML)
+                </button>
+              </>
+            ) : null}
+            <button
+              type="button"
+              onClick={() => void baixarPdf()}
+              disabled={pdfLoading}
+              className="pl-hud-btn rounded-xl px-4 py-2 text-xs font-semibold disabled:opacity-60"
+            >
+              {pdfLoading ? "Gerando PDF…" : "Baixar PDF"}
+            </button>
+          </ExportDock>
+        ) : undefined
+      }
       form={
         <form onSubmit={corrigir} className="space-y-4 max-lg:pb-2">
           <div
@@ -851,48 +897,6 @@ export function CorrecaoClient({
                   </p>
                 </div>
               ))}
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => void copiarFeedback()}
-                  className="pl-hud-btn rounded-xl px-4 py-2 text-xs font-semibold"
-                >
-                  Copiar devolutivas (WhatsApp)
-                </button>
-                {relatorioTurmaText ? (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => void copiarRelatorioTurma()}
-                      className="pl-hud-btn rounded-xl px-4 py-2 text-xs font-semibold"
-                    >
-                      Exportar relatório da turma
-                    </button>
-                    <button
-                      type="button"
-                      onClick={baixarRelatorioTurmaTxt}
-                      className="pl-hud-btn-secondary rounded-xl px-4 py-2 text-xs font-semibold"
-                    >
-                      Baixar .txt
-                    </button>
-                    <button
-                      type="button"
-                      onClick={baixarRelatorioTurmaHtml}
-                      className="pl-hud-btn-secondary rounded-xl px-4 py-2 text-xs font-semibold"
-                    >
-                      Imprimir (HTML)
-                    </button>
-                  </>
-                ) : null}
-                <button
-                  type="button"
-                  onClick={() => void baixarPdf()}
-                  disabled={pdfLoading}
-                  className="pl-hud-btn rounded-xl px-4 py-2 text-xs font-semibold disabled:opacity-60"
-                >
-                  {pdfLoading ? "Gerando PDF…" : "Baixar PDF"}
-                </button>
-              </div>
             </>
           ) : resultado ? (
             <>
@@ -937,24 +941,6 @@ export function CorrecaoClient({
                   ))}
                 </div>
               ) : null}
-
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => void copiarFeedback()}
-                  className="pl-hud-btn rounded-xl px-4 py-2 text-xs font-semibold"
-                >
-                  Copiar devolutiva
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void baixarPdf()}
-                  disabled={pdfLoading}
-                  className="pl-hud-btn rounded-xl px-4 py-2 text-xs font-semibold disabled:opacity-60"
-                >
-                  {pdfLoading ? "Gerando PDF…" : "Baixar PDF"}
-                </button>
-              </div>
             </>
           ) : (
             <div className="rounded-2xl border border-dashed border-cyan-400/25 bg-white/70 px-6 py-12 text-center">

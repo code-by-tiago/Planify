@@ -1,6 +1,8 @@
 ﻿"use client";
 
 import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
+import { usePlanifyWorkspace } from "@/components/pro/planify-workspace-context";
+import { TeachySectionHub } from "@/components/teachy-layout";
 import { PlanifyPageHero } from "@/components/pro/PlanifyPageHero";
 import { PlanifyOwlMark } from "@/components/pro/PlanifyOwlMark";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
@@ -135,6 +137,7 @@ function MaterialActions({
 }
 
 export function BibliotecaClient() {
+  const { embeddedInDashboard } = usePlanifyWorkspace();
   const [query, setQuery] = useState("");
   const [etapa, setEtapa] = useState("Todas");
   const [tipo, setTipo] = useState("Todos");
@@ -246,18 +249,8 @@ export function BibliotecaClient() {
     }
   }
 
-  return (
-    <PlanifyWorkspacePane
-      header={
-        <PlanifyPageHero
-          badge="Biblioteca"
-          icon="library"
-          title="Materiais curados pelo Planify"
-          description="Recursos pedagógicos selecionados pela equipe — baixe arquivos/PDF ou abra no editor para personalizar."
-        />
-      }
-    >
-      <div className="planify-hud pl-hud-hub mx-auto max-w-6xl space-y-5 px-4 py-5 sm:px-6">
+  const hubBody = (
+      <div className={`mx-auto max-w-6xl space-y-5 ${embeddedInDashboard ? "px-0 py-0" : "planify-hud pl-hud-hub px-4 py-5 sm:px-6"}`}>
         <section className="pl-hud-glass rounded-2xl p-4 sm:p-5">
           <div className="grid gap-3 md:grid-cols-[1fr_auto_auto_auto] md:items-end">
             <label className="grid gap-1.5">
@@ -418,6 +411,24 @@ export function BibliotecaClient() {
           </section>
         ) : null}
       </div>
+  );
+
+  if (embeddedInDashboard) {
+    return <TeachySectionHub singleColumn>{hubBody}</TeachySectionHub>;
+  }
+
+  return (
+    <PlanifyWorkspacePane
+      header={
+        <PlanifyPageHero
+          badge="Biblioteca"
+          icon="library"
+          title="Materiais curados pelo Planify"
+          description="Recursos pedagógicos selecionados pela equipe — baixe arquivos/PDF ou abra no editor para personalizar."
+        />
+      }
+    >
+      {hubBody}
     </PlanifyWorkspacePane>
   );
 }

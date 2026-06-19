@@ -29,16 +29,16 @@ export type SidebarWorkspaceGroup = {
   sectionIds: DashboardSectionId[];
 };
 
-/** Workspace hubs grouped for sidebar navigation */
+/** Workspace hubs grouped for sidebar navigation (Criar = tools block in sidebar UI) */
 export const sidebarWorkspaceGroups: SidebarWorkspaceGroup[] = [
   {
-    id: "planeje",
-    label: "Planeje",
+    id: "planejar",
+    label: "Planejar",
     sectionIds: ["planejamentos", "bncc"],
   },
   {
-    id: "revise",
-    label: "Revise",
+    id: "avaliar",
+    label: "Avaliar",
     sectionIds: ["banco-questoes", "editor", "historico"],
   },
   {

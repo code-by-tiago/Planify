@@ -51,19 +51,17 @@ export function PlanifySidebarRecents({
   if (items.length === 0) return null;
 
   return (
-    <div className={`shrink-0 ${collapsed ? "px-2 pb-2" : "px-3 pb-2"}`}>
+    <section className="pl-sidebar-section" aria-label="Recentes">
       {!collapsed ? (
         <div className="mb-1 flex items-center justify-between px-1">
-          <p className="pl-sidebar-section-label text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-500/90">
-            Recentes
-          </p>
+          <h2 className="pl-sidebar-section-label">Recentes</h2>
           <button
             type="button"
             onClick={() => {
               onOpenHistorico();
               onActivate?.();
             }}
-            className="text-[10px] font-semibold text-cyan-700 hover:text-cyan-900"
+            className="text-[10px] font-semibold text-cyan-300/90 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-400/50"
           >
             Ver tudo
           </button>
@@ -79,7 +77,7 @@ export function PlanifySidebarRecents({
               onOpenHistorico();
               onActivate?.();
             }}
-            className={`pf-sidebar-recent flex w-full items-center gap-2 rounded-xl px-2 py-2 text-left transition hover:bg-cyan-400/10 ${
+            className={`pf-sidebar-recent flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left transition ${
               collapsed ? "justify-center" : ""
             }`}
           >
@@ -97,6 +95,6 @@ export function PlanifySidebarRecents({
           </button>
         ))}
       </div>
-    </div>
+    </section>
   );
 }

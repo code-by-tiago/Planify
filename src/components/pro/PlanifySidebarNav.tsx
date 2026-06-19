@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState, type ReactNode, type RefObject } from "react";
+import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { PlanifyNavIcon } from "@/components/pro/PlanifyNavIcon";
 import { PlanifySidebarRecents } from "@/components/pro/PlanifySidebarRecents";
 import type { DashboardSectionId } from "@/lib/pro/dashboardViews";
@@ -45,23 +46,90 @@ type PlanifySidebarNavProps = {
 };
 
 function navButtonClass(selected: boolean, collapsed: boolean) {
-  return `pl-sidebar-nav-item flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition ${
-    collapsed ? "justify-center px-2" : ""
-  } ${
-    selected
-      ? "is-active bg-gradient-to-r from-cyan-500 to-blue-600 shadow-sm"
-      : "hover:bg-cyan-400/10"
-  }`;
+  return [
+    "pl-sidebar-nav-item",
+    selected ? "is-active" : "",
+    collapsed ? "pl-sidebar-nav-item--collapsed" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
 }
 
 function toolButtonClass(selected: boolean, collapsed: boolean) {
-  return `pf-sidebar-tool flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left transition ${
-    collapsed ? "justify-center px-1.5" : ""
-  } ${
-    selected
-      ? "is-active bg-cyan-500/15 ring-1 ring-cyan-400/35"
-      : "hover:bg-cyan-400/8"
-  }`;
+  return [
+    "pf-sidebar-tool",
+    selected ? "is-active" : "",
+    collapsed ? "pf-sidebar-tool--collapsed" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
+
+function SidebarSection({
+  label,
+  collapsed,
+  children,
+  className = "",
+}: {
+  label: string;
+  collapsed: boolean;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <section className={`pl-sidebar-section ${className}`.trim()} aria-label={label}>
+      {!collapsed ? (
+        <h2 className="pl-sidebar-section-label">{label}</h2>
+      ) : (
+        <span className="sr-only">{label}</span>
+      )}
+      {children}
+    </section>
+  );
+}
+
+function renderNavItem(
+  item: AppNavItem,
+  opts: {
+    selected: boolean;
+    collapsed: boolean;
+    mode: SidebarNavMode;
+    onActivate?: () => void;
+    handleWorkspaceClick: (item: AppNavItem) => void;
+  },
+) {
+  const { selected, collapsed, mode, onActivate, handleWorkspaceClick } = opts;
+  const className = navButtonClass(selected, collapsed);
+
+  if (mode === "studio" && item.panel !== "external" && item.panel !== "diretor") {
+    return (
+      <button
+        key={item.href}
+        type="button"
+        onClick={() => handleWorkspaceClick(item)}
+        aria-current={selected ? "page" : undefined}
+        title={collapsed ? item.label : undefined}
+        className={className}
+      >
+        <PlanifyNavIcon name={item.icon} className="pl-sidebar-nav-icon" />
+        {!collapsed ? <span className="pl-sidebar-nav-label">{item.label}</span> : null}
+      </button>
+    );
+  }
+
+  return (
+    <Link
+      key={item.href}
+      href={item.href}
+      onClick={() => onActivate?.()}
+      aria-current={selected ? "page" : undefined}
+      title={collapsed ? item.label : undefined}
+      className={className}
+    >
+      <PlanifyNavIcon name={item.icon} className="pl-sidebar-nav-icon" />
+      {!collapsed ? <span className="pl-sidebar-nav-label">{item.label}</span> : null}
+    </Link>
+  );
 }
 
 export function PlanifySidebarNav({
@@ -83,7 +151,7 @@ export function PlanifySidebarNav({
   collapsed = false,
 }: PlanifySidebarNavProps) {
   const [toolQuery, setToolQuery] = useState("");
-  const [toolsExpanded, setToolsExpanded] = useState(true);
+  const [criarExpanded, setCriarExpanded] = useState(true);
 
   const navItems: AppNavItem[] = filterSidebarNavigation({
     canViewBnccProgress,
@@ -96,7 +164,7 @@ export function PlanifySidebarNav({
       filterToolsForSidebar({
         query: toolQuery,
         category: activeCategory,
-        limit: collapsed ? 8 : 16,
+        limit: collapsed ? 8 : 12,
       }),
     [activeCategory, collapsed, toolQuery],
   );
@@ -161,69 +229,32 @@ export function PlanifySidebarNav({
 
   const externalItems = navItems.filter((item) => item.panel === "external");
   const directorItems = navItems.filter((item) => item.panel === "diretor");
+  const padX = collapsed ? "px-2" : "px-3";
 
-  return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      {primaryAction ? (
-        <div className={`shrink-0 pt-3 ${collapsed ? "px-2" : "px-3"}`}>{primaryAction}</div>
-      ) : null}
+  const criarSection =
+    mode === "studio" && !isManagerView ? (
+      <SidebarSection label="Criar" collapsed={collapsed} className="pl-sidebar-section--criar">
+        {!collapsed ? (
+          <button
+            type="button"
+            onClick={() => setCriarExpanded((current) => !current)}
+            aria-expanded={criarExpanded}
+            className="pl-sidebar-section-toggle mb-1.5"
+          >
+            <span className="text-[11px] font-semibold text-slate-400">
+              {filteredTools.length} geradores IA
+            </span>
+            <PlanifyIcon
+              name="chevronDown"
+              className={`h-3.5 w-3.5 text-slate-400 transition ${criarExpanded ? "rotate-180" : ""}`}
+            />
+          </button>
+        ) : null}
 
-      {mode === "studio" && !collapsed ? (
-        <div className="shrink-0 px-3 pb-2">
-          <p className="pl-sidebar-section-label px-1 pb-1 text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-500/90">
-            Categorias
-          </p>
-          <div className="space-y-0.5">
-            <button
-              type="button"
-              onClick={() => {
-                onSelectCategory?.("todos");
-                onActivate?.();
-              }}
-              className={`pf-sidebar-category ${!activeCategory || activeCategory === "todos" ? "is-active" : ""}`}
-            >
-              <PlanifyNavIcon name="spark" className="h-4 w-4 shrink-0" />
-              Todos
-            </button>
-            {categoryTabs.map((cat) => (
-              <button
-                key={cat.id}
-                type="button"
-                onClick={() => {
-                  onSelectCategory?.(cat.id);
-                  onActivate?.();
-                }}
-                className={`pf-sidebar-category ${activeCategory === cat.id ? "is-active" : ""}`}
-              >
-                <PlanifyNavIcon name={cat.icon} className="h-4 w-4 shrink-0" />
-                {cat.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      ) : null}
-
-      {mode === "studio" && !isManagerView ? (
-        <div className={`shrink-0 ${collapsed ? "px-2 pb-2" : "px-3 pb-2"}`}>
-          {!collapsed ? (
-            <button
-              type="button"
-              onClick={() => setToolsExpanded((current) => !current)}
-              className="mb-1 flex w-full items-center justify-between px-1"
-            >
-              <p className="pl-sidebar-section-label text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-500/90">
-                Ferramentas IA
-              </p>
-              <PlanifyNavIcon
-                name="chevronDown"
-                className={`h-3.5 w-3.5 text-slate-400 transition ${toolsExpanded ? "rotate-180" : ""}`}
-              />
-            </button>
-          ) : null}
-
-          {!collapsed && toolsExpanded ? (
+        {!collapsed && criarExpanded ? (
+          <>
             <div className="relative mb-2">
-              <PlanifyNavIcon
+              <PlanifyIcon
                 name="search"
                 className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400"
               />
@@ -231,166 +262,159 @@ export function PlanifySidebarNav({
                 value={toolQuery}
                 onChange={(event) => setToolQuery(event.target.value)}
                 placeholder="Buscar ferramenta…"
-                aria-label="Buscar ferramentas"
-                className="pf-sidebar-search w-full rounded-xl border border-[var(--pf-border)] bg-white py-2 pl-8 pr-3 text-xs font-medium text-slate-900 outline-none placeholder:text-slate-400 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+                aria-label="Buscar ferramentas de IA"
+                className="pf-sidebar-search w-full rounded-lg py-2 pl-8 pr-3 text-xs font-medium outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40"
               />
             </div>
-          ) : null}
-
-          {(collapsed || toolsExpanded) && (
-            <div className={`space-y-0.5 ${collapsed ? "max-h-[40vh] overflow-y-auto" : "max-h-52 overflow-y-auto"}`}>
-              {filteredTools.map((tool) => {
-                const selected = isToolSelected(tool.id);
-                return (
-                  <button
-                    key={tool.id}
-                    type="button"
-                    title={collapsed ? tool.shortTitle : undefined}
-                    onClick={() => handleToolClick(tool.id)}
-                    className={toolButtonClass(selected, collapsed)}
-                  >
-                    <span
-                      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br ${tool.accent} text-white shadow-sm`}
-                    >
-                      <PlanifyNavIcon name={tool.icon} className="h-3.5 w-3.5" />
-                    </span>
-                    {!collapsed ? (
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-xs font-bold text-slate-900">
-                          {tool.shortTitle}
-                        </span>
-                        {tool.popular ? (
-                          <span className="text-[10px] font-semibold text-amber-700">Popular</span>
-                        ) : null}
-                      </span>
-                    ) : null}
-                  </button>
-                );
-              })}
-              {!collapsed && filteredTools.length === 0 ? (
-                <p className="px-2 py-2 text-[11px] font-medium text-slate-500">
-                  Nenhuma ferramenta encontrada.
-                </p>
-              ) : null}
+            <div
+              className="pl-sidebar-category-rail mb-2 flex gap-1 overflow-x-auto pb-0.5"
+              role="tablist"
+              aria-label="Filtrar por categoria"
+            >
+              <button
+                type="button"
+                role="tab"
+                aria-selected={!activeCategory || activeCategory === "todos"}
+                onClick={() => {
+                  onSelectCategory?.("todos");
+                  onActivate?.();
+                }}
+                className={`pl-sidebar-category-pill ${!activeCategory || activeCategory === "todos" ? "is-active" : ""}`}
+              >
+                Todos
+              </button>
+              {categoryTabs.map((cat) => (
+                <button
+                  key={cat.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={activeCategory === cat.id}
+                  onClick={() => {
+                    onSelectCategory?.(cat.id);
+                    onActivate?.();
+                  }}
+                  className={`pl-sidebar-category-pill ${activeCategory === cat.id ? "is-active" : ""}`}
+                >
+                  {cat.label}
+                </button>
+              ))}
             </div>
-          )}
-        </div>
+          </>
+        ) : null}
+
+        {(collapsed || criarExpanded) && (
+          <div
+            className={`pl-sidebar-tool-list space-y-0.5 ${collapsed ? "max-h-[36vh] overflow-y-auto" : "max-h-44 overflow-y-auto"}`}
+          >
+            {filteredTools.map((tool) => {
+              const selected = isToolSelected(tool.id);
+              return (
+                <button
+                  key={tool.id}
+                  type="button"
+                  title={collapsed ? tool.shortTitle : undefined}
+                  onClick={() => handleToolClick(tool.id)}
+                  className={toolButtonClass(selected, collapsed)}
+                >
+                  <span
+                    className={`pf-sidebar-tool-icon flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br ${tool.accent} text-white shadow-sm`}
+                  >
+                    <PlanifyIcon name={tool.icon} className="h-3.5 w-3.5" />
+                  </span>
+                  {!collapsed ? (
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-xs font-bold">{tool.shortTitle}</span>
+                      {tool.popular ? (
+                        <span className="text-[10px] font-semibold opacity-80">Popular</span>
+                      ) : null}
+                    </span>
+                  ) : null}
+                </button>
+              );
+            })}
+            {!collapsed && filteredTools.length === 0 ? (
+              <p className="px-2 py-2 text-[11px] font-medium opacity-70">
+                Nenhuma ferramenta encontrada.
+              </p>
+            ) : null}
+          </div>
+        )}
+      </SidebarSection>
+    ) : null;
+
+  return (
+    <div className="flex min-h-0 flex-1 flex-col">
+      {primaryAction ? (
+        <div className={`shrink-0 pt-3 ${padX}`}>{primaryAction}</div>
       ) : null}
 
       <nav
         aria-label="Navegação principal"
-        className={`min-h-0 flex-1 space-y-3 overflow-x-hidden overflow-y-auto overscroll-contain py-2 ${collapsed ? "px-2" : "px-3"}`}
+        className={`min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain py-2 ${padX}`}
       >
-        {directorItems.map((item) => {
-          const selected = isWorkspaceSelected(item);
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={() => onActivate?.()}
-              aria-current={selected ? "page" : undefined}
-              title={collapsed ? item.label : undefined}
-              className={navButtonClass(selected, collapsed)}
-            >
-              <PlanifyNavIcon name={item.icon} className="pl-sidebar-nav-icon" />
-              {!collapsed ? <span className="pl-sidebar-nav-label">{item.label}</span> : null}
-            </Link>
-          );
-        })}
+        {directorItems.length > 0 ? (
+          <SidebarSection label="Gestão" collapsed={collapsed}>
+            <div className="pl-sidebar-nav-group">
+              {directorItems.map((item) =>
+                renderNavItem(item, {
+                  selected: isWorkspaceSelected(item),
+                  collapsed,
+                  mode,
+                  onActivate,
+                  handleWorkspaceClick,
+                }),
+              )}
+            </div>
+          </SidebarSection>
+        ) : null}
 
         {sidebarWorkspaceGroups.map((group) => {
           const groupItems = resolveGroupItems(group.sectionIds);
           if (groupItems.length === 0) return null;
 
           return (
-            <div key={group.id}>
-              {!collapsed ? (
-                <p className="pl-sidebar-section-label px-1 pb-1 text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-500/90">
-                  {group.label}
-                </p>
-              ) : null}
-              <div className="space-y-0.5">
-                {groupItems.map((item) => {
-                  const selected = isWorkspaceSelected(item);
-                  const className = navButtonClass(selected, collapsed);
-
-                  if (mode === "studio") {
-                    return (
-                      <button
-                        key={item.href}
-                        type="button"
-                        onClick={() => handleWorkspaceClick(item)}
-                        aria-current={selected ? "page" : undefined}
-                        title={collapsed ? item.label : undefined}
-                        className={className}
-                      >
-                        <PlanifyNavIcon name={item.icon} className="pl-sidebar-nav-icon" />
-                        {!collapsed ? (
-                          <span className="pl-sidebar-nav-label">{item.label}</span>
-                        ) : null}
-                      </button>
-                    );
-                  }
-
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={() => onActivate?.()}
-                      aria-current={selected ? "page" : undefined}
-                      title={collapsed ? item.label : undefined}
-                      className={className}
-                    >
-                      <PlanifyNavIcon name={item.icon} className="pl-sidebar-nav-icon" />
-                      {!collapsed ? (
-                        <span className="pl-sidebar-nav-label">{item.label}</span>
-                      ) : null}
-                    </Link>
-                  );
-                })}
+            <SidebarSection key={group.id} label={group.label} collapsed={collapsed}>
+              <div className="pl-sidebar-nav-group">
+                {groupItems.map((item) =>
+                  renderNavItem(item, {
+                    selected: isWorkspaceSelected(item),
+                    collapsed,
+                    mode,
+                    onActivate,
+                    handleWorkspaceClick,
+                  }),
+                )}
               </div>
-            </div>
+            </SidebarSection>
           );
         })}
 
         {externalItems.length > 0 ? (
-          <div>
-            {!collapsed ? (
-              <p className="pl-sidebar-section-label px-1 pb-1 text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-500/90">
-                Conta
-              </p>
-            ) : null}
-            <div className="space-y-0.5">
-              {externalItems.map((item) => {
-                const selected = isWorkspaceSelected(item);
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onClick={() => onActivate?.()}
-                    aria-current={selected ? "page" : undefined}
-                    title={collapsed ? item.label : undefined}
-                    className={navButtonClass(selected, collapsed)}
-                  >
-                    <PlanifyNavIcon name={item.icon} className="pl-sidebar-nav-icon" />
-                    {!collapsed ? (
-                      <span className="pl-sidebar-nav-label">{item.label}</span>
-                    ) : null}
-                  </Link>
-                );
-              })}
+          <SidebarSection label="Conta" collapsed={collapsed}>
+            <div className="pl-sidebar-nav-group">
+              {externalItems.map((item) =>
+                renderNavItem(item, {
+                  selected: isWorkspaceSelected(item),
+                  collapsed,
+                  mode,
+                  onActivate,
+                  handleWorkspaceClick,
+                }),
+              )}
             </div>
-          </div>
+          </SidebarSection>
+        ) : null}
+
+        {criarSection}
+
+        {mode === "studio" && onSelectSection && !isManagerView ? (
+          <PlanifySidebarRecents
+            collapsed={collapsed}
+            onOpenHistorico={() => onSelectSection("historico")}
+            onActivate={onActivate}
+          />
         ) : null}
       </nav>
-
-      {mode === "studio" && onSelectSection && !isManagerView ? (
-        <PlanifySidebarRecents
-          collapsed={collapsed}
-          onOpenHistorico={() => onSelectSection("historico")}
-          onActivate={onActivate}
-        />
-      ) : null}
     </div>
   );
 }

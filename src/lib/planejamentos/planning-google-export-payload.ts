@@ -170,6 +170,7 @@ export function buildOfficialPlanningPayloadFromEditorMeta(
     professor: generation?.professor || meta.professor,
     etapa: generation?.etapa || meta.etapa,
     anoSerie: generation?.anoSerie || meta.anoSerie,
+    turma: generation?.turma || generation?.className,
     areaConhecimento: generation?.areaConhecimento,
     componenteCurricular:
       generation?.componenteCurricular || meta.componente || "Componente",
@@ -197,6 +198,7 @@ export function buildOfficialPlanningPayloadFromGeneration(input: {
   professor?: string;
   etapa?: string;
   anoSerie?: string;
+  turma?: string;
   areaConhecimento?: string;
   componenteCurricular?: string;
   cargaHoraria?: string;
@@ -220,6 +222,7 @@ export function buildOfficialPlanningPayloadFromGeneration(input: {
     professor: input.professor,
     etapa: input.etapa,
     anoSerie: input.anoSerie,
+    turma: input.turma,
     areaConhecimento: input.areaConhecimento,
     componenteCurricular: input.componenteCurricular,
     cargaHoraria: input.cargaHoraria,

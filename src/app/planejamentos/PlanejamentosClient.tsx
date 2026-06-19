@@ -1821,6 +1821,7 @@ export function PlanejamentosClient() {
                         professor: form.professor,
                         etapa: form.etapa,
                         anoSerie: form.anoSerie,
+                        turma: school.turmaPayload.turma,
                         areaConhecimento: form.areaConhecimento,
                         componenteCurricular: form.componenteCurricular,
                         cargaHoraria:
@@ -1844,7 +1845,7 @@ export function PlanejamentosClient() {
                   <div className="mt-6 rounded-xl border border-white/80 bg-white/90 px-4 py-3">
                     <PlanningOfficialExportBar
                       title={generatedPlanning.titulo || "Planejamento trimestral"}
-                      form={form}
+                      form={{ ...form, turma: school.turmaPayload.turma }}
                       mode="trimestral"
                       trimestre={Number(form.trimestre || 1)}
                       matriz={generatedPlanning}
@@ -1864,7 +1865,7 @@ export function PlanejamentosClient() {
                       <div className="mt-2">
                         <PlanningOfficialExportBar
                           title={generatedPlanning.titulo || "Planejamento anual"}
-                          form={form}
+                          form={{ ...form, turma: school.turmaPayload.turma }}
                           mode="anual"
                           matriz={generatedPlanning}
                           qualityScore={qualityScore}
@@ -1887,7 +1888,7 @@ export function PlanejamentosClient() {
                           <div className="mt-2">
                             <PlanningOfficialExportBar
                               title={trimPlan.titulo || `${trimestre}º trimestre`}
-                              form={form}
+                              form={{ ...form, turma: school.turmaPayload.turma }}
                               mode="trimestral"
                               trimestre={trimestre}
                               matriz={trimPlan}

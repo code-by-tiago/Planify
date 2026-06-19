@@ -15,6 +15,7 @@ type PlanningFormSlice = {
   professor: string;
   etapa: string;
   anoSerie: string;
+  turma?: string;
   areaConhecimento: string;
   componenteCurricular: string;
   cargaHoraria: string;
@@ -74,6 +75,7 @@ export function PlanningOfficialExportBar({
         professor: form.professor,
         etapa: form.etapa,
         anoSerie: form.anoSerie,
+        turma: form.turma,
         areaConhecimento: form.areaConhecimento,
         componenteCurricular: form.componenteCurricular,
         cargaHoraria:

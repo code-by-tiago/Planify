@@ -14,13 +14,13 @@ export function LandingTools() {
     >
       <div className="mx-auto max-w-7xl">
         <div className="mx-auto max-w-2xl text-center">
-          <p className={ppEyebrow}>Geradores com IA</p>
-          <h2 className="mt-3 font-[family-name:var(--font-display)] text-3xl font-extrabold text-slate-900 sm:text-4xl">
-            Ferramentas para cada etapa da aula
+          <p className={ppEyebrow}>{tools.length} ferramentas IA</p>
+          <h2 className="pf-headline mt-3 text-3xl sm:text-4xl">
+            Tudo que você precisa para ensinar
           </h2>
           <p className="mt-4 text-base font-medium leading-7 text-slate-600">
-            Do planejamento BNCC à correção de redações — cada gerador estrutura um rascunho
-            pedagógico para você revisar no editor antes de exportar ou publicar.
+            Do planejamento BNCC à correção de redações — explore o catálogo completo de geradores
+            pedagógicos do Planify.
           </p>
         </div>
 
@@ -43,7 +43,7 @@ export function LandingTools() {
                 {tool.description}
               </span>
               <span className="mt-4 flex items-center gap-1 text-xs font-bold text-cyan-700">
-                Abrir
+                Acessar
                 <PlanifyIcon
                   name="arrowRight"
                   className="h-3 w-3 transition group-hover:translate-x-0.5"

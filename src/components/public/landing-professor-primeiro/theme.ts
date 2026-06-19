@@ -1,7 +1,7 @@
 /** Design tokens — cyan/indigo HUD (public pages + landing structure). */
 
 export const ppPage =
-  "planify-hud planify-ui3 planify-hud-landing planify-public flex min-h-screen flex-col overflow-x-hidden bg-white sm:overflow-x-clip sm:bg-gradient-to-b sm:from-white sm:via-sky-50/60 sm:to-[var(--planify-canvas)]";
+  "pf-scope pf-marketing-shell flex min-h-screen flex-col overflow-x-hidden bg-white";
 
 export const ppEyebrow =
   "text-xs font-bold uppercase tracking-[0.2em] text-cyan-700";

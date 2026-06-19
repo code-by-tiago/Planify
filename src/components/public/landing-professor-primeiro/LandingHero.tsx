@@ -21,18 +21,18 @@ export function LandingHero() {
           </span>
 
           <h1 className="pf-headline mt-6 text-4xl font-extrabold uppercase leading-[1.04] tracking-tight sm:text-5xl lg:text-[3.1rem]">
-            Menos tempo planejando.{" "}
-            <span className="text-cyan-600">Mais qualidade ensinando.</span>
+            Sistema completo de IA{" "}
+            <span className="text-cyan-600">para professores</span>
           </h1>
 
           <p className="mt-5 max-w-xl text-lg font-medium leading-8 text-slate-600">
-            Ecossistema professor-only: planejamentos BNCC, materiais com IA, correção e exportação
-            oficial — tudo num só lugar, com a identidade Planify.
+            Junte-se a milhares de educadores com planejamentos BNCC, materiais com IA, correção e
+            exportação Google — tudo num só lugar, feito para o docente brasileiro.
           </p>
 
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
-            <Link href="/planos" className={`${ppBtnPrimary} gap-2 px-8 py-4 text-base`}>
-              Começar grátis
+            <Link href="/cadastro" className={`${ppBtnPrimary} gap-2 px-8 py-4 text-base`}>
+              Acesse grátis
               <PlanifyIcon name="arrowRight" className="h-4 w-4" />
             </Link>
             <Link href="/ferramentas" className={`${ppBtnSecondary} gap-2 px-8 py-4 text-base`}>

@@ -19,8 +19,8 @@ export function LandingFinalCta() {
           </p>
 
           <div className="mt-10">
-            <Link href="/planos" className={`${ppBtnPrimary} gap-2 px-10 py-4 text-base`}>
-              Começar agora
+            <Link href="/cadastro" className={`${ppBtnPrimary} gap-2 px-10 py-4 text-base`}>
+              Acesse grátis
               <PlanifyIcon name="arrowRight" className="h-4 w-4" />
             </Link>
           </div>

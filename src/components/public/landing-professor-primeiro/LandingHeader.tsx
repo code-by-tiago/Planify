@@ -32,12 +32,18 @@ export function LandingHeader() {
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-8 sm:py-4">
         <PlanifyBrand href="/" hideTagline />
 
-        <div className="flex items-center gap-2 sm:gap-2.5">
+        <nav className="flex items-center gap-1 sm:gap-2" aria-label="Navegação principal">
           <Link
             href="/ferramentas"
-            className="hidden rounded-xl px-3 py-2 text-sm font-semibold text-slate-700 transition hover:text-cyan-700 sm:inline-flex sm:px-4"
+            className="hidden rounded-xl px-3 py-2 text-sm font-semibold text-slate-700 transition hover:text-cyan-700 md:inline-flex md:px-4"
           >
             Ferramentas
+          </Link>
+          <Link
+            href="/planos"
+            className="hidden rounded-xl px-3 py-2 text-sm font-semibold text-slate-700 transition hover:text-cyan-700 md:inline-flex md:px-4"
+          >
+            Planos
           </Link>
           {showPainel ? (
             <Link
@@ -54,12 +60,12 @@ export function LandingHeader() {
               >
                 Entrar
               </Link>
-              <Link href="/planos" className={`${ppBtnPrimarySm} whitespace-nowrap`}>
-                Começar agora
+              <Link href="/cadastro" className={`${ppBtnPrimarySm} whitespace-nowrap`}>
+                Acesse grátis
               </Link>
             </>
           )}
-        </div>
+        </nav>
       </div>
     </header>
   );

@@ -140,7 +140,24 @@
 }
 
 .pf-marketing-hero {
-  background: linear-gradient(180deg, #fff 0%, rgba(240, 244, 248, 0.6) 100%);
+  background: linear-gradient(180deg, #fff 0%, rgba(240, 244, 248, 0.5) 100%);
+}
+
+.pf-marketing-shell {
+  background: #fff;
+  color: var(--pf-text);
+}
+
+.pf-marketing-integrated {
+  background: linear-gradient(180deg, rgba(240, 244, 248, 0.4) 0%, #fff 100%);
+}
+
+.pf-marketing-stats {
+  background: #fff;
+}
+
+.pf-marketing-ecosystem {
+  background: rgba(248, 250, 252, 0.9);
 }
 
 .pf-catalog-grid {
@@ -281,6 +298,46 @@
 .pf-sidebar-category.is-active {
   background: var(--pf-gradient);
   color: #fff;
+}
+
+.pf-sidebar-search {
+  background: var(--pf-surface);
+}
+
+.pf-sidebar-tool.is-active .truncate {
+  color: var(--pf-accent-deep);
+}
+
+.pf-sidebar-recent {
+  border: 1px solid transparent;
+}
+
+.pf-sidebar-recent:hover {
+  border-color: var(--pf-border);
+  background: rgba(8, 145, 178, 0.06);
+}
+
+.pf-qb-card {
+  border-radius: var(--pf-radius-lg);
+  border: 1px solid var(--pf-border);
+  background: var(--pf-surface);
+  box-shadow: var(--pf-shadow-sm);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.pf-qb-card:hover {
+  border-color: var(--pf-border-strong);
+  box-shadow: var(--pf-shadow-md);
+}
+
+.pf-qb-card.is-selected {
+  border-color: var(--pf-accent);
+  box-shadow: 0 0 0 1px rgba(8, 145, 178, 0.2);
+}
+
+.pf-qb-card.is-preview {
+  border-color: var(--pf-accent-deep);
+  background: rgba(8, 145, 178, 0.04);
 }
 
 .pf-docente-feed {

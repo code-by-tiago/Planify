@@ -9,17 +9,17 @@ import { LandingTestimonials } from "./LandingTestimonials";
 import { LandingTools } from "./LandingTools";
 
 /**
- * Homepage pública — arquitetura espelhando Teachy MarketingHome:
- * Hero → Sistema integrado → Ecossistema → Stats → Studio → Ferramentas → Depoimentos → CTA
+ * Homepage pública — arquitetura marketing premium:
+ * Hero → Sistema integrado → Stats → Studio → Ecossistema → Ferramentas → Depoimentos → CTA
  */
 export function LandingProfessorPrimeiroPage() {
   return (
     <PlanifyMarketingLayout>
       <LandingHero />
       <LandingIntegratedSystem />
-      <LandingEcosystem />
       <LandingSocialProof />
       <LandingStudioFeatures />
+      <LandingEcosystem />
       <LandingTools />
       <LandingTestimonials />
       <LandingFinalCta />

@@ -2638,3 +2638,1441 @@ html:has(.pl-single-screen) body {
     padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
   }
 }
+
+/* PLANIFY_REFERENCE_STYLE_2026_START */
+
+:root {
+  --planify-navy: #082f3a;
+  --planify-navy-soft: #0b5a62;
+  --planify-ink: #12323a;
+  --planify-muted: #5b6f75;
+  --planify-paper: #f7fbfa;
+  --planify-paper-alt: #f3faf8;
+  --planify-surface: #ffffff;
+  --planify-line: #d9e8e6;
+  --planify-line-strong: #bfece5;
+  --planify-teal: #12b8a6;
+  --planify-teal-dark: #0b8f85;
+  --planify-mint: #dff7f2;
+  --planify-sun: #f6c65b;
+  --planify-sun-soft: #fff2d0;
+  --planify-coral: #f26d5b;
+  --planify-radius: 8px;
+  --planify-radius-lg: 8px;
+  --planify-radius-xl: 8px;
+  --planify-shadow-soft: 0 14px 34px rgba(13, 67, 82, 0.06);
+  --planify-shadow-lift: 0 22px 50px rgba(18, 184, 166, 0.16);
+  --planify-accent-gradient: linear-gradient(135deg, #f6c65b 0%, #ffd878 100%);
+  --planify-text-gradient: linear-gradient(120deg, #dff7f2 0%, #12b8a6 55%, #f6c65b 100%);
+
+  --pf-canvas: var(--planify-paper);
+  --pf-surface: var(--planify-surface);
+  --pf-accent: var(--planify-teal);
+  --pf-accent-light: var(--planify-mint);
+  --pf-accent-deep: var(--planify-teal-dark);
+  --pf-text: var(--planify-ink);
+  --pf-text-muted: var(--planify-muted);
+  --pf-border: rgba(8, 47, 58, 0.12);
+  --pf-border-strong: rgba(18, 184, 166, 0.34);
+  --pf-radius: var(--planify-radius);
+  --pf-radius-lg: var(--planify-radius);
+  --pf-radius-xl: var(--planify-radius);
+  --pf-shadow-sm: var(--planify-shadow-soft);
+  --pf-shadow-md: var(--planify-shadow-lift);
+  --pf-gradient: linear-gradient(135deg, #12b8a6 0%, #0b8f85 100%);
+
+  --pl-page: var(--planify-paper);
+  --pl-soft: var(--planify-paper-alt);
+  --pl-card: var(--planify-surface);
+  --pl-card-soft: var(--planify-paper-alt);
+  --pl-text: var(--planify-ink);
+  --pl-muted: var(--planify-muted);
+  --pl-line: var(--planify-line);
+  --pl-indigo: var(--planify-teal-dark);
+  --pl-blue: var(--planify-teal);
+  --pl-cyan: var(--planify-teal);
+  --pl-teal: var(--planify-teal-dark);
+  --pl-purple: var(--planify-coral);
+
+  --planify-canvas: var(--planify-paper);
+  --ps-pro-canvas: var(--planify-paper);
+  --ps-pro-surface: var(--planify-surface);
+  --ps-pro-surface-muted: #fbfefd;
+  --ps-pro-border: rgba(8, 47, 58, 0.12);
+  --ps-pro-border-strong: rgba(18, 184, 166, 0.34);
+  --ps-pro-accent-from: var(--planify-teal);
+  --ps-pro-accent-via: var(--planify-teal-dark);
+  --ps-pro-accent-to: var(--planify-navy-soft);
+  --ps-pro-chip-bg: #ffffff;
+  --ps-pro-chip-active-bg: linear-gradient(135deg, #12b8a6 0%, #0b8f85 100%);
+  --ps-pro-export-shadow: 0 -10px 32px rgba(8, 47, 58, 0.08);
+  --ps-pro-preview-glass: #ffffff;
+  --ps-pro-generate-bar-bg: #ffffff;
+}
+
+html,
+body {
+  background: var(--planify-paper) !important;
+  color: var(--planify-ink) !important;
+}
+
+::selection {
+  background: rgba(246, 198, 91, 0.42);
+  color: var(--planify-navy);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(8, 47, 58, 0.22);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(8, 47, 58, 0.34);
+}
+
+.pf-marketing-shell {
+  --pf-mkt-text: var(--planify-ink);
+  --pf-mkt-muted: var(--planify-muted);
+  --pf-mkt-faint: #9eb1b6;
+  --pf-mkt-primary: var(--planify-sun);
+  --pf-mkt-primary-hover: #ffd878;
+  --pf-mkt-accent: var(--planify-teal-dark);
+  --pf-mkt-surface-alt: var(--planify-paper);
+  --pf-mkt-radius-btn: 8px;
+  --pf-mkt-radius-card: 8px;
+  --pf-mkt-radius-lg: 8px;
+  --pf-mkt-shadow-card: var(--planify-shadow-soft);
+  --pf-mkt-shadow-soft: 0 1px 3px rgba(8, 47, 58, 0.06);
+  background: var(--planify-paper) !important;
+  color: var(--planify-ink) !important;
+}
+
+.pf-ecosystem-scope.pf-marketing-shell .pf-marketing-nav,
+.pf-marketing-nav {
+  position: fixed !important;
+  inset: 0 0 auto 0;
+  z-index: 50;
+  background: rgba(8, 47, 58, 0.88) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14) !important;
+  box-shadow: none !important;
+  backdrop-filter: blur(18px) !important;
+  -webkit-backdrop-filter: blur(18px) !important;
+}
+
+.pf-ecosystem-scope.pf-marketing-shell .pf-marketing-nav.is-scrolled,
+.pf-marketing-nav.is-scrolled {
+  border-bottom-color: rgba(255, 255, 255, 0.18) !important;
+  box-shadow: 0 10px 30px rgba(4, 35, 43, 0.18) !important;
+}
+
+.pf-marketing-nav .text-slate-950,
+.pf-marketing-nav .text-white,
+.pf-marketing-nav .text-xl,
+.pf-marketing-nav p,
+.pf-marketing-nav .text-cyan-600,
+.pf-marketing-nav .pf-marketing-nav-link,
+.pf-marketing-nav .pf-marketing-btn--ghost {
+  color: rgba(255, 255, 255, 0.84) !important;
+}
+
+.pf-marketing-nav .text-xl {
+  color: #ffffff !important;
+}
+
+.pf-marketing-nav nav,
+.pf-marketing-nav [class*="rounded-full"],
+.pf-marketing-nav [class*="rounded-2xl"] {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+.pf-marketing-nav .pf-marketing-nav-link--pill {
+  border-color: transparent !important;
+  background: transparent !important;
+  color: rgba(255, 255, 255, 0.84) !important;
+}
+
+.pf-ecosystem-scope.pf-marketing-shell .pf-marketing-nav .pf-marketing-nav-link--pill,
+.pf-ecosystem-scope.pf-marketing-shell .pf-marketing-nav .pf-marketing-btn--ghost {
+  border-color: transparent !important;
+  background: transparent !important;
+  color: rgba(255, 255, 255, 0.84) !important;
+}
+
+.pf-marketing-nav .pf-marketing-nav-link:hover,
+.pf-marketing-nav .pf-marketing-btn--ghost:hover {
+  background: rgba(255, 255, 255, 0.12) !important;
+  color: #ffffff !important;
+}
+
+.pf-ecosystem-scope.pf-marketing-shell .pf-marketing-nav .pf-marketing-nav-link--pill:hover,
+.pf-ecosystem-scope.pf-marketing-shell .pf-marketing-nav .pf-marketing-btn--ghost:hover {
+  background: rgba(255, 255, 255, 0.12) !important;
+  color: #ffffff !important;
+}
+
+.pf-marketing-nav .pf-marketing-btn--primary-sm {
+  color: var(--planify-navy) !important;
+}
+
+.planify-public > header {
+  background: rgba(8, 47, 58, 0.88) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14) !important;
+  box-shadow: 0 10px 30px rgba(4, 35, 43, 0.14) !important;
+  backdrop-filter: blur(18px) !important;
+  -webkit-backdrop-filter: blur(18px) !important;
+}
+
+.planify-public > header .text-slate-950,
+.planify-public > header .text-slate-700,
+.planify-public > header .text-cyan-600,
+.planify-public > header p,
+.planify-public > header a:not(.pf-marketing-btn--primary-sm) {
+  color: rgba(255, 255, 255, 0.88) !important;
+}
+
+.planify-public > header a:not(.pf-marketing-btn--primary-sm):hover {
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+.pf-marketing-nav-link,
+.pf-marketing-btn,
+.pl-hud-btn,
+.pl-hud-btn-generate,
+.pl-hud-btn-secondary,
+.pl-hud-btn-ghost,
+.pl-btn-primary,
+.pl-btn-brand {
+  border-radius: 8px !important;
+}
+
+.pf-marketing-btn {
+  min-height: 46px;
+  font-weight: 800;
+  transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.pf-marketing-btn:hover {
+  transform: translateY(-1px);
+}
+
+.pf-ecosystem-scope.pf-marketing-shell .pf-marketing-btn--primary,
+.pf-ecosystem-scope.pf-marketing-shell .pf-marketing-btn--primary-sm,
+.pf-marketing-btn--primary,
+.pf-marketing-btn--primary-sm,
+.pf-btn-primary,
+.planify-hud .pl-hud-btn,
+.planify-hud .pl-hud-btn-generate,
+.planify-hud .pl-btn-brand,
+.planify-hud .pl-btn-primary,
+.pf-ecosystem-scope .pl-hud-btn {
+  background: var(--planify-sun) !important;
+  border: 1px solid transparent !important;
+  color: var(--planify-navy) !important;
+  box-shadow: 0 12px 30px rgba(246, 198, 91, 0.24) !important;
+}
+
+.pf-ecosystem-scope.pf-marketing-shell .pf-marketing-btn--primary:hover,
+.pf-ecosystem-scope.pf-marketing-shell .pf-marketing-btn--primary-sm:hover,
+.pf-marketing-btn--primary:hover,
+.pf-marketing-btn--primary-sm:hover,
+.pf-btn-primary:hover,
+.planify-hud .pl-hud-btn:hover,
+.planify-hud .pl-hud-btn-generate:hover:not(:disabled),
+.planify-hud .pl-btn-brand:hover {
+  background: #ffd878 !important;
+  color: var(--planify-navy) !important;
+}
+
+.planify-hud .pl-hud-btn svg,
+.planify-hud .pl-hud-btn-generate svg,
+.pf-marketing-btn--primary svg {
+  color: var(--planify-navy) !important;
+}
+
+.pf-marketing-btn--outline,
+.planify-hud .pl-hud-btn-secondary,
+.pf-ecosystem-scope .pl-hud-btn-secondary {
+  background: #ffffff !important;
+  border: 1px solid var(--planify-line) !important;
+  color: var(--planify-ink) !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+.pf-marketing-btn--outline:hover,
+.planify-hud .pl-hud-btn-secondary:hover {
+  border-color: var(--planify-teal) !important;
+  background: #fbfefd !important;
+  color: var(--planify-navy) !important;
+}
+
+.pf-marketing-hero {
+  min-height: 84svh !important;
+  display: grid;
+  align-items: center;
+  overflow: hidden;
+  isolation: isolate;
+  background: var(--planify-navy) !important;
+  color: #ffffff !important;
+}
+
+.pf-marketing-hero::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  z-index: 2;
+  height: 92px;
+  background: linear-gradient(180deg, rgba(247, 251, 250, 0), var(--planify-paper));
+  pointer-events: none;
+}
+
+.pf-marketing-hero-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background:
+    linear-gradient(90deg, rgba(4, 35, 43, 0.96) 0%, rgba(4, 35, 43, 0.78) 45%, rgba(4, 35, 43, 0.22) 100%) !important;
+  opacity: 1 !important;
+}
+
+.pf-marketing-hero-video {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.72;
+}
+
+.pf-marketing-hero-inner {
+  position: relative;
+  z-index: 3;
+  width: min(1180px, calc(100% - 32px));
+  max-width: none !important;
+  margin: 0 auto;
+  padding: 116px 0 76px !important;
+}
+
+.pf-marketing-hero-copy {
+  width: min(720px, 100%);
+}
+
+.pf-marketing-hero-eyebrow,
+.pf-marketing-eyebrow,
+.pf-eyebrow,
+.pl-hud-badge {
+  display: inline-flex !important;
+  width: fit-content !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 7px 10px !important;
+  color: #d9fffa !important;
+  background: rgba(18, 184, 166, 0.16) !important;
+  border: 1px solid rgba(143, 241, 229, 0.32) !important;
+  border-radius: 999px !important;
+}
+
+.pf-marketing-hero-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 18px;
+  padding: 7px 10px;
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.pf-marketing-hero-eyebrow::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--planify-teal);
+}
+
+.pf-ecosystem-scope.pf-marketing-shell main h1.pf-marketing-hero-title,
+.pf-marketing-hero-title {
+  margin: 0 !important;
+  color: #ffffff !important;
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif !important;
+  font-size: clamp(3.4rem, 10vw, 7.5rem) !important;
+  font-weight: 900 !important;
+  line-height: 0.9 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+}
+
+.pf-marketing-lead--hero {
+  color: rgba(255, 255, 255, 0.88) !important;
+  font-size: clamp(1.08rem, 2vw, 1.34rem) !important;
+  line-height: 1.5 !important;
+}
+
+.pf-marketing-hero-copy .pf-marketing-lead--hero {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+.pf-marketing-hero-outline {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.42) !important;
+  color: #ffffff !important;
+}
+
+.pf-marketing-hero-outline:hover {
+  background: rgba(255, 255, 255, 0.16) !important;
+  color: #ffffff !important;
+}
+
+.pf-marketing-hero-proof span {
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 7px 10px;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 0.95rem;
+}
+
+.pf-marketing-hero-legacy-cta {
+  display: none !important;
+}
+
+.pf-marketing-audience-card,
+.pf-marketing-audience-pill {
+  border-radius: 8px !important;
+  border-color: rgba(255, 255, 255, 0.24) !important;
+  background: rgba(255, 255, 255, 0.09) !important;
+}
+
+.pf-marketing-audience-card-icon {
+  border-radius: 8px !important;
+  background: rgba(246, 198, 91, 0.18) !important;
+  color: var(--planify-sun) !important;
+}
+
+.pf-marketing-trust-strip {
+  margin-top: -2px;
+  padding: 24px 0 30px !important;
+  background: var(--planify-paper) !important;
+  border-bottom: 1px solid var(--planify-line) !important;
+}
+
+.pf-marketing-trust-strip-inner {
+  width: min(1180px, calc(100% - 32px));
+  max-width: none !important;
+  justify-content: space-between !important;
+  border: 1px solid var(--planify-line);
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 18px 22px !important;
+}
+
+.pf-marketing-trust-item {
+  color: var(--planify-muted) !important;
+}
+
+.pf-marketing-section {
+  background: var(--planify-paper);
+}
+
+.pf-ecosystem-scope.pf-marketing-shell .pf-marketing-section--alt,
+.pf-ecosystem-scope.pf-marketing-shell .pf-marketing-ecosystem,
+.pf-marketing-section--alt,
+.pf-marketing-ecosystem {
+  background: #ffffff !important;
+}
+
+.pf-ecosystem-scope.pf-marketing-shell .pf-marketing-display--section,
+.pf-marketing-display--section {
+  color: var(--planify-navy) !important;
+  font-size: clamp(2rem, 4vw, 3.4rem) !important;
+  font-weight: 900 !important;
+  line-height: 1.04 !important;
+  letter-spacing: 0 !important;
+}
+
+.pf-marketing-gradient-word {
+  background: linear-gradient(135deg, var(--planify-teal) 0%, var(--planify-teal-dark) 54%, var(--planify-sun) 100%) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  color: transparent !important;
+  -webkit-text-fill-color: transparent !important;
+}
+
+.pf-marketing-lead--section,
+.pf-marketing-shell .text-slate-600,
+.pf-marketing-shell .text-slate-500 {
+  color: var(--planify-muted) !important;
+}
+
+.pf-marketing-shell input,
+.pf-marketing-shell select,
+.pf-marketing-shell textarea {
+  border-color: var(--planify-line) !important;
+  border-radius: 8px !important;
+  background: #fbfefd !important;
+  color: var(--planify-ink) !important;
+}
+
+.pf-marketing-shell input:focus,
+.pf-marketing-shell select:focus,
+.pf-marketing-shell textarea:focus {
+  border-color: var(--planify-teal) !important;
+  box-shadow: 0 0 0 4px rgba(18, 184, 166, 0.14) !important;
+  outline: none !important;
+}
+
+.pf-marketing-shell [class*="rounded-2xl"],
+.pf-marketing-shell [class*="rounded-3xl"],
+.pf-marketing-shell [class*="rounded-["] {
+  border-radius: 8px !important;
+}
+
+.pf-marketing-card,
+.pf-marketing-tool-card,
+.pf-marketing-eco-card,
+.pf-marketing-testimonial,
+.pf-demo-mock,
+.pf-card,
+.pf-tool-card,
+.pf-qb-card,
+.pf-docente-card,
+.ps-pro-section-card,
+.ps-pro-tool-card,
+.pl-card,
+.pl-hud-glass,
+.pl-hud-glass-band,
+.ps-pro-preview-glass,
+.pf-studio-preview-glass {
+  border: 1px solid var(--planify-line) !important;
+  border-radius: 8px !important;
+  background: #ffffff !important;
+  box-shadow: var(--planify-shadow-soft) !important;
+}
+
+.pf-marketing-tool-card:hover,
+.pf-marketing-eco-card:hover,
+.pf-tool-card:hover,
+.ps-pro-tool-card:hover,
+.pl-card:hover {
+  border-color: var(--planify-teal) !important;
+  box-shadow: var(--planify-shadow-lift) !important;
+  transform: translateY(-1px);
+}
+
+.pf-marketing-tool-card > span:first-child,
+.pf-sidebar-tool > span:first-child,
+.ps-pro-tool-card-icon,
+.pl-hud-hub-tool-icon,
+.ps-pro-section-card [class*="bg-gradient-to-br"] {
+  border-radius: 8px !important;
+  background: linear-gradient(135deg, var(--planify-teal), var(--planify-teal-dark)) !important;
+  color: #ffffff !important;
+}
+
+.pf-marketing-tool-card:nth-child(3n + 2) > span:first-child,
+.pf-sidebar-tool:nth-child(3n + 2) > span:first-child {
+  background: linear-gradient(135deg, var(--planify-sun), #f59f45) !important;
+  color: var(--planify-navy) !important;
+}
+
+.pf-marketing-tool-card:nth-child(3n) > span:first-child,
+.pf-sidebar-tool:nth-child(3n) > span:first-child {
+  background: linear-gradient(135deg, var(--planify-coral), #d84b3b) !important;
+}
+
+.pf-marketing-tool-card .text-cyan-700,
+.pf-marketing-tool-card:hover .group-hover\:text-cyan-700,
+.pf-marketing-shell a:hover {
+  color: var(--planify-teal-dark) !important;
+}
+
+.pf-marketing-shell .pf-marketing-btn--primary:hover,
+.pf-marketing-shell .pf-marketing-btn--primary-sm:hover {
+  color: var(--planify-navy) !important;
+}
+
+.pf-marketing-shell .pf-marketing-hero-outline:hover {
+  color: #ffffff !important;
+}
+
+.pf-marketing-cta-band {
+  overflow: hidden;
+  border-radius: 8px !important;
+  background:
+    linear-gradient(90deg, rgba(8, 47, 58, 0.96), rgba(8, 47, 58, 0.72)),
+    url("/videos/planify-hero-poster.jpg") center / cover no-repeat !important;
+  box-shadow: var(--planify-shadow-lift) !important;
+}
+
+.pf-marketing-footer {
+  background: #061f27 !important;
+  border-top: 0 !important;
+  color: rgba(255, 255, 255, 0.76) !important;
+}
+
+.pf-marketing-footer .text-slate-500,
+.pf-marketing-footer .text-slate-600,
+.pf-marketing-footer .text-slate-950,
+.pf-marketing-footer .text-cyan-600,
+.pf-marketing-footer a,
+.pf-marketing-footer p {
+  color: rgba(255, 255, 255, 0.76) !important;
+}
+
+.pf-marketing-footer a:hover {
+  color: #ffffff !important;
+}
+
+.pf-app-shell,
+.pf-studio-shell,
+.ps-pro-shell,
+.pl-dashboard-root,
+.pl-hud-main,
+.pl-hud-hub,
+.pl-hud-board,
+.planify-tool-studio,
+.pl-app-bg,
+.planify-hud-app.pl-app-bg,
+.planify-hud-app.pl-hud-shell {
+  background: var(--planify-paper) !important;
+  background-image: none !important;
+}
+
+.pf-ecosystem-scope .pl-sidebar,
+.pl-sidebar.pl-sidebar-hud {
+  background: linear-gradient(180deg, #082f3a 0%, #061f27 100%) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: #ffffff !important;
+}
+
+.pl-sidebar .text-slate-950,
+.pl-sidebar .text-slate-900,
+.pl-sidebar .text-slate-800,
+.pl-sidebar .text-slate-700,
+.pl-sidebar .pl-sidebar-nav-label,
+.pl-sidebar .truncate {
+  color: rgba(255, 255, 255, 0.92) !important;
+}
+
+.pl-sidebar .text-slate-500,
+.pl-sidebar .text-slate-400,
+.pl-sidebar .pl-sidebar-section-label {
+  color: rgba(223, 247, 242, 0.7) !important;
+}
+
+.pf-sidebar-search,
+.pl-sidebar input {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border-color: rgba(255, 255, 255, 0.18) !important;
+  color: #ffffff !important;
+}
+
+.pf-sidebar-search::placeholder,
+.pl-sidebar input::placeholder {
+  color: rgba(255, 255, 255, 0.52) !important;
+}
+
+.pl-sidebar-nav-item,
+.pf-sidebar-tool,
+.pf-sidebar-category {
+  border-radius: 8px !important;
+}
+
+.pl-sidebar-nav-item:hover,
+.pf-sidebar-tool:hover,
+.pf-sidebar-category:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+.pl-sidebar-nav-item.is-active,
+.pf-sidebar-category.is-active,
+.pf-sidebar-tool.is-active {
+  background: var(--planify-sun) !important;
+  color: var(--planify-navy) !important;
+  box-shadow: 0 12px 30px rgba(246, 198, 91, 0.2) !important;
+}
+
+.pl-sidebar-nav-item.is-active *,
+.pf-sidebar-category.is-active *,
+.pf-sidebar-tool.is-active * {
+  color: var(--planify-navy) !important;
+}
+
+.pf-ecosystem-scope .ps-pro-header,
+.ps-pro-header,
+.pf-studio-header {
+  background: rgba(255, 255, 255, 0.98) !important;
+  border-color: var(--planify-line) !important;
+  box-shadow: 0 1px 0 rgba(8, 47, 58, 0.04) !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+.ps-pro-config,
+.pf-studio-config {
+  background: var(--planify-paper) !important;
+  border-color: var(--planify-line) !important;
+}
+
+.ps-pro-preview,
+.pf-studio-preview {
+  background: var(--planify-paper-alt) !important;
+}
+
+.pf-export-dock,
+.planify-studio-export-dock,
+.ps-pro-export-dock,
+.ps-pro-generate-bar {
+  background: #ffffff !important;
+  border-color: var(--planify-line) !important;
+  box-shadow: 0 -10px 32px rgba(8, 47, 58, 0.06) !important;
+  backdrop-filter: none !important;
+}
+
+.ps-pro-chip,
+.pf-chip,
+.pl-hud-hub-category-pill {
+  border-color: var(--planify-line) !important;
+  background: #ffffff !important;
+  color: var(--planify-muted) !important;
+  border-radius: 999px !important;
+}
+
+.ps-pro-chip--active,
+.pf-chip--active,
+.pl-hud-hub-category-pill--active {
+  border-color: var(--planify-teal) !important;
+  background: var(--planify-mint) !important;
+  color: var(--planify-teal-dark) !important;
+  box-shadow: none !important;
+}
+
+.planify-studio-pro input,
+.planify-studio-pro select,
+.planify-studio-pro textarea,
+.pf-ecosystem-scope input,
+.pf-ecosystem-scope select,
+.pf-ecosystem-scope textarea {
+  border-color: var(--planify-line) !important;
+  border-radius: 8px !important;
+  background: #fbfefd !important;
+  color: var(--planify-ink) !important;
+}
+
+.planify-studio-pro input:focus,
+.planify-studio-pro select:focus,
+.planify-studio-pro textarea:focus,
+.pf-ecosystem-scope input:focus,
+.pf-ecosystem-scope select:focus,
+.pf-ecosystem-scope textarea:focus {
+  border-color: var(--planify-teal) !important;
+  box-shadow: 0 0 0 4px rgba(18, 184, 166, 0.14) !important;
+  outline: none !important;
+}
+
+.planify-ui3 {
+  --pl-primary: var(--planify-teal);
+  --pl-primary-strong: var(--planify-teal-dark);
+  --pl-coral: var(--planify-coral);
+  --pl-coral-strong: #df5948;
+  --pl-amber: var(--planify-sun);
+  --pl-peach: #ffd878;
+  --pl-mint: var(--planify-teal);
+  --pl-ink: var(--planify-ink);
+  --pl-muted: var(--planify-muted);
+  --pl-surface: #ffffff;
+  --pl-surface-2: var(--planify-paper-alt);
+  --pl-line: var(--planify-line);
+  --pl-radius: 8px;
+  --pl-radius-lg: 8px;
+  --pl-shadow-soft: var(--planify-shadow-soft);
+  --pl-shadow-lift: var(--planify-shadow-lift);
+}
+
+.pl-section-hero,
+.pl-dash-root {
+  background: var(--planify-paper-alt) !important;
+}
+
+.pl-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(18, 184, 166, 0.06) 25%,
+    rgba(246, 198, 91, 0.14) 50%,
+    rgba(18, 184, 166, 0.06) 75%
+  ) !important;
+}
+
+.pf-ecosystem-scope:not(.pf-marketing-shell) button > span[class*="bg-gradient-to-br"],
+.pf-ecosystem-scope:not(.pf-marketing-shell) header [class*="bg-gradient-to-br"],
+.pf-ecosystem-scope:not(.pf-marketing-shell) .ps-pro-tool-card-icon {
+  border-radius: 8px !important;
+  background: linear-gradient(135deg, var(--planify-teal), var(--planify-teal-dark)) !important;
+  color: #ffffff !important;
+}
+
+.pf-ecosystem-scope:not(.pf-marketing-shell) button:nth-child(3n + 2) > span[class*="bg-gradient-to-br"] {
+  background: linear-gradient(135deg, var(--planify-sun), #f59f45) !important;
+  color: var(--planify-navy) !important;
+}
+
+.pf-ecosystem-scope:not(.pf-marketing-shell) button:nth-child(3n) > span[class*="bg-gradient-to-br"] {
+  background: linear-gradient(135deg, var(--planify-coral), #d84b3b) !important;
+  color: #ffffff !important;
+}
+
+.pf-ecosystem-scope [class*="bg-indigo-600"],
+.pf-ecosystem-scope [class*="from-indigo-600"][class*="to-violet-600"],
+.pf-ecosystem-scope [class*="from-cyan-500"][class*="to-blue-600"] {
+  background: var(--planify-sun) !important;
+  color: var(--planify-navy) !important;
+}
+
+.pf-ecosystem-scope [class*="text-indigo-600"],
+.pf-ecosystem-scope [class*="text-cyan-600"],
+.pf-ecosystem-scope [class*="text-cyan-700"],
+.pf-ecosystem-scope [class*="text-blue-700"] {
+  color: var(--planify-teal-dark) !important;
+}
+
+.pf-ecosystem-scope [class*="ring-cyan-400"],
+.pf-ecosystem-scope [class*="ring-indigo-"],
+.pf-ecosystem-scope [class*="focus:ring-indigo"],
+.pf-ecosystem-scope [class*="focus:ring-cyan"] {
+  --tw-ring-color: rgba(18, 184, 166, 0.24) !important;
+}
+
+.pf-ecosystem-scope [class*="focus:border-indigo"],
+.pf-ecosystem-scope [class*="focus:border-cyan"] {
+  border-color: var(--planify-teal) !important;
+}
+
+@media (max-width: 960px) {
+  .pf-marketing-hero {
+    min-height: 82svh !important;
+  }
+
+  .pf-marketing-hero-video {
+    object-position: 58% center;
+  }
+
+  .pf-marketing-trust-strip-inner {
+    justify-content: center !important;
+  }
+}
+
+@media (max-width: 620px) {
+  .pf-marketing-nav > div {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+
+  .pf-marketing-nav .pf-marketing-btn--ghost {
+    display: none !important;
+  }
+
+  .pf-marketing-hero {
+    min-height: 78svh !important;
+  }
+
+  .pf-marketing-hero-inner {
+    width: min(100% - 24px, 1180px);
+    padding: 96px 0 58px !important;
+  }
+
+  .pf-marketing-hero-title {
+    font-size: clamp(3rem, 17vw, 4.7rem) !important;
+  }
+
+  .pf-marketing-hero-actions,
+  .pf-marketing-hero-actions .pf-marketing-btn {
+    width: 100%;
+  }
+
+  .pf-marketing-trust-strip-inner {
+    width: min(100% - 24px, 1180px);
+  }
+}
+
+/* PLANIFY_REFERENCE_STYLE_2026_END */
+
+/* PLANIFY_ENTERPRISE_REDESIGN_2026_START */
+:root {
+  --plx-navy-950: #03191f;
+  --plx-navy-900: #062a33;
+  --plx-navy-800: #0a3b45;
+  --plx-ink: #092c34;
+  --plx-muted: #5d7378;
+  --plx-paper: #f6fbfa;
+  --plx-paper-strong: #edf7f5;
+  --plx-line: #d5e9e5;
+  --plx-teal: #12b8a6;
+  --plx-teal-dark: #087d75;
+  --plx-mint: #dff7f2;
+  --plx-sun: #f6c65b;
+  --plx-coral: #f26d5b;
+  --plx-shadow-sm: 0 1px 2px rgba(3, 25, 31, 0.06);
+  --plx-shadow-md: 0 18px 48px rgba(3, 25, 31, 0.1);
+  --plx-shadow-lg: 0 30px 80px rgba(3, 25, 31, 0.16);
+}
+
+body {
+  background:
+    linear-gradient(180deg, #fbfefd 0%, var(--plx-paper) 44%, #ffffff 100%) !important;
+  color: var(--plx-ink) !important;
+}
+
+.planify-brand-mark {
+  border-radius: 8px !important;
+  background: linear-gradient(135deg, #ffe08a 0%, var(--plx-sun) 56%, #f0a83c 100%) !important;
+  box-shadow: 0 16px 38px rgba(246, 198, 91, 0.28) !important;
+}
+
+.pf-marketing-shell,
+.planify-public {
+  background: var(--plx-paper) !important;
+  color: var(--plx-ink) !important;
+}
+
+.pf-marketing-nav,
+.planify-public > header {
+  min-height: 72px;
+  background:
+    linear-gradient(180deg, rgba(6, 42, 51, 0.96), rgba(6, 42, 51, 0.9)) !important;
+  border-bottom: 1px solid rgba(223, 247, 242, 0.16) !important;
+  box-shadow: 0 12px 40px rgba(3, 25, 31, 0.18) !important;
+}
+
+.pf-marketing-nav > div,
+.planify-public > header > div {
+  max-width: 1320px !important;
+}
+
+.pf-marketing-nav-link,
+.pf-marketing-btn--ghost,
+.planify-public > header a:not(.pf-marketing-btn--primary-sm) {
+  min-height: 42px;
+  border-radius: 8px !important;
+  color: rgba(255, 255, 255, 0.82) !important;
+}
+
+.pf-marketing-nav-link:hover,
+.pf-marketing-btn--ghost:hover,
+.planify-public > header a:not(.pf-marketing-btn--primary-sm):hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: #ffffff !important;
+}
+
+.pf-marketing-btn--primary,
+.pf-marketing-btn--primary-sm,
+.pf-btn-primary,
+.pl-btn-brand,
+.pl-hud-btn-generate,
+.pl-hud-btn,
+.pl-btn-primary {
+  border-radius: 8px !important;
+  background: var(--plx-sun) !important;
+  color: var(--plx-navy-950) !important;
+  box-shadow: 0 16px 36px rgba(246, 198, 91, 0.26) !important;
+}
+
+.pf-marketing-btn--primary:hover,
+.pf-marketing-btn--primary-sm:hover,
+.pf-btn-primary:hover,
+.pl-btn-brand:hover,
+.pl-hud-btn-generate:hover:not(:disabled),
+.pl-hud-btn:hover {
+  background: #ffdc7c !important;
+  color: var(--plx-navy-950) !important;
+  transform: translateY(-1px);
+}
+
+.pf-marketing-btn--outline,
+.pl-btn-secondary,
+.pl-hud-btn-secondary {
+  border-radius: 8px !important;
+  border: 1px solid var(--plx-line) !important;
+  background: rgba(255, 255, 255, 0.86) !important;
+  color: var(--plx-ink) !important;
+  backdrop-filter: none;
+}
+
+.pf-marketing-hero {
+  min-height: 92svh !important;
+  background: var(--plx-navy-950) !important;
+}
+
+.pf-marketing-hero-video {
+  display: none !important;
+}
+
+.pf-marketing-hero-image {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 78% center;
+  opacity: 0.98;
+}
+
+.pf-marketing-hero-bg {
+  z-index: 1;
+  background:
+    linear-gradient(90deg, rgba(3, 25, 31, 0.98) 0%, rgba(3, 25, 31, 0.86) 26%, rgba(3, 25, 31, 0.42) 46%, rgba(3, 25, 31, 0.06) 68%, transparent 100%),
+    linear-gradient(180deg, rgba(3, 25, 31, 0.2) 0%, rgba(3, 25, 31, 0.38) 100%) !important;
+}
+
+.pf-marketing-hero::after {
+  height: 124px !important;
+  background: linear-gradient(180deg, rgba(246, 251, 250, 0), var(--plx-paper) 88%) !important;
+}
+
+.pf-marketing-hero-inner {
+  width: min(1320px, calc(100% - 40px));
+  padding: 132px 0 94px !important;
+  margin-left: clamp(20px, 4vw, 56px) !important;
+  margin-right: auto !important;
+}
+
+.pf-marketing-hero-copy {
+  width: min(520px, 100%) !important;
+}
+
+.pf-marketing-hero-eyebrow,
+.pf-marketing-eyebrow,
+.pf-eyebrow {
+  min-height: 32px;
+  border-color: rgba(155, 240, 229, 0.36) !important;
+  background: rgba(18, 184, 166, 0.16) !important;
+  color: #dff7f2 !important;
+  letter-spacing: 0.08em !important;
+}
+
+.pf-marketing-hero-title {
+  font-size: 4.4rem !important;
+  line-height: 0.92 !important;
+  letter-spacing: 0 !important;
+}
+
+.pf-marketing-lead--hero {
+  max-width: 620px !important;
+  color: rgba(255, 255, 255, 0.88) !important;
+  font-size: 1.2rem !important;
+  line-height: 1.55 !important;
+}
+
+.pf-marketing-hero-actions .pf-marketing-btn {
+  min-height: 52px;
+  padding-left: 22px !important;
+  padding-right: 22px !important;
+}
+
+.pf-marketing-hero-outline {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.32) !important;
+  color: #ffffff !important;
+}
+
+.pf-marketing-hero-proof span {
+  border-color: rgba(223, 247, 242, 0.22) !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: rgba(255, 255, 255, 0.84) !important;
+}
+
+.pf-marketing-hero-kpis {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  width: min(100%, 520px);
+  margin-top: 22px;
+}
+
+.pf-marketing-hero-kpis div {
+  min-height: 96px;
+  border: 1px solid rgba(223, 247, 242, 0.18);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 14px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(14px);
+}
+
+.pf-marketing-hero-kpis strong {
+  display: block;
+  color: var(--plx-sun);
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.pf-marketing-hero-kpis span {
+  display: block;
+  margin-top: 8px;
+  color: rgba(255, 255, 255, 0.76);
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.pf-marketing-audience-card {
+  min-width: 216px;
+  border-color: rgba(223, 247, 242, 0.22) !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  box-shadow: none !important;
+}
+
+.pf-marketing-audience-card.is-active {
+  border-color: rgba(246, 198, 91, 0.56) !important;
+}
+
+.pf-marketing-trust-strip {
+  background: var(--plx-paper) !important;
+}
+
+.pf-marketing-trust-strip-inner {
+  border: 1px solid var(--plx-line) !important;
+  background: rgba(255, 255, 255, 0.86) !important;
+  box-shadow: var(--plx-shadow-sm) !important;
+}
+
+.pf-marketing-section,
+.pf-marketing-section--alt,
+.pf-marketing-ecosystem,
+.pl-catalog-body {
+  background:
+    linear-gradient(180deg, var(--plx-paper) 0%, #ffffff 100%) !important;
+}
+
+.pf-marketing-display--section,
+.pf-headline {
+  color: var(--plx-navy-950) !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+}
+
+.pf-marketing-lead--section,
+.pf-marketing-shell .text-slate-600,
+.planify-public .text-slate-600 {
+  color: var(--plx-muted) !important;
+}
+
+.pf-marketing-card,
+.pf-marketing-tool-card,
+.pf-marketing-eco-card,
+.pf-marketing-testimonial,
+.pf-card,
+.pf-tool-card,
+.pl-card,
+.ps-pro-section-card,
+.ps-pro-tool-card,
+.planify-public article,
+.pf-marketing-shell article {
+  border: 1px solid var(--plx-line) !important;
+  border-radius: 8px !important;
+  background: rgba(255, 255, 255, 0.92) !important;
+  box-shadow: 0 16px 50px rgba(3, 25, 31, 0.07) !important;
+}
+
+.pf-marketing-card:hover,
+.pf-marketing-tool-card:hover,
+.pf-tool-card:hover,
+.ps-pro-tool-card:hover,
+.pl-card:hover {
+  border-color: rgba(18, 184, 166, 0.54) !important;
+  box-shadow: 0 24px 70px rgba(3, 25, 31, 0.12) !important;
+}
+
+.pl-catalog-hero {
+  position: relative;
+  overflow: hidden;
+  padding-top: 104px !important;
+  background:
+    linear-gradient(135deg, #f8fdfc 0%, #ecf8f5 54%, #fff7df 100%) !important;
+}
+
+.pl-catalog-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(to right, rgba(8, 47, 58, 0.045) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(8, 47, 58, 0.045) 1px, transparent 1px);
+  background-size: 42px 42px;
+  mask-image: linear-gradient(90deg, #000, transparent 72%);
+  pointer-events: none;
+}
+
+.pl-catalog-hero > div {
+  position: relative;
+  z-index: 1;
+}
+
+.pl-catalog-stat-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.pl-catalog-stat-row span,
+.pl-catalog-category > div > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--plx-line);
+  border-radius: 999px;
+  background: #ffffff;
+  padding: 8px 12px;
+  color: var(--plx-muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.pl-catalog-stat-row strong {
+  color: var(--plx-navy-950);
+}
+
+.pl-catalog-category {
+  border-top: 1px solid var(--plx-line);
+  padding-top: 28px;
+}
+
+.pl-catalog-category h2 {
+  color: var(--plx-navy-950) !important;
+}
+
+.pf-tool-card {
+  position: relative;
+  min-height: 218px;
+  display: flex !important;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 22px !important;
+}
+
+.pf-tool-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(18, 184, 166, 0.08), transparent 42%),
+    linear-gradient(90deg, rgba(246, 198, 91, 0.12), transparent 38%);
+  opacity: 0;
+  transition: opacity 0.18s ease;
+}
+
+.pf-tool-card:hover::before {
+  opacity: 1;
+}
+
+.pf-tool-card-badge {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 1;
+  border-radius: 999px;
+  background: #fff2d0;
+  padding: 6px 9px;
+  color: var(--plx-navy-950);
+  font-size: 0.64rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.ps-pro-tool-card-icon,
+.pf-marketing-tool-card > span:first-child,
+.pf-sidebar-tool > span:first-child {
+  width: 48px !important;
+  height: 48px !important;
+  border-radius: 8px !important;
+  background: linear-gradient(135deg, var(--plx-teal), var(--plx-teal-dark)) !important;
+  color: #ffffff !important;
+  box-shadow: 0 14px 30px rgba(18, 184, 166, 0.22) !important;
+}
+
+.planify-ui3,
+.pf-ecosystem-scope:not(.pf-marketing-shell),
+.pl-dash-root,
+.pl-section-hero {
+  background:
+    linear-gradient(180deg, #f7fbfa 0%, #eef8f6 48%, #ffffff 100%) !important;
+  color: var(--plx-ink) !important;
+}
+
+.pl-sidebar,
+.pl-sidebar.pl-sidebar-hud {
+  background:
+    linear-gradient(180deg, var(--plx-navy-900) 0%, var(--plx-navy-950) 100%) !important;
+  border-color: rgba(223, 247, 242, 0.14) !important;
+}
+
+.pl-sidebar .planify-brand-mark {
+  box-shadow: 0 12px 34px rgba(246, 198, 91, 0.2) !important;
+}
+
+.pl-sidebar-nav-item,
+.pf-sidebar-tool,
+.pf-sidebar-category {
+  border-radius: 8px !important;
+  border: 1px solid transparent !important;
+}
+
+.pl-sidebar-nav-item:hover,
+.pf-sidebar-tool:hover,
+.pf-sidebar-category:hover {
+  border-color: rgba(223, 247, 242, 0.14) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+.pl-sidebar-nav-item.is-active,
+.pf-sidebar-category.is-active,
+.pf-sidebar-tool.is-active {
+  background: var(--plx-sun) !important;
+  color: var(--plx-navy-950) !important;
+}
+
+.pl-dashboard-welcome {
+  position: relative;
+  isolation: isolate;
+  background:
+    linear-gradient(135deg, #f8fdfc 0%, #edf8f5 55%, #fff7df 100%) !important;
+}
+
+.pl-dashboard-welcome::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image:
+    linear-gradient(to right, rgba(8, 47, 58, 0.045) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(8, 47, 58, 0.045) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: linear-gradient(180deg, #000, transparent 82%);
+}
+
+.pl-dashboard-eyebrow {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  border: 1px solid rgba(18, 184, 166, 0.24);
+  border-radius: 999px;
+  background: var(--plx-mint);
+  padding: 8px 11px;
+  color: var(--plx-teal-dark) !important;
+}
+
+.pl-dashboard-welcome h1 span,
+.pf-marketing-gradient-word {
+  background: linear-gradient(135deg, var(--plx-teal), var(--plx-teal-dark) 56%, var(--plx-sun)) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  color: transparent !important;
+  -webkit-text-fill-color: transparent !important;
+}
+
+.pl-dashboard-proof li {
+  min-height: 112px;
+  border: 1px solid var(--plx-line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 16px;
+  box-shadow: var(--plx-shadow-sm);
+}
+
+.ps-pro-header,
+.pf-studio-header,
+.planify-ui3-header,
+.planify-public .planify-ui3-header {
+  border-color: var(--plx-line) !important;
+  background: rgba(255, 255, 255, 0.92) !important;
+  box-shadow: 0 10px 34px rgba(3, 25, 31, 0.06) !important;
+}
+
+.planify-studio-pro input,
+.planify-studio-pro select,
+.planify-studio-pro textarea,
+.pf-ecosystem-scope input,
+.pf-ecosystem-scope select,
+.pf-ecosystem-scope textarea,
+.pf-marketing-shell input,
+.pf-marketing-shell select,
+.pf-marketing-shell textarea {
+  border-radius: 8px !important;
+  border-color: var(--plx-line) !important;
+  background: #fbfefd !important;
+}
+
+.planify-studio-pro input:focus,
+.planify-studio-pro select:focus,
+.planify-studio-pro textarea:focus,
+.pf-ecosystem-scope input:focus,
+.pf-ecosystem-scope select:focus,
+.pf-ecosystem-scope textarea:focus,
+.pf-marketing-shell input:focus,
+.pf-marketing-shell select:focus,
+.pf-marketing-shell textarea:focus {
+  border-color: var(--plx-teal) !important;
+  box-shadow: 0 0 0 4px rgba(18, 184, 166, 0.14) !important;
+}
+
+@media (min-width: 768px) {
+  .pf-marketing-hero-title {
+    font-size: 7rem !important;
+  }
+}
+
+@media (min-width: 1200px) {
+  .pf-marketing-hero-title {
+    font-size: 8.6rem !important;
+  }
+}
+
+@media (max-width: 900px) {
+  .pf-marketing-hero {
+    min-height: 88svh !important;
+  }
+
+  .pf-marketing-hero-bg {
+    background:
+      linear-gradient(180deg, rgba(3, 25, 31, 0.94), rgba(3, 25, 31, 0.72)),
+      linear-gradient(90deg, rgba(3, 25, 31, 0.98), rgba(3, 25, 31, 0.52)) !important;
+  }
+
+  .pf-marketing-hero-image {
+    object-position: 68% center;
+    opacity: 0.52;
+  }
+
+  .pf-marketing-hero-kpis {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 620px) {
+  .pf-marketing-hero-inner {
+    width: min(100% - 28px, 1320px);
+    padding-top: 106px !important;
+    padding-bottom: 64px !important;
+  }
+
+  .pf-marketing-hero-title {
+    font-size: 4.6rem !important;
+  }
+
+  .pf-marketing-lead--hero {
+    font-size: 1.04rem !important;
+  }
+
+  .pf-marketing-hero-kpis div {
+    min-height: auto;
+  }
+
+  .pl-catalog-hero {
+    padding-top: 96px !important;
+  }
+}
+/* PLANIFY_ENTERPRISE_REDESIGN_2026_END */

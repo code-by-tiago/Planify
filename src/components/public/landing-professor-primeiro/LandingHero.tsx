@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { landingPartnerLabels } from "@/lib/pro/planifyLanding";
-import { ppBtnPrimary } from "./theme";
+import { ppBtnPrimary, ppBtnSecondary } from "./theme";
 
 const AUDIENCE_PILLS = [
   {
@@ -27,20 +27,59 @@ export function LandingHero() {
     <>
       <section id="professores" className="pf-marketing-hero scroll-mt-24">
         <div className="pf-marketing-hero-bg" aria-hidden />
+        <img
+          className="pf-marketing-hero-image"
+          src="/images/planify-saas-hero-v1.png"
+          alt=""
+          aria-hidden
+        />
 
         <div className="pf-marketing-hero-inner">
-          <div className="mx-auto flex max-w-[1120px] flex-col items-center text-center">
-            <h1 className="pf-marketing-hero-title">
-              <span className="block">All-in-one </span>
-              <span className="pf-marketing-gradient-word pf-marketing-hero-title-accent">IA</span>
-              <br />
-              <span className="block">Learning System</span>
-            </h1>
+          <div className="pf-marketing-hero-copy flex max-w-[520px] flex-col items-start text-left">
+            <p className="pf-marketing-hero-eyebrow">Sistema operacional pedagógico com IA</p>
+            <h1 className="pf-marketing-hero-title">IA Planify</h1>
 
-            <p className="pf-marketing-lead pf-marketing-lead--hero mx-auto mt-6 max-w-2xl">
-              Junte-se a milhares de educadores com planejamentos BNCC, materiais com IA, correção e
-              exportação Google — tudo num só lugar, feito para o docente brasileiro.
+            <p className="pf-marketing-lead pf-marketing-lead--hero mt-6 max-w-xl">
+              Uma plataforma SaaS completa para planejar aulas, criar materiais, avaliar, corrigir
+              e exportar documentos editáveis com padrão profissional, BNCC e fluxo real de escola.
             </p>
+
+            <div className="pf-marketing-hero-actions mt-8 flex flex-wrap gap-3">
+              <Link href="/cadastro" className={`${ppBtnPrimary} gap-2 px-6 py-3`}>
+                Começar grátis
+                <PlanifyIcon name="arrowRight" className="h-5 w-5" />
+              </Link>
+              <Link
+                href="/#ferramentas"
+                className={`${ppBtnSecondary} pf-marketing-hero-outline px-6 py-3`}
+              >
+                Ver ferramentas
+              </Link>
+            </div>
+
+            <div
+              className="pf-marketing-hero-proof mt-8 flex flex-wrap gap-2"
+              aria-label="Principais benefícios"
+            >
+              <span>18 ferramentas conectadas</span>
+              <span>BNCC, editor e Google Docs</span>
+              <span>Experiência de plataforma, não chatbot</span>
+            </div>
+
+            <div className="pf-marketing-hero-kpis" aria-label="Destaques da plataforma">
+              <div>
+                <strong>10x</strong>
+                <span>mais velocidade para transformar ideia em material pronto</span>
+              </div>
+              <div>
+                <strong>1 fluxo</strong>
+                <span>do planejamento à exportação editável</span>
+              </div>
+              <div>
+                <strong>BNCC</strong>
+                <span>como base do produto, não detalhe decorativo</span>
+              </div>
+            </div>
 
             <nav
               className="pf-marketing-audience-nav mt-10 hidden lg:flex"
@@ -75,7 +114,10 @@ export function LandingHero() {
               ))}
             </div>
 
-            <Link href="/cadastro" className={`${ppBtnPrimary} mt-8 gap-2 px-6 py-3`}>
+            <Link
+              href="/cadastro"
+              className={`${ppBtnPrimary} pf-marketing-hero-legacy-cta mt-8 gap-2 px-6 py-3`}
+            >
               Acesse grátis
               <PlanifyIcon name="arrowRight" className="h-5 w-5" />
             </Link>

@@ -28,7 +28,7 @@ export function LandingHeader() {
       }`}
     >
       <div className="mx-auto flex max-w-[1440px] items-center justify-between gap-3 px-6 py-3 md:px-10 md:py-3.5">
-        <PlanifyBrand href="/" hideTagline />
+        <PlanifyBrand href="/" dark hideTagline />
 
         <nav className="flex items-center gap-0.5 sm:gap-1" aria-label="Navegação principal">
           <Link href="/#solucoes" className="pf-marketing-nav-link pf-marketing-nav-link--pill hidden md:inline-flex">

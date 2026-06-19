@@ -27,6 +27,7 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   ...buildGlobalMetadata(),
+  manifest: "/manifest.webmanifest",
   icons: {
     icon: "/brand/planify-owl-graduate.png",
     apple: "/brand/planify-owl-graduate.png",

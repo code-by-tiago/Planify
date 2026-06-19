@@ -34,6 +34,8 @@ export function TemaCombobox({
   onKeyDown,
 }: TemaComboboxProps) {
   const listboxId = useId();
+  const inputId = useId();
+  const labelId = `${inputId}-label`;
   const rootRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
@@ -121,9 +123,13 @@ export function TemaCombobox({
 
   return (
     <div ref={rootRef} className={className}>
-      <label className="block">
-        <span className={HUD_SECTION_LABEL}>{label}</span>
+      <label className="block" htmlFor={inputId}>
+        <span className={HUD_SECTION_LABEL} id={labelId}>
+          {label}
+        </span>
         <input
+          id={inputId}
+          aria-labelledby={labelId}
           value={value}
           onChange={(event) => {
             onChange(event.target.value);

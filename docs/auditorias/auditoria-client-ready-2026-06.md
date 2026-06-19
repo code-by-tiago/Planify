@@ -137,10 +137,21 @@ Relatório: docs/auditorias/auditoria-anti-vazamento-9-21-0-2026-06-18T23-47-37-
 - Nenhum secret hardcoded no scan
 - Referências a chaves públicas via `NEXT_PUBLIC_*` conforme esperado
 
+## Fase 5F/5G (18/06/2026)
+
+| Entrega | Status |
+|---------|--------|
+| Admin **Saúde IA** (gerações, falha, cota, 429) | ✅ `AdminQualidadePanel` |
+| Página pública `/status` (IA, auth, export sanitizado) | ✅ + link footer |
+| WCAG incremental materiais/planejamentos | ✅ + `npm run verify:wcag-forms` |
+| Indicação professor→professor | ✅ `/cadastro?ref=`, dashboard, DB |
+| PWA leve (manifest + último material offline) | ✅ sem service worker |
+
 ## Verificações locais (Fases 4–5)
 
 ```bash
 npm run verify:gate-launch
+npm run verify:wcag-forms
 npm run verify:go-live
 npm run typecheck
 npm run build

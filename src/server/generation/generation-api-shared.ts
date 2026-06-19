@@ -135,6 +135,14 @@ export async function prepareGenerationRequest<TPayload>(
         `suas ${daily.limit} gerações profundas`,
       );
 
+      logOperationalEvent({
+        eventType: "daily_quota_blocked",
+        toolTipo: tipo,
+        ok: false,
+        errorCode: "daily_limit_reached",
+        metadata: { used: daily.used, limit: daily.limit },
+      });
+
       return {
         ok: false,
         response: NextResponse.json(

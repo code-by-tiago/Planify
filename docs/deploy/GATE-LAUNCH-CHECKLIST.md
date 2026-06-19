@@ -1,8 +1,8 @@
 # Planify — Gate Launch (pré-produção)
 
-Checklist acionável antes do go-live. Atualizado: 18/06/2026 (pós-Fase 5, commit `c1eab7b9`).
+Checklist acionável antes do go-live. Atualizado: 18/06/2026 (pós-Fase 5F/5G, commit Gate Launch).
 
-**Plataforma professor-only:** sem login, portal ou links públicos para alunos.
+**Plataforma professor-only:** sem login, portal ou links públicos para alunos. Indicação = professor convida professor.
 
 Legenda: ✅ verificado | ⚠️ parcial / manual | ❌ pendente
 
@@ -18,11 +18,14 @@ Legenda: ✅ verificado | ⚠️ parcial / manual | ❌ pendente
 | 8 | **Smoke mobile (E2E responsivo)** | Code | ✅ | `e2e/responsive.spec.ts` — viewports 390×844, 768×1024, 1280×800. CI job **e2e** após **verify**. Rodar: `npm run test:e2e`. |
 | 9 | **Privacidade / termos (IA, Stripe, contato)** | Code | ✅ | `/privacidade` menciona Gemini, Stripe e link `/contato`. `/termos` menciona Stripe e IA. `/contato` operacional. |
 | 10 | **Rollback (< 15 min)** | Ops | ⚠️ | Procedimento em `docs/deploy/DEPLOY-CHECKLIST.md` § Rollback. Vercel: redeploy do deployment anterior. Supabase: migrations são aditivas; rollback de app não exige reverter SQL imediato. |
+| 11 | **Fase 5F — Saúde IA + `/status` público** | Code | ✅ | Admin: card **Saúde IA** em `AdminQualidadePanel` (gerações 24h, falha, cota, 429). Professores: `/status` + link no footer. `npm run verify:wcag-forms` para labels nos fluxos materiais/planejamentos. |
+| 12 | **Fase 5G — Indicação + PWA leve** | Code | ✅ | `/cadastro?ref=CODE` → cookie → `teacher_referrals` no activate-account. Painel: **Indique um colega** no dashboard. `public/manifest.webmanifest` + cache offline do último material (`localStorage`). Migration: `20260628_teacher_referrals.sql`. |
 
 ## Automação
 
 ```bash
 npm run verify:gate-launch   # checks estáticos dos itens 2–5, 7–9
+npm run verify:wcag-forms    # labels nos formulários core materiais/planejamentos
 npm run verify:go-live       # suite completa pré-deploy
 npm run typecheck
 npm run build
@@ -36,7 +39,8 @@ npm run test:e2e             # smoke + responsivo (+ autenticado se secrets)
 supabase db push
 # ou aplicar manualmente:
 # - supabase/migrations/20260618_teacher_teaching_context.sql
-# - supabase/migrations/20260618_teacher_correction_profile.sql
+# supabase/migrations/20260618_teacher_correction_profile.sql
+# - supabase/migrations/20260628_teacher_referrals.sql
 ```
 
 Ver também `docs/deploy/DEPLOY-CHECKLIST.md`.

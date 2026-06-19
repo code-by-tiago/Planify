@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PublicProfessorPrimeiroLayout } from "@/components/public/PublicProfessorPrimeiroLayout";
+import { ReferralCapture } from "@/components/referral/ReferralCapture";
 import { buildPageMetadata } from "@/lib/seo/metadata";
 import { PlanCheckoutLink } from "@/components/planos/PlanCheckoutLink";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
@@ -29,6 +30,7 @@ type PlanosPageProps = {
     message?: string;
     premium?: string;
     cadastro?: string;
+    ref?: string;
   }>;
 };
 
@@ -108,6 +110,7 @@ export default async function PlanosPage({ searchParams }: PlanosPageProps) {
 
   return (
     <PublicProfessorPrimeiroLayout>
+      <ReferralCapture referralCode={params.ref} />
       <section className="relative min-h-[calc(100vh-4rem)] overflow-hidden bg-white">
         <div
           aria-hidden

@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { GoogleDocumentExportBar } from "@/components/google/GoogleDocumentExportBar";
 import { GoogleClassroomDockButton } from "@/components/google/GoogleClassroomDockButton";
@@ -75,6 +75,11 @@ import {
   type MaterialEditorMeta,
   type MaterialHistoryPreview,
 } from "@/lib/materiais/material-editor-flow";
+import {
+  loadOfflineMaterialCache,
+  saveOfflineMaterialCache,
+  type OfflineMaterialCache,
+} from "@/lib/materiais/offline-material-cache";
 import { buildMaterialGenerationSummary } from "@/lib/materiais/material-generation-summary";
 import {
   getPlanifyTool,
@@ -327,6 +332,12 @@ export function MateriaisClient({
   legacyLayout = false,
 }: MateriaisClientProps = {}) {
   const useStudioExportDock = studioMode && !legacyLayout;
+  const fieldIdEtapa = useId();
+  const fieldIdAnoSerie = useId();
+  const fieldIdArea = useId();
+  const fieldIdComponente = useId();
+  const fieldIdDificuldade = useId();
+  const fieldIdQuantidade = useId();
   const school = useSchoolClasses();
   const teachingContext = useTeacherTeachingContext();
   const autoAppliedTeachingContextRef = useRef(false);
@@ -395,6 +406,8 @@ export function MateriaisClient({
   const [abrirEditorAutomatico, setAbrirEditorAutomatico] = useState(true);
   const [materialSalvo, setMaterialSalvo] = useState(false);
   const [hintFeedback, setHintFeedback] = useState("");
+  const [isOnline, setIsOnline] = useState(true);
+  const [offlineCache, setOfflineCache] = useState<OfflineMaterialCache | null>(null);
   const [bnccGroups, setBnccGroups] = useState<BnccSkillGroup[]>([]);
   const [selectedBnccSkills, setSelectedBnccSkills] = useState<BnccSkillOption[]>(
     [],
@@ -424,6 +437,32 @@ export function MateriaisClient({
       persistSlideGenerationPayload(payload);
     }
   }
+
+  const cacheOfflinePreview = useCallback(
+    (html: string, titulo: string) => {
+      saveOfflineMaterialCache({
+        title: titulo,
+        html,
+        toolId: tipo,
+        tema: tema.trim() || titulo,
+        savedAt: new Date().toISOString(),
+      });
+      setOfflineCache(loadOfflineMaterialCache());
+    },
+    [tipo, tema],
+  );
+
+  useEffect(() => {
+    setOfflineCache(loadOfflineMaterialCache());
+    const syncOnline = () => setIsOnline(navigator.onLine);
+    syncOnline();
+    window.addEventListener("online", syncOnline);
+    window.addEventListener("offline", syncOnline);
+    return () => {
+      window.removeEventListener("online", syncOnline);
+      window.removeEventListener("offline", syncOnline);
+    };
+  }, []);
 
   const slideAdjustPayload =
     lastGenerationPayload ??
@@ -1427,6 +1466,7 @@ export function MateriaisClient({
         openMaterialInEditor(html, titulo, meta, {
           from: "materiais",
         });
+        cacheOfflinePreview(html, titulo);
         setHistorico(loadMaterialHistoryPreview());
         setMaterialSalvo(true);
         saveTeachingContextDefaults();
@@ -1434,6 +1474,7 @@ export function MateriaisClient({
       }
 
       persistGeneratedMaterial(html, titulo, meta);
+      cacheOfflinePreview(html, titulo);
       setHistorico(loadMaterialHistoryPreview());
       setMaterialSalvo(true);
       setResultadoHtml(html);
@@ -1512,6 +1553,7 @@ export function MateriaisClient({
         },
       );
       persistGeneratedMaterial(html, titulo, meta);
+      cacheOfflinePreview(html, titulo);
       setResultadoHtml(html);
       setMaterialSalvo(true);
       setHistorico(loadMaterialHistoryPreview());
@@ -1551,6 +1593,7 @@ export function MateriaisClient({
         generationPayload: lastGenerationPayload,
       });
       persistGeneratedMaterial(result.html, titulo, meta);
+      cacheOfflinePreview(result.html, titulo);
       setMaterialSalvo(true);
       setHistorico(loadMaterialHistoryPreview());
       setHintFeedback(
@@ -1600,6 +1643,7 @@ export function MateriaisClient({
         generationPayload: lastGenerationPayload,
       });
       persistGeneratedMaterial(result.html, titulo, meta);
+      cacheOfflinePreview(result.html, titulo);
       setMaterialSalvo(true);
       setHistorico(loadMaterialHistoryPreview());
       setHintFeedback(
@@ -1645,6 +1689,7 @@ export function MateriaisClient({
       generationPayload: result.payload,
     });
     persistGeneratedMaterial(result.html, titulo, meta);
+    cacheOfflinePreview(result.html, titulo);
     setMaterialSalvo(true);
     setHistorico(loadMaterialHistoryPreview());
     setHintFeedback("Ajuste aplicado — revise os slides antes de salvar ou exportar.");
@@ -1802,6 +1847,24 @@ export function MateriaisClient({
             <DailyGenerationsBar tipoMaterial={tipo} />
           </div>
 
+          {!isOnline && offlineCache ? (
+            <div
+              role="status"
+              className="mt-4 rounded-2xl border border-amber-300/80 bg-amber-50/90 p-4"
+            >
+              <p className="text-sm font-black text-amber-950">Último material offline</p>
+              <p className="mt-1 text-xs font-semibold text-amber-900">
+                Sem conexão — visualização somente leitura do último material gerado neste
+                dispositivo.
+              </p>
+              <p className="mt-2 text-xs font-bold text-amber-800">{offlineCache.title}</p>
+              <div
+                className="prose prose-sm mt-3 max-h-48 overflow-y-auto rounded-xl border border-amber-200/80 bg-white p-3"
+                dangerouslySetInnerHTML={{ __html: offlineCache.html }}
+              />
+            </div>
+          ) : null}
+
           {isRedacao ? (
             <p className="mt-3 rounded-xl border border-cyan-400/20 bg-cyan-50/60 px-4 py-3 text-sm font-semibold leading-6 text-cyan-900">
               Gera a proposta completa (tema, textos motivadores, comando e critérios)
@@ -1824,11 +1887,13 @@ export function MateriaisClient({
               />
             </div>
 
-            <label>
-              <span className={HUD_SECTION_LABEL}>
+            <label htmlFor={fieldIdEtapa}>
+              <span className={HUD_SECTION_LABEL} id={`${fieldIdEtapa}-label`}>
                 Etapa de ensino
               </span>
               <select
+                id={fieldIdEtapa}
+                aria-labelledby={`${fieldIdEtapa}-label`}
                 value={etapa}
                 onChange={(event) =>
                   applyEducation({ etapa: event.target.value })
@@ -1843,11 +1908,13 @@ export function MateriaisClient({
               </select>
             </label>
 
-            <label>
-              <span className={HUD_SECTION_LABEL}>
+            <label htmlFor={fieldIdAnoSerie}>
+              <span className={HUD_SECTION_LABEL} id={`${fieldIdAnoSerie}-label`}>
                 Ano / série
               </span>
               <select
+                id={fieldIdAnoSerie}
+                aria-labelledby={`${fieldIdAnoSerie}-label`}
                 value={anoSerie}
                 onChange={(event) =>
                   applyEducation({ anoSerie: event.target.value })
@@ -1862,11 +1929,13 @@ export function MateriaisClient({
               </select>
             </label>
 
-            <label className="md:col-span-2">
-              <span className={HUD_SECTION_LABEL}>
+            <label className="md:col-span-2" htmlFor={fieldIdArea}>
+              <span className={HUD_SECTION_LABEL} id={`${fieldIdArea}-label`}>
                 Área do conhecimento
               </span>
               <select
+                id={fieldIdArea}
+                aria-labelledby={`${fieldIdArea}-label`}
                 value={areaConhecimento}
                 onChange={(event) =>
                   applyEducation({ areaConhecimento: event.target.value })
@@ -1881,11 +1950,13 @@ export function MateriaisClient({
               </select>
             </label>
 
-            <label className="md:col-span-2">
-              <span className={HUD_SECTION_LABEL}>
+            <label className="md:col-span-2" htmlFor={fieldIdComponente}>
+              <span className={HUD_SECTION_LABEL} id={`${fieldIdComponente}-label`}>
                 Disciplina / componente
               </span>
               <select
+                id={fieldIdComponente}
+                aria-labelledby={`${fieldIdComponente}-label`}
                 value={componente}
                 onChange={(event) =>
                   applyEducation({ componente: event.target.value })
@@ -2134,11 +2205,13 @@ export function MateriaisClient({
               ) : null}
             </label>
 
-            <label>
-              <span className={HUD_SECTION_LABEL}>
+            <label htmlFor={fieldIdDificuldade}>
+              <span className={HUD_SECTION_LABEL} id={`${fieldIdDificuldade}-label`}>
                 Dificuldade
               </span>
               <select
+                id={fieldIdDificuldade}
+                aria-labelledby={`${fieldIdDificuldade}-label`}
                 value={dificuldade}
                 onChange={(event) =>
                   setDificuldade(event.target.value as Dificuldade)
@@ -2171,13 +2244,17 @@ export function MateriaisClient({
                 </select>
               </label>
             ) : isExamTool ? (
-              <div>
-                <span className={HUD_SECTION_LABEL}>Quantidade</span>
+              <div role="group" aria-labelledby={`${fieldIdQuantidade}-label`}>
+                <span className={HUD_SECTION_LABEL} id={`${fieldIdQuantidade}-label`}>
+                  Quantidade
+                </span>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {quantityPresets.map((preset) => (
                     <button
                       key={preset.value}
                       type="button"
+                      aria-pressed={quantidade === preset.value}
+                      aria-label={`${preset.label.replace(/\s.*/, "")} questões`}
                       onClick={() => setQuantidade(preset.value)}
                       className={
                         quantidade === preset.value
@@ -2191,11 +2268,13 @@ export function MateriaisClient({
                 </div>
               </div>
             ) : (
-              <label>
-                <span className={HUD_SECTION_LABEL}>
+              <label htmlFor={fieldIdQuantidade}>
+                <span className={HUD_SECTION_LABEL} id={`${fieldIdQuantidade}-label`}>
                   {isRedacao ? "Estrutura da proposta" : "Quantidade"}
                 </span>
                 <select
+                  id={fieldIdQuantidade}
+                  aria-labelledby={`${fieldIdQuantidade}-label`}
                   value={quantidade}
                   onChange={(event) => setQuantidade(event.target.value)}
                   className={SELECT_FIELD_CLASS}

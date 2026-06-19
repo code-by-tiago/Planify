@@ -44,6 +44,7 @@
     "verify:all": "npm run verify:material-quality && npm run verify:generators && npm run verify:export-pipeline && node scripts/verify-export-motors.mjs && node scripts/verify-forms-export-payload.mjs && npm run verify:planejamento-docx && node scripts/verify-google-export-readiness.mjs",
     "verify:go-live": "node scripts/verify-go-live.mjs",
     "verify:gate-launch": "node scripts/verify-gate-launch.mjs",
+    "verify:wcag-forms": "node scripts/verify-wcag-forms.mjs",
     "test:e2e": "playwright test",
     "test:e2e:install": "playwright install chromium",
     "audit:health": "node scripts/audit-system-health.mjs",

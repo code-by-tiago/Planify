@@ -1,0 +1,20 @@
+{
+  "name": "Planify — IA para Professores",
+  "short_name": "Planify",
+  "description": "Planejamentos, materiais e provas com IA alinhados à BNCC — plataforma para professores.",
+  "start_url": "/dashboard",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#ffffff",
+  "theme_color": "#00d4ff",
+  "lang": "pt-BR",
+  "icons": [
+    {
+      "src": "/brand/planify-owl-graduate.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -70,6 +70,12 @@ export function LandingFooter() {
               Planos
             </Link>
             <Link
+              href="/status"
+              className="text-sm font-medium text-slate-600 transition hover:text-cyan-700"
+            >
+              Status dos serviços
+            </Link>
+            <Link
               href="/contato"
               className="text-sm font-medium text-slate-600 transition hover:text-cyan-700"
             >

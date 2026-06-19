@@ -64,7 +64,7 @@ import {
 } from "@/lib/planejamentos/planning-trimestral-from-annual";
 import { useBnccEducationOptions } from "@/hooks/useBnccEducationOptions";
 import type { MaterialEducationFields } from "@/lib/educacao/education-options";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { splitTopicLines } from "@/lib/bncc/split-topic-lines";
 import { TemaCombobox } from "@/components/bncc/TemaCombobox";
 import type { BnccTemaAutocompleteSuggestion } from "@/lib/bncc/bncc-tema-autocomplete";
@@ -392,6 +392,13 @@ export function PlanejamentosClient() {
   const school = useSchoolClasses();
   const teachingContext = useTeacherTeachingContext();
   const autoAppliedTeachingContextRef = useRef(false);
+  const fieldIdEscola = useId();
+  const fieldIdProfessor = useId();
+  const fieldIdEtapa = useId();
+  const fieldIdAnoSerie = useId();
+  const fieldIdArea = useId();
+  const fieldIdComponente = useId();
+  const fieldIdConteudos = useId();
   const [form, setForm] = useState<FormState>(initialForm);
   const [temaBusca, setTemaBusca] = useState("");
   const [groups, setGroups] = useState<BnccGroup[]>([]);
@@ -1476,17 +1483,39 @@ export function PlanejamentosClient() {
                   onSave={saveTeachingContextDefaults}
                 />
               </div>
-              <label className="grid gap-2">
-                <span className="text-sm font-bold text-slate-500">Escola</span>
-                <input value={form.escola} onChange={(event) => updateField("escola", event.target.value)} placeholder="Nome da escola" className={HUD_FIELD_CLASS} />
+              <label className="grid gap-2" htmlFor={fieldIdEscola}>
+                <span className="text-sm font-bold text-slate-500" id={`${fieldIdEscola}-label`}>
+                  Escola
+                </span>
+                <input
+                  id={fieldIdEscola}
+                  aria-labelledby={`${fieldIdEscola}-label`}
+                  value={form.escola}
+                  onChange={(event) => updateField("escola", event.target.value)}
+                  placeholder="Nome da escola"
+                  className={HUD_FIELD_CLASS}
+                />
               </label>
-              <label className="grid gap-2">
-                <span className="text-sm font-bold text-slate-500">Professor</span>
-                <input value={form.professor} onChange={(event) => updateField("professor", event.target.value)} placeholder="Nome do professor" className={HUD_FIELD_CLASS} />
+              <label className="grid gap-2" htmlFor={fieldIdProfessor}>
+                <span className="text-sm font-bold text-slate-500" id={`${fieldIdProfessor}-label`}>
+                  Professor
+                </span>
+                <input
+                  id={fieldIdProfessor}
+                  aria-labelledby={`${fieldIdProfessor}-label`}
+                  value={form.professor}
+                  onChange={(event) => updateField("professor", event.target.value)}
+                  placeholder="Nome do professor"
+                  className={HUD_FIELD_CLASS}
+                />
               </label>
-              <label className="grid gap-2">
-                <span className="text-sm font-bold text-slate-500">Etapa</span>
+              <label className="grid gap-2" htmlFor={fieldIdEtapa}>
+                <span className="text-sm font-bold text-slate-500" id={`${fieldIdEtapa}-label`}>
+                  Etapa
+                </span>
                 <select
+                  id={fieldIdEtapa}
+                  aria-labelledby={`${fieldIdEtapa}-label`}
                   value={form.etapa}
                   onChange={(event) =>
                     applyEducationFields({ etapa: event.target.value })
@@ -1498,9 +1527,13 @@ export function PlanejamentosClient() {
                   ))}
                 </select>
               </label>
-              <label className="grid gap-2">
-                <span className="text-sm font-bold text-slate-500">Ano/Série</span>
+              <label className="grid gap-2" htmlFor={fieldIdAnoSerie}>
+                <span className="text-sm font-bold text-slate-500" id={`${fieldIdAnoSerie}-label`}>
+                  Ano/Série
+                </span>
                 <select
+                  id={fieldIdAnoSerie}
+                  aria-labelledby={`${fieldIdAnoSerie}-label`}
                   value={form.anoSerie}
                   onChange={(event) =>
                     applyEducationFields({ anoSerie: event.target.value })
@@ -1512,9 +1545,13 @@ export function PlanejamentosClient() {
                   ))}
                 </select>
               </label>
-              <label className="grid gap-2">
-                <span className="text-sm font-bold text-slate-500">Área do conhecimento</span>
+              <label className="grid gap-2" htmlFor={fieldIdArea}>
+                <span className="text-sm font-bold text-slate-500" id={`${fieldIdArea}-label`}>
+                  Área do conhecimento
+                </span>
                 <select
+                  id={fieldIdArea}
+                  aria-labelledby={`${fieldIdArea}-label`}
                   value={form.areaConhecimento}
                   onChange={(event) =>
                     applyEducationFields({ areaConhecimento: event.target.value })
@@ -1526,9 +1563,13 @@ export function PlanejamentosClient() {
                   ))}
                 </select>
               </label>
-              <label className="grid gap-2">
-                <span className="text-sm font-bold text-slate-500">Componente curricular</span>
+              <label className="grid gap-2" htmlFor={fieldIdComponente}>
+                <span className="text-sm font-bold text-slate-500" id={`${fieldIdComponente}-label`}>
+                  Componente curricular
+                </span>
                 <select
+                  id={fieldIdComponente}
+                  aria-labelledby={`${fieldIdComponente}-label`}
                   value={form.componenteCurricular}
                   onChange={(event) =>
                     applyEducationFields({ componente: event.target.value })
@@ -1632,9 +1673,13 @@ export function PlanejamentosClient() {
                 componente={form.componenteCurricular}
               />
 
-              <label className="grid gap-2">
-                <span className="text-sm font-bold text-slate-500">Conteúdos</span>
+              <label className="grid gap-2" htmlFor={fieldIdConteudos}>
+                <span className="text-sm font-bold text-slate-500" id={`${fieldIdConteudos}-label`}>
+                  Conteúdos
+                </span>
                 <textarea
+                  id={fieldIdConteudos}
+                  aria-labelledby={`${fieldIdConteudos}-label`}
                   value={form.conteudos}
                   onChange={(event) => updateField("conteudos", event.target.value)}
                   rows={6}

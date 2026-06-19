@@ -36,6 +36,7 @@ export type Database = {
           last_login_at: string | null;
           correction_profile: Json | null;
           teaching_context: Json | null;
+          referral_code: string | null;
           created_at: string;
           updated_at: string;
         },
@@ -58,6 +59,7 @@ export type Database = {
           last_login_at?: string | null;
           correction_profile?: Json | null;
           teaching_context?: Json | null;
+          referral_code?: string | null;
           created_at?: string;
           updated_at?: string;
         },
@@ -80,8 +82,32 @@ export type Database = {
           last_login_at?: string | null;
           correction_profile?: Json | null;
           teaching_context?: Json | null;
+          referral_code?: string | null;
           created_at?: string;
           updated_at?: string;
+        }
+      >;
+      teacher_referrals: TableDefinition<
+        {
+          id: string;
+          created_at: string;
+          referrer_id: string;
+          referred_id: string;
+          referral_code: string;
+        },
+        {
+          id?: string;
+          created_at?: string;
+          referrer_id: string;
+          referred_id: string;
+          referral_code: string;
+        },
+        {
+          id?: string;
+          created_at?: string;
+          referrer_id?: string;
+          referred_id?: string;
+          referral_code?: string;
         }
       >;
       plans: TableDefinition<

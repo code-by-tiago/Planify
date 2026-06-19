@@ -3,6 +3,11 @@ import { getSupabaseAdminClient } from "@/server/supabase/admin-client";
 import { getCheckoutSessionPublicSummary } from "@/server/stripe/checkout-session-lookup";
 import { linkPendingSubscriptionsToUser } from "@/server/stripe/link-subscription-to-user";
 import { syncCheckoutSessionToDatabase } from "@/server/stripe/webhook-service";
+import {
+  normalizeReferralCode,
+  recordTeacherReferral,
+  REFERRAL_COOKIE,
+} from "@/server/referral/referral-service";
 import { appendFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -103,6 +108,7 @@ export async function POST(request: NextRequest) {
       email?: string;
       password?: string;
       sessionId?: string;
+      referralCode?: string;
     };
 
     const email = body.email?.trim().toLowerCase() || "";
@@ -222,6 +228,29 @@ export async function POST(request: NextRequest) {
       userId: created.user.id,
       email,
     });
+
+    const cookieReferral = normalizeReferralCode(
+      request.cookies.get(REFERRAL_COOKIE)?.value,
+    );
+    const referralCode =
+      normalizeReferralCode(body.referralCode) || cookieReferral;
+
+    try {
+      await recordTeacherReferral({
+        referredUserId: created.user.id,
+        referralCode,
+      });
+    } catch (referralError) {
+      debugLog({
+        hypothesisId: "referral",
+        location: "activate-account:referralFailed",
+        message: "referral record failed",
+        data: {
+          errorMessage:
+            referralError instanceof Error ? referralError.message : "unknown",
+        },
+      });
+    }
 
     debugLog({
       hypothesisId: "H1-H6",

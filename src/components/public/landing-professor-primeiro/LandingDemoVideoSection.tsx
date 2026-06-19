@@ -52,52 +52,44 @@ export function LandingDemoVideoSection() {
   return (
     <section
       id="demo"
-      className="scroll-mt-24 border-b border-slate-200/80 bg-gradient-to-b from-white to-slate-50/60 px-5 py-16 sm:px-8 sm:py-24"
+      className="pf-demo-video-section scroll-mt-24 border-b border-slate-200/80 bg-gradient-to-b from-white to-slate-50/60"
       aria-labelledby="demo-video-heading"
     >
-      <div className="mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-2 lg:gap-16">
-        <div className="order-2 lg:order-1">
+      <div className="pf-demo-video-section-inner">
+        <div className="pf-demo-video-column">
           {useFallback ? (
             <LandingHeroLiveDashboard />
           ) : (
-            <div className="relative mx-auto w-full max-w-xl lg:mx-0 lg:max-w-none">
-              <div
-                aria-hidden
-                className="pointer-events-none absolute -right-8 -top-8 hidden h-40 w-40 rounded-full bg-cyan-400/15 blur-3xl sm:block"
-              />
-              <div
-                aria-hidden
-                className="pointer-events-none absolute -bottom-10 -left-8 hidden h-32 w-32 rounded-full bg-slate-900/5 blur-3xl sm:block"
-              />
+            <div className="pf-demo-video-wrap">
+              <div className="pf-demo-video-glow" aria-hidden />
+              <div className="pf-demo-video-shell">
+                <div className="pf-demo-video-frame">
+                  <div className="pf-demo-video-chrome">
+                    <span className="pf-demo-video-dot pf-demo-video-dot--red" aria-hidden />
+                    <span className="pf-demo-video-dot pf-demo-video-dot--amber" aria-hidden />
+                    <span className="pf-demo-video-dot pf-demo-video-dot--green" aria-hidden />
+                    <span className="pf-demo-video-chrome-label">Planify · demonstração ao vivo</span>
+                  </div>
 
-              <div className="pf-demo-video-frame relative overflow-hidden rounded-2xl border border-slate-200/80 bg-slate-950 shadow-2xl shadow-slate-900/15 ring-1 ring-slate-900/5">
-                <div className="flex items-center gap-2 border-b border-white/10 bg-slate-900/90 px-4 py-2.5">
-                  <span className="h-2.5 w-2.5 rounded-full bg-red-400" aria-hidden />
-                  <span className="h-2.5 w-2.5 rounded-full bg-amber-400" aria-hidden />
-                  <span className="h-2.5 w-2.5 rounded-full bg-emerald-400" aria-hidden />
-                  <span className="ml-2 text-[11px] font-semibold text-slate-400">
-                    Planify · demonstração ao vivo
-                  </span>
+                  <video
+                    ref={videoRef}
+                    className="pf-demo-video-player"
+                    autoPlay
+                    muted
+                    loop
+                    playsInline
+                    preload="auto"
+                    aria-label="Demonstração em vídeo do fluxo Planify: planeje, crie, revise e compartilhe"
+                  >
+                    <source src={DEMO_VIDEO_SRC} type="video/mp4" />
+                  </video>
                 </div>
-
-                <video
-                  ref={videoRef}
-                  className="aspect-[16/10] w-full bg-slate-900 object-cover object-center"
-                  autoPlay
-                  muted
-                  loop
-                  playsInline
-                  preload="auto"
-                  aria-label="Demonstração em vídeo do fluxo Planify: planeje, crie, revise e compartilhe"
-                >
-                  <source src={DEMO_VIDEO_SRC} type="video/mp4" />
-                </video>
               </div>
             </div>
           )}
         </div>
 
-        <div className="order-1 lg:order-2">
+        <div className="pf-demo-video-copy">
           <p className={ppEyebrow}>Veja na prática</p>
           <h2
             id="demo-video-heading"

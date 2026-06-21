@@ -112,6 +112,20 @@ export function normalizeQuestionOptions(options: string[] | undefined): string[
 
 const TEACHY_MAX_STATEMENT_CHARS = 320;
 const TEACHY_MAX_STATEMENT_SENTENCES = 3;
+export const TEACHY_MAX_GABARITO_CHARS = 120;
+
+/** Gabarito Teachy: resposta objetiva em no máximo 1–2 linhas (~120 chars). */
+export function trimTeachyGabaritoAnswer(
+  text: string,
+  maxLen = TEACHY_MAX_GABARITO_CHARS,
+): string {
+  const trimmed = String(text || "").replace(/\s+/g, " ").trim();
+  if (!trimmed) return "";
+  if (trimmed.length <= maxLen) return trimmed;
+  const slice = trimmed.slice(0, maxLen);
+  const lastSpace = slice.lastIndexOf(" ");
+  return `${(lastSpace > 40 ? slice.slice(0, lastSpace) : slice).trim()}…`;
+}
 
 /** Enunciado Teachy: no máximo 3 frases curtas (prova/lista). */
 export function trimTeachyStatement(statement: string): string {
@@ -148,6 +162,9 @@ export function renderQuestionCard(params: {
   const itemLabel = params.label || "Questão";
   const num = String(params.number).padStart(2, "0");
   const compact = params.compact ?? false;
+  const statement = compact
+    ? trimTeachyStatement(params.statement)
+    : params.statement;
 
   const cleanOptions = normalizeQuestionOptions(params.options);
 
@@ -176,7 +193,7 @@ export function renderQuestionCard(params: {
   return `
     <article class="planify-questao planify-questao-card${compact ? " planify-questao-card-compact" : ""}">
       ${headContent}
-      <p class="planify-questao-statement">${escapeHtml(params.statement)}</p>
+      <p class="planify-questao-statement">${escapeHtml(statement)}</p>
       ${options}
     </article>
   `.trim();
@@ -185,7 +202,12 @@ export function renderQuestionCard(params: {
 export function renderGabaritoTable(
   entries: { number: number | string; answer: string }[],
 ): string {
-  const clean = entries.filter((entry) => entry.answer.trim());
+  const clean = entries
+    .map((entry) => ({
+      number: entry.number,
+      answer: trimTeachyGabaritoAnswer(entry.answer),
+    }))
+    .filter((entry) => entry.answer.trim());
   if (!clean.length) return "";
 
   const rows = clean

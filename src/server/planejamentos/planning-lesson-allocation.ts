@@ -1,3 +1,5 @@
+import { formatPeriodosComSemanas } from "@/lib/planejamentos/planning-annual-field-enrichment";
+
 export type PlanningAllocationPayload = {
   tipoPlanejamento?: string;
   cargaHoraria?: string | number;
@@ -225,11 +227,12 @@ export function ensureAnnualTrimesterDistribution<T extends MatrixLessonAllocata
   }
 
   const chunkSize = Math.max(1, Math.ceil(items.length / 3));
-
-  return items.map((item, index) => ({
+  const redistributed = items.map((item, index) => ({
     ...item,
     trimestre: Math.min(3, Math.floor(index / chunkSize) + 1),
   }));
+
+  return redistributed;
 }
 
 export function finalizeMatrixLessonAllocation<T extends MatrixLessonAllocatable>(
@@ -303,9 +306,16 @@ export function resolveMatrixPeriodos(item: MatrixLessonAllocatable): number {
   return range > 0 ? range : 1;
 }
 
-export function formatMatrixPeriodosLabel(item: MatrixLessonAllocatable): string {
+export function formatMatrixPeriodosLabel(
+  item: MatrixLessonAllocatable,
+  weeklyPeriods = 0,
+): string {
   const periodos = resolveMatrixPeriodos(item);
-  return periodos === 1 ? "1 período" : `${periodos} período(s)`;
+  if (weeklyPeriods > 0) {
+    return formatPeriodosComSemanas(periodos, weeklyPeriods);
+  }
+
+  return periodos === 1 ? "1 período" : `${periodos} períodos`;
 }
 
 export function formatMatrixAulaLabel(item: MatrixLessonAllocatable): string {

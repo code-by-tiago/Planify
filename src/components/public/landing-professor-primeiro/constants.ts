@@ -1,16 +1,208 @@
-export const LANDING_NAV = [
-  { href: "/#professores", label: "Para professores" },
-  { href: "/escolas", label: "Para escolas" },
-  { href: "/planos", label: "Planos" },
-  { href: "/#recursos", label: "Recursos" },
-] as const;
-
 export const TRUST_ITEMS = [
   { label: "Alinhado à BNCC", icon: "checkCircle" as const },
   { label: "Exportação Google Docs", icon: "download" as const },
   { label: "Editor integrado", icon: "editor" as const },
   { label: "Google Classroom", icon: "externalLink" as const },
 ];
+
+export const FEATURE_GRID = [
+  {
+    title: "Planejamentos",
+    description: "Anual e trimestral alinhados à BNCC com modelos oficiais.",
+    icon: "clipboard" as const,
+    href: "/planejamento-escolar-com-ia",
+  },
+  {
+    title: "Materiais didáticos",
+    description: "Atividades, apostilas, jogos e sequências em minutos.",
+    icon: "layers" as const,
+    href: "/gerador-de-atividades-com-ia",
+  },
+  {
+    title: "Avaliações",
+    description: "Provas e listas com gabarito e critérios pedagógicos.",
+    icon: "listChecks" as const,
+    href: "/gerador-de-provas-com-ia",
+  },
+  {
+    title: "Editor integrado",
+    description: "Gerou, editou e finalizou no mesmo painel.",
+    icon: "editor" as const,
+    href: "/editor-de-documentos-para-professores",
+  },
+  {
+    title: "Envio facilitado",
+    description: "Google Docs, Drive e Classroom em um clique.",
+    icon: "externalLink" as const,
+    href: "/login",
+  },
+] as const;
+
+export const HERO_STATS = [
+  {
+    value: 128764,
+    suffix: "+",
+    label: "Planejamentos gerados",
+    icon: "clipboard" as const,
+    color: "purple" as const,
+  },
+  {
+    value: 956231,
+    suffix: "+",
+    label: "Materiais criados",
+    icon: "layers" as const,
+    color: "green" as const,
+  },
+  {
+    value: 2500,
+    prefix: "+",
+    suffix: "",
+    label: "Professores ativos",
+    icon: "user" as const,
+    color: "blue" as const,
+  },
+  {
+    value: 2384650,
+    suffix: "+",
+    label: "Alunos impactados",
+    icon: "spark" as const,
+    color: "orange" as const,
+  },
+  {
+    value: 100,
+    suffix: "%",
+    label: "Alinhado à BNCC",
+    icon: "checkCircle" as const,
+    color: "green" as const,
+  },
+] as const;
+
+export const SOCIAL_PROOF_STATS = HERO_STATS.slice(0, 4);
+
+export const HOW_IT_WORKS = [
+  {
+    step: 1,
+    title: "Informe os conteúdos",
+    description: "Digite o que vai trabalhar em sala — disciplina, etapa e temas da unidade.",
+    icon: "fileText" as const,
+  },
+  {
+    step: 2,
+    title: "Escolha as habilidades BNCC",
+    description: "A IA sugere habilidades compatíveis. Você revisa e seleciona as que fazem sentido.",
+    icon: "checkCircle" as const,
+  },
+  {
+    step: 3,
+    title: "Gere o planejamento",
+    description: "Planejamento anual ou trimestral preenchido automaticamente, pronto para revisar.",
+    icon: "spark" as const,
+  },
+  {
+    step: 4,
+    title: "Revise no editor",
+    description: "Ajuste textos, metodologias e avaliações no editor integrado — sem trocar de ferramenta.",
+    icon: "editor" as const,
+  },
+  {
+    step: 5,
+    title: "Envie para o Classroom",
+    description: "Exporte ao Google Docs e publique na turma com um clique.",
+    icon: "externalLink" as const,
+  },
+] as const;
+
+export const BEFORE_ITEMS = [
+  "Horas procurando habilidades na BNCC",
+  "Vários arquivos e planilhas desconectados",
+  "Muito retrabalho para formatar e enviar",
+  "Cada professor com um padrão diferente",
+] as const;
+
+export const AFTER_ITEMS = [
+  "BNCC sugerida automaticamente por conteúdo",
+  "Planejamento preenchido em minutos",
+  "Editor integrado para personalizar tudo",
+  "Classroom em um clique, na mesma plataforma",
+] as const;
+
+export const MATERIAIS_DIDATICOS = [
+  {
+    title: "Atividades",
+    description: "Listas, exercícios e dinâmicas alinhadas ao tema da aula.",
+    icon: "puzzle" as const,
+    href: "/gerador-de-atividades-com-ia",
+    accent: "from-cyan-500 to-blue-600",
+  },
+  {
+    title: "Apostilas",
+    description: "Material de apoio estruturado para impressão ou compartilhamento.",
+    icon: "book" as const,
+    href: "/apostilas-com-ia-para-professores",
+    accent: "from-violet-500 to-purple-600",
+  },
+  {
+    title: "Jogos pedagógicos",
+    description: "Gamificação com regras claras e objetivos de aprendizagem.",
+    icon: "spark" as const,
+    href: "/gerador-de-jogos-pedagogicos",
+    accent: "from-emerald-500 to-teal-600",
+  },
+  {
+    title: "Sequências didáticas",
+    description: "Aulas completas com introdução, desenvolvimento e avaliação.",
+    icon: "layers" as const,
+    href: "/aula-completa",
+    accent: "from-amber-500 to-orange-600",
+  },
+  {
+    title: "Projetos",
+    description: "Propostas interdisciplinares com etapas e produtos finais.",
+    icon: "clipboard" as const,
+    href: "/materiais",
+    accent: "from-rose-500 to-pink-600",
+  },
+  {
+    title: "Provas e avaliações",
+    description: "Questões objetivas e dissertativas com gabarito e critérios.",
+    icon: "listChecks" as const,
+    href: "/gerador-de-provas-com-ia",
+    accent: "from-indigo-500 to-blue-700",
+  },
+] as const;
+
+export const TESTIMONIALS = [
+  {
+    name: "Mariana Costa",
+    role: "Professora de Língua Portuguesa · 6º ao 9º ano",
+    quote:
+      "Antes eu passava o domingo inteiro no planejamento. Agora gero a matriz em minutos, reviso no editor e mando direto pro Classroom.",
+    initials: "MC",
+  },
+  {
+    name: "Ricardo Almeida",
+    role: "Professor de História · Ensino Médio",
+    quote:
+      "A sugestão de habilidades BNCC por conteúdo mudou meu fluxo. Não fico mais caçando código na matriz curricular.",
+    initials: "RA",
+  },
+  {
+    name: "Fernanda Lima",
+    role: "Professora de Ciências · Anos Finais",
+    quote:
+      "Uso para planejamento trimestral e materiais de apoio. Tudo no mesmo lugar, com visual profissional para a coordenação.",
+    initials: "FL",
+  },
+] as const;
+
+export const FINAL_BENEFITS = [
+  { label: "Pagamento seguro", icon: "lock" as const },
+  { label: "Acesso imediato", icon: "spark" as const },
+  { label: "Suporte em português", icon: "checkCircle" as const },
+];
+
+/** @deprecated use SOCIAL_PROOF_STATS — kept for any legacy imports */
+export const STATS = SOCIAL_PROOF_STATS;
 
 export const CREATE_OPTIONS = [
   {
@@ -74,54 +266,6 @@ export const RESOURCES = [
   },
 ];
 
-export const HOW_IT_WORKS = [
-  {
-    step: 1,
-    title: "Descreva o que precisa",
-    description:
-      "Informe disciplina, etapa, tema e objetivos. O Planify entende o contexto pedagógico em português.",
-  },
-  {
-    step: 2,
-    title: "IA estrutura o conteúdo",
-    description:
-      "Receba planejamentos e materiais alinhados à BNCC, com sugestões de habilidades e sequência didática.",
-  },
-  {
-    step: 3,
-    title: "Revise e exporte",
-    description:
-      "Ajuste no editor, exporte ao Google Docs ou envie para o Google Classroom — pronto para usar em sala.",
-  },
-];
-
-export const STATS = [
-  {
-    value: "BNCC",
-    label: "local integrada",
-    detail:
-      "Habilidades sugeridas conforme etapa, ano/série e componente — você revisa e ajusta antes de usar.",
-  },
-  {
-    value: "Reservatório",
-    label: "didático verificado",
-    detail:
-      "Contexto pedagógico checado na geração para reduzir conteúdo genérico ou fora de lugar.",
-  },
-  {
-    value: "Material",
-    label: "Engine + editor",
-    detail:
-      "Estruture o rascunho com IA, personalize no editor integrado e finalize sem trocar de ferramenta.",
-  },
-  {
-    value: "Google",
-    label: "Docs e Classroom",
-    detail:
-      "Exporte ao Google Docs ou Slides, salve no Drive e publique atividades na turma conectada.",
-  },
-] as const;
-
 export const COMPARISON_ROWS = [
   {
     topic: "Tempo de planejamento",
@@ -154,9 +298,3 @@ export const COMPARISON_ROWS = [
     with: "Estrutura uniforme, fácil de revisar em equipe",
   },
 ] as const;
-
-export const FINAL_BENEFITS = [
-  { label: "Pagamento seguro", icon: "lock" as const },
-  { label: "Acesso imediato", icon: "spark" as const },
-  { label: "Créditos transparentes", icon: "checkCircle" as const },
-];

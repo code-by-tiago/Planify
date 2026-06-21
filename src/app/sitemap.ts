@@ -6,10 +6,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = getSiteUrl();
   const lastModified = new Date();
 
-  return PUBLIC_SITEMAP_PAGES.map((page) => ({
+  const entries = PUBLIC_SITEMAP_PAGES.map((page) => ({
     url: `${baseUrl}${page.path}`,
     lastModified,
     changeFrequency: page.changeFrequency,
     priority: page.priority,
   }));
+
+  return entries;
 }

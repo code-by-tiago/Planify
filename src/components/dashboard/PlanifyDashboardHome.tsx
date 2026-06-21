@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
+import { ReferralInvitePanel } from "@/components/referral/ReferralInvitePanel";
 import type { DashboardSectionId } from "@/lib/pro/dashboardViews";
 
 type PlanifyDashboardHomeProps = {
@@ -56,10 +57,11 @@ export function PlanifyDashboardHome({
             onSubmit={handleTopicSubmit}
             className="mt-8 rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm"
           >
-            <label className="text-xs font-black uppercase tracking-wide text-slate-500">
+            <label className="text-xs font-black uppercase tracking-wide text-slate-500" htmlFor="dashboard-tema">
               Tema da aula (opcional)
             </label>
             <input
+              id="dashboard-tema"
               value={topic}
               onChange={(event) => setTopic(event.target.value)}
               onBlur={() => persistTopic(topic)}
@@ -81,6 +83,8 @@ export function PlanifyDashboardHome({
               Abrir planejamentos
             </button>
           </form>
+
+          <ReferralInvitePanel className="mt-6 text-left" />
 
           <p className="mt-6 text-xs font-bold text-slate-400">
             Atalho: pressione <kbd className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[10px] text-slate-600">/</kbd> para buscar ferramenta no menu

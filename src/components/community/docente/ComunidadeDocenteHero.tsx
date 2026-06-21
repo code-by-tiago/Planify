@@ -14,7 +14,7 @@ export function ComunidadeDocenteHero({
   onHeroSearch,
 }: ComunidadeDocenteHeroProps) {
   return (
-    <section className="relative overflow-hidden rounded-3xl border border-cyan-100 bg-gradient-to-br from-cyan-50 via-white to-slate-50 shadow-sm">
+    <section className="pf-surface relative overflow-hidden rounded-3xl border border-cyan-100 bg-gradient-to-br from-cyan-50 via-white to-slate-50 shadow-sm">
       <div
         className="pointer-events-none absolute inset-0 opacity-[0.07]"
         aria-hidden

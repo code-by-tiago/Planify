@@ -352,7 +352,7 @@ export type AppNavItem = {
   hideForManagerView?: boolean;
 };
 
-/** Navegação lateral — apenas páginas (sem ferramentas IA) */
+/** Navegação lateral — hubs de trabalho (ferramentas IA ficam na lista do sidebar) */
 export const sidebarNavigation: AppNavItem[] = [
   {
     label: "Painel do Gestor",
@@ -360,6 +360,13 @@ export const sidebarNavigation: AppNavItem[] = [
     icon: "clipboard",
     panel: "diretor",
     requiresDirectorAccess: true,
+  },
+  {
+    label: "Planejamentos",
+    href: "/dashboard?secao=planejamentos",
+    icon: "clipboard",
+    panel: "planejamentos",
+    hideForManagerView: true,
   },
   {
     label: "Progresso BNCC",
@@ -384,6 +391,13 @@ export const sidebarNavigation: AppNavItem[] = [
     hideForManagerView: true,
   },
   {
+    label: "Meus materiais",
+    href: "/dashboard?secao=historico",
+    icon: "history",
+    panel: "historico",
+    hideForManagerView: true,
+  },
+  {
     label: "Biblioteca",
     href: "/dashboard?secao=biblioteca",
     icon: "library",
@@ -395,13 +409,6 @@ export const sidebarNavigation: AppNavItem[] = [
     href: "/dashboard?secao=marketplace",
     icon: "market",
     panel: "marketplace",
-    hideForManagerView: true,
-  },
-  {
-    label: "Meus materiais",
-    href: "/dashboard?secao=historico",
-    icon: "history",
-    panel: "historico",
     hideForManagerView: true,
   },
   {

@@ -1,6 +1,8 @@
 import {
   renderGabaritoTable,
   renderQuestionCard,
+  trimTeachyStatement,
+  trimTeachyGabaritoAnswer,
   wrapProfessionalDocument,
 } from "@/lib/materiais/material-document-layout";
 import type { MaterialAIOutput } from "@/types/ai";
@@ -79,7 +81,7 @@ function renderGabarito(output: MaterialAIOutput, incluirGabarito: boolean): str
   const byNumber = new Map<number, string>();
 
   for (const question of output.questoes) {
-    const answer = question.respostaEsperada?.trim();
+    const answer = trimTeachyGabaritoAnswer(question.respostaEsperada || "");
     if (answer) {
       byNumber.set(question.numero, answer);
     }
@@ -90,7 +92,7 @@ function renderGabarito(output: MaterialAIOutput, incluirGabarito: boolean): str
     if (match) {
       const num = Number(match[1]);
       if (!byNumber.has(num)) {
-        byNumber.set(num, match[2].trim());
+        byNumber.set(num, trimTeachyGabaritoAnswer(match[2]));
       }
     }
   }

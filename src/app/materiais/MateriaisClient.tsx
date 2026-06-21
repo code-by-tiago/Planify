@@ -1,8 +1,10 @@
 ﻿"use client";
 
-import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { GoogleDocumentExportBar } from "@/components/google/GoogleDocumentExportBar";
+import { GoogleClassroomDockButton } from "@/components/google/GoogleClassroomDockButton";
+import { MaterialWhatsAppShareButton } from "@/components/share/MaterialWhatsAppShareButton";
 import { GoogleSlidesExportButton } from "@/components/google/GoogleSlidesExportButton";
 import { SlidesPptxDownloadButton } from "@/components/documents/SlidesPptxDownloadButton";
 import { SlideAiAdjustPanel } from "@/components/slides/SlideAiAdjustPanel";
@@ -27,7 +29,10 @@ import { CreditsBalancePill } from "@/components/credits/CreditsBalancePill";
 import { GenerationCostHint } from "@/components/credits/GenerationCostHint";
 import { DailyGenerationsBar } from "@/components/credits/DailyGenerationsBar";
 import { MaterialPreviewSkeleton } from "@/components/materiais/MaterialPreviewSkeleton";
+import { MaterialStudioStepHeader } from "@/components/materiais/MaterialStudioStepHeader";
 import { MaterialToolPageShell } from "@/components/pro/MaterialToolPageShell";
+import { ToolStudioShell } from "@/components/studio/ToolStudioShell";
+import { ExportDock } from "@/components/studio/ExportDock";
 import { MaterialToolMobileSubmitBar } from "@/components/pro/MaterialToolMobileSubmitBar";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { PlanifyOwlGenerationCoach } from "@/components/pro/PlanifyOwlGenerationCoach";
@@ -63,6 +68,7 @@ import {
   openMaterialInEditor,
   persistGeneratedMaterial,
   clearSlideGenerationPayload,
+  consumeMaterialRegenerateContext,
   persistSlideGenerationPayload,
   readAutoOpenEditorPreference,
   readSlideGenerationPayload,
@@ -70,6 +76,11 @@ import {
   type MaterialEditorMeta,
   type MaterialHistoryPreview,
 } from "@/lib/materiais/material-editor-flow";
+import {
+  loadOfflineMaterialCache,
+  saveOfflineMaterialCache,
+  type OfflineMaterialCache,
+} from "@/lib/materiais/offline-material-cache";
 import { buildMaterialGenerationSummary } from "@/lib/materiais/material-generation-summary";
 import {
   getPlanifyTool,
@@ -87,7 +98,11 @@ import {
   useRetryableAction,
 } from "@/lib/pro/generation-error-ui";
 import { readProvaInjectObservacoes } from "@/lib/banco-questoes/question-bank-storage";
-import { resolveUnifiedPipelineLabel } from "@/lib/materiais/unified-pipeline-labels";
+import {
+  isFastDeliveryPipeline,
+  resolveUnifiedPipelineLabel,
+} from "@/lib/materiais/unified-pipeline-labels";
+import { UNIFIED_ELEVATE_BANNER_THRESHOLD } from "@/lib/materiais/unified-quality-gate";
 import {
   buildPedagogicalObservacoes,
   fetchPedagogicalContext,
@@ -95,6 +110,8 @@ import {
 } from "@/lib/pedagogical-cache/pedagogical-context-client";
 import { lessonBundleFollowUp } from "@/lib/pro/teachyStudio";
 import { useSchoolClasses } from "@/hooks/useSchoolClasses";
+import { useTeacherTeachingContext } from "@/hooks/useTeacherTeachingContext";
+import { MinhaTurmaChip } from "@/components/teacher/MinhaTurmaChip";
 import { TurmaCombobox } from "@/components/school/TurmaCombobox";
 import { MaterialBnccSkillsPanel } from "@/components/bncc/MaterialBnccSkillsPanel";
 import { TemaCombobox } from "@/components/bncc/TemaCombobox";
@@ -303,6 +320,8 @@ type MateriaisClientProps = {
   initialTema?: string;
   onStudioClose?: () => void;
   onOpenRelatedTool?: (toolId: PlanifyToolId) => void;
+  /** Rollback: layout anterior sem ExportDock fixo. */
+  legacyLayout?: boolean;
 };
 
 export function MateriaisClient({
@@ -311,8 +330,19 @@ export function MateriaisClient({
   initialTema = "",
   onStudioClose,
   onOpenRelatedTool,
+  legacyLayout = false,
 }: MateriaisClientProps = {}) {
+  const useStudioExportDock = studioMode && !legacyLayout;
+  const fieldIdEtapa = useId();
+  const fieldIdAnoSerie = useId();
+  const fieldIdArea = useId();
+  const fieldIdComponente = useId();
+  const fieldIdDificuldade = useId();
+  const fieldIdQuantidade = useId();
   const school = useSchoolClasses();
+  const teachingContext = useTeacherTeachingContext();
+  const autoAppliedTeachingContextRef = useRef(false);
+  const [exportShareStatus, setExportShareStatus] = useState<string | null>(null);
   const [categoria, setCategoria] = useState<ToolCategoryId>("todos");
   const [tipo, setTipo] = useState<PlanifyToolId>(initialTipo ?? "slides");
   const [modalAberto, setModalAberto] = useState(studioMode);
@@ -377,6 +407,8 @@ export function MateriaisClient({
   const [abrirEditorAutomatico, setAbrirEditorAutomatico] = useState(true);
   const [materialSalvo, setMaterialSalvo] = useState(false);
   const [hintFeedback, setHintFeedback] = useState("");
+  const [isOnline, setIsOnline] = useState(true);
+  const [offlineCache, setOfflineCache] = useState<OfflineMaterialCache | null>(null);
   const [bnccGroups, setBnccGroups] = useState<BnccSkillGroup[]>([]);
   const [selectedBnccSkills, setSelectedBnccSkills] = useState<BnccSkillOption[]>(
     [],
@@ -394,6 +426,7 @@ export function MateriaisClient({
   const [pedagogicalExpanded, setPedagogicalExpanded] = useState(true);
   const [usePedagogicalOnly, setUsePedagogicalOnly] = useState(false);
   const pedagogicalDebounceRef = useRef<number | null>(null);
+  const examBnccAutoSuggestedRef = useRef(false);
 
   function rememberSlideGenerationPayload(payload: MaterialEngineInput | null) {
     setLastGenerationPayload(payload);
@@ -405,6 +438,32 @@ export function MateriaisClient({
       persistSlideGenerationPayload(payload);
     }
   }
+
+  const cacheOfflinePreview = useCallback(
+    (html: string, titulo: string) => {
+      saveOfflineMaterialCache({
+        title: titulo,
+        html,
+        toolId: tipo,
+        tema: tema.trim() || titulo,
+        savedAt: new Date().toISOString(),
+      });
+      setOfflineCache(loadOfflineMaterialCache());
+    },
+    [tipo, tema],
+  );
+
+  useEffect(() => {
+    setOfflineCache(loadOfflineMaterialCache());
+    const syncOnline = () => setIsOnline(navigator.onLine);
+    syncOnline();
+    window.addEventListener("online", syncOnline);
+    window.addEventListener("offline", syncOnline);
+    return () => {
+      window.removeEventListener("online", syncOnline);
+      window.removeEventListener("offline", syncOnline);
+    };
+  }, []);
 
   const slideAdjustPayload =
     lastGenerationPayload ??
@@ -590,6 +649,15 @@ export function MateriaisClient({
       incluirGabarito,
     ],
   );
+  const pipelineDisplayLabel = useMemo(
+    () => resolveUnifiedPipelineLabel(pipelineGeracao),
+    [pipelineGeracao],
+  );
+  const showFastDraftBanner = useMemo(() => {
+    if (typeof qualityScore !== "number") return false;
+    if (qualityScore >= UNIFIED_ELEVATE_BANNER_THRESHOLD) return false;
+    return isFastDeliveryPipeline(pipelineGeracao);
+  }, [qualityScore, pipelineGeracao]);
   const isJogo = tipo === "jogo";
   const isRedacao = tipo === "redacao";
   const isExamTool = tipo === "lista" || tipo === "prova";
@@ -637,7 +705,92 @@ export function MateriaisClient({
     setAnoSerie(next.anoSerie);
     setAreaConhecimento(next.areaConhecimento);
     setComponente(next.componente);
+    teachingContext.resetApplied();
   });
+
+  const applyTeachingContextFields = useCallback(
+    (fields: {
+      etapa: string;
+      anoSerie: string;
+      areaConhecimento: string;
+      componente: string;
+      turma: string;
+      classId: string | null;
+      observacoesTurma: string;
+    }) => {
+      applyEducation({
+        etapa: fields.etapa,
+        anoSerie: fields.anoSerie,
+        areaConhecimento: fields.areaConhecimento,
+        componente: fields.componente,
+      });
+      if (fields.turma) {
+        school.setTurmaInput(fields.turma);
+      } else if (fields.classId) {
+        school.setClassId(fields.classId);
+      }
+      if (fields.observacoesTurma && !observacoes.trim()) {
+        setObservacoes(fields.observacoesTurma);
+      }
+    },
+    [applyEducation, observacoes, school],
+  );
+
+  const currentTeachingFields = useCallback(
+    () => ({
+      etapa,
+      anoSerie,
+      areaConhecimento,
+      componente,
+      turma: school.turmaDisplayValue,
+      classId: school.classId,
+      observacoesTurma: observacoes,
+    }),
+    [
+      anoSerie,
+      areaConhecimento,
+      componente,
+      etapa,
+      observacoes,
+      school.classId,
+      school.turmaDisplayValue,
+    ],
+  );
+
+  const saveTeachingContextDefaults = useCallback(() => {
+    teachingContext.saveCurrentAsDefault(currentTeachingFields());
+  }, [currentTeachingFields, teachingContext]);
+
+  useEffect(() => {
+    if (teachingContext.loading || autoAppliedTeachingContextRef.current) return;
+
+    const regenerate = consumeMaterialRegenerateContext();
+    autoAppliedTeachingContextRef.current = true;
+
+    if (regenerate) {
+      if (regenerate.toolId) {
+        setTipo(regenerate.toolId);
+      }
+      if (regenerate.tema) {
+        setTema(regenerate.tema);
+      }
+      applyTeachingContextFields({
+        etapa: regenerate.etapa || etapa,
+        anoSerie: regenerate.anoSerie || anoSerie,
+        areaConhecimento: regenerate.areaConhecimento || areaConhecimento,
+        componente: regenerate.componente || componente,
+        turma: "",
+        classId: null,
+        observacoesTurma: "",
+      });
+      return;
+    }
+
+    if (teachingContext.configured) {
+      teachingContext.applyToForm(applyTeachingContextFields);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- auto-apply once on mount
+  }, [teachingContext.loading, teachingContext.configured]);
 
   const quantityPresets = useMemo(() => getQuantityPresets(tipo), [tipo]);
 
@@ -917,7 +1070,33 @@ export function MateriaisClient({
     ]);
     setSelectedBnccSkills(habilidades.slice(0, 3));
     setBnccRegistroFeedback(null);
+    examBnccAutoSuggestedRef.current = true;
   }
+
+  useEffect(() => {
+    examBnccAutoSuggestedRef.current = false;
+  }, [tipo, tema, componente, anoSerie, etapa]);
+
+  useEffect(() => {
+    if (tipo !== "lista" && tipo !== "prova") return;
+    if (!suggestContextReady || bnccGroups.length > 0) return;
+    if (examBnccAutoSuggestedRef.current || loadingBncc) return;
+
+    examBnccAutoSuggestedRef.current = true;
+    const timer = window.setTimeout(() => {
+      void sugerirHabilidadesBncc();
+    }, 700);
+
+    return () => window.clearTimeout(timer);
+  }, [
+    tipo,
+    suggestContextReady,
+    bnccGroups.length,
+    loadingBncc,
+    tema,
+    componente,
+    anoSerie,
+  ]);
 
   function toggleBnccSkill(skill: BnccSkillOption) {
     setSelectedBnccSkills((current) => {
@@ -1252,7 +1431,7 @@ export function MateriaisClient({
 
         if (typeof record.pipeline === "string") {
           pipelineLabel = resolveUnifiedPipelineLabel(record.pipeline);
-          setPipelineGeracao(pipelineLabel);
+          setPipelineGeracao(record.pipeline);
         }
 
         if (typeof record.qualityScore === "number") {
@@ -1292,15 +1471,19 @@ export function MateriaisClient({
         openMaterialInEditor(html, titulo, meta, {
           from: "materiais",
         });
+        cacheOfflinePreview(html, titulo);
         setHistorico(loadMaterialHistoryPreview());
         setMaterialSalvo(true);
+        saveTeachingContextDefaults();
         return;
       }
 
       persistGeneratedMaterial(html, titulo, meta);
+      cacheOfflinePreview(html, titulo);
       setHistorico(loadMaterialHistoryPreview());
       setMaterialSalvo(true);
       setResultadoHtml(html);
+      saveTeachingContextDefaults();
       }, { onError: dispatchCreditsChangedIfNeeded });
     } catch (error) {
       dispatchCreditsChangedIfNeeded(error);
@@ -1375,6 +1558,7 @@ export function MateriaisClient({
         },
       );
       persistGeneratedMaterial(html, titulo, meta);
+      cacheOfflinePreview(html, titulo);
       setResultadoHtml(html);
       setMaterialSalvo(true);
       setHistorico(loadMaterialHistoryPreview());
@@ -1414,6 +1598,7 @@ export function MateriaisClient({
         generationPayload: lastGenerationPayload,
       });
       persistGeneratedMaterial(result.html, titulo, meta);
+      cacheOfflinePreview(result.html, titulo);
       setMaterialSalvo(true);
       setHistorico(loadMaterialHistoryPreview());
       setHintFeedback(
@@ -1463,6 +1648,7 @@ export function MateriaisClient({
         generationPayload: lastGenerationPayload,
       });
       persistGeneratedMaterial(result.html, titulo, meta);
+      cacheOfflinePreview(result.html, titulo);
       setMaterialSalvo(true);
       setHistorico(loadMaterialHistoryPreview());
       setHintFeedback(
@@ -1508,6 +1694,7 @@ export function MateriaisClient({
       generationPayload: result.payload,
     });
     persistGeneratedMaterial(result.html, titulo, meta);
+    cacheOfflinePreview(result.html, titulo);
     setMaterialSalvo(true);
     setHistorico(loadMaterialHistoryPreview());
     setHintFeedback("Ajuste aplicado — revise os slides antes de salvar ou exportar.");
@@ -1526,8 +1713,112 @@ export function MateriaisClient({
     setModalAberto(false);
   }
 
+  const exportDockStatusMessage = useStudioExportDock
+    ? exportShareStatus ||
+      (typeof qualityScore === "number" &&
+      qualityScore < UNIFIED_ELEVATE_BANNER_THRESHOLD
+        ? "Score abaixo do ideal — revise ou use Elevar qualidade antes de exportar."
+        : null)
+    : null;
+
+  const studioExportDock =
+    useStudioExportDock && resultadoHtml ? (
+      <ExportDock
+        visible
+        disabled={!resultadoHtml}
+        statusMessage={exportDockStatusMessage}
+      >
+        {tipo === "slides" ? (
+          <>
+            <GoogleSlidesExportButton
+              title={buildTitle(tipo, tema)}
+              html={resultadoHtml}
+              slides={resultadoEstrutura?.slides}
+              theme={resultadoEstrutura?.slideTheme || designSlides}
+              returnTo="/dashboard?tipo=slides"
+              alwaysShowExport
+              iconOnly={false}
+            />
+            <SlidesPptxDownloadButton
+              title={buildTitle(tipo, tema)}
+              html={resultadoHtml}
+              slides={resultadoEstrutura?.slides}
+              theme={resultadoEstrutura?.slideTheme || designSlides}
+              documentType="material:slides"
+              iconOnly={false}
+              label="Baixar PPTX"
+            />
+          </>
+        ) : null}
+        <GoogleClassroomDockButton
+          title={buildTitle(tipo, tema)}
+          getHtml={() => resultadoHtml}
+          documentType={`material:${tipo}`}
+          returnTo="/dashboard"
+          onStatus={setExportShareStatus}
+        />
+        <MaterialWhatsAppShareButton
+          title={buildTitle(tipo, tema)}
+          tipoLabel={mode.shortTitle || mode.title}
+          componente={componente}
+          anoSerie={anoSerie}
+          turma={school.turmaDisplayValue || undefined}
+          onStatus={setExportShareStatus}
+        />
+        <GoogleDocumentExportBar
+          title={buildTitle(tipo, tema)}
+          getHtml={() => resultadoHtml}
+          documentType={`material:${tipo}`}
+          isSlideDeck={tipo === "slides"}
+          returnTo="/dashboard"
+          compact
+          classroomMode="popover"
+          disabled={!resultadoHtml}
+        />
+        <button
+          type="button"
+          onClick={abrirNoEditor}
+          className="pl-hud-btn inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold"
+        >
+          <PlanifyIcon name="editor" className="h-4 w-4" />
+          Editor
+        </button>
+        <button
+          type="button"
+          onClick={() => void executarGeracao()}
+          disabled={loading}
+          className="pl-hud-btn-secondary inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          <PlanifyIcon name="spark" className="h-4 w-4" />
+          Regenerar
+        </button>
+        <MarketplacePublishButton
+          title={buildTitle(tipo, tema)}
+          getHtml={() => resultadoHtml}
+          tipoMaterial={mode.title}
+          tema={tema}
+          componente={componente}
+          etapa={etapa}
+          anoSerie={anoSerie}
+          disabled={!resultadoHtml}
+          label="Publicar na comunidade"
+          compact
+          className="pl-hud-btn-secondary inline-flex items-center gap-2 rounded-xl border border-fuchsia-200/80 bg-fuchsia-50 px-4 py-2.5 text-sm font-bold text-fuchsia-900 transition hover:bg-fuchsia-100"
+        />
+        <Link
+          href="/historico"
+          className="pl-hud-btn-secondary inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold"
+        >
+          <PlanifyIcon name="history" className="h-4 w-4" />
+          Histórico
+        </Link>
+      </ExportDock>
+    ) : null;
+
+  const ToolShell = studioMode ? ToolStudioShell : MaterialToolPageShell;
+
   const painelCriacao = modalAberto ? (
-    <MaterialToolPageShell
+      <ToolShell
       tool={mode}
       studioMode={studioMode}
       onBack={fecharPainel}
@@ -1536,8 +1827,16 @@ export function MateriaisClient({
       previewScrollAttr={studioMode}
       previewReady={Boolean(resultadoHtml)}
       previewLoading={loading}
+      {...(studioMode ? { legacyLayout, exportDock: studioExportDock } : {})}
       form={
         <form onSubmit={gerarMaterial} className="space-y-1 max-lg:pb-2">
+          {studioMode ? (
+            <MaterialStudioStepHeader
+              tool={mode}
+              hasResult={Boolean(resultadoHtml)}
+              isGenerating={loading}
+            />
+          ) : null}
           <div className="flex flex-wrap items-start justify-between gap-3">
             {studioMode ? (
               <p className="text-[10px] font-bold uppercase tracking-wide text-cyan-600">
@@ -1560,6 +1859,24 @@ export function MateriaisClient({
             <DailyGenerationsBar tipoMaterial={tipo} />
           </div>
 
+          {!isOnline && offlineCache ? (
+            <div
+              role="status"
+              className="mt-4 rounded-2xl border border-amber-300/80 bg-amber-50/90 p-4"
+            >
+              <p className="text-sm font-black text-amber-950">Último material offline</p>
+              <p className="mt-1 text-xs font-semibold text-amber-900">
+                Sem conexão — visualização somente leitura do último material gerado neste
+                dispositivo.
+              </p>
+              <p className="mt-2 text-xs font-bold text-amber-800">{offlineCache.title}</p>
+              <div
+                className="prose prose-sm mt-3 max-h-48 overflow-y-auto rounded-xl border border-amber-200/80 bg-white p-3"
+                dangerouslySetInnerHTML={{ __html: offlineCache.html }}
+              />
+            </div>
+          ) : null}
+
           {isRedacao ? (
             <p className="mt-3 rounded-xl border border-cyan-400/20 bg-cyan-50/60 px-4 py-3 text-sm font-semibold leading-6 text-cyan-900">
               Gera a proposta completa (tema, textos motivadores, comando e critérios)
@@ -1569,11 +1886,26 @@ export function MateriaisClient({
           ) : null}
 
           <div className="mt-5 grid gap-4 md:grid-cols-2">
-            <label>
-              <span className={HUD_SECTION_LABEL}>
+            <div className="md:col-span-2">
+              <MinhaTurmaChip
+                configured={teachingContext.configured}
+                applied={teachingContext.applied}
+                loading={teachingContext.loading}
+                turmaLabel={teachingContext.context.turma || school.turmaDisplayValue}
+                onApply={() =>
+                  teachingContext.applyToForm(applyTeachingContextFields)
+                }
+                onSave={saveTeachingContextDefaults}
+              />
+            </div>
+
+            <label htmlFor={fieldIdEtapa}>
+              <span className={HUD_SECTION_LABEL} id={`${fieldIdEtapa}-label`}>
                 Etapa de ensino
               </span>
               <select
+                id={fieldIdEtapa}
+                aria-labelledby={`${fieldIdEtapa}-label`}
                 value={etapa}
                 onChange={(event) =>
                   applyEducation({ etapa: event.target.value })
@@ -1588,11 +1920,13 @@ export function MateriaisClient({
               </select>
             </label>
 
-            <label>
-              <span className={HUD_SECTION_LABEL}>
+            <label htmlFor={fieldIdAnoSerie}>
+              <span className={HUD_SECTION_LABEL} id={`${fieldIdAnoSerie}-label`}>
                 Ano / série
               </span>
               <select
+                id={fieldIdAnoSerie}
+                aria-labelledby={`${fieldIdAnoSerie}-label`}
                 value={anoSerie}
                 onChange={(event) =>
                   applyEducation({ anoSerie: event.target.value })
@@ -1607,11 +1941,13 @@ export function MateriaisClient({
               </select>
             </label>
 
-            <label className="md:col-span-2">
-              <span className={HUD_SECTION_LABEL}>
+            <label className="md:col-span-2" htmlFor={fieldIdArea}>
+              <span className={HUD_SECTION_LABEL} id={`${fieldIdArea}-label`}>
                 Área do conhecimento
               </span>
               <select
+                id={fieldIdArea}
+                aria-labelledby={`${fieldIdArea}-label`}
                 value={areaConhecimento}
                 onChange={(event) =>
                   applyEducation({ areaConhecimento: event.target.value })
@@ -1626,11 +1962,13 @@ export function MateriaisClient({
               </select>
             </label>
 
-            <label className="md:col-span-2">
-              <span className={HUD_SECTION_LABEL}>
+            <label className="md:col-span-2" htmlFor={fieldIdComponente}>
+              <span className={HUD_SECTION_LABEL} id={`${fieldIdComponente}-label`}>
                 Disciplina / componente
               </span>
               <select
+                id={fieldIdComponente}
+                aria-labelledby={`${fieldIdComponente}-label`}
                 value={componente}
                 onChange={(event) =>
                   applyEducation({ componente: event.target.value })
@@ -1655,6 +1993,7 @@ export function MateriaisClient({
             etapa={etapa}
             anoSerie={anoSerie}
             componente={componente}
+            prefetchOnFocus={isExamTool}
           />
 
           {(loadingPedagogical || pedagogicalEntries.length > 0) ? (
@@ -1852,7 +2191,7 @@ export function MateriaisClient({
               selectedSkills={selectedBnccSkills}
               loading={loadingBncc}
               temaReady={suggestContextReady}
-              optional
+              optional={!isExamTool}
               onSuggest={() => void sugerirHabilidadesBncc()}
               onToggleSkill={toggleBnccSkill}
               onSelectGroup={selectBnccGroup}
@@ -1878,11 +2217,13 @@ export function MateriaisClient({
               ) : null}
             </label>
 
-            <label>
-              <span className={HUD_SECTION_LABEL}>
+            <label htmlFor={fieldIdDificuldade}>
+              <span className={HUD_SECTION_LABEL} id={`${fieldIdDificuldade}-label`}>
                 Dificuldade
               </span>
               <select
+                id={fieldIdDificuldade}
+                aria-labelledby={`${fieldIdDificuldade}-label`}
                 value={dificuldade}
                 onChange={(event) =>
                   setDificuldade(event.target.value as Dificuldade)
@@ -1915,13 +2256,17 @@ export function MateriaisClient({
                 </select>
               </label>
             ) : isExamTool ? (
-              <div>
-                <span className={HUD_SECTION_LABEL}>Quantidade</span>
+              <div role="group" aria-labelledby={`${fieldIdQuantidade}-label`}>
+                <span className={HUD_SECTION_LABEL} id={`${fieldIdQuantidade}-label`}>
+                  Quantidade
+                </span>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {quantityPresets.map((preset) => (
                     <button
                       key={preset.value}
                       type="button"
+                      aria-pressed={quantidade === preset.value}
+                      aria-label={`${preset.label.replace(/\s.*/, "")} questões`}
                       onClick={() => setQuantidade(preset.value)}
                       className={
                         quantidade === preset.value
@@ -1935,11 +2280,13 @@ export function MateriaisClient({
                 </div>
               </div>
             ) : (
-              <label>
-                <span className={HUD_SECTION_LABEL}>
+              <label htmlFor={fieldIdQuantidade}>
+                <span className={HUD_SECTION_LABEL} id={`${fieldIdQuantidade}-label`}>
                   {isRedacao ? "Estrutura da proposta" : "Quantidade"}
                 </span>
                 <select
+                  id={fieldIdQuantidade}
+                  aria-labelledby={`${fieldIdQuantidade}-label`}
                   value={quantidade}
                   onChange={(event) => setQuantidade(event.target.value)}
                   className={SELECT_FIELD_CLASS}
@@ -2212,6 +2559,16 @@ export function MateriaisClient({
               {generationSummary ? (
                 <MaterialGenerationSummaryPanel summary={generationSummary} />
               ) : null}
+              {showFastDraftBanner ? (
+                <aside className="mb-4 rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-950">
+                  <p className="font-black">Rascunho rápido</p>
+                  <p className="mt-1 font-semibold leading-6">
+                    Gerado no modo rápido para você revisar em segundos. Antes de exportar
+                    para a turma, use &quot;Elevar qualidade&quot; se o score estiver abaixo de{" "}
+                    {UNIFIED_ELEVATE_BANNER_THRESHOLD}.
+                  </p>
+                </aside>
+              ) : null}
               {typeof qualityScore === "number" ? (
                 <MaterialQualityScoreBar
                   score={qualityScore}
@@ -2252,7 +2609,7 @@ export function MateriaisClient({
                     <p className="text-xs font-bold text-slate-500">
                       Origem:{" "}
                       <span className="inline-flex rounded-full border border-cyan-200 bg-cyan-50 px-2.5 py-0.5 text-[11px] font-black uppercase tracking-wide text-cyan-800">
-                        {pipelineGeracao}
+                        {pipelineDisplayLabel}
                       </span>
                     </p>
                   ) : null}
@@ -2308,7 +2665,7 @@ export function MateriaisClient({
                   onError={setErro}
                 />
               ) : null}
-              {tipo === "slides" ? (
+              {tipo === "slides" && !useStudioExportDock ? (
                 <aside className="mb-4 rounded-xl border border-cyan-400/20 bg-gradient-to-r from-cyan-50/80 to-emerald-50/60 px-4 py-3">
                   <p className="text-sm font-bold text-cyan-900">
                     Abrir no Google Apresentações
@@ -2339,6 +2696,7 @@ export function MateriaisClient({
                   </div>
                 </aside>
               ) : null}
+              {!useStudioExportDock ? (
               <div className="mb-4 flex flex-wrap justify-end gap-2">
                 <button
                   type="button"
@@ -2386,6 +2744,7 @@ export function MateriaisClient({
                   Histórico
                 </Link>
               </div>
+              ) : null}
               <MaterialTypedPreview html={resultadoHtml} tipoMaterial={tipo} />
             </div>
           ) : (

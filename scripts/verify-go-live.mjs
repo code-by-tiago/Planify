@@ -40,6 +40,14 @@ if (proxy.includes("/comunidade") && proxy.includes("allowGracePass")) {
   fail("proxy.ts incompleto (comunidade/grace)");
 }
 
+for (const route of ["/aula-completa", "/correcao", "/banco-questoes"]) {
+  if (proxy.includes(`"${route}"`)) {
+    ok(`proxy protege ${route}`);
+  } else {
+    fail(`proxy.ts não protege ${route}`);
+  }
+}
+
 if (!read("src/proxy.ts").includes("127.0.0.1:7616")) {
   ok("sem telemetria debug no proxy");
 } else {

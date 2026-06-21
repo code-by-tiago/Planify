@@ -135,6 +135,14 @@ export async function prepareGenerationRequest<TPayload>(
         `suas ${daily.limit} gerações profundas`,
       );
 
+      logOperationalEvent({
+        eventType: "daily_quota_blocked",
+        toolTipo: tipo,
+        ok: false,
+        errorCode: "daily_limit_reached",
+        metadata: { used: daily.used, limit: daily.limit },
+      });
+
       return {
         ok: false,
         response: NextResponse.json(
@@ -177,6 +185,19 @@ export async function prepareGenerationRequest<TPayload>(
           402,
           { meta: { balance: spend.balance, cost: spend.cost } },
         ),
+      };
+    }
+
+    if (spend.status === "unavailable") {
+      if (chargedDeepDaily) {
+        await refundDeepGeneration(user.id);
+      }
+
+      return {
+        ok: false,
+        response: jsonGenerationError("server_error", spend.message, 503, {
+          retryable: true,
+        }),
       };
     }
 

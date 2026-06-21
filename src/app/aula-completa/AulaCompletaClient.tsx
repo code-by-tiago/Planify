@@ -13,7 +13,7 @@ import { GenerationCostHint } from "@/components/credits/GenerationCostHint";
 import { DailyGenerationsBar } from "@/components/credits/DailyGenerationsBar";
 import { MaterialTypedPreview } from "@/components/materiais/preview/MaterialTypedPreview";
 import { MaterialPreviewSkeleton } from "@/components/materiais/MaterialPreviewSkeleton";
-import { MaterialToolPageShell } from "@/components/pro/MaterialToolPageShell";
+import { ToolStudioShell } from "@/components/studio/ToolStudioShell";
 import { SwipeTabPanel } from "@/components/pro/SwipeTabPanel";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { PlanifyOwlGenerationCoach } from "@/components/pro/PlanifyOwlGenerationCoach";
@@ -402,9 +402,8 @@ export function AulaCompletaClient({
   );
 
   const painelCriacao = modalAberto ? (
-    <MaterialToolPageShell
+    <ToolStudioShell
       tool={tool}
-      studioMode={studioMode}
       onBack={fecharPainel}
       backLabel={studioMode ? "Início" : "Catálogo"}
       formScrollAttr={studioMode}

@@ -23,6 +23,10 @@ type OperationalStats = {
     total: number;
     failureRate: number;
   }>;
+  totalEvents: number;
+  totalFailures: number;
+  overallFailureRate: number;
+  rate429: number;
 };
 
 type PedagogicalStats = {
@@ -128,6 +132,71 @@ export function AdminQualidadePanel() {
         <p className="text-sm font-semibold text-slate-500">Carregando telemetria...</p>
       ) : stats ? (
         <>
+          <div className="rounded-[2rem] border border-indigo-200 bg-gradient-to-br from-indigo-50 to-white p-6">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="text-sm font-black uppercase tracking-[0.25em] text-indigo-600">
+                  Saúde IA
+                </p>
+                <p className="mt-1 text-xs font-semibold text-slate-500">
+                  Telemetria agregada · sem segredos de ambiente
+                </p>
+              </div>
+              <a
+                href="/api/admin/site-health"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded-full border border-indigo-200 bg-white px-3 py-1.5 text-xs font-black text-indigo-700 transition hover:border-indigo-400"
+              >
+                JSON saúde do site ↗
+              </a>
+            </div>
+
+            <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              {[
+                {
+                  label: "Gerações",
+                  value: String(stats.total),
+                  detail: window === "24h" ? "últimas 24h" : "período selecionado",
+                },
+                {
+                  label: "Taxa falha",
+                  value:
+                    operational && operational.totalEvents > 0
+                      ? `${operational.overallFailureRate}%`
+                      : "—",
+                  detail: operational
+                    ? `${operational.totalFailures}/${operational.totalEvents} eventos`
+                    : "sem operational_events",
+                },
+                {
+                  label: "Cota diária",
+                  value: `${stats.dailyQuotaRate}%`,
+                  detail: "gerações que consumiram slot Pro",
+                },
+                {
+                  label: "429 / cota",
+                  value:
+                    operational && operational.totalEvents > 0
+                      ? `${operational.rate429}%`
+                      : "—",
+                  detail: "bloqueios daily_limit_reached",
+                },
+              ].map((metric) => (
+                <div
+                  key={metric.label}
+                  className="rounded-xl border border-indigo-100 bg-white/80 p-4"
+                >
+                  <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+                    {metric.label}
+                  </p>
+                  <p className="mt-2 text-2xl font-black text-slate-950">{metric.value}</p>
+                  <p className="mt-1 text-xs font-bold text-indigo-700">{metric.detail}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
           {pedagogical ? (
             <>
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">

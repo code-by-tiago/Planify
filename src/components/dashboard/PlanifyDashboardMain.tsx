@@ -1,13 +1,14 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import type { ReactNode } from "react";
+import { type ReactNode } from "react";
 import { ComunidadeDashboardRouter } from "@/components/community/docente/ComunidadeDashboardRouter";
+import { TeachySectionHub } from "@/components/teachy-layout";
 import TeachyStudioHome from "@/components/dashboard/TeachyStudioHome";
 import { TeachyMateriaisStudio } from "@/components/dashboard/TeachyMateriaisStudio";
 import { PlanifyWorkspaceProvider } from "@/components/pro/planify-workspace-context";
 import type { DashboardSectionId } from "@/lib/pro/dashboardViews";
-import type { PlanifyToolId } from "@/lib/pro/planifyTools";
+import type { PlanifyToolId, ToolCategoryId } from "@/lib/pro/planifyTools";
 
 function PanelLoading() {
   return (
@@ -88,12 +89,20 @@ const DirectorPanelClient = dynamic(
   { ssr: false, loading: PanelLoading },
 );
 
+function EmbeddedSection({ children }: { children: ReactNode }) {
+  return (
+    <PlanifyWorkspaceProvider embeddedInDashboard>
+      <div className="pf-scope flex h-full min-h-0 w-full flex-col overflow-hidden">
+        {children}
+      </div>
+    </PlanifyWorkspaceProvider>
+  );
+}
+
 function SectionPanel({ children }: { children: ReactNode }) {
   return (
     <PlanifyWorkspaceProvider embeddedInDashboard>
-      <div className="pl-hud-board flex h-full min-h-0 w-full flex-col overflow-hidden bg-[var(--planify-canvas)]">
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">{children}</div>
-      </div>
+      <TeachySectionHub singleColumn>{children}</TeachySectionHub>
     </PlanifyWorkspaceProvider>
   );
 }
@@ -102,9 +111,11 @@ type PlanifyDashboardMainProps = {
   toolId: PlanifyToolId | null;
   sectionId: DashboardSectionId | null;
   initialTopic: string;
+  initialCategory?: ToolCategoryId | null;
   onTopicChange: (topic: string) => void;
   onSelectTool: (toolId: PlanifyToolId) => void;
   onSelectSection: (sectionId: DashboardSectionId) => void;
+  onSelectCategory?: (category: ToolCategoryId) => void;
   onClosePanel: () => void;
 };
 
@@ -112,19 +123,19 @@ export function PlanifyDashboardMain({
   toolId,
   sectionId,
   initialTopic,
+  initialCategory = null,
   onTopicChange,
   onSelectTool,
   onSelectSection,
+  onSelectCategory,
   onClosePanel,
 }: PlanifyDashboardMainProps) {
   if (toolId) {
     if (toolId === "inclusao") {
       return (
         <PlanifyWorkspaceProvider embeddedInDashboard>
-          <div className="planify-hud planify-materiais-studio flex h-full min-h-0 w-full flex-col overflow-hidden bg-[var(--planify-canvas)]">
-            <div className="min-h-0 flex-1 overflow-hidden">
-              <InclusaoClient studioMode onStudioClose={onClosePanel} />
-            </div>
+          <div className="pf-scope flex h-full min-h-0 w-full flex-col overflow-hidden">
+            <InclusaoClient studioMode onStudioClose={onClosePanel} />
           </div>
         </PlanifyWorkspaceProvider>
       );
@@ -133,14 +144,12 @@ export function PlanifyDashboardMain({
     if (toolId === "aula-completa") {
       return (
         <PlanifyWorkspaceProvider embeddedInDashboard>
-          <div className="planify-hud planify-materiais-studio flex h-full min-h-0 w-full flex-col overflow-hidden bg-[var(--planify-canvas)]">
-            <div className="min-h-0 flex-1 overflow-hidden">
-              <AulaCompletaClient
-                studioMode
-                onStudioClose={onClosePanel}
-                initialTema={initialTopic}
-              />
-            </div>
+          <div className="pf-scope flex h-full min-h-0 w-full flex-col overflow-hidden">
+            <AulaCompletaClient
+              studioMode
+              onStudioClose={onClosePanel}
+              initialTema={initialTopic}
+            />
           </div>
         </PlanifyWorkspaceProvider>
       );
@@ -149,10 +158,8 @@ export function PlanifyDashboardMain({
     if (toolId === "correcao-ia") {
       return (
         <PlanifyWorkspaceProvider embeddedInDashboard>
-          <div className="planify-hud planify-materiais-studio flex h-full min-h-0 w-full flex-col overflow-hidden bg-[var(--planify-canvas)]">
-            <div className="min-h-0 flex-1 overflow-hidden">
-              <CorrecaoClient studioMode onStudioClose={onClosePanel} />
-            </div>
+          <div className="pf-scope flex h-full min-h-0 w-full flex-col overflow-hidden">
+            <CorrecaoClient studioMode onStudioClose={onClosePanel} />
           </div>
         </PlanifyWorkspaceProvider>
       );
@@ -170,33 +177,33 @@ export function PlanifyDashboardMain({
 
   if (sectionId === "planejamentos") {
     return (
-      <SectionPanel>
+      <EmbeddedSection>
         <PlanejamentosClient />
-      </SectionPanel>
+      </EmbeddedSection>
     );
   }
 
   if (sectionId === "banco-questoes") {
     return (
-      <SectionPanel>
+      <EmbeddedSection>
         <BancoQuestoesClient />
-      </SectionPanel>
+      </EmbeddedSection>
     );
   }
 
   if (sectionId === "editor") {
     return (
-      <SectionPanel>
+      <EmbeddedSection>
         <EditorClient embedded />
-      </SectionPanel>
+      </EmbeddedSection>
     );
   }
 
   if (sectionId === "historico") {
     return (
-      <SectionPanel>
+      <EmbeddedSection>
         <HistoricoClient />
-      </SectionPanel>
+      </EmbeddedSection>
     );
   }
 
@@ -237,7 +244,9 @@ export function PlanifyDashboardMain({
       onSelectTool={onSelectTool}
       onSelectSection={onSelectSection}
       initialTopic={initialTopic}
+      initialCategory={initialCategory}
       onTopicChange={onTopicChange}
+      onSelectCategory={onSelectCategory}
     />
   );
 }

@@ -215,7 +215,7 @@ const payload: OfficialPlanningPayload = {
         conteudo: "Brasil colonial e escravidão",
         trimestre: 1,
         numeroAula: 1,
-        periodos: 4,
+        periodos: 12,
         aulaInicio: 1,
         aulaFim: 4,
         habilidades: [
@@ -243,19 +243,47 @@ const buffer = buildOfficialPlanningDocx(payload);
 const text = normalizeSearch(readZipDocxText(buffer));
 
 const requiredSnippets = [
-  "tempo, memoria, cultura e sociedade",
+  "brasil: colonia, escravidao, independencia e republica",
   "brasil colonial e escravidao",
   "ef05hi01",
-  "compreender a formacao da sociedade colonial brasileira",
-  "contextualizacao historica",
-  "caderno, fichas impressas",
-  "projetor",
-  "livro didatico",
-  "1. contextualizacao do tema",
-  "registros escritos",
-  "rubrica de participacao",
-  "semana 1 (4 periodos)",
+  "identificar os processos de formacao das culturas e dos povos",
+  "contextualizacao do tema",
+  "semana 1 data:",
+  "semana 2 data:",
+  "semana 3 data:",
+  "trabalho em grupo",
+  "atividade em duplas",
+  "atividades integradoras",
 ];
+
+const forbiddenPlaceholders = [
+  "[de acordo com a matriz",
+  "[descreva aqui",
+  "[descreva os instrumentos",
+  "[indique os projetos",
+  "[data de inicio",
+];
+
+const leftover = forbiddenPlaceholders.filter((snippet) => text.includes(snippet));
+
+if (leftover.length > 0) {
+  console.error("Falha: placeholders do modelo ainda presentes no DOCX:", leftover);
+  process.exit(1);
+}
+
+if (!text.includes("rubrica de participacao") && !text.includes("avaliacao formativa")) {
+  console.error("Falha: instrumentos de avaliação não preenchidos no DOCX trimestral.");
+  process.exit(1);
+}
+
+if (
+  !text.includes("integracao entre os conteudos") &&
+  !text.includes("projetos e integracao") &&
+  !text.includes("atividades integradoras")
+) {
+  console.error("Falha: projetos interdisciplinares não preenchidos no DOCX trimestral.");
+  process.exit(1);
+}
 
 const missing = requiredSnippets.filter((snippet) => !text.includes(snippet));
 

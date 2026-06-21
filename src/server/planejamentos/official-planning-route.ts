@@ -60,6 +60,10 @@ export async function handleOfficialPlanningDocxGet() {
           anual: "data/modelos-oficiais/modelo-anual.docx",
           trimestral: "data/modelos-oficiais/modelo-trimestral.docx",
         },
+        referencias: {
+          anualPreenchido: "data/modelos-oficiais/referencias/anual-preenchido.docx",
+          trimestralModelo: "data/modelos-oficiais/referencias/trimestral-modelo.docx",
+        },
       },
     },
     { status: 200 },

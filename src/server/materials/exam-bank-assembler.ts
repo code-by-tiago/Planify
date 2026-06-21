@@ -329,18 +329,25 @@ async function finalizeExamAssembly(
   let issues = getEngineOutputIssues(request, estrutura);
 
   if (issues.length && repairIfNeeded) {
-    const { regenerateWeakExamQuestions } = await import("./exam-questions-retry");
-    const repaired = await regenerateWeakExamQuestions(input, estrutura);
-    return {
-      ok: true,
-      html: repaired.html,
-      estrutura: repaired.estrutura,
-      pipeline: pipeline === "bank-selected" ? "bank-selected" : "bank-hybrid",
-      qualityScore: repaired.qualityScore,
-      qualityIssues: repaired.qualityIssues,
-      alertas,
-      bankQuestionIds,
-    };
+    try {
+      const { regenerateWeakExamQuestions } = await import("./exam-questions-retry");
+      const repaired = await regenerateWeakExamQuestions(input, estrutura);
+      return {
+        ok: true,
+        html: repaired.html,
+        estrutura: repaired.estrutura,
+        pipeline: pipeline === "bank-selected" ? "bank-selected" : "bank-hybrid",
+        qualityScore: repaired.qualityScore,
+        qualityIssues: repaired.qualityIssues,
+        alertas,
+        bankQuestionIds,
+      };
+    } catch (error) {
+      console.warn(
+        "[exam-bank-assembler] weak question repair failed:",
+        error instanceof Error ? error.message : error,
+      );
+    }
   }
 
   const html = buildMaterialEngineHtmlFromStructure(input, estrutura);
@@ -487,7 +494,7 @@ export async function tryAssembleExamFromBank(
     pipeline,
     alertas,
     usedIds,
-    !iaFilled,
+    request.elevarQualidade && !iaFilled,
   );
 }
 

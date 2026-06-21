@@ -11,8 +11,9 @@ const links: {
 }[] = [
   { id: "inicio", label: "Início", icon: "home" },
   { id: "planejamentos", label: "Planejamentos", icon: "clipboard" },
+  { id: "banco-questoes", label: "Banco", icon: "library" },
   { id: "editor", label: "Editor", icon: "editor" },
-  { id: "historico", label: "Meus materiais", icon: "history" },
+  { id: "historico", label: "Materiais", icon: "history" },
   { id: "biblioteca", label: "Biblioteca", icon: "library" },
   { id: "marketplace", label: "Comunidade", icon: "market" },
 ];

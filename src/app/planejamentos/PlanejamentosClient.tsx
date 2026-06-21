@@ -1,11 +1,7 @@
 "use client";
 
-import { DailyGenerationsBar } from "@/components/credits/DailyGenerationsBar";
-import { GenerationCostHint } from "@/components/credits/GenerationCostHint";
 import { MaterialPreviewSkeleton } from "@/components/materiais/MaterialPreviewSkeleton";
 import { MaterialQualityScoreBar } from "@/components/materiais/MaterialQualityScoreBar";
-import { PLANNING_DEEP_GENERATION_TYPE } from "@/lib/ai/material-generation-policy";
-import { getClientCreditCost } from "@/lib/credits/credit-costs";
 import {
   dispatchCreditsChangedIfNeeded,
   formatGenerationError,
@@ -15,9 +11,15 @@ import { MarketplacePublishButton } from "@/components/marketplace/MarketplacePu
 import { PlanifyOwlGenerationCoach } from "@/components/pro/PlanifyOwlGenerationCoach";
 import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
 import { useSchoolClasses } from "@/hooks/useSchoolClasses";
+import { useTeacherTeachingContext } from "@/hooks/useTeacherTeachingContext";
+import { MinhaTurmaChip } from "@/components/teacher/MinhaTurmaChip";
 import { TurmaCombobox } from "@/components/school/TurmaCombobox";
 import { PlanifyPageHero } from "@/components/pro/PlanifyPageHero";
 import { usePlanifyWorkspace } from "@/components/pro/planify-workspace-context";
+import { TeachyToolStudioPage } from "@/components/teachy-layout";
+import { ExportDock } from "@/components/studio/ExportDock";
+import { PlanifyOwlMark } from "@/components/pro/PlanifyOwlMark";
+import { useRouter } from "next/navigation";
 import {
   HUD_FIELD_CLASS,
   HUD_SCROLLABLE_TEXTAREA_CLASS,
@@ -54,7 +56,12 @@ import {
   PlanningWizardStepper,
   type PlanningWizardStep,
 } from "@/components/planejamentos/PlanningWizardStepper";
+import { PlanningJourneyStrip } from "@/components/planejamentos/PlanningJourneyStrip";
 import { buildOfficialPlanningPayloadFromGeneration } from "@/lib/planejamentos/planning-google-export-payload";
+import {
+  assembleClientPlanningPackage,
+  resolveBundleActiveIndex,
+} from "@/lib/planejamentos/planning-package-assembler";
 import {
   buildTrimestralPlansFromAnnual,
   trimestralCargaHorariaLabel,
@@ -62,7 +69,7 @@ import {
 } from "@/lib/planejamentos/planning-trimestral-from-annual";
 import { useBnccEducationOptions } from "@/hooks/useBnccEducationOptions";
 import type { MaterialEducationFields } from "@/lib/educacao/education-options";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { splitTopicLines } from "@/lib/bncc/split-topic-lines";
 import { TemaCombobox } from "@/components/bncc/TemaCombobox";
 import type { BnccTemaAutocompleteSuggestion } from "@/lib/bncc/bncc-tema-autocomplete";
@@ -295,10 +302,6 @@ const PACOTE_TRIMESTRAL_OPTIONS: Array<{
   { value: "1", label: "Planejamento anual + 1º trimestre" },
   { value: "2", label: "Planejamento anual + 2º trimestre" },
   { value: "3", label: "Planejamento anual + 3º trimestre" },
-  {
-    value: "todos",
-    label: "Planejamento anual + 1º, 2º e 3º trimestres juntos",
-  },
 ];
 
 function normalizeSkill(skill: any, fallbackConteudo = ""): BnccSkill {
@@ -391,7 +394,17 @@ function saveAnnualMatrixSnapshot(form: FormState, planning: GeneratedPlanning) 
 
 export function PlanejamentosClient() {
   const { embeddedInDashboard } = usePlanifyWorkspace();
+  const router = useRouter();
   const school = useSchoolClasses();
+  const teachingContext = useTeacherTeachingContext();
+  const autoAppliedTeachingContextRef = useRef(false);
+  const fieldIdEscola = useId();
+  const fieldIdProfessor = useId();
+  const fieldIdEtapa = useId();
+  const fieldIdAnoSerie = useId();
+  const fieldIdArea = useId();
+  const fieldIdComponente = useId();
+  const fieldIdConteudos = useId();
   const [form, setForm] = useState<FormState>(initialForm);
   const [temaBusca, setTemaBusca] = useState("");
   const [groups, setGroups] = useState<BnccGroup[]>([]);
@@ -482,9 +495,75 @@ export function PlanejamentosClient() {
       invalidateGenerated();
       setStatus("Aguardando nova sugestão");
       setError("");
+      teachingContext.resetApplied();
     },
-    [applyBnccEducation],
+    [applyBnccEducation, teachingContext],
   );
+
+  const applyTeachingContextFields = useCallback(
+    (fields: {
+      etapa: string;
+      anoSerie: string;
+      areaConhecimento: string;
+      componente: string;
+      turma: string;
+      classId: string | null;
+      observacoesTurma: string;
+    }) => {
+      applyEducationFields({
+        etapa: fields.etapa,
+        anoSerie: fields.anoSerie,
+        areaConhecimento: fields.areaConhecimento,
+        componente: fields.componente,
+      });
+      if (fields.turma) {
+        school.setTurmaInput(fields.turma);
+      } else if (fields.classId) {
+        school.setClassId(fields.classId);
+      }
+      if (fields.observacoesTurma && !form.observacoes.trim()) {
+        setForm((current) => ({
+          ...current,
+          observacoes: fields.observacoesTurma,
+        }));
+      }
+    },
+    [applyEducationFields, form.observacoes, school],
+  );
+
+  const currentTeachingFields = useCallback(
+    () => ({
+      etapa: form.etapa,
+      anoSerie: form.anoSerie,
+      areaConhecimento: form.areaConhecimento,
+      componente: form.componenteCurricular,
+      turma: school.turmaDisplayValue,
+      classId: school.classId,
+      observacoesTurma: form.observacoes,
+    }),
+    [
+      form.anoSerie,
+      form.areaConhecimento,
+      form.componenteCurricular,
+      form.etapa,
+      form.observacoes,
+      school.classId,
+      school.turmaDisplayValue,
+    ],
+  );
+
+  const saveTeachingContextDefaults = useCallback(() => {
+    teachingContext.saveCurrentAsDefault(currentTeachingFields());
+  }, [currentTeachingFields, teachingContext]);
+
+  useEffect(() => {
+    if (teachingContext.loading || autoAppliedTeachingContextRef.current) return;
+    if (!teachingContext.configured) return;
+
+    autoAppliedTeachingContextRef.current = true;
+    teachingContext.applyToForm(applyTeachingContextFields);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- auto-apply once on mount
+  }, [teachingContext.loading, teachingContext.configured]);
 
   const stats = useMemo(
     () => ({
@@ -521,27 +600,21 @@ export function PlanejamentosClient() {
 
   const syncTrimestralPlansFromAnnual = useCallback(
     (annual: GeneratedPlanning | null, nextForm: FormState) => {
-      if (
-        !annual ||
-        nextForm.tipoPlanejamento !== "anual" ||
-        nextForm.pacoteTrimestralAnual === "nenhum"
-      ) {
+      if (!annual || nextForm.tipoPlanejamento !== "anual") {
         setGeneratedTrimestralPlans(null);
         setPreviewMatrizKey("anual");
         return;
       }
 
-      const trimestres = pacoteTrimestralAnualToTrimestres(nextForm.pacoteTrimestralAnual);
+      const snapshot = assembleClientPlanningPackage(annual, nextForm.pacoteTrimestralAnual);
 
-      if (!trimestres.length) {
+      if (!snapshot.trimestres.length) {
         setGeneratedTrimestralPlans(null);
         setPreviewMatrizKey("anual");
         return;
       }
 
-      setGeneratedTrimestralPlans(
-        buildTrimestralPlansFromAnnual(annual, trimestres),
-      );
+      setGeneratedTrimestralPlans(snapshot.trimestrais);
     },
     [],
   );
@@ -1006,6 +1079,8 @@ export function PlanejamentosClient() {
     if (loadingPlan) return;
 
     setError("");
+    setErrorCta(null);
+    setErrorRetryable(false);
 
     const conteudosText = form.conteudos.trim();
 
@@ -1020,11 +1095,11 @@ export function PlanejamentosClient() {
     }
 
     setLoadingPlan(true);
-    setStatus("Gerando matriz pedagógica com IA...");
+    setStatus("Gerando planejamento com IA...");
 
     const idempotencyKey = crypto.randomUUID();
 
-    try {
+    const runGeneration = async (useBnccMode: boolean) => {
       const turma = school.turmaPayload;
       if (turma.className) {
         await school.rememberPersonalClass(turma.className);
@@ -1034,10 +1109,21 @@ export function PlanejamentosClient() {
         ...buildBasePayload(),
         conteudos: conteudosText,
         idempotencyKey,
+        ...(useBnccMode
+          ? {
+              modoMatrizBncc: true as const,
+              trimestresNoPacote:
+                form.tipoPlanejamento === "anual"
+                  ? pacoteTrimestralAnualToTrimestres(form.pacoteTrimestralAnual)
+                  : [],
+            }
+          : {}),
       };
       const data = await requestPlanningGeneration(payload);
 
-      window.dispatchEvent(new Event("planify:credits-changed"));
+      if (!useBnccMode) {
+        window.dispatchEvent(new Event("planify:credits-changed"));
+      }
 
       const serverMaterialId =
         typeof data.materialId === "string" && data.materialId.trim()
@@ -1045,14 +1131,21 @@ export function PlanejamentosClient() {
           : undefined;
 
       const planning = data.planejamento as GeneratedPlanning;
-      const trimestresSelecionados =
-        form.tipoPlanejamento === "anual"
-          ? pacoteTrimestralAnualToTrimestres(form.pacoteTrimestralAnual)
-          : [];
-      const trimestralPlans =
-        trimestresSelecionados.length > 0
-          ? buildTrimestralPlansFromAnnual(planning, trimestresSelecionados)
+      const serverPackage =
+        data.package &&
+        typeof data.package === "object" &&
+        data.package !== null &&
+        !Array.isArray(data.package)
+          ? (data.package as ReturnType<typeof assembleClientPlanningPackage>)
           : null;
+      const packageSnapshot =
+        serverPackage ??
+        assembleClientPlanningPackage(
+          planning,
+          form.tipoPlanejamento === "anual" ? form.pacoteTrimestralAnual : "nenhum",
+        );
+      const trimestresSelecionados = packageSnapshot.trimestres;
+      const trimestralPlans = packageSnapshot.trimestrais;
 
       setGeneratedPlanning(planning);
       setGeneratedTrimestralPlans(trimestralPlans);
@@ -1060,6 +1153,7 @@ export function PlanejamentosClient() {
       setUsedAI(Boolean(data.usedAI));
       const issues = applyQualityFromResponse(data);
       setLastGenerationPayload(payload);
+      saveTeachingContextDefaults();
 
       const qualityContext = {
         qualityScore:
@@ -1078,6 +1172,10 @@ export function PlanejamentosClient() {
               trimestralPlans,
             )
           : null;
+
+      const trimestresExtraidos = trimestresSelecionados
+        .map((value) => `${value}º`)
+        .join(", ");
 
       if (abrirEditorAutomatico) {
         if (bundleDocuments && bundleDocuments.length > 1) {
@@ -1112,24 +1210,36 @@ export function PlanejamentosClient() {
         });
       }
 
-      const trimestresExtraidos = trimestresSelecionados
-        .map((value) => `${value}º`)
-        .join(", ");
-
       setStatus(
-        data.usedAI
-          ? trimestresExtraidos
-            ? `Matriz anual gerada. Trimestrais ${trimestresExtraidos} extraídos e salvos no histórico.`
-            : "Matriz gerada e salva no histórico. Exporte ao Google Docs ou edite no editor."
-          : trimestresExtraidos
-            ? `Matriz anual (modo seguro). Trimestrais ${trimestresExtraidos} extraídos e salvos no histórico.`
-            : "Matriz em modo seguro salva no histórico. Exporte ao Google Docs ou edite no editor.",
+        trimestresExtraidos
+          ? `Planejamento gerado (anual + ${trimestresExtraidos}). Salvo no histórico.`
+          : "Planejamento gerado e salvo no histórico. Exporte ao Google Docs ou edite no editor.",
       );
+    };
 
-      if (data.warning) {
-        setError(data.warning);
-      }
+    try {
+      await runGeneration(false);
     } catch (err) {
+      const code =
+        err instanceof Error && "code" in err
+          ? String((err as Error & { code?: string }).code || "")
+          : "";
+
+      if (code === "daily_limit_reached") {
+        try {
+          await runGeneration(true);
+          return;
+        } catch (fallbackErr) {
+          dispatchCreditsChangedIfNeeded(fallbackErr);
+          const formatted = formatGenerationError(fallbackErr);
+          setError(formatted.message);
+          setErrorCta(formatted.cta ?? null);
+          setErrorRetryable(formatted.retryable);
+          setStatus("Erro ao gerar planejamento");
+          return;
+        }
+      }
+
       dispatchCreditsChangedIfNeeded(err);
       const formatted = formatGenerationError(err);
       setError(formatted.message);
@@ -1169,10 +1279,16 @@ export function PlanejamentosClient() {
 
       const planning = data.planejamento as GeneratedPlanning;
       setGeneratedPlanning(planning);
+      const elevatePackage = assembleClientPlanningPackage(
+        planning,
+        form.tipoPlanejamento === "anual" ? form.pacoteTrimestralAnual : "nenhum",
+      );
+      setGeneratedTrimestralPlans(elevatePackage.trimestrais);
       saveAnnualMatrixSnapshot(form, planning);
       setUsedAI(Boolean(data.usedAI));
       const issues = applyQualityFromResponse(data);
       setLastGenerationPayload(payload);
+      saveTeachingContextDefaults();
 
       persistGeneratedPlanning(planning, payload, {
         qualityScore: data.qualityScore,
@@ -1180,15 +1296,7 @@ export function PlanejamentosClient() {
         serverMaterialId,
       });
 
-      setStatus(
-        data.usedAI
-          ? "Matriz regenerada com foco em qualidade."
-          : "Matriz atualizada em modo seguro.",
-      );
-
-      if (data.warning) {
-        setError(data.warning);
-      }
+      setStatus("Planejamento atualizado com foco em qualidade.");
     } catch (err) {
       const code =
         err instanceof Error && "code" in err
@@ -1209,13 +1317,47 @@ export function PlanejamentosClient() {
   }
 
   function sendToEditor() {
-    if (!activePreviewPlanning) {
-      setError("Gere o planejamento com IA antes de enviar para o Editor.");
+    if (!generatedPlanning) {
+      setError("Gere o planejamento antes de enviar para o Editor.");
       return;
     }
 
+    const trimestresSelecionados =
+      form.tipoPlanejamento === "anual"
+        ? pacoteTrimestralAnualToTrimestres(form.pacoteTrimestralAnual)
+        : [];
+
+    if (
+      trimestresSelecionados.length > 0 &&
+      generatedTrimestralPlans &&
+      lastGenerationPayload
+    ) {
+      const trimestralPlans = generatedTrimestralPlans;
+      const qualityContext = {
+        qualityScore,
+        qualityIssues,
+        serverMaterialId: undefined,
+      };
+      const bundleDocuments = buildPlanningBundleDocuments(
+        generatedPlanning,
+        trimestresSelecionados,
+        lastGenerationPayload,
+        qualityContext,
+        trimestralPlans,
+      );
+
+      if (bundleDocuments.length > 1) {
+        const activeIndex = resolveBundleActiveIndex(
+          trimestresSelecionados,
+          previewMatrizKey,
+        );
+        openPlanningBundleInEditor(bundleDocuments, activeIndex);
+        return;
+      }
+    }
+
     const editorForm =
-      previewMatrizKey !== "anual"
+      previewMatrizKey !== "anual" && activePreviewPlanning
         ? {
             ...form,
             tipoPlanejamento: "trimestral" as const,
@@ -1224,33 +1366,184 @@ export function PlanejamentosClient() {
           }
         : form;
 
-    const html = buildPlanningEditorHtml(editorForm, activePreviewPlanning);
+    const planning = activePreviewPlanning || generatedPlanning;
+    const html = buildPlanningEditorHtml(editorForm, planning);
     openPlanningInEditor(
       html,
-      activePreviewPlanning.titulo || "Planejamento",
+      planning.titulo || "Planejamento",
       buildPlanningEditorMeta({
         tipoPlanejamento:
           previewMatrizKey === "anual" ? "anual" : "trimestral",
         trimestre:
           previewMatrizKey !== "anual" ? String(previewMatrizKey) : undefined,
       }),
-      activePreviewPlanning,
+      planning,
     );
   }
 
-  return (
-    <PlanifyWorkspacePane>
-      <div className="planify-hud pl-hud-hub mx-auto max-w-7xl space-y-5 px-3 sm:px-4 lg:px-0">
+  const matrizPreviewPanel = loadingPlan ? (
+    <>
+      <PlanifyOwlGenerationCoach
+        active={loadingPlan}
+        title="Gerando planejamento"
+        description="Montando matriz pedagógica com IA…"
+        toolId="planejamentos"
+      />
+      <MaterialPreviewSkeleton />
+    </>
+  ) : activePreviewPlanning ? (
+    <div className="space-y-4">
+      {usedAI === false ? (
+        <aside className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+          <p className="font-black">Matriz montada sem IA</p>
+          <p className="mt-1 font-semibold leading-6">
+            Revise conteúdos, habilidades e períodos antes de exportar.
+          </p>
+        </aside>
+      ) : null}
+      {typeof qualityScore === "number" ? (
+        <MaterialQualityScoreBar
+          score={qualityScore}
+          issues={qualityIssues}
+          compact
+          onElevate={
+            lastGenerationPayload && usedAI === true
+              ? () => void elevarQualidadePlanejamento()
+              : undefined
+          }
+          elevating={elevatingQuality}
+        />
+      ) : null}
+      {generatedTrimestralPlans && Object.keys(generatedTrimestralPlans).length > 0 ? (
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => setPreviewMatrizKey("anual")}
+            className={`rounded-xl px-4 py-2 text-xs font-black transition ${
+              previewMatrizKey === "anual"
+                ? "bg-emerald-600 text-white"
+                : "bg-white text-slate-700 hover:bg-emerald-100"
+            }`}
+          >
+            Anual
+          </button>
+          {Object.keys(generatedTrimestralPlans)
+            .map(Number)
+            .sort((a, b) => a - b)
+            .map((trimestre) => (
+              <button
+                key={`studio-preview-trim-${trimestre}`}
+                type="button"
+                onClick={() => setPreviewMatrizKey(trimestre as MatrizPreviewKey)}
+                className={`rounded-xl px-4 py-2 text-xs font-black transition ${
+                  previewMatrizKey === trimestre
+                    ? "bg-emerald-600 text-white"
+                    : "bg-white text-slate-700 hover:bg-emerald-100"
+                }`}
+              >
+                {trimestre}º trimestre
+              </button>
+            ))}
+        </div>
+      ) : null}
+      <p className="text-[10px] font-black uppercase tracking-[0.28em] text-emerald-600">
+        Matriz gerada
+      </p>
+      <h3 className="text-xl font-black text-slate-950 sm:text-2xl">
+        {activePreviewPlanning.titulo}
+      </h3>
+      <p className="text-sm leading-7 text-slate-600">{activePreviewPlanning.resumo}</p>
+      <div className="grid gap-2">
+        {activePreviewPlanning.conteudos.map((item: PlanningMatrixItem) => {
+          const numeroAula =
+            Number.isFinite(Number(item.numeroAula)) && Number(item.numeroAula) > 0
+              ? Number(item.numeroAula)
+              : item.aulaInicio;
+          const periodos =
+            Number.isFinite(Number(item.periodos)) && Number(item.periodos) > 0
+              ? Number(item.periodos)
+              : Math.max(1, item.aulaFim - item.aulaInicio + 1);
+          const periodosLabel = periodos === 1 ? "1 período" : `${periodos} período(s)`;
+
+          return (
+            <div
+              key={`studio-${item.conteudo}-${numeroAula}`}
+              className="rounded-2xl border border-slate-200/80 bg-white p-4"
+            >
+              <p className="font-black text-slate-950">{item.conteudo}</p>
+              <p className="mt-1 text-sm text-slate-500">
+                {Number(item.trimestre) >= 1 && Number(item.trimestre) <= 3
+                  ? `${item.trimestre}º trimestre · `
+                  : ""}
+                Aula {numeroAula} · {periodosLabel} · {item.habilidades.length} habilidade(s)
+              </p>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  ) : (
+    <div className="flex h-full min-h-[280px] flex-col items-center justify-center px-4 py-8 text-center">
+      <PlanifyOwlMark size={72} glow />
+      <p className="mt-4 text-[10px] font-bold uppercase tracking-wide text-cyan-600">
+        Pré-visualização
+      </p>
+      <h3 className="mt-2 text-xl font-extrabold text-slate-950">Matriz pedagógica</h3>
+      <p className="mt-2 max-w-sm text-sm font-semibold leading-6 text-slate-500">
+        Preencha os dados, sugira habilidades BNCC e gere o planejamento. A matriz aparece aqui.
+      </p>
+    </div>
+  );
+
+  const planningExportDock =
+    embeddedInDashboard && wizardStep === 3 && generatedPlanning ? (
+      <ExportDock statusMessage={status !== "Aguardando" ? status : null}>
+        <button
+          type="button"
+          onClick={sendToEditor}
+          className="pl-hud-btn-secondary rounded-xl px-4 py-2 text-sm font-semibold"
+        >
+          Editar no editor
+        </button>
+        {form.tipoPlanejamento === "trimestral" ? (
+          <PlanningOfficialExportBar
+            title={generatedPlanning.titulo || "Planejamento trimestral"}
+            form={form}
+            mode="trimestral"
+            trimestre={Number(form.trimestre || 1)}
+            matriz={generatedPlanning}
+            qualityScore={qualityScore}
+            qualityIssues={qualityIssues}
+            onStatus={(message) => setStatus(message)}
+          />
+        ) : (
+          <PlanningOfficialExportBar
+            title={generatedPlanning.titulo || "Planejamento anual"}
+            form={form}
+            mode="anual"
+            matriz={generatedPlanning}
+            qualityScore={qualityScore}
+            qualityIssues={qualityIssues}
+            onStatus={(message) => setStatus(message)}
+          />
+        )}
+      </ExportDock>
+    ) : null;
+
+  const planningWorkspace = (
+    <>
         {!embeddedInDashboard ? (
           <div className="pl-hud-page-hero overflow-hidden rounded-2xl border border-cyan-400/15">
             <PlanifyPageHero
               badge="Planejamentos"
               icon="clipboard"
-              title="BNCC → IA → Google Docs oficial"
-              description="Sugira habilidades por conteúdo, gere a matriz pedagógica com IA e exporte com os modelos oficiais anual/trimestral."
+              title="Planejamentos com IA"
+              description="Informe os conteúdos, selecione as habilidades BNCC e gere seu planejamento pronto para exportar nos modelos oficiais."
             />
           </div>
         ) : null}
+
+        <PlanningJourneyStrip wizardStep={wizardStep} />
 
         <PlanningWizardStepper
           step={wizardStep}
@@ -1267,7 +1560,7 @@ export function PlanejamentosClient() {
       <section className="space-y-6">
           {wizardStep < 3 ? (
           <>
-          <div className="pl-hud-glass rounded-2xl border border-cyan-400/20 p-5 sm:p-6">
+          <div className="pf-config-panel space-y-5">
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-600">
               Escolha o tipo
             </p>
@@ -1275,9 +1568,8 @@ export function PlanejamentosClient() {
               Planejamento anual ou trimestral
             </h2>
             <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-slate-600">
-              Informe os conteúdos, deixe a IA montar a matriz BNCC e exporte ao
-              Google Docs com os modelos oficiais. O trimestral usa a mesma base do
-              anual — sem retrabalho.
+              Informe os conteúdos, selecione as habilidades e gere o planejamento com IA.
+              Exporte ao Google Docs nos modelos oficiais — anual e trimestral na mesma base.
             </p>
             <div className="mt-5 grid gap-3 sm:grid-cols-2">
               <button
@@ -1335,17 +1627,51 @@ export function PlanejamentosClient() {
             </div>
 
             <div className="mt-8 grid gap-5 md:grid-cols-2">
-              <label className="grid gap-2">
-                <span className="text-sm font-bold text-slate-500">Escola</span>
-                <input value={form.escola} onChange={(event) => updateField("escola", event.target.value)} placeholder="Nome da escola" className={HUD_FIELD_CLASS} />
+              <div className="md:col-span-2">
+                <MinhaTurmaChip
+                  configured={teachingContext.configured}
+                  applied={teachingContext.applied}
+                  loading={teachingContext.loading}
+                  turmaLabel={teachingContext.context.turma || school.turmaDisplayValue}
+                  onApply={() =>
+                    teachingContext.applyToForm(applyTeachingContextFields)
+                  }
+                  onSave={saveTeachingContextDefaults}
+                />
+              </div>
+              <label className="grid gap-2" htmlFor={fieldIdEscola}>
+                <span className="text-sm font-bold text-slate-500" id={`${fieldIdEscola}-label`}>
+                  Escola
+                </span>
+                <input
+                  id={fieldIdEscola}
+                  aria-labelledby={`${fieldIdEscola}-label`}
+                  value={form.escola}
+                  onChange={(event) => updateField("escola", event.target.value)}
+                  placeholder="Nome da escola"
+                  className={HUD_FIELD_CLASS}
+                />
               </label>
-              <label className="grid gap-2">
-                <span className="text-sm font-bold text-slate-500">Professor</span>
-                <input value={form.professor} onChange={(event) => updateField("professor", event.target.value)} placeholder="Nome do professor" className={HUD_FIELD_CLASS} />
+              <label className="grid gap-2" htmlFor={fieldIdProfessor}>
+                <span className="text-sm font-bold text-slate-500" id={`${fieldIdProfessor}-label`}>
+                  Professor
+                </span>
+                <input
+                  id={fieldIdProfessor}
+                  aria-labelledby={`${fieldIdProfessor}-label`}
+                  value={form.professor}
+                  onChange={(event) => updateField("professor", event.target.value)}
+                  placeholder="Nome do professor"
+                  className={HUD_FIELD_CLASS}
+                />
               </label>
-              <label className="grid gap-2">
-                <span className="text-sm font-bold text-slate-500">Etapa</span>
+              <label className="grid gap-2" htmlFor={fieldIdEtapa}>
+                <span className="text-sm font-bold text-slate-500" id={`${fieldIdEtapa}-label`}>
+                  Etapa
+                </span>
                 <select
+                  id={fieldIdEtapa}
+                  aria-labelledby={`${fieldIdEtapa}-label`}
                   value={form.etapa}
                   onChange={(event) =>
                     applyEducationFields({ etapa: event.target.value })
@@ -1357,9 +1683,13 @@ export function PlanejamentosClient() {
                   ))}
                 </select>
               </label>
-              <label className="grid gap-2">
-                <span className="text-sm font-bold text-slate-500">Ano/Série</span>
+              <label className="grid gap-2" htmlFor={fieldIdAnoSerie}>
+                <span className="text-sm font-bold text-slate-500" id={`${fieldIdAnoSerie}-label`}>
+                  Ano/Série
+                </span>
                 <select
+                  id={fieldIdAnoSerie}
+                  aria-labelledby={`${fieldIdAnoSerie}-label`}
                   value={form.anoSerie}
                   onChange={(event) =>
                     applyEducationFields({ anoSerie: event.target.value })
@@ -1371,9 +1701,13 @@ export function PlanejamentosClient() {
                   ))}
                 </select>
               </label>
-              <label className="grid gap-2">
-                <span className="text-sm font-bold text-slate-500">Área do conhecimento</span>
+              <label className="grid gap-2" htmlFor={fieldIdArea}>
+                <span className="text-sm font-bold text-slate-500" id={`${fieldIdArea}-label`}>
+                  Área do conhecimento
+                </span>
                 <select
+                  id={fieldIdArea}
+                  aria-labelledby={`${fieldIdArea}-label`}
                   value={form.areaConhecimento}
                   onChange={(event) =>
                     applyEducationFields({ areaConhecimento: event.target.value })
@@ -1385,9 +1719,13 @@ export function PlanejamentosClient() {
                   ))}
                 </select>
               </label>
-              <label className="grid gap-2">
-                <span className="text-sm font-bold text-slate-500">Componente curricular</span>
+              <label className="grid gap-2" htmlFor={fieldIdComponente}>
+                <span className="text-sm font-bold text-slate-500" id={`${fieldIdComponente}-label`}>
+                  Componente curricular
+                </span>
                 <select
+                  id={fieldIdComponente}
+                  aria-labelledby={`${fieldIdComponente}-label`}
                   value={form.componenteCurricular}
                   onChange={(event) =>
                     applyEducationFields({ componente: event.target.value })
@@ -1429,8 +1767,9 @@ export function PlanejamentosClient() {
                   Extrair trimestres do anual
                 </legend>
                 <p className="mt-1 text-sm font-medium leading-6 text-slate-600">
-                  Após a IA montar o anual, os trimestres escolhidos serão extraídos da mesma
-                  matriz — mesmos conteúdos, habilidades e períodos, sem nova geração.
+                  Após montar o anual, os trimestres escolhidos são extraídos da mesma
+                  matriz — mesmos conteúdos, habilidades e períodos. Não consome créditos
+                  extras nem nova geração de IA.
                 </p>
 
                 <div className="mt-4 space-y-2">
@@ -1490,9 +1829,13 @@ export function PlanejamentosClient() {
                 componente={form.componenteCurricular}
               />
 
-              <label className="grid gap-2">
-                <span className="text-sm font-bold text-slate-500">Conteúdos</span>
+              <label className="grid gap-2" htmlFor={fieldIdConteudos}>
+                <span className="text-sm font-bold text-slate-500" id={`${fieldIdConteudos}-label`}>
+                  Conteúdos
+                </span>
                 <textarea
+                  id={fieldIdConteudos}
+                  aria-labelledby={`${fieldIdConteudos}-label`}
                   value={form.conteudos}
                   onChange={(event) => updateField("conteudos", event.target.value)}
                   rows={6}
@@ -1562,11 +1905,6 @@ export function PlanejamentosClient() {
               />
             ) : null}
 
-            <GenerationCostHint
-              creditCost={getClientCreditCost(PLANNING_DEEP_GENERATION_TYPE)}
-              className="mt-4"
-            />
-
             <label className="mt-6 flex cursor-pointer items-center gap-3 rounded-xl border border-cyan-400/20 bg-cyan-50/50 px-5 py-3">
               <input
                 type="checkbox"
@@ -1583,16 +1921,17 @@ export function PlanejamentosClient() {
               </span>
             </label>
 
-            <div className="mt-6">
-              <DailyGenerationsBar tipoMaterial={PLANNING_DEEP_GENERATION_TYPE} />
-            </div>
-
             <div className="mt-7 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
               <button type="button" onClick={suggestBncc} disabled={loadingBncc} className="pl-hud-btn-secondary rounded-xl px-5 py-3.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60">
                 {loadingBncc ? "Sugerindo BNCC..." : "1. Sugerir BNCC"}
               </button>
-              <button type="button" onClick={generatePlanning} disabled={loadingPlan} className="pl-hud-btn-generate rounded-full px-6 py-4 text-sm transition disabled:cursor-not-allowed">
-                {loadingPlan ? "Gerando com IA..." : "2. Gerar planejamento com IA"}
+              <button
+                type="button"
+                onClick={() => void generatePlanning()}
+                disabled={loadingPlan}
+                className="pl-hud-btn-generate rounded-full px-6 py-4 text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {loadingPlan ? "Gerando planejamento..." : "Gerar planejamento com IA"}
               </button>
               <button type="button" onClick={sendToEditor} disabled={!generatedPlanning} className="pl-hud-btn-secondary rounded-xl px-5 py-3.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50">
                 Editar no editor
@@ -1630,7 +1969,6 @@ export function PlanejamentosClient() {
               <div className="flex flex-wrap gap-2">
                 <Pill tone="cyan">{stats.sugeridas} sugeridas</Pill>
                 <Pill tone="emerald">{stats.selecionadas} selecionadas</Pill>
-                {usedAI !== null ? <Pill tone={usedAI ? "emerald" : "amber"}>{usedAI ? "IA usada" : "Modo seguro"}</Pill> : null}
               </div>
             </div>
 
@@ -1690,15 +2028,26 @@ export function PlanejamentosClient() {
               </div>
             )}
 
-            {activePreviewPlanning ? (
+            {activePreviewPlanning && !embeddedInDashboard ? (
               <div className="mt-7 rounded-[1.75rem] border border-emerald-200/80 bg-emerald-50/80 p-5">
+                {usedAI === false ? (
+                  <aside className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+                    <p className="font-black">Matriz montada sem IA</p>
+                    <p className="mt-1 font-semibold leading-6">
+                      A geração por IA não respondeu a tempo ou falhou. Usamos a matriz BNCC
+                      automática — revise conteúdos, habilidades e períodos antes de exportar.
+                      Gere novamente quando a IA estiver disponível ou use Elevar qualidade após
+                      uma geração completa.
+                    </p>
+                  </aside>
+                ) : null}
                 {typeof qualityScore === "number" ? (
                   <MaterialQualityScoreBar
                     score={qualityScore}
                     issues={qualityIssues}
                     compact
                     onElevate={
-                      lastGenerationPayload
+                      lastGenerationPayload && usedAI === true
                         ? () => void elevarQualidadePlanejamento()
                         : undefined
                     }
@@ -1775,7 +2124,7 @@ export function PlanejamentosClient() {
           </div>
           ) : null}
 
-          {wizardStep === 3 && generatedPlanning ? (
+          {wizardStep === 3 && generatedPlanning && !embeddedInDashboard ? (
             <div className="space-y-6">
               <div className="pl-hud-glass rounded-2xl border border-emerald-200/60 p-5 sm:p-6">
                 <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-emerald-600">
@@ -1906,13 +2255,21 @@ export function PlanejamentosClient() {
 
               {activePreviewPlanning ? (
                 <div className="pl-hud-glass rounded-2xl border border-emerald-200/50 p-5 sm:p-6">
+                  {usedAI === false ? (
+                    <aside className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+                      <p className="font-black">Matriz montada sem IA</p>
+                      <p className="mt-1 font-semibold leading-6">
+                        Revise a matriz BNCC automática antes de exportar o DOCX oficial.
+                      </p>
+                    </aside>
+                  ) : null}
                   {typeof qualityScore === "number" ? (
                     <MaterialQualityScoreBar
                       score={qualityScore}
                       issues={qualityIssues}
                       compact
                       onElevate={
-                        lastGenerationPayload
+                        lastGenerationPayload && usedAI === true
                           ? () => void elevarQualidadePlanejamento()
                           : undefined
                       }
@@ -1992,6 +2349,33 @@ export function PlanejamentosClient() {
             </div>
           ) : null}
         </section>
+    </>
+  );
+
+  if (embeddedInDashboard) {
+    return (
+      <TeachyToolStudioPage
+        icon="clipboard"
+        iconAccent="from-cyan-500 to-indigo-600"
+        title="Planejamentos com IA"
+        subtitle="Informe conteúdos, selecione habilidades BNCC e exporte nos modelos oficiais."
+        onBack={() => router.replace("/dashboard", { scroll: false })}
+        backLabel="Início"
+        form={planningWorkspace}
+        preview={matrizPreviewPanel}
+        exportDock={planningExportDock}
+        previewReady={Boolean(activePreviewPlanning)}
+        previewLoading={loadingPlan}
+        formScrollAttr
+        previewScrollAttr
+      />
+    );
+  }
+
+  return (
+    <PlanifyWorkspacePane>
+      <div className="planify-hud pl-hud-hub mx-auto max-w-7xl space-y-5 px-3 sm:px-4 lg:px-0">
+        {planningWorkspace}
       </div>
     </PlanifyWorkspacePane>
   );

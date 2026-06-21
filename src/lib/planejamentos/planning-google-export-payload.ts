@@ -6,6 +6,8 @@ const EDITOR_DOCUMENT_KEY = "planify_editor_document";
 
 type PlanningEditorRawMeta = PlanningEditorMeta & {
   matrizPlanejamento?: unknown;
+  turma?: string;
+  className?: string;
 };
 
 export type PlanningExportContext = {
@@ -170,7 +172,8 @@ export function buildOfficialPlanningPayloadFromEditorMeta(
     professor: generation?.professor || meta.professor,
     etapa: generation?.etapa || meta.etapa,
     anoSerie: generation?.anoSerie || meta.anoSerie,
-    turma: generation?.turma || generation?.className,
+    turma: generation?.turma || generation?.className || meta.turma,
+    className: generation?.className || generation?.turma || meta.className,
     areaConhecimento: generation?.areaConhecimento,
     componenteCurricular:
       generation?.componenteCurricular || meta.componente || "Componente",
@@ -198,12 +201,15 @@ export function buildOfficialPlanningPayloadFromGeneration(input: {
   professor?: string;
   etapa?: string;
   anoSerie?: string;
-  turma?: string;
   areaConhecimento?: string;
   componenteCurricular?: string;
   cargaHoraria?: string;
   trimestre?: string;
+  turma?: string;
+  className?: string;
   matrizPlanejamento: unknown;
+  trimestresExtraidos?: number[];
+  matrizesTrimestrais?: Record<string, unknown>;
   planifyQuality?: {
     qualityScore?: number | null;
     qualityIssues?: string[];
@@ -222,12 +228,19 @@ export function buildOfficialPlanningPayloadFromGeneration(input: {
     professor: input.professor,
     etapa: input.etapa,
     anoSerie: input.anoSerie,
-    turma: input.turma,
+    turma: input.turma || input.className,
+    className: input.className || input.turma,
     areaConhecimento: input.areaConhecimento,
     componenteCurricular: input.componenteCurricular,
     cargaHoraria: input.cargaHoraria,
     trimestre: input.trimestre,
     matrizPlanejamento: input.matrizPlanejamento,
+    ...(Array.isArray(input.trimestresExtraidos) && input.trimestresExtraidos.length > 0
+      ? { trimestresExtraidos: input.trimestresExtraidos }
+      : {}),
+    ...(input.matrizesTrimestrais && Object.keys(input.matrizesTrimestrais).length > 0
+      ? { matrizesTrimestrais: input.matrizesTrimestrais }
+      : {}),
     ...(typeof qualityScore === "number" || qualityIssues.length > 0
       ? {
           _planifyQualityScore:

@@ -15,6 +15,8 @@ type TemaComboboxProps = {
   anoSerie?: string;
   componente?: string;
   className?: string;
+  /** Prefetch temas BNCC do contexto ao focar (lista/prova). */
+  prefetchOnFocus?: boolean;
   onKeyDown?: (event: React.KeyboardEvent<HTMLInputElement>) => void;
 };
 
@@ -28,23 +30,28 @@ export function TemaCombobox({
   anoSerie,
   componente,
   className,
+  prefetchOnFocus = false,
   onKeyDown,
 }: TemaComboboxProps) {
   const listboxId = useId();
+  const inputId = useId();
+  const labelId = `${inputId}-label`;
   const rootRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
 
-  const { suggestions, loading, error, canSearch } = useBnccTemaAutocomplete({
-    query: value,
-    etapa,
-    anoSerie,
-    componente,
-    enabled: open,
-    debounceMs: 300,
-  });
+  const { suggestions, loading, error, canSearch, browseMode } =
+    useBnccTemaAutocomplete({
+      query: value,
+      etapa,
+      anoSerie,
+      componente,
+      enabled: open,
+      prefetchOnFocus,
+      debounceMs: 300,
+    });
 
-  const showPanel = open && (loading || error || canSearch);
+  const showPanel = open && (loading || error || canSearch || browseMode);
 
   useEffect(() => {
     function handlePointerDown(event: MouseEvent) {
@@ -116,9 +123,13 @@ export function TemaCombobox({
 
   return (
     <div ref={rootRef} className={className}>
-      <label className="block">
-        <span className={HUD_SECTION_LABEL}>{label}</span>
+      <label className="block" htmlFor={inputId}>
+        <span className={HUD_SECTION_LABEL} id={labelId}>
+          {label}
+        </span>
         <input
+          id={inputId}
+          aria-labelledby={labelId}
           value={value}
           onChange={(event) => {
             onChange(event.target.value);
@@ -145,7 +156,9 @@ export function TemaCombobox({
           >
             {loading ? (
               <li className="px-3 py-2 text-xs font-semibold text-slate-500">
-                Buscando temas BNCC…
+                {browseMode && !value.trim()
+                  ? "Carregando temas BNCC do contexto…"
+                  : "Buscando temas BNCC…"}
               </li>
             ) : error ? (
               <li className="px-3 py-2 text-xs font-semibold text-rose-700">
@@ -154,7 +167,9 @@ export function TemaCombobox({
             ) : suggestions.length === 0 ? (
               <li className="px-3 py-2 text-xs font-semibold text-slate-500">
                 {canSearch
-                  ? "Nenhum tema BNCC encontrado para este filtro."
+                  ? browseMode && !value.trim()
+                    ? "Nenhum tema BNCC encontrado para esta disciplina e série."
+                    : "Nenhum tema BNCC encontrado para este filtro."
                   : "Digite pelo menos 2 caracteres para ver sugestões BNCC."}
               </li>
             ) : (

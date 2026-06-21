@@ -72,16 +72,15 @@ export function PlanifyShellSidebar({
       window.removeEventListener("resize", onResize);
     };
   }, [open, onOpenChange]);
+
   const sidebarClass = isHud
-    ? "pl-sidebar pl-sidebar-hud"
-    : "pl-sidebar";
-  const brandBorder = isHud
-    ? "border-slate-200/80"
-    : "border-rose-100/50";
+    ? "pl-sidebar pl-sidebar-hud pl-sidebar-premium"
+    : "pl-sidebar pl-sidebar-premium";
+
   const footer = showUserFooter ? (
     <PlanifySidebarUser lumiHint={lumiHint} collapsed={collapsed} />
   ) : (
-    <div className="border-t border-slate-200/80 px-4 py-3 text-[11px] font-semibold text-slate-500">
+    <div className="border-t border-white/10 px-4 py-3 text-[11px] font-semibold opacity-70">
       {lumiHint}
     </div>
   );
@@ -93,13 +92,7 @@ export function PlanifyShellSidebar({
         onClick={onToggleCollapsed}
         aria-label={collapsed ? "Expandir menu" : "Recolher menu"}
         title={collapsed ? "Expandir menu" : "Recolher menu"}
-        className={[
-          "hidden lg:flex",
-          "mx-auto mb-2 h-9 w-9 shrink-0 items-center justify-center rounded-xl border transition",
-          isHud
-            ? "border-cyan-400/20 text-slate-300 hover:border-cyan-400/40 hover:bg-cyan-400/10 hover:text-white"
-            : "border-slate-200 text-slate-500 hover:border-slate-300 hover:bg-slate-50",
-        ].join(" ")}
+        className="pl-sidebar-collapse-btn hidden lg:flex"
       >
         <PlanifyIcon
           name="chevronRight"
@@ -109,11 +102,14 @@ export function PlanifyShellSidebar({
     ) : null;
 
   const brandBlock = (
-    <div className={`shrink-0 border-b ${brandBorder} px-4 py-4 ${collapsed ? "px-2 py-3" : ""}`}>
-      <PlanifyBrand href={brandHref} dark={isHud} compact={collapsed} hideTagline />
+    <div className={`pl-sidebar-brand shrink-0 ${collapsed ? "pl-sidebar-brand--collapsed" : ""}`}>
+      <div className="flex min-w-0 flex-1 items-center">
+        <PlanifyBrand href={brandHref} dark={isHud} compact={collapsed} hideTagline />
+      </div>
+      {collapseToggle}
       {!collapsed ? (
-        <p className={`mt-2 text-[11px] font-bold leading-snug ${isHud ? "text-slate-500" : "text-slate-500"}`}>
-          Coruja Planify · IA alinhada à BNCC
+        <p className="pl-sidebar-brand-tagline">
+          Planeje · Crie · Revise · Compartilhe
         </p>
       ) : null}
     </div>
@@ -126,47 +122,35 @@ export function PlanifyShellSidebar({
     .filter(Boolean)
     .join(" ");
 
+  const asideWidth = collapsed
+    ? "w-[4.5rem] min-w-[4.5rem] max-w-[4.5rem]"
+    : alwaysVisible
+      ? "w-[min(17.5rem,34vw)] min-w-[15rem]"
+      : "w-[17.5rem] min-w-[15rem]";
+
+  const desktopAside = (
+    <aside
+      aria-label="Menu lateral Planify"
+      className={[
+        asideClass,
+        "flex h-full min-h-0 shrink-0 flex-col border-r transition-[width] duration-200 ease-out",
+        asideWidth,
+        alwaysVisible ? "h-screen" : "hidden lg:flex",
+      ].join(" ")}
+    >
+      {brandBlock}
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">{children}</div>
+      <div className="pl-sidebar-footer shrink-0">{footer}</div>
+    </aside>
+  );
+
   if (alwaysVisible) {
-    return (
-      <aside
-        className={[
-          asideClass,
-          "flex h-screen shrink-0 flex-col border-r transition-[width] duration-200",
-          collapsed
-            ? "w-[4.5rem] min-w-[4.5rem] max-w-[4.5rem]"
-            : "w-[min(18rem,34vw)] min-w-[14.5rem]",
-        ].join(" ")}
-      >
-        {brandBlock}
-        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain">
-          {children}
-        </div>
-        <div className="shrink-0 border-t border-slate-200/60 bg-inherit px-2 py-2">
-          {collapseToggle}
-          {footer}
-        </div>
-      </aside>
-    );
+    return desktopAside;
   }
 
   return (
     <>
-      <aside
-        className={[
-          asideClass,
-          "hidden h-full min-h-0 shrink-0 flex-col border-r transition-[width] duration-200 lg:flex",
-          collapsed ? "w-[4.5rem] min-w-[4.5rem] max-w-[4.5rem]" : "w-72 min-w-[18rem]",
-        ].join(" ")}
-      >
-        {brandBlock}
-        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain">
-          {children}
-        </div>
-        <div className="shrink-0 border-t border-slate-200/60 bg-inherit px-2 py-2">
-          {collapseToggle}
-          {footer}
-        </div>
-      </aside>
+      {desktopAside}
 
       <AnimatePresence>
         {open ? (
@@ -179,36 +163,33 @@ export function PlanifyShellSidebar({
               exit="hidden"
               transition={{ duration: 0.2 }}
               className={`fixed inset-0 z-40 backdrop-blur-sm lg:hidden ${
-                isHud ? "bg-slate-950/50" : "bg-slate-950/40"
+                isHud ? "bg-slate-950/55" : "bg-slate-950/40"
               }`}
               onClick={() => onOpenChange?.(false)}
               aria-hidden="true"
             />
             <motion.aside
               key="drawer"
+              aria-label="Menu lateral Planify"
               initial={{ x: "-100%" }}
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
               transition={{ type: "spring", stiffness: 320, damping: 34 }}
-              className={`${sidebarClass} fixed inset-y-0 left-0 z-50 flex h-[100dvh] w-[min(300px,88vw)] max-w-[88vw] flex-col border-r shadow-2xl pb-[env(safe-area-inset-bottom)] lg:hidden`}
+              className={`${sidebarClass} fixed inset-y-0 left-0 z-50 flex h-[100dvh] w-[min(17.5rem,88vw)] max-w-[88vw] flex-col border-r shadow-2xl pb-[env(safe-area-inset-bottom)] lg:hidden`}
             >
-              <div
-                className={`flex shrink-0 items-center justify-between border-b ${brandBorder} px-4 py-4`}
-              >
-                <PlanifyBrand href={brandHref} />
+              <div className="pl-sidebar-brand flex shrink-0 items-center justify-between">
+                <PlanifyBrand href={brandHref} dark={isHud} />
                 <button
                   type="button"
                   onClick={() => onOpenChange?.(false)}
                   aria-label="Fechar menu"
-                  className="flex h-11 w-11 items-center justify-center rounded-xl text-slate-400 transition hover:bg-white/10"
+                  className="flex h-10 w-10 items-center justify-center rounded-lg text-slate-300 transition hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-400/60"
                 >
                   <PlanifyIcon name="close" className="h-5 w-5" />
                 </button>
               </div>
-              <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain">
-                {children}
-              </div>
-              <div className="shrink-0 border-t border-slate-200/60">{footer}</div>
+              <div className="flex min-h-0 flex-1 flex-col overflow-hidden">{children}</div>
+              <div className="pl-sidebar-footer shrink-0">{footer}</div>
             </motion.aside>
           </>
         ) : null}

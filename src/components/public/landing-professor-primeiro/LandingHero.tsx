@@ -1,50 +1,87 @@
 import Link from "next/link";
-import { LandingHeroVideo } from "./LandingHeroVideo";
+import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
+import { LandingHeroDashboardMock } from "./LandingHeroDashboardMock";
+import { LandingHeroFlowBar } from "./LandingHeroFlowBar";
+import { LandingHeroStatsBar } from "./LandingHeroStatsBar";
 import { ppBtnPrimary, ppBtnSecondary } from "./theme";
+
+const AVATAR_COLORS = ["#3B82F6", "#10B981", "#8B5CF6"];
 
 export function LandingHero() {
   return (
-    <section
-      id="professores"
-      className="relative scroll-mt-24 overflow-hidden px-5 pb-16 pt-10 sm:px-8 sm:pb-20 sm:pt-14"
-    >
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 hidden bg-[radial-gradient(ellipse_80%_60%_at_80%_15%,rgba(8,145,178,0.06),transparent_50%)] sm:block"
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 hidden opacity-40 bg-[radial-gradient(circle_at_25%_35%,rgba(8,145,178,0.05),transparent_40%),radial-gradient(circle_at_72%_28%,rgba(71,85,105,0.04),transparent_36%)] sm:block"
-      />
-
-      <div className="relative mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-2 lg:gap-16">
-        <div>
-          <span className="inline-flex items-center rounded-full border border-cyan-200 bg-cyan-50 px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-cyan-800">
-            Planejamento BNCC com IA
-          </span>
-
-          <h1 className="mt-6 font-[family-name:var(--font-display)] text-4xl font-extrabold leading-[1.08] tracking-tight text-slate-900 sm:text-5xl lg:text-[3.25rem]">
-            Planejamento BNCC{" "}
-            <span className="text-cyan-600">pronto em minutos.</span>
-          </h1>
-
-          <p className="mt-5 max-w-xl text-lg font-medium leading-8 text-slate-600">
-            Informe os conteúdos, aprove as habilidades BNCC sugeridas e gere planejamentos
-            anuais ou trimestrais completos, prontos para editar, exportar ou enviar.
-          </p>
-
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
-            <Link href="/planos" className={ppBtnPrimary}>
-              Criar meu planejamento BNCC
+    <>
+      <section id="professores" className="pf-marketing-hero pf-marketing-hero--light scroll-mt-24">
+        <div className="pf-marketing-hero-inner pf-marketing-hero-inner--split">
+          <div className="pf-marketing-hero-copy">
+            <Link href="#professores" className="pf-marketing-hero-back-label">
+              ← IR PARA PROFESSORES
             </Link>
-            <Link href="/#recursos" className={ppBtnSecondary}>
-              Ver como funciona
-            </Link>
+
+            <h1 className="pf-marketing-hero-title pf-marketing-hero-title--light">
+              <span className="pf-marketing-hero-title-line">Menos tempo</span>
+              <span className="pf-marketing-hero-title-line">planejando.</span>
+              <span className="pf-marketing-hero-title-line pf-marketing-hero-title-accent">
+                Mais qualidade
+              </span>
+              <span className="pf-marketing-hero-title-line pf-marketing-hero-title-accent">
+                ensinando.
+              </span>
+            </h1>
+
+            <p className="pf-marketing-lead pf-marketing-lead--hero mt-6">
+              Planejamentos alinhados à BNCC, materiais didáticos, correção com IA, editor
+              integrado e envio para o Google Classroom.
+            </p>
+
+            <div className="pf-marketing-hero-actions mt-8 flex flex-wrap gap-3">
+              <Link href="/cadastro" className={`${ppBtnPrimary} gap-2 px-6 py-3`}>
+                Começar agora — grátis
+              </Link>
+              <Link
+                href="/#demo"
+                className={`${ppBtnSecondary} pf-marketing-hero-outline gap-2 px-6 py-3`}
+              >
+                <PlanifyIcon name="presentation" className="h-4 w-4" />
+                Ver demonstração
+              </Link>
+            </div>
+
+            <div className="pf-marketing-hero-rating mt-8 flex flex-wrap items-center gap-3">
+              <div className="pf-marketing-hero-avatars" aria-hidden>
+                {AVATAR_COLORS.map((color, index) => (
+                  <span
+                    key={color}
+                    className="pf-marketing-hero-avatar"
+                    style={{
+                      backgroundColor: color,
+                      zIndex: AVATAR_COLORS.length - index,
+                    }}
+                  />
+                ))}
+              </div>
+              <div className="pf-marketing-hero-stars" aria-label="Avaliação 4,9 de 5">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <span key={i} className="pf-marketing-hero-star">
+                    ★
+                  </span>
+                ))}
+              </div>
+              <span className="pf-marketing-hero-rating-score">4,9 de 5</span>
+              <span className="pf-marketing-hero-rating-divider" aria-hidden>
+                ·
+              </span>
+              <span className="pf-marketing-hero-rating-count">+2.500 professores recomendam</span>
+            </div>
+          </div>
+
+          <div className="pf-marketing-hero-visual">
+            <LandingHeroFlowBar />
+            <LandingHeroDashboardMock />
           </div>
         </div>
 
-        <LandingHeroVideo />
-      </div>
-    </section>
+        <LandingHeroStatsBar />
+      </section>
+    </>
   );
 }

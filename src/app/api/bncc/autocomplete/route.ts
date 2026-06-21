@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireApiAuthenticated } from "@/server/auth/api-access";
-import { searchBnccTemaSuggestions } from "@/server/bncc/bncc-tema-autocomplete";
+import {
+  browseBnccTemaSuggestions,
+  searchBnccTemaSuggestions,
+} from "@/server/bncc/bncc-tema-autocomplete";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -24,11 +27,16 @@ export async function GET(request: NextRequest) {
   );
 
   try {
-    const suggestions = await searchBnccTemaSuggestions(
-      query,
-      { etapa, anoSerie, componente },
-      limit,
-    );
+    const trimmedQuery = query.trim();
+    const context = { etapa, anoSerie, componente };
+    const canBrowse =
+      trimmedQuery.length < 2 &&
+      Boolean(componente?.trim()) &&
+      Boolean((anoSerie || etapa)?.trim());
+
+    const suggestions = canBrowse
+      ? await browseBnccTemaSuggestions(context, limit)
+      : await searchBnccTemaSuggestions(trimmedQuery, context, limit);
 
     return NextResponse.json({
       success: true,

@@ -36,7 +36,7 @@ export function ComunidadeDocenteDiscussionCard({
   const { author } = discussion;
 
   return (
-    <article className="group rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm transition hover:border-slate-300 hover:shadow-md sm:p-5">
+    <article className="pf-docente-card group rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm transition hover:border-cyan-200/80 hover:shadow-md sm:p-5">
       <div className="flex gap-3">
         <CommunityAuthorAvatar
           userId={author.id}

@@ -26,7 +26,7 @@ export const billingPlans: BillingPlan[] = [
       "Geradores com IA, planejamentos BNCC, editor e exportação — tudo em um plano.",
     priceLabel: "R$ 24,90",
     recurrenceLabel: "/ mês",
-    creditsLabel: "Uso ilimitado",
+    creditsLabel: "5 gerações profundas/dia",
     creditsPerCycle: 800,
     envPriceKeys: [
       "STRIPE_PRICE_PRO_MONTHLY",
@@ -38,6 +38,7 @@ export const billingPlans: BillingPlan[] = [
     highlighted: true,
     features: [
       "Todas as ferramentas com IA",
+      "5 gerações profundas por dia (listas, provas, slides, planejamentos)",
       "Planejamentos BNCC",
       "Editor, biblioteca e exportação",
       "Comunidade docente",

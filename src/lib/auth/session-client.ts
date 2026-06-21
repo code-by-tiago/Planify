@@ -1,4 +1,5 @@
 import { getSupabaseBrowserClient } from "../supabase/browser-client";
+import { readReferralCookie } from "@/lib/referral/referral-client";
 import {
   checkPremiumAccess,
   clearPremiumAccessCookie,
@@ -400,6 +401,7 @@ export async function activateAccountAfterPayment(params: {
       email,
       password,
       sessionId: params.sessionId || undefined,
+      referralCode: readReferralCookie() || undefined,
     }),
   });
 

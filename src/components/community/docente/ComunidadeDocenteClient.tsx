@@ -952,7 +952,7 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
   return (
     <div
       className={[
-        "flex min-h-0 flex-col bg-[#f8fafc]",
+        "pf-scope pf-docente-feed flex min-h-0 flex-col bg-[var(--pf-canvas)]",
         embedded ? "h-full" : "h-[100dvh]",
       ].join(" ")}
     >

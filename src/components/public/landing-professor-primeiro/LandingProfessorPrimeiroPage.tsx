@@ -1,31 +1,39 @@
+import { PlanifyMarketingLayout } from "@/components/planify-layout";
 import { LandingComparison } from "./LandingComparison";
-import { LandingCreateBlock } from "./LandingCreateBlock";
+import { LandingComunidadeDocente } from "./LandingComunidadeDocente";
+import { LandingCorrecaoSection } from "./LandingCorrecaoSection";
+import { LandingEditorSection } from "./LandingEditorSection";
 import { LandingFinalCta } from "./LandingFinalCta";
-import { LandingFooter } from "./LandingFooter";
-import { LandingHeader } from "./LandingHeader";
 import { LandingHero } from "./LandingHero";
+import { LandingDemoVideoSection } from "./LandingDemoVideoSection";
 import { LandingHowItWorks } from "./LandingHowItWorks";
-import { LandingResources } from "./LandingResources";
-import { LandingSolutions } from "./LandingSolutions";
-import { LandingStats } from "./LandingStats";
-import { LandingTools } from "./LandingTools";
-import { LandingTrustBar } from "./LandingTrustBar";
+import { LandingJourneySection } from "./LandingJourneySection";
+import { LandingMateriaisDidaticos } from "./LandingMateriaisDidaticos";
+import { LandingPlanejamentosBncc } from "./LandingPlanejamentosBncc";
+import { LandingSocialProof } from "./LandingSocialProof";
+import { LandingTestimonials } from "./LandingTestimonials";
 
+/**
+ * Homepage pública — jornada pedagógica premium:
+ * Hero → Vídeo demo → Prova social → Como funciona → Antes/depois → Jornada →
+ * Planeje/Crie/Revise/Compartilhe → Comunidade → Depoimentos → CTA
+ */
 export function LandingProfessorPrimeiroPage() {
   return (
-    <>
-      <LandingHeader />
+    <PlanifyMarketingLayout>
       <LandingHero />
-      <LandingTrustBar />
-      <LandingStats />
-      <LandingCreateBlock />
-      <LandingTools />
-      <LandingResources />
-      <LandingSolutions />
+      <LandingDemoVideoSection />
+      <LandingSocialProof />
       <LandingHowItWorks />
       <LandingComparison />
+      <LandingJourneySection />
+      <LandingPlanejamentosBncc />
+      <LandingMateriaisDidaticos />
+      <LandingEditorSection />
+      <LandingCorrecaoSection />
+      <LandingComunidadeDocente />
+      <LandingTestimonials />
       <LandingFinalCta />
-      <LandingFooter />
-    </>
+    </PlanifyMarketingLayout>
   );
 }

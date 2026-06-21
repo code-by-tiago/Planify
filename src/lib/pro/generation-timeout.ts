@@ -4,6 +4,12 @@ export const GENERATION_CLIENT_TIMEOUT_MS = 280_000;
 /** Teto de trabalho no servidor antes de entregar o melhor resultado possível. */
 export const GENERATION_SERVER_DEADLINE_MS = 235_000;
 
+/** Geração padrão (sem Elevar qualidade) — entrega rápida. */
+export const GENERATION_FAST_DEADLINE_MS = 90_000;
+
+/** Timeout por chamada Gemini no fluxo rápido. */
+export const MATERIAL_GEMINI_CALL_TIMEOUT_MS = 55_000;
+
 /** Teto total para pacote aula completa (vários materiais em sequência). */
 export const BUNDLE_SERVER_DEADLINE_MS = 275_000;
 

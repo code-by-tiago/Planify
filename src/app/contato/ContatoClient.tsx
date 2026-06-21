@@ -62,6 +62,7 @@ const inputClass = ppInput;
 export function ContatoClient() {
   const [form, setForm] = useState<FormState>(initialForm);
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [status, setStatus] = useState<{
     type: "info" | "success" | "warning";
     message: string;
@@ -89,18 +90,56 @@ export function ContatoClient() {
     return null;
   }
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const error = validateForm();
     if (error) {
       setStatus({ type: "warning", message: error });
       return;
     }
-    setSubmitted(true);
-    setStatus({
-      type: "success",
-      message: "Solicitação registrada visualmente. O envio real será conectado em etapa futura.",
-    });
+
+    setSubmitting(true);
+    setStatus(null);
+
+    try {
+      const response = await fetch("/api/contato", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      const data = (await response.json().catch(() => ({}))) as {
+        ok?: boolean;
+        message?: string;
+        error?: { message?: string };
+      };
+
+      if (!response.ok || !data.ok) {
+        setSubmitted(false);
+        setStatus({
+          type: "warning",
+          message:
+            data.error?.message ||
+            "Não foi possível enviar agora. Tente novamente em instantes.",
+        });
+        return;
+      }
+
+      setSubmitted(true);
+      setStatus({
+        type: "success",
+        message:
+          data.message ||
+          "Solicitação recebida. Responderemos pelo e-mail informado em até 2 dias úteis.",
+      });
+    } catch {
+      setSubmitted(false);
+      setStatus({
+        type: "warning",
+        message: "Falha de conexão. Verifique sua internet e tente novamente.",
+      });
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   function statusClass() {
@@ -240,8 +279,8 @@ export function ContatoClient() {
               </div>
 
               <div className="flex flex-col gap-3 sm:flex-row">
-                <button type="submit" className={ppBtnPrimary}>
-                  Enviar solicitação
+                <button type="submit" className={ppBtnPrimary} disabled={submitting}>
+                  {submitting ? "Enviando…" : "Enviar solicitação"}
                 </button>
                 <Link href="/dashboard" className={ppBtnSecondary}>
                   Voltar ao painel

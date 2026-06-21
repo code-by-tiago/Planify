@@ -154,7 +154,7 @@ function safeFilename(value: string) {
 
 function sanitizeTrimestresExtraidos(value: unknown): number[] {
   if (!Array.isArray(value)) {
-    return [1, 2, 3];
+    return [1];
   }
 
   const normalized = value
@@ -162,7 +162,7 @@ function sanitizeTrimestresExtraidos(value: unknown): number[] {
     .filter((item) => Number.isFinite(item) && item >= 1 && item <= 3);
 
   const unique = Array.from(new Set(normalized)).sort((a, b) => a - b);
-  return unique.length ? unique : [1, 2, 3];
+  return unique.length ? [unique[0]] : [1];
 }
 
 function createDocument(
@@ -232,8 +232,7 @@ export async function POST(request: NextRequest) {
         ? payload.componenteCurricular
         : "planejamentos";
     const year = typeof payload.anoSerie === "string" ? payload.anoSerie : "planify";
-    const trimLabel =
-      trimestres.length === 3 ? "trimestrais" : `trim-${trimestres.join("-")}`;
+    const trimLabel = `trim-${trimestres[0]}`;
     const filename = `${safeFilename(`planify-anual-${trimLabel}-${component}-${year}`)}.zip`;
 
     return new NextResponse(zipBody, {

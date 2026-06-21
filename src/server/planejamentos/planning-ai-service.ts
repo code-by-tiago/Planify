@@ -7,6 +7,15 @@ import {
 } from "@/lib/materiais/unified-quality-gate";
 import { generateGeminiJSON } from "../ai/gemini-client";
 import {
+  buildSpanishPlanningRules,
+  matchBnccSkillsToContent,
+} from "./planning-bncc-skills";
+import {
+  generatePlanningFromBncc as runBnccPlanningEngine,
+  runPlanningMatrixEngine,
+  assembleTrimestralPackageAsync,
+} from "./planning-matrix-engine";
+import {
   buildPlanningQualityRetryNote,
   computePlanningQualityScore,
   getPlanningOutputIssues,
@@ -53,6 +62,20 @@ export type PlanningAiPayload = {
   turma?: string | null;
   discipline?: string | null;
   disciplina?: string | null;
+  /** Monta a matriz só com conteúdos + habilidades BNCC — sem Gemini e sem cota profunda. */
+  modoMatrizBncc?: boolean;
+  /** Trimestres a extrair do anual no motor BNCC (1–3). */
+  trimestresNoPacote?: number[];
+};
+
+export type TrimestralSemanaPlan = {
+  semana: 1 | 2 | 3 | 4 | 5;
+  microtemas: string[];
+  metodologia: string;
+  materiais: string;
+  etapas: string;
+  evidencias: string;
+  instrumentos: string;
 };
 
 export type PlanningMatrixItem = {
@@ -70,6 +93,9 @@ export type PlanningMatrixItem = {
   etapas?: string;
   avaliacao: string;
   evidencias: string;
+  /** Preenchido pelo pipeline trimestral (etapas 1–7) antes do DOCX. */
+  semanas?: TrimestralSemanaPlan[];
+  funcaoAula?: string;
 };
 
 export type PlanningAiResult = {
@@ -78,6 +104,7 @@ export type PlanningAiResult = {
   warning?: string;
   qualityScore?: number;
   qualityIssues?: string[];
+  package?: import("./planning-matrix-engine").PlanningMatrixPackage;
   planejamento: {
     tipoPlanejamento: string;
     titulo: string;
@@ -104,103 +131,7 @@ function normalizeSearch(value: unknown): string {
     .trim();
 }
 
-const SPANISH_EM_PLANNING_SKILLS: PlanningSkill[] = [
-  {
-    codigo: "EM13LGG102",
-    descricao:
-      "Analisar visões de mundo, conflitos de interesse, preconceitos e ideologias presentes nos discursos veiculados nas diferentes mídias, ampliando suas possibilidades de explicação, interpretação e intervenção crítica da/na realidade.",
-    componente: "Língua Espanhola",
-    area: "Linguagens e suas Tecnologias",
-    etapa: "Ensino Médio",
-    anoSerie: "1ª a 3ª série",
-  },
-  {
-    codigo: "EM13LGG301",
-    descricao:
-      "Participar de processos de produção individual e colaborativa em diferentes linguagens (artísticas, corporais e verbais), levando em conta suas formas e seus funcionamentos, para produzir sentidos em diferentes contextos.",
-    componente: "Língua Espanhola",
-    area: "Linguagens e suas Tecnologias",
-    etapa: "Ensino Médio",
-    anoSerie: "1ª a 3ª série",
-  },
-  {
-    codigo: "EM13LGG401",
-    descricao:
-      "Analisar criticamente textos de modo a compreender e caracterizar as línguas como fenômeno (geo)político, histórico, social, cultural, variável, heterogêneo e sensível aos contextos de uso.",
-    componente: "Língua Espanhola",
-    area: "Linguagens e suas Tecnologias",
-    etapa: "Ensino Médio",
-    anoSerie: "1ª a 3ª série",
-  },
-];
-
-function isSpanishHighSchoolPayload(payload?: PlanningAiPayload): boolean {
-  if (!payload) {
-    return false;
-  }
-
-  const component = normalizeSearch(payload.componenteCurricular);
-  const stage = normalizeSearch(`${payload.etapa || ""} ${payload.anoSerie || ""}`);
-
-  const isSpanish =
-    component.includes("lingua espanhola") ||
-    component.includes("espanhol") ||
-    component.includes("espanola") ||
-    component.includes("lengua espanola");
-  const isHighSchool =
-    stage.includes("ensino medio") ||
-    stage.includes("medio") ||
-    stage.includes("1 serie") ||
-    stage.includes("1a serie") ||
-    stage.includes("1ª serie") ||
-    stage.includes("2 serie") ||
-    stage.includes("2a serie") ||
-    stage.includes("2ª serie") ||
-    stage.includes("3 serie") ||
-    stage.includes("3a serie") ||
-    stage.includes("3ª serie");
-
-  return isSpanish && isHighSchool;
-}
-
-function spanishHighSchoolSkillCodesForContent(content: string): string[] {
-  const normalized = normalizeSearch(content);
-  const codes: string[] = [];
-
-  if (/gramatic|gramatica|verbo|verbos|conjug|tempo verbal|presente|preterito|pretérito|futuro|imperativo|subjuntivo|ser\b|estar\b|tener\b|haber\b|gustar|pronome|pronombres|artigo|articulos|artículo|substantivo|sustantivo|adjetivo|adverbio|preposi|conect|vocab|vocabulario|vocabulário|lexico|léxico|numerais|numeros|alfabeto|pronuncia|fonetica|fonética/.test(normalized)) {
-    codes.push("EM13LGG102");
-  }
-
-  if (/leitura|leer|lectura|interpret|compreens|comprension|compreensão|texto|textos|escrita|escribir|redacao|redação|producao textual|produção textual|oralidade|oral|fala|escuta|dialogo|diálogo|conversa|entrevista|genero textual|gênero textual|carta|email|e-mail|noticia|notícia|resenha|relato|roteiro|argument|opiniao|opinião/.test(normalized)) {
-    codes.push("EM13LGG301");
-  }
-
-  if (/cultura|cultural|hispan|hispânico|hispanico|hispano|paises|países|pais|país|america latina|américa latina|latino|espanha|mexico|méxico|argentina|uruguai|paraguai|chile|colombia|colômbia|peru|bolivia|bolívia|literatura|literario|literário|poesia|poema|conto|romance|autor|autores|obra|obras|diversidade|identidade|festividade|celebracao|celebração|dia de los muertos|mundo global|global|variedade|variacao|variação|sotaque|dialeto/.test(normalized)) {
-    codes.push("EM13LGG401");
-  }
-
-  return Array.from(new Set(codes.length > 0 ? codes : ["EM13LGG401"])).slice(0, 2);
-}
-
-function buildSpanishPlanningRules(payload: PlanningAiPayload): string {
-  if (!isSpanishHighSchoolPayload(payload)) {
-    return "";
-  }
-
-  return `
-REGRAS ESPECÍFICAS PARA LÍNGUA ESPANHOLA NO ENSINO MÉDIO:
-- A BNCC não possui código específico de Língua Espanhola no Ensino Médio.
-- Use somente habilidades EM13LGG da área de Linguagens e suas Tecnologias já selecionadas.
-- Não repita automaticamente as mesmas 3 habilidades em todos os conteúdos.
-- Cada conteúdo deve receber no máximo 1 ou 2 habilidades.
-- Gramática, verbos e vocabulário: priorize EM13LGG102.
-- Leitura, interpretação, oralidade e escrita: priorize EM13LGG301.
-- Cultura hispânica, literatura, países, diversidade e variação linguística: priorize EM13LGG401.
-`.trim();
-}
-
 const splitConteudos = splitPlanningConteudos;
-
 
 function parseNumber(value: unknown, fallback: number): number {
   const match = normalizeText(value).match(/\d+/);
@@ -266,62 +197,7 @@ function skillsForContent(
   payload?: PlanningAiPayload,
   contentIndex = 0,
 ): PlanningSkill[] {
-  if (isSpanishHighSchoolPayload(payload)) {
-    const codes = spanishHighSchoolSkillCodesForContent(content);
-    const sourceSkills = skills.length > 0 ? skills : SPANISH_EM_PLANNING_SKILLS;
-    const selected = codes
-      .map((code) =>
-        sourceSkills.find((skill) => skill.codigo.toUpperCase() === code) ||
-        SPANISH_EM_PLANNING_SKILLS.find((skill) => skill.codigo === code),
-      )
-      .filter((skill): skill is PlanningSkill => Boolean(skill))
-      .map((skill) => ({ ...skill, conteudo: content }));
-
-    if (selected.length > 0) {
-      return selected.slice(0, 2);
-    }
-  }
-
-  const normalized = normalizeSearch(content);
-
-  const byContent = skills.filter((skill) => {
-    const skillContent = normalizeSearch(skill.conteudo);
-
-    return (
-      skillContent &&
-      (skillContent.includes(normalized) || normalized.includes(skillContent))
-    );
-  });
-
-  if (byContent.length > 0) {
-    return byContent.slice(0, 2).map((skill) => ({ ...skill, conteudo: content }));
-  }
-
-  if (skills.length === 0) {
-    return [];
-  }
-
-  const perContent = 2;
-  const distributed: PlanningSkill[] = [];
-  const seen = new Set<string>();
-
-  for (let offset = 0; offset < skills.length && distributed.length < perContent; offset += 1) {
-    const skill = skills[(contentIndex * perContent + offset) % skills.length];
-    const key = normalizeSearch(skill.codigo || skill.descricao || "");
-
-    if (!key || seen.has(key)) {
-      continue;
-    }
-
-    seen.add(key);
-    distributed.push({ ...skill, conteudo: content });
-  }
-
-  if (distributed.length > 0) {
-    return distributed;
-  }
-
-  return [{ ...skills[contentIndex % skills.length], conteudo: content }];
+  return matchBnccSkillsToContent(content, skills, payload, contentIndex);
 }
 
 function resolveMatrixSkills(
@@ -363,69 +239,23 @@ function resolveMatrixSkills(
   return fallback ? [{ ...fallback, conteudo }] : [];
 }
 
+export { generatePlanningFromBncc } from "./planning-matrix-engine";
+
 function fallbackPlanning(payload: PlanningAiPayload, warning?: string): PlanningAiResult {
-  const conteudos = splitConteudos(payload.conteudos);
-  const tipo = getTipo(payload);
-  const safeConteudos = conteudos.length > 0 ? conteudos : ["Conteúdo central"];
-  const trimestreSelecionado = getTrimestre(payload);
-  const chunkSize = Math.max(1, Math.ceil(safeConteudos.length / 3));
-  const skills = Array.isArray(payload.habilidadesSelecionadas)
-    ? payload.habilidadesSelecionadas.map(normalizeSkill)
+  const trimestres = Array.isArray(payload.trimestresNoPacote)
+    ? payload.trimestresNoPacote
     : [];
-
-  const draftMatrix = safeConteudos.map((conteudo, index) => {
-    const trimestre =
-      tipo === "trimestral"
-        ? trimestreSelecionado
-        : Math.min(3, Math.floor(index / chunkSize) + 1);
-
-    return {
-      conteudo,
-      trimestre,
-      numeroAula: index + 1,
-      periodos: 0,
-      aulaInicio: 0,
-      aulaFim: 0,
-      habilidades: skillsForContent(conteudo, skills, payload, index),
-      objetivos:
-        normalizeText(payload.objetivosGerais || payload.objetivos) ||
-        `Compreender, aplicar e sistematizar conhecimentos relacionados a ${conteudo}, desenvolvendo análise, participação, registro e produção conforme a etapa escolar.`,
-      metodologia:
-        index % 2 === 0
-          ? `Aula dialogada, levantamento de conhecimentos prévios, explicação orientada, prática supervisionada, registro e socialização das aprendizagens sobre ${conteudo}.`
-          : `Contextualização, análise guiada, atividade em grupo, produção individual, retomada coletiva e síntese do conteúdo ${conteudo}.`,
-      materiais: "Caderno, fichas de atividade, material impresso e textos de apoio.",
-      recursos:
-        index % 2 === 0
-          ? "Quadro, livro didático, projetor e recursos digitais disponíveis."
-          : "Quadro, slides, fontes de consulta, projetor e registros do professor.",
-      etapas:
-        index % 2 === 0
-          ? "1. Contextualização do tema.\n2. Explicação e prática orientada.\n3. Registro e socialização."
-          : "1. Mobilização de conhecimentos prévios.\n2. Atividade em grupo e produção individual.\n3. Síntese e devolutiva.",
-      avaliacao: `Avaliação contínua por participação, registros, resolução das atividades, qualidade das respostas e evidências de aprendizagem sobre ${conteudo}.`,
-      evidencias:
-        "Registros no caderno, atividades concluídas, respostas orais e escritas, produções individuais ou coletivas e devolutivas do professor.",
-    };
+  const detail = warning?.trim();
+  const userWarning = detail
+    ? `A IA não completou a geração (${detail}). Montamos a matriz BNCC automaticamente — revise conteúdos, habilidades e períodos antes de exportar.`
+    : "Montamos a matriz BNCC automaticamente — revise conteúdos, habilidades e períodos antes de exportar.";
+  const result = runPlanningMatrixEngine(payload, {
+    trimestres,
+    engineMode: "ai-fallback",
+    warning: userWarning,
   });
-
-  const matrix = finalizeMatrixLessonAllocation(draftMatrix, payload);
-
-  return {
-    success: true,
-    usedAI: false,
-    warning,
-    planejamento: {
-      tipoPlanejamento: tipo,
-      titulo:
-        tipo === "trimestral"
-          ? `Planejamento trimestral — ${trimestreSelecionado}º trimestre`
-          : "Planejamento anual",
-      resumo:
-        "Planejamento estruturado em modo seguro a partir dos conteúdos, habilidades selecionadas e dados pedagógicos informados.",
-      conteudos: matrix,
-    },
-  };
+  const { engineMode: _engineMode, package: _package, ...planningResult } = result;
+  return planningResult;
 }
 
 function extractJsonFromText(text: string): unknown {
@@ -603,10 +433,14 @@ Regras obrigatórias:
 10. No planejamento anual, distribua os conteúdos entre 1º, 2º e 3º trimestre de forma equilibrada.
 11. aulaInicio e aulaFim representam a faixa cumulativa de períodos no ano (ou no trimestre, se trimestral).
 12. Gere objetivos/expectativas de aprendizagem, metodologia, materiais, recursos necessários, etapas da experiência, evidências de aprendizagem e instrumentos de avaliação.
-13. Preencha projetos interdisciplinares, temas integradores e instrumentos de avaliação de forma coerente quando estes campos existirem no DOCX.
-14. Não use texto genérico vazio nem repita a mesma metodologia em todas as linhas.
-15. Cada linha deve citar estratégias, recursos e avaliação coerentes com o conteúdo daquela linha.
-16. Objetivos devem ser mensuráveis e ligados ao componente curricular e à etapa informados.
+13. etapas deve listar EXATAMENTE 5 passos numerados (1. a 5.), concretos e progressivos, específicos ao conteúdo da linha.
+14. metodologia deve descrever estratégias distintas aplicáveis (grupo, duplas, plenária, produção individual).
+15. materiais e recursos: itens separados por vírgula, específicos ao conteúdo (mínimo 4 itens no total).
+16. evidencias e avaliacao devem ser observáveis e mensuráveis, ligados às habilidades BNCC da linha.
+17. Preencha projetos interdisciplinares, temas integradores de forma coerente quando existirem no DOCX.
+18. Não use texto genérico vazio nem repita a mesma metodologia em todas as linhas.
+19. Cada linha deve citar estratégias, recursos e avaliação coerentes com o conteúdo daquela linha.
+20. Objetivos devem ser mensuráveis e ligados ao componente curricular e à etapa informados.
 
 Formato:
 {
@@ -665,6 +499,15 @@ export async function generatePlanningWithAI(
   payload: PlanningAiPayload,
   options?: { userId?: string | null },
 ): Promise<PlanningAiResult> {
+  if (payload.modoMatrizBncc === true) {
+    const trimestres = Array.isArray(payload.trimestresNoPacote)
+      ? payload.trimestresNoPacote
+      : [];
+    const result = runBnccPlanningEngine(payload, trimestres);
+    const { engineMode: _engineMode, ...planningResult } = result;
+    return planningResult;
+  }
+
   if (!process.env.GEMINI_API_KEY) {
     return fallbackPlanning(payload, "Chave de IA não configurada. Foi usado modo seguro.");
   }
@@ -707,10 +550,37 @@ export async function generatePlanningWithAI(
     );
 
     if (!issues.length) {
+      const tipo = getTipo(enrichedPayload);
+      const trimestres = Array.isArray(enrichedPayload.trimestresNoPacote)
+        ? enrichedPayload.trimestresNoPacote
+        : [];
+
+      let packageResult;
+      if (tipo === "anual" && trimestres.length > 0 && result.usedAI) {
+        packageResult = await assembleTrimestralPackageAsync(
+          result.planejamento,
+          trimestres,
+          {
+            cargaHoraria: String(enrichedPayload.cargaHoraria ?? ""),
+            componenteCurricular: String(
+              enrichedPayload.componenteCurricular ||
+                enrichedPayload.disciplina ||
+                enrichedPayload.discipline ||
+                "",
+            ),
+            etapa: String(enrichedPayload.etapa ?? ""),
+            anoSerie: String(enrichedPayload.anoSerie ?? ""),
+            elevarQualidade: enrichedPayload.elevarQualidade === true,
+            useAiExpansion: true,
+          },
+        );
+      }
+
       return {
         ...result,
         qualityScore: computePlanningQualityScore([]),
         qualityIssues: [],
+        package: packageResult,
       };
     }
 

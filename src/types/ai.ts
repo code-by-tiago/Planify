@@ -282,4 +282,8 @@ export type GeminiGenerateJSONOptions = {
    * Reduz custo reutilizando system instruction e regras pedagógicas.
    */
   cacheProfile?: import("../server/ai/gemini-static-context").GeminiCacheProfile;
+  /** Timestamp (ms) após o qual não iniciar novas chamadas nem retries. */
+  deadlineAt?: number;
+  /** Timeout máximo desta chamada (ms). Fluxo rápido usa ~55s. */
+  callTimeoutMs?: number;
 };

@@ -15,11 +15,14 @@ import {
   isDashboardSection,
   type DashboardSectionId,
 } from "@/lib/pro/dashboardViews";
+import { sectionHasOwnLayout } from "@/lib/pro/dashboardNav";
 import {
   getPlanifyTool,
   planifyToolCount,
   planifyTools,
+  toolCategories,
   type PlanifyToolId,
+  type ToolCategoryId,
 } from "@/lib/pro/planifyTools";
 import { usePlanifyAccess } from "@/hooks/usePlanifyAccess";
 import { usePersistedSidebarCollapsed } from "@/hooks/usePersistedSidebarCollapsed";
@@ -27,6 +30,10 @@ import { setHistorySupabaseSync, syncLocalHistoryToSupabase } from "@/lib/histor
 
 function isValidToolId(value: string | null): value is PlanifyToolId {
   return planifyTools.some((tool) => tool.id === value);
+}
+
+function isValidCategory(value: string | null): value is ToolCategoryId {
+  return toolCategories.some((c) => c.id === value);
 }
 
 function readTemaParam(searchParams: URLSearchParams): string {
@@ -68,6 +75,11 @@ export default function PlanifyDashboardShell() {
     return isDashboardSection(secao) ? secao : null;
   }, [searchParams, selectedToolId]);
 
+  const activeCategory = useMemo(() => {
+    const cat = searchParams.get("categoria");
+    return isValidCategory(cat) ? cat : null;
+  }, [searchParams]);
+
   const initialTopic = useMemo(
     () => readTemaParam(searchParams),
     [searchParams],
@@ -101,10 +113,23 @@ export default function PlanifyDashboardShell() {
     [router, searchParams],
   );
 
+  const selectCategory = useCallback(
+    (categoryId: ToolCategoryId) => {
+      replaceDashboardUrl((params) => {
+        params.delete("tipo");
+        params.delete("secao");
+        if (categoryId === "todos") params.delete("categoria");
+        else params.set("categoria", categoryId);
+      });
+    },
+    [replaceDashboardUrl],
+  );
+
   const selectInicio = useCallback(() => {
     replaceDashboardUrl((params) => {
       params.delete("tipo");
       params.delete("secao");
+      params.delete("categoria");
     });
   }, [replaceDashboardUrl]);
 
@@ -148,6 +173,9 @@ export default function PlanifyDashboardShell() {
 
   const activeTool = selectedToolId ? getPlanifyTool(selectedToolId) : null;
   const hasPanel = Boolean(selectedToolId || selectedSectionId);
+  /** Ferramentas e hubs com layout próprio — evita header duplicado com o sidebar. */
+  const panelHasOwnHeader =
+    Boolean(selectedToolId) || sectionHasOwnLayout(selectedSectionId);
 
   const panelTitle = useMemo(() => {
     if (activeTool) return activeTool.title;
@@ -209,7 +237,7 @@ export default function PlanifyDashboardShell() {
   );
 
   return (
-    <div className="planify-hud planify-ui3 planify-hud-app pl-hud-shell pl-dashboard-root pl-app-bg flex h-[100dvh] w-full max-w-[100vw] overflow-hidden text-slate-950">
+    <div className="pf-ecosystem-scope planify-hud planify-ui3 planify-hud-app pl-hud-shell pl-dashboard-root pl-app-bg flex h-[100dvh] w-full max-w-[100vw] overflow-hidden text-slate-950">
       <PlanifyShellSidebar
         variant="hud"
         brandHref="/"
@@ -225,42 +253,54 @@ export default function PlanifyDashboardShell() {
           primaryAction={primaryAction}
           selectedToolId={selectedToolId}
           selectedSectionId={selectedSectionId}
+          onSelectTool={selectTool}
           onSelectSection={selectSection}
+          onSelectInicio={selectInicio}
+          activeCategory={activeCategory}
+          onSelectCategory={selectCategory}
           onActivate={closeSidebar}
           pathname="/dashboard"
           canViewBnccProgress={access.canViewBnccProgress}
           canViewDirectorPanel={access.canViewDirectorPanel}
           isManagerView={access.isManagerView}
+          isSiteAdmin={access.isSiteAdmin}
           collapsed={sidebarCollapsed}
         />
       </PlanifyShellSidebar>
 
-      <main className="pl-hud-main flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-white">
-        {hasPanel ? (
-          <header className="flex shrink-0 flex-col gap-2 border-b border-cyan-400/15 bg-white/95 px-3 py-2.5 pt-[max(0.625rem,env(safe-area-inset-top))] sm:px-5">
+      <main className="pl-hud-main flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-[var(--ps-pro-canvas)]">
+        {hasPanel && !panelHasOwnHeader ? (
+          <header className="ps-pro-header flex shrink-0 flex-col gap-2 border-b px-3 py-2.5 pt-[max(0.625rem,env(safe-area-inset-top))] sm:px-5">
             <div className="flex items-center justify-between gap-2 sm:gap-3">
               <div className="flex min-w-0 flex-1 items-center gap-2">
                 <button
                   type="button"
                   onClick={() => setSidebarOpen(true)}
                   aria-label="Abrir menu"
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-slate-600 transition hover:bg-slate-50 lg:hidden"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-slate-600 transition hover:bg-white/80 lg:hidden"
                 >
                   <PlanifyIcon name="menu" className="h-5 w-5" />
                 </button>
                 <button
                   type="button"
                   onClick={selectInicio}
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-slate-600 transition hover:bg-slate-50"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-slate-600 transition hover:bg-white/80"
                   aria-label="Voltar ao início"
                 >
                   <PlanifyIcon name="arrowLeft" className="h-5 w-5" />
                 </button>
+                {activeTool ? (
+                  <div
+                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${activeTool.accent} text-white shadow-sm`}
+                  >
+                    <PlanifyIcon name={activeTool.icon} className="h-5 w-5" />
+                  </div>
+                ) : null}
                 <div className="min-w-0">
                   <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-cyan-600">
                     {selectedToolId ? "Ferramenta IA · BNCC" : "Espaço de trabalho"}
                   </p>
-                  <h1 className="truncate text-base font-extrabold text-slate-950">
+                  <h1 className="truncate text-base font-extrabold text-slate-950 sm:text-lg">
                     {panelTitle}
                   </h1>
                   {panelSubtitle ? (
@@ -290,33 +330,25 @@ export default function PlanifyDashboardShell() {
               onSelectSection={selectSection}
             />
           </header>
-        ) : (
-          <header className="pl-hud-hub-shell-header relative shrink-0 overflow-hidden border-b px-3 py-3 pt-[max(0.5rem,env(safe-area-inset-top))] sm:px-5 sm:py-4">
-            <div className="pl-hud-hub-mesh pointer-events-none absolute inset-0 opacity-40" aria-hidden />
-            <div className="pl-hud-hub-grid-bg pointer-events-none absolute inset-0 opacity-25" aria-hidden />
-            <div className="relative flex flex-wrap items-center justify-between gap-3">
+        ) : !hasPanel ? (
+          <header className="pf-studio-header shrink-0 border-b border-[var(--pf-border)] bg-white/95 px-3 py-3 pt-[max(0.5rem,env(safe-area-inset-top))] backdrop-blur-sm sm:px-5 sm:py-3.5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex min-w-0 items-center gap-2 sm:gap-3">
                 <button
                   type="button"
                   onClick={() => setSidebarOpen(true)}
                   aria-label="Abrir menu"
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-cyan-400/15 bg-white/80 text-slate-600 transition hover:border-cyan-400/35 lg:hidden"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[var(--pf-border)] bg-white text-slate-600 transition hover:border-[var(--pf-border-strong)] lg:hidden"
                 >
                   <PlanifyIcon name="menu" className="h-5 w-5" />
                 </button>
                 <div className="min-w-0">
-                  <span className="pl-hud-badge">
-                    <PlanifyIcon name="spark" className="h-3 w-3" />
-                    Estúdio Planify
-                  </span>
-                  <h1 className="mt-1.5 truncate text-lg font-extrabold tracking-tight text-slate-950 sm:text-xl">
-                    O que vamos{" "}
-                    <span className="bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent">
-                      criar hoje?
-                    </span>
+                  <p className="pf-eyebrow">Centro operacional</p>
+                  <h1 className="truncate text-lg font-extrabold tracking-tight text-slate-950 sm:text-xl">
+                    Planeje · Crie · Revise · Compartilhe
                   </h1>
                   <p className="hidden text-xs font-medium text-slate-500 sm:block">
-                    {planifyToolCount + 1} geradores · BNCC · Google Docs · Comunidade
+                    {planifyToolCount} geradores · BNCC · Google Docs · Classroom
                   </p>
                 </div>
               </div>
@@ -327,23 +359,25 @@ export default function PlanifyDashboardShell() {
                 <CreditsBalancePill />
                 <Link
                   href="/planos"
-                  className="pl-hud-btn rounded-xl px-3 py-1.5 text-xs font-semibold sm:px-4"
+                  className="pf-btn-secondary min-h-11 px-3 py-2 text-xs sm:min-h-0 sm:px-4"
                 >
                   Planos
                 </Link>
               </div>
             </div>
           </header>
-        )}
+        ) : null}
 
         <div className="min-h-0 flex-1 overflow-hidden">
           <PlanifyDashboardMain
             toolId={selectedToolId}
             sectionId={selectedSectionId}
             initialTopic={initialTopic}
+            initialCategory={activeCategory}
             onTopicChange={setTopic}
             onSelectTool={selectTool}
             onSelectSection={selectSection}
+            onSelectCategory={selectCategory}
             onClosePanel={selectInicio}
           />
         </div>

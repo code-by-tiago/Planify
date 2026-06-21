@@ -28,14 +28,20 @@ export function PlanifyWorkspacePane({
   const showHeader = Boolean(header) && !embeddedInDashboard;
   const collapsed = useScrollCollapse(scrollRef, 36);
 
-  const body = (
+  const body = embeddedInDashboard ? (
+    <div className="h-full min-h-0 w-full">{children}</div>
+  ) : (
     <div className="mx-auto w-full max-w-7xl">{children}</div>
   );
+
+  const shellClass = embeddedInDashboard
+    ? `planify-studio-pro ps-pro-config ${className}`
+    : className;
 
   if (showHeader) {
     return (
       <div
-        className={`planify-ui3 flex h-full min-h-0 w-full flex-col overflow-hidden ${className}`}
+        className={`planify-ui3 flex h-full min-h-0 w-full flex-col overflow-hidden ${shellClass}`}
       >
         <div
           ref={scrollRef}
@@ -54,11 +60,13 @@ export function PlanifyWorkspacePane({
 
   return (
     <div
-      className={`planify-ui3 flex h-full min-h-0 w-full flex-col overflow-hidden ${className}`}
+      className={`planify-ui3 flex h-full min-h-0 w-full flex-col overflow-hidden ${shellClass}`}
     >
       <div
         ref={scrollRef}
-        className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain px-4 py-4 sm:px-6 sm:py-5"
+        className={`min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain ${
+          embeddedInDashboard ? "p-4 sm:p-5" : "px-4 py-4 sm:px-6 sm:py-5"
+        }`}
       >
         {body}
       </div>

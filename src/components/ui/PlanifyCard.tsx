@@ -15,7 +15,7 @@ export function PlanifyCard({ children, className = "", noPadding = false }: Pla
   return (
     <div
       className={[
-        "rounded-[2rem] border border-slate-200 bg-white shadow-sm",
+        "rounded-lg border border-[var(--pl-border-teal)] bg-white shadow-[var(--pl-shadow-soft)]",
         noPadding ? "" : "p-6",
         className,
       ]
@@ -50,13 +50,13 @@ export function PlanifyCardHeader({
     <div className="flex flex-wrap items-start justify-between gap-3">
       <div className="min-w-0">
         {eyebrow && (
-          <p className="mb-2 text-xs font-black uppercase tracking-[0.18em] text-indigo-600">
+          <p className="mb-2 text-xs font-black uppercase tracking-[0.18em] text-[#0b8f85]">
             {eyebrow}
           </p>
         )}
         <div className="flex items-center gap-3">
           {icon && (
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-700">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[#bfece5] bg-[#dff7f2] text-[#082f3a]">
               {icon}
             </div>
           )}
@@ -101,14 +101,14 @@ export function PlanifyToolCard({
     <button
       type="button"
       onClick={onClick}
-      className="group relative min-h-[148px] w-full rounded-[1.5rem] border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:-translate-y-1 hover:border-slate-950 hover:shadow-xl"
+      className="group relative min-h-[148px] w-full rounded-lg border border-[#d9e8e6] bg-white p-4 text-left shadow-[0_14px_34px_rgba(13,67,82,0.06)] transition hover:-translate-y-1 hover:border-[#12b8a6] hover:shadow-[0_22px_50px_rgba(18,184,166,0.16)]"
     >
       {badge && (
-        <span className="absolute right-3 top-3 rounded-full bg-blue-50 px-2 py-1 text-[10px] font-black uppercase tracking-wide text-blue-700">
+        <span className="absolute right-3 top-3 rounded-full bg-[#fff2d0] px-2 py-1 text-[10px] font-black uppercase tracking-wide text-[#082f3a]">
           {badge}
         </span>
       )}
-      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 text-slate-700 transition group-hover:bg-slate-950 group-hover:text-white">
+      <div className="flex h-11 w-11 items-center justify-center rounded-lg border border-[#bfece5] bg-[#dff7f2] text-[#082f3a] transition group-hover:border-[#12b8a6] group-hover:bg-[#12b8a6] group-hover:text-white">
         {icon}
       </div>
       <h3 className="mt-4 text-sm font-black leading-tight text-slate-950">
@@ -134,13 +134,13 @@ type StatCardProps = {
 
 export function PlanifyStatCard({ label, value, icon, trend }: StatCardProps) {
   return (
-    <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+    <div className="rounded-lg border border-[#d9e8e6] bg-white p-5 shadow-[0_14px_34px_rgba(13,67,82,0.06)]">
       <div className="flex items-center justify-between gap-3">
         <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-400">
           {label}
         </p>
         {icon && (
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#bfece5] bg-[#dff7f2] text-[#082f3a]">
             {icon}
           </div>
         )}

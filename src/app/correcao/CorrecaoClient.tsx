@@ -5,7 +5,8 @@ import { useSearchParams } from "next/navigation";
 import { CreditsBalancePill } from "@/components/credits/CreditsBalancePill";
 import { GenerationCostHint } from "@/components/credits/GenerationCostHint";
 import { MaterialPreviewSkeleton } from "@/components/materiais/MaterialPreviewSkeleton";
-import { MaterialToolPageShell } from "@/components/pro/MaterialToolPageShell";
+import { ToolStudioShell } from "@/components/studio/ToolStudioShell";
+import { ExportDock } from "@/components/studio/ExportDock";
 import { MaterialToolMobileSubmitBar } from "@/components/pro/MaterialToolMobileSubmitBar";
 import { planifyAuthenticatedFetch } from "@/lib/auth/authenticated-fetch";
 import { getClientCreditCost } from "@/lib/credits/credit-costs";
@@ -93,6 +94,125 @@ function formatWhatsAppDevolutiva(
     .join("\n");
 }
 
+function formatRelatorioTurma(resultados: CorrectionAiOutput[]): string {
+  const mediaPercentual =
+    resultados.length > 0
+      ? Math.round(
+          resultados.reduce((sum, item) => sum + item.percentual, 0) /
+            resultados.length,
+        )
+      : 0;
+
+  const lines = [
+    "RELATÓRIO DA TURMA — Planify (uso docente)",
+    `Gerado em: ${new Date().toLocaleString("pt-BR")}`,
+    `Alunos corrigidos: ${resultados.length}`,
+    `Média da turma: ${mediaPercentual}%`,
+    "",
+  ];
+
+  resultados.forEach((item, index) => {
+    lines.push(`--- Aluno ${index + 1} ---`);
+    lines.push(`Nota: ${item.nota}/${item.notaMaxima} (${item.percentual}%)`);
+    lines.push(`Feedback: ${item.feedbackGeral}`);
+    if (item.pontosFortes.length) {
+      lines.push(
+        `Pontos fortes: ${item.pontosFortes.map((p) => `• ${p}`).join(" ")}`,
+      );
+    }
+    if (item.pontosMelhoria.length) {
+      lines.push(
+        `Principais melhorias: ${item.pontosMelhoria.map((p) => `• ${p}`).join(" ")}`,
+      );
+    }
+    lines.push("");
+  });
+
+  lines.push(
+    "—",
+    "Relatório para análise do professor. Não compartilhe dados identificáveis de estudantes fora do contexto escolar.",
+  );
+
+  return lines.join("\n");
+}
+
+function formatRelatorioTurmaHtml(resultados: CorrectionAiOutput[]): string {
+  const mediaPercentual =
+    resultados.length > 0
+      ? Math.round(
+          resultados.reduce((sum, item) => sum + item.percentual, 0) /
+            resultados.length,
+        )
+      : 0;
+
+  const rows = resultados
+    .map(
+      (item, index) => `
+    <tr>
+      <td>Aluno ${index + 1}</td>
+      <td>${item.nota}/${item.notaMaxima}</td>
+      <td>${item.percentual}%</td>
+      <td>${escapeHtml(item.feedbackGeral)}</td>
+      <td>${escapeHtml(item.pontosMelhoria.slice(0, 3).join("; ") || "—")}</td>
+    </tr>`,
+    )
+    .join("");
+
+  return `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <title>Relatório da turma — Planify</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 2rem; color: #0f172a; }
+    h1 { font-size: 1.25rem; }
+    .meta { color: #475569; font-size: 0.875rem; margin-bottom: 1.5rem; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+    th, td { border: 1px solid #cbd5e1; padding: 0.5rem 0.75rem; text-align: left; vertical-align: top; }
+    th { background: #f1f5f9; }
+    footer { margin-top: 2rem; font-size: 0.75rem; color: #64748b; }
+    @media print { body { margin: 1rem; } }
+  </style>
+</head>
+<body>
+  <h1>Relatório da turma — Planify</h1>
+  <p class="meta">Uso docente · ${resultados.length} aluno(s) · Média ${mediaPercentual}% · ${new Date().toLocaleString("pt-BR")}</p>
+  <table>
+    <thead>
+      <tr>
+        <th>Aluno</th>
+        <th>Nota</th>
+        <th>%</th>
+        <th>Feedback geral</th>
+        <th>Principais melhorias</th>
+      </tr>
+    </thead>
+    <tbody>${rows}
+    </tbody>
+  </table>
+  <footer>Relatório para análise do professor. Revise antes de usar em reuniões ou documentos oficiais.</footer>
+</body>
+</html>`;
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function downloadTextFile(filename: string, content: string, mime: string) {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
+
 export function CorrecaoClient({
   studioMode = false,
   onStudioClose,
@@ -157,6 +277,11 @@ export function CorrecaoClient({
     return resultadosLote
       .map((item, index) => formatWhatsAppDevolutiva(index, item))
       .join("\n\n---\n\n");
+  }, [resultadosLote]);
+
+  const relatorioTurmaText = useMemo(() => {
+    if (resultadosLote.length < 2) return "";
+    return formatRelatorioTurma(resultadosLote);
   }, [resultadosLote]);
 
   function updateProfile(partial: Partial<typeof profile>) {
@@ -366,6 +491,29 @@ export function CorrecaoClient({
     }
   }
 
+  async function copiarRelatorioTurma() {
+    if (!relatorioTurmaText) return;
+    try {
+      await navigator.clipboard.writeText(relatorioTurmaText);
+    } catch {
+      setErro("Não foi possível copiar o relatório. Tente baixar o arquivo.");
+    }
+  }
+
+  function baixarRelatorioTurmaTxt() {
+    if (!relatorioTurmaText) return;
+    downloadTextFile("relatorio-turma-planify.txt", relatorioTurmaText, "text/plain;charset=utf-8");
+  }
+
+  function baixarRelatorioTurmaHtml() {
+    if (resultadosLote.length < 2) return;
+    downloadTextFile(
+      "relatorio-turma-planify.html",
+      formatRelatorioTurmaHtml(resultadosLote),
+      "text/html;charset=utf-8",
+    );
+  }
+
   function fecharPainel() {
     if (studioMode && onStudioClose) {
       onStudioClose();
@@ -375,15 +523,60 @@ export function CorrecaoClient({
   }
 
   const painelCriacao = modalAberto ? (
-    <MaterialToolPageShell
+    <ToolStudioShell
       tool={tool}
-      studioMode={studioMode}
       onBack={fecharPainel}
       backLabel={studioMode ? "Início" : "Catálogo"}
       formScrollAttr={studioMode}
       previewScrollAttr={studioMode}
       previewReady={Boolean(resultado || resultadosLote.length)}
       previewLoading={loading}
+      exportDock={
+        resultado || resultadosLote.length ? (
+          <ExportDock>
+            <button
+              type="button"
+              onClick={() => void copiarFeedback()}
+              className="pl-hud-btn rounded-xl px-4 py-2 text-xs font-semibold"
+            >
+              {resultadosLote.length ? "Copiar devolutivas" : "Copiar devolutiva"}
+            </button>
+            {relatorioTurmaText ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => void copiarRelatorioTurma()}
+                  className="pl-hud-btn rounded-xl px-4 py-2 text-xs font-semibold"
+                >
+                  Relatório da turma
+                </button>
+                <button
+                  type="button"
+                  onClick={baixarRelatorioTurmaTxt}
+                  className="pl-hud-btn-secondary rounded-xl px-4 py-2 text-xs font-semibold"
+                >
+                  Baixar .txt
+                </button>
+                <button
+                  type="button"
+                  onClick={baixarRelatorioTurmaHtml}
+                  className="pl-hud-btn-secondary rounded-xl px-4 py-2 text-xs font-semibold"
+                >
+                  Imprimir (HTML)
+                </button>
+              </>
+            ) : null}
+            <button
+              type="button"
+              onClick={() => void baixarPdf()}
+              disabled={pdfLoading}
+              className="pl-hud-btn rounded-xl px-4 py-2 text-xs font-semibold disabled:opacity-60"
+            >
+              {pdfLoading ? "Gerando PDF…" : "Baixar PDF"}
+            </button>
+          </ExportDock>
+        ) : undefined
+      }
       form={
         <form onSubmit={corrigir} className="space-y-4 max-lg:pb-2">
           <div
@@ -704,23 +897,6 @@ export function CorrecaoClient({
                   </p>
                 </div>
               ))}
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => void copiarFeedback()}
-                  className="pl-hud-btn rounded-xl px-4 py-2 text-xs font-semibold"
-                >
-                  Copiar devolutivas (WhatsApp)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void baixarPdf()}
-                  disabled={pdfLoading}
-                  className="pl-hud-btn rounded-xl px-4 py-2 text-xs font-semibold disabled:opacity-60"
-                >
-                  {pdfLoading ? "Gerando PDF…" : "Baixar PDF"}
-                </button>
-              </div>
             </>
           ) : resultado ? (
             <>
@@ -765,24 +941,6 @@ export function CorrecaoClient({
                   ))}
                 </div>
               ) : null}
-
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => void copiarFeedback()}
-                  className="pl-hud-btn rounded-xl px-4 py-2 text-xs font-semibold"
-                >
-                  Copiar devolutiva
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void baixarPdf()}
-                  disabled={pdfLoading}
-                  className="pl-hud-btn rounded-xl px-4 py-2 text-xs font-semibold disabled:opacity-60"
-                >
-                  {pdfLoading ? "Gerando PDF…" : "Baixar PDF"}
-                </button>
-              </div>
             </>
           ) : (
             <div className="rounded-2xl border border-dashed border-cyan-400/25 bg-white/70 px-6 py-12 text-center">

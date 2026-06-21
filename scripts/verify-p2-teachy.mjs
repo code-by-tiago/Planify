@@ -78,7 +78,7 @@ function loadTsModule(relativePath) {
 }
 
 const catalog = loadTsModule("src/server/bncc/bncc-catalog-service.ts");
-const { searchBnccTemaSuggestions } = loadTsModule(
+const { searchBnccTemaSuggestions, browseBnccTemaSuggestions } = loadTsModule(
   "src/server/bncc/bncc-tema-autocomplete.ts",
 );
 const { splitMultiStudentText } = loadTsModule(
@@ -111,6 +111,30 @@ async function main() {
     "H1 FAIL: expected suggestions with Matemática 5º Fraç",
   );
 
+  const browse = await browseBnccTemaSuggestions({
+    etapa: "Ensino Fundamental",
+    anoSerie: "5º ano",
+    componente: "Matemática",
+  });
+  agentLog("H2", "verify-p2-teachy.mjs", "browse prefetch", {
+    count: browse.length,
+    firstLabel: browse[0]?.label,
+  });
+  assert.ok(
+    browse.length > 0,
+    "H2 FAIL: expected browse suggestions for Matemática 5º",
+  );
+
+  const { trimTeachyGabaritoAnswer, TEACHY_MAX_GABARITO_CHARS } = loadTsModule(
+    "src/lib/materiais/material-document-layout.ts",
+  );
+  assert.equal(TEACHY_MAX_GABARITO_CHARS, 120);
+  const longAnswer = "A".repeat(200);
+  assert.ok(
+    trimTeachyGabaritoAnswer(longAnswer).length <= 121,
+    "gabarito deve respeitar limite Teachy",
+  );
+
   // H5: student split heuristics
   const sample = `Aluno: Maria Silva
 Resposta da questão 1 sobre frações.
@@ -127,6 +151,7 @@ Resposta da questão 1 diferente.`;
 
   console.log("verify-p2-teachy: OK");
   console.log(`  autocomplete with context: ${withContext.length} (${withContext[0]?.label})`);
+  console.log(`  browse prefetch: ${browse.length} (${browse[0]?.label})`);
   console.log(`  autocomplete no context: ${noContext.length}`);
   console.log(`  student split: ${parts.length} parts`);
 }

@@ -32,3 +32,34 @@ jobs:
         run: npm run build
         env:
           NODE_ENV: production
+
+  e2e:
+    runs-on: ubuntu-latest
+    needs: verify
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install chromium --with-deps
+
+      - name: Production build
+        run: npm run build
+        env:
+          NODE_ENV: production
+
+      - name: E2E smoke and responsive tests
+        run: npm run test:e2e
+        env:
+          CI: "true"
+        # Optional secrets for authenticated E2E (skipped automatically when unset):
+        # PLANIFY_E2E_EMAIL, PLANIFY_E2E_PASSWORD

@@ -32,6 +32,14 @@ export type FormattedGenerationError = {
 const DAILY_LIMIT_MESSAGE =
   "Você usou suas gerações profundas de hoje. A cota reinicia à meia-noite (horário de Brasília).";
 
+function statusPageCta(): ReactNode {
+  return (
+    <Link href="/status" className="font-bold underline">
+      Ver status dos serviços
+    </Link>
+  );
+}
+
 function plansCta(): ReactNode {
   return (
     <Link href="/planos" className="font-bold underline">
@@ -90,8 +98,9 @@ export function formatGenerationError(error: unknown): FormattedGenerationError 
 
   if (code === "daily_limit_reached") {
     return {
-      message: DAILY_LIMIT_MESSAGE,
+      message: `${DAILY_LIMIT_MESSAGE} Isso é limite do seu plano, não indisponibilidade da IA.`,
       code: "daily_limit_reached",
+      cta: plansCta(),
       retryable: false,
     };
   }
@@ -128,6 +137,7 @@ export function formatGenerationError(error: unknown): FormattedGenerationError 
         rawMessage ||
         "A IA está indisponível no momento. Aguarde alguns instantes e tente novamente.",
       code: "ai_unavailable",
+      cta: statusPageCta(),
       retryable: true,
     };
   }

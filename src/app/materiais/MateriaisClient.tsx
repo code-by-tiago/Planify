@@ -1183,7 +1183,11 @@ export function MateriaisClient({
           const streamResult = await requestMaterialGenerationStream(payload, {
             onProgress: ({ phase, message, progress, index, total }) => {
               if (typeof progress === "number") {
-                setRealGenerationProgress(progress);
+                // Eventos de heartbeat da mesma etapa não podem fazer a barra
+                // voltar após uma revisão/qualidade já concluída.
+                setRealGenerationProgress((current) =>
+                  Math.max(current ?? 0, progress),
+                );
               }
               if (phase === "images" && index != null && total != null) {
                 setProgressLabel(`Resolvendo imagens (${index}/${total})…`);

@@ -37,6 +37,31 @@ export type MaterialStreamResult = {
   persistWarning?: string | null;
 };
 
+function streamTimeoutForMaterial(payload: MaterialStreamPayload): number {
+  return payload.tipoMaterial === "slides" ? 210_000 : 150_000;
+}
+
+async function readStreamChunk(
+  reader: ReadableStreamDefaultReader<Uint8Array>,
+  timeoutMs: number,
+): Promise<ReadableStreamReadResult<Uint8Array>> {
+  let timeoutId: number | undefined;
+
+  try {
+    return await Promise.race([
+      reader.read(),
+      new Promise<ReadableStreamReadResult<Uint8Array>>((_, reject) => {
+        timeoutId = window.setTimeout(() => {
+          void reader.cancel();
+          reject(createGenerationTimeoutError("material"));
+        }, timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timeoutId) window.clearTimeout(timeoutId);
+  }
+}
+
 function parseNdjsonLine(line: string): MaterialStreamEvent | null {
   const trimmed = line.trim();
   if (!trimmed) return null;
@@ -51,9 +76,13 @@ export async function requestMaterialGenerationStream(
   payload: MaterialStreamPayload,
   callbacks: MaterialStreamCallbacks = {},
 ): Promise<MaterialStreamResult> {
+  const generationTimeoutMs = Math.min(
+    GENERATION_CLIENT_TIMEOUT_MS,
+    streamTimeoutForMaterial(payload),
+  );
   const signal = withGenerationTimeoutSignal(
     callbacks.signal,
-    GENERATION_CLIENT_TIMEOUT_MS,
+    generationTimeoutMs,
   );
 
   let response: Response;
@@ -91,10 +120,16 @@ export async function requestMaterialGenerationStream(
   let complete: MaterialStreamResult | null = null;
   let lastProgressStage: string | undefined;
   let lastProgressMessage: string | undefined;
+  const streamDeadlineAt = Date.now() + generationTimeoutMs;
 
   try {
     while (true) {
-      const { done, value } = await reader.read();
+      const remainingMs = streamDeadlineAt - Date.now();
+      if (remainingMs <= 0) {
+        throw createGenerationTimeoutError("material");
+      }
+
+      const { done, value } = await readStreamChunk(reader, remainingMs);
       if (done) break;
 
       buffer += decoder.decode(value, { stream: true });

@@ -1,6 +1,4 @@
 import { buildVisualGameMaterial } from "@/lib/materiais/game-builder";
-import { getModelTierForMaterialRequest } from "@/lib/ai/material-generation-policy";
-import { GENERATION_SERVER_DEADLINE_MS } from "@/lib/pro/generation-timeout";
 import { buildStageEvent } from "@/lib/generation/generation-pipeline-stages";
 import type { GenerationStageEvent } from "@/lib/generation/generation-job-types";
 import { computeQualityScore } from "@/lib/materiais/material-quality-score";
@@ -29,10 +27,6 @@ import {
   buildQualityRetryPrompt,
   getEngineOutputIssues,
 } from "./material-engine-quality";
-import {
-  buildPedagogicalOutlinePromptBlock,
-  usesPedagogicalOutline,
-} from "./material-pedagogical-outline";
 import {
   normalizeMaterialEngineRequest,
   validateMaterialEngineRequest,
@@ -92,13 +86,9 @@ const P0_QUALITY_GATE_TYPES = new Set<MaterialEngineType>([
 /** Mínimo para entrega sem alerta crítico — acima do piso Teachy (80). */
 const MIN_P0_QUALITY_SCORE = 88;
 
-const GENERATION_DEADLINE_MS = GENERATION_SERVER_DEADLINE_MS;
 const MAX_EXAM_REPAIR_PASSES = 1;
-/** Reserva tempo suficiente para renderizar e enriquecer o deck uma única vez. */
-const SLIDES_FINALIZATION_RESERVE_MS = 75_000;
-/** Uma chamada lenta não pode consumir toda a vida útil da rota de Slides. */
-const MAX_SLIDES_CONTENT_CALL_MS = 100_000;
 const MAX_SLIDES_IMAGE_ENRICHMENT_MS = 65_000;
+const MIN_REMAINING_GENERATION_MS = 15_000;
 
 const CRITICAL_RETRY_TYPES = new Set<MaterialEngineType>([
   "prova",
@@ -111,20 +101,45 @@ const CRITICAL_RETRY_TYPES = new Set<MaterialEngineType>([
   "resumo",
 ]);
 
-function maxAttemptsFor(type: MaterialEngineType): number {
-  switch (type) {
-    case "prova":
-    case "lista":
-    case "slides":
-    case "apostila":
-    case "plano-aula":
-    case "sequencia":
-    case "projeto":
-    case "redacao":
-      return 3;
-    default:
-      return 2;
+function maxAttemptsFor(_type: MaterialEngineType): number {
+  // Uma primeira versão e, no máximo, uma revisão orientada por qualidade.
+  // Mais tentativas multiplicavam a espera sem elevar proporcionalmente a entrega.
+  return 2;
+}
+
+function materialGenerationBudgetMs(request: MaterialEngineRequest): number {
+  if (request.tipoMaterial === "slides") return 180_000;
+  if (
+    request.tipoMaterial === "apostila" ||
+    request.tipoMaterial === "prova" ||
+    request.tipoMaterial === "lista"
+  ) {
+    return 135_000;
   }
+  return 105_000;
+}
+
+function materialContentTimeoutMs(
+  request: MaterialEngineRequest,
+  remainingMs: number,
+): number {
+  const preferred =
+    request.tipoMaterial === "slides"
+      ? 85_000
+      : request.tipoMaterial === "apostila" ||
+          request.tipoMaterial === "prova" ||
+          request.tipoMaterial === "lista"
+        ? 65_000
+        : 50_000;
+
+  return Math.max(
+    MIN_REMAINING_GENERATION_MS,
+    Math.min(preferred, remainingMs - MIN_REMAINING_GENERATION_MS),
+  );
+}
+
+function isMaterialGenerationTimeout(message: string): boolean {
+  return /passou do tempo limite|demorou mais que o esperado/i.test(message);
 }
 
 function buildDeliveryAlertas(
@@ -1076,15 +1091,15 @@ function renderDocumentHtml(
 
 function maxOutputTokensFor(request: MaterialEngineRequest): number {
   if (request.tipoMaterial === "slides") {
-    // Decks usuais (6–15 slides) não precisam reservar 24k tokens. Para os
-    // decks longos, o teto continua escalando até o máximo anterior.
-    return Math.min(24000, Math.max(12000, request.quantidade * 800));
+    return Math.min(12_000, Math.max(6_000, request.quantidade * 650));
   }
   const type = request.tipoMaterial;
-  if (type === "flashcards" || type === "mapa-mental") return 14000;
-  if (type === "resumo" || type === "atividade" || type === "jogo") return 16000;
-  if (type === "prova" || type === "lista" || type === "apostila") return 16000;
-  return 12000;
+  if (type === "flashcards" || type === "mapa-mental") return 4_500;
+  if (type === "resumo") return 5_500;
+  if (type === "atividade" || type === "jogo") return 7_500;
+  if (type === "prova" || type === "lista") return 9_500;
+  if (type === "apostila") return 12_000;
+  return 8_500;
 }
 
 type MaterialEngineGenerationOptions = {
@@ -1137,24 +1152,13 @@ export async function generateMaterialByEngine(
     };
   }
 
-  const modelTier = getModelTierForMaterialRequest(request.tipoMaterial, request);
-
   const promptInput = toPromptEngineInput(request);
   const { systemInstruction, userPrompt } = buildPromptEngine(promptInput);
   const schema = getMaterialLayoutSchema();
-  let outlineBlock = "";
-
-  if (modelTier === "advanced" && usesPedagogicalOutline(request.tipoMaterial)) {
-    try {
-      outlineBlock = await buildPedagogicalOutlinePromptBlock(request);
-    } catch {
-      outlineBlock = "";
-    }
-  }
-
-  const basePrompt = outlineBlock
-    ? `${userPrompt}\n\n${outlineBlock}`
-    : userPrompt;
+  // O prompt principal já contém as regras pedagógicas e o gate valida a
+  // entrega. Gerar um segundo outline por IA aqui duplicava a latência de
+  // todas as ferramentas antes mesmo da primeira versão do material.
+  const basePrompt = userPrompt;
   const maxOutputTokens = maxOutputTokensFor(request);
 
   let activePrompt = basePrompt;
@@ -1162,15 +1166,25 @@ export async function generateMaterialByEngine(
 
   const maxAttempts = maxAttemptsFor(request.tipoMaterial);
   const generationStartedAt = Date.now();
+  const generationBudgetMs = materialGenerationBudgetMs(request);
   const isPastGenerationDeadline = () =>
-    Date.now() - generationStartedAt > GENERATION_DEADLINE_MS;
+    Date.now() - generationStartedAt >= generationBudgetMs;
 
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
     try {
+      const remainingForGeneration = generationBudgetMs - (Date.now() - generationStartedAt);
+      if (remainingForGeneration <= MIN_REMAINING_GENERATION_MS) {
+        throw new Error("A geração demorou mais que o esperado. Tente novamente.");
+      }
+
       const modelTier =
         request.elevarQualidade || attempt > 0
           ? "advanced"
           : "default";
+      const contentTimeoutMs = materialContentTimeoutMs(
+        request,
+        remainingForGeneration,
+      );
       const generateLayout = generateGeminiJSON<MaterialLayout>({
         systemInstruction,
         prompt: activePrompt,
@@ -1180,24 +1194,16 @@ export async function generateMaterialByEngine(
         topP: modelTier === "advanced" ? 0.82 : 0.86,
         maxOutputTokens,
         responseSchema: schema,
+        timeoutMs: contentTimeoutMs,
+        maxAttempts: 1,
       });
-      const remainingForContent =
-        GENERATION_DEADLINE_MS -
-        (Date.now() - generationStartedAt) -
-        SLIDES_FINALIZATION_RESERVE_MS;
-      if (request.tipoMaterial === "slides" && remainingForContent <= 0) {
-        throw new Error(
-          "A geração dos slides demorou mais que o esperado. Tente novamente.",
-        );
-      }
-      const layoutRaw =
-        request.tipoMaterial === "slides"
-          ? await withMaterialStepTimeout(
-              generateLayout,
-              Math.min(MAX_SLIDES_CONTENT_CALL_MS, remainingForContent),
-              "A geração dos slides",
-            )
-          : await generateLayout;
+      const layoutRaw = await withMaterialStepTimeout(
+        generateLayout,
+        contentTimeoutMs,
+        `A geração de ${request.tipoMaterial}`,
+      );
+
+      options?.onStage?.(buildStageEvent("quality", "Revisando qualidade pedagógica…"));
 
       const layoutIssues = validateMaterialLayout(promptInput, layoutRaw);
       if (
@@ -1274,13 +1280,23 @@ export async function generateMaterialByEngine(
         (finalNormalized.exam?.questions?.length ?? 0) > 0
       ) {
         const { regenerateWeakExamQuestions } = await import("./exam-questions-retry");
-        if (!isPastGenerationDeadline()) {
+        const remainingForRepair = generationBudgetMs - (Date.now() - generationStartedAt);
+        if (remainingForRepair > MIN_REMAINING_GENERATION_MS + 5_000) {
           for (
             let repairPass = 0;
             repairPass < MAX_EXAM_REPAIR_PASSES;
             repairPass += 1
           ) {
-            const repaired = await regenerateWeakExamQuestions(input, finalNormalized);
+            let repaired: Awaited<ReturnType<typeof regenerateWeakExamQuestions>>;
+            try {
+              repaired = await withMaterialStepTimeout(
+                regenerateWeakExamQuestions(input, finalNormalized),
+                Math.min(45_000, remainingForRepair - MIN_REMAINING_GENERATION_MS),
+                "A revisão das questões",
+              );
+            } catch {
+              break;
+            }
             finalNormalized = repaired.estrutura;
             finalIssues = repaired.qualityIssues;
             finalHtml = repaired.html;
@@ -1304,7 +1320,7 @@ export async function generateMaterialByEngine(
       if (request.tipoMaterial === "slides" && finalNormalized.slides?.length) {
         const remainingForImages = Math.max(
           0,
-          GENERATION_DEADLINE_MS - (Date.now() - generationStartedAt),
+          generationBudgetMs - (Date.now() - generationStartedAt),
         );
         const imageTimeoutMs = Math.min(
           MAX_SLIDES_IMAGE_ENRICHMENT_MS,
@@ -1361,6 +1377,9 @@ export async function generateMaterialByEngine(
         break;
       }
       if (message.includes("Créditos de IA esgotados") || message.includes("GEMINI_API_KEY")) {
+        break;
+      }
+      if (isMaterialGenerationTimeout(message) || isPastGenerationDeadline()) {
         break;
       }
     }

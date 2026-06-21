@@ -205,6 +205,7 @@ function parseRetryDelayMs(message: string, attempt = 0): number {
 
 const MAX_RETRIES_PER_MODEL = 3;
 const GEMINI_CALL_TIMEOUT_MS = 120_000;
+const MIN_GEMINI_CALL_TIMEOUT_MS = 5_000;
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => {
@@ -215,7 +216,12 @@ function sleep(ms: number): Promise<void> {
 async function withGeminiCallTimeout<T>(
   promise: Promise<T>,
   label = "Chamada à IA",
+  timeoutMs = GEMINI_CALL_TIMEOUT_MS,
 ): Promise<T> {
+  const safeTimeoutMs = Math.min(
+    GEMINI_CALL_TIMEOUT_MS,
+    Math.max(MIN_GEMINI_CALL_TIMEOUT_MS, Math.round(timeoutMs)),
+  );
   let timeoutId: ReturnType<typeof setTimeout> | undefined;
 
   try {
@@ -225,10 +231,10 @@ async function withGeminiCallTimeout<T>(
         timeoutId = setTimeout(() => {
           reject(
             new Error(
-              `${label} passou do tempo limite (${Math.round(GEMINI_CALL_TIMEOUT_MS / 1000)}s). Tente novamente.`,
+              `${label} passou do tempo limite (${Math.round(safeTimeoutMs / 1000)}s). Tente novamente.`,
             ),
           );
-        }, GEMINI_CALL_TIMEOUT_MS);
+        }, safeTimeoutMs);
       }),
     ]);
   } finally {
@@ -355,6 +361,7 @@ async function buildGeneratePlan(
 async function callGeminiGenerateContent(
   model: string,
   plan: GenerateContentPlan,
+  timeoutMs?: number,
 ): Promise<GeminiCallResult> {
   try {
     const response = await withGeminiCallTimeout(
@@ -364,6 +371,7 @@ async function callGeminiGenerateContent(
         config: plan.config,
       }),
       "Geração de conteúdo",
+      timeoutMs,
     );
 
     const text = response.text?.trim() ?? "";
@@ -399,6 +407,7 @@ function handleGeminiCallFailure(
   message: string,
   httpStatus: number,
   attempt: number,
+  maxAttempts = MAX_RETRIES_PER_MODEL,
 ): "retry" | "next_model" | "fail" {
   if (isGeminiNonRetryableError(message, httpStatus)) {
     throw new Error(humanizeGeminiError(message));
@@ -410,7 +419,7 @@ function handleGeminiCallFailure(
 
   if (
     shouldRetryGeminiCall(message, httpStatus) &&
-    attempt < MAX_RETRIES_PER_MODEL - 1
+    attempt < maxAttempts - 1
   ) {
     return "retry";
   }
@@ -422,11 +431,15 @@ export async function generateGeminiJSON<T>(
   options: GeminiGenerateJSONOptions,
 ): Promise<T> {
   const models = resolveModelCandidates(options.tier, options.model);
+  const maxAttempts = Math.min(
+    MAX_RETRIES_PER_MODEL,
+    Math.max(1, Math.round(options.maxAttempts ?? MAX_RETRIES_PER_MODEL)),
+  );
 
   let lastError = "Erro ao chamar a IA.";
 
   for (const model of models) {
-    for (let attempt = 0; attempt < MAX_RETRIES_PER_MODEL; attempt += 1) {
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
       const plan = await buildGeneratePlan(
         {
           ...options,
@@ -434,7 +447,7 @@ export async function generateGeminiJSON<T>(
         },
         model,
       );
-      const json = await callGeminiGenerateContent(model, plan);
+      const json = await callGeminiGenerateContent(model, plan, options.timeoutMs);
 
       if (json.httpStatus >= 200 && json.httpStatus < 300 && !json.error) {
         const cleaned = stripJsonFence(json.text);
@@ -456,6 +469,7 @@ export async function generateGeminiJSON<T>(
         message,
         json.httpStatus,
         attempt,
+        maxAttempts,
       );
 
       if (failureAction === "retry") {

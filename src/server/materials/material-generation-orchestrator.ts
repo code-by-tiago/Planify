@@ -12,7 +12,6 @@ import { generateMaterialByEngine } from "./material-engine-service";
 import { assessUnifiedQualityGate } from "@/lib/materiais/unified-quality-gate";
 import {
   finalizeUnifiedDelivery,
-  shouldAutoElevateQuality,
   type UnifiedDeliveryPipeline,
   type UnifiedMaterialDelivery,
 } from "./material-unified-delivery";
@@ -100,7 +99,10 @@ async function enrichInputWithPedagogicalContext(
     {
       userId: userId ?? null,
       toolTipo: input.tipoMaterial || input.tipo || "material",
-      allowScrape: true,
+      // Uma busca externa em cache miss não pode atrasar a entrega. Contexto
+      // aprovado em cache continua sendo injetado; novas buscas seguem pelo
+      // fluxo pedagógico explícito, fora da geração em tempo real.
+      allowScrape: false,
     },
   );
 }
@@ -176,13 +178,16 @@ async function runEngineDelivery(
   let heartbeatTick = 0;
   const heartbeat = setInterval(() => {
     heartbeatTick += 1;
-    emitStage(
-      options,
-      "generate",
+    const message =
       GENERATE_HEARTBEAT_MESSAGES[
         heartbeatTick % GENERATE_HEARTBEAT_MESSAGES.length
-      ],
-    );
+      ];
+    options?.onStage?.({
+      ...buildStageEvent("generate", message),
+      // A geração ainda está ativa. Atualizar a faixa evita que a interface
+      // pare visualmente em 58% enquanto aguarda a resposta estruturada.
+      progress: Math.min(72, 58 + heartbeatTick * 3),
+    });
   }, GENERATE_HEARTBEAT_MS);
 
   let firstPass: Awaited<ReturnType<typeof generateMaterialByEngine>>;
@@ -198,33 +203,10 @@ async function runEngineDelivery(
     return firstPass;
   }
 
-  let result = firstPass;
-  let pipeline: UnifiedDeliveryPipeline = request.elevarQualidade
+  const result = firstPass;
+  const pipeline: UnifiedDeliveryPipeline = request.elevarQualidade
     ? "engine-elevated"
     : "engine";
-
-  const firstScore = result.data.qualityScore ?? 0;
-  const firstIssues = result.data.qualityIssues ?? [];
-
-  if (shouldAutoElevateQuality(firstScore, Boolean(request.elevarQualidade))) {
-    emitStage(options, "generate", "Reforçando qualidade automaticamente…");
-    const elevated = await generateMaterialByEngine(
-      {
-        ...input,
-        elevarQualidade: true,
-        problemasQualidade: firstIssues,
-      },
-      { onStage: options?.onStage },
-    );
-
-    if (elevated.ok) {
-      const elevatedScore = elevated.data.qualityScore ?? 0;
-      if (elevatedScore >= firstScore) {
-        result = elevated;
-        pipeline = "engine-elevated";
-      }
-    }
-  }
 
   emitStage(options, "quality");
   return enforceUnifiedQualityGate(

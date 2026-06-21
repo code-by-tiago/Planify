@@ -259,6 +259,13 @@ export type GeminiGenerateJSONOptions = {
   topP?: number;
   maxOutputTokens?: number;
   /**
+   * Limite local da chamada. Usado pelos fluxos interativos para não deixar a
+   * interface aguardando uma resposta remota indefinidamente.
+   */
+  timeoutMs?: number;
+  /** Total de tentativas por modelo. O padrão mantém a política global atual. */
+  maxAttempts?: number;
+  /**
    * Tier de modelo: "default" (Flash) ou "advanced" (Pro).
    * Tem precedência sobre `model` quando definido.
    * Seleção ocorre exclusivamente no servidor.

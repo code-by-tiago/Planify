@@ -518,6 +518,16 @@ function replaceCellContent(cellXml: string, value: Primitive): string {
   return `${open}${tcPr}${paragraphXml(value)}</w:tc>`;
 }
 
+function replaceParagraphContent(paragraphXml: string, value: Primitive): string {
+  const open = paragraphXml.match(/<w:p(?:\s[^>]*)?>/)?.[0] || "<w:p>";
+  const pPr = paragraphXml.match(/<w:pPr[\s\S]*?<\/w:pPr>/)?.[0] || "";
+  const rPr = paragraphXml.match(/<w:rPr[\s\S]*?<\/w:rPr>/)?.[0] || "";
+
+  return `${open}${pPr}<w:r>${rPr}<w:t xml:space="preserve">${escapeXml(
+    value,
+  )}</w:t></w:r></w:p>`;
+}
+
 function replaceCellsInRow(rowXml: string, values: Array<Primitive | null>): string {
   const cells = findRanges(rowXml, "w:tc");
   let output = rowXml;
@@ -769,7 +779,7 @@ function fieldValueForText(text: string, payload: OfficialPlanningPayload): stri
     return getString(payload, ["anoSerie", "serie", "ano"], "Ano/Série");
   }
 
-  if (normalized.includes("etapa")) {
+  if (normalized === "etapa" || normalized.includes("etapa de ensino")) {
     return getString(payload, ["etapa"], "Etapa não informada");
   }
 
@@ -838,6 +848,31 @@ function fillIdentificationTables(documentXml: string, payload: OfficialPlanning
   });
 
   return replaceInXml(documentXml, tables, replacements);
+}
+
+/** Preenche os títulos livres do modelo trimestral atualizado sem tocar no layout. */
+function fillStandaloneTemplateTokens(
+  documentXml: string,
+  payload: OfficialPlanningPayload,
+): string {
+  const paragraphs = findRanges(documentXml, "w:p");
+  const escola = getString(payload, ["escola"], "Escola não informada");
+  const area = getString(payload, ["areaConhecimento"], "Área do conhecimento");
+  const replacements = paragraphs.map((paragraph) => {
+    const text = normalizeSearch(textFromXml(paragraph.xml));
+
+    if (text === "[nome da escola]") {
+      return replaceParagraphContent(paragraph.xml, escola);
+    }
+
+    if (text === "[area de conhecimento]") {
+      return replaceParagraphContent(paragraph.xml, area);
+    }
+
+    return paragraph.xml;
+  });
+
+  return replaceInXml(documentXml, paragraphs, replacements);
 }
 
 function isPlanningHeaderText(text: string): boolean {
@@ -1134,7 +1169,7 @@ function labelValue(label: string, item: PlanningMatrixItem, payload: OfficialPl
   const trimItem = trimestralMatrixItem(item);
 
   if (text.includes("trimestre") && text.includes("aula")) {
-    return `${getTrimestre(payload)}º trimestre — Aula ${formatMatrixAulaLabel(trimItem)} · ${formatMatrixPeriodosLabel(trimItem)}`;
+    return `${getTrimestre(payload)}º trimestre - Aula nº ${formatMatrixAulaLabel(trimItem)}`;
   }
 
   if (text.includes("aula")) {
@@ -1208,12 +1243,68 @@ function labelValue(label: string, item: PlanningMatrixItem, payload: OfficialPl
   return null;
 }
 
+/**
+ * Rótulo da experiência no modelo trimestral atualizado. Cada aula ocupa uma
+ * única linha da grade, mantendo a semana e a carga horária lado a lado com
+ * os cinco campos pedagógicos da própria aula.
+ */
+function trimestralSemanaLabel(item: PlanningMatrixItem): string {
+  const periodos = Math.max(
+    1,
+    Number(item.periodos) || Number(item.aulaFim) - Number(item.aulaInicio) + 1 || 1,
+  );
+  const periodoLabel = periodos === 1 ? "período" : "períodos";
+
+  return `Semana ${formatMatrixAulaLabel(item)} (${periodos} ${periodoLabel})`;
+}
+
+function isUpdatedTrimestralExperienceHeader(row: RowInfo): boolean {
+  if (row.cells.length < 6) return false;
+
+  const headers = row.cells.map((cell) => normalizeSearch(cell.text));
+
+  return (
+    headers[1]?.includes("metodologia") &&
+    headers[2]?.includes("materiais") &&
+    (headers[3]?.includes("etapa") || headers[3]?.includes("momento")) &&
+    headers[4]?.includes("evidencia") &&
+    (headers[5]?.includes("instrumento") || headers[5]?.includes("avaliacao"))
+  );
+}
+
+function isUpdatedTrimestralExperienceDataRow(row: RowInfo): boolean {
+  if (row.cells.length < 6 || isUpdatedTrimestralExperienceHeader(row)) {
+    return false;
+  }
+
+  return normalizeSearch(row.cells[0]?.text || "").includes("semana");
+}
+
+function updatedTrimestralExperienceValues(
+  item: PlanningMatrixItem,
+): Array<Primitive | null> {
+  const trimItem = trimestralMatrixItem(item);
+
+  return [
+    trimestralSemanaLabel(trimItem),
+    shortText(trimItem.metodologia, 520),
+    shortText(formatMateriaisRecursosNecessarios(trimItem), 520),
+    shortText(trimItem.etapas || trimItem.metodologia, 520),
+    shortText(trimItem.evidencias, 520),
+    shortText(trimItem.avaliacao, 520),
+  ];
+}
+
 function fillTrimestralLabelRow(
   row: RowInfo,
   item: PlanningMatrixItem,
   payload: OfficialPlanningPayload,
 ): string {
   const cellCount = row.cells.length;
+
+  if (isUpdatedTrimestralExperienceDataRow(row)) {
+    return replaceCellsInRow(row.xml, updatedTrimestralExperienceValues(item));
+  }
 
   if (cellCount === 1) {
     const value = labelValue(row.cells[0]?.text || "", item, payload);
@@ -1322,9 +1413,10 @@ function isTrimestralExperienceTable(table: TableInfo): boolean {
 
   return (
     text.includes("experiencia") &&
-    text.includes("organizacao") &&
+    (text.includes("organizacao") || text.includes("metodologia")) &&
     text.includes("materiais") &&
-    text.includes("evidencia")
+    text.includes("evidencia") &&
+    (text.includes("momento") || text.includes("etapa"))
   );
 }
 
@@ -1354,6 +1446,10 @@ function fillTrimestralExperienceTable(
   const trimItem = trimestralMatrixItem(item);
 
   const rowReplacements = table.rows.map((row) => {
+    if (isUpdatedTrimestralExperienceDataRow(row)) {
+      return replaceCellsInRow(row.xml, updatedTrimestralExperienceValues(trimItem));
+    }
+
     if (row.cells.length < 6) {
       return row.xml;
     }
@@ -1559,6 +1655,7 @@ function fillOfficialTemplateXml(documentXml: string, payload: OfficialPlanningP
   let output = documentXml;
 
   output = fillIdentificationTables(output, payload);
+  output = fillStandaloneTemplateTokens(output, payload);
 
   if (getTipo(payload) === "trimestral") {
     output = fillTrimestralPlanningTable(output, payload);

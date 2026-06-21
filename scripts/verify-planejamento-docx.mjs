@@ -355,13 +355,27 @@ function verifyReferenceTemplates(buildOfficialPlanningDocx, buildTrimestralPlan
           `${trimestre}º trimestre contém conteúdo de outro período (${item.conteudo})`,
         ),
       );
-    ["semana 1", "materiais e recursos necessarios", "instrumentos de avaliacao"]
+    [
+      "semana 1 (6 periodos)",
+      "metodologia",
+      "materiais e recursos necessarios",
+      "etapas dessa experiencia",
+      "instrumentos de avaliacao",
+    ]
       .forEach((expected) =>
         assert.ok(
           trimestralText.includes(expected),
           `${trimestre}º trimestre: campo de referência ausente (${expected})`,
         ),
       );
+    assert.ok(
+      !trimestralText.includes("organizacao da turma"),
+      `${trimestre}º trimestre: estrutura antiga de experiências permaneceu no modelo`,
+    );
+    assert.ok(
+      !trimestralText.includes("momentos/etapas dessa experiencia"),
+      `${trimestre}º trimestre: rótulo antigo de etapas permaneceu no modelo`,
+    );
     assertWithoutReferenceInstructions(`${trimestre}º trimestre`, trimestralText);
   }
 

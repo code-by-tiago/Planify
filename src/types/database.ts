@@ -1523,6 +1523,12 @@ export type Database = {
           tags: string[];
           source_title: string | null;
           source_type: string | null;
+          collection: string;
+          source_url: string | null;
+          source_license: string | null;
+          review_status: string;
+          quality_score: number | null;
+          reviewed_at: string | null;
           content_hash: string;
           visibility: string;
           is_published: boolean;
@@ -1550,6 +1556,12 @@ export type Database = {
           tags?: string[];
           source_title?: string | null;
           source_type?: string | null;
+          collection?: string;
+          source_url?: string | null;
+          source_license?: string | null;
+          review_status?: string;
+          quality_score?: number | null;
+          reviewed_at?: string | null;
           content_hash: string;
           visibility?: string;
           is_published?: boolean;
@@ -1577,6 +1589,12 @@ export type Database = {
           tags?: string[];
           source_title?: string | null;
           source_type?: string | null;
+          collection?: string;
+          source_url?: string | null;
+          source_license?: string | null;
+          review_status?: string;
+          quality_score?: number | null;
+          reviewed_at?: string | null;
           content_hash?: string;
           visibility?: string;
           is_published?: boolean;

@@ -5,6 +5,7 @@
  * Fontes:
  *  - planify-materials   — generated_materials (dados próprios)
  *  - planify-biblioteca  — pacotes curados Planify
+ *  - approved-feeds      — feeds JSON HTTPS oficialmente autorizados/licenciados
  *  - stackexchange       — DESATIVADO (fórum universitário EN, não serve EF/EM BR)
  *  - wikiversity-pt      — DESATIVADO (qualidade inconsistente)
  *
@@ -35,13 +36,14 @@ import { SOURCE_ID as BIB_ID, iteratePlanifyBiblioteca } from "./lib/question-ba
 import { SOURCE_ID as MAT_ID, iteratePlanifyMaterials } from "./lib/question-bank-ingest/sources/planify-materials.mjs";
 import { SOURCE_ID as SE_ID, iterateStackExchange } from "./lib/question-bank-ingest/sources/stackexchange.mjs";
 import { SOURCE_ID as WIKI_ID, iterateWikiversityPt } from "./lib/question-bank-ingest/sources/wikiversity-pt.mjs";
+import { SOURCE_ID as APPROVED_FEEDS_ID, iterateApprovedFeeds } from "./lib/question-bank-ingest/sources/approved-feeds.mjs";
 
 loadEnvLocal();
 
 const { computeQuestionContentHash } = loadTsModule("src/lib/banco-questoes/question-bank-hash.ts");
 
 /** Padrão Teachy: só curadoria Planify + materiais gerados com qualidade. */
-const DEFAULT_SOURCES = `${MAT_ID},${BIB_ID}`;
+const DEFAULT_SOURCES = `${MAT_ID},${BIB_ID},${APPROVED_FEEDS_ID}`;
 
 const ALL_SOURCES = {
   [MAT_ID]: iteratePlanifyMaterials,
@@ -49,6 +51,7 @@ const ALL_SOURCES = {
   // Fontes externas desativadas — volume ≠ qualidade escolar BR
   [SE_ID]: iterateStackExchange,
   [WIKI_ID]: iterateWikiversityPt,
+  [APPROVED_FEEDS_ID]: iterateApprovedFeeds,
 };
 
 function log(msg) {

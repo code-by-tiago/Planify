@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   getLessonBundleCreditCost,
   LESSON_BUNDLE_GENERATION_TYPE,
+  normalizeLessonBundleTools,
 } from "@/lib/aula-completa/lesson-bundle-config";
-import { DEFAULT_LESSON_BUNDLE_TOOLS } from "@/lib/aula-completa/lesson-bundle-config";
 import { isDeepGenerationType } from "@/lib/ai/material-generation-policy";
 import { requireApiPremiumAccess } from "@/server/auth/api-access";
 import {
@@ -70,9 +70,21 @@ export async function prepareLessonBundleRequest(
     };
   }
 
-  const toolIds = (payload.bundleTools?.length
-    ? payload.bundleTools
-    : DEFAULT_LESSON_BUNDLE_TOOLS) as PlanifyToolId[];
+  const { toolIds, invalidToolIds } = normalizeLessonBundleTools(payload.bundleTools);
+  if (invalidToolIds.length) {
+    return {
+      ok: false,
+      response: NextResponse.json(
+        {
+          ok: false,
+          message: `Ferramenta(s) inválida(s) para Aula Completa: ${invalidToolIds.join(", ")}.`,
+        },
+        { status: 400 },
+      ),
+    };
+  }
+
+  payload.bundleTools = toolIds;
 
   const tipo = LESSON_BUNDLE_GENERATION_TYPE;
   const bundleCost = getLessonBundleCreditCost(toolIds);

@@ -54,6 +54,9 @@ export function stripCompetitorMentions(text) {
  */
 export function deriveEtapa(anoSerie) {
   const s = String(anoSerie || "").toLowerCase();
+  if (/enem|vestibular/.test(s)) return "ENEM e Vestibulares";
+  if (/superior|gradua[cç][aã]o|universit[aá]rio/.test(s)) return "Ensino Superior";
+  if (/concurso/.test(s)) return "Concursos Públicos";
   if (/em|médio|medio|1º\s*ano.*em|2º\s*ano.*em|3º\s*ano.*em/.test(s)) {
     return "Ensino Médio";
   }
@@ -64,6 +67,17 @@ export function deriveEtapa(anoSerie) {
     return "Ensino Fundamental I";
   }
   return "Ensino Fundamental";
+}
+
+/** @param {string} etapa */
+export function deriveCollection(etapa) {
+  const normalized = String(etapa || "").toLowerCase();
+  if (normalized.includes("enem")) return "enem";
+  if (normalized.includes("vestibular")) return "vestibular";
+  if (normalized.includes("concurso")) return "concurso";
+  if (normalized.includes("superior")) return "superior";
+  if (normalized.includes("ensino")) return "escolar";
+  return "geral";
 }
 
 const GABARITO_LETTERS = new Set(["A", "B", "C", "D", "E"]);
@@ -106,8 +120,10 @@ export function normalizeGeneratedQuestion(raw, ctx) {
     bnccCodigos: Array.isArray(raw.bncc_codigos)
       ? raw.bncc_codigos.map(String).filter(Boolean).slice(0, 6)
       : [],
-    sourceType: "ingest:ai-gemini",
-    sourceTitle: "Geração IA Planify",
+    collection: deriveCollection(ctx.etapa),
+    sourceType: "ingest:ai:gemini",
+    sourceTitle: "Curadoria automática Planify",
+    reviewStatus: "automated",
     authorName: "Planify Curadoria OER",
   };
 }

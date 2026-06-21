@@ -10,6 +10,9 @@ import { generateSlideIllustration } from "./slide-image-generator";
 
 const WIKIMEDIA_API = "https://commons.wikimedia.org/w/api.php";
 const USER_AGENT = "Planify/1.0 (educational slides; contact: planify-app)";
+const STOCK_SEARCH_TIMEOUT_MS = 6_000;
+const SLIDE_IMAGE_RESOLUTION_TIMEOUT_MS = 22_000;
+const DEFAULT_SLIDE_IMAGE_ENRICHMENT_TIMEOUT_MS = 65_000;
 
 const STOPWORDS = new Set([
   "conceito",
@@ -95,7 +98,10 @@ function isSafeImageUrl(url: string): boolean {
   }
 }
 
-async function searchWikimedia(query: string): Promise<{ url: string; alt: string } | null> {
+async function searchWikimedia(
+  query: string,
+  timeoutMs: number,
+): Promise<{ url: string; alt: string } | null> {
   const params = new URLSearchParams({
     action: "query",
     generator: "search",
@@ -110,7 +116,7 @@ async function searchWikimedia(query: string): Promise<{ url: string; alt: strin
 
   const response = await fetch(`${WIKIMEDIA_API}?${params}`, {
     headers: { "User-Agent": USER_AGENT },
-    signal: AbortSignal.timeout(8000),
+    signal: AbortSignal.timeout(Math.max(1, timeoutMs)),
   });
 
   if (!response.ok) return null;
@@ -142,6 +148,7 @@ async function searchWikimedia(query: string): Promise<{ url: string; alt: strin
 
 async function searchOpenverse(
   query: string,
+  timeoutMs: number,
 ): Promise<{ url: string; alt: string } | null> {
   const params = new URLSearchParams({
     q: query,
@@ -155,7 +162,7 @@ async function searchOpenverse(
       `https://api.openverse.org/v1/images/?${params}`,
       {
         headers: { "User-Agent": USER_AGENT, Accept: "application/json" },
-        signal: AbortSignal.timeout(8000),
+        signal: AbortSignal.timeout(Math.max(1, timeoutMs)),
       },
     );
 
@@ -183,7 +190,10 @@ async function searchOpenverse(
   return null;
 }
 
-async function searchUnsplash(query: string): Promise<{ url: string; alt: string } | null> {
+async function searchUnsplash(
+  query: string,
+  timeoutMs: number,
+): Promise<{ url: string; alt: string } | null> {
   const key = String(process.env.UNSPLASH_ACCESS_KEY || "").trim();
   if (!key) return null;
 
@@ -196,7 +206,7 @@ async function searchUnsplash(query: string): Promise<{ url: string; alt: string
 
   const response = await fetch(`https://api.unsplash.com/search/photos?${params}`, {
     headers: { Authorization: `Client-ID ${key}` },
-    signal: AbortSignal.timeout(8000),
+    signal: AbortSignal.timeout(Math.max(1, timeoutMs)),
   });
 
   if (!response.ok) return null;
@@ -223,25 +233,36 @@ async function searchUnsplash(query: string): Promise<{ url: string; alt: string
 export async function resolveSlideImage(input: {
   imagePrompt: string;
   tema: string;
-}): Promise<{ url: string; alt: string } | null> {
+}, options?: { deadlineAt?: number }): Promise<{ url: string; alt: string } | null> {
   const prompt = input.imagePrompt.trim();
   if (!prompt) return null;
 
   const queries = normalizeSearchTerms(prompt, input.tema);
   if (!queries.length) return null;
 
+  const deadlineAt =
+    options?.deadlineAt ?? Date.now() + SLIDE_IMAGE_RESOLUTION_TIMEOUT_MS;
+  const remainingTimeout = () =>
+    Math.min(STOCK_SEARCH_TIMEOUT_MS, Math.max(0, deadlineAt - Date.now()));
+
   for (const query of queries) {
-    const wiki = await searchWikimedia(query);
+    const timeoutMs = remainingTimeout();
+    if (!timeoutMs) return null;
+    const wiki = await searchWikimedia(query, timeoutMs);
     if (wiki) return wiki;
   }
 
   for (const query of queries) {
-    const openverse = await searchOpenverse(query);
+    const timeoutMs = remainingTimeout();
+    if (!timeoutMs) return null;
+    const openverse = await searchOpenverse(query, timeoutMs);
     if (openverse) return openverse;
   }
 
   for (const query of queries) {
-    const unsplash = await searchUnsplash(query);
+    const timeoutMs = remainingTimeout();
+    if (!timeoutMs) return null;
+    const unsplash = await searchUnsplash(query, timeoutMs);
     if (unsplash) return unsplash;
   }
 
@@ -259,28 +280,42 @@ type EnrichableSlide = {
 /** Teto de imagens geradas por IA por apresentação (controla custo/latência). */
 const MAX_AI_IMAGES = 8;
 /** Quantas gerações de imagem correm em paralelo. */
-const IMAGE_CONCURRENCY = 4;
+const IMAGE_CONCURRENCY = 3;
+
+function isSlideImageCandidate(slide: EnrichableSlide): boolean {
+  return Boolean(
+    !slide.imageUrl?.trim() &&
+      slide.layout !== "fechamento" &&
+      (slide.imagePrompt?.trim() || slide.title?.trim()),
+  );
+}
 
 async function resolveForSlide(
   slide: EnrichableSlide,
   context: { tema: string },
   allowAi: () => boolean,
+  deadlineAt: number,
 ): Promise<void> {
-  if (slide.imageUrl?.trim()) return;
-  if (slide.layout === "fechamento") return;
+  if (!isSlideImageCandidate(slide) || Date.now() >= deadlineAt) return;
 
   // O imagePrompt concreto do slide (ou o título como apoio) é a base. Sem
   // fallback genérico de tema+componente, que trazia imagens sem relação.
   const prompt = slide.imagePrompt?.trim() || slide.title?.trim();
   if (!prompt) return;
 
+  const imageDeadlineAt = Math.min(
+    deadlineAt,
+    Date.now() + SLIDE_IMAGE_RESOLUTION_TIMEOUT_MS,
+  );
+  const remainingTimeout = () => Math.max(0, imageDeadlineAt - Date.now());
+
   // 1) Ilustração gerada por IA — sempre condiz com o conteúdo do slide.
-  if (allowAi()) {
+  if (allowAi() && remainingTimeout() > 0) {
     try {
       const generated = await generateSlideIllustration({
         imagePrompt: prompt,
         tema: context.tema,
-      });
+      }, { timeoutMs: remainingTimeout() });
       if (generated) {
         slide.imageUrl = generated.url;
         slide.imageAlt = generated.alt;
@@ -292,8 +327,12 @@ async function resolveForSlide(
   }
 
   // 2) Foto de stock relevante (com filtro). 3) Nenhuma imagem.
+  if (remainingTimeout() <= 0) return;
   try {
-    const resolved = await resolveSlideImage({ imagePrompt: prompt, tema: context.tema });
+    const resolved = await resolveSlideImage(
+      { imagePrompt: prompt, tema: context.tema },
+      { deadlineAt: imageDeadlineAt },
+    );
     if (resolved) {
       slide.imageUrl = resolved.url;
       slide.imageAlt = resolved.alt;
@@ -307,12 +346,17 @@ async function runWithConcurrency<T>(
   items: T[],
   limit: number,
   worker: (item: T) => Promise<void>,
+  deadlineAt: number,
 ): Promise<void> {
   const queue = [...items];
   const runners = Array.from(
     { length: Math.min(limit, queue.length) },
     async () => {
-      for (let item = queue.shift(); item !== undefined; item = queue.shift()) {
+      for (
+        let item = queue.shift();
+        item !== undefined && Date.now() < deadlineAt;
+        item = queue.shift()
+      ) {
         await worker(item);
       }
     },
@@ -342,7 +386,14 @@ function aiImagesEnabled(): boolean {
 export async function enrichSlidesWithImages(
   slides: EnrichableSlide[],
   context: { tema: string; componente: string },
+  options?: {
+    timeoutMs?: number;
+    onProgress?: (index: number, total: number) => void;
+  },
 ): Promise<void> {
+  const deadlineAt =
+    Date.now() +
+    Math.max(1, options?.timeoutMs ?? DEFAULT_SLIDE_IMAGE_ENRICHMENT_TIMEOUT_MS);
   let aiBudget = aiImagesEnabled() ? MAX_AI_IMAGES : 0;
   const allowAi = () => {
     if (aiBudget <= 0) return false;
@@ -350,7 +401,12 @@ export async function enrichSlidesWithImages(
     return true;
   };
 
-  await runWithConcurrency(slides, IMAGE_CONCURRENCY, (slide) =>
-    resolveForSlide(slide, { tema: context.tema }, allowAi),
-  );
+  const candidates = slides.filter(isSlideImageCandidate);
+  let completed = 0;
+
+  await runWithConcurrency(candidates, IMAGE_CONCURRENCY, async (slide) => {
+    await resolveForSlide(slide, { tema: context.tema }, allowAi, deadlineAt);
+    completed += 1;
+    options?.onProgress?.(completed, candidates.length);
+  }, deadlineAt);
 }

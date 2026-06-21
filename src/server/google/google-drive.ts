@@ -78,6 +78,8 @@ export async function uploadBufferToGoogleDrive(params: {
 
 const PPTX_MIME =
   "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+const GOOGLE_PRESENTATION_MIME = "application/vnd.google-apps.presentation";
+const GOOGLE_PRESENTATION_UPLOAD_TIMEOUT_MS = 90_000;
 
 /** Envia PPTX e converte para Google Apresentações nativo. */
 export async function uploadPptxAsGooglePresentation(params: {
@@ -89,7 +91,7 @@ export async function uploadPptxAsGooglePresentation(params: {
   const baseName = params.filename.replace(/\.pptx$/i, "");
   const metadata: Record<string, unknown> = {
     name: baseName,
-    mimeType: "application/vnd.google-apps.presentation",
+    mimeType: GOOGLE_PRESENTATION_MIME,
   };
 
   if (driveFolderId) {
@@ -103,7 +105,7 @@ export async function uploadPptxAsGooglePresentation(params: {
     ),
     Buffer.from(`--${boundary}\r\nContent-Type: ${PPTX_MIME}\r\n\r\n`),
     params.buffer,
-    Buffer.from(`\r\n--${boundary}--`),
+    Buffer.from(`\r\n--${boundary}--\r\n`),
   ]);
 
   const response = await fetch(
@@ -115,6 +117,7 @@ export async function uploadPptxAsGooglePresentation(params: {
         "Content-Type": `multipart/related; boundary=${boundary}`,
       },
       body: multipartBody,
+      signal: AbortSignal.timeout(GOOGLE_PRESENTATION_UPLOAD_TIMEOUT_MS),
     },
   );
 
@@ -122,6 +125,7 @@ export async function uploadPptxAsGooglePresentation(params: {
     id?: string;
     name?: string;
     webViewLink?: string;
+    mimeType?: string;
     error?: { message?: string };
   };
 
@@ -129,6 +133,12 @@ export async function uploadPptxAsGooglePresentation(params: {
     throw new Error(
       data.error?.message ||
         "Não foi possível criar a apresentação no Google Apresentações.",
+    );
+  }
+
+  if (data.mimeType !== GOOGLE_PRESENTATION_MIME) {
+    throw new Error(
+      "O Google Drive não confirmou a conversão para Google Apresentações. Tente novamente.",
     );
   }
 

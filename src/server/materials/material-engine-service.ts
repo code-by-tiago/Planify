@@ -1,6 +1,8 @@
 import { buildVisualGameMaterial } from "@/lib/materiais/game-builder";
 import { getModelTierForMaterialRequest } from "@/lib/ai/material-generation-policy";
 import { GENERATION_SERVER_DEADLINE_MS } from "@/lib/pro/generation-timeout";
+import { buildStageEvent } from "@/lib/generation/generation-pipeline-stages";
+import type { GenerationStageEvent } from "@/lib/generation/generation-job-types";
 import { computeQualityScore } from "@/lib/materiais/material-quality-score";
 import { isGenericEducationalText } from "@/lib/materiais/material-semantic-quality";
 import {
@@ -92,6 +94,11 @@ const MIN_P0_QUALITY_SCORE = 88;
 
 const GENERATION_DEADLINE_MS = GENERATION_SERVER_DEADLINE_MS;
 const MAX_EXAM_REPAIR_PASSES = 1;
+/** Reserva tempo suficiente para renderizar e enriquecer o deck uma única vez. */
+const SLIDES_FINALIZATION_RESERVE_MS = 75_000;
+/** Uma chamada lenta não pode consumir toda a vida útil da rota de Slides. */
+const MAX_SLIDES_CONTENT_CALL_MS = 100_000;
+const MAX_SLIDES_IMAGE_ENRICHMENT_MS = 65_000;
 
 const CRITICAL_RETRY_TYPES = new Set<MaterialEngineType>([
   "prova",
@@ -1067,12 +1074,42 @@ function renderDocumentHtml(
   return base;
 }
 
-function maxOutputTokensFor(type: MaterialEngineType): number {
-  if (type === "slides") return 24000;
+function maxOutputTokensFor(request: MaterialEngineRequest): number {
+  if (request.tipoMaterial === "slides") {
+    // Decks usuais (6–15 slides) não precisam reservar 24k tokens. Para os
+    // decks longos, o teto continua escalando até o máximo anterior.
+    return Math.min(24000, Math.max(12000, request.quantidade * 800));
+  }
+  const type = request.tipoMaterial;
   if (type === "flashcards" || type === "mapa-mental") return 14000;
   if (type === "resumo" || type === "atividade" || type === "jogo") return 16000;
   if (type === "prova" || type === "lista" || type === "apostila") return 16000;
   return 12000;
+}
+
+type MaterialEngineGenerationOptions = {
+  onStage?: (stage: GenerationStageEvent) => void;
+};
+
+async function withMaterialStepTimeout<T>(
+  work: Promise<T>,
+  timeoutMs: number,
+  label: string,
+): Promise<T> {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+  try {
+    return await Promise.race([
+      work,
+      new Promise<T>((_, reject) => {
+        timeoutId = setTimeout(() => {
+          reject(new Error(`${label} demorou mais que o esperado. Tente novamente.`));
+        }, timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
+  }
 }
 
 /** Smoke/offline: monta HTML a partir de estrutura já normalizada (scripts de verificação). */
@@ -1085,7 +1122,10 @@ export function buildMaterialEngineHtmlFromStructure(
   return renderDocumentHtml(request, normalized);
 }
 
-export async function generateMaterialByEngine(input: MaterialEngineInput) {
+export async function generateMaterialByEngine(
+  input: MaterialEngineInput,
+  options?: MaterialEngineGenerationOptions,
+) {
   const request = normalizeMaterialEngineRequest(input);
   const errors = validateMaterialEngineRequest(request);
 
@@ -1115,7 +1155,7 @@ export async function generateMaterialByEngine(input: MaterialEngineInput) {
   const basePrompt = outlineBlock
     ? `${userPrompt}\n\n${outlineBlock}`
     : userPrompt;
-  const maxOutputTokens = maxOutputTokensFor(request.tipoMaterial);
+  const maxOutputTokens = maxOutputTokensFor(request);
 
   let activePrompt = basePrompt;
   let lastError: unknown = null;
@@ -1131,7 +1171,7 @@ export async function generateMaterialByEngine(input: MaterialEngineInput) {
         request.elevarQualidade || attempt > 0
           ? "advanced"
           : "default";
-      const layoutRaw = await generateGeminiJSON<MaterialLayout>({
+      const generateLayout = generateGeminiJSON<MaterialLayout>({
         systemInstruction,
         prompt: activePrompt,
         cacheProfile: `material-engine:${request.tipoMaterial}`,
@@ -1141,6 +1181,23 @@ export async function generateMaterialByEngine(input: MaterialEngineInput) {
         maxOutputTokens,
         responseSchema: schema,
       });
+      const remainingForContent =
+        GENERATION_DEADLINE_MS -
+        (Date.now() - generationStartedAt) -
+        SLIDES_FINALIZATION_RESERVE_MS;
+      if (request.tipoMaterial === "slides" && remainingForContent <= 0) {
+        throw new Error(
+          "A geração dos slides demorou mais que o esperado. Tente novamente.",
+        );
+      }
+      const layoutRaw =
+        request.tipoMaterial === "slides"
+          ? await withMaterialStepTimeout(
+              generateLayout,
+              Math.min(MAX_SLIDES_CONTENT_CALL_MS, remainingForContent),
+              "A geração dos slides",
+            )
+          : await generateLayout;
 
       const layoutIssues = validateMaterialLayout(promptInput, layoutRaw);
       if (
@@ -1168,10 +1225,6 @@ export async function generateMaterialByEngine(input: MaterialEngineInput) {
           });
         }
         assignSlideSequenceLabels(normalized.slides);
-        await enrichSlidesWithImages(normalized.slides, {
-          tema: request.tema,
-          componente: request.componenteCurricular,
-        });
       }
 
       const issues = [...layoutIssues, ...getEngineOutputIssues(request, normalized)];
@@ -1243,6 +1296,48 @@ export async function generateMaterialByEngine(input: MaterialEngineInput) {
             }
           }
         }
+      }
+
+      // Imagens só são resolvidas depois que o conteúdo passou pelas revisões.
+      // Antes, cada tentativa de qualidade iniciava novas imagens e o stream
+      // permanecia em 58% até a infraestrutura encerrar a requisição.
+      if (request.tipoMaterial === "slides" && finalNormalized.slides?.length) {
+        const remainingForImages = Math.max(
+          0,
+          GENERATION_DEADLINE_MS - (Date.now() - generationStartedAt),
+        );
+        const imageTimeoutMs = Math.min(
+          MAX_SLIDES_IMAGE_ENRICHMENT_MS,
+          remainingForImages,
+        );
+
+        if (imageTimeoutMs > 0) {
+          options?.onStage?.(buildStageEvent("images", "Resolvendo imagens dos slides…"));
+          try {
+            await enrichSlidesWithImages(
+              finalNormalized.slides,
+              {
+                tema: request.tema,
+                componente: request.componenteCurricular,
+              },
+              {
+                timeoutMs: imageTimeoutMs,
+                onProgress: (index, total) => {
+                  options?.onStage?.(
+                    buildStageEvent(
+                      "images",
+                      `Resolvendo imagens (${index}/${total})…`,
+                    ),
+                  );
+                },
+              },
+            );
+          } catch {
+            // O deck continua útil mesmo se um provedor de imagens falhar.
+          }
+        }
+
+        finalHtml = renderDocumentHtml(request, finalNormalized);
       }
 
       return {

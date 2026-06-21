@@ -21,6 +21,26 @@ export const OPTIONAL_LESSON_BUNDLE_TOOLS: PlanifyToolId[] = [
   "mapa-mental",
 ];
 
+/** Ferramentas que podem compor Aula Completa; impede recursão e itens incompatíveis. */
+export const LESSON_BUNDLE_ALLOWED_TOOLS: readonly PlanifyToolId[] = [
+  ...DEFAULT_LESSON_BUNDLE_TOOLS,
+  ...OPTIONAL_LESSON_BUNDLE_TOOLS,
+];
+
+export function isLessonBundleTool(value: string): value is PlanifyToolId {
+  return LESSON_BUNDLE_ALLOWED_TOOLS.includes(value as PlanifyToolId);
+}
+
+export function normalizeLessonBundleTools(
+  tools?: PlanifyToolId[],
+): { toolIds: PlanifyToolId[]; invalidToolIds: string[] } {
+  const requested = tools?.length ? tools : DEFAULT_LESSON_BUNDLE_TOOLS;
+  const invalidToolIds = requested.filter((toolId) => !isLessonBundleTool(toolId));
+  const toolIds = [...new Set(requested.filter(isLessonBundleTool))];
+
+  return { toolIds, invalidToolIds };
+}
+
 export const LESSON_BUNDLE_GENERATION_TYPE = "aula-completa";
 
 const BUNDLE_DISCOUNT = 0.85;

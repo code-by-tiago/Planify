@@ -144,6 +144,9 @@ const INTERNAL_SOURCE_PREFIXES = [
   "planify:",
   "ingest:planify-biblioteca",
   "ingest:planify-materials",
+  "ingest:ai:",
+  "ingest:official:",
+  "ingest:licensed:",
 ];
 
 export function normalizeWhitespace(text) {
@@ -310,6 +313,13 @@ export async function persistQuestion(supabase, userId, question, { dryRun, hash
     tags: question.tags || [],
     source_title: question.sourceTitle || "Ingestão Planify",
     source_type: question.sourceType || "ingest",
+    collection: question.collection || "geral",
+    source_url: question.sourceUrl || null,
+    source_license: question.sourceLicense || null,
+    review_status: question.reviewStatus || "community",
+    quality_score:
+      typeof question.qualityScore === "number" ? question.qualityScore : null,
+    reviewed_at: question.reviewedAt || null,
     content_hash: contentHash,
     visibility: "community",
     is_published: true,

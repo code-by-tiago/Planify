@@ -91,7 +91,7 @@ function buildEducationalIllustrationPrompt(input: {
 export async function generateSlideIllustration(input: {
   imagePrompt: string;
   tema: string;
-}): Promise<{ url: string; alt: string } | null> {
+}, options?: { timeoutMs?: number }): Promise<{ url: string; alt: string } | null> {
   const subject = (input.imagePrompt || "").trim() || (input.tema || "").trim();
   if (!subject) return null;
 
@@ -99,6 +99,7 @@ export async function generateSlideIllustration(input: {
   const image = await generateImagenImage(prompt, {
     aspectRatio: "16:9",
     outputMimeType: "image/png",
+    timeoutMs: options?.timeoutMs,
   });
 
   if (!image) return null;

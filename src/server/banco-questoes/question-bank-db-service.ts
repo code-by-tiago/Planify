@@ -1,4 +1,8 @@
 import { computeQuestionContentHash } from "@/lib/banco-questoes/question-bank-hash";
+import {
+  isHumanReviewedQuestion,
+  normalizeQuestionBankCollection,
+} from "@/lib/banco-questoes/question-bank-curation";
 import type { Database } from "@/types/database";
 import type { QuestionBankItem } from "@/types/question-bank";
 import { getPrimarySchoolIdForUser } from "../schools/school-access";
@@ -14,6 +18,15 @@ export type QuestionBankListFilter = {
   query?: string;
   limit?: number;
   offset?: number;
+};
+
+export type QuestionBankCurationSummary = {
+  totalPublic: number;
+  curated: number;
+  humanReviewed: number;
+  automated: number;
+  latestAt: string | null;
+  byCollection: Record<string, number>;
 };
 
 function mapRowToItem(row: QuestionBankRow): QuestionBankItem {
@@ -37,6 +50,13 @@ function mapRowToItem(row: QuestionBankRow): QuestionBankItem {
     tags: row.tags ?? [],
     sourceTitle: row.source_title ?? undefined,
     sourceType: row.source_type ?? undefined,
+    collection: normalizeQuestionBankCollection(row.collection),
+    sourceUrl: row.source_url ?? undefined,
+    sourceLicense: row.source_license ?? undefined,
+    reviewStatus: row.review_status as QuestionBankItem["reviewStatus"],
+    qualityScore:
+      typeof row.quality_score === "number" ? row.quality_score : undefined,
+    reviewedAt: row.reviewed_at ?? undefined,
     isCommunity: row.visibility === "community" && row.is_published,
     isSchool: row.visibility === "school" && row.is_published,
     authorName: row.author_display_name ?? undefined,
@@ -76,6 +96,13 @@ function mapItemToInsert(
     tags: item.tags ?? [],
     source_title: item.sourceTitle ?? null,
     source_type: item.sourceType ?? null,
+    collection: normalizeQuestionBankCollection(item.collection),
+    source_url: item.sourceUrl ?? null,
+    source_license: item.sourceLicense ?? null,
+    review_status: item.reviewStatus ?? "community",
+    quality_score:
+      typeof item.qualityScore === "number" ? item.qualityScore : null,
+    reviewed_at: item.reviewedAt ?? null,
     content_hash: contentHash,
     visibility: "private",
     is_published: false,
@@ -181,6 +208,53 @@ export async function listCommunityQuestions(
   }
 
   return items;
+}
+
+export async function getQuestionBankCurationSummary(): Promise<QuestionBankCurationSummary> {
+  const supabase = getSupabaseAdminClient();
+  const [{ count, error: countError }, { data, error }] = await Promise.all([
+    supabase
+      .from("question_bank_items")
+      .select("*", { count: "exact", head: true })
+      .eq("visibility", "community")
+      .eq("is_published", true),
+    supabase
+      .from("question_bank_items")
+      .select("collection, review_status, source_type, updated_at")
+      .eq("visibility", "community")
+      .eq("is_published", true)
+      .order("updated_at", { ascending: false })
+      .limit(5000),
+  ]);
+
+  if (countError) throw new Error(countError.message);
+  if (error) throw new Error(error.message);
+
+  const byCollection: Record<string, number> = {};
+  let humanReviewed = 0;
+  let automated = 0;
+
+  for (const row of data ?? []) {
+    const collection = normalizeQuestionBankCollection(row.collection);
+    byCollection[collection] = (byCollection[collection] ?? 0) + 1;
+    if (isHumanReviewedQuestion({
+      reviewStatus: row.review_status as QuestionBankItem["reviewStatus"],
+      sourceType: row.source_type ?? undefined,
+    })) {
+      humanReviewed += 1;
+    } else if (row.review_status === "automated") {
+      automated += 1;
+    }
+  }
+
+  return {
+    totalPublic: count ?? data?.length ?? 0,
+    curated: humanReviewed + automated,
+    humanReviewed,
+    automated,
+    latestAt: data?.[0]?.updated_at ?? null,
+    byCollection,
+  };
 }
 
 export async function getQuestionsByIds(ids: string[]): Promise<QuestionBankItem[]> {

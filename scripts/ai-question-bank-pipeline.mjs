@@ -242,7 +242,11 @@ async function main() {
       continue;
     }
 
-    const question = normalizeGeneratedQuestion(generated, ctx);
+    const question = {
+      ...normalizeGeneratedQuestion(generated, ctx),
+      qualityScore: Number(review.nota),
+      reviewedAt: new Date().toISOString(),
+    };
 
     if (
       containsCompetitorMention(question.enunciado) ||

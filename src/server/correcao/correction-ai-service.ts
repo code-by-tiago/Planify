@@ -67,6 +67,42 @@ function validatePayload(payload: CorrectionAiPayload): string | null {
   return null;
 }
 
+function clamp(value: number, minimum: number, maximum: number): number {
+  return Math.min(maximum, Math.max(minimum, value));
+}
+
+export function normalizeCorrectionScores(
+  raw: {
+    nota?: unknown;
+    notaMaxima?: unknown;
+    percentual?: unknown;
+  },
+  fallbackNotaMaxima?: number,
+): Pick<CorrectionAiOutput, "nota" | "notaMaxima" | "percentual"> {
+  const requestedNotaMaxima = Number(raw.notaMaxima ?? fallbackNotaMaxima ?? 10);
+  const notaMaxima =
+    Number.isFinite(requestedNotaMaxima) && requestedNotaMaxima > 0
+      ? requestedNotaMaxima
+      : 10;
+  const requestedNota = Number(raw.nota ?? 0);
+  const nota = clamp(
+    Number.isFinite(requestedNota) ? requestedNota : 0,
+    0,
+    notaMaxima,
+  );
+  const calculatedPercentual = Math.round((nota / notaMaxima) * 100);
+  const requestedPercentual = Number(raw.percentual);
+  const percentual = clamp(
+    Number.isFinite(requestedPercentual)
+      ? Math.round(requestedPercentual)
+      : calculatedPercentual,
+    0,
+    100,
+  );
+
+  return { nota, notaMaxima, percentual };
+}
+
 export async function evaluateCorrectionWithAI(
   payload: CorrectionAiPayload,
 ): Promise<
@@ -89,10 +125,9 @@ export async function evaluateCorrectionWithAI(
       maxOutputTokens: 4096,
     });
 
-    const notaMaxima = Number(generated.notaMaxima || payload.notaMaxima || 10);
-    const nota = Math.min(notaMaxima, Math.max(0, Number(generated.nota || 0)));
-    const percentual = Number(
-      generated.percentual ?? Math.round((nota / Math.max(1, notaMaxima)) * 100),
+    const { nota, notaMaxima, percentual } = normalizeCorrectionScores(
+      generated,
+      payload.notaMaxima,
     );
 
     return {

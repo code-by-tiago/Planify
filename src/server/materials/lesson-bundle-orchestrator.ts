@@ -1,7 +1,7 @@
 import {
   buildLessonBundleObservacoes,
-  DEFAULT_LESSON_BUNDLE_TOOLS,
   getBundleQuantityForTool,
+  normalizeLessonBundleTools,
 } from "@/lib/aula-completa/lesson-bundle-config";
 import { BUNDLE_SERVER_DEADLINE_MS } from "@/lib/pro/generation-timeout";
 import type { PlanifyToolId } from "@/lib/pro/planifyTools";
@@ -59,9 +59,14 @@ export async function generateLessonBundle(
     return { ok: false, status: 400, message: "Informe o tema da aula." };
   }
 
-  const toolIds = (input.bundleTools?.length
-    ? input.bundleTools
-    : DEFAULT_LESSON_BUNDLE_TOOLS) as PlanifyToolId[];
+  const { toolIds, invalidToolIds } = normalizeLessonBundleTools(input.bundleTools);
+  if (invalidToolIds.length) {
+    return {
+      ok: false,
+      status: 400,
+      message: `Ferramenta(s) inválida(s) para Aula Completa: ${invalidToolIds.join(", ")}.`,
+    };
+  }
 
   const items: LessonBundleItemResult[] = [];
   const completedLabels: string[] = [];

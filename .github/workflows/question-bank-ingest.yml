@@ -33,12 +33,13 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           PLANIFY_OWNER_USER_ID: ${{ secrets.PLANIFY_OWNER_USER_ID }}
+          QUESTION_BANK_CURATED_FEEDS: ${{ secrets.QUESTION_BANK_CURATED_FEEDS }}
           STACKEXCHANGE_KEY: ${{ secrets.STACKEXCHANGE_KEY }}
         run: |
           node scripts/ingest-question-bank-web.mjs \
             --hours=${{ github.event.inputs.hours || '2' }} \
             --max=${{ github.event.inputs.max || '3000' }} \
-            --sources=planify-materials,planify-biblioteca
+            --sources=planify-materials,planify-biblioteca,approved-feeds
 
       - uses: actions/upload-artifact@v4
         if: always()

@@ -110,6 +110,16 @@ const FIXTURES = [
     anoSerie: "7º ano",
     etapa: "Ensino Médio",
   }),
+  item({
+    id: "concurso-logica-curada",
+    enunciado: "Considere as proposições apresentadas e assinale a conclusão logicamente válida.",
+    componente: "Raciocínio Lógico",
+    anoSerie: "Concursos Públicos",
+    etapa: "Concursos Públicos",
+    tema: "Raciocínio lógico proposicional",
+    sourceType: "ingest:official:instituicao-parceira",
+    reviewStatus: "human-reviewed",
+  }),
 ];
 
 let passed = 0;
@@ -137,7 +147,7 @@ test("browse shows all valid items", () => {
     source: "todas",
   });
   assert.equal(result.mode, "browse");
-  assert.equal(result.items.length, 3);
+  assert.equal(result.items.length, 4);
   assert.ok(!result.items.some((i) => i.id === "bad-meta"));
 });
 
@@ -214,6 +224,18 @@ test("score rejects cross-stage serie", () => {
     "3ª série",
   );
   assert.equal(score, 0);
+});
+
+test("curated source exposes human-reviewed concurso items only", () => {
+  const result = searchQuestionBankItems(FIXTURES, {
+    query: "lógico",
+    etapa: "Concursos Públicos",
+    componente: "Raciocínio Lógico",
+    anoSerie: "Concursos Públicos",
+    bncc: "",
+    source: "curadas",
+  });
+  assert.deepEqual(result.items.map((entry) => entry.id), ["concurso-logica-curada"]);
 });
 
 console.log(`\nverify-question-bank-match: ${passed} passed, ${failed} failed`);

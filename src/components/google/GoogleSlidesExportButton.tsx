@@ -17,21 +17,12 @@ import {
   notifyGoogleStatusChanged,
   readGoogleSlidesExportPending,
   saveGoogleSlidesExportPending,
+  type GoogleSlidesExportPending,
+  type GoogleSlidesExportSlide,
 } from "@/lib/google/google-status-events";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-export type PlanifySlideExportPayload = {
-  title: string;
-  bullets: string[];
-  speakerNotes: string;
-  layout?: string;
-  subtitle?: string;
-  imagePrompt?: string;
-  imageUrl?: string;
-  imageAlt?: string;
-  sequenceStep?: number;
-  sequenceLabel?: string;
-};
+export type PlanifySlideExportPayload = GoogleSlidesExportSlide;
 
 type GoogleSlidesExportButtonProps = {
   title: string;
@@ -77,16 +68,19 @@ export function GoogleSlidesExportButton({
     }
   }, []);
 
-  const runExport = useCallback(async () => {
+  const runExport = useCallback(async (pending?: GoogleSlidesExportPending | null) => {
     setBusy(true);
     setError("");
 
     try {
+      const pendingHasDeck = Boolean(
+        pending?.html?.trim() || pending?.slides?.length,
+      );
       const result = await exportToGoogleSlides({
-        title,
-        html: getHtml ? getHtml() : html,
-        slides,
-        theme,
+        title: pending?.title || title,
+        html: pendingHasDeck ? pending?.html : getHtml ? getHtml() : html,
+        slides: pendingHasDeck ? pending?.slides : slides,
+        theme: pending?.theme || theme,
       });
       clearGoogleSlidesExportPending();
       window.open(result.presentationUrl, "_blank", "noopener,noreferrer");
@@ -112,11 +106,23 @@ export function GoogleSlidesExportButton({
     setBusy(true);
     setError("");
 
-    saveGoogleSlidesExportPending({
-      title,
-      theme,
-      returnTo,
-    });
+    try {
+      saveGoogleSlidesExportPending({
+        title,
+        theme,
+        returnTo,
+        html: getHtml ? getHtml() : html,
+        slides,
+      });
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Não foi possível preparar os slides para a conexão com o Google.",
+      );
+      setBusy(false);
+      return;
+    }
 
     try {
       await startGoogleOAuth(returnTo);
@@ -125,7 +131,7 @@ export function GoogleSlidesExportButton({
       setError(err instanceof Error ? err.message : "Erro ao conectar Google.");
       setBusy(false);
     }
-  }, [returnTo, theme, title]);
+  }, [getHtml, html, returnTo, slides, theme, title]);
 
   useEffect(() => {
     void refresh();
@@ -178,7 +184,7 @@ export function GoogleSlidesExportButton({
 
       const pending = readGoogleSlidesExportPending();
       if (fresh?.connected && pending?.title) {
-        await runExport();
+        await runExport(pending);
       }
     })();
   }, [refresh, runExport]);

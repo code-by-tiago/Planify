@@ -23,6 +23,7 @@ import { assignSlideSequenceLabels, orderSlidesPedagogically } from "./slide-ped
 type SlideItem = NonNullable<MaterialEngineResponse["slides"]>[number];
 
 const TEXT_FIT = "none" as const;
+const IMAGE_PRELOAD_CONCURRENCY = 4;
 
 async function fetchImageDataUrl(url: string): Promise<string | null> {
   try {
@@ -61,14 +62,21 @@ async function preloadImages(slides: SlideItem[]): Promise<Map<string, string>> 
     ),
   ];
 
-  const entries = await Promise.all(
-    urls.map(async (url) => [url, await fetchImageDataUrl(url)] as const),
+  const map = new Map<string, string>();
+  let nextIndex = 0;
+  const workers = Array.from(
+    { length: Math.min(IMAGE_PRELOAD_CONCURRENCY, urls.length) },
+    async () => {
+      while (nextIndex < urls.length) {
+        const url = urls[nextIndex];
+        nextIndex += 1;
+        const data = await fetchImageDataUrl(url);
+        if (data) map.set(url, data);
+      }
+    },
   );
 
-  const map = new Map<string, string>();
-  for (const [url, data] of entries) {
-    if (data) map.set(url, data);
-  }
+  await Promise.all(workers);
   return map;
 }
 

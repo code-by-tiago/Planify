@@ -160,6 +160,7 @@ export async function exportToGoogleSlides(params: {
     imageAlt?: string;
     sequenceStep?: number;
     sequenceLabel?: string;
+    callout?: { title?: string; text?: string };
   }>;
   theme?: string;
 }): Promise<GoogleSlidesExportResult> {

@@ -86,6 +86,12 @@ const {
   mergeCorrectionProfiles,
   DEFAULT_CORRECTION_PROFILE,
 } = loadTsModule("src/server/correcao/correction-profile-service.ts");
+const { normalizeCorrectionScores } = loadTsModule(
+  "src/server/correcao/correction-ai-service.ts",
+);
+const { normalizeLessonBundleTools } = loadTsModule(
+  "src/lib/aula-completa/lesson-bundle-config.ts",
+);
 
 // --- normalizeMaterialEstrutura fixtures ---
 
@@ -154,5 +160,22 @@ assert.equal(merged.tom, "detalhado");
 
 const mergedLocalWins = mergeCorrectionProfiles(remote, local);
 assert.equal(mergedLocalWins.tom, "detalhado");
+
+assert.deepEqual(
+  normalizeCorrectionScores({ nota: 14, notaMaxima: 10, percentual: 140 }),
+  { nota: 10, notaMaxima: 10, percentual: 100 },
+);
+assert.deepEqual(
+  normalizeCorrectionScores({ nota: "invalida", notaMaxima: 0, percentual: "x" }),
+  { nota: 0, notaMaxima: 10, percentual: 0 },
+);
+
+const bundleTools = normalizeLessonBundleTools([
+  "atividade",
+  "atividade",
+  "correcao-ia",
+]);
+assert.deepEqual(bundleTools.toolIds, ["atividade"]);
+assert.deepEqual(bundleTools.invalidToolIds, ["correcao-ia"]);
 
 console.log("verify:sprint2 OK — normalizeMaterialEstrutura + correction profile");

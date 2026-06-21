@@ -15,7 +15,11 @@ export type ImagenAspectRatio = "1:1" | "3:4" | "4:3" | "9:16" | "16:9";
 export type GenerateImagenImageOptions = {
   aspectRatio?: ImagenAspectRatio;
   outputMimeType?: "image/png" | "image/jpeg";
+  /** Limite do fluxo de Slides para impedir que uma imagem prenda o deck. */
+  timeoutMs?: number;
 };
+
+const DEFAULT_IMAGEN_TIMEOUT_MS = 20_000;
 
 /**
  * Resolve o modelo Imagen a partir de IMAGEN_MODEL (ou GEMINI_IMAGE_MODEL legado).
@@ -69,6 +73,7 @@ async function generateImagenImageViaRest(
   model: string,
   mime: GenerateImagenImageOptions["outputMimeType"],
   aspectRatio: ImagenAspectRatio,
+  timeoutMs: number,
 ): Promise<{ data: Buffer; mime: string } | null> {
   const apiKey = getGeminiApiKey();
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:predict`;
@@ -80,7 +85,7 @@ async function generateImagenImageViaRest(
         "Content-Type": "application/json",
         "x-goog-api-key": apiKey,
       },
-      signal: AbortSignal.timeout(45000),
+      signal: AbortSignal.timeout(Math.max(1, timeoutMs)),
       body: JSON.stringify({
         instances: [{ prompt }],
         parameters: {
@@ -106,6 +111,23 @@ async function generateImagenImageViaRest(
   }
 }
 
+async function withImagenTimeout<T>(work: Promise<T>, timeoutMs: number): Promise<T> {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      work,
+      new Promise<T>((_, reject) => {
+        timeoutId = setTimeout(
+          () => reject(new Error("A geração da imagem demorou mais que o esperado.")),
+          timeoutMs,
+        );
+      }),
+    ]);
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
+  }
+}
+
 /**
  * Gera uma ilustração via Imagen (Gemini API) com GEMINI_API_KEY.
  * Retorna null se a API não estiver disponível ou a geração falhar.
@@ -120,17 +142,22 @@ export async function generateImagenImage(
   const model = resolveImagenModel();
   const mime = options.outputMimeType ?? "image/png";
   const aspectRatio = options.aspectRatio ?? "16:9";
+  const timeoutMs = Math.max(1, options.timeoutMs ?? DEFAULT_IMAGEN_TIMEOUT_MS);
+  const startedAt = Date.now();
 
   try {
-    const response = await getGeminiSdk().models.generateImages({
-      model,
-      prompt: trimmed,
-      config: {
-        numberOfImages: 1,
-        outputMimeType: mime,
-        aspectRatio,
-      },
-    });
+    const response = await withImagenTimeout(
+      getGeminiSdk().models.generateImages({
+        model,
+        prompt: trimmed,
+        config: {
+          numberOfImages: 1,
+          outputMimeType: mime,
+          aspectRatio,
+        },
+      }),
+      timeoutMs,
+    );
 
     const extracted = extractImageBytes(response);
     if (extracted) {
@@ -143,5 +170,14 @@ export async function generateImagenImage(
     // fallback REST abaixo
   }
 
-  return generateImagenImageViaRest(trimmed, model, mime, aspectRatio);
+  const remainingMs = timeoutMs - (Date.now() - startedAt);
+  if (remainingMs <= 0) return null;
+
+  return generateImagenImageViaRest(
+    trimmed,
+    model,
+    mime,
+    aspectRatio,
+    remainingMs,
+  );
 }

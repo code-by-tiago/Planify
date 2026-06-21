@@ -187,7 +187,9 @@ async function runEngineDelivery(
 
   let firstPass: Awaited<ReturnType<typeof generateMaterialByEngine>>;
   try {
-    firstPass = await generateMaterialByEngine(input);
+    firstPass = await generateMaterialByEngine(input, {
+      onStage: options?.onStage,
+    });
   } finally {
     clearInterval(heartbeat);
   }
@@ -206,11 +208,14 @@ async function runEngineDelivery(
 
   if (shouldAutoElevateQuality(firstScore, Boolean(request.elevarQualidade))) {
     emitStage(options, "generate", "Reforçando qualidade automaticamente…");
-    const elevated = await generateMaterialByEngine({
-      ...input,
-      elevarQualidade: true,
-      problemasQualidade: firstIssues,
-    });
+    const elevated = await generateMaterialByEngine(
+      {
+        ...input,
+        elevarQualidade: true,
+        problemasQualidade: firstIssues,
+      },
+      { onStage: options?.onStage },
+    );
 
     if (elevated.ok) {
       const elevatedScore = elevated.data.qualityScore ?? 0;

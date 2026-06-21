@@ -27,6 +27,12 @@ import {
   searchQuestionBankItems,
 } from "@/lib/banco-questoes/question-bank-match";
 import {
+  getQuestionBankCollection,
+  getQuestionReviewLabel,
+  isCuratedQuestion,
+  isHumanReviewedQuestion,
+} from "@/lib/banco-questoes/question-bank-curation";
+import {
   stashQuestionsForProva,
 } from "@/lib/banco-questoes/question-bank-storage";
 import { TemaCombobox } from "@/components/bncc/TemaCombobox";
@@ -80,7 +86,30 @@ const SOURCE_OPTIONS: {
   { id: "minhas", label: "Criadas por mim", hint: "Questões importadas ou remixadas por você" },
   { id: "comunidade", label: "Comunidade Planify", hint: "Questões públicas de outros professores" },
   { id: "escola", label: "Da minha escola", hint: "Questões compartilhadas na sua escola" },
+  { id: "curadas", label: "Curadas", hint: "Fontes humanas revisadas e robô Planify" },
 ];
+
+const QUICK_CATALOGS: Array<{
+  etapa: QuestionBankFilter["etapa"];
+  label: string;
+  description: string;
+}> = [
+  { etapa: "todos", label: "Todo o acervo", description: "Explore sem recorte" },
+  { etapa: "Ensino Fundamental", label: "Fundamental", description: "Anos iniciais e finais" },
+  { etapa: "Ensino Médio", label: "Ensino Médio", description: "Formação geral" },
+  { etapa: "ENEM e Vestibulares", label: "ENEM e vestibulares", description: "Alta complexidade" },
+  { etapa: "Concursos Públicos", label: "Concursos", description: "Conhecimentos específicos" },
+  { etapa: "Ensino Superior", label: "Superior", description: "Graduação e formação" },
+];
+
+type QuestionBankCurationSummary = {
+  totalPublic: number;
+  curated: number;
+  humanReviewed: number;
+  automated: number;
+  latestAt: string | null;
+  byCollection: Record<string, number>;
+};
 
 function newId(): string {
   return `qb-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -93,6 +122,16 @@ function isLocalOnlyQuestionId(id: string): boolean {
 function buildAvaliacaoTitle(tipo: "prova" | "lista", tema: string): string {
   const label = tipo === "lista" ? "Lista" : "Prova";
   return `${label} — ${tema.trim() || "Material Planify"}`;
+}
+
+function getSafeExternalUrl(value?: string): string | null {
+  if (!value) return null;
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" || url.protocol === "http:" ? url.toString() : null;
+  } catch {
+    return null;
+  }
 }
 
 function resolveQuestionDisplay(item: QuestionBankItem): {
@@ -158,6 +197,8 @@ export function BancoQuestoesClient() {
   const [remixDraft, setRemixDraft] = useState<RemixDraft | null>(null);
   const [publishingId, setPublishingId] = useState<string | null>(null);
   const [assembling, setAssembling] = useState(false);
+  const [curationSummary, setCurationSummary] =
+    useState<QuestionBankCurationSummary | null>(null);
 
   useEffect(() => {
     void syncFromServerOnMount()
@@ -170,6 +211,19 @@ export function BancoQuestoesClient() {
         /* offline — local only */
       })
       .finally(() => setSyncing(false));
+  }, []);
+
+  useEffect(() => {
+    void planifyAuthenticatedFetch("/api/banco-questoes/curadoria", { method: "GET" })
+      .then((response) => response.json().catch(() => null))
+      .then((data) => {
+        if (data?.ok && data.summary) {
+          setCurationSummary(data.summary as QuestionBankCurationSummary);
+        }
+      })
+      .catch(() => {
+        /* O acervo continua utilizável se o resumo de curadoria estiver indisponível. */
+      });
   }, []);
 
   const allItems = useMemo(
@@ -234,14 +288,30 @@ export function BancoQuestoesClient() {
       .filter((item): item is QuestionBankItem => Boolean(item));
   }, [allItems, selectedIds]);
 
+  const inventory = useMemo(() => {
+    const humanReviewed = allItems.filter((item) => isHumanReviewedQuestion(item)).length;
+    const curated = allItems.filter((item) => isCuratedQuestion(item)).length;
+    return {
+      total: allItems.length,
+      curated,
+      humanReviewed,
+      advanced: allItems.filter((item) => {
+        const collection = getQuestionBankCollection(item);
+        return collection === "enem" || collection === "vestibular" || collection === "concurso" || collection === "superior";
+      }).length,
+    };
+  }, [allItems]);
+
   const visibleItems = useMemo(
     () => [...filtered, ...relatedItems],
     [filtered, relatedItems],
   );
 
+  const bnccSupportedStage =
+    filter.etapa === "Ensino Fundamental" || filter.etapa === "Ensino Médio";
   const bnccTemaReady =
     Boolean(draftQuery.trim()) &&
-    filter.etapa !== "todos" &&
+    bnccSupportedStage &&
     filter.componente !== "todos" &&
     filter.anoSerie !== "todos";
 
@@ -273,11 +343,11 @@ export function BancoQuestoesClient() {
     }
 
     if (
-      filter.etapa === "todos" ||
+      !bnccSupportedStage ||
       filter.componente === "todos" ||
       filter.anoSerie === "todos"
     ) {
-      setBnccError("Selecione nível escolar, disciplina e série/ano antes de sugerir BNCC.");
+      setBnccError("A sugestão BNCC está disponível para Ensino Fundamental e Médio. Para ENEM, concursos e superior, busque pelo tema.");
       return;
     }
 
@@ -421,6 +491,15 @@ export function BancoQuestoesClient() {
     clearAppliedSearch();
     setSelectedIds(new Set());
     setShowAdvanced(false);
+  }
+
+  function applyQuickCatalog(etapa: QuestionBankFilter["etapa"]) {
+    patchFilter({
+      etapa,
+      anoSerie: "todos",
+      componente: "todos",
+    });
+    clearAppliedSearch();
   }
 
   function refreshFromHybrid() {
@@ -834,18 +913,120 @@ export function BancoQuestoesClient() {
       header={
         <PlanifyPageHero
           title="Banco de questões"
-          description="Navegue pelo acervo completo ou refine por nível, disciplina, série e tema."
+          description="Encontre, selecione e transforme questões em uma prova ou lista pronta para revisar."
           icon="library"
         />
       }
     >
       <div className={`space-y-6 px-4 py-6 sm:px-6${selectedItems.length > 0 ? " pb-28" : ""}`}>
-        <p className="rounded-xl border border-cyan-400/15 bg-cyan-50/30 px-4 py-2.5 text-sm font-medium text-slate-600">
-          Selecione questões e monte prova ou lista em um clique — ou importe do histórico.
-        </p>
+        <section className="overflow-hidden rounded-3xl border border-cyan-200/70 bg-gradient-to-br from-cyan-50 via-white to-sky-50 shadow-sm">
+          <div className="flex flex-col gap-4 px-5 py-5 sm:px-6">
+            <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
+              <div>
+                <p className="text-[11px] font-black uppercase tracking-[0.16em] text-cyan-700">
+                  Biblioteca inteligente
+                </p>
+                <h2 className="mt-1 text-xl font-black tracking-tight text-slate-950">
+                  Ache a questão certa sem navegar no escuro
+                </h2>
+                <p className="mt-1 max-w-2xl text-sm leading-relaxed text-slate-600">
+                  Comece por um acervo, pesquise pelo tema e coloque na cesta. Só então escolha
+                  se quer uma prova ou uma lista.
+                </p>
+              </div>
+              <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-800">
+                <PlanifyIcon name="checkCircle" className="h-3.5 w-3.5" />
+                Curadoria rastreável
+              </span>
+            </div>
+
+            <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+              {[
+                {
+                  label: "No seu recorte",
+                  value: syncing ? "—" : String(searchMode === "browse" ? filtered.length : visibleItems.length),
+                  hint: searchActive ? "resultados encontrados" : "questões disponíveis",
+                },
+                {
+                  label: "Acervo público",
+                  value: String(curationSummary?.totalPublic ?? inventory.total),
+                  hint: "questões compartilhadas",
+                },
+                {
+                  label: "Curadas",
+                  value: String(curationSummary?.curated ?? inventory.curated),
+                  hint: "revisadas por fonte ou robô",
+                },
+                {
+                  label: "Alta complexidade",
+                  value: String(
+                    (curationSummary?.byCollection.enem ?? 0) +
+                      (curationSummary?.byCollection.vestibular ?? 0) +
+                      (curationSummary?.byCollection.concurso ?? 0) +
+                      (curationSummary?.byCollection.superior ?? 0) ||
+                      inventory.advanced,
+                  ),
+                  hint: "ENEM, superior e concursos",
+                },
+              ].map((stat) => (
+                <div key={stat.label} className="rounded-2xl border border-white bg-white/85 px-3 py-3 shadow-sm">
+                  <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">{stat.label}</p>
+                  <p className="mt-1 text-xl font-black text-slate-950">{stat.value}</p>
+                  <p className="text-[11px] font-medium text-slate-500">{stat.hint}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section aria-label="Escolha rápida do acervo" className="space-y-2">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">1. Escolha um acervo</p>
+              <p className="mt-1 text-sm font-medium text-slate-600">Você pode mudar o recorte a qualquer momento.</p>
+            </div>
+            {filter.source !== "curadas" ? (
+              <button
+                type="button"
+                onClick={() => patchFilter({ source: "curadas" })}
+                className="text-xs font-bold text-cyan-800 underline underline-offset-4"
+              >
+                Ver somente curadas
+              </button>
+            ) : null}
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-6">
+            {QUICK_CATALOGS.map((catalog) => {
+              const active = filter.etapa === catalog.etapa;
+              return (
+                <button
+                  key={catalog.etapa}
+                  type="button"
+                  onClick={() => applyQuickCatalog(catalog.etapa)}
+                  className={`rounded-2xl border px-3 py-3 text-left transition ${
+                    active
+                      ? "border-cyan-500 bg-cyan-600 text-white shadow-sm"
+                      : "border-slate-200 bg-white text-slate-800 hover:border-cyan-300 hover:bg-cyan-50/60"
+                  }`}
+                >
+                  <span className="block text-sm font-extrabold">{catalog.label}</span>
+                  <span className={`mt-0.5 block text-[11px] font-medium ${active ? "text-cyan-50" : "text-slate-500"}`}>
+                    {catalog.description}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </section>
 
         <fieldset className="space-y-3">
           <legend className="sr-only">Filtros do banco de questões</legend>
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">2. Refine a busca</p>
+            <p className="mt-1 text-sm font-medium text-slate-600">
+              Use só os filtros que ajudam agora; tema é opcional, mas deixa o resultado bem mais preciso.
+            </p>
+          </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <div>
               <label className={HUD_SECTION_LABEL} htmlFor="qb-etapa">
@@ -962,9 +1143,10 @@ export function BancoQuestoesClient() {
             </button>
           </div>
           <p className="text-[11px] font-medium text-slate-500">
-            Defina nível, disciplina e série; informe o tema e clique em{" "}
-            <strong className="text-slate-700">Buscar</strong> ou sugira habilidades BNCC
-            oficiais — como em Planejamentos e Meus materiais.
+            Informe o tema e clique em <strong className="text-slate-700">Buscar</strong>.
+            {bnccSupportedStage
+              ? " Se quiser, acrescente habilidades BNCC para um recorte escolar ainda mais preciso."
+              : " Neste acervo, a busca usa tema, disciplina e nível — sem forçar códigos BNCC."}
           </p>
 
           {searchPending && searchActive ? (
@@ -973,18 +1155,20 @@ export function BancoQuestoesClient() {
             </p>
           ) : null}
 
-          <MaterialBnccSkillsPanel
-            groups={bnccGroups}
-            selectedSkills={selectedBnccSkills}
-            loading={loadingBncc}
-            temaReady={bnccTemaReady}
-            optional
-            onSuggest={() => void sugerirHabilidadesBncc()}
-            onToggleSkill={toggleBnccSkill}
-            onSelectGroup={selectBnccGroup}
-            onClearGroup={clearBnccGroup}
-            onClearAll={clearBnccSelection}
-          />
+          {bnccSupportedStage ? (
+            <MaterialBnccSkillsPanel
+              groups={bnccGroups}
+              selectedSkills={selectedBnccSkills}
+              loading={loadingBncc}
+              temaReady={bnccTemaReady}
+              optional
+              onSuggest={() => void sugerirHabilidadesBncc()}
+              onToggleSkill={toggleBnccSkill}
+              onSelectGroup={selectBnccGroup}
+              onClearGroup={clearBnccGroup}
+              onClearAll={clearBnccSelection}
+            />
+          ) : null}
 
           {bnccError ? (
             <p className="text-sm font-semibold text-rose-700">{bnccError}</p>
@@ -1013,14 +1197,16 @@ export function BancoQuestoesClient() {
             </div>
           ) : null}
 
-          <button
-            type="button"
-            onClick={() => setShowAdvanced((current) => !current)}
-            className="text-xs font-semibold text-slate-600 underline"
-          >
-            {showAdvanced ? "Ocultar filtro avançado" : "Filtro avançado (código BNCC manual)"}
-          </button>
-          {showAdvanced ? (
+          {bnccSupportedStage ? (
+            <button
+              type="button"
+              onClick={() => setShowAdvanced((current) => !current)}
+              className="text-xs font-semibold text-slate-600 underline"
+            >
+              {showAdvanced ? "Ocultar filtro avançado" : "Filtro avançado (código BNCC manual)"}
+            </button>
+          ) : null}
+          {bnccSupportedStage && showAdvanced ? (
             <div className="max-w-xs space-y-1">
               <label className={HUD_SECTION_LABEL} htmlFor="qb-bncc">
                 Código BNCC (opcional)
@@ -1056,21 +1242,29 @@ export function BancoQuestoesClient() {
 
         </fieldset>
 
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={() => void importFromHistory()}
-            className="pl-hud-btn rounded-xl px-4 py-2 text-xs font-semibold"
-          >
-            Importar do histórico
-          </button>
-          <button
-            type="button"
-            onClick={() => void openServerImportModal()}
-            className="pl-hud-btn rounded-xl px-4 py-2 text-xs font-semibold"
-          >
-            Importar do servidor
-          </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="mr-1 text-xs font-black uppercase tracking-[0.14em] text-slate-500">3. Selecione e monte</span>
+          <details className="relative">
+            <summary className="cursor-pointer list-none rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50">
+              Adicionar questões próprias
+            </summary>
+            <div className="absolute left-0 top-11 z-20 flex min-w-56 flex-col gap-1 rounded-xl border border-slate-200 bg-white p-2 shadow-xl">
+              <button
+                type="button"
+                onClick={() => void importFromHistory()}
+                className="rounded-lg px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-cyan-50"
+              >
+                Importar do histórico
+              </button>
+              <button
+                type="button"
+                onClick={() => void openServerImportModal()}
+                className="rounded-lg px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-cyan-50"
+              >
+                Importar do servidor
+              </button>
+            </div>
+          </details>
           {visibleItems.length > 0 ? (
             <button
               type="button"
@@ -1156,9 +1350,12 @@ export function BancoQuestoesClient() {
 
         <div className="space-y-3">
           {filtered.length > 0
-            ? filtered.map((item) => {
+           ? filtered.map((item) => {
             const selected = selectedIds.has(item.id);
             const display = resolveQuestionDisplay(item);
+            const collection = getQuestionBankCollection(item);
+            const humanReviewed = isHumanReviewedQuestion(item);
+            const sourceUrl = getSafeExternalUrl(item.sourceUrl);
             return (
               <article
                 key={item.id}
@@ -1180,6 +1377,28 @@ export function BancoQuestoesClient() {
                       </button>
                       <span className="text-[10px] font-bold uppercase tracking-wide text-slate-500">
                         {item.componente} · {item.anoSerie}
+                      </span>
+                      {collection !== "geral" && collection !== "escolar" ? (
+                        <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-bold uppercase text-sky-800">
+                          {collection === "enem"
+                            ? "ENEM"
+                            : collection === "vestibular"
+                              ? "Vestibular"
+                              : collection === "concurso"
+                                ? "Concurso"
+                                : "Superior"}
+                        </span>
+                      ) : null}
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                          humanReviewed
+                            ? "bg-emerald-100 text-emerald-800"
+                            : item.reviewStatus === "automated"
+                              ? "bg-cyan-100 text-cyan-800"
+                              : "bg-slate-100 text-slate-600"
+                        }`}
+                      >
+                        {getQuestionReviewLabel(item)}
                       </span>
                       {item.matchScore >= 8 ? (
                         <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold uppercase text-emerald-800">
@@ -1233,6 +1452,28 @@ export function BancoQuestoesClient() {
                         </span>
                       ))}
                     </div>
+                    {(item.sourceTitle || item.qualityScore !== undefined) ? (
+                      <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-medium text-slate-500">
+                        {item.sourceTitle ? (
+                          sourceUrl ? (
+                            <a
+                              href={sourceUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-1 text-cyan-800 underline underline-offset-2"
+                            >
+                              Fonte: {item.sourceTitle}
+                              <PlanifyIcon name="externalLink" className="h-3 w-3" />
+                            </a>
+                          ) : (
+                            <span>Origem: {item.sourceTitle}</span>
+                          )
+                        ) : null}
+                        {typeof item.qualityScore === "number" ? (
+                          <span>Qualidade do robô: {item.qualityScore.toFixed(1)}/10</span>
+                        ) : null}
+                      </div>
+                    ) : null}
                   </div>
                   <div className="flex shrink-0 flex-col gap-2">
                     <button

@@ -49,6 +49,14 @@ function collectIssues(result: CorrectionAiOutput): string[] {
     issues.push("Nota fora do intervalo permitido pela rubrica.");
   }
 
+  if (
+    !Number.isFinite(result.percentual) ||
+    result.percentual < 0 ||
+    result.percentual > 100
+  ) {
+    issues.push("Percentual inválido na correção.");
+  }
+
   if (!result.pontosFortes?.length) {
     issues.push("Inclua pelo menos um ponto forte identificado na resposta.");
   }

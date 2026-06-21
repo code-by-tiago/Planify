@@ -9,6 +9,7 @@
     "typecheck": "tsc --noEmit",
     "verify:material-quality": "node scripts/verify-material-quality.mjs",
     "verify:question-bank-match": "node scripts/verify-question-bank-match.mjs",
+    "verify:question-bank-curation": "node scripts/verify-question-bank-curation.mjs",
     "verify:prova-engine-contract": "node scripts/verify-prova-engine-contract.mjs",
     "verify:generators": "node scripts/verify-all-generators.mjs",
     "verify:sprint2": "node scripts/verify-sprint2.mjs",

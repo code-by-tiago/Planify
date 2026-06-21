@@ -42,6 +42,26 @@ export const AI_TOPIC_QUEUE = [
   { topic: "Ecossistemas", componente: "Biologia", anoSerie: "7º ano" },
   { topic: "Democracia e cidadania", componente: "História", anoSerie: "6º ano" },
   { topic: "Movimentos sociais no Brasil", componente: "História", anoSerie: "9º ano" },
+  // Acervo avançado: questões inéditas, sempre revisadas pelo segundo estágio do robô.
+  { topic: "Leitura e inferência em textos argumentativos", componente: "Linguagens", anoSerie: "ENEM" },
+  { topic: "Variação linguística e adequação comunicativa", componente: "Linguagens", anoSerie: "ENEM" },
+  { topic: "Funções, gráficos e modelagem", componente: "Matemática", anoSerie: "ENEM" },
+  { topic: "Probabilidade e análise de dados", componente: "Matemática", anoSerie: "ENEM" },
+  { topic: "Ecologia, ciclos biogeoquímicos e impactos ambientais", componente: "Ciências da Natureza", anoSerie: "ENEM" },
+  { topic: "Energia, eletricidade e consumo consciente", componente: "Ciências da Natureza", anoSerie: "ENEM" },
+  { topic: "Cidadania, trabalho e desigualdades no Brasil", componente: "Ciências Humanas", anoSerie: "ENEM" },
+  { topic: "Democracia, direitos humanos e participação social", componente: "Ciências Humanas", anoSerie: "ENEM" },
+  { topic: "Coesão, repertório e projeto de texto", componente: "Redação", anoSerie: "Vestibular" },
+  { topic: "Argumentação e análise crítica de fontes", componente: "Linguagens", anoSerie: "Vestibular" },
+  { topic: "Raciocínio lógico proposicional", componente: "Raciocínio Lógico", anoSerie: "Concursos Públicos" },
+  { topic: "Interpretação de texto em contextos administrativos", componente: "Língua Portuguesa", anoSerie: "Concursos Públicos" },
+  { topic: "Princípios da administração pública", componente: "Administração Pública", anoSerie: "Concursos Públicos" },
+  { topic: "Ética no serviço público", componente: "Administração Pública", anoSerie: "Concursos Públicos" },
+  { topic: "Direitos e garantias fundamentais", componente: "Direito", anoSerie: "Concursos Públicos" },
+  { topic: "Segurança da informação e cidadania digital", componente: "Tecnologia", anoSerie: "Concursos Públicos" },
+  { topic: "Metodologia científica e leitura de evidências", componente: "Ciências Humanas", anoSerie: "Ensino Superior" },
+  { topic: "Raciocínio quantitativo aplicado", componente: "Matemática", anoSerie: "Ensino Superior" },
+  { topic: "Comunicação acadêmica e integridade científica", componente: "Língua Portuguesa", anoSerie: "Ensino Superior" },
 ];
 
 /**

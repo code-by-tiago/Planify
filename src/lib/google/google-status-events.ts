@@ -5,10 +5,27 @@ export const GOOGLE_STATUS_CHANGED_EVENT = "planify:google-status-changed";
 
 export const GOOGLE_SLIDES_EXPORT_PENDING_KEY = "planify:google-slides-export-pending";
 
+export type GoogleSlidesExportSlide = {
+  title: string;
+  bullets: string[];
+  speakerNotes: string;
+  layout?: string;
+  subtitle?: string;
+  imagePrompt?: string;
+  imageUrl?: string;
+  imageAlt?: string;
+  sequenceStep?: number;
+  sequenceLabel?: string;
+  callout?: { title?: string; text?: string };
+};
+
 export type GoogleSlidesExportPending = {
   title: string;
   theme?: string;
   returnTo: string;
+  /** Snapshot do deck para sobreviver ao redirecionamento OAuth. */
+  html?: string;
+  slides?: GoogleSlidesExportSlide[];
   ts: number;
 };
 

@@ -15,6 +15,17 @@ export type QuestionBankItem = {
   tags: string[];
   sourceTitle?: string;
   sourceType?: string;
+  /** Coleção editorial para separar acervo escolar, exames e concursos. */
+  collection?: QuestionBankCollection;
+  /** URL pública registrada para fontes autorizadas. */
+  sourceUrl?: string;
+  /** Licença ou termo de uso registrado na importação. */
+  sourceLicense?: string;
+  /** Como a questão foi revisada antes da publicação no acervo. */
+  reviewStatus?: QuestionBankReviewStatus;
+  /** Nota da revisão automatizada, quando aplicável (0 a 10). */
+  qualityScore?: number;
+  reviewedAt?: string;
   isCommunity?: boolean;
   isSchool?: boolean;
   authorName?: string;
@@ -24,9 +35,34 @@ export type QuestionBankItem = {
   updatedAt: string;
 };
 
-export type QuestionBankSource = "todas" | "minhas" | "comunidade" | "escola";
+export type QuestionBankCollection =
+  | "escolar"
+  | "enem"
+  | "vestibular"
+  | "concurso"
+  | "superior"
+  | "geral";
 
-export type QuestionBankEtapa = "todos" | "Ensino Fundamental" | "Ensino Médio";
+export type QuestionBankReviewStatus =
+  | "community"
+  | "automated"
+  | "human-reviewed"
+  | "pending";
+
+export type QuestionBankSource =
+  | "todas"
+  | "minhas"
+  | "comunidade"
+  | "escola"
+  | "curadas";
+
+export type QuestionBankEtapa =
+  | "todos"
+  | "Ensino Fundamental"
+  | "Ensino Médio"
+  | "ENEM e Vestibulares"
+  | "Ensino Superior"
+  | "Concursos Públicos";
 
 export type QuestionBankFilter = {
   /** Tema ou assunto da aula — busca inteligente, sem precisar de código BNCC */

@@ -2,6 +2,7 @@ import {
   inferEtapaFromAnoSerie,
   inferSerieStage,
 } from "@/lib/banco-questoes/question-bank-education";
+import { isCuratedQuestion } from "@/lib/banco-questoes/question-bank-curation";
 
 export { inferSerieStage } from "@/lib/banco-questoes/question-bank-education";
 import {
@@ -176,6 +177,7 @@ function passesSourceFilter(
   if (source === "minhas" && (item.isCommunity || item.isSchool)) return false;
   if (source === "comunidade" && !item.isCommunity) return false;
   if (source === "escola" && !item.isSchool) return false;
+  if (source === "curadas" && !isCuratedQuestion(item)) return false;
   return true;
 }
 

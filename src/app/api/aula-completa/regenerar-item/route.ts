@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { LESSON_BUNDLE_GENERATION_TYPE } from "@/lib/aula-completa/lesson-bundle-config";
+import {
+  isLessonBundleTool,
+  LESSON_BUNDLE_GENERATION_TYPE,
+} from "@/lib/aula-completa/lesson-bundle-config";
 import { createLessonBundlePersistItem } from "@/server/materials/lesson-bundle-api-shared";
 import {
   getCreditCost,
@@ -33,9 +36,9 @@ async function handlePost(
   const user = auth.access.user;
   const body = (await request.json().catch(() => null)) as RegenerarItemBody | null;
 
-  if (!body?.toolId) {
+  if (!body?.toolId || !isLessonBundleTool(body.toolId)) {
     return NextResponse.json(
-      { ok: false, message: "Requisição inválida." },
+      { ok: false, message: "Selecione um item válido do pacote Aula Completa." },
       { status: 400 },
     );
   }

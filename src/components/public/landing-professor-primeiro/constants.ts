@@ -7,9 +7,9 @@ export const LANDING_NAV = [
 
 export const TRUST_ITEMS = [
   { label: "Alinhado à BNCC", icon: "checkCircle" as const },
-  { label: "Exportação Google Docs", icon: "download" as const },
+  { label: "Google Drive", googleProduct: "drive" as const },
   { label: "Editor integrado", icon: "editor" as const },
-  { label: "Google Classroom", icon: "externalLink" as const },
+  { label: "Google Classroom", googleProduct: "classroom" as const },
 ];
 
 export const CREATE_OPTIONS = [

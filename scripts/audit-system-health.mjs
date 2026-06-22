@@ -43,18 +43,21 @@ function loadPublicPaths() {
   return matches.map((match) => match[1]);
 }
 
-const TOOL_PATHS = [
+const AUTH_REDIRECT_PATHS = [
   "/materiais",
   "/planejamentos",
   "/inclusao",
-  "/aula-completa",
-  "/correcao",
   "/editor",
   "/historico",
   "/biblioteca",
   "/dashboard",
   "/login",
 ];
+
+// These legacy deep links render a tiny client shell and then navigate to the
+// dashboard tool. A raw HTTP probe correctly sees 200; browser navigation is
+// covered by the Playwright smoke suite.
+const CLIENT_REDIRECT_PATHS = ["/aula-completa", "/correcao"];
 
 const SEO_PATHS = ["/robots.txt", "/sitemap.xml"];
 
@@ -79,11 +82,12 @@ async function probe(path, expectAuthRedirect = false) {
 
 async function main() {
   const publicPaths = loadPublicPaths();
-  const authPaths = TOOL_PATHS.filter((path) => path !== "/login");
+  const authPaths = AUTH_REDIRECT_PATHS.filter((path) => path !== "/login");
   const checks = [
     ...(await Promise.all(publicPaths.map((path) => probe(path)))),
     ...(await Promise.all(SEO_PATHS.map((path) => probe(path)))),
     ...(await Promise.all(authPaths.map((path) => probe(path, true)))),
+    ...(await Promise.all(CLIENT_REDIRECT_PATHS.map((path) => probe(path)))),
   ];
 
   const failures = checks.filter((item) => !item.ok);

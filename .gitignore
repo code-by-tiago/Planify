@@ -39,3 +39,4 @@ desenho biblico/
 tsconfig.tsbuildinfo
 .tmp-export-verify/
 tmp/
+test-results/

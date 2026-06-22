@@ -63,4 +63,11 @@ test.describe("Planify smoke", () => {
       await expect(page).toHaveURL(/login/);
     }
   });
+
+  test("legacy tool links forward unauthenticated users to login", async ({ page }) => {
+    for (const path of ["/aula-completa", "/correcao"]) {
+      await page.goto(path);
+      await expect(page).toHaveURL(/login/);
+    }
+  });
 });

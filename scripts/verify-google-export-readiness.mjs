@@ -117,6 +117,18 @@ const PAYLOAD_TRIM = {
 function main() {
   if (fs.existsSync(LOG_PATH)) fs.unlinkSync(LOG_PATH);
 
+  const annualTemplateBytes = fs.statSync(
+    path.join(root, "data", "modelos-oficiais", "modelo-anual.docx"),
+  ).size;
+  const trimestralTemplateBytes = fs.statSync(
+    path.join(root, "data", "modelos-oficiais", "modelo-trimestral.docx"),
+  ).size;
+  const minimumGeneratedBytes = (templateBytes) =>
+    Math.max(4096, Math.floor(templateBytes * 0.5));
+  const isZipDocument = (buffer) =>
+    buffer.length >= 4 &&
+    buffer.subarray(0, 4).equals(Buffer.from([0x50, 0x4b, 0x03, 0x04]));
+
   const {
     buildOfficialPlanningDocx,
     getOfficialPlanningTipo,
@@ -144,8 +156,12 @@ function main() {
   auditLog("A", "verify-google-export-readiness.mjs", "official docx buffers", {
     anualBytes: anualBuf.length,
     trimBytes: trimBuf.length,
-    anualOk: anualBuf.length > 10000,
-    trimOk: trimBuf.length > 10000,
+    annualTemplateBytes,
+    trimestralTemplateBytes,
+    anualOk:
+      anualBuf.length >= minimumGeneratedBytes(annualTemplateBytes) && isZipDocument(anualBuf),
+    trimOk:
+      trimBuf.length >= minimumGeneratedBytes(trimestralTemplateBytes) && isZipDocument(trimBuf),
     distinctTemplates: !anualBuf.equals(trimBuf),
   });
 
@@ -261,8 +277,10 @@ function main() {
   });
 
   const failed =
-    anualBuf.length < 10000 ||
-    trimBuf.length < 10000 ||
+    anualBuf.length < minimumGeneratedBytes(annualTemplateBytes) ||
+    trimBuf.length < minimumGeneratedBytes(trimestralTemplateBytes) ||
+    !isZipDocument(anualBuf) ||
+    !isZipDocument(trimBuf) ||
     anualBuf.equals(trimBuf) ||
     trimTipo !== "trimestral" ||
     trim2Buf.equals(anualBuf) ||

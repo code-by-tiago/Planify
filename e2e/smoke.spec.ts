@@ -28,6 +28,7 @@ test.describe("Planify smoke", () => {
       "/comunidade",
       "/editor",
       "/historico",
+      "/banco-questoes",
     ];
 
     for (const path of premiumPaths) {
@@ -55,6 +56,15 @@ test.describe("Planify smoke", () => {
       const response = await page.goto(path);
       expect(response?.status(), `${path} should not 500`).toBeLessThan(500);
     }
+  });
+
+  test("plans page presents the complete Professor offer", async ({ page }) => {
+    await page.goto("/planos");
+    await expect(
+      page.getByRole("heading", { name: "Menos tempo montando. Mais tempo ensinando." }),
+    ).toBeVisible();
+    await expect(page.getByText("Planify Professor", { exact: true })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Assinar agora" })).toBeVisible();
   });
 
   test("auth-only routes redirect unauthenticated users", async ({ page }) => {

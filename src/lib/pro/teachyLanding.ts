@@ -92,15 +92,6 @@ export const landingExtraTools: {
     icon: "clipboard",
     accent: "from-blue-500 to-blue-600",
   },
-  {
-    id: "banco-questoes",
-    shortTitle: "Banco de questões",
-    description:
-      "Organize questões próprias e da comunidade; monte provas e listas reutilizando o que já criou ou salvou.",
-    href: "/dashboard?secao=banco-questoes",
-    icon: "library",
-    accent: "from-sky-500 to-indigo-500",
-  },
 ];
 
 export const teachyTrustSchools = [

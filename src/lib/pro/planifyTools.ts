@@ -370,13 +370,6 @@ export const sidebarNavigation: AppNavItem[] = [
     hideForManagerView: true,
   },
   {
-    label: "Banco de questões",
-    href: "/dashboard?secao=banco-questoes",
-    icon: "library",
-    panel: "banco-questoes",
-    hideForManagerView: true,
-  },
-  {
     label: "Editor",
     href: "/dashboard?secao=editor",
     icon: "editor",

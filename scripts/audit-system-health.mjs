@@ -58,6 +58,7 @@ const AUTH_REDIRECT_PATHS = [
 // dashboard tool. A raw HTTP probe correctly sees 200; browser navigation is
 // covered by the Playwright smoke suite.
 const CLIENT_REDIRECT_PATHS = ["/aula-completa", "/correcao"];
+const LEGACY_REDIRECT_PATHS = ["/banco-questoes"];
 
 const SEO_PATHS = ["/robots.txt", "/sitemap.xml"];
 
@@ -88,6 +89,7 @@ async function main() {
     ...(await Promise.all(SEO_PATHS.map((path) => probe(path)))),
     ...(await Promise.all(authPaths.map((path) => probe(path, true)))),
     ...(await Promise.all(CLIENT_REDIRECT_PATHS.map((path) => probe(path)))),
+    ...(await Promise.all(LEGACY_REDIRECT_PATHS.map((path) => probe(path, true)))),
   ];
 
   const failures = checks.filter((item) => !item.ok);

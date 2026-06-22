@@ -40,14 +40,6 @@ const CorrecaoClient = dynamic(
   { ssr: false, loading: PanelLoading },
 );
 
-const BancoQuestoesClient = dynamic(
-  () =>
-    import("@/app/banco-questoes/BancoQuestoesClient").then(
-      (m) => m.BancoQuestoesClient,
-    ),
-  { ssr: false, loading: PanelLoading },
-);
-
 const PlanejamentosClient = dynamic(
   () =>
     import("@/app/planejamentos/PlanejamentosClient").then(
@@ -172,14 +164,6 @@ export function PlanifyDashboardMain({
     return (
       <SectionPanel>
         <PlanejamentosClient />
-      </SectionPanel>
-    );
-  }
-
-  if (sectionId === "banco-questoes") {
-    return (
-      <SectionPanel>
-        <BancoQuestoesClient />
       </SectionPanel>
     );
   }

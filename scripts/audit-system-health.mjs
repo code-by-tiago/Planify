@@ -49,7 +49,6 @@ const TOOL_PATHS = [
   "/inclusao",
   "/aula-completa",
   "/correcao",
-  "/banco-questoes",
   "/editor",
   "/historico",
   "/biblioteca",

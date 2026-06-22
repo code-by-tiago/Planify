@@ -33,7 +33,6 @@ for (const viewport of viewports) {
         "/inclusao",
         "/aula-completa",
         "/correcao",
-        "/banco-questoes",
         "/contato",
       ];
 

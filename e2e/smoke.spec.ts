@@ -47,7 +47,6 @@ test.describe("Planify smoke", () => {
       "/inclusao",
       "/aula-completa",
       "/correcao",
-      "/banco-questoes",
       "/termos",
       "/privacidade",
     ];

@@ -12,11 +12,18 @@ import { PlanifyOwlMark } from "@/components/pro/PlanifyOwlMark";
 import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
 import { downloadEditorExport } from "@/lib/downloads/editor-export-client";
 import {
+  buildCruzadinhaGenerationPayload,
+  requestCruzadinhaGeneration,
+} from "@/lib/cruzadinha/cruzadinha-generation-client";
+import {
+  openMaterialInEditor,
+  type MaterialEditorMeta,
+} from "@/lib/materiais/material-editor-flow";
+import {
   CRUZADINHA_DIFFICULTY_OPTIONS,
   CRUZADINHA_GENERATION_TYPE,
   type CruzadinhaDifficulty,
 } from "@/lib/cruzadinha/cruzadinha-config";
-import { requestCruzadinhaGeneration } from "@/lib/cruzadinha/cruzadinha-generation-client";
 import {
   DEFAULT_MATERIAL_EDUCATION,
   educationDefaultsForTool,
@@ -158,23 +165,26 @@ export function CruzadinhaClient({
           void school.rememberPersonalClass(turma.className);
         }
 
+        const idempotencyKey = crypto.randomUUID();
+        const generationInput = {
+          tema: trimmedTema,
+          etapa,
+          anoSerie,
+          componenteCurricular: componente,
+          areaConhecimento,
+          quantidade,
+          dificuldade,
+          palavrasOpcionais: palavrasOpcionais.trim() || undefined,
+          observacoes: observacoes.trim() || undefined,
+          incluirGabarito: showGabarito && incluirGabarito,
+          ...turma,
+          discipline: school.selectedClass?.discipline?.trim() || componente,
+          disciplina: school.selectedClass?.discipline?.trim() || componente,
+          idempotencyKey,
+        };
+
         const result = await requestCruzadinhaGeneration(
-          {
-            tema: trimmedTema,
-            etapa,
-            anoSerie,
-            componenteCurricular: componente,
-            areaConhecimento,
-            quantidade,
-            dificuldade,
-            palavrasOpcionais: palavrasOpcionais.trim() || undefined,
-            observacoes: observacoes.trim() || undefined,
-            incluirGabarito: showGabarito && incluirGabarito,
-            ...turma,
-            discipline: school.selectedClass?.discipline?.trim() || componente,
-            disciplina: school.selectedClass?.discipline?.trim() || componente,
-            idempotencyKey: crypto.randomUUID(),
-          },
+          generationInput,
           {
             onProgress: ({ message }) => setProgressLabel(message),
           },
@@ -184,7 +194,22 @@ export function CruzadinhaClient({
           throw new Error("A geração concluiu, mas não retornou HTML.");
         }
 
-        setResultadoHtml(result.html);
+        const titulo = buildExportTitle(trimmedTema);
+        const meta: MaterialEditorMeta = {
+          toolId: "cruzadinha",
+          tema: trimmedTema,
+          componente,
+          anoSerie,
+          etapa,
+          areaConhecimento,
+          qualityScore: result.qualityScore ?? null,
+          qualityIssues: result.qualityIssues ?? [],
+          generationPayload: buildCruzadinhaGenerationPayload(generationInput),
+          serverMaterialId: result.materialId ?? null,
+        };
+
+        openMaterialInEditor(result.html, titulo, meta, { from: "cruzadinha" });
+        return;
       });
     } catch (error) {
       const formatted = formatGenerationError(error);

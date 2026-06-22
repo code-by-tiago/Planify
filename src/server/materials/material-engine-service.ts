@@ -1090,6 +1090,7 @@ function renderDocumentHtml(
       request.tipoMaterial === "cruzadinha"
         ? "cruzadinha"
         : mapGameFormato(request.formatoJogo);
+    const gameSeedOutput = buildGameSeedOutput(normalized);
     const visual = buildVisualGameMaterial(
       {
         titulo: normalized.title,
@@ -1102,8 +1103,9 @@ function renderDocumentHtml(
         objetivos: request.objetivo,
         conteudos: request.observacoes || request.tema,
         orientacoes: request.objetivo || undefined,
+        quantidade: request.quantidade,
       },
-      buildGameSeedOutput(normalized),
+      gameSeedOutput,
     );
     const extra = visual.printHtml || visual.visualHtml || "";
     if (extra) {

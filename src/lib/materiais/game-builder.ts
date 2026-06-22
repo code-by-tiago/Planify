@@ -570,7 +570,10 @@ function placeCrossword(grid: string[][], answer: string, row: number, col: numb
 }
 
 function buildCrosswordBoard(input: MaterialAIInput, aiOutput?: MaterialOutputWithSeed): CrosswordBoard {
-  const seeds = getSeedWords(input, aiOutput, 12)
+  const targetCount = Math.max(8, Math.min(15, Number(input.quantidade) || 12));
+  const candidateLimit = targetCount + 6;
+  const rawSeeds = getSeedWords(input, aiOutput, candidateLimit);
+  const seeds = rawSeeds
     .filter((seed) => seed.answer.length >= 2 && seed.answer.length <= 13)
     .sort((a, b) => b.answer.length - a.answer.length);
   const longest = seeds[0]?.answer.length || 8;
@@ -585,6 +588,7 @@ function buildCrosswordBoard(input: MaterialAIInput, aiOutput?: MaterialOutputWi
   placements.push({ number: 1, answer: first.answer, label: first.label, clue: first.clue, row: startRow, col: startCol, direction: "across" });
 
   for (const seed of seeds.slice(1)) {
+    if (placements.length >= targetCount) break;
     let best: { row: number; col: number; direction: "across" | "down"; score: number } | null = null;
 
     for (let wordIndex = 0; wordIndex < seed.answer.length; wordIndex++) {

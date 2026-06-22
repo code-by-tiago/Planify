@@ -41,3 +41,7 @@ e2e/.auth/
 # Projetos locais fora do app Planify
 desenho biblico/
 
+# Caches e arquivos temporários do TypeScript / Build
+tsconfig.tsbuildinfo
+.tmp-export-verify/
+tmp/

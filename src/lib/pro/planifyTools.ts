@@ -462,6 +462,9 @@ export function filterSidebarNavigation(input: {
     : sidebarNavigation;
 
   return source.filter((item) => {
+    if (item.panel === "banco-questoes") {
+      return false;
+    }
     if (item.requiresDirectorAccess && !input.canViewDirectorPanel) {
       return false;
     }

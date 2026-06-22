@@ -5,7 +5,10 @@ import { landingExtraTools } from "@/lib/pro/planifyLanding";
 import { ppEyebrow, ppTitle } from "./theme";
 
 export function LandingTools() {
-  const tools = [...landingExtraTools, ...planifyTools];
+  const tools = [
+    ...landingExtraTools.filter((tool) => tool.id !== "banco-questoes"),
+    ...planifyTools,
+  ];
 
   return (
     <section id="ferramentas" className="pf-marketing-section--alt pf-marketing-section scroll-mt-24">

@@ -75,7 +75,10 @@ export function TeachyHomeToolsGrid() {
           </p>
           <div className="planify-landing-tools-grid grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
             {landingExtraTools
-              .filter((tool) => tool.id !== "planejamentos")
+              .filter(
+                (tool) =>
+                  tool.id !== "planejamentos" && tool.id !== "banco-questoes",
+              )
               .map((tool) => (
                 <Link
                   key={tool.id}

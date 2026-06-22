@@ -34,7 +34,6 @@ export const PRIVATE_ROBOTS_DISALLOW = [
   "/aula-completa",
   "/inclusao",
   "/correcao",
-  "/banco-questoes",
   "/admin",
   "/gestor",
   "/diretor",

@@ -8,23 +8,12 @@ import { usePlanifyWorkspace } from "@/components/pro/planify-workspace-context"
 import { TeachySectionHub } from "@/components/teachy-layout";
 import { PlanifyDashboardBreadcrumb } from "@/components/pro/PlanifyDashboardBreadcrumb";
 import { StudioToolHeader } from "@/components/studio/StudioToolHeader";
-import { MaterialBnccSkillsPanel } from "@/components/bncc/MaterialBnccSkillsPanel";
-import { planifyAuthenticatedFetch } from "@/lib/auth/authenticated-fetch";
 import {
   getQuestionBankComponenteOptions,
   getQuestionBankYearOptions,
   normalizeQuestionBankFilterEducation,
   QUESTION_BANK_ETAPA_OPTIONS,
-  resolveQuestionBankArea,
 } from "@/lib/banco-questoes/question-bank-education";
-import {
-  groupBnccSkillsFromResponse,
-  normalizeBnccSkillOption,
-  splitTopicLines,
-  validateSelectedBnccSkillsForStage,
-  type BnccSkillGroup,
-  type BnccSkillOption,
-} from "@/lib/bncc/bncc-suggestion-ui";
 import {
   isQuestionBankFilterActive,
   isQuestionBankSearchActive,
@@ -34,8 +23,6 @@ import {
 import {
   stashQuestionsForProva,
 } from "@/lib/banco-questoes/question-bank-storage";
-import { TemaCombobox } from "@/components/bncc/TemaCombobox";
-import type { BnccTemaAutocompleteSuggestion } from "@/lib/bncc/bncc-tema-autocomplete";
 import { splitEmbeddedReadingText } from "@/lib/banco-questoes/question-bank-self-contained";
 import { extractQuestionsFromMaterialOutput } from "@/lib/banco-questoes/question-bank-extract";
 import {
@@ -133,7 +120,48 @@ const EMPTY_APPLIED_SEARCH: AppliedQuestionBankSearch = {
   bnccSearchTerms: undefined,
 };
 
-export function BancoQuestoesClient() {
+type BancoQuestoesClientProps = {
+  /** Exibe o acervo dentro de Provas e Listas, sem criar uma seção independente. */
+  pickerMode?: boolean;
+  assessmentType?: "prova" | "lista";
+  initialContext?: {
+    tema: string;
+    etapa: string;
+    anoSerie: string;
+    componente: string;
+  };
+  onLocalQuestionsPrepared?: (count: number) => void;
+};
+
+function initialPickerFilter(
+  context?: BancoQuestoesClientProps["initialContext"],
+): QuestionBankFilter {
+  const etapa = QUESTION_BANK_ETAPA_OPTIONS.some(
+    (option) => option.value === context?.etapa,
+  )
+    ? (context?.etapa as QuestionBankFilter["etapa"])
+    : "todos";
+  const anos = getQuestionBankYearOptions(etapa);
+  const componentes = getQuestionBankComponenteOptions(etapa);
+
+  return {
+    ...DEFAULT_QUESTION_BANK_FILTER,
+    etapa,
+    anoSerie: anos.includes(context?.anoSerie || "")
+      ? String(context?.anoSerie)
+      : "todos",
+    componente: componentes.includes(context?.componente || "")
+      ? String(context?.componente)
+      : "todos",
+  };
+}
+
+export function BancoQuestoesClient({
+  pickerMode = false,
+  assessmentType,
+  initialContext,
+  onLocalQuestionsPrepared,
+}: BancoQuestoesClientProps = {}) {
   const { embeddedInDashboard } = usePlanifyWorkspace();
   const router = useRouter();
   const school = useSchoolClasses();
@@ -143,15 +171,13 @@ export function BancoQuestoesClient() {
   const [syncing, setSyncing] = useState(true);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [previewId, setPreviewId] = useState<string | null>(null);
-  const [filter, setFilter] = useState<QuestionBankFilter>(DEFAULT_QUESTION_BANK_FILTER);
-  const [draftQuery, setDraftQuery] = useState("");
+  const [filter, setFilter] = useState<QuestionBankFilter>(() =>
+    initialPickerFilter(initialContext),
+  );
+  const [draftQuery, setDraftQuery] = useState(initialContext?.tema || "");
   const [manualBncc, setManualBncc] = useState("");
   const [appliedSearch, setAppliedSearch] =
     useState<AppliedQuestionBankSearch>(EMPTY_APPLIED_SEARCH);
-  const [bnccGroups, setBnccGroups] = useState<BnccSkillGroup[]>([]);
-  const [selectedBnccSkills, setSelectedBnccSkills] = useState<BnccSkillOption[]>([]);
-  const [loadingBncc, setLoadingBncc] = useState(false);
-  const [bnccError, setBnccError] = useState("");
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [importStatus, setImportStatus] = useState("");
   const [importError, setImportError] = useState("");
@@ -219,12 +245,9 @@ export function BancoQuestoesClient() {
   const searchMode = searchResult.mode;
   const searchActive = isQuestionBankSearchActive(effectiveFilter);
   const filterActive = isQuestionBankFilterActive(effectiveFilter);
-  const appliedBnccCodes = (appliedSearch.bnccCodigos ?? []).join(",");
-  const selectedBnccCodes = selectedBnccSkills.map((skill) => skill.codigo).join(",");
   const searchPending =
     draftQuery.trim() !== appliedSearch.query.trim() ||
-    manualBncc.trim() !== appliedSearch.bncc.trim() ||
-    selectedBnccCodes !== appliedBnccCodes;
+    manualBncc.trim() !== appliedSearch.bncc.trim();
 
   function patchFilter(patch: Partial<QuestionBankFilter>) {
     setFilter((current) => {
@@ -262,146 +285,15 @@ export function BancoQuestoesClient() {
     }
   }, [filtered, previewId]);
 
-  const bnccTemaReady =
-    Boolean(draftQuery.trim()) &&
-    filter.etapa !== "todos" &&
-    filter.componente !== "todos" &&
-    filter.anoSerie !== "todos";
-
-  function buildBnccSuggestPayload() {
-    const topicLines = splitTopicLines(draftQuery);
-    const conteudos =
-      topicLines.length > 1 ? topicLines.join("\n") : draftQuery.trim() || topicLines[0] || "";
-
-    return {
-      etapa: filter.etapa === "todos" ? undefined : filter.etapa,
-      anoSerie: filter.anoSerie === "todos" ? undefined : filter.anoSerie,
-      areaConhecimento: resolveQuestionBankArea(filter.etapa, filter.componente),
-      componenteCurricular:
-        filter.componente === "todos" ? undefined : filter.componente,
-      conteudos,
-      temaCentral: draftQuery.trim() || undefined,
-      ...school.turmaPayload,
-      discipline: filter.componente === "todos" ? undefined : filter.componente,
-      disciplina: filter.componente === "todos" ? undefined : filter.componente,
-    };
-  }
-
-  async function sugerirHabilidadesBncc() {
-    setBnccError("");
-
-    if (!draftQuery.trim()) {
-      setBnccError("Informe o tema antes de sugerir habilidades BNCC.");
-      return;
-    }
-
-    if (
-      filter.etapa === "todos" ||
-      filter.componente === "todos" ||
-      filter.anoSerie === "todos"
-    ) {
-      setBnccError("Selecione nível escolar, disciplina e série/ano antes de sugerir BNCC.");
-      return;
-    }
-
-    setLoadingBncc(true);
-
-    try {
-      const response = await planifyAuthenticatedFetch("/api/bncc/sugerir", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(buildBnccSuggestPayload()),
-      });
-
-      const data = (await response.json().catch(() => null)) as {
-        success?: boolean;
-        error?: { message?: string };
-      } | null;
-
-      if (!response.ok || !data?.success) {
-        throw new Error(
-          data?.error?.message || "Não foi possível sugerir habilidades BNCC.",
-        );
-      }
-
-      const topicLines = splitTopicLines(draftQuery);
-      setBnccGroups(
-        groupBnccSkillsFromResponse(data as Record<string, unknown>, topicLines),
-      );
-      setSelectedBnccSkills([]);
-    } catch (error) {
-      const formatted = formatGenerationError(error);
-      setBnccError(formatted.message);
-    } finally {
-      setLoadingBncc(false);
-    }
-  }
-
-  function toggleBnccSkill(skill: BnccSkillOption) {
-    setSelectedBnccSkills((current) => {
-      const exists = current.some((item) => item.id === skill.id);
-      return exists
-        ? current.filter((item) => item.id !== skill.id)
-        : [...current, skill];
-    });
-  }
-
-  function selectBnccGroup(group: BnccSkillGroup) {
-    setSelectedBnccSkills((current) => {
-      const map = new Map(current.map((skill) => [skill.id, skill]));
-      for (const skill of group.habilidades.slice(0, 3)) {
-        map.set(skill.id, skill);
-      }
-      return Array.from(map.values());
-    });
-  }
-
-  function clearBnccGroup(group: BnccSkillGroup) {
-    setSelectedBnccSkills((current) =>
-      current.filter(
-        (skill) => !group.habilidades.some((item) => item.id === skill.id),
-      ),
-    );
-  }
-
-  function clearBnccSelection() {
-    setSelectedBnccSkills([]);
-    setBnccGroups([]);
-    setBnccError("");
-  }
-
   function runQuestionBankSearch() {
-    setBnccError("");
-
-    if (!draftQuery.trim() && selectedBnccSkills.length === 0 && !manualBncc.trim()) {
+    if (!draftQuery.trim() && !manualBncc.trim()) {
       setAppliedSearch(EMPTY_APPLIED_SEARCH);
       return;
     }
 
-    const stageError =
-      selectedBnccSkills.length > 0 && filter.etapa !== "todos" && filter.anoSerie !== "todos"
-        ? validateSelectedBnccSkillsForStage(
-            selectedBnccSkills,
-            filter.etapa,
-            filter.anoSerie,
-          )
-        : null;
-
-    if (stageError) {
-      setBnccError(stageError);
-      return;
-    }
-
-    const codes = selectedBnccSkills.map((skill) => skill.codigo).filter(Boolean);
-    const terms = selectedBnccSkills.flatMap((skill) =>
-      [skill.conteudo, skill.descricao].filter(Boolean),
-    );
-
     setAppliedSearch({
       query: draftQuery.trim(),
-      bncc: manualBncc.trim() && codes.length === 0 ? manualBncc.trim() : "",
-      bnccCodigos: codes.length ? codes : undefined,
-      bnccSearchTerms: terms.length ? terms : undefined,
+      bncc: manualBncc.trim(),
     });
   }
 
@@ -409,34 +301,6 @@ export function BancoQuestoesClient() {
     setAppliedSearch(EMPTY_APPLIED_SEARCH);
     setDraftQuery("");
     setManualBncc("");
-    clearBnccSelection();
-  }
-
-  function handleTemaSuggestionSelect(suggestion: BnccTemaAutocompleteSuggestion) {
-    const habilidades = suggestion.habilidades.map((skill) =>
-      normalizeBnccSkillOption(skill, suggestion.tema),
-    );
-    const skill = habilidades[0];
-
-    setDraftQuery(suggestion.tema);
-    setBnccGroups([{ conteudo: suggestion.tema, habilidades }]);
-    setSelectedBnccSkills(habilidades.slice(0, 3));
-    setBnccError("");
-
-    patchFilter({
-      etapa:
-        filter.etapa === "todos" && skill?.etapa
-          ? (skill.etapa as QuestionBankFilter["etapa"])
-          : filter.etapa,
-      componente:
-        filter.componente === "todos" && suggestion.componente
-          ? suggestion.componente
-          : filter.componente,
-      anoSerie:
-        filter.anoSerie === "todos" && skill?.anoSerie
-          ? skill.anoSerie
-          : filter.anoSerie,
-    });
   }
 
   function resetFilters() {
@@ -823,6 +687,16 @@ export function BancoQuestoesClient() {
         void incrementQuestionUsage(item.id);
       }
       stashQuestionsForProva(selected);
+      if (pickerMode) {
+        setSelectedIds(new Set());
+        onLocalQuestionsPrepared?.(selected.length);
+        setImportStatus(
+          `${selected.length} questão(ões) preparada(s). Revise os dados e clique em Criar ${
+            tipoMaterial === "lista" ? "lista" : "prova"
+          }.`,
+        );
+        return;
+      }
       router.push(dashboardToolHref(tipoMaterial));
       setImportStatus(
         `${selected.length} questão(ões) enviadas — revise em Meus materiais e clique em Criar.`,
@@ -1024,23 +898,22 @@ export function BancoQuestoesClient() {
 
           <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
             <div className="min-w-0 flex-1">
-              <TemaCombobox
-                label="Tema da aula"
-                value={draftQuery}
-                onChange={setDraftQuery}
-                onSelectSuggestion={handleTemaSuggestionSelect}
-                etapa={filter.etapa === "todos" ? undefined : filter.etapa}
-                componente={filter.componente === "todos" ? undefined : filter.componente}
-                anoSerie={filter.anoSerie === "todos" ? undefined : filter.anoSerie}
-                placeholder="Ex.: tipos de sujeito, frações, Brasil colonial…"
-                className="w-full"
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") {
-                    event.preventDefault();
-                    runQuestionBankSearch();
-                  }
-                }}
-              />
+              <label className="block" htmlFor="qb-tema">
+                <span className={HUD_SECTION_LABEL}>Tema da aula</span>
+                <input
+                  id="qb-tema"
+                  value={draftQuery}
+                  onChange={(event) => setDraftQuery(event.target.value)}
+                  placeholder="Ex.: tipos de sujeito, frações, Brasil colonial..."
+                  className={HUD_FIELD_CLASS}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      runQuestionBankSearch();
+                    }
+                  }}
+                />
+              </label>
             </div>
             <button
               type="button"
@@ -1052,9 +925,9 @@ export function BancoQuestoesClient() {
             </button>
           </div>
           <p className="text-[11px] font-medium text-slate-500">
-            Defina nível, disciplina e série; informe o tema e clique em{" "}
-            <strong className="text-slate-700">Buscar</strong> ou sugira habilidades BNCC
-            oficiais — como em Planejamentos e Meus materiais.
+            Defina nível, disciplina e série, informe o tema e clique em{" "}
+            <strong className="text-slate-700">Buscar</strong> para encontrar questões
+            compatíveis.
           </p>
 
           {searchPending && searchActive ? (
@@ -1063,44 +936,14 @@ export function BancoQuestoesClient() {
             </p>
           ) : null}
 
-          <MaterialBnccSkillsPanel
-            groups={bnccGroups}
-            selectedSkills={selectedBnccSkills}
-            loading={loadingBncc}
-            temaReady={bnccTemaReady}
-            optional
-            onSuggest={() => void sugerirHabilidadesBncc()}
-            onToggleSkill={toggleBnccSkill}
-            onSelectGroup={selectBnccGroup}
-            onClearGroup={clearBnccGroup}
-            onClearAll={clearBnccSelection}
-          />
-
-          {bnccError ? (
-            <p className="text-sm font-semibold text-rose-700">{bnccError}</p>
-          ) : null}
-
-          {searchActive && appliedSearch.bnccCodigos?.length ? (
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
-                BNCC na busca
-              </span>
-              {appliedSearch.bnccCodigos.map((code) => (
-                <span
-                  key={code}
-                  className="rounded-full bg-cyan-100 px-2.5 py-0.5 text-[11px] font-bold text-cyan-900"
-                >
-                  {code}
-                </span>
-              ))}
-              <button
-                type="button"
-                onClick={clearAppliedSearch}
-                className="text-[11px] font-semibold text-slate-500 underline"
-              >
-                Limpar busca
-              </button>
-            </div>
+          {searchActive ? (
+            <button
+              type="button"
+              onClick={clearAppliedSearch}
+              className="text-[11px] font-semibold text-slate-500 underline"
+            >
+              Limpar busca
+            </button>
           ) : null}
 
           <button
@@ -1120,15 +963,9 @@ export function BancoQuestoesClient() {
                 value={manualBncc}
                 onChange={(event) => setManualBncc(event.target.value)}
                 placeholder="EF05HI06"
-                disabled={selectedBnccSkills.length > 0}
                 aria-label="Filtrar por código BNCC manual"
                 className={HUD_FIELD_CLASS}
               />
-              {selectedBnccSkills.length > 0 ? (
-                <p className="text-[11px] font-medium text-slate-500">
-                  Habilidades BNCC selecionadas — limpe a seleção para usar código manual.
-                </p>
-              ) : null}
             </div>
           ) : null}
 
@@ -1243,7 +1080,7 @@ export function BancoQuestoesClient() {
               <p className="text-xs font-bold uppercase tracking-wide text-cyan-600">Nenhuma compatível</p>
               <h3 className="mt-2 text-lg font-extrabold text-slate-950">Ajuste disciplina, série ou tema</h3>
               <p className="mt-2 text-sm font-medium text-slate-600">
-                Sugira habilidades BNCC, selecione as compatíveis e clique em Buscar.
+                Ajuste a disciplina, a série ou o tema e clique em Buscar novamente.
               </p>
             </>
           ) : filterActive ? (
@@ -1337,6 +1174,7 @@ export function BancoQuestoesClient() {
           ))}
         </div>
 
+        {!pickerMode ? (
         <div className="flex flex-wrap gap-2 border-t border-slate-100 pt-4">
           <button
             type="button"
@@ -1377,6 +1215,7 @@ export function BancoQuestoesClient() {
             </>
           ) : null}
         </div>
+        ) : null}
       </div>
     );
   })() : (
@@ -1389,7 +1228,7 @@ export function BancoQuestoesClient() {
     </div>
   );
 
-  const modals = (
+  const modals = pickerMode ? null : (
     <>
       {remixSource && remixDraft ? (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4">
@@ -1573,21 +1412,25 @@ export function BancoQuestoesClient() {
           >
             Limpar
           </button>
+          {!pickerMode ? (
+            <button
+              type="button"
+              onClick={() => void montarAvaliacao("lista")}
+              disabled={assembling}
+              className="rounded-xl border border-cyan-400/40 bg-white px-3 py-2 text-xs font-semibold text-cyan-900 hover:bg-cyan-50 disabled:opacity-50"
+            >
+              Montar lista
+            </button>
+          ) : null}
           <button
             type="button"
-            onClick={() => void montarAvaliacao("lista")}
-            disabled={assembling}
-            className="rounded-xl border border-cyan-400/40 bg-white px-3 py-2 text-xs font-semibold text-cyan-900 hover:bg-cyan-50 disabled:opacity-50"
-          >
-            Montar lista
-          </button>
-          <button
-            type="button"
-            onClick={() => void montarAvaliacao("prova")}
+            onClick={() => void montarAvaliacao(pickerMode ? assessmentType ?? "prova" : "prova")}
             disabled={assembling}
             className="pl-hud-btn rounded-xl px-4 py-2 text-xs font-semibold disabled:opacity-50"
           >
-            {assembling ? "Montando…" : "Montar prova"}
+            {assembling
+              ? "Montando…"
+              : `Montar ${pickerMode && assessmentType === "lista" ? "lista" : "prova"}`}
           </button>
         </div>
       </div>
@@ -1608,6 +1451,28 @@ export function BancoQuestoesClient() {
       {modals}
     </>
   );
+
+  if (pickerMode) {
+    return (
+      <section
+        className="mt-5 overflow-hidden rounded-2xl border border-cyan-400/20 bg-white"
+        aria-label={`Selecionar questões para ${assessmentType === "lista" ? "lista de exercícios" : "prova"}`}
+      >
+        <div className="border-b border-cyan-400/15 bg-cyan-50/60 px-4 py-4 sm:px-5">
+          <p className="text-[10px] font-black uppercase tracking-[0.22em] text-cyan-800">
+            Banco de questões
+          </p>
+          <h3 className="mt-1 text-lg font-black tracking-tight text-slate-950">
+            Monte {assessmentType === "lista" ? "a lista" : "a prova"} com questões revisadas
+          </h3>
+          <p className="mt-1 text-sm leading-6 text-slate-600">
+            Filtre o acervo, selecione as questões e monte sua avaliação sem sair desta ferramenta.
+          </p>
+        </div>
+        <div className="min-h-[34rem]">{hubContent}</div>
+      </section>
+    );
+  }
 
   if (embeddedInDashboard) {
     return (

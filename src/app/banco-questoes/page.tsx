@@ -1,15 +1,9 @@
-"use client";
+import { redirect } from "next/navigation";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { PlanifyToolRedirectShell } from "@/components/dashboard/PlanifyToolRedirectShell";
-
-export default function BancoQuestoesRedirectPage() {
-  const router = useRouter();
-
-  useEffect(() => {
-    router.replace("/dashboard?secao=banco-questoes", { scroll: false });
-  }, [router]);
-
-  return <PlanifyToolRedirectShell />;
+/**
+ * Rota de compatibilidade para links antigos. O banco agora é uma escolha
+ * dentro dos fluxos de Provas e Listas, não uma página independente.
+ */
+export default function BancoQuestoesLegacyRedirect() {
+  redirect("/materiais?tipo=prova");
 }

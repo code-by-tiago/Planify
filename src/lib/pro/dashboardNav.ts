@@ -230,6 +230,9 @@ export function filterJourneyGroups(input: {
     .map((group) => ({
       ...group,
       items: group.items.filter((item) => {
+        if (item.type === "section" && item.sectionId === "banco-questoes") {
+          return false;
+        }
         if (item.type === "section" && item.requiresBnccAccess && !input.canViewBnccProgress) {
           return false;
         }

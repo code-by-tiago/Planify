@@ -75,6 +75,14 @@ export default function PlanifyDashboardShell() {
     return isDashboardSection(secao) ? secao : null;
   }, [searchParams, selectedToolId]);
 
+  useEffect(() => {
+    if (searchParams.get("secao") !== "banco-questoes") return;
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("secao");
+    params.set("tipo", "prova");
+    router.replace(`/dashboard?${params.toString()}`, { scroll: false });
+  }, [router, searchParams]);
+
   const activeCategory = useMemo(() => {
     const cat = searchParams.get("categoria");
     return isValidCategory(cat) ? cat : null;

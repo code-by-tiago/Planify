@@ -118,7 +118,7 @@ const MODULES: SystemModule[] = [
     headline: "Questões organizadas e reutilizáveis",
     description:
       "Monte provas e listas reutilizando questões próprias, da comunidade ou geradas com IA.",
-    href: "/dashboard?secao=banco-questoes",
+    href: "/dashboard?tipo=prova",
     mockLines: [
       "Banco de questões · Matemática",
       "Filtrar por BNCC e dificuldade",

@@ -1,5 +1,6 @@
 export const dashboardSections = [
   "planejamentos",
+  // Compatibilidade de links antigos: a seção não possui mais painel próprio.
   "banco-questoes",
   "editor",
   "historico",
@@ -20,7 +21,7 @@ export function isDashboardSection(
 
 export const dashboardSectionLabels: Record<DashboardSectionId, string> = {
   planejamentos: "Planejamentos",
-  "banco-questoes": "Banco de questões",
+  "banco-questoes": "Avaliações",
   editor: "Editor",
   historico: "Meus materiais",
   biblioteca: "Biblioteca",

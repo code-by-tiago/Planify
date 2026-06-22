@@ -117,8 +117,6 @@ export const config = {
     "/aula-completa/:path*",
     "/correcao",
     "/correcao/:path*",
-    "/banco-questoes",
-    "/banco-questoes/:path*",
     "/editor",
     "/editor/:path*",
     "/historico",

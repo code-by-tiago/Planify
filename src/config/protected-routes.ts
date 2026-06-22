@@ -5,7 +5,6 @@ export const protectedRoutes = [
   "/inclusao",
   "/aula-completa",
   "/correcao",
-  "/banco-questoes",
   "/editor",
   "/historico",
   "/biblioteca",

@@ -344,8 +344,8 @@ export default function TeachyStudioHome({
               </button>
               <button
                 type="button"
-                onClick={() => openSection("banco-questoes")}
-                className="pf-surface flex items-center gap-3 p-4 text-left transition hover:border-[var(--pf-border-strong)]"
+                onClick={() => openTool("prova")}
+                className="hidden pf-surface items-center gap-3 p-4 text-left transition hover:border-[var(--pf-border-strong)]"
               >
                 <PlanifyIcon name="library" className="h-5 w-5 text-cyan-600" />
                 <span>

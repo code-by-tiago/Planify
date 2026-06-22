@@ -2,6 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { GoogleDocumentExportBar } from "@/components/google/GoogleDocumentExportBar";
 import { GoogleClassroomDockButton } from "@/components/google/GoogleClassroomDockButton";
 import { MaterialWhatsAppShareButton } from "@/components/share/MaterialWhatsAppShareButton";
@@ -113,22 +114,23 @@ import { useSchoolClasses } from "@/hooks/useSchoolClasses";
 import { useTeacherTeachingContext } from "@/hooks/useTeacherTeachingContext";
 import { MinhaTurmaChip } from "@/components/teacher/MinhaTurmaChip";
 import { TurmaCombobox } from "@/components/school/TurmaCombobox";
-import { MaterialBnccSkillsPanel } from "@/components/bncc/MaterialBnccSkillsPanel";
-import { TemaCombobox } from "@/components/bncc/TemaCombobox";
-import type { BnccTemaAutocompleteSuggestion } from "@/lib/bncc/bncc-tema-autocomplete";
 import { PlanifyMaterialHubCard } from "@/components/materials/PlanifyMaterialHubCard";
-import {
-  groupBnccSkillsFromResponse,
-  mapSelectedBnccSkillsToPayload,
-  normalizeBnccSkillOption,
-  splitTopicLines,
-  validateSelectedBnccSkillsForStage,
-  type BnccSkillGroup,
-  type BnccSkillOption,
-} from "@/lib/bncc/bncc-suggestion-ui";
-import { planifyAuthenticatedFetch } from "@/lib/auth/authenticated-fetch";
 
 const SELECT_FIELD_CLASS = HUD_FIELD_CLASS;
+const BancoQuestoesPicker = dynamic(
+  () =>
+    import("@/app/banco-questoes/BancoQuestoesClient").then(
+      (module) => module.BancoQuestoesClient,
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="mt-5 rounded-2xl border border-cyan-400/20 bg-cyan-50/50 px-4 py-6 text-sm font-semibold text-cyan-900">
+        Carregando o banco de questões…
+      </div>
+    ),
+  },
+);
 const PATIENCE_THRESHOLD_MS = 60_000;
 const LONG_GENERATION_TYPES = new Set([
   "slides",
@@ -142,6 +144,7 @@ const LONG_GENERATION_TYPES = new Set([
 ]);
 
 type Dificuldade = "facil" | "media" | "avancada";
+type ExamQuestionSource = "ia" | "banco";
 type FormatoJogo =
   | "caca-palavras"
   | "cruzadinha"
@@ -337,6 +340,7 @@ export function MateriaisClient({
   const fieldIdAnoSerie = useId();
   const fieldIdArea = useId();
   const fieldIdComponente = useId();
+  const fieldIdTema = useId();
   const fieldIdDificuldade = useId();
   const fieldIdQuantidade = useId();
   const school = useSchoolClasses();
@@ -345,6 +349,9 @@ export function MateriaisClient({
   const [exportShareStatus, setExportShareStatus] = useState<string | null>(null);
   const [categoria, setCategoria] = useState<ToolCategoryId>("todos");
   const [tipo, setTipo] = useState<PlanifyToolId>(initialTipo ?? "slides");
+  const [examQuestionSource, setExamQuestionSource] =
+    useState<ExamQuestionSource>("ia");
+  const [bankQuestionsPrepared, setBankQuestionsPrepared] = useState(false);
   const [modalAberto, setModalAberto] = useState(studioMode);
   const [tema, setTema] = useState(initialTema);
   const [etapa, setEtapa] = useState(DEFAULT_MATERIAL_EDUCATION.etapa);
@@ -409,15 +416,6 @@ export function MateriaisClient({
   const [hintFeedback, setHintFeedback] = useState("");
   const [isOnline, setIsOnline] = useState(true);
   const [offlineCache, setOfflineCache] = useState<OfflineMaterialCache | null>(null);
-  const [bnccGroups, setBnccGroups] = useState<BnccSkillGroup[]>([]);
-  const [selectedBnccSkills, setSelectedBnccSkills] = useState<BnccSkillOption[]>(
-    [],
-  );
-  const [loadingBncc, setLoadingBncc] = useState(false);
-  const [bnccRegistroFeedback, setBnccRegistroFeedback] = useState<{
-    count: number;
-    inferred: boolean;
-  } | null>(null);
   const [pedagogicalEntries, setPedagogicalEntries] = useState<
     PedagogicalContextEntry[]
   >([]);
@@ -426,7 +424,6 @@ export function MateriaisClient({
   const [pedagogicalExpanded, setPedagogicalExpanded] = useState(true);
   const [usePedagogicalOnly, setUsePedagogicalOnly] = useState(false);
   const pedagogicalDebounceRef = useRef<number | null>(null);
-  const examBnccAutoSuggestedRef = useRef(false);
 
   function rememberSlideGenerationPayload(payload: MaterialEngineInput | null) {
     setLastGenerationPayload(payload);
@@ -468,12 +465,6 @@ export function MateriaisClient({
   const slideAdjustPayload =
     lastGenerationPayload ??
     (tipo === "slides" ? readSlideGenerationPayload() : null);
-
-  function resetBnccSelection(clearSuggestions = true) {
-    if (clearSuggestions) setBnccGroups([]);
-    setSelectedBnccSkills([]);
-    setBnccRegistroFeedback(null);
-  }
 
   useEffect(() => {
     if (studioMode && initialTipo) {
@@ -517,17 +508,8 @@ export function MateriaisClient({
     if (initialTema.trim()) setTema(initialTema.trim());
   }, [initialTema]);
 
-  useEffect(() => {
-    resetBnccSelection(true);
-  }, [etapa, anoSerie, areaConhecimento, componente]);
-
-  useEffect(() => {
-    setBnccGroups([]);
-    setBnccRegistroFeedback(null);
-  }, [tema]);
-
   const loadPedagogicalContext = useCallback(async () => {
-    if (!tema.trim() && selectedBnccSkills.length === 0) {
+    if (!tema.trim()) {
       setPedagogicalEntries([]);
       setPedagogicalTokensSaved(0);
       return;
@@ -540,7 +522,6 @@ export function MateriaisClient({
         componente,
         etapa,
         anoSerie,
-        bnccCodigos: selectedBnccSkills.map((s) => s.codigo),
       });
 
       if (data.success && data.kind === "cache_hit" && data.entries.length) {
@@ -556,7 +537,7 @@ export function MateriaisClient({
     } finally {
       setLoadingPedagogical(false);
     }
-  }, [tema, componente, etapa, anoSerie, selectedBnccSkills]);
+  }, [tema, componente, etapa, anoSerie]);
 
   useEffect(() => {
     if (pedagogicalDebounceRef.current) {
@@ -627,6 +608,12 @@ export function MateriaisClient({
     if (!injected) return;
     setObservacoes((prev) => (prev.trim() ? `${prev.trim()}\n\n${injected}` : injected));
     setHintFeedback("Questões do banco importadas — revise e clique em Criar.");
+  }, [tipo]);
+
+  useEffect(() => {
+    if (tipo === "prova" || tipo === "lista") return;
+    setExamQuestionSource("ia");
+    setBankQuestionsPrepared(false);
   }, [tipo]);
 
   const mode = useMemo(() => getPlanifyTool(tipo), [tipo]);
@@ -984,147 +971,6 @@ export function MateriaisClient({
     setResultadoHtml("");
     setResultadoEstrutura(null);
     setErro("");
-    resetBnccSelection(true);
-  }
-
-  function buildBnccSuggestPayload() {
-    const topicLines = splitTopicLines(tema);
-    const conteudos =
-      topicLines.length > 1 ? topicLines : tema.trim() || topicLines[0] || "";
-
-    return {
-      etapa,
-      anoSerie,
-      areaConhecimento,
-      componenteCurricular: componente,
-      conteudos,
-      temaCentral: tema.trim() || undefined,
-      objetivosGerais: objetivo.trim() || undefined,
-      observacoes: observacoes.trim() || undefined,
-      ...school.turmaPayload,
-      discipline: componente.trim() || undefined,
-      disciplina: componente.trim() || undefined,
-    };
-  }
-
-  async function sugerirHabilidadesBncc() {
-    setErro("");
-
-    if (!tema.trim()) {
-      setErro("Informe o tema antes de sugerir habilidades BNCC.");
-      return;
-    }
-
-    if (!componente.trim() || !anoSerie.trim()) {
-      setErro("Informe disciplina e ano/série para sugerir habilidades BNCC.");
-      return;
-    }
-
-    setLoadingBncc(true);
-
-    try {
-      const response = await planifyAuthenticatedFetch("/api/bncc/sugerir", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(buildBnccSuggestPayload()),
-      });
-
-      const data = (await response.json().catch(() => null)) as {
-        success?: boolean;
-        conteudos?: unknown;
-        error?: { message?: string };
-      } | null;
-
-      if (!response.ok || !data?.success) {
-        throw new Error(
-          data?.error?.message || "Não foi possível sugerir habilidades BNCC.",
-        );
-      }
-
-      const topicLines = splitTopicLines(tema);
-      setBnccGroups(
-        groupBnccSkillsFromResponse(data as Record<string, unknown>, topicLines),
-      );
-      setSelectedBnccSkills([]);
-      setBnccRegistroFeedback(null);
-    } catch (error) {
-      const formatted = formatGenerationError(error);
-      setErro(formatted.message);
-      setErroCta(formatted.cta ?? null);
-      setErroRetryable(formatted.retryable);
-    } finally {
-      setLoadingBncc(false);
-    }
-  }
-
-  function handleTemaSuggestionSelect(suggestion: BnccTemaAutocompleteSuggestion) {
-    const habilidades = suggestion.habilidades.map((skill) =>
-      normalizeBnccSkillOption(skill, suggestion.tema),
-    );
-
-    setBnccGroups([
-      {
-        conteudo: suggestion.tema,
-        habilidades,
-      },
-    ]);
-    setSelectedBnccSkills(habilidades.slice(0, 3));
-    setBnccRegistroFeedback(null);
-    examBnccAutoSuggestedRef.current = true;
-  }
-
-  useEffect(() => {
-    examBnccAutoSuggestedRef.current = false;
-  }, [tipo, tema, componente, anoSerie, etapa]);
-
-  useEffect(() => {
-    if (tipo !== "lista" && tipo !== "prova") return;
-    if (!suggestContextReady || bnccGroups.length > 0) return;
-    if (examBnccAutoSuggestedRef.current || loadingBncc) return;
-
-    examBnccAutoSuggestedRef.current = true;
-    const timer = window.setTimeout(() => {
-      void sugerirHabilidadesBncc();
-    }, 700);
-
-    return () => window.clearTimeout(timer);
-  }, [
-    tipo,
-    suggestContextReady,
-    bnccGroups.length,
-    loadingBncc,
-    tema,
-    componente,
-    anoSerie,
-  ]);
-
-  function toggleBnccSkill(skill: BnccSkillOption) {
-    setSelectedBnccSkills((current) => {
-      const exists = current.some((item) => item.id === skill.id);
-      return exists
-        ? current.filter((item) => item.id !== skill.id)
-        : [...current, skill];
-    });
-    setBnccRegistroFeedback(null);
-  }
-
-  function selectBnccGroup(group: BnccSkillGroup) {
-    setSelectedBnccSkills((current) => {
-      const map = new Map(current.map((skill) => [skill.id, skill]));
-      for (const skill of group.habilidades.slice(0, 3)) {
-        map.set(skill.id, skill);
-      }
-      return Array.from(map.values());
-    });
-    setBnccRegistroFeedback(null);
-  }
-
-  function clearBnccGroup(group: BnccSkillGroup) {
-    setSelectedBnccSkills((current) =>
-      current.filter(
-        (skill) => !group.habilidades.some((item) => item.id === skill.id),
-      ),
-    );
   }
 
   function buildGenerationPayload(
@@ -1166,16 +1012,6 @@ export function MateriaisClient({
       ...school.turmaPayload,
       discipline: componente.trim() || undefined,
       disciplina: componente.trim() || undefined,
-      habilidadesSelecionadas: mapSelectedBnccSkillsToPayload(
-        selectedBnccSkills,
-        { etapa, anoSerie, areaConhecimento, componente },
-      ),
-      habilidadesBncc: mapSelectedBnccSkillsToPayload(selectedBnccSkills, {
-        etapa,
-        anoSerie,
-        areaConhecimento,
-        componente,
-      }),
       ...overrides,
     };
   }
@@ -1306,16 +1142,14 @@ export function MateriaisClient({
       return;
     }
 
-    const bnccValidationError =
-      selectedBnccSkills.length > 0
-        ? validateSelectedBnccSkillsForStage(
-            selectedBnccSkills,
-            etapa,
-            anoSerie,
-          )
-        : null;
-    if (bnccValidationError) {
-      setErro(bnccValidationError);
+    if (
+      isExamTool &&
+      examQuestionSource === "banco" &&
+      !bankQuestionsPrepared
+    ) {
+      setErro(
+        "Selecione questões do banco e use Montar para continuar com esta avaliação.",
+      );
       return;
     }
 
@@ -1328,7 +1162,6 @@ export function MateriaisClient({
     setQualityIssues([]);
     setMaterialSalvo(false);
     setHintFeedback("");
-    setBnccRegistroFeedback(null);
     setProgressLabel("");
     setRealGenerationProgress(undefined);
     setShowPatienceMessage(false);
@@ -1461,10 +1294,6 @@ export function MateriaisClient({
         qualityIssues: issuesValue,
         generationPayload: payload,
         serverMaterialId,
-      });
-      setBnccRegistroFeedback({
-        count: selectedBnccSkills.length,
-        inferred: false,
       });
 
       if (abrirEditorAutomatico) {
@@ -1703,6 +1532,23 @@ export function MateriaisClient({
   function gerarMaterial(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     void executarGeracao();
+  }
+
+  function applyPreparedBankQuestions(count: number) {
+    const injected = readProvaInjectObservacoes();
+    if (!injected) {
+      setErro("Não foi possível preparar as questões selecionadas. Tente novamente.");
+      return;
+    }
+
+    setObservacoes((previous) =>
+      previous.trim() ? `${previous.trim()}\n\n${injected}` : injected,
+    );
+    setBankQuestionsPrepared(true);
+    setErro("");
+    setHintFeedback(
+      `${count} questão(ões) do banco foram preparadas. Clique em Criar para finalizar a avaliação.`,
+    );
   }
 
   function fecharPainel() {
@@ -1984,17 +1830,75 @@ export function MateriaisClient({
             </label>
           </div>
 
-          <TemaCombobox
-            className="mt-5"
-            label={mode.primaryFieldLabel}
-            value={tema}
-            onChange={setTema}
-            onSelectSuggestion={handleTemaSuggestionSelect}
-            etapa={etapa}
-            anoSerie={anoSerie}
-            componente={componente}
-            prefetchOnFocus={isExamTool}
-          />
+          <label className="mt-5 block" htmlFor={fieldIdTema}>
+            <span className={HUD_SECTION_LABEL} id={`${fieldIdTema}-label`}>
+              {mode.primaryFieldLabel}
+            </span>
+            <input
+              id={fieldIdTema}
+              aria-labelledby={`${fieldIdTema}-label`}
+              value={tema}
+              onChange={(event) => setTema(event.target.value)}
+              placeholder="Digite o tema ou assunto da aula..."
+              className={`${HUD_FIELD_CLASS} mt-2`}
+              autoComplete="off"
+            />
+          </label>
+
+          {isExamTool ? (
+            <fieldset className="mt-5 rounded-2xl border border-cyan-400/20 bg-slate-50/70 p-4">
+              <legend className="px-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-600">
+                Como criar as questões
+              </legend>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setExamQuestionSource("ia");
+                    setBankQuestionsPrepared(false);
+                  }}
+                  aria-pressed={examQuestionSource === "ia"}
+                  className={`rounded-xl border p-4 text-left transition ${
+                    examQuestionSource === "ia"
+                      ? "border-cyan-500 bg-cyan-600 text-white shadow-sm"
+                      : "border-slate-200 bg-white text-slate-800 hover:border-cyan-300"
+                  }`}
+                >
+                  <span className="block text-sm font-black">Gerar com IA</span>
+                  <span className="mt-1 block text-xs font-semibold leading-5 opacity-85">
+                    Crie questões inéditas, alinhadas ao tema, nível e dificuldade.
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setExamQuestionSource("banco");
+                    setBankQuestionsPrepared(false);
+                  }}
+                  aria-pressed={examQuestionSource === "banco"}
+                  className={`rounded-xl border p-4 text-left transition ${
+                    examQuestionSource === "banco"
+                      ? "border-cyan-500 bg-cyan-600 text-white shadow-sm"
+                      : "border-slate-200 bg-white text-slate-800 hover:border-cyan-300"
+                  }`}
+                >
+                  <span className="block text-sm font-black">Usar banco de questões</span>
+                  <span className="mt-1 block text-xs font-semibold leading-5 opacity-85">
+                    Selecione questões revisadas do seu acervo, comunidade ou escola.
+                  </span>
+                </button>
+              </div>
+            </fieldset>
+          ) : null}
+
+          {isExamTool && examQuestionSource === "banco" ? (
+            <BancoQuestoesPicker
+              pickerMode
+              assessmentType={tipo === "lista" ? "lista" : "prova"}
+              initialContext={{ tema, etapa, anoSerie, componente }}
+              onLocalQuestionsPrepared={applyPreparedBankQuestions}
+            />
+          ) : null}
 
           {(loadingPedagogical || pedagogicalEntries.length > 0) ? (
             <div className="mt-4 rounded-xl border border-emerald-400/25 bg-emerald-50/60">
@@ -2122,8 +2026,7 @@ export function MateriaisClient({
               </div>
             ) : (
               <p className="md:col-span-2 text-xs font-semibold text-amber-800">
-                Preencha tema, disciplina e ano/série para liberar sugestões de conteúdo
-                e habilidades BNCC.
+                Preencha tema, disciplina e ano/série para liberar sugestões de conteúdo.
               </p>
             )}
 
@@ -2185,19 +2088,6 @@ export function MateriaisClient({
                 ) : null}
               </div>
             ) : null}
-
-            <MaterialBnccSkillsPanel
-              groups={bnccGroups}
-              selectedSkills={selectedBnccSkills}
-              loading={loadingBncc}
-              temaReady={suggestContextReady}
-              optional={!isExamTool}
-              onSuggest={() => void sugerirHabilidadesBncc()}
-              onToggleSkill={toggleBnccSkill}
-              onSelectGroup={selectBnccGroup}
-              onClearGroup={clearBnccGroup}
-              onClearAll={() => resetBnccSelection(false)}
-            />
 
             <label className="md:col-span-2">
               <span className={HUD_SECTION_LABEL}>
@@ -2477,18 +2367,6 @@ export function MateriaisClient({
               Abrir no editor automaticamente após gerar (recomendado para revisar e complementar)
             </label>
           </div>
-
-          {bnccRegistroFeedback ? (
-            <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold leading-6 text-emerald-900">
-              <strong className="font-black">
-                {bnccRegistroFeedback.count} habilidade
-                {bnccRegistroFeedback.count === 1 ? "" : "s"} BNCC
-              </strong>{" "}
-              registrada
-              {bnccRegistroFeedback.count === 1 ? "" : "s"} no Progresso BNCC
-              deste material.
-            </div>
-          ) : null}
 
           <GenerationCostHint
             creditCost={getClientCreditCost(tipo)}

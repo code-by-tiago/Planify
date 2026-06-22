@@ -107,6 +107,7 @@ export type MaterialAIInput = {
   tipo: MaterialAIType;
   modeloJogo?: string;
   tema: string;
+  quantidade?: number | string;
   quantidadeQuestoes?: string;
   duracao?: string;
   finalidade?: string;

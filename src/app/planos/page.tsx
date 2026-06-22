@@ -83,7 +83,7 @@ const valuePillars: { icon: PlanifyIconName; title: string; text: string }[] = [
   {
     icon: "spark",
     title: "Crie em minutos",
-    text: "Materiais, avaliações, jogos e sequências para a sua turma.",
+    text: "Materiais, avaliações e planejamentos para a sua turma.",
   },
   {
     icon: "calendar",

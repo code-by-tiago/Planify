@@ -6,8 +6,6 @@ const SOLUTION_LINKS = [
   { href: "/planejamento-escolar-com-ia", label: "Planejamento escolar" },
   { href: "/gerador-de-atividades-com-ia", label: "Atividades com IA" },
   { href: "/gerador-de-provas-com-ia", label: "Provas com IA" },
-  { href: "/gerador-de-jogos-pedagogicos", label: "Jogos pedagógicos" },
-  { href: "/apostilas-com-ia-para-professores", label: "Apostilas com IA" },
   { href: "/editor-de-documentos-para-professores", label: "Editor de documentos" },
 ];
 

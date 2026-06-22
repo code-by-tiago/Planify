@@ -99,7 +99,7 @@ export function DailyGenerationsBar({
         <p className="mt-2 text-[11px] font-semibold leading-5 text-slate-600">
           {applies
             ? "Este tipo conta na cota diária de gerações profundas."
-            : "Provas, apostilas e planejamentos contam na cota diária."}
+            : "Provas e planejamentos contam na cota diária."}
         </p>
       ) : null}
 

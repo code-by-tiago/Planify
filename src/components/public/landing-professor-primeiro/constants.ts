@@ -26,16 +26,16 @@ export const CREATE_OPTIONS = [
     href: "/gerador-de-provas-com-ia",
   },
   {
-    id: "slides",
-    label: "Slides / Aula",
-    icon: "presentation" as const,
+    id: "lista",
+    label: "Lista de exercícios",
+    icon: "listChecks" as const,
     href: "/login",
   },
   {
-    id: "apostila",
-    label: "Apostila / Material",
-    icon: "book" as const,
-    href: "/apostilas-com-ia-para-professores",
+    id: "plano-aula",
+    label: "Plano de aula",
+    icon: "layers" as const,
+    href: "/login",
   },
   {
     id: "atividades",
@@ -69,7 +69,7 @@ export const RESOURCES = [
   {
     title: "Exportação Google",
     description:
-      "Envie ao Google Docs ou Slides, salve no Drive e publique atividades no Classroom conectado.",
+      "Envie ao Google Docs, salve no Drive e publique atividades no Classroom conectado.",
     icon: "download" as const,
   },
 ];
@@ -118,7 +118,7 @@ export const STATS = [
     value: "Google",
     label: "Docs e Classroom",
     detail:
-      "Exporte ao Google Docs ou Slides, salve no Drive e publique atividades na turma conectada.",
+      "Exporte ao Google Docs, salve no Drive e publique atividades na turma conectada.",
   },
 ] as const;
 

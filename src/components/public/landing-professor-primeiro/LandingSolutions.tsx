@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
-import { STRATEGIC_PAGES } from "@/lib/seo/strategic-pages";
+import { PUBLIC_STRATEGIC_PAGES } from "@/lib/seo/strategic-pages";
 export function LandingSolutions() {
   return (
     <section
@@ -22,7 +22,7 @@ export function LandingSolutions() {
           aria-label="Soluções do Planify"
           className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
         >
-          {STRATEGIC_PAGES.map((page) => (
+          {PUBLIC_STRATEGIC_PAGES.map((page) => (
             <Link
               key={page.path}
               href={page.path}

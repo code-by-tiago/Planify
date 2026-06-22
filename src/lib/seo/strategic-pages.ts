@@ -172,116 +172,14 @@ export const STRATEGIC_PAGES: StrategicPageContent[] = [
     ],
     relatedLinks: [
       { href: "/gerador-de-atividades-com-ia", label: "Gerador de atividades" },
-      { href: "/apostilas-com-ia-para-professores", label: "Apostilas com IA" },
-    ],
-  },
-  {
-    path: "/gerador-de-jogos-pedagogicos",
-    title: "Gerador de jogos pedagógicos",
-    description:
-      "Crie jogos pedagógicos e dinâmicas de sala com IA no Planify. Personalize regras, conteúdo e exporte materiais editáveis.",
-    eyebrow: "Jogos e dinâmicas",
-    h1: "Gerador de jogos pedagógicos",
-    h1Accent: "engajamento em sala",
-    lead: "Proponha jogos, dinâmicas e desafios alinhados ao conteúdo da aula — com instruções claras para você adaptar ao tempo e ao perfil da turma.",
-    benefits: [
-      {
-        icon: "spark",
-        title: "Dinâmicas variadas",
-        description:
-          "Jogos de revisão, competições cooperativas, desafios e atividades lúdicas por tema.",
-      },
-      {
-        icon: "checkCircle",
-        title: "Foco pedagógico",
-        description:
-          "O conteúdo é orientado pelo tema, etapa e objetivos que você informar.",
-      },
-      {
-        icon: "editor",
-        title: "Materiais editáveis",
-        description:
-          "Ajuste regras, cartas, perguntas e instruções no editor antes de aplicar.",
-      },
-    ],
-    steps: [
-      {
-        step: 1,
-        title: "Escolha o tema",
-        description: "Informe disciplina, conteúdo e tipo de dinâmica desejada.",
-      },
-      {
-        step: 2,
-        title: "Gere o jogo",
-        description: "Receba regras, materiais e roteiro sugerido para conduzir em sala.",
-      },
-      {
-        step: 3,
-        title: "Adapte e use",
-        description: "Revise no editor, exporte se necessário e aplique com sua turma.",
-      },
-    ],
-    relatedLinks: [
-      { href: "/gerador-de-atividades-com-ia", label: "Gerador de atividades" },
-      { href: "/planejamento-escolar-com-ia", label: "Planejamento escolar" },
-    ],
-  },
-  {
-    path: "/apostilas-com-ia-para-professores",
-    title: "Apostilas com IA para professores",
-    description:
-      "Elabore apostilas e materiais de apoio com IA pedagógica no Planify. Estruture capítulos, revise no editor e exporte ao Google Docs.",
-    eyebrow: "Materiais de apoio",
-    h1: "Apostilas com IA para professores",
-    h1Accent: "conteúdo estruturado",
-    lead: "Monte apostilas, cadernos de atividades e materiais de apoio com capítulos, explicações e exercícios — prontos para revisão editorial antes do uso.",
-    benefits: [
-      {
-        icon: "book",
-        title: "Estrutura por capítulos",
-        description:
-          "Organize introdução, desenvolvimento, atividades e fechamento de forma coerente.",
-      },
-      {
-        icon: "checkCircle",
-        title: "BNCC e etapa",
-        description:
-          "Informe série e componente para orientar linguagem e profundidade do conteúdo.",
-      },
-      {
-        icon: "download",
-        title: "Google Docs profissional",
-        description:
-          "Exporte apostilas formatadas para impressão ou distribuição digital.",
-      },
-    ],
-    steps: [
-      {
-        step: 1,
-        title: "Defina o escopo",
-        description: "Informe tema, extensão desejada, etapa e objetivos de aprendizagem.",
-      },
-      {
-        step: 2,
-        title: "Gere a apostila",
-        description: "A IA propõe estrutura e conteúdo; você revisa cada seção no editor.",
-      },
-      {
-        step: 3,
-        title: "Exporte e compartilhe",
-        description: "Salve no histórico e exporte ao Google Docs quando o material estiver aprovado.",
-      },
-    ],
-    relatedLinks: [
       { href: "/editor-de-documentos-para-professores", label: "Editor de documentos" },
-      { href: "/gerador-de-provas-com-ia", label: "Gerador de provas" },
     ],
   },
   {
     path: "/editor-de-documentos-para-professores",
     title: "Editor de documentos para professores",
     description:
-      "Revise e finalize planejamentos, provas, apostilas e materiais didáticos no editor integrado do Planify com exportação Google Docs.",
+      "Revise e finalize planejamentos, provas e materiais didáticos no editor integrado do Planify com exportação Google Docs.",
     eyebrow: "Editor integrado",
     h1: "Editor de documentos para professores",
     h1Accent: "revise e exporte",
@@ -325,10 +223,20 @@ export const STRATEGIC_PAGES: StrategicPageContent[] = [
     ],
     relatedLinks: [
       { href: "/planejamento-escolar-com-ia", label: "Planejamento escolar" },
-      { href: "/apostilas-com-ia-para-professores", label: "Apostilas com IA" },
+      { href: "/gerador-de-provas-com-ia", label: "Gerador de provas" },
     ],
   },
 ];
+
+/** Páginas estratégicas exibidas na landing (exclui ferramentas desativadas). */
+const HIDDEN_STRATEGIC_PATHS = new Set([
+  "/gerador-de-jogos-pedagogicos",
+  "/apostilas-com-ia-para-professores",
+]);
+
+export const PUBLIC_STRATEGIC_PAGES = STRATEGIC_PAGES.filter(
+  (page) => !HIDDEN_STRATEGIC_PATHS.has(page.path),
+);
 
 export function getStrategicPageByPath(path: string): StrategicPageContent | undefined {
   return STRATEGIC_PAGES.find((page) => page.path === path);

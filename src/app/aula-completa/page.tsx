@@ -8,7 +8,7 @@ export default function AulaCompletaRedirectPage() {
   const router = useRouter();
 
   useEffect(() => {
-    router.replace("/dashboard?tipo=aula-completa", { scroll: false });
+    router.replace("/dashboard", { scroll: false });
   }, [router]);
 
   return <PlanifyToolRedirectShell />;

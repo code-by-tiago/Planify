@@ -1,6 +1,17 @@
 import type { DashboardSectionId } from "@/lib/pro/dashboardViews";
 import { GESTOR_SECTION_PATHS } from "@/lib/school/gestor-routes";
+import {
+  isActivePlanifyToolId,
+  isAiToolDisabled,
+} from "@/lib/pro/disabled-ai-tools";
 import { dashboardToolHref } from "@/lib/pro/toolRoutes";
+
+export {
+  DISABLED_AI_TOOLS,
+  DISABLED_AI_TOOL_MESSAGE,
+  isActivePlanifyToolId,
+  isAiToolDisabled,
+} from "@/lib/pro/disabled-ai-tools";
 
 export type PlanifyIconName =
   | "home"
@@ -337,6 +348,11 @@ export const planifyTools: PlanifyTool[] = [
   },
 ];
 
+/** Ferramentas visíveis e utilizáveis no painel (exclui as desativadas por custo de IA). */
+export const activePlanifyTools = planifyTools.filter(
+  (tool) => !isAiToolDisabled(tool.id),
+);
+
 export type AppNavPanel = "inicio" | DashboardSectionId | "external";
 
 export type AppNavItem = {
@@ -435,7 +451,11 @@ export const managerSidebarNavigation: AppNavItem[] = [
 export const appNavigation: AppNavItem[] = sidebarNavigation;
 
 export function getPlanifyTool(id: string | null | undefined) {
-  return planifyTools.find((tool) => tool.id === id) ?? planifyTools[0];
+  if (id) {
+    const found = planifyTools.find((tool) => tool.id === id);
+    if (found) return found;
+  }
+  return activePlanifyTools[0] ?? planifyTools[0];
 }
 
 export function filterSidebarNavigation(input: {
@@ -461,4 +481,4 @@ export function filterSidebarNavigation(input: {
   });
 }
 
-export const planifyToolCount = planifyTools.length;
+export const planifyToolCount = activePlanifyTools.length;

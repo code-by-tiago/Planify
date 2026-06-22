@@ -13,6 +13,10 @@ import { regenerateLessonBundleItem } from "@/server/materials/lesson-bundle-ret
 import type { LessonBundleInput } from "@/server/materials/lesson-bundle-orchestrator";
 import type { LessonBundleItemResult } from "@/server/materials/lesson-bundle-orchestrator";
 import type { PlanifyToolId } from "@/lib/pro/planifyTools";
+import {
+  DISABLED_AI_TOOL_MESSAGE,
+  isAiToolDisabled,
+} from "@/lib/pro/disabled-ai-tools";
 import { requireApiPremiumAccess } from "@/server/auth/api-access";
 import { withOperationalCapture } from "@/server/telemetry/with-operational-capture";
 
@@ -33,12 +37,26 @@ async function handlePost(
   const auth = await requireApiPremiumAccess(request);
   if (!auth.ok) return auth.response;
 
+  if (isAiToolDisabled(LESSON_BUNDLE_GENERATION_TYPE)) {
+    return NextResponse.json(
+      { ok: false, message: DISABLED_AI_TOOL_MESSAGE },
+      { status: 400 },
+    );
+  }
+
   const user = auth.access.user;
   const body = (await request.json().catch(() => null)) as RegenerarItemBody | null;
 
   if (!body?.toolId || !isLessonBundleTool(body.toolId)) {
     return NextResponse.json(
       { ok: false, message: "Selecione um item válido do pacote Aula Completa." },
+      { status: 400 },
+    );
+  }
+
+  if (isAiToolDisabled(body.toolId)) {
+    return NextResponse.json(
+      { ok: false, message: DISABLED_AI_TOOL_MESSAGE },
       { status: 400 },
     );
   }

@@ -3,10 +3,10 @@
 import { useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { PlanifyToolRedirectShell } from "@/components/dashboard/PlanifyToolRedirectShell";
-import { planifyTools } from "@/lib/pro/planifyTools";
+import { isActivePlanifyToolId } from "@/lib/pro/planifyTools";
 
 function isValidTipo(value: string | null): boolean {
-  return planifyTools.some((tool) => tool.id === value);
+  return isActivePlanifyToolId(value);
 }
 
 /**

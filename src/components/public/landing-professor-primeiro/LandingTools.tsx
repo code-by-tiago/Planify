@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
-import { planifyTools } from "@/lib/pro/planifyTools";
+import { activePlanifyTools } from "@/lib/pro/planifyTools";
 import { landingExtraTools } from "@/lib/pro/teachyLanding";
 import { ppEyebrow } from "./theme";
 
 export function LandingTools() {
-  const tools = [...landingExtraTools, ...planifyTools];
+  const tools = [...landingExtraTools, ...activePlanifyTools];
 
   return (
     <section

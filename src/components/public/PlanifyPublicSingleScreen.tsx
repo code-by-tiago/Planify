@@ -11,12 +11,12 @@ import { PlanifyShellSidebar } from "@/components/pro/PlanifyShellSidebar";
 import { PlanifySidebarNav } from "@/components/pro/PlanifySidebarNav";
 import {
   getPlanifyTool,
-  planifyTools,
+  isActivePlanifyToolId,
   type PlanifyToolId,
 } from "@/lib/pro/planifyTools";
 
 function isValidToolId(value: string | null): value is PlanifyToolId {
-  return planifyTools.some((tool) => tool.id === value);
+  return isActivePlanifyToolId(value);
 }
 
 function PublicScreenContent() {

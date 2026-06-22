@@ -73,7 +73,9 @@ import {
 } from "@/lib/materiais/material-editor-flow";
 import { buildMaterialGenerationSummary } from "@/lib/materiais/material-generation-summary";
 import {
+  activePlanifyTools,
   getPlanifyTool,
+  isActivePlanifyToolId,
   planifyToolCount,
   planifyTools,
   toolCategories,
@@ -413,7 +415,7 @@ export function MateriaisClient({
     const tipoUrl = params.get("tipo");
     const categoriaUrl = params.get("categoria");
 
-    if (planifyTools.some((tool) => tool.id === tipoUrl)) {
+    if (isActivePlanifyToolId(tipoUrl)) {
       setTipo(tipoUrl as PlanifyToolId);
       setModalAberto(true);
     }
@@ -644,7 +646,7 @@ export function MateriaisClient({
   const ferramentasFiltradas = useMemo(() => {
     const term = busca.trim().toLowerCase();
 
-    return planifyTools.filter((item) => {
+    return activePlanifyTools.filter((item) => {
       const matchCategoria =
         categoria === "todos" || item.category === categoria;
       const matchBusca =

@@ -1,19 +1,19 @@
 import Link from "next/link";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
-import { planifyTools } from "@/lib/pro/planifyTools";
+import { activePlanifyTools } from "@/lib/pro/planifyTools";
 import {
   landingExtraTools,
   landingGeneratorCount,
   landingPlanejamentoTools,
 } from "@/lib/pro/teachyLanding";
 
-const featuredToolIds = ["slides", "plano-aula", "prova", "sequencia"] as const;
+const featuredToolIds = ["plano-aula", "prova", "lista", "correcao-ia"] as const;
 
 export function TeachyHomeToolsGrid() {
-  const featuredTools = planifyTools.filter((tool) =>
+  const featuredTools = activePlanifyTools.filter((tool) =>
     featuredToolIds.includes(tool.id as (typeof featuredToolIds)[number]),
   );
-  const otherTools = planifyTools.filter(
+  const otherTools = activePlanifyTools.filter(
     (tool) => !featuredToolIds.includes(tool.id as (typeof featuredToolIds)[number]),
   );
 

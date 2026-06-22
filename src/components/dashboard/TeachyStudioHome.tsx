@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { DashboardSectionId } from "@/lib/pro/dashboardViews";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import {
+  activePlanifyTools,
   planifyToolCount,
   planifyTools,
   toolCategories,
@@ -34,7 +35,7 @@ function matchesPlanejamentosSearch(term: string): boolean {
 
 function filterTools(query: string, category: ToolCategoryId): PlanifyTool[] {
   const term = query.trim().toLowerCase();
-  return planifyTools.filter((tool) => {
+  return activePlanifyTools.filter((tool) => {
     const matchCat = category === "todos" || tool.category === category;
     const matchTerm =
       !term ||
@@ -189,7 +190,7 @@ export default function TeachyStudioHome({
                         id="hub-tool-search"
                         value={query}
                         onChange={(event) => setQuery(event.target.value)}
-                        placeholder="Buscar slides, prova, sequência, inclusão…"
+                        placeholder="Buscar prova, lista, plano de aula, inclusão…"
                         aria-label="Buscar ferramentas"
                       />
                     </div>

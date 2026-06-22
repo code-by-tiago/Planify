@@ -13,18 +13,18 @@ export const teachyHomeFeatures: {
   {
     title: "Crie o material perfeito",
     description:
-      "O primeiro rascunho pronto em segundos. Adicione seu toque e refine em minutos com IA — slides, listas, planos e resumos alinhados à BNCC.",
+      "O primeiro rascunho pronto em segundos. Adicione seu toque e refine em minutos com IA — listas, planos, provas e atividades alinhados à BNCC.",
     cta: "Ver planos",
     href: "/planos",
     icon: "spark",
     imageSide: "right",
   },
   {
-    title: "Crie uma aula inteira baseada nisso",
+    title: "Planeje e avalie com IA",
     description:
-      "Transforme seu tema em uma aula completa com plano, slides, atividades e avaliação — tudo coeso no Construtor de aula.",
-    cta: "Ver planos",
-    href: "/planos",
+      "Transforme seu tema em plano de aula, lista de exercícios ou prova — materiais coesos prontos para revisar no editor.",
+    cta: "Abrir painel",
+    href: "/dashboard",
     icon: "layers",
     imageSide: "left",
   },

@@ -27,7 +27,7 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
 const DAILY_LIMIT_MESSAGE =
-  "Você usou suas gerações profundas de hoje. A cota reinicia à meia-noite (horário de Brasília). Você ainda pode gerar flashcards e resumos, que não contam na cota.";
+  "Você usou suas gerações profundas de hoje. A cota reinicia à meia-noite (horário de Brasília).";
 
 async function handlePost(request: NextRequest, _context: { params: Promise<Record<string, string>> }) {
   const auth = await requireApiPremiumAccess(request);

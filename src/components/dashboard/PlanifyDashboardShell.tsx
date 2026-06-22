@@ -17,8 +17,9 @@ import {
 } from "@/lib/pro/dashboardViews";
 import {
   getPlanifyTool,
+  isActivePlanifyToolId,
+  isAiToolDisabled,
   planifyToolCount,
-  planifyTools,
   type PlanifyToolId,
 } from "@/lib/pro/planifyTools";
 import { usePlanifyAccess } from "@/hooks/usePlanifyAccess";
@@ -26,7 +27,7 @@ import { usePersistedSidebarCollapsed } from "@/hooks/usePersistedSidebarCollaps
 import { setHistorySupabaseSync, syncLocalHistoryToSupabase } from "@/lib/history/history-storage";
 
 function isValidToolId(value: string | null): value is PlanifyToolId {
-  return planifyTools.some((tool) => tool.id === value);
+  return isActivePlanifyToolId(value);
 }
 
 function readTemaParam(searchParams: URLSearchParams): string {
@@ -145,6 +146,14 @@ export default function PlanifyDashboardShell() {
     },
     [replaceDashboardUrl],
   );
+
+  useEffect(() => {
+    const tipo = searchParams.get("tipo");
+    if (!tipo || !isAiToolDisabled(tipo)) return;
+    replaceDashboardUrl((params) => {
+      params.delete("tipo");
+    });
+  }, [searchParams, replaceDashboardUrl]);
 
   const activeTool = selectedToolId ? getPlanifyTool(selectedToolId) : null;
   const hasPanel = Boolean(selectedToolId || selectedSectionId);

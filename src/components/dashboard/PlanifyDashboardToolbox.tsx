@@ -3,6 +3,7 @@
 import { useMemo, useState, type RefObject } from "react";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import {
+  activePlanifyTools,
   planifyTools,
   toolCategories,
   type PlanifyToolId,
@@ -30,7 +31,7 @@ export function PlanifyDashboardToolbox({
 
   const filteredTools = useMemo(() => {
     const term = query.trim().toLowerCase();
-    return planifyTools.filter((tool) => {
+    return activePlanifyTools.filter((tool) => {
       const matchCat = category === "todos" || tool.category === category;
       const matchTerm =
         !term ||

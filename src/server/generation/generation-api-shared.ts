@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isDeepGenerationType } from "@/lib/ai/material-generation-policy";
+import {
+  DISABLED_AI_TOOL_MESSAGE,
+  isAiToolDisabled,
+} from "@/lib/pro/disabled-ai-tools";
 import { requireApiPremiumAccess } from "@/server/auth/api-access";
 import {
   consumeDeepGeneration,
@@ -53,7 +57,14 @@ export type GenerationPreparedRequest<TPayload = unknown> =
     };
 
 const DEFAULT_DAILY_LIMIT_MESSAGE =
-  "Você usou suas gerações profundas de hoje. A cota reinicia à meia-noite (horário de Brasília). Você ainda pode gerar flashcards e resumos, que não contam na cota.";
+  "Você usou suas gerações profundas de hoje. A cota reinicia à meia-noite (horário de Brasília).";
+
+export function assertAiToolEnabled(tipo: string): NextResponse | null {
+  if (isAiToolDisabled(tipo)) {
+    return jsonGenerationValidationError(DISABLED_AI_TOOL_MESSAGE);
+  }
+  return null;
+}
 
 export type PrepareGenerationOptions<TPayload = unknown> = {
   skipDailyQuota?: boolean;
@@ -84,6 +95,10 @@ export async function prepareGenerationRequest<TPayload>(
   }
 
   const tipo = options.resolveTipo(payload);
+  const disabledResponse = assertAiToolEnabled(tipo);
+  if (disabledResponse) {
+    return { ok: false, response: disabledResponse };
+  }
   let chargedCost = 0;
   let chargedDeepDaily = false;
 

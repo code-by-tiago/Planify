@@ -5,7 +5,7 @@ export const SEO = {
   locale: "pt_BR",
   descriptionShort: "Plataforma educacional com IA para professores",
   descriptionFull:
-    "Plataforma educacional com IA para professores criarem planejamentos, atividades, provas, jogos pedagógicos, apostilas, sequências didáticas e documentos editáveis com padrão profissional.",
+    "Plataforma educacional com IA para professores criarem planejamentos, atividades, provas, listas de exercícios e documentos editáveis com padrão profissional.",
   keywords: [
     "Planify",
     "IA educação",
@@ -15,8 +15,8 @@ export const SEO = {
     "materiais didáticos",
     "gerador de atividades",
     "gerador de provas",
-    "jogos pedagógicos",
-    "apostilas",
+    "correção de provas",
+    "redação ENEM",
   ],
   creator: "Planify IA Educacional",
   publisher: "Planify IA Educacional",

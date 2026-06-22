@@ -1,7 +1,7 @@
 import {
   appNavigation,
+  activePlanifyTools,
   getPlanifyTool,
-  planifyTools,
   toolCategories,
   type PlanifyToolId,
   type ToolCategoryId,
@@ -29,7 +29,7 @@ export const materialCategories = toolCategories.map((item) => ({
   icon: item.icon,
 }));
 
-export const materialModes = planifyTools.map((tool) => ({
+export const materialModes = activePlanifyTools.map((tool) => ({
   id: tool.id,
   title: tool.title,
   shortTitle: tool.shortTitle,
@@ -61,7 +61,7 @@ export const studioAreas: StudioArea[] = [
     slug: "materiais",
     title: "Materiais Didáticos",
     shortTitle: "Materiais",
-    subtitle: "Apostilas, provas, slides e jogos",
+    subtitle: "Provas, listas e atividades",
     description:
       "Crie materiais com estrutura adequada para cada formato, sem misturar tipos.",
     href: "/materiais",
@@ -142,10 +142,10 @@ export const studioAreas: StudioArea[] = [
 export const quickCreate = [
   { label: "Plano anual", href: "/planejamentos", icon: "clipboard" },
   { label: "Plano trimestral", href: "/planejamentos", icon: "calendar" },
-  { label: "Slides", href: "/materiais?tipo=slides", icon: "presentation" },
   { label: "Prova", href: "/materiais?tipo=prova", icon: "fileText" },
   { label: "Exercícios", href: "/materiais?tipo=lista", icon: "listChecks" },
-  { label: "Apostila", href: "/materiais?tipo=apostila", icon: "book" },
+  { label: "Plano de aula", href: "/materiais?tipo=plano-aula", icon: "clipboard" },
+  { label: "Atividade", href: "/materiais?tipo=atividade", icon: "puzzle" },
 ];
 
 export const navigationItems = appNavigation;

@@ -1,17 +1,15 @@
-import type { Metadata } from "next";
-import { StrategicLandingPage } from "@/components/public/StrategicLandingPage";
-import { buildPageMetadata } from "@/lib/seo/metadata";
-import { getStrategicPageByPath } from "@/lib/seo/strategic-pages";
+"use client";
 
-const PATH = "/apostilas-com-ia-para-professores";
-const content = getStrategicPageByPath(PATH)!;
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { PlanifyToolRedirectShell } from "@/components/dashboard/PlanifyToolRedirectShell";
 
-export const metadata: Metadata = buildPageMetadata({
-  title: content.title,
-  description: content.description,
-  path: PATH,
-});
+export default function ApostilasComIaRedirectPage() {
+  const router = useRouter();
 
-export default function ApostilasComIaParaProfessoresPage() {
-  return <StrategicLandingPage content={content} />;
+  useEffect(() => {
+    router.replace("/dashboard", { scroll: false });
+  }, [router]);
+
+  return <PlanifyToolRedirectShell />;
 }

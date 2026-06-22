@@ -5,6 +5,10 @@ import {
   normalizeLessonBundleTools,
 } from "@/lib/aula-completa/lesson-bundle-config";
 import { isDeepGenerationType } from "@/lib/ai/material-generation-policy";
+import {
+  DISABLED_AI_TOOL_MESSAGE,
+  isAiToolDisabled,
+} from "@/lib/pro/disabled-ai-tools";
 import { requireApiPremiumAccess } from "@/server/auth/api-access";
 import {
   consumeDeepGeneration,
@@ -56,6 +60,16 @@ export async function prepareLessonBundleRequest(
 ): Promise<LessonBundlePreparedRequest> {
   const auth = await requireApiPremiumAccess(request);
   if (!auth.ok) return { ok: false, response: auth.response };
+
+  if (isAiToolDisabled(LESSON_BUNDLE_GENERATION_TYPE)) {
+    return {
+      ok: false,
+      response: NextResponse.json(
+        { ok: false, message: DISABLED_AI_TOOL_MESSAGE },
+        { status: 400 },
+      ),
+    };
+  }
 
   const user = auth.access.user;
   const payload = (await request.json().catch(() => null)) as LessonBundleInput | null;

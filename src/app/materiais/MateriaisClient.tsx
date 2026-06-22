@@ -383,10 +383,6 @@ export function MateriaisClient({
   const [pedagogicalEntries, setPedagogicalEntries] = useState<
     PedagogicalContextEntry[]
   >([]);
-  const [pedagogicalTokensSaved, setPedagogicalTokensSaved] = useState(0);
-  const [loadingPedagogical, setLoadingPedagogical] = useState(false);
-  const [pedagogicalExpanded, setPedagogicalExpanded] = useState(true);
-  const [usePedagogicalOnly, setUsePedagogicalOnly] = useState(false);
   const pedagogicalDebounceRef = useRef<number | null>(null);
 
   function rememberSlideGenerationPayload(payload: MaterialEngineInput | null) {
@@ -449,11 +445,9 @@ export function MateriaisClient({
   const loadPedagogicalContext = useCallback(async () => {
     if (!tema.trim()) {
       setPedagogicalEntries([]);
-      setPedagogicalTokensSaved(0);
       return;
     }
 
-    setLoadingPedagogical(true);
     try {
       const data = await fetchPedagogicalContext({
         tema: tema.trim(),
@@ -464,16 +458,11 @@ export function MateriaisClient({
 
       if (data.success && data.kind === "cache_hit" && data.entries.length) {
         setPedagogicalEntries(data.entries);
-        setPedagogicalTokensSaved(data.tokensSaved ?? 0);
       } else {
         setPedagogicalEntries([]);
-        setPedagogicalTokensSaved(0);
       }
     } catch {
       setPedagogicalEntries([]);
-      setPedagogicalTokensSaved(0);
-    } finally {
-      setLoadingPedagogical(false);
     }
   }, [tema, componente, etapa, anoSerie]);
 
@@ -1546,88 +1535,6 @@ export function MateriaisClient({
               className={HUD_FIELD_CLASS}
             />
           </label>
-
-          {(loadingPedagogical || pedagogicalEntries.length > 0) ? (
-            <div className="mt-4 rounded-xl border border-emerald-400/25 bg-emerald-50/60">
-              <button
-                type="button"
-                onClick={() => setPedagogicalExpanded((v) => !v)}
-                className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left"
-              >
-                <span className="text-xs font-black uppercase tracking-wide text-emerald-900">
-                  Contexto verificado
-                </span>
-                <span className="rounded-full bg-emerald-600 px-2.5 py-1 text-[10px] font-black text-white">
-                  Fonte revisada — sem custo de IA
-                </span>
-              </button>
-              {pedagogicalExpanded ? (
-                <div className="border-t border-emerald-400/20 px-4 py-3">
-                  {loadingPedagogical ? (
-                    <p className="text-xs font-semibold text-emerald-800">
-                      Buscando contexto no reservatório…
-                    </p>
-                  ) : (
-                    <>
-                      {pedagogicalEntries.map((entry) => (
-                        <div key={entry.id} className="mb-3 last:mb-0">
-                          <p className="text-sm font-black text-slate-900">
-                            {entry.title}
-                          </p>
-                          <p className="mt-1 text-xs font-semibold leading-5 text-slate-700">
-                            {entry.summary}
-                          </p>
-                          {entry.sourceUrl ? (
-                            <a
-                              href={entry.sourceUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="mt-1 inline-block text-[11px] font-bold text-emerald-800 underline"
-                            >
-                              {entry.sourceTitle || "Ver fonte"}
-                            </a>
-                          ) : null}
-                        </div>
-                      ))}
-                      {pedagogicalTokensSaved > 0 ? (
-                        <p className="text-[11px] font-bold text-emerald-800">
-                          ~{pedagogicalTokensSaved.toLocaleString("pt-BR")} tokens economizados nesta consulta.
-                        </p>
-                      ) : null}
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setUsePedagogicalOnly(true);
-                            setObservacoes(
-                              buildPedagogicalObservacoes(
-                                pedagogicalEntries,
-                                observacoes.trim(),
-                              ),
-                            );
-                          }}
-                          className="rounded-full border border-emerald-600 bg-white px-3 py-1.5 text-xs font-black text-emerald-800 hover:bg-emerald-100"
-                        >
-                          Usar só este contexto
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setUsePedagogicalOnly(false)}
-                          className={`rounded-full px-3 py-1.5 text-xs font-black transition ${
-                            !usePedagogicalOnly
-                              ? "bg-emerald-600 text-white"
-                              : "border border-emerald-400/40 bg-white text-emerald-800"
-                          }`}
-                        >
-                          Injetar na geração completa
-                        </button>
-                      </div>
-                    </>
-                  )}
-                </div>
-              ) : null}
-            </div>
-          ) : null}
 
           <div className="mt-3 flex flex-wrap gap-2">
             {(sugestoesTema[tipo] || []).map((item) => {

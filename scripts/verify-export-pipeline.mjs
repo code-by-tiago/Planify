@@ -117,6 +117,11 @@ assert.equal(
   "Classroom detecta jogo visual pelo HTML mesmo sem documentType",
 );
 assert.equal(
+  classroom.resolveClassroomExportForHtml(gameHtml, "material:cruzadinha"),
+  "pdf",
+  "Classroom deve enviar cruzadinha como PDF",
+);
+assert.equal(
   classroom.resolveClassroomExportForHtml(provaHtml, "material:prova"),
   "pdf",
 );
@@ -142,6 +147,7 @@ assert.equal(parseQuizQuestionsFromHtml(stripTeacherOnlyExportBlocks(provaHtml))
 
 // --- Auto-export pós-geração ---
 assert.equal(resolveGoogleProductForTool("jogo"), "docs");
+assert.equal(resolveGoogleProductForTool("cruzadinha"), "docs");
 assert.equal(resolveGoogleProductForTool("prova"), "forms");
 assert.equal(resolveGoogleProductForTool("lista"), "forms");
 assert.equal(resolveGoogleProductForTool("slides"), "slides");

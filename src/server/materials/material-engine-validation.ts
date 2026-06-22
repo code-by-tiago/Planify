@@ -13,10 +13,16 @@ function asText(value: unknown, fallback = ""): string {
   return typeof value === "string" && value.trim() ? value.trim() : fallback;
 }
 
-function toSafeQuantity(value: unknown): number {
+function toSafeQuantity(value: unknown, tipo?: MaterialEngineType): number {
   const parsed = Number(value);
-  if (!Number.isFinite(parsed)) return 10;
-  return Math.max(1, Math.min(30, Math.round(parsed)));
+  if (!Number.isFinite(parsed)) {
+    return tipo === "cruzadinha" ? 10 : 10;
+  }
+  const rounded = Math.round(parsed);
+  if (tipo === "cruzadinha") {
+    return Math.max(8, Math.min(15, rounded));
+  }
+  return Math.max(1, Math.min(30, rounded));
 }
 
 function normalizeType(value: unknown): MaterialEngineType {
@@ -42,6 +48,10 @@ export function normalizeMaterialEngineRequest(
   const tipoMaterial = normalizeType(payload.tipoMaterial || payload.tipo);
   const incluirQuestoes =
     tipoMaterial === "slides" && payload.incluirQuestoes === true;
+  const formatoJogo =
+    tipoMaterial === "cruzadinha"
+      ? "cruzadinha"
+      : asText(payload.formatoJogo, "") || null;
 
   return {
     tipoMaterial,
@@ -52,9 +62,9 @@ export function normalizeMaterialEngineRequest(
     ),
     tema: asText(payload.tema || payload.temaCentral),
     objetivo: asText(payload.objetivo || payload.objetivos),
-    quantidade: toSafeQuantity(payload.quantidade),
+    quantidade: toSafeQuantity(payload.quantidade, tipoMaterial),
     dificuldade: asText(payload.dificuldade, "media"),
-    formatoJogo: asText(payload.formatoJogo, "") || null,
+    formatoJogo,
     incluirGabarito: resolveIncluirGabarito(tipoMaterial, incluirQuestoes, payload),
     incluirQuestoes: incluirQuestoes || undefined,
     quantidadeQuestoes: incluirQuestoes

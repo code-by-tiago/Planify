@@ -12,6 +12,7 @@ export const MATERIAL_ENGINE_TYPES = [
   "flashcards",
   "redacao",
   "mapa-mental",
+  "cruzadinha",
 ] as const;
 
 export type MaterialEngineType = (typeof MATERIAL_ENGINE_TYPES)[number];

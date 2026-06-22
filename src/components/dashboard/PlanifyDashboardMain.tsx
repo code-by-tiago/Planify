@@ -40,6 +40,12 @@ const CorrecaoClient = dynamic(
   { ssr: false, loading: PanelLoading },
 );
 
+const CruzadinhaClient = dynamic(
+  () =>
+    import("@/app/cruzadinha/CruzadinhaClient").then((m) => m.CruzadinhaClient),
+  { ssr: false, loading: PanelLoading },
+);
+
 const PlanejamentosClient = dynamic(
   () =>
     import("@/app/planejamentos/PlanejamentosClient").then(
@@ -144,6 +150,22 @@ export function PlanifyDashboardMain({
           <div className="planify-hud planify-materiais-studio flex h-full min-h-0 w-full flex-col overflow-hidden bg-[var(--planify-canvas)]">
             <div className="min-h-0 flex-1 overflow-hidden">
               <CorrecaoClient studioMode onStudioClose={onClosePanel} />
+            </div>
+          </div>
+        </PlanifyWorkspaceProvider>
+      );
+    }
+
+    if (toolId === "cruzadinha") {
+      return (
+        <PlanifyWorkspaceProvider embeddedInDashboard>
+          <div className="planify-hud planify-materiais-studio flex h-full min-h-0 w-full flex-col overflow-hidden bg-[var(--planify-canvas)]">
+            <div className="min-h-0 flex-1 overflow-hidden">
+              <CruzadinhaClient
+                studioMode
+                onStudioClose={onClosePanel}
+                initialTema={initialTopic}
+              />
             </div>
           </div>
         </PlanifyWorkspaceProvider>

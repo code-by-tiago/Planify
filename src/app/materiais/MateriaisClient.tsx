@@ -164,6 +164,7 @@ const sugestoesTema: Record<PlanifyToolId, string[]> = {
   slides: ["Estados físicos da matéria", "Verbos", "Brasil República"],
   projeto: ["Feira de ciências", "Consciência negra", "Educação financeira"],
   jogo: ["Biomas brasileiros", "Tabuada", "Classes gramaticais"],
+  cruzadinha: ["Sistema solar", "Célula e organelas", "Independência do Brasil"],
   sequencia: ["Leitura e produção textual", "Geometria plana", "Água e sociedade"],
   resumo: ["Ciclo da água", "Fotossíntese", "Média, moda e mediana"],
   lista: ["Funções do 1º grau", "Sistema digestório", "Crase"],

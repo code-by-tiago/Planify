@@ -55,6 +55,12 @@ const MATERIAL_STEPS: Partial<Record<PlanifyToolId, string[]>> = {
     "Revisando coerência com o tema...",
     "Preparando material para edição...",
   ],
+  cruzadinha: [
+    "Gerando sua cruzadinha...",
+    "Selecionando termos e pistas do tema...",
+    "Montando a grade visual cruzada...",
+    "Preparando material para impressão...",
+  ],
   resumo: [
     "Gerando seu resumo...",
     "Organizando tópicos e síntese...",

@@ -234,7 +234,7 @@ const LESSON_PLAN_SCHEMA = {
 };
 
 export function getMaterialEngineSchema(type: MaterialEngineType) {
-  if (type === "jogo") return GAME_SCHEMA;
+  if (type === "jogo" || type === "cruzadinha") return GAME_SCHEMA;
   if (type === "atividade") {
     return {
       ...BASE_MATERIAL_SCHEMA,

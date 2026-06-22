@@ -6,6 +6,7 @@ import { MaterialQuestionsPreview } from "@/components/materiais/preview/Materia
 import { MaterialSectionsPreview } from "@/components/materiais/preview/MaterialSectionsPreview";
 import { MaterialSlidesPreview } from "@/components/materiais/preview/MaterialSlidesPreview";
 import { MaterialMindMapPreview } from "@/components/materiais/preview/MaterialMindMapPreview";
+import { MaterialCrosswordPreview } from "@/components/materiais/preview/MaterialCrosswordPreview";
 import { hasMindMapInHtml } from "@/lib/materiais/material-preview-parse";
 
 type MaterialTypedPreviewProps = {
@@ -49,6 +50,10 @@ export function MaterialTypedPreview({
 
   if (tipo === "flashcards") {
     return <MaterialFlashcardsPreview html={html} />;
+  }
+
+  if (tipo === "cruzadinha" || /planify-game-table--crossword/i.test(html)) {
+    return <MaterialCrosswordPreview html={html} />;
   }
 
   if (tipo === "mapa-mental" || hasMindMapInHtml(html)) {

@@ -15,6 +15,7 @@ export const CLIENT_CREDIT_COSTS: Partial<Record<PlanifyToolId | string, number>
   flashcards: 1,
   "mapa-mental": 1,
   jogo: 1,
+  cruzadinha: 1,
   inclusao: 6,
   "aula-completa": 28,
   "correcao-ia": 3,

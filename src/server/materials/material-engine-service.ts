@@ -74,6 +74,7 @@ const P0_QUALITY_GATE_TYPES = new Set<MaterialEngineType>([
   "slides",
   "projeto",
   "jogo",
+  "cruzadinha",
   "sequencia",
   "resumo",
   "lista",
@@ -1051,6 +1052,23 @@ function normalizeOutput(
   return normalized;
 }
 
+function buildGameSeedOutput(
+  normalized: MaterialEngineResponse,
+): { termosDoJogo: Array<{ termo?: string; pista?: string }> } | undefined {
+  const components = normalized.game?.components ?? [];
+  if (!components.length) return undefined;
+
+  return {
+    termosDoJogo: components.map((line) => {
+      const [termPart, ...rest] = String(line).split(/[:–—-]/);
+      return {
+        termo: termPart?.trim(),
+        pista: rest.join("-").trim() || undefined,
+      };
+    }),
+  };
+}
+
 function renderDocumentHtml(
   request: MaterialEngineRequest,
   normalized: MaterialEngineResponse,
@@ -1063,21 +1081,30 @@ function renderDocumentHtml(
   };
   const base = renderHtml(normalized, ctx);
 
-  if (request.tipoMaterial !== "jogo") return base;
+  const isVisualGame =
+    request.tipoMaterial === "jogo" || request.tipoMaterial === "cruzadinha";
+  if (!isVisualGame) return base;
 
   try {
-    const visual = buildVisualGameMaterial({
-      titulo: normalized.title,
-      etapa: request.etapa,
-      anoSerie: request.anoSerie,
-      componenteCurricular: request.componenteCurricular,
-      tipo: "jogo",
-      modeloJogo: mapGameFormato(request.formatoJogo),
-      tema: request.tema,
-      objetivos: request.objetivo,
-      conteudos: request.tema,
-      orientacoes: request.objetivo || undefined,
-    });
+    const modeloJogo =
+      request.tipoMaterial === "cruzadinha"
+        ? "cruzadinha"
+        : mapGameFormato(request.formatoJogo);
+    const visual = buildVisualGameMaterial(
+      {
+        titulo: normalized.title,
+        etapa: request.etapa,
+        anoSerie: request.anoSerie,
+        componenteCurricular: request.componenteCurricular,
+        tipo: request.tipoMaterial === "cruzadinha" ? "cruzadinha" : "jogo",
+        modeloJogo,
+        tema: request.tema,
+        objetivos: request.objetivo,
+        conteudos: request.observacoes || request.tema,
+        orientacoes: request.objetivo || undefined,
+      },
+      buildGameSeedOutput(normalized),
+    );
     const extra = visual.printHtml || visual.visualHtml || "";
     if (extra) {
       return `${base}<div class="planify-jogo-visual">${extra}</div>`;
@@ -1096,7 +1123,7 @@ function maxOutputTokensFor(request: MaterialEngineRequest): number {
   const type = request.tipoMaterial;
   if (type === "flashcards" || type === "mapa-mental") return 4_500;
   if (type === "resumo") return 5_500;
-  if (type === "atividade" || type === "jogo") return 7_500;
+  if (type === "atividade" || type === "jogo" || type === "cruzadinha") return 7_500;
   if (type === "prova" || type === "lista") return 9_500;
   if (type === "apostila") return 12_000;
   return 8_500;

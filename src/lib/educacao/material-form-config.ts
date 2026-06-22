@@ -6,6 +6,7 @@ export const TOOL_IDS_WITH_GABARITO: PlanifyToolId[] = [
   "lista",
   "atividade",
   "redacao",
+  "cruzadinha",
 ];
 
 export function toolSupportsGabarito(

@@ -380,6 +380,15 @@ export function getEngineOutputIssues(
     }
   }
 
+  if (tipo === "cruzadinha") {
+    const termCount = output.game?.components?.length ?? 0;
+    if (termCount < 8) {
+      issues.push(
+        "Cruzadinha: inclua pelo menos 8 termos com pistas em game.components (formato PALAVRA: pista).",
+      );
+    }
+  }
+
   if (tipo === "resumo") {
     if ((output.sections?.length ?? 0) < 2) {
       issues.push("Resumo: organize pelo menos 2 seções temáticas com bullets.");

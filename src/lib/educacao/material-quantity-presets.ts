@@ -80,6 +80,12 @@ export const QUANTITY_PRESETS_BY_TOOL: Partial<
     { value: "6", label: "6 ramos" },
     { value: "8", label: "8 ramos" },
   ],
+  cruzadinha: [
+    { value: "8", label: "8 palavras" },
+    { value: "10", label: "10 palavras" },
+    { value: "12", label: "12 palavras" },
+    { value: "15", label: "15 palavras" },
+  ],
 };
 
 export function getQuantityPresets(toolId: PlanifyToolId): QuantityPreset[] {

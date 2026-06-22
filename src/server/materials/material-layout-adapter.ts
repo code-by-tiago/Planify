@@ -30,6 +30,7 @@ const TYPE_TITLES: Record<MaterialEngineType, string> = {
   slides: "Apresentação",
   projeto: "Projeto",
   jogo: "Jogo pedagógico",
+  cruzadinha: "Cruzadinha pedagógica",
   sequencia: "Sequência didática",
   resumo: "Resumo",
   lista: "Lista de exercícios",
@@ -336,7 +337,10 @@ export function materialLayoutToEngineResponse(
                   })),
           }
         : undefined,
-    game: tipo === "jogo" ? extractGameFromSecoes(layout.secoes, request.formatoJogo) : undefined,
+    game:
+      tipo === "jogo" || tipo === "cruzadinha"
+        ? extractGameFromSecoes(layout.secoes, request.formatoJogo)
+        : undefined,
   };
 
   return response;

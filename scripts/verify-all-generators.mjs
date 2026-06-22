@@ -403,6 +403,34 @@ const GOLDEN = {
     },
     htmlChecks: [/Jogo:/, /Regras/, /Componentes/],
   },
+  cruzadinha: {
+    input: baseInput("cruzadinha", { quantidade: 10, formatoJogo: "cruzadinha" }),
+    structure: {
+      ...emptyBase(),
+      title: "Cruzadinha — Equações do 1º grau",
+      game: {
+        format: "cruzadinha",
+        rules: ["Individual ou dupla", "Conferir em correção coletiva"],
+        components: [
+          "EQUACAO: Igualdade com incognita de primeiro grau",
+          "INCOGNITA: Letra que representa valor desconhecido",
+          "COEFICIENTE: Numero que multiplica a incognita",
+          "SOLUCAO: Valor que torna a igualdade verdadeira",
+          "IGUALDADE: Relacao entre duas expressoes equivalentes",
+          "ADICAO: Operacao usada para isolar termos positivos",
+          "SUBTRACAO: Operacao inversa da adicao",
+          "MULTIPLICACAO: Operacao para resolver coeficientes",
+          "DIVISAO: Operacao inversa da multiplicacao",
+          "VERIFICACAO: Substituir o valor encontrado na equacao original",
+        ],
+      },
+    },
+    htmlChecks: [
+      /planify-jogo-visual/,
+      /planify-game-table--crossword/,
+      /Cruzadinha/,
+    ],
+  },
   resumo: {
     input: baseInput("resumo"),
     structure: {
@@ -650,6 +678,7 @@ function testGoogleExportRouting() {
   assert.equal(resolveGoogleProductForTool("prova"), "forms");
   assert.equal(resolveGoogleProductForTool("lista"), "forms");
   assert.equal(resolveGoogleProductForTool("jogo"), "docs");
+  assert.equal(resolveGoogleProductForTool("cruzadinha"), "docs");
   assert.equal(resolveGoogleProductForTool("apostila"), "docs");
   assert.equal(resolveGoogleProductForTool("atividade"), "docs");
 }

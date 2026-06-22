@@ -37,6 +37,7 @@ export const LIGHT_GENERATION_TYPES: MaterialEngineType[] = [
   "resumo",
   "mapa-mental",
   "jogo",
+  "cruzadinha",
   "atividade",
 ];
 

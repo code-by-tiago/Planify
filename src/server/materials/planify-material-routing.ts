@@ -19,6 +19,7 @@ export const PLANIFY_ENGINE_TYPES: MaterialEngineType[] = [
   "redacao",
   "sequencia",
   "projeto",
+  "cruzadinha",
 ];
 
 /** Tipos com renderizador visual dedicado (nunca usar html cru da IA). */

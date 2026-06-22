@@ -23,6 +23,7 @@ const TYPE_LABELS: Record<TipoFerramenta, string> = {
   apostila: "apostila didática",
   atividade: "atividade pedagógica",
   jogo: "jogo pedagógico",
+  cruzadinha: "cruzadinha pedagógica",
   projeto: "projeto pedagógico",
   resumo: "resumo guiado",
   flashcards: "flashcards",
@@ -208,6 +209,16 @@ function buildToolRules(input: PromptEngineInput): string[] {
         "Seção texto: regras passo a passo. Seção texto: componentes/materiais/cartas.",
         "Listar termos ou perguntas concretos ligados ao tema.",
         "Não transformar em lista de exercícios comum.",
+      ];
+
+    case "cruzadinha":
+      return [
+        `Gere termos e pistas para cruzadinha escolar sobre o tema (quantidade: ${input.quantidade}, entre 8 e 15 termos).`,
+        "Seção texto 'Termos da cruzadinha': bullets no formato PALAVRA: pista contextual.",
+        "Cada PALAVRA deve ter 4–12 letras, sem espaços e sem acentos (ex.: FOTOSINTESE, EQUACAO).",
+        "Pistas claras, sem revelar a resposta literalmente.",
+        "Seção texto 'Orientações de aplicação': 3–5 bullets sobre uso em sala.",
+        "Não incluir questões discursivas — apenas termos/pistas para a grade visual.",
       ];
 
     case "inclusao":

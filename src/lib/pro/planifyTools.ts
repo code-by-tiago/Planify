@@ -80,7 +80,8 @@ export type PlanifyToolId =
   | "mapa-mental"
   | "inclusao"
   | "aula-completa"
-  | "correcao-ia";
+  | "correcao-ia"
+  | "cruzadinha";
 
 export type PlanifyTool = {
   id: PlanifyToolId;
@@ -212,6 +213,21 @@ export const planifyTools: PlanifyTool[] = [
     loadingTitle: "Gerando atividade",
     loadingDescription: "Criando enunciado, passos e critérios.",
     accent: "from-emerald-300 via-green-300 to-lime-300",
+  },
+  {
+    id: "cruzadinha",
+    title: "Cruzadinha Pedagógica",
+    shortTitle: "Cruzadinha",
+    description:
+      "Cruzadinha com termos e pistas do tema, grade visual pronta para imprimir e gabarito para o professor.",
+    category: "engajar",
+    href: dashboardToolHref("cruzadinha"),
+    icon: "layers",
+    popular: true,
+    primaryFieldLabel: "Tema da cruzadinha",
+    loadingTitle: "Gerando cruzadinha",
+    loadingDescription: "Selecionando termos, montando pistas e grade visual.",
+    accent: "from-sky-300 via-cyan-300 to-teal-300",
   },
   {
     id: "jogo",

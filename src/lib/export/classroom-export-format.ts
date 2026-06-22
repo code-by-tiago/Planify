@@ -38,6 +38,7 @@ export function detectMaterialExportKind(
     type.includes("lista") ||
     type.includes("quiz") ||
     type.includes("jogo") ||
+    type.includes("cruzadinha") ||
     type.includes("flashcards") ||
     type.includes("mapa-mental") ||
     isQuizMaterialHtml(html) ||

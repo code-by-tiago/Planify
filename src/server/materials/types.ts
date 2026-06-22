@@ -26,6 +26,7 @@ export const TIPO_FERRAMENTA_VALUES = [
   "inclusao",
   "aula-completa",
   "correcao-ia",
+  "cruzadinha",
 ] as const;
 
 export type TipoFerramenta = (typeof TIPO_FERRAMENTA_VALUES)[number];

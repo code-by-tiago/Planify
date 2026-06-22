@@ -56,6 +56,7 @@ export const MATERIAL_STREAM_TYPES = new Set([
   "flashcards",
   "redacao",
   "mapa-mental",
+  "cruzadinha",
 ]);
 
 export function isMaterialStreamType(tipo: string): boolean {

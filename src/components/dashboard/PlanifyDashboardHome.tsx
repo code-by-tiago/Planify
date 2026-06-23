@@ -44,10 +44,10 @@ export function PlanifyDashboardHome({
           <p className="text-[10px] font-black uppercase tracking-[0.22em] text-indigo-600">
             Planify · Painel
           </p>
-          <h1 className="mt-3 text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">
+          <h1 className="mt-2 text-sm font-semibold tracking-tight text-slate-900 sm:text-base">
             Escolha uma função no menu à esquerda
           </h1>
-          <p className="mt-3 text-sm font-semibold leading-7 text-slate-600">
+          <p className="mt-2 text-xs leading-snug text-slate-500">
             Ferramentas com IA, planejamentos, editor, histórico e biblioteca abrem
             aqui no painel — sem rolar a página inteira.
           </p>

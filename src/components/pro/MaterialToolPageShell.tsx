@@ -59,21 +59,21 @@ export function MaterialToolPageShell({
       }`}
     >
       {!studioMode && onBack ? (
-        <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-cyan-400/15 bg-white/85 px-4 py-3 backdrop-blur-sm sm:gap-4 sm:px-5 sm:py-4">
-          <div className="flex min-w-0 items-center gap-3">
+        <div className="flex shrink-0 flex-wrap items-center justify-between gap-2.5 border-b border-cyan-400/15 bg-white/85 px-4 py-2.5 backdrop-blur-sm sm:gap-3 sm:px-5 sm:py-3">
+          <div className="flex min-w-0 items-center gap-2.5">
             <div
-              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${tool.accent} text-white shadow-sm`}
+              className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br ${tool.accent} text-white shadow-sm`}
             >
-              <PlanifyIcon name={tool.icon} className="h-5 w-5" />
+              <PlanifyIcon name={tool.icon} className="h-4 w-4" />
             </div>
             <div className="min-w-0">
               <p className="text-[10px] font-bold uppercase tracking-wide text-cyan-600">
                 {tool.shortTitle}
               </p>
-              <p className="truncate text-sm font-extrabold text-slate-950">
+              <p className="line-clamp-2 text-sm font-semibold tracking-tight text-slate-900">
                 {tool.title}
               </p>
-              <p className="hidden truncate text-xs font-medium text-slate-500 sm:block">
+              <p className="hidden line-clamp-2 text-xs leading-snug text-slate-500 sm:block">
                 {tool.description}
               </p>
             </div>

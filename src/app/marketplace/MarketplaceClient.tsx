@@ -470,7 +470,7 @@ export function MarketplaceClient() {
 
         {publishOpen ? (
           <section className="pl-hud-glass rounded-2xl p-5 sm:p-6">
-            <h2 className="text-lg font-extrabold text-slate-950">
+            <h2 className="text-sm font-semibold tracking-tight text-slate-900">
               Publicar na Comunidade
             </h2>
             <p className="mt-1 text-sm text-slate-600">

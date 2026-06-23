@@ -1271,10 +1271,10 @@ export function PlanejamentosClient() {
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-600">
               Escolha o tipo
             </p>
-            <h2 className="mt-2 text-2xl font-black text-slate-950">
+            <h2 className="mt-2 text-sm font-semibold tracking-tight text-slate-900 sm:text-base">
               Planejamento anual ou trimestral
             </h2>
-            <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-slate-600">
+            <p className="mt-1.5 max-w-2xl text-xs leading-snug text-slate-500">
               Informe os conteúdos, deixe a IA montar a matriz BNCC e exporte ao
               Google Docs com os modelos oficiais. O trimestral usa a mesma base do
               anual — sem retrabalho.
@@ -1327,7 +1327,7 @@ export function PlanejamentosClient() {
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-cyan-600">Dados</p>
-                <h2 className="mt-4 text-3xl font-black text-slate-950">Informações do planejamento</h2>
+                <h2 className="mt-3 text-sm font-semibold tracking-tight text-slate-900 sm:text-base">Informações do planejamento</h2>
               </div>
               <button type="button" onClick={clearAll} className="pl-hud-btn-secondary rounded-xl px-5 py-3 text-sm font-semibold">
                 Limpar tudo
@@ -1468,7 +1468,7 @@ export function PlanejamentosClient() {
               <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-cyan-600">
                 Modelo oficial
               </p>
-              <h3 className="mt-3 text-lg font-black text-slate-950">
+              <h3 className="mt-2 text-sm font-semibold text-slate-900">
                 Exportação Google Docs com modelos oficiais
               </h3>
               <p className="mt-2 text-sm leading-7 text-slate-600">
@@ -1620,7 +1620,7 @@ export function PlanejamentosClient() {
             <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-cyan-600">BNCC por conteúdo</p>
-                <h2 className="mt-4 text-3xl font-black text-slate-950">Habilidades sugeridas</h2>
+                <h2 className="mt-3 text-sm font-semibold tracking-tight text-slate-900 sm:text-base">Habilidades sugeridas</h2>
                 <p className="mt-3 text-sm leading-7 text-slate-400">
                   As sugestões vêm desmarcadas por padrão. Se não concordar com as 3 opções de um
                   conteúdo, use <strong className="text-slate-700">Atualizar habilidades</strong>{" "}
@@ -1645,7 +1645,7 @@ export function PlanejamentosClient() {
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                       <div>
                         <p className="text-xs font-black uppercase tracking-[0.25em] text-blue-600">Conteúdo</p>
-                        <h3 className="mt-2 text-xl font-black text-slate-950">{group.conteudo}</h3>
+                        <h3 className="mt-2 text-sm font-semibold text-slate-900">{group.conteudo}</h3>
                       </div>
                       <div className="flex flex-wrap gap-2">
                         <button
@@ -1739,7 +1739,7 @@ export function PlanejamentosClient() {
                   </div>
                 ) : null}
                 <p className="text-[10px] font-black uppercase tracking-[0.28em] text-emerald-600">Matriz gerada</p>
-                <h3 className="mt-3 text-2xl font-black text-slate-950">{activePreviewPlanning.titulo}</h3>
+                <h3 className="mt-2 text-sm font-semibold tracking-tight text-slate-900 sm:text-base">{activePreviewPlanning.titulo}</h3>
                 <p className="mt-3 text-sm leading-7 text-emerald-700/90">{activePreviewPlanning.resumo}</p>
                 <div className="mt-4 grid gap-2">
                   {activePreviewPlanning.conteudos.map((item: PlanningMatrixItem) => {
@@ -1781,7 +1781,7 @@ export function PlanejamentosClient() {
                 <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-emerald-600">
                   Matriz pronta
                 </p>
-                <h2 className="mt-2 text-2xl font-black text-slate-950 sm:text-3xl">
+                <h2 className="mt-2 text-sm font-semibold tracking-tight text-slate-900 sm:text-base">
                   Exportar ao Google Docs
                 </h2>
                 <p className="mt-2 max-w-2xl text-sm leading-7 text-slate-600">
@@ -1952,7 +1952,7 @@ export function PlanejamentosClient() {
                         ))}
                     </div>
                   ) : null}
-                  <h3 className="text-xl font-black text-slate-950 sm:text-2xl">
+                  <h3 className="text-sm font-semibold tracking-tight text-slate-900 sm:text-base">
                     {activePreviewPlanning.titulo}
                   </h3>
                   <p className="mt-2 text-sm leading-7 text-slate-600">

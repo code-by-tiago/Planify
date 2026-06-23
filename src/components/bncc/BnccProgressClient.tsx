@@ -111,7 +111,7 @@ export function BnccProgressClient({ embedded = false }: BnccProgressClientProps
     return (
       <section className="flex flex-1 items-center justify-center p-8 text-center">
         <div>
-          <h1 className="text-2xl font-black text-slate-950">Faça login</h1>
+          <h1 className="text-sm font-semibold tracking-tight text-slate-900 sm:text-base">Faça login</h1>
           <p className="mt-2 text-sm font-semibold text-slate-600">
             Entre na sua conta para ver o progresso BNCC.
           </p>
@@ -127,7 +127,7 @@ export function BnccProgressClient({ embedded = false }: BnccProgressClientProps
     return (
       <section className="flex flex-1 items-center justify-center p-8 text-center">
         <div className="max-w-md">
-          <h1 className="text-2xl font-black text-slate-950">Painel do Gestor</h1>
+          <h1 className="text-sm font-semibold tracking-tight text-slate-900 sm:text-base">Painel do Gestor</h1>
           <p className="mt-2 text-sm font-semibold text-slate-600">
             Como gestor ou diretor, use o painel administrativo para acompanhar
             turmas e professores da escola.
@@ -193,7 +193,7 @@ export function BnccProgressClient({ embedded = false }: BnccProgressClientProps
               <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-600">
                 BNCC
               </p>
-              <h1 className="text-2xl font-black text-slate-950">Progresso BNCC</h1>
+              <h1 className="text-sm font-semibold tracking-tight text-slate-900 sm:text-base">Progresso BNCC</h1>
               <p className="mt-1 text-sm font-semibold text-slate-600">
                 Cobertura de habilidades com base nos materiais gerados no ano letivo.
                 Selecione habilidades BNCC ao criar materiais para registrar com

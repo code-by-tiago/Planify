@@ -24,7 +24,7 @@ export function BnccPaywall({ redirectPath = "/progresso-bncc" }: BnccPaywallPro
           <PlanifyIcon name="listChecks" className="h-8 w-8" />
         </div>
 
-        <h1 className="mt-6 text-center text-3xl font-black tracking-tight text-slate-950">
+        <h1 className="mt-4 text-center text-sm font-semibold tracking-tight text-slate-900 sm:text-base">
           Progresso BNCC
         </h1>
         <p className="mx-auto mt-3 max-w-lg text-center text-sm font-semibold leading-6 text-slate-600">

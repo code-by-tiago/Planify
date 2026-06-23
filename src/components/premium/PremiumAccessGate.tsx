@@ -127,7 +127,7 @@ export default function PremiumAccessGate({
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-br from-blue-600 to-blue-500 text-white">
               <PlanifyIcon name="lock" className="h-7 w-7" />
             </div>
-            <h1 className="mt-6 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
+            <h1 className="mt-4 text-sm font-semibold tracking-tight text-slate-900 sm:text-base">
               Acesso restrito
             </h1>
             <p className="mx-auto mt-3 max-w-md text-sm font-semibold leading-6 text-slate-600">
@@ -162,7 +162,7 @@ export default function PremiumAccessGate({
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-blue-50 text-blue-700">
               <PlanifyIcon name="plans" className="h-7 w-7" />
             </div>
-            <h1 className="mt-6 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
+            <h1 className="mt-4 text-sm font-semibold tracking-tight text-slate-900 sm:text-base">
               Plano premium necessário
             </h1>
             <p className="mx-auto mt-3 max-w-md text-sm font-semibold leading-6 text-slate-600">

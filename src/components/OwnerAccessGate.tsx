@@ -22,7 +22,7 @@ export function OwnerAccessGate({
 
         {!authenticated ? (
           <>
-            <h1 className="mt-4 text-3xl font-black text-slate-950">Acesso restrito</h1>
+            <h1 className="mt-4 text-sm font-semibold tracking-tight text-slate-900 sm:text-base">Acesso restrito</h1>
             <p className="mx-auto mt-3 max-w-xl text-sm font-medium leading-7 text-slate-600">
               Entre com a conta do proprietário para acessar a administração.
             </p>
@@ -43,7 +43,7 @@ export function OwnerAccessGate({
           </>
         ) : (
           <>
-            <h1 className="mt-4 text-3xl font-black text-slate-950">Sem permissão</h1>
+            <h1 className="mt-4 text-sm font-semibold tracking-tight text-slate-900 sm:text-base">Sem permissão</h1>
             <p className="mx-auto mt-3 max-w-xl text-sm font-medium leading-7 text-slate-600">
               {email
                 ? `A conta ${email} não é o proprietário do Planify.`

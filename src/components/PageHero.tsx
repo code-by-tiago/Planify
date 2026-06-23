@@ -20,17 +20,17 @@ export function PageHero({
   secondaryHref,
 }: PageHeroProps) {
   return (
-    <section className="border-b border-indigo-100/60 bg-white/60 px-5 py-10 sm:px-8 lg:py-12">
+    <section className="border-b border-indigo-100/60 bg-white/60 px-5 py-3 sm:px-6">
       <div className="mx-auto max-w-4xl">
-        <p className="inline-flex rounded-full border border-indigo-100 bg-indigo-50 px-4 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-indigo-600">
+        <p className="inline-flex rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-indigo-600">
           {eyebrow}
         </p>
 
-        <h1 className="mt-5 text-3xl font-black leading-[1.08] tracking-tight text-slate-950 sm:text-4xl lg:text-5xl">
+        <h1 className="mt-2 text-sm font-semibold leading-snug tracking-tight text-slate-900 sm:text-base">
           {title}
         </h1>
 
-        <p className="mt-4 max-w-3xl text-base font-medium leading-8 text-slate-600 sm:text-lg">
+        <p className="mt-1.5 max-w-3xl text-xs leading-snug text-slate-500">
           {description}
         </p>
 

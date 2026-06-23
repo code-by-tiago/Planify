@@ -43,15 +43,15 @@ export function ComunidadeDocenteHero({
         </svg>
       </div>
 
-      <div className="relative grid gap-6 p-6 sm:p-8 lg:grid-cols-[1fr_280px] lg:items-center lg:gap-8">
+      <div className="relative grid gap-4 p-4 sm:p-5 lg:grid-cols-[1fr_280px] lg:items-center lg:gap-6">
         <div>
-          <p className="text-2xl" aria-hidden>
+          <p className="text-lg" aria-hidden>
             👋
           </p>
-          <h1 className="mt-2 text-2xl font-extrabold tracking-tight text-[#0F172A] sm:text-3xl">
+          <h1 className="mt-1.5 text-sm font-semibold tracking-tight text-slate-900 sm:text-base">
             Bem-vindo(a) à Comunidade Docente Planify!
           </h1>
-          <p className="mt-3 max-w-xl text-sm font-medium leading-relaxed text-slate-600 sm:text-base">
+          <p className="mt-2 max-w-xl text-xs leading-snug text-slate-500">
             Conecte-se com professores de todo o Brasil, compartilhe materiais, troque
             experiências e transforme a educação juntos.
           </p>

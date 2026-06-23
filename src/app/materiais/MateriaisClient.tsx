@@ -1160,7 +1160,7 @@ export function MateriaisClient({
                 Configurar geração
               </p>
             ) : (
-              <h2 className="text-2xl font-extrabold tracking-tight text-slate-950">
+              <h2 className="text-sm font-semibold tracking-tight text-slate-900">
                 {mode.title}
               </h2>
             )}
@@ -1804,7 +1804,7 @@ export function MateriaisClient({
               <p className="mt-4 text-[10px] font-bold uppercase tracking-wide text-cyan-600">
                 Pré-visualização
               </p>
-              <h3 className="mt-2 text-xl font-extrabold text-slate-950">
+              <h3 className="mt-2 text-sm font-semibold text-slate-900">
                 Pronto para criar
               </h3>
               <p className="mt-2 max-w-sm text-sm font-semibold leading-6 text-slate-500">
@@ -1849,10 +1849,10 @@ export function MateriaisClient({
                 <PlanifyIcon name="spark" className="h-3.5 w-3.5" />
                 Criar com IA
               </span>
-              <h1 className="mt-3 text-2xl font-extrabold tracking-tight text-slate-950 sm:text-3xl">
+              <h1 className="mt-2 text-sm font-semibold tracking-tight text-slate-900 sm:text-base">
                 Escolha uma ferramenta e gere o material em segundos.
               </h1>
-              <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-slate-600">
+              <p className="mt-1.5 max-w-2xl text-xs leading-snug text-slate-500">
                 Catálogo organizado por categoria. Clique na ferramenta para abrir o painel de criação com IA.
               </p>
             </div>
@@ -1911,7 +1911,7 @@ export function MateriaisClient({
                 <div className={`flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br ${item.accent} text-white shadow-sm transition group-hover:scale-110`}>
                   <PlanifyIcon name={item.icon} className="h-5 w-5" />
                 </div>
-                <h3 className="mt-4 text-sm font-extrabold leading-tight text-slate-950">
+                <h3 className="mt-4 text-sm font-semibold leading-tight text-slate-900">
                   {item.title}
                 </h3>
                 <p className="mt-1 line-clamp-3 text-xs font-semibold leading-5 text-slate-500">
@@ -1944,7 +1944,7 @@ export function MateriaisClient({
           <section className="pl-hud-glass rounded-2xl p-5 sm:p-6">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <h2 className="text-lg font-extrabold tracking-tight text-slate-950">
+                <h2 className="text-sm font-semibold tracking-tight text-slate-900">
                   Materiais recentes
                 </h2>
                 <p className="text-sm font-semibold text-slate-500">

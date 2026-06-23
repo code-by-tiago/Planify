@@ -46,7 +46,7 @@ export function ComunidadeDocenteOnboarding({
 
   return (
     <section className="overflow-hidden rounded-3xl border border-cyan-200 bg-gradient-to-br from-cyan-50 via-white to-indigo-50 p-6 shadow-sm">
-      <h2 className="text-xl font-extrabold text-[#0F172A]">Primeiros passos na comunidade</h2>
+      <h2 className="text-sm font-semibold tracking-tight text-slate-900 sm:text-base">Primeiros passos na comunidade</h2>
       <p className="mt-2 text-sm font-medium text-slate-600">
         Siga este roteiro para começar a interagir com outros professores.
       </p>

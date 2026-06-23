@@ -13,15 +13,15 @@ export function PlanifyDashboardWelcome({
   onTopicChange,
 }: PlanifyDashboardWelcomeProps) {
   return (
-    <div className="flex h-full min-h-0 w-full flex-col items-center justify-center overflow-hidden bg-white px-6 py-8 text-center">
-      <p className="text-[10px] font-black uppercase tracking-[0.22em] text-indigo-600">
+    <div className="flex h-full min-h-0 w-full flex-col items-center justify-center overflow-hidden bg-white px-6 py-4 text-center">
+      <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-indigo-600">
         Planify · IA pedagógica
       </p>
-      <h1 className="mt-3 max-w-xl text-2xl font-black leading-tight tracking-tight text-slate-950 sm:text-3xl">
+      <h1 className="mt-2 max-w-xl text-sm font-semibold leading-snug tracking-tight text-slate-900 sm:text-base">
         Materiais de aula com IA,{" "}
         <span className="text-indigo-600">alinhados à BNCC.</span>
       </h1>
-      <p className="mt-4 max-w-lg text-sm font-semibold leading-relaxed text-slate-600">
+      <p className="mt-2 max-w-lg text-xs leading-snug text-slate-500">
         Escolha uma ferramenta no menu à esquerda. O resultado abre aqui no painel
         — foco total na qualidade do material que você gera e revisa.
       </p>

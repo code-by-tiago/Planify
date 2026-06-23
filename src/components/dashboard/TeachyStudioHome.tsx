@@ -108,7 +108,7 @@ export default function TeachyStudioHome({
         >
           <PlanifyIcon name={tool.icon} className="h-5 w-5" />
         </span>
-        <span className="relative mt-4 text-lg font-extrabold text-slate-950">
+        <span className="relative mt-3 text-sm font-semibold tracking-tight text-slate-900">
           {tool.shortTitle}
         </span>
         <span className="relative mt-1.5 line-clamp-2 text-sm font-medium leading-snug text-slate-600">
@@ -137,7 +137,7 @@ export default function TeachyStudioHome({
         <span className="pl-hud-hub-tool-icon flex h-11 w-11 items-center justify-center bg-gradient-to-br from-cyan-500 to-blue-600">
           <PlanifyIcon name="clipboard" className="h-5 w-5" />
         </span>
-        <span className="relative mt-4 text-lg font-extrabold text-slate-950">Planejamentos</span>
+        <span className="relative mt-3 text-sm font-semibold tracking-tight text-slate-900">Planejamentos</span>
         <span className="relative mt-1.5 text-sm font-medium leading-snug text-slate-600">
           Matriz BNCC anual ou trimestral · sugira habilidades · exportação Google Docs oficial
         </span>
@@ -152,13 +152,13 @@ export default function TeachyStudioHome({
   return (
     <div className="pl-hud-hub pl-hud-board pl-hud-home flex h-full min-h-0 w-full flex-col overflow-hidden">
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-        <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:py-10">
-          <section className="pl-hud-hub-hero pl-hud-hub-reveal p-6 sm:p-8 lg:p-10">
+        <div className="mx-auto w-full max-w-7xl px-4 py-4 sm:px-6 sm:py-5">
+          <section className="pl-hud-hub-hero pl-hud-hub-reveal p-4 sm:p-5">
             <div className="pl-hud-hub-mesh" aria-hidden />
             <div className="pl-hud-hub-grid-bg" aria-hidden />
 
             <div className="relative">
-              <p className="max-w-xl text-sm font-medium leading-relaxed text-slate-600 sm:text-base">
+              <p className="max-w-xl text-xs leading-snug text-slate-500 sm:text-sm">
                 {totalGenerators} geradores com IA e planejamentos oficiais — busque abaixo ou
                 escolha uma categoria.
               </p>
@@ -225,7 +225,7 @@ export default function TeachyStudioHome({
                 <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-600">
                   Ferramentas IA
                 </p>
-                <h2 className="mt-1 text-xl font-extrabold text-slate-950 sm:text-2xl">
+                <h2 className="mt-1 text-sm font-semibold tracking-tight text-slate-900 sm:text-base">
                   {hasActiveFilter ? `${resultCount} resultado(s)` : "Todos os geradores"}
                 </h2>
               </div>
@@ -271,7 +271,7 @@ export default function TeachyStudioHome({
                 <p className="text-xs font-bold uppercase tracking-wide text-cyan-600">
                   Nenhum resultado
                 </p>
-                <h3 className="mt-2 text-lg font-extrabold text-slate-950">
+                <h3 className="mt-2 text-sm font-semibold text-slate-900">
                   Nenhuma ferramenta encontrada
                 </h3>
                 <p className="mt-2 text-sm font-medium text-slate-600">

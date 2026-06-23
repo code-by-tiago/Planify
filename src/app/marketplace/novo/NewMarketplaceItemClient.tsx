@@ -148,7 +148,7 @@ export function NewMarketplaceItemClient() {
           <p className="text-sm font-black uppercase tracking-[0.28em] text-cyan-300">
             Publicação
           </p>
-          <h1 className="mt-4 text-3xl font-black text-white">
+          <h1 className="mt-3 text-sm font-semibold tracking-tight text-white sm:text-base">
             Novo material na Comunidade
           </h1>
           <p className="mt-4 text-sm leading-7 text-cyan-100/80">
@@ -197,7 +197,7 @@ export function NewMarketplaceItemClient() {
               <p className="text-sm font-black uppercase tracking-[0.28em] text-cyan-300">
                 Dados do material
               </p>
-              <h2 className="mt-3 text-3xl font-black text-white">
+              <h2 className="mt-2 text-sm font-semibold tracking-tight text-white sm:text-base">
                 Prepare a publicação com clareza
               </h2>
             </div>
@@ -375,7 +375,7 @@ export function NewMarketplaceItemClient() {
           <p className="text-sm font-black uppercase tracking-[0.25em] text-cyan-300">
             Prévia da publicação
           </p>
-          <h2 className="mt-3 text-3xl font-black text-white">
+          <h2 className="mt-2 text-sm font-semibold tracking-tight text-white sm:text-base">
             {form.titulo || "Título do material"}
           </h2>
           <p className="mt-4 text-sm leading-7 text-cyan-100/85">

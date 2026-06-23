@@ -789,7 +789,7 @@ export function CorrecaoClient({
               <p className="text-xs font-bold uppercase tracking-wide text-cyan-600">
                 Corretor de provas em papel
               </p>
-              <h3 className="mt-2 text-lg font-extrabold text-slate-950">
+              <h3 className="mt-2 text-sm font-semibold text-slate-900">
                 Foto ou PDF → rubrica → devolutiva
               </h3>
               <p className="mt-2 text-sm font-medium text-slate-600">

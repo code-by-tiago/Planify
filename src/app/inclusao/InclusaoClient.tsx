@@ -412,7 +412,7 @@ export function InclusaoClient({
               <p className="mt-4 text-[10px] font-bold uppercase tracking-wide text-cyan-600">
                 Pré-visualização
               </p>
-              <h3 className="mt-2 text-xl font-extrabold text-slate-950">
+              <h3 className="mt-2 text-sm font-semibold text-slate-900">
                 Inclusão escolar com IA
               </h3>
               <p className="mt-2 max-w-sm text-sm font-semibold leading-6 text-slate-500">
@@ -442,7 +442,7 @@ export function InclusaoClient({
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-600">
               Inclusão escolar
             </p>
-            <h1 className="mt-2 text-2xl font-extrabold text-slate-950 sm:text-3xl">
+            <h1 className="mt-2 text-sm font-semibold tracking-tight text-slate-900 sm:text-base">
               {tool.title}
             </h1>
             <p className="mt-2 max-w-2xl text-sm font-medium leading-7 text-slate-600">

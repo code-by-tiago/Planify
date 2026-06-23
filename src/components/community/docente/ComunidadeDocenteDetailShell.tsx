@@ -123,9 +123,9 @@ export function ComunidadeDocenteDetailShell({
 
             <header className="flex flex-wrap items-start justify-between gap-4">
               <div>
-                <h1 className="text-2xl font-extrabold tracking-tight text-[#0F172A]">{title}</h1>
+                <h1 className="text-sm font-semibold tracking-tight text-slate-900 sm:text-base">{title}</h1>
                 {subtitle ? (
-                  <p className="mt-1 text-sm font-medium text-slate-500">{subtitle}</p>
+                  <p className="mt-1 text-xs leading-snug text-slate-500">{subtitle}</p>
                 ) : null}
               </div>
               {actions ? <div className="flex flex-wrap gap-2">{actions}</div> : null}

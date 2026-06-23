@@ -33,7 +33,7 @@ function EmptyState({
 }) {
   return (
     <section className="rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm">
-      <h2 className="text-xl font-extrabold text-[#0F172A]">{title}</h2>
+      <h2 className="text-sm font-semibold tracking-tight text-slate-900 sm:text-base">{title}</h2>
       <p className="mt-2 text-sm text-slate-500">{message}</p>
       {actionLabel && onAction ? (
         <button
@@ -77,7 +77,7 @@ export function ComunidadeDocenteEventos({
   return (
     <section className="space-y-4">
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-xl font-extrabold text-[#0F172A]">Próximos eventos</h2>
+        <h2 className="text-sm font-semibold tracking-tight text-slate-900 sm:text-base">Próximos eventos</h2>
         {isAdmin && onCreateEvent ? (
           <button
             type="button"
@@ -148,7 +148,7 @@ export function ComunidadeDocenteGrupos({
   return (
     <section className="space-y-4">
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-xl font-extrabold text-[#0F172A]">Grupos de estudo</h2>
+        <h2 className="text-sm font-semibold tracking-tight text-slate-900 sm:text-base">Grupos de estudo</h2>
         {onCreateGroup ? (
           <button
             type="button"
@@ -234,7 +234,7 @@ export function ComunidadeDocenteProfessores({
   if (!teachers.length) {
     return (
       <section className="rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm">
-        <h2 className="text-xl font-extrabold text-[#0F172A]">Professores</h2>
+        <h2 className="text-sm font-semibold tracking-tight text-slate-900 sm:text-base">Professores</h2>
         <p className="mt-2 text-sm text-slate-500">
           Nenhum perfil público encontrado. Ative seu perfil público nas configurações da comunidade.
         </p>
@@ -245,7 +245,7 @@ export function ComunidadeDocenteProfessores({
   return (
     <section className="space-y-4">
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-xl font-extrabold text-[#0F172A]">Professores da comunidade</h2>
+        <h2 className="text-sm font-semibold tracking-tight text-slate-900 sm:text-base">Professores da comunidade</h2>
         {onBrowseAll ? (
           <button
             type="button"
@@ -329,7 +329,7 @@ export function ComunidadeDocenteDesafios({
 
   return (
     <section className="space-y-4">
-      <h2 className="text-xl font-extrabold text-[#0F172A]">Desafios e badges</h2>
+      <h2 className="text-sm font-semibold tracking-tight text-slate-900 sm:text-base">Desafios e badges</h2>
       <div className="grid gap-4 sm:grid-cols-2">
         {badgeProgress.map((badge) => (
           <article
@@ -426,7 +426,7 @@ export function ComunidadeDocenteSalvos({
     <section className="space-y-6">
       {savedPosts.length > 0 ? (
         <div className="space-y-4">
-          <h2 className="text-xl font-extrabold text-[#0F172A]">Discussões salvas</h2>
+          <h2 className="text-sm font-semibold tracking-tight text-slate-900 sm:text-base">Discussões salvas</h2>
           <ul className="space-y-2">
             {savedPosts.map((discussion) => (
               <li key={discussion.id}>
@@ -455,7 +455,7 @@ export function ComunidadeDocenteSalvos({
 
       {savedMaterials.length > 0 ? (
     <div className="space-y-4">
-      <h2 className="text-xl font-extrabold text-[#0F172A]">Materiais salvos</h2>
+      <h2 className="text-sm font-semibold tracking-tight text-slate-900 sm:text-base">Materiais salvos</h2>
       <div className="flex gap-3 overflow-x-auto pb-2">
         {savedMaterials.map((material) => (
           <article

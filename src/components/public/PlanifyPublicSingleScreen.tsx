@@ -75,7 +75,7 @@ function PublicScreenContent() {
                 <p className="text-[11px] font-bold text-indigo-500">
                   Ferramenta IA
                 </p>
-                <h1 className="truncate text-base font-black text-slate-950">
+                <h1 className="line-clamp-2 text-sm font-semibold tracking-tight text-slate-900 sm:text-base">
                   {activeTool?.title}
                 </h1>
               </div>

@@ -610,7 +610,7 @@ export function AulaCompletaClient({
               <p className="text-xs font-bold uppercase tracking-wide text-cyan-600">
                 Aula completa
               </p>
-              <h3 className="mt-2 text-lg font-extrabold text-slate-950">
+              <h3 className="mt-2 text-sm font-semibold text-slate-900">
                 Um fluxo, quatro entregas
               </h3>
               <p className="mt-2 text-sm font-medium text-slate-600">

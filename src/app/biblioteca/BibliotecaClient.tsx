@@ -363,7 +363,7 @@ export function BibliotecaClient() {
             <p className="mt-4 text-xs font-bold uppercase tracking-wide text-cyan-600">
               Biblioteca vazia
             </p>
-            <h3 className="mt-2 text-xl font-extrabold text-slate-950">
+            <h3 className="mt-2 text-sm font-semibold text-slate-900">
               Nenhum material curado ainda
             </h3>
             <p className="mt-2 max-w-md text-sm text-slate-600">
@@ -378,7 +378,7 @@ export function BibliotecaClient() {
             <p className="text-[10px] font-bold uppercase tracking-wide text-cyan-600">
               Detalhes
             </p>
-            <h2 className="mt-2 text-2xl font-extrabold text-slate-950">
+            <h2 className="mt-2 text-sm font-semibold tracking-tight text-slate-900 sm:text-base">
               {selected.title}
             </h2>
             <p className="mt-3 text-sm leading-7 text-slate-600">

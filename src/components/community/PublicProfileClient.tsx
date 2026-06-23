@@ -134,7 +134,7 @@ export function PublicProfileClient({ userId }: PublicProfileClientProps) {
                     size="md"
                   />
                   <div className="min-w-0 flex-1 text-center sm:text-left">
-                    <h1 className="text-2xl font-extrabold text-slate-950">{profile.fullName}</h1>
+                    <h1 className="text-sm font-semibold tracking-tight text-slate-900 sm:text-base">{profile.fullName}</h1>
                     {profile.schoolName ? (
                       <p className="mt-1 text-sm font-semibold text-slate-600">
                         🏫 {profile.schoolName}

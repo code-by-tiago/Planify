@@ -158,7 +158,7 @@ export function PlanifyOwlGenerationCoach({
                 Coruja Planify · quase pronto
               </p>
             ) : null}
-            <h3 className="mt-1 text-xl font-extrabold text-slate-950 sm:text-2xl">
+            <h3 className="mt-1 text-sm font-semibold text-slate-900 sm:text-base">
               {useStageRotation ? currentMessage : title}
             </h3>
             {description ? (

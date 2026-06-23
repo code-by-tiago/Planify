@@ -783,7 +783,7 @@ export function BancoQuestoesClient({
                 <p className="text-[11px] font-black uppercase tracking-[0.16em] text-cyan-700">
                   Biblioteca inteligente
                 </p>
-                <h2 className="mt-1 text-xl font-black tracking-tight text-slate-950">
+                <h2 className="mt-1 text-sm font-semibold tracking-tight text-slate-900 sm:text-base">
                   Ache a questão certa sem navegar no escuro
                 </h2>
                 <p className="mt-1 max-w-2xl text-sm leading-relaxed text-slate-600">
@@ -1388,7 +1388,7 @@ export function BancoQuestoesClient({
         {remixSource && remixDraft ? (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4">
             <div className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-5 shadow-xl">
-              <h3 className="text-base font-extrabold text-slate-950">Remixar questão</h3>
+              <h3 className="text-sm font-semibold text-slate-900">Remixar questão</h3>
               <p className="mt-1 text-sm text-slate-600">
                 Edite antes de salvar uma cópia pessoal.
               </p>
@@ -1490,7 +1490,7 @@ export function BancoQuestoesClient({
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4">
             <div className="max-h-[80vh] w-full max-w-lg overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
               <div className="border-b border-slate-100 px-5 py-4">
-                <h3 className="text-base font-extrabold text-slate-950">
+                <h3 className="text-sm font-semibold text-slate-900">
                   Importar do servidor
                 </h3>
                 <p className="mt-1 text-sm text-slate-600">
@@ -1556,7 +1556,7 @@ export function BancoQuestoesClient({
             <p className="text-xs font-bold uppercase tracking-wide text-violet-700">
               Comunidade
             </p>
-            <h3 className="mt-2 text-lg font-extrabold text-slate-950">
+            <h3 className="mt-2 text-sm font-semibold text-slate-900">
               Seja o primeiro a publicar
             </h3>
             <p className="mt-2 text-sm font-medium text-slate-600">
@@ -1575,7 +1575,7 @@ export function BancoQuestoesClient({
                 <p className="text-xs font-bold uppercase tracking-wide text-cyan-600">
                   Banco vazio
                 </p>
-                <h3 className="mt-2 text-lg font-extrabold text-slate-950">
+                <h3 className="mt-2 text-sm font-semibold text-slate-900">
                   Comece importando suas provas
                 </h3>
                 <p className="mt-2 text-sm font-medium text-slate-600">
@@ -1588,7 +1588,7 @@ export function BancoQuestoesClient({
                 <p className="text-xs font-bold uppercase tracking-wide text-cyan-600">
                   Nenhuma compatível
                 </p>
-                <h3 className="mt-2 text-lg font-extrabold text-slate-950">
+                <h3 className="mt-2 text-sm font-semibold text-slate-900">
                   Ajuste disciplina, série ou tema
                 </h3>
                 <p className="mt-2 text-sm font-medium text-slate-600">
@@ -1601,7 +1601,7 @@ export function BancoQuestoesClient({
                 <p className="text-xs font-bold uppercase tracking-wide text-cyan-600">
                   Nenhuma neste recorte
                 </p>
-                <h3 className="mt-2 text-lg font-extrabold text-slate-950">
+                <h3 className="mt-2 text-sm font-semibold text-slate-900">
                   Amplie os filtros para ver mais questões
                 </h3>
                 <p className="mt-2 text-sm font-medium text-slate-600">

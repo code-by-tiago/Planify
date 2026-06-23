@@ -146,7 +146,7 @@ function RestrictedAccessPanel() {
         <p className="mt-5 text-xs font-black uppercase tracking-[0.2em] text-amber-700">
           Acesso restrito
         </p>
-        <h1 className="mt-3 text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">
+        <h1 className="mt-3 text-sm font-semibold tracking-tight text-slate-900 sm:text-base">
           Painel exclusivo para gestores escolares
         </h1>
         <p className="mx-auto mt-4 max-w-md text-sm font-semibold leading-7 text-slate-600">
@@ -592,7 +592,7 @@ export function DirectorPanelClient({ embedded = false }: DirectorPanelClientPro
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-50 text-cyan-600">
             <PlanifyIcon name="user" className="h-6 w-6" />
           </div>
-          <h1 className="mt-4 text-2xl font-black text-slate-950">Faça login</h1>
+          <h1 className="text-sm font-semibold tracking-tight text-slate-900 sm:text-base">Faça login</h1>
           <p className="mt-2 text-sm font-semibold text-slate-600">
             Entre na sua conta para acessar o painel do gestor.
           </p>

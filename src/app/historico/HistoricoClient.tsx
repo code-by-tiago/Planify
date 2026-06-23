@@ -554,7 +554,7 @@ export function HistoricoClient() {
             <p className="text-xs font-bold uppercase tracking-wide text-cyan-600">
               Vazio
             </p>
-            <h3 className="mt-2 text-xl font-extrabold text-slate-950">
+            <h3 className="mt-2 text-sm font-semibold text-slate-900">
               Nenhum material encontrado
             </h3>
             <p className="mt-2 text-sm text-slate-600">
@@ -586,7 +586,7 @@ export function HistoricoClient() {
                 >
                   {sourceLabels[selectedItem.source] || selectedItem.source}
                 </span>
-                <h2 className="mt-3 text-2xl font-extrabold text-slate-950">
+                <h2 className="mt-2 text-sm font-semibold tracking-tight text-slate-900 sm:text-base">
                   {selectedItem.title}
                 </h2>
                 {selectedItem.subtitle ? (

@@ -12,7 +12,7 @@ export function LandingComparison() {
   const staticRender = reduce || mobileStatic;
 
   return (
-    <section className="bg-slate-50/80 px-5 py-16 sm:px-8 sm:py-20">
+    <section id="comparacao" className="scroll-mt-24 border-b border-slate-200/80 bg-white px-5 py-16 sm:px-8 sm:py-20">
       <div className="mx-auto max-w-7xl">
         <div className="mx-auto max-w-2xl text-center">
           <p className={ppEyebrow}>Antes e depois</p>

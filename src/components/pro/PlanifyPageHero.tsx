@@ -39,8 +39,8 @@ export function PlanifyPageHero({
             {badge}
           </span>
           <h1
-            className={`font-extrabold tracking-tight text-slate-950 transition-[margin,font-size] duration-200 ${
-              collapsed ? "mt-1 truncate text-sm sm:text-base" : "mt-2 text-xl sm:text-2xl"
+            className={`font-bold leading-snug text-slate-950 transition-[margin,font-size] duration-200 ${
+              collapsed ? "mt-1 truncate text-sm sm:text-base" : "mt-2 text-lg sm:text-xl"
             }`}
           >
             {title}

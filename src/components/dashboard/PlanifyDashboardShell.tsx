@@ -269,11 +269,11 @@ export default function PlanifyDashboardShell() {
                   <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-cyan-600">
                     {selectedToolId ? "Ferramenta IA · BNCC" : "Espaço de trabalho"}
                   </p>
-                  <h1 className="truncate text-base font-extrabold text-slate-950">
+                  <h1 className="line-clamp-2 text-sm font-bold leading-snug text-slate-950 sm:text-base">
                     {panelTitle}
                   </h1>
                   {panelSubtitle ? (
-                    <p className="truncate text-xs font-medium text-slate-500">
+                    <p className="line-clamp-2 text-xs font-medium leading-snug text-slate-500">
                       {panelSubtitle}
                     </p>
                   ) : null}
@@ -300,7 +300,7 @@ export default function PlanifyDashboardShell() {
             />
           </header>
         ) : (
-          <header className="pl-hud-hub-shell-header relative shrink-0 overflow-hidden border-b px-3 py-3 pt-[max(0.5rem,env(safe-area-inset-top))] sm:px-5 sm:py-4">
+          <header className="pl-hud-hub-shell-header relative shrink-0 px-3 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] sm:px-5 sm:py-4">
             <div className="pl-hud-hub-mesh pointer-events-none absolute inset-0 opacity-40" aria-hidden />
             <div className="pl-hud-hub-grid-bg pointer-events-none absolute inset-0 opacity-25" aria-hidden />
             <div className="relative flex flex-wrap items-center justify-between gap-3">
@@ -318,7 +318,7 @@ export default function PlanifyDashboardShell() {
                     <PlanifyIcon name="spark" className="h-3 w-3" />
                     Estúdio Planify
                   </span>
-                  <h1 className="mt-1.5 truncate text-lg font-extrabold tracking-tight text-slate-950 sm:text-xl">
+                  <h1 className="mt-1.5 text-base font-bold leading-snug text-slate-950 sm:text-lg">
                     O que vamos{" "}
                     <span className="bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent">
                       criar hoje?

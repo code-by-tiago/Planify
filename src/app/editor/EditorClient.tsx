@@ -328,6 +328,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
   const undoInputTimerRef = useRef<number | null>(null);
   const [title, setTitle] = useState("Documento Planify");
   const [status, setStatus] = useState("Editor pronto.");
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [savedDocuments, setSavedDocuments] = useState<SavedDocument[]>([]);
   const [wordCount, setWordCount] = useState(0);
   const [selectedBlock, setSelectedBlock] = useState("p");
@@ -1681,6 +1682,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
       return;
     }
 
+    setDownloadingPdf(true);
     setStatus("Gerando PDF... (pode levar até 1 minuto)");
 
     try {
@@ -1694,6 +1696,8 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
       setStatus("PDF baixado com proporção de slide.");
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Erro ao baixar PDF.");
+    } finally {
+      setDownloadingPdf(false);
     }
   }
 
@@ -1955,13 +1959,6 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
                 </button>
                 <button
                   type="button"
-                  onClick={downloadPdfReal}
-                  className="shrink-0 rounded-md border border-slate-200 bg-white px-2 py-1.5 text-[11px] font-black text-slate-700"
-                >
-                  PDF
-                </button>
-                <button
-                  type="button"
                   onClick={() => setShowMobileActions((value) => !value)}
                   aria-label="Mais ações"
                   aria-expanded={showMobileActions}
@@ -1989,6 +1986,8 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
                 documentType={exportDocumentType}
                 isSlideDeck={isSlideDeck}
                 slideTheme={slideTheme}
+                onDownloadPdf={() => void downloadPdfReal()}
+                downloadingPdf={downloadingPdf}
               />
             </div>
 
@@ -2042,9 +2041,6 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
               <button type="button" onClick={newDocument} className={actionBtnClass}>
                 Novo
               </button>
-              <button type="button" onClick={downloadPdfReal} className={actionBtnClass}>
-                PDF
-              </button>
               {canElevateDocument ? (
                 <button
                   type="button"
@@ -2069,6 +2065,8 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
                 documentType={exportDocumentType}
                 isSlideDeck={isSlideDeck}
                 slideTheme={slideTheme}
+                onDownloadPdf={() => void downloadPdfReal()}
+                downloadingPdf={downloadingPdf}
               />
             </div>
             <p className="truncate text-[10px] text-slate-500" title={status}>

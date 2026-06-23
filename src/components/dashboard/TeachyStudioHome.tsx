@@ -24,6 +24,7 @@ const trustStats = [
   { value: "BNCC", label: "Alinhamento curricular" },
   { value: "Google Docs", label: "Modelo oficial" },
   { value: "Classroom", label: "Publicação direta" },
+  { value: "PDF", label: "Download local" },
 ] as const;
 
 function matchesPlanejamentosSearch(term: string): boolean {

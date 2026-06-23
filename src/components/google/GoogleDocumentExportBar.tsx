@@ -131,9 +131,7 @@ export function GoogleDocumentExportBar({
   const showSlidesChannel = materialExportAllows("google-slides", documentType, getHtml());
   const showPptxExport = materialExportAllows("pptx-download", documentType, getHtml());
   const driveIsPdf = exportPolicy.driveFormat === "pdf";
-  const showPdfDownload =
-    Boolean(onDownloadPdf) &&
-    materialExportAllows("pdf-download", documentType, getHtml());
+  const showPdfDownload = Boolean(onDownloadPdf);
 
   if (disabled) {
     return (

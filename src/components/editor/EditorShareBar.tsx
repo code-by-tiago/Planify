@@ -15,6 +15,8 @@ type EditorShareBarProps = {
   isSlideDeck?: boolean;
   slideTheme?: string | null;
   compact?: boolean;
+  onDownloadPdf?: () => void;
+  downloadingPdf?: boolean;
 };
 
 /** Marketplace + integrações Google no topo do editor */
@@ -27,6 +29,8 @@ export function EditorShareBar({
   isSlideDeck: isSlideDeckProp,
   slideTheme: slideThemeProp,
   compact = false,
+  onDownloadPdf,
+  downloadingPdf = false,
 }: EditorShareBarProps) {
   const [slideTheme] = useState<string | null>(() => {
     try {
@@ -85,6 +89,8 @@ export function EditorShareBar({
           compact
           classroomMode="popover"
           className="min-w-0 flex-1"
+          onDownloadPdf={onDownloadPdf}
+          downloadingPdf={downloadingPdf}
         />
       </div>
     </div>

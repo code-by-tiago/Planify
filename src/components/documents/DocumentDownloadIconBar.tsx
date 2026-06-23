@@ -1,6 +1,6 @@
 "use client";
 
-import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
+import { PdfProductIcon } from "@/components/documents/PdfProductIcon";
 import {
   GOOGLE_ICON_ONLY_BUTTON_CLASS,
   GOOGLE_PRODUCT_ICON_CLASS,
@@ -13,7 +13,7 @@ type DocumentDownloadIconBarProps = {
   className?: string;
 };
 
-/** Download local apenas PDF (materiais nativos). Documentos textuais usam Google Docs. */
+/** Download local em PDF — ícone na barra de exportação ao lado do Google. */
 export function DocumentDownloadIconBar({
   onDownloadPdf,
   downloadingPdf = false,
@@ -31,13 +31,10 @@ export function DocumentDownloadIconBar({
         disabled={disabled || downloadingPdf}
         onClick={onDownloadPdf}
         className={GOOGLE_ICON_ONLY_BUTTON_CLASS}
-        aria-label="Baixar PDF"
-        title="Baixar PDF"
+        aria-label={downloadingPdf ? "Gerando PDF…" : "Baixar PDF"}
+        title={downloadingPdf ? "Gerando PDF…" : "Baixar PDF"}
       >
-        <PlanifyIcon
-          name="download"
-          className={`${GOOGLE_PRODUCT_ICON_CLASS} text-rose-700`}
-        />
+        <PdfProductIcon className={GOOGLE_PRODUCT_ICON_CLASS} />
       </button>
     </div>
   );

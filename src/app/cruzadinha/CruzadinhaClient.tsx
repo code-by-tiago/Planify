@@ -45,8 +45,6 @@ import { useSchoolClasses } from "@/hooks/useSchoolClasses";
 import { TurmaCombobox } from "@/components/school/TurmaCombobox";
 import {
   HUD_FIELD_CLASS,
-  HUD_FILTER_CHIP_ACTIVE,
-  HUD_FILTER_CHIP_INACTIVE,
   HUD_SECTION_LABEL,
   HUD_TEXTAREA_CLASS,
 } from "@/lib/pro/hud-form-styles";
@@ -390,43 +388,41 @@ export function CruzadinhaClient({
           </div>
 
           <div>
-            <p className={HUD_SECTION_LABEL}>Quantidade de palavras</p>
-            <div className="flex flex-wrap gap-2">
+            <label htmlFor="cruzadinha-quantidade" className={HUD_SECTION_LABEL}>
+              Quantidade de palavras
+            </label>
+            <select
+              id="cruzadinha-quantidade"
+              value={quantidade}
+              onChange={(event) => setQuantidade(event.target.value)}
+              className={HUD_FIELD_CLASS}
+            >
               {quantityPresets.map((preset) => (
-                <button
-                  key={preset.value}
-                  type="button"
-                  onClick={() => setQuantidade(preset.value)}
-                  className={
-                    quantidade === preset.value
-                      ? HUD_FILTER_CHIP_ACTIVE
-                      : HUD_FILTER_CHIP_INACTIVE
-                  }
-                >
+                <option key={preset.value} value={preset.value}>
                   {preset.label}
-                </button>
+                </option>
               ))}
-            </div>
+            </select>
           </div>
 
           <div>
-            <p className={HUD_SECTION_LABEL}>Dificuldade</p>
-            <div className="flex flex-wrap gap-2">
+            <label htmlFor="cruzadinha-dificuldade" className={HUD_SECTION_LABEL}>
+              Dificuldade
+            </label>
+            <select
+              id="cruzadinha-dificuldade"
+              value={dificuldade}
+              onChange={(event) =>
+                setDificuldade(event.target.value as CruzadinhaDifficulty)
+              }
+              className={HUD_FIELD_CLASS}
+            >
               {CRUZADINHA_DIFFICULTY_OPTIONS.map((option) => (
-                <button
-                  key={option.id}
-                  type="button"
-                  onClick={() => setDificuldade(option.id)}
-                  className={
-                    dificuldade === option.id
-                      ? HUD_FILTER_CHIP_ACTIVE
-                      : HUD_FILTER_CHIP_INACTIVE
-                  }
-                >
+                <option key={option.id} value={option.id}>
                   {option.label}
-                </button>
+                </option>
               ))}
-            </div>
+            </select>
           </div>
 
           <div>

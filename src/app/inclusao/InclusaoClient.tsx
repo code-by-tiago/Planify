@@ -40,8 +40,6 @@ import { TurmaCombobox } from "@/components/school/TurmaCombobox";
 import {
   HUD_CHIP_INACTIVE,
   HUD_FIELD_CLASS,
-  HUD_FILTER_CHIP_ACTIVE,
-  HUD_FILTER_CHIP_INACTIVE,
   HUD_SECTION_LABEL,
   HUD_TEXTAREA_CLASS,
 } from "@/lib/pro/hud-form-styles";
@@ -234,48 +232,44 @@ export function InclusaoClient({
       form={
         <form onSubmit={gerarMaterial} className="space-y-4 max-lg:pb-2">
           <div>
-            <p className={HUD_SECTION_LABEL}>Modo</p>
-            <div className="flex flex-wrap gap-2">
+            <label className={HUD_SECTION_LABEL} htmlFor="inclusao-modo">
+              Modo
+            </label>
+            <select
+              id="inclusao-modo"
+              value={modo}
+              onChange={(event) => setModo(event.target.value as InclusaoModeId)}
+              className={HUD_FIELD_CLASS}
+            >
               {INCLUSAO_MODES.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => setModo(item.id)}
-                  className={
-                    modo === item.id ? HUD_FILTER_CHIP_ACTIVE : HUD_FILTER_CHIP_INACTIVE
-                  }
-                  title={item.description}
-                >
+                <option key={item.id} value={item.id}>
                   {item.label}
-                </button>
+                </option>
               ))}
-            </div>
+            </select>
             <p className="mt-2 text-xs font-medium text-slate-500">
               {INCLUSAO_MODES.find((m) => m.id === modo)?.description}
             </p>
           </div>
 
           <div>
-            <p className={HUD_SECTION_LABEL}>Necessidade educacional</p>
-            <div className="grid gap-2 sm:grid-cols-2">
+            <label className={HUD_SECTION_LABEL} htmlFor="inclusao-necessidade">
+              Necessidade educacional
+            </label>
+            <select
+              id="inclusao-necessidade"
+              value={necessidade}
+              onChange={(event) =>
+                setNecessidade(event.target.value as InclusaoNeedId)
+              }
+              className={HUD_FIELD_CLASS}
+            >
               {INCLUSAO_NEEDS.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => setNecessidade(item.id)}
-                  className={`rounded-xl border px-3 py-3 text-left transition ${
-                    necessidade === item.id
-                      ? "border-cyan-500 bg-cyan-50 shadow-sm"
-                      : "border-cyan-400/20 bg-white hover:border-cyan-400/40"
-                  }`}
-                >
-                  <p className="text-sm font-extrabold text-slate-950">{item.label}</p>
-                  <p className="mt-0.5 text-xs font-medium text-slate-500">
-                    {item.description}
-                  </p>
-                </button>
+                <option key={item.id} value={item.id}>
+                  {item.label} — {item.description}
+                </option>
               ))}
-            </div>
+            </select>
           </div>
 
           <div>

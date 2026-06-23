@@ -744,6 +744,7 @@ export function BancoQuestoesClient({
   const showCommunityEmpty =
     filter.source === "comunidade" && !syncing && filtered.length === 0;
   const targetLabel = targetMaterial === "lista" ? "lista" : "prova";
+  const showQuestionList = !embedded || searchMode === "search";
   const pageHeader = (
     <PlanifyPageHero
       title={
@@ -764,6 +765,17 @@ export function BancoQuestoesClient({
     <>
       <div className={`space-y-6 px-4 py-6 sm:px-6${selectedItems.length > 0 ? " pb-28" : ""}`}>
 
+        {embedded && onBack ? (
+          <button
+            type="button"
+            onClick={onBack}
+            className="w-fit text-xs font-bold text-cyan-800 underline underline-offset-4"
+          >
+            Voltar para gerar com IA
+          </button>
+        ) : null}
+
+        {!embedded ? (
         <section className="overflow-hidden rounded-3xl border border-cyan-200/70 bg-gradient-to-br from-cyan-50 via-white to-sky-50 shadow-sm">
           <div className="flex flex-col gap-4 px-5 py-5 sm:px-6">
             <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
@@ -833,7 +845,9 @@ export function BancoQuestoesClient({
             </div>
           </div>
         </section>
+        ) : null}
 
+        {!embedded ? (
         <section aria-label="Escolha rápida do acervo" className="space-y-2">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <div>
@@ -873,6 +887,7 @@ export function BancoQuestoesClient({
             })}
           </div>
         </section>
+        ) : null}
 
         <fieldset className="space-y-3">
           <legend className="sr-only">Filtros do banco de questões</legend>
@@ -1068,7 +1083,7 @@ export function BancoQuestoesClient({
               </button>
             </div>
           </details>
-          {visibleItems.length > 0 ? (
+          {visibleItems.length > 0 && showQuestionList ? (
             <button
               type="button"
               onClick={selectAllVisible}
@@ -1129,6 +1144,11 @@ export function BancoQuestoesClient({
 
         {syncing ? (
           <p className="text-sm font-medium text-slate-500">Sincronizando banco…</p>
+        ) : embedded && searchMode === "browse" ? (
+          <p className="rounded-xl border border-cyan-400/20 bg-cyan-50/50 px-4 py-3 text-sm font-semibold text-slate-600">
+            Informe o tema e clique em <strong className="text-slate-800">Buscar</strong> para
+            ver questões do seu acervo.
+          </p>
         ) : searchMode === "browse" ? (
           <p className="text-sm font-semibold text-slate-600">
             {filtered.length} questão(ões) no acervo
@@ -1151,7 +1171,7 @@ export function BancoQuestoesClient({
         )}
 
         <div className="space-y-3">
-          {filtered.length > 0
+          {showQuestionList && filtered.length > 0
            ? filtered.map((item) => {
             const selected = selectedIds.has(item.id);
             const display = resolveQuestionDisplay(item);
@@ -1324,7 +1344,7 @@ export function BancoQuestoesClient({
             : null}
         </div>
 
-        {!syncing && searchActive && relatedItems.length > 0 && filtered.length === 0 ? (
+        {!syncing && showQuestionList && searchActive && relatedItems.length > 0 && filtered.length === 0 ? (
           <div className="space-y-3">
             <div>
               <p className="text-xs font-bold uppercase tracking-wide text-amber-700">

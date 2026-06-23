@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { MateriaisClient } from "@/app/materiais/MateriaisClient";
-import { TeachyToolToolbar } from "@/components/dashboard/TeachyToolToolbar";
 import { PlanifyWorkspaceProvider } from "@/components/pro/planify-workspace-context";
 import type { PlanifyToolId } from "@/lib/pro/planifyTools";
 
@@ -36,12 +35,6 @@ export function TeachyMateriaisStudio({
     () => temaFromUrl.trim() || readStoredTema(),
   );
 
-  function handleHint(snippet: string, _actionId: string) {
-    window.dispatchEvent(
-      new CustomEvent("planify-objetivo-hint", { detail: snippet }),
-    );
-  }
-
   function handleOpenRelatedTool(nextToolId: PlanifyToolId) {
     if (onSelectTool) {
       onSelectTool(nextToolId);
@@ -53,7 +46,6 @@ export function TeachyMateriaisStudio({
   return (
     <PlanifyWorkspaceProvider embeddedInDashboard>
       <div className="planify-hud planify-materiais-studio flex h-full min-h-0 w-full flex-col overflow-hidden bg-[var(--planify-canvas)]">
-        <TeachyToolToolbar onApplyHint={handleHint} />
         <div className="min-h-0 flex-1 overflow-hidden">
           <MateriaisClient
             key={`${toolId}-${initialTema}`}

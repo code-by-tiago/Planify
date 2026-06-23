@@ -36,8 +36,6 @@ import { PlanifyOwlMark } from "@/components/pro/PlanifyOwlMark";
 import { PlanifyPageHero } from "@/components/pro/PlanifyPageHero";
 import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
 import {
-  HUD_CHIP_ACTIVE,
-  HUD_CHIP_INACTIVE,
   HUD_FIELD_CLASS,
   HUD_FILTER_CHIP_ACTIVE,
   HUD_FILTER_CHIP_INACTIVE,
@@ -149,13 +147,6 @@ const formatoJogos: { id: FormatoJogo; label: string }[] = [
   { id: "domino", label: "Dominó" },
   { id: "cartas", label: "Cartas" },
 ];
-
-type ConteudoSugerido = {
-  id: string;
-  titulo: string;
-  descricao: string;
-  objetivos: string[];
-};
 
 const sugestoesTema: Record<PlanifyToolId, string[]> = {
   apostila: ["Amazônia e biodiversidade", "Frações no cotidiano", "Romantismo no Brasil"],
@@ -344,17 +335,7 @@ export function MateriaisClient({
   const [retryingImages, setRetryingImages] = useState(false);
   const [retryingExam, setRetryingExam] = useState(false);
   const [adjustingSlides, setAdjustingSlides] = useState(false);
-  const [conteudosSugeridos, setConteudosSugeridos] = useState<
-    ConteudoSugerido[] | null
-  >(null);
-  const [conteudosSelecionadosIds, setConteudosSelecionadosIds] = useState<
-    string[]
-  >([]);
-  const [temasRapidosSelecionados, setTemasRapidosSelecionados] = useState<
-    string[]
-  >([]);
   const [designSlides, setDesignSlides] = useState<string>("moderno");
-  const [sugerindoConteudos, setSugerindoConteudos] = useState(false);
   const [quantidade, setQuantidade] = useState(
     defaultQuantityForTool(initialTipo ?? "slides"),
   );
@@ -489,53 +470,6 @@ export function MateriaisClient({
   }, [loadPedagogicalContext]);
 
   useEffect(() => {
-    if (!studioMode) return;
-
-    function onObjetivoHint(event: Event) {
-      const snippet = (event as CustomEvent<string>).detail;
-      if (!snippet || typeof snippet !== "string") return;
-      setObjetivo((prev) => {
-        const lines = prev
-          .split("\n")
-          .map((line) => line.trim())
-          .filter(Boolean);
-        const hasSnippet = lines.some((line) => line === snippet.trim());
-        const next = hasSnippet
-          ? lines.filter((line) => line !== snippet.trim())
-          : [...lines, snippet.trim()];
-        return next.join("\n");
-      });
-      setHintFeedback(
-        "Personalização aplicada — clique em Criar para gerar com esse ajuste.",
-      );
-    }
-
-    window.addEventListener("planify-objetivo-hint", onObjetivoHint);
-
-    try {
-      const stored = sessionStorage.getItem("planify-studio-objetivo-hint");
-      if (stored) {
-        sessionStorage.removeItem("planify-studio-objetivo-hint");
-        setObjetivo((prev) =>
-          prev.trim() ? `${prev.trim()}\n${stored}` : stored,
-        );
-      }
-    } catch {
-      /* ignore */
-    }
-
-    return () =>
-      window.removeEventListener("planify-objetivo-hint", onObjetivoHint);
-  }, [studioMode]);
-
-  useEffect(() => {
-    if (!studioMode || typeof window === "undefined") return;
-    window.dispatchEvent(
-      new CustomEvent("planify-objetivo-updated", { detail: objetivo }),
-    );
-  }, [objetivo, studioMode]);
-
-  useEffect(() => {
     if (tipo !== "prova" && tipo !== "lista") return;
     const injected = readProvaInjectObservacoes();
     if (!injected) return;
@@ -599,12 +533,6 @@ export function MateriaisClient({
   const educationFields = useMemo(
     () => ({ etapa, anoSerie, areaConhecimento, componente }),
     [etapa, anoSerie, areaConhecimento, componente],
-  );
-
-  const suggestContextReady = Boolean(
-    hasMaterialTopicInput(tema, conteudo) &&
-      componente.trim() &&
-      anoSerie.trim(),
   );
 
   const {
@@ -681,119 +609,6 @@ export function MateriaisClient({
     setModalAberto(true);
   }
 
-  async function sugerirConteudosComIA() {
-    if (!hasMaterialTopicInput(tema, conteudo)) {
-      setErro("Informe o conteúdo ou o tema antes de pedir sugestões de conteúdo.");
-      return;
-    }
-
-    if (!componente.trim() || !anoSerie.trim()) {
-      setErro("Informe disciplina e ano/série para sugerir conteúdos.");
-      return;
-    }
-
-    setSugerindoConteudos(true);
-    setErro("");
-
-    try {
-      const response = await fetch("/api/ai/material/sugerir-conteudos", {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          etapa,
-          anoSerie,
-          areaConhecimento,
-          componenteCurricular: componente,
-          tema: displayTema || tema.trim() || undefined,
-          conteudo: conteudo.trim() || undefined,
-          tipo,
-          modeloJogo: isJogo ? formatoJogo.replace(/-/g, "_") : undefined,
-          quantidade,
-          observacoes: observacoes.trim() || undefined,
-        }),
-      });
-
-      const data = (await response.json().catch(() => null)) as {
-        success?: boolean;
-        data?: {
-          conteudos?: ConteudoSugerido[];
-          alertas?: string[];
-        };
-        error?: { message?: string; details?: string };
-      };
-
-      if (!response.ok || !data?.success || !data.data?.conteudos?.length) {
-        throw new Error(
-          data?.error?.details ||
-            data?.error?.message ||
-            "Não foi possível sugerir conteúdos agora.",
-        );
-      }
-
-      setConteudosSugeridos(data.data.conteudos);
-      setConteudosSelecionadosIds([]);
-      if (data.data.alertas?.length) {
-        setAlertasGeracao(data.data.alertas);
-      }
-    } catch (error) {
-      const formatted = formatGenerationError(error);
-      setErro(formatted.message);
-      setErroCta(formatted.cta ?? null);
-      setErroRetryable(formatted.retryable);
-    } finally {
-      setSugerindoConteudos(false);
-    }
-  }
-
-  function toggleConteudoSugerido(id: string) {
-    setConteudosSelecionadosIds((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
-    );
-  }
-
-  function aplicarConteudosSelecionados() {
-    const items =
-      conteudosSugeridos?.filter((item) =>
-        conteudosSelecionadosIds.includes(item.id),
-      ) ?? [];
-
-    if (!items.length) return;
-
-    setTema(items.map((item) => item.titulo).join(" · "));
-
-    const objetivos = items.flatMap((item) => item.objetivos || []);
-    if (objetivos.length) {
-      setObjetivo(objetivos.join("\n"));
-    }
-
-    const blocoObservacoes = items
-      .map((item) => `${item.titulo}: ${item.descricao}`)
-      .join("\n\n");
-
-    setObservacoes((prev) =>
-      prev.trim() ? `${prev.trim()}\n\n${blocoObservacoes}` : blocoObservacoes,
-    );
-  }
-
-  function toggleTemaRapido(item: string) {
-    setTemasRapidosSelecionados((prev) => {
-      const next = prev.includes(item)
-        ? prev.filter((value) => value !== item)
-        : [...prev, item];
-
-      if (tipo === "slides" && next.length > 0) {
-        setTema(next.join(" · "));
-      } else if (next.length === 1) {
-        setTema(next[0]);
-      } else if (next.length === 0) {
-        setTema("");
-      }
-
-      return next;
-    });
-  }
-
   function limparFormulario() {
     setTema("");
     setConteudo("");
@@ -805,9 +620,6 @@ export function MateriaisClient({
     setQualityScore(null);
     setQualityIssues([]);
     rememberSlideGenerationPayload(null);
-    setConteudosSugeridos(null);
-    setConteudosSelecionadosIds([]);
-    setTemasRapidosSelecionados([]);
     setQuantidade(defaultQuantityForTool(tipo));
     setDificuldade("media");
     setFormatoJogo("caca-palavras");
@@ -1564,112 +1376,30 @@ export function MateriaisClient({
             />
           </label>
 
-          <div className="mt-3 flex flex-wrap gap-2">
-            {(sugestoesTema[tipo] || []).map((item) => {
-              const selected = temasRapidosSelecionados.includes(item);
-              return (
-                <button
-                  key={item}
-                  type="button"
-                  onClick={() =>
-                    tipo === "slides"
-                      ? toggleTemaRapido(item)
-                      : setTema(item)
-                  }
-                  className={`rounded-full border px-3 py-2 text-xs font-bold transition ${
-                    selected ? HUD_CHIP_ACTIVE : HUD_CHIP_INACTIVE
-                  }`}
-                  aria-pressed={tipo === "slides" ? selected : undefined}
-                >
-                  {tipo === "slides" && selected ? "✓ " : ""}
-                  {item}
-                </button>
-              );
-            })}
-          </div>
-          {tipo === "slides" && temasRapidosSelecionados.length > 1 ? (
-            <p className="mt-2 text-[11px] font-semibold text-cyan-700">
-              {temasRapidosSelecionados.length} assuntos combinados no tema — a IA
-              montará a sequência pedagógica dos slides.
-            </p>
+          {(sugestoesTema[tipo] || []).length > 0 ? (
+            <label className="mt-3 block">
+              <span className={HUD_SECTION_LABEL}>Exemplo de tema (opcional)</span>
+              <select
+                key={`exemplo-tema-${tipo}`}
+                defaultValue=""
+                onChange={(event) => {
+                  const value = event.target.value;
+                  if (value) setTema(value);
+                }}
+                className={SELECT_FIELD_CLASS}
+              >
+                <option value="">Escolha um exemplo ou digite acima</option>
+                {(sugestoesTema[tipo] || []).map((item) => (
+                  <option key={item} value={item}>
+                    {item}
+                  </option>
+                ))}
+              </select>
+            </label>
           ) : null}
 
           <div className="mt-5 grid gap-4 md:grid-cols-2">
             <TurmaCombobox school={school} className="md:col-span-2" listId="materiais-turma-suggestions" />
-
-            {suggestContextReady ? (
-              <div className="md:col-span-2 flex flex-wrap items-center gap-2 rounded-xl border border-cyan-400/15 bg-white/80 px-3 py-2.5">
-                <span className="text-[10px] font-black uppercase tracking-wide text-slate-500">
-                  Contexto
-                </span>
-                <span className={HUD_CHIP_ACTIVE}>{etapa}</span>
-                <span className={HUD_CHIP_ACTIVE}>{anoSerie}</span>
-                <span className={HUD_CHIP_ACTIVE}>{componente}</span>
-              </div>
-            ) : (
-              <p className="md:col-span-2 text-xs font-semibold text-amber-800">
-                Preencha conteúdo ou tema, disciplina e ano/série para liberar sugestões de conteúdo.
-              </p>
-            )}
-
-            <div className="md:col-span-2">
-              <button
-                type="button"
-                onClick={() => void sugerirConteudosComIA()}
-                disabled={sugerindoConteudos || loading || !suggestContextReady}
-                className="inline-flex items-center gap-1.5 rounded-full border border-cyan-400/25 bg-cyan-50 px-3 py-1.5 text-xs font-bold text-cyan-800 transition hover:border-cyan-400/50 disabled:cursor-not-allowed disabled:opacity-55"
-              >
-                <PlanifyIcon name="spark" className="h-3.5 w-3.5" />
-                {sugerindoConteudos ? "Sugerindo..." : "Sugerir conteúdos"}
-              </button>
-            </div>
-
-            {conteudosSugeridos && conteudosSugeridos.length > 0 ? (
-              <div className="md:col-span-2 rounded-xl border border-cyan-400/20 bg-cyan-50/50 p-4">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="text-xs font-bold uppercase tracking-wide text-cyan-800">
-                    Sugestões de conteúdo (IA)
-                  </p>
-                  <p className="text-[11px] font-semibold text-cyan-700">
-                    {tipo === "slides"
-                      ? "Selecione vários tópicos para compor a sequência da aula"
-                      : "Clique para marcar um ou mais conteúdos"}
-                  </p>
-                </div>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {conteudosSugeridos.map((item) => {
-                    const selected = conteudosSelecionadosIds.includes(item.id);
-                    return (
-                      <button
-                        key={item.id}
-                        type="button"
-                        onClick={() => toggleConteudoSugerido(item.id)}
-                        className={`rounded-xl border px-3 py-2 text-left text-xs font-bold transition ${
-                          selected
-                            ? "border-cyan-600 bg-cyan-600 text-white shadow-sm"
-                            : "border-cyan-400/25 bg-white text-slate-700 hover:border-cyan-500 hover:text-cyan-900"
-                        }`}
-                        title={item.descricao}
-                        aria-pressed={selected}
-                      >
-                        {selected ? "✓ " : ""}
-                        {item.titulo}
-                      </button>
-                    );
-                  })}
-                </div>
-                {conteudosSelecionadosIds.length > 0 ? (
-                  <button
-                    type="button"
-                    onClick={aplicarConteudosSelecionados}
-                    className="mt-3 rounded-xl bg-blue-600 px-4 py-2 text-xs font-black text-white hover:bg-blue-700"
-                  >
-                    Aplicar {conteudosSelecionadosIds.length} selecionado
-                    {conteudosSelecionadosIds.length > 1 ? "s" : ""} ao tema
-                  </button>
-                ) : null}
-              </div>
-            ) : null}
 
             <label className="md:col-span-2">
               <span className={HUD_SECTION_LABEL}>
@@ -1725,58 +1455,23 @@ export function MateriaisClient({
                   ))}
                 </select>
               </label>
-            ) : isExamTool ? (
-              <div>
-                <span className={HUD_SECTION_LABEL}>Quantidade</span>
-                <div className="mt-2 flex flex-wrap gap-2">
+            ) : isExamTool || isPlanoAula ? (
+              <label>
+                <span className={HUD_SECTION_LABEL}>
+                  {isPlanoAula ? "Períodos" : "Quantidade"}
+                </span>
+                <select
+                  value={quantidade}
+                  onChange={(event) => setQuantidade(event.target.value)}
+                  className={SELECT_FIELD_CLASS}
+                >
                   {quantityPresets.map((preset) => (
-                    <button
-                      key={preset.value}
-                      type="button"
-                      onClick={() => setQuantidade(preset.value)}
-                      className={
-                        quantidade === preset.value
-                          ? HUD_FILTER_CHIP_ACTIVE
-                          : HUD_FILTER_CHIP_INACTIVE
-                      }
-                    >
-                      {preset.label.replace(/\s.*/, "")}
-                    </button>
+                    <option key={preset.value} value={preset.value}>
+                      {preset.label}
+                    </option>
                   ))}
-                </div>
-              </div>
-            ) : isPlanoAula ? (
-              <div>
-                <span className={HUD_SECTION_LABEL}>Períodos</span>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {quantityPresets.map((preset) => (
-                    <button
-                      key={preset.value}
-                      type="button"
-                      onClick={() => setQuantidade(preset.value)}
-                      className={
-                        quantidade === preset.value
-                          ? HUD_FILTER_CHIP_ACTIVE
-                          : HUD_FILTER_CHIP_INACTIVE
-                      }
-                    >
-                      {preset.label.replace(/\s*\(.*\)/, "")}
-                    </button>
-                  ))}
-                </div>
-                <label className="mt-3 block">
-                  <span className="text-[10px] font-black uppercase tracking-wide text-slate-500">
-                    Outro valor
-                  </span>
-                  <input
-                    type="number"
-                    min={1}
-                    value={quantidade}
-                    onChange={(event) => setQuantidade(event.target.value)}
-                    className={`${HUD_FIELD_CLASS} mt-1`}
-                  />
-                </label>
-              </div>
+                </select>
+              </label>
             ) : (
               <label>
                 <span className={HUD_SECTION_LABEL}>
@@ -1858,70 +1553,23 @@ export function MateriaisClient({
 
           {tipo === "slides" ? (
             <div className="mt-4 rounded-xl border border-cyan-400/20 bg-cyan-50/40 p-4">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="text-xs font-bold uppercase tracking-wide text-slate-800">
-                  Design da apresentação
-                </p>
-                <p className="text-[11px] font-semibold text-slate-500">
-                  O tema é aplicado ao gerar — altere e clique em Gerar novamente
-                </p>
-              </div>
-              <div className="mt-3 grid max-h-[28rem] gap-2.5 overflow-y-auto pr-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {SLIDE_THEME_OPTIONS.map((tema) => {
-                  const selected = designSlides === tema.id;
-                  return (
-                    <button
-                      key={tema.id}
-                      type="button"
-                      onClick={() => setDesignSlides(tema.id)}
-                      aria-pressed={selected}
-                      className={`overflow-hidden rounded-xl border text-left transition ${
-                        selected
-                          ? "border-cyan-500 ring-2 ring-cyan-200"
-                          : "border-cyan-400/20 hover:border-cyan-400/50"
-                      }`}
-                    >
-                      <span
-                        className="relative flex h-14 items-end gap-1.5 p-2"
-                        style={{
-                          background: `linear-gradient(135deg, ${tema.preview[0]}, ${tema.preview[1]}, ${tema.preview[2]})`,
-                        }}
-                      >
-                        <span
-                          className="h-2 w-10 rounded-full shadow-sm"
-                          style={{
-                            background: tema.dark
-                              ? "rgba(255,255,255,0.85)"
-                              : tema.preview[2],
-                          }}
-                        />
-                        <span
-                          className="h-2 w-6 rounded-full"
-                          style={{
-                            background: tema.dark
-                              ? tema.preview[1]
-                              : "rgba(255,255,255,0.65)",
-                          }}
-                        />
-                        {tema.dark ? (
-                          <span className="absolute right-2 top-2 rounded-full bg-black/30 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white/90">
-                            Escuro
-                          </span>
-                        ) : null}
-                      </span>
-                      <span className="block bg-white px-3 py-2">
-                        <span className="flex items-center gap-1 text-xs font-black text-slate-800">
-                          {selected ? "✓ " : ""}
-                          {tema.label}
-                        </span>
-                        <span className="mt-0.5 block text-[11px] font-semibold leading-4 text-slate-500">
-                          {tema.descricao}
-                        </span>
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
+              <label className="block">
+                <span className={HUD_SECTION_LABEL}>Design da apresentação</span>
+                <select
+                  value={designSlides}
+                  onChange={(event) => setDesignSlides(event.target.value)}
+                  className={SELECT_FIELD_CLASS}
+                >
+                  {SLIDE_THEME_OPTIONS.map((theme) => (
+                    <option key={theme.id} value={theme.id}>
+                      {theme.label} — {theme.descricao}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <p className="mt-2 text-[11px] font-semibold text-slate-500">
+                O tema é aplicado ao gerar — altere e clique em Gerar novamente.
+              </p>
             </div>
           ) : null}
 

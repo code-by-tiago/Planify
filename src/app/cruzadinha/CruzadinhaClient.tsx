@@ -98,7 +98,9 @@ export function CruzadinhaClient({
   const [erroRetryable, setErroRetryable] = useState(false);
   const [showPatienceMessage, setShowPatienceMessage] = useState(false);
   const [progressLabel, setProgressLabel] = useState("");
+  const [openingEditor, setOpeningEditor] = useState(false);
   const patienceTimerRef = useRef<number | null>(null);
+  const editorOpenedRef = useRef(false);
   const { runWithRetry, retrying: retryingGeneration } = useRetryableAction();
   const [resultadoHtml, setResultadoHtml] = useState("");
   const [modalAberto, setModalAberto] = useState(studioMode);
@@ -148,6 +150,8 @@ export function CruzadinhaClient({
     }
 
     setLoading(true);
+    editorOpenedRef.current = false;
+    setOpeningEditor(false);
     setResultadoHtml("");
     setProgressLabel("");
     setShowPatienceMessage(false);
@@ -208,6 +212,8 @@ export function CruzadinhaClient({
           serverMaterialId: result.materialId ?? null,
         };
 
+        editorOpenedRef.current = true;
+        setOpeningEditor(true);
         openMaterialInEditor(result.html, titulo, meta, { from: "cruzadinha" });
         return;
       });
@@ -220,7 +226,9 @@ export function CruzadinhaClient({
       if (patienceTimerRef.current) {
         window.clearTimeout(patienceTimerRef.current);
       }
-      setLoading(false);
+      if (!editorOpenedRef.current) {
+        setLoading(false);
+      }
     }
   }
 
@@ -251,7 +259,7 @@ export function CruzadinhaClient({
       backLabel={studioMode ? "Início" : "Catálogo"}
       formScrollAttr={studioMode}
       previewScrollAttr={studioMode}
-      previewReady={Boolean(resultadoHtml)}
+      previewReady={loading || openingEditor}
       previewLoading={loading}
       form={
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -480,11 +488,19 @@ export function CruzadinhaClient({
             <div className="space-y-4 p-2">
               <PlanifyOwlGenerationCoach
                 active
-                title={tool.loadingTitle}
-                description={progressLabel || tool.loadingDescription}
+                title={
+                  openingEditor
+                    ? "Salvando e abrindo no editor"
+                    : tool.loadingTitle
+                }
+                description={
+                  openingEditor
+                    ? "O material foi salvo em Meus materiais. Redirecionando para o editor…"
+                    : progressLabel || tool.loadingDescription
+                }
                 toolId={CRUZADINHA_GENERATION_TYPE}
               />
-              {showPatienceMessage ? (
+              {!openingEditor && showPatienceMessage ? (
                 <p className="text-center text-sm font-semibold text-slate-600">
                   A montagem da grade pode levar alguns instantes. Não feche esta
                   página.

@@ -34,9 +34,8 @@ export function GoogleDocsExportButton({
   const runExport = useCallback(async (params: {
     html: string;
     planningPayload?: Record<string, unknown> | null;
+    previewWindow?: Window | null;
   }) => {
-    const previewWindow = window.open("about:blank", "_blank");
-
     const result = await exportToGoogleDocs({
       title,
       html: params.html,
@@ -44,6 +43,7 @@ export function GoogleDocsExportButton({
       planningPayload: params.planningPayload,
     });
 
+    const previewWindow = params.previewWindow;
     if (previewWindow && !previewWindow.closed) {
       previewWindow.location.href = result.documentUrl;
     }
@@ -54,7 +54,7 @@ export function GoogleDocsExportButton({
       onStatus?.("Google Docs aberto (matriz não reconhecida — layout simplificado).");
     }
 
-    return { openUrl: result.documentUrl, openedInPreview: Boolean(previewWindow) };
+    return { openUrl: result.documentUrl, openedInPreview: Boolean(previewWindow && !previewWindow.closed) };
   }, [documentType, onStatus, title]);
 
   return (

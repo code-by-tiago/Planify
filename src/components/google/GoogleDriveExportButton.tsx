@@ -34,9 +34,8 @@ export function GoogleDriveExportButton({
   const runExport = useCallback(async (params: {
     html: string;
     planningPayload?: Record<string, unknown> | null;
+    previewWindow?: Window | null;
   }) => {
-    const previewWindow = window.open("about:blank", "_blank");
-
     const result = await exportToGoogleDrive({
       title,
       html: params.html,
@@ -47,6 +46,7 @@ export function GoogleDriveExportButton({
     const url =
       result.driveOpenUrl || "https://drive.google.com/drive/my-drive";
 
+    const previewWindow = params.previewWindow;
     if (previewWindow && !previewWindow.closed) {
       previewWindow.location.href = url;
     }
@@ -55,7 +55,7 @@ export function GoogleDriveExportButton({
       onStatus?.("Drive aberto com o modelo oficial do planejamento.");
     }
 
-    return { openUrl: url, openedInPreview: Boolean(previewWindow) };
+    return { openUrl: url, openedInPreview: Boolean(previewWindow && !previewWindow.closed) };
   }, [documentType, onStatus, title]);
 
   return (

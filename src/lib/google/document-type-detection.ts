@@ -89,12 +89,32 @@ export function resolveFormsExportCompatible(
 }
 
 export function resolveGoogleOAuthReturnTo(explicit?: string): string {
-  if (explicit) return explicit;
+  if (explicit) return normalizeGoogleOAuthReturnTo(explicit);
   if (typeof window === "undefined") return "/dashboard?secao=editor";
 
   const { pathname, search } = window.location;
   if (pathname.startsWith("/dashboard")) return pathname + search;
   if (pathname === "/historico") return "/dashboard?secao=historico";
   if (pathname.startsWith("/marketplace")) return pathname + search;
-  return "/editor";
+  return normalizeGoogleOAuthReturnTo("/editor");
+}
+
+/** Evita redirect legado /editor → /dashboard no retorno OAuth. */
+export function normalizeGoogleOAuthReturnTo(path: string): string {
+  const trimmed = String(path || "").trim();
+  if (!trimmed.startsWith("/") || trimmed.startsWith("//")) {
+    return "/dashboard?secao=editor";
+  }
+
+  if (trimmed === "/editor" || trimmed.startsWith("/editor?")) {
+    const query = trimmed.includes("?") ? trimmed.slice(trimmed.indexOf("?") + 1) : "";
+    const params = new URLSearchParams(query);
+    params.delete("secao");
+    params.set("secao", "editor");
+    params.delete("tipo");
+    const qs = params.toString();
+    return `/dashboard?${qs}`;
+  }
+
+  return trimmed;
 }

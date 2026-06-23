@@ -38,7 +38,7 @@ export function EditorShareBar({
 
   const returnTo = useMemo(() => {
     if (typeof window === "undefined") return "/dashboard?secao=editor";
-    return `${window.location.pathname}${window.location.search}` || "/editor?from=materiais";
+    return `${window.location.pathname}${window.location.search}` || "/dashboard?secao=editor";
   }, []);
 
   useAutoGoogleExport({

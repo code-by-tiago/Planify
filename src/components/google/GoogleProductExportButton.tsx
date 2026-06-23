@@ -17,6 +17,7 @@ import {
   waitForExportableHtml,
   waitForGoogleConnected,
 } from "@/lib/google/google-export-resume";
+import { normalizeGoogleOAuthReturnTo } from "@/lib/google/document-type-detection";
 import {
   GOOGLE_STATUS_CHANGED_EVENT,
   notifyGoogleStatusChanged,
@@ -48,6 +49,7 @@ type GoogleProductExportButtonProps = {
   onExport: (params: {
     html: string;
     planningPayload?: Record<string, unknown> | null;
+    previewWindow?: Window | null;
   }) => Promise<{ openUrl: string; openedInPreview?: boolean }>;
   onStatus?: (message: string) => void;
   onExportError?: (error: unknown) => void;
@@ -104,7 +106,10 @@ export function GoogleProductExportButton({
     return waitForExportableHtml(getHtml);
   }, [getHtml, pendingStorageKey]);
 
-  const runExport = useCallback(async () => {
+  const runExport = useCallback(async (
+    previewWindow?: Window | null,
+    options?: { fallbackToSameTab?: boolean },
+  ) => {
     setBusy(true);
     setError("");
 
@@ -112,6 +117,7 @@ export function GoogleProductExportButton({
       const html = await resolveHtmlForExport();
 
       if (!hasExportableHtml(html)) {
+        previewWindow?.close();
         throw new Error("O documento ainda não carregou. Aguarde e tente exportar novamente.");
       }
 
@@ -120,19 +126,28 @@ export function GoogleProductExportButton({
       const planningPayload =
         pendingPayload ?? getPlanningPayload?.() ?? null;
 
-      const result = await onExport({ html, planningPayload });
+      const result = await onExport({ html, planningPayload, previewWindow });
       clearGoogleExportPending(pendingStorageKey);
 
       const opened =
-        result.openedInPreview || openGoogleExportUrl(result.openUrl);
+        result.openedInPreview ||
+        (!previewWindow?.closed && previewWindow
+          ? (() => {
+              previewWindow.location.href = result.openUrl;
+              return true;
+            })()
+          : openGoogleExportUrl(result.openUrl));
 
-      if (opened) {
+      if (!opened && !previewWindow && options?.fallbackToSameTab) {
+        window.location.assign(result.openUrl);
+      } else if (opened) {
         onStatus?.(`${productName} aberto em nova aba.`);
       } else {
         onStatus?.(`${productName} criado. Permita pop-ups ou abra: ${result.openUrl}`);
         setError("Pop-up bloqueado. Permita janelas do Planify e clique de novo.");
       }
     } catch (err) {
+      previewWindow?.close();
       onExportError?.(err);
       const message =
         err instanceof Error ? err.message : `Erro ao exportar para ${productName}.`;
@@ -149,7 +164,7 @@ export function GoogleProductExportButton({
     } finally {
       setBusy(false);
     }
-  }, [onExport, onExportError, onStatus, pendingStorageKey, productName, resolveHtmlForExport]);
+  }, [onExport, onExportError, onStatus, pendingStorageKey, productName, resolveHtmlForExport, getPlanningPayload]);
 
   const runConnect = useCallback(async () => {
     setBusy(true);
@@ -157,13 +172,13 @@ export function GoogleProductExportButton({
 
     saveGoogleExportPending(pendingStorageKey, {
       title,
-      returnTo,
+      returnTo: normalizeGoogleOAuthReturnTo(returnTo),
       html: getHtml(),
       planningPayload: getPlanningPayload?.() ?? null,
     });
 
     try {
-      await startGoogleOAuth(returnTo);
+      await startGoogleOAuth(normalizeGoogleOAuthReturnTo(returnTo));
     } catch (err) {
       clearGoogleExportPending(pendingStorageKey);
       setError(err instanceof Error ? err.message : "Erro ao conectar Google.");
@@ -220,34 +235,42 @@ export function GoogleProductExportButton({
     window.history.replaceState({}, "", next);
 
     void (async () => {
-      const fresh = await waitForGoogleConnected(refresh);
+      setBusy(true);
+      onStatus?.(`Retomando exportação para ${productName}…`);
+
+      await waitForGoogleConnected(refresh, 15);
       notifyGoogleStatusChanged();
 
-      if (!fresh?.connected) {
-        setError("Google conectado, mas a sessão ainda não sincronizou. Clique no botão novamente.");
-        return;
-      }
-
-      await runExport();
+      await runExport(null, { fallbackToSameTab: true });
     })();
-  }, [pendingStorageKey, refresh, runExport]);
+  }, [pendingStorageKey, refresh, runExport, onStatus, productName]);
 
-  async function handlePrimaryAction() {
+  function handlePrimaryAction() {
+    const previewWindow = window.open("about:blank", "_blank");
+    void handlePrimaryActionAsync(previewWindow);
+  }
+
+  async function handlePrimaryActionAsync(previewWindow: Window | null) {
     const fresh = (await refresh()) ?? status;
 
-    if (!fresh?.configured) return;
+    if (!fresh?.configured) {
+      previewWindow?.close();
+      return;
+    }
 
     if (!fresh.authenticated) {
+      previewWindow?.close();
       window.location.href = `/login?redirect=${encodeURIComponent(returnTo)}`;
       return;
     }
 
     if (!fresh.connected) {
+      previewWindow?.close();
       await runConnect();
       return;
     }
 
-    await runExport();
+    await runExport(previewWindow);
   }
 
   const defaultClassName = iconOnly
@@ -320,7 +343,7 @@ export function GoogleProductExportButton({
         <button
           type="button"
           disabled={busy}
-          onClick={() => void handlePrimaryAction()}
+          onClick={handlePrimaryAction}
           className={resolvedClassName}
           aria-label={exportLabel}
           title={actionTitle}

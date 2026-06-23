@@ -97,6 +97,13 @@ function resolveMaterialDocumentId(meta: MaterialEditorMeta): string | undefined
   return `mat_${key.slice(0, 120)}`;
 }
 
+/** URL canônica do editor no painel único (evita redirect legado /editor → /dashboard). */
+export function buildMaterialEditorHref(from?: string): string {
+  const params = new URLSearchParams({ secao: "editor" });
+  if (from?.trim()) params.set("from", from.trim());
+  return `/dashboard?${params.toString()}`;
+}
+
 export function persistGeneratedMaterial(
   html: string,
   title: string,
@@ -126,13 +133,10 @@ export function openMaterialInEditor(
 
   persistGeneratedMaterial(html, title, meta);
 
-  const params = new URLSearchParams();
-  if (options?.from) params.set("from", options.from);
-  const query = params.toString();
-  const href = query ? `/editor?${query}` : "/editor";
+  const href = buildMaterialEditorHref(options?.from);
 
   if (options?.redirect !== false) {
-    window.location.href = href;
+    window.location.replace(href);
   }
 }
 

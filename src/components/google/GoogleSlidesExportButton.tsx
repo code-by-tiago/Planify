@@ -68,7 +68,10 @@ export function GoogleSlidesExportButton({
     }
   }, []);
 
-  const runExport = useCallback(async (pending?: GoogleSlidesExportPending | null) => {
+  const runExport = useCallback(async (
+    pending?: GoogleSlidesExportPending | null,
+    previewWindow?: Window | null,
+  ) => {
     setBusy(true);
     setError("");
 
@@ -83,7 +86,15 @@ export function GoogleSlidesExportButton({
         theme: pending?.theme || theme,
       });
       clearGoogleSlidesExportPending();
-      window.open(result.presentationUrl, "_blank", "noopener,noreferrer");
+
+      if (previewWindow && !previewWindow.closed) {
+        previewWindow.location.href = result.presentationUrl;
+      } else {
+        const opened = window.open(result.presentationUrl, "_blank", "noopener,noreferrer");
+        if (!opened && pending) {
+          window.location.assign(result.presentationUrl);
+        }
+      }
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Erro ao exportar slides.";
@@ -184,27 +195,37 @@ export function GoogleSlidesExportButton({
 
       const pending = readGoogleSlidesExportPending();
       if (fresh?.connected && pending?.title) {
-        await runExport(pending);
+        await runExport(pending, null);
       }
     })();
   }, [refresh, runExport]);
 
-  async function handlePrimaryAction() {
+  function handlePrimaryAction() {
+    const previewWindow = window.open("about:blank", "_blank");
+    void handlePrimaryActionAsync(previewWindow);
+  }
+
+  async function handlePrimaryActionAsync(previewWindow: Window | null) {
     const fresh = (await refresh()) ?? status;
 
-    if (!fresh?.configured) return;
+    if (!fresh?.configured) {
+      previewWindow?.close();
+      return;
+    }
 
     if (!fresh.authenticated) {
+      previewWindow?.close();
       window.location.href = `/login?redirect=${encodeURIComponent(returnTo)}`;
       return;
     }
 
     if (!fresh.connected) {
+      previewWindow?.close();
       await runConnect();
       return;
     }
 
-    await runExport();
+    await runExport(null, previewWindow);
   }
 
   const defaultClassName = iconOnly
@@ -280,7 +301,7 @@ export function GoogleSlidesExportButton({
         <button
           type="button"
           disabled={busy}
-          onClick={() => void handlePrimaryAction()}
+          onClick={handlePrimaryAction}
           className={resolvedClassName}
           aria-label={exportLabel}
           title={exportActionTitle}

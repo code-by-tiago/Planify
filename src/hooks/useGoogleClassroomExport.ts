@@ -129,7 +129,7 @@ export function useGoogleClassroomExport({
     }
   }
 
-  async function handleExport() {
+  async function handleExport(previewWindow?: Window | null) {
     if (!courseId) {
       setError("Selecione uma turma do Google Classroom.");
       return;
@@ -164,7 +164,11 @@ export function useGoogleClassroomExport({
       );
 
       if (link) {
-        window.open(link, "_blank", "noopener,noreferrer");
+        if (previewWindow && !previewWindow.closed) {
+          previewWindow.location.href = link;
+        } else {
+          window.open(link, "_blank", "noopener,noreferrer");
+        }
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao enviar ao Classroom.");

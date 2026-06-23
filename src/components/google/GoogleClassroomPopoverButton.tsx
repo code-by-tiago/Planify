@@ -144,7 +144,8 @@ export function GoogleClassroomPopoverButton({
                   type="button"
                   disabled={busy || !courseId || courses.length === 0}
                   onClick={() => {
-                    void handleExport().then(() => setOpen(false));
+                    const previewWindow = window.open("about:blank", "_blank");
+                    void handleExport(previewWindow).then(() => setOpen(false));
                   }}
                   className="flex-1 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-bold text-white disabled:opacity-50"
                 >

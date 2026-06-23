@@ -27,7 +27,8 @@ export async function GET(request: NextRequest) {
   const config = getGoogleConfigStatus();
 
   if (!config.configured) {
-    return redirectWith(request, "/editor", {
+    return redirectWith(request, "/dashboard", {
+      secao: "editor",
       google_error: "Google OAuth não configurado no servidor.",
     });
   }

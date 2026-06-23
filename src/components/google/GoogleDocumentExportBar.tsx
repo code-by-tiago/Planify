@@ -65,7 +65,8 @@ export function GoogleDocumentExportBar({
   const returnTo = useMemo(() => {
     if (returnToProp) return returnToProp;
     if (typeof window === "undefined") return "/dashboard?secao=editor";
-    return `${window.location.pathname}${window.location.search}` || "/editor";
+    const current = `${window.location.pathname}${window.location.search}`;
+    return current || "/dashboard?secao=editor";
   }, [returnToProp]);
 
   useEffect(() => {

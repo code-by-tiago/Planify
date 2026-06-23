@@ -27,14 +27,25 @@ export function GoogleFormsExportButton({
   onStatus,
   onExportError,
 }: GoogleFormsExportButtonProps) {
-  const runExport = useCallback(async (params: { html: string }) => {
+  const runExport = useCallback(async (params: {
+    html: string;
+    previewWindow?: Window | null;
+  }) => {
     const result = await exportToGoogleForms({
       title,
       html: params.html,
       description: "Formulário criado pelo Planify.",
     });
 
-    return { openUrl: result.formUrl };
+    const previewWindow = params.previewWindow;
+    if (previewWindow && !previewWindow.closed) {
+      previewWindow.location.href = result.formUrl;
+    }
+
+    return {
+      openUrl: result.formUrl,
+      openedInPreview: Boolean(previewWindow && !previewWindow.closed),
+    };
   }, [title]);
 
   return (

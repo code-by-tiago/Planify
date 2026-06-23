@@ -10,6 +10,22 @@ export type ExportErrorContext = {
   toolTipo?: string;
 };
 
+export class ExportHttpError extends Error {
+  readonly status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = "ExportHttpError";
+    this.status = status;
+  }
+}
+
+function resolveExportStatus(error: unknown, statusHint?: number): number | undefined {
+  if (typeof statusHint === "number") return statusHint;
+  if (error instanceof ExportHttpError) return error.status;
+  return undefined;
+}
+
 export function mapExportError(
   error: unknown,
   statusHint?: number,
@@ -17,27 +33,31 @@ export function mapExportError(
   const message =
     error instanceof Error ? error.message : "Não foi possível concluir a exportação.";
   const lower = message.toLowerCase();
+  const explicitStatus = resolveExportStatus(error, statusHint);
 
   if (
     lower.includes("scope") ||
     lower.includes("insufficient") ||
     lower.includes("permission") ||
     lower.includes("reconecte") ||
+    lower.includes("conecte o google") ||
     lower.includes("não conectada") ||
     lower.includes("não conectado") ||
     lower.includes("nenhuma questão") ||
     lower.includes("forms api") ||
-    lower.includes("google forms")
+    lower.includes("google forms") ||
+    lower.includes("has not been used") ||
+    lower.includes("access not configured")
   ) {
     return {
       code: "validation_error",
       message,
-      status: 400,
+      status: explicitStatus && explicitStatus < 500 ? explicitStatus : 400,
       retryable: false,
     };
   }
 
-  const status = statusHint ?? 502;
+  const status = explicitStatus ?? (error instanceof Error ? 400 : 502);
 
   if (status === 401 || message.toLowerCase().includes("login")) {
     return {
@@ -76,9 +96,16 @@ export function mapExportError(
   }
 
   if (status >= 500 || status === 502) {
+    const useGeneric =
+      !(error instanceof Error) ||
+      !message.trim() ||
+      message === "Não foi possível concluir a exportação.";
+
     return {
       code: "server_error",
-      message: "Exportação falhou — tente novamente em instantes.",
+      message: useGeneric
+        ? "Exportação falhou — tente novamente em instantes."
+        : message,
       status: status >= 500 ? status : 502,
       retryable: true,
     };

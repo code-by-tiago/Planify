@@ -1,4 +1,5 @@
 import { stripTeacherOnlyExportBlocks } from "../editor/prepare-export-html";
+import { ExportHttpError } from "../export/export-error-service";
 import type { ParsedQuizQuestion } from "./parse-quiz-from-html";
 import { parseQuizQuestionsFromHtml } from "./parse-quiz-from-html";
 import { hasGoogleFormsScope } from "./google-config";
@@ -85,7 +86,7 @@ export async function exportQuizToGoogleForms(
   const stored = await getGoogleTokensForUser(userId);
   if (stored && !hasGoogleFormsScope(stored.scopes || [])) {
     throw new Error(
-      "Conecte o Google de novo para autorizar o Google Forms.",
+      "Reconecte o Google para autorizar o Google Forms.",
     );
   }
 
@@ -127,9 +128,10 @@ export async function exportQuizToGoogleForms(
   };
 
   if (!createResponse.ok || !createData.formId) {
-    throw new Error(
+    throw new ExportHttpError(
       createData.error?.message ||
         "Não foi possível criar o formulário no Google Forms.",
+      createResponse.status || 502,
     );
   }
 
@@ -154,9 +156,10 @@ export async function exportQuizToGoogleForms(
   };
 
   if (!batchResponse.ok) {
-    throw new Error(
+    throw new ExportHttpError(
       batchData.error?.message ||
         "Formulário criado, mas não foi possível adicionar as questões.",
+      batchResponse.status || 502,
     );
   }
 

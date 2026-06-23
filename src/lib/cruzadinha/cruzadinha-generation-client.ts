@@ -5,9 +5,11 @@ import {
   type MaterialStreamResult,
 } from "@/lib/materiais/material-stream-client";
 import { CRUZADINHA_GENERATION_TYPE } from "./cruzadinha-config";
+import { resolveMaterialDisplayTema } from "@/lib/educacao/material-form-config";
 
 export type CruzadinhaGenerationInput = {
-  tema: string;
+  tema?: string;
+  conteudo?: string;
   etapa: string;
   anoSerie: string;
   componenteCurricular: string;
@@ -39,6 +41,11 @@ function buildObservacoes(input: CruzadinhaGenerationInput): string | undefined 
 export function buildCruzadinhaGenerationPayload(
   input: CruzadinhaGenerationInput,
 ): MaterialEngineInput {
+  const tema = resolveMaterialDisplayTema(
+    String(input.tema || ""),
+    String(input.conteudo || ""),
+  );
+
   return {
     tipoMaterial: CRUZADINHA_GENERATION_TYPE,
     tipo: CRUZADINHA_GENERATION_TYPE,
@@ -48,8 +55,9 @@ export function buildCruzadinhaGenerationPayload(
     componenteCurricular: input.componenteCurricular,
     componente: input.componenteCurricular,
     areaConhecimento: input.areaConhecimento,
-    tema: input.tema,
-    temaCentral: input.tema,
+    tema,
+    temaCentral: tema,
+    conteudo: input.conteudo?.trim() || undefined,
     objetivo: input.observacoes?.trim() || "",
     quantidade: input.quantidade,
     dificuldade: input.dificuldade,

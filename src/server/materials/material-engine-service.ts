@@ -1105,7 +1105,7 @@ function renderDocumentHtml(
         modeloJogo,
         tema: request.tema,
         objetivos: request.objetivo,
-        conteudos: request.observacoes || request.tema,
+        conteudos: request.conteudo || request.observacoes || request.tema,
         orientacoes: request.objetivo || undefined,
         quantidade: request.quantidade,
       },

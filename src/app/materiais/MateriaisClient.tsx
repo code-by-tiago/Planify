@@ -50,7 +50,7 @@ import {
   type MaterialEducationFields,
 } from "@/lib/educacao/education-options";
 import { useBnccEducationOptions } from "@/hooks/useBnccEducationOptions";
-import { toolSupportsGabarito } from "@/lib/educacao/material-form-config";
+import { toolSupportsGabarito, getMaterialFormFieldConfig, hasMaterialTopicInput, resolveMaterialDisplayTema } from "@/lib/educacao/material-form-config";
 import {
   defaultQuantityForTool,
   defaultSlidesQuestionQuantity,
@@ -285,9 +285,10 @@ function extractHtmlFromResponse(data: unknown): string {
   return "";
 }
 
-function buildTitle(mode: PlanifyToolId, tema: string): string {
+function buildTitle(mode: PlanifyToolId, tema: string, conteudo = ""): string {
   const config = getPlanifyTool(mode);
-  return `${config.shortTitle} — ${tema || "Material Planify"}`;
+  const label = resolveMaterialDisplayTema(tema, conteudo) || "Material Planify";
+  return `${config.shortTitle} — ${label}`;
 }
 
 function formatDate(value: string): string {
@@ -322,6 +323,7 @@ export function MateriaisClient({
   const [tipo, setTipo] = useState<PlanifyToolId>(initialTipo ?? "slides");
   const [modalAberto, setModalAberto] = useState(studioMode);
   const [tema, setTema] = useState(initialTema);
+  const [conteudo, setConteudo] = useState("");
   const [etapa, setEtapa] = useState(DEFAULT_MATERIAL_EDUCATION.etapa);
   const [anoSerie, setAnoSerie] = useState(DEFAULT_MATERIAL_EDUCATION.anoSerie);
   const [areaConhecimento, setAreaConhecimento] = useState(
@@ -446,14 +448,15 @@ export function MateriaisClient({
   }, [initialTema]);
 
   const loadPedagogicalContext = useCallback(async () => {
-    if (!tema.trim()) {
+    const topic = resolveMaterialDisplayTema(tema, conteudo);
+    if (!topic) {
       setPedagogicalEntries([]);
       return;
     }
 
     try {
       const data = await fetchPedagogicalContext({
-        tema: tema.trim(),
+        tema: topic,
         componente,
         etapa,
         anoSerie,
@@ -467,7 +470,7 @@ export function MateriaisClient({
     } catch {
       setPedagogicalEntries([]);
     }
-  }, [tema, componente, etapa, anoSerie]);
+  }, [tema, conteudo, componente, etapa, anoSerie]);
 
   useEffect(() => {
     if (pedagogicalDebounceRef.current) {
@@ -541,6 +544,11 @@ export function MateriaisClient({
   }, [tipo]);
 
   const mode = useMemo(() => getPlanifyTool(tipo), [tipo]);
+  const formFields = useMemo(() => getMaterialFormFieldConfig(tipo), [tipo]);
+  const displayTema = useMemo(
+    () => resolveMaterialDisplayTema(tema, conteudo),
+    [tema, conteudo],
+  );
   const generationSummary = useMemo(
     () =>
       resultadoHtml
@@ -562,6 +570,7 @@ export function MateriaisClient({
   );
   const isJogo = tipo === "jogo";
   const isRedacao = tipo === "redacao";
+  const isPlanoAula = tipo === "plano-aula";
   const isExamTool = tipo === "lista" || tipo === "prova";
   const showGabarito = toolSupportsGabarito(tipo, {
     incluirQuestoes: tipo === "slides" ? incluirQuestoes : undefined,
@@ -593,7 +602,9 @@ export function MateriaisClient({
   );
 
   const suggestContextReady = Boolean(
-    tema.trim() && componente.trim() && anoSerie.trim(),
+    hasMaterialTopicInput(tema, conteudo) &&
+      componente.trim() &&
+      anoSerie.trim(),
   );
 
   const {
@@ -671,8 +682,8 @@ export function MateriaisClient({
   }
 
   async function sugerirConteudosComIA() {
-    if (!tema.trim()) {
-      setErro("Informe o tema antes de pedir sugestões de conteúdo.");
+    if (!hasMaterialTopicInput(tema, conteudo)) {
+      setErro("Informe o conteúdo ou o tema antes de pedir sugestões de conteúdo.");
       return;
     }
 
@@ -694,7 +705,8 @@ export function MateriaisClient({
           anoSerie,
           areaConhecimento,
           componenteCurricular: componente,
-          tema,
+          tema: displayTema || tema.trim() || undefined,
+          conteudo: conteudo.trim() || undefined,
           tipo,
           modeloJogo: isJogo ? formatoJogo.replace(/-/g, "_") : undefined,
           quantidade,
@@ -784,6 +796,7 @@ export function MateriaisClient({
 
   function limparFormulario() {
     setTema("");
+    setConteudo("");
     applyEducation(educationDefaultsForTool(tipo, DEFAULT_MATERIAL_EDUCATION));
     setObjetivo("");
     setObservacoes("");
@@ -830,6 +843,7 @@ export function MateriaisClient({
       componente,
       tema,
       temaCentral: tema,
+      conteudo,
       objetivo: objetivoComposto,
       objetivos: objetivoComposto,
       observacoes: pedagogicalObs,
@@ -945,7 +959,7 @@ export function MateriaisClient({
 
     openMaterialInEditor(
       resultadoHtml,
-      buildTitle(tipo, tema),
+      buildTitle(tipo, tema, conteudo),
       buildMaterialMeta(),
       { from: "materiais" },
     );
@@ -960,8 +974,8 @@ export function MateriaisClient({
     setErroCta(null);
     setErroRetryable(false);
 
-    if (!tema.trim()) {
-      setErro("Informe o tema para gerar o material.");
+    if (!hasMaterialTopicInput(tema, conteudo)) {
+      setErro("Informe o conteúdo ou o tema para gerar o material.");
       return;
     }
 
@@ -1099,7 +1113,7 @@ export function MateriaisClient({
         }
       }
 
-      const titulo = buildTitle(tipo, tema);
+      const titulo = buildTitle(tipo, tema, conteudo);
       const record =
         data && typeof data === "object" ? (data as Record<string, unknown>) : {};
       const scoreValue =
@@ -1186,7 +1200,7 @@ export function MateriaisClient({
       }
       rememberSlideGenerationPayload(payload);
 
-      const titulo = buildTitle(tipo, tema);
+      const titulo = buildTitle(tipo, tema, conteudo);
       const meta = buildMaterialMeta(
         pipelineGeracao,
         (data.estrutura as MaterialEngineResponse | undefined) ?? null,
@@ -1236,7 +1250,7 @@ export function MateriaisClient({
       setResultadoHtml(result.html);
       setResultadoEstrutura(result.estrutura);
 
-      const titulo = buildTitle(tipo, tema);
+      const titulo = buildTitle(tipo, tema, conteudo);
       const meta = buildMaterialMeta(pipelineGeracao, result.estrutura, {
         qualityScore,
         qualityIssues,
@@ -1285,7 +1299,7 @@ export function MateriaisClient({
         setQualityIssues(result.qualityIssues);
       }
 
-      const titulo = buildTitle(tipo, tema);
+      const titulo = buildTitle(tipo, tema, conteudo);
       const meta = buildMaterialMeta(pipelineGeracao, result.estrutura, {
         qualityScore: result.qualityScore ?? qualityScore,
         qualityIssues: result.qualityIssues ?? qualityIssues,
@@ -1330,7 +1344,7 @@ export function MateriaisClient({
     if (result.qualityIssues) setQualityIssues(result.qualityIssues);
     if (result.pipeline) setPipelineGeracao(result.pipeline);
 
-    const titulo = buildTitle(tipo, tema);
+    const titulo = buildTitle(tipo, tema, conteudo);
     const meta = buildMaterialMeta(result.pipeline ?? pipelineGeracao, result.estrutura, {
       qualityScore: result.qualityScore ?? qualityScore,
       qualityIssues: result.qualityIssues ?? qualityIssues,
@@ -1530,11 +1544,22 @@ export function MateriaisClient({
           </div>
 
           <label className="mt-5 block">
-            <span className={HUD_SECTION_LABEL}>{mode.primaryFieldLabel}</span>
+            <span className={HUD_SECTION_LABEL}>{formFields.conteudoLabel}</span>
+            <textarea
+              value={conteudo}
+              onChange={(event) => setConteudo(event.target.value)}
+              placeholder={formFields.conteudoPlaceholder}
+              rows={4}
+              className={HUD_TEXTAREA_CLASS}
+            />
+          </label>
+
+          <label className="mt-4 block">
+            <span className={HUD_SECTION_LABEL}>{formFields.temaLabel}</span>
             <input
               value={tema}
               onChange={(event) => setTema(event.target.value)}
-              placeholder="Descreva o tema que deseja trabalhar"
+              placeholder="Ex.: um título curto para identificar o material (opcional)"
               className={HUD_FIELD_CLASS}
             />
           </label>
@@ -1583,7 +1608,7 @@ export function MateriaisClient({
               </div>
             ) : (
               <p className="md:col-span-2 text-xs font-semibold text-amber-800">
-                Preencha tema, disciplina e ano/série para liberar sugestões de conteúdo.
+                Preencha conteúdo ou tema, disciplina e ano/série para liberar sugestões de conteúdo.
               </p>
             )}
 
@@ -1719,6 +1744,38 @@ export function MateriaisClient({
                     </button>
                   ))}
                 </div>
+              </div>
+            ) : isPlanoAula ? (
+              <div>
+                <span className={HUD_SECTION_LABEL}>Períodos</span>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {quantityPresets.map((preset) => (
+                    <button
+                      key={preset.value}
+                      type="button"
+                      onClick={() => setQuantidade(preset.value)}
+                      className={
+                        quantidade === preset.value
+                          ? HUD_FILTER_CHIP_ACTIVE
+                          : HUD_FILTER_CHIP_INACTIVE
+                      }
+                    >
+                      {preset.label.replace(/\s*\(.*\)/, "")}
+                    </button>
+                  ))}
+                </div>
+                <label className="mt-3 block">
+                  <span className="text-[10px] font-black uppercase tracking-wide text-slate-500">
+                    Outro valor
+                  </span>
+                  <input
+                    type="number"
+                    min={1}
+                    value={quantidade}
+                    onChange={(event) => setQuantidade(event.target.value)}
+                    className={`${HUD_FIELD_CLASS} mt-1`}
+                  />
+                </label>
               </div>
             ) : (
               <label>
@@ -2095,7 +2152,7 @@ export function MateriaisClient({
                   </p>
                   <div className="mt-3 flex flex-wrap items-center gap-2">
                     <GoogleSlidesExportButton
-                      title={buildTitle(tipo, tema)}
+                      title={buildTitle(tipo, tema, conteudo)}
                       html={resultadoHtml}
                       slides={resultadoEstrutura?.slides}
                       theme={resultadoEstrutura?.slideTheme || designSlides}
@@ -2104,7 +2161,7 @@ export function MateriaisClient({
                       iconOnly={false}
                     />
                     <SlidesPptxDownloadButton
-                      title={buildTitle(tipo, tema)}
+                      title={buildTitle(tipo, tema, conteudo)}
                       html={resultadoHtml}
                       slides={resultadoEstrutura?.slides}
                       theme={resultadoEstrutura?.slideTheme || designSlides}
@@ -2125,7 +2182,7 @@ export function MateriaisClient({
                   Editar no editor
                 </button>
                 <MarketplacePublishButton
-                  title={buildTitle(tipo, tema)}
+                  title={buildTitle(tipo, tema, conteudo)}
                   getHtml={() => resultadoHtml}
                   tipoMaterial={mode.title}
                   tema={tema}
@@ -2145,7 +2202,7 @@ export function MateriaisClient({
                   Regenerar
                 </button>
                 <GoogleDocumentExportBar
-                  title={buildTitle(tipo, tema)}
+                  title={buildTitle(tipo, tema, conteudo)}
                   getHtml={() => resultadoHtml}
                   documentType={`material:${tipo}`}
                   isSlideDeck={tipo === "slides"}

@@ -213,6 +213,7 @@ export type MaterialContentSuggestionInput = {
   areaConhecimento?: string;
   componenteCurricular: string;
   tema: string;
+  conteudo?: string;
   tipo?: MaterialAIType;
   modeloJogo?: string;
   quantidade?: number | string;

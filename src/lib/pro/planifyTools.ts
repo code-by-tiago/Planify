@@ -159,10 +159,10 @@ export const planifyTools: PlanifyTool[] = [
   },
   {
     id: "plano-aula",
-    title: "Plano de Aula (1 encontro)",
+    title: "Plano de Aula",
     shortTitle: "Plano de Aula",
     description:
-      "Um encontro de aula — objetivos, metodologia, materiais e avaliação. Para planejamento escolar anual ou trimestral, use Planejamentos.",
+      "Plano por períodos de 50 minutos — objetivos, metodologia, materiais e avaliação. Informe o conteúdo que deseja trabalhar; o tema é opcional.",
     category: "planejamento",
     href: dashboardToolHref("plano-aula"),
     icon: "clipboard",

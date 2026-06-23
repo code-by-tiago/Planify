@@ -130,6 +130,7 @@ export type PromptEngineInput = {
   anoSerie: string;
   componenteCurricular: string;
   tema: string;
+  conteudo?: string;
   objetivo?: string;
   quantidade: number;
   dificuldade: string;

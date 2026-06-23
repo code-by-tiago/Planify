@@ -120,7 +120,7 @@ function buildToolRules(input: PromptEngineInput): string[] {
 
     case "plano-aula":
       return [
-        `Planejar ${q <= 1 ? "uma aula" : `${q} aulas`} com sequência pedagógica completa.`,
+        `Planejar ${q} período(s) de 50 minutos em um único plano.`,
         'OBRIGATÓRIO: inclua seção tipo "tabela" com cronograma cronometrado.',
         "Tabela do cronograma — cabecalhos: Etapa | Duração | Atividade | Recursos.",
         "Cada linha = uma etapa (Abertura, Contextualização, Explicação, Prática, Fechamento, Avaliação).",
@@ -311,7 +311,8 @@ FERRAMENTA:
 - Tipo pedagógico: ${TYPE_LABELS[input.tipoFerramenta]}
 
 DADOS DA SOLICITAÇÃO:
-- Tema: ${input.tema}
+- Conteúdo do professor (principal): ${input.conteudo?.trim() || "Não informado"}
+- Tema (opcional): ${input.tema || "Não informado"}
 - Etapa: ${input.etapa}
 - Ano/Série: ${input.anoSerie}
 - Componente curricular: ${input.componenteCurricular}
@@ -356,7 +357,8 @@ export function buildStaticRulesForType(tipoFerramenta: TipoFerramenta): string 
     .map((rule) =>
       rule
         .replace(/exatamente 0 /gi, "exatamente N ")
-        .replace(/0 aulas/gi, "N aulas")
+        .replace(/0 aulas/gi, "N períodos")
+        .replace(/0 períodos/gi, "N períodos")
         .replace(/0 seções/gi, "N seções")
         .replace(/0 slides/gi, "N slides")
         .replace(/0 questões/gi, "N questões")

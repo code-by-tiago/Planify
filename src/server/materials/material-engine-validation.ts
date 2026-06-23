@@ -3,6 +3,9 @@ import {
   resolveBnccStageFromFields,
 } from "@/lib/bncc/bncc-stage-filter";
 import {
+  hasMaterialTopicInput,
+} from "@/lib/educacao/material-form-config";
+import {
   MATERIAL_ENGINE_TYPES,
   type MaterialEngineInput,
   type MaterialEngineRequest,
@@ -61,6 +64,7 @@ export function normalizeMaterialEngineRequest(
       payload.componenteCurricular || payload.componente,
     ),
     tema: asText(payload.tema || payload.temaCentral),
+    conteudo: asText(payload.conteudo),
     objetivo: asText(payload.objetivo || payload.objetivos),
     quantidade: toSafeQuantity(payload.quantidade, tipoMaterial),
     dificuldade: asText(payload.dificuldade, "media"),
@@ -111,7 +115,9 @@ export function validateMaterialEngineRequest(
 ): string[] {
   const errors: string[] = [];
 
-  if (!request.tema) errors.push("Informe o tema para gerar o material.");
+  if (!hasMaterialTopicInput(request.tema, request.conteudo)) {
+    errors.push("Informe o conteúdo ou o tema para gerar o material.");
+  }
   if (!request.anoSerie)
     errors.push("Informe o ano/série para adequar a linguagem.");
   if (!request.componenteCurricular)

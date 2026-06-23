@@ -3,6 +3,10 @@ import {
   getBundleQuantityForTool,
   normalizeLessonBundleTools,
 } from "@/lib/aula-completa/lesson-bundle-config";
+import {
+  hasMaterialTopicInput,
+  resolveMaterialDisplayTema,
+} from "@/lib/educacao/material-form-config";
 import { BUNDLE_SERVER_DEADLINE_MS } from "@/lib/pro/generation-timeout";
 import type { PlanifyToolId } from "@/lib/pro/planifyTools";
 import type { MaterialAIOutput } from "@/types/ai";
@@ -54,10 +58,16 @@ export async function generateLessonBundle(
   | { ok: false; status: number; message: string }
   | { ok: true; items: LessonBundleItemResult[]; tema: string }
 > {
-  const tema = String(input.tema || input.temaCentral || "").trim();
-  if (!tema) {
-    return { ok: false, status: 400, message: "Informe o tema da aula." };
+  const conteudo = String(input.conteudo || "").trim();
+  const temaRaw = String(input.tema || input.temaCentral || "").trim();
+  if (!hasMaterialTopicInput(temaRaw, conteudo)) {
+    return {
+      ok: false,
+      status: 400,
+      message: "Informe o conteúdo ou o tema da aula.",
+    };
   }
+  const tema = resolveMaterialDisplayTema(temaRaw, conteudo);
 
   const { toolIds, invalidToolIds } = normalizeLessonBundleTools(input.bundleTools);
   if (invalidToolIds.length) {
@@ -118,6 +128,7 @@ export async function generateLessonBundle(
       tipoMaterial: toolId,
       tipo: toolId,
       tema,
+      conteudo,
       observacoes,
       ...(bundleQuantity ? { quantidade: bundleQuantity } : {}),
       idempotencyKey: crypto.randomUUID(),

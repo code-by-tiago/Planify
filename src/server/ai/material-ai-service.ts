@@ -14,6 +14,7 @@ import { buildHardPedagogicalMaterial, enhanceHardPedagogicalMaterial, shouldUse
 import { enforceMaterialTypeContract } from "../../lib/materiais/material-type-validator";
 import { guardMaterialQuality } from "../../lib/materiais/material-quality-guardian";
 import { auditMaterialAgainstKnowledgeEngine } from "../../lib/materiais/material-quality-auditor";
+import { resolveMaterialDisplayTema } from "@/lib/educacao/material-form-config";
 import { getModelTierForMaterialRequest } from "@/lib/ai/material-generation-policy";
 import { normalizeQuestionOptions } from "@/lib/materiais/material-document-layout";
 import { generateGeminiJSON } from "./gemini-client";
@@ -102,10 +103,10 @@ function validateInput(input: MaterialAIInput): string | null {
   if (!String(input.anoSerie || "").trim()) return "Informe o ano/série.";
   if (!String(input.componenteCurricular || "").trim()) return "Informe o componente curricular.";
   if (!String(input.tipo || "").trim()) return "Informe o tipo de material.";
-  if (!String(input.tema || "").trim()) return "Informe o tema do material.";
+  const tema = String(input.tema || "").trim();
   const conteudos = normalizeConteudos(input.conteudos);
-  if (conteudos.length === 0 && !String(input.tema || "").trim()) {
-    return "Informe ao menos um conteúdo.";
+  if (conteudos.length === 0 && !tema) {
+    return "Informe o conteúdo ou o tema para gerar o material.";
   }
   if (needsQuestionQuantity(input.tipo) && !String(input.quantidadeQuestoes || "").trim()) {
     return "Informe a quantidade de questões para atividade ou prova.";
@@ -556,7 +557,17 @@ export async function suggestMaterialContents(rawInput: MaterialContentSuggestio
   if (!String(rawInput.etapa || "").trim()) throw new Error("Informe a etapa.");
   if (!String(rawInput.anoSerie || "").trim()) throw new Error("Informe o ano/série.");
   if (!String(rawInput.componenteCurricular || "").trim()) throw new Error("Informe o componente curricular.");
-  if (!String(rawInput.tema || "").trim()) throw new Error("Informe o tema central.");
+  if (
+    !String(rawInput.tema || "").trim() &&
+    !String(rawInput.conteudo || "").trim()
+  ) {
+    throw new Error("Informe o conteúdo ou o tema para sugerir conteúdos.");
+  }
+
+  const resolvedTema = resolveMaterialDisplayTema(
+    String(rawInput.tema || ""),
+    String(rawInput.conteudo || ""),
+  );
 
   const input: MaterialContentSuggestionInput = {
     ...rawInput,
@@ -564,7 +575,8 @@ export async function suggestMaterialContents(rawInput: MaterialContentSuggestio
     anoSerie: String(rawInput.anoSerie || "").trim(),
     areaConhecimento: String(rawInput.areaConhecimento || "").trim(),
     componenteCurricular: String(rawInput.componenteCurricular || "").trim(),
-    tema: String(rawInput.tema || "").trim(),
+    tema: resolvedTema,
+    conteudo: String(rawInput.conteudo || "").trim() || undefined,
     tipo: String(rawInput.tipo || "jogo").trim(),
     modeloJogo: String(rawInput.modeloJogo || "cruzadinha").trim(),
     quantidade: rawInput.quantidade || 6,

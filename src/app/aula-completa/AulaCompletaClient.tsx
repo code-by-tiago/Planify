@@ -36,6 +36,11 @@ import {
 } from "@/lib/pro/generation-error-ui";
 import { lessonBundleTools, lessonBundleObjetivoHint } from "@/lib/pro/teachyStudio";
 import { DEFAULT_MATERIAL_EDUCATION } from "@/lib/educacao/education-options";
+import {
+  getMaterialFormFieldConfig,
+  hasMaterialTopicInput,
+  resolveMaterialDisplayTema,
+} from "@/lib/educacao/material-form-config";
 import { openMaterialInEditor } from "@/lib/materiais/material-editor-flow";
 import { useSchoolClasses } from "@/hooks/useSchoolClasses";
 import { TurmaCombobox } from "@/components/school/TurmaCombobox";
@@ -55,6 +60,7 @@ const MOBILE_BUNDLE_TOOLS: PlanifyToolId[] = [...DEFAULT_LESSON_BUNDLE_TOOLS];
 const PATIENCE_THRESHOLD_MS = 60_000;
 
 const tool = getPlanifyTool("aula-completa");
+const formFields = getMaterialFormFieldConfig("aula-completa");
 
 function initialBundleSteps(toolIds: PlanifyToolId[]): Record<PlanifyToolId, BundleStepStatus> {
   return Object.fromEntries(
@@ -74,6 +80,7 @@ export function AulaCompletaClient({
 }: AulaCompletaClientProps = {}) {
   const school = useSchoolClasses();
   const [tema, setTema] = useState(initialTema);
+  const [conteudo, setConteudo] = useState("");
   const [objetivo, setObjetivo] = useState(lessonBundleObjetivoHint);
   const [observacoes, setObservacoes] = useState("");
   const [selectedTools, setSelectedTools] = useState<PlanifyToolId[]>([
@@ -131,14 +138,14 @@ export function AulaCompletaClient({
 
   const persistContext = useMemo(
     () => ({
-      tema: tema.trim(),
+      tema: resolveMaterialDisplayTema(tema, conteudo),
       componente:
         school.selectedClass?.discipline?.trim() ||
         DEFAULT_MATERIAL_EDUCATION.componente,
       anoSerie: DEFAULT_MATERIAL_EDUCATION.anoSerie,
       etapa: DEFAULT_MATERIAL_EDUCATION.etapa,
     }),
-    [tema, school.selectedClass?.discipline],
+    [tema, conteudo, school.selectedClass?.discipline],
   );
 
   function toggleTool(toolId: PlanifyToolId) {
@@ -153,9 +160,11 @@ export function AulaCompletaClient({
 
   const buildPayload = useCallback(() => {
     const trimmedTema = tema.trim();
+    const trimmedConteudo = conteudo.trim();
     const turma = school.turmaPayload;
     return {
-      tema: trimmedTema,
+      tema: trimmedTema || undefined,
+      conteudo: trimmedConteudo || undefined,
       objetivo: objetivo.trim() || lessonBundleObjetivoHint,
       observacoes: observacoes.trim() || undefined,
       bundleTools: selectedTools,
@@ -173,7 +182,7 @@ export function AulaCompletaClient({
       discipline: school.selectedClass?.discipline?.trim() || undefined,
       disciplina: school.selectedClass?.discipline?.trim() || undefined,
     };
-  }, [tema, objetivo, observacoes, selectedTools, school]);
+  }, [tema, conteudo, objetivo, observacoes, selectedTools, school]);
 
   function upsertItemInList(nextItem: LessonBundleItem) {
     setItems((current) => {
@@ -192,8 +201,9 @@ export function AulaCompletaClient({
     setErroCta(null);
     setErroRetryable(false);
     const trimmedTema = tema.trim();
-    if (!trimmedTema) {
-      setErro("Informe o tema da aula.");
+    const trimmedConteudo = conteudo.trim();
+    if (!hasMaterialTopicInput(trimmedTema, trimmedConteudo)) {
+      setErro("Informe o conteúdo ou o tema da aula.");
       return;
     }
     if (selectedTools.length === 0) {
@@ -242,7 +252,10 @@ export function AulaCompletaClient({
         onItem: (item) => {
           upsertItemInList(item);
           if (item.ok && item.html) {
-            persistBundleItemToHistory(item, { ...persistContext, tema: trimmedTema });
+            persistBundleItemToHistory(item, {
+              ...persistContext,
+              tema: resolveMaterialDisplayTema(trimmedTema, trimmedConteudo),
+            });
             setActiveTab((current) => current ?? item.toolId);
           }
         },
@@ -289,7 +302,10 @@ export function AulaCompletaClient({
       }));
 
       if (item.ok && item.html) {
-        persistBundleItemToHistory(item, { ...persistContext, tema: tema.trim() });
+        persistBundleItemToHistory(item, {
+          ...persistContext,
+          tema: resolveMaterialDisplayTema(tema.trim(), conteudo.trim()),
+        });
         setActiveTab(toolId);
       }
     } catch (error) {
@@ -310,10 +326,10 @@ export function AulaCompletaClient({
 
   function abrirNoEditor(item = activeItem) {
     if (!item?.html) return;
-    const titulo = `${getPlanifyTool(item.toolId).shortTitle} — ${tema.trim() || "Aula"}`;
+    const titulo = `${getPlanifyTool(item.toolId).shortTitle} — ${resolveMaterialDisplayTema(tema, conteudo) || "Aula"}`;
     openMaterialInEditor(item.html, titulo, {
       toolId: item.toolId,
-      tema: tema.trim(),
+      tema: resolveMaterialDisplayTema(tema, conteudo),
       componente:
         school.selectedClass?.discipline?.trim() ||
         DEFAULT_MATERIAL_EDUCATION.componente,
@@ -414,8 +430,22 @@ export function AulaCompletaClient({
       form={
         <form onSubmit={gerarPacote} className="space-y-4 pb-20 max-lg:pb-24">
           <div>
+            <label className={HUD_SECTION_LABEL} htmlFor="aula-conteudo">
+              {formFields.conteudoLabel}
+            </label>
+            <textarea
+              id="aula-conteudo"
+              value={conteudo}
+              onChange={(event) => setConteudo(event.target.value)}
+              placeholder={formFields.conteudoPlaceholder}
+              rows={4}
+              className={HUD_TEXTAREA_CLASS}
+            />
+          </div>
+
+          <div>
             <label className={HUD_SECTION_LABEL} htmlFor="aula-tema">
-              Tema da aula
+              {formFields.temaLabel}
             </label>
             <input
               id="aula-tema"
@@ -423,7 +453,6 @@ export function AulaCompletaClient({
               onChange={(event) => setTema(event.target.value)}
               placeholder="Ex.: Revolução Industrial e trabalho nas cidades"
               className={HUD_FIELD_CLASS}
-              required
             />
           </div>
 

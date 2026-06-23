@@ -89,6 +89,7 @@ export function InclusaoClient({
   const [necessidade, setNecessidade] = useState<InclusaoNeedId>("tea");
   const [etapaEnsino, setEtapaEnsino] =
     useState<InclusaoEducationLevel>("EF I (1º ao 5º ano)");
+  const [tema, setTema] = useState("");
   const [conteudo, setConteudo] = useState("");
   const [observacoes, setObservacoes] = useState("");
   const [loading, setLoading] = useState(false);
@@ -142,7 +143,12 @@ export function InclusaoClient({
           necessidade,
           etapaEnsino,
           conteudo: trimmed,
-          observacoes: observacoes.trim() || undefined,
+          observacoes: [
+            tema.trim() ? `Tema: ${tema.trim()}` : "",
+            observacoes.trim(),
+          ]
+            .filter(Boolean)
+            .join("\n\n") || undefined,
           ...turma,
           discipline: school.selectedClass?.discipline?.trim() || undefined,
           disciplina: school.selectedClass?.discipline?.trim() || undefined,
@@ -290,6 +296,19 @@ export function InclusaoClient({
                 </option>
               ))}
             </select>
+          </div>
+
+          <div>
+            <label className={HUD_SECTION_LABEL} htmlFor="inclusao-tema">
+              Tema (opcional)
+            </label>
+            <input
+              id="inclusao-tema"
+              value={tema}
+              onChange={(event) => setTema(event.target.value)}
+              placeholder="Ex.: Frações no cotidiano, Sistema solar…"
+              className={HUD_FIELD_CLASS}
+            />
           </div>
 
           <div>

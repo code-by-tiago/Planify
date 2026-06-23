@@ -33,7 +33,7 @@ import {
   defaultQuantityForTool,
   getQuantityPresets,
 } from "@/lib/educacao/material-quantity-presets";
-import { toolSupportsGabarito } from "@/lib/educacao/material-form-config";
+import { toolSupportsGabarito, getMaterialFormFieldConfig, hasMaterialTopicInput, resolveMaterialDisplayTema } from "@/lib/educacao/material-form-config";
 import {
   formatGenerationError,
   GenerationErrorBanner,
@@ -58,10 +58,11 @@ type CruzadinhaClientProps = {
 };
 
 const tool = getPlanifyTool("cruzadinha");
+const formFields = getMaterialFormFieldConfig("cruzadinha");
 const PATIENCE_THRESHOLD_MS = 60_000;
 
-function buildExportTitle(tema: string): string {
-  const clean = tema.trim() || "Cruzadinha";
+function buildExportTitle(tema: string, conteudo: string): string {
+  const clean = resolveMaterialDisplayTema(tema, conteudo) || "Cruzadinha";
   return `Cruzadinha — ${clean}`;
 }
 
@@ -83,6 +84,7 @@ export function CruzadinhaClient({
   );
   const [componente, setComponente] = useState(defaults.componente);
   const [tema, setTema] = useState(initialTema);
+  const [conteudo, setConteudo] = useState("");
   const [quantidade, setQuantidade] = useState(
     defaultQuantityForTool("cruzadinha"),
   );
@@ -127,7 +129,10 @@ export function CruzadinhaClient({
     () => getQuantityPresets("cruzadinha"),
     [],
   );
-  const exportTitle = useMemo(() => buildExportTitle(tema), [tema]);
+  const exportTitle = useMemo(
+    () => buildExportTitle(tema, conteudo),
+    [tema, conteudo],
+  );
   const showGabarito = toolSupportsGabarito("cruzadinha");
 
   async function executarGeracao() {
@@ -136,8 +141,9 @@ export function CruzadinhaClient({
     setErroRetryable(false);
 
     const trimmedTema = tema.trim();
-    if (!trimmedTema) {
-      setErro("Informe o tema da cruzadinha.");
+    const trimmedConteudo = conteudo.trim();
+    if (!hasMaterialTopicInput(trimmedTema, trimmedConteudo)) {
+      setErro("Informe o conteúdo ou o tema da cruzadinha.");
       return;
     }
     if (!anoSerie.trim()) {
@@ -171,7 +177,8 @@ export function CruzadinhaClient({
 
         const idempotencyKey = crypto.randomUUID();
         const generationInput = {
-          tema: trimmedTema,
+          tema: trimmedTema || undefined,
+          conteudo: trimmedConteudo || undefined,
           etapa,
           anoSerie,
           componenteCurricular: componente,
@@ -198,10 +205,10 @@ export function CruzadinhaClient({
           throw new Error("A geração concluiu, mas não retornou HTML.");
         }
 
-        const titulo = buildExportTitle(trimmedTema);
+        const titulo = buildExportTitle(trimmedTema, trimmedConteudo);
         const meta: MaterialEditorMeta = {
           toolId: "cruzadinha",
-          tema: trimmedTema,
+          tema: resolveMaterialDisplayTema(trimmedTema, trimmedConteudo),
           componente,
           anoSerie,
           etapa,
@@ -264,8 +271,22 @@ export function CruzadinhaClient({
       form={
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
+            <label htmlFor="cruzadinha-conteudo" className={HUD_SECTION_LABEL}>
+              {formFields.conteudoLabel}
+            </label>
+            <textarea
+              id="cruzadinha-conteudo"
+              value={conteudo}
+              onChange={(event) => setConteudo(event.target.value)}
+              placeholder={formFields.conteudoPlaceholder}
+              rows={4}
+              className={HUD_TEXTAREA_CLASS}
+            />
+          </div>
+
+          <div>
             <label htmlFor="cruzadinha-tema" className={HUD_SECTION_LABEL}>
-              {tool.primaryFieldLabel}
+              {formFields.temaLabel}
             </label>
             <input
               id="cruzadinha-tema"
@@ -273,7 +294,6 @@ export function CruzadinhaClient({
               onChange={(event) => setTema(event.target.value)}
               placeholder="Ex.: Sistema Solar, Revolução Industrial, Frações…"
               className={HUD_FIELD_CLASS}
-              required
             />
           </div>
 

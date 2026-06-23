@@ -48,6 +48,7 @@ export type MaterialEngineRequest = {
   anoSerie: string;
   componenteCurricular: string;
   tema: string;
+  conteudo: string;
   objetivo: string;
   quantidade: number;
   dificuldade: string;
@@ -78,6 +79,7 @@ export type MaterialEngineInput = {
   componente?: string;
   tema?: string;
   temaCentral?: string;
+  conteudo?: string;
   objetivo?: string;
   objetivos?: string;
   quantidade?: string | number;

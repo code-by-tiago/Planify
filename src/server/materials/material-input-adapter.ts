@@ -1,5 +1,6 @@
 import type { MaterialAIInput } from "@/types/ai";
 import { buildElevateQualityObservacoes } from "@/lib/materiais/material-quality-score";
+import { resolveMaterialDisplayTema } from "@/lib/educacao/material-form-config";
 import type {
   MaterialEngineInput,
   MaterialEngineRequest,
@@ -30,11 +31,13 @@ function buildConteudos(
   request: MaterialEngineRequest,
   payload: MaterialEngineInput,
 ): string[] {
+  const professorConteudo = request.conteudo.trim();
   const items = [
-    request.tema,
+    professorConteudo || null,
+    request.tema.trim() ? request.tema : null,
     request.objetivo,
     typeof payload.observacoes === "string" ? payload.observacoes.trim() : "",
-  ].filter(Boolean);
+  ].filter(Boolean) as string[];
 
   return Array.from(new Set(items));
 }
@@ -88,9 +91,10 @@ export function engineRequestToMaterialAI(
 ): MaterialAIInput {
   const tipo = request.tipoMaterial;
   const conteudos = buildConteudos(request, payload);
+  const displayTema = resolveMaterialDisplayTema(request.tema, request.conteudo);
 
   return {
-    titulo: `${request.tema} — ${tipo}`,
+    titulo: `${displayTema || "Material"} — ${tipo}`,
     etapa: request.etapa,
     anoSerie: request.anoSerie,
     areaConhecimento:
@@ -100,7 +104,7 @@ export function engineRequestToMaterialAI(
     componenteCurricular: request.componenteCurricular,
     tipo,
     modeloJogo: mapGameModel(request.formatoJogo ?? undefined),
-    tema: request.tema,
+    tema: displayTema,
     quantidadeQuestoes: needsQuestionQuantity(tipo)
       ? String(request.quantidade)
       : tipo === "redacao"

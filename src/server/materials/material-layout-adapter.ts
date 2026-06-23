@@ -8,6 +8,7 @@ import type {
   MaterialEngineType,
   ExamQuestion,
 } from "./material-engine-types";
+import { resolveMaterialDisplayTema } from "@/lib/educacao/material-form-config";
 import type {
   MaterialLayout,
   MaterialSecao,
@@ -46,7 +47,8 @@ export function toPromptEngineInput(request: MaterialEngineRequest): PromptEngin
     etapa: request.etapa,
     anoSerie: request.anoSerie,
     componenteCurricular: request.componenteCurricular,
-    tema: request.tema,
+    tema: resolveMaterialDisplayTema(request.tema, request.conteudo),
+    conteudo: request.conteudo,
     objetivo: request.objetivo,
     quantidade: request.quantidade,
     dificuldade: request.dificuldade,

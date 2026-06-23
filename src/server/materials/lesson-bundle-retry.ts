@@ -1,6 +1,10 @@
 import {
   buildLessonBundleObservacoes,
 } from "@/lib/aula-completa/lesson-bundle-config";
+import {
+  hasMaterialTopicInput,
+  resolveMaterialDisplayTema,
+} from "@/lib/educacao/material-form-config";
 import type { PlanifyToolId } from "@/lib/pro/planifyTools";
 import type { MaterialAIOutput } from "@/types/ai";
 import { generatePlanifyMaterial } from "./material-generation-orchestrator";
@@ -34,10 +38,16 @@ export async function regenerateLessonBundleItem(
   | { ok: false; status: number; message: string }
   | { ok: true; item: LessonBundleItemResult }
 > {
-  const tema = String(input.tema || input.temaCentral || "").trim();
-  if (!tema) {
-    return { ok: false, status: 400, message: "Informe o tema da aula." };
+  const conteudo = String(input.conteudo || "").trim();
+  const temaRaw = String(input.tema || input.temaCentral || "").trim();
+  if (!hasMaterialTopicInput(temaRaw, conteudo)) {
+    return {
+      ok: false,
+      status: 400,
+      message: "Informe o conteúdo ou o tema da aula.",
+    };
   }
+  const tema = resolveMaterialDisplayTema(temaRaw, conteudo);
 
   const toolId = options.toolId;
   const completedLabels = options.completedItems
@@ -56,6 +66,7 @@ export async function regenerateLessonBundleItem(
     tipoMaterial: toolId,
     tipo: toolId,
     tema,
+    conteudo,
     observacoes,
     idempotencyKey: crypto.randomUUID(),
   };

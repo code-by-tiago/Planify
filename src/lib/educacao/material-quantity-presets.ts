@@ -53,8 +53,12 @@ export const QUANTITY_PRESETS_BY_TOOL: Partial<
     { value: "3", label: "3 atividades" },
   ],
   "plano-aula": [
-    { value: "1", label: "1 aula (50 min)" },
-    { value: "2", label: "2 aulas" },
+    { value: "1", label: "1 período (50 min)" },
+    { value: "2", label: "2 períodos" },
+    { value: "3", label: "3 períodos" },
+    { value: "4", label: "4 períodos" },
+    { value: "5", label: "5 períodos" },
+    { value: "6", label: "6 períodos" },
   ],
   sequencia: [
     { value: "3", label: "3 aulas" },

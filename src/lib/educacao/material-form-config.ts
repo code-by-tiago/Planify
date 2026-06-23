@@ -29,7 +29,7 @@ const DEFAULT_FORM_FIELD_CONFIG: MaterialFormFieldConfig = {
   temaLabel: "Tema (opcional)",
   conteudoLabel: "Conteúdo",
   conteudoPlaceholder:
-    "Descreva o que deseja trabalhar — tópicos, trecho do livro, roteiro ou orientações para a IA…",
+    "Descreva o que deseja trabalhar — digite livremente, sem sugestões automáticas.",
 };
 
 const FORM_FIELD_CONFIG_BY_TOOL: Partial<
@@ -38,32 +38,32 @@ const FORM_FIELD_CONFIG_BY_TOOL: Partial<
   "plano-aula": {
     conteudoLabel: "Conteúdo da aula",
     conteudoPlaceholder:
-      "Cole o conteúdo que deseja abordar, tópicos, roteiro ou orientações para o plano de aula…",
+      "Descreva o que será trabalhado na aula — digite livremente.",
   },
   slides: {
     conteudoLabel: "Conteúdo da apresentação",
     conteudoPlaceholder:
-      "Descreva os assuntos, conceitos ou sequência que a apresentação deve cobrir…",
+      "Descreva o que a apresentação deve cobrir — digite livremente.",
   },
   prova: {
     conteudoLabel: "Conteúdo da prova",
     conteudoPlaceholder:
-      "Descreva o que a prova deve avaliar — tópicos, habilidades e contexto…",
+      "Descreva o que a prova deve avaliar — digite livremente.",
   },
   lista: {
     conteudoLabel: "Conteúdo da lista",
     conteudoPlaceholder:
-      "Descreva os exercícios desejados — tópicos, habilidades e nível de complexidade…",
+      "Descreva os exercícios desejados — digite livremente.",
   },
   cruzadinha: {
     conteudoLabel: "Conteúdo da cruzadinha",
     conteudoPlaceholder:
-      "Descreva o vocabulário, conceitos ou unidade que a cruzadinha deve trabalhar…",
+      "Descreva o vocabulário ou unidade da cruzadinha — digite livremente.",
   },
   "aula-completa": {
     conteudoLabel: "Conteúdo da aula",
     conteudoPlaceholder:
-      "Descreva o que será trabalhado no pacote — tópicos, objetivos e contexto da turma…",
+      "Descreva o que será trabalhado no pacote — digite livremente.",
   },
 };
 

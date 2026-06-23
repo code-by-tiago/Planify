@@ -33,7 +33,7 @@ import {
   defaultQuantityForTool,
   getQuantityPresets,
 } from "@/lib/educacao/material-quantity-presets";
-import { toolSupportsGabarito, getMaterialFormFieldConfig, hasMaterialTopicInput, resolveMaterialDisplayTema } from "@/lib/educacao/material-form-config";
+import { toolSupportsGabarito, getMaterialFormFieldConfig, resolveMaterialDisplayTema } from "@/lib/educacao/material-form-config";
 import {
   formatGenerationError,
   GenerationErrorBanner,
@@ -81,8 +81,7 @@ export function CruzadinhaClient({
     defaults.areaConhecimento,
   );
   const [componente, setComponente] = useState(defaults.componente);
-  const [tema, setTema] = useState(initialTema);
-  const [conteudo, setConteudo] = useState("");
+  const [conteudo, setConteudo] = useState(initialTema);
   const [quantidade, setQuantidade] = useState(
     defaultQuantityForTool("cruzadinha"),
   );
@@ -128,8 +127,8 @@ export function CruzadinhaClient({
     [],
   );
   const exportTitle = useMemo(
-    () => buildExportTitle(tema, conteudo),
-    [tema, conteudo],
+    () => buildExportTitle("", conteudo),
+    [conteudo],
   );
   const showGabarito = toolSupportsGabarito("cruzadinha");
 
@@ -138,10 +137,9 @@ export function CruzadinhaClient({
     setErroCta(null);
     setErroRetryable(false);
 
-    const trimmedTema = tema.trim();
     const trimmedConteudo = conteudo.trim();
-    if (!hasMaterialTopicInput(trimmedTema, trimmedConteudo)) {
-      setErro("Informe o conteúdo ou o tema da cruzadinha.");
+    if (!trimmedConteudo) {
+      setErro("Informe o conteúdo da cruzadinha.");
       return;
     }
     if (!anoSerie.trim()) {
@@ -175,8 +173,7 @@ export function CruzadinhaClient({
 
         const idempotencyKey = crypto.randomUUID();
         const generationInput = {
-          tema: trimmedTema || undefined,
-          conteudo: trimmedConteudo || undefined,
+          conteudo: trimmedConteudo,
           etapa,
           anoSerie,
           componenteCurricular: componente,
@@ -203,10 +200,10 @@ export function CruzadinhaClient({
           throw new Error("A geração concluiu, mas não retornou HTML.");
         }
 
-        const titulo = buildExportTitle(trimmedTema, trimmedConteudo);
+        const titulo = buildExportTitle("", trimmedConteudo);
         const meta: MaterialEditorMeta = {
           toolId: "cruzadinha",
-          tema: resolveMaterialDisplayTema(trimmedTema, trimmedConteudo),
+          tema: resolveMaterialDisplayTema("", trimmedConteudo),
           componente,
           anoSerie,
           etapa,
@@ -279,19 +276,6 @@ export function CruzadinhaClient({
               placeholder={formFields.conteudoPlaceholder}
               rows={4}
               className={HUD_TEXTAREA_CLASS}
-            />
-          </div>
-
-          <div>
-            <label htmlFor="cruzadinha-tema" className={HUD_SECTION_LABEL}>
-              {formFields.temaLabel}
-            </label>
-            <input
-              id="cruzadinha-tema"
-              value={tema}
-              onChange={(event) => setTema(event.target.value)}
-              placeholder="Ex.: Sistema Solar, Revolução Industrial, Frações…"
-              className={HUD_FIELD_CLASS}
             />
           </div>
 
@@ -433,7 +417,7 @@ export function CruzadinhaClient({
               id="cruzadinha-palavras"
               value={palavrasOpcionais}
               onChange={(event) => setPalavrasOpcionais(event.target.value)}
-              placeholder="Separe por vírgula ou linha — a IA tentará incluir termos do tema que você indicar."
+              placeholder="Separe por vírgula ou linha, se quiser indicar termos específicos."
               rows={2}
               className={HUD_TEXTAREA_CLASS}
             />

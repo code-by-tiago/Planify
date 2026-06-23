@@ -48,7 +48,7 @@ import {
   type MaterialEducationFields,
 } from "@/lib/educacao/education-options";
 import { useBnccEducationOptions } from "@/hooks/useBnccEducationOptions";
-import { toolSupportsGabarito, getMaterialFormFieldConfig, hasMaterialTopicInput, resolveMaterialDisplayTema } from "@/lib/educacao/material-form-config";
+import { toolSupportsGabarito, getMaterialFormFieldConfig, resolveMaterialDisplayTema } from "@/lib/educacao/material-form-config";
 import {
   defaultQuantityForTool,
   defaultSlidesQuestionQuantity,
@@ -147,43 +147,6 @@ const formatoJogos: { id: FormatoJogo; label: string }[] = [
   { id: "domino", label: "Dominó" },
   { id: "cartas", label: "Cartas" },
 ];
-
-const sugestoesTema: Record<PlanifyToolId, string[]> = {
-  apostila: ["Amazônia e biodiversidade", "Frações no cotidiano", "Romantismo no Brasil"],
-  atividade: ["Interpretação de texto", "Sistema solar", "Porcentagem"],
-  prova: ["Revolução Industrial", "Equações do 1º grau", "Ecologia"],
-  slides: ["Estados físicos da matéria", "Verbos", "Brasil República"],
-  projeto: ["Feira de ciências", "Consciência negra", "Educação financeira"],
-  jogo: ["Biomas brasileiros", "Tabuada", "Classes gramaticais"],
-  cruzadinha: ["Sistema solar", "Célula e organelas", "Independência do Brasil"],
-  sequencia: ["Leitura e produção textual", "Geometria plana", "Água e sociedade"],
-  resumo: ["Ciclo da água", "Fotossíntese", "Média, moda e mediana"],
-  lista: ["Funções do 1º grau", "Sistema digestório", "Crase"],
-  "plano-aula": ["Amazônia", "Porcentagem", "Gêneros textuais"],
-  flashcards: ["Revolução Francesa", "Ecossistemas", "Classes de palavras"],
-  redacao: [
-    "Desafios da mobilidade urbana",
-    "Tecnologia na educação",
-    "Cidadania digital e democracia",
-  ],
-  "mapa-mental": ["Fotossíntese", "Brasil Colônia", "Figuras de linguagem"],
-  inclusao: [
-    "Atividade sobre frações adaptada para TDAH",
-    "Relatório de progresso — participação em grupo",
-    "Trilhas paralelas sobre sistema solar",
-  ],
-  "aula-completa": [
-    "Revolução Industrial — pacote completo",
-    "Frações no cotidiano — aula integrada",
-    "Sistema solar — plano, slides e avaliação",
-  ],
-  "correcao-ia": [
-    "Redação sobre mobilidade urbana",
-    "Questão discursiva de História",
-    "Produção textual — carta argumentativa",
-  ],
-};
-
 
 function escapeHtml(value: string): string {
   return value
@@ -313,8 +276,7 @@ export function MateriaisClient({
   const [categoria, setCategoria] = useState<ToolCategoryId>("todos");
   const [tipo, setTipo] = useState<PlanifyToolId>(initialTipo ?? "slides");
   const [modalAberto, setModalAberto] = useState(studioMode);
-  const [tema, setTema] = useState(initialTema);
-  const [conteudo, setConteudo] = useState("");
+  const [conteudo, setConteudo] = useState(initialTema);
   const [etapa, setEtapa] = useState(DEFAULT_MATERIAL_EDUCATION.etapa);
   const [anoSerie, setAnoSerie] = useState(DEFAULT_MATERIAL_EDUCATION.anoSerie);
   const [areaConhecimento, setAreaConhecimento] = useState(
@@ -425,11 +387,11 @@ export function MateriaisClient({
   }, [studioMode, initialTipo]);
 
   useEffect(() => {
-    if (initialTema.trim()) setTema(initialTema.trim());
+    if (initialTema.trim()) setConteudo(initialTema.trim());
   }, [initialTema]);
 
   const loadPedagogicalContext = useCallback(async () => {
-    const topic = resolveMaterialDisplayTema(tema, conteudo);
+    const topic = resolveMaterialDisplayTema("", conteudo);
     if (!topic) {
       setPedagogicalEntries([]);
       return;
@@ -451,7 +413,7 @@ export function MateriaisClient({
     } catch {
       setPedagogicalEntries([]);
     }
-  }, [tema, conteudo, componente, etapa, anoSerie]);
+  }, [conteudo, componente, etapa, anoSerie]);
 
   useEffect(() => {
     if (pedagogicalDebounceRef.current) {
@@ -480,8 +442,8 @@ export function MateriaisClient({
   const mode = useMemo(() => getPlanifyTool(tipo), [tipo]);
   const formFields = useMemo(() => getMaterialFormFieldConfig(tipo), [tipo]);
   const displayTema = useMemo(
-    () => resolveMaterialDisplayTema(tema, conteudo),
-    [tema, conteudo],
+    () => resolveMaterialDisplayTema("", conteudo),
+    [conteudo],
   );
   const generationSummary = useMemo(
     () =>
@@ -571,11 +533,11 @@ export function MateriaisClient({
   }, [tipo]);
 
   const objetivoPlaceholder =
-    "Ex.: desenvolver argumentação, revisar conceitos-chave, trabalhar leitura crítica...";
+    "Descreva o objetivo pedagógico, se desejar.";
 
   const observacoesPlaceholder = isRedacao
-    ? "Ex.: dissertação argumentativa, 25–30 linhas, foco em proposta de intervenção..."
-    : "Ex.: linguagem simples, tempo de aula de 50 min, turma com dificuldade em leitura...";
+    ? "Critérios, formato ou orientações adicionais para a proposta."
+    : "Orientações adicionais para a geração, se desejar.";
 
   const gabaritoLabel = isRedacao
     ? "Incluir critérios de avaliação e redação modelo"
@@ -610,7 +572,6 @@ export function MateriaisClient({
   }
 
   function limparFormulario() {
-    setTema("");
     setConteudo("");
     applyEducation(educationDefaultsForTool(tipo, DEFAULT_MATERIAL_EDUCATION));
     setObjetivo("");
@@ -653,8 +614,8 @@ export function MateriaisClient({
       anoSerie,
       componenteCurricular: componente,
       componente,
-      tema,
-      temaCentral: tema,
+      tema: displayTema || undefined,
+      temaCentral: displayTema || undefined,
       conteudo,
       objetivo: objetivoComposto,
       objetivos: objetivoComposto,
@@ -683,7 +644,7 @@ export function MateriaisClient({
     const resolvedEstrutura = estrutura ?? resultadoEstrutura;
     return {
       toolId: tipo,
-      tema,
+      tema: displayTema,
       componente,
       anoSerie,
       etapa,
@@ -708,7 +669,7 @@ export function MateriaisClient({
 
   function reabrirHistorico(item: MaterialHistoryPreview) {
     setTipo(item.tipo);
-    setTema(item.tema);
+    setConteudo(item.tema);
     setComponente(item.componente);
     setAnoSerie(item.anoSerie);
     setResultadoHtml(item.html);
@@ -744,8 +705,8 @@ export function MateriaisClient({
 
   function abrirFerramentaRelacionada(toolId: PlanifyToolId) {
     try {
-      if (tema.trim()) {
-        sessionStorage.setItem("planify-studio-tema", tema.trim());
+      if (conteudo.trim()) {
+        sessionStorage.setItem("planify-studio-tema", conteudo.trim());
       }
       sessionStorage.setItem(
         "planify-studio-objetivo-hint",
@@ -771,7 +732,7 @@ export function MateriaisClient({
 
     openMaterialInEditor(
       resultadoHtml,
-      buildTitle(tipo, tema, conteudo),
+      buildTitle(tipo, "", conteudo),
       buildMaterialMeta(),
       { from: "materiais" },
     );
@@ -786,8 +747,8 @@ export function MateriaisClient({
     setErroCta(null);
     setErroRetryable(false);
 
-    if (!hasMaterialTopicInput(tema, conteudo)) {
-      setErro("Informe o conteúdo ou o tema para gerar o material.");
+    if (!conteudo.trim()) {
+      setErro("Informe o conteúdo para gerar o material.");
       return;
     }
 
@@ -925,7 +886,7 @@ export function MateriaisClient({
         }
       }
 
-      const titulo = buildTitle(tipo, tema, conteudo);
+      const titulo = buildTitle(tipo, "", conteudo);
       const record =
         data && typeof data === "object" ? (data as Record<string, unknown>) : {};
       const scoreValue =
@@ -1012,7 +973,7 @@ export function MateriaisClient({
       }
       rememberSlideGenerationPayload(payload);
 
-      const titulo = buildTitle(tipo, tema, conteudo);
+      const titulo = buildTitle(tipo, "", conteudo);
       const meta = buildMaterialMeta(
         pipelineGeracao,
         (data.estrutura as MaterialEngineResponse | undefined) ?? null,
@@ -1062,7 +1023,7 @@ export function MateriaisClient({
       setResultadoHtml(result.html);
       setResultadoEstrutura(result.estrutura);
 
-      const titulo = buildTitle(tipo, tema, conteudo);
+      const titulo = buildTitle(tipo, "", conteudo);
       const meta = buildMaterialMeta(pipelineGeracao, result.estrutura, {
         qualityScore,
         qualityIssues,
@@ -1111,7 +1072,7 @@ export function MateriaisClient({
         setQualityIssues(result.qualityIssues);
       }
 
-      const titulo = buildTitle(tipo, tema, conteudo);
+      const titulo = buildTitle(tipo, "", conteudo);
       const meta = buildMaterialMeta(pipelineGeracao, result.estrutura, {
         qualityScore: result.qualityScore ?? qualityScore,
         qualityIssues: result.qualityIssues ?? qualityIssues,
@@ -1156,7 +1117,7 @@ export function MateriaisClient({
     if (result.qualityIssues) setQualityIssues(result.qualityIssues);
     if (result.pipeline) setPipelineGeracao(result.pipeline);
 
-    const titulo = buildTitle(tipo, tema, conteudo);
+    const titulo = buildTitle(tipo, "", conteudo);
     const meta = buildMaterialMeta(result.pipeline ?? pipelineGeracao, result.estrutura, {
       qualityScore: result.qualityScore ?? qualityScore,
       qualityIssues: result.qualityIssues ?? qualityIssues,
@@ -1365,38 +1326,6 @@ export function MateriaisClient({
               className={HUD_TEXTAREA_CLASS}
             />
           </label>
-
-          <label className="mt-4 block">
-            <span className={HUD_SECTION_LABEL}>{formFields.temaLabel}</span>
-            <input
-              value={tema}
-              onChange={(event) => setTema(event.target.value)}
-              placeholder="Ex.: um título curto para identificar o material (opcional)"
-              className={HUD_FIELD_CLASS}
-            />
-          </label>
-
-          {(sugestoesTema[tipo] || []).length > 0 ? (
-            <label className="mt-3 block">
-              <span className={HUD_SECTION_LABEL}>Exemplo de tema (opcional)</span>
-              <select
-                key={`exemplo-tema-${tipo}`}
-                defaultValue=""
-                onChange={(event) => {
-                  const value = event.target.value;
-                  if (value) setTema(value);
-                }}
-                className={SELECT_FIELD_CLASS}
-              >
-                <option value="">Escolha um exemplo ou digite acima</option>
-                {(sugestoesTema[tipo] || []).map((item) => (
-                  <option key={item} value={item}>
-                    {item}
-                  </option>
-                ))}
-              </select>
-            </label>
-          ) : null}
 
           <div className="mt-5 grid gap-4 md:grid-cols-2">
             <TurmaCombobox school={school} className="md:col-span-2" listId="materiais-turma-suggestions" />
@@ -1800,7 +1729,7 @@ export function MateriaisClient({
                   </p>
                   <div className="mt-3 flex flex-wrap items-center gap-2">
                     <GoogleSlidesExportButton
-                      title={buildTitle(tipo, tema, conteudo)}
+                      title={buildTitle(tipo, "", conteudo)}
                       html={resultadoHtml}
                       slides={resultadoEstrutura?.slides}
                       theme={resultadoEstrutura?.slideTheme || designSlides}
@@ -1809,7 +1738,7 @@ export function MateriaisClient({
                       iconOnly={false}
                     />
                     <SlidesPptxDownloadButton
-                      title={buildTitle(tipo, tema, conteudo)}
+                      title={buildTitle(tipo, "", conteudo)}
                       html={resultadoHtml}
                       slides={resultadoEstrutura?.slides}
                       theme={resultadoEstrutura?.slideTheme || designSlides}
@@ -1830,10 +1759,10 @@ export function MateriaisClient({
                   Editar no editor
                 </button>
                 <MarketplacePublishButton
-                  title={buildTitle(tipo, tema, conteudo)}
+                  title={buildTitle(tipo, "", conteudo)}
                   getHtml={() => resultadoHtml}
                   tipoMaterial={mode.title}
-                  tema={tema}
+                  tema={displayTema}
                   componente={componente}
                   etapa={etapa}
                   anoSerie={anoSerie}
@@ -1850,7 +1779,7 @@ export function MateriaisClient({
                   Regenerar
                 </button>
                 <GoogleDocumentExportBar
-                  title={buildTitle(tipo, tema, conteudo)}
+                  title={buildTitle(tipo, "", conteudo)}
                   getHtml={() => resultadoHtml}
                   documentType={`material:${tipo}`}
                   isSlideDeck={tipo === "slides"}

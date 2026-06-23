@@ -991,7 +991,7 @@ export function BancoQuestoesClient({
                   id="qb-tema"
                   value={draftQuery}
                   onChange={(event) => setDraftQuery(event.target.value)}
-                  placeholder="Ex.: tipos de sujeito, frações, Brasil colonial…"
+                  placeholder="Digite o tema para buscar questões"
                   className={HUD_FIELD_CLASS}
                   onKeyDown={(event) => {
                     if (event.key === "Enter") {

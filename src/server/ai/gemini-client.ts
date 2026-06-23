@@ -16,6 +16,7 @@ import {
   resolveGeminiCacheBundle,
   type GeminiCacheProfile,
 } from "./gemini-static-context";
+import { logOperationalEvent } from "../telemetry/operational-telemetry";
 
 type GeminiCallResult = {
   text: string;
@@ -35,9 +36,15 @@ const LEGACY_MODEL_MAP: Record<string, string> = {
   "gemini-2.0-flash-lite-001": "gemini-2.5-flash",
 };
 
-const DEFAULT_MODEL_FALLBACKS = ["gemini-2.5-flash"] as const;
+const DEFAULT_MODEL_FALLBACKS = [
+  "gemini-2.5-flash",
+  "gemini-2.0-flash",
+] as const;
 
-const ADVANCED_MODEL_FALLBACKS = ["gemini-2.5-flash"] as const;
+const ADVANCED_MODEL_FALLBACKS = [
+  "gemini-2.5-flash",
+  "gemini-2.0-flash",
+] as const;
 
 function normalizeModelName(model: string): string {
   const trimmed = model.trim();
@@ -148,10 +155,19 @@ export function isGeminiTransientOverloadError(
 ): boolean {
   return (
     status === 503 ||
-    /high demand|temporarily unavailable|UNAVAILABLE|overloaded|try again later/i.test(
-      message,
-    )
+    /overloaded|high demand|try again later/i.test(message)
   );
+}
+
+export function isGeminiServiceUnavailableError(
+  message: string,
+  status = 0,
+): boolean {
+  if (isGeminiTransientOverloadError(message, status)) {
+    return false;
+  }
+
+  return /UNAVAILABLE|temporarily unavailable/i.test(message);
 }
 
 export function humanizeGeminiError(message: string): string {
@@ -174,8 +190,16 @@ export function humanizeGeminiError(message: string): string {
 
   if (isGeminiTransientOverloadError(message)) {
     return (
-      "A IA está com alta demanda no momento. Aguarde alguns segundos e tente novamente. " +
-      "Se persistir, o sistema tentará automaticamente um modelo alternativo."
+      "A IA está com alta demanda no momento. Aguarde alguns segundos e tente novamente — " +
+      "o sistema repete a chamada e, se necessário, usa outro modelo Gemini (ex.: 2.0 Flash)."
+    );
+  }
+
+  if (isGeminiServiceUnavailableError(message)) {
+    return (
+      "Não foi possível acessar a IA do Google. Confira no AI Studio (ai.google.dev) se a chave " +
+      "GEMINI_API_KEY está ativa e se há cota ou faturamento habilitado. Chaves gratuitas têm " +
+      "limite de requisições por minuto."
     );
   }
 
@@ -210,6 +234,34 @@ const MIN_GEMINI_CALL_TIMEOUT_MS = 5_000;
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => {
     setTimeout(resolve, ms);
+  });
+}
+
+function sanitizeGeminiErrorSnippet(message: string): string {
+  return message
+    .replace(/AIza[A-Za-z0-9_-]{10,}/gi, "[REDACTED]")
+    .replace(/AQ\.[A-Za-z0-9_.-]+/gi, "[REDACTED]")
+    .replace(/GEMINI_API_KEY[=:\s]*\S+/gi, "GEMINI_API_KEY=[REDACTED]")
+    .slice(0, 400);
+}
+
+function logGeminiOperationalError(
+  model: string,
+  httpStatus: number,
+  message: string,
+  options?: { exhaustedRetries?: boolean },
+): void {
+  logOperationalEvent({
+    eventType: "gemini_api_error",
+    toolTipo: "gemini",
+    ok: false,
+    errorCode: httpStatus > 0 ? String(httpStatus) : undefined,
+    metadata: {
+      model,
+      httpStatus,
+      errorSnippet: sanitizeGeminiErrorSnippet(message),
+      ...(options?.exhaustedRetries ? { exhaustedRetries: true } : {}),
+    },
   });
 }
 
@@ -395,6 +447,8 @@ async function callGeminiGenerateContent(
         ? Number((error as { status: number }).status)
         : 500;
 
+    logGeminiOperationalError(model, status, message);
+
     return {
       text: "",
       httpStatus: status,
@@ -437,8 +491,11 @@ export async function generateGeminiJSON<T>(
   );
 
   let lastError = "Erro ao chamar a IA.";
+  let lastHttpStatus = 0;
+  let lastModel = models[0] ?? "unknown";
 
   for (const model of models) {
+    lastModel = model;
     for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
       const plan = await buildGeneratePlan(
         {
@@ -464,6 +521,7 @@ export async function generateGeminiJSON<T>(
         `Erro ao chamar a IA. Status HTTP: ${json.httpStatus}`;
 
       lastError = message;
+      lastHttpStatus = json.httpStatus;
 
       const failureAction = handleGeminiCallFailure(
         message,
@@ -481,6 +539,9 @@ export async function generateGeminiJSON<T>(
     }
   }
 
+  logGeminiOperationalError(lastModel, lastHttpStatus, lastError, {
+    exhaustedRetries: true,
+  });
   throw new Error(humanizeGeminiError(lastError));
 }
 

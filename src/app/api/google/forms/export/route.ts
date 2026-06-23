@@ -66,23 +66,6 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const htmlLen = String(body.html || "").trim().length;
-    // #region agent log
-    fetch("http://127.0.0.1:7453/ingest/bd608440-c83f-44b6-8664-8f8ef1293166", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "335b85" },
-      body: JSON.stringify({
-        sessionId: "335b85",
-        runId: "forms-export",
-        hypothesisId: "H4",
-        location: "forms/export/route.ts:POST",
-        message: "forms_export_request",
-        data: { titleLen: title.length, htmlLen, userId: user.id.slice(0, 8) },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
-
     const result = await exportQuizToGoogleForms(user.id, {
       title,
       html: body.html!,
@@ -91,23 +74,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: result });
   } catch (error) {
-    const errMsg = error instanceof Error ? error.message : String(error);
-    const errStatus = error instanceof Error && "status" in error ? (error as { status?: number }).status : undefined;
-    // #region agent log
-    fetch("http://127.0.0.1:7453/ingest/bd608440-c83f-44b6-8664-8f8ef1293166", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "335b85" },
-      body: JSON.stringify({
-        sessionId: "335b85",
-        runId: "forms-export",
-        hypothesisId: "H1-H3",
-        location: "forms/export/route.ts:catch",
-        message: "forms_export_error",
-        data: { errMsg, errStatus },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
     return jsonExportErrorResponse(error, { surface: "google-forms" });
   }
 }

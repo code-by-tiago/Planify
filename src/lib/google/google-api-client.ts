@@ -270,21 +270,6 @@ export async function exportToGoogleForms(params: {
 
   if (!response.ok) {
     const errMsg = data?.error?.message || "Não foi possível criar o Google Forms.";
-    // #region agent log
-    fetch("http://127.0.0.1:7453/ingest/bd608440-c83f-44b6-8664-8f8ef1293166", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "335b85" },
-      body: JSON.stringify({
-        sessionId: "335b85",
-        runId: "forms-export",
-        hypothesisId: "H1-H5",
-        location: "google-api-client.ts:exportToGoogleForms",
-        message: "forms_client_error",
-        data: { httpStatus: response.status, errMsg, code: data?.code },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
     throw new Error(errMsg);
   }
 

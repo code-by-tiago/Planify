@@ -14,6 +14,7 @@ import {
 import {
   generateGeminiJSON,
   isGeminiQuotaError,
+  isGeminiServiceUnavailableError,
   isGeminiTransientOverloadError,
   resolveGeminiFailureCode,
 } from "../ai/gemini-client";
@@ -92,6 +93,10 @@ const CRITICAL_RETRY_TYPES = new Set<MaterialEngineType>([
 function maxAttemptsFor(type: MaterialEngineType): number {
   if (type === "prova" || type === "apostila" || type === "slides") return 2;
   return 1;
+}
+
+function geminiCallMaxAttempts(type: MaterialEngineType): number {
+  return type === "prova" || type === "lista" ? 2 : 1;
 }
 
 function isStructuralExamIssue(issue: string): boolean {
@@ -1223,7 +1228,7 @@ export async function generateMaterialByEngine(
         maxOutputTokens,
         responseSchema: schema,
         timeoutMs: contentTimeoutMs,
-        maxAttempts: 1,
+        maxAttempts: geminiCallMaxAttempts(request.tipoMaterial),
       });
       const layoutRaw = await withMaterialStepTimeout(
         generateLayout,
@@ -1384,7 +1389,11 @@ export async function generateMaterialByEngine(
       lastError = error;
       const message =
         error instanceof Error ? error.message : "Erro ao gerar material.";
-      if (isGeminiQuotaError(message) || isGeminiTransientOverloadError(message)) {
+      if (
+        isGeminiQuotaError(message) ||
+        isGeminiTransientOverloadError(message) ||
+        isGeminiServiceUnavailableError(message)
+      ) {
         break;
       }
       if (message.includes("Créditos de IA esgotados") || message.includes("GEMINI_API_KEY")) {

@@ -11,7 +11,12 @@ import {
   renderQuestionCard,
   wrapProfessionalDocument,
 } from "@/lib/materiais/material-document-layout";
-import { generateGeminiJSON, isGeminiQuotaError, resolveGeminiFailureCode } from "../ai/gemini-client";
+import {
+  generateGeminiJSON,
+  isGeminiQuotaError,
+  isGeminiTransientOverloadError,
+  resolveGeminiFailureCode,
+} from "../ai/gemini-client";
 import {
   usesDedicatedEngineRenderer,
   usesPlanifyMaterialEngine,
@@ -66,25 +71,7 @@ const CRITICAL_QUALITY_TYPES = new Set<MaterialEngineType>([
   "slides",
 ]);
 
-/** All 13 geradores passam pelo gate P0 antes da entrega final. */
-const P0_QUALITY_GATE_TYPES = new Set<MaterialEngineType>([
-  "apostila",
-  "atividade",
-  "prova",
-  "slides",
-  "projeto",
-  "jogo",
-  "cruzadinha",
-  "sequencia",
-  "resumo",
-  "lista",
-  "plano-aula",
-  "flashcards",
-  "redacao",
-  "mapa-mental",
-]);
-
-/** Mínimo para entrega sem alerta crítico — acima do piso Teachy (80). */
+/** Mínimo para encerrar reparo de questões sem nova rodada de IA. */
 const MIN_P0_QUALITY_SCORE = 88;
 
 const MAX_EXAM_REPAIR_PASSES = 1;
@@ -102,10 +89,22 @@ const CRITICAL_RETRY_TYPES = new Set<MaterialEngineType>([
   "resumo",
 ]);
 
-function maxAttemptsFor(_type: MaterialEngineType): number {
-  // Uma primeira versão e, no máximo, uma revisão orientada por qualidade.
-  // Mais tentativas multiplicavam a espera sem elevar proporcionalmente a entrega.
-  return 2;
+function maxAttemptsFor(type: MaterialEngineType): number {
+  if (type === "prova" || type === "apostila" || type === "slides") return 2;
+  return 1;
+}
+
+function isStructuralExamIssue(issue: string): boolean {
+  const lower = issue.toLowerCase();
+  return (
+    lower.includes("nenhum item") ||
+    lower.includes("esperado") ||
+    lower.includes("gabarito") ||
+    lower.includes("alternativas") ||
+    lower.includes("enunciados repetidos") ||
+    lower.includes("múltipla escolha exige") ||
+    lower.includes("multipla escolha exige")
+  );
 }
 
 function materialGenerationBudgetMs(request: MaterialEngineRequest): number {
@@ -115,7 +114,7 @@ function materialGenerationBudgetMs(request: MaterialEngineRequest): number {
     request.tipoMaterial === "prova" ||
     request.tipoMaterial === "lista"
   ) {
-    return 135_000;
+    return 100_000;
   }
   return 105_000;
 }
@@ -130,8 +129,8 @@ function materialContentTimeoutMs(
       : request.tipoMaterial === "apostila" ||
           request.tipoMaterial === "prova" ||
           request.tipoMaterial === "lista"
-        ? 65_000
-        : 50_000;
+        ? 55_000
+        : 45_000;
 
   return Math.max(
     MIN_REMAINING_GENERATION_MS,
@@ -1280,23 +1279,6 @@ export async function generateMaterialByEngine(
       const alertas = buildDeliveryAlertas(request, issues, isFinalAttempt);
       const qualityScore = computeQualityScore(issues, alertas ?? []);
 
-      if (
-        P0_QUALITY_GATE_TYPES.has(request.tipoMaterial) &&
-        qualityScore < MIN_P0_QUALITY_SCORE &&
-        attempt < maxAttempts - 1 &&
-        !isPastGenerationDeadline()
-      ) {
-        activePrompt = `${basePrompt}\n\n${buildQualityRetryPrompt(
-          request,
-          [
-            ...issues,
-            `Score de qualidade ${qualityScore}/100 abaixo do mínimo ${MIN_P0_QUALITY_SCORE} para entrega P0.`,
-          ],
-          { teachyDepth: true },
-        )}`;
-        continue;
-      }
-
       let finalNormalized = normalized;
       let finalIssues = issues;
       let finalHtml = html;
@@ -1305,7 +1287,7 @@ export async function generateMaterialByEngine(
 
       if (
         shouldRepairExamAfterEngine(request) &&
-        finalIssues.length > 0 &&
+        finalIssues.some(isStructuralExamIssue) &&
         (finalNormalized.exam?.questions?.length ?? 0) > 0
       ) {
         const { regenerateWeakExamQuestions } = await import("./exam-questions-retry");
@@ -1402,7 +1384,7 @@ export async function generateMaterialByEngine(
       lastError = error;
       const message =
         error instanceof Error ? error.message : "Erro ao gerar material.";
-      if (isGeminiQuotaError(message)) {
+      if (isGeminiQuotaError(message) || isGeminiTransientOverloadError(message)) {
         break;
       }
       if (message.includes("Créditos de IA esgotados") || message.includes("GEMINI_API_KEY")) {

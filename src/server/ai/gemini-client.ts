@@ -198,7 +198,7 @@ function parseRetryDelayMs(message: string, attempt = 0): number {
     return Math.ceil(parseFloat(match[1]) * 1000) + 800;
   }
   if (isGeminiTransientOverloadError(message)) {
-    return 2500 + attempt * 2000;
+    return 1200 + attempt * 1500;
   }
   return 4000;
 }

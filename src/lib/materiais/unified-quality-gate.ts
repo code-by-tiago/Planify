@@ -31,7 +31,7 @@ const CRITICAL_ISSUE_PATTERNS: RegExp[] = [
   /c[oó]digo bncc.*inv[aá]lid/i,
   /conversacional/i,
   /chitchat/i,
-  /m[uú]ltipla escolha exige pelo menos 5/i,
+  /m[uú]ltipla escolha exige pelo menos [45]/i,
   /gabarito e respostas devem aparecer somente/i,
   /esperad[oa].*recebid[oa]/i,
   /linha\(s\) sem per[ií]odos/i,

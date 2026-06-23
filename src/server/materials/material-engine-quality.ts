@@ -12,7 +12,7 @@ import { validateProvaEngineOutput } from "./prova-engine-contract";
 
 const COUNT_TOLERANCE = 1;
 const MAX_STATEMENT_CHARS = 320;
-const MIN_MC_OPTIONS = 5;
+const MIN_MC_OPTIONS = 4;
 
 function countStatementSentences(text: string): number {
   return text
@@ -231,12 +231,12 @@ export function getEngineOutputIssues(
         options: question.options,
         tema: request.tema,
         questionType: question.type,
-      }).slice(0, 2)) {
+      }).slice(0, 1)) {
         issues.push(`Questão ${question.number}: ${semantic}`);
         flagged += 1;
-        if (flagged >= 6) break;
+        if (flagged >= 4) break;
       }
-      if (flagged >= 6) break;
+      if (flagged >= 4) break;
     }
 
     if (tipo === "lista" && questions.length >= 3) {

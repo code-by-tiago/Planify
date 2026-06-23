@@ -57,6 +57,16 @@ function enforceUnifiedQualityGate(
   });
 
   if (!gate.pass) {
+    // Score baixo com conteúdo utilizável: entrega com aviso em vez de bloquear.
+    if (gate.code === "quality_score_low" && delivery.html.trim().length > 0) {
+      const alertas = [...(delivery.alertas ?? []), gate.message];
+      return {
+        ok: true,
+        status: 200,
+        data: { ...delivery, alertas },
+      };
+    }
+
     return {
       ok: false,
       status: 422,

@@ -100,6 +100,28 @@ export async function exportQuizToGoogleForms(
 
   const questions = parseQuizQuestionsFromHtml(stripTeacherOnlyExportBlocks(html));
 
+  // #region agent log
+  fetch("http://127.0.0.1:7453/ingest/bd608440-c83f-44b6-8664-8f8ef1293166", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "335b85" },
+    body: JSON.stringify({
+      sessionId: "335b85",
+      runId: "forms-export",
+      hypothesisId: "H1",
+      location: "google-forms-export-service.ts:parse",
+      message: "forms_parse_result",
+      data: {
+        htmlLen: html.length,
+        questionCount: questions.length,
+        types: questions.map((q) => q.type),
+        optionCounts: questions.map((q) => q.options.length),
+        hasPlanifyQuestao: /planify-questao/i.test(html),
+      },
+      timestamp: Date.now(),
+    }),
+  }).catch(() => {});
+  // #endregion
+
   if (!questions.length) {
     throw new Error(
       "Nenhuma questão encontrada. Gere uma prova, lista ou quiz antes de exportar ao Google Forms.",
@@ -124,6 +146,21 @@ export async function exportQuizToGoogleForms(
   };
 
   if (!createResponse.ok || !createData.formId) {
+    // #region agent log
+    fetch("http://127.0.0.1:7453/ingest/bd608440-c83f-44b6-8664-8f8ef1293166", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "335b85" },
+      body: JSON.stringify({
+        sessionId: "335b85",
+        runId: "forms-export",
+        hypothesisId: "H3",
+        location: "google-forms-export-service.ts:create",
+        message: "forms_create_failed",
+        data: { status: createResponse.status, apiError: createData.error?.message },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
     throw new ExportHttpError(
       createData.error?.message ||
         "Não foi possível criar o formulário no Google Forms.",
@@ -163,6 +200,26 @@ export async function exportQuizToGoogleForms(
   };
 
   if (!batchResponse.ok) {
+    // #region agent log
+    fetch("http://127.0.0.1:7453/ingest/bd608440-c83f-44b6-8664-8f8ef1293166", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "335b85" },
+      body: JSON.stringify({
+        sessionId: "335b85",
+        runId: "forms-export",
+        hypothesisId: "H2",
+        location: "google-forms-export-service.ts:batchUpdate",
+        message: "forms_batch_failed",
+        data: {
+          status: batchResponse.status,
+          apiError: batchData.error?.message,
+          requestCount: requests.length,
+          formId: createData.formId,
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
     throw new ExportHttpError(
       batchData.error?.message ||
         "Formulário criado, mas não foi possível adicionar as questões.",

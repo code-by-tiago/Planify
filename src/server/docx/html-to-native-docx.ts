@@ -31,10 +31,10 @@ function textRuns(value: Primitive) {
       const text = `<w:t xml:space="preserve">${escaped}</w:t>`;
 
       if (index === 0) {
-        return text;
+        return `<w:r>${text}</w:r>`;
       }
 
-      return `<w:br/>${text}`;
+      return `<w:r><w:br/>${text}</w:r>`;
     })
     .join("");
 }
@@ -48,23 +48,216 @@ function paragraph(value: Primitive, style?: string) {
 
   const styleXml = style ? `<w:pPr><w:pStyle w:val="${style}"/></w:pPr>` : "";
 
-  return `<w:p>${styleXml}<w:r>${textRuns(text)}</w:r></w:p>`;
+  return `<w:p>${styleXml}${textRuns(text)}</w:p>`;
 }
 
-function bullet(value: Primitive) {
-  const text = cleanText(value);
+/* ---------------------------------------------------------------------------
+ * Inline runs: preserva negrito/itálico/sublinhado e quebras dentro de blocos.
+ * ------------------------------------------------------------------------- */
 
-  if (!text) {
+type RunStyle = { bold?: boolean; italic?: boolean; underline?: boolean };
+
+type InlineRun = { text?: string; break?: boolean; style?: RunStyle };
+
+const INLINE_BOLD = new Set(["STRONG", "B"]);
+const INLINE_ITALIC = new Set(["EM", "I"]);
+const INLINE_UNDERLINE = new Set(["U", "INS"]);
+
+function runProps(style: RunStyle | undefined): string {
+  if (!style) return "";
+  const props: string[] = [];
+  if (style.bold) props.push("<w:b/>");
+  if (style.italic) props.push("<w:i/>");
+  if (style.underline) props.push('<w:u w:val="single"/>');
+  return props.length ? `<w:rPr>${props.join("")}</w:rPr>` : "";
+}
+
+function collectInlineRunsFromNode(
+  node: Node,
+  style: RunStyle,
+  runs: InlineRun[],
+): void {
+  if (node.nodeType === 3) {
+    const raw = String(node.textContent ?? "").replace(/\s+/g, " ");
+    if (raw) {
+      runs.push({ text: raw, style: { ...style } });
+    }
+    return;
+  }
+
+  if (node.nodeType !== 1) {
+    return;
+  }
+
+  const element = node as Element;
+  const tag = element.tagName.toUpperCase();
+
+  if (SKIP_TAGS.has(tag)) {
+    return;
+  }
+
+  if (tag === "BR") {
+    runs.push({ break: true });
+    return;
+  }
+
+  const nextStyle: RunStyle = { ...style };
+  if (INLINE_BOLD.has(tag)) nextStyle.bold = true;
+  if (INLINE_ITALIC.has(tag)) nextStyle.italic = true;
+  if (INLINE_UNDERLINE.has(tag)) nextStyle.underline = true;
+
+  for (const child of element.childNodes) {
+    collectInlineRunsFromNode(child, nextStyle, runs);
+  }
+}
+
+function collectInlineRuns(element: Element): InlineRun[] {
+  const runs: InlineRun[] = [];
+  for (const child of element.childNodes) {
+    collectInlineRunsFromNode(child, {}, runs);
+  }
+  return runs;
+}
+
+function runsToXml(runs: InlineRun[]): string {
+  const trimmed = [...runs];
+
+  while (
+    trimmed.length &&
+    !trimmed[0].break &&
+    !(trimmed[0].text || "").trim()
+  ) {
+    trimmed.shift();
+  }
+  while (
+    trimmed.length &&
+    !trimmed[trimmed.length - 1].break &&
+    !(trimmed[trimmed.length - 1].text || "").trim()
+  ) {
+    trimmed.pop();
+  }
+
+  if (!trimmed.length) {
     return "";
   }
 
-  return `<w:p>
-    <w:pPr>
-      <w:pStyle w:val="ListParagraph"/>
-      <w:ind w:left="720"/>
-    </w:pPr>
-    <w:r><w:t xml:space="preserve">• ${escapeXml(text)}</w:t></w:r>
-  </w:p>`;
+  return trimmed
+    .map((run) => {
+      if (run.break) {
+        return "<w:r><w:br/></w:r>";
+      }
+      return `<w:r>${runProps(run.style)}<w:t xml:space="preserve">${escapeXml(run.text || "")}</w:t></w:r>`;
+    })
+    .join("");
+}
+
+function buildParagraph(
+  runsXml: string,
+  opts?: { style?: string; indent?: number },
+): string {
+  if (!runsXml) {
+    return "";
+  }
+
+  const pPr: string[] = [];
+  if (opts?.style) pPr.push(`<w:pStyle w:val="${opts.style}"/>`);
+  if (opts?.indent) pPr.push(`<w:ind w:left="${opts.indent}"/>`);
+  const pPrXml = pPr.length ? `<w:pPr>${pPr.join("")}</w:pPr>` : "";
+
+  return `<w:p>${pPrXml}${runsXml}</w:p>`;
+}
+
+/** Parágrafo a partir de um elemento, preservando formatação inline. */
+function paragraphFromElement(element: Element, style?: string): string {
+  return buildParagraph(runsToXml(collectInlineRuns(element)), { style });
+}
+
+function alphaLower(index: number): string {
+  if (index < 1) return String(index);
+  return String.fromCharCode(96 + ((index - 1) % 26) + 1);
+}
+
+function orderedMarker(type: string | null, index: number): string {
+  if (type === "a") return `${alphaLower(index)})`;
+  if (type === "A") return `${alphaLower(index).toUpperCase()})`;
+  return `${index}.`;
+}
+
+/** Renderiza <ul>/<ol> com marcadores corretos (•, 1., a)) e níveis aninhados. */
+function emitList(listEl: Element, parts: string[], depth: number): void {
+  const ordered = listEl.tagName.toUpperCase() === "OL";
+  const type = listEl.getAttribute("type");
+  let index = 0;
+
+  for (const li of Array.from(listEl.children)) {
+    if (li.tagName.toUpperCase() !== "LI") continue;
+    index += 1;
+    const marker = ordered ? orderedMarker(type, index) : "•";
+
+    const runs: InlineRun[] = [];
+    for (const child of li.childNodes) {
+      if (child.nodeType === 1) {
+        const childTag = (child as Element).tagName.toUpperCase();
+        if (childTag === "UL" || childTag === "OL") continue;
+      }
+      collectInlineRunsFromNode(child, {}, runs);
+    }
+
+    runs.unshift({ text: `${marker} ` });
+    parts.push(
+      buildParagraph(runsToXml(runs), {
+        style: "ListParagraph",
+        indent: 720 + depth * 360,
+      }),
+    );
+
+    for (const child of Array.from(li.children)) {
+      const childTag = child.tagName.toUpperCase();
+      if (childTag === "UL" || childTag === "OL") {
+        emitList(child, parts, depth + 1);
+      }
+    }
+  }
+}
+
+function emitQuestionCard(element: Element, parts: string[]): void {
+  const label = element.querySelector(".planify-questao-number-label");
+  const badge = element.querySelector(".planify-questao-number-badge");
+  const numberText = label
+    ? elementText(label)
+    : badge
+      ? `Questão ${elementText(badge).replace(/^0+(?=\d)/, "")}`
+      : "";
+
+  if (numberText) {
+    parts.push(paragraph(numberText, "QuestaoNumero"));
+  }
+
+  const statement = element.querySelector(".planify-questao-statement");
+  if (statement) {
+    parts.push(paragraphFromElement(statement));
+  }
+
+  const optionsList = element.querySelector(".planify-questao-options");
+  if (optionsList) {
+    const items = Array.from(optionsList.children).filter(
+      (node) => node.tagName.toUpperCase() === "LI",
+    );
+    items.forEach((li, position) => {
+      const runs = collectInlineRuns(li);
+      runs.unshift({ text: `${alphaLower(position + 1)}) ` });
+      parts.push(
+        buildParagraph(runsToXml(runs), {
+          style: "ListParagraph",
+          indent: 720,
+        }),
+      );
+    });
+  } else if (element.querySelector(".planify-answer-lines")) {
+    parts.push(paragraph("_______________________________________________"));
+    parts.push(paragraph("_______________________________________________"));
+    parts.push(paragraph("_______________________________________________"));
+  }
 }
 
 /** Largura útil A4 com margens de 2,54 cm (1440 dxa cada lado). */
@@ -315,26 +508,7 @@ function walkNode(node: Node, parts: string[]): void {
   }
 
   if (element.classList.contains("planify-questao")) {
-    const number = element.querySelector(".planify-questao-number");
-    if (number) {
-      parts.push(paragraph(elementText(number), "Heading1"));
-    }
-
-    const statement = element.querySelector(".planify-questao-statement");
-    if (statement) {
-      parts.push(paragraph(elementText(statement)));
-    }
-
-    const options = element.querySelectorAll(".planify-questao-options li");
-    if (options.length) {
-      for (const option of options) {
-        parts.push(bullet(elementText(option)));
-      }
-    } else if (element.querySelector(".planify-answer-lines")) {
-      parts.push(paragraph(" "));
-      parts.push(paragraph(" "));
-    }
-
+    emitQuestionCard(element, parts);
     return;
   }
 
@@ -373,13 +547,25 @@ function walkNode(node: Node, parts: string[]): void {
     return;
   }
 
+  if (tag === "UL" || tag === "OL") {
+    emitList(element, parts, 0);
+    return;
+  }
+
   if (tag === "LI") {
-    parts.push(bullet(elementText(element)));
+    const runs = collectInlineRuns(element);
+    runs.unshift({ text: "• " });
+    parts.push(
+      buildParagraph(runsToXml(runs), {
+        style: "ListParagraph",
+        indent: 720,
+      }),
+    );
     return;
   }
 
   if (tag === "P" || tag === "BLOCKQUOTE" || tag === "PRE") {
-    parts.push(paragraph(elementText(element)));
+    parts.push(paragraphFromElement(element));
     return;
   }
 

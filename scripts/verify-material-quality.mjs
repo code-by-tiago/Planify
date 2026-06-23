@@ -204,8 +204,8 @@ function runTest(name, fn) {
 function testMaterialEngineTypesCatalog() {
   assert.equal(
     MATERIAL_ENGINE_TYPES.length,
-    13,
-    "MATERIAL_ENGINE_TYPES deve listar 13 tipos",
+    14,
+    "MATERIAL_ENGINE_TYPES deve listar 14 tipos",
   );
   assert.deepEqual(
     [...new Set(MATERIAL_ENGINE_TYPES)].length,
@@ -244,7 +244,7 @@ function testMaterialTypeRouting() {
   assert.equal(
     DEEP_GENERATION_TYPES.length + LIGHT_GENERATION_TYPES.length,
     MATERIAL_ENGINE_TYPES.length,
-    "deep + light deve cobrir todos os 13 tipos",
+    "deep + light deve cobrir todos os 14 tipos",
   );
 
   assert.equal(isDeepGenerationType(PLANNING_DEEP_GENERATION_TYPE), true);
@@ -517,7 +517,7 @@ function testProvaListaQualityGate() {
 }
 
 function testUnifiedMaterialEngineContract() {
-  assert.equal(TIPO_FERRAMENTA_VALUES.length, 16, "16 ferramentas no contrato unificado");
+  assert.equal(TIPO_FERRAMENTA_VALUES.length, 17, "17 ferramentas no contrato unificado");
   assert.ok(getMaterialLayoutSchema().properties.secoes, "schema MaterialLayout presente");
   assert.equal(
     containsForbiddenChitchat("Aqui está seu material de prova"),

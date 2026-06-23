@@ -203,6 +203,95 @@ for (const route of [
   assert.match(source, /export async function POST/, `${route} deve expor POST`);
 }
 
+// --- DOCX nativo: fidelidade de questoes, alternativas e formatacao inline ---
+const { htmlBodyToWordXmlParts } = loadTsModule(
+  "src/server/docx/html-to-native-docx.ts",
+);
+const { buildMaterialEngineHtmlFromStructure } = loadTsModule(
+  "src/server/materials/material-engine-service.ts",
+);
+
+const provaDocHtml = buildMaterialEngineHtmlFromStructure(
+  {
+    tipoMaterial: "prova",
+    tipo: "prova",
+    etapa: "Ensino Fundamental",
+    anoSerie: "8 ano",
+    componenteCurricular: "Lingua Portuguesa",
+    componente: "Lingua Portuguesa",
+    tema: "Sintaxe",
+    quantidade: 2,
+    incluirGabarito: true,
+  },
+  {
+    title: "Prova - Sintaxe",
+    exam: {
+      questions: [
+        {
+          number: 1,
+          type: "multipla-escolha",
+          statement: "Qual a funcao sintatica do sujeito?",
+          options: ["Termo essencial", "Termo acessorio", "Adjunto", "Aposto"],
+          answer: "Termo essencial",
+        },
+        {
+          number: 2,
+          type: "multipla-escolha",
+          statement: "O predicado verbal tem como nucleo:",
+          options: ["Um verbo", "Um substantivo", "Um adjetivo", "Um adverbio"],
+          answer: "Um verbo",
+        },
+      ],
+    },
+  },
+);
+const provaWordXml = htmlBodyToWordXmlParts(provaDocHtml).join("");
+// "Quest\u00e3o" = "Questão" (escape unicode evita problemas de encoding)
+assert.match(provaWordXml, /Quest\u00e3o 1/, "DOCX deve preservar numero da questao 1");
+assert.match(provaWordXml, /Quest\u00e3o 2/, "DOCX deve preservar numero da questao 2");
+assert.match(provaWordXml, />a\) <\/w:t>/, "DOCX deve numerar alternativa a)");
+assert.match(provaWordXml, />d\) <\/w:t>/, "DOCX deve numerar alternativa d)");
+assert.ok(
+  !/\u2022 Termo essencial/.test(provaWordXml),
+  "alternativas nao podem virar bullets no DOCX",
+);
+assert.match(provaWordXml, /QuestaoNumero/, "DOCX usa estilo QuestaoNumero");
+
+const atividadeDocHtml = buildMaterialEngineHtmlFromStructure(
+  {
+    tipoMaterial: "atividade",
+    tipo: "atividade",
+    etapa: "Ensino Fundamental",
+    anoSerie: "5 ano",
+    componenteCurricular: "Ciencias",
+    componente: "Ciencias",
+    tema: "Agua",
+    quantidade: 1,
+    incluirGabarito: false,
+  },
+  {
+    title: "Atividade - Agua",
+    activities: [
+      {
+        title: "Ciclo da agua",
+        objective: "Compreender as etapas",
+        estimatedTime: "30 min",
+        materials: ["Cartolina", "Canetas"],
+        instructions: "Monte um cartaz ilustrando o ciclo.",
+        items: ["Evaporacao", "Condensacao", "Precipitacao"],
+        evaluation: "Participacao",
+      },
+    ],
+  },
+);
+const atividadeWordXml = htmlBodyToWordXmlParts(atividadeDocHtml).join("");
+assert.match(
+  atividadeWordXml,
+  /<w:b\/><\/w:rPr><w:t[^>]*>Objetivo:/,
+  "DOCX deve preservar negrito em 'Objetivo:'",
+);
+assert.match(atividadeWordXml, /Evaporacao/, "DOCX deve preservar itens de lista");
+
 const pptxSvc = loadTsModule("src/server/materials/slides-pptx-export-service.ts");
 const sampleSlideHtml = `
 <section class="planify-slide-deck" data-planify-slide-theme="moderno">
@@ -227,6 +316,7 @@ await pptxSvc.exportSlidesPptxBuffer({
 });
 
 console.log("verify-export-pipeline: OK");
+console.log("- DOCX nativo: questoes numeradas, alternativas a/b/c/d, negrito inline");
 console.log("- Classroom jogo/prova → PDF; apostila → DOCX");
 console.log("- Forms só prova/lista; jogo sem questões parseáveis");
 console.log("- Auto-export: jogo → Docs, prova/lista → Forms");

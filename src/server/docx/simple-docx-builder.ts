@@ -344,6 +344,15 @@ function stylesXml() {
     <w:pPr><w:spacing w:after="100"/></w:pPr>
     <w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial"/><w:sz w:val="24"/><w:color w:val="334155"/></w:rPr>
   </w:style>
+
+  <w:style w:type="paragraph" w:styleId="QuestaoNumero">
+    <w:name w:val="Questao Numero"/>
+    <w:basedOn w:val="Normal"/>
+    <w:next w:val="Normal"/>
+    <w:qFormat/>
+    <w:pPr><w:spacing w:before="280" w:after="80"/><w:keepNext/></w:pPr>
+    <w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial"/><w:b/><w:sz w:val="24"/><w:color w:val="312E81"/></w:rPr>
+  </w:style>
 </w:styles>`;
 }
 

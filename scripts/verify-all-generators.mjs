@@ -99,6 +99,23 @@ const { getMaterialGenerationSteps } = loadTsModule(
   "src/lib/pro/generation-stage-messages.ts",
 );
 const { planifyTools } = loadTsModule("src/lib/pro/planifyTools.ts");
+const { resolvePreparedExportBody, buildEditorExportHtmlForProfile } =
+  loadTsModule("src/server/export/editor-html-export-service.ts");
+const { htmlBodyToWordXmlParts } = loadTsModule(
+  "src/server/docx/html-to-native-docx.ts",
+);
+const { parseQuizQuestionsFromHtml } = loadTsModule(
+  "src/server/google/parse-quiz-from-html.ts",
+);
+const { stripTeacherOnlyExportBlocks } = loadTsModule(
+  "src/server/editor/prepare-export-html.ts",
+);
+const { parseSlidesFromPlanifyHtml, extractSlideThemeFromHtml } = loadTsModule(
+  "src/server/materials/slide-html-parser.ts",
+);
+const { resolveClassroomExportForHtml } = loadTsModule(
+  "src/lib/export/classroom-export-format.ts",
+);
 /** Espelha resolveGoogleProductForTool sem importar módulo client-side. */
 function resolveGoogleProductForTool(toolId) {
   if (toolId === "slides") return "slides";
@@ -636,6 +653,301 @@ const GOLDEN = {
   },
 };
 
+/**
+ * Tokens que DEVEM sobreviver à conversão de cada ferramenta.
+ * docxText: substrings no texto extraído do XML WordML (mirror do pipeline real).
+ * pdfText: substrings no texto do HTML de exportação PDF.
+ * pdfHtml: substrings no markup bruto do HTML de exportação PDF (classes/estrutura visual).
+ * profile: perfil de PDF esperado.
+ */
+const EXPORT_FIDELITY = {
+  prova: {
+    profile: "document",
+    docxText: ["2x + 4 = 10", "Gabarito"],
+    pdfText: ["2x + 4 = 10"],
+    pdfHtml: ["planify-questao"],
+  },
+  lista: {
+    profile: "document",
+    docxText: ["x + 5 = 12", "Gabarito"],
+    pdfText: ["x + 5 = 12"],
+    pdfHtml: ["planify-questao"],
+  },
+  apostila: {
+    profile: "document",
+    docxText: ["isole a inc", "Resolver equa", "Resolva as equa"],
+    pdfText: ["isole a inc"],
+  },
+  atividade: {
+    profile: "document",
+    docxText: ["Quadro branco", "Organize a turma em trios", "x + 4 = 11", "Objetivo:"],
+    pdfText: ["Quadro branco"],
+  },
+  "plano-aula": {
+    profile: "document",
+    docxText: ["Abertura", "Fechamento", "Retomar conceito", "10 min"],
+    pdfText: ["Abertura"],
+    pdfHtml: ["planify-cronograma-table"],
+  },
+  jogo: {
+    profile: "document",
+    docxText: ["Regras", "Dividir a turma em duplas", "Componentes", "Cartas com equa"],
+    pdfText: ["Dividir a turma em duplas"],
+  },
+  cruzadinha: {
+    profile: "document",
+    docxText: ["EQUACAO", "Igualdade com incognita"],
+    pdfText: ["EQUACAO"],
+    pdfHtml: ["planify-game-table--crossword"],
+  },
+  resumo: {
+    profile: "document",
+    docxText: ["Conceito", "Procedimento", "Isolar a inc"],
+    pdfText: ["Conceito"],
+  },
+  sequencia: {
+    profile: "document",
+    docxText: ["Aula 1", "Aula 3", "Apresentar o conceito"],
+    pdfText: ["Aula 1"],
+  },
+  projeto: {
+    profile: "document",
+    docxText: ["Fase 1", "Fase 3", "Identificar uma situa"],
+    pdfText: ["Fase 1"],
+  },
+  redacao: {
+    profile: "document",
+    docxText: ["motivador", "familiar"],
+    pdfText: ["motivador"],
+  },
+  flashcards: {
+    profile: "document",
+    docxText: ["O que", "Igualdade com inc", "Subtrair 3: x = 7."],
+    pdfText: ["Subtrair 3: x = 7."],
+    pdfHtml: ["planify-flashcard"],
+  },
+  "mapa-mental": {
+    profile: "document",
+    docxText: ["Conceito", "Resolu", "Aplica", "Isolar x"],
+    pdfText: ["Conceito"],
+    pdfHtml: ["planify-mindmap"],
+  },
+  slides: {
+    profile: "slides",
+    docxText: ["Objetivos", "Conceito", "Exemplo pr", "Resolver equa"],
+    pdfText: ["Objetivos"],
+    pdfHtml: ["planify-slide"],
+  },
+};
+
+function wordXmlText(parts) {
+  const xml = parts.join("");
+  const matches = xml.match(/<w:t[^>]*>([\s\S]*?)<\/w:t>/g) || [];
+  return decodeEntities(
+    matches
+      .map((segment) => segment.replace(/<w:t[^>]*>/, "").replace(/<\/w:t>/, ""))
+      .join(" "),
+  )
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function htmlToText(html) {
+  return decodeEntities(
+    String(html)
+      .replace(/<style[\s\S]*?<\/style>/gi, " ")
+      .replace(/<script[\s\S]*?<\/script>/gi, " ")
+      .replace(/<[^>]+>/g, " "),
+  )
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function decodeEntities(value) {
+  return String(value)
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#0?39;/g, "'")
+    .replace(/&apos;/g, "'")
+    .replace(/&middot;/g, "·")
+    .replace(/&nbsp;/g, " ");
+}
+
+function testExportFidelity() {
+  for (const tipo of MATERIAL_ENGINE_TYPES) {
+    const fixture = GOLDEN[tipo];
+    const expectations = EXPORT_FIDELITY[tipo];
+    assert.ok(expectations, `fidelidade de exportação ausente para ${tipo}`);
+
+    const html = buildMaterialEngineHtmlFromStructure(
+      fixture.input,
+      fixture.structure,
+    );
+    const documentType = `material:${tipo}`;
+
+    // DOCX (Google Docs / Drive / Classroom documento) — mirror do pipeline real.
+    const docxBody = resolvePreparedExportBody(html, documentType, "docx");
+    const docxText = wordXmlText(htmlBodyToWordXmlParts(docxBody));
+    assert.ok(
+      docxText.length > 40,
+      `${tipo}: DOCX produziu texto vazio ou curto demais`,
+    );
+    for (const token of expectations.docxText ?? []) {
+      assert.ok(
+        docxText.includes(token),
+        `${tipo}: DOCX perdeu conteúdo "${token}"`,
+      );
+    }
+    // DOCX não deve vazar fragmentos crus de HTML/estilo.
+    assert.ok(
+      !/style=|class=|<div|<span/i.test(docxText),
+      `${tipo}: DOCX vazou markup HTML no texto`,
+    );
+
+    // PDF (Classroom anexo / download) — perfil + conteúdo.
+    const { exportHtml, pdfProfile } = buildEditorExportHtmlForProfile(
+      fixture.structure.title || "Material",
+      html,
+      documentType,
+    );
+    assert.equal(
+      pdfProfile,
+      expectations.profile,
+      `${tipo}: perfil de PDF incorreto (esperado ${expectations.profile})`,
+    );
+    const pdfText = htmlToText(exportHtml);
+    for (const token of expectations.pdfText ?? []) {
+      assert.ok(
+        pdfText.includes(token),
+        `${tipo}: PDF perdeu conteúdo "${token}"`,
+      );
+    }
+    for (const token of expectations.pdfHtml ?? []) {
+      assert.ok(
+        exportHtml.includes(token),
+        `${tipo}: PDF perdeu estrutura visual "${token}"`,
+      );
+    }
+  }
+}
+
+/** Google Forms (prova/lista): parsing das questões a partir do HTML gerado. */
+function testFormsFidelity() {
+  for (const tipo of ["prova", "lista"]) {
+    const fixture = GOLDEN[tipo];
+    const html = buildMaterialEngineHtmlFromStructure(
+      fixture.input,
+      fixture.structure,
+    );
+    const questions = parseQuizQuestionsFromHtml(stripTeacherOnlyExportBlocks(html));
+    const expected = fixture.structure.exam.questions;
+
+    assert.equal(
+      questions.length,
+      expected.length,
+      `${tipo}: Forms recuperou ${questions.length} questões (esperado ${expected.length})`,
+    );
+
+    questions.forEach((question, index) => {
+      assert.ok(
+        question.statement.length > 8,
+        `${tipo}: questão ${index + 1} sem enunciado no Forms`,
+      );
+    });
+
+    // Primeira é múltipla-escolha com todas as alternativas preservadas.
+    assert.equal(
+      questions[0].type,
+      "multipla-escolha",
+      `${tipo}: 1ª questão deveria ser múltipla-escolha no Forms`,
+    );
+    assert.equal(
+      questions[0].options.length,
+      expected[0].options.length,
+      `${tipo}: alternativas perdidas no Forms (${questions[0].options.length}/${expected[0].options.length})`,
+    );
+  }
+}
+
+/** PPTX (Google Slides / download): parsing dos slides a partir do HTML gerado. */
+function testPptxFidelity() {
+  const fixture = GOLDEN.slides;
+  const html = buildMaterialEngineHtmlFromStructure(
+    fixture.input,
+    fixture.structure,
+  );
+  const slides = parseSlidesFromPlanifyHtml(html);
+
+  assert.equal(
+    slides.length,
+    fixture.structure.slides.length,
+    `slides: PPTX recuperou ${slides.length} slides (esperado ${fixture.structure.slides.length})`,
+  );
+
+  const titles = slides.map((slide) => slide.title).join(" | ");
+  for (const token of ["Objetivos", "Conceito", "Exemplo pr"]) {
+    assert.ok(
+      titles.includes(token),
+      `slides: PPTX perdeu o título "${token}" (recebido: ${titles})`,
+    );
+  }
+
+  const objetivos = slides.find((slide) => slide.title.startsWith("Objetivos"));
+  assert.ok(objetivos, "slides: slide Objetivos ausente no PPTX");
+  assert.ok(
+    objetivos.bullets.join(" ").includes("Resolver equa"),
+    `slides: bullets do slide Objetivos perdidos no PPTX (${objetivos.bullets.join(" / ")})`,
+  );
+
+  assert.equal(
+    extractSlideThemeFromHtml(html) !== undefined,
+    true,
+    "slides: tema de design não embutido no HTML (PPTX usaria fallback)",
+  );
+}
+
+/**
+ * Classroom / Drive: formato de arquivo por ferramenta.
+ * Visuais e layout-fixo → PDF (preserva layout). Documentos de texto → DOCX editável.
+ */
+const CLASSROOM_FORMAT = {
+  slides: "pdf",
+  prova: "pdf",
+  lista: "pdf",
+  jogo: "pdf",
+  cruzadinha: "pdf",
+  flashcards: "pdf",
+  "mapa-mental": "pdf",
+  apostila: "docx",
+  atividade: "docx",
+  resumo: "docx",
+  sequencia: "docx",
+  projeto: "docx",
+  "plano-aula": "docx",
+  redacao: "docx",
+};
+
+function testClassroomRouting() {
+  for (const tipo of MATERIAL_ENGINE_TYPES) {
+    const fixture = GOLDEN[tipo];
+    const expected = CLASSROOM_FORMAT[tipo];
+    assert.ok(expected, `formato Classroom ausente para ${tipo}`);
+
+    const html = buildMaterialEngineHtmlFromStructure(
+      fixture.input,
+      fixture.structure,
+    );
+    const format = resolveClassroomExportForHtml(html, `material:${tipo}`);
+    assert.equal(
+      format,
+      expected,
+      `${tipo}: Classroom deveria anexar ${expected}, recebido ${format}`,
+    );
+  }
+}
+
 function runTest(name, fn) {
   try {
     fn();
@@ -811,11 +1123,15 @@ function main() {
   runTest("generation-steps", testGenerationSteps);
   runTest("google-export-routing", testGoogleExportRouting);
   runTest("golden-fixtures", testGoldenFixtures);
+  runTest("export-fidelity", testExportFidelity);
+  runTest("forms-fidelity", testFormsFidelity);
+  runTest("pptx-fidelity", testPptxFidelity);
+  runTest("classroom-routing", testClassroomRouting);
   runTest("new-tools-fixtures", testNewToolsFixtures);
 
   const elapsedMs = Date.now() - started;
   console.log(
-    `verify-all-generators: OK (${MATERIAL_ENGINE_TYPES.length} ferramentas, fixtures + HTML + export + new-tools) — ${elapsedMs}ms`,
+    `verify-all-generators: OK (${MATERIAL_ENGINE_TYPES.length} ferramentas, fixtures + HTML + DOCX/PDF/Forms/PPTX/Classroom-fidelity + new-tools) — ${elapsedMs}ms`,
   );
 }
 

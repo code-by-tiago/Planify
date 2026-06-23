@@ -69,6 +69,7 @@ export function GoogleFormsExportButton({
       }}
       exportTitle="Cria um Google Forms a partir das questões do documento"
       pendingStorageKey={GOOGLE_FORMS_EXPORT_PENDING_KEY}
+      isExportReady={(value) => value.connected && value.formsScopeGranted === true}
       onExport={runExport}
       onStatus={onStatus}
       onExportError={onExportError}

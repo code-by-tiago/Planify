@@ -165,7 +165,8 @@ export function GoogleSlidesExportButton({
   }, [refresh]);
 
   function handlePrimaryAction() {
-    const previewWindow = window.open("about:blank", "_blank");
+    const likelyExport = Boolean(status?.connected);
+    const previewWindow = likelyExport ? window.open("about:blank", "_blank") : null;
     void handlePrimaryActionAsync(previewWindow);
   }
 

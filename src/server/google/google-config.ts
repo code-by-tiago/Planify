@@ -6,6 +6,14 @@ export const GOOGLE_OAUTH_SCOPES = [
   "https://www.googleapis.com/auth/forms.body",
 ] as const;
 
+export const GOOGLE_FORMS_SCOPE = "https://www.googleapis.com/auth/forms.body";
+
+export function hasGoogleFormsScope(scopes: readonly string[]): boolean {
+  return scopes.some(
+    (scope) => scope === GOOGLE_FORMS_SCOPE || scope.includes("forms.body"),
+  );
+}
+
 export type GoogleConfigStatus = {
   configured: boolean;
   missing: string[];

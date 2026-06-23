@@ -16,6 +16,7 @@ export type GoogleIntegrationStatus = {
   authenticated: boolean;
   connected: boolean;
   googleEmail: string | null;
+  formsScopeGranted?: boolean;
   missingEnv?: string[];
 };
 
@@ -36,6 +37,7 @@ export async function fetchGoogleStatus(): Promise<GoogleIntegrationStatus> {
     authenticated: Boolean(data?.authenticated),
     connected: Boolean(data?.connected),
     googleEmail: data?.googleEmail || null,
+    formsScopeGranted: Boolean(data?.formsScopeGranted),
     missingEnv: data?.missingEnv,
   };
 }

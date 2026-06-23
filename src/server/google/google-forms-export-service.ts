@@ -1,7 +1,8 @@
 import { stripTeacherOnlyExportBlocks } from "../editor/prepare-export-html";
 import type { ParsedQuizQuestion } from "./parse-quiz-from-html";
 import { parseQuizQuestionsFromHtml } from "./parse-quiz-from-html";
-import { getValidGoogleAccessToken } from "./google-token-store";
+import { hasGoogleFormsScope } from "./google-config";
+import { getValidGoogleAccessToken, getGoogleTokensForUser } from "./google-token-store";
 
 function safeFilename(value: string): string {
   const cleaned = String(value || "formulario-planify")
@@ -81,6 +82,13 @@ export async function exportQuizToGoogleForms(
   userId: string,
   input: GoogleFormsExportInput,
 ): Promise<GoogleFormsExportResult> {
+  const stored = await getGoogleTokensForUser(userId);
+  if (stored && !hasGoogleFormsScope(stored.scopes || [])) {
+    throw new Error(
+      "Conecte o Google de novo para autorizar o Google Forms.",
+    );
+  }
+
   const { accessToken, googleEmail } = await getValidGoogleAccessToken(userId);
   const title = String(input.title || "Formulário Planify").trim() || "Formulário Planify";
   const html = String(input.html || "").trim();

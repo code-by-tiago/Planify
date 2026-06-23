@@ -14,9 +14,30 @@ export function mapExportError(
   error: unknown,
   statusHint?: number,
 ): { code: GenerationErrorCode; message: string; status: number; retryable: boolean } {
-  const status = statusHint ?? 502;
   const message =
     error instanceof Error ? error.message : "Não foi possível concluir a exportação.";
+  const lower = message.toLowerCase();
+
+  if (
+    lower.includes("scope") ||
+    lower.includes("insufficient") ||
+    lower.includes("permission") ||
+    lower.includes("reconecte") ||
+    lower.includes("não conectada") ||
+    lower.includes("não conectado") ||
+    lower.includes("nenhuma questão") ||
+    lower.includes("forms api") ||
+    lower.includes("google forms")
+  ) {
+    return {
+      code: "validation_error",
+      message,
+      status: 400,
+      retryable: false,
+    };
+  }
+
+  const status = statusHint ?? 502;
 
   if (status === 401 || message.toLowerCase().includes("login")) {
     return {

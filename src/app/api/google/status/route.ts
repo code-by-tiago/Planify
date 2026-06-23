@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getGoogleConfigStatus } from "../../../../server/google/google-oauth";
+import { hasGoogleFormsScope } from "../../../../server/google/google-config";
 import { resolvePlanifyUserFromRequest } from "../../../../server/google/google-auth";
 import { getGoogleTokensForUser } from "../../../../server/google/google-token-store";
 
@@ -12,11 +13,13 @@ export async function GET(request: NextRequest) {
 
   let connected = false;
   let googleEmail: string | null = null;
+  let formsScopeGranted = false;
 
   if (user) {
     const tokens = await getGoogleTokensForUser(user.id).catch(() => null);
     connected = Boolean(tokens?.refreshToken);
     googleEmail = tokens?.googleEmail || null;
+    formsScopeGranted = hasGoogleFormsScope(tokens?.scopes || []);
   }
 
   return NextResponse.json({
@@ -26,5 +29,6 @@ export async function GET(request: NextRequest) {
     authenticated: Boolean(user),
     connected,
     googleEmail,
+    formsScopeGranted,
   });
 }

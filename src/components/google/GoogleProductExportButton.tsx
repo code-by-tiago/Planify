@@ -52,6 +52,8 @@ type GoogleProductExportButtonProps = {
   }) => Promise<{ openUrl: string; openedInPreview?: boolean }>;
   onStatus?: (message: string) => void;
   onExportError?: (error: unknown) => void;
+  /** Quando falso, inicia OAuth em vez de exportar (ex.: Forms sem escopo forms.body). */
+  isExportReady?: (status: GoogleIntegrationStatus) => boolean;
 };
 
 export function GoogleProductExportButton({
@@ -72,6 +74,7 @@ export function GoogleProductExportButton({
   onExport,
   onStatus,
   onExportError,
+  isExportReady = (value) => value.connected,
 }: GoogleProductExportButtonProps) {
   const [status, setStatus] = useState<GoogleIntegrationStatus | null>(null);
   const [loading, setLoading] = useState(true);
@@ -207,7 +210,8 @@ export function GoogleProductExportButton({
   }, [refresh]);
 
   function handlePrimaryAction() {
-    const previewWindow = window.open("about:blank", "_blank");
+    const likelyExport = Boolean(status?.connected && isExportReady(status));
+    const previewWindow = likelyExport ? window.open("about:blank", "_blank") : null;
     void handlePrimaryActionAsync(previewWindow);
   }
 
@@ -225,7 +229,7 @@ export function GoogleProductExportButton({
       return;
     }
 
-    if (!fresh.connected) {
+    if (!isExportReady(fresh)) {
       previewWindow?.close();
       await runConnect();
       return;

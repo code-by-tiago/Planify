@@ -15,12 +15,11 @@ import {
   clearGoogleSlidesExportPending,
   GOOGLE_STATUS_CHANGED_EVENT,
   notifyGoogleStatusChanged,
-  readGoogleSlidesExportPending,
   saveGoogleSlidesExportPending,
   type GoogleSlidesExportPending,
   type GoogleSlidesExportSlide,
 } from "@/lib/google/google-status-events";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 export type PlanifySlideExportPayload = GoogleSlidesExportSlide;
 
@@ -52,7 +51,6 @@ export function GoogleSlidesExportButton({
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const autoExportStarted = useRef(false);
 
   const refresh = useCallback(async () => {
     setError("");
@@ -165,40 +163,6 @@ export function GoogleSlidesExportButton({
       window.removeEventListener("focus", onFocus);
     };
   }, [refresh]);
-
-  useEffect(() => {
-    if (typeof window === "undefined" || autoExportStarted.current) return;
-
-    const params = new URLSearchParams(window.location.search);
-    const googleError = params.get("google_error");
-
-    if (googleError) {
-      setError(decodeURIComponent(googleError));
-      clearGoogleSlidesExportPending();
-      params.delete("google_error");
-      const next = `${window.location.pathname}?${params.toString()}`.replace(/\?$/, "");
-      window.history.replaceState({}, "", next);
-      return;
-    }
-
-    if (params.get("google") !== "connected") return;
-
-    params.delete("google");
-    const next = `${window.location.pathname}?${params.toString()}`.replace(/\?$/, "");
-    window.history.replaceState({}, "", next);
-
-    autoExportStarted.current = true;
-
-    void (async () => {
-      const fresh = await refresh();
-      notifyGoogleStatusChanged();
-
-      const pending = readGoogleSlidesExportPending();
-      if (fresh?.connected && pending?.title) {
-        await runExport(pending, null);
-      }
-    })();
-  }, [refresh, runExport]);
 
   function handlePrimaryAction() {
     const previewWindow = window.open("about:blank", "_blank");

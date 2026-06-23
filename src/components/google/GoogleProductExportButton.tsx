@@ -15,7 +15,6 @@ import {
   readGoogleExportPending,
   saveGoogleExportPending,
   waitForExportableHtml,
-  waitForGoogleConnected,
 } from "@/lib/google/google-export-resume";
 import { normalizeGoogleOAuthReturnTo } from "@/lib/google/document-type-detection";
 import {
@@ -23,7 +22,7 @@ import {
   notifyGoogleStatusChanged,
 } from "@/lib/google/google-status-events";
 import type { ReactNode } from "react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 type GoogleProductExportButtonProps = {
   title: string;
@@ -78,7 +77,6 @@ export function GoogleProductExportButton({
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const autoExportStarted = useRef(false);
 
   const refresh = useCallback(async () => {
     setError("");
@@ -207,43 +205,6 @@ export function GoogleProductExportButton({
       window.removeEventListener("focus", onFocus);
     };
   }, [refresh]);
-
-  useEffect(() => {
-    if (typeof window === "undefined" || autoExportStarted.current) return;
-
-    const params = new URLSearchParams(window.location.search);
-    const googleError = params.get("google_error");
-
-    if (googleError) {
-      setError(decodeURIComponent(googleError));
-      clearGoogleExportPending(pendingStorageKey);
-      params.delete("google_error");
-      const next = `${window.location.pathname}?${params.toString()}`.replace(/\?$/, "");
-      window.history.replaceState({}, "", next);
-      return;
-    }
-
-    if (params.get("google") !== "connected") return;
-
-    const pending = readGoogleExportPending(pendingStorageKey);
-    if (!pending?.title) return;
-
-    autoExportStarted.current = true;
-
-    params.delete("google");
-    const next = `${window.location.pathname}?${params.toString()}`.replace(/\?$/, "");
-    window.history.replaceState({}, "", next);
-
-    void (async () => {
-      setBusy(true);
-      onStatus?.(`Retomando exportação para ${productName}…`);
-
-      await waitForGoogleConnected(refresh, 15);
-      notifyGoogleStatusChanged();
-
-      await runExport(null, { fallbackToSameTab: true });
-    })();
-  }, [pendingStorageKey, refresh, runExport, onStatus, productName]);
 
   function handlePrimaryAction() {
     const previewWindow = window.open("about:blank", "_blank");

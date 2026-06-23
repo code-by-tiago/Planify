@@ -1,20 +1,17 @@
-# Configurar Google Cloud para Planify (Drive + Classroom)
+# Configurar Google Cloud para Planify (produção)
 
-Este guia prepara o projeto Google para o botão **Enviar ao Google Classroom** do Planify.
+Este guia prepara o projeto Google para exportação no Planify: **Google Docs**, **Drive**, **Forms**, **Slides** e **Classroom**.
 
-Tempo estimado: **20–40 minutos** (na primeira vez).
+Tempo estimado: **30–60 minutos** (configuração) + **verificação Google** (dias a semanas, para escopos sensíveis).
 
 ---
 
 ## 1. Criar o projeto
 
 1. Acesse [Google Cloud Console](https://console.cloud.google.com/).
-2. No topo, clique no seletor de projeto → **Novo projeto**.
-3. Nome sugerido: `Planify Produção` (ou `Planify Dev` para testes).
-4. Clique em **Criar** e aguarde alguns segundos.
-5. Selecione esse projeto no seletor do topo.
-
-Anote o **ID do projeto** (ex.: `planify-prod-123456`) — aparece no painel do projeto.
+2. No topo, clique no seletor de projeto → **Novo projeto** (ou use o projeto de produção existente).
+3. Nome sugerido: `Planify Produção`.
+4. Selecione esse projeto no seletor do topo.
 
 ---
 
@@ -24,36 +21,83 @@ Menu ☰ → **APIs e serviços** → **Biblioteca**. Pesquise e **ative** cada 
 
 | API | Para quê |
 |-----|----------|
-| **Google Drive API** | Enviar o DOCX gerado pelo Planify |
-| **Google Classroom API** | Listar turmas e publicar o material |
+| **Google Drive API** | Salvar DOCX/PDF no Drive |
+| **Google Classroom API** | Listar turmas e publicar material |
+| **Google Forms API** | Criar formulários a partir de provas/listas |
+| **Google Slides API** | Exportar apresentações (se usar Slides) |
 
-Depois de ativar, confira em **APIs e serviços → APIs ativadas** se as duas aparecem.
+Confira em **APIs e serviços → APIs ativadas** se todas aparecem.
 
 ---
 
-## 3. Tela de consentimento OAuth
+## 3. Tela de consentimento OAuth (produção)
 
 Menu ☰ → **APIs e serviços** → **Tela de consentimento OAuth**.
 
-1. Tipo de usuário:
-   - **Externo** — se professores usam Gmail pessoal ou contas fora de um domínio único.
-   - **Interno** — só se **todos** os usuários forem do mesmo Google Workspace (mesmo domínio).
-2. Preencha:
+1. Tipo de usuário: **Externo** (professores com Gmail pessoal ou contas de escola).
+2. Preencha obrigatoriamente:
    - Nome do app: `Planify`
-   - E-mail de suporte: seu e-mail
-   - Logotipo: opcional
-   - Domínios autorizados (produção): `seudominio.com` (sem `https://`)
+   - E-mail de suporte do desenvolvedor
+   - Domínios autorizados: seu domínio de produção (ex.: `planify.com.br`, sem `https://`)
    - Página inicial: `https://seudominio.com`
-   - Política de privacidade e Termos: URLs reais (obrigatório em produção)
-3. **Escopos** → Adicionar escopos → inclua manualmente (se não aparecerem na lista curta):
-   - `.../auth/drive.file`
-   - `.../auth/classroom.courses.readonly`
-   - `.../auth/classroom.coursework.me`
-4. **Usuários de teste** (enquanto o app estiver em *Testando*):
-   - Adicione o Gmail de **cada professor** que for testar (incluindo o seu).
-5. Salve.
+   - **Política de privacidade** e **Termos de uso** com URLs reais e acessíveis
+3. **Escopos** → **Adicionar ou remover escopos** → **Adicionar escopos manualmente**.
 
-> Em modo *Testando*, só contas listadas como “usuário de teste” conseguem conectar. Para liberar para qualquer professor, será preciso **publicar o app** (verificação Google — processo mais longo).
+   Cole cada URL **completa** (não use atalhos como `forms.body`):
+
+   | URL completa do escopo | Uso no Planify |
+   |------------------------|----------------|
+   | `https://www.googleapis.com/auth/drive.file` | Salvar DOCX/PDF no Drive do professor |
+   | `https://www.googleapis.com/auth/forms.body` | Criar Google Forms a partir de listas/provas |
+   | `https://www.googleapis.com/auth/classroom.courses.readonly` | Listar turmas do Classroom |
+   | `https://www.googleapis.com/auth/classroom.coursework.me` | Publicar material na turma |
+   | `https://www.googleapis.com/auth/classroom.courseworkmaterials` | Anexar materiais à turma |
+
+4. Salve.
+
+### Publicar o app (obrigatório em produção)
+
+1. Na tela de consentimento, clique em **Publicar app** para sair do modo *Testando*.
+2. Para escopos sensíveis (Forms, Classroom), o Google exige **verificação do app**:
+   - Justificativa de uso de cada escopo
+   - Vídeo demonstrando o fluxo (login → exportar → resultado no Google)
+   - URLs de privacidade e termos válidas
+3. Acompanhe o status em **Centro de verificação** no Console.
+
+> Enquanto a verificação não for aprovada, professores podem ver o aviso **"O Google não verificou este app"**. Isso é resolvido no Google Cloud, não no código do Planify.
+
+### Justificativas prontas (campo "Como os escopos serão usados?")
+
+**forms.body:**
+
+```
+O Planify é uma plataforma educacional para professores brasileiros. O escopo forms.body é usado exclusivamente quando o professor clica em "Exportar para Google Forms" no editor de materiais didáticos (listas de exercícios e provas). O aplicativo converte o conteúdo gerado pelo professor em questões estruturadas e cria um novo formulário na conta Google do professor. O Planify não acessa formulários existentes de terceiros. O acesso ocorre somente após login no Planify e autorização OAuth explícita.
+```
+
+**classroom.\* (courses, coursework, materials):**
+
+```
+Usado quando o professor escolhe "Enviar ao Google Classroom". O Planify lista as turmas do professor e publica o material didático na turma selecionada. Não há acesso a dados além do necessário para anexar o material escolhido pelo professor.
+```
+
+**drive.file:**
+
+```
+Usado para salvar cópias de materiais didáticos (DOCX/PDF) na conta Google Drive do professor, apenas em arquivos criados pelo Planify.
+```
+
+### Questionário de verificação
+
+| Pergunta | Resposta para o Planify em produção |
+|----------|-------------------------------------|
+| Apenas uso pessoal? | **Não** |
+| Apenas uso interno? | **Não** |
+| Apenas desenvolvimento/teste? | **Não** |
+| Plug-in SMTP WordPress? | **Não** |
+
+### Vídeo de demonstração (YouTube)
+
+Envie um vídeo **não listado** mostrando: login → editor → exportar Forms → autorizar Google → formulário criado. Na descrição do vídeo, explique os escopos e o fluxo (ver modelo na seção de suporte abaixo).
 
 ---
 
@@ -63,7 +107,7 @@ Menu ☰ → **APIs e serviços** → **Tela de consentimento OAuth**.
 
 1. Tipo de aplicativo: **Aplicativo da Web**.
 2. Nome: `Planify Web`.
-3. **Origens JavaScript autorizadas** (desenvolvimento + produção):
+3. **Origens JavaScript autorizadas**:
 
    ```
    http://localhost:3000
@@ -88,9 +132,9 @@ Menu ☰ → **APIs e serviços** → **Tela de consentimento OAuth**.
 
 ---
 
-## 5. Variáveis no Planify (`.env.local`)
+## 5. Variáveis no Planify
 
-No repositório, copie de `.env.example` e preencha:
+### Local (`.env.local`)
 
 ```env
 GOOGLE_CLIENT_ID=123456789-xxxx.apps.googleusercontent.com
@@ -99,82 +143,79 @@ GOOGLE_REDIRECT_URI=http://localhost:3000/api/google/oauth/callback
 GOOGLE_DRIVE_FOLDER_ID=
 ```
 
+### Produção (Vercel / provedor)
+
+```env
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
+GOOGLE_REDIRECT_URI=https://seudominio.com/api/google/oauth/callback
+GOOGLE_DRIVE_FOLDER_ID=
+```
+
 | Variável | Onde obter |
 |----------|------------|
 | `GOOGLE_CLIENT_ID` | Credenciais OAuth → ID do cliente |
 | `GOOGLE_CLIENT_SECRET` | Credenciais OAuth → Chave secreta |
 | `GOOGLE_REDIRECT_URI` | Deve ser **idêntica** a uma URI cadastrada no passo 4 |
-| `GOOGLE_DRIVE_FOLDER_ID` | Opcional: ID de pasta no Drive onde os arquivos serão criados |
-
-### Pasta opcional no Drive
-
-1. No [Google Drive](https://drive.google.com), crie a pasta `Planify`.
-2. Abra a pasta; na URL aparece o ID:  
-   `https://drive.google.com/drive/folders/ESTE_E_O_ID`
-3. Cole em `GOOGLE_DRIVE_FOLDER_ID`.
+| `GOOGLE_DRIVE_FOLDER_ID` | Opcional: pasta no Drive para novos arquivos |
 
 ---
 
 ## 6. Tabela no Supabase (tokens OAuth)
 
-No **SQL Editor** do Supabase, execute o arquivo:
+No **SQL Editor** do Supabase, execute:
 
 `supabase/migrations/20260604_google_integrations.sql`
 
-Isso cria a tabela `google_integrations` (tokens só no servidor, via service role).
+Isso cria a tabela `google_integrations` (tokens só no servidor).
 
 ---
 
 ## 7. Conta Google do professor
 
-Para publicar no Classroom, o professor precisa:
+Para usar Classroom, o professor precisa:
 
-1. Conta **Google Workspace for Education** ou conta com acesso ao Classroom.
-2. Pelo menos **uma turma** criada no [Google Classroom](https://classroom.google.com).
-3. Estar logado no Planify (Supabase) antes de clicar em **Conectar Google**.
+1. Conta com acesso ao [Google Classroom](https://classroom.google.com).
+2. Pelo menos **uma turma** de professor criada.
+3. Estar logado no Planify antes de conectar o Google.
 
 ---
 
 ## 8. Testar no Planify
 
-1. `npm run dev`
+1. `npm run dev` (local) ou acesse o site em produção.
 2. Faça login no Planify.
-3. Abra o **Editor** (ou gere um material).
-4. **Conectar Google** → autorize na tela do Google.
-5. Escolha a turma → **Enviar ao Classroom**.
-
-Se der erro `access_denied` ou `403`:
-
-- Confirme que o e-mail está em **Usuários de teste** (app em modo Teste).
-- Confirme que Drive API e Classroom API estão ativas.
-- Confirme `GOOGLE_REDIRECT_URI` igual à URI no Console.
+3. Abra o **Editor** com uma lista ou prova.
+4. Clique em **Google Forms** (ou Docs/Drive/Classroom).
+5. Autorize na tela do Google → o export deve concluir automaticamente após o retorno.
 
 ---
 
-## 9. Deploy (Vercel / produção)
+## 9. Solução de problemas (produção)
 
-1. Adicione as mesmas variáveis `GOOGLE_*` no painel do provedor.
-2. Em produção use:
-
-   ```env
-   GOOGLE_REDIRECT_URI=https://seudominio.com/api/google/oauth/callback
-   ```
-
-3. Cadastre a mesma URI nas credenciais OAuth do Google Cloud.
-4. Atualize domínios na tela de consentimento.
+| Sintoma | O que verificar |
+|---------|-----------------|
+| `access_denied` | Professor cancelou na tela do Google; tentar de novo |
+| "Google não verificou este app" | App publicado? Verificação submetida e aprovada? |
+| `redirect_uri_mismatch` | `GOOGLE_REDIRECT_URI` idêntica à URI no Console |
+| Forms não abre após OAuth | Deploy com fix OAuth recente; limpar cache do navegador |
+| `403` na API | API correspondente ativada no projeto Google Cloud |
+| Nenhuma turma no Classroom | Conta sem turma de professor no Classroom |
 
 ---
 
-## Checklist rápido
+## Checklist rápido (produção)
 
-- [ ] Projeto criado no Google Cloud
-- [ ] Drive API + Classroom API ativadas
-- [ ] Tela de consentimento configurada
+- [ ] Projeto Google Cloud de produção selecionado
+- [ ] Drive + Classroom + **Forms** APIs ativadas
+- [ ] Tela de consentimento com domínio, privacidade e termos
+- [ ] Todos os escopos declarados com **URL completa** (incl. `https://www.googleapis.com/auth/forms.body`)
+- [ ] App **publicado** (não em modo Testando)
+- [ ] Verificação Google **submetida** para escopos sensíveis
 - [ ] OAuth Web com redirect `/api/google/oauth/callback`
-- [ ] `.env.local` com `GOOGLE_CLIENT_ID` e `GOOGLE_CLIENT_SECRET`
+- [ ] Variáveis `GOOGLE_*` na Vercel com URI de produção
 - [ ] SQL `google_integrations` executado no Supabase
-- [ ] E-mail de teste adicionado (modo Teste)
-- [ ] Login no Planify + Conectar Google no Editor
+- [ ] Teste: lista/prova → Forms → abre em um fluxo
 
 ---
 
@@ -182,6 +223,7 @@ Se der erro `access_denied` ou `403`:
 
 Se travar em algum passo, envie:
 
-1. Print da tela **Credenciais OAuth** (pode ocultar o secret).
-2. Mensagem de erro exata do Planify ou do Google.
-3. Se a conta é Gmail comum ou Google Workspace (escola).
+1. Print da tela **Credenciais OAuth** (oculte o secret).
+2. Status da tela de consentimento (*Testando* vs *Em produção*).
+3. Mensagem de erro exata do Planify ou do Google.
+4. Se a conta é Gmail comum ou Google Workspace (escola).

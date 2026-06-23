@@ -1936,42 +1936,50 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
         }`}
       >
         {embedded ? (
-          <div className="flex flex-col gap-1">
-            <div className="flex flex-wrap items-center gap-1">
+          <div className="flex flex-col gap-1.5">
+            <div className="flex flex-wrap items-center gap-1.5">
               <input
                 value={title}
                 onChange={(event) => setTitle(event.target.value)}
                 onBlur={() => persistCurrentDocument("Título salvo.")}
                 aria-label="Título do documento"
-                className="h-8 min-w-[7rem] flex-1 rounded-md border border-slate-200 bg-slate-50 px-2 text-[11px] font-bold text-slate-950 outline-none focus:border-blue-400 focus:bg-white"
+                className="h-8 min-w-[min(100%,10rem)] flex-1 basis-[8rem] rounded-md border border-slate-200 bg-slate-50 px-2 text-[11px] font-bold text-slate-950 outline-none focus:border-blue-400 focus:bg-white"
               />
-              <button
-                type="button"
-                onClick={saveVersion}
-                className="shrink-0 rounded-md bg-gradient-to-r from-blue-600 to-slate-600 px-2.5 py-1.5 text-[11px] font-black text-white"
-              >
-                Salvar
-              </button>
-              <button
-                type="button"
-                onClick={downloadPdfReal}
-                className="shrink-0 rounded-md border border-slate-200 bg-white px-2 py-1.5 text-[11px] font-black text-slate-700"
-              >
-                PDF
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowMobileActions((value) => !value)}
-                aria-label="Mais ações"
-                aria-expanded={showMobileActions}
-                className={`shrink-0 rounded-md border px-2 py-1.5 text-[11px] font-black ${
-                  showMobileActions
-                    ? "border-blue-300 bg-blue-50 text-blue-800"
-                    : "border-slate-200 bg-white text-slate-700"
-                }`}
-              >
-                ⋯
-              </button>
+              <div className="flex shrink-0 items-center gap-1">
+                <button
+                  type="button"
+                  onClick={saveVersion}
+                  className="shrink-0 rounded-md bg-gradient-to-r from-blue-600 to-slate-600 px-2.5 py-1.5 text-[11px] font-black text-white"
+                >
+                  Salvar
+                </button>
+                <button
+                  type="button"
+                  onClick={downloadPdfReal}
+                  className="shrink-0 rounded-md border border-slate-200 bg-white px-2 py-1.5 text-[11px] font-black text-slate-700"
+                >
+                  PDF
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowMobileActions((value) => !value)}
+                  aria-label="Mais ações"
+                  aria-expanded={showMobileActions}
+                  className={`shrink-0 rounded-md border px-2 py-1.5 text-[11px] font-black ${
+                    showMobileActions
+                      ? "border-blue-300 bg-blue-50 text-blue-800"
+                      : "border-slate-200 bg-white text-slate-700"
+                  }`}
+                >
+                  ⋯
+                </button>
+              </div>
+              <span className="ml-auto shrink-0 text-[10px] font-bold text-slate-500">
+                {wordCount} pal.
+              </span>
+            </div>
+
+            <div className="border-t border-slate-100 pt-1.5">
               <EditorShareBar
                 compact
                 title={title}
@@ -1982,9 +1990,6 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
                 isSlideDeck={isSlideDeck}
                 slideTheme={slideTheme}
               />
-              <span className="shrink-0 text-[10px] font-bold text-slate-500">
-                {wordCount} pal.
-              </span>
             </div>
 
             {showMobileActions ? (
@@ -2025,7 +2030,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
             </p>
           </div>
         ) : (
-          <>
+          <div className="flex flex-col gap-1.5">
             <div className="flex flex-wrap items-center gap-1.5">
               <button
                 type="button"
@@ -2050,6 +2055,11 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
                   {elevatingQuality ? "Elevando..." : "Elevar qualidade"}
                 </button>
               ) : null}
+              <span className="ml-auto text-[10px] font-bold text-slate-500">
+                {wordCount} pal.
+              </span>
+            </div>
+            <div className="border-t border-slate-100 pt-1.5">
               <EditorShareBar
                 compact
                 title={title}
@@ -2060,14 +2070,11 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
                 isSlideDeck={isSlideDeck}
                 slideTheme={slideTheme}
               />
-              <span className="ml-auto text-[10px] font-bold text-slate-500">
-                {wordCount} pal.
-              </span>
             </div>
-            <p className="mt-1 truncate text-[10px] text-slate-500" title={status}>
+            <p className="truncate text-[10px] text-slate-500" title={status}>
               {status}
             </p>
-          </>
+          </div>
         )}
       </div>
 

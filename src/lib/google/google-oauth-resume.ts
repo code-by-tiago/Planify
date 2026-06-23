@@ -1,0 +1,234 @@
+import { GOOGLE_DOCS_EXPORT_PENDING_KEY } from "@/components/google/GoogleDocsExportButton";
+import { GOOGLE_DRIVE_EXPORT_PENDING_KEY } from "@/components/google/GoogleDriveExportButton";
+import { GOOGLE_FORMS_EXPORT_PENDING_KEY } from "@/components/google/GoogleFormsExportButton";
+import {
+  exportToGoogleDocs,
+  exportToGoogleDrive,
+  exportToGoogleForms,
+  exportToGoogleSlides,
+  fetchGoogleStatus,
+} from "@/lib/google/google-api-client";
+import {
+  clearGoogleExportPending,
+  consumeGoogleOAuthReturnSignal,
+  GOOGLE_EXPORT_PENDING_KEYS,
+  hasExportableHtml,
+  openGoogleExportUrl,
+  readGoogleExportPending,
+  releaseGoogleOAuthReturnLock,
+  waitForExportableHtml,
+  waitForGoogleConnected,
+  type GoogleExportPending,
+  type GoogleExportPendingKey,
+} from "@/lib/google/google-export-resume";
+import {
+  clearGoogleSlidesExportPending,
+  GOOGLE_SLIDES_EXPORT_PENDING_KEY,
+  notifyGoogleStatusChanged,
+  readGoogleSlidesExportPending,
+  type GoogleSlidesExportPending,
+} from "@/lib/google/google-status-events";
+
+export type ActiveGoogleExportPending =
+  | {
+      key: GoogleExportPendingKey;
+      kind: "product";
+      pending: GoogleExportPending;
+    }
+  | {
+      key: typeof GOOGLE_SLIDES_EXPORT_PENDING_KEY;
+      kind: "slides";
+      pending: GoogleSlidesExportPending;
+    };
+
+export function findActiveGoogleExportPending(): ActiveGoogleExportPending | null {
+  const slidesPending = readGoogleSlidesExportPending();
+  if (slidesPending?.title) {
+    return {
+      key: GOOGLE_SLIDES_EXPORT_PENDING_KEY,
+      kind: "slides",
+      pending: slidesPending,
+    };
+  }
+
+  for (const key of GOOGLE_EXPORT_PENDING_KEYS) {
+    if (key === GOOGLE_SLIDES_EXPORT_PENDING_KEY) continue;
+    const pending = readGoogleExportPending(key);
+    if (pending?.title) {
+      return { key, kind: "product", pending };
+    }
+  }
+
+  return null;
+}
+
+function clearActivePending(active: ActiveGoogleExportPending): void {
+  if (active.kind === "slides") {
+    clearGoogleSlidesExportPending();
+    return;
+  }
+  clearGoogleExportPending(active.key);
+}
+
+function openExportUrl(url: string, fallbackToSameTab: boolean): boolean {
+  const opened = openGoogleExportUrl(url);
+  if (!opened && fallbackToSameTab) {
+    window.location.assign(url);
+    return true;
+  }
+  return opened;
+}
+
+async function executeProductExport(params: {
+  key: GoogleExportPendingKey;
+  pending: GoogleExportPending;
+  getHtml: () => string;
+  getPlanningPayload?: () => Record<string, unknown> | null;
+  documentType?: string | null;
+}): Promise<string> {
+  const snapshot = params.pending.html?.trim() || "";
+  const html =
+    snapshot && hasExportableHtml(snapshot)
+      ? snapshot
+      : await waitForExportableHtml(params.getHtml);
+
+  if (!hasExportableHtml(html)) {
+    throw new Error("O documento ainda não carregou. Aguarde e tente exportar novamente.");
+  }
+
+  const planningPayload =
+    params.pending.planningPayload ?? params.getPlanningPayload?.() ?? null;
+  const title = params.pending.title;
+
+  if (params.key === GOOGLE_DOCS_EXPORT_PENDING_KEY) {
+    const result = await exportToGoogleDocs({
+      title,
+      html,
+      documentType: params.documentType,
+      planningPayload,
+    });
+    return result.documentUrl;
+  }
+
+  if (params.key === GOOGLE_DRIVE_EXPORT_PENDING_KEY) {
+    const result = await exportToGoogleDrive({
+      title,
+      html,
+      documentType: params.documentType,
+      planningPayload,
+    });
+    return result.driveOpenUrl || "https://drive.google.com/drive/my-drive";
+  }
+
+  if (params.key === GOOGLE_FORMS_EXPORT_PENDING_KEY) {
+    const result = await exportToGoogleForms({
+      title,
+      html,
+      description: "Formulário criado pelo Planify.",
+    });
+    return result.formUrl;
+  }
+
+  throw new Error("Exportação Google pendente não reconhecida.");
+}
+
+async function executeSlidesExport(params: {
+  pending: GoogleSlidesExportPending;
+  getHtml: () => string;
+}): Promise<string> {
+  const pendingHasDeck = Boolean(
+    params.pending.html?.trim() || params.pending.slides?.length,
+  );
+
+  const result = await exportToGoogleSlides({
+    title: params.pending.title,
+    html: pendingHasDeck ? params.pending.html : params.getHtml(),
+    slides: pendingHasDeck ? params.pending.slides : undefined,
+    theme: params.pending.theme,
+  });
+
+  return result.presentationUrl;
+}
+
+function productLabel(key: GoogleExportPendingKey): string {
+  if (key === GOOGLE_FORMS_EXPORT_PENDING_KEY) return "Google Forms";
+  if (key === GOOGLE_DRIVE_EXPORT_PENDING_KEY) return "Google Drive";
+  if (key === GOOGLE_DOCS_EXPORT_PENDING_KEY) return "Google Docs";
+  return "Google";
+}
+
+export type ResumePendingGoogleExportParams = {
+  getHtml: () => string;
+  getPlanningPayload?: () => Record<string, unknown> | null;
+  documentType?: string | null;
+  onStatus?: (message: string) => void;
+  onExportError?: (error: unknown) => void;
+};
+
+export async function resumePendingGoogleExport(
+  params: ResumePendingGoogleExportParams,
+): Promise<boolean> {
+  const signal = consumeGoogleOAuthReturnSignal();
+  if (!signal) return false;
+
+  try {
+    if (signal.error) {
+      const active = findActiveGoogleExportPending();
+      if (active) clearActivePending(active);
+      params.onStatus?.(signal.error);
+      return true;
+    }
+
+    if (!signal.connected) return false;
+
+    const active = findActiveGoogleExportPending();
+
+    if (!active) {
+      params.onStatus?.("Conta Google conectada com sucesso.");
+      notifyGoogleStatusChanged();
+      return true;
+    }
+
+    const label =
+      active.kind === "slides" ? "Google Slides" : productLabel(active.key);
+
+    params.onStatus?.(`Retomando exportação para ${label}…`);
+
+    const status = await waitForGoogleConnected(fetchGoogleStatus);
+    notifyGoogleStatusChanged();
+
+    if (!status?.connected) {
+      throw new Error("Conta Google ainda não conectada. Tente exportar novamente.");
+    }
+
+    const openUrl =
+      active.kind === "slides"
+        ? await executeSlidesExport({ pending: active.pending, getHtml: params.getHtml })
+        : await executeProductExport({
+            key: active.key,
+            pending: active.pending,
+            getHtml: params.getHtml,
+            getPlanningPayload: params.getPlanningPayload,
+            documentType: params.documentType,
+          });
+
+    clearActivePending(active);
+
+    const opened = openExportUrl(openUrl, true);
+    if (opened) {
+      params.onStatus?.(`${label} aberto em nova aba.`);
+    } else {
+      params.onStatus?.(`${label} criado. Permita pop-ups ou abra: ${openUrl}`);
+    }
+
+    return true;
+  } catch (error) {
+    params.onExportError?.(error);
+    const message =
+      error instanceof Error ? error.message : "Erro ao retomar exportação Google.";
+    params.onStatus?.(message);
+    return true;
+  } finally {
+    releaseGoogleOAuthReturnLock();
+  }
+}

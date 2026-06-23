@@ -18,6 +18,7 @@ import {
   resolveMaterialExportPolicy,
 } from "@/lib/export/material-export-policy";
 import { extractSlideThemeFromHtml } from "@/lib/slides/slide-deck-utils";
+import { useGoogleOAuthResume } from "@/hooks/useGoogleOAuthResume";
 import { useEffect, useMemo, useState } from "react";
 
 export type GoogleDocumentExportBarProps = {
@@ -57,6 +58,14 @@ export function GoogleDocumentExportBar({
   onDownloadPdf,
   downloadingPdf = false,
 }: GoogleDocumentExportBarProps) {
+  useGoogleOAuthResume({
+    getHtml,
+    getPlanningPayload,
+    documentType,
+    onStatus,
+    onExportError,
+  });
+
   const [isSlideMaterial, setIsSlideMaterial] = useState(
     () => resolveSlideDeck(getHtml, documentType, isSlideDeckProp) === true,
   );
@@ -139,11 +148,8 @@ export function GoogleDocumentExportBar({
     );
   }
 
-  return (
-    <div
-      className={`flex min-w-0 flex-wrap items-center ${gap} ${className}`}
-      title={wrapTitle}
-    >
+  const exportIcons = (
+    <>
       {showSlidesExport && showSlidesChannel ? (
         <>
           <GoogleSlidesExportButton
@@ -230,6 +236,21 @@ export function GoogleDocumentExportBar({
           downloadingPdf={downloadingPdf}
         />
       ) : null}
+    </>
+  );
+
+  return (
+    <div
+      className={`flex min-w-0 items-center ${gap} ${className}`}
+      title={wrapTitle}
+    >
+      {compact ? (
+        <div className="inline-flex max-w-full flex-wrap items-center gap-0.5 rounded-lg border border-slate-200 bg-slate-50/90 px-1 py-0.5">
+          {exportIcons}
+        </div>
+      ) : (
+        <div className="flex flex-wrap items-center gap-1.5">{exportIcons}</div>
+      )}
     </div>
   );
 }

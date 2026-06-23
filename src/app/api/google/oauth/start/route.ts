@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { normalizeGoogleOAuthReturnTo } from "@/lib/google/document-type-detection";
 import { buildGoogleAuthUrl, getGoogleConfigStatus } from "../../../../../server/google/google-oauth";
 import { resolvePlanifyUserFromRequest } from "../../../../../server/google/google-auth";
 
@@ -6,13 +7,13 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 function sanitizeReturnTo(value: unknown): string {
-  const raw = String(value || "/editor").trim();
+  const raw = String(value || "/dashboard?secao=editor").trim();
 
   if (!raw.startsWith("/") || raw.startsWith("//")) {
-    return "/editor";
+    return "/dashboard?secao=editor";
   }
 
-  return raw;
+  return normalizeGoogleOAuthReturnTo(raw);
 }
 
 export async function POST(request: NextRequest) {
@@ -63,7 +64,7 @@ export async function GET(request: NextRequest) {
   if (!config.configured) {
     return NextResponse.redirect(
       new URL(
-        `/editor?google_error=${encodeURIComponent("Google OAuth não configurado no servidor.")}`,
+        `/dashboard?secao=editor&google_error=${encodeURIComponent("Google OAuth não configurado no servidor.")}`,
         request.url,
       ),
     );

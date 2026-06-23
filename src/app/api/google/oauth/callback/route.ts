@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
       returnTo,
       google_error:
         error === "access_denied"
-          ? "Autorização Google cancelada. Conecte novamente para usar o Classroom."
+          ? "Autorização Google cancelada. Conecte novamente para exportar."
           : `Autorização cancelada ou negada (${error}).`,
     });
   }

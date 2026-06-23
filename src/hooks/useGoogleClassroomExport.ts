@@ -79,29 +79,6 @@ export function useGoogleClassroomExport({
     void refresh();
   }, [refresh]);
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const params = new URLSearchParams(window.location.search);
-
-    if (params.get("google") === "connected") {
-      notify("Conta Google conectada com sucesso.");
-      params.delete("google");
-      const next = `${window.location.pathname}?${params.toString()}`.replace(/\?$/, "");
-      window.history.replaceState({}, "", next);
-      void refresh();
-    }
-
-    const googleError = params.get("google_error");
-
-    if (googleError) {
-      setError(decodeURIComponent(googleError));
-      params.delete("google_error");
-      const next = `${window.location.pathname}?${params.toString()}`.replace(/\?$/, "");
-      window.history.replaceState({}, "", next);
-    }
-  }, [notify, refresh]);
-
   async function handleConnect() {
     setBusy(true);
     setError("");

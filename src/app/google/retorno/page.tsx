@@ -7,6 +7,7 @@ import {
   getCurrentAccessToken,
 } from "@/lib/auth/session-client";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
+import { notifyGoogleStatusChanged } from "@/lib/google/google-status-events";
 
 function sanitizeReturnTo(value: string | null): string {
   const raw = String(value || "/dashboard?secao=editor").trim();
@@ -114,6 +115,7 @@ export default function GoogleOAuthReturnPage() {
       }
 
       setMessage("Redirecionando…");
+      notifyGoogleStatusChanged();
       window.location.replace(destination);
     })();
 

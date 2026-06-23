@@ -16,6 +16,76 @@ export const GOOGLE_EXPORT_PENDING_KEYS = [
   "planify:google-slides-export-pending",
 ] as const;
 
+export type GoogleExportPendingKey = (typeof GOOGLE_EXPORT_PENDING_KEYS)[number];
+
+export const GOOGLE_OAUTH_RETURN_LOCK_KEY = "planify:google-oauth-return-lock";
+
+export type GoogleOAuthReturnSignal = {
+  connected: boolean;
+  error: string | null;
+};
+
+export function peekGoogleOAuthReturnSignal(): GoogleOAuthReturnSignal | null {
+  if (typeof window === "undefined") return null;
+
+  const params = new URLSearchParams(window.location.search);
+  const google = params.get("google");
+  const googleError = params.get("google_error");
+
+  if (google !== "connected" && !googleError) return null;
+
+  return {
+    connected: google === "connected",
+    error: googleError ? decodeURIComponent(googleError) : null,
+  };
+}
+
+export function clearGoogleOAuthReturnParams(): void {
+  if (typeof window === "undefined") return;
+
+  const params = new URLSearchParams(window.location.search);
+  if (!params.has("google") && !params.has("google_error")) return;
+
+  params.delete("google");
+  params.delete("google_error");
+  const qs = params.toString();
+  const next = `${window.location.pathname}${qs ? `?${qs}` : ""}`;
+  window.history.replaceState({}, "", next);
+}
+
+/** Lê o sinal OAuth da URL uma única vez por retorno (evita corrida entre componentes). */
+export function consumeGoogleOAuthReturnSignal(): GoogleOAuthReturnSignal | null {
+  const signal = peekGoogleOAuthReturnSignal();
+  if (!signal) return null;
+
+  try {
+    const lockedAt = window.sessionStorage.getItem(GOOGLE_OAUTH_RETURN_LOCK_KEY);
+    if (lockedAt) {
+      const age = Date.now() - Number(lockedAt);
+      if (age < 60_000) return null;
+    }
+    window.sessionStorage.setItem(GOOGLE_OAUTH_RETURN_LOCK_KEY, String(Date.now()));
+  } catch {
+    return null;
+  }
+
+  clearGoogleOAuthReturnParams();
+  return signal;
+}
+
+export function releaseGoogleOAuthReturnLock(): void {
+  if (typeof window === "undefined") return;
+  window.sessionStorage.removeItem(GOOGLE_OAUTH_RETURN_LOCK_KEY);
+}
+
+export function hasAnyGoogleExportPending(keys: readonly string[]): boolean {
+  if (typeof window === "undefined") return false;
+  return keys.some((key) => {
+    const pending = readGoogleExportPending(key);
+    return Boolean(pending?.title);
+  });
+}
+
 export function clearOtherGoogleExportPending(activeKey: string): void {
   if (typeof window === "undefined") return;
 
@@ -95,7 +165,7 @@ export async function waitForExportableHtml(
 
 export async function waitForGoogleConnected<T extends { connected?: boolean }>(
   refresh: () => Promise<T | null>,
-  maxAttempts = 10,
+  maxAttempts = 25,
 ): Promise<T | null> {
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
     const fresh = await refresh();

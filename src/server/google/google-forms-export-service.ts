@@ -113,11 +113,7 @@ export async function exportQuizToGoogleForms(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      info: {
-        title,
-        documentTitle: safeFilename(title),
-        description: input.description || "Formulário criado pelo Planify.",
-      },
+      info: { title },
     }),
   });
 
@@ -135,9 +131,20 @@ export async function exportQuizToGoogleForms(
     );
   }
 
-  const requests = questions.map((question, index) =>
-    buildFormItemRequest(question, index),
-  );
+  const description =
+    input.description?.trim() || "Formulário criado pelo Planify.";
+  const requests = [
+    {
+      updateFormInfo: {
+        info: {
+          description,
+          documentTitle: safeFilename(title),
+        },
+        updateMask: "description,documentTitle",
+      },
+    },
+    ...questions.map((question, index) => buildFormItemRequest(question, index)),
+  ];
 
   const batchResponse = await fetch(
     `https://forms.googleapis.com/v1/forms/${createData.formId}:batchUpdate`,

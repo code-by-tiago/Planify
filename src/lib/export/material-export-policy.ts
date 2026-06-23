@@ -32,7 +32,7 @@ const TEXT_DOC_HINT =
   "Documento editável — ideal para Google Docs e download em PDF.";
 
 const ASSESSMENT_HINT =
-  "Avaliação — use Google Forms (digital) ou PDF (impressão). Layout visual preservado no PDF.";
+  "Avaliação — use Google Forms (digital), PDF (impressão) ou salve no Drive.";
 
 const SLIDES_HINT =
   "Apresentação — exporte para Google Slides, PPTX ou PDF com slides em tela cheia.";
@@ -45,6 +45,7 @@ export const MATERIAL_EXPORT_POLICIES: Record<MaterialEngineType, MaterialExport
         "pdf-download",
         "google-slides",
         "pptx-download",
+        "google-drive",
         "google-classroom",
       ],
       driveFormat: "pdf",
@@ -53,14 +54,24 @@ export const MATERIAL_EXPORT_POLICIES: Record<MaterialEngineType, MaterialExport
       hint: SLIDES_HINT,
     },
     prova: {
-      channels: ["pdf-download", "google-forms", "google-classroom"],
+      channels: [
+        "pdf-download",
+        "google-forms",
+        "google-drive",
+        "google-classroom",
+      ],
       driveFormat: "pdf",
       classroomFormat: "pdf",
       pdfProfile: "document",
       hint: ASSESSMENT_HINT,
     },
     lista: {
-      channels: ["pdf-download", "google-forms", "google-classroom"],
+      channels: [
+        "pdf-download",
+        "google-forms",
+        "google-drive",
+        "google-classroom",
+      ],
       driveFormat: "pdf",
       classroomFormat: "pdf",
       pdfProfile: "document",
@@ -226,7 +237,9 @@ export function inferMaterialToolFromHtml(html: string): MaterialEngineType | nu
   if (/planify-game-table|planify-jogo-visual|planify-game-section/i.test(source)) {
     return "jogo";
   }
-  if (/planify-questao/i.test(source)) return "prova";
+  if (/planify-questao/i.test(source)) {
+    return /exerc[ií]cio/i.test(source) ? "lista" : "prova";
+  }
 
   return null;
 }
@@ -258,6 +271,10 @@ export function materialExportAllows(
   documentType?: string | null,
   html?: string | null,
 ): boolean {
+  if (channel === "google-drive") {
+    return true;
+  }
+
   const policy = resolveMaterialExportPolicy(documentType, html);
   return policy.channels.includes(channel);
 }

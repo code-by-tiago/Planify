@@ -985,6 +985,16 @@ function testExportPolicyChannels() {
     "prova não deve usar Google Docs",
   );
   assert.equal(
+    materialExportAllows("google-drive", "material:lista"),
+    true,
+    "lista deve sempre permitir Google Drive",
+  );
+  assert.equal(
+    materialExportAllows("google-drive", "material:slides"),
+    true,
+    "slides deve sempre permitir Google Drive",
+  );
+  assert.equal(
     materialExportAllows("google-slides", "material:slides"),
     true,
     "slides deve permitir Google Slides",

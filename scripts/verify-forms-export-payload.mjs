@@ -156,6 +156,27 @@ assert.match(questions[0].statement, /2 \+ 2/);
 assert.equal(questions[0].type, "multipla-escolha");
 assert.equal(questions[0].options.length, 3);
 assert.equal(questions[1].type, "dissertativa");
+
+const listaCompactHtml = `
+<section class="planify-questoes-block planify-questoes-block-direct">
+  <article class="planify-questao planify-questao-card planify-questao-card-compact">
+    <span class="planify-questao-number-badge">01</span>
+    <p class="planify-questao-statement">Em qual alternativa a crase esta correta?</p>
+    <ol class="planify-questao-options" type="a"><li>Vou a escola</li><li>Vou à escola</li></ol>
+  </article>
+  <article class="planify-questao planify-questao-card planify-questao-card-compact">
+    <span class="planify-questao-number-badge">02</span>
+    <p class="planify-questao-statement">Justifique o uso da crase na frase dada.</p>
+    <div class="planify-answer-lines"><span></span></div>
+  </article>
+</section>`;
+
+const listaQuestions = quizModule.parseQuizQuestionsFromHtml(listaCompactHtml);
+assert.equal(listaQuestions.length, 2, "lista compacta deve extrair 2 exercicios para Forms");
+assert.equal(listaQuestions[0].options.length, 2);
+assert.equal(listaQuestions[0].type, "multipla-escolha");
+assert.equal(listaQuestions[1].type, "dissertativa");
+
 assert.doesNotMatch(
   JSON.stringify(questions),
   /Gabarito|Notas para o professor|Tempo sugerido/i,

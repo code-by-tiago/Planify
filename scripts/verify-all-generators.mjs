@@ -116,10 +116,15 @@ const { parseSlidesFromPlanifyHtml, extractSlideThemeFromHtml } = loadTsModule(
 const { resolveClassroomExportForHtml } = loadTsModule(
   "src/lib/export/classroom-export-format.ts",
 );
+const { materialExportAllows } = loadTsModule(
+  "src/lib/export/material-export-policy.ts",
+);
 /** Espelha resolveGoogleProductForTool sem importar módulo client-side. */
 function resolveGoogleProductForTool(toolId) {
   if (toolId === "slides") return "slides";
   if (toolId === "prova" || toolId === "lista") return "forms";
+  const PDF_ONLY = new Set(["jogo", "cruzadinha", "flashcards", "mapa-mental"]);
+  if (PDF_ONLY.has(toolId)) return null;
   return "docs";
 }
 
@@ -948,6 +953,88 @@ function testClassroomRouting() {
   }
 }
 
+function testExportPolicyChannels() {
+  assert.equal(
+    materialExportAllows("google-docs", "material:cruzadinha"),
+    false,
+    "cruzadinha não deve exportar para Google Docs",
+  );
+  assert.equal(
+    materialExportAllows("google-drive", "material:cruzadinha"),
+    true,
+    "cruzadinha deve permitir Drive em PDF",
+  );
+  assert.equal(
+    materialExportAllows("pdf-download", "material:cruzadinha"),
+    true,
+    "cruzadinha deve permitir download PDF",
+  );
+  assert.equal(
+    materialExportAllows("google-docs", "material:apostila"),
+    true,
+    "apostila deve permitir Google Docs",
+  );
+  assert.equal(
+    materialExportAllows("google-forms", "material:prova"),
+    true,
+    "prova deve permitir Google Forms",
+  );
+  assert.equal(
+    materialExportAllows("google-docs", "material:prova"),
+    false,
+    "prova não deve usar Google Docs",
+  );
+  assert.equal(
+    materialExportAllows("google-slides", "material:slides"),
+    true,
+    "slides deve permitir Google Slides",
+  );
+}
+
+function testHistoryDocumentTypeResolution() {
+  const cruzadinhaItem = {
+    id: "x",
+    title: "Cruzadinha teste",
+    source: "material",
+    type: "material:cruzadinha",
+    status: "rascunho",
+    contentPreview: "",
+    content: '<div class="planify-game-table--crossword">grid</div>',
+    createdAt: "",
+    updatedAt: "",
+  };
+
+  const { resolveDocumentTypeFromHistoryItem } = loadTsModule(
+    "src/lib/documents/document-export-context.ts",
+  );
+
+  assert.equal(
+    resolveDocumentTypeFromHistoryItem(cruzadinhaItem),
+    "material:cruzadinha",
+    "histórico deve preservar material:cruzadinha",
+  );
+
+  const legacyItem = {
+    ...cruzadinhaItem,
+    type: "editor",
+    raw: { toolId: "cruzadinha" },
+  };
+  assert.equal(
+    resolveDocumentTypeFromHistoryItem(legacyItem),
+    "material:cruzadinha",
+    "histórico legado deve resolver toolId do raw",
+  );
+
+  const { resolveDocumentTypeFromMarketplaceItem } = loadTsModule(
+    "src/lib/documents/document-export-context.ts",
+  );
+  assert.equal(
+    resolveDocumentTypeFromMarketplaceItem({ tipoMaterial: "Cruzadinha" }),
+    "material:cruzadinha",
+    "comunidade deve mapear tipo Cruzadinha",
+  );
+}
+
 function runTest(name, fn) {
   try {
     fn();
@@ -989,8 +1076,8 @@ function testGoogleExportRouting() {
   assert.equal(resolveGoogleProductForTool("slides"), "slides");
   assert.equal(resolveGoogleProductForTool("prova"), "forms");
   assert.equal(resolveGoogleProductForTool("lista"), "forms");
-  assert.equal(resolveGoogleProductForTool("jogo"), "docs");
-  assert.equal(resolveGoogleProductForTool("cruzadinha"), "docs");
+  assert.equal(resolveGoogleProductForTool("jogo"), null);
+  assert.equal(resolveGoogleProductForTool("cruzadinha"), null);
   assert.equal(resolveGoogleProductForTool("apostila"), "docs");
   assert.equal(resolveGoogleProductForTool("atividade"), "docs");
 }
@@ -1123,6 +1210,8 @@ function main() {
   runTest("generation-steps", testGenerationSteps);
   runTest("google-export-routing", testGoogleExportRouting);
   runTest("golden-fixtures", testGoldenFixtures);
+  runTest("export-policy-channels", testExportPolicyChannels);
+  runTest("history-document-type", testHistoryDocumentTypeResolution);
   runTest("export-fidelity", testExportFidelity);
   runTest("forms-fidelity", testFormsFidelity);
   runTest("pptx-fidelity", testPptxFidelity);

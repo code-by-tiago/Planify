@@ -1,6 +1,7 @@
 import { GOOGLE_DOCS_EXPORT_PENDING_KEY } from "@/components/google/GoogleDocsExportButton";
 import { GOOGLE_FORMS_EXPORT_PENDING_KEY } from "@/components/google/GoogleFormsExportButton";
 import type { PlanifyToolId } from "@/lib/pro/planifyTools";
+import { materialExportAllows } from "@/lib/export/material-export-policy";
 import {
   exportToGoogleDocs,
   exportToGoogleForms,
@@ -27,12 +28,18 @@ const INTENT_TTL_MS = 30 * 60 * 1000;
 
 export function resolveGoogleProductForTool(
   toolId: PlanifyToolId,
-): GoogleAutoExportProduct {
+): GoogleAutoExportProduct | null {
   if (toolId === "slides") return "slides";
   if (toolId === "prova" || toolId === "lista") {
     return "forms";
   }
-  return "docs";
+  if (
+    materialExportAllows("google-docs", `material:${toolId}`) &&
+    !materialExportAllows("google-forms", `material:${toolId}`)
+  ) {
+    return "docs";
+  }
+  return null;
 }
 
 export function saveAutoGoogleExportIntent(

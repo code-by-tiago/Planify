@@ -1,5 +1,10 @@
 import { assessUnifiedQualityGate } from "@/lib/materiais/unified-quality-gate";
+import {
+  materialExportAllows,
+  resolveDriveExportFormat,
+} from "@/lib/export/material-export-policy";
 import { resolvePreparedExportBody } from "../export/editor-html-export-service";
+import { exportEditorHtmlDocument } from "../export/editor-html-export-service";
 import { buildNativeHtmlDocx } from "../docx/simple-docx-builder";
 import {
   buildOfficialPlanningDocx,
@@ -74,6 +79,17 @@ function isTrimestralPlanningDocumentType(documentType?: string | null): boolean
   return type.includes("trimestral") || type.includes("trimestre");
 }
 
+function assertGoogleDocsExportAllowed(
+  documentType?: string | null,
+  html?: string,
+): void {
+  if (materialExportAllows("google-docs", documentType, html)) return;
+
+  throw new Error(
+    "Este material tem layout visual (grade, cartões ou mapa). O Google Docs não preserva o design. Use o botão PDF ou envie ao Google Classroom — a qualidade fica idêntica ao editor.",
+  );
+}
+
 function buildDocxBuffer(
   title: string,
   html: string,
@@ -136,6 +152,50 @@ function buildDocxBuffer(
   };
 }
 
+async function buildDriveExportBuffer(
+  title: string,
+  html: string,
+  documentType?: string | null,
+  planningPayload?: OfficialPlanningPayload | Record<string, unknown> | null,
+): Promise<{
+  buffer: Buffer;
+  filename: string;
+  mimeType: string;
+  exportEngine: "official" | "html" | "pdf";
+}> {
+  const driveFormat = resolveDriveExportFormat(documentType, html);
+
+  if (driveFormat === "pdf") {
+    const exported = await exportEditorHtmlDocument({
+      title,
+      html,
+      format: "pdf",
+      documentType,
+    });
+    return {
+      buffer: exported.buffer,
+      filename: exported.filename,
+      mimeType: exported.contentType,
+      exportEngine: "pdf",
+    };
+  }
+
+  const { buffer, exportEngine } = buildDocxBuffer(
+    title,
+    html,
+    documentType,
+    planningPayload,
+  );
+
+  return {
+    buffer,
+    filename: `${safeFilename(title)}.docx`,
+    mimeType:
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    exportEngine,
+  };
+}
+
 export type GoogleDocsExportInput = {
   title: string;
   html: string;
@@ -151,7 +211,7 @@ export type GoogleDocsExportResult = {
   };
   documentUrl: string;
   googleEmail: string | null;
-  exportEngine?: "official" | "html";
+  exportEngine?: "official" | "html" | "pdf";
 };
 
 export async function exportDocumentToGoogleDocs(
@@ -165,6 +225,8 @@ export async function exportDocumentToGoogleDocs(
   if (!html) {
     throw new Error("Conteúdo do documento vazio.");
   }
+
+  assertGoogleDocsExportAllowed(input.documentType, html);
 
   const { buffer, exportEngine } = buildDocxBuffer(
     title,
@@ -210,10 +272,10 @@ export type GoogleDriveSaveResult = {
   /** Drive home/folder URL — never a Google Docs editor link. */
   driveOpenUrl: string;
   googleEmail: string | null;
-  exportEngine?: "official" | "html";
+  exportEngine?: "official" | "html" | "pdf";
 };
 
-/** Salva DOCX no Drive (sem converter para Google Docs). */
+/** Salva no Drive (DOCX editável ou PDF conforme o tipo de material). */
 export async function saveDocumentToGoogleDrive(
   userId: string,
   input: GoogleDriveSaveInput,
@@ -226,19 +288,23 @@ export async function saveDocumentToGoogleDrive(
     throw new Error("Conteúdo do documento vazio.");
   }
 
-  const { buffer, exportEngine } = buildDocxBuffer(
+  if (!materialExportAllows("google-drive", input.documentType, html)) {
+    throw new Error(
+      "Salvar no Drive não está disponível para este formato. Use PDF ou Google Classroom.",
+    );
+  }
+
+  const { buffer, filename, mimeType, exportEngine } = await buildDriveExportBuffer(
     title,
     html,
     input.documentType,
     input.planningPayload,
   );
-  const filename = `${safeFilename(title)}.docx`;
 
   const drive = await uploadBufferToGoogleDrive({
     accessToken,
     filename,
-    mimeType:
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    mimeType,
     buffer,
   });
 

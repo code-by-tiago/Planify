@@ -1,3 +1,7 @@
+import {
+  resolveClassroomExportFormatFromPolicy,
+  resolveMaterialExportPolicy,
+} from "@/lib/export/material-export-policy";
 import { isSlideDeckHtml } from "@/lib/slides/slide-deck-utils";
 
 export type MaterialExportKind = "slides" | "quiz" | "planejamento" | "document";
@@ -78,7 +82,17 @@ export function resolveClassroomExportForHtml(
   html: string,
   documentType?: string | null,
 ): ClassroomExportFormat {
-  return resolveClassroomExportFormat(
-    detectMaterialExportKind(html, documentType),
+  return resolveClassroomExportFormatFromPolicy(documentType, html);
+}
+
+/** Indica se o material deve usar apenas PDF (sem Google Docs). */
+export function isPdfPreferredMaterial(
+  documentType?: string | null,
+  html?: string | null,
+): boolean {
+  const policy = resolveMaterialExportPolicy(documentType, html);
+  return (
+    !policy.channels.includes("google-docs") &&
+    policy.channels.includes("pdf-download")
   );
 }

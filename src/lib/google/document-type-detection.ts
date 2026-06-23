@@ -1,4 +1,5 @@
 import { isSlideDeckHtml } from "@/lib/slides/slide-deck-utils";
+import { materialExportAllows } from "@/lib/export/material-export-policy";
 
 export function resolveSlideDeck(
   getHtml: () => string,
@@ -58,33 +59,17 @@ export function resolveFormsExportCompatible(
   getHtml: () => string,
   documentType?: string | null,
 ): boolean {
-  const type = String(documentType || "").toLowerCase();
-
-  if (
-    type.includes("jogo") ||
-    type.includes("slides") ||
-    type.includes("planejamento") ||
-    type.includes("flashcards") ||
-    type.includes("mapa-mental") ||
-    type.includes("plano-aula") ||
-    type.includes("sequencia") ||
-    type.includes("projeto")
-  ) {
-    return false;
-  }
-
-  if (type.includes("prova") || type.includes("lista") || type.includes("quiz")) {
-    return true;
-  }
-
   try {
     const html = getHtml();
+    if (!materialExportAllows("google-forms", documentType, html)) {
+      return false;
+    }
     if (/planify-game-table|planify-jogo-visual|planify-game-section/i.test(html)) {
       return false;
     }
     return /planify-questao/i.test(html);
   } catch {
-    return false;
+    return materialExportAllows("google-forms", documentType);
   }
 }
 

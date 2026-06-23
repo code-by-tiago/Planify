@@ -1,6 +1,5 @@
 "use client";
 
-import { DocumentDownloadIconBar } from "@/components/documents/DocumentDownloadIconBar";
 import { GoogleDocumentExportBar } from "@/components/google/GoogleDocumentExportBar";
 import {
   getHistoryItemHtml,
@@ -18,7 +17,6 @@ type HistoryDocumentExportBarProps = {
   onStatus?: (message: string) => void;
   onError?: (error: unknown) => void;
   classroomMode?: "panel" | "popover";
-  showDownloads?: boolean;
 };
 
 export function HistoryDocumentExportBar({
@@ -27,7 +25,6 @@ export function HistoryDocumentExportBar({
   onStatus,
   onError,
   classroomMode = "popover",
-  showDownloads = true,
 }: HistoryDocumentExportBarProps) {
   const [downloadingPdf, setDownloadingPdf] = useState(false);
 
@@ -37,9 +34,8 @@ export function HistoryDocumentExportBar({
   const html = getHistoryItemHtml(item);
   const isSlideDeck =
     documentType.includes("slides") || (html ? isSlideDeckHtml(html) : false);
-  const isPdfNative = documentType.toLowerCase().includes("pdf");
 
-  async function handleDownloadPdf() {
+  const handleDownloadPdf = useCallback(async () => {
     setDownloadingPdf(true);
     try {
       await downloadEditorExport({
@@ -55,28 +51,22 @@ export function HistoryDocumentExportBar({
     } finally {
       setDownloadingPdf(false);
     }
-  }
+  }, [documentType, getHtml, item.title, onError, onStatus]);
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <GoogleDocumentExportBar
-        title={item.title}
-        getHtml={getHtml}
-        getPlanningPayload={getPlanningPayload}
-        documentType={documentType}
-        isSlideDeck={isSlideDeck}
-        returnTo={returnTo}
-        onStatus={onStatus}
-        onExportError={onError}
-        compact
-        classroomMode={classroomMode}
-      />
-      {showDownloads && isPdfNative ? (
-        <DocumentDownloadIconBar
-          onDownloadPdf={() => void handleDownloadPdf()}
-          downloadingPdf={downloadingPdf}
-        />
-      ) : null}
-    </div>
+    <GoogleDocumentExportBar
+      title={item.title}
+      getHtml={getHtml}
+      getPlanningPayload={getPlanningPayload}
+      documentType={documentType}
+      isSlideDeck={isSlideDeck}
+      returnTo={returnTo}
+      onStatus={onStatus}
+      onExportError={onError}
+      compact
+      classroomMode={classroomMode}
+      onDownloadPdf={() => void handleDownloadPdf()}
+      downloadingPdf={downloadingPdf}
+    />
   );
 }

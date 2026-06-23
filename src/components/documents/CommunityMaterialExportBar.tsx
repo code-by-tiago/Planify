@@ -1,9 +1,9 @@
 "use client";
 
-import { DocumentDownloadIconBar } from "@/components/documents/DocumentDownloadIconBar";
 import { GoogleDocumentExportBar } from "@/components/google/GoogleDocumentExportBar";
 import { useMarketplaceMaterialHtml } from "@/hooks/useMarketplaceMaterialHtml";
 import { resolveDocumentTypeFromMarketplaceItem } from "@/lib/documents/document-export-context";
+import { materialExportAllows } from "@/lib/export/material-export-policy";
 import { extractPlanningPayloadFromHtml } from "@/lib/planejamentos/planning-export-embed";
 import type { CommunityFeedItem } from "@/lib/community/types";
 import type { MarketplaceDownloadFormat } from "@/lib/marketplace/marketplace-download-client";
@@ -39,10 +39,6 @@ export function CommunityMaterialExportBar({
     fileMime: item.fileMime,
   });
 
-  const isPdfNative =
-    String(item.fileMime || "").includes("pdf") ||
-    documentType.toLowerCase().includes("pdf");
-
   const getHtmlForExport = useCallback(() => {
     const content = getHtml();
     if (content.trim().length >= 20) {
@@ -72,7 +68,11 @@ export function CommunityMaterialExportBar({
   const googleDisabledTitle = isPlanningMaterial && !planningPayloadReady
     ? "Planejamento publicado sem matriz oficial. Abra no editor e republica na Comunidade para exportar com o modelo oficial."
     : error ||
-      "Use Google Docs para exportar. Materiais sem HTML exigem abrir no editor primeiro.";
+      "Conteúdo ainda não carregado. Abra no editor ou aguarde o carregamento.";
+
+  const canDownloadPdf =
+    materialExportAllows("pdf-download", documentType, html || undefined) ||
+    String(item.fileMime || "").includes("pdf");
 
   return (
     <div className="space-y-1.5">
@@ -97,13 +97,11 @@ export function CommunityMaterialExportBar({
           classroomMode="popover"
           disabled={googleDisabled}
           disabledTitle={googleDisabledTitle}
+          onDownloadPdf={
+            canDownloadPdf ? () => onDownload(item, "pdf") : undefined
+          }
+          downloadingPdf={downloadingKey === `${item.id}:pdf`}
         />
-        {isPdfNative ? (
-          <DocumentDownloadIconBar
-            onDownloadPdf={() => onDownload(item, "pdf")}
-            downloadingPdf={downloadingKey === `${item.id}:pdf`}
-          />
-        ) : null}
       </div>
       {exportStatus ? (
         <p className="text-[10px] font-semibold text-emerald-700">{exportStatus}</p>

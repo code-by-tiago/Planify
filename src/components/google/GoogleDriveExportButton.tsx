@@ -16,6 +16,7 @@ type GoogleDriveExportButtonProps = {
   documentType?: string | null;
   className?: string;
   iconOnly?: boolean;
+  exportTitle?: string;
   onStatus?: (message: string) => void;
   onExportError?: (error: unknown) => void;
 };
@@ -28,6 +29,7 @@ export function GoogleDriveExportButton({
   documentType,
   className,
   iconOnly,
+  exportTitle = "Salva uma cópia no Google Drive",
   onStatus,
   onExportError,
 }: GoogleDriveExportButtonProps) {
@@ -53,6 +55,8 @@ export function GoogleDriveExportButton({
 
     if (result.exportEngine === "official") {
       onStatus?.("Drive aberto com o modelo oficial do planejamento.");
+    } else if (result.exportEngine === "pdf") {
+      onStatus?.("PDF salvo no Google Drive com layout preservado.");
     }
 
     return { openUrl: url, openedInPreview: Boolean(previewWindow && !previewWindow.closed) };
@@ -78,7 +82,7 @@ export function GoogleDriveExportButton({
         connecting: "Conectando…",
         connect: "Conectar Google",
       }}
-      exportTitle="Salva uma cópia no Google Drive"
+      exportTitle={exportTitle}
       pendingStorageKey={GOOGLE_DRIVE_EXPORT_PENDING_KEY}
       onExport={runExport}
       onStatus={onStatus}

@@ -7,11 +7,16 @@ import { GoogleDriveExportButton } from "@/components/google/GoogleDriveExportBu
 import { GoogleFormsExportButton } from "@/components/google/GoogleFormsExportButton";
 import { GoogleSlidesExportButton } from "@/components/google/GoogleSlidesExportButton";
 import { SlidesPptxDownloadButton } from "@/components/documents/SlidesPptxDownloadButton";
+import { DocumentDownloadIconBar } from "@/components/documents/DocumentDownloadIconBar";
 import {
   resolveFormsExportCompatible,
   resolveSlideDeck,
   resolveSlidesExportCompatible,
 } from "@/lib/google/document-type-detection";
+import {
+  materialExportAllows,
+  resolveMaterialExportPolicy,
+} from "@/lib/export/material-export-policy";
 import { extractSlideThemeFromHtml } from "@/lib/slides/slide-deck-utils";
 import { useEffect, useMemo, useState } from "react";
 
@@ -30,6 +35,8 @@ export type GoogleDocumentExportBarProps = {
   disabled?: boolean;
   disabledTitle?: string;
   className?: string;
+  onDownloadPdf?: () => void;
+  downloadingPdf?: boolean;
 };
 
 export function GoogleDocumentExportBar({
@@ -47,6 +54,8 @@ export function GoogleDocumentExportBar({
   disabled = false,
   disabledTitle,
   className = "",
+  onDownloadPdf,
+  downloadingPdf = false,
 }: GoogleDocumentExportBarProps) {
   const [isSlideMaterial, setIsSlideMaterial] = useState(
     () => resolveSlideDeck(getHtml, documentType, isSlideDeckProp) === true,
@@ -60,6 +69,9 @@ export function GoogleDocumentExportBar({
   );
   const [showFormsExport, setShowFormsExport] = useState(() =>
     resolveFormsExportCompatible(getHtml, documentType),
+  );
+  const [exportPolicy, setExportPolicy] = useState(() =>
+    resolveMaterialExportPolicy(documentType, getHtml()),
   );
 
   const returnTo = useMemo(() => {
@@ -84,9 +96,11 @@ export function GoogleDocumentExportBar({
           slideThemeProp || extractSlideThemeFromHtml(getHtml()) || null,
         );
         setShowFormsExport(resolveFormsExportCompatible(getHtml, documentType));
+        setExportPolicy(resolveMaterialExportPolicy(documentType, getHtml()));
       } catch {
         setSlideTheme(slideThemeProp ?? null);
         setShowFormsExport(false);
+        setExportPolicy(resolveMaterialExportPolicy(documentType));
       }
     };
 
@@ -96,7 +110,21 @@ export function GoogleDocumentExportBar({
   }, [getHtml, documentType, isSlideDeckProp, slideThemeProp]);
 
   const gap = compact ? "gap-1" : "gap-1.5 sm:gap-2";
-  const wrapTitle = disabled ? disabledTitle : undefined;
+  const wrapTitle = disabled ? disabledTitle : exportPolicy.hint;
+
+  const showDocsExport = materialExportAllows("google-docs", documentType, getHtml());
+  const showDriveExport = materialExportAllows("google-drive", documentType, getHtml());
+  const showClassroomExport = materialExportAllows(
+    "google-classroom",
+    documentType,
+    getHtml(),
+  );
+  const showSlidesChannel = materialExportAllows("google-slides", documentType, getHtml());
+  const showPptxExport = materialExportAllows("pptx-download", documentType, getHtml());
+  const driveIsPdf = exportPolicy.driveFormat === "pdf";
+  const showPdfDownload =
+    Boolean(onDownloadPdf) &&
+    materialExportAllows("pdf-download", documentType, getHtml());
 
   if (disabled) {
     return (
@@ -116,7 +144,7 @@ export function GoogleDocumentExportBar({
       className={`flex min-w-0 flex-wrap items-center ${gap} ${className}`}
       title={wrapTitle}
     >
-      {showSlidesExport ? (
+      {showSlidesExport && showSlidesChannel ? (
         <>
           <GoogleSlidesExportButton
             title={title}
@@ -126,38 +154,45 @@ export function GoogleDocumentExportBar({
             alwaysShowExport
             iconOnly
           />
-          <SlidesPptxDownloadButton
-            title={title}
-            getHtml={getHtml}
-            theme={slideTheme ?? undefined}
-            documentType={documentType}
-            iconOnly
-          />
+          {showPptxExport ? (
+            <SlidesPptxDownloadButton
+              title={title}
+              getHtml={getHtml}
+              theme={slideTheme ?? undefined}
+              documentType={documentType}
+              iconOnly
+            />
+          ) : null}
         </>
       ) : null}
-      {!isSlideMaterial ? (
-        <>
-          <GoogleDocsExportButton
-            title={title}
-            getHtml={getHtml}
-            getPlanningPayload={getPlanningPayload}
-            returnTo={returnTo}
-            documentType={documentType}
-            onStatus={onStatus}
-            onExportError={onExportError}
-            iconOnly
-          />
-          <GoogleDriveExportButton
-            title={title}
-            getHtml={getHtml}
-            getPlanningPayload={getPlanningPayload}
-            returnTo={returnTo}
-            documentType={documentType}
-            onStatus={onStatus}
-            onExportError={onExportError}
-            iconOnly
-          />
-        </>
+      {!isSlideMaterial && showDocsExport ? (
+        <GoogleDocsExportButton
+          title={title}
+          getHtml={getHtml}
+          getPlanningPayload={getPlanningPayload}
+          returnTo={returnTo}
+          documentType={documentType}
+          onStatus={onStatus}
+          onExportError={onExportError}
+          iconOnly
+        />
+      ) : null}
+      {!isSlideMaterial && showDriveExport ? (
+        <GoogleDriveExportButton
+          title={title}
+          getHtml={getHtml}
+          getPlanningPayload={getPlanningPayload}
+          returnTo={returnTo}
+          documentType={documentType}
+          onStatus={onStatus}
+          onExportError={onExportError}
+          iconOnly
+          exportTitle={
+            driveIsPdf
+              ? "Salva PDF no Google Drive (preserva layout visual)"
+              : "Salva uma cópia no Google Drive"
+          }
+        />
       ) : null}
       {showFormsExport ? (
         <GoogleFormsExportButton
@@ -169,24 +204,32 @@ export function GoogleDocumentExportBar({
           iconOnly
         />
       ) : null}
-      {classroomMode === "popover" ? (
-        <GoogleClassroomPopoverButton
-          title={title}
-          getHtml={getHtml}
-          onStatus={onStatus}
-          returnTo={returnTo}
-          documentType={documentType}
+      {showClassroomExport ? (
+        classroomMode === "popover" ? (
+          <GoogleClassroomPopoverButton
+            title={title}
+            getHtml={getHtml}
+            onStatus={onStatus}
+            returnTo={returnTo}
+            documentType={documentType}
+          />
+        ) : (
+          <GoogleClassroomPanel
+            compact
+            title={title}
+            getHtml={getHtml}
+            onStatus={onStatus}
+            returnTo={returnTo}
+            documentType={documentType}
+          />
+        )
+      ) : null}
+      {showPdfDownload ? (
+        <DocumentDownloadIconBar
+          onDownloadPdf={onDownloadPdf}
+          downloadingPdf={downloadingPdf}
         />
-      ) : (
-        <GoogleClassroomPanel
-          compact
-          title={title}
-          getHtml={getHtml}
-          onStatus={onStatus}
-          returnTo={returnTo}
-          documentType={documentType}
-        />
-      )}
+      ) : null}
     </div>
   );
 }

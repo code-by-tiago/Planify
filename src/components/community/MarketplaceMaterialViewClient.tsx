@@ -3,8 +3,8 @@
 import { CommunityAuthorAvatar } from "@/components/community/CommunityAuthorAvatar";
 import { CommunityAuthorLink } from "@/components/community/CommunityAuthorLink";
 import { CommunityMaterialPreview } from "@/components/community/CommunityMaterialPreview";
-import { DocumentDownloadIconBar } from "@/components/documents/DocumentDownloadIconBar";
 import { GoogleDocumentExportBar } from "@/components/google/GoogleDocumentExportBar";
+import { materialExportAllows } from "@/lib/export/material-export-policy";
 import { MaterialLikeButton } from "@/components/community/MaterialLikeButton";
 import { MarketplaceComments } from "@/components/marketplace/MarketplaceComments";
 import {
@@ -273,30 +273,27 @@ export function MarketplaceMaterialViewClient({
   ) : null;
 
   const exportBar = material && preview ? (
-    <>
-      <GoogleDocumentExportBar
-        title={material.title}
-        getHtml={() => exportHtml}
-        getPlanningPayload={
-          documentType?.includes("planejamento") ? getPlanningPayload : undefined
-        }
-        documentType={documentType}
-        isSlideDeck={preview.isSlidePreview}
-        returnTo={`/marketplace/material/${material.id}`}
-        compact
-        classroomMode="popover"
-        disabled={googleExportDisabled}
-        disabledTitle={googleDisabledTitle}
-      />
-      <DocumentDownloadIconBar
-        onDownloadPdf={
-          preview.downloadFormats.includes("pdf")
-            ? () => void handleDownload("pdf")
-            : undefined
-        }
-        downloadingPdf={downloadingKey === `${material.id}:pdf`}
-      />
-    </>
+    <GoogleDocumentExportBar
+      title={material.title}
+      getHtml={() => exportHtml}
+      getPlanningPayload={
+        documentType?.includes("planejamento") ? getPlanningPayload : undefined
+      }
+      documentType={documentType}
+      isSlideDeck={preview.isSlidePreview}
+      returnTo={`/marketplace/material/${material.id}`}
+      compact
+      classroomMode="popover"
+      disabled={googleExportDisabled}
+      disabledTitle={googleDisabledTitle}
+      onDownloadPdf={
+        materialExportAllows("pdf-download", documentType, exportHtml) ||
+        preview.downloadFormats.includes("pdf")
+          ? () => void handleDownload("pdf")
+          : undefined
+      }
+      downloadingPdf={downloadingKey === `${material.id}:pdf`}
+    />
   ) : null;
 
   const moderationActions = material ? (

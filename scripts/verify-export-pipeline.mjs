@@ -83,6 +83,8 @@ const { stripTeacherOnlyExportBlocks } = loadTsModule(
 function resolveGoogleProductForTool(toolId) {
   if (toolId === "slides") return "slides";
   if (toolId === "prova" || toolId === "lista") return "forms";
+  const PDF_ONLY = new Set(["jogo", "cruzadinha", "flashcards", "mapa-mental"]);
+  if (PDF_ONLY.has(toolId)) return null;
   return "docs";
 }
 
@@ -146,8 +148,8 @@ assert.equal(parseQuizQuestionsFromHtml(stripTeacherOnlyExportBlocks(gameHtml)).
 assert.equal(parseQuizQuestionsFromHtml(stripTeacherOnlyExportBlocks(provaHtml)).length, 1);
 
 // --- Auto-export pós-geração ---
-assert.equal(resolveGoogleProductForTool("jogo"), "docs");
-assert.equal(resolveGoogleProductForTool("cruzadinha"), "docs");
+assert.equal(resolveGoogleProductForTool("jogo"), null);
+assert.equal(resolveGoogleProductForTool("cruzadinha"), null);
 assert.equal(resolveGoogleProductForTool("prova"), "forms");
 assert.equal(resolveGoogleProductForTool("lista"), "forms");
 assert.equal(resolveGoogleProductForTool("slides"), "slides");
@@ -319,7 +321,7 @@ console.log("verify-export-pipeline: OK");
 console.log("- DOCX nativo: questoes numeradas, alternativas a/b/c/d, negrito inline");
 console.log("- Classroom jogo/prova → PDF; apostila → DOCX");
 console.log("- Forms só prova/lista; jogo sem questões parseáveis");
-console.log("- Auto-export: jogo → Docs, prova/lista → Forms");
+console.log("- Auto-export: jogo/cruzadinha → nenhum (use PDF); prova/lista → Forms");
 console.log("- PDF preserva markup planify-game-*");
 console.log("- Jogos legados sem classes são promovidos na exportação");
 console.log("- 7 rotas de exportação com POST");

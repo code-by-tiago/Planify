@@ -29,6 +29,7 @@ export async function GET(request: NextRequest) {
     authenticated: Boolean(user),
     connected,
     googleEmail,
+    planifyEmail: user?.email ? String(user.email).trim().toLowerCase() : null,
     formsScopeGranted,
   });
 }

@@ -19,7 +19,11 @@ export type GoogleOAuthPromptMode = "consent" | "select_account consent" | "sele
 
 export function buildGoogleAuthUrl(
   payload: GoogleOAuthStatePayload,
-  options?: { promptMode?: GoogleOAuthPromptMode },
+  options?: {
+    promptMode?: GoogleOAuthPromptMode;
+    loginHint?: string;
+    hostedDomain?: string;
+  },
 ): string {
   const { clientId, redirectUri } = requireGoogleConfig();
   const state = signGoogleOAuthState(payload);
@@ -35,6 +39,16 @@ export function buildGoogleAuthUrl(
     include_granted_scopes: "true",
     state,
   });
+
+  const loginHint = options?.loginHint?.trim().toLowerCase();
+  if (loginHint) {
+    params.set("login_hint", loginHint);
+  }
+
+  const hostedDomain = options?.hostedDomain?.trim().toLowerCase();
+  if (hostedDomain) {
+    params.set("hd", hostedDomain);
+  }
 
   return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
 }

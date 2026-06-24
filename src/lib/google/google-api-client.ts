@@ -16,6 +16,7 @@ export type GoogleIntegrationStatus = {
   authenticated: boolean;
   connected: boolean;
   googleEmail: string | null;
+  planifyEmail: string | null;
   formsScopeGranted?: boolean;
   missingEnv?: string[];
 };
@@ -37,6 +38,7 @@ export async function fetchGoogleStatus(): Promise<GoogleIntegrationStatus> {
     authenticated: Boolean(data?.authenticated),
     connected: Boolean(data?.connected),
     googleEmail: data?.googleEmail || null,
+    planifyEmail: data?.planifyEmail || null,
     formsScopeGranted: Boolean(data?.formsScopeGranted),
     missingEnv: data?.missingEnv,
   };
@@ -49,7 +51,11 @@ export function buildGoogleOAuthStartUrl(returnTo = "/editor"): string {
 
 export async function startGoogleOAuth(
   returnTo = "/editor",
-  options?: { selectAccount?: boolean },
+  options?: {
+    selectAccount?: boolean;
+    loginHint?: string;
+    hostedDomain?: string;
+  },
 ): Promise<void> {
   const response = await fetch("/api/google/oauth/start", {
     method: "POST",
@@ -58,6 +64,8 @@ export async function startGoogleOAuth(
     body: JSON.stringify({
       returnTo,
       selectAccount: options?.selectAccount !== false,
+      loginHint: options?.loginHint,
+      hostedDomain: options?.hostedDomain,
     }),
   });
 

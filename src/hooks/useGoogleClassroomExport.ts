@@ -9,6 +9,15 @@ import {
   type ClassroomCourseOption,
   type GoogleIntegrationStatus,
 } from "@/lib/google/google-api-client";
+import {
+  classroomGoogleAccountMismatch,
+  isEducarInstitutionalEmail,
+  isValidGoogleEmail,
+  persistClassroomGoogleEmail,
+  readClassroomGoogleEmail,
+  resolveClassroomOAuthHint,
+  suggestInstitutionalEmail,
+} from "@/lib/google/classroom-google-account";
 import { resolveGoogleOAuthReturnTo } from "@/lib/google/document-type-detection";
 import { notifyGoogleStatusChanged } from "@/lib/google/google-status-events";
 import { useCallback, useEffect, useState } from "react";
@@ -33,6 +42,7 @@ export function useGoogleClassroomExport({
   const [courseId, setCourseId] = useState("");
   const [description, setDescription] = useState("");
   const [publishAsDraft, setPublishAsDraft] = useState(false);
+  const [institutionalEmail, setInstitutionalEmail] = useState("");
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -43,6 +53,18 @@ export function useGoogleClassroomExport({
     },
     [onStatus],
   );
+
+  useEffect(() => {
+    setInstitutionalEmail((current) => current || readClassroomGoogleEmail());
+  }, []);
+
+  useEffect(() => {
+    if (!status?.planifyEmail) return;
+
+    setInstitutionalEmail((current) =>
+      suggestInstitutionalEmail(status.planifyEmail, current),
+    );
+  }, [status?.planifyEmail]);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -58,11 +80,20 @@ export function useGoogleClassroomExport({
         setCourseId((current) => current || list[0]?.id || "");
 
         if (list.length === 0) {
-          setError(
-            next.googleEmail
-              ? `Nenhuma turma de professor encontrada em ${next.googleEmail}. Conecte a conta Google Workspace da escola em que você leciona.`
-              : "Nenhuma turma de professor encontrada. Conecte a conta Google Workspace da escola em que você leciona.",
-          );
+          const googleEmail = next.googleEmail;
+          if (classroomGoogleAccountMismatch(googleEmail)) {
+            setError(
+              googleEmail
+                ? `Nenhuma turma encontrada em ${googleEmail}. Conecte sua conta @educar.rs.gov.br da escola.`
+                : "Nenhuma turma encontrada. Conecte a conta Google institucional da escola.",
+            );
+          } else {
+            setError(
+              googleEmail
+                ? `Nenhuma turma de professor encontrada em ${googleEmail}.`
+                : "Nenhuma turma de professor encontrada.",
+            );
+          }
         }
       } else {
         setCourses([]);
@@ -81,28 +112,61 @@ export function useGoogleClassroomExport({
     void refresh();
   }, [refresh]);
 
-  async function handleConnect() {
+  const needsInstitutionalConnect =
+    !status?.connected ||
+    classroomGoogleAccountMismatch(status?.googleEmail) ||
+    courses.length === 0;
+
+  const canExport =
+    Boolean(status?.connected) &&
+    isEducarInstitutionalEmail(status?.googleEmail) &&
+    courses.length > 0 &&
+    Boolean(courseId);
+
+  async function connectWithInstitutionalEmail(mode: "connect" | "switch") {
+    const email = institutionalEmail.trim().toLowerCase();
+
+    if (!isValidGoogleEmail(email)) {
+      setError(
+        "Informe o e-mail Google institucional da escola (ex.: nome@educar.rs.gov.br).",
+      );
+      return;
+    }
+
     setBusy(true);
     setError("");
 
     try {
-      await startGoogleOAuth(resolveGoogleOAuthReturnTo(returnTo), { selectAccount: true });
+      persistClassroomGoogleEmail(email);
+
+      if (mode === "switch" && status?.connected) {
+        await disconnectGoogle();
+      }
+
+      const hint = resolveClassroomOAuthHint(email);
+      await startGoogleOAuth(resolveGoogleOAuthReturnTo(returnTo), {
+        selectAccount: true,
+        loginHint: hint.loginHint,
+        hostedDomain: hint.hostedDomain,
+      });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao conectar Google.");
+      setError(
+        err instanceof Error
+          ? err.message
+          : mode === "switch"
+            ? "Erro ao trocar conta Google."
+            : "Erro ao conectar Google.",
+      );
       setBusy(false);
     }
   }
 
-  async function handleSwitchAccount() {
-    setBusy(true);
-    setError("");
+  async function handleConnect() {
+    await connectWithInstitutionalEmail("connect");
+  }
 
-    try {
-      await startGoogleOAuth(resolveGoogleOAuthReturnTo(returnTo), { selectAccount: true });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao trocar conta Google.");
-      setBusy(false);
-    }
+  async function handleSwitchAccount() {
+    await connectWithInstitutionalEmail("switch");
   }
 
   async function handleDisconnect() {
@@ -123,6 +187,11 @@ export function useGoogleClassroomExport({
   async function handleExport(previewWindow?: Window | null) {
     if (!courseId) {
       setError("Selecione uma turma do Google Classroom.");
+      return;
+    }
+
+    if (classroomGoogleAccountMismatch(status?.googleEmail)) {
+      setError("Conecte a conta Google institucional (@educar.rs.gov.br) antes de enviar.");
       return;
     }
 
@@ -179,6 +248,10 @@ export function useGoogleClassroomExport({
     setDescription,
     publishAsDraft,
     setPublishAsDraft,
+    institutionalEmail,
+    setInstitutionalEmail,
+    needsInstitutionalConnect,
+    canExport,
     loading,
     busy,
     error,

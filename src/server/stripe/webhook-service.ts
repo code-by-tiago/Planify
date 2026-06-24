@@ -455,3 +455,48 @@ export async function syncCheckoutSessionToDatabase(sessionId: string): Promise<
     email,
   };
 }
+
+type StripeCustomerListResponse = {
+  data?: Array<{ id: string }>;
+};
+
+type StripeSubscriptionListResponse = {
+  data?: StripeSubscription[];
+};
+
+/** Recupera assinaturas pagas na Stripe quando o webhook ainda não gravou no banco. */
+export async function syncSubscriptionsForEmailFromStripe(
+  email: string,
+): Promise<{ synced: number; email: string }> {
+  const normalizedEmail = email.trim().toLowerCase();
+
+  if (!normalizedEmail) {
+    return { synced: 0, email: normalizedEmail };
+  }
+
+  const customers = await stripeApiRequest<StripeCustomerListResponse>(
+    `/customers?email=${encodeURIComponent(normalizedEmail)}&limit=5`,
+  );
+
+  let synced = 0;
+
+  for (const customer of customers.data || []) {
+    for (const status of ["active", "trialing"] as const) {
+      const subscriptions = await stripeApiRequest<StripeSubscriptionListResponse>(
+        `/subscriptions?customer=${customer.id}&status=${status}&limit=10`,
+      );
+
+      for (const subscription of subscriptions.data || []) {
+        const result = await handleSubscriptionEvent(
+          subscription,
+          "customer.subscription.sync_by_email",
+        );
+        if (result.handled) {
+          synced += 1;
+        }
+      }
+    }
+  }
+
+  return { synced, email: normalizedEmail };
+}

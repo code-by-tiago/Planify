@@ -418,7 +418,7 @@ export async function activateAccountAfterPayment(params: {
     return {
       success: false,
       premium: false,
-      redirectTo: "/planos/sucesso",
+      redirectTo: "/planos/ativar",
       message:
         activateJson?.error?.message ||
         "Não foi possível criar sua conta. Tente novamente em instantes.",

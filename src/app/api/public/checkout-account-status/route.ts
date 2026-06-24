@@ -1,37 +1,30 @@
 import { NextRequest, NextResponse } from "next/server";
+import { findAuthUserByEmail } from "@/server/auth/find-user-by-email";
 import { getSupabaseAdminClient } from "@/server/supabase/admin-client";
+import { syncSubscriptionsForEmailFromStripe } from "@/server/stripe/webhook-service";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-async function findAuthUserByEmail(email: string) {
+const ACTIVE_STATUSES = ["active", "trialing"];
+
+async function hasActiveSubscription(email: string): Promise<boolean> {
   const supabase = getSupabaseAdminClient();
-  let page = 1;
 
-  while (page <= 30) {
-    const { data, error } = await supabase.auth.admin.listUsers({ page, perPage: 100 });
-    if (error) throw new Error(error.message);
+  const { data } = await (supabase as any)
+    .from("subscriptions")
+    .select("id")
+    .eq("stripe_customer_email", email)
+    .in("status", ACTIVE_STATUSES)
+    .limit(1)
+    .maybeSingle();
 
-    const user = data.users.find(
-      (item) => String(item.email || "").trim().toLowerCase() === email,
-    );
-
-    if (user) {
-      return {
-        exists: true,
-        emailConfirmed: Boolean(user.email_confirmed_at),
-      };
-    }
-
-    if (data.users.length < 100) break;
-    page += 1;
-  }
-
-  return { exists: false, emailConfirmed: false };
+  return Boolean(data);
 }
 
 export async function GET(request: NextRequest) {
   const email = request.nextUrl.searchParams.get("email")?.trim().toLowerCase();
+  const shouldSync = request.nextUrl.searchParams.get("sync") === "1";
 
   if (!email || !email.includes("@")) {
     return NextResponse.json(
@@ -41,23 +34,27 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const auth = await findAuthUserByEmail(email);
-    const supabase = getSupabaseAdminClient();
+    if (shouldSync) {
+      await syncSubscriptionsForEmailFromStripe(email);
+    }
 
-    const { data: subscription } = await (supabase as any)
-      .from("subscriptions")
-      .select("id,status")
-      .eq("stripe_customer_email", email)
-      .in("status", ["active", "trialing"])
-      .limit(1)
-      .maybeSingle();
+    const user = await findAuthUserByEmail(email);
+    const hasAccount = Boolean(user);
+    const emailConfirmed = Boolean(user?.email_confirmed_at);
+    let hasActiveSubscriptionFlag = await hasActiveSubscription(email);
+
+    if (!hasActiveSubscriptionFlag && !shouldSync) {
+      await syncSubscriptionsForEmailFromStripe(email);
+      hasActiveSubscriptionFlag = await hasActiveSubscription(email);
+    }
 
     return NextResponse.json({
       success: true,
       data: {
-        hasAccount: auth.exists,
-        emailConfirmed: auth.emailConfirmed,
-        hasActiveSubscription: Boolean(subscription),
+        hasAccount,
+        emailConfirmed,
+        hasActiveSubscription: hasActiveSubscriptionFlag,
+        readyToActivate: hasActiveSubscriptionFlag && !hasAccount,
       },
     });
   } catch (error) {

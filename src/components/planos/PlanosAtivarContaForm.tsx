@@ -17,15 +17,18 @@ import {
 type Mode = "create" | "login";
 
 type PlanosAtivarContaFormProps = {
-  checkoutEmail: string | null;
+  checkoutEmail?: string | null;
   sessionId?: string | null;
   onActivated?: () => void;
+  /** Página de recuperação pós-pagamento (sem session_id na URL). */
+  recoveryMode?: boolean;
 };
 
 export function PlanosAtivarContaForm({
-  checkoutEmail,
+  checkoutEmail = null,
   sessionId,
   onActivated,
+  recoveryMode = false,
 }: PlanosAtivarContaFormProps) {
   const [mode, setMode] = useState<Mode>("create");
   const [email, setEmail] = useState(checkoutEmail || "");
@@ -34,6 +37,10 @@ export function PlanosAtivarContaForm({
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [hasAccount, setHasAccount] = useState<boolean | null>(null);
+  const [hasActiveSubscription, setHasActiveSubscription] = useState<boolean | null>(
+    null,
+  );
+  const [statusLoading, setStatusLoading] = useState(false);
 
   useEffect(() => {
     if (checkoutEmail) {
@@ -51,20 +58,30 @@ export function PlanosAtivarContaForm({
     let active = true;
 
     async function loadStatus() {
+      setStatusLoading(true);
       try {
         const res = await fetch(
-          `/api/public/checkout-account-status?email=${encodeURIComponent(normalized)}`,
+          `/api/public/checkout-account-status?email=${encodeURIComponent(normalized)}&sync=1`,
           { cache: "no-store" },
         );
         const json = await res.json().catch(() => null);
         if (!active) return;
         const exists = Boolean(json?.data?.hasAccount);
+        const paid = Boolean(json?.data?.hasActiveSubscription);
         setHasAccount(exists);
+        setHasActiveSubscription(paid);
         if (exists) {
           setMode("login");
+        } else if (paid) {
+          setMode("create");
         }
       } catch {
-        if (active) setHasAccount(null);
+        if (active) {
+          setHasAccount(null);
+          setHasActiveSubscription(null);
+        }
+      } finally {
+        if (active) setStatusLoading(false);
       }
     }
 
@@ -90,8 +107,8 @@ export function PlanosAtivarContaForm({
       return;
     }
 
-    if (mode === "create" && senha.length < 6) {
-      setMessage("A senha deve ter pelo menos 6 caracteres.");
+    if (mode === "create" && senha.length < 8) {
+      setMessage("A senha deve ter pelo menos 8 caracteres.");
       return;
     }
 
@@ -149,16 +166,30 @@ export function PlanosAtivarContaForm({
   return (
     <div className="mx-auto w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 text-left shadow-sm sm:p-8">
       <p className="text-xs font-bold uppercase tracking-[0.14em] text-cyan-700">
-        Passo 2 de 2
+        {recoveryMode ? "Recuperação" : "Passo 2 de 2"}
       </p>
       <h2 className="mt-2 text-xl font-black text-slate-950">
         {mode === "create" ? "Crie sua senha de acesso" : "Entre na sua conta"}
       </h2>
       <p className="mt-2 text-sm font-medium leading-6 text-slate-600">
         {mode === "create"
-          ? "Seu pagamento foi confirmado. Defina a senha para acessar o painel com o mesmo e-mail do checkout."
+          ? hasActiveSubscription
+            ? "Encontramos sua assinatura ativa. Defina a senha com o mesmo e-mail usado no pagamento."
+            : "Informe o e-mail do checkout. Se o pagamento acabou de ser feito, aguarde alguns segundos e tente novamente."
           : "Já existe conta com este e-mail. Entre com sua senha para liberar o plano pago."}
       </p>
+
+      {statusLoading ? (
+        <p className="mt-3 text-xs font-semibold text-slate-500">
+          Verificando pagamento...
+        </p>
+      ) : null}
+
+      {hasActiveSubscription && !hasAccount && mode === "create" ? (
+        <div className="mt-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800">
+          Pagamento confirmado para este e-mail. Crie sua senha abaixo.
+        </div>
+      ) : null}
 
       <form onSubmit={handleSubmit} className="mt-5 space-y-4">
         <label className="block">
@@ -185,10 +216,10 @@ export function PlanosAtivarContaForm({
             value={senha}
             onChange={(event) => setSenha(event.target.value)}
             required
-            minLength={6}
+            minLength={8}
             autoComplete={mode === "create" ? "new-password" : "current-password"}
             className={ppInput}
-            placeholder="Mínimo 6 caracteres"
+            placeholder="Mínimo 8 caracteres"
           />
         </label>
 
@@ -202,7 +233,7 @@ export function PlanosAtivarContaForm({
               value={confirmarSenha}
               onChange={(event) => setConfirmarSenha(event.target.value)}
               required
-              minLength={6}
+              minLength={8}
               autoComplete="new-password"
               className={ppInput}
             />

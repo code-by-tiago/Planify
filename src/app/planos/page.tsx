@@ -264,6 +264,12 @@ export default async function PlanosPage({ searchParams }: PlanosPageProps) {
                 <p className="mt-3 text-center text-xs leading-5 text-slate-500">
                   Checkout protegido pelo Stripe · acesso liberado após a confirmação.
                 </p>
+                <p className="mt-2 text-center text-xs leading-5 text-slate-500">
+                  Já pagou?{" "}
+                  <Link href="/planos/ativar" className="font-bold text-cyan-700 hover:text-cyan-800">
+                    Criar senha com o e-mail do pagamento
+                  </Link>
+                </p>
               </div>
             </article>
           </div>

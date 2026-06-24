@@ -1,200 +1,214 @@
 ﻿import { NextRequest, NextResponse } from "next/server";
-import { getSupabaseAdminClient } from "@/server/supabase/admin-client";
-import { getCheckoutSessionPublicSummary } from "@/server/stripe/checkout-session-lookup";
-import { linkPendingSubscriptionsToUser } from "@/server/stripe/link-subscription-to-user";
-import { syncCheckoutSessionToDatabase } from "@/server/stripe/webhook-service";
+import { z } from "zod";
+import { findAuthUserByEmail } from "../../../../server/auth/find-user-by-email";
+import { getSupabaseAdminClient } from "../../../../server/supabase/admin-client";
+import { linkPendingSubscriptionsToUser } from "../../../../server/stripe/link-subscription-to-user";
+import {
+  syncCheckoutSessionToDatabase,
+  syncSubscriptionsForEmailFromStripe,
+} from "../../../../server/stripe/webhook-service";
+import { getCheckoutSessionPublicSummary } from "../../../../server/stripe/checkout-session-lookup";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const ACTIVE_STATUSES = ["active", "trialing"];
 
-
-async function findAuthUserByEmail(email: string) {
-  const supabase = getSupabaseAdminClient();
-  let page = 1;
-
-  while (page <= 30) {
-    const { data, error } = await supabase.auth.admin.listUsers({ page, perPage: 100 });
-    if (error) throw new Error(error.message);
-
-    const user = data.users.find(
-      (item) => String(item.email || "").trim().toLowerCase() === email,
-    );
-
-    if (user) return user;
-
-    if (data.users.length < 100) return null;
-    page += 1;
-  }
-
-  return null;
-}
+const activateAccountSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(8, "A senha deve ter pelo menos 8 caracteres."),
+  sessionId: z.string().optional(),
+});
 
 async function hasActiveSubscription(email: string): Promise<boolean> {
-  const supabase = getSupabaseAdminClient();
+  const admin = getSupabaseAdminClient();
+  const normalizedEmail = email.trim().toLowerCase();
 
-  const { data, error } = await (supabase as any)
+  const { data, error } = await (admin as any)
     .from("subscriptions")
     .select("id")
-    .eq("stripe_customer_email", email)
+    .eq("stripe_customer_email", normalizedEmail)
     .in("status", ACTIVE_STATUSES)
     .limit(1)
     .maybeSingle();
 
   if (error) {
-    throw new Error(error.message);
+    throw error;
   }
 
   return Boolean(data);
 }
 
-async function wait(ms: number) {
-  await new Promise((resolve) => setTimeout(resolve, ms));
-}
+async function resolvePaidSubscription(
+  email: string,
+  sessionId?: string,
+): Promise<{ ok: true } | { ok: false; reason: "no_subscription" | "email_mismatch" }> {
+  if (sessionId) {
+    const syncResult = await syncCheckoutSessionToDatabase(sessionId);
 
-async function resolvePaidSubscription(params: {
-  email: string;
-  sessionId: string;
-}): Promise<boolean> {
-  if (params.sessionId) {
-    await syncCheckoutSessionToDatabase(params.sessionId);
-  }
+    if (!syncResult.synced) {
+      const summary = await getCheckoutSessionPublicSummary(sessionId);
+      if (!summary) {
+        return { ok: false, reason: "no_subscription" };
+      }
 
-  if (await hasActiveSubscription(params.email)) {
-    return true;
-  }
-
-  const attempts = params.sessionId ? 5 : 6;
-
-  for (let attempt = 1; attempt < attempts; attempt += 1) {
-    await wait(1500);
-
-    if (params.sessionId) {
-      await syncCheckoutSessionToDatabase(params.sessionId);
-    }
-
-    if (await hasActiveSubscription(params.email)) {
-      return true;
+      const summaryEmail = summary.email?.trim().toLowerCase() || "";
+      if (summaryEmail && summaryEmail !== email.trim().toLowerCase()) {
+        return { ok: false, reason: "email_mismatch" };
+      }
     }
   }
 
-  return false;
+  if (await hasActiveSubscription(email)) {
+    return { ok: true };
+  }
+
+  await syncSubscriptionsForEmailFromStripe(email);
+
+  const maxAttempts = 8;
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    if (await hasActiveSubscription(email)) {
+      return { ok: true };
+    }
+
+    if (attempt < maxAttempts - 1) {
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+    }
+  }
+
+  return { ok: false, reason: "no_subscription" };
 }
 
 export async function POST(request: NextRequest) {
+  let body: unknown;
+
   try {
-    const body = (await request.json().catch(() => ({}))) as {
-      email?: string;
-      password?: string;
-      sessionId?: string;
-    };
+    body = await request.json();
+  } catch {
+    return NextResponse.json(
+      {
+        success: false,
+        error: { message: "Corpo da requisição inválido." },
+      },
+      { status: 400 },
+    );
+  }
 
-    const email = body.email?.trim().toLowerCase() || "";
-    const password = body.password || "";
-    const sessionId = body.sessionId?.trim() || "";
+  const parsed = activateAccountSchema.safeParse(body);
 
-    if (!email.includes("@")) {
-      return NextResponse.json(
-        { success: false, error: { message: "E-mail invÃ¡lido.", code: "invalid_email" } },
-        { status: 400 },
-      );
-    }
-
-    if (password.length < 6) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: { message: "A senha deve ter pelo menos 6 caracteres.", code: "weak_password" },
+  if (!parsed.success) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: {
+          message: parsed.error.issues[0]?.message || "Dados inválidos.",
         },
-        { status: 400 },
-      );
-    }
+      },
+      { status: 400 },
+    );
+  }
 
-    if (sessionId) {
-      const summary = await getCheckoutSessionPublicSummary(sessionId);
-      const checkoutEmail = summary?.email?.trim().toLowerCase();
+  const email = parsed.data.email.trim().toLowerCase();
+  const password = parsed.data.password;
+  const sessionId = parsed.data.sessionId?.trim() || undefined;
 
-      if (!checkoutEmail || checkoutEmail !== email) {
+  try {
+    const subscriptionState = await resolvePaidSubscription(email, sessionId);
 
+    if (!subscriptionState.ok) {
+      if (subscriptionState.reason === "email_mismatch") {
         return NextResponse.json(
           {
             success: false,
             error: {
-              message: "Use o mesmo e-mail confirmado no pagamento Stripe.",
               code: "email_mismatch",
+              message:
+                "O e-mail informado não corresponde ao pagamento. Use o mesmo e-mail do checkout.",
             },
           },
           { status: 400 },
         );
       }
-    }
-
-    const paid = await resolvePaidSubscription({ email, sessionId });
-
-    if (!paid) {
 
       return NextResponse.json(
         {
           success: false,
           error: {
-            message:
-              "NÃ£o encontramos pagamento ativo para este e-mail. Aguarde alguns segundos e tente de novo.",
             code: "no_subscription",
+            message:
+              "Não encontramos uma assinatura ativa para este e-mail. Aguarde alguns minutos e tente de novo, ou confira se usou o mesmo e-mail do pagamento.",
           },
         },
         { status: 403 },
       );
     }
 
-    const existing = await findAuthUserByEmail(email);
+    const admin = getSupabaseAdminClient();
+    const existingUser = await findAuthUserByEmail(email);
 
-    if (existing) {
+    if (existingUser) {
       return NextResponse.json(
         {
           success: false,
           error: {
-            message: "JÃ¡ existe conta com este e-mail. Entre com sua senha.",
             code: "account_exists",
+            message: "Já existe uma conta com este e-mail. Faça login com sua senha.",
           },
         },
         { status: 409 },
       );
     }
 
-    const supabase = getSupabaseAdminClient();
+    const { data: createdUser, error: createError } =
+      await admin.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+        user_metadata: {
+          onboarding_completed: false,
+        },
+      });
 
-    const { data: created, error: createError } = await supabase.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-      user_metadata: { full_name: "" },
-    });
-
-    if (createError || !created.user) {
+    if (createError || !createdUser.user) {
+      if (
+        createError?.message?.toLowerCase().includes("already") ||
+        createError?.message?.toLowerCase().includes("registered")
+      ) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: {
+              code: "account_exists",
+              message: "Já existe uma conta com este e-mail. Faça login com sua senha.",
+            },
+          },
+          { status: 409 },
+        );
+      }
 
       return NextResponse.json(
         {
           success: false,
           error: {
-            message: createError?.message || "NÃ£o foi possÃ­vel criar a conta.",
-            code: "create_failed",
+            message:
+              createError?.message ||
+              "Não foi possível criar sua conta. Tente novamente.",
           },
         },
         { status: 500 },
       );
     }
 
-    const linkResult = await linkPendingSubscriptionsToUser({
-      userId: created.user.id,
+    await linkPendingSubscriptionsToUser({
+      userId: createdUser.user.id,
       email,
     });
 
     return NextResponse.json({
       success: true,
       data: {
-        userId: created.user.id,
-        linkedCount: linkResult.linkedCount,
+        email,
+        userId: createdUser.user.id,
       },
     });
   } catch (error) {
@@ -205,12 +219,10 @@ export async function POST(request: NextRequest) {
           message:
             error instanceof Error
               ? error.message
-              : "Erro ao ativar conta apÃ³s pagamento.",
-          code: "server_error",
+              : "Não foi possível ativar sua conta.",
         },
       },
       { status: 500 },
     );
   }
 }
-

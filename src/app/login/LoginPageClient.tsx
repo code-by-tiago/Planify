@@ -355,17 +355,32 @@ export function LoginPageClient({ initialSearchParams }: LoginPageClientProps) {
               </button>
             </form>
 
-            <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-cyan-100 bg-cyan-50/80 px-4 py-3">
-              <p className="text-sm font-semibold text-slate-700">
-                Primeira vez no Planify?
-              </p>
-              <Link
-                href="/planos"
-                className={`inline-flex items-center gap-1 text-sm font-bold ${ppLink}`}
-              >
-                Assinar e criar senha
-                <PlanifyIcon name="arrowRight" className="h-4 w-4" />
-              </Link>
+            <div className="mt-6 space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-cyan-100 bg-cyan-50/80 px-4 py-3">
+                <p className="text-sm font-semibold text-slate-700">
+                  Primeira vez no Planify?
+                </p>
+                <Link
+                  href="/planos"
+                  className={`inline-flex items-center gap-1 text-sm font-bold ${ppLink}`}
+                >
+                  Assinar agora
+                  <PlanifyIcon name="arrowRight" className="h-4 w-4" />
+                </Link>
+              </div>
+
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-emerald-100 bg-emerald-50/80 px-4 py-3">
+                <p className="text-sm font-semibold text-slate-700">
+                  Já paguei e preciso criar senha
+                </p>
+                <Link
+                  href="/planos/ativar"
+                  className={`inline-flex items-center gap-1 text-sm font-bold ${ppLink}`}
+                >
+                  Ativar minha conta
+                  <PlanifyIcon name="arrowRight" className="h-4 w-4" />
+                </Link>
+              </div>
             </div>
 
             <p className="mt-5 text-center text-xs font-medium leading-5 text-slate-500">

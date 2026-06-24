@@ -9,6 +9,7 @@ export type PublicSitemapEntry = {
 export const PUBLIC_SITEMAP_PAGES: PublicSitemapEntry[] = [
   { path: "/", changeFrequency: "weekly", priority: 1 },
   { path: "/planos", changeFrequency: "weekly", priority: 0.9 },
+  { path: "/planos/ativar", changeFrequency: "monthly", priority: 0.7 },
   { path: "/escolas", changeFrequency: "monthly", priority: 0.8 },
   { path: "/planejamento-escolar-com-ia", changeFrequency: "monthly", priority: 0.8 },
   { path: "/gerador-de-atividades-com-ia", changeFrequency: "monthly", priority: 0.8 },
@@ -45,4 +46,5 @@ export const PRIVATE_ROBOTS_DISALLOW = [
   "/sair",
   "/google/",
   "/planos/sucesso",
+  "/planos/ativar",
 ] as const;

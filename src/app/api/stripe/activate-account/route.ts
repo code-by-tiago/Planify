@@ -1,29 +1,14 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdminClient } from "@/server/supabase/admin-client";
 import { getCheckoutSessionPublicSummary } from "@/server/stripe/checkout-session-lookup";
 import { linkPendingSubscriptionsToUser } from "@/server/stripe/link-subscription-to-user";
 import { syncCheckoutSessionToDatabase } from "@/server/stripe/webhook-service";
-import { appendFileSync } from "node:fs";
-import { join } from "node:path";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const ACTIVE_STATUSES = ["active", "trialing"];
 
-function debugLog(payload: Record<string, unknown>) {
-  try {
-    const line = JSON.stringify({
-      sessionId: "3ed578",
-      runId: "checkout-activate",
-      timestamp: Date.now(),
-      ...payload,
-    });
-    appendFileSync(join(process.cwd(), "debug-3ed578.log"), `${line}\n`, "utf8");
-  } catch {
-    // ignore
-  }
-}
 
 async function findAuthUserByEmail(email: string) {
   const supabase = getSupabaseAdminClient();
@@ -111,7 +96,7 @@ export async function POST(request: NextRequest) {
 
     if (!email.includes("@")) {
       return NextResponse.json(
-        { success: false, error: { message: "E-mail inválido.", code: "invalid_email" } },
+        { success: false, error: { message: "E-mail invÃ¡lido.", code: "invalid_email" } },
         { status: 400 },
       );
     }
@@ -131,12 +116,6 @@ export async function POST(request: NextRequest) {
       const checkoutEmail = summary?.email?.trim().toLowerCase();
 
       if (!checkoutEmail || checkoutEmail !== email) {
-        debugLog({
-          hypothesisId: "H7",
-          location: "activate-account:sessionMismatch",
-          message: "checkout session email mismatch",
-          data: { hasSession: Boolean(summary), checkoutEmailMatch: checkoutEmail === email },
-        });
 
         return NextResponse.json(
           {
@@ -154,19 +133,13 @@ export async function POST(request: NextRequest) {
     const paid = await resolvePaidSubscription({ email, sessionId });
 
     if (!paid) {
-      debugLog({
-        hypothesisId: "H7",
-        location: "activate-account:noSubscription",
-        message: "no active subscription for email",
-        data: { emailDomain: email.split("@")[1] },
-      });
 
       return NextResponse.json(
         {
           success: false,
           error: {
             message:
-              "Não encontramos pagamento ativo para este e-mail. Aguarde alguns segundos e tente de novo.",
+              "NÃ£o encontramos pagamento ativo para este e-mail. Aguarde alguns segundos e tente de novo.",
             code: "no_subscription",
           },
         },
@@ -181,7 +154,7 @@ export async function POST(request: NextRequest) {
         {
           success: false,
           error: {
-            message: "Já existe conta com este e-mail. Entre com sua senha.",
+            message: "JÃ¡ existe conta com este e-mail. Entre com sua senha.",
             code: "account_exists",
           },
         },
@@ -199,18 +172,12 @@ export async function POST(request: NextRequest) {
     });
 
     if (createError || !created.user) {
-      debugLog({
-        hypothesisId: "H6",
-        location: "activate-account:createUserFailed",
-        message: "admin createUser failed",
-        data: { errorMessage: createError?.message || "unknown" },
-      });
 
       return NextResponse.json(
         {
           success: false,
           error: {
-            message: createError?.message || "Não foi possível criar a conta.",
+            message: createError?.message || "NÃ£o foi possÃ­vel criar a conta.",
             code: "create_failed",
           },
         },
@@ -221,17 +188,6 @@ export async function POST(request: NextRequest) {
     const linkResult = await linkPendingSubscriptionsToUser({
       userId: created.user.id,
       email,
-    });
-
-    debugLog({
-      hypothesisId: "H1-H6",
-      location: "activate-account:success",
-      message: "account created via admin API",
-      data: {
-        emailDomain: email.split("@")[1],
-        linkedCount: linkResult.linkedCount,
-        userId: created.user.id,
-      },
     });
 
     return NextResponse.json({
@@ -249,7 +205,7 @@ export async function POST(request: NextRequest) {
           message:
             error instanceof Error
               ? error.message
-              : "Erro ao ativar conta após pagamento.",
+              : "Erro ao ativar conta apÃ³s pagamento.",
           code: "server_error",
         },
       },
@@ -257,3 +213,4 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+

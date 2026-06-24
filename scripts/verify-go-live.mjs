@@ -46,6 +46,15 @@ if (!read("src/proxy.ts").includes("127.0.0.1:7616")) {
   fail("telemetria debug ainda presente");
 }
 
+if (read("src/proxy.ts").includes("export async function proxy")) {
+  ok("proxy.ts registrado (Next.js 16 route protection)");
+} else {
+  fail("src/proxy.ts sem export async function proxy");
+}
+
+
+
+
 if (existsSync("src/app/(app)/error.tsx")) {
   ok("error boundary (app) presente");
 } else {

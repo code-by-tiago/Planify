@@ -6,9 +6,7 @@ import { isOwnerEmail } from "./owner-emails";
  *
  * Configure via PLANIFY_COURTESY_EMAILS (vírgula) e/ou lista embutida abaixo.
  */
-const BUILTIN_COURTESY_EMAILS = [
-  "cristiane-ggwerberich@educar.rs.gov.br",
-] as const;
+const BUILTIN_COURTESY_EMAILS = [] as const;
 
 export function getCourtesyEmails(): string[] {
   const fromEnv = [

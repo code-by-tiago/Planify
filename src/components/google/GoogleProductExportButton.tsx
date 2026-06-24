@@ -183,21 +183,23 @@ export function GoogleProductExportButton({
     setBusy(true);
     setError("");
 
-    saveGoogleExportPending(pendingStorageKey, {
-      title,
-      returnTo: normalizeGoogleOAuthReturnTo(returnTo),
-      html: getHtml(),
-      planningPayload: getPlanningPayload?.() ?? null,
-    });
-
     try {
+      const html = await waitForExportableHtml(getHtml, 8_000);
+
+      saveGoogleExportPending(pendingStorageKey, {
+        title,
+        returnTo: normalizeGoogleOAuthReturnTo(returnTo),
+        html,
+        planningPayload: getPlanningPayload?.() ?? null,
+      });
+
       await startGoogleOAuth(normalizeGoogleOAuthReturnTo(returnTo), { selectAccount: true });
     } catch (err) {
       clearGoogleExportPending(pendingStorageKey);
       setError(err instanceof Error ? err.message : "Erro ao conectar Google.");
       setBusy(false);
     }
-  }, [getHtml, pendingStorageKey, returnTo, title]);
+  }, [getHtml, getPlanningPayload, pendingStorageKey, returnTo, title]);
 
   useEffect(() => {
     void refresh();

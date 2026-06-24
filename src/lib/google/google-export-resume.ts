@@ -18,6 +18,9 @@ export const GOOGLE_EXPORT_PENDING_KEYS = [
 export type GoogleExportPendingKey = (typeof GOOGLE_EXPORT_PENDING_KEYS)[number];
 
 export const GOOGLE_OAUTH_RETURN_LOCK_KEY = "planify:google-oauth-return-lock";
+export const GOOGLE_OAUTH_RESUME_ACTIVE_KEY = "planify:google-oauth-resume-active";
+
+const OAUTH_RESUME_TTL_MS = 2 * 60 * 1000;
 
 export type GoogleOAuthReturnSignal = {
   connected: boolean;
@@ -52,29 +55,70 @@ export function clearGoogleOAuthReturnParams(): void {
   window.history.replaceState({}, "", next);
 }
 
-/** Lê o sinal OAuth da URL uma única vez por retorno (evita corrida entre componentes). */
-export function consumeGoogleOAuthReturnSignal(): GoogleOAuthReturnSignal | null {
-  const signal = peekGoogleOAuthReturnSignal();
-  if (!signal) return null;
-
-  try {
-    const lockedAt = window.sessionStorage.getItem(GOOGLE_OAUTH_RETURN_LOCK_KEY);
-    if (lockedAt) {
-      const age = Date.now() - Number(lockedAt);
-      if (age < 60_000) return null;
-    }
-    window.sessionStorage.setItem(GOOGLE_OAUTH_RETURN_LOCK_KEY, String(Date.now()));
-  } catch {
-    return null;
-  }
-
-  clearGoogleOAuthReturnParams();
-  return signal;
-}
-
 export function releaseGoogleOAuthReturnLock(): void {
   if (typeof window === "undefined") return;
   window.sessionStorage.removeItem(GOOGLE_OAUTH_RETURN_LOCK_KEY);
+}
+
+export function clearGoogleOAuthResumeActive(): void {
+  if (typeof window === "undefined") return;
+  window.sessionStorage.removeItem(GOOGLE_OAUTH_RESUME_ACTIVE_KEY);
+  releaseGoogleOAuthReturnLock();
+}
+
+function markGoogleOAuthResumeActive(): void {
+  if (typeof window === "undefined") return;
+  window.sessionStorage.setItem(GOOGLE_OAUTH_RESUME_ACTIVE_KEY, String(Date.now()));
+}
+
+function readGoogleOAuthResumeActive(): GoogleOAuthReturnSignal | null {
+  if (typeof window === "undefined") return null;
+
+  try {
+    const raw = window.sessionStorage.getItem(GOOGLE_OAUTH_RESUME_ACTIVE_KEY);
+    if (!raw) return null;
+
+    const age = Date.now() - Number(raw);
+    if (!Number.isFinite(age) || age > OAUTH_RESUME_TTL_MS) {
+      clearGoogleOAuthResumeActive();
+      return null;
+    }
+
+    return { connected: true, error: null };
+  } catch {
+    return null;
+  }
+}
+
+/** Lê o sinal OAuth da URL uma única vez por retorno (evita corrida entre componentes). */
+export function consumeGoogleOAuthReturnSignal(): GoogleOAuthReturnSignal | null {
+  const fromUrl = peekGoogleOAuthReturnSignal();
+
+  if (fromUrl) {
+    try {
+      const consumedAt = window.sessionStorage.getItem(GOOGLE_OAUTH_RETURN_LOCK_KEY);
+      if (consumedAt) {
+        const age = Date.now() - Number(consumedAt);
+        if (age < 3_000) {
+          return readGoogleOAuthResumeActive();
+        }
+      }
+      window.sessionStorage.setItem(GOOGLE_OAUTH_RETURN_LOCK_KEY, String(Date.now()));
+    } catch {
+      return null;
+    }
+
+    clearGoogleOAuthReturnParams();
+    markGoogleOAuthResumeActive();
+    return fromUrl;
+  }
+
+  return readGoogleOAuthResumeActive();
+}
+
+/** URL params ou sessão ativa de retomada pós-OAuth (para retries após limpar a URL). */
+export function peekGoogleOAuthResumeIntent(): GoogleOAuthReturnSignal | null {
+  return peekGoogleOAuthReturnSignal() ?? readGoogleOAuthResumeActive();
 }
 
 export function hasAnyGoogleExportPending(keys: readonly string[]): boolean {

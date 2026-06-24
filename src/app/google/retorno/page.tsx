@@ -7,6 +7,7 @@ import {
   getCurrentAccessToken,
 } from "@/lib/auth/session-client";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
+import { releaseGoogleOAuthReturnLock } from "@/lib/google/google-export-resume";
 import { notifyGoogleStatusChanged } from "@/lib/google/google-status-events";
 
 function sanitizeReturnTo(value: string | null): string {
@@ -116,6 +117,7 @@ export default function GoogleOAuthReturnPage() {
 
       setMessage("Redirecionando…");
       notifyGoogleStatusChanged();
+      releaseGoogleOAuthReturnLock();
       window.location.replace(destination);
     })();
 

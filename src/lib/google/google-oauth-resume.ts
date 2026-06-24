@@ -10,6 +10,7 @@ import {
 import {
   clearGoogleExportPending,
   consumeGoogleOAuthReturnSignal,
+  clearGoogleOAuthResumeActive,
   GOOGLE_EXPORT_PENDING_KEYS,
   hasExportableHtml,
   openGoogleExportUrl,
@@ -183,12 +184,20 @@ export async function resumePendingGoogleExport(
       params.onStatus?.(`${label} criado. Permita pop-ups ou abra: ${openUrl}`);
     }
 
+    clearGoogleOAuthResumeActive();
     return true;
   } catch (error) {
     params.onExportError?.(error);
     const message =
       error instanceof Error ? error.message : "Erro ao retomar exportação Google.";
+
+    if (/ainda não carregou|ainda não conectada/i.test(message)) {
+      releaseGoogleOAuthReturnLock();
+      return false;
+    }
+
     params.onStatus?.(message);
+    clearGoogleOAuthResumeActive();
     return true;
   } finally {
     releaseGoogleOAuthReturnLock();

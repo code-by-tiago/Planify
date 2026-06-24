@@ -1,6 +1,9 @@
 "use client";
 
-import { hasExportableHtml, peekGoogleOAuthReturnSignal } from "@/lib/google/google-export-resume";
+import {
+  hasExportableHtml,
+  peekGoogleOAuthResumeIntent,
+} from "@/lib/google/google-export-resume";
 import {
   findActiveGoogleExportPending,
   resumePendingGoogleExport,
@@ -20,11 +23,12 @@ export function useGoogleOAuthResume(params: UseGoogleOAuthResumeParams): void {
 
     const attemptResume = async (): Promise<boolean> => {
       if (started.current) return true;
-      if (!peekGoogleOAuthReturnSignal()) return false;
+
+      const intent = peekGoogleOAuthResumeIntent();
+      if (!intent) return false;
 
       const active = paramsRef.current;
-      const signal = peekGoogleOAuthReturnSignal();
-      const needsHtml = signal?.connected && !signal.error;
+      const needsHtml = intent.connected && !intent.error;
 
       if (needsHtml) {
         const pending = findActiveGoogleExportPending();
@@ -39,10 +43,17 @@ export function useGoogleOAuthResume(params: UseGoogleOAuthResumeParams): void {
       }
 
       const handled = await resumePendingGoogleExport(active);
-      if (handled || !peekGoogleOAuthReturnSignal()) {
+
+      if (handled) {
         started.current = true;
         return true;
       }
+
+      if (!peekGoogleOAuthResumeIntent()) {
+        started.current = true;
+        return true;
+      }
+
       return false;
     };
 
@@ -60,7 +71,7 @@ export function useGoogleOAuthResume(params: UseGoogleOAuthResumeParams): void {
 
     const timeoutId = window.setTimeout(() => {
       window.clearInterval(intervalId);
-    }, 12_000);
+    }, 30_000);
 
     return () => {
       window.clearInterval(intervalId);

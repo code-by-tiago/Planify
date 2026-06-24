@@ -149,11 +149,22 @@ export async function resumePendingGoogleExport(
     params.onStatus?.(`Retomando exportação para ${label}…`);
 
     const status = await waitForGoogleConnected(fetchGoogleStatus);
-    notifyGoogleStatusChanged();
 
     if (!status?.connected) {
       throw new Error("Conta Google ainda não conectada. Tente exportar novamente.");
     }
+
+    if (
+      active.key === GOOGLE_FORMS_EXPORT_PENDING_KEY &&
+      status.formsScopeGranted !== true
+    ) {
+      params.onStatus?.(
+        "Permissão do Google Forms ainda não foi concedida. Clique em Autorizar Google Forms e aceite no Google.",
+      );
+      return true;
+    }
+
+    notifyGoogleStatusChanged();
 
     const openUrl = await executeProductExport({
       key: active.key,

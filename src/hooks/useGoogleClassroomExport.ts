@@ -102,8 +102,6 @@ export function useGoogleClassroomExport({
         setCourses([]);
         setCourseId("");
       }
-
-      notifyGoogleStatusChanged();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao carregar integração Google.");
     } finally {
@@ -121,12 +119,23 @@ export function useGoogleClassroomExport({
       void refresh();
     };
 
+    let focusTimer: number | undefined;
+
+    const onFocus = () => {
+      setBusy(false);
+      window.clearTimeout(focusTimer);
+      focusTimer = window.setTimeout(() => {
+        void refresh();
+      }, 500);
+    };
+
     window.addEventListener(GOOGLE_STATUS_CHANGED_EVENT, onStatusChanged);
-    window.addEventListener("focus", onStatusChanged);
+    window.addEventListener("focus", onFocus);
 
     return () => {
+      window.clearTimeout(focusTimer);
       window.removeEventListener(GOOGLE_STATUS_CHANGED_EVENT, onStatusChanged);
-      window.removeEventListener("focus", onStatusChanged);
+      window.removeEventListener("focus", onFocus);
     };
   }, [refresh]);
 
@@ -136,6 +145,7 @@ export function useGoogleClassroomExport({
 
     setBusy(false);
     void refresh().then(() => {
+      notifyGoogleStatusChanged();
       notify("Conta Google conectada. Selecione a turma e envie o material.");
     });
   }, [notify, refresh]);
@@ -198,6 +208,7 @@ export function useGoogleClassroomExport({
       await disconnectGoogle();
       notify("Conta Google desconectada.");
       await refresh();
+      notifyGoogleStatusChanged();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao desconectar.");
     } finally {

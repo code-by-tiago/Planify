@@ -22,7 +22,7 @@ import {
   notifyGoogleStatusChanged,
 } from "@/lib/google/google-status-events";
 import type { ReactNode } from "react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 type GoogleProductExportButtonProps = {
   title: string;
@@ -85,8 +85,14 @@ export function GoogleProductExportButton({
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const refreshInFlight = useRef(false);
 
   const refresh = useCallback(async () => {
+    if (refreshInFlight.current) {
+      return null;
+    }
+
+    refreshInFlight.current = true;
     setError("");
 
     try {
@@ -97,6 +103,7 @@ export function GoogleProductExportButton({
       setError(err instanceof Error ? err.message : "Erro ao carregar Google.");
       return null;
     } finally {
+      refreshInFlight.current = false;
       setLoading(false);
     }
   }, []);
@@ -201,14 +208,20 @@ export function GoogleProductExportButton({
       void refresh();
     };
 
+    let focusTimer: number | undefined;
+
     const onFocus = () => {
-      void refresh();
+      window.clearTimeout(focusTimer);
+      focusTimer = window.setTimeout(() => {
+        void refresh();
+      }, 500);
     };
 
     window.addEventListener(GOOGLE_STATUS_CHANGED_EVENT, onStatusChanged);
     window.addEventListener("focus", onFocus);
 
     return () => {
+      window.clearTimeout(focusTimer);
       window.removeEventListener(GOOGLE_STATUS_CHANGED_EVENT, onStatusChanged);
       window.removeEventListener("focus", onFocus);
     };
@@ -236,7 +249,12 @@ export function GoogleProductExportButton({
 
     if (!isExportReady(fresh)) {
       previewWindow?.close();
-      await runConnect();
+      setBusy(true);
+      try {
+        await runConnect();
+      } finally {
+        setBusy(false);
+      }
       return;
     }
 

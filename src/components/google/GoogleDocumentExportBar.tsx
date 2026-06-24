@@ -19,7 +19,7 @@ import {
 } from "@/lib/export/material-export-policy";
 import { extractSlideThemeFromHtml } from "@/lib/slides/slide-deck-utils";
 import { useGoogleOAuthResume } from "@/hooks/useGoogleOAuthResume";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 export type GoogleDocumentExportBarProps = {
   title: string;
@@ -128,6 +128,28 @@ export function GoogleDocumentExportBar({
     documentType,
     getHtml(),
   );
+  const loggedClassroomExportRef = useRef(false);
+  useEffect(() => {
+    if (loggedClassroomExportRef.current) return;
+    loggedClassroomExportRef.current = true;
+    // #region agent log
+    fetch("http://127.0.0.1:7718/ingest/9ac33552-969d-48be-9089-3a3b10571400", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Debug-Session-Id": "a1058c",
+      },
+      body: JSON.stringify({
+        sessionId: "a1058c",
+        hypothesisId: "H6-export-allowed",
+        location: "GoogleDocumentExportBar.tsx:showClassroomExport",
+        message: "Classroom export channel visibility",
+        data: { showClassroomExport, documentType: documentType ?? null, compact },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
+  }, [showClassroomExport, documentType, compact]);
   const showSlidesChannel = materialExportAllows("google-slides", documentType, getHtml());
   const showPptxExport = materialExportAllows("pptx-download", documentType, getHtml());
   const driveIsPdf = exportPolicy.driveFormat === "pdf";

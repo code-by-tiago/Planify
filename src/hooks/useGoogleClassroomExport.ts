@@ -15,7 +15,7 @@ import {
   isValidGoogleEmail,
   persistClassroomGoogleEmail,
   readClassroomGoogleEmail,
-  resolveClassroomOAuthHint,
+  resolveClassroomOAuthParams,
   suggestInstitutionalEmail,
 } from "@/lib/google/classroom-google-account";
 import { resolveGoogleOAuthReturnTo } from "@/lib/google/document-type-detection";
@@ -73,9 +73,11 @@ export function useGoogleClassroomExport({
     try {
       const next = await fetchGoogleStatus();
       setStatus(next);
+      let coursesCount = 0;
 
       if (next.connected) {
         const list = await fetchClassroomCourses();
+        coursesCount = list.length;
         setCourses(list);
         setCourseId((current) => current || list[0]?.id || "");
 
@@ -101,6 +103,30 @@ export function useGoogleClassroomExport({
       }
 
       notifyGoogleStatusChanged();
+      // #region agent log
+      fetch("http://127.0.0.1:7718/ingest/9ac33552-969d-48be-9089-3a3b10571400", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Debug-Session-Id": "a1058c",
+        },
+        body: JSON.stringify({
+          sessionId: "a1058c",
+          hypothesisId: "H3-hook-status",
+          location: "useGoogleClassroomExport.ts:refresh",
+          message: "Google Classroom status refreshed",
+          data: {
+            configured: next.configured,
+            authenticated: next.authenticated,
+            connected: next.connected,
+            coursesCount: coursesCount,
+            googleIsEducar: next.googleEmail?.includes("@educar.rs.gov.br") ?? false,
+            planifyIsEducar: next.planifyEmail?.includes("@educar.rs.gov.br") ?? false,
+          },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {});
+      // #endregion
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao carregar integração Google.");
     } finally {
@@ -112,42 +138,58 @@ export function useGoogleClassroomExport({
     void refresh();
   }, [refresh]);
 
-  const needsInstitutionalConnect =
-    !status?.connected ||
-    classroomGoogleAccountMismatch(status?.googleEmail) ||
-    courses.length === 0;
-
   const canExport =
     Boolean(status?.connected) &&
     isEducarInstitutionalEmail(status?.googleEmail) &&
     courses.length > 0 &&
     Boolean(courseId);
 
-  async function connectWithInstitutionalEmail(mode: "connect" | "switch") {
-    const email = institutionalEmail.trim().toLowerCase();
-
-    if (!isValidGoogleEmail(email)) {
-      setError(
-        "Informe o e-mail Google institucional da escola (ex.: nome@educar.rs.gov.br).",
-      );
-      return;
-    }
-
+  async function startClassroomGoogleOAuth(mode: "connect" | "switch") {
     setBusy(true);
     setError("");
 
     try {
-      persistClassroomGoogleEmail(email);
+      const email = institutionalEmail.trim().toLowerCase();
+      if (isValidGoogleEmail(email)) {
+        persistClassroomGoogleEmail(email);
+      }
 
       if (mode === "switch" && status?.connected) {
         await disconnectGoogle();
       }
 
-      const hint = resolveClassroomOAuthHint(email);
+      const oauthParams = resolveClassroomOAuthParams({
+        institutionalEmail: email,
+        planifyEmail: status?.planifyEmail,
+      });
+
+      // #region agent log
+      fetch("http://127.0.0.1:7718/ingest/9ac33552-969d-48be-9089-3a3b10571400", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Debug-Session-Id": "a1058c",
+        },
+        body: JSON.stringify({
+          sessionId: "a1058c",
+          runId: "post-fix",
+          hypothesisId: "H5-oauth-start",
+          location: "useGoogleClassroomExport.ts:startClassroomGoogleOAuth",
+          message: "Starting Google OAuth for Classroom",
+          data: {
+            mode,
+            hasLoginHint: Boolean(oauthParams.loginHint),
+            hostedDomain: oauthParams.hostedDomain,
+          },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {});
+      // #endregion
+
       await startGoogleOAuth(resolveGoogleOAuthReturnTo(returnTo), {
         selectAccount: true,
-        loginHint: hint.loginHint,
-        hostedDomain: hint.hostedDomain,
+        loginHint: oauthParams.loginHint,
+        hostedDomain: oauthParams.hostedDomain,
       });
     } catch (err) {
       setError(
@@ -162,11 +204,11 @@ export function useGoogleClassroomExport({
   }
 
   async function handleConnect() {
-    await connectWithInstitutionalEmail("connect");
+    await startClassroomGoogleOAuth("connect");
   }
 
   async function handleSwitchAccount() {
-    await connectWithInstitutionalEmail("switch");
+    await startClassroomGoogleOAuth("switch");
   }
 
   async function handleDisconnect() {
@@ -250,7 +292,6 @@ export function useGoogleClassroomExport({
     setPublishAsDraft,
     institutionalEmail,
     setInstitutionalEmail,
-    needsInstitutionalConnect,
     canExport,
     loading,
     busy,

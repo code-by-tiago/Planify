@@ -6,8 +6,10 @@ import {
   GOOGLE_ICON_ONLY_BUTTON_CLASS,
   GOOGLE_PRODUCT_ICON_CLASS,
 } from "@/components/google/google-icon-button-styles";
+import { needsClassroomGoogleOAuth } from "@/lib/google/classroom-google-account";
 import { useGoogleClassroomExport } from "@/hooks/useGoogleClassroomExport";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 type GoogleClassroomPopoverButtonProps = {
   title: string;
@@ -15,6 +17,12 @@ type GoogleClassroomPopoverButtonProps = {
   onStatus?: (message: string) => void;
   returnTo?: string;
   documentType?: string | null;
+};
+
+type PopoverCoords = {
+  top: number;
+  left: number;
+  width: number;
 };
 
 export function GoogleClassroomPopoverButton({
@@ -25,7 +33,10 @@ export function GoogleClassroomPopoverButton({
   documentType,
 }: GoogleClassroomPopoverButtonProps) {
   const [open, setOpen] = useState(false);
+  const [popoverCoords, setPopoverCoords] = useState<PopoverCoords | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
 
   const {
     status,
@@ -38,7 +49,7 @@ export function GoogleClassroomPopoverButton({
     setPublishAsDraft,
     institutionalEmail,
     setInstitutionalEmail,
-    needsInstitutionalConnect,
+    canExport,
     loading,
     busy,
     error,
@@ -55,143 +66,276 @@ export function GoogleClassroomPopoverButton({
     documentType,
   });
 
+  const needsOAuth = needsClassroomGoogleOAuth(status);
+  const connectMode = status?.connected && needsOAuth ? "switch" : "connect";
+
+  useLayoutEffect(() => {
+    if (!open || !buttonRef.current) {
+      setPopoverCoords(null);
+      return;
+    }
+
+    const rect = buttonRef.current.getBoundingClientRect();
+    const width = Math.min(320, window.innerWidth - 16);
+    let left = rect.right - width;
+    left = Math.max(8, Math.min(left, window.innerWidth - width - 8));
+
+    const estimatedHeight = 300;
+    let top = rect.bottom + 8;
+    if (top + estimatedHeight > window.innerHeight - 8) {
+      top = Math.max(8, rect.top - estimatedHeight - 8);
+    }
+
+    setPopoverCoords({ top, left, width });
+  }, [open, loading, canExport, needsOAuth, courses.length]);
+
   useEffect(() => {
     if (!open) return;
 
     function onPointerDown(event: MouseEvent) {
-      if (!rootRef.current?.contains(event.target as Node)) {
-        setOpen(false);
+      const target = event.target as Node;
+      if (rootRef.current?.contains(target) || popoverRef.current?.contains(target)) {
+        return;
       }
+      setOpen(false);
     }
 
     document.addEventListener("mousedown", onPointerDown);
     return () => document.removeEventListener("mousedown", onPointerDown);
   }, [open]);
 
-  const connectMode =
-    status?.connected && needsInstitutionalConnect ? "switch" : "connect";
+  useEffect(() => {
+    if (!open || !popoverRef.current) return;
+
+    const rect = popoverRef.current.getBoundingClientRect();
+    // #region agent log
+    fetch("http://127.0.0.1:7718/ingest/9ac33552-969d-48be-9089-3a3b10571400", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Debug-Session-Id": "a1058c",
+      },
+      body: JSON.stringify({
+        sessionId: "a1058c",
+        runId: "post-fix",
+        hypothesisId: "H1-popover-visibility",
+        location: "GoogleClassroomPopoverButton.tsx:popover-open",
+        message: "Popover opened — layout metrics",
+        data: {
+          top: rect.top,
+          bottom: rect.bottom,
+          viewportH: window.innerHeight,
+          visible: rect.top >= 0 && rect.bottom <= window.innerHeight,
+          needsOAuth,
+          canExport,
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
+  }, [open, popoverCoords, needsOAuth, canExport]);
+
+  function handleIconClick() {
+    // #region agent log
+    fetch("http://127.0.0.1:7718/ingest/9ac33552-969d-48be-9089-3a3b10571400", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Debug-Session-Id": "a1058c",
+      },
+      body: JSON.stringify({
+        sessionId: "a1058c",
+        runId: "post-fix",
+        hypothesisId: "H2-click-handler",
+        location: "GoogleClassroomPopoverButton.tsx:handleIconClick",
+        message: "Classroom icon clicked",
+        data: {
+          loading,
+          busy,
+          needsOAuth,
+          canExport,
+          action: loading || busy
+            ? "blocked"
+            : !status?.configured
+              ? "toggle-popover"
+              : !status?.authenticated
+                ? "login"
+                : needsOAuth
+                  ? "oauth-redirect"
+                  : canExport
+                    ? "toggle-export-popover"
+                    : "toggle-no-courses-popover",
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
+
+    if (loading || busy) return;
+
+    if (!status?.configured) {
+      setOpen((value) => !value);
+      return;
+    }
+
+    if (!status.authenticated) {
+      window.location.href = `/login?redirect=${loginRedirect}`;
+      return;
+    }
+
+    if (needsOAuth) {
+      void (status.connected ? handleSwitchAccount() : handleConnect());
+      return;
+    }
+
+    setOpen((value) => !value);
+  }
+
+  const popoverContent =
+    open && popoverCoords ? (
+      <div
+        ref={popoverRef}
+        className="rounded-xl border border-sky-200 bg-white p-3 shadow-2xl"
+        style={{
+          position: "fixed",
+          top: popoverCoords.top,
+          left: popoverCoords.left,
+          width: popoverCoords.width,
+          zIndex: 9999,
+        }}
+      >
+        <div className="flex items-center gap-2 border-b border-sky-100 pb-2">
+          <GoogleClassroomIcon className="h-5 w-5 shrink-0" />
+          <p className="text-xs font-black text-sky-900">Google Classroom</p>
+        </div>
+
+        {loading ? (
+          <p className="mt-3 text-xs font-semibold text-slate-500">Carregando…</p>
+        ) : needsOAuth ? (
+          <div className="mt-3">
+            <ClassroomGoogleConnectForm
+              compact
+              institutionalEmail={institutionalEmail}
+              onInstitutionalEmailChange={setInstitutionalEmail}
+              busy={busy}
+              onConnect={() =>
+                void (connectMode === "switch" ? handleSwitchAccount() : handleConnect())
+              }
+              mode={connectMode}
+              planifyEmail={status?.planifyEmail}
+              connectedGoogleEmail={status?.googleEmail}
+            />
+          </div>
+        ) : canExport ? (
+          <div className="mt-3 space-y-2">
+            <p className="text-[11px] font-semibold text-sky-900">
+              Conectado como{" "}
+              <span className="font-bold">{status?.googleEmail || "conta Google"}</span>
+            </p>
+
+            <select
+              value={courseId}
+              onChange={(event) => setCourseId(event.target.value)}
+              className="w-full rounded-lg border border-sky-200 bg-white px-2 py-2 text-xs font-semibold text-slate-900"
+            >
+              {courses.map((course) => (
+                <option key={course.id} value={course.id}>
+                  {course.name}
+                  {course.section ? ` — ${course.section}` : ""}
+                </option>
+              ))}
+            </select>
+            <input
+              type="text"
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
+              placeholder="Descrição (opcional)"
+              className="w-full rounded-lg border border-sky-200 bg-white px-2 py-2 text-xs font-semibold text-slate-900"
+            />
+            <label className="flex items-center gap-2 text-[11px] font-semibold text-sky-900">
+              <input
+                type="checkbox"
+                checked={publishAsDraft}
+                onChange={(event) => setPublishAsDraft(event.target.checked)}
+              />
+              Salvar como rascunho
+            </label>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                disabled={busy || !courseId}
+                onClick={() => {
+                  const previewWindow = window.open("about:blank", "_blank");
+                  void handleExport(previewWindow).then(() => setOpen(false));
+                }}
+                className="flex-1 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-bold text-white disabled:opacity-50"
+              >
+                {busy ? "Enviando…" : "Enviar"}
+              </button>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void handleDisconnect()}
+                className="rounded-lg border border-slate-200 px-3 py-2 text-[11px] font-bold text-slate-600"
+                title="Desconectar conta Google"
+              >
+                Desconectar
+              </button>
+            </div>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void handleSwitchAccount()}
+              className="text-[11px] font-semibold text-sky-700 underline-offset-2 hover:underline disabled:opacity-60"
+            >
+              Trocar conta Google da escola
+            </button>
+          </div>
+        ) : (
+          <div className="mt-3 space-y-2">
+            <p className="text-[11px] leading-5 text-amber-900">
+              Conta conectada, mas nenhuma turma de professor foi encontrada. Troque para a
+              conta @educar.rs.gov.br correta ou peça à TI da escola para liberar o Classroom.
+            </p>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void handleSwitchAccount()}
+              className="w-full rounded-lg bg-amber-500 px-3 py-2 text-xs font-bold text-white"
+            >
+              {busy ? "Abrindo Google…" : "Escolher outra conta Google"}
+            </button>
+          </div>
+        )}
+
+        {error ? (
+          <p className="mt-2 text-[11px] font-semibold text-rose-700">{error}</p>
+        ) : null}
+      </div>
+    ) : null;
 
   return (
     <div ref={rootRef} className="relative">
       <button
+        ref={buttonRef}
         type="button"
         disabled={loading}
-        onClick={() => setOpen((value) => !value)}
+        onClick={handleIconClick}
         className={GOOGLE_ICON_ONLY_BUTTON_CLASS}
         aria-label="Google Classroom"
-        title="Enviar ao Google Classroom"
+        title={
+          needsOAuth
+            ? "Conectar conta Google da escola para o Classroom"
+            : "Enviar ao Google Classroom"
+        }
         aria-expanded={open}
       >
         <GoogleClassroomIcon className={GOOGLE_PRODUCT_ICON_CLASS} />
       </button>
 
-      {open ? (
-        <div className="absolute bottom-full right-0 z-50 mb-2 w-[min(320px,calc(100vw-2rem))] rounded-xl border border-sky-200 bg-white p-3 shadow-lg">
-          <div className="flex items-center gap-2 border-b border-sky-100 pb-2">
-            <GoogleClassroomIcon className="h-5 w-5 shrink-0" />
-            <p className="text-xs font-black text-sky-900">Google Classroom</p>
-          </div>
-
-          {loading ? (
-            <p className="mt-3 text-xs font-semibold text-slate-500">Carregando…</p>
-          ) : !status?.configured ? (
-            <p className="mt-3 text-xs leading-5 text-amber-900">
-              Integração Google não configurada no servidor.
-            </p>
-          ) : !status.authenticated ? (
-            <a
-              href={`/login?redirect=${loginRedirect}`}
-              className="mt-3 inline-block rounded-lg bg-slate-900 px-3 py-2 text-xs font-bold text-white"
-            >
-              Fazer login
-            </a>
-          ) : needsInstitutionalConnect ? (
-            <div className="mt-3">
-              <ClassroomGoogleConnectForm
-                compact
-                institutionalEmail={institutionalEmail}
-                onInstitutionalEmailChange={setInstitutionalEmail}
-                busy={busy}
-                onConnect={() =>
-                  void (connectMode === "switch" ? handleSwitchAccount() : handleConnect())
-                }
-                mode={connectMode}
-                planifyEmail={status.planifyEmail}
-                connectedGoogleEmail={status.googleEmail}
-              />
-            </div>
-          ) : (
-            <div className="mt-3 space-y-2">
-              <p className="text-[11px] font-semibold text-sky-900">
-                Conectado como{" "}
-                <span className="font-bold">{status.googleEmail || "conta Google"}</span>
-              </p>
-
-              <select
-                value={courseId}
-                onChange={(event) => setCourseId(event.target.value)}
-                className="w-full rounded-lg border border-sky-200 bg-white px-2 py-2 text-xs font-semibold text-slate-900"
-              >
-                {courses.map((course) => (
-                  <option key={course.id} value={course.id}>
-                    {course.name}
-                    {course.section ? ` — ${course.section}` : ""}
-                  </option>
-                ))}
-              </select>
-              <input
-                type="text"
-                value={description}
-                onChange={(event) => setDescription(event.target.value)}
-                placeholder="Descrição (opcional)"
-                className="w-full rounded-lg border border-sky-200 bg-white px-2 py-2 text-xs font-semibold text-slate-900"
-              />
-              <label className="flex items-center gap-2 text-[11px] font-semibold text-sky-900">
-                <input
-                  type="checkbox"
-                  checked={publishAsDraft}
-                  onChange={(event) => setPublishAsDraft(event.target.checked)}
-                />
-                Salvar como rascunho
-              </label>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  disabled={busy || !courseId}
-                  onClick={() => {
-                    const previewWindow = window.open("about:blank", "_blank");
-                    void handleExport(previewWindow).then(() => setOpen(false));
-                  }}
-                  className="flex-1 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-bold text-white disabled:opacity-50"
-                >
-                  {busy ? "Enviando…" : "Enviar"}
-                </button>
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={() => void handleDisconnect()}
-                  className="rounded-lg border border-slate-200 px-3 py-2 text-[11px] font-bold text-slate-600"
-                  title="Desconectar conta Google"
-                >
-                  Desconectar
-                </button>
-              </div>
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => void handleSwitchAccount()}
-                className="text-[11px] font-semibold text-sky-700 underline-offset-2 hover:underline disabled:opacity-60"
-              >
-                Trocar conta Google da escola
-              </button>
-            </div>
-          )}
-
-          {error ? (
-            <p className="mt-2 text-[11px] font-semibold text-rose-700">{error}</p>
-          ) : null}
-        </div>
-      ) : null}
+      {typeof document !== "undefined" && popoverContent
+        ? createPortal(popoverContent, document.body)
+        : null}
     </div>
   );
 }

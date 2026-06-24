@@ -40,6 +40,34 @@ export function resolveClassroomOAuthHint(email: string): {
   return { loginHint };
 }
 
+/** Parâmetros OAuth do Classroom — sempre prioriza domínio educar e login_hint quando disponível. */
+export function resolveClassroomOAuthParams(options: {
+  institutionalEmail?: string | null;
+  planifyEmail?: string | null;
+}): {
+  loginHint?: string;
+  hostedDomain: string;
+} {
+  const candidates = [options.institutionalEmail, options.planifyEmail]
+    .map(normalizeGoogleEmail)
+    .filter(isValidGoogleEmail);
+
+  const educarEmail = candidates.find(isEducarInstitutionalEmail);
+  const loginHint = educarEmail || candidates[0];
+
+  return {
+    ...(loginHint ? { loginHint } : {}),
+    hostedDomain: EDUCAR_GOOGLE_DOMAIN,
+  };
+}
+
+export function needsClassroomGoogleOAuth(
+  status: { connected: boolean; googleEmail: string | null } | null | undefined,
+): boolean {
+  if (!status?.connected) return true;
+  return classroomGoogleAccountMismatch(status.googleEmail);
+}
+
 export function suggestInstitutionalEmail(
   planifyEmail: string | null | undefined,
   savedEmail: string | null | undefined,

@@ -6,6 +6,7 @@ import {
   GOOGLE_ICON_ONLY_BUTTON_CLASS,
   GOOGLE_PRODUCT_ICON_CLASS,
 } from "@/components/google/google-icon-button-styles";
+import { needsClassroomGoogleOAuth } from "@/lib/google/classroom-google-account";
 import { useGoogleClassroomExport } from "@/hooks/useGoogleClassroomExport";
 import { useState } from "react";
 
@@ -37,7 +38,7 @@ export function GoogleClassroomPanel({
     setPublishAsDraft,
     institutionalEmail,
     setInstitutionalEmail,
-    needsInstitutionalConnect,
+    canExport,
     loading,
     busy,
     error,
@@ -64,8 +65,17 @@ export function GoogleClassroomPanel({
     ? GOOGLE_ICON_ONLY_BUTTON_CLASS
     : "rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-black text-white transition hover:bg-emerald-700 disabled:opacity-60";
 
-  const connectMode =
-    status?.connected && needsInstitutionalConnect ? "switch" : "connect";
+  const needsOAuth = needsClassroomGoogleOAuth(status);
+  const connectMode = status?.connected && needsOAuth ? "switch" : "connect";
+
+  function handleCompactIconClick() {
+    if (busy) return;
+    if (needsOAuth) {
+      void (status?.connected ? handleSwitchAccount() : handleConnect());
+      return;
+    }
+    setCompactConnectOpen((value) => !value);
+  }
 
   if (loading) {
     return compact ? (
@@ -140,40 +150,49 @@ export function GoogleClassroomPanel({
   }
 
   if (compact) {
-    if (needsInstitutionalConnect) {
+    if (needsOAuth) {
+      return (
+        <button
+          type="button"
+          disabled={busy}
+          onClick={handleCompactIconClick}
+          className={btnPrimary}
+          aria-label="Google Classroom"
+          title="Conectar conta Google da escola"
+        >
+          <GoogleClassroomIcon className={GOOGLE_PRODUCT_ICON_CLASS} />
+        </button>
+      );
+    }
+
+    if (!canExport) {
       return (
         <div className="relative">
           <button
             type="button"
             disabled={busy}
-            onClick={() => setCompactConnectOpen((value) => !value)}
+            onClick={handleCompactIconClick}
             className={btnPrimary}
             aria-label="Google Classroom"
-            title="Conectar conta Google da escola"
+            title="Turmas não encontradas — trocar conta"
             aria-expanded={compactConnectOpen}
           >
             <GoogleClassroomIcon className={GOOGLE_PRODUCT_ICON_CLASS} />
           </button>
 
           {compactConnectOpen ? (
-            <div className="absolute bottom-full right-0 z-50 mb-2 w-[min(320px,calc(100vw-2rem))] rounded-xl border border-sky-200 bg-white p-3 shadow-lg">
-              <ClassroomGoogleConnectForm
-                compact
-                institutionalEmail={institutionalEmail}
-                onInstitutionalEmailChange={setInstitutionalEmail}
-                busy={busy}
-                onConnect={() =>
-                  void (connectMode === "switch"
-                    ? handleSwitchAccount()
-                    : handleConnect())
-                }
-                mode={connectMode}
-                planifyEmail={status.planifyEmail}
-                connectedGoogleEmail={status.googleEmail}
-              />
-              {error ? (
-                <p className="mt-2 text-[11px] font-semibold text-rose-700">{error}</p>
-              ) : null}
+            <div className="fixed z-[9999] w-[min(320px,calc(100vw-2rem))] rounded-xl border border-sky-200 bg-white p-3 shadow-2xl right-4 top-24">
+              <p className="text-[11px] leading-5 text-amber-900">
+                Nenhuma turma encontrada. Troque para a conta @educar.rs.gov.br correta.
+              </p>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void handleSwitchAccount()}
+                className="mt-2 w-full rounded-lg bg-amber-500 px-3 py-2 text-xs font-bold text-white"
+              >
+                {busy ? "Abrindo Google…" : "Escolher outra conta Google"}
+              </button>
             </div>
           ) : null}
         </div>
@@ -274,14 +293,14 @@ export function GoogleClassroomPanel({
         </p>
       </div>
 
-      {status.connected && !needsInstitutionalConnect ? (
+      {status.connected && canExport ? (
         <p className="mt-2 text-sm text-sky-900">
           Conectado como <strong>{status.googleEmail || "conta Google"}</strong>
         </p>
       ) : (
         <p className="mt-2 text-sm leading-6 text-sky-900">
-          Informe o e-mail Google institucional da escola (@educar.rs.gov.br) para publicar
-          na turma. O login do Planify pode ser outro e-mail.
+          Use a conta Google institucional (@educar.rs.gov.br) para publicar na turma. O
+          login do Planify pode ser outro e-mail.
         </p>
       )}
 
@@ -292,7 +311,7 @@ export function GoogleClassroomPanel({
       ) : null}
 
       <div className="mt-4 flex flex-wrap gap-2">
-        {needsInstitutionalConnect ? (
+        {needsOAuth ? (
           <ClassroomGoogleConnectForm
             institutionalEmail={institutionalEmail}
             onInstitutionalEmailChange={setInstitutionalEmail}
@@ -304,7 +323,7 @@ export function GoogleClassroomPanel({
             planifyEmail={status.planifyEmail}
             connectedGoogleEmail={status.googleEmail}
           />
-        ) : (
+        ) : canExport ? (
           <>
             <label className="grid w-full min-w-[200px] flex-1 gap-1">
               <span className="text-xs font-bold text-sky-800">Turma</span>
@@ -372,6 +391,15 @@ export function GoogleClassroomPanel({
               Trocar conta Google da escola
             </button>
           </>
+        ) : (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => void handleSwitchAccount()}
+            className="w-full rounded-xl bg-amber-500 px-4 py-3 text-sm font-black text-white"
+          >
+            {busy ? "Abrindo Google…" : "Escolher conta Google da escola"}
+          </button>
         )}
       </div>
 

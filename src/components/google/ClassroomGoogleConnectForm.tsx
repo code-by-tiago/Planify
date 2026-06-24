@@ -97,7 +97,7 @@ export function ClassroomGoogleConnectForm({
           ? "Abrindo Google…"
           : mode === "switch"
             ? "Trocar para conta institucional"
-            : "Conectar conta Google da escola"}
+            : "Abrir Google e escolher conta da escola"}
       </button>
 
       <p
@@ -107,7 +107,8 @@ export function ClassroomGoogleConnectForm({
             : "text-xs leading-5 text-slate-500"
         }
       >
-        Na próxima tela do Google, escolha a mesma conta informada acima.
+        O e-mail acima é opcional — ajuda a pré-selecionar sua conta @educar.rs.gov.br na
+        tela do Google.
       </p>
     </div>
   );

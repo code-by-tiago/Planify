@@ -93,6 +93,11 @@ export function EditorShareBar({
           getHtml={getHtml}
           getPlanningPayload={getPlanningPayload}
           onStatus={onStatus}
+          onExportError={(error) => {
+            const message =
+              error instanceof Error ? error.message : "Falha na exportação para o Google.";
+            onStatus?.(`Falha na exportação — ${message}`);
+          }}
           documentType={documentType}
           returnTo={returnTo}
           compact

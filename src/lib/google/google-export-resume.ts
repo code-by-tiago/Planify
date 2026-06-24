@@ -224,6 +224,27 @@ export async function waitForGoogleConnected<T extends { connected?: boolean }>(
   return null;
 }
 
+export async function waitForFormsExportReady<T extends {
+  connected?: boolean;
+  formsScopeGranted?: boolean;
+}>(
+  refresh: () => Promise<T | null>,
+  maxAttempts = 30,
+): Promise<T | null> {
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    const fresh = await refresh();
+    if (fresh?.connected && fresh.formsScopeGranted === true) {
+      return fresh;
+    }
+
+    if (attempt < maxAttempts - 1) {
+      await new Promise((resolve) => window.setTimeout(resolve, 400));
+    }
+  }
+
+  return null;
+}
+
 export function openGoogleExportUrl(url: string): boolean {
   const opened = window.open(url, "_blank", "noopener,noreferrer");
   return opened !== null;

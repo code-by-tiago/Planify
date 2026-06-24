@@ -155,7 +155,9 @@ export async function executeAutoGoogleExport(params: {
 
     window.open(openUrl, "_blank", "noopener,noreferrer");
     return "exported";
-  } catch {
-    return "failed";
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Falha ao exportar automaticamente para o Google.";
+    throw new Error(message);
   }
 }

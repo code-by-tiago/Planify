@@ -53,23 +53,31 @@ export function useAutoGoogleExport({
       started.current = true;
       clearAutoGoogleExportIntent();
 
-      const result = await executeAutoGoogleExport({
-        product: intent.product,
-        title: title.trim() || intent.title,
-        getHtml,
-        returnTo: intent.returnTo || resolvedReturnTo,
-      });
+      try {
+        const result = await executeAutoGoogleExport({
+          product: intent.product,
+          title: title.trim() || intent.title,
+          getHtml,
+          returnTo: intent.returnTo || resolvedReturnTo,
+        });
 
-      if (result === "exported") {
-        const label =
-          intent.product === "forms" ? "Google Forms" : "Google Docs";
-        onStatus?.(`${label} aberto automaticamente em nova aba.`);
-      } else if (result === "oauth_started" || result === "login_required") {
-        onStatus?.("Conecte sua conta Google para concluir a exportação.");
-      } else if (result === "failed") {
-        onStatus?.(
-          "Exportação automática indisponível. Use o botão Google na barra superior.",
-        );
+        if (result === "exported") {
+          const label =
+            intent.product === "forms" ? "Google Forms" : "Google Docs";
+          onStatus?.(`${label} aberto automaticamente em nova aba.`);
+        } else if (result === "oauth_started" || result === "login_required") {
+          onStatus?.("Conecte sua conta Google para concluir a exportação.");
+        } else if (result === "failed") {
+          onStatus?.(
+            "Exportação automática indisponível. Use o botão Google na barra superior.",
+          );
+        }
+      } catch (error) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Exportação automática indisponível. Use o botão Google na barra superior.";
+        onStatus?.(`Falha na exportação: ${message}`);
       }
 
       return true;

@@ -1516,6 +1516,14 @@ export function MateriaisClient({
                   compact
                   classroomMode="popover"
                   disabled={!resultadoHtml}
+                  onStatus={setHintFeedback}
+                  onExportError={(error) => {
+                    const message =
+                      error instanceof Error
+                        ? error.message
+                        : "Falha na exportação para o Google.";
+                    setHintFeedback(`Falha na exportação — ${message}`);
+                  }}
                 />
                 <Link
                   href="/historico"

@@ -17,6 +17,7 @@ import {
   readGoogleExportPending,
   releaseGoogleOAuthReturnLock,
   waitForExportableHtml,
+  waitForFormsExportReady,
   waitForGoogleConnected,
   type GoogleExportPending,
   type GoogleExportPendingKey,
@@ -149,20 +150,22 @@ export async function resumePendingGoogleExport(
 
     params.onStatus?.(`Retomando exportação para ${label}…`);
 
-    const status = await waitForGoogleConnected(fetchGoogleStatus);
+    if (active.key === GOOGLE_FORMS_EXPORT_PENDING_KEY) {
+      const formsStatus = await waitForFormsExportReady(fetchGoogleStatus);
 
-    if (!status?.connected) {
-      throw new Error("Conta Google ainda não conectada. Tente exportar novamente.");
-    }
+      if (!formsStatus?.connected || formsStatus.formsScopeGranted !== true) {
+        params.onStatus?.(
+          "Aguardando permissão do Google Forms… Se não abrir, clique em Autorizar Google Forms.",
+        );
+        releaseGoogleOAuthReturnLock();
+        return false;
+      }
+    } else {
+      const status = await waitForGoogleConnected(fetchGoogleStatus);
 
-    if (
-      active.key === GOOGLE_FORMS_EXPORT_PENDING_KEY &&
-      status.formsScopeGranted !== true
-    ) {
-      params.onStatus?.(
-        "Permissão do Google Forms ainda não foi concedida. Clique em Autorizar Google Forms e aceite no Google.",
-      );
-      return true;
+      if (!status?.connected) {
+        throw new Error("Conta Google ainda não conectada. Tente exportar novamente.");
+      }
     }
 
     notifyGoogleStatusChanged();

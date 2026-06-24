@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getGoogleConfigStatus } from "../../../../server/google/google-oauth";
-import { hasGoogleFormsScope } from "../../../../server/google/google-config";
 import { resolvePlanifyUserFromRequest } from "../../../../server/google/google-auth";
+import { resolveFormsScopeGrantedForUser } from "../../../../server/google/google-forms-scope";
 import { getGoogleTokensForUser } from "../../../../server/google/google-token-store";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   const config = getGoogleConfigStatus();
-  const user = await resolvePlanifyUserFromRequest(request);
+  const user = await resolvePlanifyUserFromRequest(_request);
 
   let connected = false;
   let googleEmail: string | null = null;
@@ -19,7 +19,13 @@ export async function GET(request: NextRequest) {
     const tokens = await getGoogleTokensForUser(user.id).catch(() => null);
     connected = Boolean(tokens?.refreshToken);
     googleEmail = tokens?.googleEmail || null;
-    formsScopeGranted = hasGoogleFormsScope(tokens?.scopes || []);
+
+    const scopeResult = await resolveFormsScopeGrantedForUser(user.id).catch(() => ({
+      formsScopeGranted: false,
+      dbGranted: false,
+      tokenGranted: false,
+    }));
+    formsScopeGranted = scopeResult.formsScopeGranted;
   }
 
   return NextResponse.json({

@@ -139,6 +139,25 @@ export function GoogleProductExportButton({
       const planningPayload =
         pendingPayload ?? getPlanningPayload?.() ?? null;
 
+      // #region agent log
+      fetch("http://127.0.0.1:7718/ingest/9ac33552-969d-48be-9089-3a3b10571400", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "a1058c" },
+        body: JSON.stringify({
+          sessionId: "a1058c",
+          location: "GoogleProductExportButton.tsx:runExport:start",
+          message: "export start",
+          data: {
+            hypothesisId: "A",
+            productName,
+            htmlLen: html.length,
+            hasQuestao: /planify-questao/i.test(html),
+          },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {});
+      // #endregion
+
       const result = await onExport({ html, planningPayload, previewWindow });
       clearGoogleExportPending(pendingStorageKey);
 
@@ -150,6 +169,20 @@ export function GoogleProductExportButton({
               return true;
             })()
           : openGoogleExportUrl(result.openUrl));
+
+      // #region agent log
+      fetch("http://127.0.0.1:7718/ingest/9ac33552-969d-48be-9089-3a3b10571400", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "a1058c" },
+        body: JSON.stringify({
+          sessionId: "a1058c",
+          location: "GoogleProductExportButton.tsx:runExport:success",
+          message: "export success",
+          data: { hypothesisId: "A", productName, opened, openUrl: result.openUrl.slice(0, 80) },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {});
+      // #endregion
 
       if (!opened && !previewWindow && options?.fallbackToSameTab) {
         window.location.assign(result.openUrl);
@@ -165,6 +198,20 @@ export function GoogleProductExportButton({
       const message =
         err instanceof Error ? err.message : `Erro ao exportar para ${productName}.`;
 
+      // #region agent log
+      fetch("http://127.0.0.1:7718/ingest/9ac33552-969d-48be-9089-3a3b10571400", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "a1058c" },
+        body: JSON.stringify({
+          sessionId: "a1058c",
+          location: "GoogleProductExportButton.tsx:runExport:error",
+          message: "export failed",
+          data: { hypothesisId: "A", productName, error: message },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {});
+      // #endregion
+
       if (/não conectada|não conectado/i.test(message)) {
         setStatus((current) =>
           current ? { ...current, connected: false } : current,
@@ -173,6 +220,7 @@ export function GoogleProductExportButton({
         notifyGoogleStatusChanged();
       } else {
         setError(message);
+        onStatus?.(`Falha na exportação: ${message}`);
       }
     } finally {
       setBusy(false);
@@ -232,6 +280,17 @@ export function GoogleProductExportButton({
   function handlePrimaryAction() {
     const likelyExport = Boolean(status?.connected && isExportReady(status));
     const previewWindow = likelyExport ? window.open("about:blank", "_blank") : null;
+
+    if (previewWindow && !previewWindow.closed) {
+      try {
+        previewWindow.document.title = "Exportando…";
+        previewWindow.document.body.innerHTML =
+          "<p style='font-family:sans-serif;padding:24px;color:#334155'>Exportando para o Google…</p>";
+      } catch {
+        // cross-origin guard
+      }
+    }
+
     void handlePrimaryActionAsync(previewWindow);
   }
 
@@ -349,7 +408,7 @@ export function GoogleProductExportButton({
         </button>
         {error ? (
           <span
-            className="max-w-[260px] truncate text-[11px] font-semibold text-rose-700"
+            className="max-w-[min(100%,320px)] text-[11px] font-semibold leading-snug text-rose-700"
             title={error}
           >
             {error}

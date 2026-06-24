@@ -70,10 +70,9 @@ export async function saveGoogleTokensForUser(
     .split(" ")
     .map((item) => item.trim())
     .filter(Boolean);
-  const scopes =
-    scopesFromResponse.length > 0
-      ? scopesFromResponse
-      : options?.preserveScopes || [];
+  const scopes = [
+    ...new Set([...(options?.preserveScopes || []), ...scopesFromResponse]),
+  ];
 
   const supabase = getSupabaseAdminClient();
   const row = {

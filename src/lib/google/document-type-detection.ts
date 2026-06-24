@@ -54,21 +54,30 @@ export function resolveQuizDocument(
   }
 }
 
-/** Google Forms — apenas provas/listas com questões estruturadas (não jogos visuais). */
+/** Google Forms — provas/listas com questões estruturadas (não jogos visuais). */
 export function resolveFormsExportCompatible(
   getHtml: () => string,
   documentType?: string | null,
 ): boolean {
   try {
     const html = getHtml();
+    const type = String(documentType || "").toLowerCase();
+
     if (!materialExportAllows("google-forms", documentType, html)) {
       return false;
     }
     if (/planify-game-table|planify-jogo-visual|planify-game-section/i.test(html)) {
       return false;
     }
+    if (type.includes("prova") || type.includes("lista")) {
+      return true;
+    }
     return /planify-questao/i.test(html);
   } catch {
+    const type = String(documentType || "").toLowerCase();
+    if (type.includes("prova") || type.includes("lista")) {
+      return materialExportAllows("google-forms", documentType);
+    }
     return materialExportAllows("google-forms", documentType);
   }
 }

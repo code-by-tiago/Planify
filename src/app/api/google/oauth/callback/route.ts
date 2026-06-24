@@ -4,7 +4,7 @@ import {
   getGoogleConfigStatus,
 } from "../../../../../server/google/google-oauth";
 import { verifyGoogleOAuthState } from "../../../../../server/google/google-auth";
-import { saveGoogleTokensForUser } from "../../../../../server/google/google-token-store";
+import { saveGoogleTokensForUser, getGoogleTokensForUser } from "../../../../../server/google/google-token-store";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -58,8 +58,13 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    const existing = await getGoogleTokensForUser(state.userId);
     const tokens = await exchangeGoogleAuthCode(code);
-    await saveGoogleTokensForUser(state.userId, tokens);
+    await saveGoogleTokensForUser(state.userId, tokens, {
+      existingRefreshToken: existing?.refreshToken,
+      preserveScopes: existing?.scopes,
+      preserveGoogleEmail: existing?.googleEmail,
+    });
 
     return redirectWith(request, "/google/retorno", {
       returnTo: state.returnTo || "/dashboard?secao=editor",

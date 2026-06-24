@@ -54,6 +54,9 @@ type GoogleProductExportButtonProps = {
   onExportError?: (error: unknown) => void;
   /** Quando falso, inicia OAuth em vez de exportar (ex.: Forms sem escopo forms.body). */
   isExportReady?: (status: GoogleIntegrationStatus) => boolean;
+  /** Conta conectada mas falta escopo extra (ex.: Forms). */
+  needsExtraScope?: (status: GoogleIntegrationStatus) => boolean;
+  extraScopeLabel?: string;
 };
 
 export function GoogleProductExportButton({
@@ -75,6 +78,8 @@ export function GoogleProductExportButton({
   onStatus,
   onExportError,
   isExportReady = (value) => value.connected,
+  needsExtraScope,
+  extraScopeLabel,
 }: GoogleProductExportButtonProps) {
   const [status, setStatus] = useState<GoogleIntegrationStatus | null>(null);
   const [loading, setLoading] = useState(true);
@@ -290,15 +295,17 @@ export function GoogleProductExportButton({
   }
 
   const exportLabel =
-    busy && status.connected
+    busy && status.connected && isExportReady(status)
       ? labels.creating
       : busy && !status.connected
         ? labels.connecting
-        : status.connected
-          ? labels.exportConnected
-          : alwaysShowExport
-            ? labels.exportConnect
-            : labels.connect;
+        : status.connected && needsExtraScope?.(status)
+          ? extraScopeLabel || labels.exportConnect
+          : status.connected
+            ? labels.exportConnected
+            : alwaysShowExport
+              ? labels.exportConnect
+              : labels.connect;
 
   const actionTitle = exportTitle || exportLabel;
 

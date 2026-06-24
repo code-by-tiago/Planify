@@ -120,6 +120,15 @@ export function getDisciplinaColor(disciplina: DocenteDisciplina): string {
   return DISCIPLINA_COLORS[disciplina] ?? "bg-slate-100 text-slate-700";
 }
 
+/** Returns disciplina label for display, or null when Multidisciplinar (hidden from UI). */
+export function formatDisciplinaMeta(
+  disciplina: DocenteDisciplina | string | null | undefined,
+): string | null {
+  const normalized = normalizeDocenteDisciplina(disciplina);
+  if (normalized === "Multidisciplinar") return null;
+  return normalized;
+}
+
 export function readEmbedded(searchParams: { get(name: string): string | null }): boolean {
   return searchParams.get("embedded") === "1";
 }

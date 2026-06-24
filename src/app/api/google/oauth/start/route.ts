@@ -33,8 +33,12 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const body = (await request.json().catch(() => ({}))) as { returnTo?: string };
+  const body = (await request.json().catch(() => ({}))) as {
+    returnTo?: string;
+    selectAccount?: boolean;
+  };
   const returnTo = sanitizeReturnTo(body.returnTo);
+  const selectAccount = body.selectAccount !== false;
   const user = await resolvePlanifyUserFromRequest(request);
 
   if (!user) {
@@ -49,11 +53,14 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const url = buildGoogleAuthUrl({
-    userId: user.id,
-    returnTo,
-    exp: Date.now() + 15 * 60 * 1000,
-  });
+  const url = buildGoogleAuthUrl(
+    {
+      userId: user.id,
+      returnTo,
+      exp: Date.now() + 15 * 60 * 1000,
+    },
+    { promptMode: selectAccount ? "select_account consent" : "consent" },
+  );
 
   return NextResponse.json({ success: true, url });
 }
@@ -80,11 +87,15 @@ export async function GET(request: NextRequest) {
   }
 
   const returnTo = sanitizeReturnTo(request.nextUrl.searchParams.get("returnTo"));
-  const url = buildGoogleAuthUrl({
-    userId: user.id,
-    returnTo,
-    exp: Date.now() + 15 * 60 * 1000,
-  });
+  const selectAccount = request.nextUrl.searchParams.get("selectAccount") !== "false";
+  const url = buildGoogleAuthUrl(
+    {
+      userId: user.id,
+      returnTo,
+      exp: Date.now() + 15 * 60 * 1000,
+    },
+    { promptMode: selectAccount ? "select_account consent" : "consent" },
+  );
 
   return NextResponse.redirect(url);
 }

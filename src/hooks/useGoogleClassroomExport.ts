@@ -59,7 +59,9 @@ export function useGoogleClassroomExport({
 
         if (list.length === 0) {
           setError(
-            "Conta Google conectada, mas nenhuma turma de professor foi encontrada.",
+            next.googleEmail
+              ? `Nenhuma turma de professor encontrada em ${next.googleEmail}. Conecte a conta Google Workspace da escola em que você leciona.`
+              : "Nenhuma turma de professor encontrada. Conecte a conta Google Workspace da escola em que você leciona.",
           );
         }
       } else {
@@ -84,9 +86,21 @@ export function useGoogleClassroomExport({
     setError("");
 
     try {
-      await startGoogleOAuth(resolveGoogleOAuthReturnTo(returnTo));
+      await startGoogleOAuth(resolveGoogleOAuthReturnTo(returnTo), { selectAccount: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao conectar Google.");
+      setBusy(false);
+    }
+  }
+
+  async function handleSwitchAccount() {
+    setBusy(true);
+    setError("");
+
+    try {
+      await startGoogleOAuth(resolveGoogleOAuthReturnTo(returnTo), { selectAccount: true });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao trocar conta Google.");
       setBusy(false);
     }
   }
@@ -171,6 +185,7 @@ export function useGoogleClassroomExport({
     setError,
     loginRedirect,
     handleConnect,
+    handleSwitchAccount,
     handleDisconnect,
     handleExport,
     refresh,

@@ -40,6 +40,7 @@ export function GoogleClassroomPopoverButton({
     error,
     loginRedirect,
     handleConnect,
+    handleSwitchAccount,
     handleDisconnect,
     handleExport,
   } = useGoogleClassroomExport({
@@ -63,6 +64,8 @@ export function GoogleClassroomPopoverButton({
     return () => document.removeEventListener("mousedown", onPointerDown);
   }, [open]);
 
+  const hasCourses = courses.length > 0;
+
   return (
     <div ref={rootRef} className="relative">
       <button
@@ -78,7 +81,7 @@ export function GoogleClassroomPopoverButton({
       </button>
 
       {open ? (
-        <div className="absolute bottom-full right-0 z-50 mb-2 w-[min(280px,calc(100vw-2rem))] rounded-xl border border-sky-200 bg-white p-3 shadow-lg">
+        <div className="absolute bottom-full right-0 z-50 mb-2 w-[min(300px,calc(100vw-2rem))] rounded-xl border border-sky-200 bg-white p-3 shadow-lg">
           <div className="flex items-center gap-2 border-b border-sky-100 pb-2">
             <GoogleClassroomIcon className="h-5 w-5 shrink-0" />
             <p className="text-xs font-black text-sky-900">Google Classroom</p>
@@ -108,59 +111,81 @@ export function GoogleClassroomPopoverButton({
             </button>
           ) : (
             <div className="mt-3 space-y-2">
-              <select
-                value={courseId}
-                onChange={(event) => setCourseId(event.target.value)}
-                className="w-full rounded-lg border border-sky-200 bg-white px-2 py-2 text-xs font-semibold text-slate-900"
-              >
-                {courses.length === 0 ? (
-                  <option value="">Sem turmas como professor</option>
-                ) : (
-                  courses.map((course) => (
-                    <option key={course.id} value={course.id}>
-                      {course.name}
-                      {course.section ? ` — ${course.section}` : ""}
-                    </option>
-                  ))
-                )}
-              </select>
-              <input
-                type="text"
-                value={description}
-                onChange={(event) => setDescription(event.target.value)}
-                placeholder="Descrição (opcional)"
-                className="w-full rounded-lg border border-sky-200 bg-white px-2 py-2 text-xs font-semibold text-slate-900"
-              />
-              <label className="flex items-center gap-2 text-[11px] font-semibold text-sky-900">
-                <input
-                  type="checkbox"
-                  checked={publishAsDraft}
-                  onChange={(event) => setPublishAsDraft(event.target.checked)}
-                />
-                Salvar como rascunho
-              </label>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  disabled={busy || !courseId || courses.length === 0}
-                  onClick={() => {
-                    const previewWindow = window.open("about:blank", "_blank");
-                    void handleExport(previewWindow).then(() => setOpen(false));
-                  }}
-                  className="flex-1 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-bold text-white disabled:opacity-50"
-                >
-                  {busy ? "Enviando…" : "Enviar"}
-                </button>
+              <p className="text-[11px] font-semibold text-sky-900">
+                Conectado como{" "}
+                <span className="font-bold">{status.googleEmail || "conta Google"}</span>
+              </p>
+
+              {!hasCourses ? (
                 <button
                   type="button"
                   disabled={busy}
-                  onClick={() => void handleDisconnect()}
-                  className="rounded-lg border border-slate-200 px-2 py-2 text-xs font-bold text-slate-600"
-                  title="Desconectar"
+                  onClick={() => void handleSwitchAccount()}
+                  className="w-full rounded-lg bg-amber-500 px-3 py-2 text-xs font-bold text-white transition hover:bg-amber-600 disabled:opacity-60"
                 >
-                  ✕
+                  {busy ? "Abrindo Google…" : "Escolher outra conta Google"}
                 </button>
-              </div>
+              ) : (
+                <>
+                  <select
+                    value={courseId}
+                    onChange={(event) => setCourseId(event.target.value)}
+                    className="w-full rounded-lg border border-sky-200 bg-white px-2 py-2 text-xs font-semibold text-slate-900"
+                  >
+                    {courses.map((course) => (
+                      <option key={course.id} value={course.id}>
+                        {course.name}
+                        {course.section ? ` — ${course.section}` : ""}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    type="text"
+                    value={description}
+                    onChange={(event) => setDescription(event.target.value)}
+                    placeholder="Descrição (opcional)"
+                    className="w-full rounded-lg border border-sky-200 bg-white px-2 py-2 text-xs font-semibold text-slate-900"
+                  />
+                  <label className="flex items-center gap-2 text-[11px] font-semibold text-sky-900">
+                    <input
+                      type="checkbox"
+                      checked={publishAsDraft}
+                      onChange={(event) => setPublishAsDraft(event.target.checked)}
+                    />
+                    Salvar como rascunho
+                  </label>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      disabled={busy || !courseId}
+                      onClick={() => {
+                        const previewWindow = window.open("about:blank", "_blank");
+                        void handleExport(previewWindow).then(() => setOpen(false));
+                      }}
+                      className="flex-1 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-bold text-white disabled:opacity-50"
+                    >
+                      {busy ? "Enviando…" : "Enviar"}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => void handleDisconnect()}
+                      className="rounded-lg border border-slate-200 px-3 py-2 text-[11px] font-bold text-slate-600"
+                      title="Desconectar conta Google"
+                    >
+                      Desconectar
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => void handleSwitchAccount()}
+                    className="text-[11px] font-semibold text-sky-700 underline-offset-2 hover:underline disabled:opacity-60"
+                  >
+                    Trocar conta Google
+                  </button>
+                </>
+              )}
             </div>
           )}
 

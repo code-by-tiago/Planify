@@ -1,13 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { ComunidadeDocenteMaterialCard } from "@/components/community/docente/ComunidadeDocenteMaterialCard";
 import { communityProfileHref } from "@/components/community/CommunityAuthorLink";
 import { CommunityAuthorAvatar } from "@/components/community/CommunityAuthorAvatar";
 import { useComunidadeEmbedded } from "@/hooks/useComunidadeEmbedded";
 import {
   formatDocenteNumber,
   formatEventShortTime,
-  comunidadeRoutes,
 } from "@/lib/community/docente-utils";
 import type { DocenteAuthor, DocenteBadgeProgress, DocenteDiscussion, DocenteEvent, DocenteMaterial } from "@/lib/community/docente-types";
 
@@ -456,45 +456,17 @@ export function ComunidadeDocenteSalvos({
       {savedMaterials.length > 0 ? (
     <div className="space-y-4">
       <h2 className="text-sm font-semibold tracking-tight text-slate-900 sm:text-base">Materiais salvos</h2>
-      <div className="flex gap-3 overflow-x-auto pb-2">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {savedMaterials.map((material) => (
-          <article
+          <ComunidadeDocenteMaterialCard
             key={material.id}
-            className="w-[220px] shrink-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
-          >
-            <Link href={comunidadeRoutes.material(material.id, embedded)} className="block">
-              <h3 className="line-clamp-2 text-sm font-bold text-[#0F172A] hover:text-cyan-700">
-                {material.title}
-              </h3>
-            </Link>
-            <p className="mt-1 text-xs text-slate-500">{material.author.name}</p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => onLike(material.id)}
-                className="text-xs font-bold text-rose-500"
-              >
-                Curtir
-              </button>
-              {onDownload ? (
-                <button
-                  type="button"
-                  onClick={() => onDownload(material.id)}
-                  disabled={downloadingMaterialId === material.id}
-                  className="text-xs font-bold text-cyan-600 disabled:opacity-60"
-                >
-                  {downloadingMaterialId === material.id ? "Baixando…" : "Baixar"}
-                </button>
-              ) : null}
-              <button
-                type="button"
-                onClick={() => onSave(material.id)}
-                className="text-xs font-bold text-cyan-600"
-              >
-                Remover
-              </button>
-            </div>
-          </article>
+            material={material}
+            embedded={embedded}
+            onLike={onLike}
+            onSave={onSave}
+            onDownload={onDownload}
+            downloading={downloadingMaterialId === material.id}
+          />
         ))}
       </div>
     </div>

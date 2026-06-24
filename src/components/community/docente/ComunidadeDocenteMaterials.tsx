@@ -47,7 +47,7 @@ export function ComunidadeDocenteMaterials({
         </button>
       </div>
 
-      <div className="-mx-1 flex snap-x snap-mandatory gap-3 overflow-x-auto px-1 pb-2 scrollbar-thin">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {materials.length === 0 ? (
           <div className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-8 text-center">
             <p className="text-sm text-slate-500">Nenhum material publicado ainda.</p>

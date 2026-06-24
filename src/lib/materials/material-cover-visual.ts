@@ -84,8 +84,17 @@ export function resolveMaterialCoverVisual(typeOrLabel: string): MaterialCoverVi
 
   if (key.includes("slide")) return fallbackTool("slides");
   if (key.includes("prova")) return fallbackTool("prova");
-  if (key.includes("lista")) return fallbackTool("lista");
+  if (
+    key === "lista" ||
+    key === "listas" ||
+    key.includes("lista") ||
+    key.includes("exercicio")
+  ) {
+    return fallbackTool("lista");
+  }
+  if (key.includes("crase")) return fallbackTool("lista");
   if (key.includes("flashcard")) return fallbackTool("flashcards");
+  if (key === "planejamento" || key === "planejamentos") return PLANNING_VISUAL;
 
   const display = String(typeOrLabel || "").trim();
   return {

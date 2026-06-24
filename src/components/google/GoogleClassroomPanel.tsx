@@ -38,6 +38,7 @@ export function GoogleClassroomPanel({
     error,
     loginRedirect,
     handleConnect,
+    handleSwitchAccount,
     handleDisconnect,
     handleExport,
   } = useGoogleClassroomExport({
@@ -55,6 +56,8 @@ export function GoogleClassroomPanel({
   const btnSuccess = compact
     ? GOOGLE_ICON_ONLY_BUTTON_CLASS
     : "rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-black text-white transition hover:bg-emerald-700 disabled:opacity-60";
+
+  const hasCourses = courses.length > 0;
 
   if (loading) {
     return compact ? (
@@ -144,22 +147,34 @@ export function GoogleClassroomPanel({
           </button>
         ) : (
           <>
+            {status.googleEmail ? (
+              <p className="max-w-[min(200px,40vw)] truncate text-[10px] font-semibold text-sky-800" title={status.googleEmail}>
+                {status.googleEmail}
+              </p>
+            ) : null}
+            {!hasCourses ? (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void handleSwitchAccount()}
+                className="rounded-xl bg-amber-500 px-3 py-2 text-xs font-bold text-white transition hover:bg-amber-600 disabled:opacity-60"
+              >
+                {busy ? "Abrindo Google…" : "Escolher outra conta"}
+              </button>
+            ) : (
+              <>
             <select
               value={courseId}
               onChange={(event) => setCourseId(event.target.value)}
               title="Turma do Google Classroom"
               className="max-w-[min(200px,40vw)] rounded-xl border border-sky-200 bg-white px-2 py-2 text-xs font-semibold text-slate-900"
             >
-              {courses.length === 0 ? (
-                <option value="">Sem turmas como professor</option>
-              ) : (
-                courses.map((course) => (
-                  <option key={course.id} value={course.id}>
-                    {course.name}
-                    {course.section ? ` — ${course.section}` : ""}
-                  </option>
-                ))
-              )}
+              {courses.map((course) => (
+                <option key={course.id} value={course.id}>
+                  {course.name}
+                  {course.section ? ` — ${course.section}` : ""}
+                </option>
+              ))}
             </select>
             <input
               type="text"
@@ -179,7 +194,7 @@ export function GoogleClassroomPanel({
             </label>
             <button
               type="button"
-              disabled={busy || !courseId || courses.length === 0}
+              disabled={busy || !courseId}
               onClick={() => {
                 const previewWindow = window.open("about:blank", "_blank");
                 void handleExport(previewWindow);
@@ -196,10 +211,20 @@ export function GoogleClassroomPanel({
               onClick={() => void handleDisconnect()}
               aria-label="Desconectar Google"
               title="Desconectar Google"
-              className={GOOGLE_ICON_ONLY_BUTTON_CLASS}
+              className="rounded-xl border border-slate-200 px-2 py-2 text-[11px] font-bold text-slate-600"
             >
-              ✕
+              Desconectar
             </button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void handleSwitchAccount()}
+              className="text-[11px] font-semibold text-sky-700 underline-offset-2 hover:underline disabled:opacity-60"
+            >
+              Trocar conta
+            </button>
+              </>
+            )}
           </>
         )}
         {error ? (
@@ -249,6 +274,8 @@ export function GoogleClassroomPanel({
           </button>
         ) : (
           <>
+            {hasCourses ? (
+              <>
             <label className="grid w-full min-w-[200px] flex-1 gap-1">
               <span className="text-xs font-bold text-sky-800">Turma</span>
               <select
@@ -256,16 +283,12 @@ export function GoogleClassroomPanel({
                 onChange={(event) => setCourseId(event.target.value)}
                 className="rounded-xl border border-sky-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900"
               >
-                {courses.length === 0 ? (
-                  <option value="">Nenhuma turma ativa encontrada</option>
-                ) : (
-                  courses.map((course) => (
-                    <option key={course.id} value={course.id}>
-                      {course.name}
-                      {course.section ? ` — ${course.section}` : ""}
-                    </option>
-                  ))
-                )}
+                {courses.map((course) => (
+                  <option key={course.id} value={course.id}>
+                    {course.name}
+                    {course.section ? ` — ${course.section}` : ""}
+                  </option>
+                ))}
               </select>
             </label>
 
@@ -291,7 +314,7 @@ export function GoogleClassroomPanel({
 
             <button
               type="button"
-              disabled={busy || !courseId || courses.length === 0}
+              disabled={busy || !courseId}
               onClick={() => {
                 const previewWindow = window.open("about:blank", "_blank");
                 void handleExport(previewWindow);
@@ -300,6 +323,17 @@ export function GoogleClassroomPanel({
             >
               {busy ? "Enviando..." : "Enviar ao Classroom"}
             </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void handleSwitchAccount()}
+                className="w-full rounded-xl bg-amber-500 px-4 py-3 text-sm font-black text-white transition hover:bg-amber-600 disabled:opacity-60"
+              >
+                {busy ? "Abrindo Google…" : "Escolher outra conta Google"}
+              </button>
+            )}
 
             <button
               type="button"
@@ -309,6 +343,17 @@ export function GoogleClassroomPanel({
             >
               Desconectar
             </button>
+
+            {hasCourses ? (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void handleSwitchAccount()}
+                className="text-xs font-semibold text-sky-700 underline-offset-2 hover:underline disabled:opacity-60"
+              >
+                Trocar conta Google
+              </button>
+            ) : null}
           </>
         )}
       </div>

@@ -47,12 +47,18 @@ export function buildGoogleOAuthStartUrl(returnTo = "/editor"): string {
   return `/api/google/oauth/start?${params.toString()}`;
 }
 
-export async function startGoogleOAuth(returnTo = "/editor"): Promise<void> {
+export async function startGoogleOAuth(
+  returnTo = "/editor",
+  options?: { selectAccount?: boolean },
+): Promise<void> {
   const response = await fetch("/api/google/oauth/start", {
     method: "POST",
     headers: await authHeaders(),
     credentials: "include",
-    body: JSON.stringify({ returnTo }),
+    body: JSON.stringify({
+      returnTo,
+      selectAccount: options?.selectAccount !== false,
+    }),
   });
 
   const data = await response.json().catch(() => null);

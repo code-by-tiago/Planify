@@ -2,10 +2,11 @@
 
 import { CommunityAuthorAvatar } from "@/components/community/CommunityAuthorAvatar";
 import { communityProfileHref } from "@/components/community/CommunityAuthorLink";
-import { MaterialTypeCover } from "@/components/materials/MaterialTypeCover";
+import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { useComunidadeEmbedded } from "@/hooks/useComunidadeEmbedded";
 import Link from "next/link";
 import type { DocenteAuthor, DocenteEvent, DocenteMenuItem, DocenteRecentPublication } from "@/lib/community/docente-types";
+import { resolveMaterialCoverVisual } from "@/lib/materials/material-cover-visual";
 import {
   formatDocenteNumber,
   formatDocenteTimeAgo,
@@ -55,20 +56,19 @@ export function ComunidadeDocenteRightSidebar({
           </div>
         ) : (
           <ul className="mt-4 space-y-3">
-            {recentPublications.map((pub) => (
+            {recentPublications.map((pub) => {
+              const visual = resolveMaterialCoverVisual(pub.tipoMaterial || pub.title);
+              return (
               <li key={pub.id}>
                 <Link
                   href={pub.href || `/marketplace/material/${pub.id}`}
                   className="flex w-full items-start gap-3 rounded-xl p-1 text-left transition hover:bg-slate-50"
                 >
-                  <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl">
-                    <MaterialTypeCover
-                      typeLabel={pub.tipoMaterial || pub.title}
-                      subtitle={pub.disciplina}
-                      compact
-                      className="h-full"
-                    />
-                  </div>
+                  <span
+                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br ${visual.accent} text-white shadow-sm`}
+                  >
+                    <PlanifyIcon name={visual.icon} className="h-4 w-4" />
+                  </span>
                   <div className="min-w-0">
                     <p className="line-clamp-2 text-xs font-bold leading-snug text-[#0F172A]">
                       {pub.title}
@@ -79,7 +79,8 @@ export function ComunidadeDocenteRightSidebar({
                   </div>
                 </Link>
               </li>
-            ))}
+            );
+            })}
           </ul>
         )}
       </section>

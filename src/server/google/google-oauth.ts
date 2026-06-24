@@ -15,9 +15,15 @@ export type GoogleTokenResponse = {
   token_type: string;
 };
 
-export function buildGoogleAuthUrl(payload: GoogleOAuthStatePayload): string {
+export type GoogleOAuthPromptMode = "consent" | "select_account consent" | "select_account";
+
+export function buildGoogleAuthUrl(
+  payload: GoogleOAuthStatePayload,
+  options?: { promptMode?: GoogleOAuthPromptMode },
+): string {
   const { clientId, redirectUri } = requireGoogleConfig();
   const state = signGoogleOAuthState(payload);
+  const prompt = options?.promptMode ?? "select_account consent";
 
   const params = new URLSearchParams({
     client_id: clientId,
@@ -25,7 +31,7 @@ export function buildGoogleAuthUrl(payload: GoogleOAuthStatePayload): string {
     response_type: "code",
     scope: GOOGLE_OAUTH_SCOPES.join(" "),
     access_type: "offline",
-    prompt: "consent",
+    prompt,
     include_granted_scopes: "true",
     state,
   });

@@ -179,7 +179,7 @@ export function GoogleProductExportButton({
     });
 
     try {
-      await startGoogleOAuth(normalizeGoogleOAuthReturnTo(returnTo));
+      await startGoogleOAuth(normalizeGoogleOAuthReturnTo(returnTo), { selectAccount: true });
     } catch (err) {
       clearGoogleExportPending(pendingStorageKey);
       setError(err instanceof Error ? err.message : "Erro ao conectar Google.");

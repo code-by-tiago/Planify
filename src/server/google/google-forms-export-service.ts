@@ -157,11 +157,7 @@ export async function exportQuizToGoogleForms(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      info: {
-        title,
-        documentTitle: safeFilename(title),
-        description,
-      },
+      info: { title },
     }),
   });
 
@@ -196,9 +192,17 @@ export async function exportQuizToGoogleForms(
     throw new ExportHttpError(message, createResponse.status || 502);
   }
 
-  const requests = questions.map((question, index) =>
-    buildFormItemRequest(question, index),
-  );
+  const requests = [
+    {
+      updateFormInfo: {
+        info: { description },
+        updateMask: "description",
+      },
+    },
+    ...questions.map((question, index) =>
+      buildFormItemRequest(question, index),
+    ),
+  ];
 
   const batchResponse = await fetch(
     `https://forms.googleapis.com/v1/forms/${createData.formId}:batchUpdate`,

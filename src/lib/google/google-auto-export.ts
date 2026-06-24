@@ -5,22 +5,19 @@ import { materialExportAllows } from "@/lib/export/material-export-policy";
 import {
   exportToGoogleDocs,
   exportToGoogleForms,
-  exportToGoogleSlides,
   fetchGoogleStatus,
   startGoogleOAuth,
 } from "@/lib/google/google-api-client";
-import { clearOtherGoogleExportPending } from "@/lib/google/google-export-resume";
-import { saveGoogleSlidesExportPending } from "@/lib/google/google-status-events";
+import { saveGoogleExportPending } from "@/lib/google/google-export-resume";
 
 export const AUTO_GOOGLE_EXPORT_INTENT_KEY = "planify:auto-google-export";
 
-export type GoogleAutoExportProduct = "slides" | "docs" | "forms";
+export type GoogleAutoExportProduct = "docs" | "forms";
 
 export type AutoGoogleExportIntent = {
   product: GoogleAutoExportProduct;
   title: string;
   returnTo: string;
-  slideTheme?: string;
   ts: number;
 };
 
@@ -29,7 +26,6 @@ const INTENT_TTL_MS = 30 * 60 * 1000;
 export function resolveGoogleProductForTool(
   toolId: PlanifyToolId,
 ): GoogleAutoExportProduct | null {
-  if (toolId === "slides") return "slides";
   if (toolId === "prova" || toolId === "lista") {
     return "forms";
   }
@@ -83,27 +79,20 @@ function saveProductExportPending(params: {
   product: GoogleAutoExportProduct;
   title: string;
   returnTo: string;
-  slideTheme?: string;
+  html: string;
 }): void {
   if (typeof window === "undefined") return;
 
-  if (params.product === "slides") {
-    saveGoogleSlidesExportPending({
-      title: params.title,
-      theme: params.slideTheme,
-      returnTo: params.returnTo,
-    });
-    return;
-  }
-
-  const pending = { title: params.title, returnTo: params.returnTo, ts: Date.now() };
   const key =
     params.product === "forms"
       ? GOOGLE_FORMS_EXPORT_PENDING_KEY
       : GOOGLE_DOCS_EXPORT_PENDING_KEY;
 
-  clearOtherGoogleExportPending(key);
-  window.sessionStorage.setItem(key, JSON.stringify(pending));
+  saveGoogleExportPending(key, {
+    title: params.title,
+    returnTo: params.returnTo,
+    html: params.html,
+  });
 }
 
 export type AutoGoogleExportResult =
@@ -118,7 +107,6 @@ export async function executeAutoGoogleExport(params: {
   title: string;
   getHtml: () => string;
   returnTo: string;
-  slideTheme?: string;
 }): Promise<AutoGoogleExportResult> {
   const status = await fetchGoogleStatus();
 
@@ -126,34 +114,31 @@ export async function executeAutoGoogleExport(params: {
     return "skipped";
   }
 
-  if (!status.authenticated) {
-    saveProductExportPending(params);
-    window.location.href = `/login?redirect=${encodeURIComponent(params.returnTo)}`;
-    return "login_required";
-  }
-
-  if (!status.connected) {
-    saveProductExportPending(params);
-    await startGoogleOAuth(params.returnTo);
-    return "oauth_started";
-  }
-
   const html = params.getHtml().trim();
   if (!html) {
     return "failed";
   }
 
+  if (!status.authenticated) {
+    saveProductExportPending({ ...params, html });
+    window.location.href = `/login?redirect=${encodeURIComponent(params.returnTo)}`;
+    return "login_required";
+  }
+
+  const needsOAuth =
+    !status.connected ||
+    (params.product === "forms" && status.formsScopeGranted !== true);
+
+  if (needsOAuth) {
+    saveProductExportPending({ ...params, html });
+    await startGoogleOAuth(params.returnTo, { selectAccount: true });
+    return "oauth_started";
+  }
+
   try {
     let openUrl = "";
 
-    if (params.product === "slides") {
-      const result = await exportToGoogleSlides({
-        title: params.title,
-        html,
-        theme: params.slideTheme,
-      });
-      openUrl = result.presentationUrl;
-    } else if (params.product === "forms") {
+    if (params.product === "forms") {
       const result = await exportToGoogleForms({
         title: params.title,
         html,

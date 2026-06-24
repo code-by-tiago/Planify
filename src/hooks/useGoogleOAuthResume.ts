@@ -30,14 +30,7 @@ export function useGoogleOAuthResume(params: UseGoogleOAuthResumeParams): void {
         const pending = findActiveGoogleExportPending();
         const getHtml = active.getHtml;
 
-        if (!pending) {
-          // Conexão Google sem export pendente (ex.: Classroom).
-        } else if (pending.kind === "slides") {
-          const hasDeck = Boolean(
-            pending.pending.html?.trim() || pending.pending.slides?.length,
-          );
-          if (!hasDeck && !hasExportableHtml(getHtml())) return false;
-        } else if (pending.kind === "product") {
+        if (pending) {
           const snapshot = pending.pending.html?.trim() || "";
           if (!hasExportableHtml(snapshot) && !hasExportableHtml(getHtml())) {
             return false;

@@ -992,12 +992,12 @@ function testExportPolicyChannels() {
   assert.equal(
     materialExportAllows("google-drive", "material:slides"),
     true,
-    "slides deve sempre permitir Google Drive",
+    "slides legado deve permitir Google Drive (PDF)",
   );
   assert.equal(
     materialExportAllows("google-slides", "material:slides"),
-    true,
-    "slides deve permitir Google Slides",
+    false,
+    "slides descontinuado — sem Google Slides",
   );
 }
 
@@ -1056,7 +1056,22 @@ function runTest(name, fn) {
 }
 
 function testEngineRouting() {
+  const deprecatedTypes = new Set(["slides"]);
+
   for (const tipo of MATERIAL_ENGINE_TYPES) {
+    if (deprecatedTypes.has(tipo)) {
+      assert.equal(
+        usesPlanifyMaterialEngine(tipo),
+        false,
+        `${tipo} descontinuado — não deve gerar via engine ativo`,
+      );
+      assert.ok(
+        !PLANIFY_ENGINE_TYPES.includes(tipo),
+        `${tipo} descontinuado — ausente de PLANIFY_ENGINE_TYPES`,
+      );
+      continue;
+    }
+
     assert.equal(
       usesPlanifyMaterialEngine(tipo),
       true,
@@ -1067,7 +1082,10 @@ function testEngineRouting() {
       `${tipo} ausente de PLANIFY_ENGINE_TYPES`,
     );
   }
-  assert.equal(PLANIFY_ENGINE_TYPES.length, MATERIAL_ENGINE_TYPES.length);
+  assert.equal(
+    PLANIFY_ENGINE_TYPES.length,
+    MATERIAL_ENGINE_TYPES.length - deprecatedTypes.size,
+  );
 }
 
 function testGenerationSteps() {
@@ -1083,7 +1101,6 @@ function testGenerationSteps() {
 }
 
 function testGoogleExportRouting() {
-  assert.equal(resolveGoogleProductForTool("slides"), "slides");
   assert.equal(resolveGoogleProductForTool("prova"), "forms");
   assert.equal(resolveGoogleProductForTool("lista"), "forms");
   assert.equal(resolveGoogleProductForTool("jogo"), null);
@@ -1210,7 +1227,7 @@ function testNewToolsFixtures() {
   assert.ok(existsSync(join(root, "src/app/api/materiais/gerar-stream/route.ts")));
   assert.ok(existsSync(join(root, "src/app/api/materiais/regenerar-imagens/route.ts")));
   const { isMaterialStreamType } = loadTsModule("src/lib/materiais/material-stream-types.ts");
-  assert.equal(isMaterialStreamType("slides"), true);
+  assert.equal(isMaterialStreamType("slides"), false);
   assert.equal(isMaterialStreamType("flashcards"), true);
 }
 

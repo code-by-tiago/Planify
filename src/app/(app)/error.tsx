@@ -1,6 +1,8 @@
 "use client";
 
+import * as Sentry from "@sentry/nextjs";
 import { useEffect } from "react";
+import { getSentryDsn } from "@/lib/ops/sentry-dsn";
 
 export default function AppError({
   error,
@@ -11,6 +13,11 @@ export default function AppError({
 }) {
   useEffect(() => {
     console.error("[app-error]", error);
+    if (getSentryDsn()) {
+      Sentry.captureException(error, {
+        tags: { boundary: "app-error" },
+      });
+    }
   }, [error]);
 
   return (

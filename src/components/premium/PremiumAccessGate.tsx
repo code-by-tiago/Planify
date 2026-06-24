@@ -2,8 +2,9 @@
 
 import { ReactNode, useEffect, useState } from "react";
 import Link from "next/link";
-import { PlanifyBrand } from "@/components/pro/PlanifyBrand";
+import { usePathname } from "next/navigation";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
+import { isAuthOnlyRoute } from "@/config/protected-routes";
 import {
   buildLoginRedirect,
   buildPlansRedirect,
@@ -36,6 +37,8 @@ export default function PremiumAccessGate({
   children,
   featureName = "esta ferramenta",
 }: PremiumAccessGateProps) {
+  const pathname = usePathname();
+  const authOnlyRoute = isAuthOnlyRoute(pathname || "");
   const [status, setStatus] = useState<GateStatus>(initialStatus);
   const [redirectPath, setRedirectPath] = useState("/dashboard");
 
@@ -154,7 +157,7 @@ export default function PremiumAccessGate({
     );
   }
 
-  if (!status.premium) {
+  if (!status.premium && !authOnlyRoute) {
     return (
       <main className="planify-hud planify-ui3 planify-hud-app flex h-full min-h-0 flex-1 flex-col overflow-hidden">
         <section className="flex min-h-0 flex-1 items-center justify-center p-4">

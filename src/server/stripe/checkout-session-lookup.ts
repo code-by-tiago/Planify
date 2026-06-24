@@ -16,6 +16,49 @@ export type CheckoutSessionPublicSummary = {
   paymentStatus: string | null;
 };
 
+const PAID_PAYMENT_STATUSES = new Set(["paid", "no_payment_required"]);
+
+export function isCheckoutSessionPaid(
+  summary: CheckoutSessionPublicSummary | null,
+): boolean {
+  if (!summary) {
+    return false;
+  }
+
+  if (summary.status === "expired") {
+    return false;
+  }
+
+  return PAID_PAYMENT_STATUSES.has(summary.paymentStatus || "");
+}
+
+export async function validateCheckoutSessionForEmail(params: {
+  sessionId: string;
+  email: string;
+}): Promise<
+  | { ok: true; summary: CheckoutSessionPublicSummary }
+  | { ok: false; reason: "invalid_session" | "email_mismatch" | "unpaid" }
+> {
+  const summary = await getCheckoutSessionPublicSummary(params.sessionId);
+
+  if (!summary) {
+    return { ok: false, reason: "invalid_session" };
+  }
+
+  if (!isCheckoutSessionPaid(summary)) {
+    return { ok: false, reason: "unpaid" };
+  }
+
+  const sessionEmail = summary.email?.trim().toLowerCase() || "";
+  const expectedEmail = params.email.trim().toLowerCase();
+
+  if (!sessionEmail || sessionEmail !== expectedEmail) {
+    return { ok: false, reason: "email_mismatch" };
+  }
+
+  return { ok: true, summary };
+}
+
 export async function getCheckoutSessionPublicSummary(
   sessionId: string,
 ): Promise<CheckoutSessionPublicSummary | null> {

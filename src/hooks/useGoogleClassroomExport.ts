@@ -19,7 +19,8 @@ import {
   suggestInstitutionalEmail,
 } from "@/lib/google/classroom-google-account";
 import { resolveGoogleOAuthReturnTo } from "@/lib/google/document-type-detection";
-import { notifyGoogleStatusChanged } from "@/lib/google/google-status-events";
+import { notifyGoogleStatusChanged, GOOGLE_STATUS_CHANGED_EVENT } from "@/lib/google/google-status-events";
+import { peekGoogleOAuthReturnSignal } from "@/lib/google/google-export-resume";
 import { useCallback, useEffect, useState } from "react";
 
 type UseGoogleClassroomExportOptions = {
@@ -103,30 +104,6 @@ export function useGoogleClassroomExport({
       }
 
       notifyGoogleStatusChanged();
-      // #region agent log
-      fetch("http://127.0.0.1:7718/ingest/9ac33552-969d-48be-9089-3a3b10571400", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Debug-Session-Id": "a1058c",
-        },
-        body: JSON.stringify({
-          sessionId: "a1058c",
-          hypothesisId: "H3-hook-status",
-          location: "useGoogleClassroomExport.ts:refresh",
-          message: "Google Classroom status refreshed",
-          data: {
-            configured: next.configured,
-            authenticated: next.authenticated,
-            connected: next.connected,
-            coursesCount: coursesCount,
-            googleIsEducar: next.googleEmail?.includes("@educar.rs.gov.br") ?? false,
-            planifyIsEducar: next.planifyEmail?.includes("@educar.rs.gov.br") ?? false,
-          },
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {});
-      // #endregion
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao carregar integração Google.");
     } finally {
@@ -137,6 +114,31 @@ export function useGoogleClassroomExport({
   useEffect(() => {
     void refresh();
   }, [refresh]);
+
+  useEffect(() => {
+    const onStatusChanged = () => {
+      setBusy(false);
+      void refresh();
+    };
+
+    window.addEventListener(GOOGLE_STATUS_CHANGED_EVENT, onStatusChanged);
+    window.addEventListener("focus", onStatusChanged);
+
+    return () => {
+      window.removeEventListener(GOOGLE_STATUS_CHANGED_EVENT, onStatusChanged);
+      window.removeEventListener("focus", onStatusChanged);
+    };
+  }, [refresh]);
+
+  useEffect(() => {
+    const signal = peekGoogleOAuthReturnSignal();
+    if (!signal?.connected || signal.error) return;
+
+    setBusy(false);
+    void refresh().then(() => {
+      notify("Conta Google conectada. Selecione a turma e envie o material.");
+    });
+  }, [notify, refresh]);
 
   const canExport =
     Boolean(status?.connected) &&
@@ -162,29 +164,6 @@ export function useGoogleClassroomExport({
         institutionalEmail: email,
         planifyEmail: status?.planifyEmail,
       });
-
-      // #region agent log
-      fetch("http://127.0.0.1:7718/ingest/9ac33552-969d-48be-9089-3a3b10571400", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Debug-Session-Id": "a1058c",
-        },
-        body: JSON.stringify({
-          sessionId: "a1058c",
-          runId: "post-fix",
-          hypothesisId: "H5-oauth-start",
-          location: "useGoogleClassroomExport.ts:startClassroomGoogleOAuth",
-          message: "Starting Google OAuth for Classroom",
-          data: {
-            mode,
-            hasLoginHint: Boolean(oauthParams.loginHint),
-            hostedDomain: oauthParams.hostedDomain,
-          },
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {});
-      // #endregion
 
       await startGoogleOAuth(resolveGoogleOAuthReturnTo(returnTo), {
         selectAccount: true,

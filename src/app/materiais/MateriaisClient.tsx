@@ -4,9 +4,7 @@ import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "re
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { GoogleDocumentExportBar } from "@/components/google/GoogleDocumentExportBar";
-import { GoogleSlidesExportButton } from "@/components/google/GoogleSlidesExportButton";
-import { SlidesPptxDownloadButton } from "@/components/documents/SlidesPptxDownloadButton";
-import { SlideAiAdjustPanel } from "@/components/slides/SlideAiAdjustPanel";
+import { useAutoGoogleExport } from "@/hooks/useAutoGoogleExport";
 import { MaterialGenerationSummaryPanel } from "@/components/materiais/MaterialGenerationSummary";
 import { MaterialQualityScoreBar } from "@/components/materiais/MaterialQualityScoreBar";
 import { MaterialTypedPreview } from "@/components/materiais/preview/MaterialTypedPreview";
@@ -17,13 +15,11 @@ import {
 import { isMaterialStreamType } from "@/lib/materiais/material-stream-types";
 import { requestMaterialGenerationStream } from "@/lib/materiais/material-stream-client";
 import { requestExamQuestionsRetry } from "@/lib/materiais/material-exam-retry-client";
-import { requestSlideImagesRetry } from "@/lib/materiais/material-images-retry-client";
 import { MarketplacePublishButton } from "@/components/marketplace/MarketplacePublishButton";
 import type {
   MaterialEngineInput,
   MaterialEngineResponse,
 } from "@/server/materials/material-engine-types";
-import { SLIDE_THEME_OPTIONS } from "@/server/materials/slide-design-themes";
 import { CreditsBalancePill } from "@/components/credits/CreditsBalancePill";
 import { GenerationCostHint } from "@/components/credits/GenerationCostHint";
 import { DailyGenerationsBar } from "@/components/credits/DailyGenerationsBar";
@@ -51,9 +47,7 @@ import { useBnccEducationOptions } from "@/hooks/useBnccEducationOptions";
 import { toolSupportsGabarito, getMaterialFormFieldConfig, resolveMaterialDisplayTema } from "@/lib/educacao/material-form-config";
 import {
   defaultQuantityForTool,
-  defaultSlidesQuestionQuantity,
   getQuantityPresets,
-  SLIDES_QUESTION_QUANTITY_PRESETS,
 } from "@/lib/educacao/material-quantity-presets";
 import {
   clearMaterialHistory,
@@ -61,15 +55,16 @@ import {
   loadMaterialMetaFromHistoryId,
   openMaterialInEditor,
   persistGeneratedMaterial,
-  clearSlideGenerationPayload,
-  persistSlideGenerationPayload,
   readAutoOpenEditorPreference,
-  readSlideGenerationPayload,
   writeAutoOpenEditorPreference,
   type MaterialEditorMeta,
   type MaterialHistoryPreview,
 } from "@/lib/materiais/material-editor-flow";
 import { buildMaterialGenerationSummary } from "@/lib/materiais/material-generation-summary";
+import {
+  resolveGoogleProductForTool,
+  saveAutoGoogleExportIntent,
+} from "@/lib/google/google-auto-export";
 import {
   activePlanifyTools,
   getPlanifyTool,
@@ -94,7 +89,6 @@ import {
   fetchPedagogicalContext,
   type PedagogicalContextEntry,
 } from "@/lib/pedagogical-cache/pedagogical-context-client";
-import { lessonBundleFollowUp } from "@/lib/pro/teachyStudio";
 import { useSchoolClasses } from "@/hooks/useSchoolClasses";
 import { TurmaCombobox } from "@/components/school/TurmaCombobox";
 import { PlanifyMaterialHubCard } from "@/components/materials/PlanifyMaterialHubCard";
@@ -116,7 +110,6 @@ const BancoQuestoesClient = dynamic(
   },
 );
 const LONG_GENERATION_TYPES = new Set([
-  "slides",
   "prova",
   "lista",
   "apostila",
@@ -245,6 +238,21 @@ function buildTitle(mode: PlanifyToolId, tema: string, conteudo = ""): string {
   return `${config.shortTitle} — ${label}`;
 }
 
+function queueAutoGoogleExportForMaterial(params: {
+  toolId: PlanifyToolId;
+  title: string;
+  returnTo: string;
+}): void {
+  const product = resolveGoogleProductForTool(params.toolId);
+  if (!product) return;
+
+  saveAutoGoogleExportIntent({
+    product,
+    title: params.title,
+    returnTo: params.returnTo,
+  });
+}
+
 function formatDate(value: string): string {
   try {
     return new Date(value).toLocaleDateString("pt-BR", {
@@ -274,7 +282,7 @@ export function MateriaisClient({
 }: MateriaisClientProps = {}) {
   const school = useSchoolClasses();
   const [categoria, setCategoria] = useState<ToolCategoryId>("todos");
-  const [tipo, setTipo] = useState<PlanifyToolId>(initialTipo ?? "slides");
+  const [tipo, setTipo] = useState<PlanifyToolId>(initialTipo ?? "atividade");
   const [modalAberto, setModalAberto] = useState(studioMode);
   const [conteudo, setConteudo] = useState(initialTema);
   const [etapa, setEtapa] = useState(DEFAULT_MATERIAL_EDUCATION.etapa);
@@ -294,21 +302,14 @@ export function MateriaisClient({
   const [lastGenerationPayload, setLastGenerationPayload] =
     useState<MaterialEngineInput | null>(null);
   const [elevatingQuality, setElevatingQuality] = useState(false);
-  const [retryingImages, setRetryingImages] = useState(false);
   const [retryingExam, setRetryingExam] = useState(false);
-  const [adjustingSlides, setAdjustingSlides] = useState(false);
-  const [designSlides, setDesignSlides] = useState<string>("moderno");
   const [quantidade, setQuantidade] = useState(
-    defaultQuantityForTool(initialTipo ?? "slides"),
+    defaultQuantityForTool(initialTipo ?? "atividade"),
   );
   const [dificuldade, setDificuldade] = useState<Dificuldade>("media");
   const [formatoJogo, setFormatoJogo] = useState<FormatoJogo>("caca-palavras");
   const [examCreationSource, setExamCreationSource] = useState<"ia" | "banco">("ia");
   const [incluirGabarito, setIncluirGabarito] = useState(true);
-  const [incluirQuestoes, setIncluirQuestoes] = useState(false);
-  const [quantidadeQuestoes, setQuantidadeQuestoes] = useState(
-    defaultSlidesQuestionQuantity(),
-  );
   const [resultadoHtml, setResultadoHtml] = useState("");
   const [resultadoEstrutura, setResultadoEstrutura] =
     useState<MaterialEngineResponse | null>(null);
@@ -333,20 +334,15 @@ export function MateriaisClient({
   >([]);
   const pedagogicalDebounceRef = useRef<number | null>(null);
 
-  function rememberSlideGenerationPayload(payload: MaterialEngineInput | null) {
-    setLastGenerationPayload(payload);
-    if (!payload) {
-      clearSlideGenerationPayload();
-      return;
-    }
-    if (payload.tipoMaterial === "slides") {
-      persistSlideGenerationPayload(payload);
-    }
-  }
-
-  const slideAdjustPayload =
-    lastGenerationPayload ??
-    (tipo === "slides" ? readSlideGenerationPayload() : null);
+  useAutoGoogleExport({
+    title: buildTitle(tipo, "", conteudo),
+    getHtml: () => resultadoHtml,
+    returnTo:
+      typeof window !== "undefined"
+        ? `${window.location.pathname}${window.location.search}` || "/dashboard"
+        : "/dashboard",
+    onStatus: setHintFeedback,
+  });
 
   useEffect(() => {
     if (studioMode && initialTipo) {
@@ -361,7 +357,7 @@ export function MateriaisClient({
     const tipoUrl = params.get("tipo");
     const categoriaUrl = params.get("categoria");
 
-    if (isActivePlanifyToolId(tipoUrl)) {
+    if (tipoUrl && tipoUrl !== "slides" && isActivePlanifyToolId(tipoUrl)) {
       setTipo(tipoUrl as PlanifyToolId);
       setModalAberto(true);
     }
@@ -372,10 +368,6 @@ export function MateriaisClient({
 
     setHistorico(loadMaterialHistoryPreview());
     setAbrirEditorAutomatico(readAutoOpenEditorPreference());
-    const restoredPayload = readSlideGenerationPayload();
-    if (restoredPayload) {
-      setLastGenerationPayload(restoredPayload);
-    }
   }, [studioMode, initialTipo]);
 
   useEffect(() => {
@@ -452,7 +444,6 @@ export function MateriaisClient({
             tipo,
             html: resultadoHtml,
             estrutura: resultadoEstrutura,
-            designSlides: tipo === "slides" ? designSlides : undefined,
             incluirGabarito,
           })
         : null,
@@ -460,7 +451,6 @@ export function MateriaisClient({
       resultadoHtml,
       resultadoEstrutura,
       tipo,
-      designSlides,
       incluirGabarito,
     ],
   );
@@ -468,19 +458,7 @@ export function MateriaisClient({
   const isRedacao = tipo === "redacao";
   const isPlanoAula = tipo === "plano-aula";
   const isExamTool = tipo === "lista" || tipo === "prova";
-  const showGabarito = toolSupportsGabarito(tipo, {
-    incluirQuestoes: tipo === "slides" ? incluirQuestoes : undefined,
-  });
-
-  const canRetrySlideImages = useMemo(() => {
-    if (tipo !== "slides" || !resultadoEstrutura?.slides?.length) return false;
-    return resultadoEstrutura.slides.some(
-      (slide) =>
-        slide.layout !== "fechamento" &&
-        !slide.imageUrl?.trim() &&
-        Boolean(slide.imagePrompt?.trim() || slide.title?.trim()),
-    );
-  }, [tipo, resultadoEstrutura]);
+  const showGabarito = toolSupportsGabarito(tipo);
 
   const canRetryExamQuestions = useMemo(() => {
     if (tipo !== "prova" && tipo !== "lista") return false;
@@ -514,10 +492,6 @@ export function MateriaisClient({
 
   useEffect(() => {
     setQuantidade(defaultQuantityForTool(tipo));
-    if (tipo !== "slides") {
-      setIncluirQuestoes(false);
-      setQuantidadeQuestoes(defaultSlidesQuestionQuantity());
-    }
     if (tipo !== "prova" && tipo !== "lista") {
       setExamCreationSource("ia");
     }
@@ -541,9 +515,7 @@ export function MateriaisClient({
 
   const gabaritoLabel = isRedacao
     ? "Incluir critérios de avaliação e redação modelo"
-    : tipo === "slides" && incluirQuestoes
-      ? "Incluir gabarito no último slide (opcional)"
-      : "Incluir gabarito/solução";
+    : "Incluir gabarito/solução";
 
   const ferramentasFiltradas = useMemo(() => {
     const term = busca.trim().toLowerCase();
@@ -580,13 +552,11 @@ export function MateriaisClient({
     setPipelineGeracao(null);
     setQualityScore(null);
     setQualityIssues([]);
-    rememberSlideGenerationPayload(null);
+    setLastGenerationPayload(null);
     setQuantidade(defaultQuantityForTool(tipo));
     setDificuldade("media");
     setFormatoJogo("caca-palavras");
     setIncluirGabarito(true);
-    setIncluirQuestoes(false);
-    setQuantidadeQuestoes(defaultSlidesQuestionQuantity());
     setResultadoHtml("");
     setResultadoEstrutura(null);
     setErro("");
@@ -624,11 +594,7 @@ export function MateriaisClient({
       dificuldade,
       formatoJogo: isJogo ? formatoJogo : null,
       incluirGabarito: showGabarito && incluirGabarito,
-      incluirQuestoes: tipo === "slides" && incluirQuestoes ? true : undefined,
-      quantidadeQuestoes:
-        tipo === "slides" && incluirQuestoes ? quantidadeQuestoes : undefined,
       areaConhecimento,
-      designSlides: tipo === "slides" ? designSlides : undefined,
       ...school.turmaPayload,
       discipline: componente.trim() || undefined,
       disciplina: componente.trim() || undefined,
@@ -650,10 +616,8 @@ export function MateriaisClient({
       etapa,
       areaConhecimento,
       pipeline: pipeline ?? pipelineGeracao,
-      slideTheme:
-        resolvedEstrutura?.slideTheme ||
-        (tipo === "slides" ? designSlides : null),
-      designSlides: tipo === "slides" ? designSlides : null,
+      slideTheme: resolvedEstrutura?.slideTheme ?? null,
+      designSlides: null,
       qualityScore: extras?.qualityScore ?? qualityScore,
       qualityIssues: extras?.qualityIssues ?? qualityIssues,
       generationPayload: extras?.generationPayload ?? lastGenerationPayload,
@@ -681,7 +645,7 @@ export function MateriaisClient({
       loadMaterialMetaFromHistoryId(item.id)?.generationPayload ??
       null;
     if (payload) {
-      rememberSlideGenerationPayload(payload);
+      setLastGenerationPayload(payload);
     }
   }
 
@@ -701,27 +665,6 @@ export function MateriaisClient({
       },
       { from: "materiais" },
     );
-  }
-
-  function abrirFerramentaRelacionada(toolId: PlanifyToolId) {
-    try {
-      if (conteudo.trim()) {
-        sessionStorage.setItem("planify-studio-tema", conteudo.trim());
-      }
-      sessionStorage.setItem(
-        "planify-studio-objetivo-hint",
-        "Manter o mesmo tema e a continuidade pedagógica da aula já iniciada.",
-      );
-    } catch {
-      /* ignore */
-    }
-
-    if (onOpenRelatedTool) {
-      onOpenRelatedTool(toolId);
-      return;
-    }
-
-    window.location.href = `/dashboard?tipo=${encodeURIComponent(toolId)}`;
   }
 
   function abrirNoEditor() {
@@ -796,7 +739,7 @@ export function MateriaisClient({
         ...buildGenerationPayload(overrides),
         idempotencyKey,
       };
-      rememberSlideGenerationPayload(payload);
+      setLastGenerationPayload(payload);
 
       let data: Record<string, unknown>;
       try {
@@ -887,6 +830,15 @@ export function MateriaisClient({
       }
 
       const titulo = buildTitle(tipo, "", conteudo);
+      const materiaisReturnTo =
+        typeof window !== "undefined"
+          ? `${window.location.pathname}${window.location.search}` || "/dashboard"
+          : "/dashboard";
+      queueAutoGoogleExportForMaterial({
+        toolId: tipo,
+        title: titulo,
+        returnTo: abrirEditorAutomatico ? "/dashboard?secao=editor" : materiaisReturnTo,
+      });
       const record =
         data && typeof data === "object" ? (data as Record<string, unknown>) : {};
       const scoreValue =
@@ -971,7 +923,7 @@ export function MateriaisClient({
           data.qualityIssues.map((item) => String(item)).filter(Boolean),
         );
       }
-      rememberSlideGenerationPayload(payload);
+      setLastGenerationPayload(payload);
 
       const titulo = buildTitle(tipo, "", conteudo);
       const meta = buildMaterialMeta(
@@ -1002,49 +954,6 @@ export function MateriaisClient({
       setErroRetryable(formatted.retryable);
     } finally {
       setElevatingQuality(false);
-    }
-  }
-
-  async function regenerarImagensSlides() {
-    if (!lastGenerationPayload || !resultadoEstrutura) {
-      setErro("Gere os slides antes de tentar resolver imagens.");
-      return;
-    }
-
-    setRetryingImages(true);
-    setErro("");
-
-    try {
-      const result = await requestSlideImagesRetry({
-        ...lastGenerationPayload,
-        estrutura: resultadoEstrutura,
-      });
-      window.dispatchEvent(new Event("planify:credits-changed"));
-      setResultadoHtml(result.html);
-      setResultadoEstrutura(result.estrutura);
-
-      const titulo = buildTitle(tipo, "", conteudo);
-      const meta = buildMaterialMeta(pipelineGeracao, result.estrutura, {
-        qualityScore,
-        qualityIssues,
-        generationPayload: lastGenerationPayload,
-      });
-      persistGeneratedMaterial(result.html, titulo, meta);
-      setMaterialSalvo(true);
-      setHistorico(loadMaterialHistoryPreview());
-      setHintFeedback(
-        result.imagesResolved > 0
-          ? `${result.imagesResolved} imagem(ns) resolvida(s) — revise os slides.`
-          : "Nenhuma imagem pendente encontrada.",
-      );
-    } catch (error) {
-      dispatchCreditsChangedIfNeeded(error);
-      const formatted = formatGenerationError(error);
-      setErro(formatted.message);
-      setErroCta(formatted.cta ?? null);
-      setErroRetryable(formatted.retryable);
-    } finally {
-      setRetryingImages(false);
     }
   }
 
@@ -1095,38 +1004,6 @@ export function MateriaisClient({
     } finally {
       setRetryingExam(false);
     }
-  }
-
-  function handleSlideAiAdjustResult(result: {
-    html: string;
-    estrutura: MaterialEngineResponse | null;
-    payload: MaterialEngineInput;
-    qualityScore?: number | null;
-    qualityIssues?: string[];
-    alertas?: string[];
-    pipeline?: string | null;
-  }) {
-    window.dispatchEvent(new Event("planify:credits-changed"));
-    setResultadoHtml(result.html);
-    setResultadoEstrutura(result.estrutura);
-    rememberSlideGenerationPayload(result.payload);
-    if (result.alertas?.length) setAlertasGeracao(result.alertas);
-    if (typeof result.qualityScore === "number") {
-      setQualityScore(result.qualityScore);
-    }
-    if (result.qualityIssues) setQualityIssues(result.qualityIssues);
-    if (result.pipeline) setPipelineGeracao(result.pipeline);
-
-    const titulo = buildTitle(tipo, "", conteudo);
-    const meta = buildMaterialMeta(result.pipeline ?? pipelineGeracao, result.estrutura, {
-      qualityScore: result.qualityScore ?? qualityScore,
-      qualityIssues: result.qualityIssues ?? qualityIssues,
-      generationPayload: result.payload,
-    });
-    persistGeneratedMaterial(result.html, titulo, meta);
-    setMaterialSalvo(true);
-    setHistorico(loadMaterialHistoryPreview());
-    setHintFeedback("Ajuste aplicado — revise os slides antes de salvar ou exportar.");
   }
 
   function gerarMaterial(event: FormEvent<HTMLFormElement>) {
@@ -1434,74 +1311,6 @@ export function MateriaisClient({
             </label>
           </div>
 
-          {tipo === "slides" ? (
-            <div className="mt-4 rounded-xl border border-cyan-400/20 bg-cyan-50/40 p-4">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <label className="flex cursor-pointer items-center gap-3 text-sm font-bold text-slate-800">
-                  <input
-                    type="checkbox"
-                    checked={incluirQuestoes}
-                    onChange={(event) => {
-                      const next = event.target.checked;
-                      setIncluirQuestoes(next);
-                      if (!next) {
-                        setIncluirGabarito(false);
-                      }
-                    }}
-                    className="h-4 w-4 accent-cyan-600"
-                  />
-                  Incluir questões nos slides
-                </label>
-                {incluirQuestoes ? (
-                  <label className="flex items-center gap-2 text-xs font-semibold text-slate-600">
-                    <span>Quantidade de questões</span>
-                    <select
-                      value={quantidadeQuestoes}
-                      onChange={(event) =>
-                        setQuantidadeQuestoes(event.target.value)
-                      }
-                      className="rounded-lg border border-cyan-400/25 bg-white px-2 py-1.5 text-xs font-bold text-slate-800"
-                    >
-                      {SLIDES_QUESTION_QUANTITY_PRESETS.map((preset) => (
-                        <option key={preset.value} value={preset.value}>
-                          {preset.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                ) : null}
-              </div>
-              {incluirQuestoes ? (
-                <p className="mt-2 text-[11px] font-semibold leading-4 text-slate-500">
-                  As questões entram nos slides de prática; o gabarito, se marcado,
-                  aparece somente no último slide.
-                </p>
-              ) : null}
-            </div>
-          ) : null}
-
-          {tipo === "slides" ? (
-            <div className="mt-4 rounded-xl border border-cyan-400/20 bg-cyan-50/40 p-4">
-              <label className="block">
-                <span className={HUD_SECTION_LABEL}>Design da apresentação</span>
-                <select
-                  value={designSlides}
-                  onChange={(event) => setDesignSlides(event.target.value)}
-                  className={SELECT_FIELD_CLASS}
-                >
-                  {SLIDE_THEME_OPTIONS.map((theme) => (
-                    <option key={theme.id} value={theme.id}>
-                      {theme.label} — {theme.descricao}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <p className="mt-2 text-[11px] font-semibold text-slate-500">
-                O tema é aplicado ao gerar — altere e clique em Gerar novamente.
-              </p>
-            </div>
-          ) : null}
-
           <div className="mt-5 flex flex-col gap-3">
             <div className="flex flex-wrap items-center justify-between gap-3">
               {showGabarito ? (
@@ -1516,11 +1325,6 @@ export function MateriaisClient({
                   />
                   {gabaritoLabel}
                 </label>
-              ) : tipo === "slides" ? (
-                <span className="text-sm font-semibold text-slate-500">
-                  Marque &quot;Incluir questões nos slides&quot; para opcionalmente
-                  adicionar gabarito no último slide.
-                </span>
               ) : (
                 <span className="text-sm font-semibold text-slate-500">
                   Gabarito não se aplica a esta ferramenta.
@@ -1632,28 +1436,16 @@ export function MateriaisClient({
                   elevating={elevatingQuality}
                 />
               ) : null}
-              {(canRetrySlideImages || canRetryExamQuestions) ? (
+              {canRetryExamQuestions ? (
                 <div className="mb-4 flex flex-wrap gap-2">
-                  {canRetrySlideImages ? (
-                    <button
-                      type="button"
-                      onClick={() => void regenerarImagensSlides()}
-                      disabled={loading || retryingImages || retryingExam}
-                      className="rounded-full border border-violet-200 bg-violet-50 px-4 py-2 text-xs font-black text-violet-900 transition hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {retryingImages ? "Resolvendo imagens…" : "Resolver imagens pendentes"}
-                    </button>
-                  ) : null}
-                  {canRetryExamQuestions ? (
-                    <button
-                      type="button"
-                      onClick={() => void regenerarQuestoesFracas()}
-                      disabled={loading || retryingExam || retryingImages}
-                      className="rounded-full border border-amber-200 bg-amber-50 px-4 py-2 text-xs font-black text-amber-900 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {retryingExam ? "Corrigindo questões…" : "Corrigir questões fracas"}
-                    </button>
-                  ) : null}
+                  <button
+                    type="button"
+                    onClick={() => void regenerarQuestoesFracas()}
+                    disabled={loading || retryingExam}
+                    className="rounded-full border border-amber-200 bg-amber-50 px-4 py-2 text-xs font-black text-amber-900 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {retryingExam ? "Corrigindo questões…" : "Corrigir questões fracas"}
+                  </button>
                 </div>
               ) : null}
               {(pipelineGeracao || alertasGeracao.length > 0) && (
@@ -1685,68 +1477,6 @@ export function MateriaisClient({
                     Revise e complemente no editor antes de exportar. Todas as{" "}
                     {planifyToolCount} ferramentas seguem o mesmo fluxo.
                   </p>
-                </aside>
-              ) : null}
-              {tipo === "slides" && studioMode ? (
-                <aside className="mb-4 rounded-xl border border-violet-200/80 bg-violet-50/60 p-4">
-                  <p className="text-sm font-black text-violet-900">
-                    Complete sua aula
-                  </p>
-                  <p className="mt-1 text-xs font-semibold text-violet-800/90">
-                    Mesmo tema — abra a próxima ferramenta do pacote:
-                  </p>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {lessonBundleFollowUp.map((item) => (
-                      <button
-                        key={item.toolId}
-                        type="button"
-                        onClick={() => abrirFerramentaRelacionada(item.toolId)}
-                        className="rounded-full border border-violet-200 bg-white px-3 py-1.5 text-xs font-bold text-violet-900 transition hover:border-violet-400 hover:bg-violet-100"
-                      >
-                        {item.label}
-                      </button>
-                    ))}
-                  </div>
-                </aside>
-              ) : null}
-              {tipo === "slides" ? (
-                <SlideAiAdjustPanel
-                  generationPayload={slideAdjustPayload}
-                  disabled={loading || adjustingSlides}
-                  onAdjusting={setAdjustingSlides}
-                  onResult={handleSlideAiAdjustResult}
-                  onError={setErro}
-                />
-              ) : null}
-              {tipo === "slides" ? (
-                <aside className="mb-4 rounded-xl border border-cyan-400/20 bg-gradient-to-r from-cyan-50/80 to-emerald-50/60 px-4 py-3">
-                  <p className="text-sm font-bold text-cyan-900">
-                    Abrir no Google Apresentações
-                  </p>
-                  <p className="mt-1 text-xs font-semibold leading-5 text-cyan-800/90">
-                    O Planify converte seus slides (com imagens e sequência pedagógica) em
-                    apresentação nativa na sua conta Google.
-                  </p>
-                  <div className="mt-3 flex flex-wrap items-center gap-2">
-                    <GoogleSlidesExportButton
-                      title={buildTitle(tipo, "", conteudo)}
-                      html={resultadoHtml}
-                      slides={resultadoEstrutura?.slides}
-                      theme={resultadoEstrutura?.slideTheme || designSlides}
-                      returnTo="/dashboard?tipo=slides"
-                      alwaysShowExport
-                      iconOnly={false}
-                    />
-                    <SlidesPptxDownloadButton
-                      title={buildTitle(tipo, "", conteudo)}
-                      html={resultadoHtml}
-                      slides={resultadoEstrutura?.slides}
-                      theme={resultadoEstrutura?.slideTheme || designSlides}
-                      documentType="material:slides"
-                      iconOnly={false}
-                      label="Baixar PPTX"
-                    />
-                  </div>
                 </aside>
               ) : null}
               <div className="mb-4 flex flex-wrap justify-end gap-2">
@@ -1782,7 +1512,6 @@ export function MateriaisClient({
                   title={buildTitle(tipo, "", conteudo)}
                   getHtml={() => resultadoHtml}
                   documentType={`material:${tipo}`}
-                  isSlideDeck={tipo === "slides"}
                   returnTo="/dashboard"
                   compact
                   classroomMode="popover"

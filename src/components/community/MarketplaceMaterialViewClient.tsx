@@ -280,7 +280,6 @@ export function MarketplaceMaterialViewClient({
         documentType?.includes("planejamento") ? getPlanningPayload : undefined
       }
       documentType={documentType}
-      isSlideDeck={preview.isSlidePreview}
       returnTo={`/marketplace/material/${material.id}`}
       compact
       classroomMode="popover"

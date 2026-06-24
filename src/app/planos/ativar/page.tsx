@@ -27,7 +27,9 @@ export default function PlanosAtivarPage() {
 
         <p className={`mt-5 ${ppLead}`}>
           Se você acabou de pagar e fechou a página de confirmação, use o mesmo
-          e-mail do checkout para criar sua senha e entrar no painel.
+          e-mail do checkout para criar sua senha. Se ainda tiver o link de
+          sucesso do pagamento, cole o código da sessão no formulário para
+          validação mais rápida.
         </p>
 
         <div className="mt-8 w-full">

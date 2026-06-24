@@ -46,7 +46,6 @@ export const MATERIAL_STREAM_TYPES = new Set([
   "apostila",
   "atividade",
   "prova",
-  "slides",
   "projeto",
   "jogo",
   "sequencia",

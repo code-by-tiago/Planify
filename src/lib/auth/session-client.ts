@@ -342,29 +342,12 @@ export async function signUpAndGoToPlans(params: {
     // Se o endpoint falhar, não bloqueia cadastro legado.
   }
 
-  const normalizedEmail = params.email.trim();
-  const statusRes = await fetch(
-    `/api/public/checkout-account-status?email=${encodeURIComponent(normalizedEmail)}`,
-    { cache: "no-store" },
-  );
-  const statusJson = await statusRes.json().catch(() => null);
-
-  if (
-    statusJson?.data?.hasActiveSubscription &&
-    !statusJson?.data?.hasAccount
-  ) {
-    return activateAccountAfterPayment({
-      email: normalizedEmail,
-      password: params.password,
-    });
-  }
-
   return {
     success: false,
     premium: false,
     redirectTo: "/planos",
     message:
-      "Assine o plano primeiro. Após o pagamento, crie sua senha na tela seguinte.",
+      "Assine o plano primeiro. Após o pagamento, crie sua senha na tela seguinte ou em /planos/ativar.",
   };
 }
 
@@ -376,21 +359,24 @@ export async function activateAccountAfterPayment(params: {
 }): Promise<LoginResult> {
   const email = params.email.trim();
   const password = params.password;
+  const sessionId = params.sessionId?.trim() || "";
 
-  const statusRes = await fetch(
-    `/api/public/checkout-account-status?email=${encodeURIComponent(email)}`,
-    { cache: "no-store" },
-  );
-  const statusJson = await statusRes.json().catch(() => null);
-  const hasAccount = Boolean(statusJson?.data?.hasAccount);
+  if (sessionId) {
+    const statusRes = await fetch(
+      `/api/public/checkout-account-status?email=${encodeURIComponent(email)}&session_id=${encodeURIComponent(sessionId)}&sync=1`,
+      { cache: "no-store" },
+    );
+    const statusJson = await statusRes.json().catch(() => null);
+    const hasAccount = Boolean(statusJson?.data?.hasAccount);
 
-  if (hasAccount) {
-    return signInAndSyncPremiumAccess({
-      email,
-      password,
-      redirectTo: "/dashboard",
-      requirePremium: false,
-    });
+    if (hasAccount) {
+      return signInAndSyncPremiumAccess({
+        email,
+        password,
+        redirectTo: "/dashboard",
+        requirePremium: false,
+      });
+    }
   }
 
   const activateRes = await fetch("/api/stripe/activate-account", {
@@ -406,6 +392,15 @@ export async function activateAccountAfterPayment(params: {
   const activateJson = await activateRes.json().catch(() => null);
 
   if (activateJson?.error?.code === "account_exists") {
+    return signInAndSyncPremiumAccess({
+      email,
+      password,
+      redirectTo: "/dashboard",
+      requirePremium: false,
+    });
+  }
+
+  if (activateJson?.error?.code === "activation_in_progress") {
     return signInAndSyncPremiumAccess({
       email,
       password,

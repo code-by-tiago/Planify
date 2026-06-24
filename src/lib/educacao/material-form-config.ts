@@ -13,9 +13,6 @@ export function toolSupportsGabarito(
   toolId: PlanifyToolId,
   options?: { incluirQuestoes?: boolean },
 ): boolean {
-  if (toolId === "slides") {
-    return options?.incluirQuestoes === true;
-  }
   return TOOL_IDS_WITH_GABARITO.includes(toolId);
 }
 
@@ -39,11 +36,6 @@ const FORM_FIELD_CONFIG_BY_TOOL: Partial<
     conteudoLabel: "Conteúdo da aula",
     conteudoPlaceholder:
       "Descreva o que será trabalhado na aula — digite livremente.",
-  },
-  slides: {
-    conteudoLabel: "Conteúdo da apresentação",
-    conteudoPlaceholder:
-      "Descreva o que a apresentação deve cobrir — digite livremente.",
   },
   prova: {
     conteudoLabel: "Conteúdo da prova",

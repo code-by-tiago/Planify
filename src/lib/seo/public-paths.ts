@@ -46,5 +46,4 @@ export const PRIVATE_ROBOTS_DISALLOW = [
   "/sair",
   "/google/",
   "/planos/sucesso",
-  "/planos/ativar",
 ] as const;

@@ -25,12 +25,6 @@ const MATERIAL_STEPS: Partial<Record<PlanifyToolId, string[]>> = {
     "Organizando enunciado, desenvolvimento e avaliação...",
     "Preparando material para edição...",
   ],
-  slides: [
-    "Gerando sua apresentação...",
-    "Organizando sequência pedagógica da aula...",
-    "Preparando slides e notas do professor...",
-    "Preparando material para edição...",
-  ],
   "plano-aula": [
     "Gerando seu plano de aula...",
     "Distribuindo etapas e tempos...",
@@ -87,7 +81,7 @@ const MATERIAL_STEPS: Partial<Record<PlanifyToolId, string[]>> = {
   ],
   "aula-completa": [
     "Montando seu pacote de aula completa...",
-    "Gerando plano, slides, atividade e avaliação...",
+    "Gerando plano, atividade e avaliação...",
     "Alinhando linguagem e progressão entre materiais...",
     "Preparando pré-visualização do pacote...",
   ],

@@ -22,7 +22,6 @@ function hasExportableHtml(getHtml: () => string): boolean {
 type UseAutoGoogleExportParams = {
   title: string;
   getHtml: () => string;
-  slideTheme?: string | null;
   returnTo?: string;
   onStatus?: (message: string) => void;
 };
@@ -30,7 +29,6 @@ type UseAutoGoogleExportParams = {
 export function useAutoGoogleExport({
   title,
   getHtml,
-  slideTheme,
   returnTo,
   onStatus,
 }: UseAutoGoogleExportParams): void {
@@ -60,16 +58,11 @@ export function useAutoGoogleExport({
         title: title.trim() || intent.title,
         getHtml,
         returnTo: intent.returnTo || resolvedReturnTo,
-        slideTheme: slideTheme ?? intent.slideTheme,
       });
 
       if (result === "exported") {
         const label =
-          intent.product === "slides"
-            ? "Google Slides"
-            : intent.product === "forms"
-              ? "Google Forms"
-              : "Google Docs";
+          intent.product === "forms" ? "Google Forms" : "Google Docs";
         onStatus?.(`${label} aberto automaticamente em nova aba.`);
       } else if (result === "oauth_started" || result === "login_required") {
         onStatus?.("Conecte sua conta Google para concluir a exportação.");
@@ -102,5 +95,5 @@ export function useAutoGoogleExport({
       window.clearInterval(intervalId);
       window.clearTimeout(timeoutId);
     };
-  }, [getHtml, onStatus, returnTo, slideTheme, title]);
+  }, [getHtml, onStatus, returnTo, title]);
 }

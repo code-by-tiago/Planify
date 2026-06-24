@@ -7,6 +7,39 @@ import {
 
 export type MarketplaceDownloadFormat = "docx" | "pdf" | "html";
 
+export type MarketplaceFeedFileType = "pdf" | "docx" | "pptx" | "image";
+
+export function resolveMarketplaceDownloadParams(material: {
+  title: string;
+  fileType: MarketplaceFeedFileType;
+  fileName?: string | null;
+}): {
+  format: MarketplaceDownloadFormat;
+  fallbackFileName: string;
+} {
+  const extensionByType: Record<MarketplaceFeedFileType, string> = {
+    pdf: "pdf",
+    docx: "docx",
+    pptx: "pptx",
+    image: "png",
+  };
+
+  const fallbackFileName =
+    material.fileName?.trim() ||
+    `${material.title}.${extensionByType[material.fileType]}`;
+
+  if (material.fileType === "pdf") {
+    return { format: "pdf", fallbackFileName };
+  }
+
+  if (material.fileType === "docx") {
+    return { format: "docx", fallbackFileName };
+  }
+
+  // PPTX/imagens: formato "html" entrega o arquivo original no servidor.
+  return { format: "html", fallbackFileName };
+}
+
 export async function downloadMarketplaceMaterial(params: {
   id: string;
   format?: MarketplaceDownloadFormat;

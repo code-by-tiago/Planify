@@ -4,7 +4,6 @@
  */
 export const DISABLED_AI_TOOLS = [
   "aula-completa",
-  "slides",
   "resumo",
   "flashcards",
   "apostila",

@@ -20,8 +20,6 @@ import {
   getClosestTable,
   getClosestTableCell,
 } from "@/lib/editor/editor-selection-utils";
-import { isSlideDeckHtml } from "@/lib/slides/slide-deck-utils";
-import { SlideAiAdjustPanel } from "@/components/slides/SlideAiAdjustPanel";
 import type {
   MaterialEngineInput,
   MaterialEngineResponse,
@@ -348,10 +346,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
   const [showMobileActions, setShowMobileActions] = useState(false);
   const [showAdvancedTools, setShowAdvancedTools] = useState(false);
   const [isTableActive, setIsTableActive] = useState(false);
-  const [isSlideDeck, setIsSlideDeck] = useState(false);
-  const [slideTheme, setSlideTheme] = useState<string | null>(null);
   const [elevatingQuality, setElevatingQuality] = useState(false);
-  const [adjustingSlides, setAdjustingSlides] = useState(false);
   const [planningBundle, setPlanningBundle] = useState<PlanningEditorBundle | null>(null);
   const [activeBundleIndex, setActiveBundleIndex] = useState(0);
   const activeBundleIndexRef = useRef(0);
@@ -422,19 +417,6 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
 
   const documentQualityIssues =
     materialMeta?.qualityIssues ?? planningMeta?.qualityIssues ?? [];
-
-  function syncSlideDeckFlags(html: string, stored?: StoredEditorDocument | null) {
-    const raw = stored?.payload as { raw?: MaterialEditorMeta } | undefined;
-    const meta = raw?.raw;
-    const type = String(stored?.type || meta?.toolId || "");
-    const deck =
-      type.includes("slides") ||
-      meta?.toolId === "slides" ||
-      isSlideDeckHtml(html);
-    setIsSlideDeck(deck);
-    const fromHtml = html.match(/data-planify-slide-theme=["']([a-z]+)["']/i)?.[1];
-    setSlideTheme(meta?.slideTheme || meta?.designSlides || fromHtml || null);
-  }
 
   const toolBtnClass = embedded
     ? "h-11 min-w-11 shrink-0 rounded-md border border-slate-200 bg-white px-2 text-sm font-black text-slate-700 transition hover:border-slate-950 lg:h-7 lg:min-w-7 lg:px-1.5 lg:text-[11px]"
@@ -521,7 +503,6 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
       editorRef.current.innerHTML = resolvedHtml;
       prepareImagesInsideEditor();
       updateWordCount();
-      syncSlideDeckFlags(resolvedHtml, resolvedStoredDocument);
       seedUndoStack(resolvedHtml);
     }
 
@@ -618,7 +599,6 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
       .filter(Boolean);
 
     setWordCount(words.length);
-    syncSlideDeckFlags(getEditorHtml(), documentSource);
   }
 
   function exec(command: string, value?: string) {
@@ -954,7 +934,6 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
         editorRef.current.innerHTML = data.html;
         prepareImagesInsideEditor();
         updateWordCount();
-        syncSlideDeckFlags(data.html, documentSource);
         seedUndoStack(data.html);
       }
 
@@ -1009,73 +988,6 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
     }
   }
 
-  function handleSlideAiAdjustResult(result: {
-    html: string;
-    estrutura: MaterialEngineResponse | null;
-    payload: MaterialEngineInput;
-    qualityScore?: number | null;
-    qualityIssues?: string[];
-  }) {
-    if (editorRef.current) {
-      editorRef.current.innerHTML = result.html;
-      prepareImagesInsideEditor();
-      updateWordCount();
-      syncSlideDeckFlags(result.html, documentSource);
-      seedUndoStack(result.html);
-    }
-
-    const nextMeta: MaterialEditorMeta = {
-      ...(materialMeta ?? {
-        toolId: "slides",
-        tema: title,
-        componente: "",
-        anoSerie: "",
-      }),
-      slideTheme:
-        result.estrutura?.slideTheme ||
-        materialMeta?.slideTheme ||
-        materialMeta?.designSlides ||
-        null,
-      designSlides:
-        result.estrutura?.slideTheme ||
-        materialMeta?.designSlides ||
-        null,
-      qualityScore:
-        typeof result.qualityScore === "number" ? result.qualityScore : null,
-      qualityIssues: result.qualityIssues ?? [],
-      generationPayload: result.payload,
-    };
-
-    const source = documentSource;
-    const saved = syncOpenDocumentToHistory({
-      title: title.trim() || getDocumentTitleFromHtml(result.html),
-      content: result.html,
-      type: source?.type || "material:slides",
-      payload: {
-        source: "material",
-        raw: nextMeta,
-        id: (source?.payload as { id?: string } | undefined)?.id,
-      },
-    });
-
-    setDocumentSource({
-      type: saved.type,
-      title: saved.title,
-      html: saved.content,
-      content: saved.content,
-      payload: {
-        source: saved.source,
-        subtitle: saved.subtitle,
-        raw: nextMeta,
-        id: saved.id,
-      },
-      updatedAt: saved.updatedAt,
-    });
-
-    window.dispatchEvent(new Event("planify:credits-changed"));
-    setStatus("Ajuste aplicado — revise os slides antes de salvar ou exportar.");
-  }
-
   async function elevarQualidadePlanejamentoNoEditor() {
     const base = planningMeta?.generationPayload;
     if (!base) {
@@ -1102,7 +1014,6 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
         editorRef.current.innerHTML = html;
         prepareImagesInsideEditor();
         updateWordCount();
-        syncSlideDeckFlags(html, documentSource);
         seedUndoStack(html);
       }
 
@@ -1303,7 +1214,6 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
 
     setDocumentSource(nextDocumentSource);
     applyEditorHtml(nextTab.content);
-    syncSlideDeckFlags(nextTab.content, nextDocumentSource);
 
     saveEditorDocument(
       createEditorDocument({
@@ -1984,8 +1894,6 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
                 getPlanningPayload={getPlanningPayloadForExport}
                 onStatus={setStatus}
                 documentType={exportDocumentType}
-                isSlideDeck={isSlideDeck}
-                slideTheme={slideTheme}
                 onDownloadPdf={() => void downloadPdfReal()}
                 downloadingPdf={downloadingPdf}
               />
@@ -2063,8 +1971,6 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
                 getPlanningPayload={getPlanningPayloadForExport}
                 onStatus={setStatus}
                 documentType={exportDocumentType}
-                isSlideDeck={isSlideDeck}
-                slideTheme={slideTheme}
                 onDownloadPdf={() => void downloadPdfReal()}
                 downloadingPdf={downloadingPdf}
               />
@@ -2300,19 +2206,6 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
               >
                 Aa+
               </button>
-            </div>
-          ) : null}
-
-          {isSlideDeck && materialMeta?.generationPayload ? (
-            <div className="shrink-0">
-              <SlideAiAdjustPanel
-                generationPayload={materialMeta.generationPayload}
-                disabled={adjustingSlides || elevatingQuality}
-                compact={embedded}
-                onAdjusting={setAdjustingSlides}
-                onResult={handleSlideAiAdjustResult}
-                onError={(message) => setStatus(message)}
-              />
             </div>
           ) : null}
 
@@ -2798,11 +2691,9 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
                 }}
                 onBlur={() => persistCurrentDocument("Documento salvo.")}
                 className={`planify-editor-page mx-auto w-full rounded-sm bg-white text-slate-950 shadow-md outline-none ${
-                  isSlideDeck
-                    ? "max-w-[min(100%,60rem)] px-3 py-4 sm:px-4 sm:py-5"
-                    : embedded
-                      ? "max-w-[21cm] min-h-[36vh] px-3 py-4 sm:min-h-0 sm:px-5 sm:py-6"
-                      : "max-w-[21cm] min-h-[50vh] px-4 py-5 sm:min-h-[29.7cm] sm:px-6 sm:py-8 md:px-[1.75cm] md:py-[1.75cm] md:shadow-lg"
+                  embedded
+                    ? "max-w-[21cm] min-h-[36vh] px-3 py-4 sm:min-h-0 sm:px-5 sm:py-6"
+                    : "max-w-[21cm] min-h-[50vh] px-4 py-5 sm:min-h-[29.7cm] sm:px-6 sm:py-8 md:px-[1.75cm] md:py-[1.75cm] md:shadow-lg"
                 }`}
               />
             </div>

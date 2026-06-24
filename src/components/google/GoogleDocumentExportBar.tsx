@@ -5,21 +5,14 @@ import { GoogleClassroomPopoverButton } from "@/components/google/GoogleClassroo
 import { GoogleDocsExportButton } from "@/components/google/GoogleDocsExportButton";
 import { GoogleDriveExportButton } from "@/components/google/GoogleDriveExportButton";
 import { GoogleFormsExportButton } from "@/components/google/GoogleFormsExportButton";
-import { GoogleSlidesExportButton } from "@/components/google/GoogleSlidesExportButton";
-import { SlidesPptxDownloadButton } from "@/components/documents/SlidesPptxDownloadButton";
 import { DocumentDownloadIconBar } from "@/components/documents/DocumentDownloadIconBar";
-import {
-  resolveFormsExportCompatible,
-  resolveSlideDeck,
-  resolveSlidesExportCompatible,
-} from "@/lib/google/document-type-detection";
+import { resolveFormsExportCompatible } from "@/lib/google/document-type-detection";
 import {
   materialExportAllows,
   resolveMaterialExportPolicy,
 } from "@/lib/export/material-export-policy";
-import { extractSlideThemeFromHtml } from "@/lib/slides/slide-deck-utils";
 import { useGoogleOAuthResume } from "@/hooks/useGoogleOAuthResume";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 export type GoogleDocumentExportBarProps = {
   title: string;
@@ -28,8 +21,6 @@ export type GoogleDocumentExportBarProps = {
   onStatus?: (message: string) => void;
   onExportError?: (error: unknown) => void;
   documentType?: string | null;
-  isSlideDeck?: boolean;
-  slideTheme?: string | null;
   returnTo?: string;
   compact?: boolean;
   classroomMode?: "panel" | "popover";
@@ -47,8 +38,6 @@ export function GoogleDocumentExportBar({
   onStatus,
   onExportError,
   documentType,
-  isSlideDeck: isSlideDeckProp,
-  slideTheme: slideThemeProp,
   returnTo: returnToProp,
   compact = true,
   classroomMode = "panel",
@@ -66,16 +55,6 @@ export function GoogleDocumentExportBar({
     onExportError,
   });
 
-  const [isSlideMaterial, setIsSlideMaterial] = useState(
-    () => resolveSlideDeck(getHtml, documentType, isSlideDeckProp) === true,
-  );
-  const [showSlidesExport, setShowSlidesExport] = useState(
-    () =>
-      resolveSlidesExportCompatible(getHtml, documentType, isSlideDeckProp) === true,
-  );
-  const [slideTheme, setSlideTheme] = useState<string | null>(
-    slideThemeProp ?? null,
-  );
   const [showFormsExport, setShowFormsExport] = useState(() =>
     resolveFormsExportCompatible(getHtml, documentType),
   );
@@ -92,22 +71,10 @@ export function GoogleDocumentExportBar({
 
   useEffect(() => {
     const sync = () => {
-      const slideMaterial = resolveSlideDeck(getHtml, documentType, isSlideDeckProp);
-      setIsSlideMaterial(slideMaterial);
-      const slidesCompatible = resolveSlidesExportCompatible(
-        getHtml,
-        documentType,
-        isSlideDeckProp,
-      );
-      setShowSlidesExport(slidesCompatible);
       try {
-        setSlideTheme(
-          slideThemeProp || extractSlideThemeFromHtml(getHtml()) || null,
-        );
         setShowFormsExport(resolveFormsExportCompatible(getHtml, documentType));
         setExportPolicy(resolveMaterialExportPolicy(documentType, getHtml()));
       } catch {
-        setSlideTheme(slideThemeProp ?? null);
         setShowFormsExport(false);
         setExportPolicy(resolveMaterialExportPolicy(documentType));
       }
@@ -116,7 +83,7 @@ export function GoogleDocumentExportBar({
     sync();
     const timer = window.setInterval(sync, 1500);
     return () => window.clearInterval(timer);
-  }, [getHtml, documentType, isSlideDeckProp, slideThemeProp]);
+  }, [getHtml, documentType]);
 
   const gap = compact ? "gap-1" : "gap-1.5 sm:gap-2";
   const wrapTitle = disabled ? disabledTitle : exportPolicy.hint;
@@ -128,30 +95,6 @@ export function GoogleDocumentExportBar({
     documentType,
     getHtml(),
   );
-  const loggedClassroomExportRef = useRef(false);
-  useEffect(() => {
-    if (loggedClassroomExportRef.current) return;
-    loggedClassroomExportRef.current = true;
-    // #region agent log
-    fetch("http://127.0.0.1:7718/ingest/9ac33552-969d-48be-9089-3a3b10571400", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Debug-Session-Id": "a1058c",
-      },
-      body: JSON.stringify({
-        sessionId: "a1058c",
-        hypothesisId: "H6-export-allowed",
-        location: "GoogleDocumentExportBar.tsx:showClassroomExport",
-        message: "Classroom export channel visibility",
-        data: { showClassroomExport, documentType: documentType ?? null, compact },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
-  }, [showClassroomExport, documentType, compact]);
-  const showSlidesChannel = materialExportAllows("google-slides", documentType, getHtml());
-  const showPptxExport = materialExportAllows("pptx-download", documentType, getHtml());
   const driveIsPdf = exportPolicy.driveFormat === "pdf";
   const showPdfDownload = Boolean(onDownloadPdf);
 
@@ -170,28 +113,7 @@ export function GoogleDocumentExportBar({
 
   const exportIcons = (
     <>
-      {showSlidesExport && showSlidesChannel ? (
-        <>
-          <GoogleSlidesExportButton
-            title={title}
-            getHtml={getHtml}
-            theme={slideTheme ?? undefined}
-            returnTo={returnTo}
-            alwaysShowExport
-            iconOnly
-          />
-          {showPptxExport ? (
-            <SlidesPptxDownloadButton
-              title={title}
-              getHtml={getHtml}
-              theme={slideTheme ?? undefined}
-              documentType={documentType}
-              iconOnly
-            />
-          ) : null}
-        </>
-      ) : null}
-      {!isSlideMaterial && showDocsExport ? (
+      {showDocsExport ? (
         <GoogleDocsExportButton
           title={title}
           getHtml={getHtml}
@@ -203,7 +125,7 @@ export function GoogleDocumentExportBar({
           iconOnly
         />
       ) : null}
-      {!isSlideMaterial && showDriveExport ? (
+      {showDriveExport ? (
         <GoogleDriveExportButton
           title={title}
           getHtml={getHtml}

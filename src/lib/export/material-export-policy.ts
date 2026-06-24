@@ -34,24 +34,18 @@ const TEXT_DOC_HINT =
 const ASSESSMENT_HINT =
   "Avaliação — use Google Forms (digital), PDF (impressão) ou salve no Drive.";
 
-const SLIDES_HINT =
-  "Apresentação — exporte para Google Slides, PPTX ou PDF com slides em tela cheia.";
+const SLIDES_LEGACY_HINT =
+  "Material legado — exporte em PDF para preservar o layout visual.";
 
 /** Política canônica por ferramenta do motor de materiais. */
 export const MATERIAL_EXPORT_POLICIES: Record<MaterialEngineType, MaterialExportPolicy> =
   {
     slides: {
-      channels: [
-        "pdf-download",
-        "google-slides",
-        "pptx-download",
-        "google-drive",
-        "google-classroom",
-      ],
+      channels: ["pdf-download", "google-drive", "google-classroom"],
       driveFormat: "pdf",
       classroomFormat: "pdf",
       pdfProfile: "slides",
-      hint: SLIDES_HINT,
+      hint: SLIDES_LEGACY_HINT,
     },
     prova: {
       channels: [

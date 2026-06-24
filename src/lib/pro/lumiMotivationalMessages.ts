@@ -40,10 +40,6 @@ const contextMessages: Record<Exclude<LumiCoachContext, "generic" | "material">,
 };
 
 const toolMessages: Partial<Record<PlanifyToolId, string[]>> = {
-  slides: [
-    "Organizando slides que contam uma história na sala.",
-    "Roteiro do professor entrando nos títulos certos.",
-  ],
   prova: [
     "Equilibrando questões, enunciados e gabarito.",
     "Sua avaliação está sendo calibrada com critério.",
@@ -94,7 +90,7 @@ const toolMessages: Partial<Record<PlanifyToolId, string[]>> = {
     "Material inclusivo saindo com cuidado pedagógico.",
   ],
   "aula-completa": [
-    "Montando plano, slides, atividade e avaliação no mesmo tema.",
+    "Montando plano, atividade e avaliação no mesmo tema.",
     "Cada material do pacote conversa com o anterior.",
     "Sua aula completa está ganhando coesão pedagógica.",
   ],

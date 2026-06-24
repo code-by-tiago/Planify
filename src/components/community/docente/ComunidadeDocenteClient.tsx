@@ -45,7 +45,7 @@ import {
   homeWithAba,
   parseDocenteMenuItem,
 } from "@/lib/community/docente-utils";
-import { downloadMarketplaceMaterial } from "@/lib/marketplace/marketplace-download-client";
+import { downloadMarketplaceMaterial, resolveMarketplaceDownloadParams } from "@/lib/marketplace/marketplace-download-client";
 import { submitDocenteCreatePost } from "@/lib/community/docente-create-post-client";
 import { usePersistedSidebarCollapsed } from "@/hooks/usePersistedSidebarCollapsed";
 import {
@@ -396,7 +396,7 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
             method: "POST",
             credentials: "include",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ body }),
+            body: JSON.stringify({ text: body }),
           });
           if (response.ok) {
             setDiscussions((prev) =>
@@ -484,10 +484,11 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
 
       setDownloadingMaterialId(id);
       try {
+        const downloadParams = resolveMarketplaceDownloadParams(material);
         await downloadMarketplaceMaterial({
           id,
-          format: "docx",
-          fallbackFileName: `${material.title}.docx`,
+          format: downloadParams.format,
+          fallbackFileName: downloadParams.fallbackFileName,
         });
         setMaterials((prev) =>
           prev.map((m) => (m.id === id ? { ...m, viewsCount: m.viewsCount + 1 } : m)),

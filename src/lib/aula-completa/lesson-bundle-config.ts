@@ -7,7 +7,6 @@ import type { PlanifyToolId } from "@/lib/pro/planifyTools";
  */
 export const DEFAULT_LESSON_BUNDLE_TOOLS: PlanifyToolId[] = [
   "plano-aula",
-  "slides",
   "atividade",
   "lista",
 ];
@@ -51,8 +50,6 @@ export function getBundleQuantityForTool(toolId: PlanifyToolId): string | undefi
     case "lista":
       return "5";
     case "prova":
-      return "8";
-    case "slides":
       return "8";
     case "atividade":
       return "1";

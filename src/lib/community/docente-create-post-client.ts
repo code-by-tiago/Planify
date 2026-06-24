@@ -21,6 +21,17 @@ async function deletePost(postId: string): Promise<void> {
   }).catch(() => undefined);
 }
 
+async function deleteUploadedMaterials(materialIds: string[]): Promise<void> {
+  await Promise.all(
+    materialIds.map(async (materialId) => {
+      await fetch(`/api/marketplace/materiais?id=${encodeURIComponent(materialId)}`, {
+        method: "DELETE",
+        credentials: "include",
+      }).catch(() => undefined);
+    }),
+  );
+}
+
 export async function submitDocenteCreatePost(params: {
   input: DocenteCreatePostInput;
   viewerName: string;
@@ -60,6 +71,7 @@ export async function submitDocenteCreatePost(params: {
     fileMime: string;
     sortOrder: number;
   }> = [];
+  const uploadedMaterialIds: string[] = [];
 
   try {
     for (let index = 0; index < input.files.length; index += 1) {
@@ -90,6 +102,8 @@ export async function submitDocenteCreatePost(params: {
         );
       }
 
+      uploadedMaterialIds.push(uploadData.item.id);
+
       linked.push({
         materialId: uploadData.item.id,
         fileName: file.name,
@@ -116,6 +130,7 @@ export async function submitDocenteCreatePost(params: {
 
     return { postId };
   } catch (error) {
+    await deleteUploadedMaterials(uploadedMaterialIds);
     await deletePost(postId);
     throw error instanceof Error ? error : new Error("create_post_attachments_failed");
   }

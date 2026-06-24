@@ -12,23 +12,19 @@ type PreviewResponse = {
   error?: { message?: string };
 };
 
-const htmlCache = new Map<string, { html: string; isSlideDeck: boolean }>();
+const htmlCache = new Map<string, string>();
 
 export function useMarketplaceMaterialHtml(materialId: string) {
-  const [html, setHtml] = useState<string | null>(() => htmlCache.get(materialId)?.html ?? null);
-  const [isSlideDeck, setIsSlideDeck] = useState(
-    () => htmlCache.get(materialId)?.isSlideDeck ?? false,
-  );
+  const [html, setHtml] = useState<string | null>(() => htmlCache.get(materialId) ?? null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fetchPromiseRef = useRef<Promise<string> | null>(null);
 
   const ensureHtml = useCallback(async (): Promise<string> => {
     const cached = htmlCache.get(materialId);
-    if (cached?.html) {
-      setHtml(cached.html);
-      setIsSlideDeck(cached.isSlideDeck);
-      return cached.html;
+    if (cached) {
+      setHtml(cached);
+      return cached;
     }
 
     if (fetchPromiseRef.current) {
@@ -62,10 +58,8 @@ export function useMarketplaceMaterialHtml(materialId: string) {
         );
       }
 
-      const slideDeck = Boolean(preview.isSlidePreview);
-      htmlCache.set(materialId, { html: content, isSlideDeck: slideDeck });
+      htmlCache.set(materialId, content);
       setHtml(content);
-      setIsSlideDeck(slideDeck);
       return content;
     })();
 
@@ -87,7 +81,6 @@ export function useMarketplaceMaterialHtml(materialId: string) {
 
   return {
     html,
-    isSlideDeck,
     loading,
     error,
     ensureHtml,

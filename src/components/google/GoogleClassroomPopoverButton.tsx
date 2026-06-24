@@ -104,73 +104,7 @@ export function GoogleClassroomPopoverButton({
     return () => document.removeEventListener("mousedown", onPointerDown);
   }, [open]);
 
-  useEffect(() => {
-    if (!open || !popoverRef.current) return;
-
-    const rect = popoverRef.current.getBoundingClientRect();
-    // #region agent log
-    fetch("http://127.0.0.1:7718/ingest/9ac33552-969d-48be-9089-3a3b10571400", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Debug-Session-Id": "a1058c",
-      },
-      body: JSON.stringify({
-        sessionId: "a1058c",
-        runId: "post-fix",
-        hypothesisId: "H1-popover-visibility",
-        location: "GoogleClassroomPopoverButton.tsx:popover-open",
-        message: "Popover opened — layout metrics",
-        data: {
-          top: rect.top,
-          bottom: rect.bottom,
-          viewportH: window.innerHeight,
-          visible: rect.top >= 0 && rect.bottom <= window.innerHeight,
-          needsOAuth,
-          canExport,
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
-  }, [open, popoverCoords, needsOAuth, canExport]);
-
   function handleIconClick() {
-    // #region agent log
-    fetch("http://127.0.0.1:7718/ingest/9ac33552-969d-48be-9089-3a3b10571400", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Debug-Session-Id": "a1058c",
-      },
-      body: JSON.stringify({
-        sessionId: "a1058c",
-        runId: "post-fix",
-        hypothesisId: "H2-click-handler",
-        location: "GoogleClassroomPopoverButton.tsx:handleIconClick",
-        message: "Classroom icon clicked",
-        data: {
-          loading,
-          busy,
-          needsOAuth,
-          canExport,
-          action: loading || busy
-            ? "blocked"
-            : !status?.configured
-              ? "toggle-popover"
-              : !status?.authenticated
-                ? "login"
-                : needsOAuth
-                  ? "oauth-redirect"
-                  : canExport
-                    ? "toggle-export-popover"
-                    : "toggle-no-courses-popover",
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
-
     if (loading || busy) return;
 
     if (!status?.configured) {

@@ -12,11 +12,9 @@ import {
   type OfficialPlanningPayload,
 } from "../planejamentos/official-planning-docx";
 import {
-  buildGoogleDriveDestinationUrl,
   uploadBufferToGoogleDrive,
   uploadDocxAsGoogleDocument,
 } from "./google-drive";
-import { requireGoogleConfig } from "./google-config";
 import { getValidGoogleAccessToken } from "./google-token-store";
 
 function safeFilename(value: string): string {
@@ -308,11 +306,12 @@ export async function saveDocumentToGoogleDrive(
     buffer,
   });
 
-  const { driveFolderId } = requireGoogleConfig();
+  const fileOpenUrl =
+    drive.webViewLink || `https://drive.google.com/file/d/${drive.fileId}/view`;
 
   return {
     drive,
-    driveOpenUrl: buildGoogleDriveDestinationUrl(driveFolderId),
+    driveOpenUrl: fileOpenUrl,
     googleEmail,
     exportEngine,
   };

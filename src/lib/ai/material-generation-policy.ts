@@ -6,7 +6,6 @@ import type { MaterialEngineType } from "@/server/materials/material-engine-type
 export const DEEP_GENERATION_TYPES: MaterialEngineType[] = [
   "prova",
   "apostila",
-  "slides",
   "plano-aula",
   "redacao",
   "sequencia",
@@ -69,7 +68,7 @@ export function getModelTierForMaterialType(tipo: string): AIModelTier {
   return "default";
 }
 
-/** Marcador de ajuste complementar no editor (SlideAiAdjustPanel). */
+/** Marcador de ajuste complementar no editor. */
 export const EDITOR_COMPLEMENTARY_ADJUST_MARKER =
   "AJUSTE SOLICITADO PELO PROFESSOR";
 

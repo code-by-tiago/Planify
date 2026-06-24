@@ -9,7 +9,6 @@ export const lessonBundleTools: {
   recommended?: boolean;
 }[] = [
   { id: "plano-aula", label: "Plano de aula", tag: "Essencial · Sala", icon: "clipboard", recommended: true },
-  { id: "slides", label: "Slides", tag: "Essencial · Sala", icon: "presentation", recommended: true },
   { id: "atividade", label: "Atividade", tag: "Essencial · Sala", icon: "puzzle", recommended: true },
   { id: "lista", label: "Lista de exercícios", tag: "Essencial · Fixação", icon: "listChecks", recommended: true },
   { id: "resumo", label: "Resumo", tag: "Opcional · Estudo", icon: "fileText" },
@@ -29,7 +28,7 @@ export const teachyWorkflowSteps = [
   {
     step: "2",
     title: "Montar aula completa",
-    description: "Plano, slides, atividades e avaliação no mesmo tema.",
+    description: "Plano, atividades e avaliação no mesmo tema.",
     icon: "layers" as const,
   },
   {
@@ -95,7 +94,7 @@ export const teachyQuickActions: {
   },
 ];
 
-/** Sugestões após gerar slides no pacote de aula */
+/** Sugestões após gerar material no pacote de aula */
 export const lessonBundleFollowUp: {
   toolId: PlanifyToolId;
   label: string;

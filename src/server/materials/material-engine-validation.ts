@@ -127,6 +127,10 @@ export function validateMaterialEngineRequest(
     errors.push("Tipo de material inválido. Selecione uma ferramenta do Planify.");
   }
 
+  if (request.tipoMaterial === "slides") {
+    errors.push("A ferramenta Slides não está mais disponível. Escolha outra ferramenta.");
+  }
+
   if (request.tipoMaterial === "jogo" && !request.formatoJogo) {
     errors.push("Selecione o formato do jogo.");
   }

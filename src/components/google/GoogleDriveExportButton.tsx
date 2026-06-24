@@ -46,7 +46,9 @@ export function GoogleDriveExportButton({
     });
 
     const url =
-      result.driveOpenUrl || "https://drive.google.com/drive/my-drive";
+      result.drive.webViewLink ||
+      result.driveOpenUrl ||
+      "https://drive.google.com/drive/my-drive";
 
     const previewWindow = params.previewWindow;
     if (previewWindow && !previewWindow.closed) {

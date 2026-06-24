@@ -74,7 +74,7 @@ function resolveToolId(value: unknown): PlanifyToolId {
     const id = raw.replace("material:", "");
     if (isPlanifyToolId(id)) return id;
   }
-  return "slides";
+  return "atividade";
 }
 
 export function readAutoOpenEditorPreference(): boolean {

@@ -7,12 +7,25 @@ import {
   syncCheckoutSessionToDatabase,
   syncSubscriptionsForEmailFromStripe,
 } from "../../../../server/stripe/webhook-service";
-import { getCheckoutSessionPublicSummary } from "../../../../server/stripe/checkout-session-lookup";
+import {
+  validateCheckoutSessionForEmail,
+} from "../../../../server/stripe/checkout-session-lookup";
+import {
+  claimSubscriptionActivationEmail,
+  completeSubscriptionActivationClaim,
+  releaseSubscriptionActivationClaim,
+} from "../../../../server/stripe/subscription-activation-claim";
+import {
+  consumePublicApiRateLimit,
+  getClientIp,
+  rateLimitResponse,
+} from "../../../../server/public/public-api-rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const ACTIVE_STATUSES = ["active", "trialing"];
+const RATE_LIMIT = { maxRequests: 12, windowMs: 15 * 60 * 1000 };
 
 const activateAccountSchema = z.object({
   email: z.string().email(),
@@ -42,30 +55,35 @@ async function hasActiveSubscription(email: string): Promise<boolean> {
 async function resolvePaidSubscription(
   email: string,
   sessionId?: string,
-): Promise<{ ok: true } | { ok: false; reason: "no_subscription" | "email_mismatch" }> {
+): Promise<{ ok: true } | { ok: false; reason: "no_subscription" | "email_mismatch" | "invalid_session" }> {
   if (sessionId) {
-    const syncResult = await syncCheckoutSessionToDatabase(sessionId);
+    const proof = await validateCheckoutSessionForEmail({
+      sessionId,
+      email,
+    });
 
-    if (!syncResult.synced) {
-      const summary = await getCheckoutSessionPublicSummary(sessionId);
-      if (!summary) {
-        return { ok: false, reason: "no_subscription" };
-      }
-
-      const summaryEmail = summary.email?.trim().toLowerCase() || "";
-      if (summaryEmail && summaryEmail !== email.trim().toLowerCase()) {
+    if (!proof.ok) {
+      if (proof.reason === "email_mismatch") {
         return { ok: false, reason: "email_mismatch" };
       }
+
+      return { ok: false, reason: "invalid_session" };
     }
+
+    await syncCheckoutSessionToDatabase(sessionId);
   }
 
   if (await hasActiveSubscription(email)) {
     return { ok: true };
   }
 
-  await syncSubscriptionsForEmailFromStripe(email);
+  if (sessionId) {
+    await syncCheckoutSessionToDatabase(sessionId);
+  } else {
+    await syncSubscriptionsForEmailFromStripe(email);
+  }
 
-  const maxAttempts = 8;
+  const maxAttempts = sessionId ? 8 : 4;
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
     if (await hasActiveSubscription(email)) {
       return { ok: true };
@@ -80,6 +98,17 @@ async function resolvePaidSubscription(
 }
 
 export async function POST(request: NextRequest) {
+  const clientIp = getClientIp(request);
+  const rateState = consumePublicApiRateLimit(
+    "stripe-activate-account",
+    clientIp,
+    RATE_LIMIT,
+  );
+
+  if (rateState.limited) {
+    return rateLimitResponse(rateState.retryAfterMs);
+  }
+
   let body: unknown;
 
   try {
@@ -111,8 +140,24 @@ export async function POST(request: NextRequest) {
   const email = parsed.data.email.trim().toLowerCase();
   const password = parsed.data.password;
   const sessionId = parsed.data.sessionId?.trim() || undefined;
+  let claimHeld = false;
 
   try {
+    const existingUser = await findAuthUserByEmail(email);
+
+    if (existingUser) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: "account_exists",
+            message: "Já existe uma conta com este e-mail. Faça login com sua senha.",
+          },
+        },
+        { status: 409 },
+      );
+    }
+
     const subscriptionState = await resolvePaidSubscription(email, sessionId);
 
     if (!subscriptionState.ok) {
@@ -136,28 +181,35 @@ export async function POST(request: NextRequest) {
           error: {
             code: "no_subscription",
             message:
-              "Não encontramos uma assinatura ativa para este e-mail. Aguarde alguns minutos e tente de novo, ou confira se usou o mesmo e-mail do pagamento.",
+              "Não encontramos uma assinatura ativa para este e-mail. Aguarde alguns minutos e tente novamente, ou confira se usou o mesmo e-mail do pagamento.",
           },
         },
         { status: 403 },
       );
     }
 
-    const admin = getSupabaseAdminClient();
-    const existingUser = await findAuthUserByEmail(email);
+    const claim = await claimSubscriptionActivationEmail({
+      email,
+      checkoutSessionId: sessionId,
+    });
 
-    if (existingUser) {
+    if (!claim.claimed) {
       return NextResponse.json(
         {
           success: false,
           error: {
-            code: "account_exists",
-            message: "Já existe uma conta com este e-mail. Faça login com sua senha.",
+            code: "activation_in_progress",
+            message:
+              "Este e-mail já está em processo de ativação ou já possui conta. Tente entrar com sua senha.",
           },
         },
         { status: 409 },
       );
     }
+
+    claimHeld = true;
+
+    const admin = getSupabaseAdminClient();
 
     const { data: createdUser, error: createError } =
       await admin.auth.admin.createUser({
@@ -170,6 +222,8 @@ export async function POST(request: NextRequest) {
       });
 
     if (createError || !createdUser.user) {
+      await releaseSubscriptionActivationClaim(email);
+
       if (
         createError?.message?.toLowerCase().includes("already") ||
         createError?.message?.toLowerCase().includes("registered")
@@ -199,6 +253,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    await completeSubscriptionActivationClaim({
+      email,
+      userId: createdUser.user.id,
+    });
+
     await linkPendingSubscriptionsToUser({
       userId: createdUser.user.id,
       email,
@@ -212,6 +271,10 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
+    if (claimHeld) {
+      await releaseSubscriptionActivationClaim(email).catch(() => undefined);
+    }
+
     return NextResponse.json(
       {
         success: false,

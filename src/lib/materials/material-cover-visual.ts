@@ -82,7 +82,7 @@ export function resolveMaterialCoverVisual(typeOrLabel: string): MaterialCoverVi
       : DEFAULT_VISUAL;
   };
 
-  if (key.includes("slide")) return fallbackTool("slides");
+  if (key.includes("slide")) return fallbackTool("atividade");
   if (key.includes("prova")) return fallbackTool("prova");
   if (
     key === "lista" ||

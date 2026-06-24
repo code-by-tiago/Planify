@@ -3,8 +3,7 @@
 import { GoogleDocumentExportBar } from "@/components/google/GoogleDocumentExportBar";
 import { MarketplacePublishButton } from "@/components/marketplace/MarketplacePublishButton";
 import { useAutoGoogleExport } from "@/hooks/useAutoGoogleExport";
-import { extractSlideThemeFromHtml } from "@/lib/slides/slide-deck-utils";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { extractComponenteFromPlanningPayload } from "@/lib/marketplace/marketplace-publish";
 
 function tipoMaterialFromDocumentType(documentType?: string | null): string | undefined {
@@ -25,8 +24,6 @@ type EditorShareBarProps = {
   getPlanningPayload?: () => Record<string, unknown> | null;
   onStatus?: (message: string) => void;
   documentType?: string | null;
-  isSlideDeck?: boolean;
-  slideTheme?: string | null;
   compact?: boolean;
   onDownloadPdf?: () => void;
   downloadingPdf?: boolean;
@@ -39,20 +36,10 @@ export function EditorShareBar({
   getPlanningPayload,
   onStatus,
   documentType,
-  isSlideDeck: isSlideDeckProp,
-  slideTheme: slideThemeProp,
   compact = false,
   onDownloadPdf,
   downloadingPdf = false,
 }: EditorShareBarProps) {
-  const [slideTheme] = useState<string | null>(() => {
-    try {
-      return slideThemeProp || extractSlideThemeFromHtml(getHtml()) || null;
-    } catch {
-      return slideThemeProp ?? null;
-    }
-  });
-
   const returnTo = useMemo(() => {
     if (typeof window === "undefined") return "/dashboard?secao=editor";
     return `${window.location.pathname}${window.location.search}` || "/dashboard?secao=editor";
@@ -71,7 +58,6 @@ export function EditorShareBar({
   useAutoGoogleExport({
     title,
     getHtml,
-    slideTheme,
     returnTo,
     onStatus,
   });
@@ -108,8 +94,6 @@ export function EditorShareBar({
           getPlanningPayload={getPlanningPayload}
           onStatus={onStatus}
           documentType={documentType}
-          isSlideDeck={isSlideDeckProp}
-          slideTheme={slideThemeProp ?? slideTheme}
           returnTo={returnTo}
           compact
           classroomMode="popover"

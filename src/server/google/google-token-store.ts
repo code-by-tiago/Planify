@@ -41,10 +41,14 @@ function googleIntegrationsTable(supabase: SupabaseClient) {
 export async function saveGoogleTokensForUser(
   userId: string,
   tokenResponse: GoogleTokenResponse,
-  existingRefreshToken?: string | null,
+  options?: {
+    existingRefreshToken?: string | null;
+    preserveScopes?: string[];
+    preserveGoogleEmail?: string | null;
+  },
 ): Promise<StoredGoogleTokens> {
   const refreshToken =
-    tokenResponse.refresh_token || existingRefreshToken || null;
+    tokenResponse.refresh_token || options?.existingRefreshToken || null;
 
   if (!refreshToken) {
     throw new Error(
@@ -52,11 +56,24 @@ export async function saveGoogleTokensForUser(
     );
   }
 
-  const googleEmail = await fetchGoogleUserEmail(tokenResponse.access_token);
-  const scopes = String(tokenResponse.scope || "")
+  let googleEmail = options?.preserveGoogleEmail ?? null;
+  try {
+    const fetchedEmail = await fetchGoogleUserEmail(tokenResponse.access_token);
+    if (fetchedEmail) {
+      googleEmail = fetchedEmail;
+    }
+  } catch {
+    // Mantém e-mail salvo quando a API userinfo falha após refresh.
+  }
+
+  const scopesFromResponse = String(tokenResponse.scope || "")
     .split(" ")
     .map((item) => item.trim())
     .filter(Boolean);
+  const scopes =
+    scopesFromResponse.length > 0
+      ? scopesFromResponse
+      : options?.preserveScopes || [];
 
   const supabase = getSupabaseAdminClient();
   const row = {
@@ -146,7 +163,11 @@ export async function getValidGoogleAccessToken(
   }
 
   const refreshed = await refreshGoogleAccessToken(stored.refreshToken);
-  const updated = await saveGoogleTokensForUser(userId, refreshed, stored.refreshToken);
+  const updated = await saveGoogleTokensForUser(userId, refreshed, {
+    existingRefreshToken: stored.refreshToken,
+    preserveScopes: stored.scopes,
+    preserveGoogleEmail: stored.googleEmail,
+  });
 
   if (!updated.accessToken) {
     throw new Error("Token de acesso Google indisponível após renovação.");

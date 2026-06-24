@@ -498,7 +498,7 @@ export function AulaCompletaClient({
               {durationBadge} — não feche a aba
             </p>
             <p className="mt-1 text-xs font-medium text-slate-500">
-              Pacote essencial: plano, slides, atividade e lista. Acrescente itens opcionais só se precisar.
+              Pacote essencial: plano, atividade e lista. Acrescente itens opcionais só se precisar.
             </p>
           </div>
 
@@ -614,7 +614,7 @@ export function AulaCompletaClient({
                 Um fluxo, quatro entregas
               </h3>
               <p className="mt-2 text-sm font-medium text-slate-600">
-                Informe o tema e gere plano, slides, atividade e avaliação alinhados
+                Informe o tema e gere plano, atividade e avaliação alinhados
                 no mesmo pacote.
               </p>
             </div>

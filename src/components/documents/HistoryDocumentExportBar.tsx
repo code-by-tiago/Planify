@@ -7,7 +7,6 @@ import {
   resolveDocumentTypeFromHistoryItem,
 } from "@/lib/documents/document-export-context";
 import { downloadEditorExport } from "@/lib/downloads/editor-export-client";
-import { isSlideDeckHtml } from "@/lib/slides/slide-deck-utils";
 import type { HistoryItem } from "@/types/history";
 import { useCallback, useState } from "react";
 
@@ -31,9 +30,6 @@ export function HistoryDocumentExportBar({
   const getHtml = useCallback(() => getHistoryItemHtml(item), [item]);
   const getPlanningPayload = useCallback(() => getHistoryPlanningPayload(item), [item]);
   const documentType = resolveDocumentTypeFromHistoryItem(item);
-  const html = getHistoryItemHtml(item);
-  const isSlideDeck =
-    documentType.includes("slides") || (html ? isSlideDeckHtml(html) : false);
 
   const handleDownloadPdf = useCallback(async () => {
     setDownloadingPdf(true);
@@ -59,7 +55,6 @@ export function HistoryDocumentExportBar({
       getHtml={getHtml}
       getPlanningPayload={getPlanningPayload}
       documentType={documentType}
-      isSlideDeck={isSlideDeck}
       returnTo={returnTo}
       onStatus={onStatus}
       onExportError={onError}

@@ -57,9 +57,22 @@ export function requireGoogleConfig(): {
 }
 
 export function getGoogleOAuthStateSecret(): string {
-  return (
-    String(process.env.GOOGLE_OAUTH_STATE_SECRET || "").trim() ||
-    String(process.env.SUPABASE_SERVICE_ROLE_KEY || "").trim() ||
-    "planify-google-oauth-dev-only"
-  );
+  const secret = String(process.env.GOOGLE_OAUTH_STATE_SECRET || "").trim();
+
+  if (process.env.NODE_ENV === "production" && !secret) {
+    throw new Error(
+      "GOOGLE_OAUTH_STATE_SECRET é obrigatório em produção. Defina no ambiente da Vercel.",
+    );
+  }
+
+  if (secret) {
+    return secret;
+  }
+
+  const serviceRole = String(process.env.SUPABASE_SERVICE_ROLE_KEY || "").trim();
+  if (serviceRole) {
+    return serviceRole;
+  }
+
+  return "planify-google-oauth-dev-only";
 }

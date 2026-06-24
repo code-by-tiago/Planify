@@ -41,6 +41,9 @@ export function PlanosAtivarContaForm({
     null,
   );
   const [statusLoading, setStatusLoading] = useState(false);
+  const [recoverySessionId, setRecoverySessionId] = useState("");
+
+  const effectiveSessionId = (sessionId || recoverySessionId).trim() || null;
 
   useEffect(() => {
     if (checkoutEmail) {
@@ -50,10 +53,13 @@ export function PlanosAtivarContaForm({
 
   useEffect(() => {
     const normalized = email.trim().toLowerCase();
-    if (!normalized.includes("@")) {
+    if (!normalized.includes("@") || !effectiveSessionId) {
       setHasAccount(null);
+      setHasActiveSubscription(null);
       return;
     }
+
+    const sessionIdForStatus = effectiveSessionId;
 
     let active = true;
 
@@ -61,13 +67,14 @@ export function PlanosAtivarContaForm({
       setStatusLoading(true);
       try {
         const res = await fetch(
-          `/api/public/checkout-account-status?email=${encodeURIComponent(normalized)}&sync=1`,
+          `/api/public/checkout-account-status?email=${encodeURIComponent(normalized)}&session_id=${encodeURIComponent(sessionIdForStatus)}&sync=1`,
           { cache: "no-store" },
         );
         const json = await res.json().catch(() => null);
         if (!active) return;
-        const exists = Boolean(json?.data?.hasAccount);
-        const paid = Boolean(json?.data?.hasActiveSubscription);
+        const status = json?.data?.status as string | undefined;
+        const exists = status === "account_exists";
+        const paid = status === "ready_to_activate";
         setHasAccount(exists);
         setHasActiveSubscription(paid);
         if (exists) {
@@ -90,7 +97,7 @@ export function PlanosAtivarContaForm({
     return () => {
       active = false;
     };
-  }, [email]);
+  }, [email, effectiveSessionId]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -118,7 +125,7 @@ export function PlanosAtivarContaForm({
       const result = await activateAccountAfterPayment({
         email: normalizedEmail,
         password: senha,
-        sessionId,
+        sessionId: effectiveSessionId,
       });
 
       setMessage(result.message);
@@ -175,7 +182,9 @@ export function PlanosAtivarContaForm({
         {mode === "create"
           ? hasActiveSubscription
             ? "Encontramos sua assinatura ativa. Defina a senha com o mesmo e-mail usado no pagamento."
-            : "Informe o e-mail do checkout. Se o pagamento acabou de ser feito, aguarde alguns segundos e tente novamente."
+            : recoveryMode
+              ? "Informe o e-mail do checkout e crie sua senha. Se tiver o link da página de confirmação, cole o código da sessão abaixo para validação mais rápida."
+              : "Informe o e-mail do checkout. Se o pagamento acabou de ser feito, aguarde alguns segundos e tente novamente."
           : "Já existe conta com este e-mail. Entre com sua senha para liberar o plano pago."}
       </p>
 
@@ -206,6 +215,26 @@ export function PlanosAtivarContaForm({
             className={`${ppInput} ${checkoutEmail ? "bg-slate-50 text-slate-600" : ""}`}
           />
         </label>
+
+        {recoveryMode && !sessionId ? (
+          <label className="block">
+            <span className="mb-2 block text-sm font-bold text-slate-700">
+              Código da sessão (opcional)
+            </span>
+            <input
+              type="text"
+              value={recoverySessionId}
+              onChange={(event) => setRecoverySessionId(event.target.value)}
+              autoComplete="off"
+              placeholder="cs_... (da URL após o pagamento)"
+              className={ppInput}
+            />
+            <span className="mt-1 block text-xs font-medium text-slate-500">
+              Está na barra de endereço da página de confirmação, após{" "}
+              <code className="text-xs">session_id=</code>.
+            </span>
+          </label>
+        ) : null}
 
         <label className="block">
           <span className="mb-2 block text-sm font-bold text-slate-700">

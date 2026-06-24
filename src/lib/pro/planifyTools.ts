@@ -65,7 +65,6 @@ export type ToolCategoryId =
   | "correcao";
 
 export type PlanifyToolId =
-  | "slides"
   | "prova"
   | "lista"
   | "plano-aula"
@@ -112,21 +111,6 @@ export const toolCategories: {
 ];
 
 export const planifyTools: PlanifyTool[] = [
-  {
-    id: "slides",
-    title: "Apresentação de Slides",
-    shortTitle: "Slides",
-    description:
-      "Apresentação em sequência didática com roteiro para o professor; revise no editor e exporte ao Google Slides.",
-    category: "preparar-aulas",
-    href: dashboardToolHref("slides"),
-    icon: "presentation",
-    popular: true,
-    primaryFieldLabel: "Tema da apresentação",
-    loadingTitle: "Criando apresentação",
-    loadingDescription: "Montando sequência pedagógica, imagens e roteiro de fala.",
-    accent: "from-violet-300 via-fuchsia-300 to-pink-300",
-  },
   {
     id: "prova",
     title: "Prova",
@@ -335,7 +319,7 @@ export const planifyTools: PlanifyTool[] = [
     title: "Construtor de Aula Completa",
     shortTitle: "Aula completa",
     description:
-      "Um tema gera plano, slides, atividade e lista de fixação coesos — pacote enxuto pronto para sala. Acrescente itens opcionais se quiser.",
+      "Um tema gera plano, atividade e lista de fixação coesos — pacote enxuto pronto para sala. Acrescente itens opcionais se quiser.",
     category: "preparar-aulas",
     href: dashboardToolHref("aula-completa"),
     icon: "layers",
@@ -343,7 +327,7 @@ export const planifyTools: PlanifyTool[] = [
     primaryFieldLabel: "Tema da aula",
     loadingTitle: "Montando aula completa",
     loadingDescription:
-      "Gerando plano, slides, atividade e lista com sequência pedagógica coesa.",
+      "Gerando plano, atividade e lista com sequência pedagógica coesa.",
     accent: "from-indigo-400 via-violet-400 to-fuchsia-400",
   },
   {

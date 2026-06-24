@@ -24,7 +24,7 @@ export function CommunityMaterialExportBar({
   onStatus,
   returnTo,
 }: CommunityMaterialExportBarProps) {
-  const { html, isSlideDeck, loading, error, ensureHtml, getHtml, canExportGoogle } =
+  const { html, loading, error, ensureHtml, getHtml, canExportGoogle } =
     useMarketplaceMaterialHtml(item.id);
   const [exportStatus, setExportStatus] = useState("");
 
@@ -90,7 +90,6 @@ export function CommunityMaterialExportBar({
             documentType.includes("planejamento") ? getPlanningPayload : undefined
           }
           documentType={documentType}
-          isSlideDeck={isSlideDeck}
           returnTo={returnTo}
           onStatus={handleStatus}
           compact

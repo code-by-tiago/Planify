@@ -5,7 +5,6 @@ import {
   exportToGoogleDocs,
   exportToGoogleDrive,
   exportToGoogleForms,
-  exportToGoogleSlides,
   fetchGoogleStatus,
 } from "@/lib/google/google-api-client";
 import {
@@ -21,38 +20,16 @@ import {
   type GoogleExportPending,
   type GoogleExportPendingKey,
 } from "@/lib/google/google-export-resume";
-import {
-  clearGoogleSlidesExportPending,
-  GOOGLE_SLIDES_EXPORT_PENDING_KEY,
-  notifyGoogleStatusChanged,
-  readGoogleSlidesExportPending,
-  type GoogleSlidesExportPending,
-} from "@/lib/google/google-status-events";
+import { notifyGoogleStatusChanged } from "@/lib/google/google-status-events";
 
-export type ActiveGoogleExportPending =
-  | {
-      key: GoogleExportPendingKey;
-      kind: "product";
-      pending: GoogleExportPending;
-    }
-  | {
-      key: typeof GOOGLE_SLIDES_EXPORT_PENDING_KEY;
-      kind: "slides";
-      pending: GoogleSlidesExportPending;
-    };
+export type ActiveGoogleExportPending = {
+  key: GoogleExportPendingKey;
+  kind: "product";
+  pending: GoogleExportPending;
+};
 
 export function findActiveGoogleExportPending(): ActiveGoogleExportPending | null {
-  const slidesPending = readGoogleSlidesExportPending();
-  if (slidesPending?.title) {
-    return {
-      key: GOOGLE_SLIDES_EXPORT_PENDING_KEY,
-      kind: "slides",
-      pending: slidesPending,
-    };
-  }
-
   for (const key of GOOGLE_EXPORT_PENDING_KEYS) {
-    if (key === GOOGLE_SLIDES_EXPORT_PENDING_KEY) continue;
     const pending = readGoogleExportPending(key);
     if (pending?.title) {
       return { key, kind: "product", pending };
@@ -63,10 +40,6 @@ export function findActiveGoogleExportPending(): ActiveGoogleExportPending | nul
 }
 
 function clearActivePending(active: ActiveGoogleExportPending): void {
-  if (active.kind === "slides") {
-    clearGoogleSlidesExportPending();
-    return;
-  }
   clearGoogleExportPending(active.key);
 }
 
@@ -117,7 +90,7 @@ async function executeProductExport(params: {
       documentType: params.documentType,
       planningPayload,
     });
-    return result.driveOpenUrl || "https://drive.google.com/drive/my-drive";
+    return result.drive.webViewLink || result.driveOpenUrl || "https://drive.google.com/drive/my-drive";
   }
 
   if (params.key === GOOGLE_FORMS_EXPORT_PENDING_KEY) {
@@ -130,24 +103,6 @@ async function executeProductExport(params: {
   }
 
   throw new Error("Exportação Google pendente não reconhecida.");
-}
-
-async function executeSlidesExport(params: {
-  pending: GoogleSlidesExportPending;
-  getHtml: () => string;
-}): Promise<string> {
-  const pendingHasDeck = Boolean(
-    params.pending.html?.trim() || params.pending.slides?.length,
-  );
-
-  const result = await exportToGoogleSlides({
-    title: params.pending.title,
-    html: pendingHasDeck ? params.pending.html : params.getHtml(),
-    slides: pendingHasDeck ? params.pending.slides : undefined,
-    theme: params.pending.theme,
-  });
-
-  return result.presentationUrl;
 }
 
 function productLabel(key: GoogleExportPendingKey): string {
@@ -189,8 +144,7 @@ export async function resumePendingGoogleExport(
       return true;
     }
 
-    const label =
-      active.kind === "slides" ? "Google Slides" : productLabel(active.key);
+    const label = productLabel(active.key);
 
     params.onStatus?.(`Retomando exportação para ${label}…`);
 
@@ -201,16 +155,13 @@ export async function resumePendingGoogleExport(
       throw new Error("Conta Google ainda não conectada. Tente exportar novamente.");
     }
 
-    const openUrl =
-      active.kind === "slides"
-        ? await executeSlidesExport({ pending: active.pending, getHtml: params.getHtml })
-        : await executeProductExport({
-            key: active.key,
-            pending: active.pending,
-            getHtml: params.getHtml,
-            getPlanningPayload: params.getPlanningPayload,
-            documentType: params.documentType,
-          });
+    const openUrl = await executeProductExport({
+      key: active.key,
+      pending: active.pending,
+      getHtml: params.getHtml,
+      getPlanningPayload: params.getPlanningPayload,
+      documentType: params.documentType,
+    });
 
     clearActivePending(active);
 

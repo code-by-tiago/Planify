@@ -217,12 +217,17 @@ function testMaterialEngineTypesCatalog() {
 function testMaterialTypeRouting() {
   const deepSet = new Set(DEEP_GENERATION_TYPES);
   const lightSet = new Set(LIGHT_GENERATION_TYPES);
+  const deprecatedTypes = new Set(["slides"]);
 
   for (const deepType of DEEP_GENERATION_TYPES) {
     assert.ok(!lightSet.has(deepType), `${deepType} não pode ser deep e light`);
   }
 
   for (const tipo of MATERIAL_ENGINE_TYPES) {
+    if (deprecatedTypes.has(tipo)) {
+      continue;
+    }
+
     const deep = isDeepGenerationType(tipo);
     const tier = getModelTierForMaterialType(tipo);
 
@@ -243,8 +248,8 @@ function testMaterialTypeRouting() {
 
   assert.equal(
     DEEP_GENERATION_TYPES.length + LIGHT_GENERATION_TYPES.length,
-    MATERIAL_ENGINE_TYPES.length,
-    "deep + light deve cobrir todos os 14 tipos",
+    MATERIAL_ENGINE_TYPES.length - deprecatedTypes.size,
+    "deep + light deve cobrir todos os tipos ativos",
   );
 
   assert.equal(isDeepGenerationType(PLANNING_DEEP_GENERATION_TYPE), true);

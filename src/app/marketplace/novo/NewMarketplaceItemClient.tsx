@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
 type FormState = {
@@ -60,19 +61,21 @@ function splitTags(value: string) {
     .filter(Boolean);
 }
 
-function getStoredItems() {
-  try {
-    return JSON.parse(localStorage.getItem("planify_marketplace_items") || "[]");
-  } catch {
-    return [];
+function buildDescription(form: FormState): string {
+  const parts = [form.descricao.trim()];
+  if (form.instrucoes.trim()) {
+    parts.push(`Instruções de uso: ${form.instrucoes.trim()}`);
   }
+  return parts.filter(Boolean).join("\n\n");
 }
 
 export function NewMarketplaceItemClient() {
+  const router = useRouter();
   const [form, setForm] = useState<FormState>(initialForm);
-  const [fileName, setFileName] = useState("");
+  const [file, setFile] = useState<File | null>(null);
+  const [publishing, setPublishing] = useState(false);
   const [message, setMessage] = useState(
-    "Preencha as informações para publicar um material na Comunidade.",
+    "Preencha as informações e anexe um arquivo para publicar na Comunidade.",
   );
 
   const tags = useMemo(() => splitTags(form.tags), [form.tags]);
@@ -80,7 +83,8 @@ export function NewMarketplaceItemClient() {
     form.titulo.trim().length > 2 &&
     form.descricao.trim().length > 10 &&
     form.anoSerie &&
-    form.componente;
+    form.componente &&
+    Boolean(file);
 
   function updateField<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((current) => ({
@@ -92,7 +96,7 @@ export function NewMarketplaceItemClient() {
   function createPreview() {
     if (!canPublish) {
       setMessage(
-        "Preencha título, descrição, ano/série e componente antes de gerar a prévia.",
+        "Preencha título, descrição, ano/série, componente e anexe um arquivo antes de gerar a prévia.",
       );
       return;
     }
@@ -100,44 +104,66 @@ export function NewMarketplaceItemClient() {
     setMessage("Prévia criada. Revise os dados antes de publicar.");
   }
 
-  function publishItem() {
-    if (!canPublish) {
+  async function publishItem() {
+    if (!canPublish || !file) {
       setMessage(
-        "Complete os campos obrigatórios antes de publicar o material.",
+        "Complete os campos obrigatórios e anexe um arquivo antes de publicar.",
       );
       return;
     }
 
-    const item = {
-      id: crypto.randomUUID(),
-      title: form.titulo.trim(),
-      description: form.descricao.trim(),
-      etapa: form.etapa,
-      anoSerie: form.anoSerie,
-      componente: form.componente,
-      categoria: form.categoria,
-      autor: form.autor.trim() || "Professor Planify",
-      downloads: 0,
-      tags,
-      fileName: fileName || undefined,
-      instrucoes: form.instrucoes.trim(),
-      createdAt: new Date().toISOString(),
-    };
+    setPublishing(true);
+    setMessage("Publicando material na Comunidade...");
 
-    const current = getStoredItems();
-    localStorage.setItem(
-      "planify_marketplace_items",
-      JSON.stringify([item, ...current].slice(0, 100)),
-    );
+    try {
+      const description = buildDescription(form);
+      const body = new FormData();
+      body.set("title", form.titulo.trim());
+      body.set("description", description);
+      body.set("etapa", form.etapa);
+      body.set("anoSerie", form.anoSerie);
+      body.set("componente", form.componente);
+      body.set("tipoMaterial", form.categoria);
+      body.set("tema", form.titulo.trim());
+      body.set("tags", tags.join(", "));
+      body.set("authorName", form.autor.trim() || "Professor Planify");
+      body.set("isPublished", "true");
+      body.set("file", file);
 
-    setMessage(
-      "Material publicado localmente. Ele já aparecerá na Comunidade.",
-    );
+      const response = await fetch("/api/marketplace/materiais", {
+        method: "POST",
+        body,
+        credentials: "include",
+      });
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(data?.error?.message || "Não foi possível publicar o material.");
+      }
+
+      const materialId = String(data?.item?.id || "").trim();
+      setMessage("Material publicado com sucesso na Comunidade.");
+
+      if (materialId) {
+        router.push(`/comunidade/material/${materialId}`);
+        return;
+      }
+
+      router.push("/comunidade");
+    } catch (error) {
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível publicar o material.",
+      );
+    } finally {
+      setPublishing(false);
+    }
   }
 
   function clearAll() {
     setForm(initialForm);
-    setFileName("");
+    setFile(null);
     setMessage("Campos limpos. Preencha um novo material para publicar.");
   }
 
@@ -152,17 +178,17 @@ export function NewMarketplaceItemClient() {
             Novo material na Comunidade
           </h1>
           <p className="mt-4 text-sm leading-7 text-cyan-100/80">
-            Cadastre um recurso pedagógico, informe tags e anexe o nome do
-            arquivo. A publicação local permite validar o fluxo completo antes
-            da persistência definitiva no Supabase.
+            Cadastre um recurso pedagógico, informe tags e anexe o arquivo. A
+            publicação é salva no Supabase e fica visível para professores com
+            plano ativo.
           </p>
 
           <div className="mt-6 grid gap-3">
             {[
               ["Campos", canPublish ? "Completos" : "Pendentes"],
               ["Tags", String(tags.length)],
-              ["Arquivo", fileName || "Não informado"],
-              ["Status", "Publicação local"],
+              ["Arquivo", file?.name || "Não informado"],
+              ["Status", publishing ? "Publicando..." : "Pronto para enviar"],
             ].map(([label, value]) => (
               <div
                 key={label}
@@ -205,7 +231,8 @@ export function NewMarketplaceItemClient() {
             <button
               type="button"
               onClick={clearAll}
-              className="rounded-2xl border border-white/10 bg-white/5 px-6 py-4 text-sm font-black text-white transition hover:-translate-y-1 hover:bg-white/10"
+              disabled={publishing}
+              className="rounded-2xl border border-white/10 bg-white/5 px-6 py-4 text-sm font-black text-white transition hover:-translate-y-1 hover:bg-white/10 disabled:opacity-60"
             >
               Limpar tudo
             </button>
@@ -319,8 +346,10 @@ export function NewMarketplaceItemClient() {
               <span className="text-sm font-bold text-slate-300">Arquivo</span>
               <input
                 type="file"
+                required
+                accept=".pdf,.doc,.docx,.ppt,.pptx,.png,.jpg,.jpeg,.webp,.html,.htm"
                 onChange={(event) =>
-                  setFileName(event.target.files?.[0]?.name || "")
+                  setFile(event.target.files?.[0] || null)
                 }
                 className="h-14 rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-4 text-sm text-slate-300 outline-none file:mr-4 file:rounded-xl file:border-0 file:bg-white file:px-4 file:py-2 file:text-xs file:font-black file:text-slate-950"
               />
@@ -356,17 +385,19 @@ export function NewMarketplaceItemClient() {
             <button
               type="button"
               onClick={createPreview}
-              className="rounded-2xl border border-white/10 bg-white/5 px-6 py-4 text-sm font-black text-white transition hover:-translate-y-1 hover:bg-white/10"
+              disabled={publishing}
+              className="rounded-2xl border border-white/10 bg-white/5 px-6 py-4 text-sm font-black text-white transition hover:-translate-y-1 hover:bg-white/10 disabled:opacity-60"
             >
               Gerar prévia
             </button>
 
             <button
               type="button"
-              onClick={publishItem}
-              className="rounded-2xl bg-white px-6 py-4 text-sm font-black text-slate-950 transition hover:-translate-y-1 hover:bg-cyan-100"
+              onClick={() => void publishItem()}
+              disabled={publishing || !canPublish}
+              className="rounded-2xl bg-white px-6 py-4 text-sm font-black text-slate-950 transition hover:-translate-y-1 hover:bg-cyan-100 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Publicar material
+              {publishing ? "Publicando..." : "Publicar material"}
             </button>
           </div>
         </div>
@@ -388,7 +419,7 @@ export function NewMarketplaceItemClient() {
               ["Etapa", form.etapa],
               ["Ano/Série", form.anoSerie || "Não informado"],
               ["Componente", form.componente || "Não informado"],
-              ["Arquivo", fileName || "Não informado"],
+              ["Arquivo", file?.name || "Não informado"],
             ].map(([label, value]) => (
               <div
                 key={label}

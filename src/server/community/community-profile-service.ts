@@ -21,6 +21,7 @@ export type CommunityProfile = {
   bio: string | null;
   avatarUrl: string | null;
   communityPublic: boolean;
+  teachingAreas: string[];
   topComponentes: string[];
   stats: CommunityProfileStats;
 };
@@ -33,7 +34,23 @@ type ProfileRow = {
   avatar_url: string | null;
   bio?: string | null;
   community_public?: boolean | null;
+  teaching_areas?: string[] | null;
 };
+
+function normalizeTeachingAreas(value: string[] | null | undefined): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.map((item) => String(item).trim()).filter(Boolean);
+}
+
+function resolveProfileTeachingAreas(
+  teachingAreas: string[],
+  inferred: string[],
+): { teachingAreas: string[]; topComponentes: string[] } {
+  if (teachingAreas.length > 0) {
+    return { teachingAreas, topComponentes: teachingAreas };
+  }
+  return { teachingAreas: [], topComponentes: inferred };
+}
 
 async function countUserMaterials(userId: string): Promise<number> {
   const supabase = getSupabaseAdminClient();
@@ -77,7 +94,7 @@ export async function getCommunityProfileForUser(params: {
 
   const profileResult = await supabase
     .from("profiles")
-    .select("id,email,full_name,school_name,avatar_url,bio,community_public")
+    .select("id,email,full_name,school_name,avatar_url,bio,community_public,teaching_areas")
     .eq("id", params.userId)
     .maybeSingle();
 
@@ -92,7 +109,7 @@ export async function getCommunityProfileForUser(params: {
     row = (profileResult.data || null) as ProfileRow | null;
   }
 
-  const [fullName, avatarUrl, materialsCount, classesCount, friendCounts, topComponentes] =
+  const [fullName, avatarUrl, materialsCount, classesCount, friendCounts, inferredComponentes] =
     await Promise.all([
     resolveUserDisplayName({
       userId: params.userId,
@@ -109,6 +126,9 @@ export async function getCommunityProfileForUser(params: {
     getUserTopComponentes(params.userId),
   ]);
 
+  const teachingAreas = normalizeTeachingAreas(row?.teaching_areas);
+  const { topComponentes } = resolveProfileTeachingAreas(teachingAreas, inferredComponentes);
+
   return {
     userId: params.userId,
     fullName: row?.full_name?.trim() || fullName,
@@ -117,6 +137,7 @@ export async function getCommunityProfileForUser(params: {
     bio: row?.bio?.trim() || null,
     avatarUrl: row?.avatar_url || avatarUrl,
     communityPublic: row?.community_public !== false,
+    teachingAreas,
     topComponentes,
     stats: {
       classesCount,
@@ -135,6 +156,7 @@ export type PublicCommunityProfile = {
   avatarUrl: string | null;
   communityPublic: boolean;
   isOwnProfile: boolean;
+  teachingAreas: string[];
   topComponentes: string[];
   stats: CommunityProfileStats;
   materials: Array<{
@@ -173,7 +195,7 @@ export async function getPublicCommunityProfile(params: {
 
   const profileResult = await supabase
     .from("profiles")
-    .select("id,email,full_name,school_name,avatar_url,bio,community_public")
+    .select("id,email,full_name,school_name,avatar_url,bio,community_public,teaching_areas")
     .eq("id", params.targetUserId)
     .maybeSingle();
 
@@ -204,6 +226,7 @@ export async function getPublicCommunityProfile(params: {
       avatarUrl: null,
       communityPublic: false,
       isOwnProfile: false,
+      teachingAreas: [],
       topComponentes: [],
       stats: {
         classesCount: 0,
@@ -215,7 +238,7 @@ export async function getPublicCommunityProfile(params: {
     };
   }
 
-  const [fullName, avatarUrl, materialsCount, classesCount, friendCounts, topComponentes, materialsResult] =
+  const [fullName, avatarUrl, materialsCount, classesCount, friendCounts, inferredComponentes, materialsResult] =
     await Promise.all([
       resolveUserDisplayName({
         userId: params.targetUserId,
@@ -251,6 +274,9 @@ export async function getPublicCommunityProfile(params: {
     }),
   );
 
+  const teachingAreas = normalizeTeachingAreas(row.teaching_areas);
+  const { topComponentes } = resolveProfileTeachingAreas(teachingAreas, inferredComponentes);
+
   return {
     userId: params.targetUserId,
     fullName: row.full_name?.trim() || fullName,
@@ -259,6 +285,7 @@ export async function getPublicCommunityProfile(params: {
     avatarUrl: row.avatar_url || avatarUrl,
     communityPublic,
     isOwnProfile,
+    teachingAreas,
     topComponentes,
     stats: {
       classesCount,
@@ -278,6 +305,7 @@ export async function updateCommunityProfile(
     bio?: string | null;
     communityPublic?: boolean;
     avatarUrl?: string | null;
+    teachingAreas?: string[];
   },
 ): Promise<void> {
   const supabase = getSupabaseAdminClient();
@@ -303,6 +331,10 @@ export async function updateCommunityProfile(
     update.avatar_url = input.avatarUrl;
   }
 
+  if (input.teachingAreas !== undefined) {
+    update.teaching_areas = normalizeTeachingAreas(input.teachingAreas);
+  }
+
   if (!Object.keys(update).length) {
     return;
   }
@@ -314,7 +346,8 @@ export async function updateCommunityProfile(
     error?.message?.includes("avatar_url") ||
     error?.message?.includes("school_name") ||
     error?.message?.includes("bio") ||
-    error?.message?.includes("community_public")
+    error?.message?.includes("community_public") ||
+    error?.message?.includes("teaching_areas")
   ) {
     throw new Error(
       error.message.includes("avatar_url")

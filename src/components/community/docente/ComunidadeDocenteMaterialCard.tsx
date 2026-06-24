@@ -8,6 +8,7 @@ import {
   IconEye,
   IconHeart,
 } from "@/components/community/docente/docente-icons";
+import { MaterialTypeCover } from "@/components/materials/MaterialTypeCover";
 import {
   formatDocenteNumber,
   getDisciplinaColor,
@@ -55,12 +56,11 @@ export function ComunidadeDocenteMaterialCard({
         isHidden ? "border-amber-200/80 opacity-90" : "border-slate-200/80",
       ].join(" ")}
     >
-      <div className="relative h-36 overflow-hidden">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={material.coverUrl}
-          alt=""
-          className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+      <div className="relative overflow-hidden">
+        <MaterialTypeCover
+          typeLabel={material.tipoMaterial || material.title}
+          subtitle={material.disciplina}
+          className="h-36"
         />
         <span className="absolute left-3 top-3 rounded-lg bg-white/90 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#0F172A] backdrop-blur-sm">
           {FILE_LABELS[material.fileType]}

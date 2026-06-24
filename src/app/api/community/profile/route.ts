@@ -50,6 +50,9 @@ export async function PATCH(request: NextRequest) {
     bio: body.bio !== undefined ? (body.bio === null ? null : String(body.bio || "")) : undefined,
     communityPublic:
       body.communityPublic !== undefined ? Boolean(body.communityPublic) : undefined,
+    teachingAreas: Array.isArray(body.teachingAreas)
+      ? body.teachingAreas.map((item: unknown) => String(item).trim()).filter(Boolean)
+      : undefined,
   });
 
   const profile = await getCommunityProfileForUser({

@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
     if (action === "create_post") {
       const title = String(body.title || "").trim();
       const content = String(body.body || "").trim();
-      const disciplina = String(body.disciplina || "Ciências").trim();
+      const disciplina = String(body.disciplina || "Multidisciplinar").trim();
       const tags = Array.isArray(body.tags)
         ? body.tags.map((t: unknown) => String(t).trim()).filter(Boolean)
         : [];
@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
       const postId = String(body.postId || "").trim();
       const title = String(body.title || "").trim();
       const content = String(body.body || "").trim();
-      const disciplina = String(body.disciplina || "Ciências").trim();
+      const disciplina = String(body.disciplina || "Multidisciplinar").trim();
       const tags = Array.isArray(body.tags)
         ? body.tags.map((t: unknown) => String(t).trim()).filter(Boolean)
         : [];
@@ -174,7 +174,7 @@ export async function POST(request: NextRequest) {
     if (action === "create_group") {
       const name = String(body.name || "").trim();
       const description = String(body.description || "").trim();
-      const disciplina = String(body.disciplina || "Ciências").trim();
+      const disciplina = String(body.disciplina || "Multidisciplinar").trim();
       const memberUserIds = Array.isArray(body.memberUserIds)
         ? body.memberUserIds.map((id: unknown) => String(id).trim()).filter(Boolean)
         : [];

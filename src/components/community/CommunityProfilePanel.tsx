@@ -5,6 +5,7 @@ import { CommunityMessagesIcon } from "@/components/community/CommunityMessagesI
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { CommunityProfileBioField, CommunityProfileBioTopics } from "@/components/community/CommunityProfileBio";
 import { normalizeCommunityBio } from "@/lib/community/profile-bio";
+import { DOCENTE_DISCIPLINAS } from "@/lib/community/docente-utils";
 import { parseJsonResponse } from "@/lib/http/parse-json-response";
 
 type CommunityProfileStats = {
@@ -22,6 +23,7 @@ type CommunityProfile = {
   bio: string | null;
   avatarUrl: string | null;
   communityPublic: boolean;
+  teachingAreas?: string[];
   topComponentes?: string[];
   stats: CommunityProfileStats;
 };
@@ -55,6 +57,7 @@ export function CommunityProfilePanel() {
     schoolName: "",
     bio: "",
     communityPublic: true,
+    teachingAreas: [] as string[],
   });
 
   const loadProfile = useCallback(async () => {
@@ -85,6 +88,7 @@ export function CommunityProfilePanel() {
         schoolName: data.profile.schoolName || "",
         bio: data.profile.bio || "",
         communityPublic: data.profile.communityPublic !== false,
+        teachingAreas: data.profile.teachingAreas || data.profile.topComponentes || [],
       });
     } catch (err) {
       setProfile(null);
@@ -148,6 +152,7 @@ export function CommunityProfilePanel() {
           schoolName: draft.schoolName || null,
           bio: normalizeCommunityBio(draft.bio),
           communityPublic: draft.communityPublic,
+          teachingAreas: draft.teachingAreas,
         }),
       });
       const data = await parseJsonResponse<{
@@ -375,6 +380,39 @@ export function CommunityProfilePanel() {
           />
         )}
 
+        {editing ? (
+          <div className="mt-4">
+            <p className="text-xs font-bold text-slate-500">Áreas de atuação</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {DOCENTE_DISCIPLINAS.map((disciplina) => {
+                const selected = draft.teachingAreas.includes(disciplina);
+                return (
+                  <button
+                    key={disciplina}
+                    type="button"
+                    onClick={() =>
+                      setDraft((current) => ({
+                        ...current,
+                        teachingAreas: selected
+                          ? current.teachingAreas.filter((item) => item !== disciplina)
+                          : [...current.teachingAreas, disciplina],
+                      }))
+                    }
+                    className={[
+                      "rounded-full border px-2.5 py-0.5 text-[11px] font-bold transition",
+                      selected
+                        ? "border-cyan-500 bg-cyan-50 text-cyan-800"
+                        : "border-slate-200 bg-white text-slate-600 hover:border-cyan-300",
+                    ].join(" ")}
+                  >
+                    {disciplina}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ) : null}
+
         {profile.topComponentes && profile.topComponentes.length > 0 ? (
           <div className="mt-4 flex flex-wrap gap-2">
             <span className="text-xs font-bold text-slate-500">Áreas de atuação:</span>
@@ -458,6 +496,7 @@ export function CommunityProfilePanel() {
                   schoolName: profile.schoolName || "",
                   bio: profile.bio || "",
                   communityPublic: profile.communityPublic !== false,
+                  teachingAreas: profile.teachingAreas || profile.topComponentes || [],
                 });
               }}
               className="rounded-lg px-3 py-1.5 text-xs font-bold text-slate-500 hover:text-slate-700"

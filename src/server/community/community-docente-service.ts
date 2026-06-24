@@ -17,6 +17,7 @@ import { listHiddenFeedMaterialIds } from "./community-hidden-feed-materials-ser
 import {
   formatEventMonth,
   formatEventDateTime,
+  normalizeDocenteDisciplina,
 } from "@/lib/community/docente-utils";
 import type {
   DocenteAuthor,
@@ -27,41 +28,6 @@ import type {
   DocenteRecentPublication,
   DocenteStats,
 } from "@/lib/community/docente-types";
-
-const VALID_DISCIPLINAS: DocenteDisciplina[] = [
-  "Língua Portuguesa",
-  "Matemática",
-  "Ciências",
-  "História",
-  "Geografia",
-  "Inglês",
-  "Artes",
-  "Educação Física",
-];
-
-function asDisciplina(value: string | null | undefined): DocenteDisciplina {
-  const normalized = String(value || "").trim();
-  if (VALID_DISCIPLINAS.includes(normalized as DocenteDisciplina)) {
-    return normalized as DocenteDisciplina;
-  }
-  return "Ciências";
-}
-
-function coverForComponente(componente: string): string {
-  const map: Record<string, string> = {
-    Ciências:
-      "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=400&h=280&fit=crop",
-    Matemática:
-      "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=400&h=280&fit=crop",
-    "Língua Portuguesa":
-      "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400&h=280&fit=crop",
-    História:
-      "https://images.unsplash.com/photo-1461360228754-6e81c478b882?w=400&h=280&fit=crop",
-    Geografia:
-      "https://images.unsplash.com/photo-1524661135-423995f22d0b?w=400&h=280&fit=crop",
-  };
-  return map[componente] || map.Ciências;
-}
 
 function fileTypeFromMime(mime: string | null): DocenteMaterial["fileType"] {
   const m = String(mime || "").toLowerCase();
@@ -487,7 +453,7 @@ export async function getCommunityDocenteOverview(params: {
       id: post.id,
       author: await buildAuthor(post.author_id, authorMap, undefined, authorStatsCache),
       title: post.title,
-      disciplina: asDisciplina(post.disciplina),
+      disciplina: normalizeDocenteDisciplina(post.disciplina),
       tags: post.tags || [],
       createdAt: post.created_at,
       commentsCount: post.comments_count,
@@ -515,7 +481,7 @@ export async function getCommunityDocenteOverview(params: {
         id: `mat-disc-${row.id}`,
         author: await buildAuthor(userId, authorMap, row.author_name, authorStatsCache),
         title: row.title,
-        disciplina: asDisciplina(row.componente),
+        disciplina: normalizeDocenteDisciplina(row.componente),
         tags: [],
         createdAt: row.created_at || new Date().toISOString(),
         commentsCount: comments.length,
@@ -541,10 +507,11 @@ export async function getCommunityDocenteOverview(params: {
       return {
         id: row.id,
         title: row.title,
-        disciplina: asDisciplina(row.componente),
+        disciplina: normalizeDocenteDisciplina(row.componente),
         anoSerie: row.ano_serie || "Geral",
         author: await buildAuthor(userId, authorMap, row.author_name, authorStatsCache),
-        coverUrl: coverForComponente(row.componente || "Ciências"),
+        tipoMaterial: row.tipo_material || row.title,
+        componenteRaw: row.componente || undefined,
         viewsCount: row.downloads_count || 0,
         likesCount: likes?.likesCount || 0,
         likedByMe: likes?.likedByMe || false,
@@ -565,7 +532,8 @@ export async function getCommunityDocenteOverview(params: {
   let recentPublications: DocenteRecentPublication[] = feedMaterials.slice(0, 4).map((row) => ({
     id: row.id,
     title: row.title,
-    thumbnailUrl: coverForComponente(row.componente || "Ciências"),
+    tipoMaterial: row.tipo_material || row.title,
+    disciplina: normalizeDocenteDisciplina(row.componente),
     authorName: row.author_name || "Professor(a)",
     createdAt: row.created_at || new Date().toISOString(),
     href: `/comunidade/material/${row.id}`,
@@ -578,7 +546,8 @@ export async function getCommunityDocenteOverview(params: {
         return {
           id: post.id,
           title: post.title,
-          thumbnailUrl: coverForComponente(post.disciplina),
+          tipoMaterial: "Discussão",
+          disciplina: normalizeDocenteDisciplina(post.disciplina),
           authorName: author.name,
           createdAt: post.created_at,
           href: `/comunidade/discussao/${post.id}`,
@@ -1340,7 +1309,7 @@ export async function getCommunityDiscussionDetail(params: {
       id: row.id as string,
       author: await buildAuthor(row.author_id as string, authorMap),
       title: row.title as string,
-      disciplina: asDisciplina(row.disciplina as string),
+      disciplina: normalizeDocenteDisciplina(row.disciplina as string),
       tags: (row.tags as string[]) || [],
       createdAt: row.created_at as string,
       commentsCount: row.comments_count as number,
@@ -1356,7 +1325,7 @@ export async function getCommunityDiscussionDetail(params: {
     id: postRow.id,
     title: postRow.title,
     body: postRow.body,
-    disciplina: asDisciplina(postRow.disciplina),
+    disciplina: normalizeDocenteDisciplina(postRow.disciplina),
     tags: postRow.tags || [],
     createdAt: postRow.created_at,
     author: await buildAuthor(postRow.author_id, authorMap),
@@ -1433,7 +1402,7 @@ export async function getCommunityGroupDetail(params: {
       id: post.id as string,
       author: await buildAuthor(post.author_id as string, authorMap),
       title: post.title as string,
-      disciplina: asDisciplina(post.disciplina as string),
+      disciplina: normalizeDocenteDisciplina(post.disciplina as string),
       tags: (post.tags as string[]) || [],
       createdAt: post.created_at as string,
       commentsCount: post.comments_count as number,
@@ -1544,7 +1513,7 @@ export async function getCommunityTeacherDetail(params: {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id,full_name,bio,school_name,community_public,community_reputation")
+    .select("id,full_name,bio,school_name,community_public,community_reputation,teaching_areas")
     .eq("id", params.userId)
     .maybeSingle();
 
@@ -1621,7 +1590,7 @@ export async function getCommunityTeacherDetail(params: {
       id: post.id as string,
       author: profileAuthor,
       title: post.title as string,
-      disciplina: asDisciplina(post.disciplina as string),
+      disciplina: normalizeDocenteDisciplina(post.disciplina as string),
       tags: (post.tags as string[]) || [],
       createdAt: post.created_at as string,
       commentsCount: post.comments_count as number,
@@ -1631,13 +1600,17 @@ export async function getCommunityTeacherDetail(params: {
     })),
   );
 
-  const topComponentes = [
+  const teachingAreas = Array.isArray(profile.teaching_areas)
+    ? (profile.teaching_areas as string[]).map((item) => String(item).trim()).filter(Boolean)
+    : [];
+  const inferredComponentes = [
     ...new Set(
       (materials || [])
         .map((m) => String(m.componente || "").trim())
-        .filter(Boolean),
+        .filter((comp) => comp && comp.toLowerCase() !== "multicomponente"),
     ),
   ].slice(0, 3);
+  const topComponentes = teachingAreas.length > 0 ? teachingAreas : inferredComponentes;
 
   const groups = (groupMemberships || [])
     .map((row) => {
@@ -1667,7 +1640,7 @@ export async function getCommunityTeacherDetail(params: {
     materials: (materials || []).map((m) => ({
       id: m.id as string,
       title: m.title as string,
-      disciplina: asDisciplina(m.componente as string),
+      disciplina: normalizeDocenteDisciplina(m.componente as string),
       downloadsCount: (m.downloads_count as number) || 0,
     })),
     discussions,
@@ -1963,7 +1936,7 @@ export async function getSavedDiscussionsForUser(params: {
       id: post.id,
       author: await buildAuthor(post.author_id, authorMap),
       title: post.title,
-      disciplina: asDisciplina(post.disciplina),
+      disciplina: normalizeDocenteDisciplina(post.disciplina),
       tags: post.tags || [],
       createdAt: post.created_at,
       commentsCount: post.comments_count,

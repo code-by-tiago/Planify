@@ -2,6 +2,7 @@
 
 import { CommunityAuthorAvatar } from "@/components/community/CommunityAuthorAvatar";
 import { communityProfileHref } from "@/components/community/CommunityAuthorLink";
+import { MaterialTypeCover } from "@/components/materials/MaterialTypeCover";
 import { useComunidadeEmbedded } from "@/hooks/useComunidadeEmbedded";
 import Link from "next/link";
 import type { DocenteAuthor, DocenteEvent, DocenteMenuItem, DocenteRecentPublication } from "@/lib/community/docente-types";
@@ -60,12 +61,14 @@ export function ComunidadeDocenteRightSidebar({
                   href={pub.href || `/marketplace/material/${pub.id}`}
                   className="flex w-full items-start gap-3 rounded-xl p-1 text-left transition hover:bg-slate-50"
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={pub.thumbnailUrl}
-                    alt=""
-                    className="h-12 w-12 shrink-0 rounded-xl object-cover"
-                  />
+                  <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl">
+                    <MaterialTypeCover
+                      typeLabel={pub.tipoMaterial || pub.title}
+                      subtitle={pub.disciplina}
+                      compact
+                      className="h-full"
+                    />
+                  </div>
                   <div className="min-w-0">
                     <p className="line-clamp-2 text-xs font-bold leading-snug text-[#0F172A]">
                       {pub.title}

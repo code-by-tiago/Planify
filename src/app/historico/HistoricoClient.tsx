@@ -10,6 +10,7 @@ import type { EditorDocument } from "../../types/editor";
 import type { HistoryFilter, HistoryItem } from "../../types/history";
 import { HistoryDocumentExportBar } from "@/components/documents/HistoryDocumentExportBar";
 import { getHistoryPlanningPayload } from "@/lib/documents/document-export-context";
+import { extractComponenteFromPlanningPayload } from "@/lib/marketplace/marketplace-publish";
 import { PlanifyMaterialHubCard } from "@/components/materials/PlanifyMaterialHubCard";
 import { MarketplacePublishButton } from "@/components/marketplace/MarketplacePublishButton";
 import {
@@ -114,6 +115,15 @@ function resolveMarketplaceTipo(item: HistoryItem): string {
   if (item.source === "planejamento") return "Planejamento";
   if (item.source === "manual") return "Material do editor";
   return resolveHistoryTypeLabel(item.type);
+}
+
+function resolveHistoricoComponente(item: HistoryItem): string | undefined {
+  if (String(item.type || "").includes("planejamento")) {
+    return extractComponenteFromPlanningPayload(getHistoryPlanningPayload(item));
+  }
+  const raw = item.raw as Record<string, unknown> | undefined;
+  const direct = String(raw?.componenteCurricular || raw?.componente || "").trim();
+  return direct || undefined;
 }
 
 export function HistoricoClient() {
@@ -609,6 +619,7 @@ export function HistoricoClient() {
                         : undefined
                     }
                     tipoMaterial={resolveMarketplaceTipo(selectedItem)}
+                    componente={resolveHistoricoComponente(selectedItem)}
                     tema={selectedItem.subtitle || selectedItem.title}
                     label="Comunidade"
                     compact

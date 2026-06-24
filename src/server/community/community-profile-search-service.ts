@@ -253,7 +253,7 @@ export async function getUserTopComponentes(userId: string, limit = 3): Promise<
 
   for (const row of data || []) {
     const comp = String(row.componente || "").trim();
-    if (!comp) continue;
+    if (!comp || comp.toLowerCase() === "multicomponente") continue;
     counts.set(comp, (counts.get(comp) || 0) + 1);
   }
 

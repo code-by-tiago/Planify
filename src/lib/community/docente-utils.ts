@@ -77,7 +77,32 @@ export const DOCENTE_DISCIPLINAS: DocenteDisciplina[] = [
   "Inglês",
   "Artes",
   "Educação Física",
+  "Multidisciplinar",
 ];
+
+const DISCIPLINA_ALIASES: Record<string, DocenteDisciplina> = {
+  redação: "Língua Portuguesa",
+  "escrita criativa": "Língua Portuguesa",
+  biologia: "Ciências",
+  física: "Ciências",
+  química: "Ciências",
+  arte: "Artes",
+  "língua inglesa": "Inglês",
+  multicomponente: "Multidisciplinar",
+};
+
+export function normalizeDocenteDisciplina(
+  value: string | null | undefined,
+): DocenteDisciplina {
+  const normalized = String(value || "").trim();
+  if (!normalized) return "Multidisciplinar";
+  if (DOCENTE_DISCIPLINAS.includes(normalized as DocenteDisciplina)) {
+    return normalized as DocenteDisciplina;
+  }
+  const alias = DISCIPLINA_ALIASES[normalized.toLowerCase()];
+  if (alias) return alias;
+  return "Multidisciplinar";
+}
 
 const DISCIPLINA_COLORS: Record<DocenteDisciplina, string> = {
   "Língua Portuguesa": "bg-rose-50 text-rose-700",
@@ -88,6 +113,7 @@ const DISCIPLINA_COLORS: Record<DocenteDisciplina, string> = {
   Inglês: "bg-indigo-50 text-indigo-700",
   Artes: "bg-purple-50 text-purple-700",
   "Educação Física": "bg-orange-50 text-orange-700",
+  Multidisciplinar: "bg-slate-100 text-slate-700",
 };
 
 export function getDisciplinaColor(disciplina: DocenteDisciplina): string {

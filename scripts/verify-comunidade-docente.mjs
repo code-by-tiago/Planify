@@ -28,6 +28,7 @@ const requiredFiles = [
   "src/server/community/community-post-attachments-service.ts",
   "src/lib/community/docente-create-post-client.ts",
   "supabase/migrations/20260614160000_community_optional_features.sql",
+  "supabase/migrations/20260623120000_profiles_teaching_areas.sql",
 ];
 
 const requiredSnippets = [
@@ -41,7 +42,11 @@ const requiredSnippets = [
   },
   {
     file: "src/lib/community/docente-utils.ts",
-    includes: ["hiddenOnly", "mapComunidadeHrefToEmbed", "resolveComunidadeEmbedFromLocation"],
+    includes: ["hiddenOnly", "mapComunidadeHrefToEmbed", "resolveComunidadeEmbedFromLocation", "normalizeDocenteDisciplina"],
+  },
+  {
+    file: "src/server/community/community-docente-service.ts",
+    excludes: ["coverForComponente"],
   },
   {
     file: "src/lib/community/docente-create-post-client.ts",
@@ -78,9 +83,15 @@ for (const relative of requiredFiles) {
 for (const check of requiredSnippets) {
   const path = join(root, check.file);
   const content = readFileSync(path, "utf8");
-  for (const snippet of check.includes) {
+  for (const snippet of check.includes || []) {
     if (!content.includes(snippet)) {
       console.error(`MISSING SNIPPET "${snippet}" in ${check.file}`);
+      failed += 1;
+    }
+  }
+  for (const snippet of check.excludes || []) {
+    if (content.includes(snippet)) {
+      console.error(`FORBIDDEN SNIPPET "${snippet}" in ${check.file}`);
       failed += 1;
     }
   }

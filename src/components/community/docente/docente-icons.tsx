@@ -200,6 +200,7 @@ const DISCIPLINA_ICON_COLORS: Record<string, string> = {
   Inglês: "text-indigo-500",
   Artes: "text-purple-500",
   "Educação Física": "text-orange-500",
+  Multidisciplinar: "text-slate-500",
 };
 
 export function getDisciplinaIconColor(disciplina: string): string {

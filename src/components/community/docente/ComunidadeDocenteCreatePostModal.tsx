@@ -31,7 +31,7 @@ export function ComunidadeDocenteCreatePostModal({
   open,
   onClose,
   onSubmit,
-  defaultDisciplina = "Ciências",
+  defaultDisciplina = "Multidisciplinar",
 }: ComunidadeDocenteCreatePostModalProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [title, setTitle] = useState("");

@@ -5,6 +5,19 @@ import { MarketplacePublishButton } from "@/components/marketplace/MarketplacePu
 import { useAutoGoogleExport } from "@/hooks/useAutoGoogleExport";
 import { extractSlideThemeFromHtml } from "@/lib/slides/slide-deck-utils";
 import { useMemo, useState } from "react";
+import { extractComponenteFromPlanningPayload } from "@/lib/marketplace/marketplace-publish";
+
+function tipoMaterialFromDocumentType(documentType?: string | null): string | undefined {
+  if (!documentType) return undefined;
+  const lower = documentType.toLowerCase();
+  if (lower.includes("planejamento")) return "Planejamento";
+  if (lower.startsWith("material:")) {
+    const tool = lower.replace("material:", "");
+    if (!tool) return undefined;
+    return tool.charAt(0).toUpperCase() + tool.slice(1);
+  }
+  return documentType;
+}
 
 type EditorShareBarProps = {
   title: string;
@@ -45,6 +58,16 @@ export function EditorShareBar({
     return `${window.location.pathname}${window.location.search}` || "/dashboard?secao=editor";
   }, []);
 
+  const publishComponente = useMemo(
+    () => extractComponenteFromPlanningPayload(getPlanningPayload?.() ?? null),
+    [getPlanningPayload],
+  );
+
+  const publishTipoMaterial = useMemo(
+    () => tipoMaterialFromDocumentType(documentType),
+    [documentType],
+  );
+
   useAutoGoogleExport({
     title,
     getHtml,
@@ -67,6 +90,8 @@ export function EditorShareBar({
         title={title}
         getHtml={getHtml}
         getPlanningPayload={getPlanningPayload}
+        componente={publishComponente}
+        tipoMaterial={publishTipoMaterial}
         label={compact ? "Comunidade" : "Comunidade"}
         compact
         className={comunidadeClass}

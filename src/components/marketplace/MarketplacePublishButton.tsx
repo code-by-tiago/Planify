@@ -1,6 +1,6 @@
 "use client";
 
-import { publishHtmlToMarketplace } from "@/lib/marketplace/marketplace-publish";
+import { publishHtmlToMarketplace, extractComponenteFromPlanningPayload } from "@/lib/marketplace/marketplace-publish";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -47,14 +47,18 @@ export function MarketplacePublishButton({
     setError("");
 
     try {
+      const planningPayload = getPlanningPayload?.() ?? null;
+      const resolvedComponente =
+        componente?.trim() || extractComponenteFromPlanningPayload(planningPayload);
+
       const result = await publishHtmlToMarketplace({
         title: title.trim() || "Material Planify",
         description,
         html: getHtml(),
-        planningPayload: getPlanningPayload?.() ?? null,
+        planningPayload,
         tipoMaterial,
         tema: tema || title,
-        componente,
+        componente: resolvedComponente,
         etapa,
         anoSerie,
         tags: tags.split(/[,;]/).map((item) => item.trim()).filter(Boolean),

@@ -20,7 +20,7 @@ export function ComunidadeDocenteCreateGroupModal({
 }: ComunidadeDocenteCreateGroupModalProps) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [disciplina, setDisciplina] = useState<DocenteDisciplina>("Ciências");
+  const [disciplina, setDisciplina] = useState<DocenteDisciplina>("Multidisciplinar");
   const [selectedMembers, setSelectedMembers] = useState<CommunityProfileSearchResult[]>([]);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -28,7 +28,7 @@ export function ComunidadeDocenteCreateGroupModal({
   function reset() {
     setName("");
     setDescription("");
-    setDisciplina("Ciências");
+    setDisciplina("Multidisciplinar");
     setSelectedMembers([]);
     setError("");
     setSubmitting(false);

@@ -16,6 +16,27 @@ export type MarketplacePublishInput = {
   planningPayload?: Record<string, unknown> | null;
 };
 
+export function extractComponenteFromPlanningPayload(
+  payload: Record<string, unknown> | null | undefined,
+): string | undefined {
+  if (!payload) return undefined;
+  const direct = String(payload.componenteCurricular || "").trim();
+  if (direct) return direct;
+  const meta = payload.meta as Record<string, unknown> | undefined;
+  const fromMeta = String(meta?.componente || "").trim();
+  if (fromMeta) return fromMeta;
+  const componente = String(payload.componente || "").trim();
+  return componente || undefined;
+}
+
+function resolvePublishComponente(input: MarketplacePublishInput): string {
+  const explicit = String(input.componente || "").trim();
+  if (explicit) return explicit;
+  const fromPayload = extractComponenteFromPlanningPayload(input.planningPayload);
+  if (fromPayload) return fromPayload;
+  return "Multicomponente";
+}
+
 export type MarketplacePublishResult = {
   id: string;
   title: string;
@@ -83,7 +104,7 @@ export async function publishHtmlToMarketplace(
   body.set("description", description);
   body.set("etapa", input.etapa || "Ensino Fundamental");
   body.set("anoSerie", input.anoSerie || "Geral");
-  body.set("componente", input.componente || "Multicomponente");
+  body.set("componente", resolvePublishComponente(input));
   body.set("tipoMaterial", input.tipoMaterial || "Material de apoio");
   body.set("tema", input.tema || title);
   body.set("tags", (input.tags || ["planify", "comunidade"]).join(", "));

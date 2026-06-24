@@ -16,7 +16,8 @@ export type DocenteDisciplina =
   | "Geografia"
   | "Inglês"
   | "Artes"
-  | "Educação Física";
+  | "Educação Física"
+  | "Multidisciplinar";
 
 export type DocenteAuthor = {
   id: string;
@@ -49,7 +50,10 @@ export type DocenteMaterial = {
   disciplina: DocenteDisciplina;
   anoSerie: string;
   author: DocenteAuthor;
-  coverUrl: string;
+  tipoMaterial: string;
+  componenteRaw?: string;
+  /** @deprecated Use MaterialTypeCover with tipoMaterial instead */
+  coverUrl?: string;
   viewsCount: number;
   likesCount: number;
   likedByMe: boolean;
@@ -60,7 +64,10 @@ export type DocenteMaterial = {
 export type DocenteRecentPublication = {
   id: string;
   title: string;
-  thumbnailUrl: string;
+  tipoMaterial: string;
+  disciplina?: DocenteDisciplina;
+  /** @deprecated Use MaterialTypeCover with tipoMaterial instead */
+  thumbnailUrl?: string;
   authorName: string;
   createdAt: string;
   href?: string;

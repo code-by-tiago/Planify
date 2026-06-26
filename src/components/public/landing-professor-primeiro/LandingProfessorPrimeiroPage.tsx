@@ -7,6 +7,7 @@ import { LandingHero } from "./LandingHero";
 import { LandingHowItWorks } from "./LandingHowItWorks";
 import { LandingResources } from "./LandingResources";
 import { LandingStats } from "./LandingStats";
+import { LandingTeacherProof } from "./LandingTeacherProof";
 import { LandingTools } from "./LandingTools";
 import { LandingTrustBar } from "./LandingTrustBar";
 
@@ -17,6 +18,7 @@ export function LandingProfessorPrimeiroPage() {
       <LandingHero />
       <LandingTrustBar />
       <LandingStats />
+      <LandingTeacherProof />
       <LandingCreateBlock />
       <LandingTools />
       <LandingComparison />

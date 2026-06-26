@@ -158,5 +158,5 @@ export const COMPARISON_ROWS = [
 export const FINAL_BENEFITS = [
   { label: "Pagamento seguro", icon: "lock" as const },
   { label: "Acesso imediato", icon: "spark" as const },
-  { label: "Créditos transparentes", icon: "checkCircle" as const },
+  { label: "Uso ilimitado", icon: "checkCircle" as const },
 ];

@@ -80,10 +80,10 @@ const MATERIAL_STEPS: Partial<Record<PlanifyToolId, string[]>> = {
     "Preparando material para edição...",
   ],
   pei: [
-    "Organizando identificacao e contexto do estudante...",
+    "Organizando identificação e contexto do estudante...",
     "Montando acessibilidade curricular e suportes...",
-    "Estruturando planejamento das acoes e avaliacao...",
-    "Preparando parecer pedagogico individualizado...",
+    "Estruturando planejamento das ações e avaliação...",
+    "Preparando parecer pedagógico individualizado...",
   ],
   "aula-completa": [
     "Montando seu pacote de aula completa...",

@@ -1,6 +1,6 @@
 import { appendPedagogicalGuardrails } from "@/lib/materiais/pedagogical-guardrails";
 import {
-  getPeiCidOption,
+  getPeiCidOptions,
   getPeiDisciplineOption,
   type PeiGenerationRequest,
   type PeiGenerationResult,
@@ -42,14 +42,14 @@ export type PeiEngineResult =
       estrutura: PeiStructuredOutput;
     });
 
-const SYSTEM_INSTRUCTION = appendPedagogicalGuardrails(`Voce e um especialista brasileiro em educacao inclusiva, AEE e elaboracao de Plano Educacional Individualizado (PEI).
-Produza conteudo pedagogico, colaborativo e institucional para o professor regente e o professor do Atendimento Educacional Especializado.
-O CID ou perfil informado e referencia fornecida pela escola/professor; nao diagnostique, nao prescreva tratamento e nao substitua laudo ou avaliacao multiprofissional.
-O PEI deve promover desenvolvimento integral, autonomia, acessibilidade curricular ou enriquecimento para Altas Habilidades/Superdotacao.
-Retorne SOMENTE JSON valido, sem markdown, sem HTML, com linguagem profissional e objetiva.`);
+const SYSTEM_INSTRUCTION = appendPedagogicalGuardrails(`Você é um especialista brasileiro em educação inclusiva, AEE e elaboração de Plano Educacional Individualizado (PEI).
+Produza conteúdo pedagógico, colaborativo e institucional para o professor regente e o professor do Atendimento Educacional Especializado.
+O CID ou perfil informado é referência fornecida pela escola/professor; não diagnostique, não prescreva tratamento e não substitua laudo ou avaliação multiprofissional.
+O PEI deve promover desenvolvimento integral, autonomia, acessibilidade curricular ou enriquecimento para Altas Habilidades/Superdotação.
+Retorne SOMENTE JSON válido, sem markdown, sem HTML, com linguagem profissional e objetiva.`);
 
 const PERIODS_BY_TRIMESTER: Record<PeiTrimestre, string[]> = {
-  "1": ["Fevereiro", "Marco", "Abril"],
+  "1": ["Fevereiro", "Março", "Abril"],
   "2": ["Maio", "Junho", "Julho"],
   "3": ["Agosto", "Setembro", "Outubro/Novembro"],
   todos: ["1º trimestre", "2º trimestre", "3º trimestre"],
@@ -99,9 +99,20 @@ function trimestreLabel(trimestre: PeiTrimestre): string {
   return `${trimestre}º trimestre`;
 }
 
+function resolveCidCodes(payload: PeiGenerationRequest): string[] {
+  const fromList = Array.isArray(payload.cids) ? payload.cids : [];
+  const fromLegacy = payload.cid ? [payload.cid] : [];
+  return uniqueClean([...fromList, ...fromLegacy]).slice(0, 6);
+}
+
+function resolveCidOptions(payload: PeiGenerationRequest) {
+  return getPeiCidOptions(resolveCidCodes(payload));
+}
+
 function normalizeRequest(payload: PeiGenerationRequest): PeiGenerationRequest {
-  const disciplina = cleanText(payload.disciplina || "Lingua Portuguesa", 120);
+  const disciplina = cleanText(payload.disciplina || "Língua Portuguesa", 120);
   const discipline = getPeiDisciplineOption(disciplina);
+  const cidCodes = resolveCidCodes(payload);
   const conteudos = uniqueClean(payload.conteudos, discipline.conteudos).slice(0, 8);
   const habilidades = uniqueClean(
     payload.habilidades,
@@ -110,12 +121,13 @@ function normalizeRequest(payload: PeiGenerationRequest): PeiGenerationRequest {
 
   return {
     ...payload,
-    etapa: cleanText(payload.etapa || "Ensino Medio", 80),
+    etapa: cleanText(payload.etapa || "Ensino Médio", 80),
     anoSerie: cleanText(payload.anoSerie, 80),
     disciplina,
     areaConhecimento:
       cleanText(payload.areaConhecimento, 120) || discipline.area,
-    cid: cleanText(payload.cid, 40),
+    cid: cidCodes[0] ?? "",
+    cids: cidCodes,
     conteudos,
     habilidades,
     trimestre: payload.trimestre || "todos",
@@ -127,8 +139,8 @@ export function validatePeiPayload(payload: PeiGenerationRequest): string | null
     return "Requisicao invalida.";
   }
 
-  if (!cleanText(payload.cid)) {
-    return "Selecione o CID ou perfil educacional do estudante.";
+  if (resolveCidCodes(payload).length === 0) {
+    return "Selecione ao menos um CID ou perfil educacional do estudante.";
   }
 
   if (!cleanText(payload.disciplina)) {
@@ -136,11 +148,11 @@ export function validatePeiPayload(payload: PeiGenerationRequest): string | null
   }
 
   if (!cleanText(payload.anoSerie)) {
-    return "Informe o ano ou serie do estudante.";
+    return "Informe o ano ou série do estudante.";
   }
 
   if (!Array.isArray(payload.conteudos) || payload.conteudos.length === 0) {
-    return "Selecione ao menos um conteudo curricular.";
+    return "Selecione ao menos um conteúdo curricular.";
   }
 
   if (!Array.isArray(payload.habilidades) || payload.habilidades.length === 0) {
@@ -151,42 +163,37 @@ export function validatePeiPayload(payload: PeiGenerationRequest): string | null
 }
 
 function buildFallbackOutput(payload: PeiGenerationRequest): PeiStructuredOutput {
-  const cid = getPeiCidOption(payload.cid);
-  const isEnrichment = cid.codigo === "AHSD";
+  const cidOptions = resolveCidOptions(payload);
+  const cidSummary = cidOptions.map((cid) => cid.label).join("; ");
+  const isEnrichment = cidOptions.some((cid) => cid.codigo === "AHSD");
   const periods = PERIODS_BY_TRIMESTER[payload.trimestre] ?? PERIODS_BY_TRIMESTER.todos;
-  const needs = cleanText(payload.necessidades, 600);
-  const strengths = cleanText(payload.potencialidades, 600);
-  const barriers = cleanText(payload.barreiras, 600);
-  const resources = cleanText(payload.recursos, 500);
+  const observacoes = cleanText(payload.observacoes, 700);
 
   const perfilParts = [
-    `Estudante acompanhado em PEI para garantir acesso ao curriculo de ${payload.disciplina}, considerando ${cid.label}.`,
-    strengths
-      ? `Potencialidades observadas: ${strengths}.`
-      : "O planejamento deve partir das habilidades ja demonstradas, do interesse do estudante e de evidencias coletadas em sala e na Sala de Recursos Multifuncionais.",
-    needs ? `Necessidades educacionais registradas: ${needs}.` : "",
-    barriers ? `Barreiras identificadas: ${barriers}.` : "",
+    `Estudante acompanhado em PEI para garantir acesso ao currículo de ${payload.disciplina}, considerando as referências informadas: ${cidSummary}.`,
+    "O planejamento deve partir das habilidades já demonstradas, dos interesses do estudante e de evidências coletadas em sala e na Sala de Recursos Multifuncionais.",
+    observacoes ? `Observações complementares registradas pelo professor: ${observacoes}.` : "",
   ].filter(Boolean);
 
   const supportBase = [
-    ...cid.suportes,
-    "Mediacao pedagogica pelo professor regente articulada ao AEE",
-    "Fragmentacao de comandos, exemplos modelados e checagem de compreensao",
-    "Registro continuo de avancos, barreiras e ajustes necessarios",
+    ...cidOptions.flatMap((cid) => cid.suportes),
+    "Mediação pedagógica pelo professor regente articulada ao AEE",
+    "Fragmentação de comandos, exemplos modelados e checagem de compreensão",
+    "Registro contínuo de avanços, ajustes necessários e estratégias efetivas",
   ];
 
   const acessibilidade = isEnrichment
     ? [
-        "Enriquecimento curricular por investigacao, projetos autorais e aprofundamento conceitual.",
-        "Flexibilizacao de produto final, permitindo pesquisa, prototipo, apresentacao ou curadoria.",
-        "Metas de autonomia, autoria, colaboracao e socializacao de descobertas.",
-        "Articulacao com AEE/equipe escolar para acompanhamento socioemocional e desafios adequados.",
+        "Enriquecimento curricular por investigação, projetos autorais e aprofundamento conceitual.",
+        "Flexibilização de produto final, permitindo pesquisa, protótipo, apresentação ou curadoria.",
+        "Metas de autonomia, autoria, colaboração e socialização de descobertas.",
+        "Articulação com AEE/equipe escolar para acompanhamento socioemocional e desafios adequados.",
       ]
     : [
-        "Priorizacao dos objetivos essenciais sem retirar o estudante do curriculo comum.",
-        "Adequacao de linguagem, tempo, recursos e forma de resposta conforme barreiras observadas.",
+        "Priorização dos objetivos essenciais sem retirar o estudante do currículo comum.",
+        "Adequação de linguagem, tempo, recursos e forma de resposta conforme demandas pedagógicas identificadas.",
         "Uso de apoio visual, material concreto/digital, modelos e pistas graduadas.",
-        "Avaliacao formativa, processual e multimodal, com criterios flexibilizados quando necessario.",
+        "Avaliação formativa, processual e multimodal, com critérios flexibilizados quando necessário.",
       ];
 
   const curricularRows = payload.conteudos.map((conteudo, index) => {
@@ -195,10 +202,10 @@ function buildFallbackOutput(payload: PeiGenerationRequest): PeiStructuredOutput
       conteudo,
       habilidade,
       objetivo: isEnrichment
-        ? `Aprofundar ${conteudo.toLowerCase()} por investigacao orientada, relacionando a habilidade selecionada a um produto autoral.`
+        ? `Aprofundar ${conteudo.toLowerCase()} por investigação orientada, relacionando a habilidade selecionada a um produto autoral.`
         : `Acessar ${conteudo.toLowerCase()} por meio de objetivos essenciais, com apoio para compreender, praticar e demonstrar a habilidade selecionada.`,
       adaptacao: isEnrichment
-        ? "Propor desafio ampliado, pesquisa guiada, fontes diversificadas e socializacao do produto."
+        ? "Propor desafio ampliado, pesquisa guiada, fontes diversificadas e socialização do produto."
         : "Oferecer comandos curtos, exemplo resolvido, recurso visual/concreto, tempo ampliado e resposta oral, escrita, digital ou por esquema.",
     };
   });
@@ -207,24 +214,23 @@ function buildFallbackOutput(payload: PeiGenerationRequest): PeiStructuredOutput
     periodo,
     metodologia:
       index === 0
-        ? "Acolhimento, sondagem pedagogica funcional, ensino estruturado, modelagem e combinados de rotina."
+        ? "Acolhimento, sondagem pedagógica funcional, ensino estruturado, modelagem e combinados de rotina."
         : index === 1
-          ? "Praticas guiadas em pequenos passos, mediacao por pares, pistas graduadas e retomadas frequentes."
-          : "Aplicacao em situacoes contextualizadas, generalizacao das aprendizagens e autonomia progressiva.",
+          ? "Práticas guiadas em pequenos passos, mediação por pares, pistas graduadas e retomadas frequentes."
+          : "Aplicação em situações contextualizadas, generalização das aprendizagens e autonomia progressiva.",
     recursos:
-      resources ||
-      "Slides ou cartazes visuais, atividades impressas adaptadas, organizadores graficos, tecnologia assistiva quando disponivel e jogos pedagogicos.",
+      "Slides ou cartazes visuais, atividades impressas adaptadas, organizadores gráficos, tecnologia assistiva quando disponível e jogos pedagógicos.",
     avaliacao:
-      "Avaliacao formativa e processual por observacao, producoes, registro de participacao, autoavaliacao mediada e criterios individualizados.",
+      "Avaliação formativa e processual por observação, produções, registro de participação, autoavaliação mediada e critérios individualizados.",
   }));
 
   const student = cleanText(payload.estudanteNome, 120) || "o estudante";
   const parecer = [
-    `No periodo planejado, ${student} devera ser acompanhado por PEI elaborado de forma colaborativa entre professor regente, AEE e equipe escolar.`,
+    `No período planejado, ${student} deverá ser acompanhado por PEI elaborado de forma colaborativa entre professor regente, AEE e equipe escolar.`,
     isEnrichment
-      ? `As acoes propostas priorizam enriquecimento curricular, aprofundamento, autoria e ampliacao de desafios em ${payload.disciplina}.`
-      : `As acoes propostas priorizam acessibilidade curricular, participacao nas atividades comuns e desenvolvimento gradual de autonomia em ${payload.disciplina}.`,
-    `Recomenda-se manter registros sistematicos de progresso, ajustar recursos conforme as evidencias e garantir que as avaliacoes considerem as estrategias previstas neste plano.`,
+      ? `As ações propostas priorizam enriquecimento curricular, aprofundamento, autoria e ampliação de desafios em ${payload.disciplina}.`
+      : `As ações propostas priorizam acessibilidade curricular, participação nas atividades comuns e desenvolvimento gradual de autonomia em ${payload.disciplina}.`,
+    `Recomenda-se manter registros sistemáticos de progresso, ajustar recursos conforme as evidências e garantir que as avaliações considerem as estratégias previstas neste plano.`,
   ].join(" ");
 
   return {
@@ -233,29 +239,29 @@ function buildFallbackOutput(payload: PeiGenerationRequest): PeiStructuredOutput
     acessibilidade,
     objetivos: payload.habilidades.slice(0, 5).map((habilidade) =>
       isEnrichment
-        ? `Ampliar a habilidade "${habilidade}" por meio de investigacao, autoria e socializacao.`
-        : `Desenvolver a habilidade "${habilidade}" com mediacao, recursos acessiveis e progressao por etapas.`,
+        ? `Ampliar a habilidade "${habilidade}" por meio de investigação, autoria e socialização.`
+        : `Desenvolver a habilidade "${habilidade}" com mediação, recursos acessíveis e progressão por etapas.`,
     ),
     curricularRows,
     planejamento,
     articulacao: [
-      "Professor regente e AEE devem revisar o plano periodicamente, analisando evidencias de participacao, aprendizagem e autonomia.",
-      "A Sala de Recursos Multifuncionais deve apoiar recursos, estrategias, comunicacao acessivel e acompanhamento das barreiras.",
-      "Equipe pedagogica, familia e demais profissionais devem ser envolvidos quando suas informacoes contribuirem para o acesso ao curriculo.",
+      "Professor regente e AEE devem revisar o plano periodicamente, analisando evidências de participação, aprendizagem e autonomia.",
+      "A Sala de Recursos Multifuncionais deve apoiar recursos, estratégias, comunicação acessível e acompanhamento dos apoios planejados.",
+      "Equipe pedagógica, família e demais profissionais devem ser envolvidos quando suas informações contribuírem para o acesso ao currículo.",
     ],
     parecer,
   };
 }
 
 function buildPrompt(payload: PeiGenerationRequest): string {
-  const cid = getPeiCidOption(payload.cid);
+  const cidOptions = resolveCidOptions(payload);
   const discipline = getPeiDisciplineOption(payload.disciplina);
   return [
     "Gere os campos de um PEI com base nestes dados.",
-    "Use linguagem institucional, concreta, revisavel pelo professor e adequada ao Brasil.",
-    "Nao invente laudos, historico clinico, BNCC codificada nem informacoes nao fornecidas.",
+    "Use linguagem institucional, concreta, revisável pelo professor e adequada ao Brasil.",
+    "Não invente laudos, histórico clínico, BNCC codificada nem informações não fornecidas.",
     "Inclua acessibilidade curricular ou enriquecimento quando o perfil for AH/SD.",
-    "O parecer deve ter 1 a 3 paragrafos, foco pedagogico e indicar acompanhamento colaborativo.",
+    "O parecer deve ter 1 a 3 parágrafos, foco pedagógico e indicar acompanhamento colaborativo.",
     "",
     JSON.stringify(
       {
@@ -277,17 +283,13 @@ function buildPrompt(payload: PeiGenerationRequest): string {
           habilidades: payload.habilidades,
           trimestre: payload.trimestre,
         },
-        referencia: {
+        referencias: cidOptions.map((cid) => ({
           cid: cid.codigo,
           label: cid.label,
           categoria: cid.categoria,
           suportesSugeridos: cid.suportes,
-        },
+        })),
         contextoPedagogico: {
-          necessidades: payload.necessidades || "",
-          potencialidades: payload.potencialidades || "",
-          barreiras: payload.barreiras || "",
-          recursosDisponiveis: payload.recursos || "",
           observacoes: payload.observacoes || "",
         },
       },
@@ -380,10 +382,11 @@ function renderPeiHtml(
   payload: PeiGenerationRequest,
   output: PeiStructuredOutput,
 ): string {
-  const cid = getPeiCidOption(payload.cid);
+  const cidOptions = resolveCidOptions(payload);
+  const cidSummary = cidOptions.map((cid) => cid.label).join("; ");
+  const cidCategories = uniqueClean(cidOptions.map((cid) => cid.categoria)).join("; ");
   const title = buildPeiTitle(payload);
   const turma = cleanText(payload.turma || payload.className, 120);
-  const periodo = cleanText(payload.periodoRealizacao, 120) || trimestreLabel(payload.trimestre);
 
   const curricularRows = output.curricularRows
     .map(
@@ -428,25 +431,24 @@ function renderPeiHtml(
   <header>
     <p class="pei-eyebrow">Plano Educacional Individualizado</p>
     <h1>${escapeHtml(title)}</h1>
-    <p><strong>Finalidade:</strong> assegurar acesso ao curriculo, desenvolvimento integral, participacao e autonomia do estudante por meio de medidas individualizadas e colaborativas.</p>
+    <p><strong>Finalidade:</strong> assegurar acesso ao currículo, desenvolvimento integral, participação e autonomia do estudante por meio de medidas individualizadas e colaborativas.</p>
   </header>
 
   <section class="pei-note">
-    <strong>Observacao institucional:</strong> O PEI e documento obrigatorio e deve ser elaborado de forma colaborativa pelo professor regente da classe regular, em conjunto com o professor do Atendimento Educacional Especializado, considerando especificidades do estudante, acessibilidade curricular ou enriquecimento para Altas Habilidades/Superdotacao, atividades da Sala de Recursos Multifuncionais e articulacao com os profissionais da escola.
+    <strong>Observação institucional:</strong> O PEI é documento obrigatório e deve ser elaborado de forma colaborativa pelo professor regente da classe regular, em conjunto com o professor do Atendimento Educacional Especializado, considerando especificidades do estudante, acessibilidade curricular ou enriquecimento para Altas Habilidades/Superdotação, atividades da Sala de Recursos Multifuncionais e articulação com os profissionais da escola.
   </section>
 
   <section>
-    <h2>1. Identificacao do estudante</h2>
+    <h2>1. Identificação do estudante</h2>
     <table>
       <tbody>
         ${tableRows([
           ["Nome", cleanText(payload.estudanteNome, 120)],
           ["Data de nascimento", formatDateInput(payload.dataNascimento)],
           ["Etapa", payload.etapa],
-          ["Ano/Serie", payload.anoSerie],
+          ["Ano/Série", payload.anoSerie],
           ["Turma", turma],
           ["Turno", cleanText(payload.turno, 80)],
-          ["Periodo de realizacao", periodo],
           ["Professor(a) regente", cleanText(payload.professorRegente, 120)],
           ["Professor(a) do AEE/SRM", cleanText(payload.professorAee, 120)],
         ])}
@@ -455,23 +457,24 @@ function renderPeiHtml(
   </section>
 
   <section>
-    <h2>2. Referencia pedagogica e perfil funcional</h2>
+    <h2>2. Referência pedagógica e perfil funcional</h2>
     <table>
       <tbody>
         ${tableRows([
-          ["CID/perfil informado", cid.label],
-          ["Categoria", cid.categoria],
-          ["Area do conhecimento", cleanText(payload.areaConhecimento, 120)],
+          ["CID/perfil informado(s)", cidSummary],
+          ["Categoria(s)", cidCategories],
+          ["Área do conhecimento", cleanText(payload.areaConhecimento, 120)],
           ["Componente curricular", payload.disciplina],
+          ["Trimestre(s)", trimestreLabel(payload.trimestre)],
         ])}
       </tbody>
     </table>
     <p>${escapeHtml(output.perfil)}</p>
-    <p><strong>Nota:</strong> o CID/perfil selecionado e uma referencia informada pelo professor/escola para orientar acessibilidade pedagogica. O Planify nao realiza diagnostico.</p>
+    <p><strong>Nota:</strong> o(s) CID/perfil(is) selecionado(s) são referência informada pelo professor/escola para orientar acessibilidade pedagógica. O Planify não realiza diagnóstico.</p>
   </section>
 
   <section>
-    <h2>3. Tipo(s) de suporte(s) para a realizacao das atividades</h2>
+    <h2>3. Tipo(s) de suporte(s) para a realização das atividades</h2>
     ${listHtml(output.suportes)}
   </section>
 
@@ -483,14 +486,14 @@ function renderPeiHtml(
   </section>
 
   <section>
-    <h2>5. Conteudos, habilidades e estrategias</h2>
+    <h2>5. Conteúdos, habilidades e estratégias</h2>
     <table>
       <thead>
         <tr>
-          <th>Unidades tematicas / Conteudos</th>
+          <th>Unidades temáticas / Conteúdos</th>
           <th>Habilidades</th>
           <th>Objetivos individualizados</th>
-          <th>Estrategias e adaptacoes</th>
+          <th>Estratégias e adaptações</th>
         </tr>
       </thead>
       <tbody>${curricularRows}</tbody>
@@ -498,14 +501,14 @@ function renderPeiHtml(
   </section>
 
   <section>
-    <h2>6. Planejamento das acoes</h2>
+    <h2>6. Planejamento das ações</h2>
     <table>
       <thead>
         <tr>
-          <th>Data / periodo</th>
+          <th>Data / período</th>
           <th>Metodologias</th>
           <th>Recursos utilizados</th>
-          <th>Avaliacao</th>
+          <th>Avaliação</th>
         </tr>
       </thead>
       <tbody>${planningRows}</tbody>
@@ -513,18 +516,18 @@ function renderPeiHtml(
   </section>
 
   <section>
-    <h2>7. Articulacao entre professor regente, AEE e equipe escolar</h2>
+    <h2>7. Articulação entre professor regente, AEE e equipe escolar</h2>
     ${listHtml(output.articulacao)}
   </section>
 
   <section>
-    <h2>8. Parecer pedagogico individualizado</h2>
+    <h2>8. Parecer pedagógico individualizado</h2>
     <p>${escapeHtml(output.parecer)}</p>
   </section>
 
   <section>
-    <h2>9. Revisao e acompanhamento</h2>
-    <p>Este PEI deve ser revisado durante o periodo letivo a partir de evidencias de aprendizagem, autonomia, participacao, barreiras observadas e estrategias que demonstraram efetividade.</p>
+    <h2>9. Revisão e acompanhamento</h2>
+    <p>Este PEI deve ser revisado durante o período letivo a partir de evidências de aprendizagem, autonomia, participação e estratégias que demonstraram efetividade.</p>
     <div class="pei-signatures">
       <div class="pei-signature">Professor(a) regente</div>
       <div class="pei-signature">Professor(a) do AEE/SRM</div>
@@ -601,7 +604,7 @@ export async function generatePeiDocument(
       pipeline: "pei-ai",
       qualityScore: assessQuality(output, true),
       alertas: [
-        "Revise o PEI com os profissionais responsaveis antes de anexar ao registro institucional do estudante.",
+        "Revise o PEI com os profissionais responsáveis antes de anexar ao registro institucional do estudante.",
       ],
       usedAI: true,
       estrutura: output,
@@ -616,7 +619,7 @@ export async function generatePeiDocument(
       pipeline: "pei-fallback",
       qualityScore: assessQuality(fallback, false),
       alertas: [
-        "A IA avancada nao respondeu a tempo; o Planify entregou uma versao estruturada e revisavel do PEI.",
+        "A IA avançada não respondeu a tempo; o Planify entregou uma versão estruturada e revisável do PEI.",
       ],
       usedAI: false,
       estrutura: fallback,

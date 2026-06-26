@@ -320,7 +320,7 @@ export const planifyTools: PlanifyTool[] = [
     title: "PEI - Plano Educacional Individualizado",
     shortTitle: "PEI",
     description:
-      "Documento PEI com CID/perfil educacional, conteudos, habilidades, acessibilidade curricular, planejamento das acoes e parecer pedagogico.",
+      "Documento PEI com CID/perfil educacional, conteúdos, habilidades, acessibilidade curricular, planejamento das ações e parecer pedagógico.",
     category: "planejamento",
     href: dashboardToolHref("pei"),
     icon: "clipboard",
@@ -328,7 +328,7 @@ export const planifyTools: PlanifyTool[] = [
     primaryFieldLabel: "Dados do estudante",
     loadingTitle: "Gerando PEI",
     loadingDescription:
-      "Organizando identificacao, acessibilidade curricular, estrategias, avaliacao e parecer.",
+      "Organizando identificação, acessibilidade curricular, estratégias, avaliação e parecer.",
     accent: "from-cyan-300 via-teal-300 to-emerald-300",
   },
   {

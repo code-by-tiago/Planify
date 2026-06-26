@@ -19,7 +19,7 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
 const DAILY_LIMIT_MESSAGE =
-  "Voce usou suas geracoes profundas de hoje. A cota reinicia a meia-noite (horario de Brasilia).";
+  "Você usou suas gerações profundas de hoje. A cota reinicia à meia-noite (horário de Brasília).";
 
 async function handlePost(
   request: NextRequest,
@@ -31,7 +31,7 @@ async function handlePost(
     resolveTipo: () => PEI_GENERATION_TYPE,
     dailyLimitMessage: DAILY_LIMIT_MESSAGE,
     insufficientCreditsMessage:
-      "Voce nao tem creditos suficientes neste ciclo. Aguarde a renovacao mensal ou fale com o suporte se precisar de mais volume.",
+      "Você não tem créditos suficientes neste ciclo. Aguarde a renovação mensal ou fale com o suporte se precisar de mais volume.",
   });
 
   if (!prepared.ok) return prepared.response;
@@ -107,7 +107,7 @@ async function handlePost(
 
     const persistWarning =
       user?.id && !materialId
-        ? "O PEI foi gerado, mas nao foi possivel registra-lo no Progresso BNCC. Tente novamente em instantes."
+        ? "O PEI foi gerado, mas não foi possível registrá-lo no Progresso BNCC. Tente novamente em instantes."
         : null;
 
     return NextResponse.json({

@@ -1,6 +1,6 @@
 /**
- * Plano atual ilimitado: nenhuma ferramenta consome saldo, credito mensal ou cota diaria.
- * A protecao operacional fica no inflight guard contra geracoes paralelas repetidas.
+ * Plano atual ilimitado: nenhuma ferramenta consome saldo, crédito mensal ou cota diária.
+ * A proteção operacional fica no inflight guard contra gerações paralelas repetidas.
  */
 export async function shouldSkipUsageQuotas(params: {
   userId: string;

@@ -37,7 +37,7 @@ export async function requestPeiGeneration(
 
   if (!response.ok || !data?.ok) {
     const error = new Error(
-      data?.message || "Nao foi possivel gerar o PEI.",
+      data?.message || "Não foi possível gerar o PEI.",
     ) as Error & { code?: string; status?: number };
     error.code = data?.code;
     error.status = response.status;

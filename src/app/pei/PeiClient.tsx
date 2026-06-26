@@ -29,6 +29,7 @@ import {
 import { requestPeiGeneration } from "@/lib/pei/pei-client";
 import {
   getPeiContentOptions,
+  getPeiCidOptions,
   getPeiDisciplineOption,
   getPeiSkillOptions,
   PEI_CID_OPTIONS,
@@ -68,6 +69,10 @@ type SelectAddFieldProps = {
   onDraftChange: (value: string) => void;
   onAdd: () => void;
   onRemove: (value: string) => void;
+  manualDraft?: string;
+  manualPlaceholder?: string;
+  onManualDraftChange?: (value: string) => void;
+  onManualAdd?: () => void;
 };
 
 const tool = getPlanifyTool("pei");
@@ -101,6 +106,10 @@ function SelectAddField({
   onDraftChange,
   onAdd,
   onRemove,
+  manualDraft,
+  manualPlaceholder,
+  onManualDraftChange,
+  onManualAdd,
 }: SelectAddFieldProps) {
   return (
     <div>
@@ -130,6 +139,25 @@ function SelectAddField({
           <span className="hidden sm:inline">Adicionar</span>
         </button>
       </div>
+      {onManualDraftChange && onManualAdd ? (
+        <div className="mt-2 flex gap-2">
+          <input
+            value={manualDraft ?? ""}
+            onChange={(event) => onManualDraftChange(event.target.value)}
+            className={HUD_FIELD_CLASS}
+            placeholder={manualPlaceholder}
+          />
+          <button
+            type="button"
+            onClick={onManualAdd}
+            className="pl-hud-btn-secondary inline-flex h-11 shrink-0 items-center gap-2 rounded-xl px-3 text-sm font-bold"
+            title={`Adicionar ${label.toLowerCase()} manualmente`}
+          >
+            <PlanifyIcon name="plus" className="h-4 w-4" />
+            <span className="hidden sm:inline">Manual</span>
+          </button>
+        </div>
+      ) : null}
       {selected.length ? (
         <div className="mt-2 flex flex-wrap gap-2">
           {selected.map((item) => (
@@ -163,12 +191,14 @@ export function PeiClient({
   const [etapa, setEtapa] = useState<EducationStage>("Ensino Médio");
   const [anoSerie, setAnoSerie] = useState("1ª série");
   const [turno, setTurno] = useState("");
-  const [periodoRealizacao, setPeriodoRealizacao] = useState("");
   const [professorRegente, setProfessorRegente] = useState("");
   const [professorAee, setProfessorAee] = useState("");
   const [disciplina, setDisciplina] = useState(initialDiscipline.value);
   const [areaConhecimento, setAreaConhecimento] = useState(initialDiscipline.area);
-  const [cid, setCid] = useState(PEI_CID_OPTIONS[0]?.codigo ?? "F84.0");
+  const [selectedCids, setSelectedCids] = useState<string[]>([
+    PEI_CID_OPTIONS[0]?.codigo ?? "F84.0",
+  ]);
+  const [cidDraft, setCidDraft] = useState(PEI_CID_OPTIONS[0]?.codigo ?? "F84.0");
   const [trimestre, setTrimestre] = useState<PeiTrimestre>("todos");
   const [conteudos, setConteudos] = useState<string[]>(
     initialDiscipline.conteudos.slice(0, 2),
@@ -177,13 +207,10 @@ export function PeiClient({
     initialDiscipline.habilidades.slice(0, 2).map((item) => item.label),
   );
   const [conteudoDraft, setConteudoDraft] = useState(initialDiscipline.conteudos[0] ?? "");
+  const [conteudoManual, setConteudoManual] = useState("");
   const [habilidadeDraft, setHabilidadeDraft] = useState(
     initialDiscipline.habilidades[0]?.label ?? "",
   );
-  const [necessidades, setNecessidades] = useState("");
-  const [potencialidades, setPotencialidades] = useState("");
-  const [barreiras, setBarreiras] = useState("");
-  const [recursos, setRecursos] = useState("");
   const [observacoes, setObservacoes] = useState("");
   const [gerarParecer, setGerarParecer] = useState(true);
   const [resultado, setResultado] = useState<PeiGenerationResult | null>(null);
@@ -202,9 +229,9 @@ export function PeiClient({
     () => getPeiSkillOptions(disciplina).map((item) => item.label),
     [disciplina],
   );
-  const selectedCid = useMemo(
-    () => PEI_CID_OPTIONS.find((option) => option.codigo === cid) ?? PEI_CID_OPTIONS[0],
-    [cid],
+  const selectedCidOptions = useMemo(
+    () => getPeiCidOptions(selectedCids),
+    [selectedCids],
   );
   const exportTitle = useMemo(
     () => buildExportTitle(resultado, disciplina, estudanteNome),
@@ -224,7 +251,19 @@ export function PeiClient({
     setConteudos(discipline.conteudos.slice(0, 2));
     setHabilidades(discipline.habilidades.slice(0, 2).map((item) => item.label));
     setConteudoDraft(discipline.conteudos[0] ?? "");
+    setConteudoManual("");
     setHabilidadeDraft(discipline.habilidades[0]?.label ?? "");
+  }
+
+  function addCid() {
+    setSelectedCids((current) => addUnique(current, cidDraft));
+  }
+
+  function removeCid(codigo: string) {
+    setSelectedCids((current) => {
+      const next = current.filter((item) => item !== codigo);
+      return next.length ? next : current;
+    });
   }
 
   function buildPayload(): PeiGenerationRequest {
@@ -237,19 +276,15 @@ export function PeiClient({
       anoSerie,
       turma: turma.turma ?? null,
       turno: turno.trim() || undefined,
-      periodoRealizacao: periodoRealizacao.trim() || undefined,
       professorRegente: professorRegente.trim() || undefined,
       professorAee: professorAee.trim() || undefined,
       disciplina,
       areaConhecimento,
-      cid,
+      cid: selectedCids[0] ?? "",
+      cids: selectedCids,
       conteudos,
       habilidades,
       trimestre,
-      necessidades: necessidades.trim() || undefined,
-      potencialidades: potencialidades.trim() || undefined,
-      barreiras: barreiras.trim() || undefined,
-      recursos: recursos.trim() || undefined,
       observacoes: observacoes.trim() || undefined,
       gerarParecer,
       idempotencyKey,
@@ -282,11 +317,15 @@ export function PeiClient({
     setCopied(false);
 
     if (!anoSerie.trim()) {
-      setErro("Informe o ano ou serie do estudante.");
+      setErro("Informe o ano ou série do estudante.");
+      return;
+    }
+    if (!selectedCids.length) {
+      setErro("Selecione ao menos um CID ou perfil educacional.");
       return;
     }
     if (!conteudos.length) {
-      setErro("Selecione ao menos um conteudo.");
+      setErro("Selecione ao menos um conteúdo.");
       return;
     }
     if (!habilidades.length) {
@@ -355,7 +394,7 @@ export function PeiClient({
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1800);
     } catch {
-      setErro("Nao foi possivel copiar o parecer.");
+      setErro("Não foi possível copiar o parecer.");
     }
   }
 
@@ -381,7 +420,7 @@ export function PeiClient({
       tool={tool}
       studioMode={studioMode}
       onBack={studioMode ? onStudioClose : () => setModalAberto(false)}
-      backLabel={studioMode ? "Inicio" : "Catalogo"}
+      backLabel={studioMode ? "Início" : "Catálogo"}
       formScrollAttr={studioMode}
       previewScrollAttr={studioMode}
       previewReady={Boolean(resultado)}
@@ -435,7 +474,7 @@ export function PeiClient({
             </div>
             <div>
               <label className={HUD_SECTION_LABEL} htmlFor="pei-ano">
-                Ano / serie
+                Ano / série
               </label>
               <select
                 id="pei-ano"
@@ -499,34 +538,45 @@ export function PeiClient({
           </div>
 
           <div>
-            <label className={HUD_SECTION_LABEL} htmlFor="pei-periodo">
-              Periodo de realizacao
-            </label>
-            <input
-              id="pei-periodo"
-              value={periodoRealizacao}
-              onChange={(event) => setPeriodoRealizacao(event.target.value)}
-              className={HUD_FIELD_CLASS}
-              placeholder="Ex.: fevereiro a novembro de 2026"
-            />
-          </div>
-
-          <div>
             <label className={HUD_SECTION_LABEL} htmlFor="pei-cid">
               CID / perfil educacional
             </label>
-            <select
-              id="pei-cid"
-              value={cid}
-              onChange={(event) => setCid(event.target.value)}
-              className={HUD_FIELD_CLASS}
-            >
-              {PEI_CID_OPTIONS.map((option) => (
-                <option key={option.codigo} value={option.codigo}>
-                  {option.label}
-                </option>
+            <div className="flex gap-2">
+              <select
+                id="pei-cid"
+                value={cidDraft}
+                onChange={(event) => setCidDraft(event.target.value)}
+                className={HUD_FIELD_CLASS}
+              >
+                {PEI_CID_OPTIONS.map((option) => (
+                  <option key={option.codigo} value={option.codigo}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={addCid}
+                className="pl-hud-btn-secondary inline-flex h-11 shrink-0 items-center gap-2 rounded-xl px-3 text-sm font-bold"
+              >
+                <PlanifyIcon name="plus" className="h-4 w-4" />
+                <span className="hidden sm:inline">Adicionar</span>
+              </button>
+            </div>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {selectedCidOptions.map((option) => (
+                <button
+                  type="button"
+                  key={option.codigo}
+                  onClick={() => removeCid(option.codigo)}
+                  className="inline-flex max-w-full items-center gap-1 rounded-full border border-cyan-400/25 bg-white px-3 py-1.5 text-left text-xs font-bold text-slate-700"
+                  title="Remover CID"
+                >
+                  <span className="line-clamp-1">{option.label}</span>
+                  <PlanifyIcon name="close" className="h-3.5 w-3.5 shrink-0" />
+                </button>
               ))}
-            </select>
+            </div>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
@@ -568,12 +618,19 @@ export function PeiClient({
 
           <SelectAddField
             id="pei-conteudos"
-            label="Conteudos"
+            label="Conteúdos"
             options={contentOptions}
             selected={conteudos}
             draft={conteudoDraft}
             onDraftChange={setConteudoDraft}
             onAdd={() => setConteudos((current) => addUnique(current, conteudoDraft))}
+            manualDraft={conteudoManual}
+            manualPlaceholder="Escreva um conteúdo específico"
+            onManualDraftChange={setConteudoManual}
+            onManualAdd={() => {
+              setConteudos((current) => addUnique(current, conteudoManual));
+              setConteudoManual("");
+            }}
             onRemove={(value) =>
               setConteudos((current) => current.filter((item) => item !== value))
             }
@@ -593,65 +650,8 @@ export function PeiClient({
           />
 
           <div>
-            <label className={HUD_SECTION_LABEL} htmlFor="pei-potencialidades">
-              Potencialidades observadas
-            </label>
-            <textarea
-              id="pei-potencialidades"
-              value={potencialidades}
-              onChange={(event) => setPotencialidades(event.target.value)}
-              rows={3}
-              className={HUD_TEXTAREA_CLASS}
-              placeholder="Interesses, formas de participacao, estrategias que funcionam..."
-            />
-          </div>
-
-          <div>
-            <label className={HUD_SECTION_LABEL} htmlFor="pei-necessidades">
-              Necessidades especificas
-            </label>
-            <textarea
-              id="pei-necessidades"
-              value={necessidades}
-              onChange={(event) => setNecessidades(event.target.value)}
-              rows={3}
-              className={HUD_TEXTAREA_CLASS}
-              placeholder="Apoios, comunicacao, tempo, rotina, mediacao..."
-            />
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label className={HUD_SECTION_LABEL} htmlFor="pei-barreiras">
-                Barreiras identificadas
-              </label>
-              <textarea
-                id="pei-barreiras"
-                value={barreiras}
-                onChange={(event) => setBarreiras(event.target.value)}
-                rows={3}
-                className={HUD_TEXTAREA_CLASS}
-                placeholder="Leitura, registro, atencao, socializacao, acesso fisico..."
-              />
-            </div>
-            <div>
-              <label className={HUD_SECTION_LABEL} htmlFor="pei-recursos">
-                Recursos disponiveis
-              </label>
-              <textarea
-                id="pei-recursos"
-                value={recursos}
-                onChange={(event) => setRecursos(event.target.value)}
-                rows={3}
-                className={HUD_TEXTAREA_CLASS}
-                placeholder="SRM, material concreto, tecnologia assistiva, apoio visual..."
-              />
-            </div>
-          </div>
-
-          <div>
             <label className={HUD_SECTION_LABEL} htmlFor="pei-observacoes">
-              Observacoes complementares
+              Observações complementares
             </label>
             <textarea
               id="pei-observacoes"
@@ -659,7 +659,7 @@ export function PeiClient({
               onChange={(event) => setObservacoes(event.target.value)}
               rows={3}
               className={HUD_TEXTAREA_CLASS}
-              placeholder="Contexto da escola, articulacoes, combinados com familia ou equipe..."
+              placeholder="Contexto da escola, articulações, combinados com família ou equipe..."
             />
           </div>
 
@@ -670,7 +670,7 @@ export function PeiClient({
               onChange={(event) => setGerarParecer(event.target.checked)}
               className="h-4 w-4 rounded border-slate-300 text-cyan-600"
             />
-            Gerar parecer pedagogico individualizado
+            Gerar parecer pedagógico individualizado
           </label>
 
           <DailyGenerationsBar tipoMaterial={PEI_GENERATION_TYPE} compact />
@@ -725,7 +725,7 @@ export function PeiClient({
               />
               {showPatienceMessage ? (
                 <p className="text-center text-sm font-semibold text-slate-600">
-                  O PEI pode levar alguns minutos para ficar consistente. Nao feche esta pagina.
+                  O PEI pode levar alguns minutos para ficar consistente. Não feche esta página.
                 </p>
               ) : null}
               <MaterialPreviewSkeleton />
@@ -783,7 +783,7 @@ export function PeiClient({
                         Parecer do aluno
                       </p>
                       <h3 className="mt-1 text-sm font-extrabold text-slate-950">
-                        Parecer pedagogico individualizado
+                        Parecer pedagógico individualizado
                       </h3>
                     </div>
                     <button
@@ -813,10 +813,10 @@ export function PeiClient({
               </h3>
               <div className="mt-4 max-w-md rounded-2xl border border-cyan-400/20 bg-white/80 p-4 text-left">
                 <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                  Referencia atual
+                  Referência atual
                 </p>
                 <p className="mt-2 text-sm font-semibold text-slate-800">
-                  {selectedCid?.label}
+                  {selectedCidOptions.map((option) => option.label).join("; ")}
                 </p>
                 <p className="mt-2 text-sm font-medium text-slate-600">
                   {areaConhecimento} - {disciplina}
@@ -843,7 +843,7 @@ export function PeiClient({
         {!modalAberto ? (
           <section className="pl-hud-glass rounded-2xl p-5 sm:p-6">
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-600">
-              Educacao inclusiva
+              Educação inclusiva
             </p>
             <h1 className="mt-2 text-sm font-semibold tracking-tight text-slate-900 sm:text-base">
               {tool.title}

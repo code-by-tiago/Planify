@@ -18,7 +18,7 @@ export function createGenerationTimeoutError(
     inclusao:
       "A adaptação inclusiva passou do tempo limite. Tente com um texto menor ou aguarde alguns instantes.",
     pei:
-      "O PEI passou do tempo limite. Revise a quantidade de informacoes e tente novamente em instantes.",
+      "O PEI passou do tempo limite. Revise a quantidade de informações e tente novamente em instantes.",
     correcao:
       "A correção passou do tempo limite. Tente com respostas menores ou corrija em lotes menores.",
     "aula-completa":

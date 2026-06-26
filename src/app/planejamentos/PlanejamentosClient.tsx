@@ -54,6 +54,7 @@ import {
   previewMatrizKeyToTabId,
 } from "@/lib/planejamentos/planning-trial-bundle";
 import { PlanningTrialExportBar } from "@/components/planejamentos/PlanningTrialExportBar";
+import { PlanningTrialProtectedZone } from "@/components/planejamentos/PlanningTrialProtectedZone";
 import { buildPlanningEditorHtml } from "@/lib/planejamentos/planning-editor-html";
 import type {
   PlanningAiPayload,
@@ -1905,7 +1906,10 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
             )}
 
             {activePreviewPlanning ? (
-              <div className="mt-7 rounded-[1.75rem] border border-emerald-200/80 bg-emerald-50/80 p-5">
+              <PlanningTrialProtectedZone
+                enabled={trialMode}
+                className="mt-7 rounded-[1.75rem] border border-emerald-200/80 bg-emerald-50/80 p-5"
+              >
                 {typeof qualityScore === "number" ? (
                   <MaterialQualityScoreBar
                     score={qualityScore}
@@ -1984,7 +1988,7 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
                     );
                   })}
                 </div>
-              </div>
+              </PlanningTrialProtectedZone>
             ) : null}
           </div>
           ) : null}
@@ -2129,7 +2133,10 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
               </div>
 
               {activePreviewPlanning ? (
-                <div className="pl-hud-glass rounded-2xl border border-emerald-200/50 p-5 sm:p-6">
+                <PlanningTrialProtectedZone
+                  enabled={trialMode}
+                  className="pl-hud-glass rounded-2xl border border-emerald-200/50 p-5 sm:p-6"
+                >
                   {typeof qualityScore === "number" ? (
                     <MaterialQualityScoreBar
                       score={qualityScore}
@@ -2211,7 +2218,7 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
                       );
                     })}
                   </div>
-                </div>
+                </PlanningTrialProtectedZone>
               ) : null}
             </div>
           ) : null}

@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { PlanifyBrand } from "@/components/pro/PlanifyBrand";
 import { PlanningTrialExportBar } from "@/components/planejamentos/PlanningTrialExportBar";
 import { PlanningTrialPaywallModal } from "@/components/planejamentos/PlanningTrialPaywallModal";
+import { PlanningTrialProtectedZone } from "@/components/planejamentos/PlanningTrialProtectedZone";
 import {
   getActivePlanningTrialTab,
   readPlanningTrialDocument,
@@ -18,7 +19,6 @@ export function PlanningTrialDocumentClient() {
   const [doc, setDoc] = useState<PlanningTrialStoredDocument | null>(null);
   const [activeTabId, setActiveTabId] = useState("anual");
   const [paywallOpen, setPaywallOpen] = useState(false);
-  const articleRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     const stored = readPlanningTrialDocument();
@@ -75,8 +75,8 @@ export function PlanningTrialDocumentClient() {
 
       <div className="mx-auto max-w-6xl px-4 py-6 pb-16 sm:px-6">
         <div className="mb-4 rounded-2xl border border-cyan-100 bg-cyan-50/80 px-4 py-3 text-sm font-medium text-cyan-900">
-          Visualização completa do pacote de teste: anual e trimestres extraídos da
-          mesma matriz. Role a página à vontade — exportações ficam no Planify Pro.
+          Visualização protegida do pacote de teste: anual e trimestres extraídos da
+          mesma matriz. Conteúdo disponível para assinantes exportarem no Planify Pro.
         </div>
 
         {doc.tabs.length > 1 ? (
@@ -108,8 +108,8 @@ export function PlanningTrialDocumentClient() {
           <PlanningTrialExportBar />
         </div>
 
-        <article
-          ref={articleRef}
+        <PlanningTrialProtectedZone
+          as="article"
           className="overflow-x-auto rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-10"
           dangerouslySetInnerHTML={{ __html: activeTab.html }}
         />

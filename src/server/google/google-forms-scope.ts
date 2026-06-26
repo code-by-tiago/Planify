@@ -1,25 +1,6 @@
-import { appendFileSync } from "node:fs";
-import { join } from "node:path";
 import { GOOGLE_FORMS_SCOPE, hasGoogleFormsScope } from "./google-config";
 import { getGoogleTokensForUser, saveGoogleTokensForUser } from "./google-token-store";
 import { refreshGoogleAccessToken } from "./google-oauth";
-
-function agentDebugLog(message: string, data: Record<string, unknown>): void {
-  try {
-    appendFileSync(
-      join(process.cwd(), "debug-a1058c.log"),
-      `${JSON.stringify({
-        sessionId: "a1058c",
-        location: "google-forms-scope.ts",
-        message,
-        data,
-        timestamp: Date.now(),
-      })}\n`,
-    );
-  } catch {
-    // ignore
-  }
-}
 
 export async function tokenInfoHasFormsScope(accessToken: string): Promise<boolean> {
   try {
@@ -72,15 +53,6 @@ export async function resolveFormsScopeGrantedForUser(
   const tokenGranted = accessToken ? await tokenInfoHasFormsScope(accessToken) : false;
   const formsScopeGranted = tokenGranted;
 
-  // #region agent log
-  agentDebugLog("resolveFormsScopeGranted", {
-    hypothesisId: "C",
-    dbGranted,
-    tokenGranted,
-    formsScopeGranted,
-  });
-  // #endregion
-
   if (tokenGranted && !dbGranted && stored) {
     const mergedScopes = [...new Set([...(stored.scopes || []), GOOGLE_FORMS_SCOPE])];
     try {
@@ -105,14 +77,6 @@ export async function assertFormsScopeForExport(
   const stored = await getGoogleTokensForUser(userId);
   const dbGranted = hasGoogleFormsScope(stored?.scopes || []);
   const tokenGranted = await tokenInfoHasFormsScope(accessToken);
-
-  // #region agent log
-  agentDebugLog("assertFormsScopeForExport", {
-    hypothesisId: "C",
-    dbGranted,
-    tokenGranted,
-  });
-  // #endregion
 
   if (!dbGranted && !tokenGranted) {
     throw new Error(

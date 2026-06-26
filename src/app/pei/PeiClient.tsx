@@ -2,7 +2,6 @@
 
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MaterialBnccSkillsPanel } from "@/components/bncc/MaterialBnccSkillsPanel";
-import { TemaCombobox } from "@/components/bncc/TemaCombobox";
 import { CreditsBalancePill } from "@/components/credits/CreditsBalancePill";
 import { DailyGenerationsBar } from "@/components/credits/DailyGenerationsBar";
 import { GenerationCostHint } from "@/components/credits/GenerationCostHint";
@@ -18,7 +17,6 @@ import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
 import { TurmaCombobox } from "@/components/school/TurmaCombobox";
 import { useBnccContentSkillsSuggestion } from "@/hooks/useBnccContentSkillsSuggestion";
 import { useSchoolClasses } from "@/hooks/useSchoolClasses";
-import type { BnccTemaAutocompleteSuggestion } from "@/lib/bncc/bncc-tema-autocomplete";
 import {
   mapSelectedBnccSkillsToPayload,
   splitTopicLines,
@@ -113,7 +111,6 @@ export function PeiClient({
   const [cidDraft, setCidDraft] = useState(PEI_CID_OPTIONS[0]?.codigo ?? "F84.0");
   const [trimestre, setTrimestre] = useState<PeiTrimestre>("todos");
   const [conteudos, setConteudos] = useState("");
-  const [temaBusca, setTemaBusca] = useState("");
   const [observacoes, setObservacoes] = useState("");
   const [gerarParecer, setGerarParecer] = useState(true);
   const [resultado, setResultado] = useState<PeiGenerationResult | null>(null);
@@ -160,7 +157,6 @@ export function PeiClient({
     selectGroup,
     clearGroup,
     clearAll: clearBnccSelection,
-    applyTemaSuggestion,
     reset: resetBncc,
   } = useBnccContentSkillsSuggestion({
     basePayload: bnccBasePayload,
@@ -170,7 +166,7 @@ export function PeiClient({
 
   const yearOptions = useMemo(() => getYearOptions(etapa), [etapa]);
   const conteudosPreenchido = Boolean(conteudos.trim());
-  const bnccTemaReady = Boolean(etapa && anoSerie && disciplina);
+  const bnccReady = Boolean(etapa && anoSerie && disciplina && conteudosPreenchido);
   const selectedCidOptions = useMemo(
     () => getPeiCidOptions(selectedCids),
     [selectedCids],
@@ -194,13 +190,6 @@ export function PeiClient({
     const discipline = getPeiDisciplineOption(next);
     setDisciplina(discipline.value);
     setAreaConhecimento(discipline.area);
-  }
-
-  function handleTemaSuggestionSelect(suggestion: BnccTemaAutocompleteSuggestion) {
-    setConteudos(suggestion.tema);
-    setTemaBusca(suggestion.tema);
-    applyTemaSuggestion(suggestion);
-    setErro("");
   }
 
   function addCid() {
@@ -574,16 +563,6 @@ export function PeiClient({
             </div>
           </div>
 
-          <TemaCombobox
-            label="Buscar tema BNCC"
-            value={temaBusca}
-            onChange={setTemaBusca}
-            onSelectSuggestion={handleTemaSuggestionSelect}
-            etapa={etapa}
-            anoSerie={anoSerie}
-            componente={disciplina}
-          />
-
           <div>
             <label className={HUD_SECTION_LABEL} htmlFor="pei-conteudos">
               Conteúdos
@@ -594,7 +573,7 @@ export function PeiClient({
               onChange={(event) => setConteudos(event.target.value)}
               rows={6}
               spellCheck={false}
-              placeholder="Descreva os conteúdos, temas ou unidades que deseja trabalhar no PEI."
+              placeholder="Descreva os conteúdos ou unidades que deseja trabalhar no PEI."
               className={HUD_SCROLLABLE_TEXTAREA_CLASS}
               aria-describedby="pei-conteudos-hint"
             />
@@ -612,7 +591,8 @@ export function PeiClient({
             groups={bnccGroups}
             selectedSkills={selectedSkills}
             loading={loadingBncc}
-            temaReady={bnccTemaReady && conteudosPreenchido}
+            temaReady={bnccReady}
+            notReadyHint="Preencha etapa, ano/série, disciplina e conteúdos acima para buscar habilidades compatíveis."
             title="Habilidades BNCC por conteúdo"
             description="As sugestões vêm desmarcadas por padrão. Se não concordar com as opções de um conteúdo, use Atualizar habilidades naquele bloco. Selecione as habilidades que entrarão no PEI."
             suggestButtonLabel={loadingBncc ? "Sugerindo BNCC..." : "Sugerir BNCC"}

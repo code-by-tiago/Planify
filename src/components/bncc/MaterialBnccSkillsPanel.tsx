@@ -14,6 +14,7 @@ type MaterialBnccSkillsPanelProps = {
   description?: string;
   suggestButtonLabel?: string;
   emptyStateHint?: string;
+  notReadyHint?: string;
   onSuggest: () => void;
   onToggleSkill: (skill: BnccSkillOption) => void;
   onSelectGroup: (group: BnccSkillGroup) => void;
@@ -56,6 +57,7 @@ export function MaterialBnccSkillsPanel({
   description = "Selecione as habilidades que este material deve cobrir. Elas entram no seu Progresso BNCC e servem como referência de alinhamento na geração — o conteúdo continua centrado no tema e nos conteúdos que você definiu. Sem seleção, o sistema estima automaticamente pelo tema.",
   suggestButtonLabel,
   emptyStateHint,
+  notReadyHint,
   onSuggest,
   onToggleSkill,
   onSelectGroup,
@@ -133,7 +135,8 @@ export function MaterialBnccSkillsPanel({
 
         {!temaReady ? (
           <p className="mt-3 text-xs font-semibold text-amber-800">
-            Preencha tema, disciplina e ano/série acima para buscar habilidades compatíveis.
+            {notReadyHint ||
+              "Preencha tema, disciplina e ano/série acima para buscar habilidades compatíveis."}
           </p>
         ) : null}
       </div>

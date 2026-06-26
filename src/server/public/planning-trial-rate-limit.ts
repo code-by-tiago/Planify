@@ -58,6 +58,31 @@ async function readPersistedUsage(
 
   if (error) {
     console.error("[planning-trial] rate limit read failed:", error);
+    if (process.env.NODE_ENV === "production") {
+      return Number.MAX_SAFE_INTEGER;
+    }
+    return null;
+  }
+
+  return parseUsageTimestamp(data);
+}
+
+async function tryPersistedConsume(
+  ip: string | null,
+  fingerprint: string,
+): Promise<number | null> {
+  const supabase = db();
+  if (!supabase) {
+    return null;
+  }
+
+  const { data, error } = await supabase.rpc("planify_try_consume_planning_trial_usage", {
+    p_ip: ip,
+    p_fingerprint: fingerprint,
+  });
+
+  if (error) {
+    console.error("[planning-trial] atomic consume failed:", error);
     return null;
   }
 
@@ -168,6 +193,33 @@ export async function checkPlanningTrialRateLimit(
   }
 
   return { limited: false, fingerprint };
+}
+
+export async function tryConsumePlanningTrialUsage(
+  request: NextRequest,
+  fingerprint: string,
+): Promise<{ consumed: boolean; usedAt: number }> {
+  const ip = getClientIp(request);
+  const memoryUsedAt = readMemoryUsage(request, fingerprint, ip);
+
+  if (memoryUsedAt > 0) {
+    return { consumed: false, usedAt: memoryUsedAt };
+  }
+
+  const persistedUsedAt = await tryPersistedConsume(ip, fingerprint);
+
+  if (persistedUsedAt === 0) {
+    return { consumed: false, usedAt: 0 };
+  }
+
+  if (persistedUsedAt === null) {
+    const now = Date.now();
+    writeMemoryUsage(ip, fingerprint, now);
+    return { consumed: true, usedAt: now };
+  }
+
+  writeMemoryUsage(ip, fingerprint, persistedUsedAt);
+  return { consumed: true, usedAt: persistedUsedAt };
 }
 
 export async function markPlanningTrialUsage(

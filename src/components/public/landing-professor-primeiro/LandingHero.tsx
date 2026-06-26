@@ -34,11 +34,11 @@ export function LandingHero() {
           </p>
 
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
-            <Link href="/planos" className={ppBtnPrimary}>
-              Criar meu planejamento BNCC
+            <Link href="/testar-planejamento" className={ppBtnPrimary}>
+              Testar planejamento grátis
             </Link>
-            <Link href="/#recursos" className={ppBtnSecondary}>
-              Ver como funciona
+            <Link href="/planos" className={ppBtnSecondary}>
+              Ver planos
             </Link>
           </div>
         </div>

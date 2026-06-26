@@ -48,7 +48,7 @@ import {
   getPlanningTrialBnccSuggestUrl,
   requestPlanningTrialGeneration,
 } from "@/lib/planejamentos/planning-trial-client";
-import { savePlanningTrialDocument, readPlanningTrialDocument } from "@/lib/planejamentos/planning-trial-storage";
+import { savePlanningTrialDocument, readPlanningTrialDocument, clearPlanningTrialDocument } from "@/lib/planejamentos/planning-trial-storage";
 import {
   buildPlanningTrialStoredDocument,
   previewMatrizKeyToTabId,
@@ -74,6 +74,7 @@ import {
 import { useBnccEducationOptions } from "@/hooks/useBnccEducationOptions";
 import type { MaterialEducationFields } from "@/lib/educacao/education-options";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { splitTopicLines } from "@/lib/bncc/split-topic-lines";
 import { TemaCombobox } from "@/components/bncc/TemaCombobox";
 import type { BnccTemaAutocompleteSuggestion } from "@/lib/bncc/bncc-tema-autocomplete";
@@ -457,13 +458,37 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
 
   useEffect(() => {
     if (!trialMode) return;
-    const docScrollable =
-      document.documentElement.scrollHeight > document.documentElement.clientHeight;
-    const trappedPane = document.querySelector(".planify-ui3.overflow-hidden");
-    // #region agent log
-    fetch('http://127.0.0.1:7718/ingest/9ac33552-969d-48be-9089-3a3b10571400',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a1058c'},body:JSON.stringify({sessionId:'a1058c',location:'PlanejamentosClient.tsx:scroll',message:'trial form scroll metrics',data:{docScrollable,hasTrappedPane:Boolean(trappedPane),scrollHeight:document.documentElement.scrollHeight,clientHeight:document.documentElement.clientHeight},timestamp:Date.now(),hypothesisId:'B',runId:'post-fix'})}).catch(()=>{});
-    // #endregion
-  }, [trialMode, wizardStep]);
+    const stored = readPlanningTrialDocument();
+    if (!stored?.planning) return;
+
+    setGeneratedPlanning(stored.planning as GeneratedPlanning);
+    if (stored.trimestralPlans) {
+      setGeneratedTrimestralPlans(stored.trimestralPlans);
+    }
+    setForm((current) => ({
+      ...current,
+      escola: stored.form.escola,
+      professor: stored.form.professor,
+      etapa: stored.form.etapa,
+      anoSerie: stored.form.anoSerie,
+      areaConhecimento: stored.form.areaConhecimento,
+      componenteCurricular: stored.form.componenteCurricular,
+      cargaHoraria: stored.form.cargaHoraria,
+      tipoPlanejamento: "anual",
+      pacoteTrimestralAnual: "todos",
+      conteudos: current.conteudos,
+      objetivos: current.objetivos,
+      observacoes: current.observacoes,
+      trimestre: current.trimestre,
+    }));
+    if (typeof stored.qualityScore === "number") {
+      setQualityScore(stored.qualityScore);
+    }
+    if (stored.qualityIssues?.length) {
+      setQualityIssues(stored.qualityIssues);
+    }
+    setWizardStep(3);
+  }, [trialMode]);
 
   useEffect(() => {
     const prefill = readPlanejamentoPrefill();
@@ -657,7 +682,14 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
   }
 
   function clearAll() {
-    setForm(initialForm);
+    if (trialMode) {
+      clearPlanningTrialDocument();
+    }
+    setForm(
+      trialMode
+        ? { ...initialForm, tipoPlanejamento: "anual", pacoteTrimestralAnual: "todos" }
+        : initialForm,
+    );
     setGroups([]);
     setSelectedSkills([]);
     setContentRefreshOffsets({});
@@ -1071,7 +1103,7 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
 
     try {
       const turma = school.turmaPayload;
-      if (turma.className) {
+      if (!trialMode && turma.className) {
         await school.rememberPersonalClass(turma.className);
       }
 
@@ -1216,8 +1248,17 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
       dispatchCreditsChangedIfNeeded(err);
       const formatted = formatGenerationError(err);
       setError(formatted.message);
-      setErrorCta(formatted.cta ?? null);
-      setErrorRetryable(formatted.retryable);
+      if (trialMode && formatted.code === "trial_limit_reached") {
+        setErrorCta(
+          <Link href="/planos" className="font-bold underline">
+            Assinar Planify Pro
+          </Link>,
+        );
+        setErrorRetryable(false);
+      } else {
+        setErrorCta(formatted.cta ?? null);
+        setErrorRetryable(formatted.retryable);
+      }
       setStatus("Erro ao gerar planejamento");
     } finally {
       setLoadingPlan(false);
@@ -1380,11 +1421,30 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
 
         {trialMode && trialLimited && !generatedPlanning ? (
           <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm font-medium text-amber-900">
-            Você já testou o planejamento grátis neste dispositivo.{" "}
-            <a href="/planos" className="font-bold underline">
+            {readPlanningTrialDocument() ? (
+              <>
+                Seu teste gratuito já foi usado, mas o documento ainda está disponível.{" "}
+                <Link href="/testar-planejamento/documento" className="font-bold underline">
+                  Continuar visualizando
+                </Link>
+                {" · "}
+              </>
+            ) : (
+              <>Você já testou o planejamento grátis neste dispositivo. </>
+            )}
+            <Link href="/planos" className="font-bold underline">
               Assine o Planify Pro
-            </a>{" "}
+            </Link>{" "}
             para gerar, exportar e salvar sem limites.
+          </div>
+        ) : null}
+
+        {trialMode && generatedPlanning ? (
+          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-4 text-sm font-medium text-emerald-900">
+            Pacote de teste pronto (anual + trimestres).{" "}
+            <Link href="/testar-planejamento/documento" className="font-bold underline">
+              Ver documentos completos
+            </Link>
           </div>
         ) : null}
 
@@ -1408,12 +1468,14 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
               Escolha o tipo
             </p>
             <h2 className="mt-2 text-sm font-semibold tracking-tight text-slate-900 sm:text-base">
-              Planejamento anual ou trimestral
+              {trialMode
+                ? "Planejamento anual com trimestres coerentes"
+                : "Planejamento anual ou trimestral"}
             </h2>
             <p className="mt-1.5 max-w-2xl text-xs leading-snug text-slate-500">
-              Informe os conteúdos, deixe a IA montar a matriz BNCC e exporte ao
-              Google Docs com os modelos oficiais. O trimestral usa a mesma base do
-              anual — sem retrabalho.
+              {trialMode
+                ? "Uma geração de teste inclui o anual e os três trimestres extraídos da mesma matriz BNCC."
+                : "Informe os conteúdos, deixe a IA montar a matriz BNCC e exporte ao Google Docs com os modelos oficiais. O trimestral usa a mesma base do anual — sem retrabalho."}
             </p>
             <div className="mt-5 grid gap-3 sm:grid-cols-2">
               <button
@@ -1542,6 +1604,7 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
                 <span className="text-sm font-bold text-slate-500">Carga horária</span>
                 <input value={form.cargaHoraria} onChange={(event) => updateField("cargaHoraria", event.target.value)} placeholder="Ex.: 80 períodos" className={HUD_FIELD_CLASS} />
               </label>
+              {!trialMode ? (
               <label className="grid gap-2">
                 <span className="text-sm font-bold text-slate-500">Tipo</span>
                 <select value={form.tipoPlanejamento} onChange={(event) => updateField("tipoPlanejamento", event.target.value as TipoPlanejamento)} className={HUD_FIELD_CLASS}>
@@ -1549,7 +1612,8 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
                   <option value="trimestral">Trimestral</option>
                 </select>
               </label>
-              {form.tipoPlanejamento === "trimestral" ? (
+              ) : null}
+              {!trialMode && form.tipoPlanejamento === "trimestral" ? (
                 <label className="grid gap-2">
                   <span className="text-sm font-bold text-slate-500">Trimestre</span>
                   <select value={form.trimestre} onChange={(event) => updateField("trimestre", event.target.value)} className={HUD_FIELD_CLASS}>
@@ -1561,7 +1625,15 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
               ) : null}
             </div>
 
-            {form.tipoPlanejamento === "anual" ? (
+            {trialMode ? (
+              <div className="relative z-10 mt-6 rounded-2xl border border-cyan-400/20 bg-cyan-50/40 px-5 py-4">
+                <p className="text-sm font-black text-slate-950">Pacote incluso no teste</p>
+                <p className="mt-1 text-sm font-medium leading-6 text-slate-600">
+                  Planejamento anual + 1º, 2º e 3º trimestres extraídos da mesma matriz — mesma
+                  coerência da ferramenta completa.
+                </p>
+              </div>
+            ) : form.tipoPlanejamento === "anual" ? (
               <fieldset className="relative z-10 mt-6 rounded-2xl border border-cyan-400/20 bg-cyan-50/40 p-5">
                 <legend className="px-1 text-sm font-black text-slate-950">
                   Extrair trimestres do anual
@@ -1601,7 +1673,7 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
               </p>
             )}
 
-            {wizardStep >= 2 ? (
+            {!trialMode && wizardStep >= 2 ? (
             <div className="mt-8 rounded-2xl border border-cyan-400/20 bg-white/70 p-5">
               <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-cyan-600">
                 Modelo oficial
@@ -1737,7 +1809,7 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
                 {loadingPlan ? "Gerando com IA..." : "2. Gerar planejamento com IA"}
               </button>
               <button type="button" onClick={sendToEditor} disabled={!generatedPlanning} className="pl-hud-btn-secondary rounded-xl px-5 py-3.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50">
-                Editar no editor
+                {trialMode ? "Ver documento completo" : "Editar no editor"}
               </button>
             </div>
 

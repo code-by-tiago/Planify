@@ -16,6 +16,9 @@ export function PlanningTrialPaywallModal({
   useEffect(() => {
     if (!open) return;
 
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
         onClose();
@@ -23,7 +26,10 @@ export function PlanningTrialPaywallModal({
     }
 
     window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
   }, [open, onClose]);
 
   if (!open) return null;
@@ -62,8 +68,8 @@ export function PlanningTrialPaywallModal({
           Seu planejamento está pronto!
         </h2>
         <p className="mt-3 text-sm font-medium leading-7 text-slate-600">
-          Para baixar em DOCX, editar, salvar no histórico e exportar, assine o
-          Planify Pro.
+          Para baixar em DOCX, editar, salvar no histórico e exportar para Google
+          Docs, assine o Planify Pro.
         </p>
 
         <div className="mt-8 grid gap-3">
@@ -71,17 +77,11 @@ export function PlanningTrialPaywallModal({
             href="/api/stripe/checkout?plan=professor-monthly"
             className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 px-5 py-3.5 text-center text-sm font-bold text-white shadow-sm transition hover:brightness-105"
           >
-            Assinar agora
-          </Link>
-          <Link
-            href="/api/stripe/checkout?plan=professor-monthly"
-            className="inline-flex items-center justify-center rounded-xl border border-cyan-200 bg-cyan-50 px-5 py-3.5 text-center text-sm font-bold text-cyan-900 transition hover:bg-cyan-100"
-          >
-            Desbloquear o DOCX por apenas R$ 24,90
+            Assinar Planify Pro — R$ 24,90/mês
           </Link>
           <Link
             href="/planos"
-            className="text-center text-xs font-semibold text-slate-500 underline-offset-2 hover:underline"
+            className="inline-flex items-center justify-center rounded-xl border border-cyan-200 bg-cyan-50 px-5 py-3.5 text-center text-sm font-bold text-cyan-900 transition hover:bg-cyan-100"
           >
             Ver todos os planos
           </Link>

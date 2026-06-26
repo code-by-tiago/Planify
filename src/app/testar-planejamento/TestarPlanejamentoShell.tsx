@@ -3,13 +3,21 @@
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { PlanifyBrand } from "@/components/pro/PlanifyBrand";
+import { MaterialPreviewSkeleton } from "@/components/materiais/MaterialPreviewSkeleton";
 
 const PlanejamentosClient = dynamic(
   () =>
     import("@/app/planejamentos/PlanejamentosClient").then(
       (module) => module.PlanejamentosClient,
     ),
-  { ssr: false },
+  {
+    ssr: false,
+    loading: () => (
+      <div className="mx-auto max-w-7xl px-4 py-8">
+        <MaterialPreviewSkeleton />
+      </div>
+    ),
+  },
 );
 
 export function TestarPlanejamentoShell() {

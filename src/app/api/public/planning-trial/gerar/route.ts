@@ -3,11 +3,12 @@ import { UnifiedQualityGateError } from "@/lib/materiais/unified-quality-gate";
 import { generatePlanningWithAI } from "@/server/planejamentos/planning-ai-service";
 import { validatePlanningPayload } from "@/server/planejamentos/planning-validation";
 import type { PlanningAiPayload } from "@/server/planejamentos/planning-ai-service";
+import { isPlanningTrialRequestOriginAllowed } from "@/server/public/planning-trial-origin";
 import {
   applyPlanningTrialUsageCookies,
   checkPlanningTrialRateLimit,
-  markPlanningTrialUsage,
   resolvePlanningTrialFingerprint,
+  tryConsumePlanningTrialUsage,
 } from "@/server/public/planning-trial-rate-limit";
 
 export const runtime = "nodejs";
@@ -26,6 +27,16 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  if (!isPlanningTrialRequestOriginAllowed(request)) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: { message: "Origem da requisição não permitida." },
+      },
+      { status: 403 },
+    );
+  }
+
   const rateState = await checkPlanningTrialRateLimit(request);
 
   if (rateState.limited) {
@@ -95,12 +106,37 @@ export async function POST(request: NextRequest) {
   }
 
   const fingerprint = resolvePlanningTrialFingerprint(request);
-  let reservedAt: number | null = null;
 
   try {
-    reservedAt = await markPlanningTrialUsage(request, fingerprint);
-
     const result = await generatePlanningWithAI(trialPayload, { userId: null });
+
+    if (!result?.planejamento) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            message: "Não foi possível gerar o planejamento de teste. Tente novamente.",
+          },
+          retryable: true,
+        },
+        { status: 500 },
+      );
+    }
+
+    const consume = await tryConsumePlanningTrialUsage(request, fingerprint);
+
+    if (!consume.consumed) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: "trial_limit_reached",
+            message: "Você já testou o planejamento grátis neste dispositivo.",
+          },
+        },
+        { status: 429 },
+      );
+    }
 
     const response = NextResponse.json({
       ...result,
@@ -109,11 +145,11 @@ export async function POST(request: NextRequest) {
       persistWarning: null,
     });
 
-    applyPlanningTrialUsageCookies(request, response, fingerprint, reservedAt);
+    applyPlanningTrialUsageCookies(request, response, fingerprint, consume.usedAt);
     return response;
   } catch (error) {
     if (error instanceof UnifiedQualityGateError) {
-      const response = NextResponse.json(
+      return NextResponse.json(
         {
           success: false,
           code: "quality_gate_failed",
@@ -123,34 +159,21 @@ export async function POST(request: NextRequest) {
           },
           qualityScore: error.qualityScore,
           qualityIssues: error.qualityIssues,
+          retryable: true,
         },
         { status: 422 },
       );
-
-      if (reservedAt !== null) {
-        applyPlanningTrialUsageCookies(request, response, fingerprint, reservedAt);
-      }
-
-      return response;
     }
 
-    const response = NextResponse.json(
+    return NextResponse.json(
       {
         success: false,
         error: {
-          message:
-            error instanceof Error
-              ? error.message
-              : "Não foi possível gerar o planejamento de teste.",
+          message: "Não foi possível gerar o planejamento de teste. Tente novamente em instantes.",
         },
+        retryable: true,
       },
       { status: 500 },
     );
-
-    if (reservedAt !== null) {
-      applyPlanningTrialUsageCookies(request, response, fingerprint, reservedAt);
-    }
-
-    return response;
   }
 }

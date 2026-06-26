@@ -18,6 +18,7 @@ export type GenerationErrorCode =
   | "timeout"
   | "server_error"
   | "quality_gate_failed"
+  | "trial_limit_reached"
   | "ai_unavailable"
   | "ai_billing";
 
@@ -78,6 +79,15 @@ function isOfflineError(error: unknown): boolean {
 export function formatGenerationError(error: unknown): FormattedGenerationError {
   const code = extractErrorCode(error);
   const status = extractStatus(error);
+
+  if (code === "trial_limit_reached" || (status === 429 && code === "trial_limit_reached")) {
+    return {
+      message:
+        "Você já testou o planejamento grátis neste dispositivo. Assine o Planify Pro para gerar sem limites.",
+      code: "trial_limit_reached",
+      retryable: false,
+    };
+  }
 
   if (code === "daily_limit_reached") {
     return {

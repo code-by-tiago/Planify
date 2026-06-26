@@ -4,6 +4,7 @@ import type { GeneratedPlanningHtml } from "@/lib/planejamentos/planning-editor-
 import type { TrimestralPlanningLike } from "@/lib/planejamentos/planning-trimestral-from-annual";
 
 export const PLANNING_TRIAL_STORAGE_KEY = "planify:planning-trial:document";
+const LEGACY_SESSION_KEY = PLANNING_TRIAL_STORAGE_KEY;
 
 export type PlanningTrialBundleTab = {
   id: string;
@@ -84,7 +85,7 @@ function normalizePlanningTrialDocument(
       componenteCurricular: value.form?.componenteCurricular || "",
       cargaHoraria: value.form?.cargaHoraria || "",
       tipoPlanejamento: "anual",
-      pacoteTrimestralAnual: value.form?.pacoteTrimestralAnual || "nenhum",
+      pacoteTrimestralAnual: value.form?.pacoteTrimestralAnual || "todos",
     };
 
     return {
@@ -108,16 +109,43 @@ function normalizePlanningTrialDocument(
   return null;
 }
 
+function readStoredRaw(): string | null {
+  if (typeof window === "undefined") return null;
+
+  const fromLocal = localStorage.getItem(PLANNING_TRIAL_STORAGE_KEY);
+  if (fromLocal) return fromLocal;
+
+  const fromSession = sessionStorage.getItem(LEGACY_SESSION_KEY);
+  if (!fromSession) return null;
+
+  try {
+    localStorage.setItem(PLANNING_TRIAL_STORAGE_KEY, fromSession);
+    sessionStorage.removeItem(LEGACY_SESSION_KEY);
+  } catch {
+    return fromSession;
+  }
+
+  return fromSession;
+}
+
 export function savePlanningTrialDocument(doc: PlanningTrialStoredDocument): void {
   if (typeof window === "undefined") return;
-  sessionStorage.setItem(PLANNING_TRIAL_STORAGE_KEY, JSON.stringify(doc));
+
+  try {
+    localStorage.setItem(PLANNING_TRIAL_STORAGE_KEY, JSON.stringify(doc));
+    sessionStorage.removeItem(LEGACY_SESSION_KEY);
+  } catch {
+    throw new Error(
+      "Não foi possível salvar o documento de teste neste navegador. Libere espaço ou tente outro dispositivo.",
+    );
+  }
 }
 
 export function readPlanningTrialDocument(): PlanningTrialStoredDocument | null {
   if (typeof window === "undefined") return null;
 
   try {
-    const raw = sessionStorage.getItem(PLANNING_TRIAL_STORAGE_KEY);
+    const raw = readStoredRaw();
     if (!raw) return null;
     return normalizePlanningTrialDocument(JSON.parse(raw));
   } catch {
@@ -127,7 +155,8 @@ export function readPlanningTrialDocument(): PlanningTrialStoredDocument | null 
 
 export function clearPlanningTrialDocument(): void {
   if (typeof window === "undefined") return;
-  sessionStorage.removeItem(PLANNING_TRIAL_STORAGE_KEY);
+  localStorage.removeItem(PLANNING_TRIAL_STORAGE_KEY);
+  sessionStorage.removeItem(LEGACY_SESSION_KEY);
 }
 
 export function getActivePlanningTrialTab(

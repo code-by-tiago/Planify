@@ -23,28 +23,12 @@ export function PlanningTrialDocumentClient() {
   useEffect(() => {
     const stored = readPlanningTrialDocument();
     if (!stored) {
-      router.replace("/testar-planejamento");
+      router.replace("/testar-planejamento?missing=document");
       return;
     }
     setDoc(stored);
     setActiveTabId(stored.activeTabId || stored.tabs[0]?.id || "anual");
   }, [router]);
-
-  useEffect(() => {
-    if (!doc) return;
-    const article = articleRef.current;
-    const docScrollable =
-      document.documentElement.scrollHeight > document.documentElement.clientHeight;
-    const articleOverflow = article
-      ? window.getComputedStyle(article).overflowY
-      : "missing";
-    const articleMaxHeight = article
-      ? window.getComputedStyle(article).maxHeight
-      : "missing";
-    // #region agent log
-    fetch('http://127.0.0.1:7718/ingest/9ac33552-969d-48be-9089-3a3b10571400',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a1058c'},body:JSON.stringify({sessionId:'a1058c',location:'PlanningTrialDocumentClient.tsx:scroll',message:'trial document scroll metrics',data:{docScrollable,articleOverflow,articleMaxHeight,scrollHeight:document.documentElement.scrollHeight,clientHeight:document.documentElement.clientHeight,articleScrollHeight:article?.scrollHeight??0},timestamp:Date.now(),hypothesisId:'A',runId:'post-fix'})}).catch(()=>{});
-    // #endregion
-  }, [doc, activeTabId]);
 
   const activeTab = useMemo(() => {
     if (!doc) return null;

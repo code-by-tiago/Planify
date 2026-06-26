@@ -34,6 +34,7 @@ export function PlanningTrialExportBar({
               onClick={() => setPaywallOpen(true)}
               className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-2 text-[11px] font-bold text-slate-600 transition hover:bg-white hover:text-cyan-800"
               title="Disponível no Planify Pro"
+              aria-label={`${action.label} — disponível no Planify Pro`}
             >
               <PlanifyIcon name={action.icon} className="h-4 w-4" />
               <span className="hidden sm:inline">{action.label}</span>

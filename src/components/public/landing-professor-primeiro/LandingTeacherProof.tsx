@@ -4,9 +4,9 @@ import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { ppBtnSecondary, ppEyebrow } from "./theme";
 
 const proofHighlights = [
-  "Resultados mais bem organizados",
-  "Criação com menos retrabalho",
-  "Revisão final sempre com o professor",
+  "Atividades organizadas no painel Planify",
+  "Material pronto para projetar na lousa ou imprimir",
+  "Professor no controle da revisão antes da aula",
 ] as const;
 
 export function LandingTeacherProof() {
@@ -17,13 +17,14 @@ export function LandingTeacherProof() {
     >
       <div className="mx-auto max-w-7xl">
         <div className="mx-auto max-w-2xl text-center">
-          <p className={ppEyebrow}>Feedback de professora</p>
+          <p className={ppEyebrow}>Prova real em sala</p>
           <h2 className="mt-3 font-[family-name:var(--font-display)] text-3xl font-extrabold text-slate-900 sm:text-4xl">
-            Ferramentas que ajudam o professor a entregar melhor, mais rápido.
+            Do painel à lousa: material que o professor realmente usa com a turma.
           </h2>
           <p className="mt-4 text-base font-medium leading-7 text-slate-600">
-            A experiência da professora Helena Lopes reforça o foco do Planify: transformar ideias
-            em materiais claros, revisáveis e prontos para adaptar à realidade da turma.
+            A professora Helena Lopes cria atividades de Português no Planify, revisa no editor e
+            leva o conteúdo para a lousa digital — com a mesma clareza pedagógica que a plataforma
+            promete desde o planejamento.
           </p>
         </div>
 
@@ -31,17 +32,18 @@ export function LandingTeacherProof() {
           <div className="relative min-h-[360px] overflow-hidden rounded-3xl border border-slate-200 bg-slate-100 shadow-sm sm:min-h-[440px]">
             <Image
               src="/depoimentos/helena-lopes.jpg"
-              alt="Professora Helena Lopes com materiais pedagógicos"
+              alt="Professora Helena Lopes em sala de aula apresentando atividades de Português geradas no Planify em lousa digital"
               fill
               sizes="(min-width: 1024px) 52vw, 100vw"
-              className="object-cover object-[50%_44%]"
+              className="object-cover object-[42%_38%]"
+              priority={false}
             />
             <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950/82 via-slate-950/38 to-transparent p-6 pt-20 text-white">
               <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-cyan-100">
-                Helena Lopes
+                Helena Lopes · Professora de Português
               </p>
               <p className="mt-2 max-w-md text-2xl font-extrabold leading-tight">
-                Professora usando IA para ganhar tempo sem abrir mão da curadoria pedagógica.
+                Atividades de Português prontas para conduzir a aula na lousa.
               </p>
             </div>
           </div>
@@ -50,21 +52,21 @@ export function LandingTeacherProof() {
             <div>
               <span className="inline-flex items-center gap-2 rounded-full border border-cyan-100 bg-cyan-50 px-3 py-1.5 text-xs font-extrabold uppercase tracking-[0.16em] text-cyan-800">
                 <PlanifyIcon name="checkCircle" className="h-3.5 w-3.5" />
-                Prova social
+                Uso real
               </span>
 
               <h3 className="mt-6 font-[family-name:var(--font-display)] text-2xl font-extrabold leading-tight text-slate-900 sm:text-3xl">
                 Helena Lopes
               </h3>
-              <p className="mt-2 text-sm font-bold text-cyan-700">Professora</p>
+              <p className="mt-2 text-sm font-bold text-cyan-700">Professora de Português</p>
 
               <div className="mt-8 border-l-4 border-cyan-400 bg-cyan-50/70 py-4 pl-5 pr-4">
                 <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-cyan-800">
-                  Síntese do feedback
+                  Síntese do uso em sala
                 </p>
                 <p className="mt-3 text-xl font-extrabold leading-8 text-slate-900">
-                  O Planify acelera a criação, organiza o raciocínio didático e entrega um material
-                  que o professor consegue revisar, adaptar e usar com confiança.
+                  O Planify organiza as atividades no painel, a professora revisa com segurança e
+                  o material segue direto para a lousa — sem perder o fio pedagógico da aula.
                 </p>
               </div>
             </div>

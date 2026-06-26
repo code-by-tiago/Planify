@@ -10,7 +10,7 @@ const SOLUTION_LINKS = [
 ];
 
 const RESOURCE_LINKS = [
-  { href: "/#recursos", label: "Recursos" },
+  { href: "/#recursos", label: "Prova real" },
   { href: "/#ferramentas", label: "Soluções" },
   { href: "/#como-funciona", label: "Como funciona" },
   { href: "/escolas", label: "Para escolas" },

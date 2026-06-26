@@ -53,6 +53,9 @@ const WEAK_BANK_MATCH_THRESHOLD = 4;
 
 function parseTargetQuantity(request: MaterialEngineRequest): number {
   const raw = resolveBankTargetQuantity(request);
+  if (request.tipoMaterial === "atividade") {
+    return Math.min(20, Math.max(1, raw || 2));
+  }
   return Math.min(20, Math.max(3, raw || 10));
 }
 
@@ -60,17 +63,33 @@ function buildActivitiesFromExamQuestions(
   request: MaterialEngineRequest,
   questions: ExamQuestion[],
 ): MaterialEngineResponse["activities"] {
-  return questions.map((question, index) => ({
-    title: `Atividade ${index + 1}`,
-    objective: `Consolidar aprendizagens sobre ${request.tema}.`,
-    estimatedTime: "15–20 min",
-    materials: ["Caderno", "Material de apoio do professor"],
-    instructions: trimTeachyStatement(question.statement),
-    items: normalizeQuestionOptions(question.options ?? []),
-    evaluation: request.incluirGabarito && question.answer?.trim()
-      ? `Gabarito: ${question.answer.trim()}`
-      : "Correção coletiva em sala.",
-  }));
+  return questions.map((question, index) => {
+    const statement = trimTeachyStatement(question.statement);
+    const options = normalizeQuestionOptions(question.options ?? []);
+    const optionSummary = options.length
+      ? `Alternativas para análise: ${options.slice(0, 5).join(" | ")}`
+      : "Registre dados, pistas ou conceitos do enunciado antes de responder.";
+    const answer = question.answer?.trim();
+
+    return {
+      title: `Atividade ${index + 1} — ${request.tema}`,
+      objective: `Aprofundar a aprendizagem sobre ${request.tema} por meio de leitura, resolução, justificativa e síntese aplicada.`,
+      estimatedTime: "25-30 minutos",
+      materials: ["Caderno ou folha de registro", "Quadro ou projetor", "Material de apoio do professor"],
+      instructions:
+        "Oriente os estudantes a ler a situação com atenção, registrar evidências, resolver a tarefa por etapas e revisar a justificativa antes da socialização.",
+      items: [
+        `a) Leia a situação e destaque as informações essenciais: ${statement}`,
+        `b) Interprete o comando, identifique o conceito central e compare as possibilidades. ${optionSummary}`,
+        "c) Resolva a tarefa registrando o raciocínio, os cálculos, as relações ou as evidências usadas para chegar à resposta.",
+        "d) Justifique a resposta com uma frase completa, conectando o resultado ao tema e ao componente curricular estudado.",
+        "e) Produza uma síntese final ou exemplo próprio que mostre como essa aprendizagem pode ser aplicada em outra situação.",
+      ],
+      evaluation: request.incluirGabarito && answer
+        ? `Avaliar leitura do enunciado, coerência do raciocínio, justificativa e síntese final. Gabarito de referência: ${answer}.`
+        : "Avaliar leitura do enunciado, coerência do raciocínio, justificativa, participação e qualidade da síntese final.",
+    };
+  });
 }
 
 function formatBankQuestionsObservacoes(

@@ -119,6 +119,7 @@ function isStructuralExamIssue(issue: string): boolean {
 
 function materialGenerationBudgetMs(request: MaterialEngineRequest): number {
   if (request.tipoMaterial === "slides") return 180_000;
+  if (request.tipoMaterial === "atividade") return 125_000;
   if (
     request.tipoMaterial === "apostila" ||
     request.tipoMaterial === "prova" ||
@@ -136,6 +137,8 @@ function materialContentTimeoutMs(
   const preferred =
     request.tipoMaterial === "slides"
       ? 85_000
+      : request.tipoMaterial === "atividade"
+        ? 65_000
       : request.tipoMaterial === "apostila" ||
           request.tipoMaterial === "prova" ||
           request.tipoMaterial === "lista"
@@ -1134,7 +1137,10 @@ function maxOutputTokensFor(request: MaterialEngineRequest): number {
   const type = request.tipoMaterial;
   if (type === "flashcards" || type === "mapa-mental") return 4_500;
   if (type === "resumo") return 5_500;
-  if (type === "atividade" || type === "jogo" || type === "cruzadinha") return 7_500;
+  if (type === "atividade") {
+    return Math.min(14_000, Math.max(8_500, request.quantidade * 1_250));
+  }
+  if (type === "jogo" || type === "cruzadinha") return 7_500;
   if (type === "prova" || type === "lista") return 9_500;
   if (type === "apostila") return 12_000;
   return 8_500;

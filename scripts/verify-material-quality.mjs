@@ -515,6 +515,175 @@ function testProvaListaQualityGate() {
   );
 }
 
+function testAtividadeQualityGate() {
+  const request = normalizeMaterialEngineRequest({
+    tipoMaterial: "atividade",
+    etapa: "Ensino Fundamental - Anos Finais",
+    anoSerie: "9º ano",
+    componenteCurricular: "Matemática",
+    tema: "Equações do 1º grau",
+    objetivo: "Resolver equações",
+    quantidade: 2,
+    dificuldade: "media",
+    incluirGabarito: true,
+    habilidadesSelecionadas: [],
+  });
+
+  const weakOutput = {
+    title: "Atividade",
+    subtitle: "9º ano",
+    summary: "Atividade curta.",
+    sections: [],
+    activities: [
+      {
+        title: "Exercício rápido",
+        objective: "Resolver equações.",
+        estimatedTime: "10 min",
+        materials: ["Caderno"],
+        instructions: "Resolva as contas.",
+        items: ["a) x + 2 = 8", "b) 3x = 21"],
+        evaluation: "Participação.",
+      },
+    ],
+    answerKey: [],
+    teacherNotes: [],
+  };
+
+  const weakIssues = getEngineOutputIssues(request, weakOutput);
+  assert.ok(
+    weakIssues.some((issue) => issue.includes("esperado exatamente 2")),
+    "atividade fraca deve exigir quantidade exata",
+  );
+  assert.ok(
+    weakIssues.some((issue) => issue.includes("pelo menos 5 itens")),
+    "atividade fraca deve exigir itens a)-e)",
+  );
+
+  const strongActivity = (title, seed) => ({
+    title,
+    objective:
+      "Resolver equações do 1º grau em contexto escolar, registrando estratégias e justificativas matemáticas.",
+    estimatedTime: "30 minutos",
+    materials: ["Caderno de registro", "Cartões de equações", "Quadro branco"],
+    instructions:
+      "Organize os estudantes em duplas, apresente a situação, peça registro individual do raciocínio e finalize com comparação das estratégias usadas.",
+    items: [
+      `a) Leia a situação ${seed} e destaque os dados relevantes antes de calcular.`,
+      `b) Interprete qual operação inversa ajuda a isolar a incógnita em ${seed}.`,
+      `c) Resolva a equação de ${seed}, mostrando uma etapa por linha no caderno.`,
+      `d) Justifique por que o valor encontrado mantém a igualdade verdadeira em ${seed}.`,
+      `e) Produza um novo exemplo semelhante a ${seed} e explique a solução para um colega.`,
+    ],
+    evaluation:
+      "Avaliar registro das etapas, coerência da justificativa, participação na dupla e qualidade do exemplo produzido.",
+  });
+
+  const strongOutput = {
+    title: "Atividade — Equações",
+    subtitle: "9º ano",
+    summary: "Atividades orientadas sobre equações do 1º grau.",
+    sections: [],
+    activities: [
+      strongActivity("Estação de resolução", "x + 4 = 11"),
+      strongActivity("Desafio de aplicação", "3x = 21"),
+    ],
+    answerKey: [],
+    teacherNotes: [],
+  };
+
+  const strongIssues = getEngineOutputIssues(request, strongOutput);
+  assert.deepEqual(
+    strongIssues,
+    [],
+    `atividade forte deveria passar, recebido: ${strongIssues.join("; ")}`,
+  );
+}
+
+function testRedacaoQualityGate() {
+  const request = normalizeMaterialEngineRequest({
+    tipoMaterial: "redacao",
+    etapa: "Ensino Fundamental - Anos Finais",
+    anoSerie: "9º ano",
+    componenteCurricular: "Língua Portuguesa",
+    tema: "Educação financeira e cidadania",
+    objetivo: "Produzir texto argumentativo",
+    quantidade: 3,
+    dificuldade: "media",
+    incluirGabarito: false,
+    habilidadesSelecionadas: [],
+  });
+
+  const weakOutput = {
+    title: "Redação",
+    subtitle: "9º ano",
+    summary: "",
+    sections: [
+      { title: "Texto motivador 1", content: "Texto curto.", bullets: [] },
+      { title: "Texto motivador 2", content: "Outro texto.", bullets: [] },
+    ],
+    activities: [],
+    answerKey: [],
+    teacherNotes: ["Avaliar."],
+  };
+
+  const weakIssues = getEngineOutputIssues(request, weakOutput);
+  assert.ok(
+    weakIssues.some((issue) => issue.includes("exatamente 3 textos motivadores")),
+    "redação fraca deve exigir quantidade exata de motivadores",
+  );
+  assert.ok(
+    weakIssues.some((issue) => issue.includes("tema e comando")),
+    "redação fraca deve exigir seção de comando",
+  );
+
+  const strongOutput = {
+    title: "Redação — Educação financeira e cidadania",
+    subtitle: "9º ano",
+    summary: "",
+    sections: [
+      {
+        title: "Tema e comando",
+        content:
+          "Produza um texto dissertativo-argumentativo sobre a importância da educação financeira para escolhas cidadãs. Defenda um ponto de vista, mobilize repertório pertinente e conclua com encaminhamento coerente.",
+        bullets: [
+          "Gênero: texto dissertativo-argumentativo escolar",
+          "Finalidade: defender uma tese com argumentos e exemplos",
+        ],
+      },
+      {
+        title: "Texto motivador 1",
+        content:
+          "Uma reportagem descreve famílias que usam planilhas simples para comparar renda, despesas fixas e gastos variáveis. O texto mostra que interpretar números ajuda a planejar prioridades e evitar decisões impulsivas no cotidiano.",
+        bullets: [],
+      },
+      {
+        title: "Texto motivador 2",
+        content:
+          "Uma charge apresenta um estudante calculando quanto precisa economizar para comprar um livro sem comprometer transporte e alimentação. A cena aproxima matemática, autonomia e responsabilidade nas escolhas de consumo.",
+        bullets: [],
+      },
+      {
+        title: "Texto motivador 3",
+        content:
+          "Um trecho de material didático afirma que educação financeira envolve analisar consequências, justificar escolhas e reconhecer limites. Nesse percurso, linguagem matemática e argumentação ajudam a transformar informação em cidadania.",
+        bullets: [],
+      },
+    ],
+    activities: [],
+    answerKey: [],
+    teacherNotes: [
+      "Avaliar adequação ao tema, repertório usado na argumentação, coesão entre parágrafos, linguagem adequada ao gênero e conclusão coerente com a tese.",
+    ],
+  };
+
+  const strongIssues = getEngineOutputIssues(request, strongOutput);
+  assert.deepEqual(
+    strongIssues,
+    [],
+    `redação forte deveria passar, recebido: ${strongIssues.join("; ")}`,
+  );
+}
+
 function testUnifiedMaterialEngineContract() {
   assert.equal(TIPO_FERRAMENTA_VALUES.length, 17, "17 ferramentas no contrato unificado");
   assert.ok(getMaterialLayoutSchema().properties.secoes, "schema MaterialLayout presente");
@@ -833,6 +1002,8 @@ function main() {
   runTest("imagen-model", testImagenModelResolution);
   runTest("structured-display-contract", testStructuredDisplayContract);
   runTest("prova-lista-quality-gate", testProvaListaQualityGate);
+  runTest("atividade-quality-gate", testAtividadeQualityGate);
+  runTest("redacao-quality-gate", testRedacaoQualityGate);
   runTest("unified-material-engine", testUnifiedMaterialEngineContract);
   runTest("cronograma-table-renderer", testCronogramaTableRenderer);
   runTest("unified-quality-gate", testUnifiedQualityGate);

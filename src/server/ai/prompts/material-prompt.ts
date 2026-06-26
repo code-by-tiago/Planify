@@ -40,7 +40,8 @@ function materialRulesByType(type: string): string[] {
       "Depois entregue GABARITO DO PROFESSOR separado, com respostas esperadas e critérios.",
       "Organize aquecimento, desenvolvimento, prática, desafio e fechamento apenas dentro dos comandos, sem texto explicativo antes do material.",
       "Crie questões progressivas, contextualizadas e variadas: identificação, classificação, reescrita, interpretação, associação, produção, justificativa, análise, aplicação e síntese.",
-      "Não compacte várias letras a), b), c), d) dentro de uma única questão. Cada pergunta principal deve ser uma questão própria no array questoes.",
+      "Cada atividade principal deve ter percurso interno com pelo menos cinco subitens a), b), c), d), e), indo de leitura/observação até produção ou síntese.",
+      "Não use subitens a)-e) para esconder questões independentes demais; use-os como etapas conectadas da mesma atividade ou crie uma questão principal própria no array questoes.",
       "Inclua enunciados completos, exemplos suficientes, resposta esperada, critério de correção e comandos de aplicação.",
       "Se a questão pedir classificar, identificar ou analisar várias frases, apresente as frases em tópicos com • e não no mesmo parágrafo do comando.",
       "A versão do aluno deve ficar sem resposta logo abaixo da questão; o gabarito deve ficar separado.",
@@ -153,9 +154,9 @@ function materialRulesByType(type: string): string[] {
   if (normalizedType === "redacao") {
     return [
       "Entregue proposta de redação para produção textual (não corrija redação já escrita).",
-      "Inclua tema, gênero textual, comando e textos motivadores na quantidade solicitada.",
-      "Cada motivador deve estar em seção própria com título que identifique o texto.",
-      "Inclua critérios de avaliação e competências em criteriosAvaliacao.",
+      "Inclua tema, gênero textual, público-alvo, finalidade, comando e textos motivadores na quantidade solicitada.",
+      "Cada motivador deve estar em seção própria, com título que identifique o texto e conteúdo suficiente para sustentar a escrita.",
+      "Inclua critérios de avaliação com adequação ao tema, repertório, argumentação, coesão, linguagem e proposta/conclusão quando aplicável.",
       "Se o professor pediu gabarito, inclua redação modelo no array gabarito; caso contrário, omita modelo.",
       "Não preencha questoes como lista de exercícios.",
     ];

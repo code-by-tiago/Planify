@@ -276,12 +276,21 @@ const atividadeDocHtml = buildMaterialEngineHtmlFromStructure(
     activities: [
       {
         title: "Ciclo da agua",
-        objective: "Compreender as etapas",
+        objective:
+          "Compreender as etapas do ciclo da agua por meio de observacao, representacao visual e justificativa cientifica.",
         estimatedTime: "30 min",
         materials: ["Cartolina", "Canetas"],
-        instructions: "Monte um cartaz ilustrando o ciclo.",
-        items: ["Evaporacao", "Condensacao", "Precipitacao"],
-        evaluation: "Participacao",
+        instructions:
+          "Oriente a turma a organizar as etapas do ciclo da agua em cartaz, explicar as transformacoes e revisar se as setas indicam a sequencia correta.",
+        items: [
+          "a) Observe as palavras Evaporacao, Condensacao e Precipitacao e relacione cada uma a uma etapa do ciclo.",
+          "b) Interprete como o calor do Sol participa da evaporacao da agua em rios, mares e lagos.",
+          "c) Aplique as etapas montando um cartaz com setas, legendas e exemplos do cotidiano.",
+          "d) Justifique por que a condensacao ocorre antes da precipitacao no ciclo representado.",
+          "e) Produza uma frase de sintese explicando como a agua circula na natureza.",
+        ],
+        evaluation:
+          "Avaliar participacao, sequencia correta das etapas, clareza das legendas e justificativa cientifica apresentada no cartaz.",
       },
     ],
   },

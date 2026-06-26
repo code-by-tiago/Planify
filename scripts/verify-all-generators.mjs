@@ -325,31 +325,57 @@ const GOLDEN = {
       activities: [
         {
           title: "Estação de equações",
-          objective: "Resolver equações simples em grupo.",
+          objective:
+            "Resolver equações do 1º grau em grupo, registrando estratégias e justificativas matemáticas.",
           estimatedTime: "20 minutos",
           materials: ["Folha de exercícios", "Lápis", "Quadro branco"],
           instructions:
-            "Organize a turma em trios e distribua os cartões com equações.",
-          items: ["Cartão 1: x + 4 = 11", "Cartão 2: 2x = 14"],
-          evaluation: "Observar participação e correção dos cálculos.",
+            "Organize a turma em trios, distribua cartões com equações e peça que cada grupo registre o procedimento antes de socializar uma estratégia.",
+          items: [
+            "a) Observe o cartão 1: x + 4 = 11 e identifique a operação que precisa ser desfeita.",
+            "b) Interprete o cartão 2: 2x = 14 e explique qual operação inversa resolve a equação.",
+            "c) Resolva cada cartão registrando uma etapa por linha no caderno.",
+            "d) Justifique por que a solução encontrada mantém a igualdade verdadeira.",
+            "e) Produza um novo cartão de equação e entregue a outro trio para resolver.",
+          ],
+          evaluation:
+            "Observar participação, registro das etapas, uso correto das operações inversas e clareza da justificativa apresentada.",
         },
         {
           title: "Desafio relâmpago",
-          objective: "Fixar resolução mental de equações.",
+          objective:
+            "Fixar a resolução mental de equações simples sem perder o registro do raciocínio utilizado.",
           estimatedTime: "10 minutos",
-          materials: ["Cronômetro"],
-          instructions: "Cada estudante resolve uma equação no quadro em até 2 minutos.",
-          items: ["x - 2 = 5", "4x = 28"],
-          evaluation: "Registrar acertos e orientar correções.",
+          materials: ["Cronômetro", "Quadro branco", "Pincel"],
+          instructions:
+            "Chame estudantes em rodadas curtas, apresente uma equação por vez e peça que todos registrem mentalmente a estratégia antes da resposta no quadro.",
+          items: [
+            "a) Leia x - 2 = 5 e diga qual número precisa ser somado aos dois membros.",
+            "b) Compare com 4x = 28 e identifique a operação inversa necessária.",
+            "c) Resolva as duas equações e confira substituindo o valor de x.",
+            "d) Justifique oralmente uma das respostas usando a ideia de equilíbrio.",
+            "e) Crie uma equação relâmpago para um colega resolver em até 2 minutos.",
+          ],
+          evaluation:
+            "Registrar acertos, identificar erros de operação inversa e orientar correções com base na explicação do estudante.",
         },
         {
           title: "Problema do cotidiano",
-          objective: "Modelar situação real com equação.",
+          objective:
+            "Modelar uma situação cotidiana com equação do 1º grau, resolvendo e interpretando a resposta final.",
           estimatedTime: "15 minutos",
-          materials: ["Caderno"],
-          instructions: "Leia o problema e monte a equação antes de resolver.",
-          items: ["João tem o dobro da idade de Ana. A soma é 36 anos."],
-          evaluation: "Verificar equação montada e resposta final.",
+          materials: ["Caderno", "Lápis", "Ficha do problema"],
+          instructions:
+            "Apresente a situação, peça leitura silenciosa, destaque dos dados e montagem da equação antes de qualquer cálculo numérico.",
+          items: [
+            "a) Leia: João tem o dobro da idade de Ana e a soma das idades é 36 anos.",
+            "b) Identifique a incógnita e represente a idade de cada pessoa com expressões algébricas.",
+            "c) Monte a equação correspondente e resolva passo a passo.",
+            "d) Justifique se a resposta faz sentido dentro da situação apresentada.",
+            "e) Produza um novo problema de idade que possa ser resolvido por equação do 1º grau.",
+          ],
+          evaluation:
+            "Verificar modelagem, resolução, interpretação da resposta e coerência do problema criado pelo estudante.",
         },
       ],
     },
@@ -550,22 +576,36 @@ const GOLDEN = {
       title: "Redação — Tema: equações e cidadania",
       sections: [
         {
+          title: "Tema e comando",
+          content:
+            "Produza um texto dissertativo-argumentativo sobre o uso de equações e educação financeira na vida cidadã. Defenda um ponto de vista, use repertório pertinente e proponha uma conclusão coerente para estudantes do 9º ano.",
+          bullets: [
+            "Gênero: texto dissertativo-argumentativo escolar",
+            "Finalidade: defender uma ideia com argumentos e exemplos",
+          ],
+        },
+        {
           title: "Texto motivador 1",
-          content: "Notícia sobre orçamento familiar.",
+          content:
+            "Uma reportagem sobre orçamento familiar mostra que muitas famílias registram gastos mensais em tabelas para comparar renda, despesas fixas e compras variáveis. Quando os estudantes compreendem relações entre valores, conseguem planejar escolhas financeiras com mais autonomia.",
           bullets: [],
         },
         {
           title: "Texto motivador 2",
-          content: "Charge sobre gastos mensais.",
+          content:
+            "Uma charge apresenta um jovem tentando descobrir quanto pode economizar por mês depois de separar transporte, alimentação e lazer. A situação evidencia como a linguagem matemática pode apoiar decisões cotidianas e evitar consumo por impulso.",
           bullets: [],
         },
         {
           title: "Texto motivador 3",
-          content: "Trecho sobre educação financeira.",
+          content:
+            "Um trecho de material escolar afirma que educação financeira não se resume a calcular dinheiro, mas envolve interpretar problemas, justificar escolhas e avaliar consequências. Nesse processo, equações simples ajudam a representar metas e limites.",
           bullets: [],
         },
       ],
-      teacherNotes: ["Avaliar coesão, argumentação e norma culta."],
+      teacherNotes: [
+        "Avaliar adequação ao tema, repertório usado para sustentar a argumentação, coesão entre parágrafos, linguagem adequada ao gênero e conclusão coerente com a tese.",
+      ],
     },
     htmlChecks: [/motivador/i, /Notas para o professor/],
   },

@@ -317,21 +317,47 @@ export function getEngineOutputIssues(
 
   if (tipo === "atividade") {
     const activities = output.activities ?? [];
-    const issue = countIssues("atividades", q, activities.length);
-    if (issue) issues.push(issue);
+    if (activities.length === 0) {
+      issues.push(`atividades: nenhum item foi gerado (esperado ${q}).`);
+    } else if (activities.length !== q) {
+      issues.push(`atividades: esperado exatamente ${q}, recebido ${activities.length}.`);
+    }
 
     for (const [index, activity] of activities.entries()) {
+      const n = index + 1;
       if (!activity.objective?.trim()) {
         issues.push(`Atividade ${index + 1}: preencha 'objective'.`);
+      } else if ((activity.objective?.trim().length ?? 0) < 35) {
+        issues.push(`Atividade ${n}: objetivo deve ser especifico e contextualizado.`);
       }
       if (!activity.estimatedTime?.trim()) {
         issues.push(`Atividade ${index + 1}: preencha 'estimatedTime'.`);
       }
       if (!activity.materials?.length) {
         issues.push(`Atividade ${index + 1}: liste 'materials' necessários.`);
+      } else if (activity.materials.length < 2) {
+        issues.push(`Atividade ${n}: inclua pelo menos 2 materiais ou recursos.`);
+      }
+      if (!activity.instructions?.trim()) {
+        issues.push(`Atividade ${n}: preencha 'instructions'.`);
+      } else if ((activity.instructions?.trim().length ?? 0) < 80) {
+        issues.push(`Atividade ${n}: desenvolvimento deve ser mais extenso e orientar a aplicacao.`);
+      }
+      const items = activity.items ?? [];
+      if (items.length < 5) {
+        issues.push(`Atividade ${n}: inclua pelo menos 5 itens/subquestoes para o estudante.`);
+      }
+      const joinedItems = items.join("\n");
+      for (const letter of ["a", "b", "c", "d", "e"]) {
+        if (!new RegExp(`(^|\\n)\\s*${letter}\\)`, "i").test(joinedItems)) {
+          issues.push(`Atividade ${n}: inclua o item ${letter}) no percurso do estudante.`);
+          break;
+        }
       }
       if (!activity.evaluation?.trim()) {
         issues.push(`Atividade ${index + 1}: preencha 'evaluation'.`);
+      } else if ((activity.evaluation?.trim().length ?? 0) < 45) {
+        issues.push(`Atividade ${n}: avaliacao deve ter criterios observaveis.`);
       }
       if (issues.length >= 12) break;
     }
@@ -356,18 +382,38 @@ export function getEngineOutputIssues(
   }
 
   if (tipo === "redacao") {
-    const motivadores =
-      output.sections?.filter((s) => s.title?.toLowerCase().includes("motivador"))
-        .length ?? output.sections?.length ?? 0;
-    if (motivadores < q - COUNT_TOLERANCE) {
+    const sections = output.sections ?? [];
+    const motivatorSections = sections.filter((s) =>
+      s.title?.toLowerCase().includes("motivador"),
+    );
+    if (motivatorSections.length !== q) {
       issues.push(
-        `Redação: inclua pelo menos ${q} textos motivadores em sections (recebido ${motivadores}).`,
+        `Redação: inclua exatamente ${q} textos motivadores em sections (recebido ${motivatorSections.length}).`,
       );
     }
-    if (!output.teacherNotes?.length) {
+    const weakMotivator = motivatorSections.find(
+      (section) => `${section.content || ""} ${(section.bullets ?? []).join(" ")}`.trim().length < 120,
+    );
+    if (weakMotivator) {
+      issues.push("Redação: textos motivadores devem ter contexto e recorte suficientes.");
+    }
+    const commandSection = sections.find((section) =>
+      /tema|comando|proposta|produ[cç][aã]o/i.test(
+        `${section.title || ""} ${section.content || ""} ${(section.bullets ?? []).join(" ")}`,
+      ),
+    );
+    if (!commandSection) {
+      issues.push("Redação: inclua seção com tema e comando de produção.");
+    }
+    const criteriaText = (output.teacherNotes ?? []).join(" ");
+    if (!output.teacherNotes?.length || criteriaText.trim().length < 80) {
       issues.push(
-        "Redação: inclua critérios de avaliação em teacherNotes.",
+        "Redação: inclua critérios de avaliação completos em teacherNotes.",
       );
+    } else if (
+      !/tema|argumenta[cç][aã]o|coes[aã]o|linguagem|repert[oó]rio/i.test(criteriaText)
+    ) {
+      issues.push("Redação: critérios devem citar tema, argumentação, coesão, linguagem ou repertório.");
     }
   }
 
@@ -432,7 +478,9 @@ export function buildQualityRetryPrompt(
         ]
       : []),
     `Tema obrigatório: "${request.tema}".`,
-    "Reescreva o JSON MaterialLayout completo com enunciados contextualizados, 5 alternativas (A–E) distintas e gabarito objetivo.",
+    request.tipoMaterial === "atividade"
+      ? "Reescreva o JSON MaterialLayout completo: cada atividade deve ter objetivo contextualizado, materiais, desenvolvimento extenso, avaliacao observavel e pelo menos 5 itens do estudante rotulados a), b), c), d), e)."
+      : "Reescreva o JSON MaterialLayout completo com enunciados contextualizados, 5 alternativas (A-E) distintas e gabarito objetivo.",
     ...(options?.teachyDepth ? ["", TEACHY_QUALITY_RULES] : []),
   ].join("\n");
 }

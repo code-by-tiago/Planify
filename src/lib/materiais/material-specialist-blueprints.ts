@@ -504,7 +504,7 @@ export function getMaterialBlueprint(input: MaterialAIInput): MaterialSpecialist
   return {
     kind: "atividade",
     specialistName: "Especialista Planify em Atividades Didáticas",
-    qualityMission: "Construir atividade completa, prática e orientada, com comandos claros e progressão.",
+    qualityMission: "Construir atividades completas, práticas e orientadas, com desenvolvimento extenso, subitens a)-e) e progressão cognitiva.",
     defaultQuestionCount: 10,
     allowsQuestions: true,
     minSections: 5,
@@ -512,6 +512,8 @@ export function getMaterialBlueprint(input: MaterialAIInput): MaterialSpecialist
     structureRules: [
       "Organizar aquecimento, contextualização, prática orientada, desafio e fechamento.",
       "A atividade deve ser aplicável em sala e coerente com o tempo informado.",
+      "Cada atividade deve ter objetivo específico, tempo estimado, pelo menos 2 materiais, desenvolvimento guiado, avaliação observável e no mínimo 5 subitens do estudante rotulados a), b), c), d), e).",
+      "Os subitens a)-e) devem progredir de observar/ler e interpretar para aplicar, justificar e produzir/sintetizar.",
       "As questões devem aparecer como parte da prática, não como prova formal.",
       ...componentLens,
     ],
@@ -686,7 +688,7 @@ export function buildCompletionQuestion(input: MaterialAIInput, index: number): 
 
   const enunciadoByKind: Record<MaterialBlueprintKind, string> = {
     apostila: `Exercício de fixação: explique o conteúdo "${content}" dentro do tema ${theme}. Use um exemplo e registre por que esse conhecimento é importante em ${component}.`,
-    atividade: `Com base no estudo de ${theme}, resolva a proposta sobre "${content}". Apresente resposta clara, exemplo e justificativa.`,
+    atividade: `Com base no estudo de ${theme}, desenvolva a proposta sobre "${content}" em percurso a)-e), com resposta, exemplo, justificativa e síntese final.`,
     lista: `Treino progressivo: aplique o conteúdo "${content}" para resolver uma situação sobre ${theme}. Mostre o raciocínio utilizado.`,
     revisao: `Revisão: escreva uma síntese curta sobre "${content}", cite um exemplo e indique uma dúvida que precisa ser retomada.`,
     prova: `Questão discursiva: analise o conteúdo "${content}" no contexto de ${theme}. Explique o conceito central, apresente exemplo e justifique sua resposta.`,

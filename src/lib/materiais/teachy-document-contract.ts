@@ -37,7 +37,7 @@ export const TEACHY_TYPE_HINTS: Record<string, string> = {
   resumo:
     "Resumo Teachy: síntese em bullets (máx. 12 palavras/item); seções temáticas curtas; sem parágrafos explicativos antes do conteúdo.",
   atividade:
-    "Atividade Teachy: objetivo + passos numerados + materiais + tempo estimado; enunciado aplicável em sala; critérios objetivos.",
+    "Atividade Teachy: objetivo + tempo estimado + pelo menos 2 materiais + desenvolvimento orientado + subitens do estudante a), b), c), d), e) + critérios observáveis.",
   "plano-aula":
     "Plano Teachy: objetivos, metodologia, recursos, avaliação e duração por etapa; BNCC citada quando aplicável; ações concretas por bloco temporal.",
   sequencia:

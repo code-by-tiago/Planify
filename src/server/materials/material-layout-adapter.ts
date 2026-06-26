@@ -158,17 +158,59 @@ function textoSecaoToActivity(secao: MaterialSecao) {
 
   const bullets = secao.conteudo.bullets ?? [];
   const paragraphs = secao.conteudo.paragrafos ?? [];
-  const materials = bullets.filter((item) => /^material/i.test(item));
-  const steps = bullets.filter((item) => !/^material/i.test(item));
+  const allTextItems = [...paragraphs, ...bullets];
+  const objectivePattern = /^objetivos?\s*:/i;
+  const developmentPattern = /^(?:desenvolvimento|orienta[cç][oõ]es?|instru[cç][oõ]es?)\s*:/i;
+  const materialPattern = /^materia(?:l|is)\s*:/i;
+  const timePattern = /^(?:tempo|dura[cç][aã]o)\s*:/i;
+  const evaluationPattern = /^(?:avalia[cç][aã]o|criterios?|crit[eé]rios?)\s*:/i;
+  const letteredPattern = /^[a-e]\)/i;
+  const isMetadataLine = (item: string) =>
+    objectivePattern.test(item) ||
+    developmentPattern.test(item) ||
+    materialPattern.test(item) ||
+    timePattern.test(item) ||
+    evaluationPattern.test(item);
+  const stripKnownPrefix = (item: string) =>
+    item
+      .replace(objectivePattern, "")
+      .replace(developmentPattern, "")
+      .replace(materialPattern, "")
+      .replace(timePattern, "")
+      .replace(evaluationPattern, "")
+      .trim();
+  const materials = allTextItems.filter((item) => materialPattern.test(item));
+  const letteredItems = allTextItems.filter((item) => letteredPattern.test(item.trim()));
+  const narrativeItems = allTextItems.filter(
+    (item) =>
+      !isMetadataLine(item) &&
+      !letteredPattern.test(item.trim()),
+  );
+  const supportItems = allTextItems.filter((item) => !isMetadataLine(item));
+  const steps = letteredItems.length >= 5 ? letteredItems : supportItems;
+  const explicitObjective = allTextItems.find((item) => objectivePattern.test(item));
+  const explicitDevelopment = allTextItems.find((item) => developmentPattern.test(item));
+  const estimatedTime =
+    allTextItems.find((item) => /minuto|hora|tempo|dura[cç][aã]o/i.test(item)) ||
+    "";
+  const evaluation =
+    allTextItems.find((item) => /avalia|crit[eé]rio|criterio/i.test(item)) ||
+    "";
+  const objective = explicitObjective
+    ? stripKnownPrefix(explicitObjective)
+    : narrativeItems[0] || "";
+  const instructions = explicitDevelopment
+    ? stripKnownPrefix(explicitDevelopment)
+    : narrativeItems.slice(explicitObjective ? 0 : objective ? 1 : 0).join(" ");
 
   return {
     title: secao.titulo,
-    objective: paragraphs[0] || "",
-    estimatedTime: bullets.find((item) => /minuto|hora|tempo/i.test(item)) || "",
-    materials: materials.map((item) => item.replace(/^materiais?\s*:\s*/i, "")),
-    instructions: paragraphs.slice(1).join(" ") || bullets[0] || "",
+    objective,
+    estimatedTime: stripKnownPrefix(estimatedTime),
+    materials: materials.map(stripKnownPrefix),
+    instructions: instructions || narrativeItems.join(" ") || "",
     items: steps.length ? steps : bullets,
-    evaluation: bullets.find((item) => /avalia/i.test(item)) || "",
+    evaluation: stripKnownPrefix(evaluation),
   };
 }
 

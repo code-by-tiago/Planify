@@ -172,7 +172,11 @@ function buildToolRules(input: PromptEngineInput): string[] {
     case "atividade":
       return [
         `Crie ${q} seções tipo "texto" — uma por atividade.`,
-        "Cada seção: objetivo, tempo estimado, materiais (bullets), passos (bullets), critérios de avaliação.",
+        "Cada atividade deve ser robusta e pronta para aplicar: objetivo especifico, tempo estimado, materiais, desenvolvimento orientado e criterios de avaliacao.",
+        'Em conteudo.paragrafos de cada seção, use exatamente: "Objetivo: ..." e "Desenvolvimento: ..." com orientação extensa para aplicação.',
+        'Em conteudo.bullets de cada seção, inclua "Tempo: ...", 2 a 4 bullets prefixados por "Material: ...", depois pelo menos 5 itens de tarefa rotulados exatamente como a), b), c), d), e), e finalize com "Avaliação: ...".',
+        "Os itens a)-e) devem ter progressao cognitiva: observar/ler, interpretar, aplicar, justificar e produzir/sintetizar.",
+        "Use enunciados completos e contextualizados; nao entregue comandos genericos de uma linha.",
       ];
 
     case "sequencia":
@@ -190,8 +194,10 @@ function buildToolRules(input: PromptEngineInput): string[] {
 
     case "redacao":
       return [
-        `Inclua ${q} textos motivadores em seções tipo "texto".`,
-        "Seção adicional: tema, gênero textual, comando de produção e critérios de avaliação.",
+        `Inclua exatamente ${q} textos motivadores em seções tipo "texto" com títulos "Texto motivador 1", "Texto motivador 2" etc.`,
+        "Cada texto motivador deve ter contexto, dado/exemplo/recorte e conexão explícita com o tema; não use frases soltas.",
+        "Inclua seção adicional obrigatória 'Tema e comando' com tema, gênero textual, público-alvo, finalidade e comando de produção.",
+        "Inclua critérios de avaliação em teacherNotes: adequação ao tema, repertório, argumentação, coesão, linguagem e proposta/conclusão quando aplicável.",
         incluirGabarito
           ? "Incluir redação modelo de referência em seção texto separada."
           : "Sem redação modelo.",

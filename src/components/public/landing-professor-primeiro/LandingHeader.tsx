@@ -52,6 +52,12 @@ export function LandingHeader() {
               {item.label}
             </Link>
           ))}
+          <Link
+            href="/testar-planejamento"
+            className="rounded-lg px-3.5 py-2 text-sm font-bold text-cyan-700 transition hover:bg-cyan-50"
+          >
+            Testar planejamento grátis
+          </Link>
         </nav>
 
         <div className="hidden items-center gap-2.5 sm:flex">
@@ -72,6 +78,12 @@ export function LandingHeader() {
             </>
           ) : (
             <>
+              <Link
+                href="/testar-planejamento"
+                className="rounded-xl border border-cyan-200 bg-cyan-50 px-4 py-2.5 text-sm font-bold text-cyan-800 transition hover:bg-cyan-100"
+              >
+                Testar planejamento grátis
+              </Link>
               <Link
                 href="/login"
                 className="rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:text-cyan-700"
@@ -130,6 +142,13 @@ export function LandingHeader() {
               </>
             ) : (
               <>
+                <Link
+                  href="/testar-planejamento"
+                  onClick={() => setOpen(false)}
+                  className="rounded-xl border border-cyan-200 bg-cyan-50 py-3 text-center text-sm font-bold text-cyan-800"
+                >
+                  Testar planejamento grátis
+                </Link>
                 <Link
                   href="/login"
                   onClick={() => setOpen(false)}

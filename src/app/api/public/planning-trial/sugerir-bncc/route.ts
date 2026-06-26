@@ -1,0 +1,92 @@
+import { NextRequest, NextResponse } from "next/server";
+import { suggestBnccByConteudos } from "@/server/bncc/bncc-suggestion-engine";
+import { filterExtractedBnccByStage } from "@/server/bncc/bncc-stage-filter";
+import { validateBnccSuggestionPayload } from "@/server/planejamentos/planning-validation";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+export async function POST(request: NextRequest) {
+  try {
+    const payload = (await request.json().catch(() => null)) as Record<
+      string,
+      unknown
+    > | null;
+
+    if (!payload || typeof payload !== "object") {
+      return NextResponse.json(
+        {
+          success: false,
+          ok: false,
+          error: { message: "Corpo da requisição inválido." },
+        },
+        { status: 400 },
+      );
+    }
+
+    const validationError = validateBnccSuggestionPayload(payload);
+
+    if (validationError) {
+      return NextResponse.json(
+        {
+          success: false,
+          ok: false,
+          error: { message: validationError },
+        },
+        { status: 400 },
+      );
+    }
+
+    const result = await suggestBnccByConteudos(payload || {});
+    const etapa = String(payload?.etapa || "").trim();
+    const anoSerie = String(payload?.anoSerie || payload?.serie || "").trim();
+    const habilidades = result.habilidades || [];
+    const filtered = filterExtractedBnccByStage(
+      {
+        codes: habilidades.map((skill) => skill.codigo),
+        skills: habilidades,
+      },
+      etapa,
+      anoSerie,
+    );
+
+    const allowedCodes = new Set(filtered.codes.map((code) => code.toUpperCase()));
+    const conteudos = (result.conteudos || []).map((group) => ({
+      ...group,
+      habilidades: (group.habilidades || []).filter((skill) =>
+        allowedCodes.has(String(skill.codigo || "").toUpperCase()),
+      ),
+    }));
+
+    return NextResponse.json({
+      success: true,
+      ok: true,
+      ...result,
+      conteudos,
+      habilidades: filtered.skills,
+      sugeridas: filtered.skills,
+      skills: filtered.skills,
+      items: filtered.skills,
+      total: filtered.skills.length,
+      data: {
+        conteudos,
+        habilidades: filtered.skills,
+        sugeridas: filtered.skills,
+      },
+    });
+  } catch (error) {
+    return NextResponse.json(
+      {
+        success: false,
+        ok: false,
+        error: {
+          message:
+            error instanceof Error
+              ? error.message
+              : "Não foi possível sugerir habilidades BNCC.",
+        },
+      },
+      { status: 500 },
+    );
+  }
+}

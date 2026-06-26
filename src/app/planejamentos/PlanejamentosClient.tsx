@@ -43,6 +43,17 @@ import {
   buildElevatePlanningPayload,
   requestPlanningGeneration,
 } from "@/lib/planejamentos/elevate-planning-client";
+import {
+  fetchPlanningTrialStatus,
+  getPlanningTrialBnccSuggestUrl,
+  requestPlanningTrialGeneration,
+} from "@/lib/planejamentos/planning-trial-client";
+import { savePlanningTrialDocument, readPlanningTrialDocument } from "@/lib/planejamentos/planning-trial-storage";
+import {
+  buildPlanningTrialStoredDocument,
+  previewMatrizKeyToTabId,
+} from "@/lib/planejamentos/planning-trial-bundle";
+import { PlanningTrialExportBar } from "@/components/planejamentos/PlanningTrialExportBar";
 import { buildPlanningEditorHtml } from "@/lib/planejamentos/planning-editor-html";
 import type {
   PlanningAiPayload,
@@ -389,7 +400,7 @@ function saveAnnualMatrixSnapshot(form: FormState, planning: GeneratedPlanning) 
   localStorage.setItem("planify_matriz_anual", JSON.stringify(snapshot));
 }
 
-export function PlanejamentosClient() {
+export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean }) {
   const { embeddedInDashboard } = usePlanifyWorkspace();
   const school = useSchoolClasses();
   const [form, setForm] = useState<FormState>(initialForm);
@@ -420,10 +431,29 @@ export function PlanejamentosClient() {
   const [errorRetryable, setErrorRetryable] = useState(false);
   const [abrirEditorAutomatico, setAbrirEditorAutomatico] = useState(true);
   const [wizardStep, setWizardStep] = useState<PlanningWizardStep>(1);
+  const [trialLimited, setTrialLimited] = useState(false);
+
+  const bnccSuggestUrl = trialMode
+    ? getPlanningTrialBnccSuggestUrl()
+    : "/api/bncc/sugerir";
 
   useEffect(() => {
+    if (trialMode) return;
     setAbrirEditorAutomatico(readAutoOpenPlanningEditorPreference());
-  }, []);
+  }, [trialMode]);
+
+  useEffect(() => {
+    if (!trialMode) return;
+    setAbrirEditorAutomatico(false);
+    setForm((current) => ({
+      ...current,
+      tipoPlanejamento: "anual",
+      pacoteTrimestralAnual: "todos",
+    }));
+    void fetchPlanningTrialStatus().then((status) => {
+      setTrialLimited(status.limited);
+    });
+  }, [trialMode]);
 
   useEffect(() => {
     const prefill = readPlanejamentoPrefill();
@@ -731,7 +761,7 @@ export function PlanejamentosClient() {
     setStatus("Buscando habilidades BNCC pelos conteúdos...");
 
     try {
-      const response = await fetch("/api/bncc/sugerir", {
+      const response = await fetch(bnccSuggestUrl, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -774,7 +804,7 @@ export function PlanejamentosClient() {
     setStatus(`Buscando outras opções para: ${group.conteudo}`);
 
     try {
-      const response = await fetch("/api/bncc/sugerir", {
+      const response = await fetch(bnccSuggestUrl, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -1005,6 +1035,11 @@ export function PlanejamentosClient() {
   async function generatePlanning() {
     if (loadingPlan) return;
 
+    if (trialMode && trialLimited) {
+      setError("Você já testou o planejamento grátis neste dispositivo.");
+      return;
+    }
+
     setError("");
 
     const conteudosText = form.conteudos.trim();
@@ -1034,13 +1069,21 @@ export function PlanejamentosClient() {
         ...buildBasePayload(),
         conteudos: conteudosText,
         idempotencyKey,
+        ...(trialMode ? { tipoPlanejamento: "anual" as const } : {}),
       };
-      const data = await requestPlanningGeneration(payload);
+      const data = trialMode
+        ? await requestPlanningTrialGeneration(payload)
+        : await requestPlanningGeneration(payload);
 
-      window.dispatchEvent(new Event("planify:credits-changed"));
+      if (!trialMode) {
+        window.dispatchEvent(new Event("planify:credits-changed"));
+      }
 
       const serverMaterialId =
-        typeof data.materialId === "string" && data.materialId.trim()
+        !trialMode &&
+        "materialId" in data &&
+        typeof data.materialId === "string" &&
+        data.materialId.trim()
           ? data.materialId.trim()
           : undefined;
 
@@ -1060,6 +1103,36 @@ export function PlanejamentosClient() {
       setUsedAI(Boolean(data.usedAI));
       const issues = applyQualityFromResponse(data);
       setLastGenerationPayload(payload);
+
+      if (trialMode) {
+        const trialDoc = buildPlanningTrialStoredDocument({
+          form: {
+            escola: form.escola,
+            professor: form.professor,
+            etapa: form.etapa,
+            anoSerie: form.anoSerie,
+            areaConhecimento: form.areaConhecimento,
+            componenteCurricular: form.componenteCurricular,
+            cargaHoraria: form.cargaHoraria,
+            tipoPlanejamento: "anual",
+            pacoteTrimestralAnual: form.pacoteTrimestralAnual,
+          },
+          planning,
+          trimestres: trimestresSelecionados,
+          trimestralPlans,
+          activeTabId: "anual",
+          qualityScore:
+            typeof data.qualityScore === "number" ? data.qualityScore : null,
+          qualityIssues: issues,
+        });
+        savePlanningTrialDocument(trialDoc);
+        setTrialLimited(true);
+        setWizardStep(3);
+        setStatus(
+          "Pacote de teste gerado: anual e trimestres coerentes. Visualize os documentos e assine para exportar.",
+        );
+        return;
+      }
 
       const qualityContext = {
         qualityScore:
@@ -1142,6 +1215,11 @@ export function PlanejamentosClient() {
   }
 
   async function elevarQualidadePlanejamento() {
+    if (trialMode) {
+      setError("Elevar qualidade está disponível no Planify Pro.");
+      return;
+    }
+
     if (!lastGenerationPayload) {
       setError("Gere o planejamento uma vez antes de elevar a qualidade.");
       return;
@@ -1214,6 +1292,45 @@ export function PlanejamentosClient() {
       return;
     }
 
+    if (trialMode) {
+      const activeTabId = previewMatrizKeyToTabId(previewMatrizKey);
+      const stored = readPlanningTrialDocument();
+
+      if (stored && generatedPlanning) {
+        savePlanningTrialDocument({ ...stored, activeTabId });
+        window.location.href = "/testar-planejamento/documento";
+        return;
+      }
+
+      if (generatedPlanning) {
+        const trimestresSelecionados = pacoteTrimestralAnualToTrimestres(
+          form.pacoteTrimestralAnual,
+        );
+        savePlanningTrialDocument(
+          buildPlanningTrialStoredDocument({
+            form: {
+              escola: form.escola,
+              professor: form.professor,
+              etapa: form.etapa,
+              anoSerie: form.anoSerie,
+              areaConhecimento: form.areaConhecimento,
+              componenteCurricular: form.componenteCurricular,
+              cargaHoraria: form.cargaHoraria,
+              tipoPlanejamento: "anual",
+              pacoteTrimestralAnual: form.pacoteTrimestralAnual,
+            },
+            planning: generatedPlanning,
+            trimestres: trimestresSelecionados,
+            trimestralPlans: generatedTrimestralPlans,
+            activeTabId,
+          }),
+        );
+      }
+
+      window.location.href = "/testar-planejamento/documento";
+      return;
+    }
+
     const editorForm =
       previewMatrizKey !== "anual"
         ? {
@@ -1241,7 +1358,7 @@ export function PlanejamentosClient() {
   return (
     <PlanifyWorkspacePane>
       <div className="planify-hud pl-hud-hub mx-auto max-w-7xl space-y-5 px-3 sm:px-4 lg:px-0">
-        {!embeddedInDashboard ? (
+        {!embeddedInDashboard && !trialMode ? (
           <div className="pl-hud-page-hero overflow-hidden rounded-2xl border border-cyan-400/15">
             <PlanifyPageHero
               badge="Planejamentos"
@@ -1249,6 +1366,16 @@ export function PlanejamentosClient() {
               title="BNCC → IA → Google Docs oficial"
               description="Sugira habilidades por conteúdo, gere a matriz pedagógica com IA e exporte com os modelos oficiais anual/trimestral."
             />
+          </div>
+        ) : null}
+
+        {trialMode && trialLimited && !generatedPlanning ? (
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm font-medium text-amber-900">
+            Você já testou o planejamento grátis neste dispositivo.{" "}
+            <a href="/planos" className="font-bold underline">
+              Assine o Planify Pro
+            </a>{" "}
+            para gerar, exportar e salvar sem limites.
           </div>
         ) : null}
 
@@ -1287,7 +1414,7 @@ export function PlanejamentosClient() {
                   form.tipoPlanejamento === "anual"
                     ? "border-cyan-500 bg-cyan-600 text-white shadow-md"
                     : "border-cyan-400/20 bg-white text-slate-950 hover:border-cyan-400/50"
-                }`}
+                } ${trialMode ? "sm:col-span-2" : ""}`}
               >
                 <p className="text-sm font-black">Planejamento Anual</p>
                 <p
@@ -1300,6 +1427,7 @@ export function PlanejamentosClient() {
                   Matriz do ano letivo · modelo oficial completo
                 </p>
               </button>
+              {!trialMode ? (
               <button
                 type="button"
                 onClick={() => updateField("tipoPlanejamento", "trimestral")}
@@ -1320,6 +1448,7 @@ export function PlanejamentosClient() {
                   1º, 2º ou 3º trimestre · coerente com o anual
                 </p>
               </button>
+              ) : null}
             </div>
           </div>
 
@@ -1562,6 +1691,8 @@ export function PlanejamentosClient() {
               />
             ) : null}
 
+            {!trialMode ? (
+            <>
             <GenerationCostHint
               creditCost={getClientCreditCost(PLANNING_DEEP_GENERATION_TYPE)}
               className="mt-4"
@@ -1586,6 +1717,8 @@ export function PlanejamentosClient() {
             <div className="mt-6">
               <DailyGenerationsBar tipoMaterial={PLANNING_DEEP_GENERATION_TYPE} />
             </div>
+            </>
+            ) : null}
 
             <div className="mt-7 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
               <button type="button" onClick={suggestBncc} disabled={loadingBncc} className="pl-hud-btn-secondary rounded-xl px-5 py-3.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60">
@@ -1698,7 +1831,7 @@ export function PlanejamentosClient() {
                     issues={qualityIssues}
                     compact
                     onElevate={
-                      lastGenerationPayload
+                      !trialMode && lastGenerationPayload
                         ? () => void elevarQualidadePlanejamento()
                         : undefined
                     }
@@ -1782,10 +1915,12 @@ export function PlanejamentosClient() {
                   Matriz pronta
                 </p>
                 <h2 className="mt-2 text-sm font-semibold tracking-tight text-slate-900 sm:text-base">
-                  Exportar ao Google Docs
+                  {trialMode ? "Visualize seu planejamento" : "Exportar ao Google Docs"}
                 </h2>
                 <p className="mt-2 max-w-2xl text-sm leading-7 text-slate-600">
-                  Modelos oficiais Planify — anual e trimestral. Revise a matriz abaixo antes de exportar.
+                  {trialMode
+                    ? "Visualize o anual e os trimestres extraídos da mesma matriz. Para baixar DOCX e exportar, assine o Planify Pro."
+                    : "Modelos oficiais Planify — anual e trimestral. Revise a matriz abaixo antes de exportar."}
                 </p>
 
                 <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
@@ -1794,8 +1929,9 @@ export function PlanejamentosClient() {
                     onClick={sendToEditor}
                     className="pl-hud-btn-secondary rounded-xl px-5 py-3 text-sm font-semibold"
                   >
-                    Editar no editor
+                    {trialMode ? "Ver documento completo" : "Editar no editor"}
                   </button>
+                  {!trialMode ? (
                   <MarketplacePublishButton
                     title={activePreviewPlanning?.titulo || generatedPlanning.titulo || "Planejamento"}
                     getHtml={() => {
@@ -1839,9 +1975,16 @@ export function PlanejamentosClient() {
                     etapa={form.etapa}
                     anoSerie={form.anoSerie}
                   />
+                  ) : null}
                 </div>
 
-                {form.tipoPlanejamento === "trimestral" ? (
+                {trialMode ? (
+                  <div className="mt-6 rounded-xl border border-white/80 bg-white/90 px-4 py-3">
+                    <PlanningTrialExportBar />
+                  </div>
+                ) : null}
+
+                {!trialMode && form.tipoPlanejamento === "trimestral" ? (
                   <div className="mt-6 rounded-xl border border-white/80 bg-white/90 px-4 py-3">
                     <PlanningOfficialExportBar
                       title={generatedPlanning.titulo || "Planejamento trimestral"}
@@ -1856,7 +1999,7 @@ export function PlanejamentosClient() {
                   </div>
                 ) : null}
 
-                {form.tipoPlanejamento === "anual" ? (
+                {!trialMode && form.tipoPlanejamento === "anual" ? (
                   <div className="mt-6 space-y-3">
                     <div className="rounded-xl border border-white/80 bg-white/90 px-4 py-3">
                       <p className="text-[10px] font-black uppercase tracking-wide text-slate-500">
@@ -1912,7 +2055,7 @@ export function PlanejamentosClient() {
                       issues={qualityIssues}
                       compact
                       onElevate={
-                        lastGenerationPayload
+                        !trialMode && lastGenerationPayload
                           ? () => void elevarQualidadePlanejamento()
                           : undefined
                       }

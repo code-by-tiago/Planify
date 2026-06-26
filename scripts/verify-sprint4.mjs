@@ -112,12 +112,12 @@ assert.equal(offline.retryable, true);
 
 const credits = formatGenerationError({ code: "insufficient_credits", message: "x" });
 assert.equal(credits.code, "insufficient_credits");
-assert.equal(credits.retryable, false);
-assert.ok(credits.cta);
+assert.equal(credits.retryable, true);
+assert.equal(credits.cta, undefined);
 
 const daily = formatGenerationError({ code: "daily_limit_reached" });
 assert.equal(daily.code, "daily_limit_reached");
-assert.match(daily.message, /Brasília/i);
+assert.doesNotMatch(daily.message, /cota|cr[eé]dito|saldo/i);
 
 const serverBusy = formatGenerationError({ status: 502, message: "bad gateway" });
 assert.equal(serverBusy.code, "server_error");

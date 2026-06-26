@@ -14,7 +14,6 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const requiredFiles = [
   "src/server/export/export-error-service.ts",
   "src/app/planejamentos/PlanejamentosClient.tsx",
-  "src/components/slides/SlideAiAdjustPanel.tsx",
   "src/app/api/google/docs/export/route.ts",
   "src/app/api/google/slides/export/route.ts",
   "src/app/api/google/forms/export/route.ts",
@@ -85,12 +84,18 @@ assert.match(planejSource, /formatGenerationError/);
 assert.match(planejSource, /GenerationErrorBanner/);
 assert.match(planejSource, /MaterialPreviewSkeleton/);
 
-const slideAdjust = readFileSync(
-  join(root, "src/components/slides/SlideAiAdjustPanel.tsx"),
+const toolsSource = readFileSync(
+  join(root, "src/lib/pro/planifyTools.ts"),
   "utf8",
 );
-assert.match(slideAdjust, /formatGenerationError/);
-assert.match(slideAdjust, /MaterialPreviewSkeleton/);
+assert.doesNotMatch(toolsSource, /id:\s*"slides"/);
+
+const materiaisSource = readFileSync(
+  join(root, "src/app/materiais/MateriaisClient.tsx"),
+  "utf8",
+);
+assert.match(materiaisSource, /tipoUrl && tipoUrl !== "slides"/);
+assert.doesNotMatch(materiaisSource, /SlideAiAdjustPanel/);
 
 for (const route of [
   "src/app/api/google/docs/export/route.ts",

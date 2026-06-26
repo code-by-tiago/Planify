@@ -16,12 +16,22 @@ function mustExist(rel) {
   return full;
 }
 
+function runStep(command, args) {
+  const result = spawnSync(command, args, {
+    cwd: root,
+    stdio: "inherit",
+    shell: true,
+  });
+
+  assert.equal(
+    result.status,
+    0,
+    `${[command, ...args].join(" ")} failed`,
+  );
+}
+
 // P1
-spawnSync("npm", ["run", "verify:pedagogical-p1"], {
-  cwd: root,
-  stdio: "inherit",
-  shell: true,
-});
+runStep("npm", ["run", "verify:pedagogical-p1"]);
 
 // P2
 mustExist("src/server/pedagogical-cache/adapters/wikipedia-pt-adapter.ts");
@@ -44,11 +54,7 @@ const orchestrator = readFileSync(
 assert.match(orchestrator, /12_000|12000/);
 
 // P3
-spawnSync("npm", ["run", "verify:pedagogical-p3"], {
-  cwd: root,
-  stdio: "inherit",
-  shell: true,
-});
+runStep("npm", ["run", "verify:pedagogical-p3"]);
 
 // P4
 mustExist("src/app/api/admin/pedagogico/fila/route.ts");

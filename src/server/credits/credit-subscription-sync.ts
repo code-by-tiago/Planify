@@ -124,8 +124,8 @@ async function maybeGrant(params: {
 }
 
 /**
- * Garante carteira de créditos para assinantes ativos. Evita bloqueio pós-migração
- * quando a tabela existe mas o webhook ainda não concedeu o ciclo.
+ * Garante carteira legada para assinantes ativos. Evita inconsistencias
+ * pos-migracao quando a tabela existe mas o webhook ainda nao sincronizou o ciclo.
  */
 export async function syncCreditWalletFromSubscription(params: {
   userId: string;

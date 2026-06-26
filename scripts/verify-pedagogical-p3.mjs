@@ -21,10 +21,10 @@ const materiais = readFileSync(
   join(root, "src/app/materiais/MateriaisClient.tsx"),
   "utf8",
 );
-assert.match(materiais, /Contexto verificado/);
 assert.match(materiais, /fetchPedagogicalContext/);
 assert.match(materiais, /600/);
-assert.match(materiais, /sem custo de IA/i);
+assert.match(materiais, /pedagogicalEntries/);
+assert.match(materiais, /buildPedagogicalObservacoes/);
 
 const telemetry = readFileSync(
   join(root, "src/server/telemetry/operational-telemetry.ts"),

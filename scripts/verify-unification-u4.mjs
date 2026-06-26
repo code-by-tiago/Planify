@@ -15,7 +15,6 @@ const requiredFiles = [
   "src/server/materials/exam-questions-retry.ts",
   "src/app/api/materiais/regenerar-questoes/route.ts",
   "src/lib/materiais/material-exam-retry-client.ts",
-  "src/lib/materiais/material-images-retry-client.ts",
 ];
 
 for (const file of requiredFiles) {
@@ -43,7 +42,7 @@ const materiaisSource = readFileSync(
 );
 assert.match(materiaisSource, /requestExamQuestionsRetry/);
 assert.match(materiaisSource, /regenerarQuestoesFracas/);
-assert.match(materiaisSource, /requestSlideImagesRetry/);
+assert.doesNotMatch(materiaisSource, /requestSlideImagesRetry/);
 
 const navigationSource = readFileSync(join(root, "src/lib/navigation.ts"), "utf8");
 const futuroHighlights = navigationSource.match(
@@ -60,6 +59,7 @@ const retryRoute = readFileSync(
   "utf8",
 );
 assert.match(retryRoute, /regenerateWeakExamQuestions/);
-assert.match(retryRoute, /0\.5|retryCost/);
+assert.match(retryRoute, /creditCost:\s*0/);
+assert.doesNotMatch(retryRoute, /spendCredits|insufficient_credits|retryCost/);
 
 console.log("verify-unification-u4: OK");

@@ -36,6 +36,20 @@ export function mapExportError(
   const explicitStatus = resolveExportStatus(error, statusHint);
 
   if (
+    error instanceof TypeError ||
+    lower.includes("failed to fetch") ||
+    lower.includes("network") ||
+    lower.includes("load failed")
+  ) {
+    return {
+      code: "server_error",
+      message: "Exporta\u00e7\u00e3o falhou \u2014 tente novamente em instantes.",
+      status: explicitStatus && explicitStatus >= 500 ? explicitStatus : 502,
+      retryable: true,
+    };
+  }
+
+  if (
     lower.includes("scope") ||
     lower.includes("insufficient") ||
     lower.includes("permission") ||

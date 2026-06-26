@@ -1,29 +1,14 @@
 /**
- * Serviço de créditos do Planify.
+ * Servico de carteira legado do Planify.
  *
- * Princípios:
- * - Custo ponderado por tipo de material (materiais "pesados" custam mais).
- * - Concessão por ciclo de assinatura (Stripe) — reseta o saldo ao total do plano.
- * - Débito atômico via RPC `planify_spend_credits`.
- * - FALHA ABERTA apenas para usuários sem plano de cobrança (free / pré-migração).
- *   Quem tem assinatura Stripe ou `profiles.plan` (ex.: Pro via convite escolar)
- *   deve ter carteira provisionada; sem carteira após sync, a geração é bloqueada.
+ * A regra de produto atual e uso ilimitado para assinantes nas ferramentas
+ * ativas. As funcoes continuam existindo para compatibilidade com webhook,
+ * admin e tabelas antigas, mas geracao nao aplica limites de uso.
  */
 
 import { getBillingPlan } from "@/types/billing";
 import { getSupabaseAdminClient } from "../supabase/admin-client";
-import type { MaterialEngineType } from "../materials/material-engine-types";
-import { hasUnlimitedQuota } from "../auth/courtesy-emails";
-import {
-  resolveUserBillingPlanKey,
-  syncCreditWalletFromSubscription,
-} from "./credit-subscription-sync";
 
-/**
- * O client admin é tipado a partir do schema gerado, que ainda não inclui as
- * funções/tabela de créditos. Usamos um acesso solto e tipado o suficiente para
- * as chamadas que fazemos, sem recorrer a `any`.
- */
 type DbResult = { data: unknown; error: unknown };
 type SupabaseLoose = {
   rpc: (fn: string, args: Record<string, unknown>) => Promise<DbResult>;
@@ -47,31 +32,6 @@ export type CreditWallet = {
   planKey: string | null;
   cycleStartsAt: string | null;
   cycleEndsAt: string | null;
-};
-
-/**
- * Custo em créditos por tipo de material.
- * Materiais profundos (Gemini Pro) custam mais — alinhado ao custo de API.
- */
-const CREDIT_COST: Partial<Record<MaterialEngineType, number>> & Record<string, number> = {
-  prova: 10,
-  apostila: 10,
-  slides: 10,
-  "plano-aula": 10,
-  redacao: 10,
-  lista: 6,
-  sequencia: 6,
-  projeto: 6,
-  atividade: 3,
-  resumo: 1,
-  flashcards: 1,
-  "mapa-mental": 1,
-  jogo: 1,
-  cruzadinha: 1,
-  inclusao: 6,
-  pei: 10,
-  "aula-completa": 28,
-  "correcao-ia": 3,
 };
 
 export function getCreditCost(tipo: string): number {
@@ -137,11 +97,7 @@ export async function getCreditWallet(
   }
 }
 
-/**
- * Tenta debitar `cost` créditos. Falha aberta (status "skipped") quando não há
- * carteira ou ocorre erro de infraestrutura, para não bloquear a geração antes
- * de o sistema de créditos estar provisionado.
- */
+/** Politica atual ilimitada: nao debita creditos. */
 export async function spendCredits(
   userId: string,
   tipo: string,
@@ -173,8 +129,8 @@ export async function refundCredits(
 }
 
 /**
- * Concede/renova os créditos do ciclo conforme o plano. Usado pelo webhook do
- * Stripe quando uma assinatura fica ativa ou é renovada.
+ * Mantem carteiras sincronizadas para telas/admin legado. A concessao nao
+ * limita o uso das ferramentas ativas.
  */
 export async function grantPlanCredits(params: {
   userId: string;

@@ -332,26 +332,20 @@ function testPlanningQuality() {
   assert.match(elevateNote, /Metodologia genérica/);
 }
 
-function testDailyQuotaMigrationContract() {
-  const migrationPath = join(
-    root,
-    "supabase/migrations/20260606_daily_deep_generations.sql",
-  );
+function testUnlimitedUsagePolicy() {
+  const usagePolicyPath = join(root, "src/server/generation/usage-quota-policy.ts");
   const servicePath = join(root, "src/server/credits/daily-generation-service.ts");
-  const migration = readFileSync(migrationPath, "utf8");
+  const creditServicePath = join(root, "src/server/credits/credit-service.ts");
+  const usagePolicy = readFileSync(usagePolicyPath, "utf8");
   const service = readFileSync(servicePath, "utf8");
+  const creditService = readFileSync(creditServicePath, "utf8");
 
-  assert.match(migration, /daily_deep_generations/);
-  assert.match(migration, /planify_brazil_today/);
-
-  for (const rpc of [
-    "planify_get_deep_generation_usage",
-    "planify_consume_deep_generation",
-    "planify_refund_deep_generation",
-  ]) {
-    assert.match(migration, new RegExp(rpc));
-    assert.match(service, new RegExp(`"${rpc}"`));
-  }
+  assert.match(usagePolicy, /return true;/);
+  assert.match(service, /limit:\s*0/);
+  assert.match(service, /return \{ status: "skipped" \}/);
+  assert.doesNotMatch(service, /planify_(get|consume|refund)_deep_generation/);
+  assert.match(creditService, /return 0;/);
+  assert.match(creditService, /return \{ status: "skipped" \}/);
 }
 
 function testImagenModelResolution() {
@@ -742,6 +736,37 @@ function testCompanionToolsQuality() {
   const { assessCorrectionQuality } = loadTsModule(
     "src/server/correcao/correction-quality.ts",
   );
+  const { assessPeiQuality } = loadTsModule("src/server/pei/pei-quality.ts");
+
+  const goodPei = assessPeiQuality({
+    perfil: "Estudante com TDAH em acompanhamento pedagógico.",
+    suportes: ["Blocos curtos", "Checklist visual", "Pausas programadas"],
+    acessibilidade: ["Material ampliado", "Tempo estendido"],
+    curricularRows: [
+      { conteudo: "Frações", habilidade: "EF05MA03" },
+      { conteudo: "Problemas", habilidade: "EF05MA08" },
+    ],
+    planejamento: [
+      { periodo: "Março", metodologia: "Roda de conversa" },
+      { periodo: "Abril", metodologia: "Estações de aprendizagem" },
+    ],
+    parecer:
+      "O estudante demonstra avanço na leitura de enunciados quando recebe apoio visual e tempo adicional. Recomenda-se manter estratégias de mediação e revisão colaborativa com a família e a equipe escolar, priorizando autonomia progressiva nas tarefas de matemática.",
+    usedAI: true,
+  });
+  assert.equal(goodPei.pass, true);
+  assert.ok(goodPei.qualityScore >= 72);
+
+  const badPei = assessPeiQuality({
+    perfil: "",
+    suportes: [],
+    acessibilidade: [],
+    curricularRows: [],
+    planejamento: [],
+    parecer: "Ok.",
+    usedAI: false,
+  });
+  assert.equal(badPei.pass, false);
 
   const goodInclusao = assessInclusaoQuality({
     modo: "adaptacao",
@@ -813,7 +838,7 @@ function main() {
   runTest("unified-quality-gate", testUnifiedQualityGate);
   runTest("game-export-markup", testGameExportMarkup);
   runTest("planning-quality", testPlanningQuality);
-  runTest("daily-quota-migration", testDailyQuotaMigrationContract);
+  runTest("unlimited-usage-policy", testUnlimitedUsagePolicy);
   runTest("generation-events-migration", testGenerationEventsMigrationContract);
   runTest("companion-tools-quality", testCompanionToolsQuality);
 

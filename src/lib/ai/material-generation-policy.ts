@@ -2,7 +2,7 @@ import type { AIModelTier } from "./aiConfig";
 import type { BillingPlanKey } from "@/types/billing";
 import type { MaterialEngineType } from "@/server/materials/material-engine-types";
 
-/** Materiais que usam geração profunda (Gemini Pro) e contam na cota diária. */
+/** Tipos que exigem raciocinio pedagogico mais profundo no modelo avancado. */
 export const DEEP_GENERATION_TYPES: MaterialEngineType[] = [
   "prova",
   "apostila",
@@ -13,16 +13,16 @@ export const DEEP_GENERATION_TYPES: MaterialEngineType[] = [
   "lista",
 ];
 
-/** Planejamento anual/trimestral — geração profunda (Pro), conta na cota diária. */
+/** Planejamento anual/trimestral usa modelo avancado. */
 export const PLANNING_DEEP_GENERATION_TYPE = "planejamento";
 
-/** Adaptação curricular inclusiva — geração profunda (Pro), conta na cota diária. */
+/** Adaptacao curricular inclusiva usa modelo avancado. */
 export const INCLUSAO_DEEP_GENERATION_TYPE = "inclusao";
 
-/** Plano Educacional Individualizado - geracao profunda (Pro), conta na cota diaria. */
+/** Plano Educacional Individualizado usa modelo avancado. */
 export const PEI_DEEP_GENERATION_TYPE = "pei";
 
-/** Pacote Aula Completa — uma cota profunda para o pacote inteiro. */
+/** Pacote Aula Completa usa modelo avancado quando estiver habilitado. */
 export const LESSON_BUNDLE_DEEP_GENERATION_TYPE = "aula-completa";
 
 const DEEP_PLANNING_TYPES = new Set([
@@ -34,7 +34,7 @@ const DEEP_PLANNING_TYPES = new Set([
   LESSON_BUNDLE_DEEP_GENERATION_TYPE,
 ]);
 
-/** Materiais leves — legado de cota/UI; geração inicial usa Pro como os demais. */
+/** Tipos mais leves que tambem usam modelo avancado no produto atual. */
 export const LIGHT_GENERATION_TYPES: MaterialEngineType[] = [
   "flashcards",
   "resumo",
@@ -64,7 +64,7 @@ export function isDeepGenerationType(tipo: string): boolean {
   return false;
 }
 
-/** Tier do tipo — materiais profundos/leves usam Pro; complementares leves usam Flash. */
+/** Tier efetivo do tipo: ferramentas de material usam modelo advanced. */
 export function getModelTierForMaterialType(tipo: string): AIModelTier {
   const key = normalizeMaterialTypeKey(tipo);
   if (DEEP_SET.has(key) || LIGHT_SET.has(key)) return "advanced";
@@ -76,7 +76,7 @@ export function getModelTierForMaterialType(tipo: string): AIModelTier {
 export const EDITOR_COMPLEMENTARY_ADJUST_MARKER =
   "AJUSTE SOLICITADO PELO PROFESSOR";
 
-/** Marcador de regeneração focada (elevar qualidade no editor). */
+/** Marcador de regeneracao focada (elevar qualidade no editor). */
 export const EDITOR_ELEVATE_QUALITY_MARKER = "MODO ELEVAR QUALIDADE";
 
 type ComplementaryGenerationContext = {
@@ -85,7 +85,7 @@ type ComplementaryGenerationContext = {
   observacoes?: string | null;
 };
 
-/** Elevar qualidade ou regeneração focada — sempre Pro. */
+/** Elevar qualidade ou regeneracao focada sempre usa modelo advanced. */
 export function isElevateQualityGeneration(
   context: ComplementaryGenerationContext,
 ): boolean {
@@ -101,7 +101,7 @@ export function isElevateQualityGeneration(
   );
 }
 
-/** Geração complementar no editor — ajuste, elevar qualidade ou pequena regeneração. */
+/** Ajuste complementar leve no editor. */
 export function isComplementaryMaterialGeneration(
   context: ComplementaryGenerationContext,
 ): boolean {
@@ -113,7 +113,7 @@ export function isComplementaryMaterialGeneration(
   return false;
 }
 
-/** Tier efetivo para uma requisição de material (geração inicial vs complementar). */
+/** Tier efetivo para uma requisicao de material. */
 export function getModelTierForMaterialRequest(
   tipo: string,
   context?: ComplementaryGenerationContext,
@@ -125,7 +125,7 @@ export function getModelTierForMaterialRequest(
   return getModelTierForMaterialType(tipo);
 }
 
-/** Planejamento — Pro na geração inicial e ao elevar; Flash só em ajuste complementar leve. */
+/** Planejamento usa advanced na geracao inicial e ao elevar qualidade. */
 export function getModelTierForPlanning(
   context?: ComplementaryGenerationContext,
 ): AIModelTier {
@@ -139,18 +139,8 @@ export function getModelTierForPlanning(
 export function getDailyDeepGenerationLimit(
   planKey: string | null | undefined,
 ): number {
-  const key = String(planKey || "").trim().toLowerCase();
-  if (
-    key === "monthly" ||
-    key === "mensal" ||
-    key === "professor_pro" ||
-    key === "pro" ||
-    key === "premium" ||
-    key === "professor_premium"
-  ) {
-    return 5;
-  }
-  return 3;
+  void planKey;
+  return 0;
 }
 
 export function resolveDailyLimitPlanKey(
@@ -171,7 +161,7 @@ export function resolveDailyLimitPlanKey(
   return "default";
 }
 
-/** Próxima meia-noite em America/Sao_Paulo (ISO UTC). */
+/** Proxima meia-noite em America/Sao_Paulo (ISO UTC). */
 export function nextBrazilMidnightIso(now = new Date()): string {
   const formatter = new Intl.DateTimeFormat("en-US", {
     timeZone: "America/Sao_Paulo",

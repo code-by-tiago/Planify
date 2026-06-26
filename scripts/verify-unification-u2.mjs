@@ -54,6 +54,7 @@ const retryRoute = readFileSync(
   join(root, "src/app/api/materiais/regenerar-imagens/route.ts"),
   "utf8",
 );
-assert.match(retryRoute, /0\.5|retryCost/);
+assert.match(retryRoute, /creditCost:\s*0/);
+assert.doesNotMatch(retryRoute, /spendCredits|insufficient_credits|retryCost/);
 
 console.log("verify-unification-u2: OK");

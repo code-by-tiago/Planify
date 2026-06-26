@@ -23,6 +23,7 @@ const SECTION_TYPES = new Set([
   "resumo",
   "redacao",
   "inclusao",
+  "pei",
 ]);
 
 export function MaterialTypedPreview({

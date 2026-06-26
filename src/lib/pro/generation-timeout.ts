@@ -8,7 +8,7 @@ export const GENERATION_SERVER_DEADLINE_MS = 235_000;
 export const BUNDLE_SERVER_DEADLINE_MS = 275_000;
 
 export function createGenerationTimeoutError(
-  surface: "material" | "planejamento" | "inclusao" | "correcao" | "aula-completa",
+  surface: "material" | "planejamento" | "inclusao" | "pei" | "correcao" | "aula-completa",
 ): Error & { code: string } {
   const hints: Record<typeof surface, string> = {
     material:
@@ -17,6 +17,8 @@ export function createGenerationTimeoutError(
       "O planejamento passou do tempo limite. Reduza conteúdos selecionados ou tente novamente em instantes.",
     inclusao:
       "A adaptação inclusiva passou do tempo limite. Tente com um texto menor ou aguarde alguns instantes.",
+    pei:
+      "O PEI passou do tempo limite. Revise a quantidade de informacoes e tente novamente em instantes.",
     correcao:
       "A correção passou do tempo limite. Tente com respostas menores ou corrija em lotes menores.",
     "aula-completa":

@@ -89,6 +89,11 @@ const toolMessages: Partial<Record<PlanifyToolId, string[]>> = {
     "Técnicas de mediação alinhadas à necessidade informada.",
     "Material inclusivo saindo com cuidado pedagógico.",
   ],
+  pei: [
+    "PEI sendo estruturado com cuidado pedagogico e institucional.",
+    "Acessibilidade curricular, AEE e parecer caminhando juntos.",
+    "Organizando estrategias para participacao e autonomia do estudante.",
+  ],
   "aula-completa": [
     "Montando plano, atividade e avaliação no mesmo tema.",
     "Cada material do pacote conversa com o anterior.",

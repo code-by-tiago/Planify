@@ -78,6 +78,7 @@ export type PlanifyToolId =
   | "redacao"
   | "mapa-mental"
   | "inclusao"
+  | "pei"
   | "aula-completa"
   | "correcao-ia"
   | "cruzadinha";
@@ -313,6 +314,22 @@ export const planifyTools: PlanifyTool[] = [
     loadingDescription:
       "Aplicando técnicas de psicopedagogia e inclusão escolar ao seu material.",
     accent: "from-teal-300 via-cyan-300 to-sky-300",
+  },
+  {
+    id: "pei",
+    title: "PEI - Plano Educacional Individualizado",
+    shortTitle: "PEI",
+    description:
+      "Documento PEI com CID/perfil educacional, conteudos, habilidades, acessibilidade curricular, planejamento das acoes e parecer pedagogico.",
+    category: "planejamento",
+    href: dashboardToolHref("pei"),
+    icon: "clipboard",
+    popular: true,
+    primaryFieldLabel: "Dados do estudante",
+    loadingTitle: "Gerando PEI",
+    loadingDescription:
+      "Organizando identificacao, acessibilidade curricular, estrategias, avaliacao e parecer.",
+    accent: "from-cyan-300 via-teal-300 to-emerald-300",
   },
   {
     id: "aula-completa",

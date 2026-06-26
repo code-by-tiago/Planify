@@ -16,6 +16,7 @@ const TOOL_DURATION_MS: Partial<Record<PlanifyToolId | string, number>> = {
   redacao: 100_000,
   "mapa-mental": 60_000,
   inclusao: 90_000,
+  pei: 150_000,
   "aula-completa": 360_000,
   "correcao-ia": 60_000,
 };

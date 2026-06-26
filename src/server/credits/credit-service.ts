@@ -69,6 +69,7 @@ const CREDIT_COST: Partial<Record<MaterialEngineType, number>> & Record<string, 
   jogo: 1,
   cruzadinha: 1,
   inclusao: 6,
+  pei: 10,
   "aula-completa": 28,
   "correcao-ia": 3,
 };

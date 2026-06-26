@@ -39,15 +39,14 @@ function progressPhase(stage: string): "content" | "images" {
   return stage === "images" ? "images" : "content";
 }
 
-async function handlePost(request: NextRequest, _context: { params: Promise<Record<string, string>> }) {
+async function handlePost(
+  request: NextRequest,
+  _context: { params: Promise<Record<string, string>> },
+) {
   const prepared = await prepareGenerationRequest<MaterialEngineInput>(request, {
     parsePayload: (raw) =>
       raw && typeof raw === "object" ? (raw as MaterialEngineInput) : null,
     resolveTipo: (payload) => String(payload.tipoMaterial || payload.tipo || ""),
-    dailyLimitMessage:
-      "Você usou suas gerações profundas de hoje (materiais e planejamentos). A cota reinicia à meia-noite (horário de Brasília).",
-    insufficientCreditsMessage:
-      "Você não tem créditos suficientes neste ciclo. Faça upgrade do plano para continuar gerando materiais.",
   });
 
   if (!prepared.ok) return prepared.response;
@@ -130,7 +129,7 @@ async function handlePost(request: NextRequest, _context: { params: Promise<Reco
           return;
         }
 
-        emitStage(buildStageEvent("persist", "Salvando material…"));
+        emitStage(buildStageEvent("persist", "Salvando material..."));
 
         const pipeline =
           "pipeline" in result.data ? String(result.data.pipeline) : "engine";

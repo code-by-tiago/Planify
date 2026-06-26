@@ -2,21 +2,49 @@ import { NextRequest, NextResponse } from "next/server";
 import { CORRECAO_GENERATION_TYPE } from "@/types/correction";
 import { requireApiPremiumAccess } from "@/server/auth/api-access";
 import {
-  getCreditCost,
-  refundCredits,
-  spendCredits,
-} from "@/server/credits/credit-service";
-import { logGenerationComplete, bucketQualityScore } from "@/server/telemetry/generation-telemetry";
+  logGenerationComplete,
+  bucketQualityScore,
+} from "@/server/telemetry/generation-telemetry";
 import {
   evaluateCorrectionWithAI,
   type CorrectionAiPayload,
 } from "@/server/correcao/correction-ai-service";
+import {
+  appendQualityRetryNote,
+  runQualityRetry,
+} from "@/server/generation/quality-retry";
 import { assessCorrectionQuality } from "@/server/correcao/correction-quality";
 import { withOperationalCapture } from "@/server/telemetry/with-operational-capture";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
+
+type CorrectionSuccess = Extract<
+  Awaited<ReturnType<typeof evaluateCorrectionWithAI>>,
+  { ok: true }
+>;
+
+async function evaluateWithQualityRetry(payload: CorrectionAiPayload) {
+  const outcome = await runQualityRetry({
+    input: payload,
+    generate: async (input) => evaluateCorrectionWithAI(input),
+    assess: (value) => assessCorrectionQuality(value.result),
+    buildRetryInput: (input, issues) => ({
+      ...input,
+      rubrica: appendQualityRetryNote(input.rubrica, issues),
+    }),
+  });
+
+  if (!outcome.ok) return outcome;
+
+  return {
+    ok: true as const,
+    result: outcome.value.result,
+    quality: outcome.quality,
+    retried: outcome.retried,
+  };
+}
 
 async function handlePost(
   request: NextRequest,
@@ -25,7 +53,6 @@ async function handlePost(
   const auth = await requireApiPremiumAccess(request);
   if (!auth.ok) return auth.response;
 
-  const user = auth.access.user;
   const payload = (await request.json().catch(() => null)) as CorrectionAiPayload | null;
 
   if (!payload) {
@@ -35,51 +62,18 @@ async function handlePost(
     );
   }
 
-  const tipo = CORRECAO_GENERATION_TYPE;
-  let chargedCost = 0;
-
   try {
-    if (user?.id) {
-      const spend = await spendCredits(user.id, tipo, user.email);
+    const evaluated = await evaluateWithQualityRetry(payload);
 
-      if (spend.status === "insufficient") {
-        return NextResponse.json(
-          {
-            ok: false,
-            code: "insufficient_credits",
-            message:
-              "Você não tem créditos suficientes neste ciclo. Aguarde a renovação mensal ou fale com o suporte.",
-            balance: spend.balance,
-            cost: spend.cost,
-          },
-          { status: 402 },
-        );
-      }
-
-      if (spend.status === "ok") {
-        chargedCost = spend.cost;
-      }
-    }
-
-    const result = await evaluateCorrectionWithAI(payload);
-
-    if (!result.ok) {
-      if (user?.id && chargedCost > 0) {
-        await refundCredits(user.id, chargedCost, tipo);
-      }
-
+    if (!evaluated.ok) {
       return NextResponse.json(
-        { ok: false, message: result.message },
-        { status: result.status },
+        { ok: false, message: evaluated.message },
+        { status: evaluated.status },
       );
     }
 
-    const quality = assessCorrectionQuality(result.result);
+    const { result, quality, retried } = evaluated;
     if (!quality.pass) {
-      if (user?.id && chargedCost > 0) {
-        await refundCredits(user.id, chargedCost, tipo);
-      }
-
       return NextResponse.json(
         {
           ok: false,
@@ -94,32 +88,28 @@ async function handlePost(
 
     logGenerationComplete({
       surface: "material",
-      tipo,
-      pipeline: "correcao-ai",
+      tipo: CORRECAO_GENERATION_TYPE,
+      pipeline: retried ? "correcao-ai-quality-retry" : "correcao-ai",
       qualityScoreBucket: bucketQualityScore(quality.qualityScore),
-      elevarQualidade: false,
+      elevarQualidade: retried,
       usedAI: true,
       dailyQuotaConsumed: false,
     });
 
     return NextResponse.json({
       ok: true,
-      result: result.result,
+      result,
       qualityScore: quality.qualityScore,
       qualityIssues: quality.qualityIssues,
       creditCost: 0,
     });
   } catch (error) {
-    if (user?.id && chargedCost > 0) {
-      await refundCredits(user.id, chargedCost, tipo).catch(() => null);
-    }
-
     console.error("[correcao/avaliar] unexpected failure:", error);
 
     return NextResponse.json(
       {
         ok: false,
-        message: "Erro inesperado ao corrigir. Seus créditos foram estornados.",
+        message: "Erro inesperado ao corrigir. Tente novamente em instantes.",
       },
       { status: 500 },
     );

@@ -182,7 +182,7 @@ function normalizeRequest(payload: PeiGenerationRequest): PeiGenerationRequest {
 
 export function validatePeiPayload(payload: PeiGenerationRequest): string | null {
   if (!payload || typeof payload !== "object") {
-    return "Requisicao invalida.";
+    return "Requisição inválida.";
   }
 
   if (resolveCidCodes(payload).length === 0) {

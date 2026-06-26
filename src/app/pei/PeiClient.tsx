@@ -300,7 +300,7 @@ export function PeiClient({
         const payload = buildPayload();
         const result = await requestPeiGeneration(payload);
         if (!result.html.trim()) {
-          throw new Error("A geracao concluiu, mas nao retornou HTML.");
+          throw new Error("A geração concluiu, mas não retornou HTML.");
         }
 
         setResultado(result);

@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import {
   useCallback,
   useRef,
@@ -29,16 +28,8 @@ export type FormattedGenerationError = {
   retryable: boolean;
 };
 
-const DAILY_LIMIT_MESSAGE =
-  "Você usou suas gerações profundas de hoje. A cota reinicia à meia-noite (horário de Brasília).";
-
-function plansCta(): ReactNode {
-  return (
-    <Link href="/planos" className="font-bold underline">
-      Ver planos
-    </Link>
-  );
-}
+const RETRYABLE_OPERATION_MESSAGE =
+  "Não foi possível concluir agora. Aguarde alguns instantes e tente novamente.";
 
 function extractErrorCode(error: unknown): string | undefined {
   if (error instanceof LessonBundleError || error instanceof CorrectionError) {
@@ -90,15 +81,14 @@ export function formatGenerationError(error: unknown): FormattedGenerationError 
 
   if (code === "daily_limit_reached") {
     return {
-      message: DAILY_LIMIT_MESSAGE,
+      message: RETRYABLE_OPERATION_MESSAGE,
       code: "daily_limit_reached",
-      retryable: false,
+      retryable: true,
     };
   }
 
   if (code === "generation_in_progress" || status === 409) {
-    const rawMessage =
-      error instanceof Error ? error.message.trim() : "";
+    const rawMessage = error instanceof Error ? error.message.trim() : "";
     return {
       message:
         rawMessage ||
@@ -109,20 +99,18 @@ export function formatGenerationError(error: unknown): FormattedGenerationError 
   }
 
   if (code === "ai_billing") {
-    const rawMessage =
-      error instanceof Error ? error.message.trim() : "";
+    const rawMessage = error instanceof Error ? error.message.trim() : "";
     return {
       message:
         rawMessage ||
-        "Créditos de IA esgotados no Google AI Studio. Recarregue o saldo ou habilite faturação e tente novamente.",
+        "A infraestrutura de IA precisa de atenção operacional. Tente novamente em instantes.",
       code: "ai_billing",
       retryable: false,
     };
   }
 
   if (code === "ai_unavailable") {
-    const rawMessage =
-      error instanceof Error ? error.message.trim() : "";
+    const rawMessage = error instanceof Error ? error.message.trim() : "";
     return {
       message:
         rawMessage ||
@@ -133,12 +121,11 @@ export function formatGenerationError(error: unknown): FormattedGenerationError 
   }
 
   if (code === "quality_gate_failed" || status === 422) {
-    const rawMessage =
-      error instanceof Error ? error.message.trim() : "";
+    const rawMessage = error instanceof Error ? error.message.trim() : "";
     return {
       message:
         rawMessage ||
-        "O conteúdo não atingiu o padrão mínimo Planify. Use Elevar qualidade ou ajuste o tema e gere novamente.",
+        "O conteúdo não atingiu o padrão mínimo Planify. Ajuste o tema ou tente novamente.",
       code: "quality_gate_failed",
       retryable: true,
     };
@@ -146,21 +133,18 @@ export function formatGenerationError(error: unknown): FormattedGenerationError 
 
   if (code === "insufficient_credits") {
     return {
-      message: "Você não tem créditos suficientes para esta ação.",
+      message: RETRYABLE_OPERATION_MESSAGE,
       code: "insufficient_credits",
-      cta: plansCta(),
-      retryable: false,
+      retryable: true,
     };
   }
 
   if (status === 502 || status === 503 || code === "server_error") {
-    const rawMessage =
-      error instanceof Error ? error.message.trim() : "";
+    const rawMessage = error instanceof Error ? error.message.trim() : "";
     const isGenericOperationalMessage =
       !rawMessage ||
       rawMessage === "Não foi possível gerar o material." ||
-      rawMessage ===
-        "Servidor ocupado. Aguarde alguns segundos e tente novamente.";
+      rawMessage === "Servidor ocupado. Aguarde alguns segundos e tente novamente.";
 
     if (!isGenericOperationalMessage) {
       return {
@@ -178,15 +162,14 @@ export function formatGenerationError(error: unknown): FormattedGenerationError 
   }
 
   if (code === "timeout" || status === 504) {
-    const rawMessage =
-      error instanceof Error ? error.message.trim() : "";
+    const rawMessage = error instanceof Error ? error.message.trim() : "";
     return {
       message:
         rawMessage && rawMessage !== "A operação demorou demais. Tente novamente."
           ? rawMessage
           : "A operação demorou demais. Tente novamente com menos itens ou aguarde alguns instantes.",
       code: "timeout",
-      retryable: false,
+      retryable: true,
     };
   }
 
@@ -254,7 +237,7 @@ export function GenerationErrorBanner({
     >
       <p>
         {message}
-        {cta ? <> {" "}{cta}</> : null}
+        {cta ? <> {cta}</> : null}
       </p>
       {retryable && onRetry ? (
         <button
@@ -263,7 +246,7 @@ export function GenerationErrorBanner({
           disabled={retrying}
           className="mt-2 text-xs font-bold underline disabled:opacity-50"
         >
-          {retrying ? "Tentando novamente…" : "Tentar novamente"}
+          {retrying ? "Tentando novamente..." : "Tentar novamente"}
         </button>
       ) : null}
     </div>
@@ -318,5 +301,5 @@ export function useRetryableAction() {
 export function formatDurationEstimateBadge(estimatedDurationMs: number): string {
   const minMinutes = Math.max(1, Math.floor(estimatedDurationMs / 60_000));
   const maxMinutes = Math.max(minMinutes + 1, Math.ceil((estimatedDurationMs * 1.4) / 60_000));
-  return `Estimativa: ${minMinutes}–${maxMinutes} min`;
+  return `Estimativa: ${minMinutes}-${maxMinutes} min`;
 }

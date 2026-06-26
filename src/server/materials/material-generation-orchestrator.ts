@@ -9,6 +9,7 @@ import {
   resolveQuestionBankFirstMode,
 } from "./question-bank-first-policy";
 import { generateMaterialByEngine } from "./material-engine-service";
+import { buildQualityRetryPrompt } from "./material-engine-quality";
 import { assessUnifiedQualityGate } from "@/lib/materiais/unified-quality-gate";
 import {
   finalizeUnifiedDelivery,
@@ -42,6 +43,7 @@ type GenerationFailure = {
 };
 
 const GENERATE_HEARTBEAT_MS = 12_000;
+const ORCHESTRATOR_QUALITY_RETRY_THRESHOLD = 80;
 const GENERATE_HEARTBEAT_MESSAGES = [
   "Gerando conteúdo…",
   "A IA está elaborando o material…",
@@ -213,21 +215,71 @@ async function runEngineDelivery(
     return firstPass;
   }
 
-  const result = firstPass;
-  const pipeline: UnifiedDeliveryPipeline = request.elevarQualidade
+  let engineData = firstPass.data;
+  let pipeline: UnifiedDeliveryPipeline = request.elevarQualidade
     ? "engine-elevated"
     : "engine";
+
+  const firstDelivery = finalizeUnifiedDelivery(
+    {
+      tipoMaterial: engineData.tipoMaterial,
+      html: engineData.html,
+      estrutura: engineData.estrutura,
+      qualityScore: engineData.qualityScore,
+      qualityIssues: engineData.qualityIssues,
+      alertas: engineData.alertas,
+    },
+    pipeline,
+    request,
+  );
+
+  const firstGate = assessUnifiedQualityGate({
+    qualityScore: firstDelivery.qualityScore,
+    qualityIssues: firstDelivery.qualityIssues,
+  });
+
+  const shouldRetryForQuality =
+    !request.elevarQualidade &&
+    firstGate.pass === false &&
+    firstGate.code === "quality_score_low" &&
+    (firstDelivery.qualityScore ?? 0) < ORCHESTRATOR_QUALITY_RETRY_THRESHOLD &&
+    (firstDelivery.qualityIssues?.length ?? 0) > 0;
+
+  if (shouldRetryForQuality) {
+    emitStage(options, "generate", "Refinando qualidade do material…");
+    const retryHint = buildQualityRetryPrompt(
+      request,
+      firstDelivery.qualityIssues ?? [],
+    );
+    const retryInput: MaterialEngineInput = {
+      ...input,
+      observacoes: [input.observacoes, retryHint].filter(Boolean).join("\n\n"),
+    };
+
+    const secondPass = await generateMaterialByEngine(retryInput, {
+      onStage: options?.onStage,
+    });
+
+    if (secondPass.ok) {
+      const secondScore = secondPass.data.qualityScore ?? 0;
+      const firstScore = engineData.qualityScore ?? 0;
+      if (secondScore >= firstScore) {
+        engineData = secondPass.data;
+        pipeline = "engine-elevated";
+      }
+    }
+  }
 
   emitStage(options, "quality");
   return enforceUnifiedQualityGate(
     finalizeUnifiedDelivery(
       {
-        tipoMaterial: result.data.tipoMaterial,
-        html: result.data.html,
-        estrutura: result.data.estrutura,
-        qualityScore: result.data.qualityScore,
-        qualityIssues: result.data.qualityIssues,
-        alertas: result.data.alertas,
+        tipoMaterial: engineData.tipoMaterial,
+        html: engineData.html,
+        estrutura: engineData.estrutura,
+        qualityScore: engineData.qualityScore,
+        qualityIssues: engineData.qualityIssues,
+        alertas: engineData.alertas,
       },
       pipeline,
       request,

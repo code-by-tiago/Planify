@@ -5,11 +5,6 @@ import type {
 } from "@/server/materials/material-engine-types";
 import { regenerateWeakExamQuestions } from "@/server/materials/exam-questions-retry";
 import { requireApiPremiumAccess } from "@/server/auth/api-access";
-import {
-  getCreditCost,
-  refundCredits,
-  spendCredits,
-} from "@/server/credits/credit-service";
 import { withOperationalCapture } from "@/server/telemetry/with-operational-capture";
 
 export const runtime = "nodejs";
@@ -27,7 +22,6 @@ async function handlePost(
   const auth = await requireApiPremiumAccess(request);
   if (!auth.ok) return auth.response;
 
-  const user = auth.access.user;
   const body = (await request.json().catch(() => null)) as RegenerarQuestoesBody | null;
 
   if (!body?.estrutura || !body.tipoMaterial) {
@@ -40,42 +34,13 @@ async function handlePost(
   const tipo = String(body.tipoMaterial || body.tipo || "");
   if (tipo !== "prova" && tipo !== "lista") {
     return NextResponse.json(
-      { ok: false, message: "Retry parcial disponível apenas para prova e lista." },
+      { ok: false, message: "Retry parcial disponivel apenas para prova e lista." },
       { status: 400 },
     );
   }
 
-  const retryCost = Math.max(1, Math.round(getCreditCost(tipo) * 0.5));
-  let chargedCost = 0;
-
-  if (user?.id) {
-    const spend = await spendCredits(user.id, tipo, user.email, retryCost);
-
-    if (spend.status === "insufficient") {
-      return NextResponse.json(
-        {
-          ok: false,
-          code: "insufficient_credits",
-          message:
-            "Você não tem créditos suficientes para regenerar questões. Faça upgrade do plano para continuar.",
-          balance: spend.balance,
-          cost: spend.cost,
-        },
-        { status: 402 },
-      );
-    }
-
-    if (spend.status === "ok") {
-      chargedCost = spend.cost;
-    }
-  }
-
   try {
     const result = await regenerateWeakExamQuestions(body, body.estrutura);
-
-    if (result.questionsResolved === 0 && user?.id && chargedCost > 0) {
-      await refundCredits(user.id, chargedCost, tipo);
-    }
 
     return NextResponse.json({
       ok: true,
@@ -87,14 +52,10 @@ async function handlePost(
       creditCost: 0,
     });
   } catch (error) {
-    if (user?.id && chargedCost > 0) {
-      await refundCredits(user.id, chargedCost, tipo);
-    }
-
     const message =
       error instanceof Error
         ? error.message
-        : "Erro inesperado ao regenerar questões.";
+        : "Erro inesperado ao regenerar questoes.";
 
     return NextResponse.json({ ok: false, message }, { status: 500 });
   }

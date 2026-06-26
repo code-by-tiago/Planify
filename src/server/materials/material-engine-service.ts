@@ -1,6 +1,7 @@
 import { buildVisualGameMaterial } from "@/lib/materiais/game-builder";
 import { buildStageEvent } from "@/lib/generation/generation-pipeline-stages";
 import type { GenerationStageEvent } from "@/lib/generation/generation-job-types";
+import { getModelTierForMaterialRequest } from "@/lib/ai/material-generation-policy";
 import { computeQualityScore } from "@/lib/materiais/material-quality-score";
 import { isGenericEducationalText } from "@/lib/materiais/material-semantic-quality";
 import {
@@ -66,9 +67,11 @@ import { validateMaterialLayout } from "./validator";
 const CRITICAL_QUALITY_TYPES = new Set<MaterialEngineType>([
   "prova",
   "lista",
-  "apostila",
   "atividade",
   "plano-aula",
+  "redacao",
+  "cruzadinha",
+  "apostila",
   "slides",
 ]);
 
@@ -82,21 +85,23 @@ const MIN_REMAINING_GENERATION_MS = 15_000;
 const CRITICAL_RETRY_TYPES = new Set<MaterialEngineType>([
   "prova",
   "lista",
-  "slides",
   "plano-aula",
   "atividade",
+  "redacao",
+  "cruzadinha",
+  "slides",
   "apostila",
   "sequencia",
   "resumo",
 ]);
 
 function maxAttemptsFor(type: MaterialEngineType): number {
-  if (type === "prova" || type === "apostila" || type === "slides") return 2;
+  if (CRITICAL_RETRY_TYPES.has(type)) return 2;
   return 1;
 }
 
 function geminiCallMaxAttempts(type: MaterialEngineType): number {
-  return type === "prova" || type === "lista" ? 2 : 1;
+  return CRITICAL_RETRY_TYPES.has(type) ? 2 : 1;
 }
 
 function isStructuralExamIssue(issue: string): boolean {
@@ -1213,7 +1218,7 @@ export async function generateMaterialByEngine(
       const modelTier =
         request.elevarQualidade || attempt > 0
           ? "advanced"
-          : "default";
+          : getModelTierForMaterialRequest(request.tipoMaterial, request);
       const contentTimeoutMs = materialContentTimeoutMs(
         request,
         remainingForGeneration,

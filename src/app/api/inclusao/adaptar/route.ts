@@ -5,6 +5,10 @@ import {
   type InclusaoAiPayload,
 } from "@/server/inclusao/inclusao-ai-service";
 import { assessInclusaoQuality } from "@/server/inclusao/inclusao-quality";
+import {
+  appendQualityRetryNote,
+  runQualityRetry,
+} from "@/server/generation/quality-retry";
 import { persistGeneratedMaterialBestEffort } from "@/server/materials/persist-generated-material";
 import {
   finalizeGenerationFailure,
@@ -18,17 +22,48 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
-const DAILY_LIMIT_MESSAGE =
-  "Você usou suas gerações profundas de hoje. A cota reinicia à meia-noite (horário de Brasília).";
+type InclusaoSuccess = Extract<
+  Awaited<ReturnType<typeof generateInclusaoWithAI>>,
+  { ok: true }
+>;
 
-async function handlePost(request: NextRequest, _context: { params: Promise<Record<string, string>> }) {
+async function generateWithQualityRetry(
+  payload: InclusaoAiPayload,
+  userId?: string | null,
+) {
+  const outcome = await runQualityRetry({
+    input: payload,
+    generate: async (input) => generateInclusaoWithAI(input, { userId }),
+    assess: (result) =>
+      assessInclusaoQuality({
+        modo: payload.modo,
+        markdown: result.markdown,
+        sourceContent: payload.conteudo,
+      }),
+    buildRetryInput: (input, issues) => ({
+      ...input,
+      observacoes: appendQualityRetryNote(input.observacoes, issues),
+    }),
+  });
+
+  if (!outcome.ok) return outcome;
+
+  return {
+    ok: true as const,
+    result: outcome.value as InclusaoSuccess,
+    quality: outcome.quality,
+    retried: outcome.retried,
+  };
+}
+
+async function handlePost(
+  request: NextRequest,
+  _context: { params: Promise<Record<string, string>> },
+) {
   const prepared = await prepareGenerationRequest<InclusaoAiPayload>(request, {
     parsePayload: (raw) =>
       raw && typeof raw === "object" ? (raw as InclusaoAiPayload) : null,
     resolveTipo: () => INCLUSAO_GENERATION_TYPE,
-    dailyLimitMessage: DAILY_LIMIT_MESSAGE,
-    insufficientCreditsMessage:
-      "Você não tem créditos suficientes neste ciclo. Aguarde a renovação mensal ou fale com o suporte.",
   });
 
   if (!prepared.ok) return prepared.response;
@@ -36,26 +71,22 @@ async function handlePost(request: NextRequest, _context: { params: Promise<Reco
   const { user, payload, tipo, charge } = prepared;
 
   try {
-    const result = await generateInclusaoWithAI(payload, { userId: user?.id ?? null });
+    const generated = await generateWithQualityRetry(payload, user?.id ?? null);
 
-    if (!result.ok) {
+    if (!generated.ok) {
       await finalizeGenerationFailure(user?.id, tipo, charge, {
         eventType: "material_generation_failed",
-        errorCode: String(result.status),
-        metadata: { message: result.message, modo: payload.modo },
+        errorCode: String(generated.status),
+        metadata: { message: generated.message, modo: payload.modo },
       });
 
       return NextResponse.json(
-        { ok: false, message: result.message },
-        { status: result.status },
+        { ok: false, message: generated.message },
+        { status: generated.status },
       );
     }
 
-    const quality = assessInclusaoQuality({
-      modo: payload.modo,
-      markdown: result.markdown,
-      sourceContent: payload.conteudo,
-    });
+    const { result, quality, retried } = generated;
 
     if (!quality.pass) {
       await finalizeGenerationFailure(user?.id, tipo, charge, {
@@ -65,6 +96,7 @@ async function handlePost(request: NextRequest, _context: { params: Promise<Reco
           modo: payload.modo,
           qualityScore: quality.qualityScore,
           qualityIssues: quality.qualityIssues,
+          retried,
         },
       });
 
@@ -83,9 +115,13 @@ async function handlePost(request: NextRequest, _context: { params: Promise<Reco
     logGenerationSuccessEvent({
       surface: "material",
       tipo: `${tipo}:${payload.modo}`,
-      pipeline: result.usedAI ? "inclusao-ai" : "inclusao-fallback",
+      pipeline: retried
+        ? "inclusao-ai-quality-retry"
+        : result.usedAI
+          ? "inclusao-ai"
+          : "inclusao-fallback",
       qualityScore: quality.qualityScore,
-      elevarQualidade: false,
+      elevarQualidade: retried,
       usedAI: result.usedAI,
       dailyQuotaConsumed: charge.chargedDeepDaily && result.usedAI,
     });
@@ -102,7 +138,7 @@ async function handlePost(request: NextRequest, _context: { params: Promise<Reco
         title: String(payload.conteudo || "Adaptação inclusiva").slice(0, 120),
         contentHtml: result.html,
         contentPreview: result.markdown,
-        pipeline: result.usedAI ? "inclusao-ai" : "inclusao-fallback",
+        pipeline: retried ? "inclusao-ai-quality-retry" : "inclusao-ai",
         payload: payload as unknown as Record<string, unknown>,
         result: {
           markdown: result.markdown,
@@ -110,6 +146,7 @@ async function handlePost(request: NextRequest, _context: { params: Promise<Reco
           usedAI: result.usedAI,
           qualityScore: quality.qualityScore,
           qualityIssues: quality.qualityIssues,
+          retried,
         },
       });
     }

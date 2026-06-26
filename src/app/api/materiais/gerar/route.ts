@@ -19,15 +19,14 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
-async function handlePost(request: NextRequest, _context: { params: Promise<Record<string, string>> }) {
+async function handlePost(
+  request: NextRequest,
+  _context: { params: Promise<Record<string, string>> },
+) {
   const prepared = await prepareGenerationRequest<MaterialEngineInput>(request, {
     parsePayload: (raw) =>
       raw && typeof raw === "object" ? (raw as MaterialEngineInput) : null,
     resolveTipo: (payload) => String(payload.tipoMaterial || payload.tipo || ""),
-    dailyLimitMessage:
-      "Você usou suas gerações profundas de hoje (materiais e planejamentos). A cota reinicia à meia-noite (horário de Brasília).",
-    insufficientCreditsMessage:
-      "Você não tem créditos suficientes neste ciclo. Aguarde a renovação mensal ou fale com o suporte se precisar de mais volume.",
   });
 
   if (!prepared.ok) return prepared.response;

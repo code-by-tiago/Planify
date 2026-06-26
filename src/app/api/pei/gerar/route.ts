@@ -4,6 +4,11 @@ import {
   generatePeiDocument,
   validatePeiPayload,
 } from "@/server/pei/pei-engine";
+import { assessPeiQuality } from "@/server/pei/pei-quality";
+import {
+  appendQualityRetryNote,
+  runQualityRetry,
+} from "@/server/generation/quality-retry";
 import { persistGeneratedMaterialBestEffort } from "@/server/materials/persist-generated-material";
 import {
   finalizeGenerationFailure,
@@ -18,8 +23,40 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
-const DAILY_LIMIT_MESSAGE =
-  "Você usou suas gerações profundas de hoje. A cota reinicia à meia-noite (horário de Brasília).";
+type PeiEngineSuccess = Extract<
+  Awaited<ReturnType<typeof generatePeiDocument>>,
+  { ok: true }
+>;
+
+async function generatePeiWithQualityRetry(payload: PeiGenerationRequest) {
+  const outcome = await runQualityRetry({
+    input: payload,
+    generate: async (input) => generatePeiDocument(input),
+    assess: (result) =>
+      assessPeiQuality({
+        perfil: result.estrutura.perfil,
+        suportes: result.estrutura.suportes,
+        acessibilidade: result.estrutura.acessibilidade,
+        curricularRows: result.estrutura.curricularRows,
+        planejamento: result.estrutura.planejamento,
+        parecer: result.parecer,
+        usedAI: result.usedAI,
+      }),
+    buildRetryInput: (input, issues) => ({
+      ...input,
+      observacoes: appendQualityRetryNote(input.observacoes, issues),
+    }),
+  });
+
+  if (!outcome.ok) return outcome;
+
+  return {
+    ok: true as const,
+    result: outcome.value as PeiEngineSuccess,
+    quality: outcome.quality,
+    retried: outcome.retried,
+  };
+}
 
 async function handlePost(
   request: NextRequest,
@@ -29,9 +66,6 @@ async function handlePost(
     parsePayload: (raw) =>
       raw && typeof raw === "object" ? (raw as PeiGenerationRequest) : null,
     resolveTipo: () => PEI_GENERATION_TYPE,
-    dailyLimitMessage: DAILY_LIMIT_MESSAGE,
-    insufficientCreditsMessage:
-      "Você não tem créditos suficientes neste ciclo. Aguarde a renovação mensal ou fale com o suporte se precisar de mais volume.",
   });
 
   if (!prepared.ok) return prepared.response;
@@ -49,27 +83,52 @@ async function handlePost(
   }
 
   try {
-    const result = await generatePeiDocument(payload);
+    const generated = await generatePeiWithQualityRetry(payload);
 
-    if (!result.ok) {
+    if (!generated.ok) {
       await finalizeGenerationFailure(user?.id, tipo, charge, {
         eventType: "material_generation_failed",
-        errorCode: String(result.status),
-        metadata: { message: result.message },
+        errorCode: String(generated.status),
+        metadata: { message: generated.message },
       });
 
       return NextResponse.json(
-        { ok: false, message: result.message },
-        { status: result.status },
+        { ok: false, message: generated.message },
+        { status: generated.status },
+      );
+    }
+
+    const { result, quality, retried } = generated;
+
+    if (!quality.pass) {
+      await finalizeGenerationFailure(user?.id, tipo, charge, {
+        eventType: "material_generation_failed",
+        errorCode: "quality_gate",
+        metadata: {
+          qualityScore: quality.qualityScore,
+          qualityIssues: quality.qualityIssues,
+          retried,
+        },
+      });
+
+      return NextResponse.json(
+        {
+          ok: false,
+          code: "quality_gate",
+          message: quality.message,
+          qualityScore: quality.qualityScore,
+          qualityIssues: quality.qualityIssues,
+        },
+        { status: 422 },
       );
     }
 
     logGenerationSuccessEvent({
       surface: "material",
       tipo,
-      pipeline: result.pipeline,
-      qualityScore: result.qualityScore,
-      elevarQualidade: false,
+      pipeline: retried ? "pei-ai-quality-retry" : result.pipeline,
+      qualityScore: quality.qualityScore,
+      elevarQualidade: retried,
       usedAI: result.usedAI,
       dailyQuotaConsumed: charge.chargedDeepDaily && result.usedAI,
     });
@@ -90,17 +149,19 @@ async function handlePost(
         title: result.title,
         contentHtml: result.html,
         contentPreview: result.parecer,
-        pipeline: result.pipeline,
-        qualityScore: result.qualityScore,
+        pipeline: retried ? "pei-ai-quality-retry" : result.pipeline,
+        qualityScore: quality.qualityScore,
         payload: payload as unknown as Record<string, unknown>,
         result: {
           title: result.title,
           html: result.html,
           parecer: result.parecer,
-          pipeline: result.pipeline,
-          qualityScore: result.qualityScore,
+          pipeline: retried ? "pei-ai-quality-retry" : result.pipeline,
+          qualityScore: quality.qualityScore,
+          qualityIssues: quality.qualityIssues,
           estrutura: result.estrutura,
           alertas: result.alertas,
+          retried,
         },
       });
     }
@@ -115,8 +176,9 @@ async function handlePost(
       html: result.html,
       parecer: result.parecer,
       title: result.title,
-      pipeline: result.pipeline,
-      qualityScore: result.qualityScore,
+      pipeline: retried ? "pei-ai-quality-retry" : result.pipeline,
+      qualityScore: quality.qualityScore,
+      qualityIssues: quality.qualityIssues,
       alertas: persistWarning
         ? [...result.alertas, persistWarning]
         : result.alertas,

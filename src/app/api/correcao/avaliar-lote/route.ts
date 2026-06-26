@@ -1,16 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { CorrectionAiOutput } from "@/types/correction";
 import { CORRECAO_GENERATION_TYPE } from "@/types/correction";
 import { requireApiPremiumAccess } from "@/server/auth/api-access";
 import {
-  getCreditCost,
-  refundCredits,
-  spendCredits,
-} from "@/server/credits/credit-service";
-import { logGenerationComplete, bucketQualityScore } from "@/server/telemetry/generation-telemetry";
+  logGenerationComplete,
+  bucketQualityScore,
+} from "@/server/telemetry/generation-telemetry";
 import {
   evaluateCorrectionWithAI,
   type CorrectionAiPayload,
 } from "@/server/correcao/correction-ai-service";
+import {
+  appendQualityRetryNote,
+  runQualityRetry,
+} from "@/server/generation/quality-retry";
 import { assessCorrectionQuality } from "@/server/correcao/correction-quality";
 import { withOperationalCapture } from "@/server/telemetry/with-operational-capture";
 
@@ -18,13 +21,37 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 180;
 
-/** Lote: 1 crédito por resposta (transparente vs. correcao-ia unitário de 3). */
-const BATCH_CREDIT_PER_RESPONSE = 1;
 const MAX_BATCH_SIZE = 5;
 
 type BatchBody = CorrectionAiPayload & {
   respostas?: string[];
 };
+
+type CorrectionSuccess = Extract<
+  Awaited<ReturnType<typeof evaluateCorrectionWithAI>>,
+  { ok: true }
+>;
+
+async function evaluateWithQualityRetry(payload: CorrectionAiPayload) {
+  const outcome = await runQualityRetry({
+    input: payload,
+    generate: async (input) => evaluateCorrectionWithAI(input),
+    assess: (value) => assessCorrectionQuality(value.result),
+    buildRetryInput: (input, issues) => ({
+      ...input,
+      rubrica: appendQualityRetryNote(input.rubrica, issues),
+    }),
+  });
+
+  if (!outcome.ok) return outcome;
+
+  return {
+    ok: true as const,
+    result: outcome.value.result,
+    quality: outcome.quality,
+    retried: outcome.retried,
+  };
+}
 
 async function handlePost(
   request: NextRequest,
@@ -33,7 +60,6 @@ async function handlePost(
   const auth = await requireApiPremiumAccess(request);
   if (!auth.ok) return auth.response;
 
-  const user = auth.access.user;
   const body = (await request.json().catch(() => null)) as BatchBody | null;
 
   if (!body || !Array.isArray(body.respostas)) {
@@ -56,47 +82,16 @@ async function handlePost(
 
   if (respostas.length > MAX_BATCH_SIZE) {
     return NextResponse.json(
-      { ok: false, message: `Máximo de ${MAX_BATCH_SIZE} respostas por lote.` },
+      { ok: false, message: `Maximo de ${MAX_BATCH_SIZE} respostas por lote.` },
       { status: 400 },
     );
   }
 
-  const tipo = CORRECAO_GENERATION_TYPE;
-  const totalCost = respostas.length * BATCH_CREDIT_PER_RESPONSE;
-  let chargedCost = 0;
-
   try {
-    if (user?.id) {
-      const spend = await spendCredits(
-        user.id,
-        tipo,
-        user.email,
-        totalCost,
-      );
-
-      if (spend.status === "insufficient") {
-        return NextResponse.json(
-          {
-            ok: false,
-            code: "insufficient_credits",
-            message: `Você precisa de ${totalCost} crédito(s) para corrigir ${respostas.length} resposta(s).`,
-            balance: spend.balance,
-            cost: spend.cost,
-          },
-          { status: 402 },
-        );
-      }
-
-      if (spend.status === "ok") {
-        chargedCost = spend.cost;
-      }
-    }
-
-    const resultados: import("@/types/correction").CorrectionAiOutput[] = [];
-
+    const resultados: CorrectionAiOutput[] = [];
     const falhas: { index: number; message: string }[] = [];
-    let successCount = 0;
     const qualityScores: number[] = [];
+    let retriedCount = 0;
 
     for (let index = 0; index < respostas.length; index += 1) {
       const payload: CorrectionAiPayload = {
@@ -111,30 +106,25 @@ async function handlePost(
         teacherProfile: body.teacherProfile,
       };
 
-      const result = await evaluateCorrectionWithAI(payload);
+      const evaluated = await evaluateWithQualityRetry(payload);
 
-      if (result.ok) {
-        const quality = assessCorrectionQuality(result.result);
-        if (!quality.pass) {
-          falhas.push({ index, message: quality.message });
-          continue;
-        }
-
-        resultados.push(result.result);
-        qualityScores.push(quality.qualityScore);
-        successCount += 1;
-      } else {
-        falhas.push({ index, message: result.message });
+      if (!evaluated.ok) {
+        falhas.push({ index, message: evaluated.message });
+        continue;
       }
+
+      if (evaluated.retried) retriedCount += 1;
+
+      if (!evaluated.quality.pass) {
+        falhas.push({ index, message: evaluated.quality.message });
+        continue;
+      }
+
+      resultados.push(evaluated.result);
+      qualityScores.push(evaluated.quality.qualityScore);
     }
 
-    const failedCount = falhas.length;
-    if (user?.id && chargedCost > 0 && failedCount > 0) {
-      const refundAmount = failedCount * BATCH_CREDIT_PER_RESPONSE;
-      await refundCredits(user.id, refundAmount, tipo);
-    }
-
-    if (successCount === 0) {
+    if (!resultados.length) {
       return NextResponse.json(
         {
           ok: false,
@@ -155,10 +145,11 @@ async function handlePost(
 
     logGenerationComplete({
       surface: "material",
-      tipo,
-      pipeline: "correcao-ai-batch",
+      tipo: CORRECAO_GENERATION_TYPE,
+      pipeline:
+        retriedCount > 0 ? "correcao-ai-batch-quality-retry" : "correcao-ai-batch",
       qualityScoreBucket: bucketQualityScore(avgQuality),
-      elevarQualidade: false,
+      elevarQualidade: retriedCount > 0,
       usedAI: true,
       dailyQuotaConsumed: false,
     });
@@ -171,16 +162,12 @@ async function handlePost(
       creditCost: 0,
     });
   } catch (error) {
-    if (user?.id && chargedCost > 0) {
-      await refundCredits(user.id, chargedCost, tipo).catch(() => null);
-    }
-
     console.error("[correcao/avaliar-lote] unexpected failure:", error);
 
     return NextResponse.json(
       {
         ok: false,
-        message: "Erro inesperado ao corrigir o lote. Seus créditos foram estornados.",
+        message: "Erro inesperado ao corrigir o lote. Tente novamente em instantes.",
       },
       { status: 500 },
     );

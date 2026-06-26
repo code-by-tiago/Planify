@@ -1,4 +1,5 @@
 import { appendPedagogicalGuardrails } from "@/lib/materiais/pedagogical-guardrails";
+import type { BnccSelectedSkillPayload } from "@/lib/bncc/bncc-suggestion-ui";
 import {
   getPeiCidOptions,
   getPeiDisciplineOption,
@@ -99,6 +100,54 @@ function trimestreLabel(trimestre: PeiTrimestre): string {
   return `${trimestre}º trimestre`;
 }
 
+function formatBnccSkillLabel(skill: BnccSelectedSkillPayload): string {
+  const codigo = cleanText(skill.codigo, 40);
+  const descricao = cleanText(skill.descricao, 320);
+  return codigo && descricao ? `${codigo} — ${descricao}` : codigo || descricao;
+}
+
+function resolveSelectedSkills(payload: PeiGenerationRequest): BnccSelectedSkillPayload[] {
+  if (!Array.isArray(payload.habilidadesSelecionadas)) {
+    return [];
+  }
+
+  return payload.habilidadesSelecionadas
+    .map((skill) => ({
+      codigo: cleanText(skill.codigo, 40),
+      descricao: cleanText(skill.descricao, 320),
+      etapa: cleanText(skill.etapa, 80) || undefined,
+      anoSerie: cleanText(skill.anoSerie, 80) || undefined,
+      area: cleanText(skill.area, 120) || undefined,
+      componente: cleanText(skill.componente, 120) || undefined,
+      conteudo: cleanText(skill.conteudo, 220) || undefined,
+    }))
+    .filter((skill) => skill.codigo && skill.descricao);
+}
+
+function findSkillForConteudo(
+  conteudo: string,
+  skills: BnccSelectedSkillPayload[],
+): BnccSelectedSkillPayload | null {
+  const normalized = conteudo.trim().toLowerCase();
+  if (!normalized) return skills[0] ?? null;
+
+  const exact = skills.find(
+    (skill) => String(skill.conteudo || "").trim().toLowerCase() === normalized,
+  );
+  if (exact) return exact;
+
+  const partial = skills.find((skill) => {
+    const skillConteudo = String(skill.conteudo || "").trim().toLowerCase();
+    return (
+      skillConteudo &&
+      (skillConteudo.includes(normalized) || normalized.includes(skillConteudo))
+    );
+  });
+  if (partial) return partial;
+
+  return skills[0] ?? null;
+}
+
 function resolveCidCodes(payload: PeiGenerationRequest): string[] {
   const fromList = Array.isArray(payload.cids) ? payload.cids : [];
   const fromLegacy = payload.cid ? [payload.cid] : [];
@@ -114,10 +163,7 @@ function normalizeRequest(payload: PeiGenerationRequest): PeiGenerationRequest {
   const discipline = getPeiDisciplineOption(disciplina);
   const cidCodes = resolveCidCodes(payload);
   const conteudos = uniqueClean(payload.conteudos, discipline.conteudos).slice(0, 8);
-  const habilidades = uniqueClean(
-    payload.habilidades,
-    discipline.habilidades.map((item) => item.label),
-  ).slice(0, 8);
+  const habilidadesSelecionadas = resolveSelectedSkills(payload).slice(0, 12);
 
   return {
     ...payload,
@@ -129,7 +175,7 @@ function normalizeRequest(payload: PeiGenerationRequest): PeiGenerationRequest {
     cid: cidCodes[0] ?? "",
     cids: cidCodes,
     conteudos,
-    habilidades,
+    habilidadesSelecionadas,
     trimestre: payload.trimestre || "todos",
   };
 }
@@ -152,11 +198,12 @@ export function validatePeiPayload(payload: PeiGenerationRequest): string | null
   }
 
   if (!Array.isArray(payload.conteudos) || payload.conteudos.length === 0) {
-    return "Selecione ao menos um conteúdo curricular.";
+    return "Informe ao menos um conteúdo curricular.";
   }
 
-  if (!Array.isArray(payload.habilidades) || payload.habilidades.length === 0) {
-    return "Selecione ao menos uma habilidade.";
+  const skills = resolveSelectedSkills(payload);
+  if (skills.length === 0) {
+    return "Selecione ao menos uma habilidade BNCC compatível com os conteúdos.";
   }
 
   return null;
@@ -196,8 +243,14 @@ function buildFallbackOutput(payload: PeiGenerationRequest): PeiStructuredOutput
         "Avaliação formativa, processual e multimodal, com critérios flexibilizados quando necessário.",
       ];
 
-  const curricularRows = payload.conteudos.map((conteudo, index) => {
-    const habilidade = payload.habilidades[index % payload.habilidades.length];
+  const selectedSkills = resolveSelectedSkills(payload);
+  const skillLabels = selectedSkills.map(formatBnccSkillLabel);
+
+  const curricularRows = payload.conteudos.map((conteudo) => {
+    const matchedSkill = findSkillForConteudo(conteudo, selectedSkills);
+    const habilidade = matchedSkill
+      ? formatBnccSkillLabel(matchedSkill)
+      : skillLabels[0] || "Habilidade BNCC selecionada";
     return {
       conteudo,
       habilidade,
@@ -237,7 +290,7 @@ function buildFallbackOutput(payload: PeiGenerationRequest): PeiStructuredOutput
     perfil: perfilParts.join(" "),
     suportes: uniqueClean(supportBase).slice(0, 8),
     acessibilidade,
-    objetivos: payload.habilidades.slice(0, 5).map((habilidade) =>
+    objetivos: skillLabels.slice(0, 5).map((habilidade) =>
       isEnrichment
         ? `Ampliar a habilidade "${habilidade}" por meio de investigação, autoria e socialização.`
         : `Desenvolver a habilidade "${habilidade}" com mediação, recursos acessíveis e progressão por etapas.`,
@@ -256,6 +309,7 @@ function buildFallbackOutput(payload: PeiGenerationRequest): PeiStructuredOutput
 function buildPrompt(payload: PeiGenerationRequest): string {
   const cidOptions = resolveCidOptions(payload);
   const discipline = getPeiDisciplineOption(payload.disciplina);
+  const selectedSkills = resolveSelectedSkills(payload);
   return [
     "Gere os campos de um PEI com base nestes dados.",
     "Use linguagem institucional, concreta, revisável pelo professor e adequada ao Brasil.",
@@ -280,7 +334,7 @@ function buildPrompt(payload: PeiGenerationRequest): string {
           areaConhecimento: payload.areaConhecimento || discipline.area,
           disciplina: payload.disciplina,
           conteudos: payload.conteudos,
-          habilidades: payload.habilidades,
+          habilidadesSelecionadas: selectedSkills,
           trimestre: payload.trimestre,
         },
         referencias: cidOptions.map((cid) => ({

@@ -1,4 +1,8 @@
+import type { BnccSelectedSkillPayload } from "@/lib/bncc/bncc-suggestion-ui";
+
 export const PEI_GENERATION_TYPE = "pei";
+
+export type { BnccSelectedSkillPayload };
 
 export type PeiTrimestre = "1" | "2" | "3" | "todos";
 
@@ -35,7 +39,7 @@ export type PeiGenerationRequest = {
   cid?: string;
   cids?: string[];
   conteudos: string[];
-  habilidades: string[];
+  habilidadesSelecionadas: BnccSelectedSkillPayload[];
   trimestre: PeiTrimestre;
   observacoes?: string;
   gerarParecer?: boolean;

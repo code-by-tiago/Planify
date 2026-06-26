@@ -10,11 +10,17 @@ type MaterialBnccSkillsPanelProps = {
   loading: boolean;
   temaReady: boolean;
   optional?: boolean;
+  title?: string;
+  description?: string;
+  suggestButtonLabel?: string;
+  emptyStateHint?: string;
   onSuggest: () => void;
   onToggleSkill: (skill: BnccSkillOption) => void;
   onSelectGroup: (group: BnccSkillGroup) => void;
   onClearGroup: (group: BnccSkillGroup) => void;
   onClearAll: () => void;
+  onRefreshGroup?: (group: BnccSkillGroup) => void;
+  refreshingConteudo?: string | null;
 };
 
 function Pill({
@@ -46,11 +52,17 @@ export function MaterialBnccSkillsPanel({
   loading,
   temaReady,
   optional = false,
+  title = "Habilidades BNCC do material",
+  description = "Selecione as habilidades que este material deve cobrir. Elas entram no seu Progresso BNCC e servem como referência de alinhamento na geração — o conteúdo continua centrado no tema e nos conteúdos que você definiu. Sem seleção, o sistema estima automaticamente pelo tema.",
+  suggestButtonLabel,
+  emptyStateHint,
   onSuggest,
   onToggleSkill,
   onSelectGroup,
   onClearGroup,
   onClearAll,
+  onRefreshGroup,
+  refreshingConteudo = null,
 }: MaterialBnccSkillsPanelProps) {
   const suggestedCount = groups.reduce(
     (total, group) => total + group.habilidades.length,
@@ -78,18 +90,13 @@ export function MaterialBnccSkillsPanel({
               </Link>
             </div>
             <h3 className="mt-2 text-lg font-black tracking-tight text-slate-950 sm:text-xl">
-              Habilidades BNCC do material
+              {title}
               {optional ? (
                 <span className="ml-2 text-sm font-bold text-slate-500">(opcional)</span>
               ) : null}
             </h3>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-              Selecione as habilidades que este material deve cobrir. Elas entram no
-              seu{" "}
-              <strong className="font-bold text-slate-800">Progresso BNCC</strong> e
-              servem como referência de alinhamento na geração — o conteúdo continua
-              centrado no tema e nos conteúdos que você definiu. Sem seleção, o
-              sistema estima automaticamente pelo tema.
+              {description}
             </p>
           </div>
 
@@ -109,7 +116,9 @@ export function MaterialBnccSkillsPanel({
             className="inline-flex items-center gap-2 rounded-xl border border-cyan-400/30 bg-white px-4 py-2.5 text-sm font-black text-cyan-900 shadow-sm transition hover:border-cyan-500 hover:bg-cyan-50 disabled:cursor-not-allowed disabled:opacity-55"
           >
             <PlanifyIcon name="spark" className="h-4 w-4" />
-            {loading ? "Buscando habilidades..." : "Sugerir habilidades BNCC"}
+            {loading
+              ? "Buscando habilidades..."
+              : suggestButtonLabel || "Sugerir habilidades BNCC"}
           </button>
           {selectedSkills.length > 0 ? (
             <button
@@ -154,9 +163,8 @@ export function MaterialBnccSkillsPanel({
       <div className="max-h-[22rem] overflow-y-auto px-4 py-4 sm:px-5">
         {groups.length === 0 ? (
           <div className="rounded-xl border border-dashed border-cyan-300/40 bg-white/70 px-4 py-6 text-sm leading-7 text-slate-500">
-            Nenhuma sugestão ainda. Com disciplina, ano e tema preenchidos, clique em{" "}
-            <strong className="text-slate-900">Sugerir habilidades BNCC</strong> para
-            escolher o que contará no seu progresso.
+            {emptyStateHint ||
+              "Nenhuma sugestão ainda. Com disciplina, ano e tema preenchidos, clique em Sugerir habilidades BNCC para escolher o que contará no seu progresso."}
           </div>
         ) : (
           <div className="grid gap-4">
@@ -176,19 +184,31 @@ export function MaterialBnccSkillsPanel({
                   </div>
                   {group.habilidades.length > 0 ? (
                     <div className="flex flex-wrap gap-2">
+                      {onRefreshGroup ? (
+                        <button
+                          type="button"
+                          onClick={() => onRefreshGroup(group)}
+                          disabled={loading || refreshingConteudo === group.conteudo}
+                          className="rounded-lg border border-cyan-400/30 bg-cyan-50 px-3 py-1.5 text-[11px] font-black text-cyan-900 transition hover:bg-cyan-100 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {refreshingConteudo === group.conteudo
+                            ? "Atualizando..."
+                            : "Atualizar habilidades"}
+                        </button>
+                      ) : null}
                       <button
                         type="button"
                         onClick={() => onSelectGroup(group)}
                         className="rounded-lg border border-emerald-300/40 bg-emerald-50 px-3 py-1.5 text-[11px] font-black text-emerald-800 transition hover:bg-emerald-100"
                       >
-                        Selecionar até 3
+                        Selecionar grupo
                       </button>
                       <button
                         type="button"
                         onClick={() => onClearGroup(group)}
                         className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-black text-slate-600 transition hover:border-rose-200 hover:text-rose-700"
                       >
-                        Remover grupo
+                        Remover
                       </button>
                     </div>
                   ) : null}

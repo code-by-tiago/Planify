@@ -1,6 +1,8 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { MaterialBnccSkillsPanel } from "@/components/bncc/MaterialBnccSkillsPanel";
+import { TemaCombobox } from "@/components/bncc/TemaCombobox";
 import { CreditsBalancePill } from "@/components/credits/CreditsBalancePill";
 import { DailyGenerationsBar } from "@/components/credits/DailyGenerationsBar";
 import { GenerationCostHint } from "@/components/credits/GenerationCostHint";
@@ -14,7 +16,14 @@ import { PlanifyOwlGenerationCoach } from "@/components/pro/PlanifyOwlGeneration
 import { PlanifyOwlMark } from "@/components/pro/PlanifyOwlMark";
 import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
 import { TurmaCombobox } from "@/components/school/TurmaCombobox";
+import { useBnccContentSkillsSuggestion } from "@/hooks/useBnccContentSkillsSuggestion";
 import { useSchoolClasses } from "@/hooks/useSchoolClasses";
+import type { BnccTemaAutocompleteSuggestion } from "@/lib/bncc/bncc-tema-autocomplete";
+import {
+  mapSelectedBnccSkillsToPayload,
+  splitTopicLines,
+  validateSelectedBnccSkillsForStage,
+} from "@/lib/bncc/bncc-suggestion-ui";
 import { downloadEditorExport } from "@/lib/downloads/editor-export-client";
 import {
   EDUCATION_STAGES,
@@ -28,10 +37,8 @@ import {
 } from "@/lib/materiais/material-editor-flow";
 import { requestPeiGeneration } from "@/lib/pei/pei-client";
 import {
-  getPeiContentOptions,
   getPeiCidOptions,
   getPeiDisciplineOption,
-  getPeiSkillOptions,
   PEI_CID_OPTIONS,
   PEI_DISCIPLINE_OPTIONS,
   PEI_GENERATION_TYPE,
@@ -48,6 +55,7 @@ import {
 } from "@/lib/pro/generation-error-ui";
 import {
   HUD_FIELD_CLASS,
+  HUD_SCROLLABLE_TEXTAREA_CLASS,
   HUD_SECTION_LABEL,
   HUD_TEXTAREA_CLASS,
 } from "@/lib/pro/hud-form-styles";
@@ -58,21 +66,6 @@ type PeiClientProps = {
   studioMode?: boolean;
   onStudioClose?: () => void;
   initialTema?: string;
-};
-
-type SelectAddFieldProps = {
-  id: string;
-  label: string;
-  options: string[];
-  selected: string[];
-  draft: string;
-  onDraftChange: (value: string) => void;
-  onAdd: () => void;
-  onRemove: (value: string) => void;
-  manualDraft?: string;
-  manualPlaceholder?: string;
-  onManualDraftChange?: (value: string) => void;
-  onManualAdd?: () => void;
 };
 
 const tool = getPlanifyTool("pei");
@@ -97,87 +90,6 @@ function addUnique(list: string[], value: string): string[] {
   return [...list, trimmed];
 }
 
-function SelectAddField({
-  id,
-  label,
-  options,
-  selected,
-  draft,
-  onDraftChange,
-  onAdd,
-  onRemove,
-  manualDraft,
-  manualPlaceholder,
-  onManualDraftChange,
-  onManualAdd,
-}: SelectAddFieldProps) {
-  return (
-    <div>
-      <label className={HUD_SECTION_LABEL} htmlFor={id}>
-        {label}
-      </label>
-      <div className="flex gap-2">
-        <select
-          id={id}
-          value={draft}
-          onChange={(event) => onDraftChange(event.target.value)}
-          className={HUD_FIELD_CLASS}
-        >
-          {options.map((option) => (
-            <option key={option} value={option}>
-              {option}
-            </option>
-          ))}
-        </select>
-        <button
-          type="button"
-          onClick={onAdd}
-          className="pl-hud-btn-secondary inline-flex h-11 shrink-0 items-center gap-2 rounded-xl px-3 text-sm font-bold"
-          title={`Adicionar ${label.toLowerCase()}`}
-        >
-          <PlanifyIcon name="plus" className="h-4 w-4" />
-          <span className="hidden sm:inline">Adicionar</span>
-        </button>
-      </div>
-      {onManualDraftChange && onManualAdd ? (
-        <div className="mt-2 flex gap-2">
-          <input
-            value={manualDraft ?? ""}
-            onChange={(event) => onManualDraftChange(event.target.value)}
-            className={HUD_FIELD_CLASS}
-            placeholder={manualPlaceholder}
-          />
-          <button
-            type="button"
-            onClick={onManualAdd}
-            className="pl-hud-btn-secondary inline-flex h-11 shrink-0 items-center gap-2 rounded-xl px-3 text-sm font-bold"
-            title={`Adicionar ${label.toLowerCase()} manualmente`}
-          >
-            <PlanifyIcon name="plus" className="h-4 w-4" />
-            <span className="hidden sm:inline">Manual</span>
-          </button>
-        </div>
-      ) : null}
-      {selected.length ? (
-        <div className="mt-2 flex flex-wrap gap-2">
-          {selected.map((item) => (
-            <button
-              type="button"
-              key={item}
-              onClick={() => onRemove(item)}
-              className="inline-flex max-w-full items-center gap-1 rounded-full border border-cyan-400/25 bg-white px-3 py-1.5 text-left text-xs font-bold text-slate-700"
-              title="Remover"
-            >
-              <span className="line-clamp-1">{item}</span>
-              <PlanifyIcon name="close" className="h-3.5 w-3.5 shrink-0" />
-            </button>
-          ))}
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
 export function PeiClient({
   studioMode = false,
   onStudioClose,
@@ -200,17 +112,8 @@ export function PeiClient({
   ]);
   const [cidDraft, setCidDraft] = useState(PEI_CID_OPTIONS[0]?.codigo ?? "F84.0");
   const [trimestre, setTrimestre] = useState<PeiTrimestre>("todos");
-  const [conteudos, setConteudos] = useState<string[]>(
-    initialDiscipline.conteudos.slice(0, 2),
-  );
-  const [habilidades, setHabilidades] = useState<string[]>(
-    initialDiscipline.habilidades.slice(0, 2).map((item) => item.label),
-  );
-  const [conteudoDraft, setConteudoDraft] = useState(initialDiscipline.conteudos[0] ?? "");
-  const [conteudoManual, setConteudoManual] = useState("");
-  const [habilidadeDraft, setHabilidadeDraft] = useState(
-    initialDiscipline.habilidades[0]?.label ?? "",
-  );
+  const [conteudos, setConteudos] = useState("");
+  const [temaBusca, setTemaBusca] = useState("");
   const [observacoes, setObservacoes] = useState("");
   const [gerarParecer, setGerarParecer] = useState(true);
   const [resultado, setResultado] = useState<PeiGenerationResult | null>(null);
@@ -221,14 +124,53 @@ export function PeiClient({
   const [showPatienceMessage, setShowPatienceMessage] = useState(false);
   const [copied, setCopied] = useState(false);
   const patienceTimerRef = useRef<number | null>(null);
+  const conteudosRef = useRef(conteudos);
   const { runWithRetry, retrying: retryingGeneration } = useRetryableAction();
 
-  const yearOptions = useMemo(() => getYearOptions(etapa), [etapa]);
-  const contentOptions = useMemo(() => getPeiContentOptions(disciplina), [disciplina]);
-  const skillOptions = useMemo(
-    () => getPeiSkillOptions(disciplina).map((item) => item.label),
-    [disciplina],
+  useEffect(() => {
+    conteudosRef.current = conteudos;
+  }, [conteudos]);
+
+  const bnccBasePayload = useMemo(
+    () => ({
+      etapa,
+      anoSerie,
+      areaConhecimento,
+      componenteCurricular: disciplina,
+    }),
+    [anoSerie, areaConhecimento, disciplina, etapa],
   );
+
+  const handleBnccError = useCallback((message: string) => {
+    if (message) {
+      setErro(message);
+    } else {
+      setErro("");
+    }
+  }, []);
+
+  const {
+    groups: bnccGroups,
+    selectedSkills,
+    loadingBncc,
+    refreshingConteudo,
+    suggestBncc,
+    refreshContentBncc,
+    toggleSkill,
+    selectGroup,
+    clearGroup,
+    clearAll: clearBnccSelection,
+    applyTemaSuggestion,
+    reset: resetBncc,
+  } = useBnccContentSkillsSuggestion({
+    basePayload: bnccBasePayload,
+    getConteudosText: () => conteudosRef.current,
+    onError: handleBnccError,
+  });
+
+  const yearOptions = useMemo(() => getYearOptions(etapa), [etapa]);
+  const conteudosPreenchido = Boolean(conteudos.trim());
+  const bnccTemaReady = Boolean(etapa && anoSerie && disciplina);
   const selectedCidOptions = useMemo(
     () => getPeiCidOptions(selectedCids),
     [selectedCids],
@@ -244,15 +186,21 @@ export function PeiClient({
     }
   }, [anoSerie, yearOptions]);
 
+  useEffect(() => {
+    resetBncc();
+  }, [etapa, anoSerie, disciplina, resetBncc]);
+
   function updateDiscipline(next: string) {
     const discipline = getPeiDisciplineOption(next);
     setDisciplina(discipline.value);
     setAreaConhecimento(discipline.area);
-    setConteudos(discipline.conteudos.slice(0, 2));
-    setHabilidades(discipline.habilidades.slice(0, 2).map((item) => item.label));
-    setConteudoDraft(discipline.conteudos[0] ?? "");
-    setConteudoManual("");
-    setHabilidadeDraft(discipline.habilidades[0]?.label ?? "");
+  }
+
+  function handleTemaSuggestionSelect(suggestion: BnccTemaAutocompleteSuggestion) {
+    setConteudos(suggestion.tema);
+    setTemaBusca(suggestion.tema);
+    applyTemaSuggestion(suggestion);
+    setErro("");
   }
 
   function addCid() {
@@ -282,8 +230,13 @@ export function PeiClient({
       areaConhecimento,
       cid: selectedCids[0] ?? "",
       cids: selectedCids,
-      conteudos,
-      habilidades,
+      conteudos: splitTopicLines(conteudos),
+      habilidadesSelecionadas: mapSelectedBnccSkillsToPayload(selectedSkills, {
+        etapa,
+        anoSerie,
+        areaConhecimento,
+        componente: disciplina,
+      }),
       trimestre,
       observacoes: observacoes.trim() || undefined,
       gerarParecer,
@@ -324,12 +277,17 @@ export function PeiClient({
       setErro("Selecione ao menos um CID ou perfil educacional.");
       return;
     }
-    if (!conteudos.length) {
-      setErro("Selecione ao menos um conteúdo.");
+    if (!conteudosPreenchido) {
+      setErro("Informe ao menos um conteúdo na caixa Conteúdos.");
       return;
     }
-    if (!habilidades.length) {
-      setErro("Selecione ao menos uma habilidade.");
+    if (!selectedSkills.length) {
+      setErro("Sugira e selecione ao menos uma habilidade BNCC compatível.");
+      return;
+    }
+    const stageError = validateSelectedBnccSkillsForStage(selectedSkills, etapa, anoSerie);
+    if (stageError) {
+      setErro(stageError);
       return;
     }
 
@@ -616,37 +574,56 @@ export function PeiClient({
             </div>
           </div>
 
-          <SelectAddField
-            id="pei-conteudos"
-            label="Conteúdos"
-            options={contentOptions}
-            selected={conteudos}
-            draft={conteudoDraft}
-            onDraftChange={setConteudoDraft}
-            onAdd={() => setConteudos((current) => addUnique(current, conteudoDraft))}
-            manualDraft={conteudoManual}
-            manualPlaceholder="Escreva um conteúdo específico"
-            onManualDraftChange={setConteudoManual}
-            onManualAdd={() => {
-              setConteudos((current) => addUnique(current, conteudoManual));
-              setConteudoManual("");
-            }}
-            onRemove={(value) =>
-              setConteudos((current) => current.filter((item) => item !== value))
-            }
+          <TemaCombobox
+            label="Buscar tema BNCC"
+            value={temaBusca}
+            onChange={setTemaBusca}
+            onSelectSuggestion={handleTemaSuggestionSelect}
+            etapa={etapa}
+            anoSerie={anoSerie}
+            componente={disciplina}
           />
 
-          <SelectAddField
-            id="pei-habilidades"
-            label="Habilidades"
-            options={skillOptions}
-            selected={habilidades}
-            draft={habilidadeDraft}
-            onDraftChange={setHabilidadeDraft}
-            onAdd={() => setHabilidades((current) => addUnique(current, habilidadeDraft))}
-            onRemove={(value) =>
-              setHabilidades((current) => current.filter((item) => item !== value))
-            }
+          <div>
+            <label className={HUD_SECTION_LABEL} htmlFor="pei-conteudos">
+              Conteúdos
+            </label>
+            <textarea
+              id="pei-conteudos"
+              value={conteudos}
+              onChange={(event) => setConteudos(event.target.value)}
+              rows={6}
+              spellCheck={false}
+              placeholder="Descreva os conteúdos, temas ou unidades que deseja trabalhar no PEI."
+              className={HUD_SCROLLABLE_TEXTAREA_CLASS}
+              aria-describedby="pei-conteudos-hint"
+            />
+            <p
+              id="pei-conteudos-hint"
+              className="mt-2 text-xs text-cyan-700/80"
+            >
+              Texto livre — use o formato que preferir. A IA e a BNCC interpretam o conteúdo
+              informado sem reorganizar automaticamente este campo.
+              {conteudosPreenchido ? " (preenchido)" : ""}
+            </p>
+          </div>
+
+          <MaterialBnccSkillsPanel
+            groups={bnccGroups}
+            selectedSkills={selectedSkills}
+            loading={loadingBncc}
+            temaReady={bnccTemaReady && conteudosPreenchido}
+            title="Habilidades BNCC por conteúdo"
+            description="As sugestões vêm desmarcadas por padrão. Se não concordar com as opções de um conteúdo, use Atualizar habilidades naquele bloco. Selecione as habilidades que entrarão no PEI."
+            suggestButtonLabel={loadingBncc ? "Sugerindo BNCC..." : "Sugerir BNCC"}
+            emptyStateHint="Nenhuma sugestão ainda. Preencha os conteúdos e clique em Sugerir BNCC."
+            onSuggest={() => void suggestBncc()}
+            onToggleSkill={toggleSkill}
+            onSelectGroup={selectGroup}
+            onClearGroup={clearGroup}
+            onClearAll={clearBnccSelection}
+            onRefreshGroup={(group) => void refreshContentBncc(group)}
+            refreshingConteudo={refreshingConteudo}
           />
 
           <div>

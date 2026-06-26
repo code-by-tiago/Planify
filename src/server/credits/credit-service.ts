@@ -75,7 +75,8 @@ const CREDIT_COST: Partial<Record<MaterialEngineType, number>> & Record<string, 
 };
 
 export function getCreditCost(tipo: string): number {
-  return CREDIT_COST[tipo as MaterialEngineType] ?? 1;
+  void tipo;
+  return 0;
 }
 
 type SpendResult =
@@ -147,44 +148,11 @@ export async function spendCredits(
   email?: string | null,
   costOverride?: number,
 ): Promise<SpendResult> {
-  const cost =
-    typeof costOverride === "number" && costOverride > 0
-      ? Math.round(costOverride)
-      : getCreditCost(tipo);
-
-  await syncCreditWalletFromSubscription({ userId, email });
-
-  const wallet = await getCreditWallet(userId);
-  const billedPlanKey = await resolveUserBillingPlanKey({ userId, email });
-  if (hasUnlimitedQuota(email) || billedPlanKey) {
-    return { status: "skipped" };
-  }
-
-  if (!wallet) {
-    return { status: "skipped" };
-  }
-
-  try {
-    const { data, error } = await db().rpc("planify_spend_credits", {
-      p_user: userId,
-      p_cost: cost,
-      p_tipo: tipo,
-    });
-
-    if (error) {
-      return { status: "skipped" };
-    }
-
-    const newBalance = Number(data);
-
-    if (newBalance < 0) {
-      return { status: "insufficient", balance: wallet.balance, cost };
-    }
-
-    return { status: "ok", balance: newBalance, cost };
-  } catch {
-    return { status: "skipped" };
-  }
+  void userId;
+  void tipo;
+  void email;
+  void costOverride;
+  return { status: "skipped" };
 }
 
 export async function refundCredits(

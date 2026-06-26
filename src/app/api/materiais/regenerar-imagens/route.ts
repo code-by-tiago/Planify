@@ -77,7 +77,7 @@ async function handlePost(request: NextRequest, _context: { params: Promise<Reco
       html: result.html,
       estrutura: result.estrutura,
       imagesResolved: result.imagesResolved,
-      creditCost: chargedCost || retryCost,
+      creditCost: 0,
     });
   } catch (error) {
     if (user?.id && chargedCost > 0) {

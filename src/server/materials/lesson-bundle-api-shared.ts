@@ -271,5 +271,8 @@ export function resolveLessonBundleCreditCost(
   bundleCost: number,
   tipo: string,
 ): number {
-  return charge.chargedCost || bundleCost || getCreditCost(tipo);
+  void charge;
+  void bundleCost;
+  void tipo;
+  return 0;
 }

@@ -84,7 +84,7 @@ async function handlePost(
       questionsResolved: result.questionsResolved,
       qualityScore: result.qualityScore,
       qualityIssues: result.qualityIssues,
-      creditCost: chargedCost || retryCost,
+      creditCost: 0,
     });
   } catch (error) {
     if (user?.id && chargedCost > 0) {

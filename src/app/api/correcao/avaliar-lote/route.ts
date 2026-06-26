@@ -168,7 +168,7 @@ async function handlePost(
       resultados,
       falhas,
       qualityScore: avgQuality,
-      creditCost: successCount * BATCH_CREDIT_PER_RESPONSE || getCreditCost(tipo),
+      creditCost: 0,
     });
   } catch (error) {
     if (user?.id && chargedCost > 0) {

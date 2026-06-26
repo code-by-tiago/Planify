@@ -115,7 +115,7 @@ async function handlePost(
     return NextResponse.json({
       ok: true,
       item: result.item,
-      creditCost: chargedCost || retryCost,
+      creditCost: 0,
     });
   } catch (error) {
     if (user?.id && chargedCost > 0) {

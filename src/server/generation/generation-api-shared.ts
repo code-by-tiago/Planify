@@ -228,7 +228,10 @@ export function resolveGenerationCreditCost(
   tipo: string,
   fallbackCost?: number,
 ): number {
-  return charge.chargedCost || fallbackCost || getCreditCost(tipo);
+  void charge;
+  void tipo;
+  void fallbackCost;
+  return 0;
 }
 
 export function logGenerationSuccessEvent(options: {

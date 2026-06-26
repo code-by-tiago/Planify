@@ -107,7 +107,7 @@ async function handlePost(
       result: result.result,
       qualityScore: quality.qualityScore,
       qualityIssues: quality.qualityIssues,
-      creditCost: chargedCost || getCreditCost(tipo),
+      creditCost: 0,
     });
   } catch (error) {
     if (user?.id && chargedCost > 0) {

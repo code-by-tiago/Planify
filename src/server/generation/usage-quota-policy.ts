@@ -1,24 +1,13 @@
-import { hasUnlimitedQuota } from "@/server/auth/courtesy-emails";
-import { resolveUserBillingPlanKey } from "@/server/credits/credit-subscription-sync";
-
 /**
- * Assinantes ativos e contas cortesia não têm teto de créditos nem cota diária.
- * Proteção contra abuso fica no inflight guard (cliques repetidos / geração paralela).
+ * Plano atual ilimitado: nenhuma ferramenta consome saldo, credito mensal ou cota diaria.
+ * A protecao operacional fica no inflight guard contra geracoes paralelas repetidas.
  */
 export async function shouldSkipUsageQuotas(params: {
   userId: string;
   email?: string | null;
 }): Promise<boolean> {
-  if (hasUnlimitedQuota(params.email)) {
-    return true;
-  }
-
-  const planKey = await resolveUserBillingPlanKey({
-    userId: params.userId,
-    email: params.email,
-  });
-
-  return Boolean(planKey);
+  void params;
+  return true;
 }
 
 export function extractIdempotencyKey(payload: unknown): string | null {

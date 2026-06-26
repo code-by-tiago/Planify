@@ -23,5 +23,6 @@ export const CLIENT_CREDIT_COSTS: Partial<Record<PlanifyToolId | string, number>
 };
 
 export function getClientCreditCost(tipo: string): number {
-  return CLIENT_CREDIT_COSTS[tipo] ?? 1;
+  void tipo;
+  return 0;
 }

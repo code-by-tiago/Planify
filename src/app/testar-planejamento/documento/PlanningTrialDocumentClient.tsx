@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { PlanifyBrand } from "@/components/pro/PlanifyBrand";
 import { PlanningTrialExportBar } from "@/components/planejamentos/PlanningTrialExportBar";
 import { PlanningTrialPaywallModal } from "@/components/planejamentos/PlanningTrialPaywallModal";
@@ -18,6 +18,7 @@ export function PlanningTrialDocumentClient() {
   const [doc, setDoc] = useState<PlanningTrialStoredDocument | null>(null);
   const [activeTabId, setActiveTabId] = useState("anual");
   const [paywallOpen, setPaywallOpen] = useState(false);
+  const articleRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     const stored = readPlanningTrialDocument();
@@ -28,6 +29,22 @@ export function PlanningTrialDocumentClient() {
     setDoc(stored);
     setActiveTabId(stored.activeTabId || stored.tabs[0]?.id || "anual");
   }, [router]);
+
+  useEffect(() => {
+    if (!doc) return;
+    const article = articleRef.current;
+    const docScrollable =
+      document.documentElement.scrollHeight > document.documentElement.clientHeight;
+    const articleOverflow = article
+      ? window.getComputedStyle(article).overflowY
+      : "missing";
+    const articleMaxHeight = article
+      ? window.getComputedStyle(article).maxHeight
+      : "missing";
+    // #region agent log
+    fetch('http://127.0.0.1:7718/ingest/9ac33552-969d-48be-9089-3a3b10571400',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a1058c'},body:JSON.stringify({sessionId:'a1058c',location:'PlanningTrialDocumentClient.tsx:scroll',message:'trial document scroll metrics',data:{docScrollable,articleOverflow,articleMaxHeight,scrollHeight:document.documentElement.scrollHeight,clientHeight:document.documentElement.clientHeight,articleScrollHeight:article?.scrollHeight??0},timestamp:Date.now(),hypothesisId:'A',runId:'post-fix'})}).catch(()=>{});
+    // #endregion
+  }, [doc, activeTabId]);
 
   const activeTab = useMemo(() => {
     if (!doc) return null;
@@ -72,10 +89,10 @@ export function PlanningTrialDocumentClient() {
         </div>
       </header>
 
-      <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
+      <div className="mx-auto max-w-6xl px-4 py-6 pb-16 sm:px-6">
         <div className="mb-4 rounded-2xl border border-cyan-100 bg-cyan-50/80 px-4 py-3 text-sm font-medium text-cyan-900">
           Visualização completa do pacote de teste: anual e trimestres extraídos da
-          mesma matriz. Role cada documento — exportações ficam no Planify Pro.
+          mesma matriz. Role a página à vontade — exportações ficam no Planify Pro.
         </div>
 
         {doc.tabs.length > 1 ? (
@@ -108,7 +125,8 @@ export function PlanningTrialDocumentClient() {
         </div>
 
         <article
-          className="max-h-[calc(100vh-14rem)] overflow-y-auto rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-10"
+          ref={articleRef}
+          className="overflow-x-auto rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-10"
           dangerouslySetInnerHTML={{ __html: activeTab.html }}
         />
       </div>

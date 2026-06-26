@@ -456,6 +456,16 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
   }, [trialMode]);
 
   useEffect(() => {
+    if (!trialMode) return;
+    const docScrollable =
+      document.documentElement.scrollHeight > document.documentElement.clientHeight;
+    const trappedPane = document.querySelector(".planify-ui3.overflow-hidden");
+    // #region agent log
+    fetch('http://127.0.0.1:7718/ingest/9ac33552-969d-48be-9089-3a3b10571400',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a1058c'},body:JSON.stringify({sessionId:'a1058c',location:'PlanejamentosClient.tsx:scroll',message:'trial form scroll metrics',data:{docScrollable,hasTrappedPane:Boolean(trappedPane),scrollHeight:document.documentElement.scrollHeight,clientHeight:document.documentElement.clientHeight},timestamp:Date.now(),hypothesisId:'B',runId:'post-fix'})}).catch(()=>{});
+    // #endregion
+  }, [trialMode, wizardStep]);
+
+  useEffect(() => {
     const prefill = readPlanejamentoPrefill();
     const matriz =
       typeof window !== "undefined"
@@ -1355,9 +1365,8 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
     );
   }
 
-  return (
-    <PlanifyWorkspacePane>
-      <div className="planify-hud pl-hud-hub mx-auto max-w-7xl space-y-5 px-3 sm:px-4 lg:px-0">
+  const workspaceContent = (
+    <div className="planify-hud pl-hud-hub mx-auto max-w-7xl space-y-5 px-3 sm:px-4 lg:px-0">
         {!embeddedInDashboard && !trialMode ? (
           <div className="pl-hud-page-hero overflow-hidden rounded-2xl border border-cyan-400/15">
             <PlanifyPageHero
@@ -2136,6 +2145,11 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
           ) : null}
         </section>
       </div>
-    </PlanifyWorkspacePane>
+  );
+
+  return trialMode ? (
+    workspaceContent
+  ) : (
+    <PlanifyWorkspacePane>{workspaceContent}</PlanifyWorkspacePane>
   );
 }

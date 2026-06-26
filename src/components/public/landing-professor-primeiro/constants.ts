@@ -2,7 +2,7 @@ export const LANDING_NAV = [
   { href: "/#professores", label: "Para professores" },
   { href: "/escolas", label: "Para escolas" },
   { href: "/planos", label: "Planos" },
-  { href: "/#recursos", label: "Recursos" },
+  { href: "/#recursos", label: "Feedback" },
 ] as const;
 
 export const TRUST_ITEMS = [

@@ -23,10 +23,17 @@ function decodeJwtEmail(token: string): string {
   }
 }
 
+function getClientOwnerEmails(): string[] {
+  return (process.env.NEXT_PUBLIC_ADMIN_EMAIL || "")
+    .split(",")
+    .map((email) => email.trim().toLowerCase())
+    .filter(Boolean);
+}
+
 function mightBeOwnerToken(token: string): boolean {
   const email = decodeJwtEmail(token);
-  const ownerHint = process.env.NEXT_PUBLIC_ADMIN_EMAIL?.trim().toLowerCase();
-  return Boolean(ownerHint && email && email === ownerHint);
+  if (!email) return false;
+  return getClientOwnerEmails().includes(email);
 }
 
 export function markPremiumCookiesSynced(): void {

@@ -15,11 +15,27 @@ export type BnccSkillOption = {
   componente?: string;
   conteudo: string;
   source?: "local" | "fallback";
+  relevanceScore?: number;
+  score?: number;
+  justificativaPedagogica?: string;
+  compatibilidade?: "alta" | "compativel" | "resgate";
+};
+
+export type BnccSkillGroupMeta = {
+  total?: number;
+  catalogTotal?: number;
+  recommendedTotal?: number;
+  componente?: string;
+  etapa?: string;
+  anoSerie?: string;
 };
 
 export type BnccSkillGroup = {
   conteudo: string;
   habilidades: BnccSkillOption[];
+  catalogo?: BnccSkillOption[];
+  recomendadas?: BnccSkillOption[];
+  meta?: BnccSkillGroupMeta;
 };
 
 export type BnccSelectedSkillPayload = {
@@ -65,6 +81,28 @@ export function normalizeBnccSkillOption(
     componente: skill?.componente ? String(skill.componente) : undefined,
     conteudo: String(skill?.conteudo || fallbackConteudo || "Tema informado"),
     source: skill?.source === "local" ? "local" : "fallback",
+    relevanceScore:
+      typeof skill?.relevanceScore === "number"
+        ? skill.relevanceScore
+        : typeof skill?.score === "number"
+          ? skill.score
+          : undefined,
+    score:
+      typeof skill?.score === "number"
+        ? skill.score
+        : typeof skill?.relevanceScore === "number"
+          ? skill.relevanceScore
+          : undefined,
+    justificativaPedagogica:
+      typeof skill?.justificativaPedagogica === "string"
+        ? skill.justificativaPedagogica
+        : undefined,
+    compatibilidade:
+      skill?.compatibilidade === "alta" ||
+      skill?.compatibilidade === "compativel" ||
+      skill?.compatibilidade === "resgate"
+        ? skill.compatibilidade
+        : undefined,
   };
 }
 
@@ -144,6 +182,20 @@ export function groupBnccSkillsFromResponse(
               normalizeBnccSkillOption(skill, conteudo),
             )
           : [],
+        catalogo: Array.isArray(group?.catalogo)
+          ? (group.catalogo as Record<string, unknown>[]).map((skill) =>
+              normalizeBnccSkillOption(skill, conteudo),
+            )
+          : undefined,
+        recomendadas: Array.isArray(group?.recomendadas)
+          ? (group.recomendadas as Record<string, unknown>[]).map((skill) =>
+              normalizeBnccSkillOption(skill, conteudo),
+            )
+          : undefined,
+        meta:
+          group?.meta && typeof group.meta === "object"
+            ? (group.meta as BnccSkillGroupMeta)
+            : undefined,
       });
     }
   }

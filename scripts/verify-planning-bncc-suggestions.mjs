@@ -141,11 +141,33 @@ function assertNoCrossDiscipline(codes, componente, label) {
   }
 }
 
+function assertCatalogStructure(groups, label) {
+  for (const group of groups) {
+    const catalogo = group.catalogo || [];
+    const recomendadas = group.recomendadas || group.habilidades || [];
+    const catalogCodes = new Set(catalogo.map((skill) => skill.codigo));
+
+    assert.ok(catalogo.length > 0, `${label}: catalogo vazio para "${group.conteudo.slice(0, 50)}"`);
+    assert.ok(
+      recomendadas.length <= 10,
+      `${label}: recomendadas.length=${recomendadas.length} > 10`,
+    );
+
+    for (const skill of recomendadas) {
+      assert.ok(
+        catalogCodes.has(skill.codigo),
+        `${label}: ${skill.codigo} em recomendadas mas fora do catalogo`,
+      );
+    }
+  }
+}
+
 function assertCoherence(groups, label, assertive = false) {
   const assess = assertive ? assessAssertiveSkillCoherence : assessSkillContentCoherence;
 
   for (const group of groups) {
-    for (const skill of group.habilidades || []) {
+    const skills = group.recomendadas || group.habilidades || [];
+    for (const skill of skills) {
       const assessment = assess(group.conteudo, skill, skill.score);
       assert.equal(
         assessment.coherent,
@@ -163,7 +185,7 @@ function assertCoherence(groups, label, assertive = false) {
 
 function assertExpectsCode(groups, expectedPrefixes, label) {
   const codes = groups.flatMap((group) =>
-    (group.habilidades || []).map((skill) => skill.codigo),
+    (group.recomendadas || group.habilidades || []).map((skill) => skill.codigo),
   );
 
   for (const prefix of expectedPrefixes) {
@@ -332,18 +354,24 @@ for (const scenario of assertiveScenarios) {
     );
     const groups = result.conteudos || [];
     const allCodes = groups.flatMap((group) =>
-      (group.habilidades || []).map((skill) => skill.codigo),
+      (group.recomendadas || group.habilidades || []).map((skill) => skill.codigo),
     );
 
     console.log(`\n=== ${scenario.name} ===`);
     for (const group of groups) {
-      const codes = (group.habilidades || []).map((skill) => skill.codigo).join(", ");
-      console.log(`  ${group.conteudo.slice(0, 50)} => ${codes || "(vazio)"}`);
+      const catalogCount = (group.catalogo || []).length;
+      const recommended = (group.recomendadas || group.habilidades || [])
+        .map((skill) => skill.codigo)
+        .join(", ");
+      console.log(
+        `  ${group.conteudo.slice(0, 50)} => catálogo=${catalogCount}, recomendadas=${recommended || "(vazio)"}`,
+      );
     }
     console.log(`  qualityScore=${result.qualityScore ?? "n/a"}`);
 
     if (scenario.expectSkills) {
       assert.ok(allCodes.length > 0, `${scenario.name}: esperava habilidades`);
+      assertCatalogStructure(groups, scenario.name);
       assertCoherence(groups, scenario.name, true);
       assertStage(
         allCodes,
@@ -387,7 +415,7 @@ for (const scenario of assertiveScenarios) {
       }
 
       for (const group of groups) {
-        for (const skill of group.habilidades || []) {
+        for (const skill of group.recomendadas || group.habilidades || []) {
           assert.ok(
             typeof skill.justificativaPedagogica === "string" &&
               skill.justificativaPedagogica.length > 20,

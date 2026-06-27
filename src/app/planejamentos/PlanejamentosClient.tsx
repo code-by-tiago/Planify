@@ -78,6 +78,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { splitTopicLines } from "@/lib/bncc/split-topic-lines";
 import { TemaCombobox } from "@/components/bncc/TemaCombobox";
+import { PlanningBnccSkillPicker } from "@/components/planejamentos/PlanningBnccSkillPicker";
 import type { BnccTemaAutocompleteSuggestion } from "@/lib/bncc/bncc-tema-autocomplete";
 
 type TipoPlanejamento = "anual" | "trimestral";
@@ -99,12 +100,21 @@ type BnccSkill = {
   compatibilidade?: "alta" | "compativel" | "resgate";
 };
 
-const BNCC_HIGH_RELEVANCE_SCORE = 16;
-const BNCC_MIN_RELEVANCE_SCORE = 8;
+const MAX_BNCC_SKILLS_PER_CONTENT = 3;
 
 type BnccGroup = {
   conteudo: string;
   habilidades: BnccSkill[];
+  catalogo?: BnccSkill[];
+  recomendadas?: BnccSkill[];
+  meta?: {
+    total?: number;
+    catalogTotal?: number;
+    recommendedTotal?: number;
+    componente?: string;
+    etapa?: string;
+    anoSerie?: string;
+  };
 };
 
 type GeneratedPlanning = {
@@ -371,6 +381,13 @@ function groupSkillsFromResponse(data: any, conteudos: string[]) {
         habilidades: Array.isArray(group?.habilidades)
           ? group.habilidades.map((skill: any) => normalizeSkill(skill, conteudo))
           : [],
+        catalogo: Array.isArray(group?.catalogo)
+          ? group.catalogo.map((skill: any) => normalizeSkill(skill, conteudo))
+          : undefined,
+        recomendadas: Array.isArray(group?.recomendadas)
+          ? group.recomendadas.map((skill: any) => normalizeSkill(skill, conteudo))
+          : undefined,
+        meta: group?.meta && typeof group.meta === "object" ? group.meta : undefined,
       });
     }
   }
@@ -379,25 +396,12 @@ function groupSkillsFromResponse(data: any, conteudos: string[]) {
 
   return conteudos.map((conteudo) => ({
     conteudo,
-    habilidades: [],
+    habilidades: [] as BnccSkill[],
+    catalogo: [] as BnccSkill[],
+    recomendadas: [] as BnccSkill[],
   }));
 }
 
-function relevanceBadge(score?: number): { label: string; tone: "emerald" | "cyan" | "amber" } | null {
-  if (typeof score !== "number") {
-    return null;
-  }
-
-  if (score >= BNCC_HIGH_RELEVANCE_SCORE) {
-    return { label: "Alta compatibilidade", tone: "emerald" };
-  }
-
-  if (score >= BNCC_MIN_RELEVANCE_SCORE) {
-    return { label: "Compatível", tone: "cyan" };
-  }
-
-  return null;
-}
 
 function Pill({
   children,
@@ -585,14 +589,31 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
     [applyBnccEducation],
   );
 
+  const topicLineCount = useMemo(
+    () => (form.conteudos.trim() ? splitTopicLines(form.conteudos.trim()).length : 0),
+    [form.conteudos],
+  );
+
+  const conteudosComBncc = useMemo(() => {
+    const withSelection = new Set(
+      selectedSkills.map((skill) => skill.conteudo).filter(Boolean),
+    );
+    return withSelection.size;
+  }, [selectedSkills]);
+
   const stats = useMemo(
     () => ({
-      conteudos: conteudosPreenchido ? 1 : 0,
-      sugeridas: groups.reduce((total, group) => total + group.habilidades.length, 0),
+      conteudos: topicLineCount,
+      conteudosComBncc,
+      sugeridas: groups.reduce(
+        (total, group) => total + (group.recomendadas?.length ?? group.habilidades.length),
+        0,
+      ),
+      catalogo: groups.reduce((total, group) => total + (group.catalogo?.length ?? 0), 0),
       selecionadas: selectedSkills.length,
       matriz: generatedPlanning?.conteudos?.length || 0,
     }),
-    [conteudosPreenchido, groups, selectedSkills.length, generatedPlanning],
+    [topicLineCount, conteudosComBncc, groups, selectedSkills.length, generatedPlanning],
   );
 
   const canGoToWizardStep2 = conteudosPreenchido;
@@ -734,32 +755,34 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
     setError("");
   }
 
-  function isSelected(skill: BnccSkill) {
-    return selectedSkills.some((item) => item.id === skill.id);
-  }
-
   function toggleSkill(skill: BnccSkill) {
     invalidateGenerated();
     setSelectedSkills((current) => {
       const exists = current.some((item) => item.id === skill.id);
-      return exists ? current.filter((item) => item.id !== skill.id) : [...current, skill];
+      if (exists) {
+        return current.filter((item) => item.id !== skill.id);
+      }
+
+      const sameContentCount = current.filter((item) => item.conteudo === skill.conteudo).length;
+      if (sameContentCount >= MAX_BNCC_SKILLS_PER_CONTENT) {
+        return current;
+      }
+
+      return [...current, skill];
     });
   }
 
-  function selectGroup(group: BnccGroup) {
+  function selectTopRecommendedForGroup(conteudo: string, skills: BnccSkill[]) {
     invalidateGenerated();
     setSelectedSkills((current) => {
-      const map = new Map(current.map((skill) => [skill.id, skill]));
-      for (const skill of group.habilidades.slice(0, 3)) map.set(skill.id, skill);
-      return Array.from(map.values());
+      const withoutContent = current.filter((item) => item.conteudo !== conteudo);
+      return [...withoutContent, ...skills.slice(0, MAX_BNCC_SKILLS_PER_CONTENT)];
     });
   }
 
-  function removeGroup(group: BnccGroup) {
+  function clearGroupSelection(conteudo: string) {
     invalidateGenerated();
-    setSelectedSkills((current) =>
-      current.filter((skill) => !group.habilidades.some((item) => item.id === skill.id)),
-    );
+    setSelectedSkills((current) => current.filter((skill) => skill.conteudo !== conteudo));
   }
 
   function buildPlanningEditorMeta(extras?: Partial<PlanningEditorMeta>): PlanningEditorMeta {
@@ -836,7 +859,7 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
     const topicLines = splitTopicLines(conteudosText);
 
     setLoadingBncc(true);
-    setStatus("Buscando habilidades BNCC pelos conteúdos...");
+    setStatus("Carregando catálogo BNCC pelos conteúdos...");
 
     try {
       const response = await fetch(bnccSuggestUrl, {
@@ -862,7 +885,7 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
       setSelectedSkills([]);
       setContentRefreshOffsets({});
       invalidateGenerated();
-      setStatus("Habilidades sugeridas. Escolha manualmente quais entrarão no planejamento.");
+      setStatus("Catálogo BNCC carregado. Escolha as habilidades para cada conteúdo.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao sugerir habilidades BNCC.");
       setStatus("Erro na sugestão");
@@ -874,7 +897,7 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
   async function refreshContentBncc(group: BnccGroup) {
     setError("");
 
-    const excludeCodigos = group.habilidades
+    const excludeCodigos = (group.recomendadas ?? group.habilidades)
       .map((skill) => skill.codigo.trim())
       .filter(Boolean);
     const nextOffset = (contentRefreshOffsets[group.conteudo] ?? 0) + 1;
@@ -910,7 +933,7 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
       const refreshed =
         refreshedGroups.find((item) => item.conteudo === group.conteudo) ?? refreshedGroups[0];
 
-      if (!refreshed?.habilidades.length) {
+      if (!refreshed?.recomendadas?.length && !refreshed?.habilidades.length) {
         setError(
           String(data?.message || "Sem outras opções compatíveis com este conteúdo."),
         );
@@ -918,14 +941,16 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
         return;
       }
 
-      const replacedCodes = new Set(group.habilidades.map((skill) => skill.codigo));
-      const newCodes = new Set(refreshed.habilidades.map((skill) => skill.codigo));
+      const replacedCodes = new Set(
+        (group.recomendadas ?? group.habilidades).map((skill) => skill.codigo),
+      );
+      const newCodes = new Set(
+        (refreshed.recomendadas ?? refreshed.habilidades).map((skill) => skill.codigo),
+      );
 
       setGroups((current) =>
         current.map((item) =>
-          item.conteudo === group.conteudo
-            ? { conteudo: group.conteudo, habilidades: refreshed.habilidades }
-            : item,
+          item.conteudo === group.conteudo ? refreshed : item,
         ),
       );
 
@@ -945,9 +970,9 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
 
       invalidateGenerated();
       setStatus(
-        refreshed.habilidades.length < 3
-          ? `Foram encontradas ${refreshed.habilidades.length} alternativa(s) compatíveis com este conteúdo.`
-          : "Novas opções carregadas para este conteúdo. Escolha as habilidades desejadas.",
+        (refreshed.recomendadas ?? refreshed.habilidades).length < 3
+          ? `Foram encontradas ${(refreshed.recomendadas ?? refreshed.habilidades).length} alternativa(s) compatíveis com este conteúdo.`
+          : "Novas recomendações carregadas para este conteúdo.",
       );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao buscar outras habilidades BNCC.");
@@ -1491,6 +1516,7 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
           onStepChange={setWizardStep}
           stats={{
             conteudos: stats.conteudos,
+            conteudosComBncc: stats.conteudosComBncc,
             selecionadas: stats.selecionadas,
             matriz: stats.matriz,
           }}
@@ -1841,7 +1867,7 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
 
             <div className="mt-7 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
               <button type="button" onClick={suggestBncc} disabled={loadingBncc} className="pl-hud-btn-secondary rounded-xl px-5 py-3.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60">
-                {loadingBncc ? "Sugerindo BNCC..." : "1. Sugerir BNCC"}
+                {loadingBncc ? "Carregando BNCC..." : "1. Carregar habilidades BNCC"}
               </button>
               <button
                 type="button"
@@ -1895,15 +1921,15 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
             <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-cyan-600">BNCC por conteúdo</p>
-                <h2 className="mt-3 text-sm font-semibold tracking-tight text-slate-900 sm:text-base">Habilidades sugeridas</h2>
+                <h2 className="mt-3 text-sm font-semibold tracking-tight text-slate-900 sm:text-base">Escolha as habilidades BNCC</h2>
                 <p className="mt-3 text-sm leading-7 text-slate-400">
-                  As sugestões vêm desmarcadas por padrão. Se não concordar com as 3 opções de um
-                  conteúdo, use <strong className="text-slate-700">Atualizar habilidades</strong>{" "}
-                  naquele bloco.
+                  Todas as habilidades da sua etapa e disciplina. No topo, as mais relacionadas ao
+                  conteúdo que você escreveu — você escolhe; recomendamos por afinidade.
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
-                <Pill tone="cyan">{stats.sugeridas} sugeridas</Pill>
+                <Pill tone="cyan">{stats.catalogo} no catálogo</Pill>
+                <Pill tone="cyan">{stats.sugeridas} recomendadas</Pill>
                 <Pill tone="emerald">{stats.selecionadas} selecionadas</Pill>
                 {usedAI !== null ? <Pill tone={usedAI ? "emerald" : "amber"}>{usedAI ? "IA usada" : "Modo seguro"}</Pill> : null}
               </div>
@@ -1911,81 +1937,25 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
 
             {groups.length === 0 ? (
               <div className="mt-7 rounded-2xl border border-dashed border-blue-200 bg-slate-50/50 p-7 text-sm leading-7 text-slate-500">
-                Nenhuma sugestão ainda. Preencha os conteúdos e clique em <strong className="text-slate-950">Sugerir BNCC</strong>.
+                Nenhum catálogo carregado ainda. Preencha os conteúdos e clique em{" "}
+                <strong className="text-slate-950">Carregar habilidades BNCC</strong>.
               </div>
             ) : (
               <div className="mt-7 grid gap-5">
                 {groups.map((group) => (
-                  <div key={group.conteudo} className="rounded-[1.75rem] border border-slate-200/80 bg-white/90 p-5">
-                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                      <div>
-                        <p className="text-xs font-black uppercase tracking-[0.25em] text-blue-600">Conteúdo</p>
-                        <h3 className="mt-2 text-sm font-semibold text-slate-900">{group.conteudo}</h3>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        <button
-                          type="button"
-                          onClick={() => void refreshContentBncc(group)}
-                          disabled={
-                            loadingBncc || refreshingConteudo === group.conteudo
-                          }
-                          className="rounded-xl border border-cyan-400/30 bg-cyan-50 px-4 py-2 text-xs font-black text-cyan-900 transition hover:bg-cyan-100 disabled:cursor-not-allowed disabled:opacity-60"
-                        >
-                          {refreshingConteudo === group.conteudo
-                            ? "Atualizando..."
-                            : "Atualizar habilidades"}
-                        </button>
-                        <button type="button" onClick={() => selectGroup(group)} className="rounded-xl border border-emerald-300/30 bg-emerald-300/10 px-4 py-2 text-xs font-black text-emerald-100 transition hover:bg-emerald-300/20">
-                          Selecionar grupo
-                        </button>
-                        <button type="button" onClick={() => removeGroup(group)} className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-black text-slate-700 transition hover:border-rose-300 hover:bg-slate-50 hover:text-rose-700">
-                          Remover
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="mt-5 grid gap-3">
-                      {group.habilidades.length === 0 ? (
-                        <div className="rounded-xl border border-dashed border-amber-200 bg-amber-50/70 p-5 text-sm leading-7 text-amber-900">
-                          Nenhuma habilidade coerente encontrada para este conteúdo. Revise o texto
-                          ou use <strong>Atualizar habilidades</strong> para buscar alternativas.
-                        </div>
-                      ) : null}
-                      {group.habilidades.length > 0 && group.habilidades.length < 3 ? (
-                        <p className="rounded-xl border border-amber-200/80 bg-amber-50/60 px-4 py-3 text-sm text-amber-900">
-                          Foram encontradas apenas {group.habilidades.length} habilidade(s)
-                          compatível(is) com este conteúdo. Você pode atualizar para ver outras
-                          opções.
-                        </p>
-                      ) : null}
-                      {group.habilidades.map((skill) => {
-                        const selected = isSelected(skill);
-                        const badge = relevanceBadge(skill.relevanceScore);
-                        return (
-                          <button key={skill.id} type="button" onClick={() => toggleSkill(skill)} className={`rounded-xl border p-5 text-left transition hover:-translate-y-0.5 ${selected ? "border-emerald-300/60 bg-emerald-50/80" : "border-cyan-400/15 bg-white/80 hover:border-cyan-400/35 hover:bg-cyan-50/40"}`}>
-                            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                              <div>
-                                <p className="text-lg font-extrabold text-slate-950">{skill.codigo}</p>
-                                <p className="mt-2 text-sm leading-7 text-slate-600">{skill.descricao}</p>
-                                {skill.justificativaPedagogica ? (
-                                  <details className="mt-3 rounded-lg border border-slate-200/80 bg-slate-50/80 px-4 py-3 text-sm leading-6 text-slate-600">
-                                    <summary className="cursor-pointer font-semibold text-slate-800">
-                                      Justificativa pedagógica
-                                    </summary>
-                                    <p className="mt-2">{skill.justificativaPedagogica}</p>
-                                  </details>
-                                ) : null}
-                              </div>
-                              <div className="flex flex-wrap gap-2">
-                                {badge ? <Pill tone={badge.tone}>{badge.label}</Pill> : null}
-                                <Pill tone={selected ? "emerald" : "slate"}>{selected ? "Selecionada" : "Clique para usar"}</Pill>
-                              </div>
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
+                  <PlanningBnccSkillPicker
+                    key={group.conteudo}
+                    group={group}
+                    selectedSkills={selectedSkills}
+                    loading={loadingBncc}
+                    refreshing={refreshingConteudo === group.conteudo}
+                    onToggleSkill={toggleSkill}
+                    onSelectTopRecommended={(skills) =>
+                      selectTopRecommendedForGroup(group.conteudo, skills)
+                    }
+                    onClearGroup={() => clearGroupSelection(group.conteudo)}
+                    onRefresh={() => void refreshContentBncc(group)}
+                  />
                 ))}
               </div>
             )}

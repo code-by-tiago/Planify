@@ -7,6 +7,7 @@ type PlanningWizardStepperProps = {
   onStepChange: (step: PlanningWizardStep) => void;
   stats: {
     conteudos: number;
+    conteudosComBncc?: number;
     selecionadas: number;
     matriz: number;
   };
@@ -88,6 +89,11 @@ export function PlanningWizardStepper({
         <span className="rounded-full border border-slate-200 bg-white px-3 py-1">
           {stats.conteudos} conteúdo(s)
         </span>
+        {typeof stats.conteudosComBncc === "number" ? (
+          <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-emerald-800">
+            {stats.conteudosComBncc}/{stats.conteudos} conteúdos com BNCC
+          </span>
+        ) : null}
         <span className="rounded-full border border-slate-200 bg-white px-3 py-1">
           {stats.selecionadas} BNCC
         </span>

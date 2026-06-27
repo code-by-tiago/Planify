@@ -198,18 +198,13 @@ export type BnccRetrievalCandidate = {
   specificMatches: number;
 };
 
-export function retrieveBnccCandidates(
+export function rankAllBnccCandidates(
   catalog: BNCCSkill[],
   context: BnccContextFilter,
   content: string,
-  topK = 15,
 ): BnccRetrievalCandidate[] {
   const terms = expandContentTerms(content, { assertiveMode: true });
   const contentVerbs = extractActionVerbs(content);
-
-  if (terms.length === 0 && contentVerbs.length === 0) {
-    return [];
-  }
 
   const ranked = catalog.map((skill) => {
     const searchableText = normalizeText(
@@ -288,8 +283,25 @@ export function retrieveBnccCandidates(
     };
   });
 
-  return ranked
+  return ranked.sort(
+    (a, b) => b.score - a.score || a.skill.codigo.localeCompare(b.skill.codigo),
+  );
+}
+
+export function retrieveBnccCandidates(
+  catalog: BNCCSkill[],
+  context: BnccContextFilter,
+  content: string,
+  topK = 15,
+): BnccRetrievalCandidate[] {
+  const terms = expandContentTerms(content, { assertiveMode: true });
+  const contentVerbs = extractActionVerbs(content);
+
+  if (terms.length === 0 && contentVerbs.length === 0) {
+    return [];
+  }
+
+  return rankAllBnccCandidates(catalog, context, content)
     .filter((item) => item.score > 0)
-    .sort((a, b) => b.score - a.score || a.skill.codigo.localeCompare(b.skill.codigo))
     .slice(0, topK);
 }

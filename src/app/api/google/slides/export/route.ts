@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
       title,
       html,
       slides,
-      theme: body.theme,
+      theme: body.theme || (isLessonPlanDocument(documentType) ? "startup" : undefined),
     });
 
     logExportSuccess({

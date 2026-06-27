@@ -25,6 +25,14 @@ type SlideItem = NonNullable<MaterialEngineResponse["slides"]>[number];
 const TEXT_FIT = "none" as const;
 const IMAGE_PRELOAD_CONCURRENCY = 4;
 
+function compactText(value: string, max = 126): string {
+  const clean = String(value || "").replace(/\s+/g, " ").trim();
+  if (clean.length <= max) return clean;
+  const slice = clean.slice(0, max);
+  const lastSpace = slice.lastIndexOf(" ");
+  return `${(lastSpace > 72 ? slice.slice(0, lastSpace) : slice).trim()}...`;
+}
+
 async function fetchImageDataUrl(url: string): Promise<string | null> {
   try {
     const response = await fetch(url, {
@@ -124,6 +132,27 @@ function drawCoverDecoration(
         line: { type: "none" },
       });
       break;
+    case "dots":
+      for (let index = 0; index < 9; index += 1) {
+        slide.addShape(pptx.ShapeType.ellipse, {
+          x: 7.15 + (index % 3) * 0.42,
+          y: 0.58 + Math.floor(index / 3) * 0.42,
+          w: 0.11,
+          h: 0.11,
+          fill: { color: theme.coverBgHex2 },
+          line: { type: "none" },
+        });
+      }
+      slide.addShape(pptx.ShapeType.roundRect, {
+        x: 6.95,
+        y: 3.55,
+        w: 2.65,
+        h: 1.22,
+        fill: { color: theme.coverBgHex2, transparency: 18 },
+        line: { color: theme.coverMutedInk, transparency: 60, width: 0.6 },
+        rectRadius: 0.08,
+      });
+      break;
     case "chalk":
       slide.addShape(pptx.ShapeType.rect, {
         x: 0.26,
@@ -137,6 +166,76 @@ function drawCoverDecoration(
     default:
       break;
   }
+}
+
+function drawContentBackdrop(
+  pptx: PptxGenJS,
+  slide: PptxGenJS.Slide,
+  theme: SlideTheme,
+  layout: SlideItem["layout"],
+): void {
+  if (theme.dark) {
+    slide.addShape(pptx.ShapeType.rect, {
+      x: 0,
+      y: SLIDE_HEIGHT_IN - 0.18,
+      w: SLIDE_WIDTH_IN,
+      h: 0.18,
+      fill: { color: theme.accentHex },
+      line: { type: "none" },
+    });
+    return;
+  }
+
+  if (layout === "destaque" || layout === "fechamento") {
+    slide.addShape(pptx.ShapeType.roundRect, {
+      x: 6.88,
+      y: 0.76,
+      w: 2.72,
+      h: 4.1,
+      fill: { color: theme.accentSoftHex },
+      line: { type: "none" },
+      rectRadius: 0.08,
+    });
+  }
+
+  if (theme.decoration === "dots") {
+    for (let index = 0; index < 12; index += 1) {
+      slide.addShape(pptx.ShapeType.ellipse, {
+        x: 8.35 + (index % 3) * 0.32,
+        y: 4.15 + Math.floor(index / 3) * 0.25,
+        w: 0.07,
+        h: 0.07,
+        fill: { color: theme.accentHex, transparency: 20 },
+        line: { type: "none" },
+      });
+    }
+  }
+}
+
+function drawContentFooter(
+  pptx: PptxGenJS,
+  slide: PptxGenJS.Slide,
+  theme: SlideTheme,
+): void {
+  slide.addShape(pptx.ShapeType.line, {
+    x: SLIDE_MARGIN_X,
+    y: 5.22,
+    w: SLIDE_CONTENT_W,
+    h: 0,
+    line: { color: theme.accentSoftHex, width: 1 },
+  });
+  slide.addText("IAPlanify", {
+    x: SLIDE_MARGIN_X,
+    y: 5.28,
+    w: 1.6,
+    h: 0.2,
+    fontSize: 8.5,
+    bold: true,
+    color: theme.mutedInk,
+    charSpacing: 1.2,
+    fontFace: theme.fontHeading,
+    fit: TEXT_FIT,
+  });
 }
 
 function drawContentHeader(
@@ -320,6 +419,73 @@ function addBulletsBlock(
   );
 }
 
+function addBulletCards(
+  pptx: PptxGenJS,
+  pptxSlide: PptxGenJS.Slide,
+  bullets: string[],
+  opts: {
+    x: number;
+    y: number;
+    w: number;
+    bodyFontSize: number;
+    theme: SlideTheme;
+  },
+): number {
+  if (!bullets.length) return 0;
+
+  const gap = 0.12;
+  const cardH = bullets.length <= 3 ? 0.66 : 0.55;
+  const textSize = Math.max(16, opts.bodyFontSize - 5);
+
+  bullets.forEach((bullet, index) => {
+    const y = opts.y + index * (cardH + gap);
+    pptxSlide.addShape(pptx.ShapeType.roundRect, {
+      x: opts.x,
+      y,
+      w: opts.w,
+      h: cardH,
+      fill: { color: opts.theme.cardBgHex },
+      line: { color: opts.theme.accentSoftHex, width: 0.9 },
+      rectRadius: 0.07,
+    });
+    pptxSlide.addShape(pptx.ShapeType.ellipse, {
+      x: opts.x + 0.15,
+      y: y + 0.17,
+      w: 0.32,
+      h: 0.32,
+      fill: { color: opts.theme.accentHex },
+      line: { type: "none" },
+    });
+    pptxSlide.addText(String(index + 1), {
+      x: opts.x + 0.15,
+      y: y + 0.185,
+      w: 0.32,
+      h: 0.28,
+      fontSize: 9.5,
+      bold: true,
+      color: "FFFFFF",
+      align: "center",
+      valign: "middle",
+      fontFace: opts.theme.fontHeading,
+      fit: TEXT_FIT,
+    });
+    pptxSlide.addText(compactText(bullet), {
+      x: opts.x + 0.58,
+      y: y + 0.1,
+      w: opts.w - 0.76,
+      h: cardH - 0.16,
+      fontSize: textSize,
+      bold: true,
+      color: opts.theme.bodyInk,
+      fontFace: opts.theme.fontBody,
+      valign: "middle",
+      fit: TEXT_FIT,
+    });
+  });
+
+  return bullets.length * cardH + Math.max(0, bullets.length - 1) * gap;
+}
+
 function addImageBlock(
   pptxSlide: PptxGenJS.Slide,
   imageData: string,
@@ -364,7 +530,7 @@ export async function buildSlidesPptxBuffer(input: {
       pptxSlide.background = { color: theme.coverBgHex };
       drawCoverDecoration(pptx, pptxSlide, theme);
 
-      pptxSlide.addText("PLANIFY · APRESENTAÇÃO", {
+      pptxSlide.addText("PLANIFY | AULA EXECUTAVEL", {
         x: SLIDE_MARGIN_X,
         y: 0.72,
         w: SLIDE_CONTENT_W,
@@ -401,10 +567,10 @@ export async function buildSlidesPptxBuffer(input: {
         });
       }
       let coverBottomY = slide.subtitle ? 3.42 : 2.72;
-      pptxSlide.addText(`${ordered.length} SLIDES`, {
+      pptxSlide.addText(`${ordered.length} SLIDES | GOOGLE SLIDES`, {
         x: SLIDE_MARGIN_X,
         y: coverBottomY,
-        w: 3.2,
+        w: 4.4,
         h: 0.26,
         fontSize: 11,
         color: theme.coverMutedInk,
@@ -431,12 +597,13 @@ export async function buildSlidesPptxBuffer(input: {
     }
 
     pptxSlide.background = { color: theme.contentBgHex };
+    drawContentBackdrop(pptx, pptxSlide, theme, layout);
 
     if (layout !== "fechamento") contentCounter += 1;
 
     const headerLabel =
       layout === "fechamento"
-        ? "SÍNTESE"
+        ? "SINTESE"
         : (slide.sequenceLabel || `Etapa ${contentCounter}`).toUpperCase();
     const positionLabel =
       layout === "fechamento" ? "Fechamento" : `${contentCounter} / ${contentTotal}`;
@@ -469,67 +636,96 @@ export async function buildSlidesPptxBuffer(input: {
     });
 
     let contentBottomY = 1.58;
+    if (slide.subtitle?.trim()) {
+      pptxSlide.addText(compactText(slide.subtitle, 132), {
+        x: SLIDE_MARGIN_X,
+        y: 1.34,
+        w: SLIDE_CONTENT_W * 0.82,
+        h: 0.32,
+        fontSize: 13.5,
+        color: theme.mutedInk,
+        fontFace: theme.fontBody,
+        fit: TEXT_FIT,
+      });
+      contentBottomY = 1.82;
+    }
+
     const textColumnW = useSideBySide ? 4.25 : SLIDE_CONTENT_W;
 
     if (bullets.length) {
-      const bulletBlockHeight = computeBulletBlockHeight(bullets.length);
-      addBulletsBlock(pptxSlide, bullets, {
-        x: SLIDE_MARGIN_X,
-        y: contentBottomY,
-        w: textColumnW,
-        h: bulletBlockHeight,
-        bodyFontSize,
-        theme,
-      });
+      const useCards = !useSideBySide && bullets.length <= 4;
+      const bulletBlockHeight = useCards
+        ? addBulletCards(pptx, pptxSlide, bullets, {
+            x: SLIDE_MARGIN_X,
+            y: contentBottomY,
+            w: textColumnW,
+            bodyFontSize,
+            theme,
+          })
+        : computeBulletBlockHeight(bullets.length);
+
+      if (!useCards) {
+        addBulletsBlock(pptxSlide, bullets, {
+          x: SLIDE_MARGIN_X,
+          y: contentBottomY,
+          w: textColumnW,
+          h: bulletBlockHeight,
+          bodyFontSize,
+          theme,
+        });
+      }
       contentBottomY += bulletBlockHeight + 0.14;
     }
 
     if (hasCallout && slide.callout?.text) {
-      const calloutHeight = 0.95;
+      const remaining = SLIDE_CONTENT_BOTTOM - contentBottomY - 0.08;
+      const calloutHeight = Math.max(0.72, Math.min(layout === "destaque" ? 1.12 : 0.95, remaining));
       const calloutW = useSideBySide ? textColumnW : SLIDE_CONTENT_W;
-      pptxSlide.addShape(pptx.ShapeType.roundRect, {
-        x: SLIDE_MARGIN_X,
-        y: contentBottomY,
-        w: calloutW,
-        h: calloutHeight,
-        fill: { color: theme.accentSoftHex },
-        line: { color: theme.accentHex, width: 0.75 },
-        rectRadius: 0.07,
-      });
-      pptxSlide.addText(
-        [
-          ...(slide.callout.title
-            ? [
-                {
-                  text: slide.callout.title,
-                  options: {
-                    bold: true,
-                    color: theme.accentHex,
-                    fontSize: Math.max(16, bodyFontSize - 2),
-                    breakLine: true,
+      if (calloutHeight >= 0.68) {
+        pptxSlide.addShape(pptx.ShapeType.roundRect, {
+          x: SLIDE_MARGIN_X,
+          y: contentBottomY,
+          w: calloutW,
+          h: calloutHeight,
+          fill: { color: theme.accentSoftHex },
+          line: { color: theme.accentHex, width: 0.75 },
+          rectRadius: 0.07,
+        });
+        pptxSlide.addText(
+          [
+            ...(slide.callout.title
+              ? [
+                  {
+                    text: slide.callout.title,
+                    options: {
+                      bold: true,
+                      color: theme.accentHex,
+                      fontSize: Math.max(15, bodyFontSize - 4),
+                      breakLine: true,
+                    },
                   },
-                },
-              ]
-            : []),
-          {
-            text: slide.callout.text,
-            options: {
-              color: theme.bodyInk,
-              fontSize: Math.max(SLIDE_MIN_BODY_FONT, bodyFontSize - 1),
+                ]
+              : []),
+            {
+              text: compactText(slide.callout.text, 148),
+              options: {
+                color: theme.bodyInk,
+                fontSize: Math.max(17, bodyFontSize - 5),
+              },
             },
+          ],
+          {
+            x: SLIDE_MARGIN_X + 0.14,
+            y: contentBottomY + 0.08,
+            w: calloutW - 0.28,
+            h: calloutHeight - 0.16,
+            valign: "middle",
+            fontFace: theme.fontBody,
+            fit: TEXT_FIT,
           },
-        ],
-        {
-          x: SLIDE_MARGIN_X + 0.12,
-          y: contentBottomY + 0.07,
-          w: calloutW - 0.24,
-          h: calloutHeight - 0.14,
-          valign: "middle",
-          fontFace: theme.fontBody,
-          fit: TEXT_FIT,
-        },
-      );
-      contentBottomY += calloutHeight + 0.14;
+        );
+        contentBottomY += calloutHeight + 0.14;
+      }
     }
 
     if (hasImage && imageData) {
@@ -559,6 +755,7 @@ export async function buildSlidesPptxBuffer(input: {
     if (slide.speakerNotes?.trim()) {
       pptxSlide.addNotes(slide.speakerNotes);
     }
+    drawContentFooter(pptx, pptxSlide, theme);
   }
 
   const output = (await pptx.write({ outputType: "nodebuffer" })) as Buffer;

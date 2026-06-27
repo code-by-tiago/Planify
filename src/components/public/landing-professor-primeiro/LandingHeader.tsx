@@ -5,8 +5,10 @@ import Link from "next/link";
 import { PlanifyBrand } from "@/components/pro/PlanifyBrand";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { usePlanifySession } from "@/hooks/usePlanifySession";
-import { LANDING_NAV } from "./constants";
 import { ppBtnPrimarySm } from "./theme";
+
+const navLinkClass =
+  "rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-cyan-50 hover:text-cyan-800";
 
 export function LandingHeader() {
   const [open, setOpen] = useState(false);
@@ -39,54 +41,25 @@ export function LandingHeader() {
           : "border-transparent sm:bg-white/70"
       }`}
     >
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:gap-4 sm:px-8 sm:py-4">
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-8 sm:py-4">
         <div className="shrink-0">
           <PlanifyBrand href="/" hideTagline />
         </div>
 
-        <nav
-          className="hidden min-w-0 flex-1 items-center justify-center gap-1 lg:flex"
-          aria-label="Navegação principal"
-        >
-          {LANDING_NAV.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="rounded-lg px-3.5 py-2 text-sm font-semibold text-slate-600 transition hover:bg-cyan-50 hover:text-cyan-800"
-            >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-
-        <div className="hidden shrink-0 items-center gap-2.5 sm:flex">
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
           {showPainel ? (
-            <>
-              <Link
-                href="/dashboard"
-                className="rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:brightness-105"
-              >
-                Painel
-              </Link>
-              <Link
-                href="/planos"
-                className="rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:text-cyan-700"
-              >
-                Planos
-              </Link>
-            </>
+            <Link
+              href="/dashboard"
+              className="rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:brightness-105"
+            >
+              Painel
+            </Link>
           ) : (
             <>
-              <Link
-                href="/testar-planejamento"
-                className="rounded-xl border border-cyan-200 bg-cyan-50 px-4 py-2.5 text-sm font-bold text-cyan-800 transition hover:bg-cyan-100"
-              >
-                Testar planejamento grátis
+              <Link href="/escolas" className={`${navLinkClass} hidden md:inline-flex`}>
+                Para escolas
               </Link>
-              <Link
-                href="/login"
-                className="rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:text-cyan-700"
-              >
+              <Link href="/login" className={`${navLinkClass} hidden sm:inline-flex`}>
                 Entrar
               </Link>
               <Link href="/planos" className={ppBtnPrimarySm}>
@@ -94,77 +67,46 @@ export function LandingHeader() {
               </Link>
             </>
           )}
-        </div>
 
-        <button
-          type="button"
-          onClick={() => setOpen((v) => !v)}
-          aria-label={open ? "Fechar menu" : "Abrir menu"}
-          aria-expanded={open}
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 text-slate-700 lg:hidden"
-        >
-          <PlanifyIcon name={open ? "close" : "menu"} className="h-5 w-5" />
-        </button>
+          {!showPainel ? (
+            <button
+              type="button"
+              onClick={() => setOpen((v) => !v)}
+              aria-label={open ? "Fechar menu" : "Abrir menu"}
+              aria-expanded={open}
+              className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 text-slate-700 md:hidden"
+            >
+              <PlanifyIcon name={open ? "close" : "menu"} className="h-5 w-5" />
+            </button>
+          ) : null}
+        </div>
       </div>
 
-      {open ? (
-        <div className="border-t border-slate-100 bg-white px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] lg:hidden">
+      {open && !showPainel ? (
+        <div className="border-t border-slate-100 bg-white px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] md:hidden">
           <nav className="flex flex-col gap-1">
-            {LANDING_NAV.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => setOpen(false)}
-                className="rounded-xl px-4 py-3 text-base font-semibold text-slate-800 hover:bg-cyan-50"
-              >
-                {item.label}
-              </Link>
-            ))}
+            <Link
+              href="/escolas"
+              onClick={() => setOpen(false)}
+              className="rounded-xl px-4 py-3 text-base font-semibold text-slate-800 hover:bg-cyan-50"
+            >
+              Para escolas
+            </Link>
+            <Link
+              href="/testar-planejamento"
+              onClick={() => setOpen(false)}
+              className="rounded-xl px-4 py-3 text-base font-semibold text-slate-800 hover:bg-cyan-50"
+            >
+              Testar planejamento grátis
+            </Link>
+            <Link
+              href="/login"
+              onClick={() => setOpen(false)}
+              className="rounded-xl px-4 py-3 text-base font-semibold text-slate-800 hover:bg-cyan-50 sm:hidden"
+            >
+              Entrar
+            </Link>
           </nav>
-          <div className="mt-4 grid gap-2 border-t border-slate-100 pt-4">
-            {showPainel ? (
-              <>
-                <Link
-                  href="/dashboard"
-                  onClick={() => setOpen(false)}
-                  className={`${ppBtnPrimarySm} w-full py-3 text-center`}
-                >
-                  Entrar no painel
-                </Link>
-                <Link
-                  href="/planos"
-                  onClick={() => setOpen(false)}
-                  className="rounded-xl border border-slate-200 py-3 text-center text-sm font-semibold text-slate-800"
-                >
-                  Planos
-                </Link>
-              </>
-            ) : (
-              <>
-                <Link
-                  href="/testar-planejamento"
-                  onClick={() => setOpen(false)}
-                  className="rounded-xl border border-cyan-200 bg-cyan-50 py-3 text-center text-sm font-bold text-cyan-800"
-                >
-                  Testar planejamento grátis
-                </Link>
-                <Link
-                  href="/login"
-                  onClick={() => setOpen(false)}
-                  className="rounded-xl border border-slate-200 py-3 text-center text-sm font-semibold text-slate-800"
-                >
-                  Entrar
-                </Link>
-                <Link
-                  href="/planos"
-                  onClick={() => setOpen(false)}
-                  className={`${ppBtnPrimarySm} w-full py-3 text-center`}
-                >
-                  Começar agora
-                </Link>
-              </>
-            )}
-          </div>
         </div>
       ) : null}
     </header>

@@ -10,7 +10,6 @@ const SOLUTION_LINKS = [
 ];
 
 const RESOURCE_LINKS = [
-  { href: "/#recursos", label: "Prova real" },
   { href: "/#ferramentas", label: "Soluções" },
   { href: "/#como-funciona", label: "Como funciona" },
   { href: "/escolas", label: "Para escolas" },
@@ -65,7 +64,7 @@ export function LandingFooter() {
               href="/planos"
               className="text-sm font-medium text-slate-600 transition hover:text-cyan-700"
             >
-              Planos
+              Começar agora
             </Link>
             <Link
               href="/contato"

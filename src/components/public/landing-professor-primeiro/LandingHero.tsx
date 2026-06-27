@@ -38,7 +38,7 @@ export function LandingHero() {
               Testar planejamento grátis
             </Link>
             <Link href="/planos" className={ppBtnSecondary}>
-              Ver planos
+              Começar agora
             </Link>
           </div>
         </div>

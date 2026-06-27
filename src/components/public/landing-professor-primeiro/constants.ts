@@ -1,10 +1,3 @@
-export const LANDING_NAV = [
-  { href: "/#professores", label: "Para professores" },
-  { href: "/escolas", label: "Para escolas" },
-  { href: "/planos", label: "Planos" },
-  { href: "/#recursos", label: "Prova real" },
-] as const;
-
 export const TRUST_ITEMS = [
   { label: "Alinhado à BNCC", icon: "checkCircle" as const },
   { label: "Google Drive", googleProduct: "drive" as const },

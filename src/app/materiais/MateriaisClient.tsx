@@ -1351,7 +1351,9 @@ export function MateriaisClient({
                 }}
                 className="h-4 w-4 accent-cyan-600"
               />
-              Abrir no editor automaticamente após gerar (recomendado para revisar e complementar)
+              {isPlanoAula
+                ? "Abrir no editor automaticamente após gerar (recomendado para ajustar atividades, tempo e exportar)"
+                : "Abrir no editor automaticamente após gerar (recomendado para revisar e complementar)"}
             </label>
           </div>
 
@@ -1477,6 +1479,23 @@ export function MateriaisClient({
                     Revise e complemente no editor antes de exportar. Todas as{" "}
                     {planifyToolCount} ferramentas seguem o mesmo fluxo.
                   </p>
+                </aside>
+              ) : null}
+              {isPlanoAula ? (
+                <aside className="mb-4 rounded-2xl border border-cyan-300 bg-gradient-to-r from-cyan-50 to-sky-50 px-5 py-4 text-sm text-cyan-950">
+                  <p className="font-black">Próximo passo: refine no editor</p>
+                  <p className="mt-1 font-semibold">
+                    O preview mostra o rascunho. No editor você ajusta sequência, atividades e
+                    tempo antes de exportar para Google Docs.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={abrirNoEditor}
+                    className="pl-hud-btn mt-3 inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold"
+                  >
+                    <PlanifyIcon name="editor" className="h-4 w-4" />
+                    Abrir plano no editor
+                  </button>
                 </aside>
               ) : null}
               <div className="mb-4 flex flex-wrap justify-end gap-2">

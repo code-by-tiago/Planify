@@ -39,10 +39,15 @@ export function LandingHeader() {
           : "border-transparent sm:bg-white/70"
       }`}
     >
-      <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:gap-4 sm:px-8 sm:py-4">
-        <PlanifyBrand href="/" hideTagline />
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:gap-4 sm:px-8 sm:py-4">
+        <div className="shrink-0">
+          <PlanifyBrand href="/" hideTagline />
+        </div>
 
-        <nav className="hidden items-center gap-1 lg:flex" aria-label="Navegação principal">
+        <nav
+          className="hidden min-w-0 flex-1 items-center justify-center gap-1 lg:flex"
+          aria-label="Navegação principal"
+        >
           {LANDING_NAV.map((item) => (
             <Link
               key={item.href}
@@ -52,15 +57,9 @@ export function LandingHeader() {
               {item.label}
             </Link>
           ))}
-          <Link
-            href="/testar-planejamento"
-            className="rounded-lg px-3.5 py-2 text-sm font-bold text-cyan-700 transition hover:bg-cyan-50"
-          >
-            Testar planejamento grátis
-          </Link>
         </nav>
 
-        <div className="hidden items-center gap-2.5 sm:flex">
+        <div className="hidden shrink-0 items-center gap-2.5 sm:flex">
           {showPainel ? (
             <>
               <Link

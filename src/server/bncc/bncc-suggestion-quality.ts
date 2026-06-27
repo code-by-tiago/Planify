@@ -1,7 +1,10 @@
 import type { BnccSkillSuggestion } from "./bncc-suggestion-engine";
+import { stemPt } from "./bncc-retrieval";
+import { expandContentTerms } from "./bncc-term-expansion";
 
 export const MIN_SUGGESTION_RELEVANCE_SCORE = 8;
 export const HIGH_SUGGESTION_RELEVANCE_SCORE = 16;
+export const RESCUE_SUGGESTION_RELEVANCE_SCORE = 5;
 
 export type BnccSuggestionGroup = {
   conteudo: string;
@@ -57,9 +60,111 @@ export function assessSkillContentCoherence(
   };
 }
 
-export function filterCoherentSuggestions(group: BnccSuggestionGroup): BnccSuggestionGroup {
+const VAGUE_CONTENT_PATTERNS = [
+  /aula generica/,
+  /conteudo generico/,
+  /conteudos genericos/,
+  /conteudos diversos/,
+  /temas variados/,
+  /assuntos diversos/,
+  /conteudo variado/,
+];
+
+const GENERIC_CONTENT_TERMS = new Set([
+  "generica",
+  "generico",
+  "genericos",
+  "diversos",
+  "variados",
+  "variado",
+  "assunto",
+  "assuntos",
+  "conteudo",
+  "conteudos",
+  "aula",
+  "aulas",
+  "tema",
+  "temas",
+  "sobre",
+]);
+
+export function isVagueAssertiveContent(content: string): boolean {
+  const normalized = normalizeSearch(content);
+
+  if (VAGUE_CONTENT_PATTERNS.some((pattern) => pattern.test(normalized))) {
+    return true;
+  }
+
+  const terms = expandContentTerms(content, { assertiveMode: true });
+  const specificTerms = terms.filter(
+    (term) => term.length >= 5 && !GENERIC_CONTENT_TERMS.has(term),
+  );
+
+  return specificTerms.length === 0;
+}
+
+function normalizeSearch(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function hasSpecificStemMatch(content: string, skill: Pick<BnccSkillSuggestion, "descricao">): boolean {
+  const contentTerms = normalizeSearch(content)
+    .split(" ")
+    .filter((term) => term.length >= 5);
+  const skillText = normalizeSearch(`${skill.descricao || ""}`);
+
+  return contentTerms.some((term) => {
+    const stem = stemPt(term);
+    return stem.length >= 4 && skillText.includes(stem);
+  });
+}
+
+export function assessAssertiveSkillCoherence(
+  content: string,
+  skill: Pick<BnccSkillSuggestion, "codigo" | "descricao" | "componente" | "score">,
+  score = skill.score,
+): SkillCoherenceAssessment {
+  const relevanceScore = Number.isFinite(score) ? score : 0;
+  const issues: string[] = [];
+
+  if (relevanceScore >= HIGH_SUGGESTION_RELEVANCE_SCORE) {
+    return { coherent: true, relevanceScore, issues };
+  }
+
+  if (relevanceScore >= MIN_SUGGESTION_RELEVANCE_SCORE) {
+    return { coherent: true, relevanceScore, issues };
+  }
+
+  if (
+    relevanceScore >= RESCUE_SUGGESTION_RELEVANCE_SCORE &&
+    hasSpecificStemMatch(content, skill)
+  ) {
+    return { coherent: true, relevanceScore, issues };
+  }
+
+  issues.push(
+    `Compatibilidade insuficiente (${relevanceScore}) para "${content.slice(0, 60)}".`,
+  );
+
+  return { coherent: false, relevanceScore, issues };
+}
+
+export function filterCoherentSuggestions(
+  group: BnccSuggestionGroup,
+  options?: { assertiveMode?: boolean },
+): BnccSuggestionGroup {
+  const assess = options?.assertiveMode
+    ? assessAssertiveSkillCoherence
+    : assessSkillContentCoherence;
+
   const habilidades = (group.habilidades || []).filter((skill) =>
-    assessSkillContentCoherence(group.conteudo, skill, skill.score).coherent,
+    assess(group.conteudo, skill, skill.score).coherent,
   );
 
   return {

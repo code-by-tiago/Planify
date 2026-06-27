@@ -40,23 +40,10 @@ function loadTsModule(relativePath) {
         countBnccSkillsInDb: async () => bnccSkills.length,
       };
     }
-    if (specifier === "./bncc-service") {
-      return loadTsModule("src/server/bncc/bncc-service.ts");
-    }
-    if (specifier === "./bncc-suggestion-quality") {
-      return loadTsModule("src/server/bncc/bncc-suggestion-quality.ts");
-    }
-    if (specifier === "./bncc-suggestion-response") {
-      return loadTsModule("src/server/bncc/bncc-suggestion-response.ts");
-    }
-    if (specifier === "./bncc-stage-filter") {
-      return loadTsModule("src/server/bncc/bncc-stage-filter.ts");
-    }
-    if (specifier === "./discipline-catalog") {
-      return loadTsModule("src/server/bncc/discipline-catalog.ts");
-    }
-    if (specifier === "./bncc-term-expansion") {
-      return loadTsModule("src/server/bncc/bncc-term-expansion.ts");
+    if (specifier === "../ai/gemini-client") {
+      return {
+        generateGeminiJSON: async () => ({ codigos: [] }),
+      };
     }
     if (specifier.startsWith(".")) {
       const resolved = path.join(path.dirname(sourcePath), specifier);
@@ -96,6 +83,7 @@ const { applyStageFilterToBnccSuggestionResult } = loadTsModule(
 const {
   MIN_SUGGESTION_RELEVANCE_SCORE,
   assessSkillContentCoherence,
+  assessAssertiveSkillCoherence,
 } = loadTsModule("src/server/bncc/bncc-suggestion-quality.ts");
 const { bnccCodeMatchesStage, resolveBnccStageFromFields } = loadTsModule(
   "src/lib/bncc/bncc-stage-filter.ts",
@@ -153,27 +141,80 @@ function assertNoCrossDiscipline(codes, componente, label) {
   }
 }
 
-function assertCoherence(groups, label) {
+function assertCoherence(groups, label, assertive = false) {
+  const assess = assertive ? assessAssertiveSkillCoherence : assessSkillContentCoherence;
+
   for (const group of groups) {
     for (const skill of group.habilidades || []) {
-      const assessment = assessSkillContentCoherence(group.conteudo, skill, skill.score);
+      const assessment = assess(group.conteudo, skill, skill.score);
       assert.equal(
         assessment.coherent,
         true,
         `${label}: ${skill.codigo} incoerente (score ${skill.score}) para "${group.conteudo.slice(0, 50)}"`,
       );
       assert.ok(
-        assessment.relevanceScore >= MIN_SUGGESTION_RELEVANCE_SCORE,
+        assessment.relevanceScore >= MIN_SUGGESTION_RELEVANCE_SCORE ||
+          (assertive && assessment.coherent),
         `${label}: score ${assessment.relevanceScore} abaixo do mínimo`,
       );
     }
   }
 }
 
-const scenarios = [
+function assertExpectsCode(groups, expectedPrefixes, label) {
+  const codes = groups.flatMap((group) =>
+    (group.habilidades || []).map((skill) => skill.codigo),
+  );
+
+  for (const prefix of expectedPrefixes) {
+    assert.ok(
+      codes.some((code) => code.startsWith(prefix)),
+      `${label}: esperava código com prefixo ${prefix}, obteve ${codes.join(", ") || "(vazio)"}`,
+    );
+  }
+}
+
+const assertiveScenarios = [
   {
-    name: "PT EM 3ª série",
+    name: "LP EM screenshot — conotação e denotação",
     payload: {
+      assertiveMode: true,
+      etapa: "Ensino Médio",
+      anoSerie: "3ª série",
+      componenteCurricular: "Língua Portuguesa",
+      conteudos: "Conotação e denotação",
+    },
+    expectSkills: true,
+    expectPrefixes: ["EM13LP"],
+  },
+  {
+    name: "LP EM screenshot — variação linguística",
+    payload: {
+      assertiveMode: true,
+      etapa: "Ensino Médio",
+      anoSerie: "3ª série",
+      componenteCurricular: "Língua Portuguesa",
+      conteudos: "Variação Linguística",
+    },
+    expectSkills: true,
+    expectPrefixes: ["EM13LP10"],
+  },
+  {
+    name: "LP EM screenshot — linguagem verbal/não verbal/mista",
+    payload: {
+      assertiveMode: true,
+      etapa: "Ensino Médio",
+      anoSerie: "3ª série",
+      componenteCurricular: "Língua Portuguesa",
+      conteudos: "Linguagem verbal, não verbal e mista",
+    },
+    expectSkills: true,
+    expectPrefixes: ["EM13"],
+  },
+  {
+    name: "PT EM 3ª série (legacy assertive)",
+    payload: {
+      assertiveMode: true,
       etapa: "Ensino Médio",
       anoSerie: "3ª série",
       componenteCurricular: "Língua Portuguesa",
@@ -189,6 +230,7 @@ const scenarios = [
   {
     name: "História EF 5º ano",
     payload: {
+      assertiveMode: true,
       etapa: "Ensino Fundamental",
       anoSerie: "5º ano",
       componenteCurricular: "História",
@@ -200,6 +242,7 @@ const scenarios = [
   {
     name: "Matemática EF 6º ano",
     payload: {
+      assertiveMode: true,
       etapa: "Ensino Fundamental",
       anoSerie: "6º ano",
       componenteCurricular: "Matemática",
@@ -209,8 +252,46 @@ const scenarios = [
     expectGrade: 6,
   },
   {
+    name: "Matemática EM 3ª série",
+    payload: {
+      assertiveMode: true,
+      etapa: "Ensino Médio",
+      anoSerie: "3ª série",
+      componenteCurricular: "Matemática",
+      conteudos: "Funções exponenciais\nLogaritmos",
+    },
+    expectSkills: true,
+    expectStagePrefix: "EM",
+    forbidPrefixes: ["EF"],
+  },
+  {
+    name: "Geografia EF 7º ano",
+    payload: {
+      assertiveMode: true,
+      etapa: "Ensino Fundamental",
+      anoSerie: "7º ano",
+      componenteCurricular: "Geografia",
+      conteudos: "Urbanização\nPopulação\nTerritório brasileiro",
+    },
+    expectSkills: true,
+    expectGrade: 7,
+  },
+  {
+    name: "Ciências EF 8º ano",
+    payload: {
+      assertiveMode: true,
+      etapa: "Ensino Fundamental",
+      anoSerie: "8º ano",
+      componenteCurricular: "Ciências",
+      conteudos: "Genética\nCélulas\nEvolução",
+    },
+    expectSkills: true,
+    expectGrade: 8,
+  },
+  {
     name: "Cross-contamination guard",
     payload: {
+      assertiveMode: true,
       etapa: "Ensino Fundamental",
       anoSerie: "5º ano",
       componenteCurricular: "História",
@@ -220,8 +301,9 @@ const scenarios = [
     forbidPrefixes: ["EF05LP", "EF05MA", "EF05CI"],
   },
   {
-    name: "Generic content",
+    name: "Conteúdo vago",
     payload: {
+      assertiveMode: true,
       etapa: "Ensino Fundamental",
       anoSerie: "5º ano",
       componenteCurricular: "Língua Portuguesa",
@@ -231,9 +313,16 @@ const scenarios = [
   },
 ];
 
+const regressionPayload = {
+  etapa: "Ensino Fundamental",
+  anoSerie: "5º ano",
+  componenteCurricular: "História",
+  conteudos: "Brasil Colônia",
+};
+
 let failures = 0;
 
-for (const scenario of scenarios) {
+for (const scenario of assertiveScenarios) {
   try {
     const raw = await suggestBnccByConteudos(scenario.payload);
     const result = applyStageFilterToBnccSuggestionResult(
@@ -255,7 +344,7 @@ for (const scenario of scenarios) {
 
     if (scenario.expectSkills) {
       assert.ok(allCodes.length > 0, `${scenario.name}: esperava habilidades`);
-      assertCoherence(groups, scenario.name);
+      assertCoherence(groups, scenario.name, true);
       assertStage(
         allCodes,
         scenario.payload.etapa,
@@ -281,6 +370,10 @@ for (const scenario of scenarios) {
         }
       }
 
+      if (scenario.expectPrefixes?.length) {
+        assertExpectsCode(groups, scenario.expectPrefixes, scenario.name);
+      }
+
       if (scenario.forbidPrefixes?.length) {
         for (const code of allCodes) {
           for (const prefix of scenario.forbidPrefixes) {
@@ -292,6 +385,16 @@ for (const scenario of scenarios) {
           }
         }
       }
+
+      for (const group of groups) {
+        for (const skill of group.habilidades || []) {
+          assert.ok(
+            typeof skill.justificativaPedagogica === "string" &&
+              skill.justificativaPedagogica.length > 20,
+            `${scenario.name}: justificativa ausente em ${skill.codigo}`,
+          );
+        }
+      }
     } else {
       assert.equal(allCodes.length, 0, `${scenario.name}: não deveria sugerir habilidades genéricas`);
     }
@@ -301,6 +404,51 @@ for (const scenario of scenarios) {
     failures += 1;
     console.error(`  FAIL: ${error instanceof Error ? error.message : String(error)}`);
   }
+}
+
+try {
+  const legacyRaw = await suggestBnccByConteudos(regressionPayload);
+  const legacyFiltered = applyStageFilterToBnccSuggestionResult(
+    legacyRaw,
+    regressionPayload.etapa,
+    regressionPayload.anoSerie,
+  );
+  const legacyCodes = (legacyFiltered.conteudos || []).flatMap((group) =>
+    (group.habilidades || []).map((skill) => skill.codigo),
+  );
+
+  const assertiveRaw = await suggestBnccByConteudos({
+    ...regressionPayload,
+    assertiveMode: true,
+  });
+  const assertiveFiltered = applyStageFilterToBnccSuggestionResult(
+    assertiveRaw,
+    regressionPayload.etapa,
+    regressionPayload.anoSerie,
+  );
+  const assertiveCodes = (assertiveFiltered.conteudos || []).flatMap((group) =>
+    (group.habilidades || []).map((skill) => skill.codigo),
+  );
+
+  console.log("\n=== Regressão non-assertive ===");
+  console.log(`  legacy=${legacyCodes.join(", ") || "(vazio)"}`);
+  console.log(`  assertive=${assertiveCodes.join(", ") || "(vazio)"}`);
+
+  assert.ok(legacyCodes.length > 0, "Regressão: modo padrão deveria sugerir habilidades");
+  assert.ok(assertiveCodes.length > 0, "Regressão: modo assertivo deveria sugerir habilidades");
+
+  for (const skill of (legacyFiltered.habilidades || [])) {
+    assert.equal(
+      skill.justificativaPedagogica,
+      undefined,
+      "Regressão: modo padrão não deve expor justificativa",
+    );
+  }
+
+  console.log("  OK");
+} catch (error) {
+  failures += 1;
+  console.error(`  FAIL regressão: ${error instanceof Error ? error.message : String(error)}`);
 }
 
 if (failures === 0) {

@@ -12,8 +12,12 @@ import {
   getCachedBnccSkills,
 } from "./bncc-catalog-service";
 import { resolveBnccCatalogSubjects } from "./discipline-catalog";
-import { MIN_SUGGESTION_RELEVANCE_SCORE } from "./bncc-suggestion-quality";
+import {
+  MIN_SUGGESTION_RELEVANCE_SCORE,
+  RESCUE_SUGGESTION_RELEVANCE_SCORE,
+} from "./bncc-suggestion-quality";
 import { expandContentTerms } from "./bncc-term-expansion";
+import { retrieveBnccCandidates } from "./bncc-retrieval";
 
 export const BNCC_NOT_INSTALLED_MESSAGE =
   "Nenhuma base BNCC foi encontrada no Supabase. Execute o import para public.bncc_skills.";
@@ -433,10 +437,17 @@ const GENERIC_MATCH_TERMS = new Set([
 export function calculateTextualRelevance(
   skill: BNCCSkill,
   request: BNCCSuggestionRequest,
-  options?: { usedCodes?: Set<string>; contentIndex?: number },
+  options?: {
+    usedCodes?: Set<string>;
+    contentIndex?: number;
+    assertiveMode?: boolean;
+  },
 ): number {
   const content = request.conteudo || "";
-  const terms = expandContentTerms(content);
+  const terms = expandContentTerms(content, {
+    assertiveMode: options?.assertiveMode,
+    componenteCurricular: request.componenteCurricular,
+  });
 
   if (terms.length === 0) {
     return 0;
@@ -504,6 +515,18 @@ export function calculateTextualRelevance(
 
   if (options?.usedCodes?.has(skill.codigo)) {
     score -= 40;
+  }
+
+  if (options?.assertiveMode) {
+    const retrieved = retrieveBnccCandidates([skill], {
+      etapa: request.etapa,
+      anoSerie: request.anoSerie,
+      componenteCurricular: request.componenteCurricular,
+    }, content, 1);
+
+    if (retrieved.length > 0) {
+      score = Math.max(score, retrieved[0].score);
+    }
   }
 
   return score;
@@ -597,6 +620,7 @@ export function rankBnccSkillsForContent(
     limit?: number;
     excludeCodigos?: Set<string>;
     requireContentMatch?: boolean;
+    assertiveMode?: boolean;
   },
 ): Array<{ skill: BNCCSkill; score: number }> {
   const limit = Math.min(Math.max(options?.limit ?? 3, 1), 5);
@@ -612,6 +636,19 @@ export function rankBnccSkillsForContent(
     exclude && exclude.size > 0
       ? skills.filter((skill) => !exclude.has(skill.codigo.toUpperCase()))
       : skills;
+
+  if (options?.assertiveMode) {
+    const retrieved = retrieveBnccCandidates(pool, context, content, 15);
+    const minScore = options.requireContentMatch
+      ? MIN_SUGGESTION_RELEVANCE_SCORE
+      : RESCUE_SUGGESTION_RELEVANCE_SCORE;
+
+    return retrieved
+      .filter((item) => !options.usedCodes?.has(item.skill.codigo))
+      .filter((item) => item.score >= minScore)
+      .slice(0, limit)
+      .map((item) => ({ skill: item.skill, score: item.score }));
+  }
 
   const ranked = [...pool]
     .map((skill) => ({

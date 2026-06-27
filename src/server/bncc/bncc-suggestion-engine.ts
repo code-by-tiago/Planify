@@ -7,7 +7,14 @@ import {
 import {
   assessBnccSuggestionResult,
   filterCoherentSuggestions,
+  isVagueAssertiveContent,
 } from "./bncc-suggestion-quality";
+import { retrieveBnccCandidates } from "./bncc-retrieval";
+import { mapRetrievedSkills } from "./bncc-pedagogical-mapper";
+import {
+  rerankBnccCandidates,
+  shouldRerankBnccCandidates,
+} from "./bncc-suggestion-rerank";
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -23,6 +30,9 @@ export type BnccSkillSuggestion = {
   componente?: string;
   conteudo: string;
   score: number;
+  relevanceScore?: number;
+  justificativaPedagogica?: string;
+  compatibilidade?: "alta" | "compativel" | "resgate";
   source: "local" | "fallback";
 };
 
@@ -43,6 +53,7 @@ export type BnccSuggestionPayload = {
   excludeCodigos?: string[];
   refresh?: boolean;
   offset?: number;
+  assertiveMode?: boolean;
 };
 
 type SkillCandidate = {
@@ -1449,6 +1460,162 @@ function chooseForContent(
   );
 }
 
+export function isBnccAssertiveMode(payload: BnccSuggestionPayload): boolean {
+  const value = (payload as UnknownRecord).assertiveMode;
+
+  return value === true || String(value).toLowerCase() === "true";
+}
+
+function expandAssertiveSkillPool(
+  filtered: BNCCSkill[],
+  catalog: BNCCSkill[],
+  payload: BnccSuggestionPayload,
+  content: string,
+): BNCCSkill[] {
+  const componente = normalizeSearch(
+    getString(payload, ["componenteCurricular", "componente"]),
+  );
+  const normalizedContent = normalizeSearch(content);
+  const pool = new Map(filtered.map((skill) => [skill.codigo.toUpperCase(), skill]));
+
+  const includeLggForLpEm =
+    isHighSchoolPayload(payload) &&
+    (componente.includes("lingua portuguesa") ||
+      componente.includes("redacao") ||
+      componente.includes("escrita criativa")) &&
+    /verbal|nao verbal|naoverbal|mista|semios|gestual|paralingu|multimodal|linguagens/.test(
+      normalizedContent,
+    );
+
+  if (includeLggForLpEm) {
+    for (const skill of catalog) {
+      const code = skill.codigo.toUpperCase();
+
+      if (/^EM13LGG/.test(code)) {
+        pool.set(code, skill);
+      }
+    }
+  }
+
+  return Array.from(pool.values());
+}
+
+async function suggestBnccAssertive(
+  payload: BnccSuggestionPayload,
+  conteudos: string[],
+) {
+  const refresh = isBnccRefreshRequest(payload);
+  const refreshOffset = getBnccRefreshOffset(payload);
+  const excludeCodigos = extractExcludeCodigosFromPayload(payload);
+
+  const context = {
+    etapa: getString(payload, ["etapa"]),
+    anoSerie: getString(payload, ["anoSerie", "serie", "ano"]),
+    componenteCurricular: getString(payload, ["componenteCurricular", "componente"]),
+  };
+
+  const catalog = await readBNCCSkills();
+  const filtered = filterBnccSkillsByContext(catalog, context);
+  const usedCodes = new Set(excludeCodigos);
+
+  const grouped = [];
+
+  for (const [, conteudo] of conteudos.entries()) {
+    if (isVagueAssertiveContent(conteudo)) {
+      grouped.push({ conteudo, habilidades: [] });
+      continue;
+    }
+
+    const pool = expandAssertiveSkillPool(filtered, catalog, payload, conteudo);
+    let retrieved = retrieveBnccCandidates(pool, context, conteudo, 15).filter(
+      (item) => !excludeCodigos.has(item.skill.codigo.toUpperCase()),
+    );
+
+    if (shouldRerankBnccCandidates(retrieved)) {
+      retrieved = (
+        await rerankBnccCandidates({
+          content: conteudo,
+          context,
+          candidates: retrieved,
+        })
+      ).map((item, index) => ({
+        skill: item.skill,
+        score: item.score,
+        stemMatches: retrieved[index]?.stemMatches ?? 0,
+        specificMatches: retrieved[index]?.specificMatches ?? 0,
+      }));
+    }
+
+    const mapped = mapRetrievedSkills(
+      conteudo,
+      retrieved.map((item) => ({ skill: item.skill, score: item.score })),
+      context,
+    );
+
+    const habilidades = mapped.slice(0, 3).map((item, index) => {
+      const skill = retrieved.find((entry) => entry.skill.codigo === item.codigo)?.skill;
+
+      return {
+        id: `${item.codigo}-${normalizeSearch(conteudo).slice(0, 28)}-${index}`,
+        codigo: item.codigo,
+        descricao: item.descricao,
+        texto: `${item.codigo} — ${item.descricao}`,
+        label: `${item.codigo} — ${item.descricao}`,
+        etapa: item.etapa || skill?.etapa,
+        anoSerie: item.anoSerie,
+        area: item.area,
+        componente: item.componente,
+        conteudo,
+        score: item.relevanceScore,
+        relevanceScore: item.relevanceScore,
+        justificativaPedagogica: item.justificativaPedagogica,
+        compatibilidade: item.compatibilidade,
+        source: "local" as const,
+      } satisfies BnccSkillSuggestion;
+    });
+
+    const filteredGroup = filterCoherentSuggestions(
+      { conteudo, habilidades },
+      { assertiveMode: true },
+    );
+
+    filteredGroup.habilidades.forEach((skill) => usedCodes.add(skill.codigo));
+
+    grouped.push(filteredGroup);
+  }
+
+  const flattened = grouped.flatMap((group) => group.habilidades);
+  const quality = assessBnccSuggestionResult(context, {
+    conteudos: grouped,
+    habilidades: flattened,
+  });
+
+  return {
+    conteudos: grouped,
+    habilidades: flattened,
+    sugeridas: flattened,
+    skills: flattened,
+    items: flattened,
+    data: {
+      conteudos: grouped,
+      habilidades: flattened,
+      sugeridas: flattened,
+    },
+    total: flattened.length,
+    source: catalog.length > 0 ? "local" : "fallback",
+    qualityScore: quality.qualityScore,
+    qualityIssues: quality.qualityIssues,
+    message:
+      flattened.length > 0
+        ? refresh
+          ? "Novas alternativas de habilidades BNCC para os conteúdos informados."
+          : "Habilidades sugeridas a partir dos conteúdos informados (modo assertivo)."
+        : refresh
+          ? "Sem outras opções compatíveis com este conteúdo."
+          : "Nenhuma habilidade coerente encontrada. Refine o conteúdo informado.",
+  };
+}
+
 function bnccSkillToSuggestion(
   skill: BNCCSkill,
   content: string,
@@ -1485,6 +1652,10 @@ export async function suggestBnccByConteudos(payload: BnccSuggestionPayload) {
       source: "empty",
       message: "Informe pelo menos um conteúdo para sugerir habilidades BNCC.",
     };
+  }
+
+  if (isBnccAssertiveMode(payload)) {
+    return suggestBnccAssertive(payload, conteudos);
   }
 
   const refresh = isBnccRefreshRequest(payload);

@@ -215,7 +215,17 @@ const SYNONYM_GROUPS: Array<[RegExp, string[]]> = [
   ],
 ];
 
-export function expandContentTerms(content: string): string[] {
+import { expandDomainSynonyms } from "./bncc-domain-synonyms";
+
+export type ExpandContentTermsOptions = {
+  assertiveMode?: boolean;
+  componenteCurricular?: string;
+};
+
+export function expandContentTerms(
+  content: string,
+  options?: ExpandContentTermsOptions,
+): string[] {
   const normalized = normalizeSearch(content);
   const terms = new Set(
     normalized
@@ -229,6 +239,12 @@ export function expandContentTerms(content: string): string[] {
       for (const term of additions) {
         terms.add(term);
       }
+    }
+  }
+
+  if (options?.assertiveMode) {
+    for (const term of expandDomainSynonyms(content, options.componenteCurricular)) {
+      terms.add(term);
     }
   }
 

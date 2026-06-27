@@ -76,7 +76,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const result = await suggestBnccByConteudos(payload || {});
+    const result = await suggestBnccByConteudos({
+      ...payload,
+      assertiveMode: true,
+    });
     const etapa = String(payload?.etapa || "").trim();
     const anoSerie = String(payload?.anoSerie || payload?.serie || "").trim();
     const filtered = applyStageFilterToBnccSuggestionResult(result, etapa, anoSerie);

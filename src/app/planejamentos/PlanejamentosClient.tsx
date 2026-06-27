@@ -95,6 +95,8 @@ type BnccSkill = {
   conteudo: string;
   source?: "local" | "fallback";
   relevanceScore?: number;
+  justificativaPedagogica?: string;
+  compatibilidade?: "alta" | "compativel" | "resgate";
 };
 
 const BNCC_HIGH_RELEVANCE_SCORE = 16;
@@ -347,6 +349,11 @@ function normalizeSkill(skill: any, fallbackConteudo = ""): BnccSkill {
         : typeof skill?.score === "number"
           ? skill.score
           : undefined,
+    justificativaPedagogica:
+      typeof skill?.justificativaPedagogica === "string"
+        ? skill.justificativaPedagogica
+        : undefined,
+    compatibilidade: skill?.compatibilidade,
   };
 }
 
@@ -839,6 +846,7 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
         body: JSON.stringify({
           ...buildBasePayload(),
           conteudos: conteudosText,
+          assertiveMode: true,
         }),
       });
 
@@ -888,6 +896,7 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
           refresh: true,
           excludeCodigos,
           offset: nextOffset,
+          assertiveMode: true,
         }),
       });
 
@@ -1958,6 +1967,14 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
                               <div>
                                 <p className="text-lg font-extrabold text-slate-950">{skill.codigo}</p>
                                 <p className="mt-2 text-sm leading-7 text-slate-600">{skill.descricao}</p>
+                                {skill.justificativaPedagogica ? (
+                                  <details className="mt-3 rounded-lg border border-slate-200/80 bg-slate-50/80 px-4 py-3 text-sm leading-6 text-slate-600">
+                                    <summary className="cursor-pointer font-semibold text-slate-800">
+                                      Justificativa pedagógica
+                                    </summary>
+                                    <p className="mt-2">{skill.justificativaPedagogica}</p>
+                                  </details>
+                                ) : null}
                               </div>
                               <div className="flex flex-wrap gap-2">
                                 {badge ? <Pill tone={badge.tone}>{badge.label}</Pill> : null}

@@ -347,6 +347,7 @@ export function parseArgs(argv) {
     max: 0,
     dryRun: false,
     sources: "all",
+    minQuality: 0,
     reportPath: join(INGEST_ROOT, "tmp/question-bank-ingest-report.json"),
   };
 
@@ -355,6 +356,7 @@ export function parseArgs(argv) {
     else if (arg.startsWith("--hours=")) args.hours = Number(arg.split("=")[1]) || 1;
     else if (arg.startsWith("--max=")) args.max = Number(arg.split("=")[1]) || 0;
     else if (arg.startsWith("--sources=")) args.sources = arg.split("=")[1] || "all";
+    else if (arg.startsWith("--min-quality=")) args.minQuality = Number(arg.split("=")[1]) || 0;
     else if (arg.startsWith("--report=")) args.reportPath = arg.slice("--report=".length);
   }
 

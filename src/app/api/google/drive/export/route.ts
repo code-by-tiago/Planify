@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { resolvePlanifyUserFromRequest } from "../../../../../server/google/google-auth";
 import { saveDocumentToGoogleDrive } from "../../../../../server/google/google-docs-export-service";
+import { logExportSuccess, parseExportTelemetryMetadata } from "@/server/export/export-error-service";
 import { getGoogleConfigStatus } from "../../../../../server/google/google-oauth";
 
 export const runtime = "nodejs";
@@ -66,11 +67,22 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    const startedAt = Date.now();
     const result = await saveDocumentToGoogleDrive(user.id, {
       title,
       html: body.html!,
       documentType: body.documentType,
       planningPayload: body.planningPayload ?? null,
+    });
+
+    logExportSuccess({
+      surface: "google-drive",
+      toolTipo: body.documentType || "google-drive",
+      durationMs: Date.now() - startedAt,
+      metadata: parseExportTelemetryMetadata({
+        documentType: body.documentType,
+        format: "google-drive",
+      }),
     });
 
     return NextResponse.json({ success: true, data: result });

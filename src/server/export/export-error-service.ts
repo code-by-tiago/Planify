@@ -10,6 +10,11 @@ export type ExportErrorContext = {
   toolTipo?: string;
 };
 
+export type ExportSuccessContext = ExportErrorContext & {
+  metadata?: Record<string, unknown>;
+  durationMs?: number;
+};
+
 export class ExportHttpError extends Error {
   readonly status: number;
 
@@ -131,6 +136,41 @@ export function mapExportError(
     status: status >= 400 ? status : 400,
     retryable: false,
   };
+}
+
+/** Telemetria de exportação bem-sucedida — sem HTML, PII ou IP. */
+export function logExportSuccess(context: ExportSuccessContext): void {
+  logOperationalEvent({
+    eventType: "export_success",
+    toolTipo: context.toolTipo ?? context.surface,
+    ok: true,
+    durationMs: context.durationMs,
+    metadata: {
+      surface: context.surface,
+      ...(context.metadata ?? {}),
+    },
+  });
+}
+
+export function parseExportTelemetryMetadata(input: {
+  documentType?: string | null;
+  materialId?: string | null;
+  format?: string | null;
+}): Record<string, unknown> {
+  const raw = String(input.documentType || "").trim();
+  const parts = raw.split(":");
+  const surface = parts[0] || "documento";
+  const tipo = parts.length > 1 ? parts.slice(1).join(":") : raw || "documento";
+
+  const metadata: Record<string, unknown> = {
+    tipo,
+    surface,
+  };
+
+  if (input.format) metadata.format = input.format;
+  if (input.materialId) metadata.material_id = input.materialId;
+
+  return metadata;
 }
 
 export function logExportFailure(

@@ -73,8 +73,9 @@ export async function* iteratePlanifyMaterials(ctx) {
   while (!ctx.shouldAbort()) {
     const { data, error } = await ctx.supabase
       .from("generated_materials")
-      .select("id, tipo, discipline, response_json, title")
+      .select("id, tipo, discipline, response_json, title, quality_score, status")
       .in("tipo", ["lista", "prova", "atividade", "apostila"])
+      .eq("status", "completed")
       .order("created_at", { ascending: false })
       .range(offset, offset + pageSize - 1);
 
@@ -86,6 +87,16 @@ export async function* iteratePlanifyMaterials(ctx) {
 
       stats.scanned += 1;
       bumpSource(ctx.stats, SOURCE_ID, "scanned");
+
+      const minQuality = Number(ctx.minQuality || 0);
+      if (minQuality > 0) {
+        const score = Number(row.quality_score);
+        if (!Number.isFinite(score) || score < minQuality) {
+          bumpReject(ctx.stats, "low_quality");
+          bumpSource(ctx.stats, SOURCE_ID, "rejected");
+          continue;
+        }
+      }
 
       const responseJson = row.response_json;
       const meta = {

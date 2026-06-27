@@ -2,6 +2,7 @@ import "server-only";
 
 import { logOperationalEvent } from "@/server/telemetry/operational-telemetry";
 import type { PedagogicalScrapeQuery } from "./adapters/pedagogical-source-adapter";
+import { findApprovedCorpusCandidates } from "@/server/corpus/corpus-candidates-db-service";
 import {
   estimateTokensSaved,
   findApprovedEntries,
@@ -84,7 +85,17 @@ export async function resolvePedagogicalContext(
   },
 ): Promise<PedagogicalContextResult> {
   const minApproved = options?.minApproved ?? 1;
-  const approved = await findApprovedEntries(query);
+  const [cacheApproved, corpusApproved] = await Promise.all([
+    findApprovedEntries(query),
+    findApprovedCorpusCandidates(query),
+  ]);
+
+  const seenIds = new Set<string>();
+  const approved = [...cacheApproved, ...corpusApproved].filter((entry) => {
+    if (seenIds.has(entry.id)) return false;
+    seenIds.add(entry.id);
+    return true;
+  });
 
   if (approved.length >= minApproved) {
     const confidence = filterEntriesByConfidence(query, approved);

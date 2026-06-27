@@ -1,4 +1,5 @@
 import { planifyAuthenticatedFetch } from "@/lib/auth/authenticated-fetch";
+import { markHistoryItemReady } from "@/lib/history/history-storage";
 import {
   filenameFromContentDisposition,
   readDownloadBlob,
@@ -13,6 +14,9 @@ export async function downloadEditorExport(params: {
   format: EditorExportFormat;
   fallbackFileName?: string;
   documentType?: string | null;
+  /** ID do documento no histórico local — marca como pronto após exportação. */
+  historyDocumentId?: string;
+  materialId?: string | null;
 }): Promise<void> {
   const response = await planifyAuthenticatedFetch("/api/documentos/export", {
     method: "POST",
@@ -21,6 +25,7 @@ export async function downloadEditorExport(params: {
       html: params.html,
       format: params.format,
       documentType: params.documentType ?? null,
+      materialId: params.materialId ?? null,
     }),
   });
 
@@ -39,4 +44,8 @@ export async function downloadEditorExport(params: {
     `documento-planify.${params.format}`;
 
   triggerBrowserDownload(blob, filename);
+
+  if (params.historyDocumentId) {
+    markHistoryItemReady(params.historyDocumentId);
+  }
 }

@@ -1855,6 +1855,59 @@ export type Database = {
           created_at?: string;
         }
       >;
+      corpus_candidates: TableDefinition<
+        {
+          id: string;
+          source_table: string;
+          source_id: string;
+          surface: string;
+          tipo: string;
+          bncc_codigos: string[];
+          quality_score: number | null;
+          tema: string;
+          discipline: string | null;
+          topic_signature: string;
+          content_summary: string;
+          content_hash: string;
+          review_status: string;
+          metadata: Json;
+          created_at: string;
+        },
+        {
+          id?: string;
+          source_table: string;
+          source_id: string;
+          surface?: string;
+          tipo?: string;
+          bncc_codigos?: string[];
+          quality_score?: number | null;
+          tema?: string;
+          discipline?: string | null;
+          topic_signature?: string;
+          content_summary?: string;
+          content_hash: string;
+          review_status?: string;
+          metadata?: Json;
+          created_at?: string;
+        },
+        {
+          id?: string;
+          source_table?: string;
+          source_id?: string;
+          surface?: string;
+          tipo?: string;
+          bncc_codigos?: string[];
+          quality_score?: number | null;
+          tema?: string;
+          discipline?: string | null;
+          topic_signature?: string;
+          content_summary?: string;
+          content_hash?: string;
+          review_status?: string;
+          metadata?: Json;
+          created_at?: string;
+        }
+      >;
       operational_events: TableDefinition<
         {
           id: string;

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { resolvePlanifyUserFromRequest } from "../../../../../server/google/google-auth";
 import { exportMaterialToGoogle } from "../../../../../server/google/google-export-service";
 import { getGoogleConfigStatus } from "../../../../../server/google/google-oauth";
+import { logExportSuccess, parseExportTelemetryMetadata } from "@/server/export/export-error-service";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -75,6 +76,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    const startedAt = Date.now();
     const result = await exportMaterialToGoogle(user.id, {
       title,
       html: body.html,
@@ -86,6 +88,16 @@ export async function POST(request: NextRequest) {
         body.publishState === "DRAFT" || body.publishState === "PUBLISHED"
           ? body.publishState
           : undefined,
+    });
+
+    logExportSuccess({
+      surface: "google-classroom",
+      toolTipo: body.documentType || "google-classroom",
+      durationMs: Date.now() - startedAt,
+      metadata: parseExportTelemetryMetadata({
+        documentType: body.documentType,
+        format: "google-classroom",
+      }),
     });
 
     return NextResponse.json({ success: true, data: result });

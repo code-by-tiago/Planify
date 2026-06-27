@@ -25,6 +25,8 @@
     "verify:pedagogical-p3": "node scripts/verify-pedagogical-p3.mjs",
     "verify:pedagogical-ecosystem": "node scripts/verify-pedagogical-ecosystem.mjs",
     "backfill:pedagogical-bncc": "node scripts/backfill-pedagogical-bncc.mjs",
+    "sync:corpus-candidates": "node scripts/corpus-mining/sync-corpus-candidates.mjs",
+    "verify:corpus-mining": "node scripts/verify-corpus-mining.mjs",
     "seed:community-questions": "node scripts/seed-community-questions.mjs",
     "seed:comunidade-docente": "node scripts/seed-comunidade-docente.mjs",
     "seed:pedagogical-themes": "node scripts/seed-pedagogical-themes.mjs",

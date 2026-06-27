@@ -91,6 +91,7 @@ async function main() {
     stats,
     sleep,
     log,
+    minQuality: args.minQuality,
     shouldAbort: () => Boolean(shouldStop(deadlineMs, stats, args.max)),
   };
 

@@ -9,6 +9,7 @@ export type OperationalEventType =
   | "material_generation_failed"
   | "planning_generation_failed"
   | "export_failed"
+  | "export_success"
   | "editor_ai_adjust_failed"
   | "pedagogical_cache_hit"
   | "pedagogical_cache_miss"

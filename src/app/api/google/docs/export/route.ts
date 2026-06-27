@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { resolvePlanifyUserFromRequest } from "../../../../../server/google/google-auth";
 import { exportDocumentToGoogleDocs } from "../../../../../server/google/google-docs-export-service";
 import { getGoogleConfigStatus } from "../../../../../server/google/google-oauth";
-import { jsonExportErrorResponse } from "@/server/export/export-error-service";
+import { jsonExportErrorResponse, logExportSuccess, parseExportTelemetryMetadata } from "@/server/export/export-error-service";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -67,11 +67,26 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    const startedAt = Date.now();
     const result = await exportDocumentToGoogleDocs(user.id, {
       title,
       html: body.html!,
       documentType: body.documentType,
       planningPayload: body.planningPayload ?? null,
+    });
+
+    logExportSuccess({
+      surface: "google-docs",
+      toolTipo: body.documentType || "google-docs",
+      durationMs: Date.now() - startedAt,
+      metadata: parseExportTelemetryMetadata({
+        documentType: body.documentType,
+        materialId:
+          typeof body.planningPayload?.materialId === "string"
+            ? body.planningPayload.materialId
+            : null,
+        format: "google-docs",
+      }),
     });
 
     return NextResponse.json({ success: true, data: result });

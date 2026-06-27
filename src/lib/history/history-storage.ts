@@ -179,6 +179,23 @@ export function saveEditorDocumentToHistory(document: EditorDocument): HistoryIt
   return upsertHistoryItem(editorDocumentToHistoryItem(document));
 }
 
+export function markHistoryItemReady(id: string): void {
+  if (!canUseStorage() || !id.trim()) {
+    return;
+  }
+
+  const item = loadHistoryItems().find((historyItem) => historyItem.id === id);
+  if (!item || item.status === "pronto") {
+    return;
+  }
+
+  upsertHistoryItem({
+    ...item,
+    status: "pronto",
+    updatedAt: new Date().toISOString(),
+  });
+}
+
 export function removeHistoryItem(id: string): HistoryItem[] {
   return removeHistoryItems([id]);
 }

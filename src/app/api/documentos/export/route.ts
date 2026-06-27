@@ -4,7 +4,7 @@ import {
   exportEditorHtmlDocument,
   type EditorHtmlExportFormat,
 } from "../../../../server/export/editor-html-export-service";
-import { jsonExportErrorResponse } from "@/server/export/export-error-service";
+import { jsonExportErrorResponse, logExportSuccess, parseExportTelemetryMetadata } from "@/server/export/export-error-service";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -31,6 +31,11 @@ export async function POST(request: NextRequest) {
     const title = String(body?.title || "Documento Planify").trim();
     const html = String(body?.html || "");
     const format = parseFormat(body?.format);
+    const documentType =
+      typeof body?.documentType === "string" ? body.documentType : null;
+    const materialId =
+      typeof body?.materialId === "string" ? body.materialId : null;
+    const startedAt = Date.now();
 
     if (!html.trim()) {
       return NextResponse.json(
@@ -46,8 +51,18 @@ export async function POST(request: NextRequest) {
       title,
       html,
       format,
-      documentType:
-        typeof body?.documentType === "string" ? body.documentType : null,
+      documentType,
+    });
+
+    logExportSuccess({
+      surface: "documentos-export",
+      toolTipo: documentType || "documento",
+      durationMs: Date.now() - startedAt,
+      metadata: parseExportTelemetryMetadata({
+        documentType,
+        materialId,
+        format,
+      }),
     });
 
     return new NextResponse(new Uint8Array(exported.buffer), {

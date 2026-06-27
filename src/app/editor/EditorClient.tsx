@@ -1569,6 +1569,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
 
   async function downloadHtml() {
     setStatus("Gerando HTML...");
+    const historyDocumentId = loadEditorDocument()?.id;
 
     try {
       await downloadEditorExport({
@@ -1576,6 +1577,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
         html: getEditorHtml(),
         format: "html",
         fallbackFileName: `${sanitizeFilename(title)}.html`,
+        historyDocumentId,
       });
       setStatus("HTML baixado.");
     } catch (error) {
@@ -1594,6 +1596,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
 
     setDownloadingPdf(true);
     setStatus("Gerando PDF... (pode levar até 1 minuto)");
+    const historyDocumentId = loadEditorDocument()?.id;
 
     try {
       await downloadEditorExport({
@@ -1602,6 +1605,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
         format: "pdf",
         fallbackFileName: `${sanitizeFilename(title)}.pdf`,
         documentType: exportDocumentType,
+        historyDocumentId,
       });
       setStatus("PDF baixado com proporção de slide.");
     } catch (error) {

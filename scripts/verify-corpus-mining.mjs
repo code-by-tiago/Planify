@@ -73,7 +73,22 @@ assert.equal(hashA, hashB);
 assert.notEqual(hashA, hashC);
 
 assert.ok(existsSync(join(root, "scripts/corpus-mining/sync-corpus-candidates.mjs")));
+assert.ok(existsSync(join(root, "src/server/corpus/sync-corpus-candidates.ts")));
+assert.ok(existsSync(join(root, "src/app/api/cron/corpus-sync/route.ts")));
 assert.ok(existsSync(join(root, "src/app/api/admin/corpus-candidates/stats/route.ts")));
+
+const vercelJson = readFileSync(join(root, "vercel.json"), "utf8");
+assert.match(vercelJson, /\/api\/cron\/corpus-sync/);
+assert.match(vercelJson, /0 5 \* \* \*/);
+
+const syncSource = readFileSync(
+  join(root, "src/server/corpus/sync-corpus-candidates.ts"),
+  "utf8",
+);
+assert.match(syncSource, /CORPUS_AUTO_APPROVE_THRESHOLD = 90/);
+assert.match(syncSource, /review_status: autoApproved \? "approved" : "pending"/);
+assert.match(syncSource, /review_status: "approved"/);
+assert.match(syncSource, /PRIVACIDADE/);
 
 const resolverSource = readFileSync(
   join(root, "src/server/pedagogical-cache/pedagogical-context-resolver.ts"),

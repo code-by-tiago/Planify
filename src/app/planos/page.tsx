@@ -164,51 +164,46 @@ export default async function PlanosPage({ searchParams }: PlanosPageProps) {
             </div>
           ) : null}
 
-          <div className="grid items-center gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(360px,0.82fr)] lg:gap-14">
-            <header className="max-w-2xl">
+          <div className="grid items-start gap-10 lg:grid-cols-[minmax(0,1.05fr)_minmax(340px,0.88fr)] lg:gap-12 xl:gap-16">
+            <header className="max-w-xl pt-1 lg:max-w-none lg:pr-4">
               <p className={ppEyebrow}>Plano único para professores</p>
-              <h1 className="mt-4 font-[family-name:var(--font-display)] text-4xl font-extrabold leading-[1.04] tracking-tight text-slate-950 sm:text-5xl lg:text-6xl">
+              <h1 className="mt-4 font-[family-name:var(--font-display)] text-4xl font-extrabold leading-[1.06] tracking-tight text-slate-950 sm:text-5xl">
                 Menos tempo montando. <span className={ppTitleAccent}>Mais tempo ensinando.</span>
               </h1>
-              <p className="mt-5 max-w-xl text-lg font-medium leading-8 text-slate-600">
+              <p className="mt-5 max-w-lg text-lg font-medium leading-8 text-slate-600">
                 Tudo que você precisa para planejar, criar, revisar e entregar aulas melhores —
                 reunido em uma assinatura simples.
               </p>
 
-              <div className="mt-7 flex flex-wrap gap-2">
+              <ul className="mt-8 space-y-4 border-t border-slate-200/80 pt-8">
+                {valuePillars.map((item) => (
+                  <li key={item.title} className="flex gap-4">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-cyan-50 text-cyan-700">
+                      <PlanifyIcon name={item.icon} className="h-4 w-4" />
+                    </span>
+                    <div className="min-w-0 pt-0.5">
+                      <h2 className="text-sm font-black text-slate-950">{item.title}</h2>
+                      <p className="mt-1 text-sm font-medium leading-6 text-slate-600">{item.text}</p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+
+              <div className="mt-8 flex flex-wrap gap-2">
                 <span className={ppBadge}>
                   <PlanifyIcon name="checkCircle" className="h-3.5 w-3.5" />
                   Acesso completo
                 </span>
                 <span className={ppBadge}>
                   <PlanifyIcon name="checkCircle" className="h-3.5 w-3.5" />
-                  Sem pacotes para comparar
-                </span>
-                <span className={ppBadge}>
-                  <PlanifyIcon name="checkCircle" className="h-3.5 w-3.5" />
                   Cancele quando quiser
                 </span>
-              </div>
-
-              <div className="mt-10 grid gap-3 sm:grid-cols-3">
-                {valuePillars.map((item) => (
-                  <div
-                    key={item.title}
-                    className="rounded-2xl border border-white/80 bg-white/80 p-4 shadow-sm shadow-slate-200/40 backdrop-blur"
-                  >
-                    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-cyan-50 text-cyan-700">
-                      <PlanifyIcon name={item.icon} className="h-4 w-4" />
-                    </span>
-                    <h2 className="mt-3 text-sm font-black text-slate-950">{item.title}</h2>
-                    <p className="mt-1 text-xs font-medium leading-5 text-slate-600">{item.text}</p>
-                  </div>
-                ))}
               </div>
             </header>
 
             <article
               id="precos"
-              className="scroll-mt-24 rounded-3xl border border-slate-200/80 bg-white p-6 shadow-lg shadow-slate-200/50 sm:p-8"
+              className="scroll-mt-24 rounded-3xl border border-slate-200/70 bg-white/95 p-6 shadow-[0_20px_50px_-24px_rgba(8,145,178,0.35)] backdrop-blur-sm sm:p-8 lg:sticky lg:top-24"
             >
               <div className="flex items-start justify-between gap-4">
                 <div>

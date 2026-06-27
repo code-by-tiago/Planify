@@ -208,18 +208,12 @@ export default async function PlanosPage({ searchParams }: PlanosPageProps) {
 
             <article
               id="precos"
-              className="scroll-mt-24 relative overflow-hidden rounded-[2rem] border border-cyan-200/80 bg-white p-6 shadow-[0_32px_80px_-38px_rgba(8,145,178,0.45)] sm:p-8"
+              className="scroll-mt-24 rounded-3xl border border-slate-200/80 bg-white p-6 shadow-lg shadow-slate-200/50 sm:p-8"
             >
-              <div
-                aria-hidden
-                className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-500"
-              />
               <div className="flex items-start justify-between gap-4">
                 <div>
                   {plan.badgeLabel ? (
-                    <span className="inline-flex rounded-full bg-slate-950 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-white">
-                      {plan.badgeLabel}
-                    </span>
+                    <span className={ppBadge}>{plan.badgeLabel}</span>
                   ) : null}
                   <h2 className="mt-4 text-xl font-black tracking-tight text-slate-950">
                     {plan.name}
@@ -232,12 +226,19 @@ export default async function PlanosPage({ searchParams }: PlanosPageProps) {
 
               <p className="mt-3 text-sm font-medium leading-6 text-slate-600">{plan.description}</p>
 
-              <div className="mt-7 rounded-2xl bg-slate-950 px-5 py-5 text-white">
-                <div className="flex items-end gap-2">
-                  <span className="text-4xl font-black tracking-tight sm:text-5xl">{plan.priceLabel}</span>
-                  <span className="mb-1.5 text-sm font-semibold text-slate-300">{plan.recurrenceLabel}</span>
+              <div className="mt-7 rounded-2xl border border-cyan-100 bg-gradient-to-br from-cyan-50/80 via-white to-sky-50/60 px-5 py-5">
+                <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-cyan-700">
+                  Investimento mensal
+                </p>
+                <div className="mt-2 flex items-end gap-2">
+                  <span className="text-4xl font-black tracking-tight text-slate-950 sm:text-5xl">
+                    {plan.priceLabel}
+                  </span>
+                  <span className="mb-1.5 text-sm font-semibold text-slate-600">
+                    {plan.recurrenceLabel}
+                  </span>
                 </div>
-                <p className="mt-2 text-xs font-medium leading-5 text-slate-300">
+                <p className="mt-2 text-sm font-medium leading-6 text-slate-600">
                   Uma assinatura. Todas as ferramentas essenciais para a sua rotina docente.
                 </p>
               </div>

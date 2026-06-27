@@ -563,6 +563,8 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
   );
 
   const canGoToWizardStep2 = conteudosPreenchido;
+  const canGeneratePlanning =
+    conteudosPreenchido && selectedSkills.length > 0 && !loadingPlan;
   const canGoToWizardStep3 = Boolean(generatedPlanning);
 
   useEffect(() => {
@@ -1806,13 +1808,29 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
               <button type="button" onClick={suggestBncc} disabled={loadingBncc} className="pl-hud-btn-secondary rounded-xl px-5 py-3.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60">
                 {loadingBncc ? "Sugerindo BNCC..." : "1. Sugerir BNCC"}
               </button>
-              <button type="button" onClick={generatePlanning} disabled={loadingPlan} className="pl-hud-btn-generate rounded-full px-6 py-4 text-sm transition disabled:cursor-not-allowed">
+              <button
+                type="button"
+                onClick={generatePlanning}
+                disabled={!canGeneratePlanning}
+                title={
+                  !canGeneratePlanning && !loadingPlan
+                    ? "Selecione pelo menos uma habilidade BNCC antes de gerar."
+                    : undefined
+                }
+                className="pl-hud-btn-generate rounded-full px-6 py-4 text-sm transition disabled:cursor-not-allowed disabled:opacity-50"
+              >
                 {loadingPlan ? "Gerando com IA..." : "2. Gerar planejamento com IA"}
               </button>
               <button type="button" onClick={sendToEditor} disabled={!generatedPlanning} className="pl-hud-btn-secondary rounded-xl px-5 py-3.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50">
                 {trialMode ? "Ver documento completo" : "Editar no editor"}
               </button>
             </div>
+
+            {conteudosPreenchido && selectedSkills.length === 0 && !loadingPlan ? (
+              <p className="mt-3 text-sm text-amber-700">
+                Selecione pelo menos uma habilidade BNCC na lista abaixo antes de gerar.
+              </p>
+            ) : null}
 
             {loadingBncc || loadingPlan ? (
               <PlanningGenerationPanel

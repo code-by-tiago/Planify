@@ -161,3 +161,90 @@ export async function fetchCorpusCandidateStats(): Promise<CorpusCandidateStats>
     total: pending + approved + rejected,
   };
 }
+
+export type CorpusReviewStatus = "pending" | "approved" | "rejected";
+
+export type CorpusCandidateListFilters = {
+  status?: CorpusReviewStatus | "all";
+  q?: string;
+  page?: number;
+  limit?: number;
+};
+
+export type CorpusCandidateListResult = {
+  items: CorpusCandidate[];
+  total: number;
+  page: number;
+  limit: number;
+};
+
+export async function listCorpusCandidates(
+  filters: CorpusCandidateListFilters = {},
+): Promise<CorpusCandidateListResult> {
+  const supabase = getSupabaseAdminClient();
+  const status = filters.status ?? "pending";
+  const page = Math.max(1, filters.page ?? 1);
+  const limit = Math.min(100, Math.max(1, filters.limit ?? 25));
+  const offset = (page - 1) * limit;
+
+  let query = supabase.from("corpus_candidates").select("*", { count: "exact" });
+
+  if (status !== "all") {
+    query = query.eq("review_status", status);
+  }
+
+  const q = filters.q?.trim();
+  if (q) {
+    const pattern = `%${q.replace(/[%_]/g, "")}%`;
+    query = query.or(
+      `tema.ilike.${pattern},discipline.ilike.${pattern},surface.ilike.${pattern},tipo.ilike.${pattern}`,
+    );
+  }
+
+  const { data, error, count } = await query
+    .order("quality_score", { ascending: false, nullsFirst: false })
+    .order("created_at", { ascending: false })
+    .range(offset, offset + limit - 1);
+
+  if (error) throw new Error(error.message);
+
+  return {
+    items: (data || []) as CorpusCandidate[],
+    total: count ?? 0,
+    page,
+    limit,
+  };
+}
+
+export async function updateCorpusCandidateReview(
+  id: string,
+  reviewStatus: Exclude<CorpusReviewStatus, "pending">,
+): Promise<CorpusCandidate> {
+  const supabase = getSupabaseAdminClient();
+  const { data, error } = await supabase
+    .from("corpus_candidates")
+    .update({ review_status: reviewStatus })
+    .eq("id", id)
+    .select("*")
+    .single();
+
+  if (error) throw new Error(error.message);
+  return data as CorpusCandidate;
+}
+
+export async function bulkUpdateCorpusCandidateReview(
+  ids: string[],
+  reviewStatus: Exclude<CorpusReviewStatus, "pending">,
+): Promise<number> {
+  if (ids.length === 0) return 0;
+
+  const supabase = getSupabaseAdminClient();
+  const { data, error } = await supabase
+    .from("corpus_candidates")
+    .update({ review_status: reviewStatus })
+    .in("id", ids)
+    .select("id");
+
+  if (error) throw new Error(error.message);
+  return data?.length ?? 0;
+}

@@ -22,6 +22,8 @@ import { AdminCommunityModerationPanel } from "./AdminCommunityModerationPanel";
 import { AdminCriticalSettings } from "./components/AdminCriticalSettings";
 import { AdminFinancialCards } from "./components/AdminFinancialCards";
 import { AdminMetricsCharts } from "./components/AdminMetricsCharts";
+import { AdminCorpusPanel } from "./components/AdminCorpusPanel";
+import { AdminPedagogicoPanel } from "./components/AdminPedagogicoPanel";
 
 type AdminSchool = {
   id: string;
@@ -142,10 +144,30 @@ type HealthReport = {
   checkedAt: string;
 };
 
+type CorpusStats = {
+  pending: number;
+  approved: number;
+  rejected: number;
+  total: number;
+};
+
+type GenerationQuickStats = {
+  total: number;
+  elevationRate: number;
+  usedAiRate: number;
+};
+
+type PedagogicalQuickStats = {
+  cacheHits: number;
+  hitRate: number | null;
+  tokensSaved: number;
+};
+
 const quickLinks = [
+  { href: "/admin/corpus", title: "Garimpo RAG" },
   { href: "/admin/biblioteca", title: "Biblioteca Premium" },
+  { href: "/admin#qualidade-ia", title: "Qualidade IA" },
   { href: "/dashboard", title: "Painel professor" },
-  { href: "/planos", title: "Página de planos" },
 ];
 
 const supabaseOnlyTasks = [
@@ -166,6 +188,9 @@ export function AdminControleClient() {
   const [overview, setOverview] = useState<Overview | null>(null);
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [health, setHealth] = useState<HealthReport | null>(null);
+  const [corpusStats, setCorpusStats] = useState<CorpusStats | null>(null);
+  const [generationQuick, setGenerationQuick] = useState<GenerationQuickStats | null>(null);
+  const [pedagogicalQuick, setPedagogicalQuick] = useState<PedagogicalQuickStats | null>(null);
   const [schools, setSchools] = useState<AdminSchool[]>([]);
   const [platformUsers, setPlatformUsers] = useState<PlatformUser[]>([]);
   const [platformMaterials, setPlatformMaterials] = useState<PlatformMaterial[]>([]);
@@ -201,15 +226,25 @@ export function AdminControleClient() {
     setError("");
 
     try {
-      const [overviewRes, healthRes, metricsRes] = await Promise.all([
+      const [overviewRes, healthRes, metricsRes, corpusRes, genRes] = await Promise.all([
         fetch("/api/admin/overview", { credentials: "include", cache: "no-store" }),
         fetch("/api/admin/site-health", { credentials: "include", cache: "no-store" }),
         fetch("/api/admin/metrics", { credentials: "include", cache: "no-store" }),
+        fetch("/api/admin/corpus-candidates/stats", {
+          credentials: "include",
+          cache: "no-store",
+        }),
+        fetch("/api/admin/generation-stats?window=24h", {
+          credentials: "include",
+          cache: "no-store",
+        }),
       ]);
 
       const overviewJson = await overviewRes.json().catch(() => null);
       const healthJson = await healthRes.json().catch(() => null);
       const metricsJson = await metricsRes.json().catch(() => null);
+      const corpusJson = await corpusRes.json().catch(() => null);
+      const genJson = await genRes.json().catch(() => null);
 
       if (!overviewRes.ok || !overviewJson?.success) {
         throw new Error(
@@ -230,10 +265,39 @@ export function AdminControleClient() {
           ? (metricsJson.metrics as DashboardMetrics)
           : null,
       );
+      setCorpusStats(
+        corpusRes.ok && corpusJson?.success
+          ? (corpusJson.stats as CorpusStats)
+          : null,
+      );
+      if (genRes.ok && genJson?.success) {
+        const stats = genJson.stats as GenerationQuickStats;
+        setGenerationQuick({
+          total: stats.total,
+          elevationRate: stats.elevationRate,
+          usedAiRate: stats.usedAiRate,
+        });
+        const ped = genJson.pedagogical as PedagogicalQuickStats | undefined;
+        setPedagogicalQuick(
+          ped
+            ? {
+                cacheHits: ped.cacheHits,
+                hitRate: ped.hitRate,
+                tokensSaved: ped.tokensSaved,
+              }
+            : null,
+        );
+      } else {
+        setGenerationQuick(null);
+        setPedagogicalQuick(null);
+      }
     } catch (err) {
       setOverview(null);
       setHealth(null);
       setMetrics(null);
+      setCorpusStats(null);
+      setGenerationQuick(null);
+      setPedagogicalQuick(null);
       setError(err instanceof Error ? err.message : "Erro ao carregar dados.");
     } finally {
       setLoading(false);
@@ -627,6 +691,45 @@ export function AdminControleClient() {
             detail={`${overview.credits.walletsWithBalance} carteiras`}
             accent="amber"
           />
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {corpusStats ? (
+            <>
+              <AdminStatCard
+                label="Garimpo pendente"
+                value={corpusStats.pending}
+                detail={`${corpusStats.approved} aprovados · ${corpusStats.total} total`}
+                accent="amber"
+              />
+              <AdminStatCard
+                label="Corpus aprovado"
+                value={corpusStats.approved}
+                detail="entra no RAG via match BNCC/tema"
+                accent="emerald"
+              />
+            </>
+          ) : null}
+          {generationQuick ? (
+            <AdminStatCard
+              label="Telemetria 24h"
+              value={generationQuick.total}
+              detail={`IA ${generationQuick.usedAiRate}% · elevação ${generationQuick.elevationRate}%`}
+              accent="cyan"
+            />
+          ) : null}
+          {pedagogicalQuick ? (
+            <AdminStatCard
+              label="Cache didático"
+              value={
+                pedagogicalQuick.hitRate !== null
+                  ? `${pedagogicalQuick.hitRate}%`
+                  : pedagogicalQuick.cacheHits
+              }
+              detail={`${pedagogicalQuick.tokensSaved.toLocaleString("pt-BR")} tokens economizados`}
+              accent="violet"
+            />
+          ) : null}
         </div>
 
         {metrics ? (
@@ -1188,6 +1291,14 @@ export function AdminControleClient() {
   }
 
   function renderTabContent() {
+    if (activeTab === "corpus") {
+      return <AdminCorpusPanel />;
+    }
+
+    if (activeTab === "reservatorio") {
+      return <AdminPedagogicoPanel />;
+    }
+
     if (activeTab === "qualidade-ia") {
       return (
         <div className="pl-admin-panel p-4 [&_.text-slate-950]:text-slate-100 [&_.text-slate-600]:text-slate-400 [&_.bg-white]:bg-[#0d121c] [&_.border-slate-200]:border-slate-800">

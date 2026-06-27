@@ -1,15 +1,15 @@
-import { getOwnerPageAccess } from "../../../server/auth/owner-access";
-import { OwnerAccessGate } from "../../../components/OwnerAccessGate";
-import { AdminSecurityBar } from "../../../components/AdminSecurityBar";
-import { AdminTabSessionGuard } from "../../../components/AdminTabSessionGuard";
-import { PageShell } from "../../../components/PageShell";
 import Link from "next/link";
-import { AdminBibliotecaClient } from "./AdminBibliotecaClient";
+import { getOwnerPageAccess } from "@/server/auth/owner-access";
+import { OwnerAccessGate } from "@/components/OwnerAccessGate";
+import { AdminSecurityBar } from "@/components/AdminSecurityBar";
+import { AdminTabSessionGuard } from "@/components/AdminTabSessionGuard";
+import { PageShell } from "@/components/PageShell";
+import { AdminCorpusPanel } from "../components/AdminCorpusPanel";
 import { AdminSidebarLinks } from "../components/AdminSidebarLinks";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminBibliotecaPage() {
+export default async function AdminCorpusPage() {
   const owner = await getOwnerPageAccess();
 
   if (!owner.authenticated || !owner.isOwner) {
@@ -18,7 +18,7 @@ export default async function AdminBibliotecaPage() {
         <OwnerAccessGate
           authenticated={owner.authenticated}
           email={owner.email}
-          redirectTo="/admin/biblioteca"
+          redirectTo="/admin/corpus"
         />
       </PageShell>
     );
@@ -33,20 +33,18 @@ export default async function AdminBibliotecaPage() {
           <section className="mx-auto max-w-7xl px-4 pb-2 pt-4 sm:px-6 lg:px-8">
             <div className="flex flex-wrap items-end justify-between gap-4">
               <div>
-                <p className="text-xs font-medium text-cyan-400">Biblioteca Premium</p>
+                <p className="text-xs font-medium text-cyan-400">Garimpo interno</p>
                 <h1 className="mt-1 text-xl font-bold text-slate-100 sm:text-2xl">
-                  Materiais oficiais
+                  Corpus RAG
                 </h1>
                 <p className="mt-2 max-w-2xl text-sm text-slate-500">
-                  Publique e gerencie o acervo premium da plataforma.
+                  Curadoria de materiais de alta qualidade para enriquecer gerações. O impacto
+                  aparece gradualmente via match BNCC/tema — não é mudança instantânea na UI.
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
                 <Link href="/admin" className="pl-admin-btn-ghost px-4 py-2">
-                  Voltar ao admin
-                </Link>
-                <Link href="/biblioteca" className="pl-admin-btn-ghost px-4 py-2">
-                  Ver biblioteca pública
+                  Voltar ao painel
                 </Link>
               </div>
             </div>
@@ -56,7 +54,11 @@ export default async function AdminBibliotecaPage() {
             </div>
           </section>
 
-          <AdminBibliotecaClient />
+          <section className="mx-auto max-w-7xl px-4 pb-20 sm:px-6 lg:px-8">
+            <div className="pl-admin-shell overflow-hidden rounded-2xl p-5 sm:p-6">
+              <AdminCorpusPanel />
+            </div>
+          </section>
         </AdminTabSessionGuard>
       </div>
     </PageShell>

@@ -127,6 +127,65 @@ function assertOfficialDistribution(items, carga) {
   );
 }
 
+function assertAulaContinuity(items) {
+  assert.ok(items.length > 0, "matriz não pode estar vazia");
+
+  let expectedInicio = 1;
+  for (const [index, item] of items.entries()) {
+    assert.equal(
+      item.aulaInicio,
+      expectedInicio,
+      `linha ${index + 1}: aulaInicio esperado ${expectedInicio}, recebido ${item.aulaInicio}`,
+    );
+    assert.equal(
+      item.aulaFim,
+      expectedInicio + item.periodos - 1,
+      `linha ${index + 1}: aulaFim inconsistente com periodos`,
+    );
+    expectedInicio = item.aulaFim + 1;
+  }
+
+  assert.equal(
+    items[items.length - 1].aulaFim,
+    items.reduce((sum, item) => sum + item.periodos, 0),
+    "aulaFim final deve coincidir com soma de períodos",
+  );
+}
+
+function assertAnnualTrimestres(items, label) {
+  if (items.length < 3) {
+    return;
+  }
+
+  const trimestres = new Set(items.map((item) => item.trimestre));
+  for (const trimestre of [1, 2, 3]) {
+    assert.ok(
+      trimestres.has(trimestre),
+      `${label}: trimestre ${trimestre} ausente (presentes: ${[...trimestres].sort().join(", ")})`,
+    );
+  }
+}
+
+function runAllocationScenario({ label, conteudos, carga, payload }) {
+  const coarse = conteudos.map((conteudo, index) =>
+    makeMatrixItem(conteudo, Math.ceil(carga / conteudos.length), index),
+  );
+  const finalized = finalizeMatrixLessonAllocation(coarse, payload);
+
+  assertOfficialDistribution(finalized, carga);
+  assertAulaContinuity(finalized);
+  if (payload.tipoPlanejamento !== "trimestral") {
+    assertAnnualTrimestres(finalized, label);
+  }
+
+  const maxPeriodos = Math.max(...finalized.map((item) => item.periodos));
+  console.log(
+    `OK: ${label} → ${finalized.length} experiências (max ${maxPeriodos} períodos/linha)`,
+  );
+
+  return finalized;
+}
+
 console.log("verify-planning-allocation: contrato oficial");
 
 assert.equal(OFFICIAL_PERIODS_PER_EXPERIENCE, 2);
@@ -255,5 +314,103 @@ assert.equal(
 );
 
 console.log("OK: planning-quality detecta e absolve distribuição corrigida");
+
+console.log("\nverify-planning-allocation: cargas altas (120/160 períodos)");
+
+const conteudosEm = [
+  "Literatura brasileira contemporânea",
+  "Análise linguística e variação",
+  "Produção textual dissertativa",
+  "Competências leitoras do ENEM",
+];
+
+runAllocationScenario({
+  label: "EM 4 conteúdos / 120 períodos",
+  conteudos: conteudosEm,
+  carga: 120,
+  payload: {
+    tipoPlanejamento: "anual",
+    etapa: "Ensino Médio",
+    anoSerie: "2ª série",
+    componenteCurricular: "Língua Portuguesa",
+    cargaHoraria: "120 períodos",
+    conteudos: conteudosEm.join("\n"),
+    habilidadesSelecionadas: [{ codigo: "EM13LP01", descricao: "Habilidade" }],
+  },
+});
+
+runAllocationScenario({
+  label: "EM 4 conteúdos / 160 períodos",
+  conteudos: conteudosEm,
+  carga: 160,
+  payload: {
+    tipoPlanejamento: "anual",
+    etapa: "Ensino Médio",
+    anoSerie: "3ª série",
+    componenteCurricular: "Língua Portuguesa",
+    cargaHoraria: "160",
+    conteudos: conteudosEm.join("\n"),
+    habilidadesSelecionadas: [{ codigo: "EM13LP01", descricao: "Habilidade" }],
+  },
+});
+
+const conteudosEf = [
+  "Brasil: formação e diversidade",
+  "Povos indígenas e africanos",
+  "Colonização e escravidão",
+  "Independência e cidadania",
+  "República e movimentos sociais",
+  "Geografia histórica regional",
+];
+
+runAllocationScenario({
+  label: "EF 6 conteúdos / 120 períodos",
+  conteudos: conteudosEf,
+  carga: 120,
+  payload: {
+    tipoPlanejamento: "anual",
+    etapa: "Ensino Fundamental",
+    anoSerie: "9º ano",
+    componenteCurricular: "História",
+    cargaHoraria: "120 períodos",
+    conteudos: conteudosEf.join("\n"),
+    habilidadesSelecionadas: [{ codigo: "EF09HI01", descricao: "Habilidade" }],
+  },
+});
+
+const conteudosEfDenso = Array.from(
+  { length: 10 },
+  (_, index) => `Unidade temática ${index + 1}: conceitos e práticas`,
+);
+
+runAllocationScenario({
+  label: "EF 10 conteúdos / 120 períodos",
+  conteudos: conteudosEfDenso,
+  carga: 120,
+  payload: {
+    tipoPlanejamento: "anual",
+    etapa: "Ensino Fundamental",
+    anoSerie: "8º ano",
+    componenteCurricular: "Ciências",
+    cargaHoraria: "120",
+    conteudos: conteudosEfDenso.join("\n"),
+    habilidadesSelecionadas: [{ codigo: "EF08CI01", descricao: "Habilidade" }],
+  },
+});
+
+runAllocationScenario({
+  label: "EM 1 conteúdo / 80 períodos (edge)",
+  conteudos: ["Projeto integrador de leitura e escrita"],
+  carga: 80,
+  payload: {
+    tipoPlanejamento: "anual",
+    etapa: "Ensino Médio",
+    anoSerie: "1ª série",
+    componenteCurricular: "Língua Portuguesa",
+    cargaHoraria: "80 períodos",
+    conteudos: "Projeto integrador de leitura e escrita",
+    habilidadesSelecionadas: [{ codigo: "EM13LP01", descricao: "Habilidade" }],
+  },
+});
 
 console.log("\nTodos os testes de alocação de planejamento passaram.");

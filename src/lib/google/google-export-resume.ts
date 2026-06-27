@@ -13,6 +13,7 @@ export const GOOGLE_EXPORT_PENDING_KEYS = [
   "planify:google-docs-export-pending",
   "planify:google-drive-export-pending",
   "planify:google-forms-export-pending",
+  "planify:google-slides-export-pending",
 ] as const;
 
 export type GoogleExportPendingKey = (typeof GOOGLE_EXPORT_PENDING_KEYS)[number];

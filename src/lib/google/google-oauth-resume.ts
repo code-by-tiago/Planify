@@ -1,10 +1,12 @@
 import { GOOGLE_DOCS_EXPORT_PENDING_KEY } from "@/components/google/GoogleDocsExportButton";
 import { GOOGLE_DRIVE_EXPORT_PENDING_KEY } from "@/components/google/GoogleDriveExportButton";
 import { GOOGLE_FORMS_EXPORT_PENDING_KEY } from "@/components/google/GoogleFormsExportButton";
+import { GOOGLE_SLIDES_EXPORT_PENDING_KEY } from "@/components/google/GoogleSlidesExportButton";
 import {
   exportToGoogleDocs,
   exportToGoogleDrive,
   exportToGoogleForms,
+  exportToGoogleSlides,
   fetchGoogleStatus,
 } from "@/lib/google/google-api-client";
 import {
@@ -68,7 +70,9 @@ async function executeProductExport(params: {
       : await waitForExportableHtml(params.getHtml);
 
   if (!hasExportableHtml(html)) {
-    throw new Error("O documento ainda não carregou. Aguarde e tente exportar novamente.");
+    throw new Error(
+      "O documento ainda nao carregou. Aguarde e tente exportar novamente.",
+    );
   }
 
   const planningPayload =
@@ -92,23 +96,37 @@ async function executeProductExport(params: {
       documentType: params.documentType,
       planningPayload,
     });
-    return result.drive.webViewLink || result.driveOpenUrl || "https://drive.google.com/drive/my-drive";
+    return (
+      result.drive.webViewLink ||
+      result.driveOpenUrl ||
+      "https://drive.google.com/drive/my-drive"
+    );
   }
 
   if (params.key === GOOGLE_FORMS_EXPORT_PENDING_KEY) {
     const result = await exportToGoogleForms({
       title,
       html,
-      description: "Formulário criado pelo Planify.",
+      description: "Formulario criado pelo Planify.",
     });
     return result.formUrl;
   }
 
-  throw new Error("Exportação Google pendente não reconhecida.");
+  if (params.key === GOOGLE_SLIDES_EXPORT_PENDING_KEY) {
+    const result = await exportToGoogleSlides({
+      title,
+      html,
+      documentType: params.documentType,
+    });
+    return result.presentationUrl;
+  }
+
+  throw new Error("Exportacao Google pendente nao reconhecida.");
 }
 
 function productLabel(key: GoogleExportPendingKey): string {
   if (key === GOOGLE_FORMS_EXPORT_PENDING_KEY) return "Google Forms";
+  if (key === GOOGLE_SLIDES_EXPORT_PENDING_KEY) return "Google Slides";
   if (key === GOOGLE_DRIVE_EXPORT_PENDING_KEY) return "Google Drive";
   if (key === GOOGLE_DOCS_EXPORT_PENDING_KEY) return "Google Docs";
   return "Google";
@@ -148,14 +166,14 @@ export async function resumePendingGoogleExport(
 
     const label = productLabel(active.key);
 
-    params.onStatus?.(`Retomando exportação para ${label}…`);
+    params.onStatus?.(`Retomando exportacao para ${label}...`);
 
     if (active.key === GOOGLE_FORMS_EXPORT_PENDING_KEY) {
       const formsStatus = await waitForFormsExportReady(fetchGoogleStatus);
 
       if (!formsStatus?.connected || formsStatus.formsScopeGranted !== true) {
         params.onStatus?.(
-          "Aguardando permissão do Google Forms… Se não abrir, clique em Autorizar Google Forms.",
+          "Aguardando permissao do Google Forms. Se nao abrir, clique em Autorizar Google Forms.",
         );
         releaseGoogleOAuthReturnLock();
         return false;
@@ -164,7 +182,7 @@ export async function resumePendingGoogleExport(
       const status = await waitForGoogleConnected(fetchGoogleStatus);
 
       if (!status?.connected) {
-        throw new Error("Conta Google ainda não conectada. Tente exportar novamente.");
+        throw new Error("Conta Google ainda nao conectada. Tente exportar novamente.");
       }
     }
 
@@ -192,9 +210,9 @@ export async function resumePendingGoogleExport(
   } catch (error) {
     params.onExportError?.(error);
     const message =
-      error instanceof Error ? error.message : "Erro ao retomar exportação Google.";
+      error instanceof Error ? error.message : "Erro ao retomar exportacao Google.";
 
-    if (/ainda não carregou|ainda não conectada/i.test(message)) {
+    if (/ainda nao carregou|ainda nao conectada/i.test(message)) {
       releaseGoogleOAuthReturnLock();
       return false;
     }

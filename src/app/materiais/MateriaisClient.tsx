@@ -6,6 +6,7 @@ import Link from "next/link";
 import { GoogleDocumentExportBar } from "@/components/google/GoogleDocumentExportBar";
 import { useAutoGoogleExport } from "@/hooks/useAutoGoogleExport";
 import { MaterialGenerationSummaryPanel } from "@/components/materiais/MaterialGenerationSummary";
+import { PlanoAulaExecutionPanel } from "@/components/materiais/lesson-execution/PlanoAulaExecutionPanel";
 import { MaterialQualityScoreBar } from "@/components/materiais/MaterialQualityScoreBar";
 import { MaterialTypedPreview } from "@/components/materiais/preview/MaterialTypedPreview";
 import {
@@ -1423,6 +1424,23 @@ export function MateriaisClient({
             </div>
           ) : resultadoHtml ? (
             <div>
+              {isPlanoAula ? (
+                <PlanoAulaExecutionPanel
+                  title={buildTitle(tipo, "", conteudo)}
+                  html={resultadoHtml}
+                  etapa={etapa}
+                  anoSerie={anoSerie}
+                  componente={componente}
+                  onStatus={setHintFeedback}
+                  onError={(error) => {
+                    const message =
+                      error instanceof Error
+                        ? error.message
+                        : "Falha ao preparar a aula.";
+                    setHintFeedback(message);
+                  }}
+                />
+              ) : null}
               {generationSummary ? (
                 <MaterialGenerationSummaryPanel summary={generationSummary} />
               ) : null}

@@ -4,15 +4,11 @@ import { PublicProfessorPrimeiroLayout } from "@/components/public/PublicProfess
 import { buildPageMetadata } from "@/lib/seo/metadata";
 import { PlanCheckoutLink } from "@/components/planos/PlanCheckoutLink";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
-import type { PlanifyIconName } from "@/lib/pro/planifyTools";
 import { LandingFaq } from "@/components/public/landing/LandingFaq";
 import {
   ppBadge,
   ppBtnPrimary,
-  ppBtnSecondary,
-  ppEyebrow,
   ppLink,
-  ppTitleAccent,
 } from "@/components/public/landing-professor-primeiro/theme";
 import { billingPlans } from "../../types/billing";
 
@@ -79,57 +75,16 @@ function alertClass(type: string) {
   return "border-amber-200 bg-amber-50 text-amber-800";
 }
 
-const valuePillars: { icon: PlanifyIconName; title: string; text: string }[] = [
-  {
-    icon: "spark",
-    title: "Crie em minutos",
-    text: "Materiais, avaliações e planejamentos para a sua turma.",
-  },
-  {
-    icon: "calendar",
-    title: "Planeje com segurança",
-    text: "Planejamentos anuais, trimestrais e de aula alinhados à BNCC.",
-  },
-  {
-    icon: "editor",
-    title: "Revise e entregue",
-    text: "Editor, biblioteca e exportações para finalizar no seu padrão.",
-  },
-];
-
-const activationSteps = [
-  {
-    number: "01",
-    title: "Assine com segurança",
-    text: "Conclua o checkout protegido em poucos passos.",
-  },
-  {
-    number: "02",
-    title: "Ative sua conta",
-    text: "Crie a senha no e-mail de confirmação e entre no Planify.",
-  },
-  {
-    number: "03",
-    title: "Comece pela sua aula",
-    text: "Escolha uma ferramenta, informe o tema e revise o resultado antes de usar.",
-  },
-];
-
 const planFaq = [
-  {
-    question: "O uso é ilimitado?",
-    answer:
-      "Sim — todas as ferramentas premium ficam disponíveis no Plano Professor, sem comparar pacotes. O uso é pessoal docente e segue nossos termos.",
-  },
   {
     question: "O que está incluído?",
     answer:
-      "Você tem acesso às ferramentas com IA, Planejamentos BNCC, editor, biblioteca, exportações e Comunidade Docente em uma única assinatura.",
+      "Ferramentas com IA, Planejamentos BNCC, editor, biblioteca, exportações e Comunidade Docente — tudo em uma assinatura.",
   },
   {
     question: "Como começo depois de assinar?",
     answer:
-      "Conclua o checkout, crie sua senha na confirmação e entre com o mesmo e-mail em /login. Seu espaço estará pronto para começar.",
+      "Conclua o checkout, crie sua senha na confirmação e entre com o mesmo e-mail em /login.",
   },
   {
     question: "Posso cancelar?",
@@ -145,14 +100,14 @@ export default async function PlanosPage({ searchParams }: PlanosPageProps) {
 
   return (
     <PublicProfessorPrimeiroLayout>
-      <section className="relative overflow-hidden px-5 pb-20 pt-12 sm:px-8 sm:pt-20">
+      <section className="relative overflow-hidden px-5 pb-16 pt-10 sm:px-8 sm:pb-20 sm:pt-14">
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 hidden bg-[radial-gradient(ellipse_80%_60%_at_15%_10%,rgba(8,145,178,0.08),transparent_55%)] sm:block"
+          className="pointer-events-none absolute inset-0 hidden bg-[radial-gradient(ellipse_80%_60%_at_80%_15%,rgba(8,145,178,0.06),transparent_50%)] sm:block"
         />
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 hidden bg-[radial-gradient(ellipse_50%_40%_at_92%_8%,rgba(37,99,235,0.07),transparent_60%)] sm:block"
+          className="pointer-events-none absolute inset-0 hidden opacity-40 bg-[radial-gradient(circle_at_25%_35%,rgba(8,145,178,0.05),transparent_40%),radial-gradient(circle_at_72%_28%,rgba(71,85,105,0.04),transparent_36%)] sm:block"
         />
 
         <div className="relative mx-auto max-w-6xl">
@@ -169,27 +124,21 @@ export default async function PlanosPage({ searchParams }: PlanosPageProps) {
           ) : null}
 
           <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
-            <header>
-              <p className={ppEyebrow}>Plano único para professores</p>
-              <h1 className="mt-4 font-[family-name:var(--font-display)] text-4xl font-extrabold leading-[1.08] tracking-tight text-slate-950 sm:text-5xl lg:text-[3.25rem]">
-                Menos tempo montando. <span className={ppTitleAccent}>Mais tempo ensinando.</span>
-              </h1>
-              <p className="mt-5 max-w-xl text-lg font-medium leading-8 text-slate-600">
-                Planeje, crie e entregue aulas melhores — ferramentas com IA, BNCC e exportação em
-                uma assinatura simples.
-              </p>
+            <div>
+              <span className="inline-flex items-center rounded-full border border-cyan-200 bg-cyan-50 px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-cyan-800">
+                Plano único para professores
+              </span>
 
-              <div className="mt-8 flex flex-wrap gap-2">
-                <span className={ppBadge}>
-                  <PlanifyIcon name="checkCircle" className="h-3.5 w-3.5" />
-                  Acesso completo
-                </span>
-                <span className={ppBadge}>
-                  <PlanifyIcon name="checkCircle" className="h-3.5 w-3.5" />
-                  Cancele quando quiser
-                </span>
-              </div>
-            </header>
+              <h1 className="mt-6 font-[family-name:var(--font-display)] text-4xl font-extrabold leading-[1.08] tracking-tight text-slate-900 sm:text-5xl lg:text-[3.25rem]">
+                Menos tempo montando.{" "}
+                <span className="text-cyan-600">Mais tempo ensinando.</span>
+              </h1>
+
+              <p className="mt-5 max-w-xl text-lg font-medium leading-8 text-slate-600">
+                Ferramentas com IA, planejamentos BNCC e exportação — uma assinatura
+                simples, sem pacotes para comparar.
+              </p>
+            </div>
 
             <article
               id="precos"
@@ -260,70 +209,16 @@ export default async function PlanosPage({ searchParams }: PlanosPageProps) {
             </article>
           </div>
 
-          <section className="mt-16 rounded-3xl border border-slate-200/80 bg-white/70 px-5 py-7 backdrop-blur-sm sm:px-8 sm:py-9">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <p className={ppEyebrow}>Uma rotina mais leve</p>
-                <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">
-                  Do planejamento à entrega, sem trocar de plataforma.
-                </h2>
-              </div>
-              <Link href="/login" className={`${ppBtnSecondary} shrink-0 px-5 py-3 text-sm`}>
-                Já sou assinante
-              </Link>
+          <div className="mx-auto mt-16 max-w-2xl">
+            <h2 className="text-center text-lg font-black tracking-tight text-slate-950">
+              Dúvidas frequentes
+            </h2>
+            <div className="mt-5">
+              <LandingFaq items={planFaq} />
             </div>
+          </div>
 
-            <div className="mt-7 grid gap-4 sm:grid-cols-3">
-              {valuePillars.map((item) => (
-                <article key={item.title} className="rounded-2xl border border-slate-200/80 bg-white p-5">
-                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-cyan-50 text-cyan-700">
-                    <PlanifyIcon name={item.icon} className="h-4 w-4" />
-                  </span>
-                  <h3 className="mt-3 text-base font-black text-slate-950">{item.title}</h3>
-                  <p className="mt-2 text-sm font-medium leading-6 text-slate-600">{item.text}</p>
-                </article>
-              ))}
-            </div>
-          </section>
-
-          <section className="mt-10 grid gap-6 sm:grid-cols-3">
-            {activationSteps.map((step) => (
-              <article key={step.number} className="text-center sm:text-left">
-                <span className="text-xs font-black tracking-[0.16em] text-cyan-700">{step.number}</span>
-                <h3 className="mt-2 text-base font-black text-slate-950">{step.title}</h3>
-                <p className="mt-1 text-sm font-medium leading-6 text-slate-600">{step.text}</p>
-              </article>
-            ))}
-          </section>
-
-          <section className="mt-14 grid gap-10 lg:grid-cols-[0.8fr_1.2fr] lg:items-start">
-            <div>
-              <p className={ppEyebrow}>Assinatura sem labirinto</p>
-              <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-950">
-                Clareza antes, durante e depois do checkout.
-              </h2>
-              <p className="mt-4 text-base font-medium leading-7 text-slate-600">
-                Um único plano evita comparação artificial. Você sabe exatamente o que libera e
-                como começar a usar.
-              </p>
-              <PlanCheckoutLink
-                planKey={plan.key}
-                className={`${ppBtnPrimary} mt-7 w-full sm:w-auto`}
-              >
-                Começar agora
-                <PlanifyIcon name="arrowRight" className="h-4 w-4" />
-              </PlanCheckoutLink>
-            </div>
-
-            <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
-              <h2 className="text-xl font-black text-slate-950">Perguntas frequentes</h2>
-              <div className="mt-4">
-                <LandingFaq items={planFaq} />
-              </div>
-            </div>
-          </section>
-
-          <p className="mt-12 text-center text-sm text-slate-500">
+          <p className="mt-10 text-center text-sm text-slate-500">
             Já tem uma conta? <Link href="/login" className={ppLink}>Entrar</Link>
           </p>
         </div>

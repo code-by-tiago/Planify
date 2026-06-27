@@ -74,7 +74,7 @@ async function regenerateExamQuestions(
     "Cada item deve citar o tema, ter enunciado direto (sem preâmbulo) e gabarito objetivo.",
     "MÚLTIPLA ESCOLHA: exatamente 4 alternativas no array options, SEM prefixo a) b) — cada alternativa com frase completa (mín. 35 caracteres), plausível e distinta, contextualizada no tema.",
     "PROIBIDO alternativas genéricas ('todas as anteriores', 'nenhuma das anteriores', 'conteúdo estudado', opções de 1–2 palavras).",
-    "GABARITO: objetivas com letra/resposta + justificativa mínima (1 frase); dissertativas com passos ou critérios concretos (mín. 40 caracteres).",
+    "GABARITO: objetivas com letra/resposta curta (≤120 caracteres no total); dissertativas com passos concretos (40–120 caracteres).",
     "ENUNCIADO: no máximo 3 frases curtas e diretas — comando claro sem contextualização longa.",
     "",
     "Itens a corrigir:",

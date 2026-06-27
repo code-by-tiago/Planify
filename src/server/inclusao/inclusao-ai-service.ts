@@ -61,7 +61,7 @@ export async function generateInclusaoWithAI(
   }
 
   const { enrichWithPedagogicalContext } = await import(
-    "@/server/pedagogical-cache/enrich-with-pedagogical-context"
+    "../pedagogical-cache/enrich-with-pedagogical-context"
   );
   const enrichedPayload = await enrichWithPedagogicalContext(
     payload,

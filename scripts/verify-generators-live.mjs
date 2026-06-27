@@ -51,25 +51,43 @@ function loadTsModule(relativePath) {
   const localRequire = (specifier) => {
     if (specifier.startsWith(".")) {
       const resolved = join(dirname(sourcePath), specifier);
-      for (const candidate of [`${resolved}.ts`, `${resolved}.js`]) {
+      const candidates = [
+        `${resolved}.ts`,
+        `${resolved}.js`,
+        join(resolved, "index.ts"),
+        join(resolved, "index.js"),
+      ];
+
+      for (const candidate of candidates) {
         if (candidate.endsWith(".ts")) {
           const rel = candidate.slice(root.length + 1).replace(/\\/g, "/");
           return loadTsModule(rel);
         }
       }
     }
+
     if (specifier.startsWith("@/")) {
       const rel = `src/${specifier.slice(2)}`;
-      for (const candidate of [`${rel}.ts`, `${rel}.tsx`]) {
+      const candidates = [`${rel}.ts`, `${rel}.tsx`, join(rel, "index.ts")];
+      for (const candidate of candidates) {
+        const full = join(root, candidate);
         try {
-          readFileSync(join(root, candidate));
+          readFileSync(full);
           return loadTsModule(candidate.replace(/\\/g, "/"));
         } catch {
-          // continue
+          // try next
         }
       }
     }
+
     return require(specifier);
+  };
+
+  const localRequireWithStubs = (specifier) => {
+    if (specifier === "server-only") {
+      return {};
+    }
+    return localRequire(specifier);
   };
 
   const evaluator = new Function(
@@ -80,7 +98,7 @@ function loadTsModule(relativePath) {
     "__filename",
     transpiled,
   );
-  evaluator(module.exports, localRequire, module, dirname(sourcePath), sourcePath);
+  evaluator(module.exports, localRequireWithStubs, module, dirname(sourcePath), sourcePath);
   moduleCache.set(normalized, module.exports);
   return module.exports;
 }
@@ -108,6 +126,18 @@ const BNCC = [
       "Resolver e elaborar problemas que envolvam equações polinomiais de 2º grau.",
   },
 ];
+
+/** 9 ferramentas ativas — material engine (6) + inclusão + PEI + correção IA. */
+const ACTIVE_LIVE_TOOLS = [
+  "prova",
+  "lista",
+  "plano-aula",
+  "atividade",
+  "redacao",
+  "cruzadinha",
+];
+
+const MIN_QUALITY_SCORE = 88;
 
 const LIVE_PAYLOADS = {
   prova: {
@@ -139,6 +169,12 @@ const LIVE_PAYLOADS = {
     tipoMaterial: "jogo",
     formatoJogo: "quiz",
     quantidade: 1,
+    incluirGabarito: false,
+  },
+  cruzadinha: {
+    tipoMaterial: "cruzadinha",
+    formatoJogo: "cruzadinha",
+    quantidade: 10,
     incluirGabarito: false,
   },
   resumo: {
@@ -220,7 +256,7 @@ async function runEngineType(tipo, generateMaterialByEngine, failures) {
     const { html, qualityScore, qualityIssues = [], alertas = [] } = result.data;
     const htmlLen = String(html || "").length;
     const hasStructure = /<h1|planify-doc-title|planify-doc-header/i.test(html || "");
-    const minScore = 88;
+    const minScore = MIN_QUALITY_SCORE;
     const acceptable =
       htmlLen > 200 &&
       hasStructure &&
@@ -463,6 +499,133 @@ async function runSprint1Suite(failures) {
   }
 }
 
+async function runCorrecaoLive(failures) {
+  const { evaluateCorrectionWithAI } = loadTsModule(
+    "src/server/correcao/correction-ai-service.ts",
+  );
+  const { assessCorrectionQuality } = loadTsModule(
+    "src/server/correcao/correction-quality.ts",
+  );
+
+  console.log("\n=== Correção IA live ===");
+  const started = Date.now();
+
+  try {
+    const correctionResult = await evaluateCorrectionWithAI({
+      respostaAluno:
+        "Para resolver x + 5 = 12, subtraímos 5 dos dois lados e obtemos x = 7. Verifiquei substituindo na equação original.",
+      enunciado: "Resolva a equação x + 5 = 12.",
+      gabarito: "x = 7",
+      componente: "Matemática",
+      anoSerie: "9º ano",
+      tema: "Equações do 1º grau",
+      notaMaxima: 10,
+    });
+    const elapsedMs = Date.now() - started;
+
+    if (!correctionResult.ok) {
+      failures.push({ tipo: "correcao-ia", reason: correctionResult.message, elapsedMs });
+      console.log(`  ✗ correcao-ia: ${correctionResult.message}`);
+      return;
+    }
+
+    const quality = assessCorrectionQuality({
+      ...correctionResult.result,
+      notaMaxima: 10,
+    });
+
+    if (!quality.pass) {
+      failures.push({
+        tipo: "correcao-ia",
+        reason: quality.message || `score=${quality.qualityScore}`,
+        elapsedMs,
+      });
+      console.log(`  ✗ correcao-ia: score=${quality.qualityScore}`);
+      return;
+    }
+
+    console.log(
+      `  ✓ correcao-ia: nota=${correctionResult.result.nota}, score=${quality.qualityScore}, ${elapsedMs}ms`,
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    failures.push({ tipo: "correcao-ia", reason: message });
+    console.log(`  ✗ correcao-ia: ${message}`);
+  }
+}
+
+async function runPeiLive(failures) {
+  const { generatePeiDocument } = loadTsModule("src/server/pei/pei-engine.ts");
+  const { assessPeiQuality } = loadTsModule("src/server/pei/pei-quality.ts");
+
+  console.log("\n=== PEI live ===");
+  const started = Date.now();
+
+  try {
+    const result = await generatePeiDocument({
+      etapa: "Ensino Fundamental - Anos Finais",
+      anoSerie: "5º ano",
+      disciplina: "Matemática",
+      conteudos: ["Frações equivalentes", "Operações com frações"],
+      habilidadesSelecionadas: [
+        {
+          codigo: "EF05MA03",
+          descricao:
+            "Identificar e representar frações (menores e maiores que a unidade), associando-as ao resultado de uma divisão ou à ideia de parte de um todo.",
+        },
+      ],
+      trimestre: "1",
+      cid: "F90",
+      observacoes: "Estudante com TDAH em acompanhamento pedagógico escolar.",
+    });
+
+    const elapsedMs = Date.now() - started;
+
+    if (!result.ok) {
+      failures.push({ tipo: "pei", reason: result.message, elapsedMs });
+      console.log(`  ✗ pei: ${result.message}`);
+      return;
+    }
+
+    const { estrutura, usedAI, html } = result;
+    const quality = assessPeiQuality({
+      perfil: estrutura.perfil,
+      suportes: estrutura.suportes,
+      acessibilidade: estrutura.acessibilidade,
+      curricularRows: estrutura.curricularRows.map((row) => ({
+        conteudo: row.conteudo,
+        habilidade: row.habilidade,
+      })),
+      planejamento: estrutura.planejamento.map((row) => ({
+        periodo: row.periodo,
+        metodologia: row.metodologia,
+      })),
+      parecer: estrutura.parecer,
+      usedAI,
+    });
+
+    if (!quality.pass || String(html || "").length < 200) {
+      failures.push({
+        tipo: "pei",
+        reason: quality.pass
+          ? "HTML curto demais"
+          : quality.message || `score=${quality.qualityScore}`,
+        elapsedMs,
+      });
+      console.log(`  ✗ pei: score=${quality.qualityScore}, htmlLen=${String(html || "").length}`);
+      return;
+    }
+
+    console.log(
+      `  ✓ pei: score=${quality.qualityScore}, htmlLen=${String(html).length}, ${elapsedMs}ms`,
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    failures.push({ tipo: "pei", reason: message });
+    console.log(`  ✗ pei: ${message}`);
+  }
+}
+
 async function runInclusaoLive(failures) {
   const { generateInclusaoWithAI } = loadTsModule(
     "src/server/inclusao/inclusao-ai-service.ts",
@@ -522,6 +685,29 @@ async function runInclusaoLive(failures) {
   }
 }
 
+async function runActiveLiveSuite(failures, started) {
+  const { generateMaterialByEngine } = loadTsModule(
+    "src/server/materials/material-engine-service.ts",
+  );
+  const filter = parseTypesArg();
+  const types = filter?.length
+    ? filter.filter((tipo) => ACTIVE_LIVE_TOOLS.includes(tipo))
+    : ACTIVE_LIVE_TOOLS;
+
+  for (const tipo of types) {
+    await runEngineType(tipo, generateMaterialByEngine, failures);
+  }
+  await runInclusaoLive(failures);
+  await runPeiLive(failures);
+  await runCorrecaoLive(failures);
+
+  const total = types.length + 3;
+  const elapsedMs = Date.now() - started;
+  console.log(
+    `\nverify-generators-live: ${total - failures.length}/${total} OK (9 ferramentas ativas) — ${elapsedMs}ms`,
+  );
+}
+
 async function main() {
   loadEnvLocal();
 
@@ -555,6 +741,14 @@ async function main() {
     }
   } else if (suite === "inclusao") {
     await runInclusaoLive(failures);
+  } else if (suite === "pei") {
+    await runPeiLive(failures);
+  } else if (suite === "correcao") {
+    await runCorrecaoLive(failures);
+  } else if (suite === "active") {
+    await runActiveLiveSuite(failures, started);
+  } else if (!suite) {
+    await runActiveLiveSuite(failures, started);
   } else {
     const { MATERIAL_ENGINE_TYPES } = loadTsModule(
       "src/server/materials/material-engine-types.ts",
@@ -592,6 +786,14 @@ async function main() {
   } else if (suite === "inclusao") {
     const total = 1;
     console.log(`\nverify:generators-live (inclusao): ${total - failures.length}/${total} OK — ${elapsedMs}ms`);
+  } else if (suite === "pei") {
+    const total = 1;
+    console.log(`\nverify:generators-live (pei): ${total - failures.length}/${total} OK — ${elapsedMs}ms`);
+  } else if (suite === "correcao") {
+    const total = 1;
+    console.log(`\nverify:generators-live (correcao): ${total - failures.length}/${total} OK — ${elapsedMs}ms`);
+  } else if (suite === "active" || !suite) {
+    // summary already printed in runActiveLiveSuite
   }
 
   if (failures.length) {

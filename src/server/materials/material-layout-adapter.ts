@@ -79,10 +79,13 @@ function questaoToExamQuestion(questao: QuestaoItem) {
     .map((alt) => String(alt.texto || "").trim())
     .filter(Boolean);
 
-  const answer = [questao.respostaCorreta, questao.justificativa]
-    .map((part) => String(part || "").trim())
-    .filter(Boolean)
-    .join(" — ");
+  const resposta = String(questao.respostaCorreta || "").trim();
+  const justificativa = String(questao.justificativa || "").trim();
+  let answer = resposta;
+  if (justificativa) {
+    const combined = `${resposta} — ${justificativa}`;
+    answer = combined.length <= 120 ? combined : resposta || justificativa.slice(0, 120);
+  }
 
   return {
     number: questao.numero,
@@ -137,9 +140,9 @@ function extractGameFromSecoes(secoes: MaterialSecao[], formato: string | null |
     const bullets = secao.conteudo.bullets ?? [];
     const paragraphs = secao.conteudo.paragrafos ?? [];
 
-    if (/regra/.test(title)) {
+    if (/regra|orienta|aplica[cç][aã]o|como usar|passo a passo/.test(title)) {
       rules = [...rules, ...bullets, ...paragraphs];
-    } else if (/component|material|cart|peça|peca|termo/.test(title)) {
+    } else if (/component|material|cart|pe[cç]a|termo|cruzadinha|palavra|pista/.test(title)) {
       components = [...components, ...bullets, ...paragraphs];
     }
   }
@@ -180,6 +183,23 @@ function textoSecaoToActivity(secao: MaterialSecao) {
       .replace(evaluationPattern, "")
       .trim();
   const materials = allTextItems.filter((item) => materialPattern.test(item));
+  const materialValues = materials.map(stripKnownPrefix).filter(Boolean);
+  if (materialValues.length < 2) {
+    for (const item of bullets) {
+      const trimmed = item.trim();
+      if (
+        letteredPattern.test(trimmed) ||
+        isMetadataLine(trimmed) ||
+        trimmed.length < 4
+      ) {
+        continue;
+      }
+      if (!materialValues.includes(stripKnownPrefix(trimmed))) {
+        materialValues.push(stripKnownPrefix(trimmed));
+      }
+      if (materialValues.length >= 2) break;
+    }
+  }
   const letteredItems = allTextItems.filter((item) => letteredPattern.test(item.trim()));
   const narrativeItems = allTextItems.filter(
     (item) =>
@@ -190,9 +210,19 @@ function textoSecaoToActivity(secao: MaterialSecao) {
   const steps = letteredItems.length >= 5 ? letteredItems : supportItems;
   const explicitObjective = allTextItems.find((item) => objectivePattern.test(item));
   const explicitDevelopment = allTextItems.find((item) => developmentPattern.test(item));
-  const estimatedTime =
-    allTextItems.find((item) => /minuto|hora|tempo|dura[cç][aã]o/i.test(item)) ||
+  let estimatedTime =
+    allTextItems.find((item) => timePattern.test(item)) ||
     "";
+  if (!estimatedTime) {
+    const joined = allTextItems.join("\n");
+    const labeled = joined.match(/(?:tempo|dura[cç][aã]o)\s*:\s*([^\n.]+)/i);
+    if (labeled?.[0]) {
+      estimatedTime = labeled[0].trim();
+    } else {
+      const inline = joined.match(/\b(\d+\s*(?:minutos?|min\.?|horas?))\b/i);
+      if (inline?.[1]) estimatedTime = `Tempo: ${inline[1]}`;
+    }
+  }
   const evaluation =
     allTextItems.find((item) => /avalia|crit[eé]rio|criterio/i.test(item)) ||
     "";
@@ -207,7 +237,7 @@ function textoSecaoToActivity(secao: MaterialSecao) {
     title: secao.titulo,
     objective,
     estimatedTime: stripKnownPrefix(estimatedTime),
-    materials: materials.map(stripKnownPrefix),
+    materials: materialValues.length ? materialValues : materials.map(stripKnownPrefix),
     instructions: instructions || narrativeItems.join(" ") || "",
     items: steps.length ? steps : bullets,
     evaluation: stripKnownPrefix(evaluation),
@@ -260,6 +290,13 @@ export function materialLayoutToEngineResponse(
         const activity = textoSecaoToActivity(secao);
         if (activity) activities.push(activity);
         continue;
+      }
+
+      if (tipo === "plano-aula" && /atividade|pr[aá]tica|aplica[cç][aã]o em sala/i.test(secao.titulo)) {
+        const activity = textoSecaoToActivity(secao);
+        if (activity?.objective || activity?.instructions) {
+          activities.push(activity);
+        }
       }
 
       if (tipo === "mapa-mental") {

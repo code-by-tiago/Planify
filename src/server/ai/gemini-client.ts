@@ -38,12 +38,11 @@ const LEGACY_MODEL_MAP: Record<string, string> = {
 
 const DEFAULT_MODEL_FALLBACKS = [
   "gemini-2.5-flash",
-  "gemini-2.0-flash",
 ] as const;
 
 const ADVANCED_MODEL_FALLBACKS = [
   "gemini-2.5-flash",
-  "gemini-2.0-flash",
+  "gemini-2.5-pro",
 ] as const;
 
 function normalizeModelName(model: string): string {

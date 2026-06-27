@@ -4,6 +4,7 @@
  */
 
 import { resolveSlideTheme } from "./slide-design-themes";
+import { buildTeachyContractForType } from "@/lib/materiais/teachy-document-contract";
 import type {
   BnccSkillAnchor,
   PromptEngineInput,
@@ -108,24 +109,26 @@ function buildToolRules(input: PromptEngineInput): string[] {
         `Crie UMA seção tipo "questoes" com exatamente ${q} questões.`,
         `TEMA ÂNCORA obrigatório em cada enunciado: "${tema}".`,
         "Cada questão DEVE ter exatamente 5 alternativas (A, B, C, D, E) em alternativas[].",
+        "Alternativas: frases completas (mín. 35 caracteres), plausíveis, distintas e contextualizadas — proibido 'todas/nenhuma das anteriores'.",
         "Apenas UMA alternativa correta — preencha respostaCorreta com a letra (A–E).",
-        "justificativa: máximo 120 caracteres, objetiva, sem tom de aula.",
+        "respostaCorreta + justificativa juntas: máximo 120 caracteres — gabarito enxuto, sem tom de aula.",
+        "justificativa isolada: máximo 80 caracteres, objetiva.",
         "Variar tipos (objetiva + dissertativa quando q >= 2).",
-        "Enunciados diretos — sem 'Questão N:', sem preâmbulos.",
+        "Enunciados diretos — máximo 3 frases curtas; sem 'Questão N:', sem preâmbulos.",
         incluirGabarito === false
           ? "Sem gabarito: respostaCorreta e justificativa podem ser vazias."
-          : "Gabarito obrigatório em respostaCorreta + justificativa curta.",
+          : "Gabarito obrigatório: respostaCorreta (letra ou valor) + justificativa mínima dentro do limite de 120 caracteres no total.",
         "NÃO crie seções tipo texto com introdução longa — material direto para aplicar.",
       ];
 
     case "plano-aula":
       return [
         `Planejar ${q} período(s) de 50 minutos em um único plano.`,
-        "OBRIGATÓRIO: lessonPlan.steps com mínimo 5 etapas (Abertura → Fechamento), cada uma com stage, duration, description (professor + estudantes) e resources.",
-        "OBRIGATÓRIO: scheduleTables com cronograma cronometrado — cabeçalhos Etapa | Duração | Atividade | Recursos.",
-        "OBRIGATÓRIO: activities com pelo menos 1 atividade (objective, estimatedTime, materials, instructions, 5 itens a)-e), evaluation).",
-        "sections: objetivos/BNCC, desenvolvimento, recursos e avaliação formativa, adaptações.",
-        "Cada etapa deve orientar o professor com ações concretas em sala — zero texto genérico.",
+        "OBRIGATÓRIO: seção tipo tabela com cronograma (cabeçalhos Etapa | Duração | Atividade | Recursos) — mínimo 4 linhas incluindo Abertura e Fechamento.",
+        "OBRIGATÓRIO: lessonPlan.steps com mínimo 5 etapas (Abertura → Fechamento), cada uma com stage, duration, description (40+ caracteres: ações do professor e estudantes) e resources.",
+        "OBRIGATÓRIO: seção texto 'Atividade em sala' com objective, Tempo:, Material: (2+), Desenvolvimento:, itens a)-e) e Avaliação:.",
+        "sections: mínimo 3 (objetivos/BNCC, desenvolvimento, recursos e avaliação formativa).",
+        "Cada etapa deve orientar o professor com ações concretas — zero texto genérico ('trabalhar o conteúdo').",
       ];
 
     case "slides":
@@ -171,12 +174,12 @@ function buildToolRules(input: PromptEngineInput): string[] {
 
     case "atividade":
       return [
-        `Crie ${q} seções tipo "texto" — uma por atividade.`,
-        "Cada atividade deve ser robusta e pronta para aplicar: objetivo especifico, tempo estimado, materiais, desenvolvimento orientado e criterios de avaliacao.",
-        'Em conteudo.paragrafos de cada seção, use exatamente: "Objetivo: ..." e "Desenvolvimento: ..." com orientação extensa para aplicação.',
-        'Em conteudo.bullets de cada seção, inclua "Tempo: ...", 2 a 4 bullets prefixados por "Material: ...", depois pelo menos 5 itens de tarefa rotulados exatamente como a), b), c), d), e), e finalize com "Avaliação: ...".',
-        "Os itens a)-e) devem ter progressao cognitiva: observar/ler, interpretar, aplicar, justificar e produzir/sintetizar.",
-        "Use enunciados completos e contextualizados; nao entregue comandos genericos de uma linha.",
+        `Crie ${q} seções tipo "texto" — uma por atividade (título descritivo da atividade).`,
+        "Cada atividade DEVE ser robusta e pronta para aplicar em sala.",
+        'Em conteudo.paragrafos: "Objetivo: ..." (35+ caracteres, específico ao tema) e "Desenvolvimento: ..." (80+ caracteres com orientação passo a passo).',
+        'Em conteudo.bullets: "Tempo: XX minutos", 2+ bullets "Material: ...", exatamente 5 itens "a) ...", "b) ...", "c) ...", "d) ...", "e) ..." e "Avaliação: ..." (45+ caracteres com critérios observáveis).',
+        "Os itens a)-e) devem ter progressão cognitiva: observar/ler, interpretar, aplicar, justificar e produzir/sintetizar.",
+        "Use enunciados completos contextualizados no tema — proibido comandos genéricos de uma linha.",
       ];
 
     case "sequencia":
@@ -195,9 +198,10 @@ function buildToolRules(input: PromptEngineInput): string[] {
     case "redacao":
       return [
         `Inclua exatamente ${q} textos motivadores em seções tipo "texto" com títulos "Texto motivador 1", "Texto motivador 2" etc.`,
+        "Use SOMENTE seções tipo texto — proibido tipo slide ou questoes.",
         "Cada texto motivador deve ter contexto, dado/exemplo/recorte e conexão explícita com o tema; não use frases soltas.",
         "Inclua seção adicional obrigatória 'Tema e comando' com tema, gênero textual, público-alvo, finalidade e comando de produção.",
-        "Inclua critérios de avaliação em teacherNotes: adequação ao tema, repertório, argumentação, coesão, linguagem e proposta/conclusão quando aplicável.",
+        "Inclua critérios de avaliação em teacherNotes citando explicitamente: tema, argumentação, coesão, linguagem e repertório.",
         incluirGabarito
           ? "Incluir redação modelo de referência em seção texto separada."
           : "Sem redação modelo.",
@@ -223,7 +227,7 @@ function buildToolRules(input: PromptEngineInput): string[] {
         "Seção texto 'Termos da cruzadinha': bullets no formato PALAVRA: pista contextual.",
         "Cada PALAVRA deve ter 4–12 letras, sem espaços e sem acentos (ex.: FOTOSINTESE, EQUACAO).",
         "Pistas claras, sem revelar a resposta literalmente.",
-        "Seção texto 'Orientações de aplicação': 3–5 bullets sobre uso em sala.",
+        "Seção texto 'Regras e orientações de aplicação': 3–5 bullets sobre distribuição, tempo, mediação e correção em sala.",
         "Não incluir questões discursivas — apenas termos/pistas para a grade visual.",
       ];
 
@@ -331,6 +335,8 @@ ${buildBnccRagAnchor(input.habilidadesBncc)}
 
 REGRAS ESPECIALIZADAS (${input.tipoFerramenta}):
 ${toolRules}
+
+${buildTeachyContractForType(input.tipoFerramenta)}
 
 REGRAS GERAIS:
 - Adequar linguagem ao ano/série informado.

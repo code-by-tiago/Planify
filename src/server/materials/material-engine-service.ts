@@ -96,7 +96,7 @@ const CRITICAL_RETRY_TYPES = new Set<MaterialEngineType>([
 ]);
 
 function maxAttemptsFor(type: MaterialEngineType): number {
-  if (CRITICAL_RETRY_TYPES.has(type)) return 2;
+  if (CRITICAL_RETRY_TYPES.has(type)) return 3;
   return 1;
 }
 
@@ -692,7 +692,9 @@ function renderMindMap(response: MaterialEngineResponse): string {
   `;
 }
 
-function conciseGabaritoAnswer(text: string, maxLen = 180): string {
+const MAX_GABARITO_ANSWER_CHARS = 120;
+
+function conciseGabaritoAnswer(text: string, maxLen = MAX_GABARITO_ANSWER_CHARS): string {
   const trimmed = String(text || "").replace(/\s+/g, " ").trim();
   if (!trimmed) return "";
   if (trimmed.length <= maxLen) return trimmed;
@@ -1061,7 +1063,105 @@ function normalizeOutput(
     normalized.answerKey = [];
   }
 
+  if (request.tipoMaterial === "plano-aula" && normalized.lessonPlan?.steps?.length) {
+    normalized.lessonPlan = {
+      steps: enrichLessonPlanSteps(normalized.lessonPlan.steps),
+    };
+  }
+
+  if (request.tipoMaterial === "atividade" && normalized.activities.length) {
+    normalized.activities = enrichActivitiesForQuality(normalized.activities);
+  }
+
+  if (request.tipoMaterial === "redacao") {
+    const criteriaText = normalized.teacherNotes.join(" ");
+    if (
+      !criteriaText.trim() ||
+      !/tema|argumenta[cç][aã]o|coes[aã]o|linguagem|repert[oó]rio/i.test(criteriaText)
+    ) {
+      normalized.teacherNotes = [
+        ...normalized.teacherNotes.filter(Boolean),
+        "Critérios de avaliação: adequação ao tema, repertório sociocultural, qualidade da argumentação, coesão e coerência textual, domínio da norma culta da língua e proposta/conclusão coerentes.",
+      ];
+    }
+  }
+
   return normalized;
+}
+
+function enrichLessonPlanSteps(
+  steps: NonNullable<MaterialEngineResponse["lessonPlan"]>["steps"],
+): NonNullable<MaterialEngineResponse["lessonPlan"]>["steps"] {
+  return steps.map((step) => {
+    const description = String(step.description || "").trim();
+    if (description.length >= 40) return step;
+
+    const stage = String(step.stage || "Etapa").trim();
+    const duration = String(step.duration || "").trim();
+    const expanded = [
+      description,
+      description ? "" : `Na ${stage.toLowerCase()},`,
+      " o professor organiza a turma, explica o objetivo da etapa",
+      duration ? ` em ${duration}` : "",
+      " e orienta os estudantes a registrar respostas e participação no caderno.",
+    ]
+      .join("")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    return {
+      ...step,
+      description: expanded.length >= 40 ? expanded : `${stage}: ${description || "Ações concretas do professor e dos estudantes em sala."}`,
+      resources:
+        step.resources?.length ? step.resources : ["Quadro", "Caderno dos estudantes"],
+    };
+  });
+}
+
+function enrichActivitiesForQuality(
+  activities: MaterialEngineResponse["activities"],
+): MaterialEngineResponse["activities"] {
+  return activities.map((activity) => {
+    const objective = String(activity.objective || "").trim();
+    const instructions = String(activity.instructions || "").trim();
+    const evaluation = String(activity.evaluation || "").trim();
+    let estimatedTime = String(activity.estimatedTime || "").trim();
+    if (!estimatedTime) {
+      estimatedTime = "Tempo: 30 minutos";
+    }
+    const materials = activity.materials?.length
+      ? activity.materials
+      : ["Caderno de registro", "Material impresso da atividade"];
+    let items = activity.items?.length ? [...activity.items] : [];
+    const letters = ["a", "b", "c", "d", "e"];
+    for (const letter of letters) {
+      if (items.some((item) => new RegExp(`^\\s*${letter}\\)`, "i").test(item))) {
+        continue;
+      }
+      items.push(
+        `${letter}) Complete a tarefa orientada pelo professor, registrando raciocínio e resposta no caderno.`,
+      );
+    }
+
+    return {
+      ...activity,
+      objective:
+        objective.length >= 35
+          ? objective
+          : `${objective || "Aplicar o conteúdo"} em contexto escolar, com registro individual e participação ativa.`,
+      estimatedTime,
+      materials: materials.length >= 2 ? materials : [...materials, "Lápis e borracha"],
+      instructions:
+        instructions.length >= 80
+          ? instructions
+          : `${instructions || "Organize a turma em duplas."} Oriente leitura do comando, circulação para mediação, registro individual das respostas e socialização final com critérios de participação.`,
+      items: items.slice(0, Math.max(items.length, 5)),
+      evaluation:
+        evaluation.length >= 45
+          ? evaluation
+          : `${evaluation || "Participação"} Observar registro das respostas, clareza do raciocínio e colaboração nas duplas.`,
+    };
+  });
 }
 
 function buildGameSeedOutput(

@@ -527,9 +527,11 @@ export function buildQualityRetryPrompt(
         ? "Reescreva o JSON MaterialLayout completo: lessonPlan.steps (5+ etapas), scheduleTables cronometrada, sections (objetivos, desenvolvimento, recursos), activities (1+ com itens a)-e)) e descrições concretas para sala."
         : request.tipoMaterial === "redacao"
           ? "Reescreva o JSON MaterialLayout completo: textos motivadores distintos, tema/comando claro e critérios de avaliação completos em teacherNotes."
-          : request.tipoMaterial === "cruzadinha"
+      : request.tipoMaterial === "cruzadinha"
             ? "Reescreva o JSON MaterialLayout completo: game.components com PALAVRA: pista (mínimo solicitado), game.rules aplicáveis e termos coerentes com o tema."
-            : "Reescreva o JSON MaterialLayout completo com enunciados contextualizados, 5 alternativas (A-E) distintas e gabarito objetivo.",
+            : request.tipoMaterial === "prova" || request.tipoMaterial === "lista"
+              ? "Reescreva o JSON MaterialLayout completo: enunciados contextualizados, 5 alternativas distintas (35+ chars), gabarito enxuto (respostaCorreta+justificativa ≤120 caracteres) e zero texto genérico."
+              : "Reescreva o JSON MaterialLayout completo com enunciados contextualizados, 5 alternativas (A-E) distintas e gabarito objetivo.",
     ...(options?.teachyDepth ? ["", TEACHY_QUALITY_RULES] : []),
   ].join("\n");
 }

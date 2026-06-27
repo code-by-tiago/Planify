@@ -422,7 +422,20 @@ export function validateMaterialLayout(
       }
     }
 
-    if (isSlideConteudo(secao.conteudo, secao.tipo)) {
+    if (
+      isSlideConteudo(secao.conteudo, secao.tipo) &&
+      tipo !== "slides" &&
+      tipo !== "aula-completa"
+    ) {
+      issues.push(
+        `${label}: seções tipo slide não são permitidas em ${tipo} — use seções tipo texto.`,
+      );
+    }
+
+    if (
+      isSlideConteudo(secao.conteudo, secao.tipo) &&
+      (tipo === "slides" || tipo === "aula-completa")
+    ) {
       for (const [si, slide] of (secao.conteudo.slides ?? []).entries()) {
         issues.push(...scanTextForIssues(`Slide ${si + 1} titulo`, slide.titulo));
         const topicos = slide.topicos ?? [];

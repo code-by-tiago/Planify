@@ -211,6 +211,10 @@ export function AdminCorpusPanel() {
         title="Garimpo interno (corpus RAG)"
         subtitle="Materiais de alta qualidade curados para enriquecer gerações via match BNCC/tema. Impacto gradual — não altera a UI imediatamente."
       >
+        <p className="mb-3 text-xs text-slate-500">
+          Sync diário às 05:00 UTC. Score ≥ 90 é aprovado automaticamente (preview
+          sanitizado, sem PII); 75–89 ficam pendentes para revisão manual.
+        </p>
         {stats ? (
           <div className="grid gap-3 sm:grid-cols-4">
             {(

@@ -403,7 +403,8 @@ const GOLDEN = {
           {
             stage: "Explicação",
             duration: "15 min",
-            description: "Demonstrar resolução passo a passo.",
+            description:
+              "Professor demonstra resolução passo a passo no quadro; estudantes registram procedimentos no caderno.",
             resources: ["Livro didático"],
           },
           {
@@ -415,7 +416,8 @@ const GOLDEN = {
           {
             stage: "Fechamento",
             duration: "10 min",
-            description: "Síntese dos procedimentos de resolução.",
+            description:
+              "Professor sintetiza procedimentos de resolução; estudantes registram aprendizagens no caderno.",
             resources: ["Caderno"],
           },
         ],
@@ -423,8 +425,48 @@ const GOLDEN = {
       sections: [
         {
           title: "Objetivos",
-          content: "Resolver equações do 1º grau.",
+          content: "Resolver equações do 1º grau com procedimentos algébricos.",
+          bullets: ["Identificar incógnita", "Aplicar propriedades da igualdade"],
+        },
+        {
+          title: "Desenvolvimento",
+          content: "Sequência de explicação, prática guiada e autônoma.",
           bullets: [],
+        },
+        {
+          title: "Recursos e avaliação",
+          content: "Observação formativa durante a prática e registro no caderno.",
+          bullets: [],
+        },
+      ],
+      activities: [
+        {
+          title: "Prática em duplas",
+          objective: "Resolver equações do 1º grau aplicando propriedades da igualdade.",
+          estimatedTime: "15 min",
+          materials: ["Lista impressa", "Lápis", "Caderno"],
+          instructions:
+            "Orientar duplas a resolver três equações com apoio do professor e registro no caderno.",
+          items: [
+            "a) Leiam o enunciado e identifiquem a incógnita.",
+            "b) Isolem o termo com a incógnita.",
+            "c) Apliquem a operação inversa em ambos os lados.",
+            "d) Verifiquem a solução substituindo na equação original.",
+            "e) Registrem o procedimento usado em cada passo.",
+          ],
+          evaluation: "Observar clareza do procedimento e participação nas duplas.",
+        },
+      ],
+      scheduleTables: [
+        {
+          title: "Cronograma da aula",
+          headers: ["Etapa", "Duração", "Atividade", "Recursos"],
+          rows: [
+            ["Abertura", "10 min", "Retomar conceitos", "Quadro"],
+            ["Explicação", "15 min", "Modelagem passo a passo", "Slides"],
+            ["Prática", "15 min", "Resolver equações", "Lista"],
+            ["Fechamento", "10 min", "Síntese", "Caderno"],
+          ],
         },
       ],
     },

@@ -1,6 +1,7 @@
 import { computeQualityScore } from "@/lib/materiais/material-quality-score";
 import {
-  hasCriticalQualityIssues,
+  assessUnifiedQualityGate,
+  buildQualityGateFailureMessage,
   isCriticalQualityIssue,
 } from "@/lib/materiais/unified-quality-gate";
 import type { QualityAssessment } from "@/server/generation/quality-retry";
@@ -73,35 +74,21 @@ function collectIssues(input: PeiQualityInput): string[] {
 export function assessPeiQuality(input: PeiQualityInput): QualityAssessment {
   const qualityIssues = collectIssues(input);
   const qualityScore = computeQualityScore(qualityIssues);
+  const gate = assessUnifiedQualityGate({ qualityScore, qualityIssues });
 
-  if (hasCriticalQualityIssues(qualityIssues)) {
+  if (!gate.pass) {
+    const prefix = gate.code === "critical_issues" ? "O PEI não passou" : "O PEI ficou abaixo do padrão mínimo";
     return {
       pass: false,
       qualityScore,
       qualityIssues,
-      message: `O PEI não passou no controle de qualidade (${qualityScore}/100). ${qualityIssues.filter(isCriticalQualityIssue).slice(0, 2).join(" ")} Revise os dados do estudante e gere novamente.`,
-    };
-  }
-
-  const hasHardFailure = qualityIssues.some((issue) =>
-    /ausente|muito curto|conversacional/i.test(issue),
-  );
-
-  if (hasHardFailure && qualityScore < 80) {
-    return {
-      pass: false,
-      qualityScore,
-      qualityIssues,
-      message: `O PEI ficou abaixo do padrão mínimo (${qualityScore}/100). Complete conteúdos, habilidades e parecer antes de anexar ao registro.`,
-    };
-  }
-
-  if (qualityScore < 72) {
-    return {
-      pass: false,
-      qualityScore,
-      qualityIssues,
-      message: `O PEI ficou abaixo do padrão mínimo (${qualityScore}/100). Revise os campos e gere novamente.`,
+      message:
+        gate.code === "critical_issues"
+          ? `${prefix} no controle de qualidade (${qualityScore}/100). ${qualityIssues.filter(isCriticalQualityIssue).slice(0, 2).join(" ")} Revise os dados do estudante e gere novamente.`
+          : buildQualityGateFailureMessage(qualityScore, qualityIssues).replace(
+              "O conteúdo",
+              "O PEI",
+            ),
     };
   }
 

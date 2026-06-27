@@ -261,17 +261,56 @@ export function getEngineOutputIssues(
 
   if (tipo === "plano-aula") {
     const steps = output.lessonPlan?.steps ?? [];
-    if (steps.length < 5) {
+    const tables = output.scheduleTables ?? [];
+    const tableRows = tables.flatMap((table) => table.rows ?? []);
+    const hasEnoughSteps = steps.length >= 5;
+    const hasEnoughTable = tableRows.length >= 4;
+
+    if (!hasEnoughSteps && !hasEnoughTable) {
       issues.push(
-        `Plano de aula: inclua pelo menos 5 etapas em lessonPlan.steps (recebido ${steps.length}).`,
+        `Plano de aula: inclua pelo menos 5 etapas em lessonPlan.steps ou cronograma com 4+ linhas (recebido ${steps.length} etapas, ${tableRows.length} linhas).`,
       );
     }
-    const stageNames = steps.map((step) => step.stage?.toLowerCase() || "").join(" ");
+
+    const stageNames = [
+      ...steps.map((step) => step.stage?.toLowerCase() || ""),
+      ...tableRows.map((row) => String(row[0] || "").toLowerCase()),
+    ].join(" ");
     if (!/abertura|in[ií]cio|acolhimento/.test(stageNames)) {
-      issues.push("Plano de aula: inclua etapa de Abertura em lessonPlan.steps.");
+      issues.push("Plano de aula: inclua etapa de Abertura no cronograma.");
     }
     if (!/fechamento|s[ií]ntese|encerramento/.test(stageNames)) {
-      issues.push("Plano de aula: inclua etapa de Fechamento em lessonPlan.steps.");
+      issues.push("Plano de aula: inclua etapa de Fechamento no cronograma.");
+    }
+    if ((output.sections?.length ?? 0) < 3) {
+      issues.push(
+        "Plano de aula: inclua pelo menos 3 seções (objetivos, desenvolvimento, recursos/avaliação).",
+      );
+    }
+    if ((output.activities?.length ?? 0) < 1) {
+      issues.push(
+        "Plano de aula: inclua pelo menos 1 atividade pedagógica aplicável em sala.",
+      );
+    }
+    if (isGenericEducationalText(output.summary)) {
+      issues.push(
+        "Plano de aula: resumo inicial genérico — contextualize o tema e a turma.",
+      );
+    }
+    for (const step of steps.slice(0, 6)) {
+      const label = step.stage?.trim() || "Etapa";
+      if (!step.duration?.trim()) {
+        issues.push(`Plano de aula: etapa "${label}" deve informar duração.`);
+      }
+      if ((step.description?.trim().length ?? 0) < 40) {
+        issues.push(
+          `Plano de aula: etapa "${label}" precisa descrever ações do professor e dos estudantes.`,
+        );
+      }
+      if (!(step.resources?.length ?? 0)) {
+        issues.push(`Plano de aula: etapa "${label}" deve listar recursos.`);
+      }
+      if (issues.length >= 14) break;
     }
   }
 
@@ -427,11 +466,15 @@ export function getEngineOutputIssues(
   }
 
   if (tipo === "cruzadinha") {
+    const minTerms = Math.min(Math.max(q, 8), 16);
     const termCount = output.game?.components?.length ?? 0;
-    if (termCount < 8) {
+    if (termCount < minTerms) {
       issues.push(
-        "Cruzadinha: inclua pelo menos 8 termos com pistas em game.components (formato PALAVRA: pista).",
+        `Cruzadinha: inclua pelo menos ${minTerms} termos com pistas em game.components (formato PALAVRA: pista).`,
       );
+    }
+    if (!output.game?.rules?.length) {
+      issues.push("Cruzadinha: preencha game.rules com orientações de aplicação em sala.");
     }
   }
 
@@ -480,7 +523,13 @@ export function buildQualityRetryPrompt(
     `Tema obrigatório: "${request.tema}".`,
     request.tipoMaterial === "atividade"
       ? "Reescreva o JSON MaterialLayout completo: cada atividade deve ter objetivo contextualizado, materiais, desenvolvimento extenso, avaliacao observavel e pelo menos 5 itens do estudante rotulados a), b), c), d), e)."
-      : "Reescreva o JSON MaterialLayout completo com enunciados contextualizados, 5 alternativas (A-E) distintas e gabarito objetivo.",
+      : request.tipoMaterial === "plano-aula"
+        ? "Reescreva o JSON MaterialLayout completo: lessonPlan.steps (5+ etapas), scheduleTables cronometrada, sections (objetivos, desenvolvimento, recursos), activities (1+ com itens a)-e)) e descrições concretas para sala."
+        : request.tipoMaterial === "redacao"
+          ? "Reescreva o JSON MaterialLayout completo: textos motivadores distintos, tema/comando claro e critérios de avaliação completos em teacherNotes."
+          : request.tipoMaterial === "cruzadinha"
+            ? "Reescreva o JSON MaterialLayout completo: game.components com PALAVRA: pista (mínimo solicitado), game.rules aplicáveis e termos coerentes com o tema."
+            : "Reescreva o JSON MaterialLayout completo com enunciados contextualizados, 5 alternativas (A-E) distintas e gabarito objetivo.",
     ...(options?.teachyDepth ? ["", TEACHY_QUALITY_RULES] : []),
   ].join("\n");
 }

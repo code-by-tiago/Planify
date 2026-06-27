@@ -1,4 +1,9 @@
 import { computeQualityScore } from "@/lib/materiais/material-quality-score";
+import {
+  assessUnifiedQualityGate,
+  buildQualityGateFailureMessage,
+  isCriticalQualityIssue,
+} from "@/lib/materiais/unified-quality-gate";
 import type { CorrectionAiOutput } from "@/types/correction";
 
 export type CorrectionQualityAssessment =
@@ -77,20 +82,20 @@ export function assessCorrectionQuality(
 ): CorrectionQualityAssessment {
   const qualityIssues = collectIssues(result);
   const qualityScore = computeQualityScore(qualityIssues);
+  const gate = assessUnifiedQualityGate({ qualityScore, qualityIssues });
 
-  const critical =
-    qualityIssues.some((issue) =>
-      /ausente|muito curta|Nenhum crit[eé]rio|Nota inv[aá]lida|fora do intervalo/i.test(
-        issue,
-      ),
-    ) || qualityScore < 55;
-
-  if (critical) {
+  if (!gate.pass) {
     return {
       pass: false,
       qualityScore,
       qualityIssues,
-      message: `A correção não atingiu o padrão mínimo (${qualityScore}/100). ${qualityIssues.slice(0, 2).join(" ")} Tente novamente com enunciado, gabarito ou rubrica mais claros.`,
+      message:
+        gate.code === "critical_issues"
+          ? `A correção não passou no controle de qualidade (${qualityScore}/100). ${qualityIssues.filter(isCriticalQualityIssue).slice(0, 2).join(" ")} Tente novamente com enunciado, gabarito ou rubrica mais claros.`
+          : buildQualityGateFailureMessage(qualityScore, qualityIssues).replace(
+              "O conteúdo",
+              "A correção",
+            ),
     };
   }
 

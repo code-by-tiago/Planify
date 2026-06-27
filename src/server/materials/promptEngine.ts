@@ -121,11 +121,11 @@ function buildToolRules(input: PromptEngineInput): string[] {
     case "plano-aula":
       return [
         `Planejar ${q} período(s) de 50 minutos em um único plano.`,
-        'OBRIGATÓRIO: inclua seção tipo "tabela" com cronograma cronometrado.',
-        "Tabela do cronograma — cabecalhos: Etapa | Duração | Atividade | Recursos.",
-        "Cada linha = uma etapa (Abertura, Contextualização, Explicação, Prática, Fechamento, Avaliação).",
-        "Complemente com seções tipo texto para objetivos, metodologia e critérios de avaliação.",
-        "Cada etapa deve orientar o professor com ações concretas em sala.",
+        "OBRIGATÓRIO: lessonPlan.steps com mínimo 5 etapas (Abertura → Fechamento), cada uma com stage, duration, description (professor + estudantes) e resources.",
+        "OBRIGATÓRIO: scheduleTables com cronograma cronometrado — cabeçalhos Etapa | Duração | Atividade | Recursos.",
+        "OBRIGATÓRIO: activities com pelo menos 1 atividade (objective, estimatedTime, materials, instructions, 5 itens a)-e), evaluation).",
+        "sections: objetivos/BNCC, desenvolvimento, recursos e avaliação formativa, adaptações.",
+        "Cada etapa deve orientar o professor com ações concretas em sala — zero texto genérico.",
       ];
 
     case "slides":

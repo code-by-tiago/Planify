@@ -684,6 +684,138 @@ function testRedacaoQualityGate() {
   );
 }
 
+function testPlanoAulaQualityGate() {
+  const request = normalizeMaterialEngineRequest({
+    tipoMaterial: "plano-aula",
+    etapa: "Ensino Fundamental - Anos Finais",
+    anoSerie: "8º ano",
+    componenteCurricular: "História",
+    tema: "Independência do Brasil",
+    quantidade: 1,
+    incluirGabarito: false,
+    habilidadesSelecionadas: [],
+  });
+
+  const weakOutput = {
+    title: "Plano de aula",
+    subtitle: "8º ano",
+    summary: "Plano genérico sobre tema estudado.",
+    sections: [{ title: "Objetivos", content: "Estudar o tema.", bullets: [] }],
+    activities: [],
+    answerKey: [],
+    teacherNotes: [],
+    lessonPlan: {
+      steps: [
+        {
+          stage: "Aula",
+          duration: "50 min",
+          description: "Trabalhar o conteúdo.",
+          resources: [],
+        },
+      ],
+    },
+  };
+
+  const weakIssues = getEngineOutputIssues(request, weakOutput);
+  assert.ok(
+    weakIssues.some((issue) => issue.includes("5 etapas") || issue.includes("4+ linhas")),
+    "plano fraco deve exigir cronograma completo",
+  );
+  assert.ok(
+    weakIssues.some((issue) => issue.includes("atividade pedagógica")),
+    "plano fraco deve exigir atividade",
+  );
+
+  const strongOutput = {
+    title: "Plano de aula — Independência do Brasil",
+    subtitle: "8º ano",
+    summary: "Plano para analisar causas e consequências da Independência do Brasil.",
+    sections: [
+      {
+        title: "Objetivos",
+        content: "Compreender o processo de independência e suas consequências políticas.",
+        bullets: ["EF08HI01"],
+      },
+      {
+        title: "Desenvolvimento",
+        content: "Sequência de contextualização, análise de documentos e síntese.",
+        bullets: [],
+      },
+      {
+        title: "Recursos e avaliação",
+        content: "Observação formativa e registro escrito.",
+        bullets: [],
+      },
+    ],
+    activities: [
+      {
+        title: "Análise de documento",
+        objective: "Interpretar um trecho do Manifesto do Dia 7 de Setembro.",
+        estimatedTime: "20 min",
+        materials: ["Cartaz", "Caderno"],
+        instructions:
+          "Orientar leitura guiada, identificação de argumentos e produção de síntese em grupo.",
+        items: [
+          "a) Leiam o documento e circulem palavras-chave.",
+          "b) Identifiquem a tese defendida no texto.",
+          "c) Relacionem o documento ao contexto político da época.",
+          "d) Registrem uma consequência histórica citada.",
+          "e) Apresentem a síntese do grupo em 1 minuto.",
+        ],
+        evaluation: "Clareza da interpretação e participação nas duplas.",
+      },
+    ],
+    answerKey: [],
+    teacherNotes: [],
+    lessonPlan: {
+      steps: [
+        {
+          stage: "Abertura",
+          duration: "10 min",
+          description:
+            "Professor retoma conhecimentos sobre Colônia e apresenta pergunta norteadora; estudantes registram hipóteses.",
+          resources: ["Quadro", "Caderno"],
+        },
+        {
+          stage: "Contextualização",
+          duration: "10 min",
+          description:
+            "Professor explica o contexto político; estudantes completam linha do tempo inicial.",
+          resources: ["Linha do tempo"],
+        },
+        {
+          stage: "Análise",
+          duration: "15 min",
+          description:
+            "Estudantes analisam documento em duplas; professor circula mediando interpretações.",
+          resources: ["Cartaz histórico"],
+        },
+        {
+          stage: "Prática",
+          duration: "10 min",
+          description:
+            "Duplas produzem síntese escrita; professor registra dúvidas no quadro.",
+          resources: ["Caderno"],
+        },
+        {
+          stage: "Fechamento",
+          duration: "5 min",
+          description:
+            "Professor sistematiza causas e consequências; estudantes registram aprendizagens.",
+          resources: ["Caderno"],
+        },
+      ],
+    },
+  };
+
+  const strongIssues = getEngineOutputIssues(request, strongOutput);
+  assert.deepEqual(
+    strongIssues,
+    [],
+    `plano forte deveria passar, recebido: ${strongIssues.join("; ")}`,
+  );
+}
+
 function testUnifiedMaterialEngineContract() {
   assert.equal(TIPO_FERRAMENTA_VALUES.length, 17, "17 ferramentas no contrato unificado");
   assert.ok(getMaterialLayoutSchema().properties.secoes, "schema MaterialLayout presente");
@@ -906,6 +1038,9 @@ function testCompanionToolsQuality() {
     "src/server/correcao/correction-quality.ts",
   );
   const { assessPeiQuality } = loadTsModule("src/server/pei/pei-quality.ts");
+  const { UNIFIED_MIN_QUALITY_SCORE } = loadTsModule(
+    "src/lib/materiais/unified-quality-gate.ts",
+  );
 
   const goodPei = assessPeiQuality({
     perfil: "Estudante com TDAH em acompanhamento pedagógico.",
@@ -924,7 +1059,7 @@ function testCompanionToolsQuality() {
     usedAI: true,
   });
   assert.equal(goodPei.pass, true);
-  assert.ok(goodPei.qualityScore >= 72);
+  assert.ok(goodPei.qualityScore >= UNIFIED_MIN_QUALITY_SCORE);
 
   const badPei = assessPeiQuality({
     perfil: "",
@@ -948,7 +1083,7 @@ function testCompanionToolsQuality() {
     ].join("\n"),
   });
   assert.equal(goodInclusao.pass, true);
-  assert.ok(goodInclusao.qualityScore >= 80);
+  assert.ok(goodInclusao.qualityScore >= UNIFIED_MIN_QUALITY_SCORE);
 
   const badInclusao = assessInclusaoQuality({
     modo: "adaptacao",
@@ -978,6 +1113,7 @@ function testCompanionToolsQuality() {
     sugestaoProfessor: "Peça um contraexemplo em dupla na próxima aula.",
   });
   assert.equal(goodCorrection.pass, true);
+  assert.ok(goodCorrection.qualityScore >= UNIFIED_MIN_QUALITY_SCORE);
 
   const badCorrection = assessCorrectionQuality({
     nota: 8,
@@ -1004,6 +1140,7 @@ function main() {
   runTest("prova-lista-quality-gate", testProvaListaQualityGate);
   runTest("atividade-quality-gate", testAtividadeQualityGate);
   runTest("redacao-quality-gate", testRedacaoQualityGate);
+  runTest("plano-aula-quality-gate", testPlanoAulaQualityGate);
   runTest("unified-material-engine", testUnifiedMaterialEngineContract);
   runTest("cronograma-table-renderer", testCronogramaTableRenderer);
   runTest("unified-quality-gate", testUnifiedQualityGate);

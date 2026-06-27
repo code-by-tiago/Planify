@@ -1,7 +1,8 @@
 import type { InclusaoModeId } from "@/lib/inclusao/inclusao-config";
 import { computeQualityScore } from "@/lib/materiais/material-quality-score";
 import {
-  hasCriticalQualityIssues,
+  assessUnifiedQualityGate,
+  buildQualityGateFailureMessage,
   isCriticalQualityIssue,
 } from "@/lib/materiais/unified-quality-gate";
 
@@ -114,26 +115,20 @@ function collectIssues(input: InclusaoQualityInput): string[] {
 export function assessInclusaoQuality(input: InclusaoQualityInput): InclusaoQualityAssessment {
   const qualityIssues = collectIssues(input);
   const qualityScore = computeQualityScore(qualityIssues);
+  const gate = assessUnifiedQualityGate({ qualityScore, qualityIssues });
 
-  if (hasCriticalQualityIssues(qualityIssues)) {
+  if (!gate.pass) {
     return {
       pass: false,
       qualityScore,
       qualityIssues,
-      message: `A adaptação inclusiva não passou no controle de qualidade (${qualityScore}/100). ${qualityIssues.filter(isCriticalQualityIssue).slice(0, 2).join(" ")} Tente novamente com mais contexto no material ou nas observações.`,
-    };
-  }
-
-  const hasHardFailure = qualityIssues.some((issue) =>
-    /vazia|repetiu o conteúdo|conversacional/i.test(issue),
-  );
-
-  if (hasHardFailure || qualityScore < 62) {
-    return {
-      pass: false,
-      qualityScore,
-      qualityIssues,
-      message: `A adaptação ficou abaixo do padrão mínimo (${qualityScore}/100). Revise o material de entrada ou gere novamente.`,
+      message:
+        gate.code === "critical_issues"
+          ? `A adaptação inclusiva não passou no controle de qualidade (${qualityScore}/100). ${qualityIssues.filter(isCriticalQualityIssue).slice(0, 2).join(" ")} Tente novamente com mais contexto no material ou nas observações.`
+          : buildQualityGateFailureMessage(qualityScore, qualityIssues).replace(
+              "O conteúdo",
+              "A adaptação inclusiva",
+            ),
     };
   }
 

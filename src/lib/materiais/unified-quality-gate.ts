@@ -36,6 +36,13 @@ const CRITICAL_ISSUE_PATTERNS: RegExp[] = [
   /esperad[oa].*recebid[oa]/i,
   /linha\(s\) sem per[ií]odos/i,
   /soma dos per[ií]odos/i,
+  /adaptação inclusiva veio vazia/i,
+  /repetiu o conteúdo original/i,
+  /devolutiva geral ausente/i,
+  /nenhum crit[eé]rio da rubrica/i,
+  /nota inv[aá]lida/i,
+  /perfil educacional do estudante ausente/i,
+  /atividades: nenhum item foi gerado/i,
 ];
 
 export function isCriticalQualityIssue(issue: string): boolean {

@@ -145,13 +145,17 @@ export default async function PlanosPage({ searchParams }: PlanosPageProps) {
 
   return (
     <PublicProfessorPrimeiroLayout>
-      <section className="relative overflow-hidden bg-white pb-20 pt-12 sm:pt-20">
+      <section className="relative overflow-hidden px-5 pb-20 pt-12 sm:px-8 sm:pt-20">
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_68%_48%_at_18%_0%,rgba(8,145,178,0.13),transparent_70%),radial-gradient(ellipse_48%_38%_at_90%_10%,rgba(37,99,235,0.1),transparent_72%)]"
+          className="pointer-events-none absolute inset-0 hidden bg-[radial-gradient(ellipse_80%_60%_at_15%_10%,rgba(8,145,178,0.08),transparent_55%)] sm:block"
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 hidden bg-[radial-gradient(ellipse_50%_40%_at_92%_8%,rgba(37,99,235,0.07),transparent_60%)] sm:block"
         />
 
-        <div className="relative mx-auto max-w-6xl px-5 sm:px-8">
+        <div className="relative mx-auto max-w-6xl">
           {alert ? (
             <div
               className={`mx-auto mb-8 flex max-w-3xl gap-3 rounded-2xl border p-4 ${alertClass(alert.type)}`}
@@ -164,30 +168,16 @@ export default async function PlanosPage({ searchParams }: PlanosPageProps) {
             </div>
           ) : null}
 
-          <div className="grid items-start gap-10 lg:grid-cols-[minmax(0,1.05fr)_minmax(340px,0.88fr)] lg:gap-12 xl:gap-16">
-            <header className="max-w-xl pt-1 lg:max-w-none lg:pr-4">
+          <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
+            <header>
               <p className={ppEyebrow}>Plano único para professores</p>
-              <h1 className="mt-4 font-[family-name:var(--font-display)] text-4xl font-extrabold leading-[1.06] tracking-tight text-slate-950 sm:text-5xl">
+              <h1 className="mt-4 font-[family-name:var(--font-display)] text-4xl font-extrabold leading-[1.08] tracking-tight text-slate-950 sm:text-5xl lg:text-[3.25rem]">
                 Menos tempo montando. <span className={ppTitleAccent}>Mais tempo ensinando.</span>
               </h1>
-              <p className="mt-5 max-w-lg text-lg font-medium leading-8 text-slate-600">
-                Tudo que você precisa para planejar, criar, revisar e entregar aulas melhores —
-                reunido em uma assinatura simples.
+              <p className="mt-5 max-w-xl text-lg font-medium leading-8 text-slate-600">
+                Planeje, crie e entregue aulas melhores — ferramentas com IA, BNCC e exportação em
+                uma assinatura simples.
               </p>
-
-              <ul className="mt-8 space-y-4 border-t border-slate-200/80 pt-8">
-                {valuePillars.map((item) => (
-                  <li key={item.title} className="flex gap-4">
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-cyan-50 text-cyan-700">
-                      <PlanifyIcon name={item.icon} className="h-4 w-4" />
-                    </span>
-                    <div className="min-w-0 pt-0.5">
-                      <h2 className="text-sm font-black text-slate-950">{item.title}</h2>
-                      <p className="mt-1 text-sm font-medium leading-6 text-slate-600">{item.text}</p>
-                    </div>
-                  </li>
-                ))}
-              </ul>
 
               <div className="mt-8 flex flex-wrap gap-2">
                 <span className={ppBadge}>
@@ -203,7 +193,7 @@ export default async function PlanosPage({ searchParams }: PlanosPageProps) {
 
             <article
               id="precos"
-              className="scroll-mt-24 rounded-3xl border border-slate-200/70 bg-white/95 p-6 shadow-[0_20px_50px_-24px_rgba(8,145,178,0.35)] backdrop-blur-sm sm:p-8 lg:sticky lg:top-24"
+              className="scroll-mt-24 rounded-3xl border border-slate-200/80 bg-white p-6 shadow-[0_24px_64px_-32px_rgba(8,145,178,0.28)] sm:p-8 lg:sticky lg:top-24"
             >
               <div className="flex items-start justify-between gap-4">
                 <div>
@@ -270,7 +260,7 @@ export default async function PlanosPage({ searchParams }: PlanosPageProps) {
             </article>
           </div>
 
-          <section className="mt-16 rounded-3xl border border-slate-200 bg-slate-50/80 px-5 py-7 sm:px-8 sm:py-9">
+          <section className="mt-16 rounded-3xl border border-slate-200/80 bg-white/70 px-5 py-7 backdrop-blur-sm sm:px-8 sm:py-9">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <p className={ppEyebrow}>Uma rotina mais leve</p>
@@ -283,15 +273,27 @@ export default async function PlanosPage({ searchParams }: PlanosPageProps) {
               </Link>
             </div>
 
-            <div className="mt-7 grid gap-4 md:grid-cols-3">
-              {activationSteps.map((step) => (
-                <article key={step.number} className="rounded-2xl border border-slate-200 bg-white p-5">
-                  <span className="text-xs font-black tracking-[0.16em] text-cyan-700">{step.number}</span>
-                  <h3 className="mt-3 text-base font-black text-slate-950">{step.title}</h3>
-                  <p className="mt-2 text-sm font-medium leading-6 text-slate-600">{step.text}</p>
+            <div className="mt-7 grid gap-4 sm:grid-cols-3">
+              {valuePillars.map((item) => (
+                <article key={item.title} className="rounded-2xl border border-slate-200/80 bg-white p-5">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-cyan-50 text-cyan-700">
+                    <PlanifyIcon name={item.icon} className="h-4 w-4" />
+                  </span>
+                  <h3 className="mt-3 text-base font-black text-slate-950">{item.title}</h3>
+                  <p className="mt-2 text-sm font-medium leading-6 text-slate-600">{item.text}</p>
                 </article>
               ))}
             </div>
+          </section>
+
+          <section className="mt-10 grid gap-6 sm:grid-cols-3">
+            {activationSteps.map((step) => (
+              <article key={step.number} className="text-center sm:text-left">
+                <span className="text-xs font-black tracking-[0.16em] text-cyan-700">{step.number}</span>
+                <h3 className="mt-2 text-base font-black text-slate-950">{step.title}</h3>
+                <p className="mt-1 text-sm font-medium leading-6 text-slate-600">{step.text}</p>
+              </article>
+            ))}
           </section>
 
           <section className="mt-14 grid gap-10 lg:grid-cols-[0.8fr_1.2fr] lg:items-start">

@@ -40,7 +40,11 @@ export function CommunityMaterialPreview({
     const slideMode = Boolean(isSlidePreview);
 
     return (
-      <div className="w-full min-w-0 overflow-hidden rounded-2xl border border-cyan-400/15 bg-white shadow-sm">
+      <div
+        className={`w-full min-w-0 rounded-2xl border border-cyan-400/15 bg-white shadow-sm ${
+          pageScroll ? "" : "overflow-hidden"
+        }`}
+      >
         <style>
           {slideMode
             ? PLANIFY_COMMUNITY_SLIDE_PREVIEW_CSS
@@ -48,10 +52,10 @@ export function CommunityMaterialPreview({
         </style>
         <div
           className={`w-full min-w-0 bg-white ${
-            slideMode ? "p-3 sm:p-5" : "px-3 py-4 sm:px-5 sm:py-6"
+            slideMode ? "p-3 sm:p-5" : "px-4 py-5 sm:px-8 sm:py-8"
           } ${
             pageScroll
-              ? "overflow-x-hidden"
+              ? ""
               : "max-h-[min(78vh,920px)] overflow-x-hidden overflow-y-auto overscroll-contain [touch-action:pan-y]"
           }`}
         >
@@ -70,7 +74,11 @@ export function CommunityMaterialPreview({
 
   if (kind === "pdf" && signedUrl) {
     return (
-      <div className="w-full min-w-0 overflow-hidden rounded-2xl border border-cyan-400/15 bg-white shadow-sm">
+      <div
+        className={`w-full min-w-0 rounded-2xl border border-cyan-400/15 bg-white shadow-sm ${
+          pageScroll ? "" : "overflow-hidden"
+        }`}
+      >
         <iframe
           title={title}
           src={`${signedUrl}#toolbar=1&navpanes=0&view=FitH`}

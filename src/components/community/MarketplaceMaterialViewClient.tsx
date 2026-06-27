@@ -320,14 +320,13 @@ export function MarketplaceMaterialViewClient({
   const resolvedBackHref =
     backHref || (isEmbeddedVariant ? comunidadeRoutes.homeEmbedded : "/dashboard?secao=marketplace");
 
-  return (
-    <PlanifyWorkspacePane>
-      <div
-        className={[
-          "mx-auto space-y-3",
-          isEmbeddedVariant ? "max-w-4xl" : "planify-hud pl-hud-hub max-w-6xl",
-        ].join(" ")}
-      >
+  const body = (
+    <div
+      className={[
+        "mx-auto space-y-3",
+        isEmbeddedVariant ? "w-full max-w-none" : "planify-hud pl-hud-hub max-w-6xl",
+      ].join(" ")}
+    >
         {!isEmbeddedVariant ? (
         <div className="flex flex-wrap items-center gap-2 border-b border-cyan-400/10 pb-3">
           <Link
@@ -385,7 +384,7 @@ export function MarketplaceMaterialViewClient({
             {error}
           </section>
         ) : material && preview ? (
-          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_280px] lg:items-start">
+          <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_300px] xl:items-start">
             <div className="min-w-0 space-y-3">
               {metaExpanded ? (
                 <section className="rounded-xl border border-cyan-400/15 bg-white/90 px-3 py-2.5 text-xs text-slate-600 shadow-sm">
@@ -415,7 +414,7 @@ export function MarketplaceMaterialViewClient({
                 scrollMode="page"
               />
 
-              <div className="rounded-xl border border-cyan-400/15 bg-white p-3 shadow-sm lg:hidden">
+              <div className="rounded-xl border border-cyan-400/15 bg-white p-3 shadow-sm xl:hidden">
                 <div className="space-y-2">
                   {openEditorButton}
                   <div className="flex flex-wrap items-center gap-2">
@@ -434,7 +433,7 @@ export function MarketplaceMaterialViewClient({
                 </div>
               </div>
 
-              <section className="rounded-xl border border-cyan-400/15 bg-white shadow-sm lg:hidden">
+              <section className="rounded-xl border border-cyan-400/15 bg-white shadow-sm xl:hidden">
                 <div className="border-b border-cyan-400/10 px-3 py-2">
                   <h2 className="text-xs font-black uppercase tracking-[0.14em] text-cyan-700">
                     Comentários
@@ -449,7 +448,7 @@ export function MarketplaceMaterialViewClient({
               </section>
             </div>
 
-            <aside className="hidden space-y-3 lg:sticky lg:top-3 lg:block lg:max-h-[calc(100vh-5rem)] lg:overflow-y-auto lg:overscroll-contain">
+            <aside className="hidden space-y-3 xl:sticky xl:top-3 xl:block">
               <section className="overflow-hidden rounded-xl border border-cyan-400/15 bg-white shadow-sm">
                 <div className="space-y-3 px-3 py-3">
                   {openEditorButton}
@@ -486,7 +485,12 @@ export function MarketplaceMaterialViewClient({
             </aside>
           </div>
         ) : null}
-      </div>
-    </PlanifyWorkspacePane>
+    </div>
   );
+
+  if (embeddedInCommunity) {
+    return body;
+  }
+
+  return <PlanifyWorkspacePane>{body}</PlanifyWorkspacePane>;
 }

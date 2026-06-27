@@ -19,14 +19,13 @@ export function ComunidadeDocenteMaterialDetailClient({
   return (
     <ComunidadeDocenteDetailShell
       embedded={embedded}
+      wide
       activeMenu="materiais"
       breadcrumbs={[{ label: "Materiais", href: homeHref }]}
       title="Material"
       subtitle="Visualize, baixe e interaja com o material."
     >
-      <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-        <MarketplaceMaterialViewClient materialId={materialId} embeddedInCommunity />
-      </div>
+      <MarketplaceMaterialViewClient materialId={materialId} embeddedInCommunity />
     </ComunidadeDocenteDetailShell>
   );
 }

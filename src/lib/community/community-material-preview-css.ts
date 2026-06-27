@@ -54,6 +54,46 @@ export const PLANIFY_COMMUNITY_DOCUMENT_SCREEN_CSS = `
     border-collapse: collapse;
     margin: 1rem 0;
   }
+  .planify-community-material-document .planify-cronograma-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+    background: #ffffff;
+  }
+  .planify-community-material-document .planify-cronograma-table {
+    width: 100%;
+    min-width: 520px;
+    border-collapse: collapse;
+    font-size: 10.5pt;
+    line-height: 1.45;
+  }
+  .planify-community-material-document .planify-cronograma-table thead th {
+    background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+    color: #475569;
+    font-weight: 700;
+    font-size: 10pt;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 0.6rem 0.75rem;
+    border-bottom: 2px solid #cbd5e1;
+    text-align: left;
+    white-space: nowrap;
+  }
+  .planify-community-material-document .planify-cronograma-table tbody td {
+    padding: 0.55rem 0.75rem;
+    border-bottom: 1px solid #e2e8f0;
+    vertical-align: top;
+    color: #0f172a;
+  }
+  .planify-community-material-document .planify-cronograma-table tbody tr:nth-child(even) td {
+    background: #f8fafc;
+  }
+  .planify-community-material-document .planify-cronograma-table tbody td:first-child {
+    font-weight: 600;
+    color: #312e81;
+    white-space: nowrap;
+  }
   .planify-community-material-document td,
   .planify-community-material-document th {
     border: 1px solid #cbd5e1;
@@ -84,7 +124,10 @@ export const PLANIFY_COMMUNITY_DOCUMENT_SCREEN_CSS = `
     max-width: 100%;
   }
   @media (max-width: 640px) {
-    .planify-community-material-document table {
+    .planify-community-material-document {
+      font-size: 11pt;
+    }
+    .planify-community-material-document table:not(.planify-cronograma-table) {
       display: block;
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;

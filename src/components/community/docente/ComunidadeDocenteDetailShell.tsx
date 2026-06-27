@@ -21,6 +21,8 @@ type ComunidadeDocenteDetailShellProps = {
   title: string;
   subtitle?: string;
   embedded?: boolean;
+  /** Material/document views need full width for readable previews. */
+  wide?: boolean;
   children: React.ReactNode;
   actions?: React.ReactNode;
 };
@@ -31,6 +33,7 @@ export function ComunidadeDocenteDetailShell({
   title,
   subtitle,
   embedded = false,
+  wide = false,
   children,
   actions,
 }: ComunidadeDocenteDetailShellProps) {
@@ -102,7 +105,12 @@ export function ComunidadeDocenteDetailShell({
         />
 
         <main className="min-h-0 flex-1 overflow-y-auto">
-          <div className="mx-auto max-w-4xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
+          <div
+            className={[
+              "mx-auto space-y-6 px-4 py-6 sm:px-6 lg:px-8",
+              wide ? "max-w-none" : "max-w-4xl",
+            ].join(" ")}
+          >
             <nav className="flex flex-wrap items-center gap-1.5 text-xs font-semibold text-slate-400">
               <Link href={homeHref} className="transition hover:text-cyan-600">
                 Comunidade

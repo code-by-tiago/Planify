@@ -12,6 +12,7 @@ import {
   getCachedBnccSkills,
 } from "./bncc-catalog-service";
 import { resolveBnccCatalogSubjects } from "./discipline-catalog";
+import { MIN_SUGGESTION_RELEVANCE_SCORE } from "./bncc-suggestion-quality";
 import { expandContentTerms } from "./bncc-term-expansion";
 
 export const BNCC_NOT_INSTALLED_MESSAGE =
@@ -219,6 +220,32 @@ export function gradeMatches(skill: BNCCSkill, requestedGrade: string): boolean 
   return requested.min >= skillRange.min && requested.min <= skillRange.max;
 }
 
+function componentAliasMatches(
+  aliases: string[],
+  component: string,
+  area: string,
+  strictComponentOnly: boolean,
+): boolean {
+  for (const alias of aliases) {
+    if (!alias) {
+      continue;
+    }
+
+    if (
+      component &&
+      (component.includes(alias) || alias.includes(component))
+    ) {
+      return true;
+    }
+
+    if (!strictComponentOnly && area && (area.includes(alias) || alias.includes(area))) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 export function componentMatches(skill: BNCCSkill, requestedComponent: string): boolean {
   if (!requestedComponent.trim()) {
     return true;
@@ -232,20 +259,8 @@ export function componentMatches(skill: BNCCSkill, requestedComponent: string): 
     return true;
   }
 
-  for (const alias of aliases) {
-    if (!alias) {
-      continue;
-    }
-
-    if (
-      (component && (component.includes(alias) || alias.includes(component))) ||
-      (area && (area.includes(alias) || alias.includes(area)))
-    ) {
-      return true;
-    }
-  }
-
-  return false;
+  const strictComponentOnly = Boolean(component);
+  return componentAliasMatches(aliases, component, area, strictComponentOnly);
 }
 
 export function stageMatches(skill: BNCCSkill, requestedStage: string): boolean {
@@ -391,6 +406,30 @@ export function removeDuplicateSkills(skills: BNCCSkill[]): BNCCSkill[] {
   return Array.from(map.values());
 }
 
+const GENERIC_MATCH_TERMS = new Set([
+  "texto",
+  "textos",
+  "genero",
+  "generos",
+  "linguagem",
+  "conteudo",
+  "conteudos",
+  "leitura",
+  "escrita",
+  "producao",
+  "competencias",
+  "habilidades",
+  "conhecimento",
+  "aprendizagem",
+  "estudar",
+  "estudar",
+  "sociedade",
+  "cultura",
+  "historia",
+  "numeros",
+  "numero",
+]);
+
 export function calculateTextualRelevance(
   skill: BNCCSkill,
   request: BNCCSuggestionRequest,
@@ -415,25 +454,52 @@ export function calculateTextualRelevance(
     ].join(" "),
   );
   const keywordSet = new Set(skill.keywords.map(normalizeText));
+  const objetoConhecimento = normalizeText(skill.objetoConhecimento || "");
 
   let score = 0;
+  let matchedTerms = 0;
+  let specificMatches = 0;
+  let objetoMatches = 0;
 
   for (const term of terms) {
-    if (searchableText.includes(term)) {
+    let termMatched = false;
+
+    if (objetoConhecimento.includes(term)) {
+      score += 10;
+      objetoMatches += 1;
+      termMatched = true;
+      specificMatches += 1;
+    } else if (normalizeText(skill.unidadeTematica || "").includes(term)) {
+      score += 4;
+      termMatched = true;
+      specificMatches += 1;
+    } else if (keywordSet.has(term)) {
+      score += 4;
+      termMatched = true;
+      if (!GENERIC_MATCH_TERMS.has(term)) {
+        specificMatches += 1;
+      }
+    } else if (searchableText.includes(term)) {
       score += 5;
+      termMatched = true;
+      if (!GENERIC_MATCH_TERMS.has(term)) {
+        specificMatches += 1;
+      }
     }
 
-    if (keywordSet.has(term)) {
-      score += 4;
+    if (termMatched) {
+      matchedTerms += 1;
     }
+  }
 
-    if (normalizeText(skill.objetoConhecimento || "").includes(term)) {
-      score += 6;
-    }
+  if (objetoMatches >= 2) {
+    score += 4;
+  } else if (objetoMatches === 1) {
+    score += 2;
+  }
 
-    if (normalizeText(skill.unidadeTematica || "").includes(term)) {
-      score += 4;
-    }
+  if (matchedTerms > 0 && specificMatches === 0) {
+    score -= 6;
   }
 
   if (options?.usedCodes?.has(skill.codigo)) {
@@ -452,16 +518,12 @@ export function filterBnccSkillsByContext(
   const componenteCurricular = context.componenteCurricular || "";
   const stage = etapa ? normalizeStage(etapa, "") : "unknown";
 
-  return skills.filter((skill) => {
+  const stageAndGradeFiltered = skills.filter((skill) => {
     if (etapa && !stageMatches(skill, etapa)) {
       return false;
     }
 
     if (anoSerie && !gradeMatches(skill, anoSerie)) {
-      return false;
-    }
-
-    if (componenteCurricular && !componentMatches(skill, componenteCurricular)) {
       return false;
     }
 
@@ -478,6 +540,29 @@ export function filterBnccSkillsByContext(
     }
 
     return true;
+  });
+
+  if (!componenteCurricular.trim()) {
+    return stageAndGradeFiltered;
+  }
+
+  const aliases = resolveBnccCatalogSubjects(componenteCurricular).map(normalizeText);
+  const catalogHasComponent = stageAndGradeFiltered.some((skill) => {
+    const component = normalizeText(skill.componente || "");
+    return component && componentAliasMatches(aliases, component, "", true);
+  });
+
+  return stageAndGradeFiltered.filter((skill) => {
+    if (!catalogHasComponent) {
+      return componentMatches(skill, componenteCurricular);
+    }
+
+    const component = normalizeText(skill.componente || "");
+    if (!component) {
+      return componentMatches(skill, componenteCurricular);
+    }
+
+    return componentAliasMatches(aliases, component, "", true);
   });
 }
 
@@ -533,41 +618,10 @@ export function rankBnccSkillsForContent(
       skill,
       score: calculateTextualRelevance(skill, request, options),
     }))
-    .filter((item) => item.score > 0)
+    .filter((item) => item.score >= MIN_SUGGESTION_RELEVANCE_SCORE)
     .sort((a, b) => b.score - a.score || a.skill.codigo.localeCompare(b.skill.codigo));
 
-  if (options?.requireContentMatch) {
-    return ranked.slice(0, limit);
-  }
-
-  if (ranked.length >= limit) {
-    return ranked.slice(0, limit);
-  }
-
-  const fallback = [...pool]
-    .map((skill) => ({
-      skill,
-      score: calculateTextualRelevance(skill, request, options),
-    }))
-    .sort((a, b) => b.score - a.score || a.skill.codigo.localeCompare(b.skill.codigo));
-
-  const chosen = new Map<string, { skill: BNCCSkill; score: number }>();
-
-  for (const item of ranked) {
-    chosen.set(item.skill.codigo, item);
-  }
-
-  const offset = options?.contentIndex ?? 0;
-
-  for (let i = 0; chosen.size < limit && i < fallback.length; i += 1) {
-    const item = fallback[(i + offset) % fallback.length];
-
-    if (!chosen.has(item.skill.codigo)) {
-      chosen.set(item.skill.codigo, { skill: item.skill, score: Math.max(item.score, 1) });
-    }
-  }
-
-  return Array.from(chosen.values()).slice(0, limit);
+  return ranked.slice(0, limit);
 }
 
 export async function searchBNCCSkills(

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { suggestBnccByConteudos } from "@/server/bncc/bncc-suggestion-engine";
-import { filterExtractedBnccByStage } from "@/server/bncc/bncc-stage-filter";
+import { applyStageFilterToBnccSuggestionResult } from "@/server/bncc/bncc-suggestion-response";
 import { validateBnccSuggestionPayload } from "@/server/planejamentos/planning-validation";
 import { checkPlanningTrialBnccRateLimit } from "@/server/public/planning-trial-bncc-rate-limit";
 import { isPlanningTrialRequestOriginAllowed } from "@/server/public/planning-trial-origin";
@@ -79,39 +79,12 @@ export async function POST(request: NextRequest) {
     const result = await suggestBnccByConteudos(payload || {});
     const etapa = String(payload?.etapa || "").trim();
     const anoSerie = String(payload?.anoSerie || payload?.serie || "").trim();
-    const habilidades = result.habilidades || [];
-    const filtered = filterExtractedBnccByStage(
-      {
-        codes: habilidades.map((skill) => skill.codigo),
-        skills: habilidades,
-      },
-      etapa,
-      anoSerie,
-    );
-
-    const allowedCodes = new Set(filtered.codes.map((code) => code.toUpperCase()));
-    const conteudos = (result.conteudos || []).map((group) => ({
-      ...group,
-      habilidades: (group.habilidades || []).filter((skill) =>
-        allowedCodes.has(String(skill.codigo || "").toUpperCase()),
-      ),
-    }));
+    const filtered = applyStageFilterToBnccSuggestionResult(result, etapa, anoSerie);
 
     return NextResponse.json({
       success: true,
       ok: true,
-      ...result,
-      conteudos,
-      habilidades: filtered.skills,
-      sugeridas: filtered.skills,
-      skills: filtered.skills,
-      items: filtered.skills,
-      total: filtered.skills.length,
-      data: {
-        conteudos,
-        habilidades: filtered.skills,
-        sugeridas: filtered.skills,
-      },
+      ...filtered,
     });
   } catch (error) {
     return NextResponse.json(

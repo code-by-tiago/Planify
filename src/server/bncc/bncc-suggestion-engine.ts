@@ -4,6 +4,10 @@ import {
   rankBnccSkillsForContent,
   readBNCCSkills,
 } from "./bncc-service";
+import {
+  assessBnccSuggestionResult,
+  filterCoherentSuggestions,
+} from "./bncc-suggestion-quality";
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -1540,12 +1544,12 @@ export async function suggestBnccByConteudos(payload: BnccSuggestionPayload) {
 
     ranked.forEach((item) => usedCodes.add(item.skill.codigo));
 
-    return {
+    return filterCoherentSuggestions({
       conteudo,
       habilidades: ranked.map(({ skill, score }, index) =>
         bnccSkillToSuggestion(skill, conteudo, index, score),
       ),
-    };
+    });
   });
 
   const flattened = grouped.flatMap((group) => group.habilidades);
@@ -1560,6 +1564,10 @@ export async function suggestBnccByConteudos(payload: BnccSuggestionPayload) {
   }
 
   const habilidades = Array.from(unique.values());
+  const quality = assessBnccSuggestionResult(context, {
+    conteudos: grouped,
+    habilidades,
+  });
 
   return {
     conteudos: grouped,
@@ -1574,6 +1582,8 @@ export async function suggestBnccByConteudos(payload: BnccSuggestionPayload) {
     },
     total: habilidades.length,
     source: catalog.length > 0 ? "local" : "fallback",
+    qualityScore: quality.qualityScore,
+    qualityIssues: quality.qualityIssues,
     message:
       habilidades.length > 0
         ? refresh

@@ -45,6 +45,12 @@ function loadTsModule(relativePath) {
     if (specifier === "./bncc-service") {
       return loadTsModule("src/server/bncc/bncc-service.ts");
     }
+    if (specifier === "./bncc-suggestion-quality") {
+      return loadTsModule("src/server/bncc/bncc-suggestion-quality.ts");
+    }
+    if (specifier === "./bncc-suggestion-response") {
+      return loadTsModule("src/server/bncc/bncc-suggestion-response.ts");
+    }
     if (specifier === "./discipline-catalog") {
       return loadTsModule("src/server/bncc/discipline-catalog.ts");
     }
@@ -59,6 +65,15 @@ function loadTsModule(relativePath) {
         }
       }
     }
+    if (specifier.startsWith("@/")) {
+      const rel = `src/${specifier.slice(2)}`;
+      for (const candidate of [`${rel}.ts`, `${rel}.tsx`]) {
+        const full = path.join(root, candidate);
+        if (fs.existsSync(full)) {
+          return loadTsModule(candidate.replace(/\\/g, "/"));
+        }
+      }
+    }
     return require(specifier);
   };
   new Function("exports", "require", "module", "__dirname", "__filename", transpiled)(
@@ -69,6 +84,13 @@ function loadTsModule(relativePath) {
 }
 
 const { suggestBnccByConteudos } = loadTsModule("src/server/bncc/bncc-suggestion-engine.ts");
+const { applyStageFilterToBnccSuggestionResult } = loadTsModule(
+  "src/server/bncc/bncc-suggestion-response.ts",
+);
+const {
+  MIN_SUGGESTION_RELEVANCE_SCORE,
+  assessSkillContentCoherence,
+} = loadTsModule("src/server/bncc/bncc-suggestion-quality.ts");
 
 const scenarios = [
   {
@@ -89,6 +111,7 @@ const scenarios = [
         "Repertório Sociocultural: Uso de dados, filosofia, história e literatura nos argumentos",
       ].join("\n"),
     },
+    minSkills: 5,
   },
   {
     name: "PT EF 5º ano",
@@ -98,6 +121,7 @@ const scenarios = [
       componenteCurricular: "Língua Portuguesa",
       conteudos: "Orações simples e compostas\nCoesão textual\nProdução de texto narrativo",
     },
+    minSkills: 1,
   },
   {
     name: "História EF 5º ano",
@@ -107,6 +131,7 @@ const scenarios = [
       componenteCurricular: "História",
       conteudos: "Brasil Colônia\nEscravidão\nIndependência do Brasil",
     },
+    minSkills: 1,
   },
   {
     name: "Matemática EF 6º ano",
@@ -116,6 +141,7 @@ const scenarios = [
       componenteCurricular: "Matemática",
       conteudos: "Frações\nNúmeros decimais\nGeometria plana",
     },
+    minSkills: 3,
   },
   {
     name: "Ciências EF 4º ano",
@@ -125,16 +151,24 @@ const scenarios = [
       componenteCurricular: "Ciências",
       conteudos: "Corpo humano\nMateriais e suas propriedades\nSeres vivos",
     },
+    minSkills: 1,
   },
 ];
 
 let failures = 0;
 
 for (const scenario of scenarios) {
-  const result = await suggestBnccByConteudos(scenario.payload);
-  const perGroup = (result.conteudos || []).map((g) => ({
+  const raw = await suggestBnccByConteudos(scenario.payload);
+  const result = applyStageFilterToBnccSuggestionResult(
+    raw,
+    scenario.payload.etapa,
+    scenario.payload.anoSerie,
+  );
+  const groups = result.conteudos || [];
+  const perGroup = groups.map((g) => ({
     conteudo: g.conteudo.slice(0, 45),
-    codes: g.habilidades.map((h) => h.codigo),
+    codes: (g.habilidades || []).map((h) => h.codigo),
+    skills: g.habilidades || [],
   }));
   const allCodes = perGroup.flatMap((g) => g.codes);
   const unique = new Set(allCodes);
@@ -147,21 +181,42 @@ for (const scenario of scenarios) {
       return payloadGrade && grade !== payloadGrade && !(m[1] !== "0" && grade <= Number(m[2]) && payloadGrade >= grade && payloadGrade <= Number(m[2]));
     }),
   );
+  const hasIncoherentSkill = groups.some((group) =>
+    (group.habilidades || []).some((skill) => {
+      const assessment = assessSkillContentCoherence(group.conteudo, skill, skill.score);
+      return !assessment.coherent || assessment.relevanceScore < MIN_SUGGESTION_RELEVANCE_SCORE;
+    }),
+  );
 
   console.log(`\n=== ${scenario.name} (source: ${result.source}) ===`);
   for (const g of perGroup) console.log(`  ${g.conteudo} => ${g.codes.join(", ") || "(vazio)"}`);
   console.log(`  unique: ${unique.size}/${allCodes.length}`);
+  console.log(`  qualityScore=${result.qualityScore ?? "n/a"}`);
 
   log({
     hypothesisId: "UNIFIED",
     location: "testar-bncc-escopo",
     message: scenario.name,
-    data: { source: result.source, perGroup, uniqueCount: unique.size, total: allCodes.length },
+    data: {
+      source: result.source,
+      perGroup,
+      uniqueCount: unique.size,
+      total: allCodes.length,
+      qualityScore: result.qualityScore,
+    },
   });
 
-  if (allCodes.length === 0 || unique.size < Math.min(3, perGroup.length)) {
+  const minSkills = scenario.minSkills ?? 1;
+
+  if (allCodes.length < minSkills) {
     failures += 1;
-    console.log("  FAIL: poucas habilidades distintas");
+    console.log(`  FAIL: menos de ${minSkills} habilidade(s) coerente(s)`);
+  } else if (hasWrongGrade) {
+    failures += 1;
+    console.log("  FAIL: habilidade fora do ano/série");
+  } else if (hasIncoherentSkill) {
+    failures += 1;
+    console.log("  FAIL: habilidade abaixo do score mínimo de coerência");
   }
 }
 

@@ -94,7 +94,11 @@ type BnccSkill = {
   componente?: string;
   conteudo: string;
   source?: "local" | "fallback";
+  relevanceScore?: number;
 };
+
+const BNCC_HIGH_RELEVANCE_SCORE = 16;
+const BNCC_MIN_RELEVANCE_SCORE = 8;
 
 type BnccGroup = {
   conteudo: string;
@@ -337,6 +341,12 @@ function normalizeSkill(skill: any, fallbackConteudo = ""): BnccSkill {
     componente: skill?.componente,
     conteudo: String(skill?.conteudo || fallbackConteudo || "Conteúdo informado"),
     source: skill?.source === "local" ? "local" : "fallback",
+    relevanceScore:
+      typeof skill?.relevanceScore === "number"
+        ? skill.relevanceScore
+        : typeof skill?.score === "number"
+          ? skill.score
+          : undefined,
   };
 }
 
@@ -364,6 +374,22 @@ function groupSkillsFromResponse(data: any, conteudos: string[]) {
     conteudo,
     habilidades: [],
   }));
+}
+
+function relevanceBadge(score?: number): { label: string; tone: "emerald" | "cyan" | "amber" } | null {
+  if (typeof score !== "number") {
+    return null;
+  }
+
+  if (score >= BNCC_HIGH_RELEVANCE_SCORE) {
+    return { label: "Alta compatibilidade", tone: "emerald" };
+  }
+
+  if (score >= BNCC_MIN_RELEVANCE_SCORE) {
+    return { label: "Compatível", tone: "cyan" };
+  }
+
+  return null;
 }
 
 function Pill({
@@ -1910,8 +1936,22 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
                     </div>
 
                     <div className="mt-5 grid gap-3">
+                      {group.habilidades.length === 0 ? (
+                        <div className="rounded-xl border border-dashed border-amber-200 bg-amber-50/70 p-5 text-sm leading-7 text-amber-900">
+                          Nenhuma habilidade coerente encontrada para este conteúdo. Revise o texto
+                          ou use <strong>Atualizar habilidades</strong> para buscar alternativas.
+                        </div>
+                      ) : null}
+                      {group.habilidades.length > 0 && group.habilidades.length < 3 ? (
+                        <p className="rounded-xl border border-amber-200/80 bg-amber-50/60 px-4 py-3 text-sm text-amber-900">
+                          Foram encontradas apenas {group.habilidades.length} habilidade(s)
+                          compatível(is) com este conteúdo. Você pode atualizar para ver outras
+                          opções.
+                        </p>
+                      ) : null}
                       {group.habilidades.map((skill) => {
                         const selected = isSelected(skill);
+                        const badge = relevanceBadge(skill.relevanceScore);
                         return (
                           <button key={skill.id} type="button" onClick={() => toggleSkill(skill)} className={`rounded-xl border p-5 text-left transition hover:-translate-y-0.5 ${selected ? "border-emerald-300/60 bg-emerald-50/80" : "border-cyan-400/15 bg-white/80 hover:border-cyan-400/35 hover:bg-cyan-50/40"}`}>
                             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -1919,7 +1959,10 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
                                 <p className="text-lg font-extrabold text-slate-950">{skill.codigo}</p>
                                 <p className="mt-2 text-sm leading-7 text-slate-600">{skill.descricao}</p>
                               </div>
-                              <Pill tone={selected ? "emerald" : "slate"}>{selected ? "Selecionada" : "Clique para usar"}</Pill>
+                              <div className="flex flex-wrap gap-2">
+                                {badge ? <Pill tone={badge.tone}>{badge.label}</Pill> : null}
+                                <Pill tone={selected ? "emerald" : "slate"}>{selected ? "Selecionada" : "Clique para usar"}</Pill>
+                              </div>
                             </div>
                           </button>
                         );

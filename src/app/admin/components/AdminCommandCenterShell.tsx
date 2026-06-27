@@ -1,9 +1,12 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { AdminSidebarLinks } from "./AdminSidebarLinks";
 
 export type AdminTabId =
   | "visao-geral"
+  | "corpus"
+  | "reservatorio"
   | "qualidade-ia"
   | "escolas"
   | "usuarios"
@@ -15,6 +18,8 @@ type TabDef = { id: AdminTabId; label: string };
 
 export const adminTabs: TabDef[] = [
   { id: "visao-geral", label: "Visão geral" },
+  { id: "corpus", label: "Garimpo RAG" },
+  { id: "reservatorio", label: "Reservatório" },
   { id: "escolas", label: "Escolas" },
   { id: "usuarios", label: "Usuários" },
   { id: "materiais", label: "Materiais IA" },
@@ -64,6 +69,9 @@ export function AdminCommandCenterShell({
 
         <div className="grid lg:grid-cols-[200px_1fr]">
           <nav className="pl-admin-nav border-b lg:border-b-0 lg:border-r">
+            <div className="hidden border-b border-slate-800/60 p-3 lg:block">
+              <AdminSidebarLinks orientation="vertical" />
+            </div>
             <div className="flex gap-1 overflow-x-auto p-2 lg:flex-col lg:overflow-visible lg:p-3">
               {adminTabs.map((tab) => (
                 <button

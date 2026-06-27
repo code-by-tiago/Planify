@@ -15,43 +15,24 @@ function normalizeText(value: unknown): string {
     .trim();
 }
 
-function searchText(value: unknown): string {
-  return normalizeText(value)
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/\p{Diacritic}/gu, "");
-}
-
-function limitText(value: string, max = 118): string {
+function limitText(value: string, max = 180): string {
   const clean = normalizeText(value);
   if (clean.length <= max) return clean;
   const slice = clean.slice(0, max);
   const lastSpace = slice.lastIndexOf(" ");
-  return `${(lastSpace > 70 ? slice.slice(0, lastSpace) : slice).trim()}...`;
+  return `${(lastSpace > 80 ? slice.slice(0, lastSpace) : slice).trim()}...`;
 }
 
-function polishBullet(value: string): string {
-  const clean = normalizeText(value)
-    .replace(/[_/]{3,}/g, "")
-    .replace(/\s*[-–—]\s*/g, " - ");
-
-  const [label, ...rest] = clean.split(" - ");
-  const body = rest.join(" - ").trim();
-
-  if (body && label.length <= 32 && /tempo|etapa|acao|atividade|recurso|avaliacao|objetivo|metodo/i.test(label)) {
-    return `${label}: ${body}`;
-  }
-
-  return clean;
-}
-
-function uniqueBullets(values: string[], max = 3): string[] {
+function uniqueBullets(values: string[], max = 5): string[] {
   const seen = new Set<string>();
   const bullets: string[] = [];
 
   for (const value of values) {
-    const clean = limitText(polishBullet(value), 116);
-    const key = searchText(clean);
+    const clean = limitText(value, 170);
+    const key = clean
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/\p{Diacritic}/gu, "");
 
     if (!clean || clean.length < 8 || seen.has(key)) continue;
     seen.add(key);
@@ -73,15 +54,15 @@ function collectMeta(document: Document): string {
   for (const row of rows) {
     const cells = Array.from(row.querySelectorAll("th,td")).map(elementText);
     if (cells.length < 2) continue;
-    const label = searchText(cells[0]);
+    const label = cells[0].toLowerCase();
     const value = cells.slice(1).join(" ").replace(/[_/]{3,}/g, "").trim();
     if (!value || value === "-") continue;
-    if (/componente|disciplina|ano|serie|etapa|turma/.test(label)) {
+    if (/componente|disciplina|ano|serie|s[ée]rie|etapa/i.test(label)) {
       parts.push(value);
     }
   }
 
-  return uniqueBullets(parts, 3).join(" | ");
+  return uniqueBullets(parts, 3).join(" - ");
 }
 
 function collectTableBullets(section: Element): string[] {
@@ -104,10 +85,10 @@ function collectSectionBullets(section: Element): string[] {
   const listItems = Array.from(section.querySelectorAll("li")).map(elementText);
   const paragraphs = Array.from(section.querySelectorAll("p"))
     .map(elementText)
-    .filter((text) => !/^notas do professor/i.test(searchText(text)));
+    .filter((text) => !/^notas do professor/i.test(text));
   const tableRows = collectTableBullets(section);
 
-  return uniqueBullets([...tableRows, ...listItems, ...paragraphs], 3);
+  return uniqueBullets([...tableRows, ...listItems, ...paragraphs], 5);
 }
 
 function collectSections(document: Document): LessonSection[] {
@@ -125,7 +106,7 @@ function collectSections(document: Document): LessonSection[] {
     const bullets = collectSectionBullets(section);
 
     if (title && bullets.length) {
-      sections.push({ title: limitText(title, 78), bullets });
+      sections.push({ title: limitText(title, 90), bullets });
     }
   }
 
@@ -143,9 +124,9 @@ function collectSections(document: Document): LessonSection[] {
       cursor = cursor.nextElementSibling;
     }
 
-    const cleanBullets = uniqueBullets(bullets, 3);
+    const cleanBullets = uniqueBullets(bullets, 5);
     if (title && cleanBullets.length) {
-      sections.push({ title: limitText(title, 78), bullets: cleanBullets });
+      sections.push({ title: limitText(title, 90), bullets: cleanBullets });
     }
   }
 
@@ -156,25 +137,15 @@ function findSection(
   sections: LessonSection[],
   pattern: RegExp,
 ): LessonSection | undefined {
-  return sections.find((section) => pattern.test(searchText(section.title)));
+  return sections.find((section) => pattern.test(section.title));
 }
 
-function fallbackBullets(document: Document, max = 4): string[] {
+function fallbackBullets(document: Document, max = 5): string[] {
   const candidates = Array.from(document.querySelectorAll("p,li,td"))
     .map(elementText)
     .filter((text) => text.length > 20);
 
   return uniqueBullets(candidates, max);
-}
-
-function sectionBulletsOrFallback(
-  section: LessonSection | undefined,
-  fallback: string[],
-  defaults: string[],
-): string[] {
-  if (section?.bullets?.length) return section.bullets;
-  if (fallback.length) return uniqueBullets(fallback, 3);
-  return defaults;
 }
 
 function makeSlide(input: {
@@ -186,21 +157,24 @@ function makeSlide(input: {
   sequenceStep: number;
   sequenceLabel: string;
   callout?: SlideItem["callout"];
-  accentColor?: SlideItem["accentColor"];
-  iconHint?: string;
 }): SlideItem {
   return {
     title: input.title,
-    bullets: uniqueBullets(input.bullets, input.layout === "fechamento" ? 4 : 3),
+    bullets: uniqueBullets(input.bullets, 5),
     layout: input.layout ?? "conteudo",
     subtitle: input.subtitle,
     speakerNotes: input.speakerNotes ?? "",
     sequenceStep: input.sequenceStep,
     sequenceLabel: input.sequenceLabel,
     callout: input.callout,
-    accentColor: input.accentColor,
-    iconHint: input.iconHint,
   };
+}
+
+function sectionBulletsOrFallback(
+  section: LessonSection | undefined,
+  fallback: string[],
+): string[] {
+  return section?.bullets?.length ? section.bullets : fallback;
 }
 
 export function buildLessonPlanSlidesFromHtml(input: {
@@ -213,55 +187,25 @@ export function buildLessonPlanSlidesFromHtml(input: {
     elementText(document.querySelector("h1")) ||
     normalizeText(input.title) ||
     "Plano de aula";
-  const subtitle = collectMeta(document) || "Roteiro premium para conduzir em sala";
+  const subtitle = collectMeta(document) || "Roteiro pronto para conduzir em sala";
   const sections = collectSections(document);
   const fallback = fallbackBullets(document, 6);
 
-  const objective = findSection(sections, /objetiv|expectativa|aprendiz|habilidade/);
-  const opening = findSection(sections, /abertura|inicio|sondagem|context|problematiz/);
+  const objective = findSection(sections, /objetiv|expectativa|aprendiz/i);
+  const opening = findSection(sections, /abertura|inicio|in[ií]cio|sondagem|context/i);
   const development = findSection(
     sections,
-    /desenvolv|metodolog|conteudo|explica|procedimento|conceito/,
+    /desenvolv|metodolog|conte[uú]do|explica|procedimento/i,
   );
   const practice = findSection(
     sections,
-    /atividade|pratica|exercicio|grupo|producao|aplicacao/,
+    /atividade|pr[aá]tica|exerc[ií]cio|grupo|produ[cç][aã]o/i,
   );
-  const schedule = findSection(sections, /cronograma|roteiro|etapa|tempo/);
+  const schedule = findSection(sections, /cronograma|roteiro|etapa|tempo/i);
   const assessment = findSection(
     sections,
-    /avalia|evidencia|criterio|fechamento|sintese|retomada/,
+    /avalia|evid[eê]ncia|crit[eé]rio|fechamento|s[ií]ntese/i,
   );
-
-  const objectiveBullets = sectionBulletsOrFallback(objective, fallback.slice(0, 3), [
-    "Apresente a meta da aula em linguagem simples.",
-    "Mostre o que a turma deve conseguir explicar, resolver ou produzir.",
-    "Conecte o objetivo a uma evidencia observavel.",
-  ]);
-  const openingBullets = sectionBulletsOrFallback(opening, fallback.slice(0, 3), [
-    "Recupere conhecimentos previos com uma pergunta curta.",
-    "Use um exemplo proximo da realidade da turma.",
-    "Nomeie o desafio que sera investigado na aula.",
-  ]);
-  const developmentBullets = sectionBulletsOrFallback(development, fallback.slice(1, 4), [
-    "Explique a ideia central em blocos curtos.",
-    "Modele um exemplo antes de pedir autonomia.",
-    "Cheque compreensao antes de avancar.",
-  ]);
-  const practiceBullets = sectionBulletsOrFallback(
-    practice ?? schedule,
-    fallback.slice(2, 5),
-    [
-      "Organize a turma para aplicar o conceito.",
-      "Circule pela sala para observar estrategias e duvidas.",
-      "Registre evidencias para orientar a devolutiva.",
-    ],
-  );
-  const assessmentBullets = sectionBulletsOrFallback(assessment, fallback.slice(-3), [
-    "Retome a ideia central com a turma.",
-    "Colete uma resposta curta como evidencia de aprendizagem.",
-    "Indique o proximo passo ou tarefa de continuidade.",
-  ]);
 
   const slides: SlideItem[] = [
     makeSlide({
@@ -272,102 +216,65 @@ export function buildLessonPlanSlidesFromHtml(input: {
       sequenceStep: 0,
       sequenceLabel: "Abertura",
       speakerNotes:
-        "Receba a turma, apresente o tema e explicite o resultado esperado da aula em uma frase.",
+        "Receba a turma, apresente o tema e explicite o objetivo da aula em linguagem simples.",
     }),
     makeSlide({
-      title: "Mapa da aula",
-      subtitle: "Um roteiro enxuto para conduzir sem improviso",
-      layout: "destaque",
-      bullets: [
-        "Conectar o tema ao repertorio da turma.",
-        "Construir a ideia central com exemplo guiado.",
-        "Aplicar, checar e registrar evidencias.",
-      ],
+      title: "Objetivo da aula",
+      bullets: sectionBulletsOrFallback(objective, fallback.slice(0, 4)),
       sequenceStep: 1,
-      sequenceLabel: "Roteiro",
-      callout: {
-        title: "Ritmo sugerido",
-        text: "Trabalhe em ciclos curtos: explicar, praticar, checar e ajustar.",
-      },
-      speakerNotes:
-        "Mostre para a turma como a aula vai acontecer. Isso reduz ansiedade e melhora engajamento.",
-    }),
-    makeSlide({
-      title: "Objetivo essencial",
-      subtitle: "O que a turma precisa conseguir fazer ao final",
-      layout: "destaque",
-      bullets: objectiveBullets,
-      sequenceStep: 2,
       sequenceLabel: "Objetivo",
-      callout: {
-        title: "Foco do professor",
-        text: "Transforme o objetivo em uma evidencia concreta: fala, registro, resolucao ou produto.",
-      },
       speakerNotes:
-        "Leia o objetivo e traduza para uma acao observavel. Evite termos abstratos sem exemplo.",
+        "Leia os objetivos com a turma e conecte a meta da aula ao que sera produzido ou observado.",
     }),
     makeSlide({
-      title: "Pergunta de abertura",
-      subtitle: "Ative repertorio antes da explicacao",
-      bullets: openingBullets,
+      title: "Abertura e contexto",
+      bullets: sectionBulletsOrFallback(opening, fallback.slice(0, 4)),
+      sequenceStep: 2,
+      sequenceLabel: "Abertura",
+      speakerNotes:
+        "Use este momento para ativar conhecimentos previos e aproximar o conteudo da realidade dos alunos.",
+    }),
+    makeSlide({
+      title: "Desenvolvimento",
+      bullets: sectionBulletsOrFallback(development, fallback.slice(1, 6)),
       sequenceStep: 3,
-      sequenceLabel: "Aquecimento",
-      callout: {
-        title: "Pergunta-chave",
-        text: "Que exemplo da vida real ajuda a turma a entrar neste tema agora?",
-      },
-      speakerNotes:
-        "Use a pergunta para diagnosticar o ponto de partida. Nao corrija tudo ainda; colete pistas.",
-    }),
-    makeSlide({
-      title: "Ideia central",
-      subtitle: "Explique em camadas curtas e verificaveis",
-      bullets: developmentBullets,
-      sequenceStep: 4,
       sequenceLabel: "Desenvolvimento",
       speakerNotes:
-        "Conduza a explicacao em blocos de 8 a 12 minutos e pare para uma checagem simples.",
+        "Conduza a explicacao em blocos curtos, verificando compreensao antes de passar para a pratica.",
     }),
     makeSlide({
-      title: "Atividade guiada",
-      subtitle: "Transforme explicacao em acao",
-      bullets: practiceBullets,
-      sequenceStep: 5,
+      title: "Pratica orientada",
+      bullets: sectionBulletsOrFallback(practice ?? schedule, fallback.slice(2, 7)),
+      sequenceStep: 4,
       sequenceLabel: "Pratica",
-      callout: {
-        title: "Mediação",
-        text: "Circule, observe estrategias e intervenha com perguntas antes de entregar a resposta.",
-      },
       speakerNotes:
-        "Defina tempo, agrupamento e criterio de sucesso. Registre evidencias enquanto os alunos trabalham.",
+        "Organize a turma, acompanhe as duvidas e registre evidencias enquanto os alunos trabalham.",
     }),
     makeSlide({
-      title: "Checagem interativa",
-      subtitle: "Abra esta pergunta na sala ao vivo IAPlanify",
+      title: "Checagem rapida",
+      bullets: [
+        "Uma pergunta para verificar se a turma compreendeu a ideia central.",
+        "Uma resposta curta para identificar duvidas antes do fechamento.",
+        "Uma retomada oral com exemplos dos alunos.",
+      ],
       layout: "destaque",
-      bullets: ["Entendi bem", "Preciso de mais um exemplo", "Ainda tenho duvida"],
-      sequenceStep: 6,
-      sequenceLabel: "Interacao",
+      sequenceStep: 5,
+      sequenceLabel: "Checagem",
       callout: {
-        title: "Pergunta para a turma",
+        title: "Pergunta de sala",
         text: "O que voce consegue explicar agora que ainda nao estava claro no inicio?",
       },
       speakerNotes:
-        "Abra a pergunta na sala ao vivo. Use o resultado para decidir se fecha, retoma ou exemplifica.",
+        "Colete respostas rapidas e retome apenas o ponto que a turma demonstrar maior dificuldade.",
     }),
     makeSlide({
-      title: "Fechamento com evidencias",
-      subtitle: "Sintese, registro e proximo passo",
-      bullets: assessmentBullets,
+      title: "Avaliacao e fechamento",
+      bullets: sectionBulletsOrFallback(assessment, fallback.slice(-4)),
       layout: "fechamento",
-      sequenceStep: 7,
+      sequenceStep: 6,
       sequenceLabel: "Fechamento",
-      callout: {
-        title: "Evidencia final",
-        text: "Peca uma resposta curta: o que aprendi, onde apliquei e qual duvida permanece?",
-      },
       speakerNotes:
-        "Feche com sintese objetiva, evidencias observaveis e encaminhamento para continuidade.",
+        "Feche com sintese, evidencias observaveis e encaminhamento objetivo para a proxima aula.",
     }),
   ];
 

@@ -1,3 +1,9 @@
+import {
+  assessDistributionCoarseness,
+  OFFICIAL_MAX_PERIODS_PER_ROW,
+  splitPeriodsIntoExperienceChunks,
+} from "./planning-official-contract";
+
 export type PlanningAllocationPayload = {
   tipoPlanejamento?: string;
   cargaHoraria?: string | number;
@@ -31,9 +37,14 @@ function normalizeSearch(value: unknown): string {
 }
 
 export function parsePlanningCargaHoraria(value: unknown, fallback: number): number {
+  const parsed = parsePlanningCargaHorariaStrict(value);
+  return parsed ?? fallback;
+}
+
+export function parsePlanningCargaHorariaStrict(value: unknown): number | null {
   const match = normalizeText(value).match(/\d+/);
   const parsed = match ? Number(match[0]) : NaN;
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 }
 
 export function getPlanningTipo(payload: PlanningAllocationPayload): "anual" | "trimestral" {
@@ -163,6 +174,98 @@ export function computeLessonAllocation(params: {
   });
 }
 
+function matrixHasOfficialPeriodDistribution(
+  items: MatrixLessonAllocatable[],
+  cargaTotal: number,
+): boolean {
+  if (!items.length) {
+    return false;
+  }
+
+  const periodsSum = items.reduce((sum, item) => sum + (Number(item.periodos) || 0), 0);
+  if (periodsSum !== cargaTotal) {
+    return false;
+  }
+
+  if (!items.every((item) => {
+    const periodos = Number(item.periodos) || 0;
+    return periodos > 0 && periodos <= OFFICIAL_MAX_PERIODS_PER_ROW;
+  })) {
+    return false;
+  }
+
+  return !assessDistributionCoarseness(items, cargaTotal).coarse;
+}
+
+export function applyOfficialPeriodDistribution<T extends MatrixLessonAllocatable>(
+  items: T[],
+  cargaTotal: number,
+): T[] {
+  if (!items.length) {
+    return items;
+  }
+
+  const targetTotal = Math.max(items.length, cargaTotal);
+  const conteudos = items.map((item) => item.conteudo);
+  const totalFromItems = items.reduce((sum, item) => sum + (Number(item.periodos) || 0), 0);
+
+  const periodAllocations =
+    totalFromItems === targetTotal && items.every((item) => (Number(item.periodos) || 0) > 0)
+      ? items.map((item) => Number(item.periodos) || 1)
+      : allocateRawPeriods(conteudos, targetTotal);
+
+  const expanded: T[] = [];
+
+  for (let index = 0; index < items.length; index += 1) {
+    const item = items[index];
+    const periods = periodAllocations[index] || 1;
+    const chunks = splitPeriodsIntoExperienceChunks(periods);
+
+    for (const chunkPeriodos of chunks) {
+      expanded.push({
+        ...item,
+        periodos: chunkPeriodos,
+      });
+    }
+  }
+
+  let allocationSum = expanded.reduce((sum, item) => sum + (Number(item.periodos) || 0), 0);
+  let adjustIndex = expanded.length - 1;
+
+  while (allocationSum > targetTotal && adjustIndex >= 0) {
+    const current = expanded[adjustIndex];
+    const currentPeriodos = Number(current.periodos) || 1;
+
+    if (currentPeriodos > 1) {
+      expanded[adjustIndex] = { ...current, periodos: currentPeriodos - 1 };
+      allocationSum -= 1;
+    } else {
+      adjustIndex -= 1;
+    }
+  }
+
+  adjustIndex = 0;
+  while (allocationSum < targetTotal) {
+    const current = expanded[adjustIndex % expanded.length];
+    const currentPeriodos = Number(current.periodos) || 1;
+
+    if (currentPeriodos < OFFICIAL_MAX_PERIODS_PER_ROW) {
+      expanded[adjustIndex % expanded.length] = {
+        ...current,
+        periodos: currentPeriodos + 1,
+      };
+      allocationSum += 1;
+    }
+
+    adjustIndex += 1;
+    if (adjustIndex > expanded.length * (targetTotal + 1)) {
+      break;
+    }
+  }
+
+  return expanded;
+}
+
 export function rebalanceMatrixPeriods<T extends MatrixLessonAllocatable>(
   items: T[],
   cargaTotal: number,
@@ -172,33 +275,22 @@ export function rebalanceMatrixPeriods<T extends MatrixLessonAllocatable>(
     return items;
   }
 
-  const conteudos = items.map((item) => item.conteudo);
-  const allocation = computeLessonAllocation({
-    conteudos,
-    cargaTotal: Math.max(cargaTotal, items.length),
-    tipo,
-    trimestreSelecionado: items[0]?.trimestre || 1,
-  });
-
-  const periodosFromHeuristic = allocateRawPeriods(conteudos, Math.max(cargaTotal, items.length));
-
-  return items.map((item, index) => {
-    const aiPeriodos = Number(item.periodos);
-    const slot = allocation[index];
-    const periodos =
-      Number.isFinite(aiPeriodos) && aiPeriodos > 0
-        ? aiPeriodos
-        : periodosFromHeuristic[index] || slot?.periodos || 1;
-
-    return {
+  if (matrixHasOfficialPeriodDistribution(items, cargaTotal)) {
+    return items.map((item, index) => ({
       ...item,
-      trimestre: item.trimestre || slot?.trimestre || 1,
-      numeroAula: item.numeroAula || slot?.numeroAula || index + 1,
-      periodos,
-      aulaInicio: item.aulaInicio || slot?.aulaInicio || index + 1,
-      aulaFim: item.aulaFim || slot?.aulaFim || index + 1,
-    };
-  });
+      numeroAula: item.numeroAula || index + 1,
+    }));
+  }
+
+  const expanded = applyOfficialPeriodDistribution(items, cargaTotal);
+  const trimestreSelecionado = items[0]?.trimestre || 1;
+  const trimestres = distributeTrimestres(expanded.length, tipo, trimestreSelecionado);
+
+  return expanded.map((item, index) => ({
+    ...item,
+    trimestre: tipo === "trimestral" ? trimestreSelecionado : trimestres[index] || item.trimestre || 1,
+    numeroAula: index + 1,
+  }));
 }
 
 /**
@@ -257,9 +349,7 @@ export function finalizeMatrixLessonAllocation<T extends MatrixLessonAllocatable
     };
   });
 
-  const periodsSum = withAiPeriods.reduce((sum, item) => sum + (item.periodos || 0), 0);
-  const hasValidPeriods =
-    withAiPeriods.every((item) => (item.periodos || 0) > 0) && periodsSum === carga;
+  const hasValidPeriods = matrixHasOfficialPeriodDistribution(withAiPeriods, carga);
 
   const base = hasValidPeriods
     ? withAiPeriods

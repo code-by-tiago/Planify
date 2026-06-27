@@ -260,7 +260,7 @@ const exemplos = {
     componenteCurricular: "Língua Portuguesa",
     cargaHoraria: "80 períodos",
     conteudos:
-      "Tipos de texto: descrição, narração e dissertação\nEstrutura dissertativa-argumentativa: introdução com tese, desenvolvimento e conclusão\nCompetências do ENEM: domínio da norma padrão e proposta de intervenção detalhada\nRepertório sociocultural: uso de dados, filosofia, história e literatura nos argumentos",
+      "Tipos de texto: descrição e narração\nEstrutura dissertativa-argumentativa: tese e parágrafos\nCompetências do ENEM: norma padrão e coesão\nRepertório sociocultural em argumentos\nProdução e revisão de textos dissertativos\nAnálise de propostas de intervenção do ENEM",
     objetivos:
       "Desenvolver competências de leitura, análise, argumentação, escrita e revisão de textos.",
     observacoes:
@@ -1718,8 +1718,8 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
                   id="planejamentos-conteudos-hint"
                   className="text-xs text-cyan-700/80"
                 >
-                  Texto livre — use o formato que preferir. A IA e a BNCC interpretam o conteúdo
-                  informado sem reorganizar automaticamente este campo.
+                  Texto livre — use o formato que preferir. A IA desdobra conteúdos amplos em
+                  experiências de 1–4 períodos, alinhadas aos modelos oficiais DOCX.
                   {conteudosPreenchido ? " (preenchido)" : ""}
                 </span>
               </label>
@@ -1829,6 +1829,13 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
             {conteudosPreenchido && selectedSkills.length === 0 && !loadingPlan ? (
               <p className="mt-3 text-sm text-amber-700">
                 Selecione pelo menos uma habilidade BNCC na lista abaixo antes de gerar.
+              </p>
+            ) : null}
+
+            {canGeneratePlanning && !loadingPlan ? (
+              <p className="mt-3 text-sm text-slate-500">
+                A matriz será desdobrada em experiências de 1–4 períodos cada, conforme a carga
+                horária informada e os modelos oficiais.
               </p>
             ) : null}
 
@@ -1983,12 +1990,8 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
                       Number.isFinite(Number(item.numeroAula)) && Number(item.numeroAula) > 0
                         ? Number(item.numeroAula)
                         : item.aulaInicio;
-                    const periodos =
-                      Number.isFinite(Number(item.periodos)) && Number(item.periodos) > 0
-                        ? Number(item.periodos)
-                        : Math.max(1, item.aulaFim - item.aulaInicio + 1);
-                    const periodosLabel =
-                      periodos === 1 ? "1 período" : `${periodos} período(s)`;
+                    const aulaInicio = item.aulaInicio || numeroAula;
+                    const aulaFim = item.aulaFim || aulaInicio;
 
                     return (
                       <div
@@ -2000,7 +2003,8 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
                           {Number(item.trimestre) >= 1 && Number(item.trimestre) <= 3
                             ? `${item.trimestre}º trimestre · `
                             : ""}
-                          Aula {numeroAula} · {periodosLabel} · {item.habilidades.length} habilidade(s)
+                          Experiência {numeroAula} · períodos {aulaInicio}–{aulaFim} ·{" "}
+                          {item.habilidades.length} habilidade(s)
                         </p>
                       </div>
                     );
@@ -2213,12 +2217,8 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
                         Number.isFinite(Number(item.numeroAula)) && Number(item.numeroAula) > 0
                           ? Number(item.numeroAula)
                           : item.aulaInicio;
-                      const periodos =
-                        Number.isFinite(Number(item.periodos)) && Number(item.periodos) > 0
-                          ? Number(item.periodos)
-                          : Math.max(1, item.aulaFim - item.aulaInicio + 1);
-                      const periodosLabel =
-                        periodos === 1 ? "1 período" : `${periodos} período(s)`;
+                      const aulaInicio = item.aulaInicio || numeroAula;
+                      const aulaFim = item.aulaFim || aulaInicio;
 
                       return (
                         <div
@@ -2230,7 +2230,8 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
                             {Number(item.trimestre) >= 1 && Number(item.trimestre) <= 3
                               ? `${item.trimestre}º trimestre · `
                               : ""}
-                            Aula {numeroAula} · {periodosLabel} · {item.habilidades.length} habilidade(s)
+                            Experiência {numeroAula} · períodos {aulaInicio}–{aulaFim} ·{" "}
+                            {item.habilidades.length} habilidade(s)
                           </p>
                         </div>
                       );

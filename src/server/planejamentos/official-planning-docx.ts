@@ -1255,6 +1255,10 @@ function trimestralSemanaLabel(item: PlanningMatrixItem): string {
   );
   const periodoLabel = periodos === 1 ? "período" : "períodos";
 
+  if (periodos > 4) {
+    return `Semanas ${item.aulaInicio} a ${item.aulaFim} (${periodos} ${periodoLabel})`;
+  }
+
   return `Semana ${formatMatrixAulaLabel(item)} (${periodos} ${periodoLabel})`;
 }
 

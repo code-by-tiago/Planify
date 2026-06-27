@@ -14,7 +14,14 @@ import {
 import {
   finalizeMatrixLessonAllocation,
   parsePlanningCargaHoraria,
+  parsePlanningCargaHorariaStrict,
 } from "./planning-lesson-allocation";
+import {
+  assessDistributionCoarseness,
+  computeIdealRowCount,
+  OFFICIAL_MAX_PERIODS_PER_ROW,
+  OFFICIAL_PERIODS_PER_EXPERIENCE,
+} from "./planning-official-contract";
 import { splitPlanningConteudos } from "./planning-validation";
 
 type UnknownRecord = Record<string, unknown>;
@@ -466,6 +473,10 @@ function sanitizeAiResult(value: unknown, payload: PlanningAiPayload): PlanningA
     : [];
 
   const inputConteudos = splitConteudos(payload.conteudos);
+  const cargaHoraria =
+    parsePlanningCargaHorariaStrict(payload.cargaHoraria) ??
+    parsePlanningCargaHoraria(payload.cargaHoraria, inputConteudos.length);
+  const idealRows = computeIdealRowCount(cargaHoraria);
   const chunkSize = Math.max(1, Math.ceil(Math.max(rawItems.length, inputConteudos.length) / 3));
 
   const items = rawItems.map((item, index) => {
@@ -525,10 +536,17 @@ function sanitizeAiResult(value: unknown, payload: PlanningAiPayload): PlanningA
   });
 
   const finalized = finalizeMatrixLessonAllocation(items, payload);
+  const coarseBeforeFinalize = assessDistributionCoarseness(
+    items.map((item) => ({ periodos: item.periodos })),
+    cargaHoraria,
+  ).coarse;
 
   return {
     success: true,
     usedAI: true,
+    warning: coarseBeforeFinalize
+      ? `A matriz foi desdobrada automaticamente em ~${idealRows} experiências (${OFFICIAL_PERIODS_PER_EXPERIENCE} períodos por linha, máx. ${OFFICIAL_MAX_PERIODS_PER_ROW}).`
+      : undefined,
     planejamento: {
       tipoPlanejamento: tipo,
       titulo:
@@ -562,6 +580,10 @@ function buildPlanningPrompt(
   const selectedSkills = Array.isArray(payload.habilidadesSelecionadas)
     ? payload.habilidadesSelecionadas.map(normalizeSkill)
     : [];
+  const cargaHoraria =
+    parsePlanningCargaHorariaStrict(payload.cargaHoraria) ??
+    parsePlanningCargaHoraria(payload.cargaHoraria, conteudos.length);
+  const idealRows = computeIdealRowCount(cargaHoraria);
 
   const elevateBlock =
     payload.elevarQualidade || payload.problemasQualidade?.length
@@ -592,21 +614,22 @@ ${buildSpanishPlanningRules(payload)}
 
 Regras obrigatórias:
 1. Retorne uma matriz em planejamento.conteudos.
-2. Cada item deve representar apenas um conteúdo.
-3. Cada conteúdo deve ter no máximo 3 habilidades.
-4. Use código e descrição completa das habilidades.
-5. Não invente código BNCC se houver habilidade selecionada compatível.
-6. Gere exatamente uma linha por conteúdo informado pelo professor (na mesma ordem).
-7. numeroAula deve ser sequencial: 1 para o 1º conteúdo, 2 para o 2º, e assim por diante.
-8. periodos deve variar conforme a complexidade de cada conteúdo (conteúdos densos recebem mais períodos; revisões e introduções recebem menos).
-9. A soma de periodos de todas as linhas deve ser igual à carga horária informada (${parsePlanningCargaHoraria(payload.cargaHoraria, conteudos.length)} períodos).
-10. No planejamento anual, distribua os conteúdos entre 1º, 2º e 3º trimestre de forma equilibrada.
-11. aulaInicio e aulaFim representam a faixa cumulativa de períodos no ano (ou no trimestre, se trimestral).
-12. Gere objetivos/expectativas de aprendizagem, metodologia, materiais, recursos necessários, etapas da experiência, evidências de aprendizagem e instrumentos de avaliação.
-13. Preencha projetos interdisciplinares, temas integradores e instrumentos de avaliação de forma coerente quando estes campos existirem no DOCX.
-14. Não use texto genérico vazio nem repita a mesma metodologia em todas as linhas.
-15. Cada linha deve citar estratégias, recursos e avaliação coerentes com o conteúdo daquela linha.
-16. Objetivos devem ser mensuráveis e ligados ao componente curricular e à etapa informados.
+2. Cada linha representa uma experiência de aprendizagem (1–${OFFICIAL_MAX_PERIODS_PER_ROW} períodos).
+3. Quando a carga horária (${cargaHoraria} períodos) exige mais linhas do que conteúdos informados (${conteudos.length}), desdobre cada conteúdo em várias experiências — meta ~${idealRows} linhas no total (~${OFFICIAL_PERIODS_PER_EXPERIENCE} períodos por experiência).
+4. Cada conteúdo deve ter no máximo 3 habilidades.
+5. Use código e descrição completa das habilidades.
+6. Não invente código BNCC se houver habilidade selecionada compatível.
+7. Mantenha a ordem dos conteúdos informados; repita o mesmo conteudo em linhas consecutivas ao desdobrar.
+8. numeroAula deve ser sequencial de 1 até o total de linhas.
+9. periodos por linha: entre 1 e ${OFFICIAL_MAX_PERIODS_PER_ROW}; conteúdos densos recebem mais linhas, não mais períodos por linha.
+10. A soma de periodos de todas as linhas deve ser exatamente ${cargaHoraria}.
+11. No planejamento anual, distribua as experiências entre 1º, 2º e 3º trimestre de forma equilibrada.
+12. aulaInicio e aulaFim representam a faixa cumulativa de períodos no ano (ou no trimestre, se trimestral).
+13. Gere objetivos/expectativas de aprendizagem, metodologia, materiais, recursos necessários, etapas da experiência, evidências de aprendizagem e instrumentos de avaliação.
+14. Preencha projetos interdisciplinares, temas integradores e instrumentos de avaliação de forma coerente quando estes campos existirem no DOCX.
+15. Não use texto genérico vazio nem repita a mesma metodologia em todas as linhas.
+16. Cada linha deve citar estratégias, recursos e avaliação coerentes com o conteúdo daquela linha.
+17. Objetivos devem ser mensuráveis e ligados ao componente curricular e à etapa informados.
 
 Formato:
 {
@@ -619,9 +642,27 @@ Formato:
         "conteudo": "...",
         "trimestre": 1,
         "numeroAula": 1,
-        "periodos": 5,
+        "periodos": 2,
         "aulaInicio": 1,
-        "aulaFim": 5,
+        "aulaFim": 2,
+        "habilidades": [
+          { "codigo": "...", "descricao": "..." }
+        ],
+        "objetivos": "...",
+        "metodologia": "...",
+        "materiais": "...",
+        "recursos": "...",
+        "etapas": "...",
+        "avaliacao": "...",
+        "evidencias": "..."
+      },
+      {
+        "conteudo": "...",
+        "trimestre": 1,
+        "numeroAula": 2,
+        "periodos": 2,
+        "aulaInicio": 3,
+        "aulaFim": 4,
         "habilidades": [
           { "codigo": "...", "descricao": "..." }
         ],

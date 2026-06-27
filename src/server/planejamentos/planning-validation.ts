@@ -3,6 +3,7 @@ import {
   resolveBnccStageFromFields,
 } from "../bncc/bncc-stage-filter";
 import type { PlanningAiPayload } from "./planning-ai-service";
+import { parsePlanningCargaHorariaStrict } from "./planning-lesson-allocation";
 
 const MAX_FIELD_LENGTH = 240;
 const MAX_TEXT_BLOCK_LENGTH = 4000;
@@ -51,6 +52,10 @@ export function validatePlanningPayload(
 
   if (!normalizeText(payload.componenteCurricular)) {
     return "Informe o componente curricular.";
+  }
+
+  if (parsePlanningCargaHorariaStrict(payload.cargaHoraria) === null) {
+    return "Informe a carga horária em períodos (ex.: 80 períodos).";
   }
 
   const conteudos = splitPlanningConteudos(payload.conteudos);

@@ -208,7 +208,7 @@ const payload: OfficialPlanningPayload = {
   anoSerie: "5º ano",
   areaConhecimento: "Ciências Humanas",
   componenteCurricular: "História",
-  cargaHoraria: "12",
+  cargaHoraria: "4",
   matrizPlanejamento: {
     conteudos: [
       {

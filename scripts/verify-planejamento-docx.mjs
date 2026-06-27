@@ -262,9 +262,9 @@ function verifyReferenceTemplates(buildOfficialPlanningDocx, buildTrimestralPlan
     trimestre,
     conteudo,
     numeroAula: index + 1,
-    periodos: 6,
-    aulaInicio: index * 6 + 1,
-    aulaFim: index * 6 + 6,
+    periodos: 2,
+    aulaInicio: index * 2 + 1,
+    aulaFim: index * 2 + 2,
     habilidades: [{ codigo, descricao: `Habilidade ${codigo}` }],
     objetivos: `Objetivo de aprendizagem para ${conteudo}.`,
     metodologia: `Metodologia ativa para ${conteudo} com investigação e socialização.`,
@@ -283,7 +283,7 @@ function verifyReferenceTemplates(buildOfficialPlanningDocx, buildTrimestralPlan
     anoSerie: "5º ano",
     areaConhecimento: "Ciências Humanas",
     componenteCurricular: "História",
-    cargaHoraria: "36 períodos",
+    cargaHoraria: "12 períodos",
     matrizPlanejamento: { conteudos: matrix },
   };
 
@@ -296,8 +296,8 @@ function verifyReferenceTemplates(buildOfficialPlanningDocx, buildTrimestralPlan
   [
     "prof. modelo",
     "5º ano",
-    "36 periodos",
     "12 periodos",
+    "2 periodos",
     "1 periodo",
     "conteudo t1-a",
     "conteudo t2-a",
@@ -336,7 +336,7 @@ function verifyReferenceTemplates(buildOfficialPlanningDocx, buildTrimestralPlan
       ...basePayload,
       tipoPlanejamento: "trimestral",
       trimestre,
-      cargaHoraria: "12 períodos",
+      cargaHoraria: "4 períodos",
       matrizPlanejamento: { conteudos: trimestral.conteudos },
     });
     const trimestralText = normalizeDocxText(readDocxDocumentXml(trimestralDocx));
@@ -356,7 +356,7 @@ function verifyReferenceTemplates(buildOfficialPlanningDocx, buildTrimestralPlan
         ),
       );
     [
-      "semana 1 (6 periodos)",
+      "semana 1 (2 periodos)",
       "metodologia",
       "materiais e recursos necessarios",
       "etapas dessa experiencia",

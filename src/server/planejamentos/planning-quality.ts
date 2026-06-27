@@ -7,7 +7,13 @@ import type { PlanningAiPayload, PlanningMatrixItem } from "./planning-ai-servic
 import {
   matrixPeriodsTotal,
   parsePlanningCargaHoraria,
+  parsePlanningCargaHorariaStrict,
 } from "./planning-lesson-allocation";
+import {
+  assessDistributionCoarseness,
+  computeIdealRowCount,
+  OFFICIAL_MAX_PERIODS_PER_ROW,
+} from "./planning-official-contract";
 import { splitPlanningConteudos } from "./planning-validation";
 
 function normalizeSearch(value: unknown): string {
@@ -62,10 +68,31 @@ export function getPlanningOutputIssues(
   }
 
   const expectedRows = Math.max(inputContents.length, 1);
+  const cargaEsperada =
+    parsePlanningCargaHorariaStrict(payload.cargaHoraria) ??
+    parsePlanningCargaHoraria(
+      payload.cargaHoraria,
+      Math.max(expectedRows, matrixPeriodsTotal(items) || expectedRows),
+    );
+  const idealRowCount = computeIdealRowCount(cargaEsperada);
+  const distribution = assessDistributionCoarseness(items, cargaEsperada);
 
-  if (items.length < expectedRows) {
+  const rowsExceedingMax = items.filter(
+    (item) => (Number(item.periodos) || 0) > OFFICIAL_MAX_PERIODS_PER_ROW,
+  ).length;
+  if (rowsExceedingMax > 0) {
     issues.push(
-      `Esperada uma linha por conteúdo informado (${expectedRows}); recebido ${items.length}.`,
+      `${rowsExceedingMax} linha(s) com mais de ${OFFICIAL_MAX_PERIODS_PER_ROW} períodos — desdobre em experiências menores (1–4 períodos cada).`,
+    );
+  }
+
+  if (distribution.coarse) {
+    issues.push(
+      `Distribuição grosseira: esperadas ~${idealRowCount} experiências para ${cargaEsperada} períodos; recebidas ${items.length}. Desdobre cada conteúdo em linhas com 1–4 períodos.`,
+    );
+  } else if (items.length < expectedRows) {
+    issues.push(
+      `Esperada ao menos uma linha por conteúdo informado (${expectedRows}); recebido ${items.length}.`,
     );
   }
 
@@ -74,10 +101,6 @@ export function getPlanningOutputIssues(
     issues.push(`${zeroPeriodRows} linha(s) sem períodos alocados.`);
   }
 
-  const cargaEsperada = parsePlanningCargaHoraria(
-    payload.cargaHoraria,
-    Math.max(expectedRows, matrixPeriodsTotal(items) || expectedRows),
-  );
   const cargaAlocada = matrixPeriodsTotal(items);
 
   if (cargaAlocada > 0 && cargaAlocada !== cargaEsperada) {
@@ -190,6 +213,8 @@ export function buildPlanningQualityRetryNote(issues: string[]): string {
     "Não invente códigos genéricos como BNCC.",
     "Evite metodologias copiadas iguais em todas as linhas.",
     "Cada linha deve refletir o conteúdo específico informado pelo professor.",
+    "Desdobre conteúdos amplos em várias experiências (1–4 períodos cada), como nos modelos oficiais DOCX.",
+    "A soma de periodos deve bater com a carga horária e nenhuma linha pode ter mais de 4 períodos.",
   ].join("\n");
 }
 

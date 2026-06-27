@@ -17,7 +17,10 @@ export function deriveMateriaisFromRecursos(recursos: string): string {
     .map((part) => part.trim())
     .filter(Boolean);
 
-  const materiais = parts.filter((part) => MATERIAL_KEYWORDS.test(part));
+  const materiais = parts.filter((part) => {
+    MATERIAL_KEYWORDS.lastIndex = 0;
+    return MATERIAL_KEYWORDS.test(part);
+  });
   if (materiais.length > 0) {
     return materiais.join(", ");
   }
@@ -36,9 +39,10 @@ export function deriveRecursosFromText(recursos: string, materiais: string): str
     .map((part) => part.trim())
     .filter(Boolean);
 
-  const recursosOnly = parts.filter(
-    (part) => RESOURCE_KEYWORDS.test(part) && !materiais.includes(part),
-  );
+  const recursosOnly = parts.filter((part) => {
+    RESOURCE_KEYWORDS.lastIndex = 0;
+    return RESOURCE_KEYWORDS.test(part) && !materiais.includes(part);
+  });
 
   if (recursosOnly.length > 0) {
     return recursosOnly.join(", ");

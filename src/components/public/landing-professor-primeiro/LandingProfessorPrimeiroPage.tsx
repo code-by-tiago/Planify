@@ -1,4 +1,3 @@
-import { LandingComparison } from "./LandingComparison";
 import { LandingCreateBlock } from "./LandingCreateBlock";
 import { LandingFinalCta } from "./LandingFinalCta";
 import { LandingFooter } from "./LandingFooter";
@@ -19,7 +18,6 @@ export function LandingProfessorPrimeiroPage() {
       <LandingStats />
       <LandingCreateBlock />
       <LandingTools />
-      <LandingComparison />
       <LandingTeacherProof />
       <LandingHowItWorks />
       <LandingFinalCta />

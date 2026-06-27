@@ -122,39 +122,6 @@ export const STATS = [
   },
 ] as const;
 
-export const COMPARISON_ROWS = [
-  {
-    topic: "Tempo de planejamento",
-    without: "Horas em planilhas e cópias de anos anteriores",
-    with: "Minutos com estrutura pedagógica pronta para revisar",
-  },
-  {
-    topic: "Alinhamento à BNCC",
-    without: "Busca manual de habilidades e risco de desalinhamento",
-    with: "Habilidades sugeridas por etapa, ano e componente",
-  },
-  {
-    topic: "Exportação Google Docs",
-    without: "Formatação manual, quebras de layout e retrabalho",
-    with: "Documento profissional pronto para imprimir ou compartilhar",
-  },
-  {
-    topic: "Editor integrado",
-    without: "Várias ferramentas desconectadas para criar e ajustar",
-    with: "Gere, edite e finalize no mesmo painel",
-  },
-  {
-    topic: "Google Classroom",
-    without: "Download, upload e publicação em etapas separadas",
-    with: "Salve no Drive e publique direto na turma",
-  },
-  {
-    topic: "Consistência pedagógica",
-    without: "Cada professor com formato e padrão diferente",
-    with: "Estrutura uniforme, fácil de revisar em equipe",
-  },
-] as const;
-
 export const FINAL_BENEFITS = [
   { label: "Pagamento seguro", icon: "lock" as const },
   { label: "Acesso imediato", icon: "spark" as const },

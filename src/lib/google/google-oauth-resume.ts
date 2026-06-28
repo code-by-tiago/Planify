@@ -1,8 +1,6 @@
-import { GOOGLE_CLASSROOM_EXPORT_PENDING_KEY } from "@/lib/google/google-export-resume";
 import { GOOGLE_DOCS_EXPORT_PENDING_KEY } from "@/components/google/GoogleDocsExportButton";
 import { GOOGLE_DRIVE_EXPORT_PENDING_KEY } from "@/components/google/GoogleDriveExportButton";
 import { GOOGLE_FORMS_EXPORT_PENDING_KEY } from "@/components/google/GoogleFormsExportButton";
-import { executeClassroomMaterialExport } from "@/lib/google/classroom-export-flow";
 import {
   exportToGoogleDocs,
   exportToGoogleDrive,
@@ -13,8 +11,10 @@ import {
   clearGoogleExportPending,
   consumeGoogleOAuthReturnSignal,
   clearGoogleOAuthResumeActive,
+  GOOGLE_CLASSROOM_EXPORT_PENDING_KEY,
   GOOGLE_EXPORT_PENDING_KEYS,
   hasExportableHtml,
+  markGoogleOAuthResumeHandled,
   openGoogleExportUrl,
   readGoogleExportPending,
   releaseGoogleOAuthReturnLock,
@@ -107,30 +107,9 @@ async function executeProductExport(params: {
   }
 
   if (params.key === GOOGLE_CLASSROOM_EXPORT_PENDING_KEY) {
-    const result = await executeClassroomMaterialExport({
-      title,
-      html,
-      documentType: params.documentType,
-      description: "Material didático enviado pelo Planify.",
-    });
-    // #region agent log
-    fetch("http://127.0.0.1:7718/ingest/9ac33552-969d-48be-9089-3a3b10571400", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "5b9381" },
-      body: JSON.stringify({
-        sessionId: "5b9381",
-        hypothesisId: "H-B",
-        location: "google-oauth-resume.ts:executeProductExport:classroom",
-        message: "oauth resume classroom export",
-        data: {
-          openUrlHost: result.openUrl ? new URL(result.openUrl).host : null,
-          coursesUsed: result.coursesUsed,
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
-    return result.openUrl;
+    throw new Error(
+      "Conta Google conectada. Escolha a turma no popover do Classroom e clique em Enviar.",
+    );
   }
 
   throw new Error("Exportação Google pendente não reconhecida.");
@@ -178,6 +157,16 @@ export async function resumePendingGoogleExport(
 
     const label = productLabel(active.key);
 
+    if (active.key === GOOGLE_CLASSROOM_EXPORT_PENDING_KEY) {
+      clearActivePending(active);
+      markGoogleOAuthResumeHandled();
+      params.onStatus?.(
+        "Conta Google conectada. Clique no ícone Classroom, escolha a turma e envie.",
+      );
+      notifyGoogleStatusChanged();
+      return true;
+    }
+
     params.onStatus?.(`Retomando exportação para ${label}…`);
 
     if (active.key === GOOGLE_FORMS_EXPORT_PENDING_KEY) {
@@ -200,15 +189,18 @@ export async function resumePendingGoogleExport(
 
     notifyGoogleStatusChanged();
 
+    const pendingSnapshot = { ...active };
+    clearActivePending(active);
+
     const openUrl = await executeProductExport({
-      key: active.key,
-      pending: active.pending,
+      key: pendingSnapshot.key,
+      pending: pendingSnapshot.pending,
       getHtml: params.getHtml,
       getPlanningPayload: params.getPlanningPayload,
       documentType: params.documentType,
     });
 
-    clearActivePending(active);
+    markGoogleOAuthResumeHandled();
 
     const opened = openExportUrl(openUrl, true);
     if (opened) {

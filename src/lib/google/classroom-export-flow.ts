@@ -15,6 +15,36 @@ import {
 
 export const CLASSROOM_LAST_COURSE_STORAGE_KEY = "planify-classroom-last-course-id";
 export const CLASSROOM_HOME_URL = "https://classroom.google.com";
+const CLASSROOM_EXPORT_LOCK_KEY = "planify:classroom-export-in-flight";
+const CLASSROOM_EXPORT_LOCK_TTL_MS = 45_000;
+
+function tryAcquireClassroomExportLock(): boolean {
+  if (typeof window === "undefined") return true;
+
+  try {
+    const raw = window.sessionStorage.getItem(CLASSROOM_EXPORT_LOCK_KEY);
+    if (raw) {
+      const age = Date.now() - Number(raw);
+      if (Number.isFinite(age) && age >= 0 && age < CLASSROOM_EXPORT_LOCK_TTL_MS) {
+        return false;
+      }
+    }
+    window.sessionStorage.setItem(CLASSROOM_EXPORT_LOCK_KEY, String(Date.now()));
+    return true;
+  } catch {
+    return true;
+  }
+}
+
+function releaseClassroomExportLock(): void {
+  if (typeof window === "undefined") return;
+
+  try {
+    window.sessionStorage.removeItem(CLASSROOM_EXPORT_LOCK_KEY);
+  } catch {
+    /* ignore */
+  }
+}
 
 export function resolvePreferredClassroomCourseId(
   courses: ClassroomCourseOption[],
@@ -109,6 +139,37 @@ export function resolveClassroomOAuthStartOptions(
 
 export { isClassroomExportReady };
 
+/** Salva no Drive sem publicar no Classroom (sem turma selecionada). */
+export async function executeClassroomDriveOnlyExport(params: {
+  title: string;
+  html: string;
+  documentType?: string | null;
+  onStatus?: (message: string) => void;
+}): Promise<{ openUrl: string }> {
+  if (!tryAcquireClassroomExportLock()) {
+    throw new Error("Exportação já em andamento. Aguarde alguns segundos.");
+  }
+
+  try {
+    params.onStatus?.("Salvando material no Google Drive…");
+
+    const driveResult = await exportToGoogleDrive({
+      title: params.title,
+      html: params.html,
+      documentType: params.documentType,
+    });
+
+    const openUrl =
+      driveResult.drive.webViewLink ||
+      driveResult.driveOpenUrl ||
+      CLASSROOM_HOME_URL;
+
+    return { openUrl };
+  } finally {
+    releaseClassroomExportLock();
+  }
+}
+
 export async function executeClassroomMaterialExport(params: {
   title: string;
   html: string;
@@ -118,6 +179,11 @@ export async function executeClassroomMaterialExport(params: {
   courseId?: string;
   onStatus?: (message: string) => void;
 }): Promise<{ openUrl: string; coursesUsed: number }> {
+  if (!tryAcquireClassroomExportLock()) {
+    throw new Error("Exportação ao Classroom já em andamento. Aguarde alguns segundos.");
+  }
+
+  try {
   let courses: ClassroomCourseOption[] = [];
 
   // #region agent log
@@ -162,7 +228,13 @@ export async function executeClassroomMaterialExport(params: {
     };
   }
 
-  const courseId = params.courseId || resolvePreferredClassroomCourseId(courses);
+  const explicitCourseId = String(params.courseId || "").trim();
+
+  if (courses.length > 0 && !explicitCourseId) {
+    throw new Error("Selecione a turma antes de enviar ao Google Classroom.");
+  }
+
+  const courseId = explicitCourseId;
 
   if (!courseId) {
     const driveResult = await exportToGoogleDrive({
@@ -242,4 +314,7 @@ export async function executeClassroomMaterialExport(params: {
     openUrl,
     coursesUsed: courses.length,
   };
+  } finally {
+    releaseClassroomExportLock();
+  }
 }

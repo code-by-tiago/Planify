@@ -2,7 +2,7 @@
 
 import {
   hasExportableHtml,
-  peekGoogleOAuthResumeIntent,
+  peekGoogleOAuthReturnSignal,
 } from "@/lib/google/google-export-resume";
 import {
   findActiveGoogleExportPending,
@@ -13,69 +13,58 @@ import { useEffect, useRef } from "react";
 
 type UseGoogleOAuthResumeParams = ResumePendingGoogleExportParams;
 
+const RESUME_DONE_KEY = "planify:google-oauth-resume-done";
+
+let globalResumeStarted = false;
+
 export function useGoogleOAuthResume(params: UseGoogleOAuthResumeParams): void {
-  const started = useRef(false);
   const paramsRef = useRef(params);
   paramsRef.current = params;
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    if (globalResumeStarted) return;
 
-    const attemptResume = async (): Promise<boolean> => {
-      if (started.current) return true;
+    try {
+      if (window.sessionStorage.getItem(RESUME_DONE_KEY) === "1") {
+        globalResumeStarted = true;
+        return;
+      }
+    } catch {
+      /* ignore */
+    }
 
-      const intent = peekGoogleOAuthResumeIntent();
-      if (!intent) return false;
+    const hasUrlSignal = Boolean(peekGoogleOAuthReturnSignal());
+    if (!hasUrlSignal) {
+      return;
+    }
 
+    globalResumeStarted = true;
+
+    void (async () => {
       const active = paramsRef.current;
-      const needsHtml = intent.connected && !intent.error;
+      const pending = findActiveGoogleExportPending();
+      const getHtml = active.getHtml;
 
-      if (needsHtml) {
-        const pending = findActiveGoogleExportPending();
-        const getHtml = active.getHtml;
-
-        if (pending) {
-          const snapshot = pending.pending.html?.trim() || "";
-          if (!hasExportableHtml(snapshot) && !hasExportableHtml(getHtml())) {
-            return false;
-          }
+      if (pending) {
+        const snapshot = pending.pending.html?.trim() || "";
+        if (!hasExportableHtml(snapshot) && !hasExportableHtml(getHtml())) {
+          globalResumeStarted = false;
+          return;
         }
       }
 
       const handled = await resumePendingGoogleExport(active);
 
       if (handled) {
-        started.current = true;
-        return true;
+        try {
+          window.sessionStorage.setItem(RESUME_DONE_KEY, "1");
+        } catch {
+          /* ignore */
+        }
+      } else {
+        globalResumeStarted = false;
       }
-
-      if (!peekGoogleOAuthResumeIntent()) {
-        started.current = true;
-        return true;
-      }
-
-      return false;
-    };
-
-    void attemptResume();
-
-    const intervalId = window.setInterval(() => {
-      if (started.current) {
-        window.clearInterval(intervalId);
-        return;
-      }
-      void attemptResume().then((done) => {
-        if (done) window.clearInterval(intervalId);
-      });
-    }, 400);
-
-    const timeoutId = window.setTimeout(() => {
-      window.clearInterval(intervalId);
-    }, 30_000);
-
-    return () => {
-      window.clearInterval(intervalId);
-      window.clearTimeout(timeoutId);
-    };
+    })();
   }, []);
 }

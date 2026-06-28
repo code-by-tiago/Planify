@@ -11,6 +11,7 @@ import {
 import {
   CLASSROOM_HOME_URL,
   buildClassroomCoursesMessage,
+  executeClassroomDriveOnlyExport,
   executeClassroomMaterialExport,
   persistPreferredClassroomCourseId,
   resolveClassroomOAuthStartOptions,
@@ -211,6 +212,12 @@ export function useGoogleClassroomExport({
       return;
     }
 
+    if (!courseId.trim()) {
+      setError("Selecione a turma antes de enviar.");
+      previewWindow?.close();
+      return;
+    }
+
     setBusy(true);
     setError("");
 
@@ -218,7 +225,7 @@ export function useGoogleClassroomExport({
       const result = await executeClassroomMaterialExport({
         title: title.trim() || "Material Planify",
         html: getHtml(),
-        courseId: courseId || undefined,
+        courseId: courseId.trim(),
         description:
           description.trim() ||
           "Material didático enviado pelo Planify.",
@@ -227,9 +234,7 @@ export function useGoogleClassroomExport({
         onStatus: notify,
       });
 
-      if (courseId) {
-        persistPreferredClassroomCourseId(courseId);
-      }
+      persistPreferredClassroomCourseId(courseId);
 
       notify(
         result.coursesUsed > 0
@@ -239,19 +244,46 @@ export function useGoogleClassroomExport({
           : "Material salvo no Drive. Abra o Classroom para anexar à turma.",
       );
 
-      if (previewWindow && !previewWindow.closed) {
-        previewWindow.location.href = result.openUrl;
-      } else {
-        const opened = openGoogleExportUrl(result.openUrl);
-        if (!opened) {
-          window.location.assign(result.openUrl);
-        }
-      }
+      openExportResultUrl(result.openUrl, previewWindow);
     } catch (err) {
       previewWindow?.close();
       setError(err instanceof Error ? err.message : "Erro ao enviar ao Classroom.");
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function handleDriveOnlyExport(previewWindow?: Window | null) {
+    setBusy(true);
+    setError("");
+
+    try {
+      const result = await executeClassroomDriveOnlyExport({
+        title: title.trim() || "Material Planify",
+        html: getHtml(),
+        documentType,
+        onStatus: notify,
+      });
+
+      notify("Material salvo no Drive. Abra o Classroom para anexar à turma.");
+      openExportResultUrl(result.openUrl, previewWindow);
+    } catch (err) {
+      previewWindow?.close();
+      setError(err instanceof Error ? err.message : "Erro ao salvar no Drive.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function openExportResultUrl(openUrl: string, previewWindow?: Window | null) {
+    if (previewWindow && !previewWindow.closed) {
+      previewWindow.location.href = openUrl;
+      return;
+    }
+
+    const opened = openGoogleExportUrl(openUrl);
+    if (!opened) {
+      window.location.assign(openUrl);
     }
   }
 
@@ -290,7 +322,13 @@ export function useGoogleClassroomExport({
       return;
     }
 
-    await handleExport(previewWindow);
+    if (courses.length === 0) {
+      await handleDriveOnlyExport(previewWindow);
+      return;
+    }
+
+    setError("Selecione a turma antes de enviar.");
+    previewWindow?.close();
   }
 
   function openClassroomHome() {
@@ -321,6 +359,7 @@ export function useGoogleClassroomExport({
     handleSwitchAccount,
     handleDisconnect,
     handleExport,
+    handleDriveOnlyExport,
     handleQuickExport,
     openClassroomHome,
     refresh,

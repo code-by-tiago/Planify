@@ -50,7 +50,7 @@ export function GoogleClassroomPanel({
     handleSwitchAccount,
     handleDisconnect,
     handleExport,
-    handleQuickExport,
+    handleDriveOnlyExport,
     openClassroomHome,
   } = useGoogleClassroomExport({
     title,
@@ -74,7 +74,20 @@ export function GoogleClassroomPanel({
 
   function handleCompactIconClick() {
     if (busy) return;
-    void handleQuickExport();
+
+    if (needsOAuth || needsAccountSwitch) {
+      void (needsAccountSwitch ? handleSwitchAccount() : handleConnect());
+      return;
+    }
+
+    if (canExport) {
+      onStatus?.("Escolha a turma no painel e clique em Enviar ao Classroom.");
+      return;
+    }
+
+    if (canQuickExport) {
+      void handleDriveOnlyExport();
+    }
   }
 
   if (loading) {
@@ -298,11 +311,11 @@ export function GoogleClassroomPanel({
               type="button"
               disabled={busy}
               onClick={() => {
-                void handleQuickExport();
+                void handleDriveOnlyExport();
               }}
               className="w-full rounded-xl bg-emerald-600 px-4 py-3 text-sm font-black text-white"
             >
-              {busy ? "Enviando…" : "Enviar material e abrir Classroom"}
+              {busy ? "Salvando…" : "Salvar no Drive e abrir Classroom"}
             </button>
             <button
               type="button"

@@ -24,6 +24,7 @@ export type GoogleExportPendingKey = (typeof GOOGLE_EXPORT_PENDING_KEYS)[number]
 
 export const GOOGLE_OAUTH_RETURN_LOCK_KEY = "planify:google-oauth-return-lock";
 export const GOOGLE_OAUTH_RESUME_ACTIVE_KEY = "planify:google-oauth-resume-active";
+export const GOOGLE_OAUTH_RESUME_HANDLED_KEY = "planify:google-oauth-resume-handled";
 
 const OAUTH_RESUME_TTL_MS = 2 * 60 * 1000;
 
@@ -71,6 +72,18 @@ export function clearGoogleOAuthResumeActive(): void {
   releaseGoogleOAuthReturnLock();
 }
 
+export function markGoogleOAuthResumeHandled(): void {
+  if (typeof window === "undefined") return;
+
+  try {
+    window.sessionStorage.setItem(GOOGLE_OAUTH_RESUME_HANDLED_KEY, "1");
+  } catch {
+    /* ignore */
+  }
+
+  clearGoogleOAuthResumeActive();
+}
+
 function markGoogleOAuthResumeActive(): void {
   if (typeof window === "undefined") return;
   window.sessionStorage.setItem(GOOGLE_OAUTH_RESUME_ACTIVE_KEY, String(Date.now()));
@@ -97,28 +110,38 @@ function readGoogleOAuthResumeActive(): GoogleOAuthReturnSignal | null {
 
 /** Lê o sinal OAuth da URL uma única vez por retorno (evita corrida entre componentes). */
 export function consumeGoogleOAuthReturnSignal(): GoogleOAuthReturnSignal | null {
-  const fromUrl = peekGoogleOAuthReturnSignal();
+  if (typeof window === "undefined") return null;
 
-  if (fromUrl) {
-    try {
-      const consumedAt = window.sessionStorage.getItem(GOOGLE_OAUTH_RETURN_LOCK_KEY);
-      if (consumedAt) {
-        const age = Date.now() - Number(consumedAt);
-        if (age < 3_000) {
-          return readGoogleOAuthResumeActive();
-        }
-      }
-      window.sessionStorage.setItem(GOOGLE_OAUTH_RETURN_LOCK_KEY, String(Date.now()));
-    } catch {
+  try {
+    if (window.sessionStorage.getItem(GOOGLE_OAUTH_RESUME_HANDLED_KEY) === "1") {
       return null;
     }
-
-    clearGoogleOAuthReturnParams();
-    markGoogleOAuthResumeActive();
-    return fromUrl;
+  } catch {
+    /* ignore */
   }
 
-  return readGoogleOAuthResumeActive();
+  const fromUrl = peekGoogleOAuthReturnSignal();
+
+  if (!fromUrl) {
+    return null;
+  }
+
+  try {
+    const consumedAt = window.sessionStorage.getItem(GOOGLE_OAUTH_RETURN_LOCK_KEY);
+    if (consumedAt) {
+      const age = Date.now() - Number(consumedAt);
+      if (age < 15_000) {
+        return null;
+      }
+    }
+    window.sessionStorage.setItem(GOOGLE_OAUTH_RETURN_LOCK_KEY, String(Date.now()));
+  } catch {
+    return null;
+  }
+
+  clearGoogleOAuthReturnParams();
+  markGoogleOAuthResumeActive();
+  return fromUrl;
 }
 
 /** URL params ou sessão ativa de retomada pós-OAuth (para retries após limpar a URL). */

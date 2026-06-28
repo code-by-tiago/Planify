@@ -121,6 +121,11 @@ export function saveEditorDocument(document: EditorDocument): void {
   window.localStorage.setItem(LEGACY_EDITOR_DOCUMENT_KEY, JSON.stringify(normalized));
   window.localStorage.setItem(EDITOR_CONTENT_KEY, normalized.content);
   saveEditorDocumentToHistory(normalized);
+  window.dispatchEvent(
+    new CustomEvent("planify:editor-document-open", {
+      detail: { id: normalized.id },
+    }),
+  );
 }
 
 export function loadEditorDocument(): EditorDocument | null {

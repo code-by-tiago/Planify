@@ -14,6 +14,7 @@ import type { PlanifyToolId } from "@/lib/pro/planifyTools";
 import { planifyTools } from "@/lib/pro/planifyTools";
 import type { HistoryItem } from "@/types/history";
 import { editorDocumentToHistoryItem } from "@/types/history";
+import { isMeaningfulEditorHtml } from "@/lib/history/history-editor-open";
 export const AUTO_EDITOR_PREF_KEY = "planify:materiais:auto-editor";
 
 const LEGACY_HISTORY_KEYS = [
@@ -109,6 +110,14 @@ export function persistGeneratedMaterial(
   title: string,
   meta: MaterialEditorMeta,
 ): HistoryItem {
+  const documentId = resolveMaterialDocumentId(meta);
+  if (!isMeaningfulEditorHtml(html) && documentId) {
+    const existing = loadHistoryItems().find((item) => item.id === documentId);
+    if (existing && isMeaningfulEditorHtml(existing.content)) {
+      return existing;
+    }
+  }
+
   const document = createEditorDocument({
     id: resolveMaterialDocumentId(meta),
     source: "material",

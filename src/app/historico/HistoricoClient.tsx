@@ -6,7 +6,6 @@ import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { EditorDocument } from "../../types/editor";
 import type { HistoryFilter, HistoryItem } from "../../types/history";
 import { HistoryDocumentExportBar } from "@/components/documents/HistoryDocumentExportBar";
 import { getHistoryPlanningPayload } from "@/lib/documents/document-export-context";
@@ -30,7 +29,11 @@ import {
   removeHistoryItems,
 } from "../../lib/history/history-storage";
 import { saveEditorDocument } from "../../lib/editor/editor-storage";
-import { migrateLegacyMaterialHistoryOnce } from "../../lib/materiais/material-editor-flow";
+import { resolveHistoryItemForEditor } from "../../lib/history/history-editor-open";
+import {
+  buildMaterialEditorHref,
+  migrateLegacyMaterialHistoryOnce,
+} from "../../lib/materiais/material-editor-flow";
 import {
   formatGenerationError,
   GenerationErrorBanner,
@@ -79,20 +82,6 @@ function formatDate(value: string): string {
   }
 }
 
-function historyItemToEditorDocument(item: HistoryItem): EditorDocument {
-  return {
-    id: item.id,
-    source: item.source,
-    title: item.title,
-    subtitle: item.subtitle,
-    type: item.type,
-    content: item.content,
-    raw: item.raw,
-    createdAt: item.createdAt,
-    updatedAt: item.updatedAt,
-  };
-}
-
 function refreshHistoryState(): Promise<HistoryItem[]> {
   migrateLegacyMaterialHistoryOnce();
   return loadHistoryItemsWithSync();
@@ -139,6 +128,7 @@ export function HistoricoClient() {
   const [exportErrorRetryable, setExportErrorRetryable] = useState(false);
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [openingId, setOpeningId] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -209,9 +199,27 @@ export function HistoricoClient() {
     }));
   }
 
-  function openInEditor(item: HistoryItem) {
-    saveEditorDocument(historyItemToEditorDocument(item));
-    router.push("/editor");
+  async function openInEditor(item: HistoryItem) {
+    if (openingId) return;
+
+    setOpeningId(item.id);
+    setStatus(null);
+
+    try {
+      const document = await resolveHistoryItemForEditor(item);
+      saveEditorDocument(document);
+      router.push(buildMaterialEditorHref("historico"));
+    } catch (error) {
+      setStatus({
+        type: "warning",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Não foi possível abrir este material no editor.",
+      });
+    } finally {
+      setOpeningId(null);
+    }
   }
 
   function exitSelectionMode() {
@@ -536,11 +544,11 @@ export function HistoricoClient() {
                       <div className="flex gap-1.5">
                         <button
                           type="button"
-                          onClick={() => openInEditor(item)}
-                          disabled={selectionMode}
+                          onClick={() => void openInEditor(item)}
+                          disabled={selectionMode || openingId === item.id}
                           className="pl-hud-btn min-h-9 flex-1 rounded-xl py-1.5 text-[10px] font-bold disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                          Abrir no editor
+                          {openingId === item.id ? "Abrindo..." : "Abrir no editor"}
                         </button>
                         <button
                           type="button"
@@ -627,10 +635,11 @@ export function HistoricoClient() {
                   />
                   <button
                     type="button"
-                    onClick={() => openInEditor(selectedItem)}
-                    className="pl-hud-btn rounded-xl px-4 py-2 text-xs font-semibold"
+                    onClick={() => void openInEditor(selectedItem)}
+                    disabled={openingId === selectedItem.id}
+                    className="pl-hud-btn rounded-xl px-4 py-2 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    Abrir no Editor
+                    {openingId === selectedItem.id ? "Abrindo..." : "Abrir no Editor"}
                   </button>
                   <button
                     type="button"

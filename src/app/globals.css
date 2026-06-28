@@ -2479,6 +2479,37 @@ html:has(.pl-single-screen) body {
   scrollbar-gutter: stable;
 }
 
+.planify-editor-page figure.planify-user-figure {
+  position: relative;
+}
+
+.planify-editor-page figure.planify-user-figure.selected {
+  outline: 2px solid #22d3ee;
+  outline-offset: 4px;
+}
+
+.planify-editor-page figure.planify-user-figure img[data-planify-image="true"] {
+  cursor: grab;
+}
+
+.planify-editor-page figure.planify-user-figure img[data-planify-image="true"]:active {
+  cursor: grabbing;
+}
+
+.planify-editor-page .planify-figure-resize-handle {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 14px;
+  height: 14px;
+  border: 2px solid #0ea5e9;
+  border-radius: 3px;
+  background: #ffffff;
+  cursor: nwse-resize;
+  transform: translate(35%, 35%);
+  z-index: 2;
+}
+
 @media (max-width: 640px) {
   .planify-editor-embedded .planify-editor-toolbar input[aria-label="Título do documento"] {
     font-size: 0.8rem;

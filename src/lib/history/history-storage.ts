@@ -2,6 +2,7 @@ import {
   buildHistoryContentPreview,
   historyItemNeedsPreviewNormalize,
 } from "./history-preview";
+import { isMeaningfulEditorHtml } from "./history-editor-open";
 import type { EditorDocument } from "../../types/editor";
 import type { HistoryFilter, HistoryItem } from "../../types/history";
 import { editorDocumentToHistoryItem } from "../../types/history";
@@ -80,6 +81,18 @@ export function mergeHistoryItems(
     const existing = byId.get(item.id);
     if (!existing) {
       byId.set(item.id, item);
+      continue;
+    }
+
+    const localMeaningful = isMeaningfulEditorHtml(item.content);
+    const remoteMeaningful = isMeaningfulEditorHtml(existing.content);
+
+    if (localMeaningful && !remoteMeaningful) {
+      byId.set(item.id, item);
+      continue;
+    }
+
+    if (!localMeaningful && remoteMeaningful) {
       continue;
     }
 

@@ -1,21 +1,6 @@
 "use client";
 
 import { EditorShareBar } from "@/components/editor/EditorShareBar";
-import { EditorImageOverlay } from "@/components/editor/EditorImageOverlay";
-import { EditorImageToolbar } from "@/components/editor/EditorImageToolbar";
-import {
-  buildUserFigureHtml,
-  extractImageFileFromClipboard,
-  extractImageFileFromDataTransfer,
-  insertUserFigureHtml,
-  isEditableUserImage,
-  readFileAsDataUrl,
-} from "@/lib/editor/contenteditable-image";
-import {
-  applyEditorRange,
-  cloneEditorRange,
-  preventToolbarFocusLoss,
-} from "@/lib/editor/editor-selection-preserve";
 import { downloadEditorExport } from "@/lib/downloads/editor-export-client";
 import {
   clearEditorDocument,
@@ -35,6 +20,26 @@ import {
   getClosestTable,
   getClosestTableCell,
 } from "@/lib/editor/editor-selection-utils";
+import {
+  EDITOR_DOCUMENT_OPEN_EVENT,
+  IMAGE_WIDTH_PRESETS,
+  applyFigureWidth,
+  buildUserFigureHtml,
+  caretRangeFromPoint,
+  extractImageFilesFromClipboard,
+  extractImageFilesFromDataTransfer,
+  insertHtmlAtCaret,
+  isEditableUserFigure,
+  isSlideEditorImage,
+  markSelectedFigure,
+  moveFigureBeforeCaret,
+  preventToolbarFocusLoss,
+  readImageFileAsDataUrl,
+  readImageWidthPercent,
+  removeFigureResizeHandles,
+  restoreEditorSelection,
+  saveEditorSelection,
+} from "@/lib/editor/editor-image-tools";
 import type {
   MaterialEngineInput,
   MaterialEngineResponse,
@@ -334,11 +339,15 @@ type EditorClientProps = {
 
 export function EditorClient({ embedded = false }: EditorClientProps) {
   const editorRef = useRef<HTMLDivElement | null>(null);
-  const documentScrollRef = useRef<HTMLDivElement | null>(null);
-  const editorSurfaceRef = useRef<HTMLDivElement | null>(null);
-  const savedSelectionRef = useRef<Range | null>(null);
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const selectedImageRef = useRef<HTMLImageElement | null>(null);
+  const draggedFigureRef = useRef<HTMLElement | null>(null);
+  const resizeStateRef = useRef<{
+    figure: HTMLElement;
+    image: HTMLImageElement;
+    startX: number;
+    startWidth: number;
+  } | null>(null);
   const selectedTableRef = useRef<HTMLTableElement | null>(null);
   const undoStackRef = useRef<string[]>([]);
   const redoStackRef = useRef<string[]>([]);
@@ -359,9 +368,6 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [selectedImageName, setSelectedImageName] = useState("");
   const [selectedImageWidth, setSelectedImageWidth] = useState(60);
-  const [selectedImageElement, setSelectedImageElement] = useState<HTMLImageElement | null>(
-    null,
-  );
   const [documentSource, setDocumentSource] = useState<StoredEditorDocument | null>(null);
   const [originHint, setOriginHint] = useState<string | null>(null);
   const [showVersionsPanel, setShowVersionsPanel] = useState(false);
@@ -552,34 +558,8 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [title, wordCount, isLoaded, planningBundle]);
 
-  useEffect(() => {
-    const editor = editorRef.current;
-
-    if (!editor || !isLoaded) {
-      return;
-    }
-
-    function saveSelection() {
-      const range = cloneEditorRange(editor!);
-      if (range) {
-        savedSelectionRef.current = range;
-      }
-    }
-
-    editor.addEventListener("mouseup", saveSelection);
-    editor.addEventListener("keyup", saveSelection);
-    document.addEventListener("selectionchange", saveSelection);
-
-    return () => {
-      editor.removeEventListener("mouseup", saveSelection);
-      editor.removeEventListener("keyup", saveSelection);
-      document.removeEventListener("selectionchange", saveSelection);
-    };
-  }, [isLoaded]);
-
   function focusEditor() {
     editorRef.current?.focus();
-    applyEditorRange(savedSelectionRef.current);
   }
 
   function getEditorHtml() {
@@ -601,6 +581,41 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
   function setEditorHtml(html: string) {
     applyEditorHtml(html);
   }
+
+  function reloadDocumentFromStorage() {
+    const stored = loadEditorDocument();
+    if (!stored) return;
+
+    const storedPayload: StoredEditorDocument = {
+      type: stored.type,
+      title: stored.title,
+      html: stored.content,
+      content: stored.content,
+      payload: {
+        source: stored.source,
+        subtitle: stored.subtitle,
+        raw: stored.raw,
+        id: stored.id,
+      },
+      updatedAt: stored.updatedAt,
+    };
+
+    setTitle(stored.title);
+    setDocumentSource(storedPayload);
+    applyEditorHtml(stored.content);
+    setStatus("Documento atualizado a partir do histórico.");
+  }
+
+  useEffect(() => {
+    const handleDocumentOpen = () => {
+      reloadDocumentFromStorage();
+    };
+
+    window.addEventListener(EDITOR_DOCUMENT_OPEN_EVENT, handleDocumentOpen);
+    return () => {
+      window.removeEventListener(EDITOR_DOCUMENT_OPEN_EVENT, handleDocumentOpen);
+    };
+  }, []);
 
   function seedUndoStack(html?: string) {
     const snapshot = html ?? getEditorHtml();
@@ -925,18 +940,25 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
       return;
     }
 
+    removeFigureResizeHandles(editor);
+
     editor.querySelectorAll("img").forEach((node) => {
       if (!(node instanceof HTMLImageElement)) {
         return;
       }
 
       node.dataset.planifyImage = "true";
-      if (node.classList.contains("planify-slide-image")) {
+      if (isSlideEditorImage(node)) {
         node.title = "Clique para ajustar; use Remover ou troque por Imagem no menu";
+        node.style.cursor = "pointer";
+      } else if (isEditableUserFigure(node)) {
+        node.style.cursor = "grab";
+      } else {
+        node.style.cursor = "pointer";
       }
+
       node.style.maxWidth = "100%";
       node.style.height = "auto";
-      node.style.cursor = isEditableUserImage(node) ? "grab" : "pointer";
 
       if (!node.style.width) {
         node.style.width = "60%";
@@ -944,14 +966,26 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
 
       const parent = node.parentElement;
 
-      if (parent?.tagName.toLowerCase() === "figure") {
+      if (parent instanceof HTMLElement && parent.tagName.toLowerCase() === "figure") {
         parent.style.maxWidth = "100%";
 
         if (!parent.style.textAlign) {
           parent.style.textAlign = "center";
         }
+
+        if (parent.classList.contains("planify-user-figure")) {
+          parent.setAttribute("contenteditable", "false");
+          parent.setAttribute("draggable", "true");
+        }
       }
     });
+
+    const selectedFigure = selectedImageRef.current?.closest(
+      "figure.planify-user-figure",
+    );
+    if (selectedFigure instanceof HTMLElement) {
+      markSelectedFigure(selectedFigure, editor);
+    }
   }
 
   async function elevarQualidadeNoEditor() {
@@ -1517,35 +1551,23 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
     imageInputRef.current?.click();
   }
 
-  async function insertImageFromFile(file: File) {
+  async function insertImageFile(file: File) {
     if (!file.type.startsWith("image/")) {
       setStatus("Selecione uma imagem válida.");
       return;
     }
 
-    focusEditor();
+    const editor = editorRef.current;
+    if (!editor) return;
 
     try {
-      const src = await readFileAsDataUrl(file);
+      const src = await readImageFileAsDataUrl(file);
+      if (!src) return;
 
-      if (!src) {
-        return;
-      }
-
-      insertUserFigureHtml(buildUserFigureHtml(src, file.name));
+      saveEditorSelection();
+      insertHtmlAtCaret(buildUserFigureHtml(src, file.name), editor);
       prepareImagesInsideEditor();
-
-      const inserted = editorRef.current?.querySelector(
-        "figure.planify-user-figure:last-of-type img[data-planify-image]",
-      );
-
-      if (inserted instanceof HTMLImageElement) {
-        selectImage(inserted);
-      }
-
-      updateWordCount();
-      persistCurrentDocument("Imagem inserida.");
-      setStatus("Imagem inserida. Arraste ou use os cantos para redimensionar.");
+      setStatus("Imagem inserida. Clique nela para ajustar tamanho e posição.");
     } catch {
       setStatus("Não foi possível inserir a imagem.");
     }
@@ -1558,32 +1580,96 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
       return;
     }
 
-    void insertImageFromFile(file).finally(() => {
-      event.target.value = "";
-    });
+    void insertImageFile(file);
+    event.target.value = "";
   }
 
   function handleEditorPaste(event: ClipboardEvent<HTMLDivElement>) {
-    const file = extractImageFileFromClipboard(event.clipboardData);
-
-    if (!file) {
-      return;
-    }
+    const files = extractImageFilesFromClipboard(event.clipboardData);
+    if (files.length === 0) return;
 
     event.preventDefault();
-    void insertImageFromFile(file);
+    void insertImageFile(files[0]);
+  }
+
+  function handleFigureDragStart(event: DragEvent<HTMLDivElement>) {
+    const target = event.target;
+    if (!(target instanceof HTMLElement)) return;
+
+    const figure = target.closest("figure.planify-user-figure");
+    if (!(figure instanceof HTMLElement)) return;
+
+    draggedFigureRef.current = figure;
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", "planify-user-figure");
+  }
+
+  function handleEditorDragOver(event: DragEvent<HTMLDivElement>) {
+    if (!draggedFigureRef.current) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
   }
 
   function handleEditorDrop(event: DragEvent<HTMLDivElement>) {
-    event.preventDefault();
+    const editor = editorRef.current;
+    const figure = draggedFigureRef.current;
 
-    const file = extractImageFileFromDataTransfer(event.dataTransfer);
-
-    if (!file) {
+    if (figure && editor) {
+      event.preventDefault();
+      const range = caretRangeFromPoint(event.clientX, event.clientY);
+      if (range) {
+        moveFigureBeforeCaret(figure, range, editor);
+        prepareImagesInsideEditor();
+        persistCurrentDocument("Imagem reposicionada.");
+      }
+      draggedFigureRef.current = null;
       return;
     }
 
-    void insertImageFromFile(file);
+    const files = extractImageFilesFromDataTransfer(event.dataTransfer);
+    if (files.length === 0) return;
+
+    event.preventDefault();
+    void insertImageFile(files[0]);
+  }
+
+  function handleResizePointerDown(
+    event: ReactMouseEvent,
+    figure: HTMLElement,
+    image: HTMLImageElement,
+  ) {
+    event.preventDefault();
+    event.stopPropagation();
+    saveEditorSelection();
+
+    resizeStateRef.current = {
+      figure,
+      image,
+      startX: event.clientX,
+      startWidth: readImageWidthPercent(image),
+    };
+
+    const handleMove = (moveEvent: MouseEvent) => {
+      const state = resizeStateRef.current;
+      const currentEditor = editorRef.current;
+      if (!state || !currentEditor) return;
+
+      const figureWidth = state.figure.getBoundingClientRect().width || 1;
+      const delta = moveEvent.clientX - state.startX;
+      const deltaPercent = (delta / figureWidth) * 100;
+      const nextWidth = applyFigureWidth(state.image, state.startWidth + deltaPercent);
+      setSelectedImageWidth(nextWidth);
+    };
+
+    const handleUp = () => {
+      resizeStateRef.current = null;
+      window.removeEventListener("mousemove", handleMove);
+      window.removeEventListener("mouseup", handleUp);
+      persistCurrentDocument("Imagem redimensionada.");
+    };
+
+    window.addEventListener("mousemove", handleMove);
+    window.addEventListener("mouseup", handleUp);
   }
 
   function clearFormatting() {
@@ -1706,6 +1792,8 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
   }
 
   function selectImage(image: HTMLImageElement) {
+    const editor = editorRef.current;
+
     if (selectedImageRef.current && selectedImageRef.current !== image) {
       clearImageOutline(selectedImageRef.current);
     }
@@ -1714,27 +1802,47 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
     image.dataset.planifyImage = "true";
     image.style.maxWidth = "100%";
     image.style.height = "auto";
-    image.style.cursor = isEditableUserImage(image) ? "grab" : "pointer";
+    image.style.cursor = isEditableUserFigure(image) ? "grab" : "pointer";
     image.style.outline = "3px solid #22d3ee";
     image.style.outlineOffset = "4px";
 
-    const width = Number.parseInt(image.style.width || "60", 10);
+    const figure = image.closest("figure");
+    markSelectedFigure(
+      figure instanceof HTMLElement ? figure : null,
+      editor,
+    );
+
+    const width = readImageWidthPercent(image);
 
     setSelectedImageName(image.alt || "Imagem selecionada");
-    setSelectedImageWidth(Number.isFinite(width) ? width : 60);
-    setSelectedImageElement(isEditableUserImage(image) ? image : null);
-    setStatus(
-      isEditableUserImage(image)
-        ? "Imagem selecionada. Arraste ou use os cantos para redimensionar."
-        : "Imagem selecionada. Use os controles de tamanho e posição.",
-    );
+    setSelectedImageWidth(width);
+    setStatus("Imagem selecionada. Use os controles de tamanho e posição.");
   }
 
   function clearSelectedImage() {
     clearImageOutline(selectedImageRef.current);
     selectedImageRef.current = null;
     setSelectedImageName("");
-    setSelectedImageElement(null);
+    removeFigureResizeHandles(editorRef.current || document.createElement("div"));
+    editorRef.current
+      ?.querySelectorAll("figure.planify-user-figure.selected")
+      .forEach((node) => node.classList.remove("selected"));
+  }
+
+  function handleEditorMouseDown(event: ReactMouseEvent<HTMLDivElement>) {
+    const target = event.target;
+
+    if (
+      target instanceof HTMLElement &&
+      target.classList.contains("planify-figure-resize-handle")
+    ) {
+      const figure = target.closest("figure.planify-user-figure");
+      const image = figure?.querySelector("img");
+
+      if (figure instanceof HTMLElement && image instanceof HTMLImageElement) {
+        handleResizePointerDown(event, figure, image);
+      }
+    }
   }
 
   function handleEditorClick(event: ReactMouseEvent<HTMLDivElement>) {
@@ -1763,7 +1871,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
     }
   }
 
-  function applyImageWidth(width: number, options?: { persist?: boolean }) {
+  function applyImageWidth(width: number) {
     const image = selectedImageRef.current;
 
     if (!image) {
@@ -1771,19 +1879,18 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
       return;
     }
 
-    const safeWidth = Math.max(10, Math.min(100, Math.round(width)));
-    const figure = closestFigure(image);
-
-    image.style.width = `${safeWidth}%`;
-    image.style.maxWidth = "100%";
-    image.style.height = "auto";
-    figure.style.maxWidth = "100%";
-
+    restoreEditorSelection();
+    const safeWidth = applyFigureWidth(image, width);
     setSelectedImageWidth(safeWidth);
+    persistCurrentDocument(`Imagem ajustada para ${safeWidth}%.`);
+  }
 
-    if (options?.persist !== false) {
-      persistCurrentDocument(`Imagem ajustada para ${safeWidth}%.`);
-    }
+  function withImageToolbarAction(action: () => void) {
+    return (event: ReactMouseEvent<HTMLButtonElement>) => {
+      preventToolbarFocusLoss(event);
+      restoreEditorSelection();
+      action();
+    };
   }
 
   function alignSelectedImage(position: "left" | "center" | "right") {
@@ -2262,10 +2369,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
           }
         >
           {embedded && !showFormatTools ? (
-            <div
-              className="sticky top-0 z-20 flex shrink-0 items-center gap-1 overflow-x-auto overscroll-contain rounded-xl border border-slate-200 bg-white/95 p-1.5 shadow-sm backdrop-blur lg:hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-              onMouseDown={preventToolbarFocusLoss}
-            >
+            <div className="sticky top-0 z-20 flex shrink-0 items-center gap-1 overflow-x-auto overscroll-contain rounded-xl border border-slate-200 bg-white/95 p-1.5 shadow-sm backdrop-blur lg:hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               <button type="button" onClick={undoEdit} className={toolBtnClass} aria-label="Desfazer">
                 ↶
               </button>
@@ -2344,7 +2448,6 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
                 ? "max-lg:max-h-[min(38dvh,280px)] max-lg:overflow-y-auto max-lg:overscroll-contain overflow-x-auto overscroll-contain p-1 lg:p-1.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
                 : "overflow-x-auto p-2"
             }`}
-            onMouseDown={preventToolbarFocusLoss}
           >
             {embedded && showFormatTools ? (
               <div className="mb-2 flex items-center justify-between gap-2 border-b border-slate-100 pb-2 lg:hidden">
@@ -2661,23 +2764,91 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
               </div>
             </div>
             ) : null}
+
+            {selectedImageName ? (
+            <div className={`rounded-2xl border border-blue-200 bg-blue-50 ${embedded ? "mt-2 p-2" : "mt-3 p-3"}`}>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="mr-1 text-xs font-black uppercase tracking-[0.18em] text-blue-700">
+                  Imagem
+                </span>
+
+                <span className="max-w-56 truncate rounded-xl border border-cyan-200 bg-white px-3 py-2 text-xs font-bold text-blue-700">
+                  {selectedImageName}
+                </span>
+
+                {IMAGE_WIDTH_PRESETS.map((size) => (
+                  <button
+                    key={size}
+                    type="button"
+                    onMouseDown={withImageToolbarAction(() => applyImageWidth(size))}
+                    className="h-9 rounded-xl border border-cyan-200 bg-white px-3 text-xs font-black text-blue-700 transition"
+                  >
+                    {size}%
+                  </button>
+                ))}
+
+                <button
+                  type="button"
+                  onMouseDown={withImageToolbarAction(() => alignSelectedImage("left"))}
+                  className="h-9 rounded-xl border border-cyan-200 bg-white px-3 text-xs font-black text-blue-700 transition"
+                >
+                  Esq.
+                </button>
+
+                <button
+                  type="button"
+                  onMouseDown={withImageToolbarAction(() => alignSelectedImage("center"))}
+                  className="h-9 rounded-xl border border-cyan-200 bg-white px-3 text-xs font-black text-blue-700 transition"
+                >
+                  Centro
+                </button>
+
+                <button
+                  type="button"
+                  onMouseDown={withImageToolbarAction(() => alignSelectedImage("right"))}
+                  className="h-9 rounded-xl border border-cyan-200 bg-white px-3 text-xs font-black text-blue-700 transition"
+                >
+                  Dir.
+                </button>
+
+                <button
+                  type="button"
+                  onMouseDown={withImageToolbarAction(() => floatSelectedImage("left"))}
+                  className="h-9 rounded-xl border border-cyan-200 bg-white px-3 text-xs font-black text-blue-700 transition"
+                >
+                  Texto à direita
+                </button>
+
+                <button
+                  type="button"
+                  onMouseDown={withImageToolbarAction(() => floatSelectedImage("right"))}
+                  className="h-9 rounded-xl border border-cyan-200 bg-white px-3 text-xs font-black text-blue-700 transition"
+                >
+                  Texto à esquerda
+                </button>
+
+                <button
+                  type="button"
+                  onMouseDown={withImageToolbarAction(clearImageFloat)}
+                  className="h-9 rounded-xl border border-cyan-200 bg-white px-3 text-xs font-black text-blue-700 transition"
+                >
+                  Normal
+                </button>
+
+                <button
+                  type="button"
+                  onMouseDown={withImageToolbarAction(removeSelectedImage)}
+                  className="h-9 rounded-xl border border-rose-200 bg-rose-50 px-3 text-xs font-black text-rose-700 transition"
+                >
+                  Remover
+                </button>
+              </div>
+            </div>
+            ) : null}
           </div>
           )}
 
-          <EditorImageToolbar
-            embedded={embedded}
-            selectedImageName={selectedImageName}
-            selectedImageWidth={selectedImageWidth}
-            isUserImage={Boolean(selectedImageElement)}
-            onApplyWidth={(width) => applyImageWidth(width)}
-            onAlign={alignSelectedImage}
-            onFloat={floatSelectedImage}
-            onClearFloat={clearImageFloat}
-            onRemove={removeSelectedImage}
-          />
-
           <div
-            ref={documentScrollRef}
             className={`planify-editor-document-scroll min-h-0 flex-1 rounded-lg border border-slate-200 bg-white shadow-sm ${
               embedded
                 ? "overflow-y-auto overscroll-contain p-0.5 sm:p-1"
@@ -2685,8 +2856,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
             }`}
           >
             <div
-              ref={editorSurfaceRef}
-              className={`relative bg-slate-100 ${
+              className={`bg-slate-100 ${
                 embedded ? "rounded-md p-1 sm:p-1.5" : "rounded-xl p-1.5 sm:p-2"
               }`}
             >
@@ -2695,13 +2865,11 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
                 contentEditable
                 suppressContentEditableWarning
                 onClick={handleEditorClick}
-                onPaste={handleEditorPaste}
+                onMouseDown={handleEditorMouseDown}
+                onDragStart={handleFigureDragStart}
+                onDragOver={handleEditorDragOver}
                 onDrop={handleEditorDrop}
-                onDragOver={(event) => {
-                  if (extractImageFileFromDataTransfer(event.dataTransfer)) {
-                    event.preventDefault();
-                  }
-                }}
+                onPaste={handleEditorPaste}
                 onInput={() => {
                   prepareImagesInsideEditor();
                   updateWordCount();
@@ -2714,14 +2882,6 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
                     ? "max-w-[21cm] min-h-[36vh] px-3 py-4 sm:min-h-0 sm:px-5 sm:py-6"
                     : "max-w-[21cm] min-h-[50vh] px-4 py-5 sm:min-h-[29.7cm] sm:px-6 sm:py-8 md:px-[1.75cm] md:py-[1.75cm] md:shadow-lg"
                 }`}
-              />
-              <EditorImageOverlay
-                image={selectedImageElement}
-                editor={editorRef.current}
-                container={editorSurfaceRef.current}
-                scrollContainer={documentScrollRef.current}
-                onWidthChange={(width, options) => applyImageWidth(width, options)}
-                onMoved={() => persistCurrentDocument("Imagem reposicionada.")}
               />
             </div>
           </div>
@@ -2791,10 +2951,6 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
           max-width: 100%;
           height: auto;
           cursor: pointer;
-        }
-
-        .planify-editor-page figure.planify-user-figure img[data-planify-image="true"] {
-          cursor: grab;
         }
 
         .planify-editor-page figure {

@@ -2479,20 +2479,24 @@ html:has(.pl-single-screen) body {
   scrollbar-gutter: stable;
 }
 
-.planify-editor-page figure.planify-user-figure {
+.planify-editor-page figure.planify-user-figure,
+.planify-editor-page figure[data-planify-figure="true"] {
   position: relative;
 }
 
-.planify-editor-page figure.planify-user-figure.selected {
+.planify-editor-page figure.planify-user-figure.selected,
+.planify-editor-page figure[data-planify-figure="true"].selected {
   outline: 2px solid #22d3ee;
   outline-offset: 4px;
 }
 
-.planify-editor-page figure.planify-user-figure img[data-planify-image="true"] {
+.planify-editor-page figure.planify-user-figure img[data-planify-image="true"],
+.planify-editor-page figure[data-planify-figure="true"] img[data-planify-image="true"] {
   cursor: grab;
 }
 
-.planify-editor-page figure.planify-user-figure img[data-planify-image="true"]:active {
+.planify-editor-page figure.planify-user-figure img[data-planify-image="true"]:active,
+.planify-editor-page figure[data-planify-figure="true"] img[data-planify-image="true"]:active {
   cursor: grabbing;
 }
 

@@ -245,8 +245,7 @@ export function GoogleClassroomPanel({
           type="button"
           disabled={busy || !courseId}
           onClick={() => {
-            const previewWindow = window.open("about:blank", "_blank");
-            void handleExport(previewWindow);
+            void handleExport();
           }}
           className={btnSuccess}
           aria-label={busy ? "Enviando…" : "Enviar ao Classroom"}
@@ -365,8 +364,7 @@ export function GoogleClassroomPanel({
               type="button"
               disabled={busy || !courseId}
               onClick={() => {
-                const previewWindow = window.open("about:blank", "_blank");
-                void handleExport(previewWindow);
+                void handleExport();
               }}
               className={btnSuccess}
             >

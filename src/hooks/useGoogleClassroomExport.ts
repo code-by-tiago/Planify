@@ -20,7 +20,7 @@ import {
 } from "@/lib/google/classroom-google-account";
 import { resolveGoogleOAuthReturnTo } from "@/lib/google/document-type-detection";
 import { notifyGoogleStatusChanged, GOOGLE_STATUS_CHANGED_EVENT } from "@/lib/google/google-status-events";
-import { peekGoogleOAuthReturnSignal } from "@/lib/google/google-export-resume";
+import { openGoogleExportUrl, peekGoogleOAuthReturnSignal } from "@/lib/google/google-export-resume";
 import { useCallback, useEffect, useState } from "react";
 
 type UseGoogleClassroomExportOptions = {
@@ -219,11 +219,13 @@ export function useGoogleClassroomExport({
   async function handleExport(previewWindow?: Window | null) {
     if (!courseId) {
       setError("Selecione uma turma do Google Classroom.");
+      previewWindow?.close();
       return;
     }
 
     if (classroomGoogleAccountMismatch(status?.googleEmail)) {
       setError("Conecte a conta Google institucional (@educar.rs.gov.br) antes de enviar.");
+      previewWindow?.close();
       return;
     }
 
@@ -259,10 +261,13 @@ export function useGoogleClassroomExport({
         if (previewWindow && !previewWindow.closed) {
           previewWindow.location.href = link;
         } else {
-          window.open(link, "_blank", "noopener,noreferrer");
+          openGoogleExportUrl(link);
         }
+      } else {
+        previewWindow?.close();
       }
     } catch (err) {
+      previewWindow?.close();
       setError(err instanceof Error ? err.message : "Erro ao enviar ao Classroom.");
     } finally {
       setBusy(false);

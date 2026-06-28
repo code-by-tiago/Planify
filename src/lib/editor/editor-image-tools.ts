@@ -35,8 +35,104 @@ export function isEditableUserFigure(image: HTMLImageElement): boolean {
   const figure = image.closest("figure");
   return (
     figure?.classList.contains("planify-user-figure") === true ||
-    figure?.getAttribute("data-planify-figure") === "true"
+    figure?.getAttribute("data-planify-figure") === "true" ||
+    !figure
   );
+}
+
+export function isEditableUserFigureElement(figure: HTMLElement | null): boolean {
+  if (!figure || figure.tagName.toLowerCase() !== "figure") return false;
+  if (
+    figure.classList.contains("planify-slide-figure") ||
+    figure.closest(".planify-slide-deck")
+  ) {
+    return false;
+  }
+  return (
+    figure.classList.contains("planify-user-figure") ||
+    figure.getAttribute("data-planify-figure") === "true"
+  );
+}
+
+/** Wrap or tag non-slide images so resize/drag/toolbar work in the editor. */
+export function ensureEditableUserFigure(
+  image: HTMLImageElement,
+  editor: HTMLElement,
+): HTMLElement {
+  if (isSlideEditorImage(image) || !editor.contains(image)) {
+    return image.closest("figure") instanceof HTMLElement
+      ? (image.closest("figure") as HTMLElement)
+      : image;
+  }
+
+  let figure = image.closest("figure");
+
+  if (!(figure instanceof HTMLElement)) {
+    figure = document.createElement("figure");
+    figure.className = "planify-user-figure";
+    figure.setAttribute("data-planify-figure", "true");
+    const parent = image.parentNode;
+    if (parent) {
+      parent.insertBefore(figure, image);
+      figure.appendChild(image);
+    } else {
+      editor.appendChild(figure);
+      figure.appendChild(image);
+    }
+  } else if (!isEditableUserFigureElement(figure)) {
+    figure.classList.add("planify-user-figure");
+    figure.setAttribute("data-planify-figure", "true");
+  }
+
+  figure.setAttribute("contenteditable", "false");
+  figure.setAttribute("draggable", "true");
+  figure.style.maxWidth = figure.style.maxWidth || "100%";
+  if (!figure.style.textAlign) {
+    figure.style.textAlign = "center";
+  }
+  if (!figure.style.display) {
+    figure.style.display = "block";
+  }
+  if (!figure.style.position) {
+    figure.style.position = "relative";
+  }
+
+  image.dataset.planifyImage = "true";
+  image.style.maxWidth = image.style.maxWidth || "100%";
+  image.style.height = image.style.height || "auto";
+  if (!image.style.width) {
+    image.style.width = "60%";
+  }
+  image.style.cursor = "grab";
+
+  return figure;
+}
+
+export function resolveClickedEditorImage(
+  target: EventTarget | null,
+): HTMLImageElement | null {
+  if (!(target instanceof HTMLElement)) return null;
+
+  if (target instanceof HTMLImageElement) {
+    return isSlideEditorImage(target) ? null : target;
+  }
+
+  const figure = target.closest("figure");
+  if (figure instanceof HTMLElement) {
+    if (
+      figure.classList.contains("planify-slide-figure") ||
+      figure.closest(".planify-slide-deck")
+    ) {
+      return null;
+    }
+
+    const nested = figure.querySelector("img");
+    if (nested instanceof HTMLImageElement && !isSlideEditorImage(nested)) {
+      return nested;
+    }
+  }
+
+  return null;
 }
 
 export function buildUserFigureHtml(src: string, alt: string): string {
@@ -158,10 +254,15 @@ export function markSelectedFigure(
   editor: HTMLElement | null,
 ): void {
   editor
-    ?.querySelectorAll("figure.planify-user-figure.selected")
+    ?.querySelectorAll(
+      "figure.planify-user-figure.selected, figure[data-planify-figure='true'].selected",
+    )
     .forEach((node) => node.classList.remove("selected"));
 
-  if (figure?.classList.contains("planify-user-figure")) {
+  if (figure && isEditableUserFigureElement(figure)) {
+    if (!figure.classList.contains("planify-user-figure")) {
+      figure.classList.add("planify-user-figure");
+    }
     figure.classList.add("selected");
     ensureFigureResizeHandle(figure);
   }
@@ -212,7 +313,59 @@ export function extractImageFilesFromClipboard(
     }
   }
 
+  for (const file of Array.from(clipboardData.files)) {
+    if (file.type.startsWith("image/") && !files.includes(file)) {
+      files.push(file);
+    }
+  }
+
   return files;
+}
+
+export function extractImageSrcFromClipboardHtml(html: string): string | null {
+  const trimmed = html.trim();
+  if (!trimmed) return null;
+
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(trimmed, "text/html");
+  const img = doc.querySelector("img[src]");
+  const src = img?.getAttribute("src")?.trim();
+  if (!src) return null;
+
+  if (src.startsWith("data:image/") || src.startsWith("blob:")) {
+    return src;
+  }
+
+  return null;
+}
+
+export function extractPastedFigureHtml(html: string): string | null {
+  const trimmed = html.trim();
+  if (!trimmed) return null;
+
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(trimmed, "text/html");
+  const figure = doc.querySelector(
+    "figure.planify-user-figure, figure[data-planify-figure='true']",
+  );
+
+  if (figure instanceof HTMLElement) {
+    return figure.outerHTML;
+  }
+
+  return null;
+}
+
+export function writeFigureToClipboardData(
+  clipboardData: DataTransfer,
+  image: HTMLImageElement,
+): void {
+  const figure = image.closest("figure.planify-user-figure, figure[data-planify-figure='true']");
+  const html = figure instanceof HTMLElement ? figure.outerHTML : buildUserFigureHtml(image.src, image.alt || "Imagem");
+  const plain = image.alt?.trim() || "Imagem Planify";
+
+  clipboardData.setData("text/html", html);
+  clipboardData.setData("text/plain", plain);
 }
 
 export function extractImageFilesFromDataTransfer(

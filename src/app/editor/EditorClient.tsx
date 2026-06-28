@@ -26,8 +26,11 @@ import {
   applyFigureWidth,
   buildUserFigureHtml,
   caretRangeFromPoint,
+  ensureEditableUserFigure,
   extractImageFilesFromClipboard,
   extractImageFilesFromDataTransfer,
+  extractImageSrcFromClipboardHtml,
+  extractPastedFigureHtml,
   insertHtmlAtCaret,
   isEditableUserFigure,
   isSlideEditorImage,
@@ -37,8 +40,10 @@ import {
   readImageFileAsDataUrl,
   readImageWidthPercent,
   removeFigureResizeHandles,
+  resolveClickedEditorImage,
   restoreEditorSelection,
   saveEditorSelection,
+  writeFigureToClipboardData,
 } from "@/lib/editor/editor-image-tools";
 import type {
   MaterialEngineInput,
@@ -947,41 +952,20 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
         return;
       }
 
-      node.dataset.planifyImage = "true";
       if (isSlideEditorImage(node)) {
+        node.dataset.planifyImage = "true";
         node.title = "Clique para ajustar; use Remover ou troque por Imagem no menu";
         node.style.cursor = "pointer";
-      } else if (isEditableUserFigure(node)) {
-        node.style.cursor = "grab";
-      } else {
-        node.style.cursor = "pointer";
+        node.style.maxWidth = "100%";
+        node.style.height = "auto";
+        return;
       }
 
-      node.style.maxWidth = "100%";
-      node.style.height = "auto";
-
-      if (!node.style.width) {
-        node.style.width = "60%";
-      }
-
-      const parent = node.parentElement;
-
-      if (parent instanceof HTMLElement && parent.tagName.toLowerCase() === "figure") {
-        parent.style.maxWidth = "100%";
-
-        if (!parent.style.textAlign) {
-          parent.style.textAlign = "center";
-        }
-
-        if (parent.classList.contains("planify-user-figure")) {
-          parent.setAttribute("contenteditable", "false");
-          parent.setAttribute("draggable", "true");
-        }
-      }
+      ensureEditableUserFigure(node, editor);
     });
 
     const selectedFigure = selectedImageRef.current?.closest(
-      "figure.planify-user-figure",
+      "figure.planify-user-figure, figure[data-planify-figure='true']",
     );
     if (selectedFigure instanceof HTMLElement) {
       markSelectedFigure(selectedFigure, editor);
@@ -1564,9 +1548,11 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
       const src = await readImageFileAsDataUrl(file);
       if (!src) return;
 
+      pushUndoSnapshot();
       saveEditorSelection();
       insertHtmlAtCaret(buildUserFigureHtml(src, file.name), editor);
       prepareImagesInsideEditor();
+      persistCurrentDocument("Imagem inserida.");
       setStatus("Imagem inserida. Clique nela para ajustar tamanho e posição.");
     } catch {
       setStatus("Não foi possível inserir a imagem.");
@@ -1585,18 +1571,66 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
   }
 
   function handleEditorPaste(event: ClipboardEvent<HTMLDivElement>) {
-    const files = extractImageFilesFromClipboard(event.clipboardData);
-    if (files.length === 0) return;
+    const editor = editorRef.current;
+    if (!editor) return;
+
+    const clipboardData = event.clipboardData;
+    const imageFiles = [
+      ...extractImageFilesFromClipboard(clipboardData),
+      ...extractImageFilesFromDataTransfer(clipboardData),
+    ];
+
+    if (imageFiles.length > 0) {
+      event.preventDefault();
+      void insertImageFile(imageFiles[0]);
+      return;
+    }
+
+    const html = clipboardData?.getData("text/html") || "";
+    const pastedFigure = extractPastedFigureHtml(html);
+    if (pastedFigure) {
+      event.preventDefault();
+      pushUndoSnapshot();
+      saveEditorSelection();
+      insertHtmlAtCaret(`${pastedFigure}<p><br></p>`, editor);
+      prepareImagesInsideEditor();
+      persistCurrentDocument("Imagem colada.");
+      setStatus("Imagem colada. Clique nela para ajustar tamanho e posição.");
+      return;
+    }
+
+    const pastedSrc = extractImageSrcFromClipboardHtml(html);
+    if (pastedSrc) {
+      event.preventDefault();
+      pushUndoSnapshot();
+      saveEditorSelection();
+      insertHtmlAtCaret(buildUserFigureHtml(pastedSrc, "Imagem colada"), editor);
+      prepareImagesInsideEditor();
+      persistCurrentDocument("Imagem colada.");
+      setStatus("Imagem colada. Clique nela para ajustar tamanho e posição.");
+    }
+  }
+
+  function handleEditorCopy(event: ClipboardEvent<HTMLDivElement>) {
+    const image = selectedImageRef.current;
+    if (!(image instanceof HTMLImageElement) || !isEditableUserFigure(image)) {
+      return;
+    }
+
+    if (!event.clipboardData) return;
 
     event.preventDefault();
-    void insertImageFile(files[0]);
+    writeFigureToClipboardData(event.clipboardData, image);
+    setStatus("Imagem copiada. Cole em outro documento com Ctrl+V.");
   }
 
   function handleFigureDragStart(event: DragEvent<HTMLDivElement>) {
     const target = event.target;
     if (!(target instanceof HTMLElement)) return;
 
-    const figure = target.closest("figure.planify-user-figure");
+    const figure = target.closest(
+      "figure.planify-user-figure, figure[data-planify-figure='true']",
+    );
     if (!(figure instanceof HTMLElement)) return;
 
     draggedFigureRef.current = figure;
@@ -1825,7 +1859,9 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
     setSelectedImageName("");
     removeFigureResizeHandles(editorRef.current || document.createElement("div"));
     editorRef.current
-      ?.querySelectorAll("figure.planify-user-figure.selected")
+      ?.querySelectorAll(
+        "figure.planify-user-figure.selected, figure[data-planify-figure='true'].selected",
+      )
       .forEach((node) => node.classList.remove("selected"));
   }
 
@@ -1836,7 +1872,9 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
       target instanceof HTMLElement &&
       target.classList.contains("planify-figure-resize-handle")
     ) {
-      const figure = target.closest("figure.planify-user-figure");
+      const figure = target.closest(
+        "figure.planify-user-figure, figure[data-planify-figure='true']",
+      );
       const image = figure?.querySelector("img");
 
       if (figure instanceof HTMLElement && image instanceof HTMLImageElement) {
@@ -1848,10 +1886,12 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
   function handleEditorClick(event: ReactMouseEvent<HTMLDivElement>) {
     const target = event.target;
     const editor = editorRef.current;
+    const clickedImage = resolveClickedEditorImage(target);
 
-    if (target instanceof HTMLImageElement) {
-      selectImage(target);
+    if (clickedImage) {
+      selectImage(clickedImage);
       clearSelectedTable();
+      event.preventDefault();
       return;
     }
 
@@ -2870,6 +2910,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
                 onDragOver={handleEditorDragOver}
                 onDrop={handleEditorDrop}
                 onPaste={handleEditorPaste}
+                onCopy={handleEditorCopy}
                 onInput={() => {
                   prepareImagesInsideEditor();
                   updateWordCount();

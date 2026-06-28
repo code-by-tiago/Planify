@@ -1,5 +1,6 @@
 const fs = require("node:fs");
 const path = require("node:path");
+const { execSync } = require("node:child_process");
 
 const root = process.cwd();
 
@@ -80,37 +81,67 @@ for (const key of googleKeys) {
   }
 }
 
-title("Routes currently available");
+title("Google export routes");
 
-const possibleRoutes = [
+const requiredRoutes = [
   "src/app/api/google/oauth/start/route.ts",
   "src/app/api/google/oauth/callback/route.ts",
   "src/app/api/google/classroom/export/route.ts",
+  "src/app/api/google/classroom/courses/route.ts",
   "src/app/api/google/drive/export/route.ts",
-  "src/app/api/classroom/export/route.ts",
-  "src/app/api/drive/export/route.ts",
 ];
 
-let foundAnyRoute = false;
-
-for (const route of possibleRoutes) {
-  if (exists(route)) {
-    ok(`Google export route found: ${route}`);
-    foundAnyRoute = true;
-  }
+for (const route of requiredRoutes) {
+  if (exists(route)) ok(`Route found: ${route}`);
+  else fail(`Missing route: ${route}`);
 }
 
-if (!foundAnyRoute) {
-  warn("No Google Drive/Classroom export route found yet. This is expected if the real integration is the next implementation step.");
+title("Classroom export safety invariants");
+
+const hook = read("src/hooks/useGoogleClassroomExport.ts");
+const popover = read("src/components/google/GoogleClassroomPopoverButton.tsx");
+const route = read("src/app/api/google/classroom/export/route.ts");
+
+if (/handleQuickExport/.test(hook)) fail("handleQuickExport still exported from hook");
+else ok("No handleQuickExport in classroom hook");
+
+if (/GoogleClassroomExportButton/.test(read("src/components/google/GoogleDocumentExportBar.tsx"))) {
+  fail("GoogleClassroomExportButton still referenced in export bar");
+} else ok("Export bar uses popover/panel flow");
+
+if (/Revisar envio/.test(popover) && /Confirmar envio/.test(popover)) {
+  ok("Popover has review + confirm steps");
+} else fail("Popover missing review/confirm UX");
+
+if (/classroom-export-persistent-guard/.test(route)) {
+  ok("Classroom export API uses persistent dedup guard");
+} else fail("Classroom export API missing persistent dedup guard");
+
+if (exists("supabase/migrations/20260628180000_google_classroom_export_guards.sql")) {
+  ok("Supabase migration for classroom dedup present");
+} else warn("Supabase migration for classroom dedup not found locally");
+
+if (exists("scripts/verify-classroom-export-safety.mjs")) {
+  try {
+    execSync("node scripts/verify-classroom-export-safety.mjs", {
+      cwd: root,
+      stdio: "pipe",
+    });
+    ok("verify:classroom-export-safety passed");
+  } catch (error) {
+    fail("verify:classroom-export-safety failed");
+  }
+} else {
+  fail("scripts/verify-classroom-export-safety.mjs missing");
 }
 
 title("Recommended safe implementation order");
 
-report.push("1. Implement OAuth start/callback without touching DOCX generation.");
-report.push("2. Store tokens server-side only.");
-report.push("3. Export already-generated DOCX to Drive first.");
-report.push("4. Add Classroom share/publish only after Drive export is stable.");
-report.push("5. Keep the existing DOCX download as fallback.");
+report.push("1. OAuth start/callback with tokens server-side only.");
+report.push("2. Drive export stable before Classroom publish.");
+report.push("3. Classroom: turma explicita, revisao no popover, rascunho padrao.");
+report.push("4. Dedup persistente Supabase + rate limit no API.");
+report.push("5. Manter download DOCX/PDF como fallback.");
 
 const outDir = path.join(root, "docs", "auditorias");
 fs.mkdirSync(outDir, { recursive: true });

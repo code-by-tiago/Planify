@@ -77,7 +77,7 @@ assert.ok(
 );
 
 const hookSource = read("src/hooks/useGoogleClassroomExport.ts");
-assert.match(hookSource, /confirmClassroomExport/);
+assert.match(hookSource, /buildClassroomExportSuccessMessage/);
 assert.match(hookSource, /assertClassroomClientExportAllowed/);
 assert.match(hookSource, /useState\(true\)/, "publishAsDraft defaults to true (rascunho)");
 assert.doesNotMatch(
@@ -85,6 +85,12 @@ assert.doesNotMatch(
   /saveGoogleExportPending\(GOOGLE_CLASSROOM_EXPORT_PENDING_KEY/,
   "OAuth connect must not save Classroom export pending",
 );
+assert.doesNotMatch(hookSource, /handleQuickExport/, "handleQuickExport removed");
+
+const popoverSource = read("src/components/google/GoogleClassroomPopoverButton.tsx");
+assert.match(popoverSource, /Revisar envio/);
+assert.match(popoverSource, /Confirmar envio/);
+assert.match(popoverSource, /Abrir no Classroom/);
 
 const flowSource = read("src/lib/google/classroom-export-flow.ts");
 assert.match(
@@ -95,8 +101,13 @@ assert.doesNotMatch(flowSource, /7718\/ingest/, "no debug ingest in classroom-ex
 assert.doesNotMatch(flowSource, /return courses\[0\]\?\.id/, "must not auto-pick first course");
 
 const routeSource = read("src/app/api/google/classroom/export/route.ts");
-assert.match(routeSource, /assertClassroomExportAllowed/);
+assert.match(routeSource, /classroom-export-persistent-guard/);
 assert.match(routeSource, /"DRAFT"/, "API defaults to DRAFT");
+
+assert.ok(
+  existsSync("supabase/migrations/20260628180000_google_classroom_export_guards.sql"),
+  "Supabase migration for persistent dedup must exist",
+);
 
 const oauthResume = read("src/lib/google/google-oauth-resume.ts");
 assert.match(
@@ -153,6 +164,11 @@ assert.equal(
   resolvePreferredClassroomCourseId([{ id: "only", name: "Única" }]),
   "only",
   "single course → auto-select OK",
+);
+
+assert.ok(
+  existsSync("e2e/classroom-export-safety.spec.ts"),
+  "Playwright safety spec for Classroom export must exist",
 );
 
 console.log("OK — classroom export safety checks passed");

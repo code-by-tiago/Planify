@@ -201,6 +201,21 @@ Para usar Classroom, o professor precisa:
 | Forms não abre após OAuth | Deploy com fix OAuth recente; limpar cache do navegador |
 | `403` na API | API correspondente ativada no projeto Google Cloud |
 | Nenhuma turma no Classroom | Conta sem turma de professor no Classroom |
+| Muitos posts duplicados no Classroom | Arquivar manualmente cada atividade no Classroom (Planify não apaga via API). Peça à TI se precisar limpeza em lote. |
+| Reenvio bloqueado por duplicata | Aguarde 3 minutos ou altere o conteúdo/título antes de reenviar |
+
+---
+
+## 10. Limpeza de posts duplicados (incidente de export)
+
+Se materiais foram publicados em excesso no Google Classroom:
+
+1. Abra [classroom.google.com](https://classroom.google.com) com a conta `@educar.rs.gov.br`.
+2. Entre na turma afetada → aba **Atividades**.
+3. Para cada material duplicado: menu **⋮** → **Excluir** ou **Arquivar** (conforme permissão da conta).
+4. Rascunhos enviados pelo Planify aparecem como rascunho — publique só o correto e exclua os demais.
+
+O Planify **não consegue remover** atividades já criadas no Classroom pela API de forma confiável para todas as contas Workspace. A prevenção está no fluxo atual: turma explícita, revisão no popover, rascunho por padrão e anti-duplicata.
 
 ---
 

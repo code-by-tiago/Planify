@@ -80,17 +80,29 @@ const hookSource = read("src/hooks/useGoogleClassroomExport.ts");
 assert.match(hookSource, /buildClassroomExportSuccessMessage/);
 assert.match(hookSource, /assertClassroomClientExportAllowed/);
 assert.match(hookSource, /useState\(true\)/, "publishAsDraft defaults to true (rascunho)");
+assert.match(hookSource, /canShowTurmaList/);
+assert.match(hookSource, /canSubmitExport/);
 assert.doesNotMatch(
   hookSource,
   /saveGoogleExportPending\(GOOGLE_CLASSROOM_EXPORT_PENDING_KEY/,
   "OAuth connect must not save Classroom export pending",
 );
 assert.doesNotMatch(hookSource, /handleQuickExport/, "handleQuickExport removed");
+assert.doesNotMatch(
+  hookSource,
+  /const canExport = .*Boolean\(courseId\)/,
+  "canExport must not gate turma list on courseId",
+);
 
 const popoverSource = read("src/components/google/GoogleClassroomPopoverButton.tsx");
-assert.match(popoverSource, /Revisar envio/);
-assert.match(popoverSource, /Confirmar envio/);
+assert.match(popoverSource, /Enviar à turma/);
+assert.match(popoverSource, /Selecione a turma/);
 assert.match(popoverSource, /Abrir no Classroom/);
+assert.match(popoverSource, /renderPopoverBody/, "popover must always render body content");
+
+const accountSource = read("src/lib/google/classroom-google-account.ts");
+assert.match(accountSource, /classroomGoogleAccountIncomplete/);
+assert.match(accountSource, /needsEducarClassroomConnect/);
 
 const flowSource = read("src/lib/google/classroom-export-flow.ts");
 assert.match(

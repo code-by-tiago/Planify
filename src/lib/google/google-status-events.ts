@@ -3,6 +3,14 @@ import { clearOtherGoogleExportPending } from "@/lib/google/google-export-resume
 /** Sincroniza status Google entre Classroom, Slides export e editor. */
 export const GOOGLE_STATUS_CHANGED_EVENT = "planify:google-status-changed";
 
+/** Reabre o popover Classroom após OAuth (sem auto-export). */
+export const CLASSROOM_POPOVER_OPEN_EVENT = "planify:classroom-popover-open";
+
+export function notifyClassroomPopoverOpen(): void {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new Event(CLASSROOM_POPOVER_OPEN_EVENT));
+}
+
 export const GOOGLE_SLIDES_EXPORT_PENDING_KEY = "planify:google-slides-export-pending";
 
 export type GoogleSlidesExportSlide = {

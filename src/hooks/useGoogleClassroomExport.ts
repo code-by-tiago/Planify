@@ -19,16 +19,16 @@ import {
 } from "@/lib/google/classroom-export-flow";
 import {
   classroomGoogleAccountMismatch,
-  classroomGoogleAccountNeedsSwitch,
   isClassroomExportReady,
   isValidGoogleEmail,
-  needsClassroomGoogleOAuth,
+  needsEducarClassroomConnect,
   persistClassroomGoogleEmail,
   readClassroomGoogleEmail,
   suggestInstitutionalEmail,
 } from "@/lib/google/classroom-google-account";
 import {
   assertClassroomClientExportAllowed,
+  buildClassroomExportReviewSummary,
   buildClassroomExportSuccessMessage,
   recordClassroomClientExport,
   resolveSelectedCourseLabel,
@@ -40,6 +40,8 @@ import {
   notifyGoogleStatusChanged,
 } from "@/lib/google/google-status-events";
 import { useCallback, useEffect, useState } from "react";
+
+export const CLASSROOM_OPEN_AFTER_OAUTH_KEY = "planify:classroom-open-after-oauth";
 
 type UseGoogleClassroomExportOptions = {
   title: string;
@@ -120,8 +122,10 @@ export function useGoogleClassroomExport({
         setCourses([]);
         setCourseId("");
 
-        if (next.connected && classroomGoogleAccountNeedsSwitch(next)) {
+        if (next.connected && needsEducarClassroomConnect(next)) {
           setError(buildClassroomCoursesMessage(next, 0));
+        } else if (!next.connected) {
+          setError("");
         }
       }
     } catch (err) {
@@ -161,8 +165,10 @@ export function useGoogleClassroomExport({
     };
   }, [refresh]);
 
-  const canExport = isClassroomExportReady(status) && courses.length > 0 && Boolean(courseId);
-  const canQuickExport = isClassroomExportReady(status);
+  const needsEducarConnect = needsEducarClassroomConnect(status);
+  const canShowTurmaList = isClassroomExportReady(status) && courses.length > 0;
+  const canSubmitExport = canShowTurmaList && Boolean(courseId.trim());
+  const noTurmasFallback = isClassroomExportReady(status) && courses.length === 0;
 
   async function startClassroomGoogleOAuth(mode: "connect" | "switch") {
     setBusy(true);
@@ -178,10 +184,21 @@ export function useGoogleClassroomExport({
         await disconnectGoogle();
       }
 
+      try {
+        window.sessionStorage.setItem(CLASSROOM_OPEN_AFTER_OAUTH_KEY, "1");
+      } catch {
+        /* ignore */
+      }
+
       const oauthParams = resolveClassroomOAuthStartOptions(status, email);
 
       await startGoogleOAuth(resolveGoogleOAuthReturnTo(returnTo), oauthParams);
     } catch (err) {
+      try {
+        window.sessionStorage.removeItem(CLASSROOM_OPEN_AFTER_OAUTH_KEY);
+      } catch {
+        /* ignore */
+      }
       setError(
         err instanceof Error
           ? err.message
@@ -342,6 +359,13 @@ export function useGoogleClassroomExport({
   }
 
   const loginRedirect = encodeURIComponent(resolveGoogleOAuthReturnTo(returnTo));
+  const exportTitle = title.trim() || "Material Planify";
+  const courseLabel = resolveSelectedCourseLabel(courses, courseId);
+  const exportReview = buildClassroomExportReviewSummary({
+    title: exportTitle,
+    courseLabel,
+    asDraft: publishAsDraft,
+  });
 
   return {
     status,
@@ -354,8 +378,11 @@ export function useGoogleClassroomExport({
     setPublishAsDraft,
     institutionalEmail,
     setInstitutionalEmail,
-    canExport,
-    canQuickExport,
+    needsEducarConnect,
+    canShowTurmaList,
+    canSubmitExport,
+    noTurmasFallback,
+    exportReview,
     loading,
     busy,
     error,

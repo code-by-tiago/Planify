@@ -10,12 +10,7 @@ import {
   classroomGoogleAccountNeedsSwitch,
   needsClassroomGoogleOAuth,
 } from "@/lib/google/classroom-google-account";
-import {
-  buildClassroomExportReviewSummary,
-  resolveSelectedCourseLabel,
-} from "@/lib/google/classroom-export-client-guard";
 import { useGoogleClassroomExport } from "@/hooks/useGoogleClassroomExport";
-import { useState } from "react";
 
 type GoogleClassroomPanelProps = {
   title: string;
@@ -34,8 +29,6 @@ export function GoogleClassroomPanel({
   returnTo,
   documentType,
 }: GoogleClassroomPanelProps) {
-  const [panelStep, setPanelStep] = useState<"form" | "review">("form");
-
   const {
     status,
     courses,
@@ -47,8 +40,11 @@ export function GoogleClassroomPanel({
     setPublishAsDraft,
     institutionalEmail,
     setInstitutionalEmail,
-    canExport,
-    canQuickExport,
+    needsEducarConnect,
+    canShowTurmaList,
+    canSubmitExport,
+    noTurmasFallback,
+    exportReview,
     loading,
     busy,
     error,
@@ -59,6 +55,7 @@ export function GoogleClassroomPanel({
     handleExport,
     handleDriveOnlyExport,
     openClassroomHome,
+    refresh,
   } = useGoogleClassroomExport({
     title,
     getHtml,
@@ -78,28 +75,21 @@ export function GoogleClassroomPanel({
   const needsOAuth = needsClassroomGoogleOAuth(status);
   const needsAccountSwitch = classroomGoogleAccountNeedsSwitch(status);
   const connectMode = needsAccountSwitch ? "switch" : "connect";
-  const exportTitle = title.trim() || "Material Planify";
-  const courseLabel = resolveSelectedCourseLabel(courses, courseId);
-  const reviewSummary = buildClassroomExportReviewSummary({
-    title: exportTitle,
-    courseLabel,
-    asDraft: publishAsDraft,
-  });
 
   function handleCompactIconClick() {
     if (busy) return;
 
-    if (needsOAuth || needsAccountSwitch) {
+    if (needsEducarConnect) {
       void (needsAccountSwitch ? handleSwitchAccount() : handleConnect());
       return;
     }
 
-    if (canExport) {
-      onStatus?.("Escolha a turma no painel e clique em Enviar ao Classroom.");
+    if (canShowTurmaList) {
+      onStatus?.("Escolha a turma no painel e clique em Enviar à turma.");
       return;
     }
 
-    if (canQuickExport) {
+    if (noTurmasFallback) {
       void handleDriveOnlyExport();
     }
   }
@@ -186,11 +176,9 @@ export function GoogleClassroomPanel({
           className={btnPrimary}
           aria-label={busy ? "Enviando…" : "Enviar ao Google Classroom"}
           title={
-            needsOAuth
-              ? "Conectar conta Google da escola e enviar"
-              : needsAccountSwitch
-                ? "Trocar para conta @educar.rs.gov.br e enviar"
-                : "Enviar ao Google Classroom"
+            needsEducarConnect
+              ? "Conectar conta Google da escola"
+              : "Enviar ao Google Classroom"
           }
         >
           <GoogleClassroomIcon className={GOOGLE_PRODUCT_ICON_CLASS} />
@@ -216,7 +204,7 @@ export function GoogleClassroomPanel({
         </p>
       </div>
 
-      {status.connected && canQuickExport ? (
+      {canShowTurmaList ? (
         <p className="mt-2 text-sm text-sky-900">
           Conectado como <strong>{status.googleEmail || "conta Google"}</strong>
         </p>
@@ -230,7 +218,7 @@ export function GoogleClassroomPanel({
       {error ? (
         <p
           className={`mt-3 rounded-xl border px-3 py-2 text-sm font-semibold ${
-            canQuickExport && !needsOAuth && !needsAccountSwitch
+            noTurmasFallback && !needsEducarConnect
               ? "border-amber-200 bg-amber-50 text-amber-900"
               : "border-rose-200 bg-rose-50 text-rose-800"
           }`}
@@ -240,7 +228,7 @@ export function GoogleClassroomPanel({
       ) : null}
 
       <div className="mt-4 flex flex-wrap gap-2">
-        {needsOAuth || needsAccountSwitch ? (
+        {needsEducarConnect ? (
           <ClassroomGoogleConnectForm
             institutionalEmail={institutionalEmail}
             onInstitutionalEmailChange={setInstitutionalEmail}
@@ -252,43 +240,7 @@ export function GoogleClassroomPanel({
             planifyEmail={status.planifyEmail}
             connectedGoogleEmail={status.googleEmail}
           />
-        ) : canExport ? (
-          panelStep === "review" ? (
-            <div className="w-full space-y-3 rounded-xl border border-sky-100 bg-sky-50/70 p-4">
-              <p className="text-xs font-black uppercase tracking-wide text-sky-800">
-                Revisar envio
-              </p>
-              <p className="text-sm text-slate-800">
-                <strong>{reviewSummary.title}</strong>
-                <br />
-                Turma: {reviewSummary.courseLabel}
-                <br />
-                Modo: {reviewSummary.modeLabel} — {reviewSummary.modeDescription}
-              </p>
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={() => setPanelStep("form")}
-                  className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700"
-                >
-                  Voltar
-                </button>
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={() => {
-                    void handleExport().then((result) => {
-                      if (result) setPanelStep("form");
-                    });
-                  }}
-                  className={btnSuccess}
-                >
-                  {busy ? "Enviando..." : "Confirmar envio"}
-                </button>
-              </div>
-            </div>
-          ) : (
+        ) : canShowTurmaList ? (
           <>
             <label className="grid w-full min-w-[200px] flex-1 gap-1">
               <span className="text-xs font-bold text-sky-800">Turma</span>
@@ -327,13 +279,21 @@ export function GoogleClassroomPanel({
               Publicar como rascunho (visível só para você até publicar no Classroom)
             </label>
 
+            {canSubmitExport ? (
+              <p className="w-full rounded-xl border border-sky-100 bg-sky-50/80 px-3 py-2 text-xs leading-5 text-sky-900">
+                Enviar <strong>{exportReview.title}</strong> para{" "}
+                <strong>{exportReview.courseLabel}</strong> como{" "}
+                <strong>{exportReview.modeLabel}</strong>.
+              </p>
+            ) : null}
+
             <button
               type="button"
-              disabled={busy || !courseId}
-              onClick={() => setPanelStep("review")}
+              disabled={busy || !canSubmitExport}
+              onClick={() => void handleExport()}
               className={btnSuccess}
             >
-              Revisar envio
+              {busy ? "Enviando..." : "Enviar à turma"}
             </button>
 
             <button
@@ -344,25 +304,13 @@ export function GoogleClassroomPanel({
             >
               Desconectar
             </button>
-
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => void handleSwitchAccount()}
-              className="text-xs font-semibold text-sky-700 underline-offset-2 hover:underline disabled:opacity-60"
-            >
-              Trocar conta Google da escola
-            </button>
           </>
-          )
-        ) : (
+        ) : noTurmasFallback ? (
           <>
             <button
               type="button"
               disabled={busy}
-              onClick={() => {
-                void handleDriveOnlyExport();
-              }}
+              onClick={() => void handleDriveOnlyExport()}
               className="w-full rounded-xl bg-emerald-600 px-4 py-3 text-sm font-black text-white"
             >
               {busy ? "Salvando…" : "Salvar no Drive e abrir Classroom"}
@@ -375,13 +323,19 @@ export function GoogleClassroomPanel({
             >
               Abrir classroom.google.com
             </button>
+          </>
+        ) : (
+          <>
+            <p className="w-full text-sm text-rose-800">
+              {error || "Não foi possível carregar o Google Classroom."}
+            </p>
             <button
               type="button"
               disabled={busy}
-              onClick={() => void handleSwitchAccount()}
-              className="text-xs font-semibold text-sky-700 underline-offset-2 hover:underline disabled:opacity-60"
+              onClick={() => void refresh()}
+              className="rounded-xl border border-sky-200 bg-white px-4 py-2.5 text-sm font-bold text-sky-800"
             >
-              Trocar conta Google da escola
+              Tentar novamente
             </button>
           </>
         )}

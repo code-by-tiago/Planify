@@ -11,13 +11,11 @@ import {
   needsClassroomGoogleOAuth,
 } from "@/lib/google/classroom-google-account";
 import {
-  buildClassroomExportReviewSummary,
-  resolveSelectedCourseLabel,
-} from "@/lib/google/classroom-export-client-guard";
-import {
+  CLASSROOM_OPEN_AFTER_OAUTH_KEY,
   useGoogleClassroomExport,
   type ClassroomExportSuccess,
 } from "@/hooks/useGoogleClassroomExport";
+import { GOOGLE_STATUS_CHANGED_EVENT } from "@/lib/google/google-status-events";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
@@ -35,7 +33,7 @@ type PopoverCoords = {
   width: number;
 };
 
-type PopoverStep = "form" | "review" | "success";
+type PopoverStep = "form" | "success";
 
 export function GoogleClassroomPopoverButton({
   title,
@@ -63,8 +61,11 @@ export function GoogleClassroomPopoverButton({
     setPublishAsDraft,
     institutionalEmail,
     setInstitutionalEmail,
-    canExport,
-    canQuickExport,
+    needsEducarConnect,
+    canShowTurmaList,
+    canSubmitExport,
+    noTurmasFallback,
+    exportReview,
     loading,
     busy,
     error,
@@ -75,6 +76,7 @@ export function GoogleClassroomPopoverButton({
     handleExport,
     handleDriveOnlyExport,
     openClassroomHome,
+    refresh,
   } = useGoogleClassroomExport({
     title,
     getHtml,
@@ -86,13 +88,6 @@ export function GoogleClassroomPopoverButton({
   const needsOAuth = needsClassroomGoogleOAuth(status);
   const needsAccountSwitch = classroomGoogleAccountNeedsSwitch(status);
   const connectMode = needsAccountSwitch ? "switch" : "connect";
-  const exportTitle = title.trim() || "Material Planify";
-  const courseLabel = resolveSelectedCourseLabel(courses, courseId);
-  const reviewSummary = buildClassroomExportReviewSummary({
-    title: exportTitle,
-    courseLabel,
-    asDraft: publishAsDraft,
-  });
 
   useLayoutEffect(() => {
     if (!open || !buttonRef.current) {
@@ -105,14 +100,23 @@ export function GoogleClassroomPopoverButton({
     let left = rect.right - width;
     left = Math.max(8, Math.min(left, window.innerWidth - width - 8));
 
-    const estimatedHeight = step === "review" ? 340 : step === "success" ? 280 : 300;
+    const estimatedHeight = step === "success" ? 280 : needsEducarConnect ? 260 : 340;
     let top = rect.bottom + 8;
     if (top + estimatedHeight > window.innerHeight - 8) {
       top = Math.max(8, rect.top - estimatedHeight - 8);
     }
 
     setPopoverCoords({ top, left, width });
-  }, [open, loading, canExport, needsOAuth, needsAccountSwitch, courses.length, step]);
+  }, [
+    open,
+    loading,
+    canShowTurmaList,
+    needsEducarConnect,
+    noTurmasFallback,
+    courses.length,
+    step,
+    courseId,
+  ]);
 
   useEffect(() => {
     if (!open) return;
@@ -129,6 +133,29 @@ export function GoogleClassroomPopoverButton({
     return () => document.removeEventListener("mousedown", onPointerDown);
   }, [open]);
 
+  useEffect(() => {
+    function maybeOpenAfterOAuth() {
+      try {
+        if (window.sessionStorage.getItem(CLASSROOM_OPEN_AFTER_OAUTH_KEY) !== "1") {
+          return;
+        }
+        window.sessionStorage.removeItem(CLASSROOM_OPEN_AFTER_OAUTH_KEY);
+        setStep("form");
+        setLastSuccess(null);
+        setOpen(true);
+      } catch {
+        /* ignore */
+      }
+    }
+
+    window.addEventListener(GOOGLE_STATUS_CHANGED_EVENT, maybeOpenAfterOAuth);
+    maybeOpenAfterOAuth();
+
+    return () => {
+      window.removeEventListener(GOOGLE_STATUS_CHANGED_EVENT, maybeOpenAfterOAuth);
+    };
+  }, []);
+
   function resetPopoverState() {
     setStep("form");
     setLastSuccess(null);
@@ -142,22 +169,8 @@ export function GoogleClassroomPopoverButton({
   function handleIconClick() {
     if (loading || busy) return;
 
-    if (!status?.configured) {
-      setOpen((value) => {
-        if (value) resetPopoverState();
-        return !value;
-      });
-      return;
-    }
-
-    if (!status.authenticated) {
+    if (!status?.authenticated) {
       window.location.href = `/login?redirect=${loginRedirect}`;
-      return;
-    }
-
-    if (needsOAuth || needsAccountSwitch) {
-      resetPopoverState();
-      setOpen(true);
       return;
     }
 
@@ -178,6 +191,200 @@ export function GoogleClassroomPopoverButton({
     setStep("success");
   }
 
+  function renderPopoverBody() {
+    if (loading) {
+      return <p className="mt-3 text-xs font-semibold text-slate-500">Carregando turmas…</p>;
+    }
+
+    if (!status?.configured) {
+      return (
+        <div className="mt-3 space-y-2">
+          <p className="text-[11px] leading-5 text-amber-900">
+            Integração Google não configurada no servidor. Peça à TI para configurar{" "}
+            <code className="text-[10px]">GOOGLE_CLIENT_ID</code>.
+          </p>
+        </div>
+      );
+    }
+
+    if (needsEducarConnect) {
+      return (
+        <div className="mt-3">
+          <ClassroomGoogleConnectForm
+            compact
+            institutionalEmail={institutionalEmail}
+            onInstitutionalEmailChange={setInstitutionalEmail}
+            busy={busy}
+            onConnect={() =>
+              void (connectMode === "switch" ? handleSwitchAccount() : handleConnect())
+            }
+            mode={connectMode}
+            planifyEmail={status?.planifyEmail}
+            connectedGoogleEmail={status?.googleEmail}
+          />
+        </div>
+      );
+    }
+
+    if (step === "success" && lastSuccess) {
+      return (
+        <div className="mt-3 space-y-3">
+          <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2">
+            <p className="text-xs font-black text-emerald-900">Envio concluído</p>
+            <p className="mt-1 text-[11px] leading-5 text-emerald-900">
+              {lastSuccess.asDraft
+                ? `Rascunho salvo em "${lastSuccess.courseLabel}". Os alunos só verão depois que você publicar no Classroom.`
+                : `Material publicado em "${lastSuccess.courseLabel}".`}
+            </p>
+          </div>
+          <a
+            href={lastSuccess.openUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block w-full rounded-lg bg-sky-600 px-3 py-2 text-center text-xs font-bold text-white"
+          >
+            Abrir no Classroom
+          </a>
+          <button
+            type="button"
+            onClick={handleClosePopover}
+            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700"
+          >
+            Fechar
+          </button>
+        </div>
+      );
+    }
+
+    if (canShowTurmaList) {
+      return (
+        <div className="mt-3 space-y-2">
+          <p className="text-[11px] font-semibold text-sky-900">
+            Conectado como{" "}
+            <span className="font-bold">{status?.googleEmail || "conta Google"}</span>
+          </p>
+
+          <label className="block">
+            <span className="mb-1 block text-[11px] font-bold text-sky-900">Turma</span>
+            <select
+              value={courseId}
+              onChange={(event) => setCourseId(event.target.value)}
+              className="w-full rounded-lg border border-sky-200 bg-white px-2 py-2 text-xs font-semibold text-slate-900"
+            >
+              <option value="">Selecione a turma…</option>
+              {courses.map((course) => (
+                <option key={course.id} value={course.id}>
+                  {course.name}
+                  {course.section ? ` — ${course.section}` : ""}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <input
+            type="text"
+            value={description}
+            onChange={(event) => setDescription(event.target.value)}
+            placeholder="Descrição (opcional)"
+            className="w-full rounded-lg border border-sky-200 bg-white px-2 py-2 text-xs font-semibold text-slate-900"
+          />
+
+          <label className="flex items-center gap-2 text-[11px] font-semibold text-sky-900">
+            <input
+              type="checkbox"
+              checked={publishAsDraft}
+              onChange={(event) => setPublishAsDraft(event.target.checked)}
+            />
+            Salvar como rascunho (recomendado — alunos não veem até publicar)
+          </label>
+
+          {canSubmitExport ? (
+            <p className="rounded-lg border border-sky-100 bg-sky-50/80 px-2 py-1.5 text-[10px] leading-5 text-sky-900">
+              Enviar <strong>{exportReview.title}</strong> para{" "}
+              <strong>{exportReview.courseLabel}</strong> como{" "}
+              <strong>{exportReview.modeLabel}</strong>.
+            </p>
+          ) : null}
+
+          <div className="flex gap-2">
+            <button
+              type="button"
+              disabled={busy || !canSubmitExport}
+              onClick={() => void handleConfirmExport()}
+              className="flex-1 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-bold text-white disabled:opacity-50"
+            >
+              {busy ? "Enviando…" : "Enviar à turma"}
+            </button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void handleDisconnect()}
+              className="rounded-lg border border-slate-200 px-3 py-2 text-[11px] font-bold text-slate-600"
+              title="Desconectar conta Google"
+            >
+              Desconectar
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    if (noTurmasFallback) {
+      return (
+        <div className="mt-3 space-y-2">
+          <p className="text-[11px] leading-5 text-amber-900">
+            {error ||
+              "Nenhuma turma de professor encontrada nesta conta. Salve no Drive e anexe manualmente no Classroom."}
+          </p>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => {
+              void handleDriveOnlyExport().then(() => handleClosePopover());
+            }}
+            className="w-full rounded-lg bg-emerald-600 px-3 py-2 text-xs font-bold text-white disabled:opacity-50"
+          >
+            {busy ? "Salvando…" : "Salvar no Drive e abrir Classroom"}
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={openClassroomHome}
+            className="w-full rounded-lg border border-sky-200 bg-white px-3 py-2 text-xs font-bold text-sky-800"
+          >
+            Abrir classroom.google.com
+          </button>
+        </div>
+      );
+    }
+
+    return (
+      <div className="mt-3 space-y-2">
+        <p className="text-[11px] leading-5 text-rose-800">
+          {error || "Não foi possível carregar o Google Classroom."}
+        </p>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => void refresh()}
+          className="w-full rounded-lg border border-sky-200 bg-white px-3 py-2 text-xs font-bold text-sky-800"
+        >
+          Tentar novamente
+        </button>
+        {!needsOAuth ? null : (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => void handleConnect()}
+            className="w-full rounded-lg bg-sky-600 px-3 py-2 text-xs font-bold text-white disabled:opacity-50"
+          >
+            Conectar conta @educar.rs.gov.br
+          </button>
+        )}
+      </div>
+    );
+  }
+
   const popoverContent =
     open && popoverCoords ? (
       <div
@@ -196,173 +403,9 @@ export function GoogleClassroomPopoverButton({
           <p className="text-xs font-black text-sky-900">Google Classroom</p>
         </div>
 
-        {loading ? (
-          <p className="mt-3 text-xs font-semibold text-slate-500">Carregando…</p>
-        ) : needsOAuth || needsAccountSwitch ? (
-          <div className="mt-3">
-            <ClassroomGoogleConnectForm
-              compact
-              institutionalEmail={institutionalEmail}
-              onInstitutionalEmailChange={setInstitutionalEmail}
-              busy={busy}
-              onConnect={() =>
-                void (connectMode === "switch" ? handleSwitchAccount() : handleConnect())
-              }
-              mode={connectMode}
-              planifyEmail={status?.planifyEmail}
-              connectedGoogleEmail={status?.googleEmail}
-            />
-          </div>
-        ) : step === "success" && lastSuccess ? (
-          <div className="mt-3 space-y-3">
-            <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2">
-              <p className="text-xs font-black text-emerald-900">Envio concluído</p>
-              <p className="mt-1 text-[11px] leading-5 text-emerald-900">
-                {lastSuccess.asDraft
-                  ? `Rascunho salvo em "${lastSuccess.courseLabel}". Os alunos só verão depois que você publicar no Classroom.`
-                  : `Material publicado em "${lastSuccess.courseLabel}".`}
-              </p>
-            </div>
-            <a
-              href={lastSuccess.openUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block w-full rounded-lg bg-sky-600 px-3 py-2 text-center text-xs font-bold text-white"
-            >
-              Abrir no Classroom
-            </a>
-            <button
-              type="button"
-              onClick={handleClosePopover}
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700"
-            >
-              Fechar
-            </button>
-          </div>
-        ) : step === "review" && canExport ? (
-          <div className="mt-3 space-y-3">
-            <p className="text-[11px] font-black uppercase tracking-wide text-sky-800">
-              Revisar envio
-            </p>
-            <dl className="space-y-2 rounded-lg border border-sky-100 bg-sky-50/70 px-3 py-2 text-[11px]">
-              <div>
-                <dt className="font-bold text-sky-900">Material</dt>
-                <dd className="font-semibold text-slate-800">{reviewSummary.title}</dd>
-              </div>
-              <div>
-                <dt className="font-bold text-sky-900">Turma</dt>
-                <dd className="font-semibold text-slate-800">{reviewSummary.courseLabel}</dd>
-              </div>
-              <div>
-                <dt className="font-bold text-sky-900">Modo</dt>
-                <dd className="font-semibold text-slate-800">
-                  {reviewSummary.modeLabel} — {reviewSummary.modeDescription}
-                </dd>
-              </div>
-            </dl>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => setStep("form")}
-                className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700"
-              >
-                Voltar
-              </button>
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => void handleConfirmExport()}
-                className="flex-1 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-bold text-white disabled:opacity-50"
-              >
-                {busy ? "Enviando…" : "Confirmar envio"}
-              </button>
-            </div>
-          </div>
-        ) : canExport ? (
-          <div className="mt-3 space-y-2">
-            <p className="text-[11px] font-semibold text-sky-900">
-              Conectado como{" "}
-              <span className="font-bold">{status?.googleEmail || "conta Google"}</span>
-            </p>
+        {renderPopoverBody()}
 
-            <label className="block">
-              <span className="mb-1 block text-[11px] font-bold text-sky-900">Turma</span>
-              <select
-                value={courseId}
-                onChange={(event) => setCourseId(event.target.value)}
-                className="w-full rounded-lg border border-sky-200 bg-white px-2 py-2 text-xs font-semibold text-slate-900"
-              >
-                <option value="">Selecione a turma…</option>
-                {courses.map((course) => (
-                  <option key={course.id} value={course.id}>
-                    {course.name}
-                    {course.section ? ` — ${course.section}` : ""}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <input
-              type="text"
-              value={description}
-              onChange={(event) => setDescription(event.target.value)}
-              placeholder="Descrição (opcional)"
-              className="w-full rounded-lg border border-sky-200 bg-white px-2 py-2 text-xs font-semibold text-slate-900"
-            />
-            <label className="flex items-center gap-2 text-[11px] font-semibold text-sky-900">
-              <input
-                type="checkbox"
-                checked={publishAsDraft}
-                onChange={(event) => setPublishAsDraft(event.target.checked)}
-              />
-              Salvar como rascunho (recomendado — alunos não veem até publicar)
-            </label>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                disabled={busy || !courseId}
-                onClick={() => setStep("review")}
-                className="flex-1 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-bold text-white disabled:opacity-50"
-              >
-                Revisar envio
-              </button>
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => void handleDisconnect()}
-                className="rounded-lg border border-slate-200 px-3 py-2 text-[11px] font-bold text-slate-600"
-                title="Desconectar conta Google"
-              >
-                Desconectar
-              </button>
-            </div>
-          </div>
-        ) : canQuickExport ? (
-          <div className="mt-3 space-y-2">
-            <p className="text-[11px] leading-5 text-amber-900">{error}</p>
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => {
-                void handleDriveOnlyExport().then(() => handleClosePopover());
-              }}
-              className="w-full rounded-lg bg-emerald-600 px-3 py-2 text-xs font-bold text-white disabled:opacity-50"
-            >
-              {busy ? "Salvando…" : "Salvar no Drive e abrir Classroom"}
-            </button>
-            <button
-              type="button"
-              disabled={busy}
-              onClick={openClassroomHome}
-              className="w-full rounded-lg border border-sky-200 bg-white px-3 py-2 text-xs font-bold text-sky-800"
-            >
-              Abrir classroom.google.com
-            </button>
-          </div>
-        ) : null}
-
-        {error && canExport && step !== "success" ? (
+        {error && canShowTurmaList && step !== "success" ? (
           <p className="mt-2 text-[11px] font-semibold text-rose-700">{error}</p>
         ) : null}
       </div>
@@ -373,7 +416,7 @@ export function GoogleClassroomPopoverButton({
       <button
         ref={buttonRef}
         type="button"
-        disabled={loading}
+        disabled={loading && !open}
         onClick={handleIconClick}
         className={GOOGLE_ICON_ONLY_BUTTON_CLASS}
         aria-label="Google Classroom"

@@ -73,7 +73,25 @@ export function classroomGoogleAccountNeedsSwitch(
   status: { connected: boolean; googleEmail: string | null } | null | undefined,
 ): boolean {
   if (!status?.connected) return false;
+  if (classroomGoogleAccountIncomplete(status)) return true;
   return classroomGoogleAccountMismatch(status.googleEmail);
+}
+
+/** Conectado ao Google mas sem e-mail resolvido no token (estado inconsistente). */
+export function classroomGoogleAccountIncomplete(
+  status: { connected: boolean; googleEmail: string | null } | null | undefined,
+): boolean {
+  return Boolean(status?.connected && !normalizeGoogleEmail(status.googleEmail));
+}
+
+/** Precisa conectar ou trocar para conta @educar antes de listar turmas. */
+export function needsEducarClassroomConnect(
+  status: { connected: boolean; googleEmail: string | null } | null | undefined,
+): boolean {
+  return (
+    needsClassroomGoogleOAuth(status) ||
+    classroomGoogleAccountNeedsSwitch(status)
+  );
 }
 
 /** Pronto para exportar: token Google com e-mail @educar.rs.gov.br. */

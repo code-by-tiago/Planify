@@ -2,9 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { resolvePlanifyUserFromRequest } from "../../../../../server/google/google-auth";
 import {
   assertClassroomExportAllowed,
-  buildClassroomExportDedupKey,
   recordClassroomExportDedup,
-} from "../../../../../server/google/classroom-export-dedup";
+} from "../../../../../server/google/classroom-export-persistent-guard";
 import { exportMaterialToGoogle } from "../../../../../server/google/google-export-service";
 import { getGoogleConfigStatus } from "../../../../../server/google/google-oauth";
 import { logExportSuccess, parseExportTelemetryMetadata } from "@/server/export/export-error-service";
@@ -86,14 +85,12 @@ export async function POST(request: NextRequest) {
     body.publishState === "PUBLISHED" ? "PUBLISHED" : "DRAFT";
 
   try {
-    const dedupKey = buildClassroomExportDedupKey({
+    const dedupKey = await assertClassroomExportAllowed({
       userId: user.id,
       courseId,
       title,
       html,
     });
-
-    assertClassroomExportAllowed(dedupKey);
 
     const startedAt = Date.now();
     const result = await exportMaterialToGoogle(user.id, {
@@ -106,7 +103,7 @@ export async function POST(request: NextRequest) {
       publishState,
     });
 
-    recordClassroomExportDedup(dedupKey);
+    await recordClassroomExportDedup(user.id, dedupKey);
 
     logExportSuccess({
       surface: "google-classroom",

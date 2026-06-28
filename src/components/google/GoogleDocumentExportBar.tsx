@@ -1,7 +1,7 @@
 "use client";
 
+import { GoogleClassroomExportButton } from "@/components/google/GoogleClassroomExportButton";
 import { GoogleClassroomPanel } from "@/components/google/GoogleClassroomPanel";
-import { GoogleClassroomPopoverButton } from "@/components/google/GoogleClassroomPopoverButton";
 import { GoogleDocsExportButton } from "@/components/google/GoogleDocsExportButton";
 import { GoogleDriveExportButton } from "@/components/google/GoogleDriveExportButton";
 import { GoogleFormsExportButton } from "@/components/google/GoogleFormsExportButton";
@@ -154,12 +154,14 @@ export function GoogleDocumentExportBar({
       ) : null}
       {showClassroomExport ? (
         classroomMode === "popover" ? (
-          <GoogleClassroomPopoverButton
+          <GoogleClassroomExportButton
             title={title}
             getHtml={getHtml}
             onStatus={onStatus}
+            onExportError={onExportError}
             returnTo={returnTo}
             documentType={documentType}
+            iconOnly
           />
         ) : (
           <GoogleClassroomPanel

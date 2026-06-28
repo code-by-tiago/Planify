@@ -57,6 +57,13 @@ type GoogleProductExportButtonProps = {
   /** Conta conectada mas falta escopo extra (ex.: Forms). */
   needsExtraScope?: (status: GoogleIntegrationStatus) => boolean;
   extraScopeLabel?: string;
+  getOAuthOptions?: (
+    status: GoogleIntegrationStatus | null,
+  ) => {
+    selectAccount?: boolean;
+    loginHint?: string;
+    hostedDomain?: string;
+  };
 };
 
 export function GoogleProductExportButton({
@@ -80,6 +87,7 @@ export function GoogleProductExportButton({
   isExportReady = (value) => value.connected,
   needsExtraScope,
   extraScopeLabel,
+  getOAuthOptions,
 }: GoogleProductExportButtonProps) {
   const [status, setStatus] = useState<GoogleIntegrationStatus | null>(null);
   const [loading, setLoading] = useState(true);
@@ -194,13 +202,17 @@ export function GoogleProductExportButton({
         planningPayload: getPlanningPayload?.() ?? null,
       });
 
-      await startGoogleOAuth(normalizeGoogleOAuthReturnTo(returnTo), { selectAccount: true });
+      const oauthOptions = getOAuthOptions?.(await fetchGoogleStatus()) || {
+        selectAccount: true,
+      };
+
+      await startGoogleOAuth(normalizeGoogleOAuthReturnTo(returnTo), oauthOptions);
     } catch (err) {
       clearGoogleExportPending(pendingStorageKey);
       setError(err instanceof Error ? err.message : "Erro ao conectar Google.");
       setBusy(false);
     }
-  }, [getHtml, getPlanningPayload, pendingStorageKey, returnTo, title]);
+  }, [getHtml, getOAuthOptions, getPlanningPayload, pendingStorageKey, returnTo, title]);
 
   useEffect(() => {
     void refresh();
@@ -231,24 +243,35 @@ export function GoogleProductExportButton({
   }, [refresh]);
 
   function handlePrimaryAction() {
-    const likelyExport = Boolean(status?.connected && isExportReady(status));
-    const previewWindow = likelyExport ? window.open("about:blank", "_blank") : null;
-
-    if (previewWindow && !previewWindow.closed) {
-      try {
-        previewWindow.document.title = "Exportando…";
-        previewWindow.document.body.innerHTML =
-          "<p style='font-family:sans-serif;padding:24px;color:#334155'>Exportando para o Google…</p>";
-      } catch {
-        // cross-origin guard
-      }
-    }
-
-    void handlePrimaryActionAsync(previewWindow);
+    void handlePrimaryActionAsync(null);
   }
 
   async function handlePrimaryActionAsync(previewWindow: Window | null) {
     const fresh = (await refresh()) ?? status;
+
+    // #region agent log
+    fetch("http://127.0.0.1:7718/ingest/9ac33552-969d-48be-9089-3a3b10571400", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "5b9381" },
+      body: JSON.stringify({
+        sessionId: "5b9381",
+        hypothesisId: "H-D",
+        location: "GoogleProductExportButton.tsx:handlePrimaryActionAsync",
+        message: "primary action path",
+        data: {
+          configured: Boolean(fresh?.configured),
+          authenticated: Boolean(fresh?.authenticated),
+          connected: Boolean(fresh?.connected),
+          exportReady: Boolean(fresh && isExportReady(fresh)),
+          needsExtraScope: Boolean(fresh && needsExtraScope?.(fresh)),
+          googleEmailDomain: fresh?.googleEmail?.split("@")[1] ?? null,
+          openedAboutBlank: Boolean(previewWindow && !previewWindow.closed),
+          productName,
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
 
     if (!fresh?.configured) {
       previewWindow?.close();
@@ -272,7 +295,7 @@ export function GoogleProductExportButton({
       return;
     }
 
-    await runExport(previewWindow);
+    await runExport(previewWindow, { fallbackToSameTab: true });
   }
 
   const defaultClassName = iconOnly

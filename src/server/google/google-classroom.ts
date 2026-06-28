@@ -67,60 +67,114 @@ export type ClassroomPublishResult = {
   alternateLink: string | null;
 };
 
-export async function listGoogleClassroomCourses(
+async function fetchClassroomCoursePage(
   accessToken: string,
+  query: Record<string, string>,
+  pageToken?: string,
+): Promise<{
+  courses: ClassroomCourse[];
+  nextPageToken?: string;
+  error?: { message?: string };
+  status: number;
+}> {
+  const params = new URLSearchParams({
+    pageSize: "100",
+    ...query,
+  });
+
+  if (pageToken) {
+    params.set("pageToken", pageToken);
+  }
+
+  const response = await fetch(
+    `https://classroom.googleapis.com/v1/courses?${params.toString()}`,
+    {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    },
+  );
+
+  const data = (await response.json()) as {
+    courses?: Array<{
+      id?: string;
+      name?: string;
+      section?: string;
+      courseState?: string;
+    }>;
+    nextPageToken?: string;
+    error?: { message?: string };
+  };
+
+  const courses: ClassroomCourse[] = [];
+
+  for (const course of data.courses || []) {
+    if (!course.id || !course.name) continue;
+
+    courses.push({
+      id: course.id,
+      name: course.name,
+      section: course.section,
+      courseState: course.courseState,
+    });
+  }
+
+  return {
+    courses,
+    nextPageToken: data.nextPageToken,
+    error: data.error,
+    status: response.status,
+  };
+}
+
+async function listCoursesWithQuery(
+  accessToken: string,
+  query: Record<string, string>,
 ): Promise<ClassroomCourse[]> {
   const courses: ClassroomCourse[] = [];
   let pageToken: string | undefined;
+  let lastError: string | undefined;
+  let lastStatus = 200;
 
   do {
-    const params = new URLSearchParams({
-      pageSize: "100",
-      courseStates: "ACTIVE",
-      teacherId: "me",
-    });
+    const page = await fetchClassroomCoursePage(accessToken, query, pageToken);
 
-    if (pageToken) {
-      params.set("pageToken", pageToken);
+    if (!page.status || page.status >= 400) {
+      lastStatus = page.status;
+      lastError = page.error?.message;
+      break;
     }
 
-    const response = await fetch(
-      `https://classroom.googleapis.com/v1/courses?${params.toString()}`,
-      {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      },
-    );
-
-    const data = (await response.json()) as {
-      courses?: Array<{
-        id?: string;
-        name?: string;
-        section?: string;
-        courseState?: string;
-      }>;
-      nextPageToken?: string;
-      error?: { message?: string };
-    };
-
-    if (!response.ok) {
-      throw new Error(mapClassroomApiError(response.status, data.error?.message));
-    }
-
-    for (const course of data.courses || []) {
-      if (!course.id || !course.name) continue;
-
-      courses.push({
-        id: course.id,
-        name: course.name,
-        section: course.section,
-        courseState: course.courseState,
-      });
-    }
-
-    pageToken = data.nextPageToken;
+    courses.push(...page.courses);
+    pageToken = page.nextPageToken;
   } while (pageToken);
 
-  return courses.sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
+  if (courses.length === 0 && lastError) {
+    throw new Error(mapClassroomApiError(lastStatus, lastError));
+  }
+
+  return courses;
+}
+
+export async function listGoogleClassroomCourses(
+  accessToken: string,
+): Promise<ClassroomCourse[]> {
+  const queries = [
+    { courseStates: "ACTIVE", teacherId: "me" },
+    { courseStates: "ACTIVE,PROVISIONED", teacherId: "me" },
+  ];
+
+  const merged = new Map<string, ClassroomCourse>();
+
+  for (const query of queries) {
+    const batch = await listCoursesWithQuery(accessToken, query);
+    for (const course of batch) {
+      merged.set(course.id, course);
+    }
+    if (merged.size > 0) break;
+  }
+
+  return [...merged.values()].sort((a, b) =>
+    a.name.localeCompare(b.name, "pt-BR"),
+  );
 }
 
 export async function publishDriveFileToClassroom(params: {

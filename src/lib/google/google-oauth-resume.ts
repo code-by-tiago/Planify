@@ -1,6 +1,8 @@
+import { GOOGLE_CLASSROOM_EXPORT_PENDING_KEY } from "@/lib/google/google-export-resume";
 import { GOOGLE_DOCS_EXPORT_PENDING_KEY } from "@/components/google/GoogleDocsExportButton";
 import { GOOGLE_DRIVE_EXPORT_PENDING_KEY } from "@/components/google/GoogleDriveExportButton";
 import { GOOGLE_FORMS_EXPORT_PENDING_KEY } from "@/components/google/GoogleFormsExportButton";
+import { executeClassroomMaterialExport } from "@/lib/google/classroom-export-flow";
 import {
   exportToGoogleDocs,
   exportToGoogleDrive,
@@ -104,11 +106,39 @@ async function executeProductExport(params: {
     return result.formUrl;
   }
 
+  if (params.key === GOOGLE_CLASSROOM_EXPORT_PENDING_KEY) {
+    const result = await executeClassroomMaterialExport({
+      title,
+      html,
+      documentType: params.documentType,
+      description: "Material didático enviado pelo Planify.",
+    });
+    // #region agent log
+    fetch("http://127.0.0.1:7718/ingest/9ac33552-969d-48be-9089-3a3b10571400", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "5b9381" },
+      body: JSON.stringify({
+        sessionId: "5b9381",
+        hypothesisId: "H-B",
+        location: "google-oauth-resume.ts:executeProductExport:classroom",
+        message: "oauth resume classroom export",
+        data: {
+          openUrlHost: result.openUrl ? new URL(result.openUrl).host : null,
+          coursesUsed: result.coursesUsed,
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
+    return result.openUrl;
+  }
+
   throw new Error("Exportação Google pendente não reconhecida.");
 }
 
 function productLabel(key: GoogleExportPendingKey): string {
   if (key === GOOGLE_FORMS_EXPORT_PENDING_KEY) return "Google Forms";
+  if (key === GOOGLE_CLASSROOM_EXPORT_PENDING_KEY) return "Google Classroom";
   if (key === GOOGLE_DRIVE_EXPORT_PENDING_KEY) return "Google Drive";
   if (key === GOOGLE_DOCS_EXPORT_PENDING_KEY) return "Google Docs";
   return "Google";

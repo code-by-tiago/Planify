@@ -9,10 +9,15 @@ export type GoogleExportPending = {
 const PENDING_TTL_MS = 30 * 60 * 1000;
 
 /** Session keys used to resume Google export after OAuth — only one may be active. */
+/** Session keys used to resume Google export after OAuth — only one may be active. */
+export const GOOGLE_CLASSROOM_EXPORT_PENDING_KEY =
+  "planify:google-classroom-export-pending";
+
 export const GOOGLE_EXPORT_PENDING_KEYS = [
   "planify:google-docs-export-pending",
   "planify:google-drive-export-pending",
   "planify:google-forms-export-pending",
+  GOOGLE_CLASSROOM_EXPORT_PENDING_KEY,
 ] as const;
 
 export type GoogleExportPendingKey = (typeof GOOGLE_EXPORT_PENDING_KEYS)[number];
@@ -247,5 +252,22 @@ export async function waitForFormsExportReady<T extends {
 
 export function openGoogleExportUrl(url: string): boolean {
   const opened = window.open(url, "_blank", "noopener,noreferrer");
+  // #region agent log
+  fetch("http://127.0.0.1:7718/ingest/9ac33552-969d-48be-9089-3a3b10571400", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "5b9381" },
+    body: JSON.stringify({
+      sessionId: "5b9381",
+      hypothesisId: "H-E",
+      location: "google-export-resume.ts:openGoogleExportUrl",
+      message: "open export url",
+      data: {
+        opened: opened !== null,
+        urlHost: url ? new URL(url).host : null,
+      },
+      timestamp: Date.now(),
+    }),
+  }).catch(() => {});
+  // #endregion
   return opened !== null;
 }

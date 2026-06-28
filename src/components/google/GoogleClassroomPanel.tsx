@@ -6,9 +6,11 @@ import {
   GOOGLE_ICON_ONLY_BUTTON_CLASS,
   GOOGLE_PRODUCT_ICON_CLASS,
 } from "@/components/google/google-icon-button-styles";
-import { needsClassroomGoogleOAuth } from "@/lib/google/classroom-google-account";
+import {
+  classroomGoogleAccountNeedsSwitch,
+  needsClassroomGoogleOAuth,
+} from "@/lib/google/classroom-google-account";
 import { useGoogleClassroomExport } from "@/hooks/useGoogleClassroomExport";
-import { useState } from "react";
 
 type GoogleClassroomPanelProps = {
   title: string;
@@ -39,6 +41,7 @@ export function GoogleClassroomPanel({
     institutionalEmail,
     setInstitutionalEmail,
     canExport,
+    canQuickExport,
     loading,
     busy,
     error,
@@ -47,6 +50,8 @@ export function GoogleClassroomPanel({
     handleSwitchAccount,
     handleDisconnect,
     handleExport,
+    handleQuickExport,
+    openClassroomHome,
   } = useGoogleClassroomExport({
     title,
     getHtml,
@@ -54,8 +59,6 @@ export function GoogleClassroomPanel({
     returnTo,
     documentType,
   });
-
-  const [compactConnectOpen, setCompactConnectOpen] = useState(false);
 
   const btnPrimary = compact
     ? GOOGLE_ICON_ONLY_BUTTON_CLASS
@@ -66,15 +69,12 @@ export function GoogleClassroomPanel({
     : "rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-black text-white transition hover:bg-emerald-700 disabled:opacity-60";
 
   const needsOAuth = needsClassroomGoogleOAuth(status);
-  const connectMode = status?.connected && needsOAuth ? "switch" : "connect";
+  const needsAccountSwitch = classroomGoogleAccountNeedsSwitch(status);
+  const connectMode = needsAccountSwitch ? "switch" : "connect";
 
   function handleCompactIconClick() {
     if (busy) return;
-    if (needsOAuth) {
-      void (status?.connected ? handleSwitchAccount() : handleConnect());
-      return;
-    }
-    setCompactConnectOpen((value) => !value);
+    void handleQuickExport();
   }
 
   if (loading) {
@@ -150,126 +150,23 @@ export function GoogleClassroomPanel({
   }
 
   if (compact) {
-    if (needsOAuth) {
-      return (
+    return (
+      <div className="flex min-w-0 flex-wrap items-center gap-2">
         <button
           type="button"
           disabled={busy}
           onClick={handleCompactIconClick}
           className={btnPrimary}
-          aria-label="Google Classroom"
-          title="Conectar conta Google da escola"
+          aria-label={busy ? "Enviando…" : "Enviar ao Google Classroom"}
+          title={
+            needsOAuth
+              ? "Conectar conta Google da escola e enviar"
+              : needsAccountSwitch
+                ? "Trocar para conta @educar.rs.gov.br e enviar"
+                : "Enviar ao Google Classroom"
+          }
         >
           <GoogleClassroomIcon className={GOOGLE_PRODUCT_ICON_CLASS} />
-        </button>
-      );
-    }
-
-    if (!canExport) {
-      return (
-        <div className="relative">
-          <button
-            type="button"
-            disabled={busy}
-            onClick={handleCompactIconClick}
-            className={btnPrimary}
-            aria-label="Google Classroom"
-            title="Turmas não encontradas — trocar conta"
-            aria-expanded={compactConnectOpen}
-          >
-            <GoogleClassroomIcon className={GOOGLE_PRODUCT_ICON_CLASS} />
-          </button>
-
-          {compactConnectOpen ? (
-            <div className="fixed z-[9999] w-[min(320px,calc(100vw-2rem))] rounded-xl border border-sky-200 bg-white p-3 shadow-2xl right-4 top-24">
-              <p className="text-[11px] leading-5 text-amber-900">
-                Nenhuma turma encontrada. Troque para a conta @educar.rs.gov.br correta.
-              </p>
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => void handleSwitchAccount()}
-                className="mt-2 w-full rounded-lg bg-amber-500 px-3 py-2 text-xs font-bold text-white"
-              >
-                {busy ? "Abrindo Google…" : "Escolher outra conta Google"}
-              </button>
-            </div>
-          ) : null}
-        </div>
-      );
-    }
-
-    return (
-      <div className="flex min-w-0 flex-wrap items-center gap-2">
-        {status.googleEmail ? (
-          <p
-            className="max-w-[min(200px,40vw)] truncate text-[10px] font-semibold text-sky-800"
-            title={status.googleEmail}
-          >
-            {status.googleEmail}
-          </p>
-        ) : null}
-        <select
-          value={courseId}
-          onChange={(event) => setCourseId(event.target.value)}
-          title="Turma do Google Classroom"
-          className="max-w-[min(200px,40vw)] rounded-xl border border-sky-200 bg-white px-2 py-2 text-xs font-semibold text-slate-900"
-        >
-          {courses.map((course) => (
-            <option key={course.id} value={course.id}>
-              {course.name}
-              {course.section ? ` — ${course.section}` : ""}
-            </option>
-          ))}
-        </select>
-        <input
-          type="text"
-          value={description}
-          onChange={(event) => setDescription(event.target.value)}
-          placeholder="Descrição (opcional)"
-          title="Descrição do material no Classroom"
-          className="max-w-[min(220px,45vw)] rounded-xl border border-sky-200 bg-white px-2 py-2 text-xs font-semibold text-slate-900"
-        />
-        <label
-          className="inline-flex items-center gap-1 text-[11px] font-semibold text-sky-900"
-          title="Salvar como rascunho"
-        >
-          <input
-            type="checkbox"
-            checked={publishAsDraft}
-            onChange={(event) => setPublishAsDraft(event.target.checked)}
-          />
-          Rascunho
-        </label>
-        <button
-          type="button"
-          disabled={busy || !courseId}
-          onClick={() => {
-            void handleExport();
-          }}
-          className={btnSuccess}
-          aria-label={busy ? "Enviando…" : "Enviar ao Classroom"}
-          title="Enviar ao Classroom"
-        >
-          <GoogleClassroomIcon className={GOOGLE_PRODUCT_ICON_CLASS} />
-        </button>
-        <button
-          type="button"
-          disabled={busy}
-          onClick={() => void handleDisconnect()}
-          aria-label="Desconectar Google"
-          title="Desconectar Google"
-          className="rounded-xl border border-slate-200 px-2 py-2 text-[11px] font-bold text-slate-600"
-        >
-          Desconectar
-        </button>
-        <button
-          type="button"
-          disabled={busy}
-          onClick={() => void handleSwitchAccount()}
-          className="text-[11px] font-semibold text-sky-700 underline-offset-2 hover:underline disabled:opacity-60"
-        >
-          Trocar conta
         </button>
         {error ? (
           <span
@@ -292,7 +189,7 @@ export function GoogleClassroomPanel({
         </p>
       </div>
 
-      {status.connected && canExport ? (
+      {status.connected && canQuickExport ? (
         <p className="mt-2 text-sm text-sky-900">
           Conectado como <strong>{status.googleEmail || "conta Google"}</strong>
         </p>
@@ -304,13 +201,19 @@ export function GoogleClassroomPanel({
       )}
 
       {error ? (
-        <p className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-800">
+        <p
+          className={`mt-3 rounded-xl border px-3 py-2 text-sm font-semibold ${
+            canQuickExport && !needsOAuth && !needsAccountSwitch
+              ? "border-amber-200 bg-amber-50 text-amber-900"
+              : "border-rose-200 bg-rose-50 text-rose-800"
+          }`}
+        >
           {error}
         </p>
       ) : null}
 
       <div className="mt-4 flex flex-wrap gap-2">
-        {needsOAuth ? (
+        {needsOAuth || needsAccountSwitch ? (
           <ClassroomGoogleConnectForm
             institutionalEmail={institutionalEmail}
             onInstitutionalEmailChange={setInstitutionalEmail}
@@ -362,7 +265,7 @@ export function GoogleClassroomPanel({
 
             <button
               type="button"
-              disabled={busy || !courseId}
+              disabled={busy}
               onClick={() => {
                 void handleExport();
               }}
@@ -390,20 +293,40 @@ export function GoogleClassroomPanel({
             </button>
           </>
         ) : (
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => void handleSwitchAccount()}
-            className="w-full rounded-xl bg-amber-500 px-4 py-3 text-sm font-black text-white"
-          >
-            {busy ? "Abrindo Google…" : "Escolher conta Google da escola"}
-          </button>
+          <>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => {
+                void handleQuickExport();
+              }}
+              className="w-full rounded-xl bg-emerald-600 px-4 py-3 text-sm font-black text-white"
+            >
+              {busy ? "Enviando…" : "Enviar material e abrir Classroom"}
+            </button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={openClassroomHome}
+              className="w-full rounded-xl border border-sky-200 bg-white px-4 py-3 text-sm font-bold text-sky-800"
+            >
+              Abrir classroom.google.com
+            </button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void handleSwitchAccount()}
+              className="text-xs font-semibold text-sky-700 underline-offset-2 hover:underline disabled:opacity-60"
+            >
+              Trocar conta Google da escola
+            </button>
+          </>
         )}
       </div>
 
       <p className="mt-3 text-xs leading-5 text-sky-800/90">
         O Planify envia o material ao seu Google Drive e cria um material na turma escolhida.
-        Use rascunho para revisar no Classroom antes de liberar aos alunos.
+        Sem turmas visíveis, o arquivo fica no Drive e o Classroom abre para você anexar manualmente.
       </p>
     </div>
   );

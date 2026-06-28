@@ -61,11 +61,26 @@ export function resolveClassroomOAuthParams(options: {
   };
 }
 
+/** Google OAuth ainda não conectado no Planify (independe do login Supabase). */
 export function needsClassroomGoogleOAuth(
   status: { connected: boolean; googleEmail: string | null } | null | undefined,
 ): boolean {
-  if (!status?.connected) return true;
+  return !status?.connected;
+}
+
+/** Token Google conectado, mas não é a conta institucional da escola. */
+export function classroomGoogleAccountNeedsSwitch(
+  status: { connected: boolean; googleEmail: string | null } | null | undefined,
+): boolean {
+  if (!status?.connected) return false;
   return classroomGoogleAccountMismatch(status.googleEmail);
+}
+
+/** Pronto para exportar: token Google com e-mail @educar.rs.gov.br. */
+export function isClassroomExportReady(
+  status: { connected: boolean; googleEmail: string | null } | null | undefined,
+): boolean {
+  return Boolean(status?.connected && isEducarInstitutionalEmail(status.googleEmail));
 }
 
 export function suggestInstitutionalEmail(

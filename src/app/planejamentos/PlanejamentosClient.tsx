@@ -1476,7 +1476,7 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
             <PlanifyPageHero
               badge="Planejamentos"
               icon="clipboard"
-              title="BNCC → IA → Google Docs oficial"
+              title="Planejamento"
               description="Sugira habilidades por conteúdo, gere a matriz pedagógica com IA e exporte com os modelos oficiais anual/trimestral."
             />
           </div>

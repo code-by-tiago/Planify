@@ -160,7 +160,7 @@ export default function PlanifyDashboardShell() {
   const panelTitle = useMemo(() => {
     if (activeTool) return activeTool.title;
     if (selectedSectionId === "planejamentos") {
-      return "BNCC → IA → Google Docs oficial";
+      return "Planejamento";
     }
     if (selectedSectionId) return dashboardSectionLabels[selectedSectionId];
     return "Início";

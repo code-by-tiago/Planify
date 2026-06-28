@@ -86,26 +86,18 @@ export const RESOURCES = [
   },
 ];
 
-export const HOW_IT_WORKS = [
+export const INTEGRATION_FEATURES = [
   {
-    step: 1,
-    title: "Descreva o que precisa",
+    title: "Integração com Google Workspace",
     description:
-      "Informe disciplina, etapa, tema e objetivos. O Planify entende o contexto pedagógico em português.",
+      "Serviço de exportação direta de materiais para Google Docs, Google Drive e envio de atividades para o Google Classroom.",
   },
   {
-    step: 2,
-    title: "IA estrutura o conteúdo",
+    title: "Onboarding e Treinamento Institucional",
     description:
-      "Receba planejamentos e materiais alinhados à BNCC, com sugestões de habilidades e sequência didática.",
+      "Implementação assistida e treinamento dedicado para escolas que adotam a plataforma em nível corporativo.",
   },
-  {
-    step: 3,
-    title: "Revise e exporte",
-    description:
-      "Ajuste no editor, exporte ao Google Docs ou envie para o Google Classroom — pronto para usar em sala.",
-  },
-];
+] as const;
 
 export const COMPARISON_ROWS = [
   {

@@ -107,37 +107,6 @@ export const HOW_IT_WORKS = [
   },
 ];
 
-export const STATS = [
-  {
-    value: "BNCC",
-    label: "local integrada",
-    icon: "checkCircle" as const,
-    detail:
-      "Habilidades sugeridas conforme etapa, ano/série e componente — você revisa e ajusta antes de usar.",
-  },
-  {
-    value: "Reservatório",
-    label: "didático verificado",
-    icon: "library" as const,
-    detail:
-      "Contexto pedagógico checado na geração para reduzir conteúdo genérico ou fora de lugar.",
-  },
-  {
-    value: "Material",
-    label: "Engine + editor",
-    icon: "editor" as const,
-    detail:
-      "Estruture o rascunho com IA, personalize no editor integrado e finalize sem trocar de ferramenta.",
-  },
-  {
-    value: "Google",
-    label: "Docs e Classroom",
-    icon: "download" as const,
-    detail:
-      "Exporte ao Google Docs, salve no Drive e publique atividades na turma conectada.",
-  },
-] as const;
-
 export const COMPARISON_ROWS = [
   {
     topic: "Tempo de planejamento",

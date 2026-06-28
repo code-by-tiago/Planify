@@ -19,7 +19,6 @@ import {
   getPlanifyTool,
   isActivePlanifyToolId,
   isAiToolDisabled,
-  planifyToolCount,
   type PlanifyToolId,
 } from "@/lib/pro/planifyTools";
 import { usePlanifyAccess } from "@/hooks/usePlanifyAccess";
@@ -324,9 +323,6 @@ export default function PlanifyDashboardShell() {
                       criar hoje?
                     </span>
                   </h1>
-                  <p className="hidden text-xs leading-snug text-slate-500 sm:block">
-                    {planifyToolCount + 1} geradores · BNCC · Google Docs · Comunidade
-                  </p>
                 </div>
               </div>
               <div className="flex items-center gap-1.5 sm:gap-2">

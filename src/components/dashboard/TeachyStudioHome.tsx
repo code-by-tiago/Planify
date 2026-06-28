@@ -1,12 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import type { DashboardSectionId } from "@/lib/pro/dashboardViews";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import {
   activePlanifyTools,
-  planifyToolCount,
-  planifyTools,
   toolCategories,
   type PlanifyTool,
   type PlanifyToolId,
@@ -20,31 +18,10 @@ type TeachyStudioHomeProps = {
   onTopicChange?: (topic: string) => void;
 };
 
-const trustStats = [
-  { value: "BNCC", label: "Alinhamento curricular" },
-  { value: "Google Docs", label: "Modelo oficial" },
-  { value: "Classroom", label: "Publicação direta" },
-  { value: "PDF", label: "Download local" },
-] as const;
-
-function matchesPlanejamentosSearch(term: string): boolean {
-  if (!term) return true;
-  return ["planejamento", "planejamentos", "bncc", "google", "docs", "matriz", "anual", "trimestral"].some(
-    (token) => token.includes(term) || term.includes(token),
+function filterTools(category: ToolCategoryId): PlanifyTool[] {
+  return activePlanifyTools.filter(
+    (tool) => category === "todos" || tool.category === category,
   );
-}
-
-function filterTools(query: string, category: ToolCategoryId): PlanifyTool[] {
-  const term = query.trim().toLowerCase();
-  return activePlanifyTools.filter((tool) => {
-    const matchCat = category === "todos" || tool.category === category;
-    const matchTerm =
-      !term ||
-      tool.title.toLowerCase().includes(term) ||
-      tool.shortTitle.toLowerCase().includes(term) ||
-      tool.description.toLowerCase().includes(term);
-    return matchCat && matchTerm;
-  });
 }
 
 export default function TeachyStudioHome({
@@ -53,29 +30,17 @@ export default function TeachyStudioHome({
   initialTopic = "",
   onTopicChange,
 }: TeachyStudioHomeProps) {
-  const [topic, setTopic] = useState(initialTopic);
-  const [query, setQuery] = useState("");
   const [category, setCategory] = useState<ToolCategoryId>("todos");
 
-  useEffect(() => {
-    setTopic(initialTopic);
-  }, [initialTopic]);
-
-  const hasActiveFilter = query.trim() !== "" || category !== "todos";
-  const filteredTools = useMemo(
-    () => filterTools(query, category),
-    [category, query],
-  );
-  const showPlanejamentos =
-    (category === "todos" || category === "planejamento") &&
-    matchesPlanejamentosSearch(query.trim().toLowerCase());
+  const hasActiveFilter = category !== "todos";
+  const filteredTools = useMemo(() => filterTools(category), [category]);
+  const showPlanejamentos = category === "todos" || category === "planejamento";
   const categoryTabs = toolCategories.filter((entry) => entry.id !== "todos");
   const extraSections = showPlanejamentos ? 1 : 0;
-  const totalGenerators = planifyToolCount + 1;
   const resultCount = filteredTools.length + extraSections;
 
-  function persistTopic(value = topic) {
-    const tema = value.trim();
+  function persistTopic() {
+    const tema = initialTopic.trim();
     onTopicChange?.(tema);
     if (!tema) return;
     try {
@@ -153,73 +118,7 @@ export default function TeachyStudioHome({
     <div className="pl-hud-hub pl-hud-board pl-hud-home flex h-full min-h-0 w-full flex-col overflow-hidden">
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
         <div className="mx-auto w-full max-w-7xl px-4 py-4 sm:px-6 sm:py-5">
-          <section className="pl-hud-hub-hero pl-hud-hub-reveal p-4 sm:p-5">
-            <div className="pl-hud-hub-mesh" aria-hidden />
-            <div className="pl-hud-hub-grid-bg" aria-hidden />
-
-            <div className="relative">
-              <p className="max-w-xl text-xs leading-snug text-slate-500 sm:text-sm">
-                {totalGenerators} geradores com IA e planejamentos oficiais — busque abaixo ou
-                escolha uma categoria.
-              </p>
-
-              <div className="pl-hud-hub-trust mt-6">
-                <div className="pl-hud-hub-trust-item">
-                  <span className="pl-hud-hub-trust-value">{totalGenerators}+</span>
-                  <span className="pl-hud-hub-trust-label">Geradores IA</span>
-                </div>
-                {trustStats.map((stat) => (
-                  <div key={stat.label} className="pl-hud-hub-trust-item">
-                    <span className="pl-hud-hub-trust-value">{stat.value}</span>
-                    <span className="pl-hud-hub-trust-label">{stat.label}</span>
-                  </div>
-                ))}
-              </div>
-
-              <div className="mt-7">
-                <label className="sr-only" htmlFor="hub-tool-search">
-                  Buscar ferramentas
-                </label>
-                <label className="sr-only" htmlFor="hub-topic">
-                  Tema da aula
-                </label>
-                <div className="pl-hud-hub-command">
-                  <div className="pl-hud-hub-command-row flex-col sm:flex-row">
-                    <div className="pl-hud-hub-command-field">
-                      <PlanifyIcon name="search" />
-                      <input
-                        id="hub-tool-search"
-                        value={query}
-                        onChange={(event) => setQuery(event.target.value)}
-                        placeholder="Buscar prova, lista, plano de aula, inclusão…"
-                        aria-label="Buscar ferramentas"
-                      />
-                    </div>
-                    <div className="pl-hud-hub-command-field border-t border-cyan-400/15 sm:border-t-0">
-                      <PlanifyIcon name="spark" />
-                      <input
-                        id="hub-topic"
-                        value={topic}
-                        onChange={(event) => setTopic(event.target.value)}
-                        onBlur={() => persistTopic()}
-                        placeholder="Tema da aula (opcional)"
-                        aria-label="Tema da aula"
-                      />
-                    </div>
-                  </div>
-                  <div className="pl-hud-hub-command-hint">
-                    <PlanifyIcon name="spark" className="h-3 w-3" />
-                    Launcher do estúdio — busque ferramentas ou defina o tema antes de abrir
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <section
-            className="pl-hud-hub-reveal mt-10"
-            style={{ animationDelay: "80ms" }}
-          >
+          <section className="pl-hud-hub-reveal">
             <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-600">
@@ -275,14 +174,11 @@ export default function TeachyStudioHome({
                   Nenhuma ferramenta encontrada
                 </h3>
                 <p className="mt-2 text-sm font-medium text-slate-600">
-                  Tente outro termo ou limpe os filtros para ver todas as ferramentas.
+                  Escolha outra categoria ou volte para ver todas as ferramentas.
                 </p>
                 <button
                   type="button"
-                  onClick={() => {
-                    setQuery("");
-                    setCategory("todos");
-                  }}
+                  onClick={() => setCategory("todos")}
                   className="pl-hud-btn mt-5 rounded-xl px-5 py-2.5 text-xs font-semibold"
                 >
                   Limpar filtros

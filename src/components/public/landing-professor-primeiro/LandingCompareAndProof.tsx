@@ -46,26 +46,23 @@ export function LandingCompareAndProof() {
         <article className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
           <div className="grid sm:grid-cols-[1fr_1.1fr]">
             <div className="flex flex-col justify-center p-6 sm:p-8">
-              <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-[#26C6DA]">
-                Prova real em sala
-              </p>
-              <blockquote className="mt-4 text-lg font-bold leading-8 text-[#0A192F] sm:text-xl">
+              <blockquote className="text-lg font-bold leading-8 text-[#0A192F] sm:text-xl">
                 &ldquo;O Planify organiza as atividades no painel, eu reviso com segurança e o
                 material segue direto para a lousa.&rdquo;
               </blockquote>
               <footer className="mt-6">
-                <p className="font-extrabold text-[#0A192F]">Helena Lopes</p>
+                <p className="font-extrabold text-[#0A192F]">Cris Gomes</p>
                 <p className="text-sm font-semibold text-[#26C6DA]">Professora de Português</p>
               </footer>
             </div>
 
             <div className="relative min-h-[220px] bg-slate-100 sm:min-h-full">
               <Image
-                src="/depoimentos/helena-lopes.jpg"
-                alt="Professora Helena Lopes em sala de aula usando material do Planify"
+                src="/depoimentos/cris-gomes.png"
+                alt="Professora Cris Gomes em sala de aula usando material do Planify"
                 fill
                 sizes="(min-width: 1024px) 28vw, 100vw"
-                className="object-cover object-[42%_38%]"
+                className="object-cover object-center"
               />
             </div>
           </div>

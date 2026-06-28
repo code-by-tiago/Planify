@@ -188,7 +188,7 @@ export async function publishDriveFileToClassroom(params: {
   const body = {
     title: params.title,
     description: params.description || "Material enviado pelo Planify.",
-    state: params.publishState === "DRAFT" ? "DRAFT" : "PUBLISHED",
+    state: params.publishState === "PUBLISHED" ? "PUBLISHED" : "DRAFT",
     materials: [
       {
         driveFile: {

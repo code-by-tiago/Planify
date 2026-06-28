@@ -471,32 +471,6 @@ export function finalizeMatrixLessonAllocation<T extends MatrixLessonAllocatable
   );
   const carga = parsePlanningCargaHoraria(payload.cargaHoraria, canonicalCount);
 
-  // #region agent log
-  fetch("http://127.0.0.1:7718/ingest/9ac33552-969d-48be-9089-3a3b10571400", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "4798d7" },
-    body: JSON.stringify({
-      sessionId: "4798d7",
-      runId: "post-fix",
-      hypothesisId: "A-B",
-      location: "planning-lesson-allocation.ts:finalizeMatrixLessonAllocation:entry",
-      message: "allocation input",
-      data: {
-        tipo,
-        carga,
-        inputRows: items.length,
-        canonicalCount,
-        inputPeriodosSum: items.reduce((s, i) => s + (Number(i.periodos) || 0), 0),
-        inputPeriodosSample: items.slice(0, 4).map((i) => ({
-          conteudo: i.conteudo?.slice(0, 40),
-          periodos: i.periodos,
-        })),
-      },
-      timestamp: Date.now(),
-    }),
-  }).catch(() => {});
-  // #endregion
-
   const withAiPeriods = items.map((item, index) => {
     const parsedPeriodos = Number(item.periodos);
     const parsedNumeroAula = Number(item.numeroAula);
@@ -520,37 +494,6 @@ export function finalizeMatrixLessonAllocation<T extends MatrixLessonAllocatable
   if (tipo === "anual") {
     allocated = ensureAnnualTrimesterDistribution(allocated);
   }
-
-  // #region agent log
-  fetch("http://127.0.0.1:7718/ingest/9ac33552-969d-48be-9089-3a3b10571400", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "4798d7" },
-    body: JSON.stringify({
-      sessionId: "4798d7",
-      runId: "post-fix",
-      hypothesisId: "A-B-C",
-      location: "planning-lesson-allocation.ts:finalizeMatrixLessonAllocation:exit",
-      message: "allocation output",
-      data: {
-        tipo,
-        carga,
-        targetTotal,
-        outputRows: allocated.length,
-        outputPeriodosSum: matrixPeriodsTotal(allocated),
-        maxPeriodos: Math.max(...allocated.map((i) => Number(i.periodos) || 0)),
-        sample: allocated.slice(0, 4).map((i) => ({
-          conteudo: i.conteudo?.slice(0, 40),
-          trimestre: i.trimestre,
-          numeroAula: i.numeroAula,
-          periodos: i.periodos,
-          aulaInicio: i.aulaInicio,
-          aulaFim: i.aulaFim,
-        })),
-      },
-      timestamp: Date.now(),
-    }),
-  }).catch(() => {});
-  // #endregion
 
   return allocated;
 }

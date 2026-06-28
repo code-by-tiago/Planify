@@ -275,22 +275,5 @@ export async function waitForFormsExportReady<T extends {
 
 export function openGoogleExportUrl(url: string): boolean {
   const opened = window.open(url, "_blank", "noopener,noreferrer");
-  // #region agent log
-  fetch("http://127.0.0.1:7718/ingest/9ac33552-969d-48be-9089-3a3b10571400", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "5b9381" },
-    body: JSON.stringify({
-      sessionId: "5b9381",
-      hypothesisId: "H-E",
-      location: "google-export-resume.ts:openGoogleExportUrl",
-      message: "open export url",
-      data: {
-        opened: opened !== null,
-        urlHost: url ? new URL(url).host : null,
-      },
-      timestamp: Date.now(),
-    }),
-  }).catch(() => {});
-  // #endregion
   return opened !== null;
 }

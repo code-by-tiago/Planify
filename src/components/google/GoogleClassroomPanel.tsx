@@ -247,6 +247,7 @@ export function GoogleClassroomPanel({
                 onChange={(event) => setCourseId(event.target.value)}
                 className="rounded-xl border border-sky-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900"
               >
+                <option value="">Selecione a turma…</option>
                 {courses.map((course) => (
                   <option key={course.id} value={course.id}>
                     {course.name}
@@ -278,7 +279,7 @@ export function GoogleClassroomPanel({
 
             <button
               type="button"
-              disabled={busy}
+              disabled={busy || !courseId}
               onClick={() => {
                 void handleExport();
               }}

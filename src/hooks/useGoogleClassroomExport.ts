@@ -27,13 +27,18 @@ import {
   readClassroomGoogleEmail,
   suggestInstitutionalEmail,
 } from "@/lib/google/classroom-google-account";
-import { resolveGoogleOAuthReturnTo } from "@/lib/google/document-type-detection";
-import { notifyGoogleStatusChanged, GOOGLE_STATUS_CHANGED_EVENT } from "@/lib/google/google-status-events";
 import {
-  openGoogleExportUrl,
-  saveGoogleExportPending,
-} from "@/lib/google/google-export-resume";
-import { GOOGLE_CLASSROOM_EXPORT_PENDING_KEY } from "@/lib/google/google-export-resume";
+  assertClassroomClientExportAllowed,
+  confirmClassroomExport,
+  recordClassroomClientExport,
+  resolveSelectedCourseLabel,
+} from "@/lib/google/classroom-export-client-guard";
+import { resolveGoogleOAuthReturnTo } from "@/lib/google/document-type-detection";
+import { openGoogleExportUrl } from "@/lib/google/google-export-resume";
+import {
+  GOOGLE_STATUS_CHANGED_EVENT,
+  notifyGoogleStatusChanged,
+} from "@/lib/google/google-status-events";
 import { useCallback, useEffect, useState } from "react";
 
 type UseGoogleClassroomExportOptions = {
@@ -55,7 +60,7 @@ export function useGoogleClassroomExport({
   const [courses, setCourses] = useState<ClassroomCourseOption[]>([]);
   const [courseId, setCourseId] = useState("");
   const [description, setDescription] = useState("");
-  const [publishAsDraft, setPublishAsDraft] = useState(false);
+  const [publishAsDraft, setPublishAsDraft] = useState(true);
   const [institutionalEmail, setInstitutionalEmail] = useState("");
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -91,7 +96,12 @@ export function useGoogleClassroomExport({
       if (next.connected && isClassroomExportReady(next)) {
         const list = await fetchClassroomCourses();
         setCourses(list);
-        setCourseId((current) => current || resolvePreferredClassroomCourseId(list));
+        setCourseId((current) => {
+          if (current && list.some((course) => course.id === current)) {
+            return current;
+          }
+          return resolvePreferredClassroomCourseId(list);
+        });
 
         if (list.length === 0) {
           setError(buildClassroomCoursesMessage(next, 0));
@@ -160,12 +170,6 @@ export function useGoogleClassroomExport({
         await disconnectGoogle();
       }
 
-      saveGoogleExportPending(GOOGLE_CLASSROOM_EXPORT_PENDING_KEY, {
-        title: title.trim() || "Material Planify",
-        returnTo: resolveGoogleOAuthReturnTo(returnTo),
-        html: getHtml(),
-      });
-
       const oauthParams = resolveClassroomOAuthStartOptions(status, email);
 
       await startGoogleOAuth(resolveGoogleOAuthReturnTo(returnTo), oauthParams);
@@ -218,23 +222,58 @@ export function useGoogleClassroomExport({
       return;
     }
 
+    const exportTitle = title.trim() || "Material Planify";
+    const exportHtml = getHtml();
+    const selectedCourseId = courseId.trim();
+    const asDraft = publishAsDraft;
+    const courseLabel = resolveSelectedCourseLabel(courses, selectedCourseId);
+
+    if (
+      !confirmClassroomExport({
+        title: exportTitle,
+        courseLabel,
+        asDraft,
+      })
+    ) {
+      previewWindow?.close();
+      return;
+    }
+
+    try {
+      assertClassroomClientExportAllowed({
+        courseId: selectedCourseId,
+        title: exportTitle,
+        html: exportHtml,
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Envio duplicado bloqueado.");
+      previewWindow?.close();
+      return;
+    }
+
     setBusy(true);
     setError("");
 
     try {
       const result = await executeClassroomMaterialExport({
-        title: title.trim() || "Material Planify",
-        html: getHtml(),
-        courseId: courseId.trim(),
+        title: exportTitle,
+        html: exportHtml,
+        courseId: selectedCourseId,
         description:
           description.trim() ||
           "Material didático enviado pelo Planify.",
         documentType,
-        publishState: publishAsDraft ? "DRAFT" : "PUBLISHED",
+        publishState: asDraft ? "DRAFT" : "PUBLISHED",
         onStatus: notify,
       });
 
-      persistPreferredClassroomCourseId(courseId);
+      recordClassroomClientExport({
+        courseId: selectedCourseId,
+        title: exportTitle,
+        html: exportHtml,
+      });
+
+      persistPreferredClassroomCourseId(selectedCourseId);
 
       notify(
         result.coursesUsed > 0
@@ -288,28 +327,6 @@ export function useGoogleClassroomExport({
   }
 
   async function handleQuickExport(previewWindow?: Window | null) {
-    // #region agent log
-    fetch("http://127.0.0.1:7718/ingest/9ac33552-969d-48be-9089-3a3b10571400", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "5b9381" },
-      body: JSON.stringify({
-        sessionId: "5b9381",
-        hypothesisId: "H-C",
-        location: "useGoogleClassroomExport.ts:handleQuickExport",
-        message: "quick export branch",
-        data: {
-          connected: Boolean(status?.connected),
-          googleEmailDomain: status?.googleEmail?.split("@")[1] ?? null,
-          needsOAuth: needsClassroomGoogleOAuth(status),
-          needsSwitch: classroomGoogleAccountNeedsSwitch(status),
-          coursesCount: courses.length,
-          hasPreviewWindow: Boolean(previewWindow && !previewWindow.closed),
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
-
     if (needsClassroomGoogleOAuth(status)) {
       previewWindow?.close();
       await handleConnect();

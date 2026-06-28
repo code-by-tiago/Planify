@@ -249,30 +249,6 @@ export function GoogleProductExportButton({
   async function handlePrimaryActionAsync(previewWindow: Window | null) {
     const fresh = (await refresh()) ?? status;
 
-    // #region agent log
-    fetch("http://127.0.0.1:7718/ingest/9ac33552-969d-48be-9089-3a3b10571400", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "5b9381" },
-      body: JSON.stringify({
-        sessionId: "5b9381",
-        hypothesisId: "H-D",
-        location: "GoogleProductExportButton.tsx:handlePrimaryActionAsync",
-        message: "primary action path",
-        data: {
-          configured: Boolean(fresh?.configured),
-          authenticated: Boolean(fresh?.authenticated),
-          connected: Boolean(fresh?.connected),
-          exportReady: Boolean(fresh && isExportReady(fresh)),
-          needsExtraScope: Boolean(fresh && needsExtraScope?.(fresh)),
-          googleEmailDomain: fresh?.googleEmail?.split("@")[1] ?? null,
-          openedAboutBlank: Boolean(previewWindow && !previewWindow.closed),
-          productName,
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
-
     if (!fresh?.configured) {
       previewWindow?.close();
       return;

@@ -181,6 +181,7 @@ export function GoogleClassroomPopoverButton({
                 onChange={(event) => setCourseId(event.target.value)}
                 className="w-full rounded-lg border border-sky-200 bg-white px-2 py-2 text-xs font-semibold text-slate-900"
               >
+                <option value="">Selecione a turma…</option>
                 {courses.map((course) => (
                   <option key={course.id} value={course.id}>
                     {course.name}
@@ -203,7 +204,7 @@ export function GoogleClassroomPopoverButton({
                 checked={publishAsDraft}
                 onChange={(event) => setPublishAsDraft(event.target.checked)}
               />
-              Salvar como rascunho
+              Salvar como rascunho (recomendado — alunos não veem até publicar)
             </label>
             <div className="flex gap-2">
               <button

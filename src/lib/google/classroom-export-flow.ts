@@ -64,7 +64,7 @@ export function resolvePreferredClassroomCourseId(
     /* ignore */
   }
 
-  return courses[0]?.id || "";
+  return "";
 }
 
 export function persistPreferredClassroomCourseId(courseId: string): void {
@@ -184,136 +184,80 @@ export async function executeClassroomMaterialExport(params: {
   }
 
   try {
-  let courses: ClassroomCourseOption[] = [];
+    let courses: ClassroomCourseOption[] = [];
 
-  // #region agent log
-  fetch("http://127.0.0.1:7718/ingest/9ac33552-969d-48be-9089-3a3b10571400", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "5b9381" },
-    body: JSON.stringify({
-      sessionId: "5b9381",
-      hypothesisId: "H-A",
-      location: "classroom-export-flow.ts:executeClassroomMaterialExport:entry",
-      message: "classroom export started",
-      data: {
-        hasHtml: Boolean(params.html?.trim()),
-        htmlLen: params.html?.length ?? 0,
-        courseIdParam: params.courseId || null,
-      },
-      timestamp: Date.now(),
-    }),
-  }).catch(() => {});
-  // #endregion
+    try {
+      courses = await fetchClassroomCourses();
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Erro ao listar turmas do Classroom.";
 
-  try {
-    courses = await fetchClassroomCourses();
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Erro ao listar turmas do Classroom.";
+      params.onStatus?.(`Turmas indisponíveis (${message}). Salvando no Drive…`);
 
-    params.onStatus?.(`Turmas indisponíveis (${message}). Salvando no Drive…`);
+      const driveResult = await exportToGoogleDrive({
+        title: params.title,
+        html: params.html,
+        documentType: params.documentType,
+      });
 
-    const driveResult = await exportToGoogleDrive({
-      title: params.title,
-      html: params.html,
-      documentType: params.documentType,
-    });
+      return {
+        openUrl:
+          driveResult.drive.webViewLink ||
+          driveResult.driveOpenUrl ||
+          CLASSROOM_HOME_URL,
+        coursesUsed: 0,
+      };
+    }
 
-    return {
-      openUrl:
+    const explicitCourseId = String(params.courseId || "").trim();
+
+    if (courses.length > 0 && !explicitCourseId) {
+      throw new Error("Selecione a turma antes de enviar ao Google Classroom.");
+    }
+
+    const courseId = explicitCourseId;
+
+    if (!courseId) {
+      const driveResult = await exportToGoogleDrive({
+        title: params.title,
+        html: params.html,
+        documentType: params.documentType,
+      });
+
+      params.onStatus?.(
+        "Material salvo no Google Drive. Abra o Classroom para anexar à turma.",
+      );
+
+      const openUrl =
         driveResult.drive.webViewLink ||
         driveResult.driveOpenUrl ||
-        CLASSROOM_HOME_URL,
-      coursesUsed: 0,
-    };
-  }
+        CLASSROOM_HOME_URL;
 
-  const explicitCourseId = String(params.courseId || "").trim();
+      return {
+        openUrl,
+        coursesUsed: 0,
+      };
+    }
 
-  if (courses.length > 0 && !explicitCourseId) {
-    throw new Error("Selecione a turma antes de enviar ao Google Classroom.");
-  }
-
-  const courseId = explicitCourseId;
-
-  if (!courseId) {
-    const driveResult = await exportToGoogleDrive({
+    const result = await exportToGoogleClassroom({
       title: params.title,
       html: params.html,
+      courseId,
+      description:
+        params.description?.trim() ||
+        "Material didático enviado pelo Planify.",
       documentType: params.documentType,
+      publishState: params.publishState === "PUBLISHED" ? "PUBLISHED" : "DRAFT",
     });
 
-    params.onStatus?.(
-      "Material salvo no Google Drive. Abra o Classroom para anexar à turma.",
-    );
+    persistPreferredClassroomCourseId(courseId);
 
-    const openUrl =
-      driveResult.drive.webViewLink ||
-      driveResult.driveOpenUrl ||
-      CLASSROOM_HOME_URL;
-    // #region agent log
-    fetch("http://127.0.0.1:7718/ingest/9ac33552-969d-48be-9089-3a3b10571400", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "5b9381" },
-      body: JSON.stringify({
-        sessionId: "5b9381",
-        hypothesisId: "H-A",
-        location: "classroom-export-flow.ts:executeClassroomMaterialExport:noCourses",
-        message: "no teacher courses — drive fallback",
-        data: {
-          coursesCount: courses.length,
-          openUrlHost: openUrl ? new URL(openUrl).host : null,
-          branch: "drive-fallback",
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
+    const openUrl = resolveClassroomOpenUrl(result);
 
     return {
       openUrl,
-      coursesUsed: 0,
+      coursesUsed: courses.length,
     };
-  }
-
-  const result = await exportToGoogleClassroom({
-    title: params.title,
-    html: params.html,
-    courseId,
-    description:
-      params.description?.trim() ||
-      "Material didático enviado pelo Planify.",
-    documentType: params.documentType,
-    publishState: params.publishState,
-  });
-
-  persistPreferredClassroomCourseId(courseId);
-
-  const openUrl = resolveClassroomOpenUrl(result);
-  // #region agent log
-  fetch("http://127.0.0.1:7718/ingest/9ac33552-969d-48be-9089-3a3b10571400", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "5b9381" },
-    body: JSON.stringify({
-      sessionId: "5b9381",
-      hypothesisId: "H-A",
-      location: "classroom-export-flow.ts:executeClassroomMaterialExport:success",
-      message: "classroom export completed",
-      data: {
-        coursesCount: courses.length,
-        courseIdUsed: courseId,
-        openUrlHost: openUrl ? new URL(openUrl).host : null,
-        branch: "classroom",
-      },
-      timestamp: Date.now(),
-    }),
-  }).catch(() => {});
-  // #endregion
-
-  return {
-    openUrl,
-    coursesUsed: courses.length,
-  };
   } finally {
     releaseClassroomExportLock();
   }

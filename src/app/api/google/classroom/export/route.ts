@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { resolvePlanifyUserFromRequest } from "../../../../../server/google/google-auth";
+import {
+  assertClassroomExportAllowed,
+  buildClassroomExportDedupKey,
+  recordClassroomExportDedup,
+} from "../../../../../server/google/classroom-export-dedup";
 import { exportMaterialToGoogle } from "../../../../../server/google/google-export-service";
 import { getGoogleConfigStatus } from "../../../../../server/google/google-oauth";
 import { logExportSuccess, parseExportTelemetryMetadata } from "@/server/export/export-error-service";
@@ -75,20 +80,33 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const courseId = String(body.courseId).trim();
+  const html = String(body.html || "").trim();
+  const publishState =
+    body.publishState === "PUBLISHED" ? "PUBLISHED" : "DRAFT";
+
   try {
+    const dedupKey = buildClassroomExportDedupKey({
+      userId: user.id,
+      courseId,
+      title,
+      html,
+    });
+
+    assertClassroomExportAllowed(dedupKey);
+
     const startedAt = Date.now();
     const result = await exportMaterialToGoogle(user.id, {
       title,
-      html: body.html,
+      html,
       description: body.description,
-      courseId: body.courseId ? String(body.courseId) : undefined,
+      courseId,
       filename: body.filename,
       documentType: body.documentType,
-      publishState:
-        body.publishState === "DRAFT" || body.publishState === "PUBLISHED"
-          ? body.publishState
-          : undefined,
+      publishState,
     });
+
+    recordClassroomExportDedup(dedupKey);
 
     logExportSuccess({
       surface: "google-classroom",

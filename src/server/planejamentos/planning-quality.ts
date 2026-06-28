@@ -4,16 +4,6 @@ import {
 } from "@/lib/materiais/material-semantic-quality";
 import { computeQualityScore } from "@/lib/materiais/material-quality-score";
 import type { PlanningAiPayload, PlanningMatrixItem } from "./planning-ai-service";
-import {
-  matrixPeriodsTotal,
-  parsePlanningCargaHoraria,
-  parsePlanningCargaHorariaStrict,
-} from "./planning-lesson-allocation";
-import {
-  assessDistributionCoarseness,
-  computeIdealRowCount,
-  OFFICIAL_MAX_PERIODS_PER_ROW,
-} from "./planning-official-contract";
 import { splitPlanningConteudos } from "./planning-validation";
 
 function normalizeSearch(value: unknown): string {
@@ -36,6 +26,14 @@ function getTipo(payload: PlanningAiPayload): "anual" | "trimestral" {
     .replace(/\p{Diacritic}/gu, "");
 
   return raw.includes("tri") ? "trimestral" : "anual";
+}
+
+function contentKey(value: unknown): string {
+  return normalizeSearch(value)
+    .replace(/\b(parte|aula|semana)\s*\d+\b/g, "")
+    .replace(/\b[ivx]+\b$/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function inputContentCovered(
@@ -63,49 +61,47 @@ export function getPlanningOutputIssues(
   const tipo = getTipo(payload);
 
   if (items.length === 0) {
-    issues.push("A matriz não contém linhas de conteúdo.");
+    issues.push("A matriz nao contem linhas de conteudo.");
     return issues;
   }
 
   const expectedRows = Math.max(inputContents.length, 1);
-  const cargaEsperada =
-    parsePlanningCargaHorariaStrict(payload.cargaHoraria) ??
-    parsePlanningCargaHoraria(
-      payload.cargaHoraria,
-      Math.max(expectedRows, matrixPeriodsTotal(items) || expectedRows),
-    );
-  const idealRowCount = computeIdealRowCount(cargaEsperada);
-  const distribution = assessDistributionCoarseness(items, cargaEsperada);
-
-  const rowsExceedingMax = items.filter(
-    (item) => (Number(item.periodos) || 0) > OFFICIAL_MAX_PERIODS_PER_ROW,
-  ).length;
-  if (rowsExceedingMax > 0) {
+  if (inputContents.length > 0 && items.length !== expectedRows) {
     issues.push(
-      `${rowsExceedingMax} linha(s) com mais de ${OFFICIAL_MAX_PERIODS_PER_ROW} períodos — desdobre em experiências menores (1–4 períodos cada).`,
+      `A matriz deve ter exatamente uma aula por conteudo informado (${expectedRows}); recebeu ${items.length}.`,
     );
   }
 
-  if (distribution.coarse) {
+  const seenContents = new Set<string>();
+  const repeatedContents = new Set<string>();
+  for (const item of items) {
+    const key = contentKey(item.conteudo);
+    if (!key) continue;
+    if (seenContents.has(key)) repeatedContents.add(item.conteudo);
+    seenContents.add(key);
+  }
+  if (repeatedContents.size > 0) {
     issues.push(
-      `Distribuição grosseira: esperadas ~${idealRowCount} experiências para ${cargaEsperada} períodos; recebidas ${items.length}. Desdobre cada conteúdo em linhas com 1–4 períodos.`,
-    );
-  } else if (items.length < expectedRows) {
-    issues.push(
-      `Esperada ao menos uma linha por conteúdo informado (${expectedRows}); recebido ${items.length}.`,
+      `Conteudos repetidos na matriz: ${Array.from(repeatedContents).slice(0, 5).join("; ")}.`,
     );
   }
 
-  const zeroPeriodRows = items.filter((item) => !item.periodos || item.periodos <= 0).length;
-  if (zeroPeriodRows > 0) {
-    issues.push(`${zeroPeriodRows} linha(s) sem períodos alocados.`);
-  }
+  const invalidLessonRows = items.filter((item, index) => {
+    const numeroAula = Number(item.numeroAula);
+    const periodos = Number(item.periodos);
+    const aulaInicio = Number(item.aulaInicio);
+    const aulaFim = Number(item.aulaFim);
 
-  const cargaAlocada = matrixPeriodsTotal(items);
-
-  if (cargaAlocada > 0 && cargaAlocada !== cargaEsperada) {
+    return (
+      numeroAula !== index + 1 ||
+      periodos !== 1 ||
+      aulaInicio !== index + 1 ||
+      aulaFim !== index + 1
+    );
+  }).length;
+  if (invalidLessonRows > 0) {
     issues.push(
-      `A soma dos períodos (${cargaAlocada}) deve ser igual à carga horária informada (${cargaEsperada}).`,
+      `${invalidLessonRows} linha(s) fora do contrato: numeroAula sequencial, periodos=1, aulaInicio=aulaFim=numeroAula.`,
     );
   }
 
@@ -118,14 +114,14 @@ export function getPlanningOutputIssues(
 
   if (emptyFields > Math.floor(items.length / 2)) {
     issues.push(
-      "Preencha objetivos, metodologia e avaliação em cada linha da matriz.",
+      "Preencha objetivos, metodologia e avaliacao em cada linha da matriz.",
     );
   }
 
   const withoutSkills = items.filter((item) => item.habilidades.length === 0).length;
   if (withoutSkills > 0) {
     issues.push(
-      `${withoutSkills} linha(s) sem habilidade BNCC vinculada às selecionadas.`,
+      `${withoutSkills} linha(s) sem habilidade BNCC vinculada as selecionadas.`,
     );
   }
 
@@ -140,7 +136,7 @@ export function getPlanningOutputIssues(
       const code = String(skill.codigo || "").trim().toUpperCase();
       if (code === "BNCC" || (allowedCodes.size > 0 && !allowedCodes.has(code))) {
         issues.push(
-          `Habilidade inválida ou não selecionada na linha "${item.conteudo}": ${skill.codigo}.`,
+          `Habilidade invalida ou nao selecionada na linha "${item.conteudo}": ${skill.codigo}.`,
         );
         break;
       }
@@ -150,7 +146,7 @@ export function getPlanningOutputIssues(
   for (const inputContent of inputContents.slice(0, 12)) {
     if (!inputContentCovered(inputContent, items)) {
       issues.push(
-        `O conteúdo informado "${inputContent}" não aparece de forma clara na matriz.`,
+        `O conteudo informado "${inputContent}" nao aparece de forma clara na matriz.`,
       );
     }
   }
@@ -160,7 +156,7 @@ export function getPlanningOutputIssues(
     if (semanticFlags >= 5) break;
 
     if (isGenericEducationalText(item.objetivos)) {
-      issues.push(`Objetivos genéricos na linha "${item.conteudo}".`);
+      issues.push(`Objetivos genericos na linha "${item.conteudo}".`);
       semanticFlags += 1;
     }
     if (
@@ -168,7 +164,7 @@ export function getPlanningOutputIssues(
       isGenericEducationalText(item.metodologia)
     ) {
       issues.push(
-        `Metodologia genérica ou repetida na linha "${item.conteudo}" — detalhe estratégias específicas.`,
+        `Metodologia generica ou repetida na linha "${item.conteudo}" - detalhe estrategias especificas.`,
       );
       semanticFlags += 1;
     }
@@ -181,7 +177,7 @@ export function getPlanningOutputIssues(
       item.objetivos.length < 80
     ) {
       issues.push(
-        `Objetivos pouco ligados ao conteúdo "${item.conteudo}".`,
+        `Objetivos pouco ligados ao conteudo "${item.conteudo}".`,
       );
       semanticFlags += 1;
     }
@@ -194,11 +190,11 @@ export function getPlanningOutputIssues(
   );
   if (tipo === "anual" && items.length >= 3 && !trimesters.has(3)) {
     issues.push(
-      "Planejamento anual: distribua conteúdos também no 3º trimestre.",
+      "Planejamento anual: distribua conteudos tambem no 3o trimestre.",
     );
   } else if (tipo === "anual" && trimesters.size < 2 && items.length >= 6) {
     issues.push(
-      "Planejamento anual: distribua conteúdos entre mais de um trimestre.",
+      "Planejamento anual: distribua conteudos entre mais de um trimestre.",
     );
   }
 
@@ -207,14 +203,14 @@ export function getPlanningOutputIssues(
 
 export function buildPlanningQualityRetryNote(issues: string[]): string {
   return [
-    "CORREÇÃO OBRIGATÓRIA — a matriz anterior não cumpriu o contrato pedagógico:",
+    "CORRECAO OBRIGATORIA - a matriz anterior nao cumpriu o contrato pedagogico:",
     ...issues.map((item) => `- ${item}`),
     "Use somente habilidades BNCC que o professor selecionou.",
-    "Não invente códigos genéricos como BNCC.",
+    "Nao invente codigos genericos como BNCC.",
     "Evite metodologias copiadas iguais em todas as linhas.",
-    "Cada linha deve refletir o conteúdo específico informado pelo professor.",
-    "Desdobre conteúdos amplos em várias experiências (1–4 períodos cada), como nos modelos oficiais DOCX.",
-    "A soma de periodos deve bater com a carga horária e nenhuma linha pode ter mais de 4 períodos.",
+    "Cada linha deve refletir o conteudo especifico informado pelo professor.",
+    "Mantenha exatamente uma aula por conteudo informado, sem repetir conteudo para fechar carga horaria.",
+    "Use periodos=1 e aulaInicio=aulaFim=numeroAula em todas as linhas.",
   ].join("\n");
 }
 

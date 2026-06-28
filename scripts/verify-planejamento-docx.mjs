@@ -97,8 +97,10 @@ function buildMatrix(conteudos, trimestre = 1) {
   return conteudos.map((conteudo, index) => ({
     conteudo,
     trimestre,
-    aulaInicio: index * 2 + 1,
-    aulaFim: index * 2 + 2,
+    numeroAula: index + 1,
+    periodos: 1,
+    aulaInicio: index + 1,
+    aulaFim: index + 1,
     habilidades: [HABILIDADES[index % HABILIDADES.length]],
     objetivos: `Compreender ${conteudo.toLowerCase()} com leitura, análise e socialização em sala.`,
     metodologia:
@@ -262,9 +264,9 @@ function verifyReferenceTemplates(buildOfficialPlanningDocx, buildTrimestralPlan
     trimestre,
     conteudo,
     numeroAula: index + 1,
-    periodos: 2,
-    aulaInicio: index * 2 + 1,
-    aulaFim: index * 2 + 2,
+    periodos: 1,
+    aulaInicio: index + 1,
+    aulaFim: index + 1,
     habilidades: [{ codigo, descricao: `Habilidade ${codigo}` }],
     objetivos: `Objetivo de aprendizagem para ${conteudo}.`,
     metodologia: `Metodologia ativa para ${conteudo} com investigação e socialização.`,
@@ -297,7 +299,6 @@ function verifyReferenceTemplates(buildOfficialPlanningDocx, buildTrimestralPlan
     "prof. modelo",
     "5º ano",
     "12 periodos",
-    "2 periodos",
     "1 periodo",
     "conteudo t1-a",
     "conteudo t2-a",
@@ -356,7 +357,7 @@ function verifyReferenceTemplates(buildOfficialPlanningDocx, buildTrimestralPlan
         ),
       );
     [
-      "semana 1 (2 periodos)",
+      "semana 1 (1 periodo)",
       "metodologia",
       "materiais e recursos necessarios",
       "etapas dessa experiencia",

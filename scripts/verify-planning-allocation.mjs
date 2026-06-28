@@ -1,5 +1,5 @@
 /**
- * Smoke tests for official period distribution in planejamentos.
+ * Smoke tests for planejamento fill rules.
  * Run: npm run verify:planning-allocation
  */
 import assert from "node:assert/strict";
@@ -75,342 +75,205 @@ const {
   matrixPeriodsTotal,
   rebalanceMatrixPeriods,
 } = loadTsModule("src/server/planejamentos/planning-lesson-allocation.ts");
-const {
-  assessDistributionCoarseness,
-  computeIdealRowCount,
-  OFFICIAL_MAX_PERIODS_PER_ROW,
-  OFFICIAL_PERIODS_PER_EXPERIENCE,
-} = loadTsModule("src/server/planejamentos/planning-official-contract.ts");
 const { validatePlanningPayload } = loadTsModule(
   "src/server/planejamentos/planning-validation.ts",
 );
 const { getPlanningOutputIssues } = loadTsModule(
   "src/server/planejamentos/planning-quality.ts",
 );
+const { buildTrimestralPlansFromAnnual } = loadTsModule(
+  "src/lib/planejamentos/planning-trimestral-from-annual.ts",
+);
 
-function makeMatrixItem(conteudo, periodos, index = 0) {
+function makeMatrixItem(conteudo, periodos, index = 0, trimestre = 1) {
   return {
     conteudo,
-    trimestre: 1,
+    trimestre,
     numeroAula: index + 1,
     periodos,
-    aulaInicio: 0,
-    aulaFim: 0,
+    aulaInicio: index * Math.max(1, periodos) + 1,
+    aulaFim: (index + 1) * Math.max(1, periodos),
     habilidades: [{ codigo: "EM13LP01", descricao: "Habilidade de teste" }],
-    objetivos: `Objetivos específicos sobre ${conteudo} com estratégias mensuráveis.`,
-    metodologia: `Metodologia ativa para ${conteudo}: debate, leitura orientada e produção.`,
+    objetivos: `Objetivos especificos sobre ${conteudo} com estrategias mensuraveis.`,
+    metodologia: `Metodologia ativa para ${conteudo}: debate, leitura orientada e producao.`,
     materiais: "Caderno e fichas",
     recursos: "Quadro e projetor",
-    etapas: "Contextualização, prática e síntese",
-    avaliacao: "Avaliação formativa por registros e participação",
-    evidencias: "Registros escritos e produções",
+    etapas: "Contextualizacao, pratica e sintese",
+    avaliacao: "Avaliacao formativa por registros e participacao",
+    evidencias: "Registros escritos e producoes",
   };
 }
 
-function assertOfficialDistribution(items, carga) {
-  const total = matrixPeriodsTotal(items);
-  assert.equal(total, carga, `soma de períodos deve ser ${carga}, recebido ${total}`);
-
-  for (const item of items) {
-    assert.ok(item.periodos > 0, "cada linha deve ter periodos > 0");
-    assert.ok(
-      item.periodos <= OFFICIAL_MAX_PERIODS_PER_ROW,
-      `linha "${item.conteudo}" excede máximo (${item.periodos} > ${OFFICIAL_MAX_PERIODS_PER_ROW})`,
-    );
-  }
-
-  const distribution = assessDistributionCoarseness(items, carga);
-  assert.equal(
-    distribution.coarse,
-    false,
-    `distribuição ainda grosseira: ${items.length} linhas, ideal ~${distribution.idealRowCount}`,
+function assertOneLessonPerContent(items, expectedContents, label) {
+  assert.deepEqual(
+    items.map((item) => item.conteudo),
+    expectedContents,
+    `${label}: conteudos divergem do input`,
   );
-}
+  assert.equal(matrixPeriodsTotal(items), expectedContents.length);
 
-function assertAulaContinuity(items) {
-  assert.ok(items.length > 0, "matriz não pode estar vazia");
-
-  let expectedInicio = 1;
-  for (const [index, item] of items.entries()) {
-    assert.equal(
-      item.aulaInicio,
-      expectedInicio,
-      `linha ${index + 1}: aulaInicio esperado ${expectedInicio}, recebido ${item.aulaInicio}`,
-    );
-    assert.equal(
-      item.aulaFim,
-      expectedInicio + item.periodos - 1,
-      `linha ${index + 1}: aulaFim inconsistente com periodos`,
-    );
-    expectedInicio = item.aulaFim + 1;
-  }
-
-  assert.equal(
-    items[items.length - 1].aulaFim,
-    items.reduce((sum, item) => sum + item.periodos, 0),
-    "aulaFim final deve coincidir com soma de períodos",
-  );
+  items.forEach((item, index) => {
+    assert.equal(item.numeroAula, index + 1, `${label}: numeroAula incorreto`);
+    assert.equal(item.periodos, 1, `${label}: periodos deve ser 1`);
+    assert.equal(item.aulaInicio, index + 1, `${label}: aulaInicio incorreto`);
+    assert.equal(item.aulaFim, index + 1, `${label}: aulaFim incorreto`);
+  });
 }
 
 function assertAnnualTrimestres(items, label) {
-  if (items.length < 3) {
-    return;
-  }
+  if (items.length < 3) return;
 
   const trimestres = new Set(items.map((item) => item.trimestre));
   for (const trimestre of [1, 2, 3]) {
     assert.ok(
       trimestres.has(trimestre),
-      `${label}: trimestre ${trimestre} ausente (presentes: ${[...trimestres].sort().join(", ")})`,
+      `${label}: trimestre ${trimestre} ausente (${[...trimestres].sort().join(", ")})`,
     );
   }
 }
 
-function runAllocationScenario({ label, conteudos, carga, payload }) {
-  const coarse = conteudos.map((conteudo, index) =>
-    makeMatrixItem(conteudo, Math.ceil(carga / conteudos.length), index),
-  );
-  const finalized = finalizeMatrixLessonAllocation(coarse, payload);
-
-  assertOfficialDistribution(finalized, carga);
-  assertAulaContinuity(finalized);
-  if (payload.tipoPlanejamento !== "trimestral") {
-    assertAnnualTrimestres(finalized, label);
-  }
-
-  const maxPeriodos = Math.max(...finalized.map((item) => item.periodos));
-  console.log(
-    `OK: ${label} → ${finalized.length} experiências (max ${maxPeriodos} períodos/linha)`,
-  );
-
-  return finalized;
-}
-
-console.log("verify-planning-allocation: contrato oficial");
-
-assert.equal(OFFICIAL_PERIODS_PER_EXPERIENCE, 2);
-assert.equal(OFFICIAL_MAX_PERIODS_PER_ROW, 4);
-assert.equal(computeIdealRowCount(80), 40);
-assert.equal(computeIdealRowCount(60), 30);
-
-console.log("OK: constantes e computeIdealRowCount");
+console.log("verify-planning-allocation: contrato uma aula por conteudo");
 
 const conteudosMedio = [
-  "Tipos de texto: descrição e narração",
+  "Tipos de texto: descricao e narracao",
   "Estrutura dissertativa-argumentativa",
-  "Competências do ENEM: norma padrão",
-  "Repertório sociocultural em argumentos",
+  "Competencias do ENEM: norma padrao",
+  "Repertorio sociocultural em argumentos",
+  "Producao e revisao de textos",
+  "Analise de propostas de intervencao",
 ];
-
-const coarseMedio = conteudosMedio.map((conteudo, index) =>
-  makeMatrixItem(conteudo, 20, index),
-);
 
 const payloadMedio = {
   tipoPlanejamento: "anual",
-  etapa: "Ensino Médio",
-  anoSerie: "3ª série",
-  componenteCurricular: "Língua Portuguesa",
-  cargaHoraria: "80 períodos",
+  etapa: "Ensino Medio",
+  anoSerie: "3a serie",
+  componenteCurricular: "Lingua Portuguesa",
+  cargaHoraria: "80 periodos",
   conteudos: conteudosMedio.join("\n"),
   habilidadesSelecionadas: [{ codigo: "EM13LP01", descricao: "Habilidade" }],
 };
 
-const finalizedMedio = finalizeMatrixLessonAllocation(coarseMedio, payloadMedio);
-assertOfficialDistribution(finalizedMedio, 80);
-assert.ok(
-  finalizedMedio.length >= 20,
-  `esperadas muitas linhas para 80 períodos, recebido ${finalizedMedio.length}`,
-);
-assert.ok(
-  finalizedMedio.every((item) => item.periodos <= 4),
-  "nenhuma linha deve ter mais de 4 períodos após finalize",
-);
-
-console.log(
-  `OK: médio 4 conteúdos / 80 períodos → ${finalizedMedio.length} experiências (max ${Math.max(...finalizedMedio.map((i) => i.periodos))} períodos/linha)`,
-);
-
-const conteudosOficial = Array.from({ length: 6 }, (_, index) => `Conteúdo ${index + 1}`);
-const coarseOficial = conteudosOficial.map((conteudo, index) =>
-  makeMatrixItem(conteudo, 10, index),
-);
-
-const payloadOficial = {
-  tipoPlanejamento: "anual",
-  etapa: "Ensino Fundamental",
-  anoSerie: "5º ano",
-  componenteCurricular: "História",
-  cargaHoraria: "60",
-  conteudos: conteudosOficial.join("\n"),
-  habilidadesSelecionadas: [{ codigo: "EF05HI01", descricao: "Habilidade" }],
-};
-
-const finalizedOficial = finalizeMatrixLessonAllocation(coarseOficial, payloadOficial);
-assertOfficialDistribution(finalizedOficial, 60);
-
-console.log(
-  `OK: padrão oficial 6 conteúdos / 60 períodos → ${finalizedOficial.length} experiências`,
-);
-
-const rebalanceBugInput = [
-  makeMatrixItem("Conteúdo A", 25, 0),
-  makeMatrixItem("Conteúdo B", 25, 1),
-  makeMatrixItem("Conteúdo C", 25, 2),
-  makeMatrixItem("Conteúdo D", 5, 3),
+const aiCoarseAndDuplicated = [
+  makeMatrixItem("Figuras de Linguagem", 2, 0, 1),
+  makeMatrixItem("Figuras de Linguagem - parte 2", 3, 1, 1),
+  ...conteudosMedio.map((conteudo, index) =>
+    makeMatrixItem(conteudo, index % 2 === 0 ? 4 : 2, index + 2, 1),
+  ),
+  makeMatrixItem("Conteudo extra que a IA inventou", 2, 99, 3),
 ];
 
-const rebalanced = rebalanceMatrixPeriods(rebalanceBugInput, 80, "anual");
-assertOfficialDistribution(rebalanced, 80);
-assert.notEqual(
-  rebalanced[0].periodos,
-  25,
-  "rebalanceMatrixPeriods não deve preservar 25 períodos por linha",
+const finalizedMedio = finalizeMatrixLessonAllocation(
+  aiCoarseAndDuplicated,
+  payloadMedio,
 );
+assertOneLessonPerContent(finalizedMedio, conteudosMedio, "anual EM");
+assertAnnualTrimestres(finalizedMedio, "anual EM");
+console.log("OK: anual deduplica, remove extras e preserva a ordem do input");
 
-console.log("OK: rebalanceMatrixPeriods corrige bug de preservação cega da IA");
+const reversed = [...conteudosMedio]
+  .reverse()
+  .map((conteudo, index) => makeMatrixItem(conteudo, 8, index, 1));
+const reordered = finalizeMatrixLessonAllocation(reversed, payloadMedio);
+assertOneLessonPerContent(reordered, conteudosMedio, "ordem canonica");
+console.log("OK: ordem do professor e fonte da verdade");
 
-assert.equal(
+const payloadTrimestral = {
+  ...payloadMedio,
+  tipoPlanejamento: "trimestral",
+  trimestre: 2,
+  conteudos: conteudosMedio.slice(0, 3).join("\n"),
+};
+const trimestral = finalizeMatrixLessonAllocation(
+  conteudosMedio.slice(0, 3).map((conteudo, index) => makeMatrixItem(conteudo, 10, index, 1)),
+  payloadTrimestral,
+);
+assertOneLessonPerContent(trimestral, conteudosMedio.slice(0, 3), "trimestral");
+assert.deepEqual(
+  [...new Set(trimestral.map((item) => item.trimestre))],
+  [2],
+  "trimestral deve manter o trimestre selecionado",
+);
+console.log("OK: trimestral renumera dentro do trimestre selecionado");
+
+const rebalanced = rebalanceMatrixPeriods(
+  [
+    makeMatrixItem("Conteudo A", 25, 0),
+    makeMatrixItem("Conteudo B", 25, 1),
+    makeMatrixItem("Conteudo C", 25, 2),
+  ],
+  80,
+  "anual",
+);
+assertOneLessonPerContent(
+  rebalanced,
+  ["Conteudo A", "Conteudo B", "Conteudo C"],
+  "rebalance",
+);
+assertAnnualTrimestres(rebalanced, "rebalance");
+console.log("OK: rebalanceMatrixPeriods nao expande conteudo");
+
+assert.match(
   validatePlanningPayload({
-    etapa: "Ensino Médio",
-    anoSerie: "3ª série",
-    componenteCurricular: "Língua Portuguesa",
+    etapa: "Ensino Medio",
+    anoSerie: "3a serie",
+    componenteCurricular: "Lingua Portuguesa",
     cargaHoraria: "",
     conteudos: "Tema A",
     habilidadesSelecionadas: [{ codigo: "EM13LP01", descricao: "Habilidade" }],
   }),
-  "Informe a carga horária em períodos (ex.: 80 períodos).",
+  /carga/i,
 );
 
 assert.equal(
   validatePlanningPayload({
-    etapa: "Ensino Médio",
-    anoSerie: "3ª série",
-    componenteCurricular: "Língua Portuguesa",
-    cargaHoraria: "80 períodos",
+    etapa: "Ensino Medio",
+    anoSerie: "3a serie",
+    componenteCurricular: "Lingua Portuguesa",
+    cargaHoraria: "80 periodos",
     conteudos: "Tema A",
     habilidadesSelecionadas: [{ codigo: "EM13LP01", descricao: "Habilidade" }],
   }),
   null,
 );
+console.log("OK: validatePlanningPayload exige cargaHoraria parseavel");
 
-console.log("OK: validatePlanningPayload exige cargaHoraria parseável");
-
-const qualityIssues = getPlanningOutputIssues(payloadMedio, coarseMedio);
+const rawIssues = getPlanningOutputIssues(payloadMedio, aiCoarseAndDuplicated);
 assert.ok(
-  qualityIssues.some((issue) => /distribui[cç][aã]o grosseira|mais de 4 per[ií]odos/i.test(issue)),
-  `esperados issues de distribuição grosseira, recebido: ${qualityIssues.join("; ")}`,
+  rawIssues.some((issue) => /exatamente uma aula|repetidos|fora do contrato/i.test(issue)),
+  `esperados issues de contrato, recebido: ${rawIssues.join("; ")}`,
 );
 
-const qualityIssuesAfter = getPlanningOutputIssues(payloadMedio, finalizedMedio);
-const distributionIssues = qualityIssuesAfter.filter(
-  (issue) =>
-    /distribui[cç][aã]o grosseira|mais de 4 per[ií]odos/i.test(issue),
+const fixedIssues = getPlanningOutputIssues(payloadMedio, finalizedMedio);
+const contractIssues = fixedIssues.filter((issue) =>
+  /exatamente uma aula|repetidos|fora do contrato/i.test(issue),
 );
-assert.equal(
-  distributionIssues.length,
-  0,
-  `matriz finalizada não deve ter issues de distribuição: ${distributionIssues.join("; ")}`,
+assert.deepEqual(
+  contractIssues,
+  [],
+  `matriz finalizada ainda tem issues de contrato: ${contractIssues.join("; ")}`,
 );
+console.log("OK: planning-quality detecta repeticao e absolve matriz corrigida");
 
-console.log("OK: planning-quality detecta e absolve distribuição corrigida");
+const annualForTrimestral = {
+  titulo: "Planejamento anual de teste",
+  resumo: "Matriz anual para consonancia trimestral.",
+  conteudos: finalizedMedio,
+};
+const trimestraisFromAnnual = buildTrimestralPlansFromAnnual(annualForTrimestral, [1, 2, 3]);
+for (const trimestre of [1, 2, 3]) {
+  const plan = trimestraisFromAnnual[trimestre];
+  const expected = finalizedMedio.filter((item) => item.trimestre === trimestre);
+  assert.ok(plan, `${trimestre}o trimestre ausente na extracao do anual`);
+  assert.deepEqual(
+    plan.conteudos.map((item) => item.conteudo),
+    expected.map((item) => item.conteudo),
+    `${trimestre}o trimestre divergiu dos conteudos do anual`,
+  );
+  plan.conteudos.forEach((item, index) => {
+    assert.equal(item.periodos, 1, `${trimestre}o trimestre: periodos deve ser 1`);
+    assert.equal(item.numeroAula, index + 1, `${trimestre}o trimestre: numeroAula sequencial`);
+  });
+}
+console.log("OK: trimestrais extraidos do anual mantem consonancia total");
 
-console.log("\nverify-planning-allocation: cargas altas (120/160 períodos)");
-
-const conteudosEm = [
-  "Literatura brasileira contemporânea",
-  "Análise linguística e variação",
-  "Produção textual dissertativa",
-  "Competências leitoras do ENEM",
-];
-
-runAllocationScenario({
-  label: "EM 4 conteúdos / 120 períodos",
-  conteudos: conteudosEm,
-  carga: 120,
-  payload: {
-    tipoPlanejamento: "anual",
-    etapa: "Ensino Médio",
-    anoSerie: "2ª série",
-    componenteCurricular: "Língua Portuguesa",
-    cargaHoraria: "120 períodos",
-    conteudos: conteudosEm.join("\n"),
-    habilidadesSelecionadas: [{ codigo: "EM13LP01", descricao: "Habilidade" }],
-  },
-});
-
-runAllocationScenario({
-  label: "EM 4 conteúdos / 160 períodos",
-  conteudos: conteudosEm,
-  carga: 160,
-  payload: {
-    tipoPlanejamento: "anual",
-    etapa: "Ensino Médio",
-    anoSerie: "3ª série",
-    componenteCurricular: "Língua Portuguesa",
-    cargaHoraria: "160",
-    conteudos: conteudosEm.join("\n"),
-    habilidadesSelecionadas: [{ codigo: "EM13LP01", descricao: "Habilidade" }],
-  },
-});
-
-const conteudosEf = [
-  "Brasil: formação e diversidade",
-  "Povos indígenas e africanos",
-  "Colonização e escravidão",
-  "Independência e cidadania",
-  "República e movimentos sociais",
-  "Geografia histórica regional",
-];
-
-runAllocationScenario({
-  label: "EF 6 conteúdos / 120 períodos",
-  conteudos: conteudosEf,
-  carga: 120,
-  payload: {
-    tipoPlanejamento: "anual",
-    etapa: "Ensino Fundamental",
-    anoSerie: "9º ano",
-    componenteCurricular: "História",
-    cargaHoraria: "120 períodos",
-    conteudos: conteudosEf.join("\n"),
-    habilidadesSelecionadas: [{ codigo: "EF09HI01", descricao: "Habilidade" }],
-  },
-});
-
-const conteudosEfDenso = Array.from(
-  { length: 10 },
-  (_, index) => `Unidade temática ${index + 1}: conceitos e práticas`,
-);
-
-runAllocationScenario({
-  label: "EF 10 conteúdos / 120 períodos",
-  conteudos: conteudosEfDenso,
-  carga: 120,
-  payload: {
-    tipoPlanejamento: "anual",
-    etapa: "Ensino Fundamental",
-    anoSerie: "8º ano",
-    componenteCurricular: "Ciências",
-    cargaHoraria: "120",
-    conteudos: conteudosEfDenso.join("\n"),
-    habilidadesSelecionadas: [{ codigo: "EF08CI01", descricao: "Habilidade" }],
-  },
-});
-
-runAllocationScenario({
-  label: "EM 1 conteúdo / 80 períodos (edge)",
-  conteudos: ["Projeto integrador de leitura e escrita"],
-  carga: 80,
-  payload: {
-    tipoPlanejamento: "anual",
-    etapa: "Ensino Médio",
-    anoSerie: "1ª série",
-    componenteCurricular: "Língua Portuguesa",
-    cargaHoraria: "80 períodos",
-    conteudos: "Projeto integrador de leitura e escrita",
-    habilidadesSelecionadas: [{ codigo: "EM13LP01", descricao: "Habilidade" }],
-  },
-});
-
-console.log("\nTodos os testes de alocação de planejamento passaram.");
+console.log("\nTodos os testes de alocacao de planejamento passaram.");

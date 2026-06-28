@@ -34,7 +34,10 @@ import {
   resolveSelectedCourseLabel,
 } from "@/lib/google/classroom-export-client-guard";
 import { resolveGoogleOAuthReturnTo } from "@/lib/google/document-type-detection";
-import { openGoogleExportUrl } from "@/lib/google/google-export-resume";
+import {
+  openGoogleExportUrl,
+  peekGoogleOAuthResumeIntent,
+} from "@/lib/google/google-export-resume";
 import {
   GOOGLE_STATUS_CHANGED_EVENT,
   notifyGoogleStatusChanged,
@@ -185,6 +188,12 @@ export function useGoogleClassroomExport({
 
   useEffect(() => {
     void refresh();
+  }, [refresh]);
+
+  useEffect(() => {
+    if (peekGoogleOAuthResumeIntent()?.connected) {
+      void refresh();
+    }
   }, [refresh]);
 
   useEffect(() => {

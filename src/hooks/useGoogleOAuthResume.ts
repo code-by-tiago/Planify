@@ -2,7 +2,7 @@
 
 import {
   hasExportableHtml,
-  peekGoogleOAuthReturnSignal,
+  peekGoogleOAuthResumeIntent,
 } from "@/lib/google/google-export-resume";
 import {
   findActiveGoogleExportPending,
@@ -34,8 +34,8 @@ export function useGoogleOAuthResume(params: UseGoogleOAuthResumeParams): void {
       /* ignore */
     }
 
-    const hasUrlSignal = Boolean(peekGoogleOAuthReturnSignal());
-    if (!hasUrlSignal) {
+    const hasResumeIntent = Boolean(peekGoogleOAuthResumeIntent());
+    if (!hasResumeIntent) {
       return;
     }
 

@@ -150,6 +150,8 @@ export async function resumePendingGoogleExport(
     const active = findActiveGoogleExportPending();
 
     if (!active) {
+      markGoogleOAuthResumeHandled();
+      clearGoogleOAuthResumeActive();
       params.onStatus?.("Conta Google conectada com sucesso.");
       notifyGoogleStatusChanged();
       return true;

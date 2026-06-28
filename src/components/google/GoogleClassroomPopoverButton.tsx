@@ -20,6 +20,7 @@ import {
   useGoogleClassroomExport,
   type ClassroomExportSuccess,
 } from "@/hooks/useGoogleClassroomExport";
+import { peekGoogleOAuthResumeIntent } from "@/lib/google/google-export-resume";
 import { agentDebugLog } from "@/lib/debug/agent-debug-log";
 import { GOOGLE_STATUS_CHANGED_EVENT } from "@/lib/google/google-status-events";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -153,10 +154,16 @@ export function GoogleClassroomPopoverButton({
 
   useEffect(() => {
     function maybeOpenAfterOAuth() {
+      const hasOAuthIntent = Boolean(peekGoogleOAuthResumeIntent()?.connected);
+
       try {
-        if (window.sessionStorage.getItem(CLASSROOM_OPEN_AFTER_OAUTH_KEY) !== "1") {
+        if (
+          window.sessionStorage.getItem(CLASSROOM_OPEN_AFTER_OAUTH_KEY) !== "1" &&
+          !hasOAuthIntent
+        ) {
           return;
         }
+
         window.sessionStorage.removeItem(CLASSROOM_OPEN_AFTER_OAUTH_KEY);
         openClassroomPopover();
       } catch {

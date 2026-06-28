@@ -1,6 +1,21 @@
 "use client";
 
 import { EditorShareBar } from "@/components/editor/EditorShareBar";
+import { EditorImageOverlay } from "@/components/editor/EditorImageOverlay";
+import { EditorImageToolbar } from "@/components/editor/EditorImageToolbar";
+import {
+  buildUserFigureHtml,
+  extractImageFileFromClipboard,
+  extractImageFileFromDataTransfer,
+  insertUserFigureHtml,
+  isEditableUserImage,
+  readFileAsDataUrl,
+} from "@/lib/editor/contenteditable-image";
+import {
+  applyEditorRange,
+  cloneEditorRange,
+  preventToolbarFocusLoss,
+} from "@/lib/editor/editor-selection-preserve";
 import { downloadEditorExport } from "@/lib/downloads/editor-export-client";
 import {
   clearEditorDocument,
@@ -50,6 +65,8 @@ import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
 import { PlanifyPageHero } from "@/components/pro/PlanifyPageHero";
 import {
   ChangeEvent,
+  ClipboardEvent,
+  DragEvent,
   MouseEvent as ReactMouseEvent,
   useCallback,
   useEffect,
@@ -317,6 +334,9 @@ type EditorClientProps = {
 
 export function EditorClient({ embedded = false }: EditorClientProps) {
   const editorRef = useRef<HTMLDivElement | null>(null);
+  const documentScrollRef = useRef<HTMLDivElement | null>(null);
+  const editorSurfaceRef = useRef<HTMLDivElement | null>(null);
+  const savedSelectionRef = useRef<Range | null>(null);
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const selectedImageRef = useRef<HTMLImageElement | null>(null);
   const selectedTableRef = useRef<HTMLTableElement | null>(null);
@@ -339,6 +359,9 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [selectedImageName, setSelectedImageName] = useState("");
   const [selectedImageWidth, setSelectedImageWidth] = useState(60);
+  const [selectedImageElement, setSelectedImageElement] = useState<HTMLImageElement | null>(
+    null,
+  );
   const [documentSource, setDocumentSource] = useState<StoredEditorDocument | null>(null);
   const [originHint, setOriginHint] = useState<string | null>(null);
   const [showVersionsPanel, setShowVersionsPanel] = useState(false);
@@ -529,8 +552,34 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [title, wordCount, isLoaded, planningBundle]);
 
+  useEffect(() => {
+    const editor = editorRef.current;
+
+    if (!editor || !isLoaded) {
+      return;
+    }
+
+    function saveSelection() {
+      const range = cloneEditorRange(editor!);
+      if (range) {
+        savedSelectionRef.current = range;
+      }
+    }
+
+    editor.addEventListener("mouseup", saveSelection);
+    editor.addEventListener("keyup", saveSelection);
+    document.addEventListener("selectionchange", saveSelection);
+
+    return () => {
+      editor.removeEventListener("mouseup", saveSelection);
+      editor.removeEventListener("keyup", saveSelection);
+      document.removeEventListener("selectionchange", saveSelection);
+    };
+  }, [isLoaded]);
+
   function focusEditor() {
     editorRef.current?.focus();
+    applyEditorRange(savedSelectionRef.current);
   }
 
   function getEditorHtml() {
@@ -887,7 +936,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
       }
       node.style.maxWidth = "100%";
       node.style.height = "auto";
-      node.style.cursor = "pointer";
+      node.style.cursor = isEditableUserImage(node) ? "grab" : "pointer";
 
       if (!node.style.width) {
         node.style.width = "60%";
@@ -1468,6 +1517,40 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
     imageInputRef.current?.click();
   }
 
+  async function insertImageFromFile(file: File) {
+    if (!file.type.startsWith("image/")) {
+      setStatus("Selecione uma imagem válida.");
+      return;
+    }
+
+    focusEditor();
+
+    try {
+      const src = await readFileAsDataUrl(file);
+
+      if (!src) {
+        return;
+      }
+
+      insertUserFigureHtml(buildUserFigureHtml(src, file.name));
+      prepareImagesInsideEditor();
+
+      const inserted = editorRef.current?.querySelector(
+        "figure.planify-user-figure:last-of-type img[data-planify-image]",
+      );
+
+      if (inserted instanceof HTMLImageElement) {
+        selectImage(inserted);
+      }
+
+      updateWordCount();
+      persistCurrentDocument("Imagem inserida.");
+      setStatus("Imagem inserida. Arraste ou use os cantos para redimensionar.");
+    } catch {
+      setStatus("Não foi possível inserir a imagem.");
+    }
+  }
+
   function handleImageSelected(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
 
@@ -1475,34 +1558,32 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
       return;
     }
 
-    if (!file.type.startsWith("image/")) {
-      setStatus("Selecione uma imagem válida.");
+    void insertImageFromFile(file).finally(() => {
+      event.target.value = "";
+    });
+  }
+
+  function handleEditorPaste(event: ClipboardEvent<HTMLDivElement>) {
+    const file = extractImageFileFromClipboard(event.clipboardData);
+
+    if (!file) {
       return;
     }
 
-    const reader = new FileReader();
+    event.preventDefault();
+    void insertImageFromFile(file);
+  }
 
-    reader.onload = () => {
-      const src = String(reader.result || "");
+  function handleEditorDrop(event: DragEvent<HTMLDivElement>) {
+    event.preventDefault();
 
-      if (!src) {
-        return;
-      }
+    const file = extractImageFileFromDataTransfer(event.dataTransfer);
 
-      exec(
-        "insertHTML",
-        `<figure data-planify-figure="true" style="margin: 16px auto; max-width:100%; text-align:center;">
-          <img data-planify-image="true" src="${src}" alt="${file.name}" style="width:60%;max-width:100%;height:auto;border-radius:12px;cursor:pointer;" />
-          <figcaption style="font-size:12px;color:#64748b;margin-top:6px;">${file.name}</figcaption>
-        </figure><p><br></p>`,
-      );
+    if (!file) {
+      return;
+    }
 
-      prepareImagesInsideEditor();
-      setStatus("Imagem inserida. Clique nela para ajustar tamanho e posição.");
-      event.target.value = "";
-    };
-
-    reader.readAsDataURL(file);
+    void insertImageFromFile(file);
   }
 
   function clearFormatting() {
@@ -1633,7 +1714,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
     image.dataset.planifyImage = "true";
     image.style.maxWidth = "100%";
     image.style.height = "auto";
-    image.style.cursor = "pointer";
+    image.style.cursor = isEditableUserImage(image) ? "grab" : "pointer";
     image.style.outline = "3px solid #22d3ee";
     image.style.outlineOffset = "4px";
 
@@ -1641,13 +1722,19 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
 
     setSelectedImageName(image.alt || "Imagem selecionada");
     setSelectedImageWidth(Number.isFinite(width) ? width : 60);
-    setStatus("Imagem selecionada. Use os controles de tamanho e posição.");
+    setSelectedImageElement(isEditableUserImage(image) ? image : null);
+    setStatus(
+      isEditableUserImage(image)
+        ? "Imagem selecionada. Arraste ou use os cantos para redimensionar."
+        : "Imagem selecionada. Use os controles de tamanho e posição.",
+    );
   }
 
   function clearSelectedImage() {
     clearImageOutline(selectedImageRef.current);
     selectedImageRef.current = null;
     setSelectedImageName("");
+    setSelectedImageElement(null);
   }
 
   function handleEditorClick(event: ReactMouseEvent<HTMLDivElement>) {
@@ -1676,7 +1763,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
     }
   }
 
-  function applyImageWidth(width: number) {
+  function applyImageWidth(width: number, options?: { persist?: boolean }) {
     const image = selectedImageRef.current;
 
     if (!image) {
@@ -1693,7 +1780,10 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
     figure.style.maxWidth = "100%";
 
     setSelectedImageWidth(safeWidth);
-    persistCurrentDocument(`Imagem ajustada para ${safeWidth}%.`);
+
+    if (options?.persist !== false) {
+      persistCurrentDocument(`Imagem ajustada para ${safeWidth}%.`);
+    }
   }
 
   function alignSelectedImage(position: "left" | "center" | "right") {
@@ -2172,7 +2262,10 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
           }
         >
           {embedded && !showFormatTools ? (
-            <div className="sticky top-0 z-20 flex shrink-0 items-center gap-1 overflow-x-auto overscroll-contain rounded-xl border border-slate-200 bg-white/95 p-1.5 shadow-sm backdrop-blur lg:hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div
+              className="sticky top-0 z-20 flex shrink-0 items-center gap-1 overflow-x-auto overscroll-contain rounded-xl border border-slate-200 bg-white/95 p-1.5 shadow-sm backdrop-blur lg:hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+              onMouseDown={preventToolbarFocusLoss}
+            >
               <button type="button" onClick={undoEdit} className={toolBtnClass} aria-label="Desfazer">
                 ↶
               </button>
@@ -2251,6 +2344,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
                 ? "max-lg:max-h-[min(38dvh,280px)] max-lg:overflow-y-auto max-lg:overscroll-contain overflow-x-auto overscroll-contain p-1 lg:p-1.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
                 : "overflow-x-auto p-2"
             }`}
+            onMouseDown={preventToolbarFocusLoss}
           >
             {embedded && showFormatTools ? (
               <div className="mb-2 flex items-center justify-between gap-2 border-b border-slate-100 pb-2 lg:hidden">
@@ -2567,110 +2661,23 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
               </div>
             </div>
             ) : null}
-
-            {showAdvancedTools ? (
-            <div className={`rounded-2xl border border-blue-200 bg-blue-50 ${embedded ? "mt-2 p-2" : "mt-3 p-3"}`}>
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="mr-1 text-xs font-black uppercase tracking-[0.18em] text-blue-700">
-                  Imagem
-                </span>
-
-                {selectedImageName ? (
-                  <span className="max-w-56 truncate rounded-xl bg-white px-3 py-2 text-xs font-bold text-blue-700 border border-cyan-200">
-                    {selectedImageName}
-                  </span>
-                ) : (
-                  <span className="rounded-xl border border-cyan-200 bg-white px-3 py-2 text-xs font-bold text-slate-500">
-                    Clique em uma imagem para ajustar
-                  </span>
-                )}
-
-                {[25, 40, 50, 60, 75, 100].map((size) => (
-                  <button
-                    key={size}
-                    type="button"
-                    onClick={() => applyImageWidth(size)}
-                    className="h-9 rounded-xl border border-cyan-200 bg-white px-3 text-xs font-black text-blue-700 transition"
-                  >
-                    {size}%
-                  </button>
-                ))}
-
-                <label className="flex h-9 items-center gap-2 rounded-xl border border-cyan-200 bg-white px-3 text-xs font-black text-blue-700">
-                  Largura
-                  <input
-                    type="number"
-                    min={10}
-                    max={100}
-                    value={selectedImageWidth}
-                    onChange={(event) => applyImageWidth(Number(event.target.value))}
-                    className="h-7 w-16 rounded-lg border border-slate-200 bg-white px-2 text-xs text-slate-950 outline-none"
-                  />
-                  %
-                </label>
-
-                <button
-                  type="button"
-                  onClick={() => alignSelectedImage("left")}
-                  className="h-9 rounded-xl border border-cyan-200 bg-white px-3 text-xs font-black text-blue-700 transition"
-                >
-                  Esq.
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => alignSelectedImage("center")}
-                  className="h-9 rounded-xl border border-cyan-200 bg-white px-3 text-xs font-black text-blue-700 transition"
-                >
-                  Centro
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => alignSelectedImage("right")}
-                  className="h-9 rounded-xl border border-cyan-200 bg-white px-3 text-xs font-black text-blue-700 transition"
-                >
-                  Dir.
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => floatSelectedImage("left")}
-                  className="h-9 rounded-xl border border-cyan-200 bg-white px-3 text-xs font-black text-blue-700 transition"
-                >
-                  Texto à direita
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => floatSelectedImage("right")}
-                  className="h-9 rounded-xl border border-cyan-200 bg-white px-3 text-xs font-black text-blue-700 transition"
-                >
-                  Texto à esquerda
-                </button>
-
-                <button
-                  type="button"
-                  onClick={clearImageFloat}
-                  className="h-9 rounded-xl border border-cyan-200 bg-white px-3 text-xs font-black text-blue-700 transition"
-                >
-                  Normal
-                </button>
-
-                <button
-                  type="button"
-                  onClick={removeSelectedImage}
-                  className="h-9 rounded-xl border border-rose-200 bg-rose-50 px-3 text-xs font-black text-rose-700 transition"
-                >
-                  Remover
-                </button>
-              </div>
-            </div>
-            ) : null}
           </div>
           )}
 
+          <EditorImageToolbar
+            embedded={embedded}
+            selectedImageName={selectedImageName}
+            selectedImageWidth={selectedImageWidth}
+            isUserImage={Boolean(selectedImageElement)}
+            onApplyWidth={(width) => applyImageWidth(width)}
+            onAlign={alignSelectedImage}
+            onFloat={floatSelectedImage}
+            onClearFloat={clearImageFloat}
+            onRemove={removeSelectedImage}
+          />
+
           <div
+            ref={documentScrollRef}
             className={`planify-editor-document-scroll min-h-0 flex-1 rounded-lg border border-slate-200 bg-white shadow-sm ${
               embedded
                 ? "overflow-y-auto overscroll-contain p-0.5 sm:p-1"
@@ -2678,7 +2685,8 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
             }`}
           >
             <div
-              className={`bg-slate-100 ${
+              ref={editorSurfaceRef}
+              className={`relative bg-slate-100 ${
                 embedded ? "rounded-md p-1 sm:p-1.5" : "rounded-xl p-1.5 sm:p-2"
               }`}
             >
@@ -2687,6 +2695,13 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
                 contentEditable
                 suppressContentEditableWarning
                 onClick={handleEditorClick}
+                onPaste={handleEditorPaste}
+                onDrop={handleEditorDrop}
+                onDragOver={(event) => {
+                  if (extractImageFileFromDataTransfer(event.dataTransfer)) {
+                    event.preventDefault();
+                  }
+                }}
                 onInput={() => {
                   prepareImagesInsideEditor();
                   updateWordCount();
@@ -2699,6 +2714,14 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
                     ? "max-w-[21cm] min-h-[36vh] px-3 py-4 sm:min-h-0 sm:px-5 sm:py-6"
                     : "max-w-[21cm] min-h-[50vh] px-4 py-5 sm:min-h-[29.7cm] sm:px-6 sm:py-8 md:px-[1.75cm] md:py-[1.75cm] md:shadow-lg"
                 }`}
+              />
+              <EditorImageOverlay
+                image={selectedImageElement}
+                editor={editorRef.current}
+                container={editorSurfaceRef.current}
+                scrollContainer={documentScrollRef.current}
+                onWidthChange={(width, options) => applyImageWidth(width, options)}
+                onMoved={() => persistCurrentDocument("Imagem reposicionada.")}
               />
             </div>
           </div>
@@ -2768,6 +2791,10 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
           max-width: 100%;
           height: auto;
           cursor: pointer;
+        }
+
+        .planify-editor-page figure.planify-user-figure img[data-planify-image="true"] {
+          cursor: grab;
         }
 
         .planify-editor-page figure {

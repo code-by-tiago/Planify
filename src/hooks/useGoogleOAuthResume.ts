@@ -39,19 +39,21 @@ export function useGoogleOAuthResume(params: UseGoogleOAuthResumeParams): void {
       return;
     }
 
+    const pending = findActiveGoogleExportPending();
+    if (!pending) {
+      return;
+    }
+
     globalResumeStarted = true;
 
     void (async () => {
       const active = paramsRef.current;
-      const pending = findActiveGoogleExportPending();
       const getHtml = active.getHtml;
+      const snapshot = pending.pending.html?.trim() || "";
 
-      if (pending) {
-        const snapshot = pending.pending.html?.trim() || "";
-        if (!hasExportableHtml(snapshot) && !hasExportableHtml(getHtml())) {
-          globalResumeStarted = false;
-          return;
-        }
+      if (!hasExportableHtml(snapshot) && !hasExportableHtml(getHtml())) {
+        globalResumeStarted = false;
+        return;
       }
 
       const handled = await resumePendingGoogleExport(active);

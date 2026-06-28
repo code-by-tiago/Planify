@@ -39,6 +39,7 @@ import {
   GOOGLE_STATUS_CHANGED_EVENT,
   notifyGoogleStatusChanged,
 } from "@/lib/google/google-status-events";
+import { agentDebugLog } from "@/lib/debug/agent-debug-log";
 import { useCallback, useEffect, useState } from "react";
 
 export const CLASSROOM_OPEN_AFTER_OAUTH_KEY = "planify:classroom-open-after-oauth";
@@ -103,20 +104,67 @@ export function useGoogleClassroomExport({
       const next = await fetchGoogleStatus();
       setStatus(next);
 
-      if (next.connected && isClassroomExportReady(next)) {
-        const list = await fetchClassroomCourses();
-        setCourses(list);
-        setCourseId((current) => {
-          if (current && list.some((course) => course.id === current)) {
-            return current;
-          }
-          return resolvePreferredClassroomCourseId(list);
-        });
+      // #region agent log
+      agentDebugLog({
+        hypothesisId: "H-C",
+        location: "useGoogleClassroomExport.ts:refresh:status",
+        message: "google status loaded",
+        data: {
+          configured: Boolean(next.configured),
+          authenticated: Boolean(next.authenticated),
+          connected: Boolean(next.connected),
+          exportReady: isClassroomExportReady(next),
+          needsEducar: needsEducarClassroomConnect(next),
+          googleEmailDomain: next.googleEmail?.split("@")[1] ?? null,
+        },
+      });
+      // #endregion
 
-        if (list.length === 0) {
-          setError(buildClassroomCoursesMessage(next, 0));
-        } else {
-          setError("");
+      if (next.connected && isClassroomExportReady(next)) {
+        try {
+          const list = await fetchClassroomCourses();
+          setCourses(list);
+          setCourseId((current) => {
+            if (current && list.some((course) => course.id === current)) {
+              return current;
+            }
+            return resolvePreferredClassroomCourseId(list);
+          });
+
+          if (list.length === 0) {
+            setError(buildClassroomCoursesMessage(next, 0));
+          } else {
+            setError("");
+          }
+
+          // #region agent log
+          agentDebugLog({
+            hypothesisId: "H-E",
+            location: "useGoogleClassroomExport.ts:refresh:courses",
+            message: "classroom courses loaded",
+            data: { coursesCount: list.length },
+          });
+          // #endregion
+        } catch (coursesError) {
+          setCourses([]);
+          setCourseId("");
+          setError(
+            coursesError instanceof Error
+              ? coursesError.message
+              : "Não foi possível carregar turmas do Classroom.",
+          );
+
+          // #region agent log
+          agentDebugLog({
+            hypothesisId: "H-E",
+            location: "useGoogleClassroomExport.ts:refresh:coursesError",
+            message: "classroom courses failed",
+            data: {
+              error:
+                coursesError instanceof Error ? coursesError.message : "unknown",
+            },
+          });
+          // #endregion
         }
       } else {
         setCourses([]);
@@ -166,6 +214,7 @@ export function useGoogleClassroomExport({
   }, [refresh]);
 
   const needsEducarConnect = needsEducarClassroomConnect(status);
+  const statusReady = !loading && status !== null;
   const canShowTurmaList = isClassroomExportReady(status) && courses.length > 0;
   const canSubmitExport = canShowTurmaList && Boolean(courseId.trim());
   const noTurmasFallback = isClassroomExportReady(status) && courses.length === 0;
@@ -379,6 +428,7 @@ export function useGoogleClassroomExport({
     institutionalEmail,
     setInstitutionalEmail,
     needsEducarConnect,
+    statusReady,
     canShowTurmaList,
     canSubmitExport,
     noTurmasFallback,

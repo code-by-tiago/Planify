@@ -82,6 +82,7 @@ assert.match(hookSource, /assertClassroomClientExportAllowed/);
 assert.match(hookSource, /useState\(true\)/, "publishAsDraft defaults to true (rascunho)");
 assert.match(hookSource, /canShowTurmaList/);
 assert.match(hookSource, /canSubmitExport/);
+assert.match(hookSource, /statusReady/);
 assert.doesNotMatch(
   hookSource,
   /saveGoogleExportPending\(GOOGLE_CLASSROOM_EXPORT_PENDING_KEY/,
@@ -99,6 +100,10 @@ assert.match(popoverSource, /Enviar à turma/);
 assert.match(popoverSource, /Selecione a turma/);
 assert.match(popoverSource, /Abrir no Classroom/);
 assert.match(popoverSource, /renderPopoverBody/, "popover must always render body content");
+assert.match(popoverSource, /statusReady/);
+assert.match(popoverSource, /effectiveCoords/);
+assert.match(popoverSource, /openClassroomPopover/);
+assert.match(popoverSource, /Trocar conta Google/);
 
 const accountSource = read("src/lib/google/classroom-google-account.ts");
 assert.match(accountSource, /classroomGoogleAccountIncomplete/);
@@ -134,8 +139,9 @@ assert.match(exportBar, /GoogleClassroomPopoverButton/);
 for (const file of [
   "src/hooks/useGoogleClassroomExport.ts",
   "src/server/planejamentos/planning-lesson-allocation.ts",
+  "src/components/google/GoogleClassroomPopoverButton.tsx",
 ]) {
-  assert.doesNotMatch(read(file), /7718\/ingest/, `no debug ingest in ${file}`);
+  assert.doesNotMatch(read(file), /7718\/ingest/, `no inline debug ingest in ${file}`);
 }
 
 // --- Unit: server dedup ---

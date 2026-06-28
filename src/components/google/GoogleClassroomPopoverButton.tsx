@@ -11,12 +11,18 @@ import {
   needsClassroomGoogleOAuth,
 } from "@/lib/google/classroom-google-account";
 import {
+  computeClassroomPopoverCoords,
+  estimateClassroomPopoverHeight,
+  type ClassroomPopoverCoords,
+} from "@/lib/google/classroom-popover-coords";
+import {
   CLASSROOM_OPEN_AFTER_OAUTH_KEY,
   useGoogleClassroomExport,
   type ClassroomExportSuccess,
 } from "@/hooks/useGoogleClassroomExport";
+import { agentDebugLog } from "@/lib/debug/agent-debug-log";
 import { GOOGLE_STATUS_CHANGED_EVENT } from "@/lib/google/google-status-events";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 type GoogleClassroomPopoverButtonProps = {
@@ -25,12 +31,6 @@ type GoogleClassroomPopoverButtonProps = {
   onStatus?: (message: string) => void;
   returnTo?: string;
   documentType?: string | null;
-};
-
-type PopoverCoords = {
-  top: number;
-  left: number;
-  width: number;
 };
 
 type PopoverStep = "form" | "success";
@@ -45,7 +45,7 @@ export function GoogleClassroomPopoverButton({
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<PopoverStep>("form");
   const [lastSuccess, setLastSuccess] = useState<ClassroomExportSuccess | null>(null);
-  const [popoverCoords, setPopoverCoords] = useState<PopoverCoords | null>(null);
+  const [popoverCoords, setPopoverCoords] = useState<ClassroomPopoverCoords | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
@@ -62,6 +62,7 @@ export function GoogleClassroomPopoverButton({
     institutionalEmail,
     setInstitutionalEmail,
     needsEducarConnect,
+    statusReady,
     canShowTurmaList,
     canSubmitExport,
     noTurmasFallback,
@@ -89,26 +90,43 @@ export function GoogleClassroomPopoverButton({
   const needsAccountSwitch = classroomGoogleAccountNeedsSwitch(status);
   const connectMode = needsAccountSwitch ? "switch" : "connect";
 
+  const estimatedHeight = estimateClassroomPopoverHeight({
+    step,
+    needsEducarConnect,
+    canShowTurmaList,
+  });
+
+  const syncPopoverCoords = useCallback(() => {
+    if (!buttonRef.current) return null;
+    const coords = computeClassroomPopoverCoords(buttonRef.current, estimatedHeight);
+    setPopoverCoords(coords);
+    return coords;
+  }, [estimatedHeight]);
+
+  const resetPopoverState = useCallback(() => {
+    setStep("form");
+    setLastSuccess(null);
+  }, []);
+
+  const openClassroomPopover = useCallback(() => {
+    resetPopoverState();
+    syncPopoverCoords();
+    setOpen(true);
+    void refresh();
+  }, [refresh, resetPopoverState, syncPopoverCoords]);
+
+  const handleClosePopover = useCallback(() => {
+    setOpen(false);
+    setPopoverCoords(null);
+    resetPopoverState();
+  }, [resetPopoverState]);
+
   useLayoutEffect(() => {
-    if (!open || !buttonRef.current) {
-      setPopoverCoords(null);
-      return;
-    }
-
-    const rect = buttonRef.current.getBoundingClientRect();
-    const width = Math.min(320, window.innerWidth - 16);
-    let left = rect.right - width;
-    left = Math.max(8, Math.min(left, window.innerWidth - width - 8));
-
-    const estimatedHeight = step === "success" ? 280 : needsEducarConnect ? 260 : 340;
-    let top = rect.bottom + 8;
-    if (top + estimatedHeight > window.innerHeight - 8) {
-      top = Math.max(8, rect.top - estimatedHeight - 8);
-    }
-
-    setPopoverCoords({ top, left, width });
+    if (!open || !buttonRef.current) return;
+    syncPopoverCoords();
   }, [
     open,
+    syncPopoverCoords,
     loading,
     canShowTurmaList,
     needsEducarConnect,
@@ -126,12 +144,12 @@ export function GoogleClassroomPopoverButton({
       if (rootRef.current?.contains(target) || popoverRef.current?.contains(target)) {
         return;
       }
-      setOpen(false);
+      handleClosePopover();
     }
 
     document.addEventListener("mousedown", onPointerDown);
     return () => document.removeEventListener("mousedown", onPointerDown);
-  }, [open]);
+  }, [open, handleClosePopover]);
 
   useEffect(() => {
     function maybeOpenAfterOAuth() {
@@ -140,9 +158,7 @@ export function GoogleClassroomPopoverButton({
           return;
         }
         window.sessionStorage.removeItem(CLASSROOM_OPEN_AFTER_OAUTH_KEY);
-        setStep("form");
-        setLastSuccess(null);
-        setOpen(true);
+        openClassroomPopover();
       } catch {
         /* ignore */
       }
@@ -154,34 +170,91 @@ export function GoogleClassroomPopoverButton({
     return () => {
       window.removeEventListener(GOOGLE_STATUS_CHANGED_EVENT, maybeOpenAfterOAuth);
     };
-  }, []);
+  }, [openClassroomPopover]);
 
-  function resetPopoverState() {
-    setStep("form");
-    setLastSuccess(null);
+  function resolvePopoverBranch():
+    | "loading"
+    | "not-configured"
+    | "needs-educar-connect"
+    | "success"
+    | "turma-list"
+    | "no-turmas"
+    | "fallback" {
+    if (loading || !statusReady) return "loading";
+    if (!status?.configured) return "not-configured";
+    if (needsEducarConnect) return "needs-educar-connect";
+    if (step === "success" && lastSuccess) return "success";
+    if (canShowTurmaList) return "turma-list";
+    if (noTurmasFallback) return "no-turmas";
+    return "fallback";
   }
 
-  function handleClosePopover() {
-    setOpen(false);
-    resetPopoverState();
-  }
+  const popoverBranch = resolvePopoverBranch();
+
+  useEffect(() => {
+    if (!open) return;
+
+    // #region agent log
+    agentDebugLog({
+      hypothesisId: "H-D",
+      location: "GoogleClassroomPopoverButton.tsx:popoverBranch",
+      message: "popover branch",
+      data: {
+        branch: popoverBranch,
+        loading,
+        statusReady,
+        needsEducarConnect,
+        canShowTurmaList,
+        noTurmasFallback,
+        coursesCount: courses.length,
+        hasError: Boolean(error),
+        hasCoords: Boolean(popoverCoords),
+      },
+    });
+    // #endregion
+  }, [
+    open,
+    popoverBranch,
+    loading,
+    statusReady,
+    needsEducarConnect,
+    canShowTurmaList,
+    noTurmasFallback,
+    courses.length,
+    error,
+    popoverCoords,
+  ]);
 
   function handleIconClick() {
-    if (loading || busy) return;
+    if (busy) return;
 
-    if (!status?.authenticated) {
+    if (open) {
+      handleClosePopover();
+      return;
+    }
+
+    if (statusReady && status && !status.authenticated) {
       window.location.href = `/login?redirect=${loginRedirect}`;
       return;
     }
 
-    setOpen((value) => {
-      if (value) {
-        resetPopoverState();
-        return false;
-      }
-      resetPopoverState();
-      return true;
+    openClassroomPopover();
+
+    // #region agent log
+    agentDebugLog({
+      hypothesisId: "H-A",
+      location: "GoogleClassroomPopoverButton.tsx:handleIconClick",
+      message: "classroom icon clicked",
+      data: {
+        loading,
+        busy,
+        statusReady,
+        needsEducarConnect,
+        canShowTurmaList,
+        coursesCount: courses.length,
+      },
     });
+    // #endregion
   }
 
   async function handleConfirmExport() {
@@ -192,13 +265,20 @@ export function GoogleClassroomPopoverButton({
   }
 
   function renderPopoverBody() {
-    if (loading) {
-      return <p className="mt-3 text-xs font-semibold text-slate-500">Carregando turmas…</p>;
+    if (popoverBranch === "loading") {
+      return (
+        <div className="mt-3 min-h-[120px] space-y-2">
+          <p className="text-xs font-semibold text-slate-500">Carregando integração Google…</p>
+          <p className="text-[11px] leading-5 text-slate-400">
+            Verificando conta @educar.rs.gov.br e turmas do Classroom.
+          </p>
+        </div>
+      );
     }
 
-    if (!status?.configured) {
+    if (popoverBranch === "not-configured") {
       return (
-        <div className="mt-3 space-y-2">
+        <div className="mt-3 min-h-[120px] space-y-2">
           <p className="text-[11px] leading-5 text-amber-900">
             Integração Google não configurada no servidor. Peça à TI para configurar{" "}
             <code className="text-[10px]">GOOGLE_CLIENT_ID</code>.
@@ -207,9 +287,9 @@ export function GoogleClassroomPopoverButton({
       );
     }
 
-    if (needsEducarConnect) {
+    if (popoverBranch === "needs-educar-connect") {
       return (
-        <div className="mt-3">
+        <div className="mt-3 min-h-[120px]">
           <ClassroomGoogleConnectForm
             compact
             institutionalEmail={institutionalEmail}
@@ -226,9 +306,9 @@ export function GoogleClassroomPopoverButton({
       );
     }
 
-    if (step === "success" && lastSuccess) {
+    if (popoverBranch === "success" && lastSuccess) {
       return (
-        <div className="mt-3 space-y-3">
+        <div className="mt-3 min-h-[120px] space-y-3">
           <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2">
             <p className="text-xs font-black text-emerald-900">Envio concluído</p>
             <p className="mt-1 text-[11px] leading-5 text-emerald-900">
@@ -256,9 +336,9 @@ export function GoogleClassroomPopoverButton({
       );
     }
 
-    if (canShowTurmaList) {
+    if (popoverBranch === "turma-list") {
       return (
-        <div className="mt-3 space-y-2">
+        <div className="mt-3 min-h-[120px] space-y-2">
           <p className="text-[11px] font-semibold text-sky-900">
             Conectado como{" "}
             <span className="font-bold">{status?.googleEmail || "conta Google"}</span>
@@ -329,9 +409,9 @@ export function GoogleClassroomPopoverButton({
       );
     }
 
-    if (noTurmasFallback) {
+    if (popoverBranch === "no-turmas") {
       return (
-        <div className="mt-3 space-y-2">
+        <div className="mt-3 min-h-[120px] space-y-2">
           <p className="text-[11px] leading-5 text-amber-900">
             {error ||
               "Nenhuma turma de professor encontrada nesta conta. Salve no Drive e anexe manualmente no Classroom."}
@@ -354,12 +434,20 @@ export function GoogleClassroomPopoverButton({
           >
             Abrir classroom.google.com
           </button>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => void handleSwitchAccount()}
+            className="w-full rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-900"
+          >
+            Trocar conta Google
+          </button>
         </div>
       );
     }
 
     return (
-      <div className="mt-3 space-y-2">
+      <div className="mt-3 min-h-[120px] space-y-2">
         <p className="text-[11px] leading-5 text-rose-800">
           {error || "Não foi possível carregar o Google Classroom."}
         </p>
@@ -371,7 +459,7 @@ export function GoogleClassroomPopoverButton({
         >
           Tentar novamente
         </button>
-        {!needsOAuth ? null : (
+        {needsOAuth ? (
           <button
             type="button"
             disabled={busy}
@@ -380,22 +468,27 @@ export function GoogleClassroomPopoverButton({
           >
             Conectar conta @educar.rs.gov.br
           </button>
-        )}
+        ) : null}
       </div>
     );
   }
 
+  const effectiveCoords =
+    open && buttonRef.current
+      ? popoverCoords ?? computeClassroomPopoverCoords(buttonRef.current, estimatedHeight)
+      : null;
+
   const popoverContent =
-    open && popoverCoords ? (
+    open && effectiveCoords ? (
       <div
         ref={popoverRef}
-        className="rounded-xl border border-sky-200 bg-white p-3 shadow-2xl"
+        className="max-h-[min(70dvh,420px)] overflow-y-auto rounded-xl border border-sky-200 bg-white p-3 shadow-2xl"
         style={{
           position: "fixed",
-          top: popoverCoords.top,
-          left: popoverCoords.left,
-          width: popoverCoords.width,
-          zIndex: 9999,
+          top: effectiveCoords.top,
+          left: effectiveCoords.left,
+          width: effectiveCoords.width,
+          zIndex: 99999,
         }}
       >
         <div className="flex items-center gap-2 border-b border-sky-100 pb-2">
@@ -416,7 +509,7 @@ export function GoogleClassroomPopoverButton({
       <button
         ref={buttonRef}
         type="button"
-        disabled={loading && !open}
+        disabled={busy}
         onClick={handleIconClick}
         className={GOOGLE_ICON_ONLY_BUTTON_CLASS}
         aria-label="Google Classroom"

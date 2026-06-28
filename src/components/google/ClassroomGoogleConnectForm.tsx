@@ -100,16 +100,16 @@ export function ClassroomGoogleConnectForm({
             : "Abrir Google e escolher conta da escola"}
       </button>
 
-      <p
-        className={
-          compact
-            ? "text-[10px] leading-4 text-slate-500"
-            : "text-xs leading-5 text-slate-500"
-        }
-      >
-        O e-mail acima é opcional — ajuda a pré-selecionar sua conta @educar.rs.gov.br na
-        tela do Google.
-      </p>
+        <p
+          className={
+            compact
+              ? "text-[10px] leading-4 text-slate-500"
+              : "text-xs leading-5 text-slate-500"
+          }
+        >
+          Login no Planify e conta Google do Classroom são separados. O botão abre a tela do
+          Google para autorizar o @educar.rs.gov.br com acesso às turmas.
+        </p>
     </div>
   );
 }

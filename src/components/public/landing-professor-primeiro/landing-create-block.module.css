@@ -26,7 +26,7 @@
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  border-radius: 1rem;
+  border-radius: 0.75rem;
   border: 2px solid #e2e8f0;
   background: #ffffff;
   padding: 1rem 0.75rem;
@@ -47,9 +47,10 @@
 }
 
 .optionActive {
-  border-color: #06b6d4;
-  background: #ecfeff;
-  color: #164e63;
+  border-color: #26c6da;
+  background: #ffffff;
+  box-shadow: 0 0 0 1px rgba(38, 198, 218, 0.35);
+  color: #0a192f;
 }
 
 .optionIcon {
@@ -60,5 +61,5 @@
 }
 
 .optionActive .optionIcon {
-  color: #0891b2;
+  color: #26c6da;
 }

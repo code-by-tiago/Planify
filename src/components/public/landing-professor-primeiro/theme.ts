@@ -1,67 +1,72 @@
-/** Design tokens — cyan/indigo HUD (public pages + landing structure). */
+/** Design tokens — landing mockup (#26C6DA / #0A192F / #F0F9FA). */
+
+export const ppTeal = "#26C6DA";
+export const ppNavy = "#0A192F";
+export const ppSurface = "#F0F9FA";
 
 export const ppPage =
-  "planify-hud planify-ui3 planify-hud-landing planify-public flex min-h-screen flex-col overflow-x-hidden bg-white sm:overflow-x-clip sm:bg-gradient-to-b sm:from-white sm:via-sky-50/60 sm:to-[var(--planify-canvas)]";
+  "planify-hud planify-ui3 planify-hud-landing planify-public flex min-h-screen flex-col overflow-x-hidden bg-white sm:overflow-x-clip";
 
 export const ppEyebrow =
-  "text-xs font-bold uppercase tracking-[0.2em] text-cyan-700";
+  "text-xs font-bold uppercase tracking-[0.2em] text-[#0A192F]/70";
 
 export const ppTitle =
-  "font-[family-name:var(--font-display)] text-4xl font-extrabold leading-[1.08] tracking-tight text-slate-900 sm:text-5xl";
+  "font-[family-name:var(--font-display)] text-4xl font-extrabold leading-[1.2] tracking-tight text-[#0A192F] sm:text-5xl";
 
-export const ppTitleAccent = "text-cyan-600";
+export const ppTitleAccent = "text-[#26C6DA]";
 
 export const ppLead = "text-lg font-medium leading-8 text-slate-600";
 
 export const ppCard =
-  "rounded-2xl border border-slate-200/80 bg-white shadow-sm";
+  "rounded-xl border border-slate-200/80 bg-[#F0F9FA] p-6 shadow-sm";
 
 export const ppCardLg =
-  "rounded-3xl border border-slate-200 bg-white shadow-sm";
+  "rounded-2xl border border-slate-200 bg-white shadow-sm";
 
 export const ppBadge =
-  "inline-flex items-center gap-1.5 rounded-full border border-cyan-100 bg-cyan-50 px-3 py-1.5 text-xs font-bold text-cyan-800";
+  "inline-flex items-center gap-1.5 rounded-full border border-[#26C6DA]/30 bg-[#F0F9FA] px-3 py-1.5 text-xs font-bold text-[#0A192F]";
 
 export const ppIconBox =
-  "flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-cyan-50 text-cyan-600";
+  "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#26C6DA]/15 text-[#26C6DA]";
 
 export const ppBtnPrimary =
-  "inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 px-6 py-3.5 text-sm font-bold text-white shadow-md shadow-cyan-500/20 transition hover:from-cyan-600 hover:to-blue-700";
+  "inline-flex items-center justify-center gap-2 rounded-lg bg-[#26C6DA] px-6 py-3.5 text-sm font-bold text-[#0A192F] shadow-md shadow-[#26C6DA]/25 transition hover:brightness-105";
 
 export const ppBtnPrimarySm =
-  "inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 px-5 py-2.5 text-sm font-bold text-white shadow-md shadow-cyan-500/20 transition hover:from-cyan-600 hover:to-blue-700";
+  "inline-flex items-center justify-center rounded-lg border border-[#0A192F]/15 bg-white px-5 py-2.5 text-sm font-bold text-[#0A192F] shadow-sm transition hover:bg-[#F0F9FA]";
 
 export const ppBtnSecondary =
-  "inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-6 py-3.5 text-sm font-bold text-slate-800 shadow-sm transition hover:border-cyan-200 hover:bg-cyan-50/50";
+  "inline-flex items-center justify-center gap-2 rounded-lg border border-[#0A192F]/20 bg-white px-6 py-3.5 text-sm font-bold text-[#0A192F] shadow-sm transition hover:border-[#26C6DA] hover:bg-[#F0F9FA]";
+
+export const ppBtnNavy =
+  "inline-flex items-center justify-center gap-2 rounded-lg bg-[#0A192F] px-8 py-3.5 text-sm font-bold text-white transition hover:bg-[#0d2137]";
 
 export const ppBtnGhost =
-  "inline-flex items-center justify-center gap-2 rounded-xl border border-white/20 px-7 py-3.5 text-sm font-semibold text-white transition hover:bg-white/10";
+  "inline-flex items-center justify-center gap-2 rounded-lg border border-white/20 px-7 py-3.5 text-sm font-semibold text-white transition hover:bg-white/10";
 
-/** Secondary CTA on dark bands — white fill, navy label (bypasses global text-* overrides). */
 export const ppBtnOnDark =
-  "inline-flex items-center justify-center rounded-xl border border-white/15 bg-white px-6 py-3.5 text-sm font-bold text-[#071018] shadow-sm shadow-black/10 transition hover:bg-slate-50";
+  "inline-flex items-center justify-center rounded-lg border border-white/15 bg-white px-6 py-3.5 text-sm font-bold text-[#0A192F] shadow-sm transition hover:bg-slate-50";
 
 export const ppLink =
-  "font-bold text-cyan-700 transition hover:text-cyan-900";
+  "font-bold text-[#26C6DA] transition hover:text-[#1eb3c6]";
 
 export const ppInput =
-  "w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm font-semibold text-slate-950 outline-none transition focus:border-cyan-400 focus:bg-white focus:ring-4 focus:ring-cyan-100";
+  "w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm font-semibold text-slate-950 outline-none transition focus:border-[#26C6DA] focus:bg-white focus:ring-4 focus:ring-[#26C6DA]/20";
 
 export const ppCtaBand =
-  "overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-[#0c2a3a] to-[#071018] px-8 py-10 text-center shadow-2xl sm:px-12";
+  "overflow-hidden rounded-2xl bg-[#0A192F] px-8 py-10 text-center shadow-2xl sm:px-12";
 
-/** Dark-band copy — hex bypasses global text-slate/cyan overrides on public pages. */
 export const ppCtaEyebrow =
-  "text-[10px] font-bold uppercase tracking-[0.22em] text-[#a5f3fc]";
+  "text-[10px] font-bold uppercase tracking-[0.22em] text-[#26C6DA]";
 
-export const ppCtaLead = "text-sm font-medium leading-7 text-[#bae6fd]";
+export const ppCtaLead = "text-sm font-medium leading-7 text-slate-300";
 
 export const ppCtaTitle = "font-extrabold !text-white";
 
 export const ppCtaLinkOnDark =
-  "inline-flex items-center gap-2 text-sm font-semibold text-[#bae6fd] underline-offset-4 transition hover:text-white hover:underline";
+  "inline-flex items-center gap-2 text-sm font-semibold text-slate-300 underline-offset-4 transition hover:text-white hover:underline";
 
-export const ppSectionAlt = "border-y border-slate-200/80 bg-slate-50/80";
+export const ppSectionAlt = "border-y border-slate-200/80 bg-[#F0F9FA]";
 
 export const ppPlanHighlight =
-  "border-cyan-300 bg-white shadow-md ring-2 ring-cyan-500/20 lg:scale-[1.02]";
+  "border-[#26C6DA] bg-white shadow-md ring-2 ring-[#26C6DA]/20 lg:scale-[1.02]";

@@ -1,12 +1,14 @@
 "use client";
 
+import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
+import type { PlanifyIconName } from "@/lib/pro/planifyTools";
 import { motion, useReducedMotion } from "framer-motion";
 import { STATS } from "./constants";
 import { ppEyebrow } from "./theme";
 import { useLandingMobileStatic } from "./useLandingMobileStatic";
 
 const statCardClass =
-  "group relative overflow-visible rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm transition hover:border-cyan-200 sm:overflow-hidden sm:hover:shadow-md";
+  "group relative rounded-xl border border-slate-200/60 bg-[#F0F9FA] p-6 transition hover:border-[#26C6DA]/40 hover:shadow-sm";
 
 export function LandingStats() {
   const reduce = useReducedMotion();
@@ -14,28 +16,26 @@ export function LandingStats() {
   const staticRender = reduce || mobileStatic;
 
   return (
-    <section className="border-y border-slate-200/80 bg-white px-5 py-14 sm:bg-gradient-to-b sm:from-cyan-50/40 sm:via-white sm:to-white sm:px-8 sm:py-16">
+    <section className="bg-white px-5 py-14 sm:px-8 sm:py-16">
       <div className="mx-auto max-w-7xl">
         <p className={`${ppEyebrow} text-center`}>Diferenciais</p>
-        <h2 className="mt-3 text-center font-[family-name:var(--font-display)] text-2xl font-extrabold text-slate-900 sm:text-3xl">
-          O que o Planify entrega na prática
-        </h2>
 
         <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {STATS.map((stat, index) => {
             const content = (
               <>
-                <div
-                  className="pointer-events-none absolute -right-6 -top-6 hidden h-24 w-24 rounded-full bg-cyan-100/80 sm:block"
-                  aria-hidden
-                />
-                <p className="font-[family-name:var(--font-display)] text-3xl font-extrabold tracking-tight text-cyan-600 sm:text-4xl">
-                  {stat.value}
+                <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#26C6DA]/15 text-[#26C6DA]">
+                  <PlanifyIcon
+                    name={stat.icon as PlanifyIconName}
+                    className="h-5 w-5"
+                  />
+                </span>
+                <p className="mt-4 text-sm font-extrabold uppercase tracking-wide text-[#0A192F]">
+                  {stat.value} {stat.label}
                 </p>
-                <p className="mt-1 text-sm font-extrabold uppercase tracking-wide text-slate-800">
-                  {stat.label}
+                <p className="mt-2 text-sm font-medium leading-6 text-slate-600">
+                  {stat.detail}
                 </p>
-                <p className="mt-3 text-xs font-medium leading-5 text-slate-500">{stat.detail}</p>
               </>
             );
 
@@ -51,10 +51,10 @@ export function LandingStats() {
               <motion.article
                 key={stat.label}
                 className={statCardClass}
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 16 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "-60px" }}
-                transition={{ duration: 0.5, delay: index * 0.08 }}
+                transition={{ duration: 0.45, delay: index * 0.07 }}
               >
                 {content}
               </motion.article>

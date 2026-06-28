@@ -10,44 +10,23 @@ export function LandingTools() {
   return (
     <section
       id="ferramentas"
-      className="scroll-mt-24 border-y border-slate-200/80 bg-slate-50/80 px-5 py-16 sm:px-8 sm:py-20"
+      className="scroll-mt-24 bg-white px-5 py-14 sm:px-8 sm:py-16"
     >
       <div className="mx-auto max-w-7xl">
-        <div className="mx-auto max-w-2xl text-center">
-          <p className={ppEyebrow}>Geradores com IA</p>
-          <h2 className="mt-3 font-[family-name:var(--font-display)] text-3xl font-extrabold text-slate-900 sm:text-4xl">
-            Ferramentas para cada etapa da aula
-          </h2>
-          <p className="mt-4 text-base font-medium leading-7 text-slate-600">
-            Do planejamento BNCC à correção de redações — cada gerador estrutura um rascunho
-            pedagógico para você revisar no editor antes de exportar ou publicar.
-          </p>
-        </div>
+        <p className={`${ppEyebrow} text-center`}>Geradores com IA</p>
 
-        <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
           {tools.map((tool) => (
             <Link
               key={tool.id}
               href={tool.href}
-              className="group flex flex-col rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm transition hover:border-cyan-200 hover:shadow-md"
+              className="group flex min-h-[3.25rem] items-center gap-2.5 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-left shadow-sm transition hover:border-[#26C6DA] hover:shadow-md"
             >
-              <span
-                className={`flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br ${tool.accent} text-white shadow-sm`}
-              >
-                <PlanifyIcon name={tool.icon} className="h-5 w-5" />
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[#26C6DA]/15 text-[#26C6DA]">
+                <PlanifyIcon name={tool.icon} className="h-4 w-4" />
               </span>
-              <span className="mt-4 text-base font-extrabold text-slate-900 group-hover:text-cyan-700">
+              <span className="text-xs font-bold leading-tight text-[#0A192F] group-hover:text-[#26C6DA] sm:text-sm">
                 {tool.shortTitle}
-              </span>
-              <span className="mt-2 flex-1 text-sm font-medium leading-6 text-slate-600">
-                {tool.description}
-              </span>
-              <span className="mt-4 flex items-center gap-1 text-xs font-bold text-cyan-700">
-                Abrir
-                <PlanifyIcon
-                  name="arrowRight"
-                  className="h-3 w-3 transition group-hover:translate-x-0.5"
-                />
               </span>
             </Link>
           ))}

@@ -11,8 +11,8 @@ const GOOGLE_PRODUCT_ICONS = {
 
 export function LandingTrustBar() {
   return (
-    <section className="border-y border-slate-200/80 bg-white/80 px-5 py-6 sm:px-8">
-      <div className="mx-auto grid max-w-7xl grid-cols-2 gap-4 sm:grid-cols-4 sm:gap-6">
+    <section className="bg-[#F0F9FA] px-5 py-5 sm:px-8 sm:py-6">
+      <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-around gap-6 sm:gap-4">
         {TRUST_ITEMS.map((item) => {
           const googleProduct =
             "googleProduct" in item ? item.googleProduct : undefined;
@@ -25,16 +25,19 @@ export function LandingTrustBar() {
           return (
             <div
               key={item.label}
-              className="flex items-center justify-center gap-2.5 text-center sm:justify-start sm:text-left"
+              className="group flex items-center gap-2.5 text-center sm:text-left"
             >
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white ring-1 ring-slate-100">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white shadow-sm transition group-hover:grayscale-0 grayscale-[0.35] group-hover:opacity-100 opacity-80">
                 {GoogleIcon ? (
-                  <GoogleIcon className="h-5 w-5" />
+                  <GoogleIcon className="h-5 w-5 transition group-hover:scale-105" />
                 ) : planifyIcon ? (
-                  <PlanifyIcon name={planifyIcon} className="h-4 w-4 text-cyan-600" />
+                  <PlanifyIcon
+                    name={planifyIcon}
+                    className="h-4 w-4 text-[#26C6DA] transition group-hover:scale-105"
+                  />
                 ) : null}
               </span>
-              <span className="text-sm font-bold text-slate-800">{item.label}</span>
+              <span className="text-sm font-bold text-[#0A192F]">{item.label}</span>
             </div>
           );
         })}

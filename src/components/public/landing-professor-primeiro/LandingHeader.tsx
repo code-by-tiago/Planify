@@ -8,7 +8,7 @@ import { usePlanifySession } from "@/hooks/usePlanifySession";
 import { ppBtnPrimarySm } from "./theme";
 
 const navLinkClass =
-  "rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-cyan-50 hover:text-cyan-800";
+  "rounded-lg px-3 py-2 text-sm font-semibold text-[#0A192F]/80 transition hover:bg-[#F0F9FA] hover:text-[#0A192F]";
 
 export function LandingHeader() {
   const [open, setOpen] = useState(false);
@@ -50,7 +50,7 @@ export function LandingHeader() {
           {showPainel ? (
             <Link
               href="/dashboard"
-              className="rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:brightness-105"
+              className="rounded-lg bg-[#26C6DA] px-4 py-2.5 text-sm font-bold text-[#0A192F] shadow-sm transition hover:brightness-105"
             >
               Painel
             </Link>

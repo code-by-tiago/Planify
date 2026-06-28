@@ -23,7 +23,7 @@ import {
 import { peekGoogleOAuthResumeIntent } from "@/lib/google/google-export-resume";
 import { agentDebugLog } from "@/lib/debug/agent-debug-log";
 import { GOOGLE_STATUS_CHANGED_EVENT } from "@/lib/google/google-status-events";
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 type GoogleClassroomPopoverButtonProps = {
@@ -47,6 +47,11 @@ export function GoogleClassroomPopoverButton({
   const [step, setStep] = useState<PopoverStep>("form");
   const [lastSuccess, setLastSuccess] = useState<ClassroomExportSuccess | null>(null);
   const [popoverCoords, setPopoverCoords] = useState<ClassroomPopoverCoords | null>(null);
+  const [buttonId] = useState(() =>
+    typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID()
+      : `classroom-button-${Math.random().toString(36).slice(2)}`,
+  );
   const rootRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
@@ -86,6 +91,30 @@ export function GoogleClassroomPopoverButton({
     returnTo,
     documentType,
   });
+
+  const handleConnectWithButtonId = useCallback(async () => {
+    try {
+      window.sessionStorage.setItem(
+        "planify:classroom-open-after-oauth-button",
+        buttonId,
+      );
+    } catch {
+      /* ignore */
+    }
+    await handleConnect();
+  }, [buttonId, handleConnect]);
+
+  const handleSwitchAccountWithButtonId = useCallback(async () => {
+    try {
+      window.sessionStorage.setItem(
+        "planify:classroom-open-after-oauth-button",
+        buttonId,
+      );
+    } catch {
+      /* ignore */
+    }
+    await handleSwitchAccount();
+  }, [buttonId, handleSwitchAccount]);
 
   const needsOAuth = needsClassroomGoogleOAuth(status);
   const needsAccountSwitch = classroomGoogleAccountNeedsSwitch(status);
@@ -153,18 +182,27 @@ export function GoogleClassroomPopoverButton({
   }, [open, handleClosePopover]);
 
   useEffect(() => {
+    const OPEN_HANDLED_KEY = "planify:classroom-open-after-oauth-handled";
+    const OPEN_BUTTON_KEY = "planify:classroom-open-after-oauth-button";
+
     function maybeOpenAfterOAuth() {
       const hasOAuthIntent = Boolean(peekGoogleOAuthResumeIntent()?.connected);
 
       try {
+        const alreadyHandled = window.sessionStorage.getItem(OPEN_HANDLED_KEY) === "1";
+        const targetButtonId = window.sessionStorage.getItem(OPEN_BUTTON_KEY);
         if (
-          window.sessionStorage.getItem(CLASSROOM_OPEN_AFTER_OAUTH_KEY) !== "1" &&
-          !hasOAuthIntent
+          alreadyHandled ||
+          targetButtonId !== buttonId ||
+          (window.sessionStorage.getItem(CLASSROOM_OPEN_AFTER_OAUTH_KEY) !== "1" &&
+            !hasOAuthIntent)
         ) {
           return;
         }
 
+        window.sessionStorage.setItem(OPEN_HANDLED_KEY, "1");
         window.sessionStorage.removeItem(CLASSROOM_OPEN_AFTER_OAUTH_KEY);
+        window.sessionStorage.removeItem(OPEN_BUTTON_KEY);
         openClassroomPopover();
       } catch {
         /* ignore */
@@ -322,7 +360,9 @@ export function GoogleClassroomPopoverButton({
             onInstitutionalEmailChange={setInstitutionalEmail}
             busy={busy}
             onConnect={() =>
-              void (connectMode === "switch" ? handleSwitchAccount() : handleConnect())
+              void (connectMode === "switch"
+                ? handleSwitchAccountWithButtonId()
+                : handleConnectWithButtonId())
             }
             mode={connectMode}
             planifyEmail={status?.planifyEmail}
@@ -463,7 +503,7 @@ export function GoogleClassroomPopoverButton({
           <button
             type="button"
             disabled={busy}
-            onClick={() => void handleSwitchAccount()}
+            onClick={() => void handleSwitchAccountWithButtonId()}
             className="w-full rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-900"
           >
             Trocar conta Google

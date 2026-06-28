@@ -175,13 +175,16 @@ export function GoogleClassroomPopoverButton({
   function resolvePopoverBranch():
     | "loading"
     | "not-configured"
+    | "not-authenticated"
     | "needs-educar-connect"
     | "success"
     | "turma-list"
     | "no-turmas"
     | "fallback" {
-    if (loading || !statusReady) return "loading";
+    if (loading) return "loading";
+    if (!statusReady) return "fallback";
     if (!status?.configured) return "not-configured";
+    if (!status.authenticated) return "not-authenticated";
     if (needsEducarConnect) return "needs-educar-connect";
     if (step === "success" && lastSuccess) return "success";
     if (canShowTurmaList) return "turma-list";
@@ -234,7 +237,7 @@ export function GoogleClassroomPopoverButton({
     }
 
     if (statusReady && status && !status.authenticated) {
-      window.location.href = `/login?redirect=${loginRedirect}`;
+      openClassroomPopover();
       return;
     }
 
@@ -283,6 +286,22 @@ export function GoogleClassroomPopoverButton({
             Integração Google não configurada no servidor. Peça à TI para configurar{" "}
             <code className="text-[10px]">GOOGLE_CLIENT_ID</code>.
           </p>
+        </div>
+      );
+    }
+
+    if (popoverBranch === "not-authenticated") {
+      return (
+        <div className="mt-3 min-h-[120px] space-y-2">
+          <p className="text-[11px] leading-5 text-slate-700">
+            Faça login no Planify para conectar sua conta Google e enviar ao Classroom.
+          </p>
+          <a
+            href={`/login?redirect=${loginRedirect}`}
+            className="block w-full rounded-lg bg-sky-600 px-3 py-2 text-center text-xs font-bold text-white"
+          >
+            Fazer login
+          </a>
         </div>
       );
     }

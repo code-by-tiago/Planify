@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { LandingHeroLaptopMockup } from "./LandingHeroLaptopMockup";
+import { LandingHeroShowcaseCarousel } from "./LandingHeroShowcaseCarousel";
 import { ppBtnPrimary, ppBtnSecondary } from "./theme";
 
 export function LandingHero() {
@@ -30,7 +30,7 @@ export function LandingHero() {
         </div>
 
         <div className="relative lg:-mb-8">
-          <LandingHeroLaptopMockup />
+          <LandingHeroShowcaseCarousel />
         </div>
       </div>
     </section>

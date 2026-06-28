@@ -12,6 +12,29 @@ const planejamentosAccent =
   landingExtraTools.find((tool) => tool.id === "planejamentos")?.accent ??
   "from-blue-500 to-blue-600";
 
+export const HERO_SHOWCASE_CARDS = [
+  {
+    id: "planejamento",
+    src: "/marketing/hero-cards/planejamento-bncc.png",
+    alt: "Planejamento BNCC em minutos — matriz anual pronta para exportar",
+  },
+  {
+    id: "provas",
+    src: "/marketing/hero-cards/provas-google-forms.png",
+    alt: "Provas prontas no Google Forms integradas ao Classroom",
+  },
+  {
+    id: "atividades",
+    src: "/marketing/hero-cards/atividades-ludicas.png",
+    alt: "Atividades lúdicas em segundos — cruzadinhas e jogos pedagógicos",
+  },
+  {
+    id: "pei",
+    src: "/marketing/hero-cards/pei-inclusao.png",
+    alt: "Documentos de inclusão — PEI detalhado e alinhado à BNCC",
+  },
+] as const;
+
 export const TRUST_ITEMS = [
   { label: "Alinhado à BNCC", icon: "checkCircle" as const },
   { label: "Google Drive", googleProduct: "drive" as const },

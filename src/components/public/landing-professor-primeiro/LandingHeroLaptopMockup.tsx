@@ -5,6 +5,10 @@ import { useEffect, useRef, useState } from "react";
 const VIDEO_SRC = "/videos/planify-planejamento-hero.mp4";
 const VIDEO_POSTER_SRC = "/videos/planify-planejamento-hero-poster.jpg";
 
+/** Crop superior: oculta o banner "BNCC → IA → Google Docs" gravado no vídeo. */
+const screenMediaClass =
+  "absolute inset-x-0 top-0 h-[132%] w-full max-w-none -translate-y-[18%] object-cover object-top";
+
 /** Laptop mockup com vídeo do fluxo de planejamento na tela. */
 export function LandingHeroLaptopMockup() {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -31,13 +35,13 @@ export function LandingHeroLaptopMockup() {
             {showPoster ? (
               <img
                 src={VIDEO_POSTER_SRC}
-                className="h-full w-full object-cover object-top"
+                className={screenMediaClass}
                 alt="Demonstração do Planify — planejamento BNCC com IA"
               />
             ) : (
               <video
                 ref={videoRef}
-                className="h-full w-full object-cover object-top"
+                className={screenMediaClass}
                 autoPlay
                 muted
                 loop

@@ -29,7 +29,7 @@ import {
 } from "@/lib/google/classroom-google-account";
 import {
   assertClassroomClientExportAllowed,
-  confirmClassroomExport,
+  buildClassroomExportSuccessMessage,
   recordClassroomClientExport,
   resolveSelectedCourseLabel,
 } from "@/lib/google/classroom-export-client-guard";
@@ -47,6 +47,14 @@ type UseGoogleClassroomExportOptions = {
   onStatus?: (message: string) => void;
   returnTo?: string;
   documentType?: string | null;
+};
+
+export type ClassroomExportSuccess = {
+  openUrl: string;
+  coursesUsed: number;
+  asDraft: boolean;
+  courseLabel: string;
+  exportTitle: string;
 };
 
 export function useGoogleClassroomExport({
@@ -209,17 +217,19 @@ export function useGoogleClassroomExport({
     }
   }
 
-  async function handleExport(previewWindow?: Window | null) {
+  async function handleExport(
+    previewWindow?: Window | null,
+  ): Promise<ClassroomExportSuccess | null> {
     if (classroomGoogleAccountMismatch(status?.googleEmail)) {
       setError("Conecte a conta Google institucional (@educar.rs.gov.br) antes de enviar.");
       previewWindow?.close();
-      return;
+      return null;
     }
 
     if (!courseId.trim()) {
       setError("Selecione a turma antes de enviar.");
       previewWindow?.close();
-      return;
+      return null;
     }
 
     const exportTitle = title.trim() || "Material Planify";
@@ -227,17 +237,6 @@ export function useGoogleClassroomExport({
     const selectedCourseId = courseId.trim();
     const asDraft = publishAsDraft;
     const courseLabel = resolveSelectedCourseLabel(courses, selectedCourseId);
-
-    if (
-      !confirmClassroomExport({
-        title: exportTitle,
-        courseLabel,
-        asDraft,
-      })
-    ) {
-      previewWindow?.close();
-      return;
-    }
 
     try {
       assertClassroomClientExportAllowed({
@@ -248,7 +247,7 @@ export function useGoogleClassroomExport({
     } catch (err) {
       setError(err instanceof Error ? err.message : "Envio duplicado bloqueado.");
       previewWindow?.close();
-      return;
+      return null;
     }
 
     setBusy(true);
@@ -275,18 +274,30 @@ export function useGoogleClassroomExport({
 
       persistPreferredClassroomCourseId(selectedCourseId);
 
+      const successMessage = buildClassroomExportSuccessMessage({
+        asDraft,
+        courseLabel,
+      });
+
       notify(
         result.coursesUsed > 0
-          ? publishAsDraft
-            ? "Rascunho salvo no Google Classroom."
-            : "Material publicado no Google Classroom."
+          ? successMessage
           : "Material salvo no Drive. Abra o Classroom para anexar à turma.",
       );
 
       openExportResultUrl(result.openUrl, previewWindow);
+
+      return {
+        openUrl: result.openUrl,
+        coursesUsed: result.coursesUsed,
+        asDraft,
+        courseLabel,
+        exportTitle,
+      };
     } catch (err) {
       previewWindow?.close();
       setError(err instanceof Error ? err.message : "Erro ao enviar ao Classroom.");
+      return null;
     } finally {
       setBusy(false);
     }
@@ -326,28 +337,6 @@ export function useGoogleClassroomExport({
     }
   }
 
-  async function handleQuickExport(previewWindow?: Window | null) {
-    if (needsClassroomGoogleOAuth(status)) {
-      previewWindow?.close();
-      await handleConnect();
-      return;
-    }
-
-    if (classroomGoogleAccountNeedsSwitch(status)) {
-      previewWindow?.close();
-      await handleSwitchAccount();
-      return;
-    }
-
-    if (courses.length === 0) {
-      await handleDriveOnlyExport(previewWindow);
-      return;
-    }
-
-    setError("Selecione a turma antes de enviar.");
-    previewWindow?.close();
-  }
-
   function openClassroomHome() {
     openGoogleExportUrl(CLASSROOM_HOME_URL);
   }
@@ -377,7 +366,6 @@ export function useGoogleClassroomExport({
     handleDisconnect,
     handleExport,
     handleDriveOnlyExport,
-    handleQuickExport,
     openClassroomHome,
     refresh,
   };

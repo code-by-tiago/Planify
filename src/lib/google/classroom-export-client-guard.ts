@@ -83,16 +83,33 @@ export function resolveSelectedCourseLabel(
   return match.section ? `${match.name} — ${match.section}` : match.name;
 }
 
-export function confirmClassroomExport(params: {
+export function buildClassroomExportReviewSummary(params: {
   title: string;
   courseLabel: string;
   asDraft: boolean;
-}): boolean {
-  const mode = params.asDraft
-    ? "como RASCUNHO (só você vê até publicar no Classroom)"
-    : "PUBLICADO (visível para os alunos imediatamente)";
+}): {
+  title: string;
+  courseLabel: string;
+  modeLabel: string;
+  modeDescription: string;
+} {
+  return {
+    title: params.title,
+    courseLabel: params.courseLabel,
+    modeLabel: params.asDraft ? "Rascunho" : "Publicado",
+    modeDescription: params.asDraft
+      ? "Só você vê no Classroom até publicar manualmente na turma."
+      : "Visível para os alunos imediatamente após o envio.",
+  };
+}
 
-  return window.confirm(
-    `Enviar "${params.title}" para:\n${params.courseLabel}\n\nModo: ${mode}\n\nConfirmar envio?`,
-  );
+export function buildClassroomExportSuccessMessage(params: {
+  asDraft: boolean;
+  courseLabel: string;
+}): string {
+  if (params.asDraft) {
+    return `Rascunho salvo em "${params.courseLabel}". Publique no Classroom quando estiver pronto.`;
+  }
+
+  return `Material publicado em "${params.courseLabel}".`;
 }

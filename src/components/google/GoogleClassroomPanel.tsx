@@ -10,7 +10,12 @@ import {
   classroomGoogleAccountNeedsSwitch,
   needsClassroomGoogleOAuth,
 } from "@/lib/google/classroom-google-account";
+import {
+  buildClassroomExportReviewSummary,
+  resolveSelectedCourseLabel,
+} from "@/lib/google/classroom-export-client-guard";
 import { useGoogleClassroomExport } from "@/hooks/useGoogleClassroomExport";
+import { useState } from "react";
 
 type GoogleClassroomPanelProps = {
   title: string;
@@ -29,6 +34,8 @@ export function GoogleClassroomPanel({
   returnTo,
   documentType,
 }: GoogleClassroomPanelProps) {
+  const [panelStep, setPanelStep] = useState<"form" | "review">("form");
+
   const {
     status,
     courses,
@@ -71,6 +78,13 @@ export function GoogleClassroomPanel({
   const needsOAuth = needsClassroomGoogleOAuth(status);
   const needsAccountSwitch = classroomGoogleAccountNeedsSwitch(status);
   const connectMode = needsAccountSwitch ? "switch" : "connect";
+  const exportTitle = title.trim() || "Material Planify";
+  const courseLabel = resolveSelectedCourseLabel(courses, courseId);
+  const reviewSummary = buildClassroomExportReviewSummary({
+    title: exportTitle,
+    courseLabel,
+    asDraft: publishAsDraft,
+  });
 
   function handleCompactIconClick() {
     if (busy) return;
@@ -239,6 +253,42 @@ export function GoogleClassroomPanel({
             connectedGoogleEmail={status.googleEmail}
           />
         ) : canExport ? (
+          panelStep === "review" ? (
+            <div className="w-full space-y-3 rounded-xl border border-sky-100 bg-sky-50/70 p-4">
+              <p className="text-xs font-black uppercase tracking-wide text-sky-800">
+                Revisar envio
+              </p>
+              <p className="text-sm text-slate-800">
+                <strong>{reviewSummary.title}</strong>
+                <br />
+                Turma: {reviewSummary.courseLabel}
+                <br />
+                Modo: {reviewSummary.modeLabel} — {reviewSummary.modeDescription}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => setPanelStep("form")}
+                  className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700"
+                >
+                  Voltar
+                </button>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => {
+                    void handleExport().then((result) => {
+                      if (result) setPanelStep("form");
+                    });
+                  }}
+                  className={btnSuccess}
+                >
+                  {busy ? "Enviando..." : "Confirmar envio"}
+                </button>
+              </div>
+            </div>
+          ) : (
           <>
             <label className="grid w-full min-w-[200px] flex-1 gap-1">
               <span className="text-xs font-bold text-sky-800">Turma</span>
@@ -280,12 +330,10 @@ export function GoogleClassroomPanel({
             <button
               type="button"
               disabled={busy || !courseId}
-              onClick={() => {
-                void handleExport();
-              }}
+              onClick={() => setPanelStep("review")}
               className={btnSuccess}
             >
-              {busy ? "Enviando..." : "Enviar ao Classroom"}
+              Revisar envio
             </button>
 
             <button
@@ -306,6 +354,7 @@ export function GoogleClassroomPanel({
               Trocar conta Google da escola
             </button>
           </>
+          )
         ) : (
           <>
             <button

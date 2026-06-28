@@ -604,11 +604,10 @@ Regras obrigatórias:
 7. Mantenha a ordem dos conteúdos informados.
 8. NUNCA repita o mesmo conteúdo para completar carga horária.
 9. Não crie "parte 1", "parte 2", "continuação" ou linhas adicionais do mesmo conteúdo.
-10. numeroAula deve ser sequencial de 1 até o total de conteúdos.
-11. periodos deve ser 1 em todas as linhas; aulaInicio e aulaFim devem ser iguais ao numeroAula.
-12. A carga horária (${cargaHoraria} períodos) é campo administrativo do documento, não autoriza repetir conteúdos na matriz.
-13. No planejamento anual, distribua as aulas entre 1º, 2º e 3º trimestre de forma equilibrada.
-14. aulaInicio e aulaFim representam o número da aula, não uma faixa acumulada para repetir conteúdo.
+10. numeroAula deve ser sequencial por trimestre: 1, 2, 3… dentro de cada trimestre.
+11. periodos deve variar por linha (tipicamente 1 a 10); a SOMA de todos os periodos deve ser exatamente ${cargaHoraria}.
+12. aulaInicio e aulaFim representam a faixa acumulada de períodos dentro do trimestre (ex.: periodos=5 com início em 6 → aulaInicio=6, aulaFim=10).
+13. No planejamento anual, distribua os conteúdos entre 1º, 2º e 3º trimestre de forma equilibrada.
 15. Gere objetivos/expectativas de aprendizagem, metodologia, materiais, recursos necessários, etapas da experiência, evidências de aprendizagem e instrumentos de avaliação.
 16. Preencha projetos interdisciplinares, temas integradores e instrumentos de avaliação de forma coerente quando estes campos existirem no DOCX.
 17. Não use texto genérico vazio nem repita a mesma metodologia em todas as linhas.
@@ -626,9 +625,9 @@ Formato:
         "conteudo": "...",
         "trimestre": 1,
         "numeroAula": 1,
-        "periodos": 1,
+        "periodos": 5,
         "aulaInicio": 1,
-        "aulaFim": 1,
+        "aulaFim": 5,
         "habilidades": [
           { "codigo": "...", "descricao": "..." }
         ],
@@ -644,9 +643,9 @@ Formato:
         "conteudo": "...",
         "trimestre": 1,
         "numeroAula": 2,
-        "periodos": 1,
-        "aulaInicio": 2,
-        "aulaFim": 2,
+        "periodos": 4,
+        "aulaInicio": 6,
+        "aulaFim": 9,
         "habilidades": [
           { "codigo": "...", "descricao": "..." }
         ],

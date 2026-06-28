@@ -337,7 +337,7 @@ function verifyReferenceTemplates(buildOfficialPlanningDocx, buildTrimestralPlan
       ...basePayload,
       tipoPlanejamento: "trimestral",
       trimestre,
-      cargaHoraria: "4 períodos",
+      cargaHoraria: "2 períodos",
       matrizPlanejamento: { conteudos: trimestral.conteudos },
     });
     const trimestralText = normalizeDocxText(readDocxDocumentXml(trimestralDocx));

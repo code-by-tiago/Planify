@@ -1,3 +1,7 @@
+import {
+  OFFICIAL_MAX_PERIODS_PER_ROW,
+} from "./planning-official-contract";
+
 export type PlanningAllocationPayload = {
   tipoPlanejamento?: string;
   cargaHoraria?: string | number;
@@ -68,6 +72,31 @@ function getPayloadContents(payload: PlanningAllocationPayload): string[] {
   }
 
   return result;
+}
+
+export function contentComplexityWeight(conteudo: string): number {
+  const text = normalizeSearch(conteudo);
+  let weight = 1;
+
+  if (
+    /revisao|retomada|sintese|introducao|diagnostico|acolhimento|apresentacao/.test(text)
+  ) {
+    weight *= 0.7;
+  }
+
+  if (
+    /gramatica|sintaxe|regencia|colocacao|dissertat|argument|projeto|pesquisa|monografia|geometria|funcao|equacao|redacao|producao textual/.test(
+      text,
+    )
+  ) {
+    weight *= 1.3;
+  }
+
+  if (text.length > 90) {
+    weight *= 1.1;
+  }
+
+  return Math.max(0.5, weight);
 }
 
 function scoreCandidateForContent(
@@ -156,8 +185,8 @@ function withOneLessonPerContent<T extends MatrixLessonAllocatable>(
       : ({
           conteudo,
           trimestre: trimestres[index] || trimestreSelecionado,
-          aulaInicio: index + 1,
-          aulaFim: index + 1,
+          aulaInicio: 0,
+          aulaFim: 0,
         } as T);
 
     return {
@@ -167,10 +196,6 @@ function withOneLessonPerContent<T extends MatrixLessonAllocatable>(
         tipo === "trimestral"
           ? trimestreSelecionado
           : trimestres[index] || base.trimestre || 1,
-      numeroAula: index + 1,
-      periodos: 1,
-      aulaInicio: index + 1,
-      aulaFim: index + 1,
     };
   });
 }
@@ -218,31 +243,151 @@ function distributeTrimestres(count: number, tipo: "anual" | "trimestral", trime
   return Array.from({ length: count }, (_, index) => Math.min(3, Math.floor(index / chunkSize) + 1));
 }
 
+export function allocateRawPeriods(conteudos: string[], cargaTotal: number): number[] {
+  const count = Math.max(1, conteudos.length);
+  const weights = conteudos.map((conteudo) => contentComplexityWeight(conteudo));
+  const weightSum = weights.reduce((sum, value) => sum + value, 0) || count;
+  const rowMax = Math.max(OFFICIAL_MAX_PERIODS_PER_ROW, Math.ceil(cargaTotal / count));
+
+  const raw = weights.map((weight) =>
+    Math.min(rowMax, Math.max(1, Math.round((cargaTotal * weight) / weightSum))),
+  );
+  let sum = raw.reduce((total, value) => total + value, 0);
+
+  while (sum > cargaTotal) {
+    let index = -1;
+    for (let i = 0; i < raw.length; i += 1) {
+      if (raw[i] > 1 && (index < 0 || raw[i] > raw[index])) {
+        index = i;
+      }
+    }
+    if (index < 0) break;
+    raw[index] -= 1;
+    sum -= 1;
+  }
+
+  while (sum < cargaTotal) {
+    let index = -1;
+    for (let i = 0; i < raw.length; i += 1) {
+      if (raw[i] < rowMax && (index < 0 || weights[i] > weights[index])) {
+        index = i;
+      }
+    }
+    if (index < 0) break;
+    raw[index] += 1;
+    sum += 1;
+  }
+
+  return raw.map((value) => Math.max(1, value));
+}
+
+function matrixPeriodsMatchCarga(
+  items: MatrixLessonAllocatable[],
+  cargaTotal: number,
+): boolean {
+  if (!items.length) return false;
+
+  const periodsSum = items.reduce((sum, item) => sum + (Number(item.periodos) || 0), 0);
+  if (periodsSum !== cargaTotal) return false;
+
+  const rowMax = Math.max(
+    OFFICIAL_MAX_PERIODS_PER_ROW,
+    Math.ceil(cargaTotal / Math.max(1, items.length)),
+  );
+
+  return items.every((item) => {
+    const periodos = Number(item.periodos) || 0;
+    return periodos >= 1 && periodos <= rowMax;
+  });
+}
+
+function assignPeriodosToRows<T extends MatrixLessonAllocatable>(
+  items: T[],
+  cargaTotal: number,
+): T[] {
+  const conteudos = items.map((item) => item.conteudo);
+  const targetTotal = Math.max(items.length, cargaTotal);
+
+  const aiPeriods = items.map((item) => Number(item.periodos) || 0);
+  const aiSum = aiPeriods.reduce((sum, value) => sum + value, 0);
+  const aiValid =
+    aiSum === targetTotal &&
+    aiPeriods.every((value) => value >= 1 && value <= Math.max(OFFICIAL_MAX_PERIODS_PER_ROW, Math.ceil(targetTotal / Math.max(1, items.length))));
+
+  const periodAllocations = aiValid ? aiPeriods : allocateRawPeriods(conteudos, targetTotal);
+
+  return items.map((item, index) => ({
+    ...item,
+    periodos: periodAllocations[index] || 1,
+  }));
+}
+
+function renumberPerTrimester<T extends MatrixLessonAllocatable>(items: T[]): T[] {
+  const counters = new Map<number, number>();
+
+  return items.map((item) => {
+    const trimestre = Number(item.trimestre) || 1;
+    const next = (counters.get(trimestre) || 0) + 1;
+    counters.set(trimestre, next);
+
+    return {
+      ...item,
+      numeroAula: next,
+    };
+  });
+}
+
+function assignAulaRangesPerTrimester<T extends MatrixLessonAllocatable>(items: T[]): T[] {
+  const cumulativeByTrimester = new Map<number, number>();
+
+  return items.map((item) => {
+    const trimestre = Number(item.trimestre) || 1;
+    const periodos = Math.max(1, Number(item.periodos) || 1);
+    const cumulative = cumulativeByTrimester.get(trimestre) || 0;
+    const aulaInicio = cumulative + 1;
+    const aulaFim = cumulative + periodos;
+    cumulativeByTrimester.set(trimestre, aulaFim);
+
+    return {
+      ...item,
+      periodos,
+      aulaInicio,
+      aulaFim,
+    };
+  });
+}
+
 export function computeLessonAllocation(params: {
   conteudos: string[];
   cargaTotal: number;
   tipo: "anual" | "trimestral";
   trimestreSelecionado?: number;
 }): LessonAllocationSlot[] {
-  void params.cargaTotal;
-
   const safeConteudos =
     params.conteudos.length > 0
       ? params.conteudos.map((item) => normalizeText(item)).filter(Boolean)
       : ["Conteúdo central"];
+  const cargaTotal = Math.max(safeConteudos.length, params.cargaTotal);
   const trimestreSelecionado = params.trimestreSelecionado ?? 1;
   const trimestres = distributeTrimestres(safeConteudos.length, params.tipo, trimestreSelecionado);
+  const periodosList = allocateRawPeriods(safeConteudos, cargaTotal);
 
-  return safeConteudos.map((conteudo, index) => {
-    return {
-      conteudo,
-      trimestre: trimestres[index],
-      numeroAula: index + 1,
-      periodos: 1,
-      aulaInicio: index + 1,
-      aulaFim: index + 1,
-    };
-  });
+  const draft = safeConteudos.map((conteudo, index) => ({
+    conteudo,
+    trimestre: trimestres[index],
+    periodos: periodosList[index] || 1,
+    aulaInicio: 0,
+    aulaFim: 0,
+  }));
+
+  return assignAulaRangesPerTrimester(
+    renumberPerTrimester(
+      draft.map((item) => ({
+        ...item,
+        numeroAula: 0,
+      })),
+    ),
+  ) as LessonAllocationSlot[];
 }
 
 export function applyOfficialPeriodDistribution<T extends MatrixLessonAllocatable>(
@@ -253,15 +398,8 @@ export function applyOfficialPeriodDistribution<T extends MatrixLessonAllocatabl
     return items;
   }
 
-  void cargaTotal;
-
-  return items.map((item, index) => ({
-    ...item,
-    numeroAula: index + 1,
-    periodos: 1,
-    aulaInicio: index + 1,
-    aulaFim: index + 1,
-  }));
+  const withPeriodos = assignPeriodosToRows(items, Math.max(items.length, cargaTotal));
+  return assignAulaRangesPerTrimester(renumberPerTrimester(withPeriodos));
 }
 
 export function rebalanceMatrixPeriods<T extends MatrixLessonAllocatable>(
@@ -273,25 +411,25 @@ export function rebalanceMatrixPeriods<T extends MatrixLessonAllocatable>(
     return items;
   }
 
-  void cargaTotal;
+  const targetTotal = Math.max(items.length, cargaTotal);
 
-  const trimesterSelecionado = items[0]?.trimestre || 1;
-  const trimestres = distributeTrimestres(items.length, tipo, trimesterSelecionado);
+  if (matrixPeriodsMatchCarga(items, targetTotal)) {
+    return assignAulaRangesPerTrimester(renumberPerTrimester(items));
+  }
 
-  return items.map((item, index) => ({
+  const trimestreSelecionado = items[0]?.trimestre || 1;
+  const withPeriodos = assignPeriodosToRows(items, targetTotal);
+
+  const trimestres = distributeTrimestres(withPeriodos.length, tipo, trimestreSelecionado);
+
+  const withTrimestres = withPeriodos.map((item, index) => ({
     ...item,
-    trimestre: tipo === "trimestral" ? trimesterSelecionado : trimestres[index] || item.trimestre || 1,
-    numeroAula: index + 1,
-    periodos: 1,
-    aulaInicio: index + 1,
-    aulaFim: index + 1,
+    trimestre: tipo === "trimestral" ? trimestreSelecionado : trimestres[index] || item.trimestre || 1,
   }));
+
+  return assignAulaRangesPerTrimester(renumberPerTrimester(withTrimestres));
 }
 
-/**
- * Garante que planejamentos anuais cubram os três trimestres quando há conteúdo
- * suficiente. A IA às vezes marca só o 1º e o 2º, deixando o 3º vazio no DOCX.
- */
 export function ensureAnnualTrimesterDistribution<T extends MatrixLessonAllocatable>(
   items: T[],
 ): T[] {
@@ -313,10 +451,12 @@ export function ensureAnnualTrimesterDistribution<T extends MatrixLessonAllocata
 
   const chunkSize = Math.max(1, Math.ceil(items.length / 3));
 
-  return items.map((item, index) => ({
+  const redistributed = items.map((item, index) => ({
     ...item,
     trimestre: Math.min(3, Math.floor(index / chunkSize) + 1),
   }));
+
+  return assignAulaRangesPerTrimester(renumberPerTrimester(redistributed));
 }
 
 export function finalizeMatrixLessonAllocation<T extends MatrixLessonAllocatable>(
@@ -324,23 +464,93 @@ export function finalizeMatrixLessonAllocation<T extends MatrixLessonAllocatable
   payload: PlanningAllocationPayload,
 ): T[] {
   const tipo = getPlanningTipo(payload);
+  const canonicalCount = Math.max(
+    getPayloadContents(payload).length,
+    items.length,
+    1,
+  );
+  const carga = parsePlanningCargaHoraria(payload.cargaHoraria, canonicalCount);
+
+  // #region agent log
+  fetch("http://127.0.0.1:7718/ingest/9ac33552-969d-48be-9089-3a3b10571400", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "4798d7" },
+    body: JSON.stringify({
+      sessionId: "4798d7",
+      runId: "post-fix",
+      hypothesisId: "A-B",
+      location: "planning-lesson-allocation.ts:finalizeMatrixLessonAllocation:entry",
+      message: "allocation input",
+      data: {
+        tipo,
+        carga,
+        inputRows: items.length,
+        canonicalCount,
+        inputPeriodosSum: items.reduce((s, i) => s + (Number(i.periodos) || 0), 0),
+        inputPeriodosSample: items.slice(0, 4).map((i) => ({
+          conteudo: i.conteudo?.slice(0, 40),
+          periodos: i.periodos,
+        })),
+      },
+      timestamp: Date.now(),
+    }),
+  }).catch(() => {});
+  // #endregion
 
   const withAiPeriods = items.map((item, index) => {
+    const parsedPeriodos = Number(item.periodos);
     const parsedNumeroAula = Number(item.numeroAula);
 
     return {
       ...item,
       numeroAula:
         Number.isFinite(parsedNumeroAula) && parsedNumeroAula > 0 ? parsedNumeroAula : index + 1,
-      periodos: 1,
+      periodos: Number.isFinite(parsedPeriodos) && parsedPeriodos > 0 ? parsedPeriodos : 0,
     };
   });
 
-  const allocated = withOneLessonPerContent(withAiPeriods, payload);
+  const deduped = withOneLessonPerContent(withAiPeriods, payload);
+  const targetTotal = Math.max(deduped.length, carga);
+  const withPeriodos = matrixPeriodsMatchCarga(deduped, targetTotal)
+    ? deduped
+    : assignPeriodosToRows(deduped, targetTotal);
+
+  let allocated = assignAulaRangesPerTrimester(renumberPerTrimester(withPeriodos));
 
   if (tipo === "anual") {
-    return ensureAnnualTrimesterDistribution(allocated);
+    allocated = ensureAnnualTrimesterDistribution(allocated);
   }
+
+  // #region agent log
+  fetch("http://127.0.0.1:7718/ingest/9ac33552-969d-48be-9089-3a3b10571400", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "4798d7" },
+    body: JSON.stringify({
+      sessionId: "4798d7",
+      runId: "post-fix",
+      hypothesisId: "A-B-C",
+      location: "planning-lesson-allocation.ts:finalizeMatrixLessonAllocation:exit",
+      message: "allocation output",
+      data: {
+        tipo,
+        carga,
+        targetTotal,
+        outputRows: allocated.length,
+        outputPeriodosSum: matrixPeriodsTotal(allocated),
+        maxPeriodos: Math.max(...allocated.map((i) => Number(i.periodos) || 0)),
+        sample: allocated.slice(0, 4).map((i) => ({
+          conteudo: i.conteudo?.slice(0, 40),
+          trimestre: i.trimestre,
+          numeroAula: i.numeroAula,
+          periodos: i.periodos,
+          aulaInicio: i.aulaInicio,
+          aulaFim: i.aulaFim,
+        })),
+      },
+      timestamp: Date.now(),
+    }),
+  }).catch(() => {});
+  // #endregion
 
   return allocated;
 }

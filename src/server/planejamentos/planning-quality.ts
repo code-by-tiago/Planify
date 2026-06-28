@@ -4,6 +4,11 @@ import {
 } from "@/lib/materiais/material-semantic-quality";
 import { computeQualityScore } from "@/lib/materiais/material-quality-score";
 import type { PlanningAiPayload, PlanningMatrixItem } from "./planning-ai-service";
+import { OFFICIAL_MAX_PERIODS_PER_ROW } from "./planning-official-contract";
+import {
+  matrixPeriodsTotal,
+  parsePlanningCargaHoraria,
+} from "./planning-lesson-allocation";
 import { splitPlanningConteudos } from "./planning-validation";
 
 function normalizeSearch(value: unknown): string {
@@ -72,6 +77,17 @@ export function getPlanningOutputIssues(
     );
   }
 
+  const cargaEsperada = parsePlanningCargaHoraria(
+    payload.cargaHoraria,
+    Math.max(expectedRows, 1),
+  );
+  const periodosTotal = matrixPeriodsTotal(items);
+  if (periodosTotal !== cargaEsperada) {
+    issues.push(
+      `A soma de periodos (${periodosTotal}) deve ser igual a carga horaria (${cargaEsperada}).`,
+    );
+  }
+
   const seenContents = new Set<string>();
   const repeatedContents = new Set<string>();
   for (const item of items) {
@@ -86,22 +102,42 @@ export function getPlanningOutputIssues(
     );
   }
 
-  const invalidLessonRows = items.filter((item, index) => {
-    const numeroAula = Number(item.numeroAula);
+  const invalidPeriodos = items.filter((item) => {
+    const periodos = Number(item.periodos);
+    const rowMax = Math.max(
+      OFFICIAL_MAX_PERIODS_PER_ROW,
+      Math.ceil(cargaEsperada / Math.max(1, items.length)),
+    );
+    return !Number.isFinite(periodos) || periodos < 1 || periodos > rowMax;
+  }).length;
+  if (invalidPeriodos > 0) {
+    issues.push(
+      `${invalidPeriodos} linha(s) com periodos fora do intervalo permitido para a carga informada.`,
+    );
+  }
+
+  const trimesterCounters = new Map<number, number>();
+  const invalidNumeroAula = items.filter((item) => {
+    const trimestre = Number(item.trimestre) || 1;
+    const expected = (trimesterCounters.get(trimestre) || 0) + 1;
+    trimesterCounters.set(trimestre, expected);
+    return Number(item.numeroAula) !== expected;
+  }).length;
+  if (invalidNumeroAula > 0) {
+    issues.push(
+      `${invalidNumeroAula} linha(s) com numeroAula fora da sequencia por trimestre (1, 2, 3...).`,
+    );
+  }
+
+  const invalidAulaRange = items.filter((item) => {
     const periodos = Number(item.periodos);
     const aulaInicio = Number(item.aulaInicio);
     const aulaFim = Number(item.aulaFim);
-
-    return (
-      numeroAula !== index + 1 ||
-      periodos !== 1 ||
-      aulaInicio !== index + 1 ||
-      aulaFim !== index + 1
-    );
+    return aulaFim - aulaInicio + 1 !== periodos;
   }).length;
-  if (invalidLessonRows > 0) {
+  if (invalidAulaRange > 0) {
     issues.push(
-      `${invalidLessonRows} linha(s) fora do contrato: numeroAula sequencial, periodos=1, aulaInicio=aulaFim=numeroAula.`,
+      `${invalidAulaRange} linha(s) com aulaInicio/aulaFim inconsistentes com periodos.`,
     );
   }
 
@@ -209,8 +245,9 @@ export function buildPlanningQualityRetryNote(issues: string[]): string {
     "Nao invente codigos genericos como BNCC.",
     "Evite metodologias copiadas iguais em todas as linhas.",
     "Cada linha deve refletir o conteudo especifico informado pelo professor.",
-    "Mantenha exatamente uma aula por conteudo informado, sem repetir conteudo para fechar carga horaria.",
-    "Use periodos=1 e aulaInicio=aulaFim=numeroAula em todas as linhas.",
+    "Mantenha exatamente uma linha por conteudo informado, sem repetir conteudo para fechar carga horaria.",
+    "Distribua periodos variaveis por linha (1 a 10) de modo que a soma seja igual a carga horaria informada.",
+    "Use numeroAula sequencial por trimestre (1, 2, 3...) e aulaInicio/aulaFim como faixa acumulada de periodos dentro do trimestre.",
   ].join("\n");
 }
 

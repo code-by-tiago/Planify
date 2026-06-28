@@ -5,6 +5,7 @@ import Link from "next/link";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import type { PlanifyIconName } from "@/lib/pro/planifyTools";
 import { CREATE_OPTIONS, type CreateOptionId } from "./constants";
+import { LandingToolIconBadge } from "./LandingToolIconBadge";
 import styles from "./landing-create-block.module.css";
 import { ppBtnNavy } from "./theme";
 
@@ -31,9 +32,10 @@ export function LandingCreateBlock() {
                 onClick={() => setSelected(option.id)}
                 className={`${styles.option} ${isActive ? styles.optionActive : ""}`}
               >
-                <PlanifyIcon
-                  name={option.icon as PlanifyIconName}
-                  className={styles.optionIcon}
+                <LandingToolIconBadge
+                  accent={option.accent}
+                  icon={option.icon as PlanifyIconName}
+                  size="md"
                 />
                 <span className={styles.optionLabel}>{option.label}</span>
               </button>

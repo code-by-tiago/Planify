@@ -1,3 +1,17 @@
+import { planifyTools } from "@/lib/pro/planifyTools";
+import { landingExtraTools } from "@/lib/pro/teachyLanding";
+
+function toolAccent(id: string) {
+  return (
+    planifyTools.find((tool) => tool.id === id)?.accent ??
+    "from-slate-400 to-slate-500"
+  );
+}
+
+const planejamentosAccent =
+  landingExtraTools.find((tool) => tool.id === "planejamentos")?.accent ??
+  "from-blue-500 to-blue-600";
+
 export const TRUST_ITEMS = [
   { label: "Alinhado à BNCC", icon: "checkCircle" as const },
   { label: "Google Drive", googleProduct: "drive" as const },
@@ -11,30 +25,35 @@ export const CREATE_OPTIONS = [
     label: "Planejamento",
     icon: "clipboard" as const,
     href: "/planejamento-escolar-com-ia",
+    accent: planejamentosAccent,
   },
   {
     id: "prova",
     label: "Prova",
     icon: "listChecks" as const,
     href: "/gerador-de-provas-com-ia",
+    accent: toolAccent("prova"),
   },
   {
     id: "lista",
     label: "Lista de exercícios",
     icon: "listChecks" as const,
     href: "/login",
+    accent: toolAccent("lista"),
   },
   {
     id: "plano-aula",
     label: "Plano de aula",
     icon: "layers" as const,
     href: "/login",
+    accent: toolAccent("plano-aula"),
   },
   {
     id: "atividades",
     label: "Atividades",
     icon: "puzzle" as const,
     href: "/gerador-de-atividades-com-ia",
+    accent: toolAccent("atividade"),
   },
 ] as const;
 

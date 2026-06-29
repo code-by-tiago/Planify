@@ -87,10 +87,22 @@ export function resolveGoogleOAuthReturnTo(explicit?: string): string {
   if (typeof window === "undefined") return "/dashboard?secao=editor";
 
   const { pathname, search } = window.location;
-  if (pathname.startsWith("/dashboard")) return pathname + search;
+  if (pathname.startsWith("/dashboard")) return normalizeGoogleOAuthReturnTo(pathname + search);
   if (pathname === "/historico") return "/dashboard?secao=historico";
-  if (pathname.startsWith("/marketplace")) return pathname + search;
+  if (pathname.startsWith("/marketplace")) return normalizeGoogleOAuthReturnTo(pathname + search);
   return normalizeGoogleOAuthReturnTo("/editor");
+}
+
+function stripGoogleOAuthParams(path: string): string {
+  try {
+    const url = new URL(path, "http://example.com");
+    url.searchParams.delete("google");
+    url.searchParams.delete("google_error");
+    const qs = url.searchParams.toString();
+    return `${url.pathname}${qs ? `?${qs}` : ""}`;
+  } catch {
+    return path;
+  }
 }
 
 /** Evita redirect legado /editor → /dashboard no retorno OAuth. */
@@ -100,8 +112,10 @@ export function normalizeGoogleOAuthReturnTo(path: string): string {
     return "/dashboard?secao=editor";
   }
 
-  if (trimmed === "/editor" || trimmed.startsWith("/editor?")) {
-    const query = trimmed.includes("?") ? trimmed.slice(trimmed.indexOf("?") + 1) : "";
+  const stripped = stripGoogleOAuthParams(trimmed);
+
+  if (stripped === "/editor" || stripped.startsWith("/editor?")) {
+    const query = stripped.includes("?") ? stripped.slice(stripped.indexOf("?") + 1) : "";
     const params = new URLSearchParams(query);
     params.delete("secao");
     params.set("secao", "editor");
@@ -110,5 +124,5 @@ export function normalizeGoogleOAuthReturnTo(path: string): string {
     return `/dashboard?${qs}`;
   }
 
-  return trimmed;
+  return stripped;
 }

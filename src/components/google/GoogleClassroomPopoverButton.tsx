@@ -20,11 +20,38 @@ import {
   useGoogleClassroomExport,
   type ClassroomExportSuccess,
 } from "@/hooks/useGoogleClassroomExport";
+import { normalizeGoogleOAuthReturnTo } from "@/lib/google/document-type-detection";
 import { peekGoogleOAuthResumeIntent } from "@/lib/google/google-export-resume";
 import { agentDebugLog } from "@/lib/debug/agent-debug-log";
 import { GOOGLE_STATUS_CHANGED_EVENT } from "@/lib/google/google-status-events";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+
+const CLASSROOM_OPEN_AFTER_OAUTH_BUTTON_KEY =
+  "planify:classroom-open-after-oauth-button";
+
+function sanitizeReturnToForButtonId(returnTo?: string) {
+  if (!returnTo) return "";
+  try {
+    const normalized = normalizeGoogleOAuthReturnTo(returnTo);
+    const url = new URL(normalized, "http://example.com");
+    url.searchParams.delete("google");
+    url.searchParams.delete("google_error");
+    return `${url.pathname}${url.search}`;
+  } catch {
+    return returnTo;
+  }
+}
+
+function resolveClassroomPopoverButtonId(
+  title: string,
+  returnTo?: string,
+  documentType?: string | null,
+) {
+  return `${CLASSROOM_OPEN_AFTER_OAUTH_BUTTON_KEY}:${title}:${sanitizeReturnToForButtonId(
+    returnTo,
+  )}:${documentType ?? ""}`;
+}
 
 type GoogleClassroomPopoverButtonProps = {
   title: string;
@@ -47,10 +74,9 @@ export function GoogleClassroomPopoverButton({
   const [step, setStep] = useState<PopoverStep>("form");
   const [lastSuccess, setLastSuccess] = useState<ClassroomExportSuccess | null>(null);
   const [popoverCoords, setPopoverCoords] = useState<ClassroomPopoverCoords | null>(null);
-  const [buttonId] = useState(() =>
-    typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
-      ? crypto.randomUUID()
-      : `classroom-button-${Math.random().toString(36).slice(2)}`,
+  const buttonId = useMemo(
+    () => resolveClassroomPopoverButtonId(title, returnTo, documentType),
+    [title, returnTo, documentType],
   );
   const rootRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -94,10 +120,7 @@ export function GoogleClassroomPopoverButton({
 
   const handleConnectWithButtonId = useCallback(async () => {
     try {
-      window.sessionStorage.setItem(
-        "planify:classroom-open-after-oauth-button",
-        buttonId,
-      );
+      window.sessionStorage.setItem(CLASSROOM_OPEN_AFTER_OAUTH_BUTTON_KEY, buttonId);
     } catch {
       /* ignore */
     }
@@ -106,10 +129,7 @@ export function GoogleClassroomPopoverButton({
 
   const handleSwitchAccountWithButtonId = useCallback(async () => {
     try {
-      window.sessionStorage.setItem(
-        "planify:classroom-open-after-oauth-button",
-        buttonId,
-      );
+      window.sessionStorage.setItem(CLASSROOM_OPEN_AFTER_OAUTH_BUTTON_KEY, buttonId);
     } catch {
       /* ignore */
     }
@@ -190,13 +210,14 @@ export function GoogleClassroomPopoverButton({
 
       try {
         const alreadyHandled = window.sessionStorage.getItem(OPEN_HANDLED_KEY) === "1";
+        const openFlag = window.sessionStorage.getItem(CLASSROOM_OPEN_AFTER_OAUTH_KEY);
         const targetButtonId = window.sessionStorage.getItem(OPEN_BUTTON_KEY);
-        if (
-          alreadyHandled ||
-          targetButtonId !== buttonId ||
-          (window.sessionStorage.getItem(CLASSROOM_OPEN_AFTER_OAUTH_KEY) !== "1" &&
-            !hasOAuthIntent)
-        ) {
+
+        if (alreadyHandled || openFlag !== "1" || !targetButtonId || targetButtonId !== buttonId) {
+          return;
+        }
+
+        if (!hasOAuthIntent && openFlag !== "1") {
           return;
         }
 
@@ -215,7 +236,7 @@ export function GoogleClassroomPopoverButton({
     return () => {
       window.removeEventListener(GOOGLE_STATUS_CHANGED_EVENT, maybeOpenAfterOAuth);
     };
-  }, [openClassroomPopover]);
+  }, [buttonId, openClassroomPopover]);
 
   function resolvePopoverBranch():
     | "loading"

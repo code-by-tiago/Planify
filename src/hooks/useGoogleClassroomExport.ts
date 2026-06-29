@@ -243,6 +243,7 @@ export function useGoogleClassroomExport({
       }
 
       try {
+        window.sessionStorage.removeItem("planify:classroom-open-after-oauth-handled");
         window.sessionStorage.setItem(CLASSROOM_OPEN_AFTER_OAUTH_KEY, "1");
       } catch {
         /* ignore */

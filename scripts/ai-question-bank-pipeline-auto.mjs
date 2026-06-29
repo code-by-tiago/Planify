@@ -4,7 +4,7 @@
  *
  * Uso manual ou via GitHub Actions (cron noturno):
  *   node scripts/ai-question-bank-pipeline-auto.mjs
- *   node scripts/ai-question-bank-pipeline-auto.mjs --topicsPerRun=20 --questionsPerTopic=10
+ *   node scripts/ai-question-bank-pipeline-auto.mjs --topicsPerRun=6 --questionsPerTopic=5
  *
  * Env: GEMINI_API_KEY, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
  */
@@ -26,9 +26,11 @@ function log(msg) {
 
 function parseArgs(argv) {
   const args = {
-    topicsPerRun: 20,
-    questionsPerTopic: 10,
+    topicsPerRun: 6,
+    questionsPerTopic: 5,
     maxAttemptsPerTopic: 0,
+    maxRunMinutes: 105,
+    perTopicTimeoutMinutes: 15,
     dryRun: false,
     reportPath: join(INGEST_ROOT, "tmp/ai-question-bank-pipeline-auto-report.json"),
   };
@@ -41,6 +43,10 @@ function parseArgs(argv) {
       args.questionsPerTopic = Math.max(1, Number(arg.split("=")[1]) || 3);
     } else if (arg.startsWith("--maxAttemptsPerTopic=")) {
       args.maxAttemptsPerTopic = Math.max(0, Number(arg.split("=")[1]) || 0);
+    } else if (arg.startsWith("--maxRunMinutes=")) {
+      args.maxRunMinutes = Math.max(5, Number(arg.split("=")[1]) || 105);
+    } else if (arg.startsWith("--perTopicTimeoutMinutes=")) {
+      args.perTopicTimeoutMinutes = Math.max(2, Number(arg.split("=")[1]) || 15);
     } else if (arg.startsWith("--report=")) {
       args.reportPath = arg.slice("--report=".length);
     }
@@ -56,8 +62,17 @@ function parseArgs(argv) {
   return args;
 }
 
-function runPipelineForTopic(topic, args) {
+function hasTimeForAnotherTopic(deadlineMs, args) {
+  const remainingMs = deadlineMs - Date.now();
+  return remainingMs > Math.min(args.perTopicTimeoutMinutes * 60_000, 10 * 60_000);
+}
+
+function runPipelineForTopic(topic, args, deadlineMs) {
   return new Promise((resolve) => {
+    const timeoutMs = Math.max(
+      1000,
+      Math.min(args.perTopicTimeoutMinutes * 60_000, deadlineMs - Date.now()),
+    );
     const childArgs = [
       PIPELINE_SCRIPT,
       `--topic=${topic.topic}`,
@@ -76,8 +91,21 @@ function runPipelineForTopic(topic, args) {
       env: process.env,
     });
 
+    let timedOut = false;
+    const timer = setTimeout(() => {
+      timedOut = true;
+      log(`Tempo limite por tema atingido (${args.perTopicTimeoutMinutes} min). Encerrando tema atual.`);
+      child.kill("SIGTERM");
+      setTimeout(() => {
+        if (child.exitCode === null && child.signalCode === null) {
+          child.kill("SIGKILL");
+        }
+      }, 5000).unref();
+    }, timeoutMs);
+
     child.on("close", (code) => {
-      resolve({ topic, exitCode: code ?? 1 });
+      clearTimeout(timer);
+      resolve({ topic, exitCode: timedOut ? 124 : code ?? 1, timedOut });
     });
   });
 }
@@ -92,13 +120,23 @@ async function main() {
 
   log("=== Planify · Alimentação automática do banco (IA) ===");
   log(`Temas nesta rodada: ${topics.length} × ${args.questionsPerTopic} questões`);
+  log(`Janela máxima: ${args.maxRunMinutes} min | limite por tema: ${args.perTopicTimeoutMinutes} min`);
   log(`Modo: ${args.dryRun ? "DRY-RUN" : "PRODUÇÃO"}`);
 
   const startedAt = new Date().toISOString();
+  const deadlineMs = Date.now() + args.maxRunMinutes * 60_000;
   const results = [];
+  const skipped = [];
 
-  for (const topic of topics) {
-    const result = await runPipelineForTopic(topic, args);
+  for (let index = 0; index < topics.length; index += 1) {
+    const topic = topics[index];
+    if (!hasTimeForAnotherTopic(deadlineMs, args)) {
+      log("Janela da rodada quase no fim; encerrando antes do timeout do GitHub.");
+      skipped.push(...topics.slice(index));
+      break;
+    }
+
+    const result = await runPipelineForTopic(topic, args, deadlineMs);
     results.push(result);
   }
 
@@ -108,6 +146,7 @@ async function main() {
     config: args,
     topics: topics.map((t) => ({ ...t })),
     results,
+    skipped,
     successCount: results.filter((r) => r.exitCode === 0).length,
     partialCount: results.filter((r) => r.exitCode === 2).length,
     failCount: results.filter((r) => r.exitCode !== 0 && r.exitCode !== 2).length,
@@ -118,10 +157,13 @@ async function main() {
 
   log("=== Resumo automático ===");
   log(`Temas OK: ${summary.successCount} | parcial: ${summary.partialCount} | falha: ${summary.failCount}`);
+  log(`Temas pulados por tempo: ${summary.skipped.length}`);
   log(`Relatório: ${args.reportPath}`);
 
-  if (summary.failCount > 0) process.exitCode = 1;
-  else if (summary.partialCount > 0) process.exitCode = 2;
+  const productiveCount = summary.successCount + summary.partialCount;
+  if (productiveCount === 0 && (summary.failCount > 0 || summary.skipped.length > 0)) {
+    process.exitCode = 1;
+  }
 }
 
 main().catch((err) => {

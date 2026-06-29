@@ -1,6 +1,10 @@
 import crypto from "node:crypto";
 import { getSupabaseAdminClient } from "../supabase/admin-client";
 import { getCreditWallet, grantPlanCredits } from "../credits/credit-service";
+import {
+  logPlanifyEmailError,
+  sendWelcomeEmail,
+} from "../email/resend-email-service";
 import { stripeApiRequest } from "./stripe-api";
 
 const ACTIVE_SUBSCRIPTION_STATUSES = new Set(["active", "trialing"]);
@@ -364,6 +368,24 @@ async function handleCheckoutCompleted(
   });
 
   await maybeGrantCredits({ subscription, userId: user?.id || null, eventType });
+
+  if (resolvedEmail && eventType === "checkout.session.completed") {
+    await sendWelcomeEmail({
+      email: resolvedEmail,
+      planName:
+        subscription.metadata?.plan_name ||
+        session.metadata?.plan_name ||
+        "Planify Professor",
+      checkoutSessionId: session.id,
+      subscriptionId,
+    }).catch((error) => {
+      logPlanifyEmailError("stripe.checkout.welcome", error, {
+        email: resolvedEmail,
+        checkoutSessionId: session.id,
+        subscriptionId,
+      });
+    });
+  }
 
   return {
     handled: true,

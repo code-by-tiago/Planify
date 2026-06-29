@@ -72,14 +72,37 @@ test.describe("Planify smoke", () => {
     }
   });
 
-  test("contact page offers real support channels", async ({ page }) => {
+  test("contact page sends support message by email flow", async ({ page }) => {
+    let contactRequested = false;
+    await page.route("**/api/contact", async (route) => {
+      contactRequested = true;
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          message:
+            "Sua mensagem foi enviada à equipe do Planify. Em breve entraremos em contato.",
+        }),
+      });
+    });
+
     await page.goto("/contato");
     await expect(page.getByRole("heading", { name: /atendimento para professores/i })).toBeVisible();
     await expect(page.getByRole("heading", { name: /envie sua mensagem/i })).toBeVisible();
-    await expect(page.getByLabel("Nome")).toBeVisible();
-    await expect(page.getByLabel("E-mail")).toBeVisible();
-    await expect(page.getByRole("button", { name: /enviar pelo whatsapp/i })).toBeVisible();
-    await expect(page.getByText(/envio real será conectado/i)).toHaveCount(0);
+    await page.getByLabel("Nome").fill("Professora Teste");
+    await page.getByLabel("E-mail").fill("professora@example.com");
+    await page.getByLabel("Assunto").fill("Duvida sobre suporte");
+    await page
+      .getByLabel("Mensagem")
+      .fill("Mensagem de teste com detalhes suficientes para validar o envio.");
+    await expect(page.getByRole("button", { name: /enviar mensagem/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: /enviar pelo whatsapp/i })).toHaveCount(0);
+    await page.getByRole("button", { name: /enviar mensagem/i }).click();
+    await expect(
+      page.getByText(/sua mensagem foi enviada (?:a|à) equipe do planify/i),
+    ).toBeVisible();
+    expect(contactRequested).toBe(true);
   });
 
   test("plans page presents the complete Professor offer", async ({ page }) => {

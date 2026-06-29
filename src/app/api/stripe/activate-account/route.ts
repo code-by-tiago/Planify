@@ -20,6 +20,10 @@ import {
   getClientIp,
   rateLimitResponse,
 } from "../../../../server/public/public-api-rate-limit";
+import {
+  logPlanifyEmailError,
+  sendAccessConfirmationEmail,
+} from "../../../../server/email/resend-email-service";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -276,6 +280,16 @@ export async function POST(request: NextRequest) {
     await linkPendingSubscriptionsToUser({
       userId: createdUser.user.id,
       email,
+    });
+
+    await sendAccessConfirmationEmail({
+      email,
+      userId: createdUser.user.id,
+    }).catch((error) => {
+      logPlanifyEmailError("stripe.activate-account.access-confirmation", error, {
+        email,
+        userId: createdUser.user.id,
+      });
     });
 
     return NextResponse.json({

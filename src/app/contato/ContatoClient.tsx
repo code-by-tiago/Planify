@@ -10,7 +10,6 @@ import {
   ppInput,
   ppLink,
 } from "@/components/public/landing-professor-primeiro/theme";
-import { buildCommercialWhatsAppUrl } from "@/lib/public/escolasCommercial";
 
 type ContactType = "suporte" | "assinatura" | "erro" | "sugestao" | "parceria" | "pedagogico";
 
@@ -21,11 +20,6 @@ type FormState = {
   tipo: ContactType;
   assunto: string;
   mensagem: string;
-};
-
-type ContactUrls = {
-  whatsapp: string;
-  email: string;
 };
 
 const initialForm: FormState = {
@@ -56,48 +50,11 @@ const helpCards = [
 const supportFlow = [
   { step: "1", title: "Descreva a solicitação", description: "Escolha o tipo e escreva com clareza." },
   { step: "2", title: "Equipe analisa", description: "Direcionamento conforme o assunto." },
-  { step: "3", title: "Retorno organizado", description: "Resposta pelo canal informado." },
+  { step: "3", title: "Retorno organizado", description: "Resposta pelo e-mail informado." },
 ];
 
 function getTypeLabel(type: ContactType): string {
   return contactTypes.find((item) => item.value === type)?.label ?? "Suporte";
-}
-
-function getSupportEmail(): string {
-  const raw =
-    process.env.NEXT_PUBLIC_SUPPORT_EMAIL ||
-    process.env.NEXT_PUBLIC_ADMIN_EMAIL ||
-    "";
-  return raw.split(",")[0]?.trim() || "suporte@iaplanify.com.br";
-}
-
-function buildSupportMessage(form: FormState, pageUrl: string): string {
-  return [
-    "Olá, suporte Planify.",
-    "",
-    "Preciso de ajuda com a plataforma.",
-    "",
-    `Tipo: ${getTypeLabel(form.tipo)}`,
-    `Perfil: ${form.perfil}`,
-    `Nome: ${form.nome}`,
-    `E-mail: ${form.email}`,
-    `Assunto: ${form.assunto}`,
-    "",
-    "Mensagem:",
-    form.mensagem,
-    "",
-    `Página de origem: ${pageUrl}`,
-  ].join("\n");
-}
-
-function buildContactUrls(form: FormState, pageUrl: string): ContactUrls {
-  const message = buildSupportMessage(form, pageUrl);
-  const subject = `Suporte Planify - ${getTypeLabel(form.tipo)} - ${form.assunto}`;
-
-  return {
-    whatsapp: buildCommercialWhatsAppUrl(message),
-    email: `mailto:${getSupportEmail()}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(message)}`,
-  };
 }
 
 const inputClass = ppInput;
@@ -105,11 +62,11 @@ const inputClass = ppInput;
 export function ContatoClient() {
   const [form, setForm] = useState<FormState>(initialForm);
   const [submitted, setSubmitted] = useState(false);
+  const [sending, setSending] = useState(false);
   const [status, setStatus] = useState<{
     type: "info" | "success" | "warning";
     message: string;
   } | null>(null);
-  const [contactUrls, setContactUrls] = useState<ContactUrls | null>(null);
 
   const selectedType = contactTypes.find((item) => item.value === form.tipo);
   const characterCount = useMemo(() => form.mensagem.trim().length, [form.mensagem]);
@@ -117,14 +74,15 @@ export function ContatoClient() {
   function updateField<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((current) => ({ ...current, [key]: value }));
     setSubmitted(false);
-    setContactUrls(null);
+    if (status?.type === "success") {
+      setStatus(null);
+    }
   }
 
   function clearForm() {
     setForm(initialForm);
     setStatus(null);
     setSubmitted(false);
-    setContactUrls(null);
   }
 
   function validateForm(): string | null {
@@ -135,33 +93,57 @@ export function ContatoClient() {
     return null;
   }
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const error = validateForm();
+
     if (error) {
       setStatus({ type: "warning", message: error });
-      setContactUrls(null);
       return;
     }
 
-    const urls = buildContactUrls(
-      form,
-      typeof window !== "undefined" ? window.location.href : "/contato",
-    );
+    setSending(true);
+    setStatus({ type: "info", message: "Enviando sua mensagem para a equipe do Planify..." });
 
-    setContactUrls(urls);
-    setSubmitted(true);
-    setStatus({
-      type: "success",
-      message:
-        "Abrimos o WhatsApp com sua mensagem pronta. Revise e toque em enviar. Se preferir, use o botão de e-mail abaixo.",
-    });
-    window.open(urls.whatsapp, "_blank", "noopener,noreferrer");
+    try {
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...form,
+          pageUrl: typeof window !== "undefined" ? window.location.href : "/contato",
+        }),
+      });
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok || data?.success === false) {
+        throw new Error(
+          data?.error?.message || "Não foi possível enviar sua mensagem agora.",
+        );
+      }
+
+      setSubmitted(true);
+      setStatus({
+        type: "success",
+        message:
+          "Sua mensagem foi enviada à equipe do Planify e em breve entraremos em contato.",
+      });
+    } catch (err) {
+      setStatus({
+        type: "warning",
+        message:
+          err instanceof Error
+            ? err.message
+            : "Não foi possível enviar sua mensagem agora.",
+      });
+    } finally {
+      setSending(false);
+    }
   }
 
   function statusClass() {
     if (!status) return "";
-    if (status.type === "success") return "border-cyan-200 bg-cyan-50 text-cyan-800";
+    if (status.type === "success") return "border-emerald-200 bg-emerald-50 text-emerald-800";
     if (status.type === "warning") return "border-amber-200 bg-amber-50 text-amber-800";
     return "border-cyan-200 bg-cyan-50 text-cyan-800";
   }
@@ -215,7 +197,8 @@ export function ContatoClient() {
               <button
                 type="button"
                 onClick={clearForm}
-                className="rounded-full border border-slate-200 px-5 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-50"
+                disabled={sending}
+                className="rounded-full border border-slate-200 px-5 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-60"
               >
                 Limpar
               </button>
@@ -296,19 +279,13 @@ export function ContatoClient() {
               </div>
 
               <div className="flex flex-col gap-3 sm:flex-row">
-                <button type="submit" className={ppBtnPrimary}>
-                  Enviar pelo WhatsApp
+                <button type="submit" disabled={sending} className={ppBtnPrimary}>
+                  {sending ? "Enviando..." : "Enviar mensagem"}
                   <PlanifyIcon name="arrowRight" className="h-4 w-4" />
                 </button>
-                {contactUrls ? (
-                  <a href={contactUrls.email} className={ppBtnSecondary}>
-                    Enviar por e-mail
-                  </a>
-                ) : (
-                  <Link href="/dashboard" className={ppBtnSecondary}>
-                    Voltar ao painel
-                  </Link>
-                )}
+                <Link href="/dashboard" className={ppBtnSecondary}>
+                  Voltar ao painel
+                </Link>
               </div>
             </form>
 
@@ -318,21 +295,6 @@ export function ContatoClient() {
                 className={`mt-5 rounded-2xl border p-4 text-sm font-semibold ${statusClass()}`}
               >
                 <p>{status.message}</p>
-                {contactUrls ? (
-                  <div className="mt-3 flex flex-wrap gap-3">
-                    <a
-                      href={contactUrls.whatsapp}
-                      target="_blank"
-                      rel="noreferrer"
-                      className={ppLink}
-                    >
-                      Reabrir WhatsApp
-                    </a>
-                    <a href={contactUrls.email} className={ppLink}>
-                      Enviar por e-mail
-                    </a>
-                  </div>
-                ) : null}
               </div>
             ) : null}
           </div>

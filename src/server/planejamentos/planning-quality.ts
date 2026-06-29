@@ -239,14 +239,14 @@ export function getPlanningOutputIssues(
 
 export function buildPlanningQualityRetryNote(issues: string[]): string {
   return [
-    "CORRECAO OBRIGATORIA - a matriz anterior nao cumpriu o contrato pedagogico:",
+    "CORREÇÃO OBRIGATÓRIA - a matriz anterior não cumpriu o contrato pedagógico:",
     ...issues.map((item) => `- ${item}`),
     "Use somente habilidades BNCC que o professor selecionou.",
-    "Nao invente codigos genericos como BNCC.",
+    "Não invente códigos genéricos como BNCC.",
     "Evite metodologias copiadas iguais em todas as linhas.",
-    "Cada linha deve refletir o conteudo especifico informado pelo professor.",
-    "Mantenha exatamente uma linha por conteudo informado, sem repetir conteudo para fechar carga horaria.",
-    "Distribua periodos variaveis por linha (1 a 10) de modo que a soma seja igual a carga horaria informada.",
+    "Cada linha deve refletir o conteúdo específico informado pelo professor.",
+    "Mantenha exatamente uma linha por conteúdo informado, sem repetir conteúdo para fechar carga horária.",
+    "Distribua períodos variáveis por linha (1 a 10) de modo que a soma seja igual à carga horária informada.",
     "Use numeroAula sequencial por trimestre (1, 2, 3...) e aulaInicio/aulaFim como faixa acumulada de periodos dentro do trimestre.",
   ].join("\n");
 }

@@ -1780,7 +1780,7 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
                   className="text-xs text-cyan-700/80"
                 >
                   Texto livre — use o formato que preferir. A IA desdobra conteúdos amplos em
-                  experiências de 1–4 períodos, alinhadas aos modelos oficiais DOCX.
+                  experiências de 1–4 períodos, alinhadas aos modelos oficiais.
                   {conteudosPreenchido ? " (preenchido)" : ""}
                 </span>
               </label>
@@ -2056,7 +2056,7 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
                 </h2>
                 <p className="mt-2 max-w-2xl text-sm leading-7 text-slate-600">
                   {trialMode
-                    ? "Visualize o anual e os trimestres extraídos da mesma matriz. Para baixar DOCX e exportar, assine o Planify Pro."
+                    ? "Visualize o anual e os trimestres extraídos da mesma matriz. Para exportar nos modelos oficiais, assine o Planify Pro."
                     : "Modelos oficiais Planify — anual e trimestral. Revise a matriz abaixo antes de exportar."}
                 </p>
 

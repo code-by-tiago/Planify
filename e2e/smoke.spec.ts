@@ -5,6 +5,7 @@ test.describe("Planify smoke", () => {
     await page.goto("/");
     await expect(page).toHaveTitle(/Plataforma educacional|Planify/i);
     await expect(page.getByRole("link", { name: /entrar/i }).first()).toBeVisible();
+    await expect(page.getByRole("link", { name: /^contato$/i }).first()).toBeVisible();
   });
 
   test("login page renders form", async ({ page }) => {
@@ -69,6 +70,16 @@ test.describe("Planify smoke", () => {
       const response = await page.goto(path);
       expect(response?.status(), `${path} should not 500`).toBeLessThan(500);
     }
+  });
+
+  test("contact page offers real support channels", async ({ page }) => {
+    await page.goto("/contato");
+    await expect(page.getByRole("heading", { name: /atendimento para professores/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /envie sua mensagem/i })).toBeVisible();
+    await expect(page.getByLabel("Nome")).toBeVisible();
+    await expect(page.getByLabel("E-mail")).toBeVisible();
+    await expect(page.getByRole("button", { name: /enviar pelo whatsapp/i })).toBeVisible();
+    await expect(page.getByText(/envio real será conectado/i)).toHaveCount(0);
   });
 
   test("plans page presents the complete Professor offer", async ({ page }) => {

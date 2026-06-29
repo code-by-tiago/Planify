@@ -48,16 +48,24 @@ export function LandingHeader() {
 
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
           {showPainel ? (
-            <Link
-              href="/dashboard"
-              className="rounded-lg bg-[#26C6DA] px-4 py-2.5 text-sm font-bold text-[#0A192F] shadow-sm transition hover:brightness-105"
-            >
-              Painel
-            </Link>
+            <>
+              <Link href="/contato" className={`${navLinkClass} inline-flex`}>
+                Contato
+              </Link>
+              <Link
+                href="/dashboard"
+                className="rounded-lg bg-[#26C6DA] px-4 py-2.5 text-sm font-bold text-[#0A192F] shadow-sm transition hover:brightness-105"
+              >
+                Painel
+              </Link>
+            </>
           ) : (
             <>
               <Link href="/escolas" className={`${navLinkClass} hidden md:inline-flex`}>
                 Para escolas
+              </Link>
+              <Link href="/contato" className={`${navLinkClass} hidden md:inline-flex`}>
+                Contato
               </Link>
               <Link href="/login" className={`${navLinkClass} hidden sm:inline-flex`}>
                 Entrar
@@ -91,6 +99,13 @@ export function LandingHeader() {
               className="rounded-xl px-4 py-3 text-base font-semibold text-slate-800 hover:bg-cyan-50"
             >
               Para escolas
+            </Link>
+            <Link
+              href="/contato"
+              onClick={() => setOpen(false)}
+              className="rounded-xl px-4 py-3 text-base font-semibold text-slate-800 hover:bg-cyan-50"
+            >
+              Contato e suporte
             </Link>
             <Link
               href="/testar-planejamento"

@@ -10,6 +10,7 @@ import {
   ppInput,
   ppLink,
 } from "@/components/public/landing-professor-primeiro/theme";
+import { buildCommercialWhatsAppUrl } from "@/lib/public/escolasCommercial";
 
 type ContactType = "suporte" | "assinatura" | "erro" | "sugestao" | "parceria" | "pedagogico";
 
@@ -20,6 +21,11 @@ type FormState = {
   tipo: ContactType;
   assunto: string;
   mensagem: string;
+};
+
+type ContactUrls = {
+  whatsapp: string;
+  email: string;
 };
 
 const initialForm: FormState = {
@@ -57,6 +63,43 @@ function getTypeLabel(type: ContactType): string {
   return contactTypes.find((item) => item.value === type)?.label ?? "Suporte";
 }
 
+function getSupportEmail(): string {
+  const raw =
+    process.env.NEXT_PUBLIC_SUPPORT_EMAIL ||
+    process.env.NEXT_PUBLIC_ADMIN_EMAIL ||
+    "";
+  return raw.split(",")[0]?.trim() || "suporte@iaplanify.com.br";
+}
+
+function buildSupportMessage(form: FormState, pageUrl: string): string {
+  return [
+    "Olá, suporte Planify.",
+    "",
+    "Preciso de ajuda com a plataforma.",
+    "",
+    `Tipo: ${getTypeLabel(form.tipo)}`,
+    `Perfil: ${form.perfil}`,
+    `Nome: ${form.nome}`,
+    `E-mail: ${form.email}`,
+    `Assunto: ${form.assunto}`,
+    "",
+    "Mensagem:",
+    form.mensagem,
+    "",
+    `Página de origem: ${pageUrl}`,
+  ].join("\n");
+}
+
+function buildContactUrls(form: FormState, pageUrl: string): ContactUrls {
+  const message = buildSupportMessage(form, pageUrl);
+  const subject = `Suporte Planify - ${getTypeLabel(form.tipo)} - ${form.assunto}`;
+
+  return {
+    whatsapp: buildCommercialWhatsAppUrl(message),
+    email: `mailto:${getSupportEmail()}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(message)}`,
+  };
+}
+
 const inputClass = ppInput;
 
 export function ContatoClient() {
@@ -66,6 +109,7 @@ export function ContatoClient() {
     type: "info" | "success" | "warning";
     message: string;
   } | null>(null);
+  const [contactUrls, setContactUrls] = useState<ContactUrls | null>(null);
 
   const selectedType = contactTypes.find((item) => item.value === form.tipo);
   const characterCount = useMemo(() => form.mensagem.trim().length, [form.mensagem]);
@@ -73,12 +117,14 @@ export function ContatoClient() {
   function updateField<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((current) => ({ ...current, [key]: value }));
     setSubmitted(false);
+    setContactUrls(null);
   }
 
   function clearForm() {
     setForm(initialForm);
     setStatus(null);
     setSubmitted(false);
+    setContactUrls(null);
   }
 
   function validateForm(): string | null {
@@ -94,13 +140,23 @@ export function ContatoClient() {
     const error = validateForm();
     if (error) {
       setStatus({ type: "warning", message: error });
+      setContactUrls(null);
       return;
     }
+
+    const urls = buildContactUrls(
+      form,
+      typeof window !== "undefined" ? window.location.href : "/contato",
+    );
+
+    setContactUrls(urls);
     setSubmitted(true);
     setStatus({
       type: "success",
-      message: "Solicitação registrada visualmente. O envio real será conectado em etapa futura.",
+      message:
+        "Abrimos o WhatsApp com sua mensagem pronta. Revise e toque em enviar. Se preferir, use o botão de e-mail abaixo.",
     });
+    window.open(urls.whatsapp, "_blank", "noopener,noreferrer");
   }
 
   function statusClass() {
@@ -241,17 +297,42 @@ export function ContatoClient() {
 
               <div className="flex flex-col gap-3 sm:flex-row">
                 <button type="submit" className={ppBtnPrimary}>
-                  Enviar solicitação
+                  Enviar pelo WhatsApp
+                  <PlanifyIcon name="arrowRight" className="h-4 w-4" />
                 </button>
-                <Link href="/dashboard" className={ppBtnSecondary}>
-                  Voltar ao painel
-                </Link>
+                {contactUrls ? (
+                  <a href={contactUrls.email} className={ppBtnSecondary}>
+                    Enviar por e-mail
+                  </a>
+                ) : (
+                  <Link href="/dashboard" className={ppBtnSecondary}>
+                    Voltar ao painel
+                  </Link>
+                )}
               </div>
             </form>
 
             {status ? (
-              <div className={`mt-5 rounded-2xl border p-4 text-sm font-semibold ${statusClass()}`}>
-                {status.message}
+              <div
+                aria-live="polite"
+                className={`mt-5 rounded-2xl border p-4 text-sm font-semibold ${statusClass()}`}
+              >
+                <p>{status.message}</p>
+                {contactUrls ? (
+                  <div className="mt-3 flex flex-wrap gap-3">
+                    <a
+                      href={contactUrls.whatsapp}
+                      target="_blank"
+                      rel="noreferrer"
+                      className={ppLink}
+                    >
+                      Reabrir WhatsApp
+                    </a>
+                    <a href={contactUrls.email} className={ppLink}>
+                      Enviar por e-mail
+                    </a>
+                  </div>
+                ) : null}
               </div>
             ) : null}
           </div>

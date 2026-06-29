@@ -229,7 +229,7 @@ export async function getValidGoogleAccessTokenForScopes(
 
   if (missingScopes.length > 0) {
     throw new Error(
-      `${featureLabel} precisa de nova autorizacao do Google. Clique em Autorizar Google Classroom e escolha a conta @educar.rs.gov.br.`,
+      `${featureLabel} precisa de nova autorizacao do Google. Clique em Autorizar Google e escolha a conta @educar.rs.gov.br.`,
     );
   }
 

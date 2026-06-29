@@ -15,10 +15,15 @@ function pruneExpired(now: number): void {
 
 export function buildClassroomExportDedupKey(params: {
   userId: string;
-  courseId: string;
+  courseId?: string;
+  targetId?: string;
   title: string;
   html: string;
 }): string {
+  const target = String(params.courseId || params.targetId || "classroom-share")
+    .trim()
+    .toLowerCase()
+    .slice(0, 120);
   const contentHash = createHash("sha256")
     .update(String(params.html || "").slice(0, 12_000))
     .digest("hex")
@@ -26,7 +31,7 @@ export function buildClassroomExportDedupKey(params: {
 
   return [
     params.userId,
-    params.courseId,
+    target,
     String(params.title || "").trim().toLowerCase().slice(0, 120),
     contentHash,
   ].join("|");
@@ -40,7 +45,7 @@ export function assertClassroomExportAllowed(dedupKey: string): void {
   if (previous && now - previous < DEDUP_TTL_MS) {
     const seconds = Math.ceil((DEDUP_TTL_MS - (now - previous)) / 1000);
     throw new Error(
-      `Este material já foi enviado para esta turma há pouco. Aguarde ${seconds}s antes de reenviar.`,
+      `Este material ja foi publicado para esta turma ha pouco. Aguarde ${seconds}s antes de publicar novamente.`,
     );
   }
 }

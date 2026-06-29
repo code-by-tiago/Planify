@@ -21,19 +21,25 @@ function isMissingRpcError(message: string): boolean {
 
 function mapDedupRpcError(error: { message?: string; details?: string }): string {
   const detail = String(error.details || "").trim();
-  if (detail) return detail;
+  if (detail) {
+    return detail
+      .replace(/preparado para o Classroom/gi, "publicado no Classroom")
+      .replace(/reenviar/gi, "publicar novamente");
+  }
   return String(error.message || "Exportação duplicada bloqueada.");
 }
 
 export async function assertClassroomExportAllowed(params: {
   userId: string;
-  courseId: string;
+  courseId?: string;
+  targetId?: string;
   title: string;
   html: string;
 }): Promise<string> {
   const dedupKey = buildClassroomExportDedupKey({
     userId: params.userId,
     courseId: params.courseId,
+    targetId: params.targetId,
     title: params.title,
     html: params.html,
   });

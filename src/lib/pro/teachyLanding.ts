@@ -29,9 +29,9 @@ export const teachyHomeFeatures: {
     imageSide: "left",
   },
   {
-    title: "Publique na turma do Classroom",
+    title: "Leve ao Classroom com seguranca",
     description:
-      "No editor, conecte o Google e envie o material à turma — documento no Drive e atividade criada automaticamente. Também compartilhe com outros professores na Comunidade.",
+      "No editor, conecte o Google, salve o material no Drive, escolha uma ou varias turmas reais e publique no Classroom apos revisar. Tambem compartilhe com outros professores na Comunidade.",
     cta: "Abrir editor",
     href: "/dashboard?secao=editor",
     icon: "externalLink",

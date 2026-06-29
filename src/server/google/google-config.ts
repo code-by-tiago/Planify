@@ -1,19 +1,24 @@
 export const GOOGLE_DRIVE_FILE_SCOPE =
   "https://www.googleapis.com/auth/drive.file";
-export const GOOGLE_CLASSROOM_COURSES_READONLY_SCOPE =
-  "https://www.googleapis.com/auth/classroom.courses.readonly";
-export const GOOGLE_CLASSROOM_COURSEWORK_ME_SCOPE =
-  "https://www.googleapis.com/auth/classroom.coursework.me";
-export const GOOGLE_CLASSROOM_COURSEWORK_MATERIALS_SCOPE =
-  "https://www.googleapis.com/auth/classroom.courseworkmaterials";
 export const GOOGLE_USERINFO_EMAIL_SCOPE =
   "https://www.googleapis.com/auth/userinfo.email";
 export const GOOGLE_FORMS_SCOPE = "https://www.googleapis.com/auth/forms.body";
+export const GOOGLE_CLASSROOM_COURSES_READONLY_SCOPE =
+  "https://www.googleapis.com/auth/classroom.courses.readonly";
+export const GOOGLE_CLASSROOM_COURSEWORK_MATERIALS_SCOPE =
+  "https://www.googleapis.com/auth/classroom.courseworkmaterials";
+export const GOOGLE_CLASSROOM_COURSEWORK_STUDENTS_SCOPE =
+  "https://www.googleapis.com/auth/classroom.coursework.students";
+
+export const GOOGLE_CLASSROOM_COURSES_SCOPES = [
+  GOOGLE_CLASSROOM_COURSES_READONLY_SCOPE,
+] as const;
 
 export const GOOGLE_CLASSROOM_REQUIRED_SCOPES = [
   GOOGLE_DRIVE_FILE_SCOPE,
   GOOGLE_CLASSROOM_COURSES_READONLY_SCOPE,
   GOOGLE_CLASSROOM_COURSEWORK_MATERIALS_SCOPE,
+  GOOGLE_CLASSROOM_COURSEWORK_STUDENTS_SCOPE,
 ] as const;
 
 export const GOOGLE_OAUTH_SCOPES = [
@@ -21,10 +26,10 @@ export const GOOGLE_OAUTH_SCOPES = [
   "email",
   GOOGLE_USERINFO_EMAIL_SCOPE,
   GOOGLE_DRIVE_FILE_SCOPE,
-  GOOGLE_CLASSROOM_COURSES_READONLY_SCOPE,
-  GOOGLE_CLASSROOM_COURSEWORK_ME_SCOPE,
-  GOOGLE_CLASSROOM_COURSEWORK_MATERIALS_SCOPE,
   GOOGLE_FORMS_SCOPE,
+  GOOGLE_CLASSROOM_COURSES_READONLY_SCOPE,
+  GOOGLE_CLASSROOM_COURSEWORK_MATERIALS_SCOPE,
+  GOOGLE_CLASSROOM_COURSEWORK_STUDENTS_SCOPE,
 ] as const;
 
 export function hasGoogleScope(

@@ -6,6 +6,7 @@
     "dev": "next dev",
     "build": "next build --webpack",
     "start": "next start",
+    "lint": "node scripts/lint.mjs",
     "typecheck": "tsc --noEmit",
     "verify:material-quality": "node scripts/verify-material-quality.mjs",
     "verify:question-bank-match": "node scripts/verify-question-bank-match.mjs",

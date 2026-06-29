@@ -24,10 +24,10 @@ export function computeClassroomPopoverCoords(
 export function estimateClassroomPopoverHeight(options: {
   step: "form" | "success";
   needsEducarConnect: boolean;
-  canShowTurmaList: boolean;
+  canOpenClassroomHandoff: boolean;
 }): number {
   if (options.step === "success") return 280;
   if (options.needsEducarConnect) return 320;
-  if (options.canShowTurmaList) return 380;
+  if (options.canOpenClassroomHandoff) return 300;
   return 300;
 }

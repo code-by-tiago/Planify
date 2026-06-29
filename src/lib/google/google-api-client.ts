@@ -94,6 +94,44 @@ export async function startGoogleOAuth(
   );
 }
 
+export async function startGoogleClassroomOAuth(
+  returnTo = "/editor",
+  options?: {
+    selectAccount?: boolean;
+    loginHint?: string;
+    hostedDomain?: string;
+  },
+): Promise<void> {
+  const response = await fetch("/api/google/classroom/auth", {
+    method: "POST",
+    headers: await authHeaders(),
+    credentials: "include",
+    body: JSON.stringify({
+      returnTo,
+      selectAccount: options?.selectAccount !== false,
+      loginHint: options?.loginHint,
+      hostedDomain: options?.hostedDomain,
+    }),
+  });
+
+  const data = await response.json().catch(() => null);
+
+  if (response.ok && data?.url) {
+    window.location.href = data.url;
+    return;
+  }
+
+  if (response.status === 401) {
+    throw new Error(
+      data?.error?.message || "Faca login no Planify para conectar o Google.",
+    );
+  }
+
+  throw new Error(
+    data?.error?.message || "Nao foi possivel iniciar a conexao com o Google Classroom.",
+  );
+}
+
 export async function disconnectGoogle(): Promise<void> {
   const response = await fetch("/api/google/oauth/disconnect", {
     method: "POST",
@@ -108,44 +146,65 @@ export async function disconnectGoogle(): Promise<void> {
   }
 }
 
+export type ClassroomShareType = "material" | "assignment";
+
 export type ClassroomCourseOption = {
   id: string;
   name: string;
   section?: string;
+  descriptionHeading?: string;
+  courseState?: string;
+  alternateLink?: string | null;
+};
+
+export type ClassroomExportResult = {
+  drive: { fileId: string; name: string; webViewLink: string | null };
+  classroom: {
+    publications: Array<{
+      id: string;
+      alternateLink: string | null;
+      type: ClassroomShareType;
+      courseId: string;
+    }>;
+    errors: Array<{ courseId: string; message: string }>;
+    type: ClassroomShareType;
+  };
+  openUrl: string;
+  googleEmail: string | null;
+  exportFormat?: "pdf" | "docx";
 };
 
 export async function fetchClassroomCourses(): Promise<ClassroomCourseOption[]> {
   const response = await fetch("/api/google/classroom/courses", {
-    cache: "no-store",
-    credentials: "include",
+    method: "GET",
     headers: await authHeaders(),
+    credentials: "include",
+    cache: "no-store",
   });
 
   const data = await response.json().catch(() => null);
 
   if (!response.ok) {
-    throw new Error(data?.error?.message || "Não foi possível carregar turmas.");
+    throw new Error(data?.error?.message || "Nao foi possivel listar turmas.");
   }
 
-  return Array.isArray(data?.courses) ? data.courses : [];
+  return Array.isArray(data?.courses) ? (data.courses as ClassroomCourseOption[]) : [];
 }
 
-export type ClassroomExportResult = {
-  drive: { fileId: string; name: string; webViewLink: string | null };
-  classroom?: { courseWorkId: string; alternateLink: string | null };
-  googleEmail: string | null;
-};
-
-export async function exportToGoogleClassroom(params: {
+export async function shareToGoogleClassroom(params: {
   title: string;
   html: string;
-  courseId: string;
+  courseId?: string;
+  courseIds?: string[];
+  shareType: ClassroomShareType;
   description?: string;
+  dueDate?: string;
+  dueTime?: string;
+  maxPoints?: string;
   filename?: string;
   documentType?: string | null;
-  publishState?: "PUBLISHED" | "DRAFT";
 }): Promise<ClassroomExportResult> {
-  const response = await fetch("/api/google/classroom/export", {
+  const response = await fetch("/api/google/classroom/share", {
     method: "POST",
     headers: await authHeaders(),
     credentials: "include",
@@ -155,10 +214,26 @@ export async function exportToGoogleClassroom(params: {
   const data = await response.json().catch(() => null);
 
   if (!response.ok) {
-    throw new Error(data?.error?.message || "Não foi possível enviar ao Classroom.");
+    throw new Error(data?.error?.message || "Nao foi possivel publicar no Classroom.");
   }
 
   return data.data as ClassroomExportResult;
+}
+
+export async function exportToGoogleClassroom(params: {
+  title: string;
+  html: string;
+  courseId?: string;
+  courseIds?: string[];
+  shareType: ClassroomShareType;
+  description?: string;
+  dueDate?: string;
+  dueTime?: string;
+  maxPoints?: string;
+  filename?: string;
+  documentType?: string | null;
+}): Promise<ClassroomExportResult> {
+  return shareToGoogleClassroom(params);
 }
 
 export type GoogleDocsExportResult = {

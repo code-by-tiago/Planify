@@ -1,8 +1,9 @@
 import { expect, test } from "@playwright/test";
 
-test.describe("Google Classroom resume popover", () => {
-  test("asks for Classroom authorization when connected token is missing scopes", async ({ page }) => {
+test.describe("Google Classroom premium modal", () => {
+  test("starts Classroom OAuth when connected token is missing Classroom scopes", async ({ page }) => {
     let coursesRequested = 0;
+    let authRequested = 0;
 
     await page.route("**/api/google/status", async (route) => {
       await route.fulfill({
@@ -24,6 +25,18 @@ test.describe("Google Classroom resume popover", () => {
       });
     });
 
+    await page.route("**/api/google/classroom/auth", async (route) => {
+      authRequested += 1;
+      await route.fulfill({
+        status: 503,
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: false,
+          error: { message: "OAuth indisponivel no teste" },
+        }),
+      });
+    });
+
     await page.route("**/api/google/classroom/courses", async (route) => {
       coursesRequested += 1;
       await route.fulfill({
@@ -35,22 +48,20 @@ test.describe("Google Classroom resume popover", () => {
 
     await page.goto("/test/google-classroom-resume");
 
-    const classroomButton = page.getByRole("button", { name: /Google Classroom/i });
+    const classroomButton = page.getByRole("button", { name: /Enviar ao Classroom/i });
     await expect(classroomButton).toBeVisible();
     await classroomButton.click();
 
     await expect(
-      page.getByText("precisa autorizar o Classroom para listar turmas", {
-        exact: false,
-      }),
+      page.getByRole("dialog", { name: /Enviar para Google Classroom/i }),
     ).toBeVisible();
-    await expect(
-      page.getByRole("button", { name: /Autorizar Google Classroom/i }),
-    ).toBeVisible();
+    await expect.poll(() => authRequested).toBeGreaterThan(0);
     expect(coursesRequested).toBe(0);
   });
 
-  test("shows teacher courses when Classroom token is ready", async ({ page }) => {
+  test("shows multi-class publish modal when Google token is ready", async ({ page }) => {
+    let coursesRequested = 0;
+
     await page.route("**/api/google/status", async (route) => {
       await route.fulfill({
         status: 200,
@@ -70,14 +81,15 @@ test.describe("Google Classroom resume popover", () => {
     });
 
     await page.route("**/api/google/classroom/courses", async (route) => {
+      coursesRequested += 1;
       await route.fulfill({
         status: 200,
         contentType: "application/json",
         body: JSON.stringify({
           success: true,
           courses: [
-            { id: "turma-a", name: "Turma A", section: "Manha" },
-            { id: "turma-b", name: "Turma B", section: "Tarde" },
+            { id: "c-6a", name: "6º Ano A", courseState: "ACTIVE" },
+            { id: "c-6b", name: "6º Ano B", courseState: "ACTIVE" },
           ],
         }),
       });
@@ -85,19 +97,26 @@ test.describe("Google Classroom resume popover", () => {
 
     await page.goto("/test/google-classroom-resume");
 
-    const classroomButton = page.getByRole("button", { name: /Google Classroom/i });
+    const classroomButton = page.getByRole("button", { name: /Enviar ao Classroom/i });
     await expect(classroomButton).toBeVisible();
     await classroomButton.click();
 
-    await expect(page.getByLabel("Turma")).toBeVisible();
-    await expect(page.getByText("Conectado como", { exact: false })).toBeVisible();
-    await expect(page.getByLabel("Turma")).toContainText("Turma A");
+    await expect(
+      page.getByRole("dialog", { name: /Enviar para Google Classroom/i }),
+    ).toBeVisible();
+    await expect(page.getByLabel("6º Ano A")).toBeVisible();
+    await expect(page.getByLabel("6º Ano B")).toBeVisible();
+    await expect(page.getByRole("radio", { name: "Material" })).toBeChecked();
+    await page.getByRole("radio", { name: "Atividade" }).check();
+    await expect(page.getByLabel("Data de entrega")).toBeVisible();
+    await expect(page.getByRole("button", { name: /^Publicar$/ })).toBeVisible();
+    expect(coursesRequested).toBeGreaterThan(0);
   });
 
-  test("opens the classroom popover after OAuth return intent", async ({ page }) => {
+  test("opens the classroom modal after OAuth return intent", async ({ page }) => {
     await page.goto("/test/google-classroom-resume");
 
-    const classroomButton = page.getByRole("button", { name: /Google Classroom/i });
+    const classroomButton = page.getByRole("button", { name: /Enviar ao Classroom/i });
     await expect(classroomButton).toBeVisible();
 
     await page.evaluate(() => {
@@ -116,10 +135,10 @@ test.describe("Google Classroom resume popover", () => {
     });
   });
 
-  test("opens the classroom popover after OAuth return with google query params in returnTo", async ({ page }) => {
+  test("opens the classroom modal after OAuth return with google query params in returnTo", async ({ page }) => {
     await page.goto("/test/google-classroom-resume?google=connected");
 
-    const classroomButton = page.getByRole("button", { name: /Google Classroom/i });
+    const classroomButton = page.getByRole("button", { name: /Enviar ao Classroom/i });
     await expect(classroomButton).toBeVisible();
 
     await page.evaluate(() => {

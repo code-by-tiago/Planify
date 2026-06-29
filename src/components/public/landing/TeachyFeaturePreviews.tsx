@@ -139,7 +139,7 @@ function ClassroomFeaturePreview() {
             <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-cyan-600">
               Google Classroom
             </p>
-            <p className="text-sm font-extrabold text-slate-950">Publicar na turma</p>
+            <p className="text-sm font-extrabold text-slate-950">Publicar no Classroom</p>
           </div>
         </div>
 
@@ -171,9 +171,9 @@ function ClassroomFeaturePreview() {
           <div className="flex items-start gap-2.5">
             <PlanifyIcon name="checkCircle" className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
             <div>
-              <p className="text-xs font-extrabold text-emerald-800">Material publicado</p>
+              <p className="text-xs font-extrabold text-emerald-800">Classroom aberto</p>
               <p className="mt-0.5 text-[11px] font-medium leading-snug text-emerald-700/90">
-                Google Docs no Drive · atividade criada na turma
+                Arquivo no Drive - turmas escolhidas pelo professor
               </p>
             </div>
           </div>

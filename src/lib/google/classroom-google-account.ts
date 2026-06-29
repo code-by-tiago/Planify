@@ -46,7 +46,7 @@ export function resolveClassroomOAuthParams(options: {
   planifyEmail?: string | null;
 }): {
   loginHint?: string;
-  hostedDomain: string;
+  hostedDomain?: string;
 } {
   const candidates = [options.institutionalEmail, options.planifyEmail]
     .map(normalizeGoogleEmail)
@@ -57,7 +57,7 @@ export function resolveClassroomOAuthParams(options: {
 
   return {
     ...(loginHint ? { loginHint } : {}),
-    hostedDomain: EDUCAR_GOOGLE_DOMAIN,
+    ...(educarEmail ? { hostedDomain: EDUCAR_GOOGLE_DOMAIN } : {}),
   };
 }
 
@@ -97,8 +97,7 @@ export function classroomGoogleAccountNeedsSwitch(
   status: { connected: boolean; googleEmail: string | null } | null | undefined,
 ): boolean {
   if (!status?.connected) return false;
-  if (classroomGoogleAccountIncomplete(status)) return true;
-  return classroomGoogleAccountMismatch(status.googleEmail);
+  return classroomGoogleAccountIncomplete(status);
 }
 
 /** Conectado ao Google mas sem e-mail resolvido no token (estado inconsistente). */
@@ -108,7 +107,7 @@ export function classroomGoogleAccountIncomplete(
   return Boolean(status?.connected && !normalizeGoogleEmail(status.googleEmail));
 }
 
-/** Precisa conectar ou trocar para conta @educar antes de listar turmas. */
+/** Precisa conectar, reautorizar escopos ou resolver a conta antes de publicar. */
 export function needsEducarClassroomConnect(
   status: ClassroomGoogleStatusLike | null | undefined,
 ): boolean {
@@ -118,14 +117,14 @@ export function needsEducarClassroomConnect(
   );
 }
 
-/** Pronto para exportar: token Google com e-mail @educar.rs.gov.br. */
+/** Pronto para listar turmas e publicar apos confirmacao. */
 export function isClassroomExportReady(
   status: ClassroomGoogleStatusLike | null | undefined,
 ): boolean {
   return Boolean(
     status?.connected &&
       !classroomGoogleScopesMissing(status) &&
-      isEducarInstitutionalEmail(status.googleEmail),
+      normalizeGoogleEmail(status.googleEmail),
   );
 }
 
@@ -151,7 +150,7 @@ export function classroomGoogleAccountMismatch(
 ): boolean {
   const normalized = normalizeGoogleEmail(googleEmail);
   if (!normalized) return false;
-  return !isEducarInstitutionalEmail(normalized);
+  return false;
 }
 
 export function persistClassroomGoogleEmail(email: string): void {

@@ -108,7 +108,7 @@ async function executeProductExport(params: {
 
   if (params.key === GOOGLE_CLASSROOM_EXPORT_PENDING_KEY) {
     throw new Error(
-      "Conta Google conectada. Escolha a turma no popover do Classroom e clique em Enviar.",
+      "Conta Google conectada. Clique em Enviar ao Classroom para revisar turmas e publicar.",
     );
   }
 
@@ -163,7 +163,7 @@ export async function resumePendingGoogleExport(
       clearActivePending(active);
       markGoogleOAuthResumeHandled();
       params.onStatus?.(
-        "Conta Google conectada. Clique no ícone Classroom, escolha a turma e envie.",
+        "Conta Google conectada. Clique em Enviar ao Classroom para revisar e publicar.",
       );
       notifyGoogleStatusChanged();
       return true;

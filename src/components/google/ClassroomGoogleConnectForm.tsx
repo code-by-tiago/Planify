@@ -46,7 +46,7 @@ export function ClassroomGoogleConnectForm({
             compact ? "px-2.5 py-2 text-[11px] leading-5" : "px-3 py-2.5 text-sm leading-6"
           }`}
         >
-          A conta Google conectada ({connectedGoogleEmail}) não é a institucional da escola.
+          A conta Google conectada ({connectedGoogleEmail}) nao e a institucional da escola.
           Informe seu e-mail <strong>@{EDUCAR_GOOGLE_DOMAIN}</strong> para publicar no Classroom.
         </div>
       ) : showAuthorizationMissing ? (
@@ -55,8 +55,9 @@ export function ClassroomGoogleConnectForm({
             compact ? "px-2.5 py-2 text-[11px] leading-5" : "px-3 py-2.5 text-sm leading-6"
           }`}
         >
-          A conta Google {connectedGoogleEmail} precisa autorizar o Classroom para listar
-          turmas e publicar materiais. Reautorize com o e-mail <strong>@{EDUCAR_GOOGLE_DOMAIN}</strong>.
+          A conta Google {connectedGoogleEmail} precisa autorizar o Google Classroom
+          para listar turmas e publicar apos confirmacao. Reautorize com o e-mail{" "}
+          <strong>@{EDUCAR_GOOGLE_DOMAIN}</strong>.
         </div>
       ) : (
         <p
@@ -68,7 +69,7 @@ export function ClassroomGoogleConnectForm({
         >
           {showPlanifyHint
             ? `Seu login no Planify (${planifyEmail}) pode ser pessoal. Para o Classroom, use o e-mail Google da escola.`
-            : `Use o e-mail Google institucional (@${EDUCAR_GOOGLE_DOMAIN}) com acesso às turmas.`}
+            : `Use preferencialmente o e-mail Google institucional (@${EDUCAR_GOOGLE_DOMAIN}) para o Classroom.`}
         </p>
       )}
 
@@ -122,8 +123,8 @@ export function ClassroomGoogleConnectForm({
               : "text-xs leading-5 text-slate-500"
           }
         >
-          Login no Planify e conta Google do Classroom são separados. O botão abre a tela do
-          Google para autorizar o @educar.rs.gov.br com acesso às turmas.
+          Login no Planify e conta Google do Classroom sao separados. O botao abre a tela do
+          Google para autorizar Drive e Classroom com tokens salvos apenas no backend.
         </p>
     </div>
   );

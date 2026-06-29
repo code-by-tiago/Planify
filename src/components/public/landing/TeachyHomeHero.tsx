@@ -10,7 +10,7 @@ const heroStats = [
   { value: `${landingGeneratorCount}+`, label: "Geradores IA" },
   { value: "BNCC", label: "Alinhamento curricular" },
   { value: "Google Docs", label: "Modelo oficial" },
-  { value: "Classroom", label: "Publicação direta" },
+  { value: "Classroom", label: "Publicacao revisada" },
 ] as const;
 
 export function TeachyHomeHero() {

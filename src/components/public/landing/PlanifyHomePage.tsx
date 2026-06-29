@@ -22,7 +22,7 @@ const faqItems = [
   {
     question: "O Planify envia para o Google Classroom?",
     answer:
-      "Sim. No editor, conecte o Google, escolha a turma e o Planify exporta ao Google Docs, salva no Drive e cria a atividade na turma.",
+      "Sim. No editor, conecte o Google: o Planify salva o material no Drive, lista suas turmas reais e publica no Classroom apos sua confirmacao.",
   },
   {
     question: "Como começo?",

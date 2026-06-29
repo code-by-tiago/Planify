@@ -27,8 +27,9 @@
 
 ## Google Drive/Classroom
 
-Implementar em etapa separada e segura:
+Validar integracao segura:
 1. OAuth start/callback.
-2. Exportar DOCX ja gerado para Drive.
-3. Depois compartilhar/publicar via Classroom.
+2. Exportar DOCX/PDF ja gerado para Drive.
+3. Listar turmas reais via Google Classroom API.
+4. Publicar material/atividade somente apos confirmacao no modal.
 4. Manter download DOCX como fallback.

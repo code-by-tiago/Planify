@@ -1,6 +1,7 @@
 "use client";
 
 import { GoogleDocumentExportBar } from "@/components/google/GoogleDocumentExportBar";
+import { GoogleClassroomConnectionIndicator } from "@/components/google/GoogleClassroomConnectionIndicator";
 import { MarketplacePublishButton } from "@/components/marketplace/MarketplacePublishButton";
 import { useAutoGoogleExport } from "@/hooks/useAutoGoogleExport";
 import { useMemo } from "react";
@@ -83,6 +84,7 @@ export function EditorShareBar({
         className={comunidadeClass}
       />
       <div className="flex min-w-0 flex-1 items-center gap-1.5">
+        <GoogleClassroomConnectionIndicator returnTo={returnTo} />
         {compact ? (
           <span className="hidden shrink-0 text-[9px] font-black uppercase tracking-wide text-slate-400 sm:inline">
             Exportar

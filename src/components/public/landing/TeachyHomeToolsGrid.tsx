@@ -34,7 +34,7 @@ export function TeachyHomeToolsGrid() {
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-base font-medium leading-7 text-slate-600 sm:text-lg">
             Do planejamento BNCC à correção de redações — descreva o contexto da turma,
-            gere o rascunho e revise no editor antes de exportar ou publicar.
+            gere o rascunho e revise no editor antes de exportar ou aplicar.
           </p>
         </div>
 

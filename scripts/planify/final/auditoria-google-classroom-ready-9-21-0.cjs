@@ -86,6 +86,9 @@ title("Google export routes");
 const requiredRoutes = [
   "src/app/api/google/oauth/start/route.ts",
   "src/app/api/google/oauth/callback/route.ts",
+  "src/app/api/google/classroom/auth/route.ts",
+  "src/app/api/google/classroom/callback/route.ts",
+  "src/app/api/google/classroom/share/route.ts",
   "src/app/api/google/classroom/export/route.ts",
   "src/app/api/google/classroom/courses/route.ts",
   "src/app/api/google/drive/export/route.ts",
@@ -100,7 +103,7 @@ title("Classroom export safety invariants");
 
 const hook = read("src/hooks/useGoogleClassroomExport.ts");
 const popover = read("src/components/google/GoogleClassroomPopoverButton.tsx");
-const route = read("src/app/api/google/classroom/export/route.ts");
+const route = read("src/server/google/classroom-share-api.ts");
 
 if (/handleQuickExport/.test(hook)) fail("handleQuickExport still exported from hook");
 else ok("No handleQuickExport in classroom hook");
@@ -109,9 +112,9 @@ if (/GoogleClassroomExportButton/.test(read("src/components/google/GoogleDocumen
   fail("GoogleClassroomExportButton still referenced in export bar");
 } else ok("Export bar uses popover/panel flow");
 
-if (/Revisar envio/.test(popover) && /Confirmar envio/.test(popover)) {
-  ok("Popover has review + confirm steps");
-} else fail("Popover missing review/confirm UX");
+if (/Enviar ao Classroom/.test(popover) && /GoogleClassroomShareModal/.test(popover)) {
+  ok("Classroom button opens premium review modal");
+} else fail("Classroom button missing review modal UX");
 
 if (/classroom-export-persistent-guard/.test(route)) {
   ok("Classroom export API uses persistent dedup guard");
@@ -138,8 +141,8 @@ if (exists("scripts/verify-classroom-export-safety.mjs")) {
 title("Recommended safe implementation order");
 
 report.push("1. OAuth start/callback with tokens server-side only.");
-report.push("2. Drive export stable before Classroom publish.");
-report.push("3. Classroom: turma explicita, revisao no popover, rascunho padrao.");
+report.push("2. Drive export stable before Classroom API publish.");
+report.push("3. Classroom: listar turmas reais e publicar somente apos confirmacao.");
 report.push("4. Dedup persistente Supabase + rate limit no API.");
 report.push("5. Manter download DOCX/PDF como fallback.");
 

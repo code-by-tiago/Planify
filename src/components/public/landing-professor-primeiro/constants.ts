@@ -104,7 +104,7 @@ export const RESOURCES = [
   {
     title: "Exportação Google",
     description:
-      "Envie ao Google Docs, salve no Drive e publique atividades no Classroom conectado.",
+      "Envie ao Google Docs, salve no Drive e publique no Classroom apos revisar.",
     icon: "download" as const,
   },
 ];
@@ -113,7 +113,7 @@ export const INTEGRATION_FEATURES = [
   {
     title: "Integração com Google Workspace",
     description:
-      "Serviço de exportação direta de materiais para Google Docs, Google Drive e envio de atividades para o Google Classroom.",
+      "Servico de exportacao para Google Docs, Google Drive e abertura segura do Google Classroom.",
   },
   {
     title: "Onboarding e Treinamento Institucional",
@@ -146,7 +146,7 @@ export const COMPARISON_ROWS = [
   {
     topic: "Google Classroom",
     without: "Download, upload e publicação em etapas separadas",
-    with: "Salve no Drive e publique direto na turma",
+    with: "Escolha turmas reais e publique apos revisar",
   },
   {
     topic: "Consistência pedagógica",

@@ -100,11 +100,8 @@ function resolveAssignmentOptions(body: ClassroomShareBody): ClassroomAssignment
   const dueTime = parseDueTime(body.dueTime);
   const maxPoints = parseMaxPoints(body.maxPoints);
 
-  if (dueDate && dueTime) {
-    assignment.dueDate = dueDate;
-    assignment.dueTime = dueTime;
-  }
-
+  if (dueDate) assignment.dueDate = dueDate;
+  if (dueTime) assignment.dueTime = dueTime;
   if (typeof maxPoints === "number") assignment.maxPoints = maxPoints;
 
   return Object.keys(assignment).length > 0 ? assignment : undefined;

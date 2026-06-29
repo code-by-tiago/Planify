@@ -14,6 +14,17 @@ test.describe("Planify smoke", () => {
     await expect(page.getByRole("button", { name: /entrar como/i }).first()).toBeVisible();
   });
 
+  test("paid customer activation page shows password creation form", async ({ page }) => {
+    await page.goto("/planos/ativar");
+    await expect(
+      page.getByRole("heading", { name: "Ative sua conta com o e-mail do pagamento." }),
+    ).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Crie sua senha de acesso" })).toBeVisible();
+    await expect(page.locator('input[type="email"]')).toBeVisible();
+    await expect(page.locator('input[type="password"]')).toHaveCount(2);
+    await expect(page.getByRole("button", { name: "Criar senha e entrar" })).toBeVisible();
+  });
+
   test("protected route redirects unauthenticated users", async ({ page }) => {
     const response = await page.goto("/dashboard");
     expect(response?.status()).toBeLessThan(500);

@@ -146,6 +146,21 @@ export async function POST(request: NextRequest) {
     const existingUser = await findAuthUserByEmail(email);
 
     if (existingUser) {
+      try {
+        if (sessionId) {
+          await syncCheckoutSessionToDatabase(sessionId);
+        } else {
+          await syncSubscriptionsForEmailFromStripe(email);
+        }
+
+        await linkPendingSubscriptionsToUser({
+          userId: existingUser.id,
+          email,
+        });
+      } catch {
+        // A conta existente ainda pode entrar; a validação de acesso roda no login.
+      }
+
       return NextResponse.json(
         {
           success: false,

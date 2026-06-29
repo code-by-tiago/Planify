@@ -1,12 +1,54 @@
-export const GOOGLE_OAUTH_SCOPES = [
-  "https://www.googleapis.com/auth/drive.file",
-  "https://www.googleapis.com/auth/classroom.courses.readonly",
-  "https://www.googleapis.com/auth/classroom.coursework.me",
-  "https://www.googleapis.com/auth/classroom.courseworkmaterials",
-  "https://www.googleapis.com/auth/forms.body",
+export const GOOGLE_DRIVE_FILE_SCOPE =
+  "https://www.googleapis.com/auth/drive.file";
+export const GOOGLE_CLASSROOM_COURSES_READONLY_SCOPE =
+  "https://www.googleapis.com/auth/classroom.courses.readonly";
+export const GOOGLE_CLASSROOM_COURSEWORK_ME_SCOPE =
+  "https://www.googleapis.com/auth/classroom.coursework.me";
+export const GOOGLE_CLASSROOM_COURSEWORK_MATERIALS_SCOPE =
+  "https://www.googleapis.com/auth/classroom.courseworkmaterials";
+export const GOOGLE_USERINFO_EMAIL_SCOPE =
+  "https://www.googleapis.com/auth/userinfo.email";
+export const GOOGLE_FORMS_SCOPE = "https://www.googleapis.com/auth/forms.body";
+
+export const GOOGLE_CLASSROOM_REQUIRED_SCOPES = [
+  GOOGLE_DRIVE_FILE_SCOPE,
+  GOOGLE_CLASSROOM_COURSES_READONLY_SCOPE,
+  GOOGLE_CLASSROOM_COURSEWORK_MATERIALS_SCOPE,
 ] as const;
 
-export const GOOGLE_FORMS_SCOPE = "https://www.googleapis.com/auth/forms.body";
+export const GOOGLE_OAUTH_SCOPES = [
+  "openid",
+  "email",
+  GOOGLE_USERINFO_EMAIL_SCOPE,
+  GOOGLE_DRIVE_FILE_SCOPE,
+  GOOGLE_CLASSROOM_COURSES_READONLY_SCOPE,
+  GOOGLE_CLASSROOM_COURSEWORK_ME_SCOPE,
+  GOOGLE_CLASSROOM_COURSEWORK_MATERIALS_SCOPE,
+  GOOGLE_FORMS_SCOPE,
+] as const;
+
+export function hasGoogleScope(
+  scopes: readonly string[],
+  requiredScope: string,
+): boolean {
+  return scopes.some((scope) => scope === requiredScope);
+}
+
+export function resolveMissingGoogleScopes(
+  scopes: readonly string[],
+  requiredScopes: readonly string[],
+): string[] {
+  return requiredScopes.filter((scope) => !hasGoogleScope(scopes, scope));
+}
+
+export function hasRequiredGoogleClassroomScopes(
+  scopes: readonly string[],
+): boolean {
+  return resolveMissingGoogleScopes(
+    scopes,
+    GOOGLE_CLASSROOM_REQUIRED_SCOPES,
+  ).length === 0;
+}
 
 export function hasGoogleFormsScope(scopes: readonly string[]): boolean {
   return scopes.some(

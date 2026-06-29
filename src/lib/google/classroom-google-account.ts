@@ -62,10 +62,34 @@ export function resolveClassroomOAuthParams(options: {
 }
 
 /** Google OAuth ainda não conectado no Planify (independe do login Supabase). */
-export function needsClassroomGoogleOAuth(
-  status: { connected: boolean; googleEmail: string | null } | null | undefined,
+type ClassroomGoogleStatusLike = {
+  connected: boolean;
+  googleEmail: string | null;
+  classroomScopeGranted?: boolean;
+  missingClassroomScopes?: string[];
+};
+
+export function classroomGoogleScopesMissing(
+  status:
+    | Pick<
+        ClassroomGoogleStatusLike,
+        "connected" | "classroomScopeGranted" | "missingClassroomScopes"
+      >
+    | null
+    | undefined,
 ): boolean {
-  return !status?.connected;
+  if (!status?.connected) return false;
+  if (status.classroomScopeGranted === true) return false;
+  if (Array.isArray(status.missingClassroomScopes)) {
+    return status.missingClassroomScopes.length > 0;
+  }
+  return status.classroomScopeGranted === false;
+}
+
+export function needsClassroomGoogleOAuth(
+  status: ClassroomGoogleStatusLike | null | undefined,
+): boolean {
+  return !status?.connected || classroomGoogleScopesMissing(status);
 }
 
 /** Token Google conectado, mas não é a conta institucional da escola. */
@@ -86,7 +110,7 @@ export function classroomGoogleAccountIncomplete(
 
 /** Precisa conectar ou trocar para conta @educar antes de listar turmas. */
 export function needsEducarClassroomConnect(
-  status: { connected: boolean; googleEmail: string | null } | null | undefined,
+  status: ClassroomGoogleStatusLike | null | undefined,
 ): boolean {
   return (
     needsClassroomGoogleOAuth(status) ||
@@ -96,9 +120,13 @@ export function needsEducarClassroomConnect(
 
 /** Pronto para exportar: token Google com e-mail @educar.rs.gov.br. */
 export function isClassroomExportReady(
-  status: { connected: boolean; googleEmail: string | null } | null | undefined,
+  status: ClassroomGoogleStatusLike | null | undefined,
 ): boolean {
-  return Boolean(status?.connected && isEducarInstitutionalEmail(status.googleEmail));
+  return Boolean(
+    status?.connected &&
+      !classroomGoogleScopesMissing(status) &&
+      isEducarInstitutionalEmail(status.googleEmail),
+  );
 }
 
 export function suggestInstitutionalEmail(

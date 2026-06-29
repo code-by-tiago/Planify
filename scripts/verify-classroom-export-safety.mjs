@@ -79,6 +79,7 @@ assert.ok(
 const hookSource = read("src/hooks/useGoogleClassroomExport.ts");
 assert.match(hookSource, /buildClassroomExportSuccessMessage/);
 assert.match(hookSource, /assertClassroomClientExportAllowed/);
+assert.match(hookSource, /needsClassroomAuthorization/);
 assert.match(hookSource, /useState\(true\)/, "publishAsDraft defaults to true (rascunho)");
 assert.match(hookSource, /canShowTurmaList/);
 assert.match(hookSource, /canSubmitExport/);
@@ -107,7 +108,12 @@ assert.match(popoverSource, /Trocar conta Google/);
 
 const accountSource = read("src/lib/google/classroom-google-account.ts");
 assert.match(accountSource, /classroomGoogleAccountIncomplete/);
+assert.match(accountSource, /classroomGoogleScopesMissing/);
 assert.match(accountSource, /needsEducarClassroomConnect/);
+
+const googleConfigSource = read("src/server/google/google-config.ts");
+assert.match(googleConfigSource, /GOOGLE_USERINFO_EMAIL_SCOPE/);
+assert.match(googleConfigSource, /GOOGLE_CLASSROOM_REQUIRED_SCOPES/);
 
 const flowSource = read("src/lib/google/classroom-export-flow.ts");
 assert.match(
@@ -167,6 +173,33 @@ assert.ok(blocked, "server dedup blocks duplicate within TTL");
 // --- Unit: preferred course (no auto-first when multiple) ---
 const { resolvePreferredClassroomCourseId } = loadTsModule(
   "src/lib/google/classroom-export-flow.ts",
+);
+const account = loadTsModule("src/lib/google/classroom-google-account.ts");
+
+assert.equal(
+  account.isClassroomExportReady({
+    connected: true,
+    googleEmail: "professor@educar.rs.gov.br",
+    classroomScopeGranted: false,
+    missingClassroomScopes: [
+      "https://www.googleapis.com/auth/classroom.courseworkmaterials",
+    ],
+  }),
+  false,
+  "connected @educar without Classroom scopes must not be export-ready",
+);
+
+assert.equal(
+  account.needsEducarClassroomConnect({
+    connected: true,
+    googleEmail: "professor@educar.rs.gov.br",
+    classroomScopeGranted: false,
+    missingClassroomScopes: [
+      "https://www.googleapis.com/auth/classroom.courseworkmaterials",
+    ],
+  }),
+  true,
+  "missing Classroom scopes must ask for Classroom authorization",
 );
 
 assert.equal(

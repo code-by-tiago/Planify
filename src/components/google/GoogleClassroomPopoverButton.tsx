@@ -94,6 +94,7 @@ export function GoogleClassroomPopoverButton({
     institutionalEmail,
     setInstitutionalEmail,
     needsEducarConnect,
+    needsClassroomAuthorization,
     statusReady,
     canShowTurmaList,
     canSubmitExport,
@@ -388,6 +389,7 @@ export function GoogleClassroomPopoverButton({
             mode={connectMode}
             planifyEmail={status?.planifyEmail}
             connectedGoogleEmail={status?.googleEmail}
+            authorizationMissing={needsClassroomAuthorization}
           />
         </div>
       );

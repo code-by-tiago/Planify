@@ -18,6 +18,8 @@ export type GoogleIntegrationStatus = {
   googleEmail: string | null;
   planifyEmail: string | null;
   formsScopeGranted?: boolean;
+  classroomScopeGranted?: boolean;
+  missingClassroomScopes?: string[];
   missingEnv?: string[];
 };
 
@@ -40,6 +42,10 @@ export async function fetchGoogleStatus(): Promise<GoogleIntegrationStatus> {
     googleEmail: data?.googleEmail || null,
     planifyEmail: data?.planifyEmail || null,
     formsScopeGranted: Boolean(data?.formsScopeGranted),
+    classroomScopeGranted: Boolean(data?.classroomScopeGranted),
+    missingClassroomScopes: Array.isArray(data?.missingClassroomScopes)
+      ? data.missingClassroomScopes
+      : undefined,
     missingEnv: data?.missingEnv,
   };
 }

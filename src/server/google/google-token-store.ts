@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getSupabaseAdminClient } from "../supabase/admin-client";
+import { resolveMissingGoogleScopes } from "./google-config";
 import {
   fetchGoogleUserEmail,
   refreshGoogleAccessToken,
@@ -33,6 +34,34 @@ function isExpired(expiresAt: string | null): boolean {
   return Date.parse(expiresAt) <= Date.now() + 60_000;
 }
 
+function decodeBase64UrlJson(value: string): Record<string, unknown> | null {
+  try {
+    const normalized = value.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = normalized.padEnd(
+      normalized.length + ((4 - (normalized.length % 4)) % 4),
+      "=",
+    );
+    return JSON.parse(Buffer.from(padded, "base64").toString("utf8")) as Record<
+      string,
+      unknown
+    >;
+  } catch {
+    return null;
+  }
+}
+
+function extractEmailFromGoogleIdToken(
+  idToken: string | null | undefined,
+): string | null {
+  const payloadPart = String(idToken || "").split(".")[1];
+  if (!payloadPart) return null;
+
+  const payload = decodeBase64UrlJson(payloadPart);
+  const email = typeof payload?.email === "string" ? payload.email : "";
+
+  return email ? email.trim().toLowerCase() : null;
+}
+
 /** Tabela criada em supabase/migrations/20260604_google_integrations.sql */
 function googleIntegrationsTable(supabase: SupabaseClient) {
   return supabase.from("google_integrations" as "profiles");
@@ -64,6 +93,10 @@ export async function saveGoogleTokensForUser(
     }
   } catch {
     // Mantém e-mail salvo quando a API userinfo falha após refresh.
+  }
+
+  if (!googleEmail) {
+    googleEmail = extractEmailFromGoogleIdToken(tokenResponse.id_token);
   }
 
   const scopesFromResponse = String(tokenResponse.scope || "")
@@ -176,4 +209,29 @@ export async function getValidGoogleAccessToken(
     accessToken: updated.accessToken,
     googleEmail: updated.googleEmail,
   };
+}
+
+export async function getValidGoogleAccessTokenForScopes(
+  userId: string,
+  requiredScopes: readonly string[],
+  featureLabel = "Google",
+): Promise<{ accessToken: string; googleEmail: string | null }> {
+  const stored = await getGoogleTokensForUser(userId);
+
+  if (!stored) {
+    throw new Error("Conta Google nao conectada. Use Conectar Google no editor.");
+  }
+
+  const missingScopes = resolveMissingGoogleScopes(
+    stored.scopes || [],
+    requiredScopes,
+  );
+
+  if (missingScopes.length > 0) {
+    throw new Error(
+      `${featureLabel} precisa de nova autorizacao do Google. Clique em Autorizar Google Classroom e escolha a conta @educar.rs.gov.br.`,
+    );
+  }
+
+  return getValidGoogleAccessToken(userId);
 }

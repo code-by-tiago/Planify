@@ -6,6 +6,7 @@ import {
   type GoogleIntegrationStatus,
 } from "@/lib/google/google-api-client";
 import {
+  classroomGoogleScopesMissing,
   isClassroomExportReady,
   isEducarInstitutionalEmail,
   normalizeGoogleEmail,
@@ -100,6 +101,14 @@ export function buildClassroomCoursesMessage(
     return "Conecte sua conta Google institucional (@educar.rs.gov.br) para enviar ao Classroom.";
   }
 
+  if (classroomGoogleScopesMissing(status)) {
+    return "Sua conta Google está conectada, mas falta autorização para listar turmas e publicar no Classroom. Clique em Autorizar Google Classroom e escolha a conta @educar.rs.gov.br.";
+  }
+
+  if (!googleEmail) {
+    return "Não foi possível confirmar o e-mail da conta Google conectada. Autorize novamente com o e-mail @educar.rs.gov.br.";
+  }
+
   if (googleEmail && !isEducarInstitutionalEmail(googleEmail)) {
     return `A conta Google conectada (${googleEmail}) não é @educar.rs.gov.br. Troque para a conta da escola.`;
   }
@@ -120,8 +129,11 @@ export function resolveClassroomOAuthStartOptions(
   hostedDomain?: string;
 } {
   const savedEmail = readClassroomGoogleEmail();
+  const connectedEducarEmail = isEducarInstitutionalEmail(status?.googleEmail)
+    ? status?.googleEmail
+    : null;
   const params = resolveClassroomOAuthParams({
-    institutionalEmail: institutionalEmail || savedEmail,
+    institutionalEmail: institutionalEmail || savedEmail || connectedEducarEmail,
     planifyEmail: status?.planifyEmail,
   });
 

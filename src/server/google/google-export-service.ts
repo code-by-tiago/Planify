@@ -1,8 +1,9 @@
 import { resolveClassroomExportForHtml } from "@/lib/export/classroom-export-format";
 import { exportEditorHtmlDocument } from "../export/editor-html-export-service";
+import { GOOGLE_CLASSROOM_REQUIRED_SCOPES } from "./google-config";
 import { publishDriveFileToClassroom } from "./google-classroom";
 import { uploadBufferToGoogleDrive } from "./google-drive";
-import { getValidGoogleAccessToken } from "./google-token-store";
+import { getValidGoogleAccessTokenForScopes } from "./google-token-store";
 
 function safeFilename(value: string): string {
   const cleaned = String(value || "material-planify")
@@ -46,7 +47,11 @@ export async function exportMaterialToGoogle(
   userId: string,
   input: GoogleClassroomExportInput,
 ): Promise<GoogleClassroomExportResult> {
-  const { accessToken, googleEmail } = await getValidGoogleAccessToken(userId);
+  const { accessToken, googleEmail } = await getValidGoogleAccessTokenForScopes(
+    userId,
+    GOOGLE_CLASSROOM_REQUIRED_SCOPES,
+    "Google Classroom",
+  );
   const title = String(input.title || "Material Planify").trim() || "Material Planify";
 
   let buffer = input.docxBuffer;

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { resolvePlanifyUserFromRequest } from "../../../../../server/google/google-auth";
 import { listGoogleClassroomCourses } from "../../../../../server/google/google-classroom";
-import { getValidGoogleAccessToken } from "../../../../../server/google/google-token-store";
+import { GOOGLE_CLASSROOM_REQUIRED_SCOPES } from "../../../../../server/google/google-config";
+import { getValidGoogleAccessTokenForScopes } from "../../../../../server/google/google-token-store";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -17,7 +18,11 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const { accessToken } = await getValidGoogleAccessToken(user.id);
+    const { accessToken } = await getValidGoogleAccessTokenForScopes(
+      user.id,
+      GOOGLE_CLASSROOM_REQUIRED_SCOPES,
+      "Google Classroom",
+    );
     const courses = await listGoogleClassroomCourses(accessToken);
 
     return NextResponse.json({ success: true, courses });

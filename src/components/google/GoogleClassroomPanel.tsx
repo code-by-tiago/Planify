@@ -41,6 +41,7 @@ export function GoogleClassroomPanel({
     institutionalEmail,
     setInstitutionalEmail,
     needsEducarConnect,
+    needsClassroomAuthorization,
     canShowTurmaList,
     canSubmitExport,
     noTurmasFallback,
@@ -239,6 +240,7 @@ export function GoogleClassroomPanel({
             mode={connectMode}
             planifyEmail={status.planifyEmail}
             connectedGoogleEmail={status.googleEmail}
+            authorizationMissing={needsClassroomAuthorization}
           />
         ) : canShowTurmaList ? (
           <>

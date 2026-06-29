@@ -19,7 +19,9 @@ import {
 } from "@/lib/google/classroom-export-flow";
 import {
   classroomGoogleAccountMismatch,
+  classroomGoogleScopesMissing,
   isClassroomExportReady,
+  isEducarInstitutionalEmail,
   isValidGoogleEmail,
   needsEducarClassroomConnect,
   persistClassroomGoogleEmail,
@@ -99,6 +101,14 @@ export function useGoogleClassroomExport({
     );
   }, [status?.planifyEmail]);
 
+  useEffect(() => {
+    if (!isEducarInstitutionalEmail(status?.googleEmail)) return;
+
+    setInstitutionalEmail((current) =>
+      isEducarInstitutionalEmail(current) ? current : status?.googleEmail || current,
+    );
+  }, [status?.googleEmail]);
+
   const refresh = useCallback(async () => {
     setLoading(true);
     setError("");
@@ -118,6 +128,8 @@ export function useGoogleClassroomExport({
           connected: Boolean(next.connected),
           exportReady: isClassroomExportReady(next),
           needsEducar: needsEducarClassroomConnect(next),
+          classroomScopeGranted: Boolean(next.classroomScopeGranted),
+          missingClassroomScopes: next.missingClassroomScopes || [],
           googleEmailDomain: next.googleEmail?.split("@")[1] ?? null,
         },
       });
@@ -223,6 +235,7 @@ export function useGoogleClassroomExport({
   }, [refresh]);
 
   const needsEducarConnect = needsEducarClassroomConnect(status);
+  const needsClassroomAuthorization = classroomGoogleScopesMissing(status);
   const statusReady = !loading && status !== null;
   const canShowTurmaList = isClassroomExportReady(status) && courses.length > 0;
   const canSubmitExport = canShowTurmaList && Boolean(courseId.trim());
@@ -438,6 +451,7 @@ export function useGoogleClassroomExport({
     institutionalEmail,
     setInstitutionalEmail,
     needsEducarConnect,
+    needsClassroomAuthorization,
     statusReady,
     canShowTurmaList,
     canSubmitExport,

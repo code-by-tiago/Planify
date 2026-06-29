@@ -315,7 +315,7 @@ export function GoogleClassroomPanel({
               onClick={() => void handleDriveOnlyExport()}
               className="w-full rounded-xl bg-emerald-600 px-4 py-3 text-sm font-black text-white"
             >
-              {busy ? "Salvando…" : "Salvar no Drive e abrir Classroom"}
+              {busy ? "Salvando…" : "Salvar no Drive e abrir pasta"}
             </button>
             <button
               type="button"

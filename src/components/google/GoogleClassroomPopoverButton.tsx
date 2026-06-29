@@ -513,7 +513,7 @@ export function GoogleClassroomPopoverButton({
             }}
             className="w-full rounded-lg bg-emerald-600 px-3 py-2 text-xs font-bold text-white disabled:opacity-50"
           >
-            {busy ? "Salvando…" : "Salvar no Drive e abrir Classroom"}
+            {busy ? "Salvando…" : "Salvar no Drive e abrir pasta"}
           </button>
           <button
             type="button"

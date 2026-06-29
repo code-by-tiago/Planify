@@ -46,7 +46,6 @@ export function GoogleDriveExportButton({
     });
 
     const url =
-      result.drive.webViewLink ||
       result.driveOpenUrl ||
       "https://drive.google.com/drive/my-drive";
 
@@ -56,9 +55,9 @@ export function GoogleDriveExportButton({
     }
 
     if (result.exportEngine === "official") {
-      onStatus?.("Drive aberto com o modelo oficial do planejamento.");
+      onStatus?.("Material salvo. Abrindo a pasta do Google Drive.");
     } else if (result.exportEngine === "pdf") {
-      onStatus?.("PDF salvo no Google Drive com layout preservado.");
+      onStatus?.("PDF salvo. Abrindo a pasta do Google Drive.");
     }
 
     return { openUrl: url, openedInPreview: Boolean(previewWindow && !previewWindow.closed) };

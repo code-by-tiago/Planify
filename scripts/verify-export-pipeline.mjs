@@ -205,6 +205,31 @@ for (const route of [
   assert.match(source, /export async function POST/, `${route} deve expor POST`);
 }
 
+const driveButtonSource = readFileSync(
+  join(root, "src/components/google/GoogleDriveExportButton.tsx"),
+  "utf8",
+);
+assert.match(
+  driveButtonSource,
+  /result\.driveOpenUrl\s*\|\|/,
+  "Botao Google Drive deve abrir a pasta/dashboard do Drive, nao o preview do arquivo",
+);
+assert.doesNotMatch(
+  driveButtonSource,
+  /result\.drive\.webViewLink\s*\|\|\s*result\.driveOpenUrl/,
+  "Botao Google Drive nao pode preferir webViewLink ao driveOpenUrl",
+);
+
+const driveServiceSource = readFileSync(
+  join(root, "src/server/google/google-docs-export-service.ts"),
+  "utf8",
+);
+assert.match(
+  driveServiceSource,
+  /driveOpenUrl:\s*buildGoogleDriveDestinationUrl/,
+  "API Google Drive deve retornar driveOpenUrl como pasta/Meu Drive",
+);
+
 // --- DOCX nativo: fidelidade de questoes, alternativas e formatacao inline ---
 const { htmlBodyToWordXmlParts } = loadTsModule(
   "src/server/docx/html-to-native-docx.ts",

@@ -172,8 +172,8 @@ export async function executeClassroomDriveOnlyExport(params: {
     });
 
     const openUrl =
-      driveResult.drive.webViewLink ||
       driveResult.driveOpenUrl ||
+      driveResult.drive.webViewLink ||
       CLASSROOM_HOME_URL;
 
     return { openUrl };
@@ -214,8 +214,8 @@ export async function executeClassroomMaterialExport(params: {
 
       return {
         openUrl:
-          driveResult.drive.webViewLink ||
           driveResult.driveOpenUrl ||
+          driveResult.drive.webViewLink ||
           CLASSROOM_HOME_URL,
         coursesUsed: 0,
       };
@@ -241,8 +241,8 @@ export async function executeClassroomMaterialExport(params: {
       );
 
       const openUrl =
-        driveResult.drive.webViewLink ||
         driveResult.driveOpenUrl ||
+        driveResult.drive.webViewLink ||
         CLASSROOM_HOME_URL;
 
       return {

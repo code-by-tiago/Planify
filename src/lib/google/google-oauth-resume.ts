@@ -94,7 +94,7 @@ async function executeProductExport(params: {
       documentType: params.documentType,
       planningPayload,
     });
-    return result.drive.webViewLink || result.driveOpenUrl || "https://drive.google.com/drive/my-drive";
+    return result.driveOpenUrl || "https://drive.google.com/drive/my-drive";
   }
 
   if (params.key === GOOGLE_FORMS_EXPORT_PENDING_KEY) {

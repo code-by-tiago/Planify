@@ -22,6 +22,8 @@ test.describe("Planify smoke", () => {
     await expect(page.getByRole("heading", { name: "Crie sua senha de acesso" })).toBeVisible();
     await expect(page.locator('input[type="email"]')).toBeVisible();
     await expect(page.locator('input[type="password"]')).toHaveCount(2);
+    await expect(page.getByText("Código da sessão")).toHaveCount(0);
+    await expect(page.getByText("session_id=")).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Criar senha e entrar" })).toBeVisible();
   });
 

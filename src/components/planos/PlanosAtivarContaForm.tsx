@@ -20,7 +20,7 @@ type PlanosAtivarContaFormProps = {
   checkoutEmail?: string | null;
   sessionId?: string | null;
   onActivated?: () => void;
-  /** Página de recuperação pós-pagamento (sem session_id na URL). */
+  /** Página de ativação pós-pagamento (sem session_id na URL). */
   recoveryMode?: boolean;
 };
 
@@ -41,9 +41,8 @@ export function PlanosAtivarContaForm({
     null,
   );
   const [statusLoading, setStatusLoading] = useState(false);
-  const [recoverySessionId, setRecoverySessionId] = useState("");
 
-  const effectiveSessionId = (sessionId || recoverySessionId).trim() || null;
+  const effectiveSessionId = sessionId?.trim() || null;
 
   useEffect(() => {
     if (checkoutEmail) {
@@ -173,7 +172,7 @@ export function PlanosAtivarContaForm({
   return (
     <div className="mx-auto w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 text-left shadow-sm sm:p-8">
       <p className="text-xs font-bold uppercase tracking-[0.14em] text-cyan-700">
-        {recoveryMode ? "Recuperação" : "Passo 2 de 2"}
+        {recoveryMode ? "Ativação da conta" : "Passo 2 de 2"}
       </p>
       <h2 className="mt-2 text-xl font-black text-slate-950">
         {mode === "create" ? "Crie sua senha de acesso" : "Entre na sua conta"}
@@ -183,8 +182,8 @@ export function PlanosAtivarContaForm({
           ? hasActiveSubscription
             ? "Encontramos sua assinatura ativa. Defina a senha com o mesmo e-mail usado no pagamento."
             : recoveryMode
-              ? "Informe o e-mail do checkout e crie sua senha. Se tiver o link da página de confirmação, cole o código da sessão abaixo para validação mais rápida."
-              : "Informe o e-mail do checkout. Se o pagamento acabou de ser feito, aguarde alguns segundos e tente novamente."
+              ? "Use o mesmo e-mail informado no pagamento. Vamos localizar sua assinatura automaticamente para liberar a criação da senha."
+              : "Use o mesmo e-mail informado no pagamento. Se o pagamento acabou de ser feito, aguarde alguns segundos e tente novamente."
           : "Já existe conta com este e-mail. Entre com sua senha para liberar o plano pago."}
       </p>
 
@@ -214,27 +213,12 @@ export function PlanosAtivarContaForm({
             autoComplete="email"
             className={`${ppInput} ${checkoutEmail ? "bg-slate-50 text-slate-600" : ""}`}
           />
+          {recoveryMode && !sessionId ? (
+            <span className="mt-2 block text-xs font-semibold text-slate-500">
+              Não precisa informar código: usamos seu e-mail para localizar a assinatura.
+            </span>
+          ) : null}
         </label>
-
-        {recoveryMode && !sessionId ? (
-          <label className="block">
-            <span className="mb-2 block text-sm font-bold text-slate-700">
-              Código da sessão (opcional)
-            </span>
-            <input
-              type="text"
-              value={recoverySessionId}
-              onChange={(event) => setRecoverySessionId(event.target.value)}
-              autoComplete="off"
-              placeholder="cs_... (da URL após o pagamento)"
-              className={ppInput}
-            />
-            <span className="mt-1 block text-xs font-medium text-slate-500">
-              Está na barra de endereço da página de confirmação, após{" "}
-              <code className="text-xs">session_id=</code>.
-            </span>
-          </label>
-        ) : null}
 
         <label className="block">
           <span className="mb-2 block text-sm font-bold text-slate-700">

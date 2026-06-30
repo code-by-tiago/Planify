@@ -11,6 +11,7 @@ import {
 import {
   CLASSROOM_HOME_URL,
   buildClassroomCoursesMessage,
+  clearClassroomCoursesCache,
   executeClassroomDriveOnlyExport,
   executeClassroomMaterialExport,
   loadClassroomCourses,
@@ -37,7 +38,6 @@ import {
 import { resolveGoogleOAuthReturnTo } from "@/lib/google/document-type-detection";
 import {
   openGoogleExportUrl,
-  peekGoogleOAuthResumeIntent,
 } from "@/lib/google/google-export-resume";
 import {
   GOOGLE_STATUS_CHANGED_EVENT,
@@ -147,17 +147,25 @@ export function useGoogleClassroomExport({
         : "";
 
   const loadCoursesForStatus = useCallback(
-    async (nextStatus: GoogleIntegrationStatus | null) => {
-      if (!isClassroomExportReady(nextStatus)) {
+    async (
+      nextStatus: GoogleIntegrationStatus | null,
+      options: { forceRefresh?: boolean } = {},
+    ) => {
+      if (!nextStatus || !isClassroomExportReady(nextStatus)) {
         setCourses([]);
         setSelectedCourseIds([]);
         return;
       }
 
       setCoursesLoading(true);
+      setError("");
 
       try {
-        const nextCourses = await loadClassroomCourses({ onStatus: notify });
+        const nextCourses = await loadClassroomCourses({
+          onStatus: notify,
+          googleEmail: nextStatus.googleEmail,
+          forceRefresh: options.forceRefresh,
+        });
         setCourses(nextCourses);
         setSelectedCourseIds((current) => {
           const valid = current.filter((courseId) =>
@@ -181,11 +189,16 @@ export function useGoogleClassroomExport({
     [notify],
   );
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (options: {
+    loadCourses?: boolean;
+    forceCourses?: boolean;
+  } = {}) => {
     if (!enabled) return;
 
     setLoading(true);
-    setError("");
+    if (options.loadCourses || options.forceCourses) {
+      setError("");
+    }
 
     try {
       const next = await fetchGoogleStatus();
@@ -211,8 +224,10 @@ export function useGoogleClassroomExport({
         setError(buildClassroomCoursesMessage(next, 0));
         setCourses([]);
         setSelectedCourseIds([]);
-      } else if (isClassroomExportReady(next)) {
-        await loadCoursesForStatus(next);
+      } else if (isClassroomExportReady(next) && options.loadCourses) {
+        await loadCoursesForStatus(next, {
+          forceRefresh: options.forceCourses,
+        });
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao carregar integracao Google.");
@@ -223,14 +238,7 @@ export function useGoogleClassroomExport({
 
   useEffect(() => {
     if (!enabled) return;
-    void refresh();
-  }, [enabled, refresh]);
-
-  useEffect(() => {
-    if (!enabled) return;
-    if (peekGoogleOAuthResumeIntent()?.connected) {
-      void refresh();
-    }
+    void refresh({ loadCourses: true });
   }, [enabled, refresh]);
 
   useEffect(() => {
@@ -323,6 +331,7 @@ export function useGoogleClassroomExport({
 
     try {
       await disconnectGoogle();
+      clearClassroomCoursesCache();
       setCourses([]);
       setSelectedCourseIds([]);
       notify("Conta Google desconectada.");
@@ -506,6 +515,7 @@ export function useGoogleClassroomExport({
     handleDriveOnlyExport,
     openClassroomHome,
     refresh,
-    refreshCourses: () => loadCoursesForStatus(status),
+    refreshCourses: (forceRefresh = false) =>
+      loadCoursesForStatus(status, { forceRefresh }),
   };
 }

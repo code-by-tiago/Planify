@@ -100,6 +100,8 @@ assert.match(oauthCallbackRoute, /oauth\/callback\/route/);
 const coursesRouteSource = read("src/app/api/google/classroom/courses/route.ts");
 assert.match(coursesRouteSource, /listGoogleClassroomCourses/);
 assert.match(coursesRouteSource, /GOOGLE_CLASSROOM_COURSES_SCOPES/);
+assert.match(coursesRouteSource, /status:\s*errorStatusFor\(message\)/);
+assert.match(coursesRouteSource, /limitou temporariamente|resource_exhausted/i);
 assert.doesNotMatch(coursesRouteSource, /status:\s*410/);
 
 const googleClassroomServer = read("src/server/google/google-classroom.ts");
@@ -135,11 +137,19 @@ assert.match(hookSource, /canSubmitExport/);
 assert.match(hookSource, /dueDate/);
 assert.match(hookSource, /maxPoints/);
 assert.match(hookSource, /executeClassroomMaterialExport/);
+assert.match(hookSource, /forceRefresh/);
+assert.match(hookSource, /refreshCourses/);
 assert.doesNotMatch(
   hookSource,
   /saveGoogleExportPending\(GOOGLE_CLASSROOM_EXPORT_PENDING_KEY/,
   "OAuth connect must not save pending auto-publish jobs",
 );
+
+const classroomFlowSource = read("src/lib/google/classroom-export-flow.ts");
+assert.match(classroomFlowSource, /CLASSROOM_COURSES_CACHE_TTL_MS\s*=\s*5\s*\*\s*60\s*\*\s*1000/);
+assert.match(classroomFlowSource, /sessionStorage\.getItem\(CLASSROOM_COURSES_CACHE_KEY\)/);
+assert.match(classroomFlowSource, /classroomCoursesInFlight/);
+assert.match(classroomFlowSource, /GOOGLE_CLASSROOM_RATE_LIMIT_MESSAGE/);
 
 const modalSource = read("src/components/google/GoogleClassroomShareModal.tsx");
 assert.match(modalSource, /Enviar para Google Classroom/);
@@ -150,6 +160,7 @@ assert.match(modalSource, /type="time"/);
 assert.match(modalSource, /Nota maxima/);
 assert.match(modalSource, /Publicar novamente/);
 assert.match(modalSource, /Abrir no Google Classroom/);
+assert.match(modalSource, /refreshCourses\(true\)/);
 
 const popoverSource = read("src/components/google/GoogleClassroomPopoverButton.tsx");
 assert.match(popoverSource, /Enviar ao Classroom/);

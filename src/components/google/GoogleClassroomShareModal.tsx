@@ -67,7 +67,6 @@ export function GoogleClassroomShareModal({
     setMaterialTitle(title.trim() || "Material Planify");
     setLastSuccess(null);
     autoOAuthStartedRef.current = false;
-    void classroom.refresh();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, title]);
 
@@ -447,7 +446,7 @@ export function GoogleClassroomShareModal({
           <button
             type="button"
             disabled={classroom.busy || classroom.coursesLoading}
-            onClick={() => void classroom.refresh()}
+            onClick={() => void classroom.refreshCourses(true)}
             className="rounded-lg border border-sky-200 bg-white px-4 py-2 text-sm font-bold text-sky-800 transition hover:bg-sky-50 disabled:opacity-60"
           >
             Atualizar turmas

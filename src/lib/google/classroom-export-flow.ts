@@ -17,6 +17,18 @@ import {
 export const CLASSROOM_HOME_URL = "https://classroom.google.com";
 const CLASSROOM_EXPORT_LOCK_KEY = "planify:classroom-export-in-flight";
 const CLASSROOM_EXPORT_LOCK_TTL_MS = 45_000;
+const CLASSROOM_COURSES_CACHE_KEY = "planify:classroom-courses-cache:v1";
+export const CLASSROOM_COURSES_CACHE_TTL_MS = 5 * 60 * 1000;
+export const GOOGLE_CLASSROOM_RATE_LIMIT_MESSAGE =
+  "O Google limitou temporariamente as requisições. Aguarde alguns minutos e tente novamente.";
+
+let classroomCoursesInFlight: Promise<ClassroomCourseOption[]> | null = null;
+
+type ClassroomCoursesCacheEntry = {
+  savedAt: number;
+  googleEmail: string | null;
+  courses: ClassroomCourseOption[];
+};
 
 function tryAcquireClassroomExportLock(): boolean {
   if (typeof window === "undefined") return true;
@@ -44,6 +56,73 @@ function releaseClassroomExportLock(): void {
   } catch {
     /* ignore */
   }
+}
+
+function readCachedClassroomCourses(
+  googleEmail?: string | null,
+): ClassroomCourseOption[] | null {
+  if (typeof window === "undefined") return null;
+
+  try {
+    const raw = window.sessionStorage.getItem(CLASSROOM_COURSES_CACHE_KEY);
+    if (!raw) return null;
+
+    const parsed = JSON.parse(raw) as Partial<ClassroomCoursesCacheEntry>;
+    const savedAt = Number(parsed.savedAt);
+    const age = Date.now() - savedAt;
+    if (!Number.isFinite(age) || age < 0 || age > CLASSROOM_COURSES_CACHE_TTL_MS) {
+      window.sessionStorage.removeItem(CLASSROOM_COURSES_CACHE_KEY);
+      return null;
+    }
+
+    const cachedEmail = normalizeGoogleEmail(parsed.googleEmail);
+    const requestedEmail = normalizeGoogleEmail(googleEmail);
+    if (requestedEmail && cachedEmail && cachedEmail !== requestedEmail) {
+      return null;
+    }
+
+    return Array.isArray(parsed.courses)
+      ? (parsed.courses as ClassroomCourseOption[])
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeCachedClassroomCourses(
+  courses: ClassroomCourseOption[],
+  googleEmail?: string | null,
+): void {
+  if (typeof window === "undefined") return;
+
+  try {
+    const payload: ClassroomCoursesCacheEntry = {
+      savedAt: Date.now(),
+      googleEmail: normalizeGoogleEmail(googleEmail) || null,
+      courses,
+    };
+    window.sessionStorage.setItem(CLASSROOM_COURSES_CACHE_KEY, JSON.stringify(payload));
+  } catch {
+    /* ignore */
+  }
+}
+
+export function clearClassroomCoursesCache(): void {
+  if (typeof window === "undefined") return;
+
+  try {
+    window.sessionStorage.removeItem(CLASSROOM_COURSES_CACHE_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+function normalizeClassroomCoursesError(error: unknown): Error {
+  const message = error instanceof Error ? error.message : String(error || "");
+  if (/resource_exhausted|quota|rate.?limit|too many requests|429|limitou temporariamente/i.test(message)) {
+    return new Error(GOOGLE_CLASSROOM_RATE_LIMIT_MESSAGE);
+  }
+  return error instanceof Error ? error : new Error(message || "Nao foi possivel listar turmas.");
 }
 
 export function resolveClassroomOpenUrl(result: {
@@ -114,9 +193,33 @@ export { isClassroomExportReady };
 
 export async function loadClassroomCourses(params?: {
   onStatus?: (message: string) => void;
+  googleEmail?: string | null;
+  forceRefresh?: boolean;
 }): Promise<ClassroomCourseOption[]> {
+  if (!params?.forceRefresh) {
+    const cached = readCachedClassroomCourses(params?.googleEmail);
+    if (cached) return cached;
+  } else {
+    clearClassroomCoursesCache();
+  }
+
+  if (classroomCoursesInFlight) return classroomCoursesInFlight;
+
   params?.onStatus?.("Carregando turmas do Google Classroom...");
-  return fetchClassroomCourses();
+
+  classroomCoursesInFlight = fetchClassroomCourses()
+    .then((courses) => {
+      writeCachedClassroomCourses(courses, params?.googleEmail);
+      return courses;
+    })
+    .catch((error) => {
+      throw normalizeClassroomCoursesError(error);
+    })
+    .finally(() => {
+      classroomCoursesInFlight = null;
+    });
+
+  return classroomCoursesInFlight;
 }
 
 export async function executeClassroomDriveOnlyExport(params: {

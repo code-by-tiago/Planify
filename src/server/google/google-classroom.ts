@@ -1,4 +1,6 @@
 const CLASSROOM_API_BASE = "https://classroom.googleapis.com/v1";
+const GOOGLE_CLASSROOM_RATE_LIMIT_MESSAGE =
+  "O Google limitou temporariamente as requisições. Aguarde alguns minutos e tente novamente.";
 
 export type ClassroomCourse = {
   id: string;
@@ -66,6 +68,15 @@ function mapClassroomApiError(
   const message = parseGoogleErrorMessage(data);
   const status = data?.error?.status || response.statusText;
   const detail = message ? ` Detalhe Google: ${message}` : "";
+
+  if (
+    response.status === 429 ||
+    /resource_exhausted|quota|rate.?limit|too many requests/i.test(
+      `${status} ${message}`,
+    )
+  ) {
+    return new Error(GOOGLE_CLASSROOM_RATE_LIMIT_MESSAGE);
+  }
 
   if (response.status === 401 || /invalid credentials|unauthorized/i.test(message)) {
     return new Error(

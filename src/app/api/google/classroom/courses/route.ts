@@ -8,6 +8,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 function errorStatusFor(message: string): number {
+  if (/limitou temporariamente|resource_exhausted|quota|rate.?limit|429/i.test(message)) return 429;
   if (/login|nao conectada|n[aã]o conectada/i.test(message)) return 401;
   if (/autoriz|permiss|escopo|scope|reconecte/i.test(message)) return 403;
   return 400;

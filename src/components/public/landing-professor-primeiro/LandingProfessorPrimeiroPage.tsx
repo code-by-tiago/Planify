@@ -1,4 +1,3 @@
-import { LandingCompareAndProof } from "./LandingCompareAndProof";
 import { LandingCreateBlock } from "./LandingCreateBlock";
 import { LandingFinalCta } from "./LandingFinalCta";
 import { LandingFooter } from "./LandingFooter";
@@ -16,7 +15,6 @@ export function LandingProfessorPrimeiroPage() {
       <LandingTrustBar />
       <LandingCreateBlock />
       <LandingTools />
-      <LandingCompareAndProof />
       <LandingHowItWorks />
       <LandingFinalCta />
       <LandingFooter />

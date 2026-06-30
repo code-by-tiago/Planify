@@ -1,54 +1,60 @@
-"use client";
-
-import { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
-import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
-import type { PlanifyIconName } from "@/lib/pro/planifyTools";
-import { CREATE_OPTIONS, type CreateOptionId } from "./constants";
-import { LandingToolIconBadge } from "./LandingToolIconBadge";
 import styles from "./landing-create-block.module.css";
-import { ppBtnNavy } from "./theme";
+
+const showcaseItems = [
+  {
+    title: "Planejamento – Anual + Trimestrais",
+    href: "/planejamento-escolar-com-ia",
+    image: "/marketing/create-showcase/planejamento-anual.png",
+    alt: "Prévia de um planejamento anual com tabela trimestral",
+  },
+  {
+    title: "PEI – Plano Educacional Individualizado",
+    href: "/pei",
+    image: "/marketing/create-showcase/pei-lingua-portuguesa.png",
+    alt: "Prévia de um PEI de Língua Portuguesa",
+  },
+  {
+    title: "Avaliação de Língua Portuguesa",
+    href: "/gerador-de-provas-com-ia",
+    image: "/marketing/create-showcase/avaliacao-lingua-portuguesa.png",
+    alt: "Prévia de avaliação de Língua Portuguesa no Google Forms",
+  },
+  {
+    title: "Atividade – Cruzadinha",
+    href: "/cruzadinha",
+    image: "/marketing/create-showcase/atividade-cruzadinha.png",
+    alt: "Prévia de atividade de cruzadinha",
+  },
+] as const;
 
 export function LandingCreateBlock() {
-  const [selected, setSelected] = useState<CreateOptionId>("planejamento");
-
-  const active = CREATE_OPTIONS.find((o) => o.id === selected) ?? CREATE_OPTIONS[0];
-
   return (
-    <section className="bg-white px-5 py-14 sm:px-8 sm:py-16">
-      <div className="mx-auto max-w-4xl rounded-2xl bg-[#F0F9FA] p-6 sm:p-8">
-        <h2 className="text-center font-[family-name:var(--font-display)] text-2xl font-extrabold text-[#0A192F] sm:text-3xl">
-          Hoje você quer criar:
-        </h2>
-
-        <div className={styles.list} data-landing-create>
-          {CREATE_OPTIONS.map((option) => {
-            const isActive = selected === option.id;
-            return (
-              <button
-                key={option.id}
-                type="button"
-                data-landing-create-option
-                onClick={() => setSelected(option.id)}
-                className={`${styles.option} ${isActive ? styles.optionActive : ""}`}
-              >
-                <LandingToolIconBadge
-                  accent={option.accent}
-                  icon={option.icon as PlanifyIconName}
-                  size="md"
-                />
-                <span className={styles.optionLabel}>{option.label}</span>
-              </button>
-            );
-          })}
-        </div>
-
-        <div className="mt-8 flex justify-center">
-          <Link href={active.href} className={ppBtnNavy}>
-            Continuar
-            <PlanifyIcon name="arrowRight" className="h-4 w-4" />
+    <section
+      className={styles.section}
+      aria-label="Modelos de materiais Planify"
+      data-landing-showcase
+    >
+      <div className={styles.grid}>
+        {showcaseItems.map((item) => (
+          <Link key={item.title} href={item.href} className={styles.card}>
+            <span className={styles.media}>
+              <Image
+                src={item.image}
+                alt={item.alt}
+                width={552}
+                height={404}
+                sizes="(min-width: 1280px) 276px, (min-width: 768px) 42vw, 86vw"
+                className={styles.image}
+              />
+            </span>
+            <span className={styles.caption}>
+              <span className={styles.accent} aria-hidden="true" />
+              <span>{item.title}</span>
+            </span>
           </Link>
-        </div>
+        ))}
       </div>
     </section>
   );

@@ -1,11 +1,15 @@
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { GoogleClassroomIcon } from "@/components/google/GoogleClassroomIcon";
+import { GoogleDocsIcon } from "@/components/google/GoogleDocsIcon";
 import { GoogleDriveIcon } from "@/components/google/GoogleDriveIcon";
+import { GoogleFormsIcon } from "@/components/google/GoogleFormsIcon";
 import type { PlanifyIconName } from "@/lib/pro/planifyTools";
 import { TRUST_ITEMS } from "./constants";
 
 const GOOGLE_PRODUCT_ICONS = {
   drive: GoogleDriveIcon,
+  forms: GoogleFormsIcon,
+  docs: GoogleDocsIcon,
   classroom: GoogleClassroomIcon,
 } as const;
 

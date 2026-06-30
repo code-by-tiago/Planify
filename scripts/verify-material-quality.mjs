@@ -986,6 +986,90 @@ function testGameExportMarkup() {
 
   assert.match(PLANIFY_GAME_EXPORT_CSS, /planify-game-cell--letter/);
   assert.match(PLANIFY_EXPORT_CSS, /table:not\(\.planify-game-table\)/);
+  assert.match(PLANIFY_EXPORT_CSS, /planify-doc-brand/);
+  assert.match(PLANIFY_EXPORT_CSS, /planify-doc-brand-mark/);
+
+  const robustOutput = buildVisualGameMaterial({
+    tipo: "jogo",
+    modeloJogo: "cruzadinha",
+    tema: "Divisão celular",
+    componenteCurricular: "Ciências",
+    anoSerie: "7º ano",
+    etapa: "Ensino Fundamental",
+    quantidade: 10,
+    conteudos:
+      "Palavras sugeridas pelo professor: MITOSE, MEIOSE, CROMOSSOMO, CELULA, NUCLEO, DNA, GENETICA, CITOPLASMA, PROFASE, METAFASE",
+  });
+  const robustHtml = String(robustOutput.visualHtml || "");
+  assert.ok(
+    (robustOutput.gabarito || []).length >= 8,
+    "cruzadinha deve posicionar termos suficientes na grade",
+  );
+  assert.match(robustHtml, /MITOSE|MEIOSE|CROMOSSOMO|GENETICA/);
+  assert.doesNotMatch(robustHtml, /PALAVRAS SUGERIDAS/);
+  assert.match(robustHtml, /termos conectados/);
+
+  const scopedOutput = buildVisualGameMaterial({
+    tipo: "jogo",
+    modeloJogo: "cruzadinha",
+    tema: "Ciclo da água",
+    componenteCurricular: "Ciências",
+    anoSerie: "6º ano",
+    etapa: "Ensino Fundamental",
+    quantidade: 10,
+    conteudos:
+      "Palavras sugeridas pelo professor: EVAPORACAO, CONDENSACAO, PRECIPITACAO, INFILTRACAO",
+  });
+  const allowedScopedTerms = new Set([
+    "EVAPORACAO",
+    "CONDENSACAO",
+    "PRECIPITACAO",
+    "INFILTRACAO",
+  ]);
+  const scopedTerms = (scopedOutput.gabarito || [])
+    .map((entry) => String(entry).match(/^\d+\.\s+([A-Z0-9]+)/)?.[1])
+    .filter(Boolean);
+  assert.ok(scopedTerms.length > 0, "cruzadinha deve usar termos do conteúdo informado");
+  assert.ok(
+    scopedTerms.every((term) => allowedScopedTerms.has(term)),
+    `cruzadinha não pode misturar conteúdos: ${scopedTerms.join(", ")}`,
+  );
+
+  const cruzadinhaRequest = {
+    tipoMaterial: "cruzadinha",
+    quantidade: 8,
+    tema: "Divisão celular",
+  };
+  const strongIssues = getEngineOutputIssues(cruzadinhaRequest, {
+    game: {
+      components: [
+        "MITOSE: Divisão celular que origina células com mesmo conjunto genético.",
+        "MEIOSE: Processo que reduz pela metade o número de cromossomos nos gametas.",
+        "NUCLEO: Estrutura central que guarda material genético e coordena atividades.",
+        "DNA: Molécula que armazena instruções hereditárias dos seres vivos.",
+        "GENETICA: Área que estuda hereditariedade e variação entre organismos.",
+        "CROMOSSOMO: Estrutura condensada formada por material genético e proteínas.",
+        "PROFASE: Etapa em que os cromossomos ficam visíveis no início da divisão.",
+        "CELULA: Unidade básica dos seres vivos, com estruturas que executam funções.",
+      ],
+      rules: ["Resolver individualmente.", "Corrigir coletivamente com justificativas."],
+    },
+  });
+  assert.deepEqual(strongIssues, []);
+
+  const weakIssues = getEngineOutputIssues(cruzadinhaRequest, {
+    game: {
+      components: [
+        "CONCEITO: conceito",
+        "EXEMPLO: exemplo",
+        "MEIOSE: pista que entrega meiose literalmente",
+      ],
+      rules: [],
+    },
+  });
+  assert.ok(weakIssues.some((issue) => /termos distintos/i.test(issue)));
+  assert.ok(weakIssues.some((issue) => /gen[eé]ricos/i.test(issue)));
+  assert.ok(weakIssues.some((issue) => /entreg|resposta/i.test(issue)));
 }
 
 function testUnifiedQualityGate() {

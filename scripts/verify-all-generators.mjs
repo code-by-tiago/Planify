@@ -873,6 +873,16 @@ function testExportFidelity() {
       fixture.structure,
     );
     const documentType = `material:${tipo}`;
+    assert.match(
+      html,
+      /data-planify-doc-logo="true"/,
+      `${tipo}: material gerado deve conter logo editável do Planify`,
+    );
+    assert.match(
+      html,
+      /\/brand\/planify-owl-graduate\.png/,
+      `${tipo}: material gerado deve usar o logo oficial do Planify`,
+    );
 
     // DOCX (Google Docs / Drive / Classroom documento) — mirror do pipeline real.
     const docxBody = resolvePreparedExportBody(html, documentType, "docx");

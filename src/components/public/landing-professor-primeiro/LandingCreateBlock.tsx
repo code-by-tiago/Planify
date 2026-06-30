@@ -10,16 +10,16 @@ const showcaseItems = [
     alt: "Prévia de um planejamento anual com tabela trimestral",
   },
   {
-    title: "PEI – Plano Educacional Individualizado",
+    title: "PEI – Plano Individualizado",
     href: "/pei",
-    image: "/marketing/create-showcase/pei-lingua-portuguesa.png",
-    alt: "Prévia de um PEI de Língua Portuguesa",
+    image: "/marketing/create-showcase/pei-plano-individualizado.png",
+    alt: "Prévia de um PEI individualizado",
   },
   {
-    title: "Avaliação de Língua Portuguesa",
+    title: "Avaliação – Google Forms",
     href: "/gerador-de-provas-com-ia",
-    image: "/marketing/create-showcase/avaliacao-lingua-portuguesa.png",
-    alt: "Prévia de avaliação de Língua Portuguesa no Google Forms",
+    image: "/marketing/create-showcase/avaliacao-google-forms.png",
+    alt: "Prévia de avaliação no Google Forms",
   },
   {
     title: "Atividade – Cruzadinha",
@@ -36,6 +36,11 @@ export function LandingCreateBlock() {
       aria-label="Modelos de materiais Planify"
       data-landing-showcase
     >
+      <div className={styles.header}>
+        <h2 className={styles.title}>
+          Alguns Exemplos de Materiais que o Planify Entrega Pronto
+        </h2>
+      </div>
       <div className={styles.grid}>
         {showcaseItems.map((item) => (
           <Link key={item.title} href={item.href} className={styles.card}>

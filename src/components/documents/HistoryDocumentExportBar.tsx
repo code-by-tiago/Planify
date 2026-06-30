@@ -60,6 +60,7 @@ export function HistoryDocumentExportBar({
       onExportError={onError}
       compact
       classroomMode={classroomMode}
+      showClassroomExport={false}
       onDownloadPdf={() => void handleDownloadPdf()}
       downloadingPdf={downloadingPdf}
     />

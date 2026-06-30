@@ -42,6 +42,15 @@ function isDirectAssessmentType(tipo: string): boolean {
   return tipo === "prova" || tipo === "lista";
 }
 
+export function renderPlanifyDocumentBrand(): string {
+  return `
+    <div class="planify-doc-brand" data-planify-doc-logo="true">
+      <img class="planify-doc-brand-mark" src="/brand/planify-owl-graduate.png" alt="Planify" />
+      <span class="planify-doc-brand-name">Planify</span>
+    </div>
+  `.trim();
+}
+
 export function renderMaterialInstitutionHeader(ctx: MaterialDocumentContext): string {
   const req = ctx.request;
   const compact = isDirectAssessmentType(ctx.tipo);
@@ -49,6 +58,7 @@ export function renderMaterialInstitutionHeader(ctx: MaterialDocumentContext): s
   if (compact) {
     return `
     <header class="planify-doc-header planify-doc-header-compact planify-doc-header-teachy">
+      ${renderPlanifyDocumentBrand()}
       <table class="planify-doc-meta planify-doc-meta-compact" role="presentation">
         <tbody>
           <tr>
@@ -77,7 +87,10 @@ export function renderMaterialInstitutionHeader(ctx: MaterialDocumentContext): s
 
   return `
     <header class="planify-doc-header">
-      <p class="planify-doc-kicker">${escapeHtml(tipoLabel(ctx.tipo))}</p>
+      <div class="planify-doc-brand-row">
+        ${renderPlanifyDocumentBrand()}
+        <p class="planify-doc-kicker">${escapeHtml(tipoLabel(ctx.tipo))}</p>
+      </div>
       <table class="planify-doc-meta" role="presentation">
         <tbody>
           <tr><th>Componente</th><td>${escapeHtml(req?.componenteCurricular || "—")}</td></tr>

@@ -13,8 +13,8 @@ export function LandingProfessorPrimeiroPage() {
       <LandingHeader />
       <LandingHero />
       <LandingTrustBar />
-      <LandingCreateBlock />
       <LandingTools />
+      <LandingCreateBlock />
       <LandingHowItWorks />
       <LandingFinalCta />
       <LandingFooter />

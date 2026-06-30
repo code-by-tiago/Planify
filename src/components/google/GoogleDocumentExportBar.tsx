@@ -24,6 +24,7 @@ export type GoogleDocumentExportBarProps = {
   returnTo?: string;
   compact?: boolean;
   classroomMode?: "panel" | "popover";
+  showClassroomExport?: boolean;
   disabled?: boolean;
   disabledTitle?: string;
   className?: string;
@@ -41,6 +42,7 @@ export function GoogleDocumentExportBar({
   returnTo: returnToProp,
   compact = true,
   classroomMode = "panel",
+  showClassroomExport = true,
   disabled = false,
   disabledTitle,
   className = "",
@@ -90,7 +92,7 @@ export function GoogleDocumentExportBar({
 
   const showDocsExport = materialExportAllows("google-docs", documentType, getHtml());
   const showDriveExport = materialExportAllows("google-drive", documentType, getHtml());
-  const showClassroomExport = materialExportAllows(
+  const canShowClassroomExport = showClassroomExport && materialExportAllows(
     "google-classroom",
     documentType,
     getHtml(),
@@ -152,7 +154,7 @@ export function GoogleDocumentExportBar({
           iconOnly
         />
       ) : null}
-      {showClassroomExport ? (
+      {canShowClassroomExport ? (
         classroomMode === "popover" ? (
           <GoogleClassroomPopoverButton
             title={title}

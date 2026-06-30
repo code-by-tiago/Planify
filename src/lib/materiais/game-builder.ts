@@ -69,6 +69,14 @@ type CrosswordBoard = {
   placements: CrosswordPlacement[];
 };
 
+type CrosswordPlacementCandidate = {
+  row: number;
+  col: number;
+  direction: "across" | "down";
+  score: number;
+  intersections: number;
+};
+
 const GAME_LABELS: Record<PremiumGameModel, string> = {
   caca_palavras: "Caça-palavras visual",
   cruzadinha: "Cruzadinha visual",
@@ -93,6 +101,27 @@ const DEFAULT_SEEDS: GameSeedTerm[] = [
   { label: "Interpretação", answer: "INTERPRETACAO", clue: "Ato de compreender sentidos explícitos e implícitos." },
   { label: "Produção", answer: "PRODUCAO", clue: "Criação de texto, resposta, solução ou material autoral." },
   { label: "Linguagem", answer: "LINGUAGEM", clue: "Forma de comunicação por palavras, imagens, sons ou gestos." },
+];
+
+const GENERIC_SEED_ANSWERS = new Set(
+  DEFAULT_SEEDS.map((seed) => seed.answer.toLocaleLowerCase("pt-BR")),
+);
+
+const RAW_TERM_LABELS = [
+  "palavra",
+  "palavras",
+  "palavras sugeridas",
+  "palavras opcionais",
+  "palavras sugeridas pelo professor",
+  "termo",
+  "termos",
+  "termos da cruzadinha",
+  "conteudo",
+  "conteudos",
+  "conteudo da cruzadinha",
+  "tema",
+  "observacoes",
+  "observacao",
 ];
 
 const KNOWLEDGE_PACKS: Array<{ keys: string[]; componentKeys?: string[]; terms: GameSeedTerm[] }> = [
@@ -298,47 +327,87 @@ function removeAnswerFromClue(clue: string, answer: string, fallback: string): s
   return cleaned;
 }
 
+function isRawTermLabel(value: string): boolean {
+  const normalized = normalizeForSearch(value);
+  return RAW_TERM_LABELS.some((label) => normalized === normalizeForSearch(label));
+}
+
 function clueForRawTerm(term: string, input: MaterialAIInput): string {
   const component = normalizeText(input.componenteCurricular) || "componente curricular";
   const theme = normalizeText(input.tema) || "tema estudado";
   return `Conceito trabalhado em ${component}, relacionado ao tema "${theme}", que deve ser reconhecido pelos estudantes.`;
 }
 
+function seedFromTermAndClue(
+  term: string,
+  clue: string | undefined,
+  input: MaterialAIInput,
+  category = "conteúdo informado",
+): GameSeedTerm | null {
+  const clean = term.replace(/\s+/g, " ").trim();
+  if (!clean || isRawTermLabel(clean)) return null;
+
+  const words = clean.split(/\s+/).filter(Boolean);
+  const preferred = words.length > 3 ? words.find((word) => normalizeWord(word, 4)) || clean : clean;
+  const answer = normalizeWord(preferred, 2);
+  if (!answer || answer.length > 15 || isRawTermLabel(answer)) return null;
+  const label = titleCase(preferred);
+  const fallback = clueForRawTerm(label, input);
+
+  return {
+    label,
+    answer,
+    clue: removeAnswerFromClue(clue || "", answer, fallback),
+    category,
+  };
+}
+
 function seedFromRawTerm(term: string, input: MaterialAIInput): GameSeedTerm | null {
   const clean = term.replace(/\s+/g, " ").trim();
   if (!clean) return null;
 
-  const beforeSeparator = clean.split(/[:–—-]/)[0]?.trim() || clean;
-  const words = beforeSeparator.split(/\s+/).filter(Boolean);
-  const preferred = words.length > 3 ? words.find((word) => normalizeWord(word, 4)) || beforeSeparator : beforeSeparator;
-  const answer = normalizeWord(preferred, 2);
-  if (!answer || answer.length > 15) return null;
-
-  return {
-    label: titleCase(preferred),
-    answer,
-    clue: clueForRawTerm(preferred, input),
-    category: "conteúdo informado",
-  };
+  const [beforeSeparator, ...rest] = clean.split(/[:：–—-]/);
+  const clue = rest.join("-").trim() || undefined;
+  return seedFromTermAndClue(beforeSeparator || clean, clue, input);
 }
 
+function seedFromStructuredLine(line: string, input: MaterialAIInput): GameSeedTerm[] {
+  const clean = line.replace(/^[\s•*-]+/, "").replace(/\s+/g, " ").trim();
+  if (!clean) return [];
+
+  const [beforeSeparator, ...rest] = clean.split(/[:：]/);
+  if (rest.length > 0 && isRawTermLabel(beforeSeparator || "")) {
+    return rest
+      .join(":")
+      .split(/,|;|\|/)
+      .map((item) => seedFromTermAndClue(item, undefined, input, "termo indicado pelo professor"))
+      .filter((item): item is GameSeedTerm => Boolean(item));
+  }
+
+  const structured = clean.match(/^(.{2,34}?)\s*[:：–—-]\s*(.{8,})$/);
+  if (structured) {
+    const seed = seedFromTermAndClue(
+      structured[1],
+      structured[2],
+      input,
+      "termo com pista informada",
+    );
+    return seed ? [seed] : [];
+  }
+
+  return clean
+    .split(/,|\|/)
+    .map((item) => seedFromTermAndClue(item, undefined, input, "termo indicado pelo professor"))
+    .filter((item): item is GameSeedTerm => Boolean(item));
+}
 
 function seedsFromTextBlock(text: string, input: MaterialAIInput): GameSeedTerm[] {
   const raw = normalizeText(text);
   if (!raw) return [];
 
-  const seeds: GameSeedTerm[] = [];
-  const [beforeColon, afterColon = ""] = raw.split(/[:：]/);
-  const candidates = [beforeColon, ...afterColon.split(/,|;|\|/)]
-    .map((item) => item.trim())
-    .filter(Boolean);
-
-  for (const candidate of candidates) {
-    const seed = seedFromRawTerm(candidate, input);
-    if (seed) seeds.push(seed);
-  }
-
-  return seeds;
+  return raw
+    .split(/\r?\n|;/)
+    .flatMap((line) => seedFromStructuredLine(line, input));
 }
 
 function extractAiSeeds(aiOutput?: MaterialOutputWithSeed): GameSeedTerm[] {
@@ -366,7 +435,11 @@ function extractAiSeeds(aiOutput?: MaterialOutputWithSeed): GameSeedTerm[] {
     .filter((item): item is GameSeedTerm => Boolean(item));
 }
 
-function knowledgeSeeds(input: MaterialAIInput): GameSeedTerm[] {
+function knowledgeSeeds(
+  input: MaterialAIInput,
+  options: { allowComponentFallback?: boolean } = {},
+): GameSeedTerm[] {
+  const allowComponentFallback = options.allowComponentFallback !== false;
   const text = normalizeForSearch(`${input.tema || ""} ${splitItems(input.conteudos).join(" ")}`);
   const component = normalizeForSearch(input.componenteCurricular || "");
   const exactMatches: GameSeedTerm[] = [];
@@ -383,19 +456,44 @@ function knowledgeSeeds(input: MaterialAIInput): GameSeedTerm[] {
     else if (componentMatch) componentMatches.push(...pack.terms);
   }
 
-  return exactMatches.length ? exactMatches : componentMatches;
+  if (exactMatches.length) return exactMatches;
+  return allowComponentFallback ? componentMatches : [];
 }
 
 function buildSeeds(input: MaterialAIInput, aiOutput?: MaterialOutputWithSeed, limit = 24): GameSeedTerm[] {
   const aiSeeds = extractAiSeeds(aiOutput);
   const packSeeds = knowledgeSeeds(input);
-  const rawSeeds = [input.tema, ...splitItems(input.conteudos)]
+  const rawSeeds = [input.tema, input.observacoes, ...splitItems(input.conteudos)]
     .flatMap((item) => seedsFromTextBlock(String(item || ""), input));
 
   const primary = uniqueByAnswer([...aiSeeds, ...packSeeds, ...rawSeeds]);
   const withFallback = primary.length >= 8 ? primary : uniqueByAnswer([...primary, ...DEFAULT_SEEDS]);
 
   return withFallback.slice(0, limit);
+}
+
+function buildCrosswordSeeds(input: MaterialAIInput, aiOutput?: MaterialOutputWithSeed): GameSeedTerm[] {
+  const aiSeeds = extractAiSeeds(aiOutput);
+  const exactPackSeeds = knowledgeSeeds(input, { allowComponentFallback: false });
+  const explicitSeeds = [input.observacoes, ...splitItems(input.conteudos)]
+    .flatMap((item) => seedsFromTextBlock(String(item || ""), input));
+  const themeSeeds = seedsFromTextBlock(String(input.tema || ""), input);
+
+  if (explicitSeeds.length > 0) {
+    return uniqueByAnswer([...explicitSeeds, ...aiSeeds]);
+  }
+
+  const scopedSeeds = uniqueByAnswer([
+    ...aiSeeds,
+    ...exactPackSeeds,
+    ...(aiSeeds.length ? [] : themeSeeds),
+  ]);
+
+  if (scopedSeeds.length > 0) {
+    return scopedSeeds;
+  }
+
+  return DEFAULT_SEEDS;
 }
 
 function chunk<T>(items: T[], size: number): T[][] {
@@ -410,6 +508,38 @@ function getSeedWords(input: MaterialAIInput, aiOutput?: MaterialOutputWithSeed,
   return buildSeeds(input, aiOutput, 32)
     .filter((seed) => seed.answer.length >= 2 && seed.answer.length <= 15)
     .slice(0, limit);
+}
+
+function scoreSeedForCrossword(seed: GameSeedTerm, allSeeds: GameSeedTerm[]): number {
+  const length = seed.answer.length;
+  const category = normalizeForSearch(seed.category || "");
+  const clue = normalizeForSearch(seed.clue);
+  const answer = seed.answer.toLocaleLowerCase("pt-BR");
+  const sharedLetters = new Set(seed.answer.split("")).size
+    ? seed.answer.split("").filter((letter) =>
+        allSeeds.some((other) => other.answer !== seed.answer && other.answer.includes(letter)),
+      ).length
+    : 0;
+
+  let score = 0;
+  if (length >= 4 && length <= 10) score += 28;
+  else if (length >= 3 && length <= 12) score += 16;
+  else score -= 8;
+  if (category.includes("professor") || category.includes("informad")) score += 26;
+  if (category.includes("ia") || category.includes("gerado")) score += 16;
+  if (!GENERIC_SEED_ANSWERS.has(answer)) score += 12;
+  if (clue.length >= 35 && clue.length <= 180) score += 10;
+  if (clue.includes("conceito trabalhado") || clue.includes("tema informado")) score -= 8;
+  score += Math.min(24, sharedLetters * 3);
+  return score;
+}
+
+function sortCrosswordSeeds(seeds: GameSeedTerm[]): GameSeedTerm[] {
+  return [...seeds].sort((a, b) => {
+    const scoreDiff = scoreSeedForCrossword(b, seeds) - scoreSeedForCrossword(a, seeds);
+    if (scoreDiff) return scoreDiff;
+    return b.answer.length - a.answer.length;
+  });
 }
 
 function wordSearch(input: MaterialAIInput, aiOutput?: MaterialOutputWithSeed): WordSearch {
@@ -561,6 +691,53 @@ function canPlaceCrossword(grid: string[][], answer: string, row: number, col: n
   return { intersections };
 }
 
+function findBestCrosswordPlacement(
+  grid: string[][],
+  seed: GameSeedTerm,
+  placed: CrosswordPlacement[],
+): CrosswordPlacementCandidate | null {
+  const size = grid.length;
+  let best: CrosswordPlacementCandidate | null = null;
+
+  for (let wordIndex = 0; wordIndex < seed.answer.length; wordIndex++) {
+    const letter = seed.answer[wordIndex];
+    for (let row = 0; row < size; row++) {
+      for (let col = 0; col < size; col++) {
+        if (grid[row][col] !== letter) continue;
+        for (const direction of ["across", "down"] as const) {
+          const candidateRow = direction === "down" ? row - wordIndex : row;
+          const candidateCol = direction === "across" ? col - wordIndex : col;
+          const result = canPlaceCrossword(grid, seed.answer, candidateRow, candidateCol, direction);
+          if (!result || result.intersections === 0) continue;
+
+          const centerPenalty =
+            Math.abs(candidateRow - size / 2) + Math.abs(candidateCol - size / 2);
+          const directionBonus =
+            placed.length > 0 && placed[placed.length - 1]?.direction !== direction ? 9 : 0;
+          const lengthBonus = Math.min(12, seed.answer.length);
+          const score =
+            result.intersections * 120 +
+            directionBonus +
+            lengthBonus -
+            centerPenalty * 1.4;
+
+          if (!best || score > best.score) {
+            best = {
+              row: candidateRow,
+              col: candidateCol,
+              direction,
+              score,
+              intersections: result.intersections,
+            };
+          }
+        }
+      }
+    }
+  }
+
+  return best;
+}
+
 function placeCrossword(grid: string[][], answer: string, row: number, col: number, direction: "across" | "down") {
   const dr = direction === "down" ? 1 : 0;
   const dc = direction === "across" ? 1 : 0;
@@ -569,15 +746,53 @@ function placeCrossword(grid: string[][], answer: string, row: number, col: numb
   }
 }
 
-function buildCrosswordBoard(input: MaterialAIInput, aiOutput?: MaterialOutputWithSeed): CrosswordBoard {
-  const targetCount = Math.max(8, Math.min(15, Number(input.quantidade) || 12));
-  const candidateLimit = targetCount + 6;
-  const rawSeeds = getSeedWords(input, aiOutput, candidateLimit);
-  const seeds = rawSeeds
-    .filter((seed) => seed.answer.length >= 2 && seed.answer.length <= 13)
-    .sort((a, b) => b.answer.length - a.answer.length);
-  const longest = seeds[0]?.answer.length || 8;
-  const size = Math.min(21, Math.max(15, longest + 6, seeds.length + 7));
+function renumberCrosswordPlacements(placements: CrosswordPlacement[]): CrosswordPlacement[] {
+  const sorted = [...placements].sort((a, b) => {
+    if (a.row !== b.row) return a.row - b.row;
+    if (a.col !== b.col) return a.col - b.col;
+    return a.direction === "across" ? -1 : 1;
+  });
+  const numberMap = new Map<string, number>();
+  let nextNumber = 1;
+
+  return sorted.map((placement) => {
+    const key = `${placement.row}:${placement.col}`;
+    const number = numberMap.get(key) ?? nextNumber++;
+    numberMap.set(key, number);
+    return { ...placement, number };
+  });
+}
+
+function countCrosswordIntersections(board: CrosswordBoard): number {
+  const counts = new Map<string, number>();
+  for (const placement of board.placements) {
+    const dr = placement.direction === "down" ? 1 : 0;
+    const dc = placement.direction === "across" ? 1 : 0;
+    for (let index = 0; index < placement.answer.length; index++) {
+      const key = `${placement.row + dr * index}:${placement.col + dc * index}`;
+      counts.set(key, (counts.get(key) || 0) + 1);
+    }
+  }
+  return Array.from(counts.values()).filter((count) => count > 1).length;
+}
+
+function scoreCrosswordBoard(board: CrosswordBoard, targetCount: number): number {
+  const placed = board.placements.length;
+  const intersections = countCrosswordIntersections(board);
+  const across = board.placements.filter((placement) => placement.direction === "across").length;
+  const down = board.placements.length - across;
+  const balancePenalty = Math.abs(across - down) * 12;
+  const bounds = crosswordBounds(board);
+  const area =
+    (bounds.maxRow - bounds.minRow + 1) * (bounds.maxCol - bounds.minCol + 1);
+  return placed * 1600 + intersections * 90 - balancePenalty - area + Math.min(placed, targetCount) * 60;
+}
+
+function buildCrosswordAttempt(
+  seeds: GameSeedTerm[],
+  targetCount: number,
+  size: number,
+): CrosswordBoard {
   const grid = Array.from({ length: size }, () => Array.from({ length: size }, () => ""));
   const placements: CrosswordPlacement[] = [];
 
@@ -587,44 +802,71 @@ function buildCrosswordBoard(input: MaterialAIInput, aiOutput?: MaterialOutputWi
   placeCrossword(grid, first.answer, startRow, startCol, "across");
   placements.push({ number: 1, answer: first.answer, label: first.label, clue: first.clue, row: startRow, col: startCol, direction: "across" });
 
-  for (const seed of seeds.slice(1)) {
-    if (placements.length >= targetCount) break;
-    let best: { row: number; col: number; direction: "across" | "down"; score: number } | null = null;
+  const remaining = seeds.slice(1);
+  while (placements.length < targetCount && remaining.length > 0) {
+    let bestSeedIndex = -1;
+    let bestPlacement: CrosswordPlacementCandidate | null = null;
 
-    for (let wordIndex = 0; wordIndex < seed.answer.length; wordIndex++) {
-      const letter = seed.answer[wordIndex];
-      for (let row = 0; row < size; row++) {
-        for (let col = 0; col < size; col++) {
-          if (grid[row][col] !== letter) continue;
-          for (const direction of ["across", "down"] as const) {
-            const candidateRow = direction === "down" ? row - wordIndex : row;
-            const candidateCol = direction === "across" ? col - wordIndex : col;
-            const result = canPlaceCrossword(grid, seed.answer, candidateRow, candidateCol, direction);
-            if (!result || result.intersections === 0) continue;
-            const centerPenalty = Math.abs(candidateRow - size / 2) + Math.abs(candidateCol - size / 2);
-            const directionBonus = placements[placements.length - 1]?.direction === direction ? 0 : 2;
-            const score = result.intersections * 20 + directionBonus - centerPenalty;
-            if (!best || score > best.score) best = { row: candidateRow, col: candidateCol, direction, score };
-          }
-        }
+    for (let index = 0; index < remaining.length; index++) {
+      const candidate = findBestCrosswordPlacement(grid, remaining[index], placements);
+      if (!candidate) continue;
+      const candidateScore =
+        candidate.score + scoreSeedForCrossword(remaining[index], seeds) * 0.6;
+      if (!bestPlacement || candidateScore > bestPlacement.score) {
+        bestPlacement = { ...candidate, score: candidateScore };
+        bestSeedIndex = index;
       }
     }
 
-    if (best) {
-      placeCrossword(grid, seed.answer, best.row, best.col, best.direction);
-      placements.push({
-        number: placements.length + 1,
-        answer: seed.answer,
-        label: seed.label,
-        clue: seed.clue,
-        row: best.row,
-        col: best.col,
-        direction: best.direction,
-      });
+    if (!bestPlacement || bestSeedIndex < 0) break;
+
+    const seed = remaining.splice(bestSeedIndex, 1)[0];
+    placeCrossword(grid, seed.answer, bestPlacement.row, bestPlacement.col, bestPlacement.direction);
+    placements.push({
+      number: placements.length + 1,
+      answer: seed.answer,
+      label: seed.label,
+      clue: seed.clue,
+      row: bestPlacement.row,
+      col: bestPlacement.col,
+      direction: bestPlacement.direction,
+    });
+  }
+
+  return { grid, placements: renumberCrosswordPlacements(placements) };
+}
+
+function buildCrosswordBoard(input: MaterialAIInput, aiOutput?: MaterialOutputWithSeed): CrosswordBoard {
+  const targetCount = Math.max(8, Math.min(15, Number(input.quantidade) || 12));
+  const rawSeeds = buildCrosswordSeeds(input, aiOutput);
+  const seeds = sortCrosswordSeeds(
+    uniqueByAnswer(rawSeeds).filter((seed) => seed.answer.length >= 3 && seed.answer.length <= 13),
+  );
+  const availableSeeds = seeds.length ? seeds : DEFAULT_SEEDS;
+  const longest = availableSeeds[0]?.answer.length || 8;
+  const baseSize = Math.min(23, Math.max(17, longest + 7, targetCount + 8));
+  const sizes = Array.from(new Set([baseSize, Math.min(23, baseSize + 2), 23]));
+  let bestBoard: CrosswordBoard | null = null;
+  let bestScore = Number.NEGATIVE_INFINITY;
+  const startCandidates = availableSeeds.slice(0, Math.min(10, availableSeeds.length));
+
+  for (const size of sizes) {
+    for (let startIndex = 0; startIndex < startCandidates.length; startIndex++) {
+      const first = startCandidates[startIndex];
+      const attemptSeeds = [first, ...availableSeeds.filter((seed) => seed.answer !== first.answer)];
+      const board = buildCrosswordAttempt(attemptSeeds, targetCount, size);
+      const score = scoreCrosswordBoard(board, targetCount);
+      if (!bestBoard || score > bestScore) {
+        bestBoard = board;
+        bestScore = score;
+      }
+      if (board.placements.length >= targetCount && countCrosswordIntersections(board) >= Math.floor(targetCount * 0.6)) {
+        return board;
+      }
     }
   }
 
-  return { grid, placements };
+  return bestBoard || buildCrosswordAttempt(availableSeeds, targetCount, baseSize);
 }
 
 function crosswordBounds(board: CrosswordBoard) {
@@ -678,7 +920,7 @@ function renderCrosswordClues(board: CrosswordBoard) {
   const down = board.placements.filter((placement) => placement.direction === "down");
   const renderList = (items: CrosswordPlacement[]) =>
     items.length
-      ? `<ol>${items.map((item) => `<li><strong>${item.number}.</strong> ${escapeHtml(item.clue)} <em>(${item.answer.length} letras)</em></li>`).join("")}</ol>`
+      ? `<ol style="list-style:none;margin:0;padding-left:0;">${items.map((item) => `<li><strong>${item.number}.</strong> ${escapeHtml(item.clue)} <em>(${item.answer.length} letras)</em></li>`).join("")}</ol>`
       : `<p>Nenhuma pista nesta direção.</p>`;
 
   return `<table class="planify-game-clues-table" role="presentation">
@@ -809,6 +1051,8 @@ export function buildVisualGameMaterial(input: MaterialAIInput, aiOutput?: Mater
 
   if (model === "cruzadinha") {
     const board = buildCrosswordBoard(input, aiOutput);
+    const placedCount = board.placements.length;
+    const intersectionCount = countCrosswordIntersections(board);
     visualHtml = `
       <section class="planify-game-section">
         <h2>Cruzadinha — versão do aluno</h2>
@@ -817,12 +1061,13 @@ export function buildVisualGameMaterial(input: MaterialAIInput, aiOutput?: Mater
         ${renderCrosswordClues(board)}
         <div class="planify-game-teacher-block">
           <h2>Gabarito do professor</h2>
+          <p>Grade com <strong>${placedCount}</strong> termos conectados e <strong>${intersectionCount}</strong> cruzamentos conferidos automaticamente.</p>
           ${renderCrosswordGrid(board, true)}
-          <ol>${board.placements.map((item) => `<li><strong>${item.number}. ${escapeHtml(item.answer)}</strong> — ${escapeHtml(item.clue)}</li>`).join("")}</ol>
+          <ul>${board.placements.map((item) => `<li><strong>${item.number}. ${escapeHtml(item.answer)}</strong> — ${escapeHtml(item.clue)}</li>`).join("")}</ul>
         </div>
       </section>`;
     sections = [
-      dataSection("Cruzadinha visual conectada", "A cruzadinha é montada em grade única, com palavras cruzadas, pistas horizontais/verticais e gabarito."),
+      dataSection("Cruzadinha visual conectada", `A cruzadinha foi montada com ${placedCount} termos na grade, ${intersectionCount} cruzamentos, pistas horizontais/verticais e gabarito.`),
       dataSection("Pistas da cruzadinha", "Pistas para os estudantes:", board.placements.map((row) => `${row.number}. ${row.clue}`)),
     ];
     gabarito = board.placements.map((row) => `${row.number}. ${row.answer} — ${row.clue}`);

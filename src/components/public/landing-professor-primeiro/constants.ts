@@ -22,9 +22,9 @@ export const HERO_SHOWCASE_CARDS = [
 ] as const;
 
 export const TRUST_ITEMS = [
-  { label: "Alinhado à BNCC", icon: "checkCircle" as const },
   { label: "Google Drive", googleProduct: "drive" as const },
-  { label: "Editor integrado", icon: "editor" as const },
+  { label: "Google Forms", googleProduct: "forms" as const },
+  { label: "Google Docs", googleProduct: "docs" as const },
   { label: "Google Classroom", googleProduct: "classroom" as const },
 ];
 

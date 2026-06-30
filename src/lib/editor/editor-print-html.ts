@@ -36,8 +36,47 @@ export const PLANIFY_EXPORT_DOC_COMPONENT_CSS = `
     background: #fafbfc;
     box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
   }
+  .planify-doc-brand-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin: 0 0 0.65rem;
+  }
+  .planify-doc-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    width: max-content;
+    max-width: 100%;
+    margin: 0 0 0.65rem;
+    padding: 0.2rem 0.55rem 0.2rem 0.2rem;
+    border-radius: 999px;
+    background: #0b1f35;
+    color: #ffffff;
+    line-height: 1;
+  }
+  .planify-doc-header .planify-doc-brand {
+    margin-bottom: 0;
+  }
+  .planify-doc-brand-mark {
+    width: 34px;
+    height: 34px;
+    flex: 0 0 34px;
+    border-radius: 999px;
+    object-fit: contain;
+    background: #ffffff;
+    display: block;
+  }
+  .planify-doc-brand-name {
+    font-size: 13pt;
+    font-weight: 800;
+    letter-spacing: 0;
+    color: #ffffff;
+    white-space: nowrap;
+  }
   .planify-doc-kicker {
-    margin: 0 0 0.55rem;
+    margin: 0;
     font-size: 10pt;
     font-weight: 700;
     letter-spacing: 0.08em;
@@ -88,6 +127,9 @@ export const PLANIFY_EXPORT_DOC_COMPONENT_CSS = `
   }
   .planify-doc-header-teachy {
     box-shadow: none;
+  }
+  .planify-doc-visual > .planify-doc-brand {
+    margin-bottom: 0.85rem;
   }
   .planify-doc-header-row {
     display: flex;

@@ -9,6 +9,7 @@ import {
   trimTeachyStatement,
   renderCronogramaTables,
   renderGabaritoTable,
+  renderPlanifyDocumentBrand,
   renderQuestionCard,
   wrapProfessionalDocument,
 } from "@/lib/materiais/material-document-layout";
@@ -805,6 +806,7 @@ function renderHtml(response: MaterialEngineResponse, ctx?: RenderContext): stri
   if (tipo === "slides" || tipo === "flashcards" || tipo === "mapa-mental") {
     return `
       <article class="planify-doc planify-doc-visual">
+        ${renderPlanifyDocumentBrand()}
         <h1>${escapeHtml(response.title)}</h1>
         ${response.subtitle ? `<p class="planify-doc-subtitle">${escapeHtml(response.subtitle)}</p>` : ""}
         ${response.summary ? `<p class="planify-doc-summary">${escapeHtml(response.summary)}</p>` : ""}
@@ -1203,6 +1205,10 @@ function renderDocumentHtml(
         ? "cruzadinha"
         : mapGameFormato(request.formatoJogo);
     const gameSeedOutput = buildGameSeedOutput(normalized);
+    const visualConteudos = [request.conteudo, request.observacoes]
+      .map((item) => String(item || "").trim())
+      .filter(Boolean)
+      .join("\n\n");
     const visual = buildVisualGameMaterial(
       {
         titulo: normalized.title,
@@ -1213,8 +1219,9 @@ function renderDocumentHtml(
         modeloJogo,
         tema: request.tema,
         objetivos: request.objetivo,
-        conteudos: request.conteudo || request.observacoes || request.tema,
-        orientacoes: request.objetivo || undefined,
+        conteudos: visualConteudos || request.tema,
+        orientacoes: request.objetivo || request.observacoes || undefined,
+        observacoes: request.observacoes || undefined,
         quantidade: request.quantidade,
       },
       gameSeedOutput,

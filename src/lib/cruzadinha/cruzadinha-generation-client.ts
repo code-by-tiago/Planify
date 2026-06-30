@@ -33,6 +33,9 @@ function buildObservacoes(input: CruzadinhaGenerationInput): string | undefined 
   if (palavras) {
     parts.push(`Palavras sugeridas pelo professor: ${palavras}`);
   }
+  parts.push(
+    "Qualidade obrigatória da cruzadinha: priorize termos centrais do conteúdo, use palavras de 3 a 13 letras quando fizer sentido, crie pistas contextualizadas que não revelem a resposta e garanta gabarito confiável.",
+  );
   const obs = input.observacoes?.trim();
   if (obs) parts.push(obs);
   return parts.length ? parts.join("\n\n") : undefined;
@@ -58,7 +61,12 @@ export function buildCruzadinhaGenerationPayload(
     tema,
     temaCentral: tema,
     conteudo: input.conteudo?.trim() || undefined,
-    objetivo: input.observacoes?.trim() || "",
+    objetivo: [
+      "Gerar uma cruzadinha pedagógica conectada, com pistas claras, termos relevantes e gabarito pronto para uso.",
+      input.observacoes?.trim(),
+    ]
+      .filter(Boolean)
+      .join("\n"),
     quantidade: input.quantidade,
     dificuldade: input.dificuldade,
     observacoes: buildObservacoes(input),

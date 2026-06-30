@@ -77,6 +77,36 @@ function countIssues(
   return null;
 }
 
+function normalizeCruzadinhaTerm(value: string): string {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .toUpperCase();
+}
+
+function parseCruzadinhaComponent(line: string): {
+  raw: string;
+  term: string;
+  normalizedTerm: string;
+  clue: string;
+} {
+  const raw = String(line || "")
+    .replace(/^[\s•*-]+/, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  const match = raw.match(/^(?:\d+[.)]\s*)?([^:：–—-]{2,40})\s*[:：–—-]\s*(.+)$/);
+  const term = (match?.[1] || raw).trim();
+  const clue = (match?.[2] || "").trim();
+
+  return {
+    raw,
+    term,
+    normalizedTerm: normalizeCruzadinhaTerm(term),
+    clue,
+  };
+}
+
 export function getEngineOutputIssues(
   request: MaterialEngineRequest,
   output: MaterialEngineResponse,
@@ -466,13 +496,78 @@ export function getEngineOutputIssues(
   }
 
   if (tipo === "cruzadinha") {
-    const minTerms = Math.min(Math.max(q, 8), 16);
-    const termCount = output.game?.components?.length ?? 0;
-    if (termCount < minTerms) {
+    const minTerms = Math.min(Math.max(q, 8), 15);
+    const components = output.game?.components ?? [];
+    const parsedComponents = components.map(parseCruzadinhaComponent);
+    const distinctTerms = new Set(
+      parsedComponents
+        .map((item) => item.normalizedTerm)
+        .filter(Boolean),
+    );
+
+    if (distinctTerms.size < minTerms) {
       issues.push(
-        `Cruzadinha: inclua pelo menos ${minTerms} termos com pistas em game.components (formato PALAVRA: pista).`,
+        `Cruzadinha: inclua pelo menos ${minTerms} termos distintos com pistas em game.components (formato PALAVRA: pista).`,
       );
     }
+
+    const malformed = parsedComponents.filter(
+      (item) =>
+        !item.normalizedTerm ||
+        item.normalizedTerm.length < 3 ||
+        item.normalizedTerm.length > 13 ||
+        /\s/.test(item.term.trim()) ||
+        item.clue.length < 24,
+    );
+    if (malformed.length) {
+      issues.push(
+        "Cruzadinha: cada componente deve seguir PALAVRA: pista contextual, com termo sem espaços e pista com contexto suficiente.",
+      );
+    }
+
+    const duplicateCount = parsedComponents.length - distinctTerms.size;
+    if (duplicateCount > 0) {
+      issues.push("Cruzadinha: remova termos repetidos ou equivalentes no banco de palavras.");
+    }
+
+    const genericTerms = new Set([
+      "CONCEITO",
+      "EXEMPLO",
+      "TEMA",
+      "ATIVIDADE",
+      "CONTEUDO",
+      "PALAVRA",
+      "PERGUNTA",
+      "RESPOSTA",
+    ]);
+    const genericCount = parsedComponents.filter((item) =>
+      genericTerms.has(item.normalizedTerm),
+    ).length;
+    if (genericCount > 1) {
+      issues.push(
+        "Cruzadinha: substitua termos genéricos por conceitos específicos do conteúdo.",
+      );
+    }
+
+    const revealingClues = parsedComponents.filter(
+      (item) =>
+        item.normalizedTerm.length > 3 &&
+        normalizeCruzadinhaTerm(item.clue).includes(item.normalizedTerm),
+    );
+    if (revealingClues.length) {
+      issues.push("Cruzadinha: reescreva pistas que repetem ou entregam a resposta.");
+    }
+
+    const normalizedClues = parsedComponents.map((item) =>
+      item.clue.trim().toLocaleLowerCase("pt-BR").replace(/\s+/g, " "),
+    );
+    const duplicateClues = normalizedClues.filter(
+      (clue, index) => clue && normalizedClues.indexOf(clue) !== index,
+    );
+    if (duplicateClues.length) {
+      issues.push("Cruzadinha: varie as pistas; não repita a mesma definição.");
+    }
+
     if (!output.game?.rules?.length) {
       issues.push("Cruzadinha: preencha game.rules com orientações de aplicação em sala.");
     }
@@ -528,7 +623,7 @@ export function buildQualityRetryPrompt(
         : request.tipoMaterial === "redacao"
           ? "Reescreva o JSON MaterialLayout completo: textos motivadores distintos, tema/comando claro e critérios de avaliação completos em teacherNotes."
       : request.tipoMaterial === "cruzadinha"
-            ? "Reescreva o JSON MaterialLayout completo: game.components com PALAVRA: pista (mínimo solicitado), game.rules aplicáveis e termos coerentes com o tema."
+            ? "Reescreva o JSON MaterialLayout completo: game.components com PALAVRA: pista (mínimo solicitado), termos específicos do tema, sem duplicatas, sem termos genéricos e sem pistas que revelem a resposta."
             : request.tipoMaterial === "prova" || request.tipoMaterial === "lista"
               ? "Reescreva o JSON MaterialLayout completo: enunciados contextualizados, 5 alternativas distintas (35+ chars), gabarito enxuto (respostaCorreta+justificativa ≤120 caracteres) e zero texto genérico."
               : "Reescreva o JSON MaterialLayout completo com enunciados contextualizados, 5 alternativas (A-E) distintas e gabarito objetivo.",

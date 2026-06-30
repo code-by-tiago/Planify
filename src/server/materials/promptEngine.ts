@@ -225,8 +225,11 @@ function buildToolRules(input: PromptEngineInput): string[] {
       return [
         `Gere termos e pistas para cruzadinha escolar sobre o tema (quantidade: ${input.quantidade}, entre 8 e 15 termos).`,
         "Seção texto 'Termos da cruzadinha': bullets no formato PALAVRA: pista contextual.",
-        "Cada PALAVRA deve ter 4–12 letras, sem espaços e sem acentos (ex.: FOTOSINTESE, EQUACAO).",
-        "Pistas claras, sem revelar a resposta literalmente.",
+        "Priorize palavras indicadas pelo professor quando houver.",
+        "Use termos centrais do conteúdo; evite palavras genéricas como CONCEITO, EXEMPLO, TEMA ou ATIVIDADE quando houver conteúdo específico.",
+        "Cada PALAVRA deve ter 3–13 letras, preferencialmente 4–12, sem espaços e sem acentos (ex.: FOTOSINTESE, EQUACAO).",
+        "Misture termos curtos e médios para facilitar cruzamentos reais na grade visual.",
+        "Cada pista deve ensinar ou revisar o conceito, sem repetir a resposta nem variação evidente da palavra.",
         "Seção texto 'Regras e orientações de aplicação': 3–5 bullets sobre distribuição, tempo, mediação e correção em sala.",
         "Não incluir questões discursivas — apenas termos/pistas para a grade visual.",
       ];

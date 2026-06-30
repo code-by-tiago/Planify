@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { fetchFullPlanifyAccessStatus } from "@/lib/auth/access-client";
 
 /**
  * Em usuários premium autenticados, envia da landing para o painel (/dashboard).
@@ -14,16 +15,8 @@ export default function StudioSessionRedirect() {
 
     async function redirectIfPremium() {
       try {
-        const response = await fetch("/api/access/status", {
-          cache: "no-store",
-          credentials: "include",
-        });
-        if (!response.ok || !active) return;
-
-        const data = (await response.json()) as {
-          authenticated?: boolean;
-          premium?: boolean;
-        };
+        const data = await fetchFullPlanifyAccessStatus();
+        if (!active) return;
 
         if (data.authenticated && data.premium) {
           const search =

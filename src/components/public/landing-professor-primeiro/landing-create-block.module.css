@@ -1,5 +1,6 @@
 .section {
   background: #f0fbfc;
+  overflow-x: hidden;
   padding: 36px 24px 54px;
 }
 
@@ -23,11 +24,14 @@
   gap: 38px;
   margin: 0 auto;
   max-width: 1372px;
+  min-width: 0;
 }
 
 .card {
+  contain: layout paint;
   display: flex;
   min-height: 293px;
+  min-width: 0;
   flex-direction: column;
   background: #ffffff;
   color: #0a192f;
@@ -53,6 +57,7 @@
 }
 
 .image {
+  display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -109,6 +114,7 @@
   .grid {
     grid-template-columns: 1fr;
     gap: 20px;
+    max-width: 100%;
   }
 
   .card {

@@ -123,7 +123,12 @@ export function CommunityNotificationsIcon({ className }: CommunityNotifications
 
   useEffect(() => {
     void refresh();
-    const interval = window.setInterval(() => void refresh(), 60000);
+    const interval = window.setInterval(() => {
+      if (document.visibilityState === "hidden") {
+        return;
+      }
+      void refresh();
+    }, 60000);
     return () => window.clearInterval(interval);
   }, [refresh]);
 

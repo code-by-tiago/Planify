@@ -40,6 +40,9 @@ export function CommunityMessagesIcon({
   useEffect(() => {
     void refreshUnread();
     const interval = window.setInterval(() => {
+      if (document.visibilityState === "hidden") {
+        return;
+      }
       void refreshUnread();
     }, 60000);
     return () => window.clearInterval(interval);

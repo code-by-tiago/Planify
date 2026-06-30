@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { AccessTier } from "@/lib/bncc/access";
 import type { SchoolMembershipRole } from "@/types/school";
+import { fetchFullPlanifyAccessStatus } from "@/lib/auth/access-client";
 import { ensurePremiumSessionCookies } from "@/lib/auth/session-client";
 
 export type PlanifyExtendedAccess = {
@@ -52,13 +53,7 @@ export function usePlanifyAccess() {
     async function load() {
       try {
         await ensurePremiumSessionCookies();
-        const response = await fetch("/api/access/status", {
-          cache: "no-store",
-          credentials: "include",
-        });
-        const data = (await response.json().catch(() => null)) as Partial<
-          PlanifyExtendedAccess & { message?: string }
-        > | null;
+        const data = await fetchFullPlanifyAccessStatus();
 
         if (!active) return;
 

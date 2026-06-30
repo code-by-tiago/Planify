@@ -159,6 +159,9 @@ export function ComunidadeDocenteGroupChat({
         channelRef.current = channel;
       } catch {
         pollTimer = window.setInterval(() => {
+          if (document.visibilityState === "hidden") {
+            return;
+          }
           void loadMessages();
         }, 12_000);
       }

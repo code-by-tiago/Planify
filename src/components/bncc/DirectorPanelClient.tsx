@@ -338,6 +338,9 @@ export function DirectorPanelClient({ embedded = false }: DirectorPanelClientPro
     if (access.loading || !access.canViewDirectorPanel || tab !== "overview") return;
 
     const intervalId = window.setInterval(() => {
+      if (document.visibilityState === "hidden") {
+        return;
+      }
       void loadDashboard();
     }, GESTOR_POLL_MS);
 

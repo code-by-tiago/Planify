@@ -5,6 +5,10 @@ import {
   formatDisplayNameFromEmail,
   formatPlanLabel,
 } from "@/lib/auth/format-plan-label";
+import {
+  clearPlanifyAccessStatusCache,
+  fetchFullPlanifyAccessStatus,
+} from "@/lib/auth/access-client";
 import { ensurePremiumSessionCookies } from "@/lib/auth/session-client";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 
@@ -43,20 +47,7 @@ export function usePlanifySession() {
       try {
         await ensurePremiumSessionCookies();
 
-        const response = await fetch("/api/access/status", {
-          cache: "no-store",
-          credentials: "include",
-        });
-        const data = (await response.json().catch(() => null)) as {
-          authenticated?: boolean;
-          premium?: boolean;
-          email?: string;
-          displayName?: string;
-          avatarUrl?: string | null;
-          isAdmin?: boolean;
-          isOwner?: boolean;
-          planKey?: string | null;
-        } | null;
+        const data = await fetchFullPlanifyAccessStatus();
 
         if (!active) return;
 
@@ -105,6 +96,7 @@ export function usePlanifySession() {
         if (!active) {
           return;
         }
+        clearPlanifyAccessStatusCache();
         setSession((current) => ({ ...current, loading: true }));
         void load();
       }

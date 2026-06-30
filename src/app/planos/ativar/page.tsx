@@ -8,8 +8,6 @@ import {
   ppTitleAccent,
 } from "@/components/public/landing-professor-primeiro/theme";
 
-export const dynamic = "force-dynamic";
-
 export default function PlanosAtivarPage() {
   return (
     <PublicProfessorPrimeiroLayout>

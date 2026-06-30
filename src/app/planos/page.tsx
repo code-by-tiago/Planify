@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
 import { PublicProfessorPrimeiroLayout } from "@/components/public/PublicProfessorPrimeiroLayout";
 import { buildPageMetadata } from "@/lib/seo/metadata";
 import { PlanCheckoutLink } from "@/components/planos/PlanCheckoutLink";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { LandingFaq } from "@/components/public/landing/LandingFaq";
+import { PlanosQueryAlert } from "./PlanosQueryAlert";
 import {
   ppBadge,
   ppBtnPrimary,
@@ -12,68 +14,12 @@ import {
 } from "@/components/public/landing-professor-primeiro/theme";
 import { billingPlans } from "../../types/billing";
 
-export const dynamic = "force-dynamic";
-
 export const metadata: Metadata = buildPageMetadata({
   title: "Plano Professor — R$ 24,90/mês",
   description:
     "Planify Professor: ferramentas com IA, planejamentos BNCC, editor e exportação em um plano completo por R$ 24,90/mês.",
   path: "/planos",
 });
-
-type PlanosPageProps = {
-  searchParams?: Promise<{
-    checkout?: string;
-    message?: string;
-    premium?: string;
-    cadastro?: string;
-  }>;
-};
-
-function getAlert(params: Awaited<NonNullable<PlanosPageProps["searchParams"]>>) {
-  if (params?.premium === "required") {
-    return {
-      type: "warning",
-      title: "Plano ativo necessário",
-      message: "Assine o Plano Professor para acessar as ferramentas premium.",
-    };
-  }
-  if (params?.cadastro === "ok") {
-    return {
-      type: "warning",
-      title: "Assine para começar",
-      message: "Conclua a assinatura abaixo e crie sua senha na tela seguinte.",
-    };
-  }
-  if (params?.checkout === "missing_plan") {
-    return {
-      type: "warning",
-      title: "Assine o Plano Professor",
-      message: "Inicie o checkout para liberar o acesso.",
-    };
-  }
-  if (params?.checkout === "cancelled") {
-    return {
-      type: "warning",
-      title: "Checkout cancelado",
-      message: "Você pode assinar quando quiser.",
-    };
-  }
-  if (params?.checkout === "error") {
-    return {
-      type: "error",
-      title: "Não foi possível iniciar o checkout",
-      message:
-        params?.message || "Tente novamente em instantes ou fale com o suporte.",
-    };
-  }
-  return null;
-}
-
-function alertClass(type: string) {
-  if (type === "error") return "border-rose-200 bg-rose-50 text-rose-800";
-  return "border-amber-200 bg-amber-50 text-amber-800";
-}
 
 const planFaq = [
   {
@@ -93,9 +39,7 @@ const planFaq = [
   },
 ];
 
-export default async function PlanosPage({ searchParams }: PlanosPageProps) {
-  const params = searchParams ? await searchParams : {};
-  const alert = getAlert(params);
+export default function PlanosPage() {
   const plan = billingPlans[0];
 
   return (
@@ -111,17 +55,9 @@ export default async function PlanosPage({ searchParams }: PlanosPageProps) {
         />
 
         <div className="relative mx-auto max-w-6xl">
-          {alert ? (
-            <div
-              className={`mx-auto mb-8 flex max-w-3xl gap-3 rounded-2xl border p-4 ${alertClass(alert.type)}`}
-            >
-              <PlanifyIcon name="alertCircle" className="mt-0.5 h-5 w-5 shrink-0" />
-              <div>
-                <p className="text-sm font-bold">{alert.title}</p>
-                <p className="mt-0.5 text-sm leading-6 opacity-90">{alert.message}</p>
-              </div>
-            </div>
-          ) : null}
+          <Suspense fallback={null}>
+            <PlanosQueryAlert />
+          </Suspense>
 
           <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
             <div>

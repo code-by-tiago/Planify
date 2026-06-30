@@ -318,7 +318,8 @@ function stylesXml() {
     <w:name w:val="Badge"/>
     <w:basedOn w:val="Normal"/>
     <w:qFormat/>
-    <w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial"/><w:b/><w:sz w:val="18"/><w:color w:val="0F766E"/></w:rPr>
+    <w:pPr><w:spacing w:after="80"/></w:pPr>
+    <w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial"/><w:b/><w:sz w:val="14"/><w:color w:val="64748B"/><w:spacing w:val="12"/></w:rPr>
   </w:style>
 
   <w:style w:type="paragraph" w:styleId="Small">

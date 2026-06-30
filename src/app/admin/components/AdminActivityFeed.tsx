@@ -52,6 +52,9 @@ export function AdminActivityFeed() {
   useEffect(() => {
     void loadFeed();
     const timer = window.setInterval(() => {
+      if (document.visibilityState === "hidden") {
+        return;
+      }
       void loadFeed();
     }, REFRESH_MS);
 

@@ -13,8 +13,6 @@ import {
   ppTitleAccent,
 } from "@/components/public/landing-professor-primeiro/theme";
 
-export const dynamic = "force-dynamic";
-
 export const metadata: Metadata = buildPageMetadata({
   title: "Contato e suporte",
   description:

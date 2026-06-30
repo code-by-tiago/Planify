@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { fetchFullPlanifyAccessStatus } from "@/lib/auth/access-client";
 
 type OwnerFooterLinkProps = {
   className?: string;
@@ -16,11 +17,7 @@ export function OwnerFooterLink({ className = "" }: OwnerFooterLinkProps) {
 
     async function checkOwner() {
       try {
-        const response = await fetch("/api/access/status", {
-          credentials: "include",
-          cache: "no-store",
-        });
-        const data = await response.json().catch(() => null);
+        const data = await fetchFullPlanifyAccessStatus();
 
         if (active) {
           setIsOwner(Boolean(data?.isOwner));

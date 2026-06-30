@@ -23,8 +23,6 @@ import { institutionalPlans } from "@/lib/public/escolasCommercial";
 import { EscolasContactForm } from "./EscolasContactForm";
 import { EscolasPlanActions } from "./EscolasPlanActions";
 
-export const dynamic = "force-dynamic";
-
 export const metadata: Metadata = buildPageMetadata({
   title: "Planify para escolas",
   description:

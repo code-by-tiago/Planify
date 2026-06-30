@@ -315,6 +315,9 @@ export function CommunityMessagesPanel({
           .subscribe();
       } catch {
         pollTimer = window.setInterval(() => {
+          if (document.visibilityState === "hidden") {
+            return;
+          }
           void openThread(
             activeConversationId!,
             activeOtherUserId || "",

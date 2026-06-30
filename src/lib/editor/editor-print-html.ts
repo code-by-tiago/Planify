@@ -46,33 +46,32 @@ export const PLANIFY_EXPORT_DOC_COMPONENT_CSS = `
   .planify-doc-brand {
     display: inline-flex;
     align-items: center;
-    gap: 0.45rem;
+    gap: 0.22rem;
     width: max-content;
     max-width: 100%;
-    margin: 0 0 0.65rem;
-    padding: 0.2rem 0.55rem 0.2rem 0.2rem;
-    border-radius: 999px;
-    background: #0b1f35;
-    color: #ffffff;
+    margin: 0 0 0.35rem;
+    padding: 0;
+    color: #64748b;
     line-height: 1;
+    opacity: 0.82;
   }
   .planify-doc-header .planify-doc-brand {
     margin-bottom: 0;
   }
   .planify-doc-brand-mark {
-    width: 34px;
-    height: 34px;
-    flex: 0 0 34px;
-    border-radius: 999px;
+    width: 16px;
+    height: 16px;
+    flex: 0 0 16px;
+    border-radius: 4px;
     object-fit: contain;
-    background: #ffffff;
     display: block;
   }
   .planify-doc-brand-name {
-    font-size: 13pt;
-    font-weight: 800;
-    letter-spacing: 0;
-    color: #ffffff;
+    font-size: 8pt;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: #64748b;
+    text-transform: uppercase;
     white-space: nowrap;
   }
   .planify-doc-kicker {
@@ -129,7 +128,7 @@ export const PLANIFY_EXPORT_DOC_COMPONENT_CSS = `
     box-shadow: none;
   }
   .planify-doc-visual > .planify-doc-brand {
-    margin-bottom: 0.85rem;
+    margin-bottom: 0.45rem;
   }
   .planify-doc-header-row {
     display: flex;

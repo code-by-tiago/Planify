@@ -1,5 +1,41 @@
 import { getCurrentAccessToken } from "@/lib/auth/session-client";
 
+const GOOGLE_STATUS_DEDUPE_MS = 5000;
+const CLASSROOM_COURSES_DEDUPE_MS = 30000;
+
+type CachedPromise<T> = {
+  expiresAt: number;
+  promise: Promise<T>;
+};
+
+function cacheKey(token: string | null) {
+  return token ? `bearer:${token}` : "cookie";
+}
+
+function getFreshCachedPromise<T>(
+  cache: Map<string, CachedPromise<T>>,
+  key: string,
+) {
+  const cached = cache.get(key);
+  return cached && cached.expiresAt > Date.now() ? cached.promise : null;
+}
+
+function setCachedPromise<T>(
+  cache: Map<string, CachedPromise<T>>,
+  key: string,
+  promise: Promise<T>,
+  ttlMs: number,
+) {
+  cache.set(key, {
+    expiresAt: Date.now() + ttlMs,
+    promise,
+  });
+
+  promise.catch(() => {
+    cache.delete(key);
+  });
+}
+
 async function authHeaders(): Promise<HeadersInit> {
   const token = await getCurrentAccessToken();
   const headers: HeadersInit = { "Content-Type": "application/json" };
@@ -23,31 +59,44 @@ export type GoogleIntegrationStatus = {
   missingEnv?: string[];
 };
 
+const googleStatusCache = new Map<string, CachedPromise<GoogleIntegrationStatus>>();
+
 export async function fetchGoogleStatus(): Promise<GoogleIntegrationStatus> {
   const token = await getCurrentAccessToken();
+  const key = cacheKey(token);
+  const cached = getFreshCachedPromise(googleStatusCache, key);
+
+  if (cached) {
+    return cached;
+  }
+
   const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
 
-  const response = await fetch("/api/google/status", {
+  const promise = fetch("/api/google/status", {
     cache: "no-store",
     credentials: "include",
     headers,
+  }).then(async (response) => {
+    const data = await response.json().catch(() => null);
+
+    return {
+      configured: Boolean(data?.configured),
+      authenticated: Boolean(data?.authenticated),
+      connected: Boolean(data?.connected),
+      googleEmail: data?.googleEmail || null,
+      planifyEmail: data?.planifyEmail || null,
+      formsScopeGranted: Boolean(data?.formsScopeGranted),
+      classroomScopeGranted: Boolean(data?.classroomScopeGranted),
+      missingClassroomScopes: Array.isArray(data?.missingClassroomScopes)
+        ? data.missingClassroomScopes
+        : undefined,
+      missingEnv: data?.missingEnv,
+    };
   });
 
-  const data = await response.json().catch(() => null);
+  setCachedPromise(googleStatusCache, key, promise, GOOGLE_STATUS_DEDUPE_MS);
 
-  return {
-    configured: Boolean(data?.configured),
-    authenticated: Boolean(data?.authenticated),
-    connected: Boolean(data?.connected),
-    googleEmail: data?.googleEmail || null,
-    planifyEmail: data?.planifyEmail || null,
-    formsScopeGranted: Boolean(data?.formsScopeGranted),
-    classroomScopeGranted: Boolean(data?.classroomScopeGranted),
-    missingClassroomScopes: Array.isArray(data?.missingClassroomScopes)
-      ? data.missingClassroomScopes
-      : undefined,
-    missingEnv: data?.missingEnv,
-  };
+  return promise;
 }
 
 export function buildGoogleOAuthStartUrl(returnTo = "/editor"): string {
@@ -144,6 +193,8 @@ export async function disconnectGoogle(): Promise<void> {
   if (!response.ok) {
     throw new Error(data?.error?.message || "Não foi possível desconectar o Google.");
   }
+  googleStatusCache.clear();
+  classroomCoursesCache.clear();
 }
 
 export type ClassroomShareType = "material" | "assignment";
@@ -156,6 +207,11 @@ export type ClassroomCourseOption = {
   courseState?: string;
   alternateLink?: string | null;
 };
+
+const classroomCoursesCache = new Map<
+  string,
+  CachedPromise<ClassroomCourseOption[]>
+>();
 
 export type ClassroomExportResult = {
   drive: { fileId: string; name: string; webViewLink: string | null };
@@ -175,20 +231,43 @@ export type ClassroomExportResult = {
 };
 
 export async function fetchClassroomCourses(): Promise<ClassroomCourseOption[]> {
-  const response = await fetch("/api/google/classroom/courses", {
-    method: "GET",
-    headers: await authHeaders(),
-    credentials: "include",
-    cache: "no-store",
-  });
+  const token = await getCurrentAccessToken();
+  const key = cacheKey(token);
+  const cached = getFreshCachedPromise(classroomCoursesCache, key);
 
-  const data = await response.json().catch(() => null);
-
-  if (!response.ok) {
-    throw new Error(data?.error?.message || "Nao foi possivel listar turmas.");
+  if (cached) {
+    return cached;
   }
 
-  return Array.isArray(data?.courses) ? (data.courses as ClassroomCourseOption[]) : [];
+  const headers: HeadersInit = { "Content-Type": "application/json" };
+
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const promise = fetch("/api/google/classroom/courses", {
+    method: "GET",
+    headers,
+    credentials: "include",
+    cache: "no-store",
+  }).then(async (response) => {
+    const data = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      throw new Error(data?.error?.message || "Nao foi possivel listar turmas.");
+    }
+
+    return Array.isArray(data?.courses) ? (data.courses as ClassroomCourseOption[]) : [];
+  });
+
+  setCachedPromise(
+    classroomCoursesCache,
+    key,
+    promise,
+    CLASSROOM_COURSES_DEDUPE_MS,
+  );
+
+  return promise;
 }
 
 export async function shareToGoogleClassroom(params: {

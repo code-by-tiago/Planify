@@ -6,7 +6,10 @@ import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { PlanosAtivarContaForm } from "@/components/planos/PlanosAtivarContaForm";
 import { ppBtnPrimary, ppBtnSecondary } from "@/components/public/landing-professor-primeiro/theme";
 import { getCurrentAccessToken } from "@/lib/auth/session-client";
-import { syncPremiumAccessCookie } from "@/lib/auth/access-client";
+import {
+  fetchFullPlanifyAccessStatus,
+  syncPremiumAccessCookie,
+} from "@/lib/auth/access-client";
 
 type AccessState = "loading" | "premium" | "pending" | "activate";
 
@@ -56,43 +59,62 @@ export function PlanosSucessoActions({
 
   useEffect(() => {
     let active = true;
+    let attempts = 0;
+    let timer: number | null = null;
+
+    function stopTimer() {
+      if (timer !== null) {
+        window.clearInterval(timer);
+        timer = null;
+      }
+    }
 
     async function refreshAccess() {
+      attempts += 1;
+
       try {
         const token = await getCurrentAccessToken();
         if (!token) {
           if (active) setState("activate");
+          stopTimer();
           return;
         }
 
         await syncPremiumAccessCookie(token);
 
-        const res = await fetch("/api/access/status", {
-          credentials: "include",
-          cache: "no-store",
+        const data = await fetchFullPlanifyAccessStatus(token, {
+          forceRefresh: true,
         });
-        const data = await res.json().catch(() => null);
 
         if (data?.premium) {
           if (active) setState("premium");
+          stopTimer();
           return;
         }
 
         if (active) setState("pending");
+
+        if (attempts >= 30) {
+          stopTimer();
+        }
       } catch {
         if (active) setState("activate");
+        stopTimer();
       }
     }
 
     void refreshAccess();
 
-    const timer = window.setInterval(() => {
+    timer = window.setInterval(() => {
+      if (document.visibilityState === "hidden") {
+        return;
+      }
       void refreshAccess();
     }, 4000);
 
     return () => {
       active = false;
-      window.clearInterval(timer);
+      stopTimer();
     };
   }, []);
 

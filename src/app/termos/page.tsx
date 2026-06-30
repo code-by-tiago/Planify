@@ -3,8 +3,6 @@ import Link from "next/link";
 import { LegalPageShell } from "@/components/public/LegalPageShell";
 import { buildPageMetadata } from "@/lib/seo/metadata";
 
-export const dynamic = "force-dynamic";
-
 export const metadata: Metadata = buildPageMetadata({
   title: "Termos de uso",
   description:

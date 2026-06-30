@@ -23,7 +23,7 @@ function toSafeQuantity(value: unknown, tipo?: MaterialEngineType): number {
   }
   const rounded = Math.round(parsed);
   if (tipo === "cruzadinha") {
-    return Math.max(8, Math.min(15, rounded));
+    return Math.max(5, Math.min(20, rounded));
   }
   return Math.max(1, Math.min(30, rounded));
 }

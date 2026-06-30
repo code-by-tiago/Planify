@@ -1,6 +1,9 @@
 .section {
+  position: relative;
+  z-index: 1;
+  clear: both;
   background: #f0fbfc;
-  overflow-x: hidden;
+  overflow: hidden;
   padding: 36px 24px 54px;
 }
 
@@ -100,7 +103,8 @@
 
 @media (max-width: 560px) {
   .section {
-    padding: 28px 18px 38px;
+    margin-top: 0;
+    padding: 32px 18px 40px;
   }
 
   .header {
@@ -119,9 +123,18 @@
 
   .card {
     min-height: 0;
+    border-radius: 18px;
+    overflow: hidden;
   }
 
   .media {
-    height: 196px;
+    height: auto;
+    aspect-ratio: 552 / 404;
+    margin: 14px 14px 0;
+  }
+
+  .caption {
+    padding: 16px 18px 18px 14px;
+    font-size: 15px;
   }
 }

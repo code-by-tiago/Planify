@@ -107,6 +107,15 @@ const GENERIC_SEED_ANSWERS = new Set(
   DEFAULT_SEEDS.map((seed) => seed.answer.toLocaleLowerCase("pt-BR")),
 );
 
+const INTERNAL_CROSSWORD_TEXT = [
+  "qualidade obrigatoria",
+  "priorize termos centrais",
+  "garanta gabarito",
+  "crie pistas",
+  "nao revelem a resposta",
+  "gerar uma cruzadinha",
+];
+
 const RAW_TERM_LABELS = [
   "palavra",
   "palavras",
@@ -410,6 +419,32 @@ function seedsFromTextBlock(text: string, input: MaterialAIInput): GameSeedTerm[
     .flatMap((line) => seedFromStructuredLine(line, input));
 }
 
+function isInternalCrosswordInstruction(value: string): boolean {
+  const normalized = normalizeForSearch(value);
+  return INTERNAL_CROSSWORD_TEXT.some((fragment) => normalized.includes(fragment));
+}
+
+function seedsFromTeacherSuggestions(text: unknown, input: MaterialAIInput): GameSeedTerm[] {
+  const raw = normalizeText(text);
+  if (!raw) return [];
+
+  return raw
+    .split(/\r?\n/)
+    .filter((line) => {
+      if (isInternalCrosswordInstruction(line)) return false;
+      const [beforeSeparator] = line.replace(/^[\s•*-]+/, "").split(/[:：]/);
+      return isRawTermLabel(beforeSeparator || "");
+    })
+    .flatMap((line) => seedFromStructuredLine(line, input));
+}
+
+function isViableCrosswordSeed(seed: GameSeedTerm): boolean {
+  if (seed.answer.length < 3 || seed.answer.length > 13) return false;
+  if (isInternalCrosswordInstruction(`${seed.label} ${seed.clue}`)) return false;
+  if (normalizeForSearch(seed.clue).length < 18) return false;
+  return true;
+}
+
 function extractAiSeeds(aiOutput?: MaterialOutputWithSeed): GameSeedTerm[] {
   const rawTerms = [
     ...(aiOutput?.jogoVisualSeed?.termos || []),
@@ -473,11 +508,14 @@ function buildSeeds(input: MaterialAIInput, aiOutput?: MaterialOutputWithSeed, l
 }
 
 function buildCrosswordSeeds(input: MaterialAIInput, aiOutput?: MaterialOutputWithSeed): GameSeedTerm[] {
-  const aiSeeds = extractAiSeeds(aiOutput);
+  const aiSeeds = extractAiSeeds(aiOutput).filter(isViableCrosswordSeed);
   const exactPackSeeds = knowledgeSeeds(input, { allowComponentFallback: false });
-  const explicitSeeds = [input.observacoes, ...splitItems(input.conteudos)]
-    .flatMap((item) => seedsFromTextBlock(String(item || ""), input));
-  const themeSeeds = seedsFromTextBlock(String(input.tema || ""), input);
+  const teacherSeeds = seedsFromTeacherSuggestions(input.observacoes, input);
+  const contentSeeds = splitItems(input.conteudos)
+    .flatMap((item) => seedsFromTextBlock(String(item || ""), input))
+    .filter(isViableCrosswordSeed);
+  const explicitSeeds = uniqueByAnswer([...teacherSeeds, ...contentSeeds]);
+  const themeSeeds = seedsFromTextBlock(String(input.tema || ""), input).filter(isViableCrosswordSeed);
 
   if (explicitSeeds.length > 0) {
     return uniqueByAnswer([...explicitSeeds, ...aiSeeds]);
@@ -837,18 +875,20 @@ function buildCrosswordAttempt(
 }
 
 function buildCrosswordBoard(input: MaterialAIInput, aiOutput?: MaterialOutputWithSeed): CrosswordBoard {
-  const targetCount = Math.max(8, Math.min(15, Number(input.quantidade) || 12));
+  const targetCount = Math.max(5, Math.min(20, Number(input.quantidade) || 10));
   const rawSeeds = buildCrosswordSeeds(input, aiOutput);
   const seeds = sortCrosswordSeeds(
-    uniqueByAnswer(rawSeeds).filter((seed) => seed.answer.length >= 3 && seed.answer.length <= 13),
+    uniqueByAnswer(rawSeeds).filter(isViableCrosswordSeed),
   );
   const availableSeeds = seeds.length ? seeds : DEFAULT_SEEDS;
   const longest = availableSeeds[0]?.answer.length || 8;
-  const baseSize = Math.min(23, Math.max(17, longest + 7, targetCount + 8));
-  const sizes = Array.from(new Set([baseSize, Math.min(23, baseSize + 2), 23]));
+  const maxSize = targetCount > 15 ? 25 : targetCount > 10 ? 22 : 18;
+  const minSize = targetCount > 15 ? 19 : targetCount > 10 ? 17 : 13;
+  const baseSize = Math.min(maxSize, Math.max(minSize, longest + 5, targetCount + 5));
+  const sizes = Array.from(new Set([baseSize, Math.min(maxSize, baseSize + 2), maxSize]));
   let bestBoard: CrosswordBoard | null = null;
   let bestScore = Number.NEGATIVE_INFINITY;
-  const startCandidates = availableSeeds.slice(0, Math.min(10, availableSeeds.length));
+  const startCandidates = availableSeeds.slice(0, Math.min(20, availableSeeds.length));
 
   for (const size of sizes) {
     for (let startIndex = 0; startIndex < startCandidates.length; startIndex++) {
@@ -920,7 +960,7 @@ function renderCrosswordClues(board: CrosswordBoard) {
   const down = board.placements.filter((placement) => placement.direction === "down");
   const renderList = (items: CrosswordPlacement[]) =>
     items.length
-      ? `<ol style="list-style:none;margin:0;padding-left:0;">${items.map((item) => `<li><strong>${item.number}.</strong> ${escapeHtml(item.clue)} <em>(${item.answer.length} letras)</em></li>`).join("")}</ol>`
+      ? `<ol class="planify-game-clues-list">${items.map((item) => `<li><strong>${item.number}.</strong> ${escapeHtml(item.clue)} <em>(${item.answer.length} letras)</em></li>`).join("")}</ol>`
       : `<p>Nenhuma pista nesta direção.</p>`;
 
   return `<table class="planify-game-clues-table" role="presentation">
@@ -1053,17 +1093,24 @@ export function buildVisualGameMaterial(input: MaterialAIInput, aiOutput?: Mater
     const board = buildCrosswordBoard(input, aiOutput);
     const placedCount = board.placements.length;
     const intersectionCount = countCrosswordIntersections(board);
+    const sizeClass = placedCount > 15
+      ? " planify-crossword-print--xl"
+      : placedCount > 10
+        ? " planify-crossword-print--large"
+        : "";
     visualHtml = `
-      <section class="planify-game-section">
-        <h2>Cruzadinha — versão do aluno</h2>
-        <p>Leia as pistas, observe a numeração e preencha a cruzadinha com respostas relacionadas ao tema <strong>${escapeHtml(tema)}</strong>.</p>
+      <section class="planify-game-section planify-crossword-print${sizeClass}">
+        <div class="planify-crossword-page planify-crossword-page--student">
+          <h2>Cruzadinha — ${escapeHtml(tema)}</h2>
+          <p class="planify-crossword-instructions">Leia as pistas e complete a grade. Use letra de forma.</p>
         ${renderCrosswordGrid(board, false)}
         ${renderCrosswordClues(board)}
-        <div class="planify-game-teacher-block">
+        </div>
+        <div class="planify-game-teacher-block planify-crossword-page planify-crossword-page--answer">
           <h2>Gabarito do professor</h2>
-          <p>Grade com <strong>${placedCount}</strong> termos conectados e <strong>${intersectionCount}</strong> cruzamentos conferidos automaticamente.</p>
+          <p class="planify-crossword-instructions">Grade com <strong>${placedCount}</strong> termos e <strong>${intersectionCount}</strong> cruzamentos.</p>
           ${renderCrosswordGrid(board, true)}
-          <ul>${board.placements.map((item) => `<li><strong>${item.number}. ${escapeHtml(item.answer)}</strong> — ${escapeHtml(item.clue)}</li>`).join("")}</ul>
+          <ol class="planify-crossword-answer-list">${board.placements.map((item) => `<li><strong>${item.number}. ${escapeHtml(item.answer)}</strong> — ${escapeHtml(item.clue)}</li>`).join("")}</ol>
         </div>
       </section>`;
     sections = [

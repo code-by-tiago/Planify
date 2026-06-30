@@ -1183,21 +1183,30 @@ function buildGameSeedOutput(
   };
 }
 
+function extractCrosswordTeacherTerms(observacoes?: string): string | undefined {
+  const lines = String(observacoes || "")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => /^palavras\s+(sugeridas|opcionais)/i.test(line));
+
+  return lines.length ? lines.join("\n") : undefined;
+}
+
 function renderDocumentHtml(
   request: MaterialEngineRequest,
   normalized: MaterialEngineResponse,
 ): string {
-  const ctx: RenderContext = {
-    tipo: request.tipoMaterial,
-    incluirGabarito: request.incluirGabarito,
-    tema: request.tema,
-    request,
-  };
-  const base = renderHtml(normalized, ctx);
-
   const isVisualGame =
     request.tipoMaterial === "jogo" || request.tipoMaterial === "cruzadinha";
-  if (!isVisualGame) return base;
+  if (!isVisualGame) {
+    const ctx: RenderContext = {
+      tipo: request.tipoMaterial,
+      incluirGabarito: request.incluirGabarito,
+      tema: request.tema,
+      request,
+    };
+    return renderHtml(normalized, ctx);
+  }
 
   try {
     const modeloJogo =
@@ -1219,22 +1228,45 @@ function renderDocumentHtml(
         modeloJogo,
         tema: request.tema,
         objetivos: request.objetivo,
-        conteudos: visualConteudos || request.tema,
+        conteudos:
+          request.tipoMaterial === "cruzadinha"
+            ? request.conteudo || request.tema
+            : visualConteudos || request.tema,
         orientacoes: request.objetivo || request.observacoes || undefined,
-        observacoes: request.observacoes || undefined,
+        observacoes:
+          request.tipoMaterial === "cruzadinha"
+            ? extractCrosswordTeacherTerms(request.observacoes)
+            : request.observacoes || undefined,
         quantidade: request.quantidade,
       },
       gameSeedOutput,
     );
     const extra = visual.printHtml || visual.visualHtml || "";
     if (extra) {
+      if (request.tipoMaterial === "cruzadinha") {
+        return `<div class="planify-jogo-visual planify-crossword-compact">${extra}</div>`;
+      }
+
+      const ctx: RenderContext = {
+        tipo: request.tipoMaterial,
+        incluirGabarito: request.incluirGabarito,
+        tema: request.tema,
+        request,
+      };
+      const base = renderHtml(normalized, ctx);
       return `${base}<div class="planify-jogo-visual">${extra}</div>`;
     }
   } catch {
     // Mantém entrega textual se o builder visual falhar.
   }
 
-  return base;
+  const ctx: RenderContext = {
+    tipo: request.tipoMaterial,
+    incluirGabarito: request.incluirGabarito,
+    tema: request.tema,
+    request,
+  };
+  return renderHtml(normalized, ctx);
 }
 
 function maxOutputTokensFor(request: MaterialEngineRequest): number {

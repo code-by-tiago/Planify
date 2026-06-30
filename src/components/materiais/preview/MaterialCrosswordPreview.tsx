@@ -14,7 +14,7 @@ function htmlForTab(html: string, tab: PreviewTab): string {
   if (tab === "gabarito") return html;
 
   return html.replace(
-    /<div class="planify-game-teacher-block">[\s\S]*?<\/div>/gi,
+    /<div class="[^"]*planify-game-teacher-block[^"]*">[\s\S]*?(?=<\/section>)/gi,
     "",
   );
 }

@@ -496,7 +496,7 @@ export function getEngineOutputIssues(
   }
 
   if (tipo === "cruzadinha") {
-    const minTerms = Math.min(Math.max(q, 8), 15);
+    const minTerms = Math.min(Math.max(q, 5), 20);
     const components = output.game?.components ?? [];
     const parsedComponents = components.map(parseCruzadinhaComponent);
     const distinctTerms = new Set(

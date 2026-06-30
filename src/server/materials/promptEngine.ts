@@ -223,7 +223,7 @@ function buildToolRules(input: PromptEngineInput): string[] {
 
     case "cruzadinha":
       return [
-        `Gere termos e pistas para cruzadinha escolar sobre o tema (quantidade: ${input.quantidade}, entre 8 e 15 termos).`,
+        `Gere termos e pistas para cruzadinha escolar sobre o tema (quantidade: ${input.quantidade}, entre 5 e 20 termos).`,
         "Seção texto 'Termos da cruzadinha': bullets no formato PALAVRA: pista contextual.",
         "Priorize palavras indicadas pelo professor quando houver.",
         "Use termos centrais do conteúdo; evite palavras genéricas como CONCEITO, EXEMPLO, TEMA ou ATIVIDADE quando houver conteúdo específico.",

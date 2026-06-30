@@ -202,7 +202,11 @@ for (const route of [
   "src/app/api/documentos/export-pptx/route.ts",
 ]) {
   const source = readFileSync(join(root, route), "utf8");
-  assert.match(source, /export async function POST/, `${route} deve expor POST`);
+  assert.match(
+    source,
+    /export\s+(async\s+function|const)\s+POST\b/,
+    `${route} deve expor POST`,
+  );
 }
 
 const driveButtonSource = readFileSync(

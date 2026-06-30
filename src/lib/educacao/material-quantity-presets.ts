@@ -78,10 +78,10 @@ export const QUANTITY_PRESETS_BY_TOOL: Partial<
     { value: "8", label: "8 ramos" },
   ],
   cruzadinha: [
-    { value: "8", label: "8 palavras" },
+    { value: "5", label: "5 palavras" },
     { value: "10", label: "10 palavras" },
-    { value: "12", label: "12 palavras" },
     { value: "15", label: "15 palavras" },
+    { value: "20", label: "20 palavras" },
   ],
 };
 

@@ -982,6 +982,8 @@ function testGameExportMarkup() {
   assert.match(html, /planify-game-cell--letter/);
   assert.match(html, /planify-game-clues-table/);
   assert.match(html, /planify-game-teacher-block/);
+  assert.match(html, /planify-crossword-page--student/);
+  assert.match(html, /planify-crossword-page--answer/);
   assert.doesNotMatch(html, /width:100%.*planify-game-table/s);
 
   assert.match(PLANIFY_GAME_EXPORT_CSS, /planify-game-cell--letter/);
@@ -1005,9 +1007,70 @@ function testGameExportMarkup() {
     (robustOutput.gabarito || []).length >= 8,
     "cruzadinha deve posicionar termos suficientes na grade",
   );
+  assert.ok(
+    (robustOutput.gabarito || []).length <= 20,
+    "cruzadinha deve respeitar o máximo de 20 termos",
+  );
   assert.match(robustHtml, /MITOSE|MEIOSE|CROMOSSOMO|GENETICA/);
   assert.doesNotMatch(robustHtml, /PALAVRAS SUGERIDAS/);
-  assert.match(robustHtml, /termos conectados/);
+  assert.match(robustHtml, /Grade com[\s\S]*termos/);
+
+  const internalInstructionOutput = buildVisualGameMaterial({
+    tipo: "jogo",
+    modeloJogo: "cruzadinha",
+    tema: "Divisão celular",
+    componenteCurricular: "Ciências",
+    anoSerie: "7º ano",
+    etapa: "Ensino Fundamental",
+    quantidade: 10,
+    observacoes:
+      "Qualidade obrigatória da cruzadinha: priorize termos centrais do conteúdo, crie pistas contextualizadas e garanta gabarito confiável.",
+  });
+  assert.doesNotMatch(
+    String(internalInstructionOutput.visualHtml || ""),
+    /QUALIDADE|OBRIGATORIA|GABARITO CONFIAVEL/i,
+    "instruções internas não podem virar conteúdo da cruzadinha",
+  );
+
+  const smallOutput = buildVisualGameMaterial({
+    tipo: "jogo",
+    modeloJogo: "cruzadinha",
+    tema: "Divisão celular",
+    componenteCurricular: "Ciências",
+    anoSerie: "7º ano",
+    etapa: "Ensino Fundamental",
+    quantidade: 5,
+    conteudos:
+      "Palavras sugeridas pelo professor: MITOSE, MEIOSE, CELULA, NUCLEO, DNA",
+  });
+  assert.ok(
+    (smallOutput.gabarito || []).length >= 5,
+    "cruzadinha deve aceitar 5 palavras",
+  );
+
+  const largeOutput = buildVisualGameMaterial({
+    tipo: "jogo",
+    modeloJogo: "cruzadinha",
+    tema: "Sistema solar",
+    componenteCurricular: "Ciências",
+    anoSerie: "6º ano",
+    etapa: "Ensino Fundamental",
+    quantidade: 20,
+    conteudos:
+      "Palavras sugeridas pelo professor: SOL, LUA, TERRA, MARTE, VENUS, JUPITER, SATURNO, URANO, NETUNO, MERCURIO, ORBITA, PLANETA, COMETA, ASTEROIDE, GALAXIA, ESTRELA, GRAVIDADE, ECLIPSE, ROTACAO, TRANSLACAO",
+  });
+  assert.ok(
+    (largeOutput.gabarito || []).length >= 15,
+    "cruzadinha deve aceitar grades maiores quando o professor escolher 20 palavras",
+  );
+  assert.ok(
+    (largeOutput.gabarito || []).length <= 20,
+    "cruzadinha grande não deve ultrapassar 20 palavras",
+  );
+  assert.match(
+    String(largeOutput.visualHtml || ""),
+    /planify-crossword-print--large|planify-crossword-print--xl/,
+  );
 
   const scopedOutput = buildVisualGameMaterial({
     tipo: "jogo",

@@ -120,6 +120,93 @@ export const PLANIFY_GAME_EXPORT_CSS = `
     margin: 0.25rem 0 0 1.1rem;
     padding: 0;
   }
+  .planify-game-clues-list {
+    list-style: none;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  .planify-game-clues-list li {
+    margin: 0 0 0.22rem;
+    font-size: 9.2pt;
+    line-height: 1.22;
+  }
+  .planify-crossword-compact .planify-game-section,
+  .planify-crossword-print {
+    margin: 0;
+  }
+  .planify-crossword-page {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .planify-crossword-page > h2 {
+    color: #111827;
+    font-size: 14pt;
+    margin: 0 0 0.35rem;
+    text-align: center;
+  }
+  .planify-crossword-instructions {
+    margin: 0 0 0.45rem;
+    color: #334155;
+    font-size: 9.5pt;
+    font-weight: 700;
+    text-align: center;
+  }
+  .planify-crossword-compact .planify-game-board {
+    display: block;
+    margin: 8px auto 10px;
+    text-align: center;
+  }
+  .planify-crossword-compact .planify-game-table--crossword {
+    margin: 0 auto !important;
+  }
+  .planify-crossword-compact .planify-game-table--crossword .planify-game-cell--letter,
+  .planify-crossword-compact .planify-game-table--crossword .planify-game-cell--block {
+    width: 24px !important;
+    min-width: 24px !important;
+    max-width: 24px !important;
+    height: 24px !important;
+    min-height: 24px !important;
+  }
+  .planify-crossword-compact .planify-crossword-print--large .planify-game-table--crossword .planify-game-cell--letter,
+  .planify-crossword-compact .planify-crossword-print--large .planify-game-table--crossword .planify-game-cell--block {
+    width: 21px !important;
+    min-width: 21px !important;
+    max-width: 21px !important;
+    height: 21px !important;
+    min-height: 21px !important;
+  }
+  .planify-crossword-compact .planify-crossword-print--xl .planify-game-table--crossword .planify-game-cell--letter,
+  .planify-crossword-compact .planify-crossword-print--xl .planify-game-table--crossword .planify-game-cell--block {
+    width: 18px !important;
+    min-width: 18px !important;
+    max-width: 18px !important;
+    height: 18px !important;
+    min-height: 18px !important;
+    font-size: 10px !important;
+  }
+  .planify-crossword-compact .planify-game-cell-number {
+    font-size: 6px;
+  }
+  .planify-crossword-compact .planify-game-clues-table {
+    margin: 8px 0 0 !important;
+    border-spacing: 12px 0 !important;
+  }
+  .planify-crossword-compact .planify-game-clues-table h3 {
+    font-size: 10pt;
+    margin-bottom: 0.25rem;
+  }
+  .planify-crossword-answer-list {
+    columns: 2;
+    column-gap: 18px;
+    margin: 8px 0 0;
+    padding-left: 1rem;
+  }
+  .planify-crossword-answer-list li {
+    break-inside: avoid;
+    margin: 0 0 0.22rem;
+    font-size: 9pt;
+    line-height: 1.22;
+  }
   .planify-game-word-bank {
     display: flex;
     flex-wrap: wrap;

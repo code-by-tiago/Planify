@@ -47,6 +47,7 @@ import { agentDebugLog } from "@/lib/debug/agent-debug-log";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 export const CLASSROOM_OPEN_AFTER_OAUTH_KEY = "planify:classroom-open-after-oauth";
+const DEFAULT_CLASSROOM_DUE_TIME = "23:59";
 
 type UseGoogleClassroomExportOptions = {
   title: string;
@@ -369,14 +370,24 @@ export function useGoogleClassroomExport({
     setProgressMessage("Enviando para Google Classroom...");
 
     try {
+      const assignmentDueDate = shareType === "assignment" ? dueDate.trim() : "";
+      const assignmentDueTime =
+        shareType === "assignment" && assignmentDueDate
+          ? dueTime.trim() || DEFAULT_CLASSROOM_DUE_TIME
+          : "";
+
+      if (assignmentDueDate && !dueTime.trim()) {
+        setDueTime(DEFAULT_CLASSROOM_DUE_TIME);
+      }
+
       const result = await executeClassroomMaterialExport({
         title: exportTitle,
         html: exportHtml,
         courseIds: selectedCourseIds,
         shareType,
         description,
-        dueDate: shareType === "assignment" ? dueDate : undefined,
-        dueTime: shareType === "assignment" ? dueTime : undefined,
+        dueDate: assignmentDueDate && assignmentDueTime ? assignmentDueDate : undefined,
+        dueTime: assignmentDueDate && assignmentDueTime ? assignmentDueTime : undefined,
         maxPoints: shareType === "assignment" ? maxPoints : undefined,
         documentType,
         onStatus: notify,

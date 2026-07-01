@@ -97,9 +97,7 @@ export const PLANIFY_GAME_EXPORT_CSS = `
   }
   .planify-game-cell-number {
     position: absolute;
-    /* posicionar fora do quadrado para não atrapalhar a letra */
-    top: -6px;
-    left: -6px;
+    /* small inset in the cell corner to avoid overlapping the central letter */
     font-size: 7px;
     font-weight: 800;
     color: #0f766e;
@@ -172,11 +170,9 @@ export const PLANIFY_GAME_EXPORT_CSS = `
     text-align: center;
   }
   .planify-crossword-instructions {
-    margin: 0 0 0.45rem;
-    color: #334155;
-    font-size: 9.5pt;
-    font-weight: 700;
-    text-align: center;
+    /* removed: instruction line is not needed in printed gabarito */
+    display: none !important;
+    margin: 0;
   }
   .planify-crossword-compact .planify-game-board {
     display: block;

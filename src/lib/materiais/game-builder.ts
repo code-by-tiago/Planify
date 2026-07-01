@@ -393,6 +393,38 @@ const KNOWLEDGE_PACKS: Array<{ keys: string[]; componentKeys?: string[]; terms: 
     ],
   },
   {
+    keys: [
+      "figuras de linguagem",
+      "figura de linguagem",
+      "figuras de palavras",
+      "figuras de pensamento",
+      "figuras de sintaxe",
+      "linguagem figurada",
+      "sentido figurado",
+      "metafora",
+      "metáfora",
+      "antitese",
+      "antítese",
+      "eufemismo",
+      "ironia",
+    ],
+    componentKeys: ["lingua portuguesa", "língua portuguesa"],
+    terms: [
+      { label: "Metáfora", answer: "METAFORA", clue: "Comparação implícita que aproxima dois termos por semelhança de sentido." },
+      { label: "Comparação", answer: "COMPARACAO", clue: "Relação explícita de semelhança marcada por conectivos como como ou tal qual." },
+      { label: "Antítese", answer: "ANTITESE", clue: "Figura que aproxima ideias opostas para criar contraste expressivo." },
+      { label: "Paradoxo", answer: "PARADOXO", clue: "União de ideias aparentemente contraditórias que produz reflexão." },
+      { label: "Eufemismo", answer: "EUFEMISMO", clue: "Recurso usado para suavizar uma expressão considerada dura ou direta." },
+      { label: "Ironia", answer: "IRONIA", clue: "Figura em que a intenção real se distancia do sentido literal da fala." },
+      { label: "Hipérbole", answer: "HIPERBOLE", clue: "Exagero intencional usado para reforçar uma ideia ou emoção." },
+      { label: "Aliteração", answer: "ALITERACAO", clue: "Repetição de sons consonantais para criar efeito sonoro." },
+      { label: "Onomatopeia", answer: "ONOMATOPEIA", clue: "Palavra que imita ou sugere sons do mundo real." },
+      { label: "Personificação", answer: "PERSONIFICACAO", clue: "Atribuição de características humanas a seres não humanos." },
+      { label: "Pleonasmo", answer: "PLEONASMO", clue: "Repetição expressiva de uma ideia para reforçar o sentido." },
+      { label: "Anáfora", answer: "ANAFORA", clue: "Repetição de palavras no início de versos ou frases para criar ritmo." },
+    ],
+  },
+  {
     keys: ["matematica", "matemática", "fração", "fracao", "equacao", "equação", "porcentagem", "geometria"],
     componentKeys: ["matematica", "matemática"],
     terms: [
@@ -542,7 +574,7 @@ function clueForRawTerm(term: string, input: MaterialAIInput): string {
   const theme = normalizeText(input.tema) || "tema estudado";
   const normalizedTerm = normalizeForSearch(term);
 
-  if (["acao", "acoes", "verbonoinal", "predicativo", "predicado", "verbo", "nominal", "sujeito", "complemento", "transitivo", "intransitivo", "ligacao"].some((word) => normalizedTerm.includes(word))) {
+  if (["acao", "acoes", "verbonominal", "verbo nominal", "predicativo", "predicado", "verbo", "nominal", "sujeito", "complemento", "transitivo", "intransitivo", "ligacao"].some((word) => normalizedTerm.includes(word))) {
     return `Elemento central da análise em ${component}, articulado ao tema "${theme}", que ajuda a compreender a função das palavras na frase.`;
   }
 
@@ -713,27 +745,19 @@ function buildSeeds(input: MaterialAIInput, aiOutput?: MaterialOutputWithSeed, l
 }
 
 function buildCrosswordSeeds(input: MaterialAIInput, aiOutput?: MaterialOutputWithSeed): GameSeedTerm[] {
-  const aiSeeds = extractAiSeeds(aiOutput).filter(isViableCrosswordSeed);
   const exactPackSeeds = knowledgeSeeds(input, { allowComponentFallback: false });
   const teacherSeeds = seedsFromTeacherSuggestions(input.observacoes, input);
   const contentSeeds = splitItems(input.conteudos)
     .flatMap((item) => seedsFromTextBlock(String(item || ""), input))
     .filter(isViableCrosswordSeed);
   const explicitSeeds = uniqueByAnswer([...teacherSeeds, ...contentSeeds]);
-  const themeSeeds = seedsFromTextBlock(String(input.tema || ""), input).filter(isViableCrosswordSeed);
 
-  if (explicitSeeds.length > 0) {
-    return uniqueByAnswer([...explicitSeeds, ...aiSeeds]);
+  if (exactPackSeeds.length > 0) {
+    return exactPackSeeds;
   }
 
-  const scopedSeeds = uniqueByAnswer([
-    ...aiSeeds,
-    ...exactPackSeeds,
-    ...(aiSeeds.length ? [] : themeSeeds),
-  ]);
-
-  if (scopedSeeds.length > 0) {
-    return scopedSeeds;
+  if (explicitSeeds.length > 0) {
+    return explicitSeeds;
   }
 
   return DEFAULT_SEEDS;

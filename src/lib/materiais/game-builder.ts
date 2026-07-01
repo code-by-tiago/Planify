@@ -1116,6 +1116,9 @@ function scoreCrosswordCandidate(
   const nextDown = downCount + (candidate.direction === "down" ? 1 : 0);
   const squarePenalty = Math.abs(width - height);
   const densityGain = candidate.usedCellsAdded / area;
+  const rareLetterBonus = seed.answer
+    .split("")
+    .reduce((total, letter) => total + letterRarity(letter), 0) / Math.max(1, seed.answer.length);
   const directionSwitchBonus =
     state.placements.length > 0 && state.placements[state.placements.length - 1]?.direction !== candidate.direction
       ? 18
@@ -1123,15 +1126,16 @@ function scoreCrosswordCandidate(
 
   return (
     candidate.intersections * 520 +
-    candidate.rareIntersectionScore * 44 +
-    scoreSeedForCrossword(seed, allSeeds) * 3 +
-    densityGain * 700 +
+    candidate.rareIntersectionScore * 58 +
+    rareLetterBonus * 120 +
+    scoreSeedForCrossword(seed, allSeeds) * 4 +
+    densityGain * 900 +
     directionSwitchBonus +
     Math.min(40, seed.answer.length * 3) -
-    area * 4.2 -
-    squarePenalty * 26 -
+    area * 5.6 -
+    squarePenalty * 38 -
     Math.abs(nextAcross - nextDown) * 18 -
-    centerPenalty * 5 +
+    centerPenalty * 8 +
     jitter
   );
 }
@@ -1561,10 +1565,13 @@ function initialCrosswordState(
   size: number,
   attempt: number,
   rng: () => number,
+  rootIndex = 0,
+  directionHint?: CrosswordDirection,
 ): CrosswordSearchState | null {
   if (!seeds.length) return null;
-  const first = seeds[0];
-  const direction = attempt % 2 === 0 ? "across" : "down";
+  const first = seeds[rootIndex] || seeds[0];
+  const remaining = seeds.filter((_, index) => index !== rootIndex);
+  const direction = directionHint || (attempt % 2 === 0 ? "across" : "down");
   const grid = makeCrosswordGrid(size);
   const center = Math.floor(size / 2);
   const maxOffset = Math.max(1, Math.min(3, Math.floor(size / 8)));
@@ -1594,7 +1601,7 @@ function initialCrosswordState(
         direction,
       },
     ],
-    remaining: seeds.slice(1),
+    remaining,
   };
 }
 
@@ -1688,39 +1695,50 @@ function buildCrosswordOptimizedBoard(
     score: Number.NEGATIVE_INFINITY,
   };
   const pool = seeds.slice(0, Math.min(seeds.length, Math.max(targetCount + 8, targetCount)));
-  const maxNodes = targetCount > 15 ? 92 : targetCount > 10 ? 118 : 150;
-  const branchLimit = targetCount > 15 ? 5 : 6;
-  const candidatesPerWord = targetCount > 15 ? 3 : 4;
+  const maxNodes = targetCount > 15 ? 180 : targetCount > 10 ? 220 : 260;
+  const branchLimit = targetCount > 15 ? 7 : 8;
+  const candidatesPerWord = targetCount > 15 ? 4 : 5;
+  const rootPasses = targetCount > 15 ? 8 : 10;
 
   for (let attempt = 0; attempt < attempts; attempt++) {
     const rng = createDeterministicRng(stableHash(`${size}:${attempt}:${pool.map((seed) => seed.answer).join("|")}`));
     const ordered = orderCrosswordSeedsForAttempt(pool, attempt, rng);
-    const firstIndex = attempt % Math.min(pool.length, Math.max(1, targetCount + 4));
-    const first = ordered[firstIndex] || ordered[0];
-    const seedsForAttempt = [first, ...ordered.filter((seed) => seed.answer !== first.answer)];
-    const initialState = initialCrosswordState(seedsForAttempt, size, attempt, rng);
-    if (!initialState) continue;
+    const rootLimit = Math.min(ordered.length, rootPasses);
 
-    searchCrosswordFromState(
-      initialState,
-      pool,
-      targetCount,
-      `${size}:${attempt}:bt`,
-      best,
-      { maxNodes, branchLimit, candidatesPerWord },
-    );
+    for (let rootIndex = 0; rootIndex < rootLimit; rootIndex++) {
+      const root = ordered[rootIndex];
+      if (!root) continue;
+      const seedsForAttempt = [root, ...ordered.filter((seed) => seed.answer !== root.answer)];
+      const directionHint = (attempt + rootIndex) % 2 === 0 ? "across" : "down";
+      const initialState = initialCrosswordState(
+        seedsForAttempt,
+        size,
+        attempt + rootIndex,
+        rng,
+        0,
+        directionHint,
+      );
+      if (!initialState) continue;
 
-    if (attempt % 7 === 0) {
+      searchCrosswordFromState(
+        initialState,
+        pool,
+        targetCount,
+        `${size}:${attempt}:${rootIndex}:bt`,
+        best,
+        { maxNodes, branchLimit, candidatesPerWord },
+      );
+
       beamSearchCrossword(
         initialState,
         pool,
         targetCount,
-        `${size}:${attempt}:beam`,
+        `${size}:${attempt}:${rootIndex}:beam`,
         best,
         {
-          beamWidth: targetCount > 15 ? 7 : 9,
-          branchLimit: Math.max(3, branchLimit - 1),
-          candidatesPerWord: Math.max(2, candidatesPerWord - 1),
+          beamWidth: targetCount > 15 ? 10 : 12,
+          branchLimit: Math.max(4, branchLimit - 1),
+          candidatesPerWord: Math.max(3, candidatesPerWord - 1),
         },
       );
     }

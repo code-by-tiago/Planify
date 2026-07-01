@@ -540,7 +540,13 @@ function isRawTermLabel(value: string): boolean {
 function clueForRawTerm(term: string, input: MaterialAIInput): string {
   const component = normalizeText(input.componenteCurricular) || "componente curricular";
   const theme = normalizeText(input.tema) || "tema estudado";
-  return `Conceito trabalhado em ${component}, relacionado ao tema "${theme}", que deve ser reconhecido pelos estudantes.`;
+  const normalizedTerm = normalizeForSearch(term);
+
+  if (["acao", "acoes", "verbonoinal", "predicativo", "predicado", "verbo", "nominal", "sujeito", "complemento", "transitivo", "intransitivo", "ligacao"].some((word) => normalizedTerm.includes(word))) {
+    return `Elemento central da análise em ${component}, articulado ao tema "${theme}", que ajuda a compreender a função das palavras na frase.`;
+  }
+
+  return `Conceito central de ${component}, articulado ao tema "${theme}", cuja identificação ajuda a interpretar, organizar e aprofundar o conteúdo estudado.`;
 }
 
 function seedFromTermAndClue(
@@ -655,7 +661,10 @@ function extractAiSeeds(aiOutput?: MaterialOutputWithSeed): GameSeedTerm[] {
       const answer = normalizeWord(rawAnswer, 2);
       if (!answer || answer.length > 15) return null;
       const label = normalizeText(rawLabel) || titleCase(answer);
-      const fallback = `Conceito relacionado a ${label}, trabalhado no tema informado pelo professor.`;
+      const fallback = clueForRawTerm(label, {
+        tema: normalizeText(item.categoria) || normalizeText(label),
+        componenteCurricular: normalizeText(item.categoria) || normalizeText(label),
+      } as MaterialAIInput);
       return {
         label,
         answer,

@@ -54,17 +54,33 @@ export const PLANIFY_EXPORT_DOC_COMPONENT_CSS = `
     color: #64748b;
     line-height: 1;
     opacity: 0.82;
+    vertical-align: top;
   }
   .planify-doc-header .planify-doc-brand {
     margin-bottom: 0;
   }
   .planify-doc-brand-mark {
-    width: 16px;
-    height: 16px;
-    flex: 0 0 16px;
+    width: 14px !important;
+    min-width: 14px !important;
+    max-width: 14px !important;
+    height: 14px !important;
+    min-height: 14px !important;
+    max-height: 14px !important;
+    flex: 0 0 14px;
     border-radius: 4px;
-    object-fit: contain;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  .planify-doc-brand-mark svg,
+  .planify-doc-brand-mark img {
+    width: 14px !important;
+    height: 14px !important;
+    max-width: 14px !important;
+    max-height: 14px !important;
     display: block;
+    object-fit: contain;
   }
   .planify-doc-brand-name {
     font-size: 8pt;

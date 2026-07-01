@@ -68,11 +68,14 @@ function strengthenGameVisuals(root: Element) {
 
     for (const cell of table.querySelectorAll("td")) {
       const isBlock = cell.classList.contains("planify-game-cell--block");
+      const isVoid = cell.classList.contains("planify-game-cell--void");
       cell.setAttribute(
         "style",
-        isBlock
+        isVoid
+          ? "width:28px;height:28px;min-width:28px;max-width:28px;border:none;background:transparent;box-shadow:none;"
+          : isBlock
           ? "box-shadow:inset 0 0 0 1px #94a3b8;border:none;background:#f1f5f9;"
-          : "box-shadow:inset 0 0 0 1px #111827;border:none;",
+          : "box-shadow:inset 0 0 0 1.25px #4b5563;border:none;background:#ffffff;",
       );
     }
   }

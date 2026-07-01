@@ -169,8 +169,9 @@ const prepared = exportSvc.resolvePreparedExportBody(
   "pdf-document",
 );
 assert.match(prepared, /planify-game-table--crossword/);
-assert.match(prepared, /box-shadow:inset 0 0 0 1px #111827/);
-assert.match(gamePdfHtml, /box-shadow: inset 0 0 0 1px #111827/);
+assert.match(prepared, /box-shadow:inset 0 0 0 1\.25px #4b5563/);
+assert.match(prepared, /planify-game-cell--void/);
+assert.match(gamePdfHtml, /box-shadow: inset 0 0 0 1\.25px #4b5563/);
 
 const legacyCrosswordHtml = `
 <section>
@@ -189,7 +190,7 @@ const legacyPrepared = exportSvc.resolvePreparedExportBody(
 );
 assert.match(legacyPrepared, /planify-game-table--crossword/);
 assert.match(legacyPrepared, /planify-game-cell--letter/);
-assert.match(legacyPrepared, /box-shadow:inset 0 0 0 1px #111827/);
+assert.match(legacyPrepared, /box-shadow:inset 0 0 0 1\.25px #4b5563/);
 
 // --- Rotas API existem ---
 for (const route of [

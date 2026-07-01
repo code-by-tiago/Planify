@@ -1011,9 +1011,46 @@ function testGameExportMarkup() {
     (robustOutput.gabarito || []).length <= 20,
     "cruzadinha deve respeitar o máximo de 20 termos",
   );
-  assert.match(robustHtml, /MITOSE|MEIOSE|CROMOSSOMO|GENETICA/);
+  assert.match(robustHtml, /Mitose|Meiose|Cromossomo|GenÃ©tica|GENETICA/i);
   assert.doesNotMatch(robustHtml, /PALAVRAS SUGERIDAS/);
   assert.match(robustHtml, /Grade com[\s\S]*termos/);
+  assert.match(robustHtml, /planify-game-cell--void/);
+  assert.match(robustHtml, /<h3>HORIZONTAL<\/h3>/);
+  assert.match(robustHtml, /<h3>VERTICAL<\/h3>/);
+  assert.doesNotMatch(robustHtml, /Cruzadinha\s+[—-]/);
+
+  const intertextualityOutput = buildVisualGameMaterial({
+    tipo: "jogo",
+    modeloJogo: "cruzadinha",
+    tema: "Tipos de Intertextualidade",
+    componenteCurricular: "LÃ­ngua Portuguesa",
+    anoSerie: "9Âº ano",
+    etapa: "Ensino Fundamental",
+    quantidade: 10,
+    conteudos: [
+      "EPIGRAFE: Frase ou pensamento colocado no inicio de uma obra ou capitulo para introduzir o tema.",
+      "INTERTEXTO: Relacao que um texto estabelece com outros textos ja existentes.",
+      "DIALOGO: Interacao entre textos que se complementam ou se contrapoe.",
+      "REFERENCIA: Ato de mencionar ou remeter a algo ja existente em outro contexto.",
+      "PASTICHE: Imitacao do estilo de um autor ou obra, sem intencao de critica, mas de homenagem ou exercicio.",
+      "PARODIA: Recriacao de um texto original com intencao humoristica ou critica.",
+      "CITACAO: Insercao de um trecho de outro texto, geralmente entre aspas e com indicacao da fonte.",
+      "RELEITURA: Nova interpretacao ou versao de uma obra ja conhecida.",
+      "ADAPTACAO: Transformacao de uma obra para outro formato ou publico, mantendo a essencia.",
+      "ALUSAO: Referencia indireta a um texto, personagem ou evento conhecido, sem citar explicitamente.",
+    ].join("\n"),
+  });
+  const intertextualityKey = (intertextualityOutput.gabarito || []).join("\n");
+  assert.equal(
+    (intertextualityOutput.gabarito || []).length,
+    10,
+    "cruzadinha solicitada com 10 termos deve retornar 10 respostas no gabarito",
+  );
+  for (let index = 1; index <= 10; index++) {
+    assert.match(intertextualityKey, new RegExp(`^${index}\\.`, "m"));
+  }
+  assert.match(intertextualityKey, /Ep\u00edgrafe|Cita\u00e7\u00e3o|Adapta\u00e7\u00e3o|Alus\u00e3o/);
+  assert.match(String(intertextualityOutput.visualHtml || ""), /in\u00edcio|rela\u00e7\u00e3o|inten\u00e7\u00e3o|recria\u00e7\u00e3o/);
 
   const internalInstructionOutput = buildVisualGameMaterial({
     tipo: "jogo",
@@ -1090,7 +1127,14 @@ function testGameExportMarkup() {
     "INFILTRACAO",
   ]);
   const scopedTerms = (scopedOutput.gabarito || [])
-    .map((entry) => String(entry).match(/^\d+\.\s+([A-Z0-9]+)/)?.[1])
+    .map((entry) =>
+      String(entry)
+        .match(/^\d+\.\s+(.+?)\s+-/)?.[1]
+        ?.normalize("NFD")
+        .replace(/\p{Diacritic}/gu, "")
+        .replace(/[^a-zA-Z0-9]/g, "")
+        .toUpperCase(),
+    )
     .filter(Boolean);
   assert.ok(scopedTerms.length > 0, "cruzadinha deve usar termos do conteúdo informado");
   assert.ok(

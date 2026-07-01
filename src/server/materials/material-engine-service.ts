@@ -1244,7 +1244,7 @@ function renderDocumentHtml(
     const extra = visual.printHtml || visual.visualHtml || "";
     if (extra) {
       if (request.tipoMaterial === "cruzadinha") {
-        return `<div class="planify-jogo-visual planify-crossword-compact">${renderPlanifyDocumentBrand()}${extra}</div>`;
+        return `<div class="planify-jogo-visual planify-crossword-compact">${extra}</div>`;
       }
 
       const ctx: RenderContext = {

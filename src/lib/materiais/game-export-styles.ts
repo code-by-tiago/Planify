@@ -64,8 +64,8 @@ export const PLANIFY_GAME_EXPORT_CSS = `
   .planify-game-table--crossword .planify-game-cell--letter,
   .planify-game-table--wordsearch .planify-game-cell--letter {
     border: none !important;
-    box-shadow: inset 0 0 0 1px #111827 !important;
-    -webkit-box-shadow: inset 0 0 0 1px #111827 !important;
+    box-shadow: inset 0 0 0 1.25px #4b5563 !important;
+    -webkit-box-shadow: inset 0 0 0 1.25px #4b5563 !important;
   }
   .planify-game-cell--block {
     width: 28px !important;
@@ -81,6 +81,18 @@ export const PLANIFY_GAME_EXPORT_CSS = `
     border: none !important;
     box-shadow: inset 0 0 0 1px #94a3b8 !important;
     -webkit-box-shadow: inset 0 0 0 1px #94a3b8 !important;
+  }
+  .planify-game-cell--void {
+    width: 28px !important;
+    min-width: 28px !important;
+    max-width: 28px !important;
+    height: 28px !important;
+    min-height: 28px !important;
+    padding: 0 !important;
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    -webkit-box-shadow: none !important;
   }
   .planify-game-cell-number {
     position: absolute;
@@ -101,20 +113,27 @@ export const PLANIFY_GAME_EXPORT_CSS = `
   }
   .planify-game-clues-table {
     width: 100% !important;
-    margin: 14px 0 !important;
+    margin: 14px 0 0 !important;
+    border: 1.25px solid #4b5563 !important;
     border-collapse: separate !important;
-    border-spacing: 18px 0 !important;
+    border-spacing: 0 !important;
     table-layout: fixed !important;
   }
   .planify-game-clues-table td {
     width: 50% !important;
-    padding: 0 !important;
+    padding: 8px 10px !important;
     border: none !important;
     vertical-align: top !important;
   }
+  .planify-game-clues-table td + td {
+    border-left: 1px solid #cbd5e1 !important;
+  }
   .planify-game-clues-table h3 {
-    margin: 0 0 0.35rem;
-    font-size: 11.5pt;
+    margin: 0 0 0.35rem !important;
+    font-size: 10.5pt !important;
+    font-weight: 700 !important;
+    color: #111827 !important;
+    letter-spacing: 0 !important;
   }
   .planify-game-clues-table ol {
     margin: 0.25rem 0 0 1.1rem;
@@ -126,15 +145,18 @@ export const PLANIFY_GAME_EXPORT_CSS = `
     padding: 0 !important;
   }
   .planify-game-clues-list li {
-    margin: 0 0 0.22rem;
-    font-size: 9.2pt;
-    line-height: 1.22;
+    margin: 0 0 0.25rem;
+    font-size: 9.7pt;
+    line-height: 1.28;
   }
   .planify-crossword-compact .planify-game-section,
   .planify-crossword-print {
     margin: 0;
   }
   .planify-crossword-page {
+    display: flex;
+    flex-direction: column;
+    min-height: 252mm;
     break-inside: avoid;
     page-break-inside: avoid;
   }
@@ -153,53 +175,57 @@ export const PLANIFY_GAME_EXPORT_CSS = `
   }
   .planify-crossword-compact .planify-game-board {
     display: block;
-    margin: 8px auto 10px;
+    margin: 10mm auto 12px;
     text-align: center;
   }
   .planify-crossword-compact .planify-game-table--crossword {
     margin: 0 auto !important;
   }
   .planify-crossword-compact .planify-game-table--crossword .planify-game-cell--letter,
-  .planify-crossword-compact .planify-game-table--crossword .planify-game-cell--block {
+  .planify-crossword-compact .planify-game-table--crossword .planify-game-cell--block,
+  .planify-crossword-compact .planify-game-table--crossword .planify-game-cell--void {
+    width: 28px !important;
+    min-width: 28px !important;
+    max-width: 28px !important;
+    height: 28px !important;
+    min-height: 28px !important;
+  }
+  .planify-crossword-compact .planify-crossword-print--large .planify-game-table--crossword .planify-game-cell--letter,
+  .planify-crossword-compact .planify-crossword-print--large .planify-game-table--crossword .planify-game-cell--block,
+  .planify-crossword-compact .planify-crossword-print--large .planify-game-table--crossword .planify-game-cell--void {
     width: 24px !important;
     min-width: 24px !important;
     max-width: 24px !important;
     height: 24px !important;
     min-height: 24px !important;
   }
-  .planify-crossword-compact .planify-crossword-print--large .planify-game-table--crossword .planify-game-cell--letter,
-  .planify-crossword-compact .planify-crossword-print--large .planify-game-table--crossword .planify-game-cell--block {
-    width: 21px !important;
-    min-width: 21px !important;
-    max-width: 21px !important;
-    height: 21px !important;
-    min-height: 21px !important;
-  }
   .planify-crossword-compact .planify-crossword-print--xl .planify-game-table--crossword .planify-game-cell--letter,
-  .planify-crossword-compact .planify-crossword-print--xl .planify-game-table--crossword .planify-game-cell--block {
-    width: 18px !important;
-    min-width: 18px !important;
-    max-width: 18px !important;
-    height: 18px !important;
-    min-height: 18px !important;
+  .planify-crossword-compact .planify-crossword-print--xl .planify-game-table--crossword .planify-game-cell--block,
+  .planify-crossword-compact .planify-crossword-print--xl .planify-game-table--crossword .planify-game-cell--void {
+    width: 20px !important;
+    min-width: 20px !important;
+    max-width: 20px !important;
+    height: 20px !important;
+    min-height: 20px !important;
     font-size: 10px !important;
   }
   .planify-crossword-compact .planify-game-cell-number {
     font-size: 6px;
   }
   .planify-crossword-compact .planify-game-clues-table {
-    margin: 8px 0 0 !important;
-    border-spacing: 12px 0 !important;
+    margin: auto 0 0 !important;
+    border-spacing: 0 !important;
   }
   .planify-crossword-compact .planify-game-clues-table h3 {
-    font-size: 10pt;
+    font-size: 10pt !important;
     margin-bottom: 0.25rem;
   }
   .planify-crossword-answer-list {
+    list-style: none;
     columns: 2;
     column-gap: 18px;
     margin: 8px 0 0;
-    padding-left: 1rem;
+    padding-left: 0;
   }
   .planify-crossword-answer-list li {
     break-inside: avoid;

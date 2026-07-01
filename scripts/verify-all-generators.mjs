@@ -518,7 +518,7 @@ const GOLDEN = {
     htmlChecks: [
       /planify-jogo-visual/,
       /planify-game-table--crossword/,
-      /Cruzadinha/,
+      /<h3>HORIZONTAL<\/h3>/,
     ],
   },
   resumo: {
@@ -873,6 +873,7 @@ function testExportFidelity() {
       fixture.structure,
     );
     const documentType = `material:${tipo}`;
+    if (tipo !== "cruzadinha") {
     assert.match(
       html,
       /data-planify-doc-logo="true"/,
@@ -880,11 +881,13 @@ function testExportFidelity() {
     );
     assert.match(
       html,
-      /\/brand\/planify-owl-graduate\.png/,
+      /planify-doc-brand-mark/,
       `${tipo}: material gerado deve usar o logo oficial do Planify`,
     );
 
     // DOCX (Google Docs / Drive / Classroom documento) — mirror do pipeline real.
+    }
+
     const docxBody = resolvePreparedExportBody(html, documentType, "docx");
     const docxText = wordXmlText(htmlBodyToWordXmlParts(docxBody));
     assert.ok(

@@ -154,6 +154,181 @@ const RAW_TERM_LABELS = [
   "observacao",
 ];
 
+const COMMON_CROSSWORD_DISPLAY_ACCENTS: Record<string, string> = {
+  ACAO: "Ação",
+  ADAPTACAO: "Adaptação",
+  ALUSAO: "Alusão",
+  APRESENTACAO: "Apresentação",
+  APLICACAO: "Aplicação",
+  CELULA: "Célula",
+  CITACAO: "Citação",
+  COMUNICACAO: "Comunicação",
+  CONCLUSAO: "Conclusão",
+  CONDENSCACAO: "Condensação",
+  CONDENSACAO: "Condensação",
+  CONFIANCA: "Confiança",
+  CONTEUDO: "Conteúdo",
+  DIALOGO: "Diálogo",
+  DIVERSAO: "Diversão",
+  DIVISAO: "Divisão",
+  DNA: "DNA",
+  EPIGRAFE: "Epígrafe",
+  ESPERANCA: "Esperança",
+  ETICA: "Ética",
+  EVAPORACAO: "Evaporação",
+  GENERO: "Gênero",
+  GENETICA: "Genética",
+  GRAFICO: "Gráfico",
+  GRAMATICA: "Gramática",
+  INFERENCIA: "Inferência",
+  INFILTRACAO: "Infiltração",
+  INTERPRETACAO: "Interpretação",
+  JO: "Jó",
+  JUSTICA: "Justiça",
+  LINGUISTICA: "Linguística",
+  MEXICO: "México",
+  METAFORA: "Metáfora",
+  NUCLEO: "Núcleo",
+  ORBITA: "Órbita",
+  PACIENCIA: "Paciência",
+  PARODIA: "Paródia",
+  PRECIPITACAO: "Precipitação",
+  PRODUCAO: "Produção",
+  PROVACAO: "Provação",
+  REFERENCIA: "Referência",
+  RESTAURACAO: "Restauração",
+  REVISAO: "Revisão",
+  ROTACAO: "Rotação",
+  SINTESE: "Síntese",
+  TRADICAO: "Tradição",
+  TRANSFORMACAO: "Transformação",
+  TRANSLACAO: "Translação",
+  VOCABULARIO: "Vocabulário",
+};
+
+const COMMON_PORTUGUESE_TEXT_ACCENTS: Record<string, string> = {
+  acao: "ação",
+  acoes: "ações",
+  adaptacao: "adaptação",
+  apos: "após",
+  aplicacao: "aplicação",
+  area: "área",
+  basica: "básica",
+  capitulo: "capítulo",
+  capitulos: "capítulos",
+  caracteristica: "característica",
+  caracteristicas: "características",
+  celula: "célula",
+  celulas: "células",
+  citacao: "citação",
+  comunicacao: "comunicação",
+  conclusao: "conclusão",
+  conteudo: "conteúdo",
+  conteudos: "conteúdos",
+  critica: "crítica",
+  dialogo: "diálogo",
+  dificil: "difícil",
+  dificeis: "difíceis",
+  divisao: "divisão",
+  epigrafe: "epígrafe",
+  essencia: "essência",
+  estetica: "estética",
+  etica: "ética",
+  experiencia: "experiência",
+  experiencias: "experiências",
+  explicacao: "explicação",
+  explicita: "explícita",
+  explicitas: "explícitas",
+  explicito: "explícito",
+  explicitos: "explícitos",
+  fe: "fé",
+  fenomeno: "fenômeno",
+  fenomenos: "fenômenos",
+  genero: "gênero",
+  generos: "gêneros",
+  genetica: "genética",
+  grafico: "gráfico",
+  graficos: "gráficos",
+  gramatica: "gramática",
+  humoristica: "humorística",
+  inicio: "início",
+  indicacao: "indicação",
+  intencao: "intenção",
+  interacao: "interação",
+  interpretacao: "interpretação",
+  ja: "já",
+  linguistica: "linguística",
+  numero: "número",
+  nucleo: "núcleo",
+  nucleos: "núcleos",
+  oracao: "oração",
+  oracoes: "orações",
+  parodia: "paródia",
+  pais: "país",
+  paises: "países",
+  pratica: "prática",
+  praticas: "práticas",
+  proposito: "propósito",
+  publico: "público",
+  recriacao: "recriação",
+  referencia: "referência",
+  referencias: "referências",
+  relacao: "relação",
+  revisao: "revisão",
+  sequencia: "sequência",
+  sintese: "síntese",
+  situacao: "situação",
+  situacoes: "situações",
+  classificacao: "classificação",
+  circunstancia: "circunstância",
+  solucao: "solução",
+  tambem: "também",
+  transformacao: "transformação",
+  unica: "única",
+  unico: "único",
+  versao: "versão",
+  vocabulario: "vocabulário",
+};
+
+function hasPortugueseDiacritic(value: string): boolean {
+  return /[\u00c0-\u017f]/.test(value);
+}
+
+function keepReplacementCase(match: string, replacement: string): string {
+  if (match === match.toLocaleUpperCase("pt-BR")) {
+    return replacement.toLocaleUpperCase("pt-BR");
+  }
+  const first = match.charAt(0);
+  if (first && first === first.toLocaleUpperCase("pt-BR")) {
+    return replacement.charAt(0).toLocaleUpperCase("pt-BR") + replacement.slice(1);
+  }
+  return replacement;
+}
+
+function restorePortugueseTextAccents(value: string): string {
+  let output = normalizeText(value);
+  if (!output) return output;
+
+  for (const [plain, accented] of Object.entries(COMMON_PORTUGUESE_TEXT_ACCENTS)) {
+    output = output.replace(new RegExp(`\\b${plain}\\b`, "gi"), (match) =>
+      keepReplacementCase(match, accented),
+    );
+  }
+  return output;
+}
+
+function displayCrosswordAnswer(placement: CrosswordPlacement): string {
+  const label = normalizeText(placement.label);
+  if (label && hasPortugueseDiacritic(label)) return label;
+
+  const normalized = normalizeWord(label, 1) || placement.answer;
+  return COMMON_CROSSWORD_DISPLAY_ACCENTS[normalized] || label || placement.answer;
+}
+
+function displayCrosswordClue(placement: CrosswordPlacement): string {
+  return restorePortugueseTextAccents(placement.clue);
+}
+
 const KNOWLEDGE_PACKS: Array<{ keys: string[]; componentKeys?: string[]; terms: GameSeedTerm[] }> = [
   {
     keys: ["jo", "livro de jo", "personagem biblico", "sofrimento de jo", "historia de jo"],
@@ -997,15 +1172,8 @@ function renumberCrosswordPlacements(placements: CrosswordPlacement[]): Crosswor
     if (a.col !== b.col) return a.col - b.col;
     return a.direction === "across" ? -1 : 1;
   });
-  const numberMap = new Map<string, number>();
-  let nextNumber = 1;
 
-  return sorted.map((placement) => {
-    const key = `${placement.row}:${placement.col}`;
-    const number = numberMap.get(key) ?? nextNumber++;
-    numberMap.set(key, number);
-    return { ...placement, number };
-  });
+  return sorted.map((placement, index) => ({ ...placement, number: index + 1 }));
 }
 
 function countCrosswordIntersections(board: CrosswordBoard): number {
@@ -1154,6 +1322,7 @@ function scoreCrosswordBoard(board: CrosswordBoard, targetCount: number): number
 function validateCrosswordBoard(board: CrosswordBoard): CrosswordValidationResult {
   const issues: string[] = [];
   const seenAnswers = new Set<string>();
+  const seenNumbers = new Set<number>();
   const claimedCells = new Map<
     string,
     Array<{ placementIndex: number; direction: CrosswordDirection; letter: string }>
@@ -1168,6 +1337,10 @@ function validateCrosswordBoard(board: CrosswordBoard): CrosswordValidationResul
       issues.push(`Palavra repetida: ${placement.answer}.`);
     }
     seenAnswers.add(placement.answer);
+    if (seenNumbers.has(placement.number)) {
+      issues.push(`NumeraÃ§Ã£o repetida na pista ${placement.number}.`);
+    }
+    seenNumbers.add(placement.number);
 
     const { dr, dc } = crosswordDirectionDelta(placement.direction);
     const beforeRow = placement.row - dr;
@@ -1238,17 +1411,10 @@ function validateCrosswordBoard(board: CrosswordBoard): CrosswordValidationResul
     issues.push("HÃ¡ palavra isolada sem cruzamento.");
   }
 
-  const numberedStarts = new Set(board.placements.map((placement) => `${placement.number}:${placement.row}:${placement.col}`));
-  if (numberedStarts.size !== board.placements.length) {
-    const startGroups = new Map<string, Set<number>>();
-    for (const placement of board.placements) {
-      const key = `${placement.row}:${placement.col}`;
-      const numbers = startGroups.get(key) || new Set<number>();
-      numbers.add(placement.number);
-      startGroups.set(key, numbers);
-    }
-    for (const numbers of startGroups.values()) {
-      if (numbers.size > 1) issues.push("Pistas que comeÃ§am na mesma casa precisam compartilhar numeraÃ§Ã£o.");
+  for (let number = 1; number <= board.placements.length; number++) {
+    if (!seenNumbers.has(number)) {
+      issues.push("Todas as pistas precisam ter numeraÃ§Ã£o Ãºnica e sequencial.");
+      break;
     }
   }
 
@@ -1597,10 +1763,12 @@ function crosswordBounds(board: CrosswordBoard) {
 
 function renderCrosswordGrid(board: CrosswordBoard, showAnswers: boolean): string {
   const bounds = crosswordBounds(board);
-  const numberMap = new Map<string, number>();
+  const numberMap = new Map<string, number[]>();
   for (const placement of board.placements) {
     const key = `${placement.row}:${placement.col}`;
-    if (!numberMap.has(key)) numberMap.set(key, placement.number);
+    const numbers = numberMap.get(key) || [];
+    numbers.push(placement.number);
+    numberMap.set(key, numbers);
   }
 
   const rows: string[] = [];
@@ -1608,12 +1776,12 @@ function renderCrosswordGrid(board: CrosswordBoard, showAnswers: boolean): strin
     const cells: string[] = [];
     for (let col = bounds.minCol; col <= bounds.maxCol; col++) {
       const letter = board.grid[row]?.[col] || "";
-      const number = numberMap.get(`${row}:${col}`);
+      const numbers = numberMap.get(`${row}:${col}`) || [];
       if (!letter) {
-        cells.push(`<td class="planify-game-cell--block"></td>`);
+        cells.push(`<td class="planify-game-cell--void"></td>`);
       } else {
         cells.push(`<td class="planify-game-cell--letter">
-          ${number ? `<span class="planify-game-cell-number">${number}</span>` : ""}
+          ${numbers.length ? `<span class="planify-game-cell-number">${escapeHtml(numbers.join(","))}</span>` : ""}
           ${showAnswers ? escapeHtml(letter) : ""}
         </td>`);
       }
@@ -1629,13 +1797,13 @@ function renderCrosswordClues(board: CrosswordBoard) {
   const down = board.placements.filter((placement) => placement.direction === "down");
   const renderList = (items: CrosswordPlacement[]) =>
     items.length
-      ? `<ol class="planify-game-clues-list">${items.map((item) => `<li><strong>${item.number}.</strong> ${escapeHtml(item.clue)} <em>(${item.answer.length} letras)</em></li>`).join("")}</ol>`
-      : `<p>Nenhuma pista nesta direção.</p>`;
+      ? `<ol class="planify-game-clues-list">${items.map((item) => `<li><strong>${item.number}.</strong> ${escapeHtml(displayCrosswordClue(item))}</li>`).join("")}</ol>`
+      : `<p>Nenhuma pista nesta direÃ§Ã£o.</p>`;
 
   return `<table class="planify-game-clues-table" role="presentation">
     <tr>
-      <td><h3>Horizontais</h3>${renderList(across)}</td>
-      <td><h3>Verticais</h3>${renderList(down)}</td>
+      <td><h3>HORIZONTAL</h3>${renderList(across)}</td>
+      <td><h3>VERTICAL</h3>${renderList(down)}</td>
     </tr>
   </table>`;
 }
@@ -1770,23 +1938,21 @@ export function buildVisualGameMaterial(input: MaterialAIInput, aiOutput?: Mater
     visualHtml = `
       <section class="planify-game-section planify-crossword-print${sizeClass}">
         <div class="planify-crossword-page planify-crossword-page--student">
-          <h2>Cruzadinha — ${escapeHtml(tema)}</h2>
-          <p class="planify-crossword-instructions">Leia as pistas e complete a grade. Use letra de forma.</p>
-        ${renderCrosswordGrid(board, false)}
-        ${renderCrosswordClues(board)}
+          ${renderCrosswordGrid(board, false)}
+          ${renderCrosswordClues(board)}
         </div>
         <div class="planify-game-teacher-block planify-crossword-page planify-crossword-page--answer">
           <h2>Gabarito do professor</h2>
           <p class="planify-crossword-instructions">Grade com <strong>${placedCount}</strong> termos e <strong>${intersectionCount}</strong> cruzamentos.</p>
           ${renderCrosswordGrid(board, true)}
-          <ol class="planify-crossword-answer-list">${board.placements.map((item) => `<li><strong>${item.number}. ${escapeHtml(item.answer)}</strong> — ${escapeHtml(item.clue)}</li>`).join("")}</ol>
+          <ul class="planify-crossword-answer-list">${board.placements.map((item) => `<li><strong>${item.number}. ${escapeHtml(displayCrosswordAnswer(item))}</strong> &mdash; ${escapeHtml(displayCrosswordClue(item))}</li>`).join("")}</ul>
         </div>
       </section>`;
     sections = [
       dataSection("Cruzadinha visual conectada", `A cruzadinha foi montada com ${placedCount} termos na grade, ${intersectionCount} cruzamentos, pistas horizontais/verticais e gabarito.`),
-      dataSection("Pistas da cruzadinha", "Pistas para os estudantes:", board.placements.map((row) => `${row.number}. ${row.clue}`)),
+      dataSection("Pistas da cruzadinha", "Pistas para os estudantes:", board.placements.map((row) => `${row.number}. ${displayCrosswordClue(row)}`)),
     ];
-    gabarito = board.placements.map((row) => `${row.number}. ${row.answer} — ${row.clue}`);
+    gabarito = board.placements.map((row) => `${row.number}. ${displayCrosswordAnswer(row)} - ${displayCrosswordClue(row)}`);
   }
 
   if (model === "bingo") {

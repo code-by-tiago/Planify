@@ -45,7 +45,13 @@ function isDirectAssessmentType(tipo: string): boolean {
 export function renderPlanifyDocumentBrand(): string {
   return `
     <div class="planify-doc-brand" data-planify-doc-logo="true">
-      <img class="planify-doc-brand-mark" src="/brand/planify-owl-graduate.png" alt="Planify" />
+      <span class="planify-doc-brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" role="img" focusable="false">
+          <rect x="3" y="2.5" width="18" height="19" rx="7" fill="#ffffff" stroke="#22d3ee" stroke-width="2" />
+          <path d="M8.25 17.2V7.1h4.45c2.15 0 3.65 1.33 3.65 3.25 0 1.98-1.5 3.34-3.65 3.34h-2.03v3.51H8.25Zm2.42-5.54h1.78c.91 0 1.45-.48 1.45-1.25 0-.76-.54-1.22-1.45-1.22h-1.78v2.47Z" fill="#7c3aed" />
+          <circle cx="16.7" cy="6.25" r="1.35" fill="#a3e635" />
+        </svg>
+      </span>
       <span class="planify-doc-brand-name">Planify</span>
     </div>
   `.trim();

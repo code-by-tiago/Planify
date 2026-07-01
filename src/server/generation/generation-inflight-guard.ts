@@ -2,6 +2,8 @@ import { getSupabaseAdminClient } from "@/server/supabase/admin-client";
 
 const INFLIGHT_WINDOW_MS = 180_000;
 const IDEMPOTENCY_DEDUP_MS = 5 * 60_000;
+const INFLIGHT_EXPIRE_MESSAGE =
+  "Geração anterior expirada automaticamente por inatividade.";
 
 export class GenerationInflightError extends Error {
   readonly code = "generation_in_progress";
@@ -20,12 +22,30 @@ export async function assertGenerationSlotAvailable(params: {
   const supabase = getSupabaseAdminClient();
   const inflightCutoff = new Date(Date.now() - INFLIGHT_WINDOW_MS).toISOString();
 
+  const { error: pruneError } = await supabase
+    .from("generation_jobs")
+    .update({
+      status: "failed",
+      stage: "failed",
+      progress: 100,
+      message: INFLIGHT_EXPIRE_MESSAGE,
+      error_message: INFLIGHT_EXPIRE_MESSAGE,
+      completed_at: new Date().toISOString(),
+    })
+    .eq("user_id", params.userId)
+    .eq("status", "running")
+    .lt("updated_at", inflightCutoff);
+
+  if (pruneError) {
+    console.warn("[generation-inflight] prune failed:", pruneError.message);
+  }
+
   const { count, error: inflightError } = await supabase
     .from("generation_jobs")
     .select("id", { count: "exact", head: true })
     .eq("user_id", params.userId)
     .eq("status", "running")
-    .gte("created_at", inflightCutoff);
+    .gte("updated_at", inflightCutoff);
 
   if (inflightError) {
     console.warn("[generation-inflight] check failed:", inflightError.message);

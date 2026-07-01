@@ -39,6 +39,12 @@ export default function TeachyStudioHome({
   const extraSections = showPlanejamentos ? 1 : 0;
   const resultCount = filteredTools.length + extraSections;
 
+  const featuredTools = useMemo(
+    () => activePlanifyTools.filter((tool) => tool.popular).slice(0, 4),
+    [],
+  );
+  const showFeatured = !hasActiveFilter && featuredTools.length > 0;
+
   function persistTopic() {
     const tema = initialTopic.trim();
     onTopicChange?.(tema);
@@ -92,6 +98,40 @@ export default function TeachyStudioHome({
     );
   }
 
+  function renderFeaturedCard(tool: PlanifyTool) {
+    return (
+      <button
+        key={`featured-${tool.id}`}
+        type="button"
+        onClick={() => openTool(tool.id)}
+        className="pl-hud-hub-app group flex items-start gap-4 rounded-2xl p-5 text-left"
+      >
+        <span
+          className={`pl-hud-hub-tool-icon bg-gradient-to-br ${tool.accent} h-12 w-12 shrink-0`}
+        >
+          <PlanifyIcon name={tool.icon} className="h-5 w-5" />
+        </span>
+        <span className="relative min-w-0 flex-1">
+          <span className="flex items-center gap-2">
+            <span className="truncate text-sm font-semibold tracking-tight text-slate-900">
+              {tool.shortTitle}
+            </span>
+            <span className="inline-flex shrink-0 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-700">
+              Popular
+            </span>
+          </span>
+          <span className="mt-1 line-clamp-2 block text-sm font-medium leading-snug text-slate-600">
+            {tool.description}
+          </span>
+          <span className="mt-2 flex items-center gap-1 text-xs font-semibold text-cyan-700 opacity-80 transition group-hover:gap-1.5 group-hover:opacity-100">
+            Abrir
+            <PlanifyIcon name="arrowRight" className="h-3 w-3 transition group-hover:translate-x-0.5" />
+          </span>
+        </span>
+      </button>
+    );
+  }
+
   function renderPlanejamentosCard() {
     return (
       <button
@@ -117,7 +157,43 @@ export default function TeachyStudioHome({
   return (
     <div className="pl-hud-hub pl-hud-board pl-hud-home flex h-full min-h-0 w-full flex-col overflow-hidden">
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-        <div className="mx-auto w-full max-w-7xl px-4 py-4 sm:px-6 sm:py-5">
+        <div className="mx-auto w-full max-w-7xl px-4 py-5 sm:px-6 sm:py-7">
+          <header className="pl-hud-hub-reveal mb-7 max-w-2xl">
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-600">
+              Estúdio Planify
+            </p>
+            <h1 className="mt-1.5 text-2xl font-bold tracking-tight text-slate-900 text-balance sm:text-3xl">
+              O que vamos{" "}
+              <span className="bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent">
+                criar hoje?
+              </span>
+            </h1>
+            <p className="mt-2 text-sm leading-relaxed text-slate-600">
+              Escolha uma ferramenta de IA alinhada à BNCC e gere seu material em segundos.
+            </p>
+          </header>
+
+          {showFeatured ? (
+            <section className="pl-hud-hub-reveal mb-8">
+              <div className="mb-3 flex items-center gap-2">
+                <span className="pl-hud-hub-section-icon">
+                  <PlanifyIcon name="spark" className="h-4 w-4" />
+                </span>
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-cyan-600">
+                    Em destaque
+                  </p>
+                  <h2 className="text-sm font-semibold tracking-tight text-slate-900">
+                    Mais usadas pelos professores
+                  </h2>
+                </div>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                {featuredTools.map((tool) => renderFeaturedCard(tool))}
+              </div>
+            </section>
+          ) : null}
+
           <section className="pl-hud-hub-reveal">
             <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
               <div>

@@ -1173,7 +1173,18 @@ function renumberCrosswordPlacements(placements: CrosswordPlacement[]): Crosswor
     return a.direction === "across" ? -1 : 1;
   });
 
-  return sorted.map((placement, index) => ({ ...placement, number: index + 1 }));
+  const result: CrosswordPlacement[] = [];
+  let currentNumber = 0;
+  let lastKey: string | null = null;
+  for (const placement of sorted) {
+    const key = `${placement.row}:${placement.col}`;
+    if (key !== lastKey) {
+      currentNumber += 1;
+      lastKey = key;
+    }
+    result.push({ ...placement, number: currentNumber });
+  }
+  return result;
 }
 
 function countCrosswordIntersections(board: CrosswordBoard): number {
@@ -1761,13 +1772,13 @@ function crosswordBounds(board: CrosswordBoard) {
   };
 }
 
-function renderCrosswordGrid(board: CrosswordBoard, showAnswers: boolean): string {
+function renderCrosswordGrid(board: CrosswordBoard, showAnswers: boolean, cellSize = 28): string {
   const bounds = crosswordBounds(board);
   const numberMap = new Map<string, number[]>();
   for (const placement of board.placements) {
     const key = `${placement.row}:${placement.col}`;
     const numbers = numberMap.get(key) || [];
-    numbers.push(placement.number);
+    if (!numbers.includes(placement.number)) numbers.push(placement.number);
     numberMap.set(key, numbers);
   }
 
@@ -1780,8 +1791,8 @@ function renderCrosswordGrid(board: CrosswordBoard, showAnswers: boolean): strin
       if (!letter) {
         cells.push(`<td class="planify-game-cell--void"></td>`);
       } else {
+        // numbers will be rendered in an overlay layer to avoid layout quirks
         cells.push(`<td class="planify-game-cell--letter">
-          ${numbers.length ? `<span class="planify-game-cell-number">${escapeHtml(numbers.join(","))}</span>` : ""}
           ${showAnswers ? escapeHtml(letter) : ""}
         </td>`);
       }
@@ -1789,7 +1800,25 @@ function renderCrosswordGrid(board: CrosswordBoard, showAnswers: boolean): strin
     rows.push(`<tr>${cells.join("")}</tr>`);
   }
 
-  return `<div class="planify-game-board"><table class="planify-game-table planify-game-table--crossword">${rows.join("")}</table></div>`;
+  const tableHtml = `<div class="planify-game-board" style="position: relative; display: inline-block; width: ${(bounds.maxCol - bounds.minCol + 1) * cellSize}px; height: ${(bounds.maxRow - bounds.minRow + 1) * cellSize}px;">
+    <table class="planify-game-table planify-game-table--crossword" style="table-layout: fixed; width: 100%; border-spacing: 0;">${rows.join("")}</table>`;
+
+  // build overlay with absolute positioned numbers (top-left outside the cell)
+  const overlays: string[] = [];
+  const offset = 6; // pixels to offset numbers outside the cell
+  for (const [key, nums] of numberMap.entries()) {
+    const [rStr, cStr] = key.split(":");
+    const r = Number(rStr);
+    const c = Number(cStr);
+    const top = (r - bounds.minRow) * cellSize - offset;
+    const left = (c - bounds.minCol) * cellSize - offset;
+    const sorted = nums.slice().sort((a, b) => a - b);
+    overlays.push(`<span class="planify-game-cell-number" aria-hidden="true" style="position:absolute; top:${top}px; left:${left}px;">${escapeHtml(sorted.join(","))}</span>`);
+  }
+
+  const overlayHtml = `<div style="position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none;">${overlays.join("")}</div>`;
+
+  return `${tableHtml}${overlayHtml}</div>`;
 }
 
 function renderCrosswordClues(board: CrosswordBoard) {
@@ -1935,16 +1964,17 @@ export function buildVisualGameMaterial(input: MaterialAIInput, aiOutput?: Mater
       : placedCount > 10
         ? " planify-crossword-print--large"
         : "";
+    const cellSize = placedCount > 15 ? 20 : placedCount > 10 ? 24 : 28;
     visualHtml = `
       <section class="planify-game-section planify-crossword-print${sizeClass}">
         <div class="planify-crossword-page planify-crossword-page--student">
-          ${renderCrosswordGrid(board, false)}
+          ${renderCrosswordGrid(board, false, cellSize)}
           ${renderCrosswordClues(board)}
         </div>
         <div class="planify-game-teacher-block planify-crossword-page planify-crossword-page--answer">
           <h2>Gabarito do professor</h2>
           <p class="planify-crossword-instructions">Grade com <strong>${placedCount}</strong> termos e <strong>${intersectionCount}</strong> cruzamentos.</p>
-          ${renderCrosswordGrid(board, true)}
+          ${renderCrosswordGrid(board, true, cellSize)}
           <ul class="planify-crossword-answer-list">${board.placements.map((item) => `<li><strong>${item.number}. ${escapeHtml(displayCrosswordAnswer(item))}</strong> &mdash; ${escapeHtml(displayCrosswordClue(item))}</li>`).join("")}</ul>
         </div>
       </section>`;

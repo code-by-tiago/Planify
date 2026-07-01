@@ -60,6 +60,7 @@ export const PLANIFY_GAME_EXPORT_CSS = `
     font-weight: 900 !important;
     line-height: 1 !important;
     position: relative;
+    overflow: visible !important;
   }
   .planify-game-table--crossword .planify-game-cell--letter,
   .planify-game-table--wordsearch .planify-game-cell--letter {
@@ -96,12 +97,16 @@ export const PLANIFY_GAME_EXPORT_CSS = `
   }
   .planify-game-cell-number {
     position: absolute;
-    top: 1px;
-    left: 2px;
+    /* posicionar fora do quadrado para não atrapalhar a letra */
+    top: -6px;
+    left: -6px;
     font-size: 7px;
     font-weight: 800;
     color: #0f766e;
     line-height: 1;
+    pointer-events: none;
+    user-select: none;
+    z-index: 2;
   }
   .planify-game-table--wordsearch .planify-game-cell--letter {
     width: 30px !important;

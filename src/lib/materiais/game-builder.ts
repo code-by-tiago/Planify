@@ -1787,8 +1787,11 @@ function renderCrosswordGrid(board: CrosswordBoard, showAnswers: boolean, cellSi
   const accentedLetters = new Map<string, string>();
   if (showAnswers) {
     for (const placement of board.placements) {
+      // try known full-word mappings first, then attempt a generic accent restore
       const normalized = placement.answer;
-      const display = (COMMON_CROSSWORD_DISPLAY_ACCENTS[normalized] || placement.answer).toLocaleUpperCase("pt-BR");
+      const candidate = COMMON_CROSSWORD_DISPLAY_ACCENTS[normalized];
+      const restored = candidate || restorePortugueseTextAccents(placement.answer.toLocaleLowerCase("pt-BR")) || placement.answer;
+      const display = String(restored).toLocaleUpperCase("pt-BR");
       const { dr, dc } = crosswordDirectionDelta(placement.direction);
       for (let i = 0; i < placement.answer.length; i++) {
         const r = placement.row + dr * i;
@@ -1822,20 +1825,23 @@ function renderCrosswordGrid(board: CrosswordBoard, showAnswers: boolean, cellSi
   const tableHtml = `<div class="planify-game-board" style="position: relative; display: inline-block; width: ${(bounds.maxCol - bounds.minCol + 1) * cellSize}px; height: ${(bounds.maxRow - bounds.minRow + 1) * cellSize}px;">
     <table class="planify-game-table planify-game-table--crossword" style="table-layout: fixed; width: 100%; border-spacing: 0;">${rows.join("")}</table>`;
 
-  // build overlay with absolute positioned numbers (top-left inside the cell)
+  // build overlay with absolute positioned numbers placed just in front of the
+  // starting square (slightly above the top edge, visually in front of the box)
   const overlays: string[] = [];
-  // inset and font size scale with cellSize to avoid overlapping central letter
-  const inset = Math.max(1, Math.round(cellSize * 0.08));
-  const numberFont = Math.max(6, Math.round(cellSize * 0.26));
+  // font size and vertical offset scale with cellSize
+  const numberFont = Math.max(6, Math.round(cellSize * 0.28));
+  const verticalOffset = Math.round(cellSize * 0.28); // how far above the cell the number sits
+  const horizontalInset = Math.max(1, Math.round(cellSize * 0.06));
   for (const [key, nums] of numberMap.entries()) {
     const [rStr, cStr] = key.split(":");
     const r = Number(rStr);
     const c = Number(cStr);
-    const top = (r - bounds.minRow) * cellSize + inset;
-    const left = (c - bounds.minCol) * cellSize + inset;
+    // position the number slightly above the cell, and a little inset from the left
+    const top = (r - bounds.minRow) * cellSize - verticalOffset;
+    const left = (c - bounds.minCol) * cellSize + horizontalInset;
     const sorted = nums.slice().sort((a, b) => a - b);
     overlays.push(
-      `<span class="planify-game-cell-number" aria-hidden="true" style="position:absolute; top:${top}px; left:${left}px; font-size:${numberFont}px;">${escapeHtml(
+      `<span class="planify-game-cell-number" aria-hidden="true" style="position:absolute; top:${top}px; left:${left}px; font-size:${numberFont}px; z-index:4;">${escapeHtml(
         sorted.join(","),
       )}</span>`,
     );

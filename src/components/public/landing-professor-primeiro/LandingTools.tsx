@@ -20,10 +20,10 @@ export function LandingTools() {
             <Link
               key={tool.id}
               href={tool.href}
-              className="group flex min-h-[3.5rem] min-w-0 items-center gap-2.5 overflow-hidden rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-left shadow-sm transition hover:border-[#26C6DA] hover:shadow-md"
+              className="group flex min-h-[3.5rem] min-w-0 items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2.5 pr-4 text-left shadow-sm transition hover:border-[#26C6DA] hover:shadow-md"
             >
               <LandingToolIconBadge accent={tool.accent} icon={tool.icon} />
-              <span className="min-w-0 break-words text-xs font-bold leading-tight text-[#0A192F] group-hover:text-[#26C6DA] sm:text-sm">
+              <span className="min-w-0 max-w-full overflow-hidden break-words text-xs font-bold leading-tight text-[#0A192F] group-hover:text-[#26C6DA] sm:text-sm">
                 {tool.shortTitle}
               </span>
             </Link>

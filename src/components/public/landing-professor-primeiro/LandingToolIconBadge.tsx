@@ -10,14 +10,21 @@ export function LandingToolIconBadge({
   icon: PlanifyIconName;
   size?: "sm" | "md";
 }) {
-  const box = size === "sm" ? "h-8 w-8 rounded-md" : "h-10 w-10 rounded-xl";
-  const iconSize = size === "sm" ? "h-4 w-4" : "h-5 w-5";
+  const box =
+    size === "sm"
+      ? "h-8 w-8 min-w-8 rounded-lg"
+      : "h-10 w-10 min-w-10 rounded-xl";
+  const iconSize =
+    size === "sm"
+      ? "block h-4 w-4 shrink-0"
+      : "block h-5 w-5 shrink-0";
 
   return (
     <span
-      className={`flex shrink-0 items-center justify-center bg-gradient-to-br ${accent} text-white shadow-sm ${box}`}
+      aria-hidden="true"
+      className={`inline-flex shrink-0 items-center justify-center overflow-hidden bg-gradient-to-br ${accent} text-white shadow-sm ${box}`}
     >
-      <PlanifyIcon name={icon} className={iconSize} />
+      <PlanifyIcon name={icon} className={`${iconSize} pointer-events-none`} />
     </span>
   );
 }

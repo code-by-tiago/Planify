@@ -299,7 +299,9 @@ export default function PlanifyDashboardShell() {
             />
           </header>
         ) : (
-          <header className="pl-hud-hub-shell-header relative shrink-0 px-3 py-2.5 pt-[max(0.625rem,env(safe-area-inset-top))] sm:px-6 sm:py-3">
+          <header className="pl-hud-hub-shell-header relative shrink-0 px-3 py-2 pt-[max(0.5rem,env(safe-area-inset-top))] sm:px-5 sm:py-2.5">
+            <div className="pl-hud-hub-mesh pointer-events-none absolute inset-0 opacity-40" aria-hidden />
+            <div className="pl-hud-hub-grid-bg pointer-events-none absolute inset-0 opacity-25" aria-hidden />
             <div className="relative flex flex-wrap items-center justify-between gap-3">
               <div className="flex min-w-0 items-center gap-2 sm:gap-3">
                 <button
@@ -315,6 +317,12 @@ export default function PlanifyDashboardShell() {
                     <PlanifyIcon name="spark" className="h-3 w-3" />
                     Estúdio Planify
                   </span>
+                  <h1 className="mt-1 text-sm font-semibold tracking-tight leading-snug text-slate-900 sm:text-base">
+                    O que vamos{" "}
+                    <span className="bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent">
+                      criar hoje?
+                    </span>
+                  </h1>
                 </div>
               </div>
               <div className="flex items-center gap-1.5 sm:gap-2">

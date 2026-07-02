@@ -27,8 +27,6 @@ import { MaterialPreviewSkeleton } from "@/components/materiais/MaterialPreviewS
 import { MaterialToolPageShell } from "@/components/pro/MaterialToolPageShell";
 import { MaterialToolMobileSubmitBar } from "@/components/pro/MaterialToolMobileSubmitBar";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
-import { PlanifyOwlGenerationCoach } from "@/components/pro/PlanifyOwlGenerationCoach";
-import { PlanifyOwlMark } from "@/components/pro/PlanifyOwlMark";
 import { PlanifyPageHero } from "@/components/pro/PlanifyPageHero";
 import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
 import {
@@ -54,9 +52,6 @@ import {
   loadMaterialHistoryPreview,
   loadMaterialMetaFromHistoryId,
   openMaterialInEditor,
-  persistGeneratedMaterial,
-  readAutoOpenEditorPreference,
-  writeAutoOpenEditorPreference,
   type MaterialEditorMeta,
   type MaterialHistoryPreview,
 } from "@/lib/materiais/material-editor-flow";
@@ -326,7 +321,6 @@ export function MateriaisClient({
   const { runWithRetry, retrying: retryingGeneration } = useRetryableAction();
   const [busca, setBusca] = useState("");
   const [historico, setHistorico] = useState<MaterialHistoryPreview[]>([]);
-  const [abrirEditorAutomatico, setAbrirEditorAutomatico] = useState(true);
   const [materialSalvo, setMaterialSalvo] = useState(false);
   const [hintFeedback, setHintFeedback] = useState("");
   const [pedagogicalEntries, setPedagogicalEntries] = useState<
@@ -349,7 +343,6 @@ export function MateriaisClient({
       setTipo(initialTipo);
       setModalAberto(true);
       setHistorico(loadMaterialHistoryPreview());
-      setAbrirEditorAutomatico(readAutoOpenEditorPreference());
       return;
     }
 
@@ -367,7 +360,6 @@ export function MateriaisClient({
     }
 
     setHistorico(loadMaterialHistoryPreview());
-    setAbrirEditorAutomatico(readAutoOpenEditorPreference());
   }, [studioMode, initialTipo]);
 
   useEffect(() => {
@@ -830,14 +822,10 @@ export function MateriaisClient({
       }
 
       const titulo = buildTitle(tipo, "", conteudo);
-      const materiaisReturnTo =
-        typeof window !== "undefined"
-          ? `${window.location.pathname}${window.location.search}` || "/dashboard"
-          : "/dashboard";
       queueAutoGoogleExportForMaterial({
         toolId: tipo,
         title: titulo,
-        returnTo: abrirEditorAutomatico ? "/dashboard?secao=editor" : materiaisReturnTo,
+        returnTo: "/dashboard?secao=editor",
       });
       const record =
         data && typeof data === "object" ? (data as Record<string, unknown>) : {};
@@ -856,19 +844,12 @@ export function MateriaisClient({
         generationPayload: payload,
         serverMaterialId,
       });
-      if (abrirEditorAutomatico) {
-        openMaterialInEditor(html, titulo, meta, {
-          from: "materiais",
-        });
-        setHistorico(loadMaterialHistoryPreview());
-        setMaterialSalvo(true);
-        return;
-      }
-
-      persistGeneratedMaterial(html, titulo, meta);
+      openMaterialInEditor(html, titulo, meta, {
+        from: "materiais",
+      });
       setHistorico(loadMaterialHistoryPreview());
       setMaterialSalvo(true);
-      setResultadoHtml(html);
+      return;
       }, { onError: dispatchCreditsChangedIfNeeded });
     } catch (error) {
       dispatchCreditsChangedIfNeeded(error);
@@ -942,7 +923,9 @@ export function MateriaisClient({
               : undefined,
         },
       );
-      persistGeneratedMaterial(html, titulo, meta);
+      openMaterialInEditor(html, titulo, meta, {
+        from: "materiais",
+      });
       setResultadoHtml(html);
       setMaterialSalvo(true);
       setHistorico(loadMaterialHistoryPreview());
@@ -987,7 +970,9 @@ export function MateriaisClient({
         qualityIssues: result.qualityIssues ?? qualityIssues,
         generationPayload: lastGenerationPayload,
       });
-      persistGeneratedMaterial(result.html, titulo, meta);
+      openMaterialInEditor(result.html, titulo, meta, {
+        from: "materiais",
+      });
       setMaterialSalvo(true);
       setHistorico(loadMaterialHistoryPreview());
       setHintFeedback(
@@ -1029,6 +1014,7 @@ export function MateriaisClient({
       previewScrollAttr={studioMode}
       previewReady={Boolean(resultadoHtml)}
       previewLoading={loading}
+      fullWidth={isExamTool && examCreationSource === "banco"}
       form={
         <form onSubmit={gerarMaterial} className="space-y-1 max-lg:pb-2">
           <div className="flex flex-wrap items-start justify-between gap-3">
@@ -1340,21 +1326,12 @@ export function MateriaisClient({
               </button>
             </div>
 
-            <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-cyan-400/20 bg-cyan-50/50 px-4 py-3 text-sm font-bold text-cyan-900">
-              <input
-                type="checkbox"
-                checked={abrirEditorAutomatico}
-                onChange={(event) => {
-                  const next = event.target.checked;
-                  setAbrirEditorAutomatico(next);
-                  writeAutoOpenEditorPreference(next);
-                }}
-                className="h-4 w-4 accent-cyan-600"
-              />
-              {isPlanoAula
-                ? "Abrir no editor automaticamente após gerar (recomendado para ajustar atividades, tempo e exportar)"
-                : "Abrir no editor automaticamente após gerar (recomendado para revisar e complementar)"}
-            </label>
+            <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-900">
+              <div className="flex items-center gap-2">
+                <PlanifyIcon name="editor" className="h-4 w-4" />
+                <span>Após gerar, o material abre direto no editor para revisão e exportação.</span>
+              </div>
+            </div>
           </div>
 
           <GenerationCostHint
@@ -1406,15 +1383,33 @@ export function MateriaisClient({
         <>
           {loading ? (
             <div className="space-y-4 p-2">
-              <div className="flex min-h-[200px] items-center justify-center">
-                <PlanifyOwlGenerationCoach
-                  active
-                  title={progressLabel || mode.loadingTitle}
-                  context="material"
-                  toolId={tipo}
-                  realProgressPercent={realGenerationProgress}
-                  className="max-w-lg"
-                />
+              <div className="rounded-lg border border-blue-100 bg-white px-4 py-3 shadow-sm">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-black uppercase tracking-wide text-blue-700">
+                      Gerando material
+                    </p>
+                    <p className="mt-1 line-clamp-2 text-sm font-black text-slate-900">
+                      {progressLabel || mode.loadingTitle}
+                    </p>
+                  </div>
+                  <span className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-black tabular-nums text-blue-700">
+                    {typeof realGenerationProgress === "number"
+                      ? `${Math.round(realGenerationProgress)}%`
+                      : "IA"}
+                  </span>
+                </div>
+                <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100">
+                  <div
+                    className="h-full rounded-full bg-blue-600 transition-[width] duration-500"
+                    style={{
+                      width: `${Math.max(
+                        12,
+                        Math.min(100, Math.round(realGenerationProgress ?? 36)),
+                      )}%`,
+                    }}
+                  />
+                </div>
               </div>
               {showPatienceMessage ? (
                 <p className="text-center text-sm font-semibold text-slate-600">
@@ -1555,10 +1550,12 @@ export function MateriaisClient({
               <MaterialTypedPreview html={resultadoHtml} tipoMaterial={tipo} />
             </div>
           ) : (
-            <div className="flex h-full min-h-[280px] flex-col items-center justify-center px-4 py-8 text-center">
-              <PlanifyOwlMark size={72} glow />
+            <div className="flex h-full min-h-[180px] flex-col items-center justify-center rounded-lg border border-dashed border-slate-200 bg-white px-4 py-6 text-center">
+              <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 text-blue-700">
+                <PlanifyIcon name="editor" className="h-5 w-5" />
+              </span>
               <p className="mt-4 text-[10px] font-bold uppercase tracking-wide text-cyan-600">
-                Pré-visualização
+                Editor automático
               </p>
               <h3 className="mt-2 text-sm font-semibold text-slate-900">
                 Pronto para criar
@@ -1677,9 +1674,8 @@ export function MateriaisClient({
             ))}
           </section>
         ) : (
-          <section className="pl-hud-glass flex flex-col items-center rounded-2xl px-6 py-10 text-center">
-            <PlanifyOwlMark size={64} glow />
-            <p className="mt-4 text-sm font-bold text-slate-600">
+          <section className="rounded-lg border border-slate-200 bg-white px-6 py-8 text-center shadow-sm">
+            <p className="text-sm font-bold text-slate-600">
               Nenhuma ferramenta encontrada para essa busca ou categoria.
             </p>
             <button

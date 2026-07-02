@@ -79,13 +79,11 @@ function resolveToolId(value: unknown): PlanifyToolId {
 }
 
 export function readAutoOpenEditorPreference(): boolean {
-  if (typeof window === "undefined") return true;
-  return window.localStorage.getItem(AUTO_EDITOR_PREF_KEY) !== "false";
+  return true;
 }
 
 export function writeAutoOpenEditorPreference(enabled: boolean): void {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(AUTO_EDITOR_PREF_KEY, String(enabled));
+  void enabled;
 }
 
 function resolveMaterialDocumentId(meta: MaterialEditorMeta): string | undefined {

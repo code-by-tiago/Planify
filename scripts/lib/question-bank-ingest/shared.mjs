@@ -276,11 +276,77 @@ export function bumpSource(stats, sourceId, field) {
   stats.bySource[sourceId][field] += 1;
 }
 
+const BASE_QUESTION_BANK_COLUMNS = new Set([
+  "user_id",
+  "school_id",
+  "enunciado",
+  "texto_apoio",
+  "image_urls",
+  "tipo",
+  "alternativas",
+  "resposta_esperada",
+  "criterio_correcao",
+  "componente",
+  "ano_serie",
+  "etapa",
+  "tema",
+  "bncc_codigos",
+  "tags",
+  "source_title",
+  "source_type",
+  "content_hash",
+  "visibility",
+  "is_published",
+  "published_at",
+  "author_display_name",
+  "usage_count",
+  "created_at",
+  "updated_at",
+]);
+
+const OPTIONAL_QUESTION_BANK_COLUMNS = [
+  "collection",
+  "source_url",
+  "source_license",
+  "review_status",
+  "quality_score",
+  "reviewed_at",
+];
+
+let questionBankColumnCache = null;
+
+async function getQuestionBankColumns(supabase) {
+  if (questionBankColumnCache) return questionBankColumnCache;
+
+  const columns = new Set(BASE_QUESTION_BANK_COLUMNS);
+
+  for (const column of OPTIONAL_QUESTION_BANK_COLUMNS) {
+    const { error } = await supabase
+      .from("question_bank_items")
+      .select(column, { head: true })
+      .limit(1);
+
+    if (!error) {
+      columns.add(column);
+    }
+  }
+
+  questionBankColumnCache = columns;
+  return columns;
+}
+
+function pickExistingColumns(payload, columns) {
+  return Object.fromEntries(
+    Object.entries(payload).filter(([key]) => columns.has(key)),
+  );
+}
+
 /**
  * @param {import('@supabase/supabase-js').SupabaseClient} supabase
  */
 export async function persistQuestion(supabase, userId, question, { dryRun, hashFn }) {
   const contentHash = hashFn(question.enunciado, question.tipo);
+  const columns = await getQuestionBankColumns(supabase);
 
   const { data: existing } = await supabase
     .from("question_bank_items")
@@ -297,7 +363,7 @@ export async function persistQuestion(supabase, userId, question, { dryRun, hash
   }
 
   const now = new Date().toISOString();
-  const { error } = await supabase.from("question_bank_items").insert({
+  const payload = {
     user_id: userId,
     enunciado: question.enunciado,
     texto_apoio: question.textoApoio?.trim() || null,
@@ -328,7 +394,11 @@ export async function persistQuestion(supabase, userId, question, { dryRun, hash
     usage_count: 0,
     created_at: now,
     updated_at: now,
-  });
+  };
+
+  const { error } = await supabase
+    .from("question_bank_items")
+    .insert(pickExistingColumns(payload, columns));
 
   if (error) {
     return { status: "error", message: error.message, contentHash };

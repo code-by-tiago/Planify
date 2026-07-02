@@ -3,9 +3,10 @@
  * Ingestão em massa do banco de questões Planify — fontes permitidas (OER / APIs abertas / dados internos).
  *
  * Fontes:
- *  - planify-materials   — generated_materials (dados próprios)
- *  - planify-biblioteca  — pacotes curados Planify
- *  - approved-feeds      — feeds JSON HTTPS oficialmente autorizados/licenciados
+ *  - planify-curated-catalog — catálogo curado local Planify
+ *  - planify-materials       — generated_materials (dados próprios)
+ *  - planify-biblioteca      — pacotes curados Planify
+ *  - approved-feeds          — feeds JSON HTTPS oficialmente autorizados/licenciados
  *  - stackexchange       — DESATIVADO (fórum universitário EN, não serve EF/EM BR)
  *  - wikiversity-pt      — DESATIVADO (qualidade inconsistente)
  *
@@ -13,7 +14,7 @@
  *
  * Uso:
  *   node scripts/ingest-question-bank-web.mjs --hours=2
- *   node scripts/ingest-question-bank-web.mjs --max=500 --sources=planify-materials,planify-biblioteca
+ *   node scripts/ingest-question-bank-web.mjs --max=500 --sources=planify-curated-catalog,planify-materials,planify-biblioteca
  *   node scripts/ingest-question-bank-web.mjs --dry-run --max=50
  *
  * Env: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
@@ -33,6 +34,7 @@ import {
   INGEST_ROOT,
 } from "./lib/question-bank-ingest/shared.mjs";
 import { SOURCE_ID as BIB_ID, iteratePlanifyBiblioteca } from "./lib/question-bank-ingest/sources/planify-biblioteca.mjs";
+import { SOURCE_ID as CURATED_ID, iteratePlanifyCuratedCatalog } from "./lib/question-bank-ingest/sources/planify-curated-catalog.mjs";
 import { SOURCE_ID as MAT_ID, iteratePlanifyMaterials } from "./lib/question-bank-ingest/sources/planify-materials.mjs";
 import { SOURCE_ID as SE_ID, iterateStackExchange } from "./lib/question-bank-ingest/sources/stackexchange.mjs";
 import { SOURCE_ID as WIKI_ID, iterateWikiversityPt } from "./lib/question-bank-ingest/sources/wikiversity-pt.mjs";
@@ -43,9 +45,10 @@ loadEnvLocal();
 const { computeQuestionContentHash } = loadTsModule("src/lib/banco-questoes/question-bank-hash.ts");
 
 /** Padrão Teachy: só curadoria Planify + materiais gerados com qualidade. */
-const DEFAULT_SOURCES = `${MAT_ID},${BIB_ID},${APPROVED_FEEDS_ID}`;
+const DEFAULT_SOURCES = `${CURATED_ID},${MAT_ID},${BIB_ID},${APPROVED_FEEDS_ID}`;
 
 const ALL_SOURCES = {
+  [CURATED_ID]: iteratePlanifyCuratedCatalog,
   [MAT_ID]: iteratePlanifyMaterials,
   [BIB_ID]: iteratePlanifyBiblioteca,
   // Fontes externas desativadas — volume ≠ qualidade escolar BR

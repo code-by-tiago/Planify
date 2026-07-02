@@ -12,7 +12,11 @@ import { spawn } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadEnvLocal, INGEST_ROOT } from "./lib/question-bank-ingest/shared.mjs";
+import {
+  createSupabaseAdmin,
+  loadEnvLocal,
+  INGEST_ROOT,
+} from "./lib/question-bank-ingest/shared.mjs";
 import { pickTopicsForRun } from "./lib/ai-question-bank-pipeline/topic-queue.mjs";
 
 loadEnvLocal();
@@ -31,6 +35,8 @@ function parseArgs(argv) {
     maxAttemptsPerTopic: 0,
     maxRunMinutes: 105,
     perTopicTimeoutMinutes: 15,
+    seed: null,
+    targetPublicCount: Number(process.env.QUESTION_BANK_TARGET_PUBLIC_COUNT || "5000"),
     dryRun: false,
     reportPath: join(INGEST_ROOT, "tmp/ai-question-bank-pipeline-auto-report.json"),
   };
@@ -47,6 +53,11 @@ function parseArgs(argv) {
       args.maxRunMinutes = Math.max(5, Number(arg.split("=")[1]) || 105);
     } else if (arg.startsWith("--perTopicTimeoutMinutes=")) {
       args.perTopicTimeoutMinutes = Math.max(2, Number(arg.split("=")[1]) || 15);
+    } else if (arg.startsWith("--seed=")) {
+      const value = Number(arg.split("=")[1]);
+      args.seed = Number.isFinite(value) ? value : null;
+    } else if (arg.startsWith("--targetPublicCount=")) {
+      args.targetPublicCount = Math.max(0, Number(arg.split("=")[1]) || 0);
     } else if (arg.startsWith("--report=")) {
       args.reportPath = arg.slice("--report=".length);
     }
@@ -65,6 +76,21 @@ function parseArgs(argv) {
 function hasTimeForAnotherTopic(deadlineMs, args) {
   const remainingMs = deadlineMs - Date.now();
   return remainingMs > Math.min(args.perTopicTimeoutMinutes * 60_000, 10 * 60_000);
+}
+
+async function countPublishedQuestions() {
+  const supabase = createSupabaseAdmin();
+  const { count, error } = await supabase
+    .from("question_bank_items")
+    .select("*", { count: "exact", head: true })
+    .eq("visibility", "community")
+    .eq("is_published", true);
+
+  if (error) {
+    throw new Error(`Falha ao contar banco de questões: ${error.message}`);
+  }
+
+  return count ?? 0;
 }
 
 function runPipelineForTopic(topic, args, deadlineMs) {
@@ -111,12 +137,22 @@ function runPipelineForTopic(topic, args, deadlineMs) {
 }
 
 async function main() {
+  const args = parseArgs(process.argv.slice(2));
+
+  if (!args.dryRun && args.targetPublicCount > 0) {
+    const current = await countPublishedQuestions();
+    log(`Acervo público atual: ${current}/${args.targetPublicCount}`);
+    if (current >= args.targetPublicCount) {
+      log("Meta de questões públicas já atingida; pulando geração IA.");
+      return;
+    }
+  }
+
   if (!process.env.GEMINI_API_KEY?.trim()) {
     throw new Error("Defina GEMINI_API_KEY para o pipeline automático.");
   }
 
-  const args = parseArgs(process.argv.slice(2));
-  const topics = pickTopicsForRun(args.topicsPerRun);
+  const topics = pickTopicsForRun(args.topicsPerRun, args.seed ?? undefined);
 
   log("=== Planify · Alimentação automática do banco (IA) ===");
   log(`Temas nesta rodada: ${topics.length} × ${args.questionsPerTopic} questões`);

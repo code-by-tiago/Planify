@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { PlanifyPageHero } from "@/components/pro/PlanifyPageHero";
 import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
+import { MaterialTypedPreview } from "@/components/materiais/preview/MaterialTypedPreview";
 import { planifyAuthenticatedFetch } from "@/lib/auth/authenticated-fetch";
 import {
   getQuestionBankComponenteOptions,
@@ -22,9 +23,7 @@ import {
   isCuratedQuestion,
   isHumanReviewedQuestion,
 } from "@/lib/banco-questoes/question-bank-curation";
-import {
-  stashQuestionsForProva,
-} from "@/lib/banco-questoes/question-bank-storage";
+import { CURATED_QUESTION_BANK_ITEMS } from "@/lib/banco-questoes/question-bank-curated-catalog";
 import { splitEmbeddedReadingText } from "@/lib/banco-questoes/question-bank-self-contained";
 import { extractQuestionsFromMaterialOutput } from "@/lib/banco-questoes/question-bank-extract";
 import {
@@ -43,14 +42,15 @@ import {
   listImportableSources,
   type ImportableQuestionSource,
 } from "@/lib/banco-questoes/question-bank-import-client";
-import {
-  extractQuestionsFromPdfFiles,
-  type PdfQuestionExtractionResult,
-} from "@/lib/banco-questoes/question-bank-pdf-import-client";
 import { fetchMaterialEstrutura } from "@/lib/materiais/material-estrutura-client";
 import { loadHistoryItems } from "@/lib/history/history-storage";
 import { requestExamAssemblyFromBank } from "@/lib/materiais/exam-bank-montar-client";
 import { openMaterialInEditor } from "@/lib/materiais/material-editor-flow";
+import {
+  renderGabaritoTable,
+  renderQuestionCard,
+  wrapProfessionalDocument,
+} from "@/lib/materiais/material-document-layout";
 import { dashboardToolHref } from "@/lib/pro/toolRoutes";
 import type { MaterialAIOutput } from "@/types/ai";
 import type { MaterialEngineInput } from "@/server/materials/material-engine-types";
@@ -108,7 +108,7 @@ function newId(): string {
 }
 
 function isLocalOnlyQuestionId(id: string): boolean {
-  return id.startsWith("qb-");
+  return id.startsWith("qb-") || id.startsWith("curated-planify-");
 }
 
 function buildAvaliacaoTitle(tipo: "prova" | "lista", tema: string): string {
@@ -140,6 +140,110 @@ function resolveQuestionDisplay(item: QuestionBankItem): {
   };
 }
 
+function buildQuestionBankMaterialHtml(
+  selected: QuestionBankItem[],
+  payload: MaterialEngineInput,
+  tipoMaterial: "prova" | "lista",
+): string {
+  const title = buildAvaliacaoTitle(tipoMaterial, String(payload.tema || ""));
+  const itemLabel = tipoMaterial === "lista" ? "Exercício" : "Questão";
+  const questions = selected
+    .map((item, index) => {
+      const display = resolveQuestionDisplay(item);
+      const statement = display.textoApoio?.trim()
+        ? `Texto para leitura:\n${display.textoApoio.trim()}\n\n${display.enunciado}`
+        : display.enunciado;
+
+      return renderQuestionCard({
+        number: index + 1,
+        statement,
+        options: item.alternativas,
+        questionType: item.tipo,
+        label: itemLabel,
+        compact: true,
+      });
+    })
+    .join("");
+  const gabarito = renderGabaritoTable(
+    selected.map((item, index) => {
+      const answer =
+        item.respostaEsperada ||
+        item.criterioCorrecao ||
+        "Resposta a critério do professor.";
+      return { number: index + 1, answer };
+    }),
+  );
+
+  return wrapProfessionalDocument(
+    {
+      title,
+      subtitle: [payload.componente, payload.anoSerie].filter(Boolean).join(" · "),
+      summary: "",
+      tipo: tipoMaterial,
+      tema: String(payload.tema || ""),
+      request: {
+        tipoMaterial,
+        tema: String(payload.tema || ""),
+        componenteCurricular: String(payload.componente || ""),
+        anoSerie: String(payload.anoSerie || ""),
+        etapa: String(payload.etapa || ""),
+      },
+    },
+    `<section class="planify-questoes-block planify-questoes-block-direct">${questions}</section>${gabarito}`,
+  );
+}
+
+function buildQuestionBankMaterialOutput(
+  selected: QuestionBankItem[],
+  payload: MaterialEngineInput,
+  tipoMaterial: "prova" | "lista",
+): MaterialAIOutput {
+  const tema = String(payload.tema || "Avaliação do banco");
+  return {
+    titulo: buildAvaliacaoTitle(tipoMaterial, tema),
+    subtitulo: [payload.componente, payload.anoSerie].filter(Boolean).join(" · "),
+    tipo: tipoMaterial,
+    resumo: `Material montado com ${selected.length} questão(ões) do banco Planify.`,
+    dadosGerais: {
+      etapa: String(payload.etapa || ""),
+      anoSerie: String(payload.anoSerie || ""),
+      componenteCurricular: String(payload.componente || ""),
+      tema,
+    },
+    objetivos: [`Avaliar aprendizagens relacionadas a ${tema}.`],
+    conteudos: [tema],
+    orientacoesProfessor: [
+      "Revise os enunciados, ajuste a pontuação e adapte o tempo de aplicação à turma.",
+    ],
+    orientacoesAluno: ["Leia cada questão com atenção antes de responder."],
+    introducao: "",
+    secoes: [],
+    questoes: selected.map((item, index) => ({
+      numero: index + 1,
+      tipo: item.tipo,
+      enunciado: resolveQuestionDisplay(item).enunciado,
+      alternativas: item.alternativas,
+      respostaEsperada: item.respostaEsperada,
+      criterioCorrecao: item.criterioCorrecao,
+    })),
+    criteriosAvaliacao: [
+      "Correção conceitual das respostas.",
+      "Justificativa coerente quando solicitada.",
+    ],
+    gabarito: selected.map(
+      (item, index) =>
+        `${index + 1}. ${
+          item.respostaEsperada ||
+          item.criterioCorrecao ||
+          "Resposta a critério do professor."
+        }`,
+    ),
+    adaptacoesInclusivas: [],
+    sugestoesUso: ["Aplicar como avaliação diagnóstica, formativa ou revisão dirigida."],
+    alertas: [],
+  };
+}
+
 type RemixDraft = {
   enunciado: string;
   tipo: string;
@@ -158,6 +262,107 @@ const EMPTY_APPLIED_SEARCH: AppliedQuestionBankSearch = {
   bnccCodigos: undefined,
   bnccSearchTerms: undefined,
 };
+
+type EmbeddedBankStep = "setup" | "browse";
+type EmbeddedQuestionBankTab = "draft" | "bank";
+type EmbeddedQuestionKind = "objetiva" | "discursiva";
+type EmbeddedDifficulty = "Muito facil" | "Facil" | "Medio" | "Dificil" | "Muito dificil";
+
+const EMBEDDED_BANK_PAGE_SIZE = 20;
+const EMBEDDED_DIFFICULTY_OPTIONS: EmbeddedDifficulty[] = [
+  "Muito facil",
+  "Facil",
+  "Medio",
+  "Dificil",
+  "Muito dificil",
+];
+const DEFAULT_KIND_FILTERS: Record<EmbeddedQuestionKind, boolean> = {
+  objetiva: true,
+  discursiva: true,
+};
+const DEFAULT_DIFFICULTY_FILTERS: Record<EmbeddedDifficulty, boolean> = {
+  "Muito facil": true,
+  Facil: true,
+  Medio: true,
+  Dificil: true,
+  "Muito dificil": true,
+};
+const ALTERNATIVE_LABELS = ["A", "B", "C", "D", "E", "F"];
+
+function normalizeTextForQuestionBank(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+function getEmbeddedQuestionKind(item: QuestionBankItem): EmbeddedQuestionKind {
+  const tipo = normalizeTextForQuestionBank(item.tipo || "");
+  if (tipo.includes("objet") || item.alternativas.length >= 2) return "objetiva";
+  return "discursiva";
+}
+
+function getEmbeddedQuestionDifficulty(item: QuestionBankItem): EmbeddedDifficulty {
+  const searchable = normalizeTextForQuestionBank(
+    [item.tipo, item.tema, item.sourceTitle, ...item.tags].filter(Boolean).join(" "),
+  );
+
+  if (searchable.includes("muito dificil") || searchable.includes("avancad")) {
+    return "Muito dificil";
+  }
+  if (searchable.includes("dificil") || getQuestionBankCollection(item) === "concurso") {
+    return "Dificil";
+  }
+  if (searchable.includes("muito facil")) return "Muito facil";
+  if (searchable.includes("facil")) return "Facil";
+  return "Medio";
+}
+
+function getEmbeddedDifficultyLabel(value: EmbeddedDifficulty): string {
+  switch (value) {
+    case "Muito facil":
+      return "Muito fácil";
+    case "Facil":
+      return "Fácil";
+    case "Medio":
+      return "Médio";
+    case "Dificil":
+      return "Difícil";
+    case "Muito dificil":
+      return "Muito difícil";
+    default:
+      return value;
+  }
+}
+
+function getEmbeddedQuestionSourceLabel(item: QuestionBankItem): string {
+  if (item.isSchool) return "Escola";
+  if (item.isCommunity) return item.authorName ? "Professor" : "Comunidade";
+  if (isCuratedQuestion(item)) return "Planify AI";
+  return "Meu banco";
+}
+
+function getEmbeddedQuestionYear(item: QuestionBankItem): string {
+  const year = new Date(item.createdAt).getFullYear();
+  return Number.isFinite(year) ? String(year) : "Banco";
+}
+
+function isExpectedAlternative(item: QuestionBankItem, alternative: string, index: number): boolean {
+  const expected = normalizeTextForQuestionBank(item.respostaEsperada.trim());
+  if (!expected) return false;
+
+  const label = (ALTERNATIVE_LABELS[index] || String(index + 1)).toLowerCase();
+  const normalizedAlternative = normalizeTextForQuestionBank(alternative.trim());
+
+  return (
+    expected === label ||
+    expected.startsWith(`${label}.`) ||
+    expected.startsWith(`${label})`) ||
+    expected.includes(`alternativa ${label}`) ||
+    expected.includes(`opcao ${label}`) ||
+    expected === normalizedAlternative
+  );
+}
 
 type BancoQuestoesClientProps = {
   /** Exibe o acervo dentro da criação de uma prova ou lista. */
@@ -193,18 +398,22 @@ export function BancoQuestoesClient({
   const [serverSelectedIds, setServerSelectedIds] = useState<Set<string>>(new Set());
   const [serverLoading, setServerLoading] = useState(false);
   const [serverImporting, setServerImporting] = useState(false);
-  const [pdfModalOpen, setPdfModalOpen] = useState(false);
-  const [pdfFiles, setPdfFiles] = useState<File[]>([]);
-  const [pdfColumns, setPdfColumns] = useState<"auto" | "1" | "2">("auto");
-  const [pdfSaveToBank, setPdfSaveToBank] = useState(true);
-  const [pdfExtracting, setPdfExtracting] = useState(false);
-  const [pdfResult, setPdfResult] = useState<PdfQuestionExtractionResult | null>(null);
   const [remixSource, setRemixSource] = useState<QuestionBankItem | null>(null);
   const [remixDraft, setRemixDraft] = useState<RemixDraft | null>(null);
   const [publishingId, setPublishingId] = useState<string | null>(null);
   const [assembling, setAssembling] = useState(false);
   const [curationSummary, setCurationSummary] =
     useState<QuestionBankCurationSummary | null>(null);
+  const [embeddedBankStep, setEmbeddedBankStep] = useState<EmbeddedBankStep>(
+    embedded ? "setup" : "browse",
+  );
+  const [embeddedActiveTab, setEmbeddedActiveTab] =
+    useState<EmbeddedQuestionBankTab>("bank");
+  const [embeddedTypeFilters, setEmbeddedTypeFilters] =
+    useState<Record<EmbeddedQuestionKind, boolean>>(DEFAULT_KIND_FILTERS);
+  const [embeddedDifficultyFilters, setEmbeddedDifficultyFilters] =
+    useState<Record<EmbeddedDifficulty, boolean>>(DEFAULT_DIFFICULTY_FILTERS);
+  const [embeddedBankPage, setEmbeddedBankPage] = useState(1);
 
   useEffect(() => {
     void syncFromServerOnMount()
@@ -232,10 +441,18 @@ export function BancoQuestoesClient({
       });
   }, []);
 
-  const allItems = useMemo(
-    () => [...items, ...communityItems, ...schoolItems],
-    [communityItems, items, schoolItems],
-  );
+  const allItems = useMemo(() => {
+    const byId = new Map<string, QuestionBankItem>();
+    for (const item of [
+      ...CURATED_QUESTION_BANK_ITEMS,
+      ...items,
+      ...communityItems,
+      ...schoolItems,
+    ]) {
+      byId.set(item.id, item);
+    }
+    return Array.from(byId.values());
+  }, [communityItems, items, schoolItems]);
 
   const sourceOptions = useMemo(
     () =>
@@ -310,6 +527,47 @@ export function BancoQuestoesClient({
     [filtered, relatedItems],
   );
 
+  const embeddedBankItems = useMemo(() => {
+    return visibleItems.filter((item) => {
+      const kind = getEmbeddedQuestionKind(item);
+      const difficulty = getEmbeddedQuestionDifficulty(item);
+      return embeddedTypeFilters[kind] && embeddedDifficultyFilters[difficulty];
+    });
+  }, [embeddedDifficultyFilters, embeddedTypeFilters, visibleItems]);
+
+  const embeddedBankTotalPages = Math.max(
+    1,
+    Math.ceil(embeddedBankItems.length / EMBEDDED_BANK_PAGE_SIZE),
+  );
+  const embeddedSafePage = Math.min(embeddedBankPage, embeddedBankTotalPages);
+  const embeddedPagedItems = useMemo(() => {
+    const start = (embeddedSafePage - 1) * EMBEDDED_BANK_PAGE_SIZE;
+    return embeddedBankItems.slice(start, start + EMBEDDED_BANK_PAGE_SIZE);
+  }, [embeddedBankItems, embeddedSafePage]);
+  const embeddedPageStart =
+    embeddedBankItems.length === 0 ? 0 : (embeddedSafePage - 1) * EMBEDDED_BANK_PAGE_SIZE + 1;
+  const embeddedPageEnd = Math.min(
+    embeddedSafePage * EMBEDDED_BANK_PAGE_SIZE,
+    embeddedBankItems.length,
+  );
+  const embeddedPageNumbers = useMemo(() => {
+    const pages = new Set<number>([1, embeddedBankTotalPages]);
+    for (let page = embeddedSafePage - 1; page <= embeddedSafePage + 1; page += 1) {
+      if (page >= 1 && page <= embeddedBankTotalPages) pages.add(page);
+    }
+    return Array.from(pages).sort((a, b) => a - b);
+  }, [embeddedBankTotalPages, embeddedSafePage]);
+
+  useEffect(() => {
+    setEmbeddedBankPage(1);
+  }, [effectiveFilter, embeddedDifficultyFilters, embeddedTypeFilters]);
+
+  useEffect(() => {
+    if (embeddedBankPage > embeddedBankTotalPages) {
+      setEmbeddedBankPage(embeddedBankTotalPages);
+    }
+  }, [embeddedBankPage, embeddedBankTotalPages]);
+
   const bnccSupportedStage =
     filter.etapa === "Ensino Fundamental" || filter.etapa === "Ensino Médio";
   function runQuestionBankSearch() {
@@ -323,6 +581,37 @@ export function BancoQuestoesClient({
       bncc: manualBncc.trim(),
       bnccCodigos: undefined,
       bnccSearchTerms: undefined,
+    });
+  }
+
+  function startEmbeddedBankSearch() {
+    setImportError("");
+    setImportStatus("");
+    runQuestionBankSearch();
+    setEmbeddedBankStep("browse");
+    setEmbeddedActiveTab("bank");
+    setEmbeddedBankPage(1);
+  }
+
+  function openBlankMaterial() {
+    router.push(dashboardToolHref(targetMaterial ?? "prova"));
+  }
+
+  function toggleEmbeddedTypeFilter(kind: EmbeddedQuestionKind) {
+    setEmbeddedTypeFilters((current) => {
+      if (current[kind] && Object.values(current).filter(Boolean).length === 1) {
+        return current;
+      }
+      return { ...current, [kind]: !current[kind] };
+    });
+  }
+
+  function toggleEmbeddedDifficultyFilter(difficulty: EmbeddedDifficulty) {
+    setEmbeddedDifficultyFilters((current) => {
+      if (current[difficulty] && Object.values(current).filter(Boolean).length === 1) {
+        return current;
+      }
+      return { ...current, [difficulty]: !current[difficulty] };
     });
   }
 
@@ -369,6 +658,25 @@ export function BancoQuestoesClient({
       if (next.has(id)) next.delete(id);
       else next.add(id);
       return next;
+    });
+  }
+
+  function removeSelectedItem(id: string) {
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      next.delete(id);
+      return next;
+    });
+  }
+
+  function moveSelectedItem(id: string, direction: -1 | 1) {
+    setSelectedIds((current) => {
+      const ids = Array.from(current);
+      const index = ids.indexOf(id);
+      const target = index + direction;
+      if (index < 0 || target < 0 || target >= ids.length) return current;
+      [ids[index], ids[target]] = [ids[target], ids[index]];
+      return new Set(ids);
     });
   }
 
@@ -547,52 +855,6 @@ export function BancoQuestoesClient({
     }
   }
 
-  async function extractFromPdf() {
-    if (!pdfFiles.length) {
-      setImportStatus("Selecione ao menos um PDF de prova.");
-      return;
-    }
-
-    setPdfExtracting(true);
-    setImportError("");
-    setPdfResult(null);
-    try {
-      const result = await extractQuestionsFromPdfFiles({
-        files: pdfFiles,
-        importToBank: pdfSaveToBank,
-        config: {
-          columns: pdfColumns === "auto" ? "auto" : Number(pdfColumns) === 2 ? 2 : 1,
-          etapa: "ENEM e Vestibulares",
-        },
-      });
-
-      let localImported = 0;
-      let localDuplicates = 0;
-      if (pdfSaveToBank) {
-        for (const item of result.items) {
-          const saved = upsertWithFeedback(item);
-          if (saved) localImported += 1;
-          else localDuplicates += 1;
-        }
-        refreshFromHybrid();
-      }
-
-      setPdfResult(result);
-      const extracted = result.questions.length;
-      const imported = pdfSaveToBank ? result.imported || localImported : 0;
-      const duplicates = pdfSaveToBank ? result.duplicates + localDuplicates : 0;
-      setImportStatus(
-        pdfSaveToBank
-          ? `PDF: ${extracted} extraida(s), ${imported} salva(s), ${duplicates} duplicata(s).`
-          : `PDF: ${extracted} questao(oes) extraida(s) para revisao.`,
-      );
-    } catch (error) {
-      applyImportError(error);
-    } finally {
-      setPdfExtracting(false);
-    }
-  }
-
   function openRemixModal(item: QuestionBankItem) {
     setRemixSource(item);
     setRemixDraft({
@@ -723,6 +985,28 @@ export function BancoQuestoesClient({
     };
   }
 
+  const embeddedDraftPayload = useMemo(() => {
+    if (!selectedItems.length) return null;
+    return buildMontarPayload(selectedItems, targetMaterial ?? "prova");
+  }, [
+    draftQuery,
+    effectiveFilter.query,
+    filter.anoSerie,
+    filter.componente,
+    filter.etapa,
+    selectedItems,
+    targetMaterial,
+  ]);
+
+  const embeddedDraftHtml = useMemo(() => {
+    if (!embeddedDraftPayload || !selectedItems.length) return "";
+    return buildQuestionBankMaterialHtml(
+      selectedItems,
+      embeddedDraftPayload,
+      targetMaterial ?? "prova",
+    );
+  }, [embeddedDraftPayload, selectedItems, targetMaterial]);
+
   async function montarAvaliacao(tipoMaterial: "prova" | "lista") {
     const selected = selectedItems;
     if (!selected.length) {
@@ -760,21 +1044,37 @@ export function BancoQuestoesClient({
           },
           { from: "banco-questoes" },
         );
-        setSelectedIds(new Set());
         setImportStatus(
-          `${selected.length} questão(ões) montadas — editor aberto.`,
+          `${selected.length} questão(ões) geradas — editor aberto.`,
         );
         return;
       }
 
       for (const item of selected) {
-        void incrementQuestionUsage(item.id);
+        if (!isLocalOnlyQuestionId(item.id)) {
+          void incrementQuestionUsage(item.id);
+        }
       }
-      stashQuestionsForProva(selected);
-      router.push(dashboardToolHref(tipoMaterial));
-      setImportStatus(
-        `${selected.length} questão(ões) enviadas — revise em Meus materiais e clique em Criar.`,
+      const titulo = buildAvaliacaoTitle(tipoMaterial, payload.tema || "");
+      const estrutura = buildQuestionBankMaterialOutput(selected, payload, tipoMaterial);
+      openMaterialInEditor(
+        buildQuestionBankMaterialHtml(selected, payload, tipoMaterial),
+        titulo,
+        {
+          toolId: tipoMaterial,
+          tema: payload.tema || "",
+          componente: payload.componente || "",
+          anoSerie: payload.anoSerie || "",
+          etapa: payload.etapa,
+          pipeline: "bank-selected-local",
+          qualityScore: null,
+          qualityIssues: [],
+          estrutura,
+          generationPayload: payload,
+        },
+        { from: "banco-questoes" },
       );
+      setImportStatus(`${selected.length} questão(ões) geradas — editor aberto.`);
     } catch (error) {
       applyImportError(error);
     } finally {
@@ -800,6 +1100,7 @@ export function BancoQuestoesClient({
   const showCommunityEmpty =
     filter.source === "comunidade" && !syncing && filtered.length === 0;
   const targetLabel = targetMaterial === "lista" ? "lista" : "prova";
+  const targetTitle = targetMaterial === "lista" ? "Lista" : "Prova";
   const showQuestionList = !embedded || searchMode === "search";
   const pageHeader = (
     <PlanifyPageHero
@@ -815,6 +1116,716 @@ export function BancoQuestoesClient({
       }
       icon="library"
     />
+  );
+
+  const embeddedSourceFilters: Array<{ source: QuestionBankSource; label: string }> = [
+    { source: "todas", label: "Todos" },
+    { source: "curadas", label: "Questões Planify" },
+    { source: "comunidade", label: "Questões de professores" },
+    ...(school.hasSchool ? [{ source: "escola" as QuestionBankSource, label: "Minha escola" }] : []),
+  ];
+
+  const embeddedBankContent = (
+    <div className={`min-h-[74vh] bg-slate-50${selectedItems.length > 0 ? " pb-28" : ""}`}>
+      {embeddedBankStep === "setup" ? (
+        <div className="flex min-h-[74vh] flex-col bg-white">
+          <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3 sm:px-6">
+            {onBack ? (
+              <button
+                type="button"
+                onClick={onBack}
+                className="inline-flex items-center gap-2 rounded-lg px-2 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100"
+              >
+                <PlanifyIcon name="arrowLeft" className="h-4 w-4" />
+                Voltar
+              </button>
+            ) : (
+              <span />
+            )}
+            {onBack ? (
+              <button
+                type="button"
+                onClick={onBack}
+                aria-label="Fechar banco de questões"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+              >
+                <PlanifyIcon name="close" className="h-4 w-4" />
+              </button>
+            ) : null}
+          </div>
+
+          <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col px-4 py-8 sm:px-6">
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-sky-50 text-sky-700">
+                <PlanifyIcon name="fileText" className="h-6 w-6" />
+              </div>
+              <div>
+                <h2 className="text-xl font-black text-slate-950">{targetTitle}</h2>
+                <p className="text-sm font-medium text-slate-500">
+                  Gere uma {targetLabel} para avaliar seus alunos
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-8 grid overflow-hidden rounded-lg border border-slate-200 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={onBack}
+                className="flex min-h-16 flex-col items-center justify-center gap-1 border-b border-slate-200 bg-white px-4 py-3 text-center text-sm font-bold text-slate-700 hover:bg-slate-50 sm:border-b-0 sm:border-r"
+              >
+                <span className="inline-flex items-center gap-2">
+                  <PlanifyIcon name="spark" className="h-4 w-4" />
+                  {targetTitle} automática
+                </span>
+                <span className="text-[11px] font-medium text-slate-500">
+                  Comece com uma lista pronta e edite como quiser.
+                </span>
+              </button>
+              <button
+                type="button"
+                className="flex min-h-16 flex-col items-center justify-center gap-1 border-b-2 border-blue-500 bg-blue-50 px-4 py-3 text-center text-sm font-black text-slate-900"
+              >
+                <span>Banco de questões</span>
+                <span className="text-[11px] font-medium text-slate-500">
+                  Crie selecionando manualmente as questões.
+                </span>
+              </button>
+            </div>
+
+            <div className="mt-7 grid gap-4 md:grid-cols-2">
+              <label className="block">
+                <span className={HUD_SECTION_LABEL}>Nível</span>
+                <select
+                  value={filter.etapa}
+                  onChange={(event) =>
+                    patchFilter({
+                      etapa: event.target.value as QuestionBankFilter["etapa"],
+                      anoSerie: "todos",
+                      componente: "todos",
+                    })
+                  }
+                  className={HUD_FIELD_CLASS}
+                >
+                  {QUESTION_BANK_ETAPA_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="block">
+                <span className={HUD_SECTION_LABEL}>Ano escolar</span>
+                <select
+                  value={filter.anoSerie}
+                  onChange={(event) => patchFilter({ anoSerie: event.target.value })}
+                  className={HUD_FIELD_CLASS}
+                >
+                  {yearOptions.map((year) => (
+                    <option key={year} value={year}>
+                      {year === "todos" ? "Todos" : year}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="block md:col-span-2">
+                <span className={HUD_SECTION_LABEL}>Disciplina</span>
+                <select
+                  value={filter.componente}
+                  onChange={(event) => patchFilter({ componente: event.target.value })}
+                  className={HUD_FIELD_CLASS}
+                >
+                  {componenteOptions.map((component) => (
+                    <option key={component} value={component}>
+                      {component === "todos" ? "Todas" : component}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="block md:col-span-2">
+                <span className={HUD_SECTION_LABEL}>Assunto</span>
+                <input
+                  value={draftQuery}
+                  onChange={(event) => setDraftQuery(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      startEmbeddedBankSearch();
+                    }
+                  }}
+                  placeholder="Digite o assunto"
+                  className={HUD_FIELD_CLASS}
+                />
+              </label>
+            </div>
+          </div>
+
+          <div className="border-t border-slate-100 bg-white px-4 py-4 sm:px-6">
+            <div className="mx-auto flex w-full max-w-4xl flex-col items-center gap-3">
+              <button
+                type="button"
+                onClick={startEmbeddedBankSearch}
+                className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 py-3 text-sm font-black text-white shadow-sm transition hover:bg-blue-700"
+              >
+                Buscar questões
+              </button>
+              <button
+                type="button"
+                onClick={openBlankMaterial}
+                className="text-xs font-bold text-slate-500 hover:text-slate-800"
+              >
+                Ou criar uma {targetLabel} em branco
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="min-h-[74vh] bg-slate-50">
+          <div className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur">
+            <div className="flex items-center justify-between gap-3 px-4 py-3 sm:px-6">
+              <div className="flex min-w-0 items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setEmbeddedBankStep("setup")}
+                  aria-label="Voltar para filtros iniciais"
+                  className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-blue-600 hover:bg-blue-50"
+                >
+                  <PlanifyIcon name="arrowLeft" className="h-4 w-4" />
+                </button>
+                <div className="min-w-0">
+                  <h2 className="truncate text-lg font-black text-slate-950">
+                    Lista do banco de questões
+                  </h2>
+                  <p className="text-xs font-semibold text-slate-500">
+                    {selectedItems.length} na minha {targetLabel}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                {onBack ? (
+                  <button
+                    type="button"
+                    onClick={onBack}
+                    aria-label="Fechar banco de questões"
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+                  >
+                    <PlanifyIcon name="close" className="h-4 w-4" />
+                  </button>
+                ) : null}
+              </div>
+            </div>
+            <div className="flex overflow-x-auto border-t border-slate-100 px-4 sm:px-6">
+              <button
+                type="button"
+                className={`inline-flex min-h-11 items-center gap-2 border-b-2 px-4 text-sm ${
+                  embeddedActiveTab === "draft"
+                    ? "border-blue-500 bg-blue-50 font-black text-slate-950"
+                    : "border-transparent font-bold text-slate-600 hover:text-slate-900"
+                }`}
+                onClick={() => setEmbeddedActiveTab("draft")}
+              >
+                <PlanifyIcon name="fileText" className="h-4 w-4" />
+                Minha {targetLabel}
+                <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[11px] text-blue-700">
+                  {selectedItems.length}
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setEmbeddedActiveTab("bank")}
+                className={`inline-flex min-h-11 items-center gap-2 border-b-2 px-4 text-sm ${
+                  embeddedActiveTab === "bank"
+                    ? "border-blue-500 bg-blue-50 font-black text-slate-950"
+                    : "border-transparent font-bold text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                <PlanifyIcon name="library" className="h-4 w-4" />
+                Banco de questões
+              </button>
+              <button
+                type="button"
+                onClick={onBack}
+                className="inline-flex min-h-11 items-center gap-2 border-b-2 border-transparent px-4 text-sm font-bold text-slate-600 hover:text-slate-900"
+              >
+                <PlanifyIcon name="spark" className="h-4 w-4" />
+                Criar com IA
+              </button>
+            </div>
+          </div>
+
+          {embeddedActiveTab === "draft" ? (
+            <div className="min-h-[calc(74vh-104px)] px-4 py-4 sm:px-6">
+              <div className="mx-auto grid w-full max-w-6xl gap-4 lg:grid-cols-[320px_minmax(0,1fr)]">
+                <aside className="rounded-lg border border-slate-200 bg-white p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-black uppercase tracking-wide text-blue-600">
+                        Minha {targetLabel}
+                      </p>
+                      <h3 className="mt-1 text-base font-black text-slate-950">
+                        {selectedItems.length} questão(ões)
+                      </h3>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setEmbeddedActiveTab("bank")}
+                      className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50"
+                    >
+                      Adicionar mais
+                    </button>
+                  </div>
+
+                  {selectedItems.length === 0 ? (
+                    <div className="mt-5 rounded-lg border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center">
+                      <p className="text-sm font-bold text-slate-700">
+                        Nenhuma questão adicionada ainda.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setEmbeddedActiveTab("bank")}
+                        className="mt-3 inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-xs font-black text-white hover:bg-blue-700"
+                      >
+                        Buscar questões
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="mt-5 space-y-2">
+                      {selectedItems.map((item, index) => {
+                        const display = resolveQuestionDisplay(item);
+                        return (
+                          <article
+                            key={`draft-${item.id}`}
+                            className="rounded-lg border border-slate-200 bg-slate-50 p-3"
+                          >
+                            <div className="flex items-start gap-3">
+                              <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-blue-100 text-xs font-black text-blue-700">
+                                {index + 1}
+                              </span>
+                              <div className="min-w-0 flex-1">
+                                <p className="line-clamp-3 text-xs font-semibold leading-relaxed text-slate-800">
+                                  {display.enunciado}
+                                </p>
+                                <p className="mt-1 text-[11px] font-bold text-slate-500">
+                                  {item.componente} · {item.anoSerie}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              <button
+                                type="button"
+                                onClick={() => moveSelectedItem(item.id, -1)}
+                                disabled={index === 0}
+                                className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-bold text-slate-600 hover:bg-slate-100 disabled:opacity-40"
+                              >
+                                Subir
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => moveSelectedItem(item.id, 1)}
+                                disabled={index === selectedItems.length - 1}
+                                className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-bold text-slate-600 hover:bg-slate-100 disabled:opacity-40"
+                              >
+                                Descer
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => removeSelectedItem(item.id)}
+                                className="rounded-lg border border-rose-200 bg-white px-2.5 py-1.5 text-[11px] font-bold text-rose-700 hover:bg-rose-50"
+                              >
+                                Remover
+                              </button>
+                            </div>
+                          </article>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  <div className="mt-5 flex flex-col gap-2 border-t border-slate-100 pt-4">
+                    <button
+                      type="button"
+                      onClick={() => void montarAvaliacao(targetMaterial ?? "prova")}
+                      disabled={assembling || selectedItems.length === 0}
+                      className="rounded-lg bg-blue-600 px-4 py-3 text-sm font-black text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {assembling ? "Gerando..." : `Gerar ${targetLabel}`}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={clearSelection}
+                      disabled={selectedItems.length === 0}
+                      className="rounded-lg border border-slate-200 px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-40"
+                    >
+                      Limpar seleção
+                    </button>
+                  </div>
+                </aside>
+
+                <main className="min-w-0 rounded-lg border border-slate-200 bg-white p-3 sm:p-4">
+                  {embeddedDraftHtml ? (
+                    <MaterialTypedPreview
+                      html={embeddedDraftHtml}
+                      tipoMaterial={targetMaterial ?? "prova"}
+                    />
+                  ) : (
+                    <div className="flex min-h-[360px] items-center justify-center rounded-lg border border-dashed border-slate-300 bg-slate-50 px-5 text-center">
+                      <p className="text-sm font-semibold text-slate-600">
+                        A prévia da prova aparece aqui conforme você adiciona questões.
+                      </p>
+                    </div>
+                  )}
+                </main>
+              </div>
+            </div>
+          ) : (
+          <div className="grid min-h-[calc(74vh-104px)] grid-cols-1 lg:grid-cols-[260px_minmax(0,1fr)]">
+            <aside className="border-b border-slate-200 bg-white px-4 py-4 lg:border-b-0 lg:border-r">
+              <div className="space-y-5">
+                <label className="block">
+                  <span className={HUD_SECTION_LABEL}>Ano escolar</span>
+                  <select
+                    value={filter.anoSerie}
+                    onChange={(event) => patchFilter({ anoSerie: event.target.value })}
+                    className={HUD_FIELD_CLASS}
+                  >
+                    {yearOptions.map((year) => (
+                      <option key={year} value={year}>
+                        {year === "todos" ? "Todos" : year}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="block">
+                  <span className={HUD_SECTION_LABEL}>Disciplina</span>
+                  <select
+                    value={filter.componente}
+                    onChange={(event) => patchFilter({ componente: event.target.value })}
+                    className={HUD_FIELD_CLASS}
+                  >
+                    {componenteOptions.map((component) => (
+                      <option key={component} value={component}>
+                        {component === "todos" ? "Todas" : component}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="block">
+                  <span className={HUD_SECTION_LABEL}>Assunto</span>
+                  <div className="flex gap-2">
+                    <input
+                      value={draftQuery}
+                      onChange={(event) => setDraftQuery(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          event.preventDefault();
+                          startEmbeddedBankSearch();
+                        }
+                      }}
+                      placeholder="Figuras de linguagem"
+                      className={HUD_FIELD_CLASS}
+                    />
+                    <button
+                      type="button"
+                      onClick={startEmbeddedBankSearch}
+                      aria-label="Buscar assunto"
+                      className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-blue-600 hover:bg-blue-50"
+                    >
+                      <PlanifyIcon name="search" className="h-4 w-4" />
+                    </button>
+                  </div>
+                </label>
+
+                <div>
+                  <div className="flex items-center justify-between">
+                    <span className={HUD_SECTION_LABEL}>Tipo de questões</span>
+                    <span className="text-[10px] font-bold text-slate-400">Opcional</span>
+                  </div>
+                  <div className="mt-2 rounded-lg border border-slate-200 bg-slate-50">
+                    {(
+                      [
+                        ["discursiva", "Discursiva"],
+                        ["objetiva", "Objetiva"],
+                      ] as Array<[EmbeddedQuestionKind, string]>
+                    ).map(([kind, label]) => (
+                      <label
+                        key={kind}
+                        className="flex min-h-10 cursor-pointer items-center gap-2 border-b border-slate-200 px-3 text-sm font-semibold text-slate-700 last:border-b-0"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={embeddedTypeFilters[kind]}
+                          onChange={() => toggleEmbeddedTypeFilter(kind)}
+                          className="h-4 w-4 rounded border-slate-300 text-blue-600"
+                        />
+                        {label}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between">
+                    <span className={HUD_SECTION_LABEL}>Fontes</span>
+                    <span className="text-[10px] font-bold text-slate-400">Opcional</span>
+                  </div>
+                  <div className="mt-2 rounded-lg border border-slate-200 bg-slate-50">
+                    {embeddedSourceFilters.map((option) => (
+                      <label
+                        key={option.source}
+                        className="flex min-h-10 cursor-pointer items-center gap-2 border-b border-slate-200 px-3 text-sm font-semibold text-slate-700 last:border-b-0"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={filter.source === option.source}
+                          onChange={() =>
+                            patchFilter({
+                              source:
+                                filter.source === option.source && option.source !== "todas"
+                                  ? "todas"
+                                  : option.source,
+                            })
+                          }
+                          className="h-4 w-4 rounded border-slate-300 text-blue-600"
+                        />
+                        {option.label}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between">
+                    <span className={HUD_SECTION_LABEL}>Dificuldade</span>
+                    <span className="text-[10px] font-bold text-slate-400">Opcional</span>
+                  </div>
+                  <div className="mt-2 rounded-lg border border-slate-200 bg-slate-50">
+                    {EMBEDDED_DIFFICULTY_OPTIONS.map((difficulty) => (
+                      <label
+                        key={difficulty}
+                        className="flex min-h-10 cursor-pointer items-center gap-2 border-b border-slate-200 px-3 text-sm font-semibold text-slate-700 last:border-b-0"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={embeddedDifficultyFilters[difficulty]}
+                          onChange={() => toggleEmbeddedDifficultyFilter(difficulty)}
+                          className="h-4 w-4 rounded border-slate-300 text-blue-600"
+                        />
+                        {getEmbeddedDifficultyLabel(difficulty)}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </aside>
+
+            <main className="min-w-0 px-4 py-4 sm:px-6">
+              <div className="mx-auto w-full max-w-5xl">
+                <div className="mb-3 rounded-lg border border-slate-200 bg-white px-3 py-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2 text-sm font-semibold text-slate-600">
+                    <span>
+                      {embeddedPageStart}-{embeddedPageEnd} de {embeddedBankItems.length} questões
+                    </span>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => setEmbeddedBankPage((page) => Math.max(1, page - 1))}
+                        disabled={embeddedSafePage === 1}
+                        aria-label="Página anterior"
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 disabled:opacity-40"
+                      >
+                        <PlanifyIcon name="arrowLeft" className="h-4 w-4" />
+                      </button>
+                      {embeddedPageNumbers.map((page, index) => {
+                        const previous = embeddedPageNumbers[index - 1];
+                        return (
+                          <span key={page} className="inline-flex items-center gap-1">
+                            {previous && page - previous > 1 ? (
+                              <span className="px-1 text-xs text-slate-400">...</span>
+                            ) : null}
+                            <button
+                              type="button"
+                              onClick={() => setEmbeddedBankPage(page)}
+                              className={`h-8 min-w-8 rounded-lg px-2 text-xs font-black ${
+                                page === embeddedSafePage
+                                  ? "bg-blue-100 text-blue-700"
+                                  : "text-slate-600 hover:bg-slate-100"
+                              }`}
+                            >
+                              {page}
+                            </button>
+                          </span>
+                        );
+                      })}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setEmbeddedBankPage((page) =>
+                            Math.min(embeddedBankTotalPages, page + 1),
+                          )
+                        }
+                        disabled={embeddedSafePage === embeddedBankTotalPages}
+                        aria-label="Próxima página"
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 disabled:opacity-40"
+                      >
+                        <PlanifyIcon name="arrowRight" className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {syncing ? (
+                  <p className="rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-500">
+                    Sincronizando banco...
+                  </p>
+                ) : embeddedPagedItems.length === 0 ? (
+                  <div className="rounded-lg border border-slate-200 bg-white px-5 py-10 text-center">
+                    <p className="text-sm font-black text-slate-800">Nenhuma questão encontrada.</p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        resetFilters();
+                        setEmbeddedBankStep("setup");
+                      }}
+                      className="mt-3 inline-flex items-center justify-center rounded-lg border border-slate-200 px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50"
+                    >
+                      Refazer busca
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {embeddedPagedItems.map((item) => {
+                      const selected = selectedIds.has(item.id);
+                      const display = resolveQuestionDisplay(item);
+                      const difficulty = getEmbeddedQuestionDifficulty(item);
+                      const kind = getEmbeddedQuestionKind(item);
+                      return (
+                        <article
+                          key={item.id}
+                          className={`rounded-lg border bg-white p-4 shadow-sm ${
+                            selected ? "border-blue-500 ring-1 ring-blue-200" : "border-slate-200"
+                          }`}
+                        >
+                          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                            <div className="min-w-0 flex-1">
+                              <div className="mb-3 flex flex-wrap items-center gap-2">
+                                <span className="rounded-full bg-amber-50 px-2 py-1 text-[11px] font-black text-amber-700">
+                                  {getEmbeddedDifficultyLabel(difficulty)}
+                                </span>
+                                <span className="text-xs font-bold text-slate-500">
+                                  {getEmbeddedQuestionSourceLabel(item)}
+                                </span>
+                                <span className="text-xs font-bold text-slate-400">•</span>
+                                <span className="text-xs font-bold text-slate-500">
+                                  {getEmbeddedQuestionYear(item)}
+                                </span>
+                                <span className="text-xs font-bold text-slate-400">•</span>
+                                <span className="text-xs font-bold text-slate-500">
+                                  {kind === "objetiva" ? "Objetiva" : "Discursiva"}
+                                </span>
+                              </div>
+                              {display.textoApoio ? (
+                                <p className="mb-3 rounded-lg bg-slate-50 px-3 py-2 text-xs font-medium leading-relaxed text-slate-600">
+                                  {display.textoApoio}
+                                </p>
+                              ) : null}
+                              <p className="text-sm font-semibold leading-relaxed text-slate-950">
+                                {display.enunciado}
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => toggleSelect(item.id)}
+                              className={`inline-flex min-h-10 shrink-0 items-center justify-center rounded-lg px-4 text-xs font-black transition ${
+                                selected
+                                  ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200"
+                                  : "bg-blue-600 text-white shadow-sm hover:bg-blue-700"
+                              }`}
+                            >
+                              {selected ? "Adicionada" : "Adicionar"}
+                            </button>
+                          </div>
+
+                          {item.alternativas.length > 0 ? (
+                            <div className="mt-4 space-y-2">
+                              {item.alternativas.map((alternative, index) => {
+                                const correct = isExpectedAlternative(item, alternative, index);
+                                const label = ALTERNATIVE_LABELS[index] || String(index + 1);
+                                return (
+                                  <div
+                                    key={`${item.id}-${index}`}
+                                    className="flex items-start gap-3 text-sm text-slate-700"
+                                  >
+                                    <span
+                                      className={`mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[11px] font-black ${
+                                        correct
+                                          ? "border-emerald-500 bg-emerald-50 text-emerald-700"
+                                          : "border-slate-300 text-slate-500"
+                                      }`}
+                                    >
+                                      {correct ? "✓" : ""}
+                                    </span>
+                                    <span className="font-bold text-slate-600">{label}.</span>
+                                    <span className="min-w-0 flex-1 leading-relaxed">
+                                      {alternative}
+                                    </span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          ) : item.respostaEsperada ? (
+                            <p className="mt-4 rounded-lg bg-slate-50 px-3 py-2 text-xs font-medium leading-relaxed text-slate-600">
+                              Resposta esperada: {item.respostaEsperada}
+                            </p>
+                          ) : null}
+                        </article>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </main>
+          </div>
+          )}
+        </div>
+      )}
+
+      <GenerationErrorBanner
+        message={importError}
+        retryable={importRetryable}
+        onRetry={() => {
+          setImportError("");
+          startEmbeddedBankSearch();
+        }}
+      />
+
+      {selectedItems.length > 0 && embeddedActiveTab === "bank" ? (
+        <div className="fixed inset-x-4 bottom-4 z-50 mx-auto max-w-4xl rounded-lg border border-slate-200 bg-white p-3 shadow-2xl">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm font-black text-slate-800">
+              {selectedItems.length} questão(ões) na minha {targetLabel}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={clearSelection}
+                className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50"
+              >
+                Limpar
+              </button>
+              <button
+                type="button"
+                onClick={() => setEmbeddedActiveTab("draft")}
+                disabled={assembling}
+                className="rounded-lg bg-blue-600 px-4 py-2 text-xs font-black text-white hover:bg-blue-700 disabled:opacity-50"
+              >
+                Ver minha {targetLabel}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </div>
   );
 
   const content = (
@@ -1136,16 +2147,6 @@ export function BancoQuestoesClient({
                 className="rounded-lg px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-cyan-50"
               >
                 Importar do servidor
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setPdfModalOpen(true);
-                  setPdfResult(null);
-                }}
-                className="rounded-lg px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-cyan-50"
-              >
-                Importar PDF de prova
               </button>
             </div>
           </details>
@@ -1571,121 +2572,6 @@ export function BancoQuestoesClient({
           </div>
         ) : null}
 
-        {pdfModalOpen ? (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4">
-            <div className="max-h-[86vh] w-full max-w-xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
-              <div className="border-b border-slate-100 px-5 py-4">
-                <h3 className="text-sm font-semibold text-slate-900">
-                  Importar PDF de prova
-                </h3>
-                <p className="mt-1 text-sm text-slate-600">
-                  Extraia enunciado, alternativas, texto de apoio e imagens.
-                </p>
-              </div>
-              <div className="max-h-[56vh] space-y-4 overflow-y-auto px-5 py-4">
-                <div>
-                  <label className={HUD_SECTION_LABEL} htmlFor="pdf-question-file">
-                    PDFs
-                  </label>
-                  <input
-                    id="pdf-question-file"
-                    type="file"
-                    accept="application/pdf"
-                    multiple
-                    onChange={(event) => {
-                      setPdfFiles(Array.from(event.target.files || []));
-                      setPdfResult(null);
-                    }}
-                    className={HUD_FIELD_CLASS}
-                  />
-                  {pdfFiles.length > 0 ? (
-                    <p className="mt-1 text-xs font-medium text-slate-500">
-                      {pdfFiles.map((file) => file.name).join(", ")}
-                    </p>
-                  ) : null}
-                </div>
-
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div>
-                    <label className={HUD_SECTION_LABEL} htmlFor="pdf-columns">
-                      Colunas
-                    </label>
-                    <select
-                      id="pdf-columns"
-                      value={pdfColumns}
-                      onChange={(event) =>
-                        setPdfColumns(event.target.value as "auto" | "1" | "2")
-                      }
-                      className={HUD_FIELD_CLASS}
-                    >
-                      <option value="auto">Detectar automaticamente</option>
-                      <option value="1">Uma coluna</option>
-                      <option value="2">Duas colunas</option>
-                    </select>
-                  </div>
-                  <label className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-3 text-sm font-semibold text-slate-700">
-                    <input
-                      type="checkbox"
-                      checked={pdfSaveToBank}
-                      onChange={(event) => setPdfSaveToBank(event.target.checked)}
-                    />
-                    Salvar no banco
-                  </label>
-                </div>
-
-                {pdfResult ? (
-                  <div className="rounded-xl border border-cyan-100 bg-cyan-50/50 p-3">
-                    <p className="text-xs font-black uppercase tracking-wide text-cyan-800">
-                      Resultado
-                    </p>
-                    <p className="mt-1 text-sm font-semibold text-slate-800">
-                      {pdfResult.questions.length} questao(oes) extraida(s)
-                      {pdfSaveToBank
-                        ? `, ${pdfResult.imported} salva(s), ${pdfResult.duplicates} duplicata(s)`
-                        : ""}
-                    </p>
-                    <div className="mt-2 space-y-2">
-                      {pdfResult.reports.map((report) => (
-                        <div
-                          key={report.pdfName}
-                          className="rounded-lg border border-white bg-white/80 px-3 py-2 text-xs text-slate-600"
-                        >
-                          <p className="font-bold text-slate-800">{report.pdfName}</p>
-                          <p>
-                            {report.questionsFound} questao(oes) · {report.multipleChoiceCount} objetivas · {report.openQuestionCount} abertas · {report.associatedImageCount} imagem(ns)
-                          </p>
-                          {report.warnings.length ? (
-                            <p className="mt-1 font-semibold text-amber-700">
-                              {report.warnings.join(" ")}
-                            </p>
-                          ) : null}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ) : null}
-              </div>
-              <div className="flex justify-end gap-2 border-t border-slate-100 px-5 py-4">
-                <button
-                  type="button"
-                  onClick={() => setPdfModalOpen(false)}
-                  className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void extractFromPdf()}
-                  disabled={pdfExtracting || pdfFiles.length === 0}
-                  className="pl-hud-btn rounded-xl px-4 py-2 text-xs font-semibold disabled:opacity-50"
-                >
-                  {pdfExtracting ? "Extraindo..." : "Extrair PDF"}
-                </button>
-              </div>
-            </div>
-          </div>
-        ) : null}
-
         {serverModalOpen ? (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4">
             <div className="max-h-[80vh] w-full max-w-lg overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
@@ -1857,8 +2743,8 @@ export function BancoQuestoesClient({
 
   if (embedded) {
     return (
-      <section className="mt-5 rounded-2xl border border-cyan-400/20 bg-white/70">
-        {content}
+      <section className="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        {embeddedBankContent}
       </section>
     );
   }

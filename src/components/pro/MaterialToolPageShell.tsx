@@ -18,6 +18,7 @@ type MaterialToolPageShellProps = {
   /** When true on mobile, switches to the preview tab (e.g. after generation). */
   previewReady?: boolean;
   previewLoading?: boolean;
+  fullWidth?: boolean;
 };
 
 /**
@@ -35,34 +36,41 @@ export function MaterialToolPageShell({
   previewScrollAttr = false,
   previewReady = false,
   previewLoading = false,
+  fullWidth = false,
 }: MaterialToolPageShellProps) {
   const [mobilePanel, setMobilePanel] = useState<MobilePanel>("form");
+  const showPreviewPanel = !fullWidth && (previewReady || previewLoading);
 
   useEffect(() => {
+    if (fullWidth) {
+      setMobilePanel("form");
+      return;
+    }
     if (previewReady) {
       setMobilePanel("preview");
     }
-  }, [previewReady]);
+  }, [fullWidth, previewReady]);
 
   useEffect(() => {
+    if (fullWidth) return;
     if (previewLoading) {
       setMobilePanel("preview");
     }
-  }, [previewLoading]);
+  }, [fullWidth, previewLoading]);
 
   return (
     <div
       className={`planify-hud flex h-full min-h-0 flex-col overflow-hidden ${
         studioMode
           ? ""
-          : "rounded-[2rem] border border-slate-200 bg-white shadow-sm"
+          : "rounded-2xl border border-slate-200 bg-white shadow-sm"
       }`}
     >
       {!studioMode && onBack ? (
-        <div className="flex shrink-0 flex-wrap items-center justify-between gap-2.5 border-b border-cyan-400/15 bg-white/85 px-4 py-2.5 backdrop-blur-sm sm:gap-3 sm:px-5 sm:py-3">
+        <div className="flex shrink-0 flex-wrap items-center justify-between gap-2.5 border-b border-slate-200 bg-white px-4 py-3 sm:gap-3 sm:px-5">
           <div className="flex min-w-0 items-center gap-2.5">
             <div
-              className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br ${tool.accent} text-white shadow-sm`}
+              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br ${tool.accent} text-white shadow-sm`}
             >
               <PlanifyIcon name={tool.icon} className="h-4 w-4" />
             </div>
@@ -81,7 +89,7 @@ export function MaterialToolPageShell({
           <button
             type="button"
             onClick={onBack}
-            className="pl-hud-btn-secondary flex shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold"
+            className="flex shrink-0 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
           >
             <PlanifyIcon name="arrowLeft" className="h-4 w-4" />
             <span className="hidden sm:inline">{backLabel}</span>
@@ -90,7 +98,9 @@ export function MaterialToolPageShell({
       ) : null}
 
       <div
-        className="flex shrink-0 gap-2 border-b border-cyan-400/10 bg-white/90 px-3 py-2 lg:hidden"
+        className={`shrink-0 gap-2 border-b border-slate-200 bg-white px-3 py-2 lg:hidden ${
+          fullWidth || !showPreviewPanel ? "hidden" : "flex"
+        }`}
         role="tablist"
         aria-label="Painel da ferramenta"
       >
@@ -99,9 +109,9 @@ export function MaterialToolPageShell({
           role="tab"
           aria-selected={mobilePanel === "form"}
           onClick={() => setMobilePanel("form")}
-          className={`flex-1 rounded-xl px-3 py-2.5 text-sm font-bold transition ${
+          className={`flex-1 rounded-lg px-3 py-2.5 text-sm font-bold transition ${
             mobilePanel === "form"
-              ? "bg-cyan-600 text-white shadow-sm"
+              ? "bg-blue-600 text-white shadow-sm"
               : "bg-slate-100 text-slate-700"
           }`}
         >
@@ -112,9 +122,9 @@ export function MaterialToolPageShell({
           role="tab"
           aria-selected={mobilePanel === "preview"}
           onClick={() => setMobilePanel("preview")}
-          className={`flex-1 rounded-xl px-3 py-2.5 text-sm font-bold transition ${
+          className={`flex-1 rounded-lg px-3 py-2.5 text-sm font-bold transition ${
             mobilePanel === "preview"
-              ? "bg-cyan-600 text-white shadow-sm"
+              ? "bg-blue-600 text-white shadow-sm"
               : "bg-slate-100 text-slate-700"
           }`}
         >
@@ -123,28 +133,40 @@ export function MaterialToolPageShell({
       </div>
 
       <div
-        className={`grid min-h-0 flex-1 max-lg:grid-cols-1 lg:grid-cols-[0.88fr_1.12fr] ${
-          studioMode ? "min-h-0" : "min-h-0 lg:min-h-[680px]"
-        }`}
+        className={`grid min-h-0 flex-1 max-lg:grid-cols-1 ${
+          fullWidth || !showPreviewPanel ? "lg:grid-cols-1" : "lg:grid-cols-[0.88fr_1.12fr]"
+        } ${studioMode ? "min-h-0" : "min-h-0 lg:min-h-[680px]"}`}
       >
         <div
           {...(formScrollAttr ? { "data-planify-scroll": "" } : {})}
-          className={`min-h-0 overflow-y-auto overscroll-contain bg-white/50 p-4 sm:p-5 lg:border-r lg:border-cyan-400/10 lg:max-h-none ${
-            mobilePanel === "form" ? "max-lg:flex max-lg:flex-1 max-lg:flex-col" : "max-lg:hidden"
+          className={`min-h-0 overflow-y-auto overscroll-contain bg-white/50 p-4 sm:p-5 lg:max-h-none ${
+            fullWidth || !showPreviewPanel ? "" : "lg:border-r lg:border-slate-200"
+          } ${
+            fullWidth || !showPreviewPanel || mobilePanel === "form"
+              ? "max-lg:flex max-lg:flex-1 max-lg:flex-col"
+              : "max-lg:hidden"
           }`}
         >
-          <div className="max-lg:pb-[max(5.5rem,env(safe-area-inset-bottom))]">{form}</div>
-        </div>
-        <div
-          {...(previewScrollAttr ? { "data-planify-scroll": "" } : {})}
-          className={`min-h-0 overflow-y-auto overscroll-contain bg-gradient-to-br from-cyan-50/30 via-white/70 to-white p-3 pb-[max(1rem,env(safe-area-inset-bottom))] sm:p-5 ${
-            mobilePanel === "preview" ? "max-lg:flex max-lg:flex-1 max-lg:flex-col" : "max-lg:hidden"
-          }`}
-        >
-          <div className="pl-hud-glass min-h-[min(50vh,280px)] flex-1 rounded-2xl p-3 sm:min-h-[280px] sm:p-5">
-            {preview}
+          <div
+            className={`max-lg:pb-[max(5.5rem,env(safe-area-inset-bottom))] ${
+              fullWidth || showPreviewPanel ? "" : "mx-auto w-full max-w-3xl"
+            }`}
+          >
+            {form}
           </div>
         </div>
+        {showPreviewPanel ? (
+          <div
+            {...(previewScrollAttr ? { "data-planify-scroll": "" } : {})}
+            className={`min-h-0 overflow-y-auto overscroll-contain bg-slate-50 p-3 pb-[max(1rem,env(safe-area-inset-bottom))] sm:p-5 ${
+              mobilePanel === "preview" ? "max-lg:flex max-lg:flex-1 max-lg:flex-col" : "max-lg:hidden"
+            }`}
+          >
+            <div className="min-h-[220px] flex-1 rounded-lg border border-slate-200 bg-white p-3 shadow-sm sm:p-5">
+              {preview}
+            </div>
+          </div>
+        ) : null}
       </div>
     </div>
   );

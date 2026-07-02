@@ -77,6 +77,7 @@ import {
   ChangeEvent,
   ClipboardEvent,
   DragEvent,
+  KeyboardEvent as ReactKeyboardEvent,
   MouseEvent as ReactMouseEvent,
   useCallback,
   useEffect,
@@ -362,6 +363,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
   const [title, setTitle] = useState("Documento Planify");
   const [status, setStatus] = useState("Editor pronto.");
   const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const [downloadingDocx, setDownloadingDocx] = useState(false);
   const [savedDocuments, setSavedDocuments] = useState<SavedDocument[]>([]);
   const [wordCount, setWordCount] = useState(0);
   const [selectedBlock, setSelectedBlock] = useState("p");
@@ -568,6 +570,46 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
     editorRef.current?.focus();
   }
 
+  function rememberEditorSelection() {
+    const editor = editorRef.current;
+    const selection = window.getSelection();
+
+    if (!editor || !selection || selection.rangeCount === 0) {
+      return;
+    }
+
+    const anchor = selection.anchorNode;
+    const focus = selection.focusNode;
+
+    if (
+      (anchor && editor.contains(anchor)) ||
+      (focus && editor.contains(focus))
+    ) {
+      saveEditorSelection();
+    }
+  }
+
+  function restoreEditorSelectionForCommand() {
+    focusEditor();
+    restoreEditorSelection();
+  }
+
+  function handleToolbarMouseDown(event: ReactMouseEvent<HTMLElement>) {
+    const target = event.target;
+
+    if (!(target instanceof HTMLElement)) {
+      return;
+    }
+
+    if (target.closest("input, select, textarea, label")) {
+      return;
+    }
+
+    if (target.closest("button")) {
+      preventToolbarFocusLoss(event);
+    }
+  }
+
   function getEditorHtml() {
     return editorRef.current?.innerHTML || "";
   }
@@ -709,8 +751,9 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
       pushUndoSnapshot();
     }
 
-    focusEditor();
+    restoreEditorSelectionForCommand();
     document.execCommand(command, false, value);
+    rememberEditorSelection();
     updateWordCount();
     persistCurrentDocument("Alteração aplicada.");
   }
@@ -726,7 +769,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
   }
 
   function undoEdit() {
-    focusEditor();
+    restoreEditorSelectionForCommand();
     const stack = undoStackRef.current;
 
     if (stack.length > 1) {
@@ -756,7 +799,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
   }
 
   function redoEdit() {
-    focusEditor();
+    restoreEditorSelectionForCommand();
     const redo = redoStackRef.current;
 
     if (redo.length > 0) {
@@ -1539,8 +1582,58 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
     setStatus("Coluna removida.");
   }
 
+  function insertTableRow() {
+    const cell = getCurrentTableCell();
+    const table = getCurrentTable();
+
+    if (!cell || !table) {
+      setStatus("Posicione o cursor dentro da tabela.");
+      return;
+    }
+
+    const currentRow = cell.closest("tr");
+    if (!(currentRow instanceof HTMLTableRowElement)) {
+      return;
+    }
+
+    pushUndoSnapshot();
+
+    const nextRow = table.insertRow(currentRow.rowIndex + 1);
+    const columnCount = Math.max(
+      1,
+      table.rows[0]?.cells.length || currentRow.cells.length || 1,
+    );
+
+    for (let index = 0; index < columnCount; index += 1) {
+      nextRow.insertCell(index).innerHTML = "<br>";
+    }
+
+    persistCurrentDocument("Linha adicionada.");
+    setStatus("Linha adicionada.");
+  }
+
+  function insertTableColumn() {
+    const cell = getCurrentTableCell();
+    const table = getCurrentTable();
+
+    if (!cell || !table) {
+      setStatus("Posicione o cursor dentro da tabela.");
+      return;
+    }
+
+    const colIndex = cell.cellIndex + 1;
+
+    pushUndoSnapshot();
+    Array.from(table.rows).forEach((row) => {
+      row.insertCell(colIndex).innerHTML = "<br>";
+    });
+
+    persistCurrentDocument("Coluna adicionada.");
+    setStatus("Coluna adicionada.");
+  }
+
   function deleteSelectionOrBlock() {
-    focusEditor();
+    restoreEditorSelectionForCommand();
     const selection = window.getSelection();
 
     if (selection && !selection.isCollapsed) {
@@ -1584,6 +1677,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
   }
 
   function triggerImagePicker() {
+    rememberEditorSelection();
     imageInputRef.current?.click();
   }
 
@@ -1601,7 +1695,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
       if (!src) return;
 
       pushUndoSnapshot();
-      saveEditorSelection();
+      restoreEditorSelectionForCommand();
       insertHtmlAtCaret(buildUserFigureHtml(src, file.name), editor);
       prepareImagesInsideEditor();
       persistCurrentDocument("Imagem inserida.");
@@ -1763,6 +1857,51 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
     exec("formatBlock", "p");
   }
 
+  function handleEditorKeyDown(event: ReactKeyboardEvent<HTMLDivElement>) {
+    const key = event.key.toLowerCase();
+    const withModifier = event.ctrlKey || event.metaKey;
+
+    if (!withModifier) {
+      return;
+    }
+
+    if (key === "s") {
+      event.preventDefault();
+      saveVersion();
+      setStatus("Versão salva pelo atalho Ctrl+S.");
+      return;
+    }
+
+    if (key === "z" && !event.shiftKey) {
+      event.preventDefault();
+      undoEdit();
+      return;
+    }
+
+    if (key === "y" || (key === "z" && event.shiftKey)) {
+      event.preventDefault();
+      redoEdit();
+      return;
+    }
+
+    if (key === "b") {
+      event.preventDefault();
+      exec("bold");
+      return;
+    }
+
+    if (key === "i") {
+      event.preventDefault();
+      exec("italic");
+      return;
+    }
+
+    if (key === "u") {
+      event.preventDefault();
+      exec("underline");
+    }
+  }
+
   function newDocument() {
     const confirmed = window.confirm(
       "Criar um novo documento em branco? Salve a versão atual antes se quiser manter uma cópia.",
@@ -1835,6 +1974,36 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
       setStatus("HTML baixado.");
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Erro ao baixar HTML.");
+    }
+  }
+
+  async function downloadDocx() {
+    const html = getEditorHtml();
+    const hasText = html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+
+    if (!hasText) {
+      setStatus("Adicione conteúdo ao documento antes de exportar o DOCX.");
+      return;
+    }
+
+    setDownloadingDocx(true);
+    setStatus("Gerando DOCX...");
+    const historyDocumentId = loadEditorDocument()?.id;
+
+    try {
+      await downloadEditorExport({
+        title: title.trim() || "Documento Planify",
+        html,
+        format: "docx",
+        fallbackFileName: `${sanitizeFilename(title)}.docx`,
+        documentType: exportDocumentType,
+        historyDocumentId,
+      });
+      setStatus("DOCX baixado.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Erro ao baixar DOCX.");
+    } finally {
+      setDownloadingDocx(false);
     }
   }
 
@@ -2199,6 +2368,14 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
                 </button>
                 <button
                   type="button"
+                  onClick={() => void downloadDocx()}
+                  disabled={downloadingDocx}
+                  className={actionBtnClass}
+                >
+                  {downloadingDocx ? "DOCX..." : "DOCX"}
+                </button>
+                <button
+                  type="button"
                   onClick={() => setShowVersionsPanel((value) => !value)}
                   className={`${actionBtnClass} ${
                     showVersionsPanel ? "border-blue-300 bg-blue-50 text-blue-800" : ""
@@ -2241,6 +2418,14 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
               </button>
               <button type="button" onClick={newDocument} className={actionBtnClass}>
                 Novo
+              </button>
+              <button
+                type="button"
+                onClick={() => void downloadDocx()}
+                disabled={downloadingDocx}
+                className={actionBtnClass}
+              >
+                {downloadingDocx ? "Gerando DOCX..." : "Baixar DOCX"}
               </button>
               {canElevateDocument ? (
                 <button
@@ -2338,6 +2523,15 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
 
                 <button type="button" onClick={downloadHtml} className={actionBtnClass}>
                   Baixar HTML
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => void downloadDocx()}
+                  disabled={downloadingDocx}
+                  className={actionBtnClass}
+                >
+                  {downloadingDocx ? "Gerando DOCX..." : "Baixar DOCX"}
                 </button>
 
                 {canElevateDocument ? (
@@ -2461,7 +2655,10 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
           }
         >
           {embedded && !showFormatTools ? (
-            <div className="sticky top-0 z-20 flex shrink-0 items-center gap-1 overflow-x-auto overscroll-contain rounded-xl border border-slate-200 bg-white/95 p-1.5 shadow-sm backdrop-blur lg:hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div
+              onMouseDown={handleToolbarMouseDown}
+              className="sticky top-0 z-20 flex shrink-0 items-center gap-1 overflow-x-auto overscroll-contain rounded-xl border border-slate-200 bg-white/95 p-1.5 shadow-sm backdrop-blur lg:hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            >
               <button type="button" onClick={undoEdit} className={toolBtnClass} aria-label="Desfazer">
                 ↶
               </button>
@@ -2517,6 +2714,20 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
                 </button>
                 <button
                   type="button"
+                  onClick={insertTableRow}
+                  className="h-7 rounded-md border border-cyan-200 bg-white px-2 text-[10px] font-black text-cyan-800"
+                >
+                  + Linha
+                </button>
+                <button
+                  type="button"
+                  onClick={insertTableColumn}
+                  className="h-7 rounded-md border border-cyan-200 bg-white px-2 text-[10px] font-black text-cyan-800"
+                >
+                  + Coluna
+                </button>
+                <button
+                  type="button"
                   onClick={removeTableRow}
                   className="h-7 rounded-md border border-cyan-200 bg-white px-2 text-[10px] font-black text-cyan-800"
                 >
@@ -2535,6 +2746,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
 
           {(!embedded || showFormatTools) && (
           <div
+            onMouseDown={handleToolbarMouseDown}
             className={`planify-editor-format-panel relative shrink-0 rounded-lg border border-slate-200 bg-white shadow-sm ${
               embedded
                 ? "max-lg:max-h-[min(38dvh,280px)] max-lg:overflow-y-auto max-lg:overscroll-contain overflow-x-auto overscroll-contain p-1 lg:p-1.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
@@ -2732,6 +2944,12 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
                     className={`${toolBtnClass} border-rose-200 bg-rose-50 text-rose-700`}
                   >
                     ⊟ Tabela
+                  </button>
+                  <button type="button" onClick={insertTableRow} className={toolBtnClass}>
+                    + Linha
+                  </button>
+                  <button type="button" onClick={insertTableColumn} className={toolBtnClass}>
+                    + Col.
                   </button>
                   <button type="button" onClick={removeTableRow} className={toolBtnClass}>
                     − Linha
@@ -2958,12 +3176,16 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
                 suppressContentEditableWarning
                 onClick={handleEditorClick}
                 onMouseDown={handleEditorMouseDown}
+                onMouseUp={rememberEditorSelection}
                 onDragStart={handleFigureDragStart}
                 onDragOver={handleEditorDragOver}
                 onDrop={handleEditorDrop}
+                onKeyDown={handleEditorKeyDown}
+                onKeyUp={rememberEditorSelection}
                 onPaste={handleEditorPaste}
                 onCopy={handleEditorCopy}
                 onInput={() => {
+                  rememberEditorSelection();
                   updateWordCount();
                   scheduleUndoSnapshot();
                   scheduleEditorInputSave();

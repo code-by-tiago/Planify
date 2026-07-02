@@ -345,6 +345,16 @@ body {
   box-shadow: none;
 }
 
+.pl-hud-owl-ring {
+  padding: 0;
+}
+
+.pl-hud-owl-ring::before,
+.pl-hud-owl-ring::after {
+  content: none;
+  display: none;
+}
+
 @keyframes pl-hud-ring-spin {
   to { transform: rotate(360deg); }
 }

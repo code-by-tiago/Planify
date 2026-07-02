@@ -1133,6 +1133,30 @@ body main h1:not(.planify-hero__content h1) {
   line-height: 1;
 }
 
+body .planify-hud-app main h1,
+body .planify-hud-app section h1,
+body .pl-hud-shell main h1,
+body .pl-hud-main h1,
+body main .pl-hud-page-hero h1,
+body main .pl-hud-hub h1 {
+  display: block !important;
+  overflow: visible !important;
+  -webkit-box-orient: initial !important;
+  -webkit-line-clamp: unset !important;
+  font-size: clamp(1.35rem, 1.8vw, 1.95rem) !important;
+  line-height: 1.2 !important;
+  letter-spacing: -0.025em !important;
+}
+
+body .planify-hud-app main h1 + p,
+body .planify-hud-app section h1 + p,
+body .pl-hud-shell main h1 + p,
+body .pl-hud-main h1 + p,
+body main .pl-hud-page-hero h1 + p,
+body main .pl-hud-hub h1 + p {
+  margin-top: 0.25rem !important;
+}
+
 body main h2 {
   letter-spacing: -0.045em;
 }
@@ -1288,6 +1312,16 @@ body main > section:not(.planify-hero):not(.planify-section):not(.planify-final-
 @media (max-width: 760px) {
   body main h1:not(.planify-hero__content h1) {
     font-size: clamp(2rem, 10vw, 3.2rem);
+  }
+
+  body .planify-hud-app main h1,
+  body .planify-hud-app section h1,
+  body .pl-hud-shell main h1,
+  body .pl-hud-main h1,
+  body main .pl-hud-page-hero h1,
+  body main .pl-hud-hub h1 {
+    font-size: clamp(1.35rem, 6vw, 1.85rem) !important;
+    line-height: 1.2 !important;
   }
 
   body [class*="rounded-"][class*="border"][class*="p-8"],

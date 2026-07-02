@@ -38,6 +38,7 @@ function mapRowToItem(row: QuestionBankRow): QuestionBankItem {
     id: row.id,
     enunciado: row.enunciado,
     textoApoio: row.texto_apoio ?? undefined,
+    imageUrls: row.image_urls ?? [],
     tipo: row.tipo,
     alternativas,
     respostaEsperada: row.resposta_esperada,
@@ -84,6 +85,7 @@ function mapItemToInsert(
     school_id: item.schoolId ?? null,
     enunciado: item.enunciado,
     texto_apoio: item.textoApoio?.trim() || null,
+    image_urls: item.imageUrls ?? [],
     tipo: item.tipo || "discursiva",
     alternativas: item.alternativas ?? [],
     resposta_esperada: item.respostaEsperada ?? "",
@@ -425,8 +427,29 @@ export async function upsertUserQuestion(
     .maybeSingle();
 
   if (existing && (!item.id || existing.id !== item.id)) {
+    const existingRow = existing as QuestionBankRow;
+    if ((item.imageUrls?.length ?? 0) > 0 && existingRow.image_urls.length === 0) {
+      const { data, error } = await supabase
+        .from("question_bank_items")
+        .update({
+          image_urls: item.imageUrls ?? [],
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", existingRow.id)
+        .eq("user_id", userId)
+        .select("*")
+        .single();
+
+      if (!error && data) {
+        return {
+          item: mapRowToItem(data as QuestionBankRow),
+          duplicate: true,
+        };
+      }
+    }
+
     return {
-      item: mapRowToItem(existing as QuestionBankRow),
+      item: mapRowToItem(existingRow),
       duplicate: true,
     };
   }

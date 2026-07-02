@@ -1514,6 +1514,7 @@ export type Database = {
           school_id: string | null;
           enunciado: string;
           texto_apoio: string | null;
+          image_urls: string[];
           tipo: string;
           alternativas: Json;
           resposta_esperada: string;
@@ -1547,6 +1548,7 @@ export type Database = {
           school_id?: string | null;
           enunciado: string;
           texto_apoio?: string | null;
+          image_urls?: string[];
           tipo?: string;
           alternativas?: Json;
           resposta_esperada?: string;
@@ -1580,6 +1582,7 @@ export type Database = {
           school_id?: string | null;
           enunciado?: string;
           texto_apoio?: string | null;
+          image_urls?: string[];
           tipo?: string;
           alternativas?: Json;
           resposta_esperada?: string;

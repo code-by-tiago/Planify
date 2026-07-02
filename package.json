@@ -11,6 +11,7 @@
     "verify:material-quality": "node scripts/verify-material-quality.mjs",
     "verify:question-bank-match": "node scripts/verify-question-bank-match.mjs",
     "verify:question-bank-curation": "node scripts/verify-question-bank-curation.mjs",
+    "verify:question-pdf-extractor": "tsx scripts/verify-question-pdf-extractor.ts",
     "verify:prova-engine-contract": "node scripts/verify-prova-engine-contract.mjs",
     "verify:generators": "node scripts/verify-all-generators.mjs",
     "verify:sprint2": "node scripts/verify-sprint2.mjs",
@@ -40,6 +41,7 @@
     "ingest:question-bank": "node scripts/ingest-question-bank-web.mjs",
     "generate:question-bank-ai": "node scripts/ai-question-bank-pipeline.mjs",
     "generate:question-bank-ai:auto": "node scripts/ai-question-bank-pipeline-auto.mjs",
+    "extract:entrance-exams": "tsx scripts/extract-entrance-exams.ts",
     "cleanup:question-bank": "node scripts/cleanup-question-bank-bad-ingest.mjs",
     "verify:generators-live": "node scripts/verify-generators-live.mjs",
     "verify:staging": "node scripts/verify-generators-live.mjs --suite=sprint1",
@@ -61,11 +63,14 @@
     "@supabase/ssr": "0.10.3",
     "@supabase/supabase-js": "2.106.2",
     "@types/pdfkit": "^0.17.6",
+    "@types/pngjs": "^6.0.5",
     "dotenv": "^17.4.2",
     "framer-motion": "^12.40.0",
     "linkedom": "^0.18.12",
     "next": "16.2.6",
+    "pdfjs-dist": "^6.1.200",
     "pdfkit": "^0.18.0",
+    "pngjs": "^7.0.0",
     "pptxgenjs": "^4.0.1",
     "puppeteer-core": "^25.1.0",
     "react": "19.2.6",
@@ -82,6 +87,7 @@
     "autoprefixer": "10.4.20",
     "postcss": "8.4.49",
     "tailwindcss": "3.4.17",
+    "tsx": "^4.22.4",
     "typescript": "6.0.3"
   }
 }

@@ -3,6 +3,8 @@ export type QuestionBankItem = {
   enunciado: string;
   /** Texto de leitura/apoio exibido uma vez por grupo de questões */
   textoApoio?: string;
+  /** Imagens extraidas junto da questao em pipelines experimentais. */
+  imageUrls?: string[];
   tipo: string;
   alternativas: string[];
   respostaEsperada: string;

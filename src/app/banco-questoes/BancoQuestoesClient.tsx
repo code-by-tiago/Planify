@@ -43,6 +43,10 @@ import {
   listImportableSources,
   type ImportableQuestionSource,
 } from "@/lib/banco-questoes/question-bank-import-client";
+import {
+  extractQuestionsFromPdfFiles,
+  type PdfQuestionExtractionResult,
+} from "@/lib/banco-questoes/question-bank-pdf-import-client";
 import { fetchMaterialEstrutura } from "@/lib/materiais/material-estrutura-client";
 import { loadHistoryItems } from "@/lib/history/history-storage";
 import { requestExamAssemblyFromBank } from "@/lib/materiais/exam-bank-montar-client";
@@ -189,6 +193,12 @@ export function BancoQuestoesClient({
   const [serverSelectedIds, setServerSelectedIds] = useState<Set<string>>(new Set());
   const [serverLoading, setServerLoading] = useState(false);
   const [serverImporting, setServerImporting] = useState(false);
+  const [pdfModalOpen, setPdfModalOpen] = useState(false);
+  const [pdfFiles, setPdfFiles] = useState<File[]>([]);
+  const [pdfColumns, setPdfColumns] = useState<"auto" | "1" | "2">("auto");
+  const [pdfSaveToBank, setPdfSaveToBank] = useState(true);
+  const [pdfExtracting, setPdfExtracting] = useState(false);
+  const [pdfResult, setPdfResult] = useState<PdfQuestionExtractionResult | null>(null);
   const [remixSource, setRemixSource] = useState<QuestionBankItem | null>(null);
   const [remixDraft, setRemixDraft] = useState<RemixDraft | null>(null);
   const [publishingId, setPublishingId] = useState<string | null>(null);
@@ -534,6 +544,52 @@ export function BancoQuestoesClient({
       applyImportError(error);
     } finally {
       setServerImporting(false);
+    }
+  }
+
+  async function extractFromPdf() {
+    if (!pdfFiles.length) {
+      setImportStatus("Selecione ao menos um PDF de prova.");
+      return;
+    }
+
+    setPdfExtracting(true);
+    setImportError("");
+    setPdfResult(null);
+    try {
+      const result = await extractQuestionsFromPdfFiles({
+        files: pdfFiles,
+        importToBank: pdfSaveToBank,
+        config: {
+          columns: pdfColumns === "auto" ? "auto" : Number(pdfColumns) === 2 ? 2 : 1,
+          etapa: "ENEM e Vestibulares",
+        },
+      });
+
+      let localImported = 0;
+      let localDuplicates = 0;
+      if (pdfSaveToBank) {
+        for (const item of result.items) {
+          const saved = upsertWithFeedback(item);
+          if (saved) localImported += 1;
+          else localDuplicates += 1;
+        }
+        refreshFromHybrid();
+      }
+
+      setPdfResult(result);
+      const extracted = result.questions.length;
+      const imported = pdfSaveToBank ? result.imported || localImported : 0;
+      const duplicates = pdfSaveToBank ? result.duplicates + localDuplicates : 0;
+      setImportStatus(
+        pdfSaveToBank
+          ? `PDF: ${extracted} extraida(s), ${imported} salva(s), ${duplicates} duplicata(s).`
+          : `PDF: ${extracted} questao(oes) extraida(s) para revisao.`,
+      );
+    } catch (error) {
+      applyImportError(error);
+    } finally {
+      setPdfExtracting(false);
     }
   }
 
@@ -1081,6 +1137,16 @@ export function BancoQuestoesClient({
               >
                 Importar do servidor
               </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setPdfModalOpen(true);
+                  setPdfResult(null);
+                }}
+                className="rounded-lg px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-cyan-50"
+              >
+                Importar PDF de prova
+              </button>
             </div>
           </details>
           {visibleItems.length > 0 && showQuestionList ? (
@@ -1261,6 +1327,25 @@ export function BancoQuestoesClient({
                     <p className="mt-2 text-sm font-medium leading-relaxed text-slate-800">
                       {display.enunciado}
                     </p>
+                    {item.imageUrls?.length ? (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {item.imageUrls.slice(0, 3).map((url, index) => (
+                          <a
+                            key={`${item.id}-image-${index}`}
+                            href={url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="block overflow-hidden rounded-lg border border-slate-200 bg-white"
+                          >
+                            <img
+                              src={url}
+                              alt={`Imagem da questao ${index + 1}`}
+                              className="h-24 w-32 object-contain"
+                            />
+                          </a>
+                        ))}
+                      </div>
+                    ) : null}
                     <div className="mt-2 flex flex-wrap gap-2 text-[11px] font-semibold text-slate-500">
                       <span>{item.tipo}</span>
                       {item.bnccCodigos.map((code) => (
@@ -1480,6 +1565,121 @@ export function BancoQuestoesClient({
                   className="pl-hud-btn rounded-xl px-4 py-2 text-xs font-semibold"
                 >
                   Salvar remix
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : null}
+
+        {pdfModalOpen ? (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4">
+            <div className="max-h-[86vh] w-full max-w-xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
+              <div className="border-b border-slate-100 px-5 py-4">
+                <h3 className="text-sm font-semibold text-slate-900">
+                  Importar PDF de prova
+                </h3>
+                <p className="mt-1 text-sm text-slate-600">
+                  Extraia enunciado, alternativas, texto de apoio e imagens.
+                </p>
+              </div>
+              <div className="max-h-[56vh] space-y-4 overflow-y-auto px-5 py-4">
+                <div>
+                  <label className={HUD_SECTION_LABEL} htmlFor="pdf-question-file">
+                    PDFs
+                  </label>
+                  <input
+                    id="pdf-question-file"
+                    type="file"
+                    accept="application/pdf"
+                    multiple
+                    onChange={(event) => {
+                      setPdfFiles(Array.from(event.target.files || []));
+                      setPdfResult(null);
+                    }}
+                    className={HUD_FIELD_CLASS}
+                  />
+                  {pdfFiles.length > 0 ? (
+                    <p className="mt-1 text-xs font-medium text-slate-500">
+                      {pdfFiles.map((file) => file.name).join(", ")}
+                    </p>
+                  ) : null}
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <label className={HUD_SECTION_LABEL} htmlFor="pdf-columns">
+                      Colunas
+                    </label>
+                    <select
+                      id="pdf-columns"
+                      value={pdfColumns}
+                      onChange={(event) =>
+                        setPdfColumns(event.target.value as "auto" | "1" | "2")
+                      }
+                      className={HUD_FIELD_CLASS}
+                    >
+                      <option value="auto">Detectar automaticamente</option>
+                      <option value="1">Uma coluna</option>
+                      <option value="2">Duas colunas</option>
+                    </select>
+                  </div>
+                  <label className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-3 text-sm font-semibold text-slate-700">
+                    <input
+                      type="checkbox"
+                      checked={pdfSaveToBank}
+                      onChange={(event) => setPdfSaveToBank(event.target.checked)}
+                    />
+                    Salvar no banco
+                  </label>
+                </div>
+
+                {pdfResult ? (
+                  <div className="rounded-xl border border-cyan-100 bg-cyan-50/50 p-3">
+                    <p className="text-xs font-black uppercase tracking-wide text-cyan-800">
+                      Resultado
+                    </p>
+                    <p className="mt-1 text-sm font-semibold text-slate-800">
+                      {pdfResult.questions.length} questao(oes) extraida(s)
+                      {pdfSaveToBank
+                        ? `, ${pdfResult.imported} salva(s), ${pdfResult.duplicates} duplicata(s)`
+                        : ""}
+                    </p>
+                    <div className="mt-2 space-y-2">
+                      {pdfResult.reports.map((report) => (
+                        <div
+                          key={report.pdfName}
+                          className="rounded-lg border border-white bg-white/80 px-3 py-2 text-xs text-slate-600"
+                        >
+                          <p className="font-bold text-slate-800">{report.pdfName}</p>
+                          <p>
+                            {report.questionsFound} questao(oes) · {report.multipleChoiceCount} objetivas · {report.openQuestionCount} abertas · {report.associatedImageCount} imagem(ns)
+                          </p>
+                          {report.warnings.length ? (
+                            <p className="mt-1 font-semibold text-amber-700">
+                              {report.warnings.join(" ")}
+                            </p>
+                          ) : null}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+              <div className="flex justify-end gap-2 border-t border-slate-100 px-5 py-4">
+                <button
+                  type="button"
+                  onClick={() => setPdfModalOpen(false)}
+                  className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void extractFromPdf()}
+                  disabled={pdfExtracting || pdfFiles.length === 0}
+                  className="pl-hud-btn rounded-xl px-4 py-2 text-xs font-semibold disabled:opacity-50"
+                >
+                  {pdfExtracting ? "Extraindo..." : "Extrair PDF"}
                 </button>
               </div>
             </div>

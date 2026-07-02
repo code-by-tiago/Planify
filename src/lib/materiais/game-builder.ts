@@ -573,12 +573,22 @@ function clueForRawTerm(term: string, input: MaterialAIInput): string {
   const component = normalizeText(input.componenteCurricular) || "componente curricular";
   const theme = normalizeText(input.tema) || "tema estudado";
   const normalizedTerm = normalizeForSearch(term);
+  const answerLength = normalizeWord(term, 1).length;
 
   if (["acao", "acoes", "verbonominal", "verbo nominal", "predicativo", "predicado", "verbo", "nominal", "sujeito", "complemento", "transitivo", "intransitivo", "ligacao"].some((word) => normalizedTerm.includes(word))) {
-    return `Elemento central da análise em ${component}, articulado ao tema "${theme}", que ajuda a compreender a função das palavras na frase.`;
+    return `Elemento de análise em ${component}, ligado ao tema "${theme}", que ajuda a compreender a função das palavras na frase. A resposta tem ${answerLength} letras.`;
   }
 
-  return `Conceito central de ${component}, articulado ao tema "${theme}", cuja identificação ajuda a interpretar, organizar e aprofundar o conteúdo estudado.`;
+  const templates = [
+    `Ideia-chave de ${component} usada para explicar uma situação ligada ao tema "${theme}".`,
+    `Termo do conteúdo que ajuda a relacionar exemplos, definições e aplicações do tema "${theme}".`,
+    `No contexto de ${component}, indica uma noção que precisa ser reconhecida para avançar na atividade.`,
+    `Elemento estudado que organiza parte da explicação e apoia a resolução das pistas sobre "${theme}".`,
+    `Resposta ligada ao vocabulário essencial da aula, usada para revisar uma relação importante do tema.`,
+    `Parte do conteúdo que conecta observação, interpretação e registro da aprendizagem em ${component}.`,
+  ];
+  const index = stableHash(normalizedTerm || term) % templates.length;
+  return `${templates[index]} A resposta tem ${answerLength} letras.`;
 }
 
 function seedFromTermAndClue(
@@ -746,18 +756,23 @@ function buildSeeds(input: MaterialAIInput, aiOutput?: MaterialOutputWithSeed, l
 
 function buildCrosswordSeeds(input: MaterialAIInput, aiOutput?: MaterialOutputWithSeed): GameSeedTerm[] {
   const exactPackSeeds = knowledgeSeeds(input, { allowComponentFallback: false });
+  const aiSeeds = extractAiSeeds(aiOutput).filter(isViableCrosswordSeed);
   const teacherSeeds = seedsFromTeacherSuggestions(input.observacoes, input);
   const contentSeeds = splitItems(input.conteudos)
     .flatMap((item) => seedsFromTextBlock(String(item || ""), input))
     .filter(isViableCrosswordSeed);
   const explicitSeeds = uniqueByAnswer([...teacherSeeds, ...contentSeeds]);
 
-  if (exactPackSeeds.length > 0) {
-    return exactPackSeeds;
-  }
-
   if (explicitSeeds.length > 0) {
     return explicitSeeds;
+  }
+
+  if (aiSeeds.length > 0) {
+    return uniqueByAnswer([...aiSeeds, ...exactPackSeeds]);
+  }
+
+  if (exactPackSeeds.length > 0) {
+    return exactPackSeeds;
   }
 
   return DEFAULT_SEEDS;
@@ -1469,6 +1484,13 @@ function validateCrosswordBoard(board: CrosswordBoard): CrosswordValidationResul
   return { valid: issues.length === 0, issues };
 }
 
+function isStrongCrosswordBoard(board: CrosswordBoard, targetCount: number): boolean {
+  if (board.placements.length < targetCount) return false;
+  const intersections = countCrosswordIntersections(board);
+  const minimumIntersections = Math.max(1, Math.floor(targetCount * 0.35));
+  return intersections >= minimumIntersections && crosswordConnectivity(board).connected;
+}
+
 function createDeterministicRng(seed: number): () => number {
   let state = seed >>> 0;
   return () => {
@@ -1695,10 +1717,10 @@ function buildCrosswordOptimizedBoard(
     score: Number.NEGATIVE_INFINITY,
   };
   const pool = seeds.slice(0, Math.min(seeds.length, Math.max(targetCount + 8, targetCount)));
-  const maxNodes = targetCount > 15 ? 180 : targetCount > 10 ? 220 : 260;
-  const branchLimit = targetCount > 15 ? 7 : 8;
-  const candidatesPerWord = targetCount > 15 ? 4 : 5;
-  const rootPasses = targetCount > 15 ? 8 : 10;
+  const maxNodes = targetCount > 15 ? 80 : targetCount > 10 ? 100 : 120;
+  const branchLimit = targetCount > 15 ? 5 : 6;
+  const candidatesPerWord = targetCount > 15 ? 3 : 4;
+  const rootPasses = targetCount > 15 ? 4 : 5;
 
   for (let attempt = 0; attempt < attempts; attempt++) {
     const rng = createDeterministicRng(stableHash(`${size}:${attempt}:${pool.map((seed) => seed.answer).join("|")}`));
@@ -1741,6 +1763,10 @@ function buildCrosswordOptimizedBoard(
           candidatesPerWord: Math.max(3, candidatesPerWord - 1),
         },
       );
+
+      if (best.board && isStrongCrosswordBoard(best.board, targetCount)) {
+        return best.board;
+      }
     }
   }
 
@@ -1766,8 +1792,8 @@ function buildCrosswordBoard(input: MaterialAIInput, aiOutput?: MaterialOutputWi
       Math.min(maxSize, baseSize + 4),
     ]),
   );
-  const totalAttempts = targetCount > 15 ? 1400 : targetCount > 10 ? 1150 : 850;
-  const attemptsPerSize = Math.max(120, Math.ceil(totalAttempts / sizes.length));
+  const totalAttempts = targetCount > 15 ? 180 : targetCount > 10 ? 140 : 100;
+  const attemptsPerSize = Math.max(30, Math.ceil(totalAttempts / sizes.length));
   let bestBoard: CrosswordBoard | null = null;
   let bestScore = Number.NEGATIVE_INFINITY;
 
@@ -1778,6 +1804,9 @@ function buildCrosswordBoard(input: MaterialAIInput, aiOutput?: MaterialOutputWi
     if (score > bestScore) {
       bestBoard = board;
       bestScore = score;
+    }
+    if (bestBoard && isStrongCrosswordBoard(bestBoard, targetCount)) {
+      return bestBoard;
     }
   }
 
@@ -1898,7 +1927,7 @@ function renderCrosswordGrid(board: CrosswordBoard, showAnswers: boolean, cellSi
     );
   }
 
-  const overlayHtml = `<div style="position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none;">${overlays.join("")}</div>`;
+  const overlayHtml = `<div style="position:absolute; top:0; left:0; width: 100%; height: 100%; pointer-events:none;">${overlays.join("")}</div>`;
 
   return `${tableHtml}${overlayHtml}</div>`;
 }
@@ -2050,6 +2079,7 @@ export function buildVisualGameMaterial(input: MaterialAIInput, aiOutput?: Mater
     visualHtml = `
       <section class="planify-game-section planify-crossword-print${sizeClass}">
         <div class="planify-crossword-page planify-crossword-page--student">
+          <p class="planify-crossword-instructions">Grade com ${placedCount} termos e ${intersectionCount} cruzamentos. Resolva usando as pistas horizontais e verticais.</p>
           ${renderCrosswordGrid(board, false, cellSize)}
           ${renderCrosswordClues(board)}
         </div>

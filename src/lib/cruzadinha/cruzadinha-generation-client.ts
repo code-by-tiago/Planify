@@ -27,9 +27,66 @@ export type CruzadinhaGenerationInput = {
   idempotencyKey?: string;
 };
 
+const MAX_CRUZADINHA_TEACHER_TERMS = 20;
+
+function normalizeCruzadinhaTermForGrid(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .toLocaleUpperCase("pt-BR");
+}
+
+export function parseCruzadinhaTeacherTerms(value?: string): {
+  terms: string[];
+  invalid: string[];
+  duplicates: string[];
+  overflow: string[];
+} {
+  const seen = new Set<string>();
+  const terms: string[] = [];
+  const invalid: string[] = [];
+  const duplicates: string[] = [];
+  const overflow: string[] = [];
+
+  String(value || "")
+    .split(/[\n,;|]+/)
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .forEach((item) => {
+      const normalized = normalizeCruzadinhaTermForGrid(item);
+
+      if (normalized.length < 3 || normalized.length > 13) {
+        invalid.push(item);
+        return;
+      }
+
+      if (seen.has(normalized)) {
+        duplicates.push(item);
+        return;
+      }
+
+      seen.add(normalized);
+
+      if (terms.length >= MAX_CRUZADINHA_TEACHER_TERMS) {
+        overflow.push(item);
+        return;
+      }
+
+      terms.push(normalized);
+    });
+
+  return { terms, invalid, duplicates, overflow };
+}
+
+export function sanitizeCruzadinhaTeacherTerms(value?: string): string | undefined {
+  const parsed = parseCruzadinhaTeacherTerms(value);
+  return parsed.terms.length ? parsed.terms.join(", ") : undefined;
+}
+
 function buildObservacoes(input: CruzadinhaGenerationInput): string | undefined {
   const parts: string[] = [];
-  const palavras = input.palavrasOpcionais?.trim();
+  const palavras = sanitizeCruzadinhaTeacherTerms(input.palavrasOpcionais);
   if (palavras) {
     parts.push(`Palavras sugeridas pelo professor: ${palavras}`);
   }

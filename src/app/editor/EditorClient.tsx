@@ -358,6 +358,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
   const redoStackRef = useRef<string[]>([]);
   const isApplyingUndoRef = useRef(false);
   const undoInputTimerRef = useRef<number | null>(null);
+  const editorInputSaveTimerRef = useRef<number | null>(null);
   const [title, setTitle] = useState("Documento Planify");
   const [status, setStatus] = useState("Editor pronto.");
   const [downloadingPdf, setDownloadingPdf] = useState(false);
@@ -571,6 +572,28 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
     return editorRef.current?.innerHTML || "";
   }
 
+  function getEditorScrollHost() {
+    return editorRef.current?.closest(
+      ".planify-editor-document-scroll",
+    ) as HTMLElement | null;
+  }
+
+  function preserveEditorViewportAfterMutation(
+    scrollHost: HTMLElement | null,
+    scrollTop: number,
+    scrollLeft: number,
+    windowX: number,
+    windowY: number,
+  ) {
+    window.requestAnimationFrame(() => {
+      if (scrollHost) {
+        scrollHost.scrollTop = scrollTop;
+        scrollHost.scrollLeft = scrollLeft;
+      }
+      window.scrollTo(windowX, windowY);
+    });
+  }
+
   function applyEditorHtml(html: string) {
     clearSelectedImage();
     clearSelectedTable();
@@ -658,6 +681,17 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
       pushUndoSnapshot();
       undoInputTimerRef.current = null;
     }, 400);
+  }
+
+  function scheduleEditorInputSave() {
+    if (editorInputSaveTimerRef.current) {
+      window.clearTimeout(editorInputSaveTimerRef.current);
+    }
+
+    editorInputSaveTimerRef.current = window.setTimeout(() => {
+      persistCurrentDocument("Editando...");
+      editorInputSaveTimerRef.current = null;
+    }, 900);
   }
 
   function updateWordCount() {
@@ -945,6 +979,16 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
       return;
     }
 
+    if (!editor.querySelector("img, .planify-figure-resize-handle")) {
+      return;
+    }
+
+    const scrollHost = getEditorScrollHost();
+    const scrollTop = scrollHost?.scrollTop ?? 0;
+    const scrollLeft = scrollHost?.scrollLeft ?? 0;
+    const windowX = window.scrollX;
+    const windowY = window.scrollY;
+
     removeFigureResizeHandles(editor);
 
     editor.querySelectorAll("img").forEach((node) => {
@@ -970,6 +1014,14 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
     if (selectedFigure instanceof HTMLElement) {
       markSelectedFigure(selectedFigure, editor);
     }
+
+    preserveEditorViewportAfterMutation(
+      scrollHost,
+      scrollTop,
+      scrollLeft,
+      windowX,
+      windowY,
+    );
   }
 
   async function elevarQualidadeNoEditor() {
@@ -2912,10 +2964,9 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
                 onPaste={handleEditorPaste}
                 onCopy={handleEditorCopy}
                 onInput={() => {
-                  prepareImagesInsideEditor();
                   updateWordCount();
                   scheduleUndoSnapshot();
-                  persistCurrentDocument("Editando...");
+                  scheduleEditorInputSave();
                 }}
                 onBlur={() => persistCurrentDocument("Documento salvo.")}
                 className={`planify-editor-page mx-auto w-full rounded-sm bg-white text-slate-950 shadow-md outline-none ${

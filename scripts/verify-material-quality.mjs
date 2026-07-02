@@ -1019,6 +1019,33 @@ function testGameExportMarkup() {
   assert.match(robustHtml, /<h3>VERTICAL<\/h3>/);
   assert.doesNotMatch(robustHtml, /Cruzadinha\s+[—-]/);
 
+  const aiSeededOutput = buildVisualGameMaterial(
+    {
+      tipo: "jogo",
+      modeloJogo: "cruzadinha",
+      tema: "Fotossintese",
+      componenteCurricular: "Ciências",
+      anoSerie: "6º ano",
+      etapa: "Ensino Fundamental",
+      quantidade: 8,
+    },
+    {
+      termosDoJogo: [
+        { termo: "FOTOSSINTESE", pista: "Processo em que plantas produzem alimento usando luz, água e gás carbônico." },
+        { termo: "CLOROFILA", pista: "Pigmento verde que participa da captação de energia luminosa nas folhas." },
+        { termo: "GLICOSE", pista: "Açúcar produzido pela planta como fonte de energia para suas células." },
+        { termo: "OXIGENIO", pista: "Gás liberado para o ambiente durante esse processo realizado pelas plantas." },
+        { termo: "CARBONO", pista: "Elemento presente no gás carbônico usado como matéria-prima pela planta." },
+        { termo: "LUZ", pista: "Fonte de energia necessária para iniciar a produção de alimento vegetal." },
+        { termo: "FOLHA", pista: "Órgão vegetal em que ocorre grande parte da produção de alimento." },
+        { termo: "RAIZ", pista: "Parte da planta que absorve água e sais minerais do solo." },
+      ],
+    },
+  );
+  const aiSeededKey = (aiSeededOutput.gabarito || []).join("\n");
+  assert.match(aiSeededKey, /Fotossintese|Clorofila|Glicose|Oxigenio/i);
+  assert.doesNotMatch(aiSeededKey, /Conceito|Exemplo/);
+
   const intertextualityOutput = buildVisualGameMaterial({
     tipo: "jogo",
     modeloJogo: "cruzadinha",

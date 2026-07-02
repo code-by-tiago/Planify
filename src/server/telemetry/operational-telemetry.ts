@@ -5,6 +5,8 @@ export type OperationalEventType =
   | "bundle_item_failed"
   | "correction_ocr_empty"
   | "question_import_zero"
+  | "question_pdf_extract"
+  | "question_pdf_extract_error"
   | "api_502"
   | "material_generation_failed"
   | "planning_generation_failed"

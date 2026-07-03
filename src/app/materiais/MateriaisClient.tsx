@@ -4,7 +4,6 @@ import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "re
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { GoogleDocumentExportBar } from "@/components/google/GoogleDocumentExportBar";
-import { useAutoGoogleExport } from "@/hooks/useAutoGoogleExport";
 import { MaterialGenerationSummaryPanel } from "@/components/materiais/MaterialGenerationSummary";
 import { MaterialQualityScoreBar } from "@/components/materiais/MaterialQualityScoreBar";
 import { MaterialTypedPreview } from "@/components/materiais/preview/MaterialTypedPreview";
@@ -56,10 +55,6 @@ import {
   type MaterialHistoryPreview,
 } from "@/lib/materiais/material-editor-flow";
 import { buildMaterialGenerationSummary } from "@/lib/materiais/material-generation-summary";
-import {
-  resolveGoogleProductForTool,
-  saveAutoGoogleExportIntent,
-} from "@/lib/google/google-auto-export";
 import {
   activePlanifyTools,
   getPlanifyTool,
@@ -233,21 +228,6 @@ function buildTitle(mode: PlanifyToolId, tema: string, conteudo = ""): string {
   return `${config.shortTitle} — ${label}`;
 }
 
-function queueAutoGoogleExportForMaterial(params: {
-  toolId: PlanifyToolId;
-  title: string;
-  returnTo: string;
-}): void {
-  const product = resolveGoogleProductForTool(params.toolId);
-  if (!product) return;
-
-  saveAutoGoogleExportIntent({
-    product,
-    title: params.title,
-    returnTo: params.returnTo,
-  });
-}
-
 function formatDate(value: string): string {
   try {
     return new Date(value).toLocaleDateString("pt-BR", {
@@ -327,16 +307,6 @@ export function MateriaisClient({
     PedagogicalContextEntry[]
   >([]);
   const pedagogicalDebounceRef = useRef<number | null>(null);
-
-  useAutoGoogleExport({
-    title: buildTitle(tipo, "", conteudo),
-    getHtml: () => resultadoHtml,
-    returnTo:
-      typeof window !== "undefined"
-        ? `${window.location.pathname}${window.location.search}` || "/dashboard"
-        : "/dashboard",
-    onStatus: setHintFeedback,
-  });
 
   useEffect(() => {
     if (studioMode && initialTipo) {
@@ -822,11 +792,6 @@ export function MateriaisClient({
       }
 
       const titulo = buildTitle(tipo, "", conteudo);
-      queueAutoGoogleExportForMaterial({
-        toolId: tipo,
-        title: titulo,
-        returnTo: "/dashboard?secao=editor",
-      });
       const record =
         data && typeof data === "object" ? (data as Record<string, unknown>) : {};
       const scoreValue =

@@ -51,25 +51,27 @@ export const MATERIAL_EXPORT_POLICIES: Record<MaterialEngineType, MaterialExport
       channels: [
         "pdf-download",
         "google-forms",
+        "google-docs",
         "google-drive",
         "google-classroom",
       ],
-      driveFormat: "pdf",
-      classroomFormat: "pdf",
+      driveFormat: "docx",
+      classroomFormat: "docx",
       pdfProfile: "document",
-      hint: ASSESSMENT_HINT,
+      hint: TEXT_DOC_HINT,
     },
     lista: {
       channels: [
         "pdf-download",
         "google-forms",
+        "google-docs",
         "google-drive",
         "google-classroom",
       ],
-      driveFormat: "pdf",
-      classroomFormat: "pdf",
+      driveFormat: "docx",
+      classroomFormat: "docx",
       pdfProfile: "document",
-      hint: ASSESSMENT_HINT,
+      hint: TEXT_DOC_HINT,
     },
     apostila: {
       channels: [

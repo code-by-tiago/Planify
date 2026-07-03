@@ -10,9 +10,10 @@ import { ComunidadeDocenteCreatePostModal } from "@/components/community/docente
 import { ComunidadeDocenteBnccChallengeModal } from "@/components/community/docente/ComunidadeDocenteBnccChallengeModal";
 import { ComunidadeDocenteFeedFilters } from "@/components/community/docente/ComunidadeDocenteFeedFilters";
 import { ComunidadeDocenteOnboarding } from "@/components/community/docente/ComunidadeDocenteOnboarding";
-import { ComunidadeDocenteProfileModal } from "@/components/community/docente/ComunidadeDocenteProfileModal";
+import { ComunidadeDocenteComposer } from "@/components/community/docente/ComunidadeDocenteComposer";
+import { ComunidadeDocenteShareBanner } from "@/components/community/docente/ComunidadeDocenteShareBanner";
+import { ComunidadeDocenteTrending } from "@/components/community/docente/ComunidadeDocenteTrending";
 import { ComunidadeDocenteDiscussions } from "@/components/community/docente/ComunidadeDocenteDiscussions";
-import { ComunidadeDocenteHero } from "@/components/community/docente/ComunidadeDocenteHero";
 import { ComunidadeDocenteMaterials } from "@/components/community/docente/ComunidadeDocenteMaterials";
 import { ComunidadeDocenteRightSidebar } from "@/components/community/docente/ComunidadeDocenteRightSidebar";
 import {
@@ -22,7 +23,6 @@ import {
   ComunidadeDocenteSalvos,
 } from "@/components/community/docente/ComunidadeDocenteSections";
 import { ComunidadeDocenteSidebar } from "@/components/community/docente/ComunidadeDocenteSidebar";
-import { ComunidadeDocenteStats } from "@/components/community/docente/ComunidadeDocenteStats";
 import { ComunidadeDocenteTopBar } from "@/components/community/docente/ComunidadeDocenteTopBar";
 import { IconX } from "@/components/community/docente/docente-icons";
 import type {
@@ -37,6 +37,8 @@ import type {
   DocenteMenuItem,
   DocenteRecentPublication,
   DocenteStats,
+  DocenteSuggestedTeacher,
+  DocenteViewerProfile,
 } from "@/lib/community/docente-types";
 import {
   buildOverviewQueryParams,
@@ -55,13 +57,6 @@ import {
   setHiddenFeedMaterialIds,
   unhideFeedMaterialOnServer,
 } from "@/lib/community/hidden-feed-materials";
-
-const EMPTY_STATS: DocenteStats = {
-  activeTeachers: 0,
-  sharedMaterials: 0,
-  openDiscussions: 0,
-  studyGroups: 0,
-};
 
 function isMaterialDiscussion(id: string) {
   return id.startsWith("mat-disc-");
@@ -104,12 +99,10 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
   const [activeMenu, setActiveMenu] = useState<DocenteMenuItem>("inicio");
   const [selectedDisciplina, setSelectedDisciplina] = useState<DocenteDisciplina | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [heroSearch, setHeroSearch] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [createPostOpen, setCreatePostOpen] = useState(false);
   const [createGroupOpen, setCreateGroupOpen] = useState(false);
   const [createEventOpen, setCreateEventOpen] = useState(false);
-  const [profileOpen, setProfileOpen] = useState(false);
   const [mineOnly, setMineOnly] = useState(false);
   const [friendsOnly, setFriendsOnly] = useState(false);
   const [savedOnly, setSavedOnly] = useState(false);
@@ -126,11 +119,12 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
   const [commentLoading, setCommentLoading] = useState(false);
   const [downloadingMaterialId, setDownloadingMaterialId] = useState<string | null>(null);
   const [viewerName, setViewerName] = useState("Professor(a)");
+  const [viewerProfile, setViewerProfile] = useState<DocenteViewerProfile | null>(null);
+  const [suggestedTeachers, setSuggestedTeachers] = useState<DocenteSuggestedTeacher[]>([]);
   const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
 
-  const [stats, setStats] = useState<DocenteStats>(EMPTY_STATS);
   const [discussions, setDiscussions] = useState<DocenteDiscussion[]>([]);
   const [materials, setMaterials] = useState<DocenteMaterial[]>([]);
   const [recentPublications, setRecentPublications] = useState<DocenteRecentPublication[]>([]);
@@ -144,7 +138,7 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
   const { collapsed: communitySidebarCollapsed, toggle: toggleCommunitySidebarCollapsed } =
     usePersistedSidebarCollapsed("planify:community-sidebar-collapsed");
 
-  const effectiveSearch = searchQuery || heroSearch;
+  const effectiveSearch = searchQuery;
 
   const filteredDiscussions = useMemo(() => {
     if (tipoFilter === "materiais") return [];
@@ -230,7 +224,6 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
         throw new Error(data?.error?.message || "Não foi possível carregar a comunidade.");
       }
 
-      setStats(data.stats || EMPTY_STATS);
       const nextDiscussions = (data.discussions || []).map((d: DocenteDiscussion) => ({
         ...d,
       }));
@@ -273,8 +266,37 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
     void fetch("/api/community/profile", { credentials: "include", cache: "no-store" })
       .then((r) => r.json())
       .then((data) => {
-        if (data?.ok && data.profile?.fullName) {
-          setViewerName(String(data.profile.fullName));
+        if (data?.ok && data.profile) {
+          if (data.profile.fullName) {
+            setViewerName(String(data.profile.fullName));
+          }
+          setViewerProfile({
+            userId: String(data.profile.userId || ""),
+            fullName: String(data.profile.fullName || data.profile.email || "Professor(a)"),
+            avatarUrl: data.profile.avatarUrl || null,
+            schoolName: data.profile.schoolName || null,
+            bio: data.profile.bio || null,
+            teachingAreas: Array.isArray(data.profile.teachingAreas)
+              ? data.profile.teachingAreas
+              : [],
+            stats: {
+              classesCount: Number(data.profile.stats?.classesCount || 0),
+              materialsCount: Number(data.profile.stats?.materialsCount || 0),
+              followersCount: Number(data.profile.stats?.followersCount || 0),
+              followingCount: Number(data.profile.stats?.followingCount || 0),
+            },
+          });
+        }
+      })
+      .catch(() => {});
+    void fetch("/api/community/profiles/search?suggested=1&limit=4", {
+      credentials: "include",
+      cache: "no-store",
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data?.ok && Array.isArray(data.profiles)) {
+          setSuggestedTeachers(data.profiles);
         }
       })
       .catch(() => {});
@@ -769,10 +791,32 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
 
   const openCreatePost = useCallback(() => setCreatePostOpen(true), []);
 
-  const handleHeroSearch = useCallback(() => {
-    setSearchQuery(heroSearch);
-    void loadOverview(heroSearch);
-  }, [heroSearch, loadOverview]);
+  const openProfilePage = useCallback(() => {
+    router.push(comunidadeRoutes.perfil(embedded));
+  }, [embedded, router]);
+
+  const handleFollowSuggested = useCallback(
+    async (userId: string) => {
+      const response = await fetch("/api/community/docente/actions", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "follow", followingId: userId }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.ok) {
+        showToast(data?.error?.message || "Não foi possível seguir.");
+        return;
+      }
+      setSuggestedTeachers((prev) =>
+        prev.map((teacher) =>
+          teacher.userId === userId ? { ...teacher, isFollowing: data.following } : teacher,
+        ),
+      );
+      showToast(data.following ? "Você seguiu o professor!" : "Deixou de seguir.");
+    },
+    [showToast],
+  );
 
   const renderMainContent = () => {
     if (loading) {
@@ -898,20 +942,19 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
 
         {activeMenu === "inicio" ? (
           <>
-            <ComunidadeDocenteHero
-              heroSearch={heroSearch}
-              onHeroSearchChange={setHeroSearch}
-              onHeroSearch={handleHeroSearch}
-            />
-            <ComunidadeDocenteStats stats={stats} />
             {showOnboarding ? (
               <ComunidadeDocenteOnboarding
-                onOpenProfile={() => setProfileOpen(true)}
+                onOpenProfile={openProfilePage}
                 onCreatePost={openCreatePost}
                 onCreateGroup={() => setCreateGroupOpen(true)}
                 onBrowseTeachers={() => router.push(buscaHref("", embedded))}
               />
             ) : null}
+            <ComunidadeDocenteTrending
+              materials={materials}
+              embedded={embedded}
+              onShowAll={() => setActiveMenu("materiais")}
+            />
           </>
         ) : null}
 
@@ -971,7 +1014,7 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
         }}
         onCreatePost={openCreatePost}
         onOpenMenu={() => setSidebarOpen(true)}
-        onOpenProfile={() => setProfileOpen(true)}
+        onOpenProfile={openProfilePage}
         initialOpenMessages={openMessagesPanel}
       />
 
@@ -1009,6 +1052,15 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
         <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden">
           <main className="min-h-0 flex-1 overflow-y-auto">
             <div className="mx-auto max-w-3xl space-y-6 px-4 py-6 sm:px-6 lg:max-w-none lg:px-8">
+              {activeMenu === "inicio" && !loading && !loadError ? (
+                <>
+                  <ComunidadeDocenteComposer
+                    viewerProfile={viewerProfile}
+                    onCreatePost={openCreatePost}
+                  />
+                  <ComunidadeDocenteShareBanner onShare={openCreatePost} />
+                </>
+              ) : null}
               {renderMainContent()}
             </div>
 
@@ -1017,7 +1069,10 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
                 featuredTeacher={featuredTeacher}
                 recentPublications={recentPublications}
                 events={events}
+                viewerProfile={viewerProfile}
+                suggestedTeachers={suggestedTeachers}
                 onFollow={handleFollowTeacher}
+                onFollowSuggested={handleFollowSuggested}
                 onSelectMenu={(menu) => {
                 if (menu === "eventos") {
                   navigateToMenu("eventos");
@@ -1036,7 +1091,10 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
               featuredTeacher={featuredTeacher}
               recentPublications={recentPublications}
               events={events}
+              viewerProfile={viewerProfile}
+              suggestedTeachers={suggestedTeachers}
               onFollow={handleFollowTeacher}
+              onFollowSuggested={handleFollowSuggested}
               onSelectMenu={(menu) => {
                 if (menu === "eventos") {
                   navigateToMenu("eventos");
@@ -1078,11 +1136,6 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
         open={createEventOpen}
         onClose={() => setCreateEventOpen(false)}
         onSubmit={handleCreateEvent}
-      />
-
-      <ComunidadeDocenteProfileModal
-        open={profileOpen}
-        onClose={() => setProfileOpen(false)}
       />
 
       <ComunidadeDocenteBnccChallengeModal

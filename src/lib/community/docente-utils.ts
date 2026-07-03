@@ -187,6 +187,10 @@ export function mapComunidadeHrefToEmbed(href: string): string {
   const professor = href.match(/^\/comunidade\/professor\/([^/?#]+)/);
   if (professor) return comunidadeRoutes.professor(professor[1], true);
 
+  if (href === "/comunidade/perfil" || href.startsWith("/comunidade/perfil?")) {
+    return comunidadeRoutes.perfil(true);
+  }
+
   const evento = href.match(/^\/comunidade\/evento\/([^/?#]+)/);
   if (evento) return comunidadeRoutes.evento(evento[1], true);
 
@@ -307,5 +311,7 @@ export const comunidadeRoutes = {
   desafiosEmbedded: dashboardView("desafios"),
   busca: "/comunidade/busca",
   buscaEmbedded: dashboardView("busca"),
+  perfil: (embedded?: boolean) =>
+    embedded ? dashboardView("perfil") : "/comunidade/perfil",
   messages: "/dashboard?secao=marketplace&painel=mensagens",
 };

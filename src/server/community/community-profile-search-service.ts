@@ -12,6 +12,7 @@ export type CommunityProfileSearchResult = {
   topComponente: string | null;
   materialsCount: number;
   matchHint?: CommunityProfileSearchMatchHint | null;
+  isFollowing?: boolean;
 };
 
 type ProfileRow = {
@@ -105,6 +106,8 @@ export async function searchCommunityProfiles(params: {
   component?: string;
   limit?: number;
   excludeUserId?: string;
+  /** When true, returns public profiles even without a search term (suggestions). */
+  suggested?: boolean;
 }): Promise<CommunityProfileSearchResult[]> {
   const supabase = getSupabaseAdminClient();
   const q = sanitizeIlikeTerm((params.query || "").trim().toLowerCase());
@@ -134,7 +137,7 @@ export async function searchCommunityProfiles(params: {
       .or(profileTextSearchOrFilter(q));
   } else if (searchTerm.length >= 2) {
     profileQuery = profileQuery.or(profileTextSearchOrFilter(searchTerm));
-  } else if (!component) {
+  } else if (!component && !params.suggested) {
     return [];
   }
 
@@ -229,7 +232,7 @@ export async function searchCommunityProfiles(params: {
       });
   }
 
-  return results
+  const sorted = results
     .sort(
       (a, b) =>
         b.relevanceScore - a.relevanceScore ||
@@ -238,6 +241,20 @@ export async function searchCommunityProfiles(params: {
     )
     .slice(0, limit)
     .map(({ relevanceScore: _relevanceScore, ...item }) => item);
+
+  if (params.excludeUserId && sorted.length) {
+    const { data: follows } = await supabase
+      .from("community_followers")
+      .select("following_id")
+      .eq("follower_id", params.excludeUserId)
+      .in("following_id", sorted.map((item) => item.userId));
+    const followingIds = new Set((follows || []).map((row) => String(row.following_id)));
+    for (const item of sorted) {
+      item.isFollowing = followingIds.has(item.userId);
+    }
+  }
+
+  return sorted;
 }
 
 export async function getUserTopComponentes(userId: string, limit = 3): Promise<string[]> {

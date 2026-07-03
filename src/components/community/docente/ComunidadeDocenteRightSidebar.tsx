@@ -5,7 +5,15 @@ import { communityProfileHref } from "@/components/community/CommunityAuthorLink
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { useComunidadeEmbedded } from "@/hooks/useComunidadeEmbedded";
 import Link from "next/link";
-import type { DocenteAuthor, DocenteEvent, DocenteMenuItem, DocenteRecentPublication } from "@/lib/community/docente-types";
+import { PlanifyOwlMark } from "@/components/pro/PlanifyOwlMark";
+import type {
+  DocenteAuthor,
+  DocenteEvent,
+  DocenteMenuItem,
+  DocenteRecentPublication,
+  DocenteSuggestedTeacher,
+  DocenteViewerProfile,
+} from "@/lib/community/docente-types";
 import { resolveMaterialCoverVisual } from "@/lib/materials/material-cover-visual";
 import {
   formatDocenteNumber,
@@ -18,7 +26,10 @@ type ComunidadeDocenteRightSidebarProps = {
   featuredTeacher: DocenteAuthor | null;
   recentPublications: DocenteRecentPublication[];
   events: DocenteEvent[];
+  viewerProfile?: DocenteViewerProfile | null;
+  suggestedTeachers?: DocenteSuggestedTeacher[];
   onFollow: (authorId: string) => void;
+  onFollowSuggested?: (userId: string) => void;
   onSelectMenu?: (menu: DocenteMenuItem) => void;
   onCreatePost?: () => void;
   onOpenEvent?: (id: string) => void;
@@ -28,7 +39,10 @@ export function ComunidadeDocenteRightSidebar({
   featuredTeacher: teacher,
   recentPublications,
   events,
+  viewerProfile,
+  suggestedTeachers = [],
   onFollow,
+  onFollowSuggested,
   onSelectMenu,
   onCreatePost,
   onOpenEvent,
@@ -37,6 +51,63 @@ export function ComunidadeDocenteRightSidebar({
 
   return (
     <aside className="flex w-full shrink-0 flex-col gap-5 lg:w-[300px]">
+      {viewerProfile ? (
+        <section className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
+          <div
+            className="h-16 bg-gradient-to-r from-cyan-100 via-indigo-50 to-violet-100"
+            style={{
+              backgroundImage:
+                "radial-gradient(circle at 20% 30%, rgba(34,211,238,0.35) 0, transparent 45%), radial-gradient(circle at 80% 20%, rgba(99,102,241,0.25) 0, transparent 40%)",
+            }}
+          />
+          <div className="px-4 pb-4">
+            <div className="-mt-8 flex items-end gap-3">
+              <span className="h-16 w-16 shrink-0 overflow-hidden rounded-full border-4 border-white bg-slate-100 shadow-md">
+                {viewerProfile.avatarUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={viewerProfile.avatarUrl}
+                    alt=""
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <span className="flex h-full w-full items-center justify-center">
+                    <PlanifyOwlMark size={44} />
+                  </span>
+                )}
+              </span>
+            </div>
+            <h2 className="mt-2 text-sm font-extrabold text-[#0F172A]">
+              {viewerProfile.fullName}
+            </h2>
+            {viewerProfile.schoolName ? (
+              <p className="mt-0.5 flex items-center gap-1.5 text-xs font-medium text-slate-500">
+                <PlanifyIcon name="library" className="h-3.5 w-3.5 shrink-0" />
+                {viewerProfile.schoolName}
+              </p>
+            ) : null}
+            {viewerProfile.teachingAreas.length > 0 ? (
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {viewerProfile.teachingAreas.slice(0, 3).map((area) => (
+                  <span
+                    key={area}
+                    className="rounded-full border border-cyan-400/25 bg-cyan-50 px-2 py-0.5 text-[10px] font-bold text-cyan-800"
+                  >
+                    {area}
+                  </span>
+                ))}
+              </div>
+            ) : null}
+            <Link
+              href={comunidadeRoutes.perfil(embedded)}
+              className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white py-2 text-xs font-bold text-slate-700 transition hover:border-cyan-300 hover:text-cyan-700"
+            >
+              <PlanifyIcon name="user" className="h-3.5 w-3.5" />
+              Meu perfil
+            </Link>
+          </div>
+        </section>
+      ) : null}
       <section className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
         <h2 className="text-sm font-extrabold text-[#0F172A]">Publicações recentes</h2>
         {recentPublications.length === 0 ? (
@@ -126,6 +197,51 @@ export function ComunidadeDocenteRightSidebar({
           </ul>
         )}
       </section>
+
+      {suggestedTeachers.length > 0 ? (
+        <section className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
+          <h2 className="text-sm font-extrabold text-[#0F172A]">Professores como você</h2>
+          <ul className="mt-4 space-y-4">
+            {suggestedTeachers.map((suggestion) => (
+              <li key={suggestion.userId} className="flex items-start gap-3">
+                <CommunityAuthorAvatar
+                  userId={suggestion.userId}
+                  name={suggestion.displayName}
+                  avatarUrl={suggestion.avatarUrl}
+                  size="sm"
+                />
+                <div className="min-w-0 flex-1">
+                  <Link
+                    href={communityProfileHref(suggestion.userId, embedded)}
+                    className="line-clamp-1 text-xs font-bold text-[#0F172A] hover:text-cyan-700"
+                  >
+                    {suggestion.displayName}
+                  </Link>
+                  <p className="mt-0.5 line-clamp-2 text-[11px] font-medium text-slate-400">
+                    {suggestion.topComponente ||
+                      suggestion.schoolName ||
+                      `${formatDocenteNumber(suggestion.materialsCount)} materiais`}
+                  </p>
+                  {onFollowSuggested ? (
+                    <button
+                      type="button"
+                      onClick={() => onFollowSuggested(suggestion.userId)}
+                      className={[
+                        "mt-1.5 rounded-lg px-3 py-1 text-[11px] font-bold transition",
+                        suggestion.isFollowing
+                          ? "border border-slate-200 bg-white text-slate-500"
+                          : "border border-cyan-300 bg-white text-cyan-700 hover:bg-cyan-50",
+                      ].join(" ")}
+                    >
+                      {suggestion.isFollowing ? "Seguindo" : "Seguir"}
+                    </button>
+                  ) : null}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       <section className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
         <h2 className="text-sm font-extrabold text-[#0F172A]">Professores em destaque</h2>

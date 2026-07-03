@@ -19,6 +19,32 @@ export type DocenteDisciplina =
   | "Educação Física"
   | "Multidisciplinar";
 
+export type DocenteViewerProfile = {
+  userId: string;
+  fullName: string;
+  avatarUrl: string | null;
+  schoolName: string | null;
+  bio: string | null;
+  teachingAreas: string[];
+  stats: {
+    classesCount: number;
+    materialsCount: number;
+    followersCount: number;
+    followingCount: number;
+  };
+};
+
+export type DocenteSuggestedTeacher = {
+  userId: string;
+  displayName: string;
+  avatarUrl: string | null;
+  schoolName: string | null;
+  bio: string | null;
+  topComponente: string | null;
+  materialsCount: number;
+  isFollowing?: boolean;
+};
+
 export type DocenteAuthor = {
   id: string;
   name: string;

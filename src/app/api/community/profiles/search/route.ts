@@ -19,6 +19,8 @@ export async function GET(request: NextRequest) {
   const q = request.nextUrl.searchParams.get("q") || "";
   const school = request.nextUrl.searchParams.get("school") || "";
   const component = request.nextUrl.searchParams.get("component") || "";
+  const suggested = request.nextUrl.searchParams.get("suggested") === "1";
+  const limitParam = Number(request.nextUrl.searchParams.get("limit") || 0);
 
   try {
     const profiles = await searchCommunityProfiles({
@@ -26,6 +28,8 @@ export async function GET(request: NextRequest) {
       school,
       component,
       excludeUserId: access.access.user?.id,
+      suggested,
+      limit: limitParam > 0 ? limitParam : undefined,
     });
     return NextResponse.json({ ok: true, profiles });
   } catch (error) {

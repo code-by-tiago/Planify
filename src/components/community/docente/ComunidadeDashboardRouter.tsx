@@ -9,6 +9,7 @@ import { ComunidadeDocenteEventoDetailClient } from "@/components/community/doce
 import { ComunidadeDocenteGrupoDetailClient } from "@/components/community/docente/ComunidadeDocenteGrupoDetailClient";
 import { ComunidadeDocenteMaterialDetailClient } from "@/components/community/docente/ComunidadeDocenteMaterialDetailClient";
 import { ComunidadeDocenteProfessorDetailClient } from "@/components/community/docente/ComunidadeDocenteProfessorDetailClient";
+import { ComunidadeMeuPerfilClient } from "@/components/community/docente/ComunidadeMeuPerfilClient";
 
 export function ComunidadeDashboardRouter() {
   const searchParams = useSearchParams();
@@ -35,6 +36,9 @@ export function ComunidadeDashboardRouter() {
   }
   if (view === "busca") {
     return <ComunidadeDocenteBuscaClient forceEmbedded />;
+  }
+  if (view === "perfil") {
+    return <ComunidadeMeuPerfilClient forceEmbedded />;
   }
 
   return <ComunidadeDocenteClient embedded />;

@@ -152,6 +152,21 @@ export function HistoricoClient() {
   const [pendingMoveItemId, setPendingMoveItemId] = useState<string | null>(null);
   const NEW_FOLDER_OPTION = "__new_folder__";
 
+  const activeFolder = useMemo(
+    () => folders.find((folder) => folder.id === activeFolderId) || null,
+    [folders, activeFolderId],
+  );
+  /**
+   * Escopo da visão atual: dentro de uma pasta mostra só os itens dela;
+   * fora de qualquer pasta ("Meus materiais") mostra só os itens ainda sem pasta,
+   * para que um material movido para uma pasta deixe de aparecer junto dos outros.
+   */
+  const scopeItems = useCallback(
+    (list: HistoryItem[]): HistoryItem[] =>
+      filterItemsByFolder(list, activeFolderId || "__inbox__"),
+    [activeFolderId],
+  );
+
   useEffect(() => {
     let cancelled = false;
 
@@ -174,7 +189,7 @@ export function HistoricoClient() {
       const next = await refreshHistoryState();
       if (cancelled) return;
       setItems(next);
-      setSelectedItem(next[0] ?? null);
+      setSelectedItem(scopeItems(next)[0] ?? null);
 
       const synced = await syncMaterialFoldersFromAPI();
       if (cancelled) return;
@@ -190,11 +205,14 @@ export function HistoricoClient() {
     function handleRefresh() {
       void refreshHistoryState().then((loaded) => {
         setItems(loaded);
-        setSelectedItem((current) =>
-          current
-            ? loaded.find((item) => item.id === current.id) ?? loaded[0] ?? null
-            : loaded[0] ?? null,
-        );
+        setSelectedItem((current) => {
+          const scoped = scopeItems(loaded);
+          if (current) {
+            const stillInScope = scoped.find((item) => item.id === current.id);
+            if (stillInScope) return stillInScope;
+          }
+          return scoped[0] ?? null;
+        });
       });
     }
 
@@ -204,7 +222,7 @@ export function HistoricoClient() {
       window.removeEventListener("focus", handleRefresh);
       window.removeEventListener("planify:history-changed", handleRefresh);
     };
-  }, []);
+  }, [scopeItems]);
 
   const typeOptions = useMemo(() => getHistoryTypeOptions(items), [items]);
   const folderTree = useMemo(() => buildFolderTree(folders, items), [folders, items]);
@@ -212,14 +230,9 @@ export function HistoricoClient() {
     () => folderTree.flatMap((school) => school.classes),
     [folderTree],
   );
-  const inboxCount = useMemo(
-    () => filterItemsByFolder(items, "__inbox__").length,
-    [items],
-  );
   const filteredItems = useMemo(() => {
-    const byFolder = filterItemsByFolder(items, activeFolderId);
-    return filterHistoryItems(byFolder, filter);
-  }, [items, filter, activeFolderId]);
+    return filterHistoryItems(scopeItems(items), filter);
+  }, [items, filter, scopeItems]);
   const filteredItemIds = useMemo(
     () => filteredItems.map((item) => item.id),
     [filteredItems],
@@ -304,7 +317,7 @@ export function HistoricoClient() {
     setItems(next);
 
     if (selectedItem && removedIdSet.has(selectedItem.id)) {
-      setSelectedItem(next[0] ?? null);
+      setSelectedItem(scopeItems(next)[0] ?? null);
     }
 
     setSelectedIds((current) => {
@@ -385,7 +398,7 @@ export function HistoricoClient() {
   function reloadHistory() {
     void refreshHistoryState().then((loaded) => {
       setItems(loaded);
-      setSelectedItem(loaded[0] ?? null);
+      setSelectedItem(scopeItems(loaded)[0] ?? null);
       setStatus({
         type: "success",
         message: "Materiais recarregados.",
@@ -426,8 +439,15 @@ export function HistoricoClient() {
   function moveItemToFolder(item: HistoryItem, folder: MaterialFolder | null) {
     const updated = assignHistoryItemFolder(item, folder);
     upsertHistoryItem(updated);
-    setItems((current) => current.map((i) => (i.id === item.id ? updated : i)));
-    setSelectedItem((current) => (current?.id === item.id ? updated : current));
+    const nextItems = items.map((i) => (i.id === item.id ? updated : i));
+    setItems(nextItems);
+    setSelectedItem((current) => {
+      if (current?.id !== item.id) return current;
+      const scoped = scopeItems(nextItems);
+      return scoped.some((i) => i.id === updated.id)
+        ? updated
+        : scoped[0] ?? null;
+    });
     setStatus({
       type: "success",
       message: folder
@@ -570,127 +590,103 @@ export function HistoricoClient() {
       }
     >
       <div className="grid gap-6">
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400">
-              Pastas · Escola / Turma
-            </p>
-            <span className="text-[11px] font-semibold text-slate-400">
-              Clique para abrir · use a lixeira para excluir
-            </span>
-          </div>
-
-          <div className="mt-3 grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
-            <button
-              type="button"
-              onClick={() => setActiveFolderId(null)}
-              className={[
-                "flex flex-col items-center gap-1.5 rounded-2xl border p-3 text-center transition",
-                !activeFolderId
-                  ? "border-cyan-400 bg-cyan-50"
-                  : "border-slate-200 bg-white hover:border-cyan-200 hover:bg-cyan-50/40",
-              ].join(" ")}
-            >
-              <PlanifyIcon
-                name="folder"
-                className={[
-                  "h-9 w-9",
-                  !activeFolderId ? "text-cyan-600" : "text-slate-400",
-                ].join(" ")}
-              />
-              <span className="line-clamp-1 text-xs font-bold text-slate-800">
-                Todos
-              </span>
-              <span className="text-[10px] font-semibold text-slate-400">
-                {totals.todos} {totals.todos === 1 ? "item" : "itens"}
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveFolderId("__inbox__")}
-              className={[
-                "flex flex-col items-center gap-1.5 rounded-2xl border p-3 text-center transition",
-                activeFolderId === "__inbox__"
-                  ? "border-cyan-400 bg-cyan-50"
-                  : "border-slate-200 bg-white hover:border-cyan-200 hover:bg-cyan-50/40",
-              ].join(" ")}
-            >
-              <PlanifyIcon
-                name="folder"
-                className={[
-                  "h-9 w-9",
-                  activeFolderId === "__inbox__" ? "text-cyan-600" : "text-slate-400",
-                ].join(" ")}
-              />
-              <span className="line-clamp-1 text-xs font-bold text-slate-800">
-                Sem pasta
-              </span>
-              <span className="text-[10px] font-semibold text-slate-400">
-                {inboxCount} {inboxCount === 1 ? "item" : "itens"}
-              </span>
-            </button>
-
-            {flatFolders.map(({ folder, count }) => (
-              <div key={folder.id} className="group relative">
+        {activeFolder ? (
+          <div className="rounded-2xl border border-cyan-400/30 bg-white p-4 sm:p-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
                 <button
                   type="button"
-                  onClick={() => setActiveFolderId(folder.id)}
-                  className={[
-                    "flex w-full flex-col items-center gap-1 rounded-2xl border p-3 text-center transition",
-                    activeFolderId === folder.id
-                      ? "border-cyan-400 bg-cyan-50"
-                      : "border-slate-200 bg-white hover:border-cyan-200 hover:bg-cyan-50/40",
-                  ].join(" ")}
+                  onClick={() => setActiveFolderId(null)}
+                  className="flex min-h-9 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 transition hover:bg-slate-50"
                 >
-                  <PlanifyIcon
-                    name="folder"
-                    className={[
-                      "h-9 w-9",
-                      activeFolderId === folder.id ? "text-cyan-600" : "text-amber-400",
-                    ].join(" ")}
-                  />
-                  <span className="line-clamp-1 text-xs font-bold text-slate-800">
-                    {folder.classLabel}
-                  </span>
-                  <span className="line-clamp-1 text-[10px] font-semibold text-slate-400">
-                    {folder.schoolLabel}
-                  </span>
-                  <span className="text-[10px] font-semibold text-slate-400">
-                    {count} {count === 1 ? "item" : "itens"}
-                  </span>
+                  <PlanifyIcon name="arrowLeft" className="h-3.5 w-3.5" />
+                  Meus materiais
                 </button>
-                <button
-                  type="button"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    void handleDeleteFolder(folder);
-                  }}
-                  className="absolute -right-1.5 -top-1.5 flex h-6 w-6 items-center justify-center rounded-full border border-rose-200 bg-white text-rose-600 opacity-80 shadow-sm transition hover:bg-rose-50 hover:opacity-100 focus:opacity-100"
-                  title="Excluir pasta"
-                  aria-label={`Excluir pasta ${folder.schoolLabel} ${folder.classLabel}`}
-                >
-                  <PlanifyIcon name="trash" className="h-3.5 w-3.5" />
-                </button>
+                <div className="flex items-center gap-2">
+                  <PlanifyIcon name="folder" className="h-8 w-8 text-cyan-600" />
+                  <div>
+                    <p className="text-sm font-black leading-tight text-slate-900">
+                      {activeFolder.classLabel}
+                    </p>
+                    <p className="text-xs font-semibold leading-tight text-slate-500">
+                      {activeFolder.schoolLabel} · {filteredItems.length}{" "}
+                      {filteredItems.length === 1 ? "item" : "itens"}
+                    </p>
+                  </div>
+                </div>
               </div>
-            ))}
-
-            <button
-              type="button"
-              onClick={() => openNewFolderForm()}
-              className="flex flex-col items-center justify-center gap-1.5 rounded-2xl border-2 border-dashed border-slate-300 p-3 text-center text-slate-500 transition hover:border-cyan-300 hover:bg-cyan-50/40 hover:text-cyan-700"
-            >
-              <PlanifyIcon name="plus" className="h-9 w-9" />
-              <span className="text-xs font-bold">Nova pasta</span>
-            </button>
+              <button
+                type="button"
+                onClick={() => void handleDeleteFolder(activeFolder)}
+                className="flex min-h-9 items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-700 transition hover:bg-rose-100"
+              >
+                <PlanifyIcon name="trash" className="h-3.5 w-3.5" />
+                Excluir pasta
+              </button>
+            </div>
           </div>
+        ) : (
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400">
+                Pastas · Escola / Turma
+              </p>
+              <span className="text-[11px] font-semibold text-slate-400">
+                Clique para abrir · use a lixeira para excluir
+              </span>
+            </div>
 
-          {folderTree.length === 0 ? (
-            <p className="mt-3 text-xs font-medium text-slate-500">
-              Organize por escola e turma para não perder o ano letivo.
-            </p>
-          ) : null}
-        </div>
+            <div className="mt-3 grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
+              {flatFolders.map(({ folder, count }) => (
+                <div key={folder.id} className="group relative">
+                  <button
+                    type="button"
+                    onClick={() => setActiveFolderId(folder.id)}
+                    className="flex w-full flex-col items-center gap-1 rounded-2xl border border-slate-200 bg-white p-3 text-center transition hover:border-cyan-200 hover:bg-cyan-50/40"
+                  >
+                    <PlanifyIcon name="folder" className="h-9 w-9 text-amber-400" />
+                    <span className="line-clamp-1 text-xs font-bold text-slate-800">
+                      {folder.classLabel}
+                    </span>
+                    <span className="line-clamp-1 text-[10px] font-semibold text-slate-400">
+                      {folder.schoolLabel}
+                    </span>
+                    <span className="text-[10px] font-semibold text-slate-400">
+                      {count} {count === 1 ? "item" : "itens"}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      void handleDeleteFolder(folder);
+                    }}
+                    className="absolute -right-1.5 -top-1.5 flex h-6 w-6 items-center justify-center rounded-full border border-rose-200 bg-white text-rose-600 opacity-80 shadow-sm transition hover:bg-rose-50 hover:opacity-100 focus:opacity-100"
+                    title="Excluir pasta"
+                    aria-label={`Excluir pasta ${folder.schoolLabel} ${folder.classLabel}`}
+                  >
+                    <PlanifyIcon name="trash" className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              ))}
+
+              <button
+                type="button"
+                onClick={() => openNewFolderForm()}
+                className="flex flex-col items-center justify-center gap-1.5 rounded-2xl border-2 border-dashed border-slate-300 p-3 text-center text-slate-500 transition hover:border-cyan-300 hover:bg-cyan-50/40 hover:text-cyan-700"
+              >
+                <PlanifyIcon name="plus" className="h-9 w-9" />
+                <span className="text-xs font-bold">Nova pasta</span>
+              </button>
+            </div>
+
+            {folderTree.length === 0 ? (
+              <p className="mt-3 text-xs font-medium text-slate-500">
+                Organize por escola e turma para não perder o ano letivo. Materiais sem pasta aparecem abaixo, em "Meus materiais".
+              </p>
+            ) : null}
+          </div>
+        )}
 
         {newFolderOpen ? (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4">
@@ -745,7 +741,7 @@ export function HistoricoClient() {
 
         <div className="flex flex-wrap items-center gap-3">
           {[
-            ["Total", totals.todos],
+            ["Total geral", totals.todos],
             ["Planejamentos", totals.planejamentos],
             ["Materiais", totals.materiais],
             ["Editor", totals.editor],
@@ -954,24 +950,40 @@ export function HistoricoClient() {
               Vazio
             </p>
             <h3 className="mt-2 text-sm font-semibold text-slate-900">
-              Nenhum material encontrado
+              {activeFolder
+                ? "Esta pasta ainda não tem materiais"
+                : "Nenhum material encontrado"}
             </h3>
             <p className="mt-2 text-sm text-slate-600">
-              Gere um planejamento ou material para vê-lo aqui.
+              {activeFolder
+                ? 'Volte em "Meus materiais" e use o campo Pasta em qualquer card para mover um material para aqui.'
+                : "Gere um planejamento ou material para vê-lo aqui."}
             </p>
             <div className="mt-6 flex flex-wrap justify-center gap-3">
-              <Link
-                href="/planejamentos"
-                className="pl-hud-btn rounded-xl px-5 py-2.5 text-xs font-semibold"
-              >
-                Novo planejamento
-              </Link>
-              <Link
-                href="/materiais"
-                className="pl-hud-btn-secondary rounded-xl px-5 py-2.5 text-xs font-semibold"
-              >
-                Novo material
-              </Link>
+              {activeFolder ? (
+                <button
+                  type="button"
+                  onClick={() => setActiveFolderId(null)}
+                  className="pl-hud-btn rounded-xl px-5 py-2.5 text-xs font-semibold"
+                >
+                  Ir para Meus materiais
+                </button>
+              ) : (
+                <>
+                  <Link
+                    href="/planejamentos"
+                    className="pl-hud-btn rounded-xl px-5 py-2.5 text-xs font-semibold"
+                  >
+                    Novo planejamento
+                  </Link>
+                  <Link
+                    href="/materiais"
+                    className="pl-hud-btn-secondary rounded-xl px-5 py-2.5 text-xs font-semibold"
+                  >
+                    Novo material
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         )}

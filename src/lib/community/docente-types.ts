@@ -1,9 +1,5 @@
 export type DocenteMenuItem =
   | "inicio"
-  | "discussoes"
-  | "materiais"
-  | "eventos"
-  | "grupos"
   | "professores"
   | "desafios"
   | "salvos";
@@ -31,10 +27,28 @@ export type DocenteAuthor = {
   isFollowing?: boolean;
 };
 
+export type DocenteDiscussionAttachment = {
+  id: string;
+  materialId: string;
+  title: string;
+  fileName: string;
+  fileType: "pdf" | "docx" | "pptx" | "image";
+  fileMime?: string | null;
+  /** URL assinada para exibir imagem inline no feed. */
+  previewUrl?: string | null;
+};
+
+export type DocenteAchievementBadge = {
+  name: string;
+  color: string;
+  icon: string;
+};
+
 export type DocenteDiscussion = {
   id: string;
   author: DocenteAuthor;
   title: string;
+  body?: string;
   disciplina: DocenteDisciplina;
   tags: string[];
   createdAt: string;
@@ -42,6 +56,19 @@ export type DocenteDiscussion = {
   likesCount: number;
   likedByMe: boolean;
   savedByMe: boolean;
+  /** "text" para publicações comuns, "achievement" para conquistas (selos). */
+  kind?: "text" | "achievement";
+  achievementBadge?: DocenteAchievementBadge;
+  /** Prévia de comentários no feed (evita N+1). */
+  commentsPreview?: DocenteComment[];
+  attachments?: DocenteDiscussionAttachment[];
+};
+
+export type DocenteComment = {
+  id: string;
+  body: string;
+  createdAt: string;
+  author: DocenteAuthor;
 };
 
 export type DocenteMaterial = {
@@ -62,6 +89,9 @@ export type DocenteMaterial = {
   likedByMe: boolean;
   savedByMe: boolean;
   fileType: "pdf" | "docx" | "pptx" | "image";
+  /** Conteúdo importado/destacado pelo admin (abre fora do site). */
+  externalUrl?: string | null;
+  featuredSource?: "admin" | "import" | "community" | "external" | null;
 };
 
 export type DocenteRecentPublication = {
@@ -76,21 +106,10 @@ export type DocenteRecentPublication = {
   href?: string;
 };
 
-export type DocenteEvent = {
-  id: string;
-  title: string;
-  presenterName: string;
-  startsAt: string;
-  isOnline: boolean;
-  day: number;
-  month: string;
-};
-
 export type DocenteStats = {
   activeTeachers: number;
   sharedMaterials: number;
   openDiscussions: number;
-  studyGroups: number;
 };
 
 export type DocenteCreatePostInput = {
@@ -100,14 +119,6 @@ export type DocenteCreatePostInput = {
   tags: string[];
   files: File[];
   participantUserIds?: string[];
-  groupId?: string;
-};
-
-export type DocenteCreateGroupInput = {
-  name: string;
-  description: string;
-  disciplina: DocenteDisciplina;
-  memberUserIds?: string[];
 };
 
 export type DocenteBadgeProgress = {

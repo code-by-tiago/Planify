@@ -17,7 +17,6 @@ const VALID_TARGETS: CommunityReportTarget[] = [
   "material",
   "comment",
   "user",
-  "group_message",
   "post",
   "post_comment",
 ];

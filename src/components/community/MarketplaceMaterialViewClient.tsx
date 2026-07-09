@@ -3,7 +3,9 @@
 import { CommunityAuthorAvatar } from "@/components/community/CommunityAuthorAvatar";
 import { CommunityAuthorLink } from "@/components/community/CommunityAuthorLink";
 import { CommunityMaterialPreview } from "@/components/community/CommunityMaterialPreview";
+import { DocumentDownloadIconBar } from "@/components/documents/DocumentDownloadIconBar";
 import { GoogleDocumentExportBar } from "@/components/google/GoogleDocumentExportBar";
+import { OpenMaterialInGoogleDocsButton } from "@/components/google/OpenMaterialInGoogleDocsButton";
 import { materialExportAllows } from "@/lib/export/material-export-policy";
 import { MaterialLikeButton } from "@/components/community/MaterialLikeButton";
 import { MarketplaceComments } from "@/components/marketplace/MarketplaceComments";
@@ -248,7 +250,16 @@ export function MarketplaceMaterialViewClient({
     data?.viewerUserId && material && data.viewerUserId === material.userId,
   );
   const exportHtml = preview?.htmlContent || "";
-  const canGoogleExport = preview?.kind === "html" && exportHtml.trim().length >= 20;
+  const isDocxMaterial = preview?.kind === "docx";
+  const isPdfMaterial = preview?.kind === "pdf";
+  const hasExportHtml =
+    exportHtml.trim().length >= 20 &&
+    !/Não foi possível ler o conteúdo do documento/i.test(exportHtml) &&
+    !/Documento sem texto legível na prévia/i.test(exportHtml);
+  // HTML nativo: barra Google completa (sem Classroom — só no Editor).
+  // DOCX/DOC: download + Abrir no Google Docs (arquivo original).
+  const canGoogleExport =
+    hasExportHtml && preview?.kind === "html" && !isDocxMaterial && !isPdfMaterial;
   const documentType = material
     ? resolveDocumentTypeFromMarketplaceItem({
         tipoMaterial: material.tipoMaterial,
@@ -268,8 +279,22 @@ export function MarketplaceMaterialViewClient({
     !canGoogleExport || (isPlanningMaterial && !planningPayloadReady);
   const googleDisabledTitle = isPlanningMaterial && !planningPayloadReady
     ? "Planejamento publicado sem matriz oficial. Abra no editor e republica na Comunidade para exportar com o modelo oficial."
-    : "Exportação Google indisponível para este formato.";
-  const canOpenEditor = preview?.kind === "html" || preview?.kind === "docx";
+    : isPdfMaterial
+      ? "PDF: use Baixar PDF."
+      : isDocxMaterial
+        ? "DOC/DOCX: use Baixar ou Abrir no Google Docs."
+        : "Exportação Google indisponível para este formato.";
+  const canOpenEditor =
+    preview?.kind === "html" ||
+    preview?.kind === "docx" ||
+    preview?.kind === "pdf";
+  const canDownloadPdf =
+    Boolean(preview) &&
+    !isDocxMaterial &&
+    (preview!.downloadFormats.includes("pdf") ||
+      materialExportAllows("pdf-download", documentType, exportHtml) ||
+      isPdfMaterial);
+  const canDownloadDocx = Boolean(preview) && isDocxMaterial;
 
   const openEditorButton = canOpenEditor ? (
     <button
@@ -283,28 +308,50 @@ export function MarketplaceMaterialViewClient({
     </button>
   ) : null;
 
-  const exportBar = material && preview ? (
-    <GoogleDocumentExportBar
-      title={material.title}
-      getHtml={() => exportHtml}
-      getPlanningPayload={
-        documentType?.includes("planejamento") ? getPlanningPayload : undefined
-      }
-      documentType={documentType}
-      returnTo={`/marketplace/material/${material.id}`}
-      compact
-      classroomMode="popover"
-      disabled={googleExportDisabled}
-      disabledTitle={googleDisabledTitle}
-      onDownloadPdf={
-        materialExportAllows("pdf-download", documentType, exportHtml) ||
-        preview.downloadFormats.includes("pdf")
-          ? () => void handleDownload("pdf")
-          : undefined
-      }
-      downloadingPdf={downloadingKey === `${material.id}:pdf`}
-    />
-  ) : null;
+  const exportBar =
+    material && preview && isDocxMaterial ? (
+      <div className="flex items-center gap-1">
+        <DocumentDownloadIconBar
+          onDownloadDocx={() => void handleDownload("docx")}
+          downloadingDocx={downloadingKey === `${material.id}:docx`}
+        />
+        <OpenMaterialInGoogleDocsButton
+          materialId={material.id}
+          title={material.title}
+          returnTo={`/marketplace/material/${material.id}`}
+          onStatus={(message) => setActionStatus(message)}
+          onError={(message) => setError(message)}
+        />
+      </div>
+    ) : material && preview && isPdfMaterial ? (
+      <DocumentDownloadIconBar
+        onDownloadPdf={() => void handleDownload("pdf")}
+        downloadingPdf={downloadingKey === `${material.id}:pdf`}
+      />
+    ) : material && preview ? (
+      <GoogleDocumentExportBar
+        title={material.title}
+        getHtml={() => exportHtml}
+        getPlanningPayload={
+          documentType?.includes("planejamento") ? getPlanningPayload : undefined
+        }
+        documentType={documentType}
+        returnTo={`/marketplace/material/${material.id}`}
+        compact
+        classroomMode="popover"
+        showClassroomExport={false}
+        disabled={googleExportDisabled}
+        disabledTitle={googleDisabledTitle}
+        onDownloadPdf={
+          canDownloadPdf ? () => void handleDownload("pdf") : undefined
+        }
+        downloadingPdf={downloadingKey === `${material.id}:pdf`}
+        onDownloadDocx={
+          canDownloadDocx ? () => void handleDownload("docx") : undefined
+        }
+        downloadingDocx={downloadingKey === `${material.id}:docx`}
+      />
+    ) : null;
 
   const moderationActions = material ? (
     !isOwnMaterial ? (

@@ -14,14 +14,11 @@ const baseUrl = process.env.BASE_URL || "";
 const requiredFiles = [
   "src/components/community/docente/ComunidadeDocenteClient.tsx",
   "src/components/community/docente/ComunidadeDashboardRouter.tsx",
-  "src/components/community/docente/ComunidadeDocenteGroupChat.tsx",
-  "src/server/community/community-group-messages-service.ts",
   "src/server/community/community-rate-limit-service.ts",
   "src/server/community/community-hidden-feed-materials-service.ts",
   "src/server/community/community-bncc-challenge-service.ts",
   "src/app/api/community/docente/route.ts",
   "src/app/api/community/docente/actions/route.ts",
-  "src/app/api/community/docente/grupo/[id]/messages/route.ts",
   "src/app/api/community/docente/challenges/bncc/route.ts",
   "src/app/api/community/hidden-feed-materials/route.ts",
   "supabase/migrations/20260614060300_community_docente_v3.sql",
@@ -32,10 +29,6 @@ const requiredFiles = [
 ];
 
 const requiredSnippets = [
-  {
-    file: "src/server/community/community-group-messages-service.ts",
-    includes: ["notifyGroupChatMembers", "consumeCommunityRateLimit"],
-  },
   {
     file: "src/app/api/community/docente/actions/route.ts",
     includes: ["consumeCommunityRateLimit"],
@@ -55,10 +48,6 @@ const requiredSnippets = [
   {
     file: "src/server/community/community-post-attachments-service.ts",
     includes: ["linkPostAttachments", "listPostAttachments"],
-  },
-  {
-    file: "src/server/community/community-group-messages-service.ts",
-    includes: ["downloadCommunityGroupMessageFile", "CHAT_FILES_BUCKET"],
   },
   {
     file: "src/server/community/community-reports-moderation-service.ts",

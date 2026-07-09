@@ -54,7 +54,7 @@ export function resolveQuizDocument(
   }
 }
 
-/** Google Forms — provas/listas com questões estruturadas (não jogos visuais). */
+/** Google Forms — apenas provas/listas Planify com questões estruturadas. */
 export function resolveFormsExportCompatible(
   getHtml: () => string,
   documentType?: string | null,
@@ -69,16 +69,16 @@ export function resolveFormsExportCompatible(
     if (/planify-game-table|planify-jogo-visual|planify-game-section/i.test(html)) {
       return false;
     }
-    if (type.includes("prova") || type.includes("lista")) {
+    // Exige markup nativo do motor Planify — nunca PDF/DOC convertidos.
+    if (!/planify-questao/i.test(html)) {
+      return false;
+    }
+    if (type.includes("prova") || type.includes("lista") || type.includes("quiz")) {
       return true;
     }
-    return /planify-questao/i.test(html);
+    return true;
   } catch {
-    const type = String(documentType || "").toLowerCase();
-    if (type.includes("prova") || type.includes("lista")) {
-      return materialExportAllows("google-forms", documentType);
-    }
-    return materialExportAllows("google-forms", documentType);
+    return false;
   }
 }
 

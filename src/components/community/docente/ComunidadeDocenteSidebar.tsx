@@ -4,13 +4,9 @@ import { PlanifyBrand } from "@/components/pro/PlanifyBrand";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import {
   IconBookmark,
-  IconCalendar,
-  IconChat,
-  IconFolder,
   IconGraduation,
   IconHome,
   IconTrophy,
-  IconUsers,
   getDisciplinaIconColor,
 } from "@/components/community/docente/docente-icons";
 import { DOCENTE_DISCIPLINAS } from "@/lib/community/docente-utils";
@@ -18,10 +14,6 @@ import type { DocenteDisciplina, DocenteMenuItem } from "@/lib/community/docente
 
 const MENU_ITEMS: { id: DocenteMenuItem; label: string; icon: typeof IconHome }[] = [
   { id: "inicio", label: "Início", icon: IconHome },
-  { id: "discussoes", label: "Discussões", icon: IconChat },
-  { id: "materiais", label: "Materiais", icon: IconFolder },
-  { id: "eventos", label: "Eventos", icon: IconCalendar },
-  { id: "grupos", label: "Grupos", icon: IconUsers },
   { id: "professores", label: "Professores", icon: IconGraduation },
   { id: "desafios", label: "Desafios", icon: IconTrophy },
   { id: "salvos", label: "Salvos", icon: IconBookmark },
@@ -119,7 +111,7 @@ export function ComunidadeDocenteSidebar({
                     type="button"
                     onClick={() => {
                       onSelectDisciplina(selectedDisciplina === disciplina ? null : disciplina);
-                      onSelectItem("materiais");
+                      onSelectItem("inicio");
                       onClose?.();
                     }}
                     className={[
@@ -141,7 +133,7 @@ export function ComunidadeDocenteSidebar({
                   type="button"
                   onClick={() => {
                     onSelectDisciplina(null);
-                    onSelectItem("materiais");
+                    onSelectItem("inicio");
                     onClose?.();
                   }}
                   className="mt-1 px-2 text-xs font-bold text-cyan-600 hover:text-cyan-700"
@@ -160,7 +152,7 @@ export function ComunidadeDocenteSidebar({
                 title={disciplina}
                 onClick={() => {
                   onSelectDisciplina(selectedDisciplina === disciplina ? null : disciplina);
-                  onSelectItem("materiais");
+                  onSelectItem("inicio");
                   onClose?.();
                 }}
                 className={[

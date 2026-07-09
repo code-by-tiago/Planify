@@ -47,12 +47,13 @@ export type CommunityNotificationType =
   | "like"
   | "friend_request"
   | "friend_accepted"
-  | "message";
+  | "message"
+  | "post"
+  | "follow"
+  | "mention";
 
 export type CommunityNotificationTargetType =
   | "post"
-  | "group"
-  | "event"
   | "material"
   | "professor"
   | "conversation";

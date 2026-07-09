@@ -2,6 +2,8 @@
 
 import { CommunityAuthorAvatar } from "@/components/community/CommunityAuthorAvatar";
 import { CommunityMaterialPreview } from "@/components/community/CommunityMaterialPreview";
+import { DocumentDownloadIconBar } from "@/components/documents/DocumentDownloadIconBar";
+import { OpenMaterialInGoogleDocsButton } from "@/components/google/OpenMaterialInGoogleDocsButton";
 import { MaterialLikeButton } from "@/components/community/MaterialLikeButton";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { parseJsonResponse } from "@/lib/http/parse-json-response";
@@ -12,7 +14,7 @@ import {
 import { cloneAndOpenInEditor } from "@/lib/marketplace/marketplace-clone-client";
 import { extractBnccCodesFromText } from "@/lib/community/docente-utils";
 import type { MarketplacePreviewKind } from "@/server/marketplace/marketplace-preview";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 type MaterialPreviewData = {
   material: {
@@ -63,10 +65,13 @@ export function ComunidadeMaterialPreviewModal({
   const [downloading, setDownloading] = useState(false);
   const [likesCount, setLikesCount] = useState(0);
   const [likedByMe, setLikedByMe] = useState(false);
+  const loadGenerationRef = useRef(0);
 
   const load = useCallback(async () => {
+    const generation = ++loadGenerationRef.current;
     setLoading(true);
     setError("");
+    setData(null);
     try {
       const response = await fetch(`/api/marketplace/materiais/${materialId}/preview`, {
         cache: "no-store",
@@ -76,6 +81,8 @@ export function ComunidadeMaterialPreviewModal({
         MaterialPreviewData & { success?: boolean; error?: { message?: string } }
       >(response);
 
+      if (generation !== loadGenerationRef.current) return;
+
       if (!response.ok || !payload?.material || !payload?.preview) {
         throw new Error(payload?.error?.message || "Não foi possível carregar o material.");
       }
@@ -84,15 +91,22 @@ export function ComunidadeMaterialPreviewModal({
       setLikesCount(payload.material.likesCount);
       setLikedByMe(payload.material.likedByMe);
     } catch (err) {
+      if (generation !== loadGenerationRef.current) return;
       setData(null);
       setError(err instanceof Error ? err.message : "Erro ao carregar material.");
     } finally {
-      setLoading(false);
+      if (generation === loadGenerationRef.current) setLoading(false);
     }
   }, [materialId]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      loadGenerationRef.current += 1;
+      setData(null);
+      setError("");
+      setLoading(false);
+      return;
+    }
     void load();
   }, [open, load]);
 
@@ -109,10 +123,39 @@ export function ComunidadeMaterialPreviewModal({
 
   const material = data?.material;
   const preview = data?.preview;
-  const canClone = preview?.kind === "html" || preview?.kind === "docx";
+  const canClone =
+    preview?.kind === "html" ||
+    preview?.kind === "docx" ||
+    preview?.kind === "pdf";
   const bnccCodes = material
     ? extractBnccCodesFromText(...(material.tags || []), material.tema, material.title)
     : [];
+
+  async function handleDownload() {
+    if (!material || !preview) return;
+    setDownloading(true);
+    setError("");
+    try {
+      // binary (PPTX/imagem): "html" devolve o arquivo original no servidor
+      const format =
+        preview.kind === "binary"
+          ? "html"
+          : preview.kind === "pdf"
+            ? "pdf"
+            : preview.kind === "docx"
+              ? "docx"
+              : preview.downloadFormats[0] || "docx";
+      await downloadMarketplaceMaterial({
+        id: material.id,
+        format,
+        fallbackFileName: material.fileName || `${material.title}.${format === "html" ? "bin" : format}`,
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao baixar material.");
+    } finally {
+      setDownloading(false);
+    }
+  }
 
   async function handleClone() {
     if (!material) return;
@@ -122,26 +165,33 @@ export function ComunidadeMaterialPreviewModal({
       await cloneAndOpenInEditor(material.id);
       onCloned?.(Number(material.downloadsCount || 0) + 1);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Não foi possível clonar o material.");
-      setCloning(false);
-    }
-  }
-
-  async function handleDownload() {
-    if (!material || !preview) return;
-    setDownloading(true);
-    setError("");
-    try {
-      const format = preview.downloadFormats[0] || "docx";
-      await downloadMarketplaceMaterial({
-        id: material.id,
-        format,
-        fallbackFileName: material.fileName || `${material.title}.${format}`,
-      });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao baixar material.");
-    } finally {
-      setDownloading(false);
+      try {
+        const { openMarketplaceMaterialInEditor } = await import(
+          "@/lib/marketplace/marketplace-editor-open"
+        );
+        await openMarketplaceMaterialInEditor({
+          id: material.id,
+          title: material.title,
+          description: material.description,
+          etapa: material.etapa,
+          anoSerie: material.anoSerie,
+          componente: material.componente,
+          tipoMaterial: material.tipoMaterial,
+          tema: material.tema,
+          fileName: material.fileName,
+          fileMime: material.fileMime,
+        });
+        onCloned?.(Number(material.downloadsCount || 0) + 1);
+      } catch (fallbackErr) {
+        setError(
+          fallbackErr instanceof Error
+            ? fallbackErr.message
+            : err instanceof Error
+              ? err.message
+              : "Não foi possível clonar o material.",
+        );
+        setCloning(false);
+      }
     }
   }
 
@@ -257,6 +307,27 @@ export function ComunidadeMaterialPreviewModal({
               </div>
 
               <div className="sticky bottom-0 space-y-2 border-t border-slate-200 bg-white p-4">
+                {preview.kind === "docx" ? (
+                  <div className="flex items-center justify-center gap-1 pb-1">
+                    <DocumentDownloadIconBar
+                      onDownloadDocx={() => void handleDownload()}
+                      downloadingDocx={downloading}
+                    />
+                    <OpenMaterialInGoogleDocsButton
+                      materialId={material.id}
+                      title={material.title}
+                      returnTo={`/marketplace/material/${material.id}`}
+                      onError={(message) => setError(message)}
+                    />
+                  </div>
+                ) : preview.kind === "pdf" ? (
+                  <div className="flex items-center justify-center gap-1 pb-1">
+                    <DocumentDownloadIconBar
+                      onDownloadPdf={() => void handleDownload()}
+                      downloadingPdf={downloading}
+                    />
+                  </div>
+                ) : null}
                 {canClone ? (
                   <button
                     type="button"
@@ -277,7 +348,7 @@ export function ComunidadeMaterialPreviewModal({
                     {downloading ? "Baixando…" : "Baixar material"}
                   </button>
                 )}
-                {canClone ? (
+                {canClone && preview.kind === "html" ? (
                   <button
                     type="button"
                     disabled={downloading}

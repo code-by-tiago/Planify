@@ -3,14 +3,12 @@
 type ComunidadeDocenteOnboardingProps = {
   onOpenProfile: () => void;
   onCreatePost: () => void;
-  onCreateGroup: () => void;
   onBrowseTeachers: () => void;
 };
 
 export function ComunidadeDocenteOnboarding({
   onOpenProfile,
   onCreatePost,
-  onCreateGroup,
   onBrowseTeachers,
 }: ComunidadeDocenteOnboardingProps) {
   const steps = [
@@ -23,22 +21,15 @@ export function ComunidadeDocenteOnboarding({
     },
     {
       step: "2",
-      title: "Publique sua primeira discussão",
+      title: "Publique sua primeira publicação",
       description: "Compartilhe uma dúvida, experiência ou material com a rede docente.",
       action: "Criar publicação",
       onClick: onCreatePost,
     },
     {
       step: "3",
-      title: "Crie ou entre em um grupo",
-      description: "Grupos de estudo ajudam a trocar ideias por disciplina ou tema.",
-      action: "Criar grupo",
-      onClick: onCreateGroup,
-    },
-    {
-      step: "4",
-      title: "Encontre colegas",
-      description: "Busque professores, siga perfis e convide participantes nas publicações.",
+      title: "Siga outros professores",
+      description: "Busque colegas, siga perfis e monte seu feed com quem inspira você.",
       action: "Buscar professores",
       onClick: onBrowseTeachers,
     },

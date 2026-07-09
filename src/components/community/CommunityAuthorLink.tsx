@@ -31,7 +31,7 @@ export function CommunityAuthorLink({
   return (
     <Link
       href={communityProfileHref(userId, embedded)}
-      className={`font-bold text-cyan-800 transition hover:text-cyan-600 hover:underline ${className}`}
+      className={`font-bold text-[#0F172A] transition hover:text-cyan-700 hover:underline ${className}`}
     >
       {name}
     </Link>

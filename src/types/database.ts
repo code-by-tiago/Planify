@@ -22,6 +22,7 @@ export type Database = {
           email: string;
           full_name: string | null;
           avatar_url: string | null;
+          cover_url: string | null;
           role: Database["public"]["Enums"]["app_role"];
           status: Database["public"]["Enums"]["profile_status"];
           is_admin: boolean;
@@ -44,6 +45,7 @@ export type Database = {
           email: string;
           full_name?: string | null;
           avatar_url?: string | null;
+          cover_url?: string | null;
           role?: Database["public"]["Enums"]["app_role"];
           status?: Database["public"]["Enums"]["profile_status"];
           is_admin?: boolean;
@@ -66,6 +68,7 @@ export type Database = {
           email?: string;
           full_name?: string | null;
           avatar_url?: string | null;
+          cover_url?: string | null;
           role?: Database["public"]["Enums"]["app_role"];
           status?: Database["public"]["Enums"]["profile_status"];
           is_admin?: boolean;
@@ -524,6 +527,10 @@ export type Database = {
           file_mime: string | null;
           file_size: number | null;
           is_published: boolean | null;
+          is_featured: boolean;
+          featured_at: string | null;
+          featured_source: string;
+          external_url: string | null;
           downloads_count: number | null;
           created_at: string | null;
           updated_at: string | null;
@@ -546,6 +553,10 @@ export type Database = {
           file_mime?: string | null;
           file_size?: number | null;
           is_published?: boolean | null;
+          is_featured?: boolean;
+          featured_at?: string | null;
+          featured_source?: string;
+          external_url?: string | null;
           downloads_count?: number | null;
           created_at?: string | null;
           updated_at?: string | null;
@@ -568,6 +579,10 @@ export type Database = {
           file_mime?: string | null;
           file_size?: number | null;
           is_published?: boolean | null;
+          is_featured?: boolean;
+          featured_at?: string | null;
+          featured_source?: string;
+          external_url?: string | null;
           downloads_count?: number | null;
           created_at?: string | null;
           updated_at?: string | null;
@@ -748,7 +763,8 @@ export type Database = {
           likes_count: number;
           comments_count: number;
           is_published: boolean;
-          group_id: string | null;
+          post_kind: string;
+          metadata: Record<string, unknown>;
           created_at: string;
           updated_at: string;
         },
@@ -762,7 +778,8 @@ export type Database = {
           likes_count?: number;
           comments_count?: number;
           is_published?: boolean;
-          group_id?: string | null;
+          post_kind?: string;
+          metadata?: Record<string, unknown>;
           created_at?: string;
           updated_at?: string;
         },
@@ -776,7 +793,8 @@ export type Database = {
           likes_count?: number;
           comments_count?: number;
           is_published?: boolean;
-          group_id?: string | null;
+          post_kind?: string;
+          metadata?: Record<string, unknown>;
           created_at?: string;
           updated_at?: string;
         }

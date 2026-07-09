@@ -20,6 +20,7 @@ export type CommunityProfile = {
   schoolName: string | null;
   bio: string | null;
   avatarUrl: string | null;
+  coverUrl: string | null;
   communityPublic: boolean;
   teachingAreas: string[];
   topComponentes: string[];
@@ -32,6 +33,7 @@ type ProfileRow = {
   full_name: string | null;
   school_name: string | null;
   avatar_url: string | null;
+  cover_url?: string | null;
   bio?: string | null;
   community_public?: boolean | null;
   teaching_areas?: string[] | null;
@@ -94,14 +96,14 @@ export async function getCommunityProfileForUser(params: {
 
   const profileResult = await supabase
     .from("profiles")
-    .select("id,email,full_name,school_name,avatar_url,bio,community_public,teaching_areas")
+    .select("id,email,full_name,school_name,avatar_url,cover_url,bio,community_public,teaching_areas")
     .eq("id", params.userId)
     .maybeSingle();
 
   if (profileResult.error) {
     const fallback = await supabase
       .from("profiles")
-      .select("id,email,full_name")
+      .select("id,email,full_name,avatar_url,bio,community_public,teaching_areas,school_name")
       .eq("id", params.userId)
       .maybeSingle();
     row = (fallback.data || null) as ProfileRow | null;
@@ -136,6 +138,7 @@ export async function getCommunityProfileForUser(params: {
     schoolName: row?.school_name?.trim() || null,
     bio: row?.bio?.trim() || null,
     avatarUrl: row?.avatar_url || avatarUrl,
+    coverUrl: row?.cover_url || null,
     communityPublic: row?.community_public !== false,
     teachingAreas,
     topComponentes,
@@ -154,6 +157,7 @@ export type PublicCommunityProfile = {
   schoolName: string | null;
   bio: string | null;
   avatarUrl: string | null;
+  coverUrl: string | null;
   communityPublic: boolean;
   isOwnProfile: boolean;
   teachingAreas: string[];
@@ -195,14 +199,14 @@ export async function getPublicCommunityProfile(params: {
 
   const profileResult = await supabase
     .from("profiles")
-    .select("id,email,full_name,school_name,avatar_url,bio,community_public,teaching_areas")
+    .select("id,email,full_name,school_name,avatar_url,cover_url,bio,community_public,teaching_areas")
     .eq("id", params.targetUserId)
     .maybeSingle();
 
   if (profileResult.error) {
     const fallback = await supabase
       .from("profiles")
-      .select("id,email,full_name")
+      .select("id,email,full_name,avatar_url,bio,community_public,teaching_areas,school_name")
       .eq("id", params.targetUserId)
       .maybeSingle();
     row = (fallback.data || null) as ProfileRow | null;
@@ -224,6 +228,7 @@ export async function getPublicCommunityProfile(params: {
       schoolName: null,
       bio: null,
       avatarUrl: null,
+      coverUrl: null,
       communityPublic: false,
       isOwnProfile: false,
       teachingAreas: [],
@@ -283,6 +288,7 @@ export async function getPublicCommunityProfile(params: {
     schoolName: row.school_name?.trim() || null,
     bio: row.bio?.trim() || null,
     avatarUrl: row.avatar_url || avatarUrl,
+    coverUrl: row.cover_url || null,
     communityPublic,
     isOwnProfile,
     teachingAreas,
@@ -305,6 +311,7 @@ export async function updateCommunityProfile(
     bio?: string | null;
     communityPublic?: boolean;
     avatarUrl?: string | null;
+    coverUrl?: string | null;
     teachingAreas?: string[];
   },
 ): Promise<void> {
@@ -331,6 +338,10 @@ export async function updateCommunityProfile(
     update.avatar_url = input.avatarUrl;
   }
 
+  if (input.coverUrl !== undefined) {
+    update.cover_url = input.coverUrl;
+  }
+
   if (input.teachingAreas !== undefined) {
     update.teaching_areas = normalizeTeachingAreas(input.teachingAreas);
   }
@@ -344,13 +355,14 @@ export async function updateCommunityProfile(
   if (
     error?.message?.includes("schema cache") ||
     error?.message?.includes("avatar_url") ||
+    error?.message?.includes("cover_url") ||
     error?.message?.includes("school_name") ||
     error?.message?.includes("bio") ||
     error?.message?.includes("community_public") ||
     error?.message?.includes("teaching_areas")
   ) {
     throw new Error(
-      error.message.includes("avatar_url")
+      error.message.includes("avatar_url") || error.message.includes("cover_url")
         ? "Perfil em atualização no servidor. Aguarde um minuto e tente novamente."
         : error.message || "Não foi possível atualizar o perfil.",
     );

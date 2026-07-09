@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { resolveAdminAccess } from "@/server/auth/admin-access";
 import {
-  getRequestAccessToken,
   requireApiPremiumAccess,
 } from "@/server/auth/api-access";
 import {
@@ -11,21 +9,13 @@ import {
 import { completeCommunityChallenge } from "@/server/community/community-badge-service";
 import {
   addCommunityPostComment,
-  createCommunityEvent,
-  createCommunityGroup,
   createCommunityPost,
-  deleteCommunityEvent,
+  createCommunityPostWithAttachments,
   deleteCommunityPost,
-  inviteCommunityGroupMembers,
   inviteCommunityPostParticipants,
-  joinCommunityGroup,
-  leaveCommunityGroup,
-  toggleCommunityEventRsvp,
   toggleCommunityFollow,
   toggleCommunityPostLike,
   toggleSavedPost,
-  transferCommunityGroupOwnership,
-  updateCommunityEvent,
   updateCommunityPost,
 } from "@/server/community/community-docente-service";
 import { linkPostAttachments } from "@/server/community/community-post-attachments-service";
@@ -47,7 +37,6 @@ export async function POST(request: NextRequest) {
 
   const body = await request.json().catch(() => ({}));
   const action = String(body.action || "create_post");
-  const token = getRequestAccessToken(request);
 
   try {
     await consumeCommunityRateLimit({
@@ -58,18 +47,49 @@ export async function POST(request: NextRequest) {
     });
 
     if (action === "create_post") {
-      const title = String(body.title || "").trim();
-      const content = String(body.body || "").trim();
+      const content = String(body.body || "").trim().slice(0, 8000);
+      const rawTitle = String(body.title || "").trim();
+      const hasAttachments = Boolean(body.hasAttachments) ||
+        (Array.isArray(body.attachments) && body.attachments.length > 0);
+      let title =
+        rawTitle ||
+        content
+          .split(/\r?\n/)
+          .map((line: string) => line.trim())
+          .find(Boolean)
+          ?.slice(0, 80) ||
+        "";
+
+      // Banco exige título com pelo menos 3 caracteres (community_posts_title_check).
+      if (title.trim().length < 3) {
+        title = hasAttachments
+          ? "Publicação com anexo"
+          : content.trim().length > 0
+            ? `${content.trim().slice(0, 40)} — publicação`.slice(0, 80)
+            : "Publicação na comunidade";
+      }
+      title = title.trim().slice(0, 300);
+
       const disciplina = String(body.disciplina || "Multidisciplinar").trim();
       const tags = Array.isArray(body.tags)
-        ? body.tags.map((t: unknown) => String(t).trim()).filter(Boolean)
+        ? body.tags.map((t: unknown) => String(t).trim()).filter(Boolean).slice(0, 20)
         : [];
-      const participantUserIds = Array.isArray(body.participantUserIds)
-        ? body.participantUserIds.map((id: unknown) => String(id).trim()).filter(Boolean)
+      const participantUserIds: string[] = Array.isArray(body.participantUserIds)
+        ? Array.from(
+            new Set(
+              (body.participantUserIds as unknown[])
+                .map((id) => String(id).trim())
+                .filter((id) => id.length > 0),
+            ),
+          ).slice(0, 30)
         : [];
-      const groupId = body.groupId ? String(body.groupId).trim() : null;
 
-      if (title.length < 3) return jsonError("Informe um título com pelo menos 3 caracteres.");
+      if (!content && !rawTitle && !hasAttachments) {
+        return jsonError("Escreva uma mensagem ou anexe um arquivo para publicar.");
+      }
+      if (title.trim().length < 3) {
+        return jsonError("O título da publicação precisa ter pelo menos 3 caracteres.");
+      }
 
       const post = await createCommunityPost({
         authorId: userId,
@@ -78,9 +98,78 @@ export async function POST(request: NextRequest) {
         disciplina,
         tags,
         participantUserIds,
-        groupId,
       });
       return NextResponse.json({ ok: true, postId: post?.id });
+    }
+
+    if (action === "create_post_with_attachments") {
+      const content = String(body.body || "").trim().slice(0, 8000);
+      const rawTitle = String(body.title || "").trim();
+      const attachments = Array.isArray(body.attachments) ? body.attachments : [];
+      const hasAttachments = attachments.length > 0;
+      let title =
+        rawTitle ||
+        content
+          .split(/\r?\n/)
+          .map((line: string) => line.trim())
+          .find(Boolean)
+          ?.slice(0, 80) ||
+        "";
+
+      if (title.trim().length < 3) {
+        title = hasAttachments
+          ? "Publicação com anexo"
+          : content.trim().length > 0
+            ? `${content.trim().slice(0, 40)} — publicação`.slice(0, 80)
+            : "Publicação na comunidade";
+      }
+      title = title.trim().slice(0, 300);
+
+      const disciplina = String(body.disciplina || "Multidisciplinar").trim();
+      const tags = Array.isArray(body.tags)
+        ? body.tags.map((t: unknown) => String(t).trim()).filter(Boolean).slice(0, 20)
+        : [];
+      const participantUserIds: string[] = Array.isArray(body.participantUserIds)
+        ? Array.from(
+            new Set(
+              (body.participantUserIds as unknown[])
+                .map((id) => String(id).trim())
+                .filter((id) => id.length > 0),
+            ),
+          ).slice(0, 30)
+        : [];
+
+      if (!content && !rawTitle && !hasAttachments) {
+        return jsonError("Escreva uma mensagem ou anexe um arquivo para publicar.");
+      }
+
+      const normalized = attachments
+        .map((item: unknown, index: number) => {
+          const row = item as Record<string, unknown>;
+          return {
+            materialId: String(row.materialId || "").trim(),
+            fileName: String(row.fileName || "anexo").trim(),
+            fileMime: row.fileMime ? String(row.fileMime) : null,
+            sortOrder: typeof row.sortOrder === "number" ? row.sortOrder : index,
+          };
+        })
+        .filter((item: { materialId: string }) => item.materialId)
+        .slice(0, 5);
+
+      const result = await createCommunityPostWithAttachments({
+        authorId: userId,
+        title,
+        body: content,
+        disciplina,
+        tags,
+        participantUserIds,
+        attachments: normalized,
+      });
+      return NextResponse.json({
+        ok: true,
+        postId: result.postId,
+        linked: result.linked,
+      });
     }
 
     if (action === "link_post_attachments") {
@@ -161,123 +250,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: true, ...result });
     }
 
-    if (action === "event_rsvp") {
-      const eventId = String(body.eventId || "").trim();
-      const statusRaw = String(body.status || "going").trim();
-      const status =
-        statusRaw === "interested" ? "interested" : statusRaw === "none" ? "none" : "going";
-      if (!eventId) return jsonError("Evento não informado.");
-      const result = await toggleCommunityEventRsvp({ userId, eventId, status });
-      return NextResponse.json({ ok: true, ...result });
-    }
-
-    if (action === "create_group") {
-      const name = String(body.name || "").trim();
-      const description = String(body.description || "").trim();
-      const disciplina = String(body.disciplina || "Multidisciplinar").trim();
-      const memberUserIds = Array.isArray(body.memberUserIds)
-        ? body.memberUserIds.map((id: unknown) => String(id).trim()).filter(Boolean)
-        : [];
-
-      if (name.length < 3) return jsonError("Informe um nome com pelo menos 3 caracteres.");
-
-      const group = await createCommunityGroup({
-        ownerId: userId,
-        name,
-        description,
-        disciplina,
-        memberUserIds,
-      });
-      return NextResponse.json({ ok: true, groupId: group?.id });
-    }
-
-    if (action === "create_event") {
-      const admin = await resolveAdminAccess(token);
-      if (!admin.isAdmin) {
-        return jsonError("Apenas administradores podem criar eventos.", 403);
-      }
-
-      const title = String(body.title || "").trim();
-      const description = String(body.description || "").trim();
-      const presenterName = String(body.presenterName || "").trim() || "Equipe Planify";
-      const startsAt = String(body.startsAt || "").trim();
-      const isOnline = body.isOnline !== false;
-      const location = body.location ? String(body.location).trim() : null;
-
-      if (title.length < 3) return jsonError("Informe um título com pelo menos 3 caracteres.");
-      if (!startsAt || Number.isNaN(Date.parse(startsAt))) {
-        return jsonError("Informe uma data e hora válidas.");
-      }
-
-      const event = await createCommunityEvent({
-        hostId: userId,
-        title,
-        description,
-        presenterName,
-        startsAt,
-        isOnline,
-        location,
-      });
-      return NextResponse.json({ ok: true, eventId: event?.id });
-    }
-
-    if (action === "update_event") {
-      const admin = await resolveAdminAccess(token);
-      if (!admin.isAdmin) {
-        return jsonError("Apenas administradores podem editar eventos.", 403);
-      }
-      const eventId = String(body.eventId || "").trim();
-      const title = String(body.title || "").trim();
-      const description = String(body.description || "").trim();
-      const presenterName = String(body.presenterName || "").trim() || "Equipe Planify";
-      const startsAt = String(body.startsAt || "").trim();
-      const isOnline = body.isOnline !== false;
-      const location = body.location ? String(body.location).trim() : null;
-
-      if (!eventId) return jsonError("Evento não informado.");
-      if (title.length < 3) return jsonError("Informe um título com pelo menos 3 caracteres.");
-      if (!startsAt || Number.isNaN(Date.parse(startsAt))) {
-        return jsonError("Informe uma data e hora válidas.");
-      }
-
-      await updateCommunityEvent({
-        adminId: userId,
-        eventId,
-        title,
-        description,
-        presenterName,
-        startsAt,
-        isOnline,
-        location,
-      });
-      return NextResponse.json({ ok: true });
-    }
-
-    if (action === "delete_event") {
-      const admin = await resolveAdminAccess(token);
-      if (!admin.isAdmin) {
-        return jsonError("Apenas administradores podem excluir eventos.", 403);
-      }
-      const eventId = String(body.eventId || "").trim();
-      if (!eventId) return jsonError("Evento não informado.");
-      await deleteCommunityEvent({ adminId: userId, eventId });
-      return NextResponse.json({ ok: true });
-    }
-
-    if (action === "join_group") {
-      const groupId = String(body.groupId || "").trim();
-      if (!groupId) return jsonError("Grupo não informado.");
-      const result = await joinCommunityGroup({ userId, groupId });
-      return NextResponse.json({ ok: true, ...result });
-    }
-
-    if (action === "leave_group") {
-      const groupId = String(body.groupId || "").trim();
-      if (!groupId) return jsonError("Grupo não informado.");
-      const result = await leaveCommunityGroup({ userId, groupId });
-      return NextResponse.json({ ok: true, ...result });
-    }
-
     if (action === "participate_challenge") {
       const challengeSlug = String(body.challengeSlug || "desafio-bncc").trim();
       const reflection = body.reflection != null ? String(body.reflection) : null;
@@ -294,8 +266,9 @@ export async function POST(request: NextRequest) {
 
     if (action === "comment_post") {
       const postId = String(body.postId || "").trim();
-      const comment = String(body.body || "").trim();
+      const comment = String(body.body || "").trim().slice(0, 4000);
       if (!postId || !comment) return jsonError("Post e comentário são obrigatórios.");
+      if (comment.length < 1) return jsonError("Comentário vazio.");
       const result = await addCommunityPostComment({
         authorId: userId,
         postId,
@@ -308,28 +281,6 @@ export async function POST(request: NextRequest) {
       const followingId = String(body.followingId || "").trim();
       if (!followingId) return jsonError("Professor não informado.");
       const result = await toggleCommunityFollow({ followerId: userId, followingId });
-      return NextResponse.json({ ok: true, ...result });
-    }
-
-    if (action === "transfer_group_ownership") {
-      const groupId = String(body.groupId || "").trim();
-      const newOwnerId = String(body.newOwnerId || "").trim();
-      if (!groupId || !newOwnerId) return jsonError("Grupo e novo responsável são obrigatórios.");
-      await transferCommunityGroupOwnership({ ownerId: userId, groupId, newOwnerId });
-      return NextResponse.json({ ok: true });
-    }
-
-    if (action === "invite_group_members") {
-      const groupId = String(body.groupId || "").trim();
-      const memberUserIds = Array.isArray(body.memberUserIds)
-        ? body.memberUserIds.map((id: unknown) => String(id).trim()).filter(Boolean)
-        : [];
-      if (!groupId) return jsonError("Grupo não informado.");
-      const result = await inviteCommunityGroupMembers({
-        ownerId: userId,
-        groupId,
-        memberUserIds,
-      });
       return NextResponse.json({ ok: true, ...result });
     }
 

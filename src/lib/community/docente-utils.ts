@@ -2,10 +2,6 @@ import type { DocenteDisciplina, DocenteMenuItem } from "@/lib/community/docente
 
 const VALID_MENU_ITEMS: DocenteMenuItem[] = [
   "inicio",
-  "discussoes",
-  "materiais",
-  "eventos",
-  "grupos",
   "professores",
   "desafios",
   "salvos",
@@ -22,50 +18,33 @@ export function formatDocenteNumber(value: number): string {
   return new Intl.NumberFormat("pt-BR").format(value);
 }
 
+/** Emoji correspondente ao ícone de um selo/conquista da comunidade. */
+export function badgeEmoji(icon?: string | null): string {
+  switch ((icon || "").toLowerCase()) {
+    case "star":
+      return "⭐";
+    case "badge":
+      return "🎖️";
+    case "mentor":
+      return "🧑‍🏫";
+    case "trophy":
+      return "🏆";
+    default:
+      return "🏆";
+  }
+}
+
 export function formatDocenteTimeAgo(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
+  const parsed = new Date(iso).getTime();
+  if (!Number.isFinite(parsed)) return "agora";
+  const diff = Math.max(0, Date.now() - parsed);
   const minutes = Math.floor(diff / 60000);
+  if (minutes < 1) return "agora";
   if (minutes < 60) return `há ${minutes} min`;
   const hours = Math.floor(minutes / 60);
   if (hours < 24) return `há ${hours} hora${hours > 1 ? "s" : ""}`;
   const days = Math.floor(hours / 24);
   return `há ${days} dia${days > 1 ? "s" : ""}`;
-}
-
-export function formatEventMonth(iso: string): { day: number; month: string } {
-  const date = new Date(iso);
-  const months = ["JAN", "FEV", "MAR", "ABR", "MAI", "JUN", "JUL", "AGO", "SET", "OUT", "NOV", "DEZ"];
-  return { day: date.getDate(), month: months[date.getMonth()] || "JUN" };
-}
-
-export function formatEventDateTime(iso: string): { dateLabel: string; timeLabel: string } {
-  try {
-    const date = new Date(iso);
-    const dateLabel = new Intl.DateTimeFormat("pt-BR", {
-      weekday: "long",
-      day: "2-digit",
-      month: "long",
-      year: "numeric",
-    }).format(date);
-    const timeLabel = new Intl.DateTimeFormat("pt-BR", {
-      hour: "2-digit",
-      minute: "2-digit",
-    }).format(date);
-    return { dateLabel, timeLabel };
-  } catch {
-    return { dateLabel: "", timeLabel: "" };
-  }
-}
-
-export function formatEventShortTime(iso: string): string {
-  try {
-    return new Intl.DateTimeFormat("pt-BR", {
-      hour: "2-digit",
-      minute: "2-digit",
-    }).format(new Date(iso));
-  } catch {
-    return "";
-  }
 }
 
 export const DOCENTE_DISCIPLINAS: DocenteDisciplina[] = [
@@ -218,22 +197,8 @@ export function mapComunidadeHrefToEmbed(href: string): string {
   const discussao = href.match(/^\/comunidade\/discussao\/([^/?#]+)/);
   if (discussao) return comunidadeRoutes.discussao(discussao[1], true);
 
-  const grupo = href.match(/^\/comunidade\/grupo\/([^/?#]+)/);
-  if (grupo) {
-    try {
-      const url = new URL(href, "https://planify.local");
-      const tab = url.searchParams.get("tab");
-      return comunidadeRoutes.grupo(grupo[1], true, tab || undefined);
-    } catch {
-      return comunidadeRoutes.grupo(grupo[1], true);
-    }
-  }
-
   const professor = href.match(/^\/comunidade\/professor\/([^/?#]+)/);
   if (professor) return comunidadeRoutes.professor(professor[1], true);
-
-  const evento = href.match(/^\/comunidade\/evento\/([^/?#]+)/);
-  if (evento) return comunidadeRoutes.evento(evento[1], true);
 
   const material = href.match(/^\/comunidade\/material\/([^/?#]+)/);
   if (material) return comunidadeRoutes.material(material[1], true);
@@ -332,22 +297,8 @@ export const comunidadeRoutes = {
   homeEmbedded: "/dashboard?secao=marketplace",
   discussao: (id: string, embedded?: boolean) =>
     embedded ? dashboardView("discussao", id) : `/comunidade/discussao/${id}`,
-  grupo: (id: string, embedded?: boolean, tab?: string) => {
-    if (embedded) {
-      const params = new URLSearchParams({
-        secao: "marketplace",
-        comunidadeView: "grupo",
-        comunidadeId: id,
-      });
-      if (tab) params.set("tab", tab);
-      return `/dashboard?${params.toString()}`;
-    }
-    return tab ? `/comunidade/grupo/${id}?tab=${encodeURIComponent(tab)}` : `/comunidade/grupo/${id}`;
-  },
   professor: (id: string, embedded?: boolean) =>
     embedded ? dashboardView("professor", id) : `/comunidade/professor/${id}`,
-  evento: (id: string, embedded?: boolean) =>
-    embedded ? dashboardView("evento", id) : `/comunidade/evento/${id}`,
   material: (id: string, embedded?: boolean) =>
     embedded ? dashboardView("material", id) : `/comunidade/material/${id}`,
   desafios: "/comunidade/desafios",

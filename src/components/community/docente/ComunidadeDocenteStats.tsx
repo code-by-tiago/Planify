@@ -6,7 +6,6 @@ import {
   IconChat,
   IconFolder,
   IconGraduation,
-  IconUsers,
 } from "@/components/community/docente/docente-icons";
 
 const STATS = [
@@ -28,17 +27,11 @@ const STATS = [
     icon: IconChat,
     color: "bg-violet-50 text-violet-600",
   },
-  {
-    key: "studyGroups" as const,
-    label: "Grupos de estudo",
-    icon: IconUsers,
-    color: "bg-amber-50 text-amber-600",
-  },
 ];
 
 export function ComunidadeDocenteStats({ stats }: { stats: DocenteStats }) {
   return (
-    <section className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+    <section className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
       {STATS.map(({ key, label, icon: Icon, color }) => (
         <div
           key={key}

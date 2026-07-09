@@ -24,7 +24,8 @@ Ative no Google Cloud Console:
 
 | API | Uso |
 |-----|-----|
-| Google Drive API | Salvar DOCX/PDF no Drive do professor |
+| Google Drive API | Salvar DOCX/PDF no Drive do professor; importar anexos via Picker |
+| Google Picker API | Escolher arquivos do Drive na Comunidade |
 | Google Classroom API | Listar turmas e publicar material/atividade apos confirmacao |
 | Google Forms API | Criar formularios a partir de provas/listas |
 | Google Slides API | Exportar apresentacoes quando aplicavel |
@@ -86,10 +87,16 @@ GOOGLE_CLIENT_SECRET=
 GOOGLE_REDIRECT_URI=http://localhost:3000/api/google/oauth/callback
 GOOGLE_DRIVE_FOLDER_ID=
 GOOGLE_OAUTH_STATE_SECRET=
+GOOGLE_API_KEY=
+NEXT_PUBLIC_GOOGLE_CLIENT_ID=
+GOOGLE_CLOUD_PROJECT_NUMBER=
 ```
 
 Em producao, `GOOGLE_REDIRECT_URI` deve apontar para o dominio real.
 `GOOGLE_OAUTH_STATE_SECRET` e obrigatorio em producao.
+`GOOGLE_API_KEY` e necessaria para o botao **Drive** no composer da Comunidade (Google Picker).
+`NEXT_PUBLIC_GOOGLE_CLIENT_ID` pode repetir o mesmo Client ID OAuth Web.
+`GOOGLE_CLOUD_PROJECT_NUMBER` e o numero do projeto GCP (opcional, melhora o grant `drive.file`).
 
 ## 6. Supabase
 

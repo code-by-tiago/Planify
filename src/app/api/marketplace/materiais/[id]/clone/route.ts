@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { requireApiPremiumAccess } from "@/server/auth/api-access";
 import { getSupabaseAdminClient } from "@/server/supabase/admin-client";
 import { convertSimpleDocxToHtml } from "@/server/docx/simple-docx-to-html";
+import { convertPdfToEditorHtml } from "@/server/pdf/pdf-to-editor-html";
 import {
   buildPreviewHtmlContent,
   resolveMarketplacePreviewKind,
@@ -11,7 +12,7 @@ import { saveHistoryItemToDB } from "@/server/history/history-db-service";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
+export const maxDuration = 120;
 
 const BUCKET_NAME = "marketplace-materiais";
 
@@ -78,7 +79,10 @@ export async function POST(
   const previewKind = resolveMarketplacePreviewKind(material);
   let htmlContent: string | null = null;
 
-  if (material.file_path && (previewKind === "html" || previewKind === "docx")) {
+  if (
+    material.file_path &&
+    (previewKind === "html" || previewKind === "docx" || previewKind === "pdf")
+  ) {
     try {
       const { data: fileData, error: downloadError } = await supabase.storage
         .from(BUCKET_NAME)
@@ -87,7 +91,16 @@ export async function POST(
       if (!downloadError && fileData) {
         const storedBuffer = Buffer.from(await fileData.arrayBuffer());
         if (previewKind === "docx") {
-          htmlContent = convertSimpleDocxToHtml(storedBuffer, material.title || "Material");
+          htmlContent = convertSimpleDocxToHtml(
+            storedBuffer,
+            material.title || "Material",
+          );
+        } else if (previewKind === "pdf") {
+          const converted = await convertPdfToEditorHtml(
+            storedBuffer,
+            material.title || "Material PDF",
+          );
+          htmlContent = converted.html;
         } else {
           htmlContent = buildPreviewHtmlContent({ storedBuffer, meta: material });
         }
@@ -97,9 +110,9 @@ export async function POST(
     }
   }
 
-  if (previewKind === "pdf" || previewKind === "binary") {
+  if (previewKind === "binary") {
     return jsonError(
-      "Clonar e Editar disponível para DOCX e HTML. Use Baixar para outros formatos.",
+      "Clonar e Editar disponível para PDF, DOCX e HTML. Use Baixar para outros formatos.",
       422,
     );
   }

@@ -51,10 +51,18 @@ export function useMarketplaceMaterialHtml(materialId: string) {
 
       const preview = data.preview;
       const content = String(preview?.htmlContent || "").trim();
+      const kind = String(preview?.kind || "");
+      const usable =
+        content.length >= 20 &&
+        (kind === "html" || kind === "docx") &&
+        !/Não foi possível ler o conteúdo do documento/i.test(content) &&
+        !/Documento sem texto legível na prévia/i.test(content);
 
-      if (preview?.kind !== "html" || !content) {
+      if (!usable) {
         throw new Error(
-          "Exportação Google disponível apenas para materiais em HTML. Use Google Docs ou abra o material no editor.",
+          kind === "pdf"
+            ? "PDF: use Baixar PDF. Google Docs precisa de conteúdo editável (DOCX/HTML)."
+            : "Não foi possível gerar HTML para Google. Baixe o arquivo ou abra no editor.",
         );
       }
 

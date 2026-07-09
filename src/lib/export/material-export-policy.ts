@@ -58,7 +58,7 @@ export const MATERIAL_EXPORT_POLICIES: Record<MaterialEngineType, MaterialExport
       driveFormat: "docx",
       classroomFormat: "docx",
       pdfProfile: "document",
-      hint: TEXT_DOC_HINT,
+      hint: ASSESSMENT_HINT,
     },
     lista: {
       channels: [
@@ -71,7 +71,7 @@ export const MATERIAL_EXPORT_POLICIES: Record<MaterialEngineType, MaterialExport
       driveFormat: "docx",
       classroomFormat: "docx",
       pdfProfile: "document",
-      hint: TEXT_DOC_HINT,
+      hint: ASSESSMENT_HINT,
     },
     apostila: {
       channels: [

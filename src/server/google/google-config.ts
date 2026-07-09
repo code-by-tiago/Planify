@@ -103,6 +103,37 @@ export function requireGoogleConfig(): {
   };
 }
 
+/** Config pública do Google Picker (API Key + Client ID + project number). */
+export function getGooglePickerConfig(): {
+  configured: boolean;
+  clientId: string | null;
+  apiKey: string | null;
+  appId: string | null;
+  missing: string[];
+} {
+  const clientId =
+    String(process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "").trim() ||
+    String(process.env.GOOGLE_CLIENT_ID || "").trim() ||
+    null;
+  const apiKey = String(process.env.GOOGLE_API_KEY || "").trim() || null;
+  // Preferência: env explícito; fallback: prefixo do OAuth Client ID (project number).
+  const appIdFromEnv = String(process.env.GOOGLE_CLOUD_PROJECT_NUMBER || "").trim() || null;
+  const appIdFromClient =
+    clientId && /^\d+-/.test(clientId) ? clientId.split("-")[0] : null;
+  const appId = appIdFromEnv || appIdFromClient;
+  const missing: string[] = [];
+  if (!clientId) missing.push("GOOGLE_CLIENT_ID");
+  if (!apiKey) missing.push("GOOGLE_API_KEY");
+
+  return {
+    configured: missing.length === 0,
+    clientId,
+    apiKey,
+    appId,
+    missing,
+  };
+}
+
 export function getGoogleOAuthStateSecret(): string {
   const secret = String(process.env.GOOGLE_OAUTH_STATE_SECRET || "").trim();
 

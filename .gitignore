@@ -40,6 +40,7 @@ tsconfig.tsbuildinfo
 .tmp-export-verify/
 tmp/
 test-results/
+supabase/.temp/
 
 # Vídeos locais pesados / rascunhos (não deployar)
 public/videos/fffffff.mp4

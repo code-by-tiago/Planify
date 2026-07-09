@@ -81,9 +81,9 @@ export async function grantSchoolProPlan(userId: string): Promise<boolean> {
   }
 
   const supabase = getSupabaseAdminClient();
+  // A tabela `profiles` não possui coluna `status`; o acesso é determinado por `plan`.
   const profileUpdate = {
     plan: SCHOOL_INVITE_PRO_PLAN_KEY,
-    status: "active" as const,
   };
 
   const { error } = await supabase

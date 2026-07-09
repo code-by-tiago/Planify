@@ -7,7 +7,7 @@ import { CommunityAuthorAvatar } from "@/components/community/CommunityAuthorAva
 import { CommunityAuthorLink } from "@/components/community/CommunityAuthorLink";
 import { CommunityReportButton } from "@/components/community/CommunityReportButton";
 import { ComunidadeDocenteDetailShell } from "@/components/community/docente/ComunidadeDocenteDetailShell";
-import { downloadMarketplaceMaterial } from "@/lib/marketplace/marketplace-download-client";
+import { ComunidadeDocentePostAttachments } from "@/components/community/docente/ComunidadeDocentePostAttachments";
 import { ComunidadeDocenteUserPicker } from "@/components/community/docente/ComunidadeDocenteUserPicker";
 import { IconBookmark, IconHeart, IconShare } from "@/components/community/docente/docente-icons";
 import type { CommunityProfileSearchResult } from "@/lib/community/types";
@@ -15,6 +15,7 @@ import type { CommunityDiscussionDetail } from "@/server/community/community-doc
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 import { getCurrentAccessToken } from "@/lib/auth/session-client";
 import {
+  badgeEmoji,
   comunidadeRoutes,
   formatDocenteNumber,
   formatDocenteTimeAgo,
@@ -46,7 +47,6 @@ export function ComunidadeDocenteDiscussaoDetailClient({
   const [editBody, setEditBody] = useState("");
   const [inviteOpen, setInviteOpen] = useState(false);
   const [inviteUsers, setInviteUsers] = useState<CommunityProfileSearchResult[]>([]);
-  const [downloadingMaterialId, setDownloadingMaterialId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -123,21 +123,6 @@ export function ComunidadeDocenteDiscussaoDetailClient({
   const showToast = (message: string) => {
     setStatus(message);
     window.setTimeout(() => setStatus(""), 3000);
-  };
-
-  const handleDownloadAttachment = async (materialId: string, fileName: string) => {
-    setDownloadingMaterialId(materialId);
-    try {
-      await downloadMarketplaceMaterial({
-        id: materialId,
-        fallbackFileName: fileName,
-      });
-      showToast("Download iniciado.");
-    } catch (err) {
-      showToast(err instanceof Error ? err.message : "Não foi possível baixar.");
-    } finally {
-      setDownloadingMaterialId(null);
-    }
   };
 
   const handleLike = async () => {
@@ -293,14 +278,14 @@ export function ComunidadeDocenteDiscussaoDetailClient({
     }
   };
 
-  const homeHref = homeWithAba("discussoes", embedded);
+  const homeHref = homeWithAba("inicio", embedded);
 
   if (loading) {
     return (
       <ComunidadeDocenteDetailShell
         embedded={embedded}
-        activeMenu="discussoes"
-        breadcrumbs={[{ label: "Discussões", href: homeHref }]}
+        activeMenu="inicio"
+        breadcrumbs={[{ label: "Comunidade", href: homeHref }]}
         title="Carregando…"
       >
         <div className="flex min-h-[200px] items-center justify-center rounded-3xl border border-slate-200 bg-white">
@@ -314,8 +299,8 @@ export function ComunidadeDocenteDiscussaoDetailClient({
     return (
       <ComunidadeDocenteDetailShell
         embedded={embedded}
-        activeMenu="discussoes"
-        breadcrumbs={[{ label: "Discussões", href: homeHref }]}
+        activeMenu="inicio"
+        breadcrumbs={[{ label: "Comunidade", href: homeHref }]}
         title="Discussão"
       >
         <div className="rounded-3xl border border-red-200 bg-red-50 p-6 text-center">
@@ -335,13 +320,8 @@ export function ComunidadeDocenteDiscussaoDetailClient({
   return (
     <ComunidadeDocenteDetailShell
       embedded={embedded}
-      activeMenu="discussoes"
-      breadcrumbs={[
-        { label: "Discussões", href: homeHref },
-        ...(discussion.groupId
-          ? [{ label: "Grupo", href: comunidadeRoutes.grupo(discussion.groupId, embedded) }]
-          : []),
-      ]}
+      activeMenu="inicio"
+      breadcrumbs={[{ label: "Comunidade", href: homeHref }]}
       title={discussion.title}
       subtitle={`${discussion.author.name} · ${formatDocenteTimeAgo(discussion.createdAt)}`}
       actions={
@@ -455,6 +435,24 @@ export function ComunidadeDocenteDiscussaoDetailClient({
                   {discussion.disciplina}
                 </span>
               </div>
+              {discussion.kind === "achievement" && discussion.achievementBadge ? (
+                <div
+                  className="mt-4 flex flex-col items-center gap-3 rounded-2xl px-4 py-8 text-center text-white shadow-inner"
+                  style={{
+                    background: `linear-gradient(135deg, ${discussion.achievementBadge.color}, ${discussion.achievementBadge.color}CC)`,
+                  }}
+                >
+                  <span className="flex h-20 w-20 items-center justify-center rounded-full bg-white/20 text-5xl backdrop-blur-sm">
+                    {badgeEmoji(discussion.achievementBadge.icon)}
+                  </span>
+                  <p className="text-lg font-black leading-tight">
+                    {discussion.achievementBadge.name}
+                  </p>
+                  <span className="rounded-full bg-white/20 px-3 py-0.5 text-[11px] font-bold uppercase tracking-wide">
+                    Conquista desbloqueada
+                  </span>
+                </div>
+              ) : null}
               <div className="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-slate-700">
                 {discussion.body || "Sem conteúdo adicional."}
               </div>
@@ -471,34 +469,18 @@ export function ComunidadeDocenteDiscussaoDetailClient({
                 </div>
               ) : null}
               {discussion.attachments.length > 0 ? (
-                <div className="mt-5 rounded-2xl border border-slate-100 bg-slate-50/60 p-4">
-                  <h3 className="text-xs font-extrabold uppercase tracking-wide text-slate-500">
-                    Materiais anexados ({discussion.attachments.length})
-                  </h3>
-                  <ul className="mt-3 space-y-2">
-                    {discussion.attachments.map((attachment) => (
-                      <li
-                        key={attachment.id}
-                        className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-white bg-white px-3 py-2.5 shadow-sm"
-                      >
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-bold text-[#0F172A]">{attachment.title}</p>
-                          <p className="truncate text-[11px] text-slate-500">{attachment.fileName}</p>
-                        </div>
-                        <button
-                          type="button"
-                          disabled={downloadingMaterialId === attachment.materialId}
-                          onClick={() =>
-                            void handleDownloadAttachment(attachment.materialId, attachment.fileName)
-                          }
-                          className="shrink-0 rounded-lg bg-cyan-600 px-3 py-1.5 text-[11px] font-bold text-white disabled:opacity-60"
-                        >
-                          {downloadingMaterialId === attachment.materialId ? "Baixando…" : "Baixar"}
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+                <ComunidadeDocentePostAttachments
+                  attachments={discussion.attachments.map((attachment) => ({
+                    id: attachment.id,
+                    materialId: attachment.materialId,
+                    title: attachment.title,
+                    fileName: attachment.fileName,
+                    fileType: attachment.fileType,
+                    fileMime: attachment.fileMime,
+                    previewUrl: attachment.previewUrl,
+                  }))}
+                  className="mt-5"
+                />
               ) : null}
             </div>
           </div>

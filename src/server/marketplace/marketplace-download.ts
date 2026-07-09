@@ -90,12 +90,27 @@ export function resolveMarketplaceDownloadMime(meta: MarketplaceFileMeta): strin
 
 export function resolveMarketplaceStoredMime(file: File): string {
   const name = (file.name || "").toLowerCase();
+  const type = String(file.type || "").toLowerCase();
 
   if (name.endsWith(".html") || name.endsWith(".htm")) {
     return "text/html; charset=utf-8";
   }
+  if (type.startsWith("image/")) return type;
+  if (name.endsWith(".png")) return "image/png";
+  if (name.endsWith(".jpg") || name.endsWith(".jpeg")) return "image/jpeg";
+  if (name.endsWith(".webp")) return "image/webp";
+  if (name.endsWith(".gif")) return "image/gif";
+  if (name.endsWith(".pdf")) return "application/pdf";
+  if (name.endsWith(".docx")) {
+    return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+  }
+  if (name.endsWith(".doc")) return "application/msword";
+  if (name.endsWith(".pptx")) {
+    return "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+  }
+  if (name.endsWith(".ppt")) return "application/vnd.ms-powerpoint";
 
-  return file.type || "application/octet-stream";
+  return type || "application/octet-stream";
 }
 
 function safeMarketplaceTitle(title: string): string {

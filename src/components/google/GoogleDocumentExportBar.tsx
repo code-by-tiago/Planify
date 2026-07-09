@@ -30,6 +30,8 @@ export type GoogleDocumentExportBarProps = {
   className?: string;
   onDownloadPdf?: () => void;
   downloadingPdf?: boolean;
+  onDownloadDocx?: () => void;
+  downloadingDocx?: boolean;
 };
 
 export function GoogleDocumentExportBar({
@@ -48,6 +50,8 @@ export function GoogleDocumentExportBar({
   className = "",
   onDownloadPdf,
   downloadingPdf = false,
+  onDownloadDocx,
+  downloadingDocx = false,
 }: GoogleDocumentExportBarProps) {
   useGoogleOAuthResume({
     getHtml,
@@ -90,17 +94,20 @@ export function GoogleDocumentExportBar({
   const gap = compact ? "gap-1" : "gap-1.5 sm:gap-2";
   const wrapTitle = disabled ? disabledTitle : exportPolicy.hint;
 
-  const showDocsExport = materialExportAllows("google-docs", documentType, getHtml());
-  const showDriveExport = materialExportAllows("google-drive", documentType, getHtml());
-  const canShowClassroomExport = showClassroomExport && materialExportAllows(
-    "google-classroom",
-    documentType,
-    getHtml(),
-  );
+  const showDocsExport =
+    !disabled && materialExportAllows("google-docs", documentType, getHtml());
+  const showDriveExport =
+    !disabled && materialExportAllows("google-drive", documentType, getHtml());
+  const canShowClassroomExport =
+    !disabled &&
+    showClassroomExport &&
+    materialExportAllows("google-classroom", documentType, getHtml());
   const driveIsPdf = exportPolicy.driveFormat === "pdf";
   const showPdfDownload = Boolean(onDownloadPdf);
+  const showDocxDownload = Boolean(onDownloadDocx);
+  const hasAnyDownload = showPdfDownload || showDocxDownload;
 
-  if (disabled) {
+  if (disabled && !hasAnyDownload) {
     return (
       <div
         className={`flex min-w-0 flex-wrap items-center opacity-50 ${gap} ${className}`}
@@ -144,7 +151,7 @@ export function GoogleDocumentExportBar({
           }
         />
       ) : null}
-      {showFormsExport ? (
+      {!disabled && showFormsExport ? (
         <GoogleFormsExportButton
           title={title}
           getHtml={getHtml}
@@ -174,10 +181,12 @@ export function GoogleDocumentExportBar({
           />
         )
       ) : null}
-      {showPdfDownload ? (
+      {hasAnyDownload ? (
         <DocumentDownloadIconBar
           onDownloadPdf={onDownloadPdf}
           downloadingPdf={downloadingPdf}
+          onDownloadDocx={onDownloadDocx}
+          downloadingDocx={downloadingDocx}
         />
       ) : null}
     </>

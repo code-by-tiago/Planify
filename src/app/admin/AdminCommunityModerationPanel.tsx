@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { AdminCommunityFeaturedPanel } from "./AdminCommunityFeaturedPanel";
 import {
   AdminPanel,
   adminButtonPrimaryClassName,
@@ -86,10 +87,12 @@ export function AdminCommunityModerationPanel() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      <AdminCommunityFeaturedPanel />
+
       <AdminPanel
         title="Moderação · Comunidade Docente"
-        subtitle="Fila de denúncias de posts, comentários, materiais, chat de grupos e perfis."
+        subtitle="Fila de denúncias de posts, comentários, materiais e perfis."
       >
         <div className="mb-4 flex flex-wrap items-center gap-2">
           {(["open", "resolved", "dismissed", "all"] as const).map((value) => (

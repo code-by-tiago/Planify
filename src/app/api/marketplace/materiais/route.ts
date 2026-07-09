@@ -25,6 +25,31 @@ const PREMIUM_COOKIE_NAME = "planify_access";
 const ADMIN_COOKIE_NAME = "planify_admin_access";
 const OWNER_COOKIE_NAME = "planify_owner_access";
 const BUCKET_NAME = "marketplace-materiais";
+const MAX_UPLOAD_BYTES = 25 * 1024 * 1024;
+
+const ALLOWED_UPLOAD_EXTENSIONS =
+  /\.(pdf|docx?|pptx?|png|jpe?g|webp|html?)$/i;
+const ALLOWED_UPLOAD_MIMES = [
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-powerpoint",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  "image/png",
+  "image/jpeg",
+  "image/webp",
+  "text/html",
+  "text/plain",
+];
+
+function isAllowedMarketplaceUpload(file: File): boolean {
+  const name = String(file.name || "").toLowerCase();
+  const mime = String(file.type || "").toLowerCase();
+  if (ALLOWED_UPLOAD_EXTENSIONS.test(name)) return true;
+  return ALLOWED_UPLOAD_MIMES.some(
+    (allowed) => mime === allowed || mime.startsWith(`${allowed};`),
+  );
+}
 
 type MarketplaceRow = {
   id: string;
@@ -528,6 +553,16 @@ export async function POST(request: NextRequest) {
     return jsonError("O arquivo anexado está vazio.");
   }
 
+  if (fileValue.size > MAX_UPLOAD_BYTES) {
+    return jsonError("Arquivo muito grande (máx. 25 MB).", 413);
+  }
+
+  if (!isAllowedMarketplaceUpload(fileValue)) {
+    return jsonError(
+      "Formato não suportado. Use PDF, DOC, DOCX, PPT, PPTX, HTML ou imagem.",
+    );
+  }
+
   const supabase = getSupabaseAdminClient();
   const id = randomUUID();
   const originalName = safeFilename(fileValue.name || "material");
@@ -597,6 +632,44 @@ export async function POST(request: NextRequest) {
 
   const baseItem = await withSignedUrl(data as MarketplaceRow);
   const [item] = await enrichMarketplaceItems([baseItem], access.userId || null);
+
+  if (isPublished && access.userId) {
+    try {
+      const { createCommunityNotification } = await import(
+        "@/server/community/community-notifications-service"
+      );
+      const { data: followers } = await supabase
+        .from("community_followers")
+        .select("follower_id")
+        .eq("following_id", access.userId)
+        .limit(200);
+
+      const followerIds = [
+        ...new Set(
+          (followers || [])
+            .map((row: { follower_id?: string | null }) => String(row.follower_id || ""))
+            .filter((followerId: string) => followerId && followerId !== access.userId),
+        ),
+      ];
+
+      await Promise.all(
+        followerIds.map((followerId: string) =>
+          createCommunityNotification({
+            userId: followerId,
+            type: "post",
+            actorUserId: access.userId!,
+            bodyPreview: `Publicou o material "${title.slice(0, 100)}"`,
+            materialId: id,
+            targetType: "material",
+            targetId: id,
+            href: `/comunidade/material/${id}`,
+          }),
+        ),
+      );
+    } catch {
+      // notificação não deve bloquear a publicação
+    }
+  }
 
   return NextResponse.json({
     success: true,

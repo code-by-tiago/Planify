@@ -13,7 +13,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const name = teacher?.profile.name || "Professor(a)";
   const description =
     teacher?.profile.specialty ||
-    "Perfil público na Comunidade Docente Planify — materiais, discussões e grupos.";
+    "Perfil público na Comunidade Docente Planify — materiais e publicações.";
 
   return {
     title: `${name} | Comunidade Docente Planify`,

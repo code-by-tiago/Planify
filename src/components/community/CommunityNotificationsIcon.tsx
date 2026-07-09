@@ -1,7 +1,7 @@
 "use client";
 
 import { CommunityAuthorAvatar } from "@/components/community/CommunityAuthorAvatar";
-import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
+import { IconBell } from "@/components/community/docente/docente-icons";
 import type { CommunityNotification } from "@/lib/community/types";
 import { parseJsonResponse } from "@/lib/http/parse-json-response";
 import Link from "next/link";
@@ -28,15 +28,21 @@ function formatNotificationTime(value: string): string {
 function notificationLabel(type: CommunityNotification["type"]): string {
   switch (type) {
     case "comment":
-      return "comentou";
+      return "comentou na sua publicação";
     case "like":
-      return "curtiu";
+      return "curtiu sua publicação";
     case "friend_request":
       return "solicitou amizade";
     case "friend_accepted":
       return "aceitou amizade";
     case "message":
-      return "enviou mensagem";
+      return "enviou uma mensagem";
+    case "post":
+      return "publicou no feed";
+    case "follow":
+      return "começou a seguir você";
+    case "mention":
+      return "adicionou você em uma publicação";
     default:
       return "interagiu";
   }
@@ -49,12 +55,6 @@ function notificationHref(notification: CommunityNotification): string | null {
 
   if (notification.targetType === "post" && notification.targetId) {
     return `/comunidade/discussao/${notification.targetId}`;
-  }
-  if (notification.targetType === "group" && notification.targetId) {
-    return `/comunidade/grupo/${notification.targetId}`;
-  }
-  if (notification.targetType === "event" && notification.targetId) {
-    return `/comunidade/evento/${notification.targetId}`;
   }
   if (notification.targetType === "material" && notification.targetId) {
     return `/comunidade/material/${notification.targetId}`;
@@ -69,11 +69,14 @@ function notificationHref(notification: CommunityNotification): string | null {
   if (notification.conversationId) {
     return "/dashboard?secao=marketplace&painel=mensagens";
   }
-  if (notification.type === "friend_request" || notification.type === "friend_accepted") {
+  if (notification.type === "friend_request" || notification.type === "friend_accepted" || notification.type === "follow") {
     return `/comunidade/professor/${notification.actorUserId}`;
   }
   if (notification.type === "message") {
-    return "/dashboard?secao=marketplace";
+    return "/dashboard?secao=marketplace&painel=mensagens";
+  }
+  if (notification.type === "post" && notification.targetId) {
+    return `/comunidade/discussao/${notification.targetId}`;
   }
   return null;
 }
@@ -128,7 +131,7 @@ export function CommunityNotificationsIcon({ className }: CommunityNotifications
         return;
       }
       void refresh();
-    }, 60000);
+    }, 20000);
     return () => window.clearInterval(interval);
   }, [refresh]);
 
@@ -180,13 +183,13 @@ export function CommunityNotificationsIcon({ className }: CommunityNotifications
         onClick={() => setOpen((value) => !value)}
         className={
           className ||
-          "relative inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-cyan-400/25 bg-white/90 px-3 py-2.5 text-cyan-800 shadow-sm transition hover:border-cyan-400/45 hover:bg-cyan-50 sm:w-auto"
+          "relative inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:border-cyan-200 hover:bg-cyan-50 hover:text-cyan-700"
         }
         title="Notificações"
         aria-label="Abrir notificações"
         aria-expanded={open}
       >
-        <PlanifyIcon name="spark" className="h-4 w-4" />
+        <IconBell className="h-5 w-5" />
         {unreadCount > 0 ? (
           <span className="absolute -right-1 -top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-bold text-white">
             {unreadCount > 9 ? "9+" : unreadCount}

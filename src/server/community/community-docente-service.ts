@@ -6,7 +6,6 @@ import {
   type BadgeProgress,
 } from "./community-badge-service";
 import {
-  getMaterialCommentsBatch,
   getMaterialLikesSummary,
   resolveCommunityAuthors,
 } from "./marketplace-social-service";
@@ -14,16 +13,14 @@ import { listSavedMaterialIds } from "./community-saved-materials-service";
 import { listPostAttachments, type CommunityPostAttachment } from "./community-post-attachments-service";
 import { listSavedPostIds } from "./community-saved-posts-service";
 import { listHiddenFeedMaterialIds } from "./community-hidden-feed-materials-service";
-import {
-  formatEventMonth,
-  formatEventDateTime,
-  normalizeDocenteDisciplina,
-} from "@/lib/community/docente-utils";
+import { listFeaturedCommunityMaterials } from "./community-featured-service";
+import { normalizeDocenteDisciplina } from "@/lib/community/docente-utils";
 import type {
+  DocenteAchievementBadge,
   DocenteAuthor,
+  DocenteComment,
   DocenteDiscussion,
   DocenteDisciplina,
-  DocenteEvent,
   DocenteMaterial,
   DocenteRecentPublication,
   DocenteStats,
@@ -64,24 +61,8 @@ type PostRow = {
   likes_count: number;
   comments_count: number;
   created_at: string;
-  group_id?: string | null;
-};
-
-type EventRow = {
-  id: string;
-  title: string;
-  presenter_name: string;
-  starts_at: string;
-  is_online: boolean;
-};
-
-type GroupRow = {
-  id: string;
-  name: string;
-  description: string;
-  disciplina: string;
-  members_count: number;
-  joinedByMe?: boolean;
+  post_kind?: string | null;
+  metadata?: Record<string, unknown> | null;
 };
 
 type BadgeRow = {
@@ -98,9 +79,8 @@ export type CommunityDocenteOverview = {
   stats: DocenteStats;
   discussions: DocenteDiscussion[];
   materials: DocenteMaterial[];
+  trendingMaterials: DocenteMaterial[];
   recentPublications: DocenteRecentPublication[];
-  events: DocenteEvent[];
-  groups: GroupRow[];
   badges: BadgeRow[];
   badgeProgress: BadgeProgress[];
   hiddenMaterialIds: string[];
@@ -203,6 +183,61 @@ async function buildAuthor(
   };
 }
 
+/** Últimos N comentários por post (para o feed, evita N+1). */
+async function fetchCommentsPreviewByPostIds(
+  postIds: string[],
+  limitPerPost = 2,
+): Promise<Map<string, DocenteComment[]>> {
+  const result = new Map<string, DocenteComment[]>();
+  if (!postIds.length) return result;
+
+  const supabase = getSupabaseAdminClient();
+  const { data: rows, error } = await supabase
+    .from("community_comments")
+    .select("id,post_id,author_id,body,created_at")
+    .in("post_id", postIds)
+    .order("created_at", { ascending: false })
+    .limit(Math.max(postIds.length * limitPerPost, limitPerPost));
+
+  if (error || !rows?.length) return result;
+
+  const grouped = new Map<string, typeof rows>();
+  for (const row of rows) {
+    const postId = String(row.post_id || "");
+    if (!postId) continue;
+    const list = grouped.get(postId) || [];
+    if (list.length >= limitPerPost) continue;
+    list.push(row);
+    grouped.set(postId, list);
+  }
+
+  const authorIds = [
+    ...new Set(rows.map((row) => String(row.author_id || "")).filter(Boolean)),
+  ];
+  const authorMap = await resolveCommunityAuthors(authorIds);
+  const authorStatsCache = await resolveAuthorStatsBatch(authorIds);
+
+  for (const [postId, commentRows] of grouped) {
+    const chronological = [...commentRows].reverse();
+    const comments: DocenteComment[] = await Promise.all(
+      chronological.map(async (row) => ({
+        id: String(row.id),
+        body: String(row.body || ""),
+        createdAt: String(row.created_at || ""),
+        author: await buildAuthor(
+          String(row.author_id),
+          authorMap,
+          undefined,
+          authorStatsCache,
+        ),
+      })),
+    );
+    result.set(postId, comments);
+  }
+
+  return result;
+}
+
 export async function getCommunityDocenteOverview(params: {
   viewerUserId?: string | null;
   search?: string;
@@ -236,7 +271,9 @@ export async function getCommunityDocenteOverview(params: {
 
   let postsQuery = supabase
     .from("community_posts")
-    .select("id,author_id,title,body,disciplina,tags,likes_count,comments_count,created_at")
+    .select(
+      "id,author_id,title,body,disciplina,tags,likes_count,comments_count,created_at,post_kind,metadata",
+    )
     .eq("is_published", true)
     .order("created_at", { ascending: false })
     .limit(24);
@@ -291,13 +328,11 @@ export async function getCommunityDocenteOverview(params: {
     postsResult,
     invitedPostsResult,
     materialsResult,
-    eventsResult,
-    groupsResult,
     badgesResult,
     teachersCount,
     materialsCount,
     postsCount,
-    groupsCount,
+    trendingMaterials,
   ] = await Promise.all([
     postsQuery,
     params.viewerUserId
@@ -309,19 +344,6 @@ export async function getCommunityDocenteOverview(params: {
           .limit(8)
       : Promise.resolve({ data: [], error: null }),
     materialsQuery,
-    supabase
-      .from("community_events")
-      .select("id,title,presenter_name,starts_at,is_online")
-      .gte("starts_at", new Date().toISOString())
-      .order("starts_at", { ascending: true })
-      .limit(6),
-    supabase
-      .from("community_groups")
-      .select("id,name,description,disciplina,members_count")
-      .eq("is_public", true)
-      .gt("members_count", 0)
-      .order("members_count", { ascending: false })
-      .limit(8),
     supabase
       .from("community_badges")
       .select("id,slug,name,description,icon,color,min_reputation")
@@ -338,11 +360,7 @@ export async function getCommunityDocenteOverview(params: {
       .from("community_posts")
       .select("id", { count: "exact", head: true })
       .eq("is_published", true),
-    supabase
-      .from("community_groups")
-      .select("id", { count: "exact", head: true })
-      .eq("is_public", true)
-      .gt("members_count", 0),
+    listFeaturedCommunityMaterials(12),
   ]);
 
   const posts = (postsResult.data || []) as PostRow[];
@@ -354,7 +372,9 @@ export async function getCommunityDocenteOverview(params: {
   if (invitedPostIds.length > 0) {
     const { data: invitedPostRows } = await supabase
       .from("community_posts")
-      .select("id,author_id,title,body,disciplina,tags,likes_count,comments_count,created_at")
+      .select(
+        "id,author_id,title,body,disciplina,tags,likes_count,comments_count,created_at,post_kind,metadata",
+      )
       .in("id", invitedPostIds)
       .eq("is_published", true);
     invitedPosts = (invitedPostRows || []) as PostRow[];
@@ -381,12 +401,10 @@ export async function getCommunityDocenteOverview(params: {
   let savedMaterialIds = new Set<string>();
   let savedPostIds = new Set<string>();
   let followingIds = new Set<string>();
-  let joinedGroupIds = new Set<string>();
   let badgeProgress: BadgeProgress[] = [];
 
   if (params.viewerUserId) {
-    const [likes, matLikes, savedIds, savedPosts, following, groupMemberships] =
-      await Promise.all([
+    const [likes, matLikes, savedIds, savedPosts, following] = await Promise.all([
       supabase
         .from("community_likes")
         .select("post_id")
@@ -403,17 +421,12 @@ export async function getCommunityDocenteOverview(params: {
         .from("community_followers")
         .select("following_id")
         .eq("follower_id", params.viewerUserId),
-      supabase
-        .from("community_group_members")
-        .select("group_id")
-        .eq("user_id", params.viewerUserId),
     ]);
     likedPostIds = new Set((likes.data || []).map((r) => r.post_id as string));
     likedMaterialIds = new Set((matLikes.data || []).map((r) => r.material_id as string));
     savedMaterialIds = new Set(savedIds);
     savedPostIds = new Set(savedPosts);
     followingIds = new Set((following.data || []).map((r) => r.following_id as string));
-    joinedGroupIds = new Set((groupMemberships.data || []).map((r) => r.group_id as string));
 
     await awardEligibleBadges(params.viewerUserId);
     badgeProgress = await getBadgeProgressForUser(params.viewerUserId);
@@ -432,6 +445,7 @@ export async function getCommunityDocenteOverview(params: {
 
   if (params.savedOnly && params.viewerUserId) {
     feedMaterials = feedMaterials.filter((row) => savedMaterialIds.has(row.id));
+    feedPosts = feedPosts.filter((post) => savedPostIds.has(post.id));
   }
 
   if (tagFilter) {
@@ -453,57 +467,61 @@ export async function getCommunityDocenteOverview(params: {
   ];
   const authorStatsCache = await resolveAuthorStatsBatch(allAuthorIds);
 
+  const previewPostIds = feedPosts.slice(0, 12).map((post) => post.id);
+  const commentsPreviewMap = await fetchCommentsPreviewByPostIds(previewPostIds, 2);
+
   const discussionsFromPosts: DocenteDiscussion[] = await Promise.all(
-    feedPosts.map(async (post) => ({
-      id: post.id,
-      author: await buildAuthor(post.author_id, authorMap, undefined, authorStatsCache),
-      title: post.title,
-      disciplina: normalizeDocenteDisciplina(post.disciplina),
-      tags: post.tags || [],
-      createdAt: post.created_at,
-      commentsCount: post.comments_count,
-      likesCount: post.likes_count,
-      likedByMe: likedPostIds.has(post.id),
-      savedByMe: savedPostIds.has(post.id),
-    })),
-  );
-
-  const materialIds = feedMaterials.map((m) => m.id);
-  const [likesSummary, commentsBatch] = await Promise.all([
-    getMaterialLikesSummary({
-      materialIds,
-      viewerUserId: params.viewerUserId || null,
-    }),
-    getMaterialCommentsBatch(materialIds),
-  ]);
-
-  const discussionsFromMaterials: DocenteDiscussion[] = await Promise.all(
-    feedMaterials.slice(0, 4).map(async (row) => {
-      const userId = row.user_id || "unknown";
-      const comments = commentsBatch.get(row.id) || [];
-      const likes = likesSummary.get(row.id);
+    feedPosts.slice(0, 12).map(async (post) => {
+      const isAchievement = post.post_kind === "achievement";
+      const meta = (post.metadata || {}) as Record<string, unknown>;
+      const attachments = isAchievement ? [] : await listPostAttachments(post.id);
       return {
-        id: `mat-disc-${row.id}`,
-        author: await buildAuthor(userId, authorMap, row.author_name, authorStatsCache),
-        title: row.title,
-        disciplina: normalizeDocenteDisciplina(row.componente),
-        tags: [],
-        createdAt: row.created_at || new Date().toISOString(),
-        commentsCount: comments.length,
-        likesCount: likes?.likesCount || 0,
-        likedByMe: likes?.likedByMe || false,
-        savedByMe: savedMaterialIds.has(row.id),
+        id: post.id,
+        author: await buildAuthor(post.author_id, authorMap, undefined, authorStatsCache),
+        title: post.title,
+        body: post.body || "",
+        disciplina: normalizeDocenteDisciplina(post.disciplina),
+        tags: post.tags || [],
+        createdAt: post.created_at,
+        commentsCount: post.comments_count,
+        likesCount: post.likes_count,
+        likedByMe: likedPostIds.has(post.id),
+        savedByMe: savedPostIds.has(post.id),
+        kind: isAchievement ? ("achievement" as const) : ("text" as const),
+        achievementBadge: isAchievement
+          ? {
+              name: String(meta.badgeName || post.title),
+              color: String(meta.badgeColor || "#0891B2"),
+              icon: String(meta.badgeIcon || "trophy"),
+            }
+          : undefined,
+        commentsPreview: commentsPreviewMap.get(post.id) || [],
+        attachments: attachments.map((a) => ({
+          id: a.id,
+          materialId: a.materialId,
+          title: a.title,
+          fileName: a.fileName,
+          fileType: a.fileType,
+          fileMime: a.fileMime,
+          previewUrl: a.previewUrl,
+        })),
       };
     }),
   );
 
-  const discussions = [...discussionsFromPosts, ...discussionsFromMaterials]
+  const materialIds = feedMaterials.map((m) => m.id);
+  const likesSummary = await getMaterialLikesSummary({
+    materialIds,
+    viewerUserId: params.viewerUserId || null,
+  });
+
+  const discussions = discussionsFromPosts
     .filter((d) => {
       if (!search) return true;
       const hay = `${d.title} ${d.author.name} ${d.disciplina} ${d.tags.join(" ")}`.toLowerCase();
       return hay.includes(search);
     })
-    .slice(0, 8);
+    .slice(0, 12);
 
   const materials: DocenteMaterial[] = await Promise.all(
     feedMaterials.map(async (row) => {
@@ -565,23 +583,6 @@ export async function getCommunityDocenteOverview(params: {
     );
   }
 
-  const events: DocenteEvent[] = ((eventsResult.data || []) as EventRow[]).map((e) => {
-    const { day, month } = formatEventMonth(e.starts_at);
-    return {
-      id: e.id,
-      title: e.title,
-      presenterName: e.presenter_name,
-      startsAt: e.starts_at,
-      isOnline: e.is_online,
-      day,
-      month,
-    };
-  });
-
-  const groups = ((groupsResult.data || []) as GroupRow[]).map((group) => ({
-    ...group,
-    joinedByMe: joinedGroupIds.has(group.id),
-  }));
   const badges = (badgesResult.data || []) as BadgeRow[];
 
   const topTeacherId = marketplaceRows[0]?.user_id;
@@ -629,8 +630,19 @@ export async function getCommunityDocenteOverview(params: {
     }
   }
 
-  if (featuredTeacher && params.viewerUserId) {
-    featuredTeacher.isFollowing = followingIds.has(featuredTeacher.id);
+  if (params.viewerUserId) {
+    if (featuredTeacher) {
+      featuredTeacher.isFollowing = followingIds.has(featuredTeacher.id);
+    }
+    for (const discussion of discussions) {
+      discussion.author.isFollowing = followingIds.has(discussion.author.id);
+    }
+    for (const material of filteredMaterials) {
+      material.author.isFollowing = followingIds.has(material.author.id);
+    }
+    for (const material of trendingMaterials) {
+      material.author.isFollowing = followingIds.has(material.author.id);
+    }
   }
 
   return {
@@ -638,13 +650,11 @@ export async function getCommunityDocenteOverview(params: {
       activeTeachers: teachersCount.count || 0,
       sharedMaterials: materialsCount.count || 0,
       openDiscussions: postsCount.count || discussions.length,
-      studyGroups: groupsCount.count || 0,
     },
     discussions,
     materials: filteredMaterials,
+    trendingMaterials,
     recentPublications,
-    events,
-    groups,
     badges,
     badgeProgress,
     hiddenMaterialIds: [...hiddenMaterialIds],
@@ -660,37 +670,16 @@ export async function createCommunityPost(params: {
   disciplina: string;
   tags: string[];
   participantUserIds?: string[];
-  groupId?: string | null;
 }) {
   const supabase = getSupabaseAdminClient();
 
-  if (params.groupId) {
-    const { data: membership } = await supabase
-      .from("community_group_members")
-      .select("id")
-      .eq("group_id", params.groupId)
-      .eq("user_id", params.authorId)
-      .maybeSingle();
-    if (!membership) {
-      throw new Error("Entre no grupo antes de publicar uma discussão.");
-    }
-  }
-
-  const insertPayload: {
-    author_id: string;
-    title: string;
-    body: string;
-    disciplina: string;
-    tags: string[];
-    group_id?: string;
-  } = {
+  const insertPayload = {
     author_id: params.authorId,
     title: params.title,
     body: params.body,
     disciplina: params.disciplina,
     tags: params.tags,
   };
-  if (params.groupId) insertPayload.group_id = params.groupId;
 
   const { data, error } = await supabase
     .from("community_posts")
@@ -726,9 +715,40 @@ export async function createCommunityPost(params: {
       uniqueParticipants.map((userId) =>
         createCommunityNotification({
           userId,
-          type: "message",
+          type: "mention",
           actorUserId: params.authorId,
-          bodyPreview: `Você foi convidado(a) para a discussão "${params.title}".`,
+          bodyPreview: `Você foi adicionado(a) na publicação "${params.title}".`,
+          targetType: "post",
+          targetId: data.id,
+          href: `/comunidade/discussao/${data.id}`,
+        }),
+      ),
+    );
+  }
+
+  // Notifica seguidores sobre nova publicação no feed
+  const { data: followers } = await supabase
+    .from("community_followers")
+    .select("follower_id")
+    .eq("following_id", params.authorId)
+    .limit(200);
+
+  const followerIds = [
+    ...new Set(
+      (followers || [])
+        .map((row) => String(row.follower_id || ""))
+        .filter((id) => id && id !== params.authorId && !uniqueParticipants.includes(id)),
+    ),
+  ];
+
+  if (followerIds.length > 0) {
+    await Promise.all(
+      followerIds.map((userId) =>
+        createCommunityNotification({
+          userId,
+          type: "post",
+          actorUserId: params.authorId,
+          bodyPreview: params.title.slice(0, 120) || "Nova publicação no feed",
           targetType: "post",
           targetId: data.id,
           href: `/comunidade/discussao/${data.id}`,
@@ -739,6 +759,53 @@ export async function createCommunityPost(params: {
 
   await awardEligibleBadges(params.authorId);
   return data;
+}
+
+/** Cria post e vincula anexos; se o link falhar, remove o post. */
+export async function createCommunityPostWithAttachments(params: {
+  authorId: string;
+  title: string;
+  body: string;
+  disciplina: string;
+  tags: string[];
+  participantUserIds?: string[];
+  attachments: Array<{
+    materialId: string;
+    fileName: string;
+    fileMime?: string | null;
+    sortOrder?: number;
+  }>;
+}): Promise<{ postId: string; linked: number }> {
+  const post = await createCommunityPost({
+    authorId: params.authorId,
+    title: params.title,
+    body: params.body,
+    disciplina: params.disciplina,
+    tags: params.tags,
+    participantUserIds: params.participantUserIds,
+  });
+
+  if (!params.attachments.length) {
+    return { postId: post.id, linked: 0 };
+  }
+
+  try {
+    const { linkPostAttachments } = await import(
+      "@/server/community/community-post-attachments-service"
+    );
+    const result = await linkPostAttachments({
+      authorId: params.authorId,
+      postId: post.id,
+      attachments: params.attachments,
+    });
+    return { postId: post.id, linked: result.linked };
+  } catch (error) {
+    await deleteCommunityPost({
+      authorId: params.authorId,
+      postId: post.id,
+    }).catch(() => undefined);
+    throw error;
+  }
 }
 
 export async function toggleCommunityPostLike(params: {
@@ -864,7 +931,7 @@ export async function toggleCommunityFollow(params: {
 
   void createCommunityNotification({
     userId: params.followingId,
-    type: "message",
+    type: "follow",
     actorUserId: params.followerId,
     bodyPreview: "começou a seguir você.",
     targetType: "professor",
@@ -873,280 +940,6 @@ export async function toggleCommunityFollow(params: {
   });
 
   return { following: true };
-}
-
-export async function createCommunityGroup(params: {
-  ownerId: string;
-  name: string;
-  description: string;
-  disciplina: string;
-  memberUserIds?: string[];
-}) {
-  const supabase = getSupabaseAdminClient();
-  const uniqueMemberIds = [
-    ...new Set(
-      (params.memberUserIds || []).filter((userId) => userId && userId !== params.ownerId),
-    ),
-  ];
-  const membersCount = 1 + uniqueMemberIds.length;
-
-  const { data, error } = await supabase
-    .from("community_groups")
-    .insert({
-      owner_id: params.ownerId,
-      name: params.name,
-      description: params.description,
-      disciplina: params.disciplina,
-      members_count: membersCount,
-      is_public: true,
-    })
-    .select("id")
-    .single();
-
-  if (error) throw new Error(error.message);
-
-  await supabase.from("community_group_members").insert({
-    group_id: data.id,
-    user_id: params.ownerId,
-  });
-
-  if (uniqueMemberIds.length > 0) {
-    const { error: membersError } = await supabase.from("community_group_members").insert(
-      uniqueMemberIds.map((userId) => ({
-        group_id: data.id,
-        user_id: userId,
-      })),
-    );
-
-    if (membersError) throw new Error(membersError.message);
-
-    await Promise.all(
-      uniqueMemberIds.map((userId) =>
-        createCommunityNotification({
-          userId,
-          type: "message",
-          actorUserId: params.ownerId,
-          bodyPreview: `Você foi adicionado(a) ao grupo "${params.name}".`,
-          targetType: "group",
-          targetId: data.id,
-          href: `/comunidade/grupo/${data.id}`,
-        }),
-      ),
-    );
-  }
-
-  await awardEligibleBadges(params.ownerId);
-  return data;
-}
-
-export async function joinCommunityGroup(params: {
-  userId: string;
-  groupId: string;
-}): Promise<{ joined: boolean; membersCount: number }> {
-  const supabase = getSupabaseAdminClient();
-  const { data: group } = await supabase
-    .from("community_groups")
-    .select("id,members_count,is_public")
-    .eq("id", params.groupId)
-    .maybeSingle();
-
-  if (!group) throw new Error("Grupo não encontrado.");
-
-  const { data: existing } = await supabase
-    .from("community_group_members")
-    .select("id")
-    .eq("group_id", params.groupId)
-    .eq("user_id", params.userId)
-    .maybeSingle();
-
-  if (existing) {
-    return { joined: true, membersCount: group.members_count || 0 };
-  }
-
-  const { error: joinError } = await supabase.from("community_group_members").insert({
-    group_id: params.groupId,
-    user_id: params.userId,
-  });
-  if (joinError) throw new Error(joinError.message);
-
-  const nextCount = (group.members_count || 0) + 1;
-  await supabase
-    .from("community_groups")
-    .update({ members_count: nextCount })
-    .eq("id", params.groupId);
-
-  await awardEligibleBadges(params.userId);
-  return { joined: true, membersCount: nextCount };
-}
-
-export async function leaveCommunityGroup(params: {
-  userId: string;
-  groupId: string;
-}): Promise<{ left: boolean; membersCount: number }> {
-  const supabase = getSupabaseAdminClient();
-  const { data: group } = await supabase
-    .from("community_groups")
-    .select("id,members_count,owner_id")
-    .eq("id", params.groupId)
-    .maybeSingle();
-
-  if (!group) throw new Error("Grupo não encontrado.");
-
-  const { data: existing } = await supabase
-    .from("community_group_members")
-    .select("id")
-    .eq("group_id", params.groupId)
-    .eq("user_id", params.userId)
-    .maybeSingle();
-
-  if (!existing) {
-    return { left: false, membersCount: group.members_count || 0 };
-  }
-
-  if (group.owner_id === params.userId) {
-    const { data: otherMembers } = await supabase
-      .from("community_group_members")
-      .select("user_id,joined_at")
-      .eq("group_id", params.groupId)
-      .neq("user_id", params.userId)
-      .order("joined_at", { ascending: true })
-      .limit(1);
-
-    if (otherMembers?.length) {
-      const nextOwnerId = otherMembers[0].user_id as string;
-      await supabase
-        .from("community_groups")
-        .update({ owner_id: nextOwnerId })
-        .eq("id", params.groupId);
-      await createCommunityNotification({
-        userId: nextOwnerId,
-        type: "message",
-        actorUserId: params.userId,
-        bodyPreview: `Você agora é o(a) responsável pelo grupo.`,
-        targetType: "group",
-        targetId: params.groupId,
-        href: `/comunidade/grupo/${params.groupId}`,
-      });
-    }
-  }
-
-  const { error: leaveError } = await supabase
-    .from("community_group_members")
-    .delete()
-    .eq("id", existing.id);
-  if (leaveError) throw new Error(leaveError.message);
-
-  const nextCount = Math.max(0, (group.members_count || 1) - 1);
-  await supabase
-    .from("community_groups")
-    .update({ members_count: nextCount })
-    .eq("id", params.groupId);
-
-  return { left: true, membersCount: nextCount };
-}
-
-export async function transferCommunityGroupOwnership(params: {
-  ownerId: string;
-  groupId: string;
-  newOwnerId: string;
-}) {
-  const supabase = getSupabaseAdminClient();
-  const { data: group } = await supabase
-    .from("community_groups")
-    .select("id,owner_id,name")
-    .eq("id", params.groupId)
-    .maybeSingle();
-
-  if (!group || group.owner_id !== params.ownerId) {
-    throw new Error("Apenas o(a) responsável atual pode transferir a liderança.");
-  }
-
-  const { data: membership } = await supabase
-    .from("community_group_members")
-    .select("id")
-    .eq("group_id", params.groupId)
-    .eq("user_id", params.newOwnerId)
-    .maybeSingle();
-
-  if (!membership) {
-    throw new Error("O novo responsável precisa ser membro do grupo.");
-  }
-
-  await supabase
-    .from("community_groups")
-    .update({ owner_id: params.newOwnerId })
-    .eq("id", params.groupId);
-
-  await createCommunityNotification({
-    userId: params.newOwnerId,
-    type: "message",
-    actorUserId: params.ownerId,
-    bodyPreview: `Você foi definido(a) como responsável do grupo "${group.name}".`,
-    targetType: "group",
-    targetId: params.groupId,
-    href: `/comunidade/grupo/${params.groupId}`,
-  });
-}
-
-export async function createCommunityEvent(params: {
-  hostId: string;
-  title: string;
-  description: string;
-  presenterName: string;
-  startsAt: string;
-  isOnline: boolean;
-  location?: string | null;
-}) {
-  const supabase = getSupabaseAdminClient();
-  const { data, error } = await supabase
-    .from("community_events")
-    .insert({
-      host_id: params.hostId,
-      title: params.title,
-      description: params.description,
-      presenter_name: params.presenterName,
-      starts_at: params.startsAt,
-      is_online: params.isOnline,
-      location: params.location || null,
-    })
-    .select("id")
-    .single();
-
-  if (error) throw new Error(error.message);
-  return data;
-}
-
-export async function updateCommunityEvent(params: {
-  adminId: string;
-  eventId: string;
-  title: string;
-  description: string;
-  presenterName: string;
-  startsAt: string;
-  isOnline: boolean;
-  location?: string | null;
-}) {
-  const supabase = getSupabaseAdminClient();
-  const { error } = await supabase
-    .from("community_events")
-    .update({
-      title: params.title,
-      description: params.description,
-      presenter_name: params.presenterName,
-      starts_at: params.startsAt,
-      is_online: params.isOnline,
-      location: params.location || null,
-    })
-    .eq("id", params.eventId);
-
-  if (error) throw new Error(error.message);
-}
-
-export async function deleteCommunityEvent(params: { adminId: string; eventId: string }) {
-  const supabase = getSupabaseAdminClient();
-  await supabase.from("community_event_participants").delete().eq("event_id", params.eventId);
-  const { error } = await supabase.from("community_events").delete().eq("id", params.eventId);
-  if (error) throw new Error(error.message);
 }
 
 export type CommunityDiscussionComment = {
@@ -1172,60 +965,31 @@ export type CommunityDiscussionDetail = {
   savedByMe: boolean;
   isAuthor: boolean;
   viewerUserId: string | null;
-  groupId: string | null;
+  kind?: "text" | "achievement";
+  achievementBadge?: DocenteAchievementBadge;
   comments: CommunityDiscussionComment[];
   participants: DocenteAuthor[];
   relatedDiscussions: DocenteDiscussion[];
   attachments: CommunityPostAttachment[];
 };
 
-export type CommunityGroupDetail = {
-  id: string;
-  name: string;
-  description: string;
-  disciplina: string;
-  membersCount: number;
-  joinedByMe: boolean;
-  isOwner: boolean;
-  owner: DocenteAuthor;
-  members: DocenteAuthor[];
-  discussions: DocenteDiscussion[];
-  viewerDisplayName?: string | null;
-};
-
-export type CommunityEventDetail = {
-  id: string;
-  title: string;
-  description: string;
-  presenterName: string;
-  startsAt: string;
-  isOnline: boolean;
-  location: string | null;
-  day: number;
-  month: string;
-  dateLabel: string;
-  timeLabel: string;
-  host: DocenteAuthor | null;
-  goingCount: number;
-  interestedCount: number;
-  userRsvpStatus: "going" | "interested" | null;
-  isHost: boolean;
-  isAdmin?: boolean;
-  participantsGoing: DocenteAuthor[];
-  participantsInterested: DocenteAuthor[];
-};
-
 export type CommunityTeacherDetail = {
   profile: DocenteAuthor;
   schoolName: string | null;
   bio: string | null;
+  coverUrl: string | null;
   topComponentes: string[];
   badges: Array<{ slug: string; name: string; color: string; awardedAt: string | null }>;
   materials: Array<{ id: string; title: string; disciplina: string; downloadsCount: number }>;
   discussions: DocenteDiscussion[];
-  groups: Array<{ id: string; name: string; disciplina: string; membersCount: number }>;
   isFollowing: boolean;
   isOwnProfile: boolean;
+  stats: {
+    classesCount: number;
+    materialsCount: number;
+    followersCount: number;
+    followingCount: number;
+  };
 };
 
 export async function getCommunityDiscussionDetail(params: {
@@ -1237,7 +1001,7 @@ export async function getCommunityDiscussionDetail(params: {
   const { data: post } = await supabase
     .from("community_posts")
     .select(
-      "id,author_id,title,body,disciplina,tags,likes_count,comments_count,created_at,group_id",
+      "id,author_id,title,body,disciplina,tags,likes_count,comments_count,created_at,post_kind,metadata",
     )
     .eq("id", params.postId)
     .eq("is_published", true)
@@ -1297,19 +1061,14 @@ export async function getCommunityDiscussionDetail(params: {
     ),
   );
 
-  let relatedRowsQuery = supabase
+  const relatedRowsQuery = supabase
     .from("community_posts")
     .select("id,author_id,title,body,disciplina,tags,likes_count,comments_count,created_at")
     .eq("is_published", true)
     .neq("id", params.postId)
+    .eq("disciplina", postRow.disciplina)
     .order("created_at", { ascending: false })
     .limit(4);
-
-  if (postRow.group_id) {
-    relatedRowsQuery = relatedRowsQuery.eq("group_id", postRow.group_id);
-  } else {
-    relatedRowsQuery = relatedRowsQuery.eq("disciplina", postRow.disciplina);
-  }
 
   const { data: relatedRows } = await relatedRowsQuery;
 
@@ -1330,6 +1089,9 @@ export async function getCommunityDiscussionDetail(params: {
 
   const attachments = await listPostAttachments(params.postId);
 
+  const isAchievement = postRow.post_kind === "achievement";
+  const meta = (postRow.metadata || {}) as Record<string, unknown>;
+
   return {
     id: postRow.id,
     title: postRow.title,
@@ -1344,173 +1106,18 @@ export async function getCommunityDiscussionDetail(params: {
     savedByMe,
     isAuthor: params.viewerUserId === postRow.author_id,
     viewerUserId: params.viewerUserId || null,
-    groupId: (postRow.group_id as string | null) || null,
+    kind: isAchievement ? ("achievement" as const) : ("text" as const),
+    achievementBadge: isAchievement
+      ? {
+          name: String(meta.badgeName || postRow.title),
+          color: String(meta.badgeColor || "#0891B2"),
+          icon: String(meta.badgeIcon || "trophy"),
+        }
+      : undefined,
     comments,
     participants,
     relatedDiscussions,
     attachments,
-  };
-}
-
-export async function getCommunityGroupDetail(params: {
-  groupId: string;
-  viewerUserId?: string | null;
-}): Promise<CommunityGroupDetail | null> {
-  const supabase = getSupabaseAdminClient();
-
-  const { data: group } = await supabase
-    .from("community_groups")
-    .select("id,owner_id,name,description,disciplina,members_count,is_public")
-    .eq("id", params.groupId)
-    .maybeSingle();
-
-  if (!group || !group.is_public) return null;
-
-  const { data: memberRows } = await supabase
-    .from("community_group_members")
-    .select("user_id")
-    .eq("group_id", params.groupId);
-
-  const memberIds = (memberRows || []).map((r) => r.user_id as string);
-  if (memberIds.length === 0) return null;
-
-  const authorMap = await resolveCommunityAuthors([group.owner_id as string, ...memberIds]);
-
-  let joinedByMe = false;
-  if (params.viewerUserId) {
-    joinedByMe = memberIds.includes(params.viewerUserId);
-  }
-
-  const members: DocenteAuthor[] = await Promise.all(
-    memberIds.map((userId) => buildAuthor(userId, authorMap)),
-  );
-
-  const { data: postRows } = await supabase
-    .from("community_posts")
-    .select("id,author_id,title,body,disciplina,tags,likes_count,comments_count,created_at")
-    .eq("group_id", params.groupId)
-    .eq("is_published", true)
-    .order("created_at", { ascending: false })
-    .limit(12);
-
-  let likedPostIds = new Set<string>();
-  if (params.viewerUserId && (postRows || []).length > 0) {
-    const { data: likes } = await supabase
-      .from("community_likes")
-      .select("post_id")
-      .eq("user_id", params.viewerUserId)
-      .in(
-        "post_id",
-        (postRows || []).map((p) => p.id as string),
-      );
-    likedPostIds = new Set((likes || []).map((l) => l.post_id as string));
-  }
-
-  const discussions: DocenteDiscussion[] = await Promise.all(
-    (postRows || []).map(async (post) => ({
-      id: post.id as string,
-      author: await buildAuthor(post.author_id as string, authorMap),
-      title: post.title as string,
-      disciplina: normalizeDocenteDisciplina(post.disciplina as string),
-      tags: (post.tags as string[]) || [],
-      createdAt: post.created_at as string,
-      commentsCount: post.comments_count as number,
-      likesCount: post.likes_count as number,
-      likedByMe: likedPostIds.has(post.id as string),
-      savedByMe: false,
-    })),
-  );
-
-  return {
-    id: group.id as string,
-    name: group.name as string,
-    description: group.description as string,
-    disciplina: group.disciplina as string,
-    membersCount: group.members_count as number,
-    joinedByMe,
-    isOwner: params.viewerUserId === group.owner_id,
-    owner: await buildAuthor(group.owner_id as string, authorMap),
-    members,
-    discussions,
-    viewerDisplayName: params.viewerUserId
-      ? (await buildAuthor(params.viewerUserId, authorMap)).name
-      : null,
-  };
-}
-
-export async function getCommunityEventDetail(params: {
-  eventId: string;
-  viewerUserId?: string | null;
-  isAdmin?: boolean;
-}): Promise<CommunityEventDetail | null> {
-  const supabase = getSupabaseAdminClient();
-
-  const { data: event } = await supabase
-    .from("community_events")
-    .select("id,host_id,title,description,presenter_name,starts_at,is_online,location")
-    .eq("id", params.eventId)
-    .maybeSingle();
-
-  if (!event) return null;
-
-  const { day, month } = formatEventMonth(event.starts_at as string);
-  const { dateLabel, timeLabel } = formatEventDateTime(event.starts_at as string);
-
-  let host: DocenteAuthor | null = null;
-  if (event.host_id) {
-    const authorMap = await resolveCommunityAuthors([event.host_id as string]);
-    host = await buildAuthor(event.host_id as string, authorMap);
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: participantRows } = await supabase
-    .from("community_event_participants")
-    .select("user_id,status")
-    .eq("event_id", params.eventId);
-
-  const rows = (participantRows || []) as Array<{ user_id: string; status: string }>;
-  const goingCount = rows.filter((r) => r.status === "going").length;
-  const interestedCount = rows.filter((r) => r.status === "interested").length;
-
-  let userRsvpStatus: "going" | "interested" | null = null;
-  if (params.viewerUserId) {
-    const mine = rows.find((r) => r.user_id === params.viewerUserId);
-    if (mine?.status === "going" || mine?.status === "interested") {
-      userRsvpStatus = mine.status;
-    }
-  }
-
-  const goingIds = rows.filter((r) => r.status === "going").map((r) => r.user_id);
-  const interestedIds = rows.filter((r) => r.status === "interested").map((r) => r.user_id);
-  const participantAuthorMap = await resolveCommunityAuthors([...goingIds, ...interestedIds]);
-  const participantStats = await resolveAuthorStatsBatch([...goingIds, ...interestedIds]);
-  const participantsGoing = await Promise.all(
-    goingIds.map((userId) => buildAuthor(userId, participantAuthorMap, undefined, participantStats)),
-  );
-  const participantsInterested = await Promise.all(
-    interestedIds.map((userId) => buildAuthor(userId, participantAuthorMap, undefined, participantStats)),
-  );
-
-  return {
-    id: event.id as string,
-    title: event.title as string,
-    description: event.description as string,
-    presenterName: event.presenter_name as string,
-    startsAt: event.starts_at as string,
-    isOnline: Boolean(event.is_online),
-    location: (event.location as string | null) || null,
-    day,
-    month,
-    dateLabel,
-    timeLabel,
-    host,
-    goingCount,
-    interestedCount,
-    userRsvpStatus,
-    isHost: params.viewerUserId === event.host_id,
-    isAdmin: Boolean(params.isAdmin),
-    participantsGoing,
-    participantsInterested,
   };
 }
 
@@ -1522,7 +1129,7 @@ export async function getCommunityTeacherDetail(params: {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id,full_name,bio,school_name,community_public,community_reputation,teaching_areas")
+    .select("id,full_name,bio,school_name,community_public,community_reputation,teaching_areas,cover_url,avatar_url")
     .eq("id", params.userId)
     .maybeSingle();
 
@@ -1537,7 +1144,7 @@ export async function getCommunityTeacherDetail(params: {
     { data: materials },
     { data: posts },
     { data: userBadges },
-    { data: groupMemberships },
+    { count: followingCount },
   ] = await Promise.all([
     supabase
       .from("marketplace_materials")
@@ -1558,9 +1165,9 @@ export async function getCommunityTeacherDetail(params: {
       .select("awarded_at,badge:community_badges(slug,name,color)")
       .eq("user_id", params.userId),
     supabase
-      .from("community_group_members")
-      .select("group_id,group:community_groups(id,name,disciplina,members_count,is_public)")
-      .eq("user_id", params.userId),
+      .from("community_followers")
+      .select("id", { count: "exact", head: true })
+      .eq("follower_id", params.userId),
   ]);
 
   let isFollowing = false;
@@ -1621,29 +1228,11 @@ export async function getCommunityTeacherDetail(params: {
   ].slice(0, 3);
   const topComponentes = teachingAreas.length > 0 ? teachingAreas : inferredComponentes;
 
-  const groups = (groupMemberships || [])
-    .map((row) => {
-      const group = row.group as {
-        id?: string;
-        name?: string;
-        disciplina?: string;
-        members_count?: number;
-        is_public?: boolean;
-      } | null;
-      if (!group?.id || !group.is_public) return null;
-      return {
-        id: group.id,
-        name: group.name || "Grupo",
-        disciplina: group.disciplina || "Multicomponente",
-        membersCount: group.members_count || 0,
-      };
-    })
-    .filter(Boolean) as CommunityTeacherDetail["groups"];
-
   return {
     profile: profileAuthor,
     schoolName: (profile.school_name as string | null) || null,
     bio: (profile.bio as string | null) || null,
+    coverUrl: (profile.cover_url as string | null) || null,
     topComponentes,
     badges,
     materials: (materials || []).map((m) => ({
@@ -1653,79 +1242,15 @@ export async function getCommunityTeacherDetail(params: {
       downloadsCount: (m.downloads_count as number) || 0,
     })),
     discussions,
-    groups,
     isFollowing,
     isOwnProfile,
+    stats: {
+      classesCount: 0,
+      materialsCount: profileAuthor.materialsCount,
+      followersCount: profileAuthor.followersCount,
+      followingCount: followingCount || 0,
+    },
   };
-}
-
-export async function inviteCommunityGroupMembers(params: {
-  ownerId: string;
-  groupId: string;
-  memberUserIds: string[];
-}): Promise<{ invited: number }> {
-  const supabase = getSupabaseAdminClient();
-
-  const { data: group } = await supabase
-    .from("community_groups")
-    .select("id,owner_id,name,members_count")
-    .eq("id", params.groupId)
-    .maybeSingle();
-
-  if (!group) throw new Error("Grupo não encontrado.");
-  if (group.owner_id !== params.ownerId) {
-    throw new Error("Apenas o(a) dono(a) do grupo pode convidar membros.");
-  }
-
-  const uniqueIds = [
-    ...new Set(
-      params.memberUserIds.filter((id) => id && id !== params.ownerId),
-    ),
-  ];
-
-  if (uniqueIds.length === 0) return { invited: 0 };
-
-  const { data: existing } = await supabase
-    .from("community_group_members")
-    .select("user_id")
-    .eq("group_id", params.groupId)
-    .in("user_id", uniqueIds);
-
-  const existingIds = new Set((existing || []).map((r) => r.user_id as string));
-  const toInvite = uniqueIds.filter((id) => !existingIds.has(id));
-
-  if (toInvite.length === 0) return { invited: 0 };
-
-  const { error } = await supabase.from("community_group_members").insert(
-    toInvite.map((userId) => ({
-      group_id: params.groupId,
-      user_id: userId,
-    })),
-  );
-
-  if (error) throw new Error(error.message);
-
-  const nextCount = (group.members_count || 0) + toInvite.length;
-  await supabase
-    .from("community_groups")
-    .update({ members_count: nextCount })
-    .eq("id", params.groupId);
-
-  await Promise.all(
-    toInvite.map((userId) =>
-      createCommunityNotification({
-        userId,
-        type: "message",
-        actorUserId: params.ownerId,
-        bodyPreview: `Você foi convidado(a) para o grupo "${group.name}".`,
-        targetType: "group",
-        targetId: params.groupId,
-        href: `/comunidade/grupo/${params.groupId}`,
-      }),
-    ),
-  );
-
-  return { invited: toInvite.length };
 }
 
 export async function updateCommunityPost(params: {
@@ -1829,9 +1354,9 @@ export async function inviteCommunityPostParticipants(params: {
     toInvite.map((userId) =>
       createCommunityNotification({
         userId,
-        type: "message",
+        type: "mention",
         actorUserId: params.authorId,
-        bodyPreview: `Você foi convidado(a) para a discussão "${post.title}".`,
+        bodyPreview: `Você foi adicionado(a) na publicação "${post.title}".`,
         targetType: "post",
         targetId: params.postId,
         href: `/comunidade/discussao/${params.postId}`,
@@ -1840,79 +1365,6 @@ export async function inviteCommunityPostParticipants(params: {
   );
 
   return { invited: toInvite.length };
-}
-
-export async function toggleCommunityEventRsvp(params: {
-  userId: string;
-  eventId: string;
-  status: "going" | "interested" | "none";
-}): Promise<{ status: "going" | "interested" | null; goingCount: number; interestedCount: number }> {
-  const supabase = getSupabaseAdminClient();
-
-  const { data: event } = await supabase
-    .from("community_events")
-    .select("id")
-    .eq("id", params.eventId)
-    .maybeSingle();
-  if (!event) throw new Error("Evento não encontrado.");
-
-  const participantsTable = supabase.from("community_event_participants");
-
-  const { data: existing } = await participantsTable
-    .select("status")
-    .eq("event_id", params.eventId)
-    .eq("user_id", params.userId)
-    .maybeSingle();
-
-  if (params.status === "none") {
-    if (existing) {
-      await participantsTable
-        .delete()
-        .eq("event_id", params.eventId)
-        .eq("user_id", params.userId);
-    }
-  } else if (existing) {
-    if (existing.status === params.status) {
-      await participantsTable
-        .delete()
-        .eq("event_id", params.eventId)
-        .eq("user_id", params.userId);
-    } else {
-      await participantsTable
-        .update({ status: params.status })
-        .eq("event_id", params.eventId)
-        .eq("user_id", params.userId);
-    }
-  } else {
-    await participantsTable.insert({
-      event_id: params.eventId,
-      user_id: params.userId,
-      status: params.status,
-    });
-  }
-
-  const { data: allRows } = await supabase
-    .from("community_event_participants")
-    .select("status")
-    .eq("event_id", params.eventId);
-
-  const rows = (allRows || []) as Array<{ status: string }>;
-  const goingCount = rows.filter((r) => r.status === "going").length;
-  const interestedCount = rows.filter((r) => r.status === "interested").length;
-
-  let finalStatus: "going" | "interested" | null = null;
-  if (params.status !== "none") {
-    const { data: mine } = await participantsTable
-      .select("status")
-      .eq("event_id", params.eventId)
-      .eq("user_id", params.userId)
-      .maybeSingle();
-    if (mine?.status === "going" || mine?.status === "interested") {
-      finalStatus = mine.status;
-    }
-  }
-
-  return { status: finalStatus, goingCount, interestedCount };
 }
 
 export async function getSavedDiscussionsForUser(params: {
@@ -1926,7 +1378,9 @@ export async function getSavedDiscussionsForUser(params: {
   const ids = savedIds.slice(0, params.limit || 20);
   const { data: posts } = await supabase
     .from("community_posts")
-    .select("id,author_id,title,body,disciplina,tags,likes_count,comments_count,created_at")
+    .select(
+      "id,author_id,title,body,disciplina,tags,likes_count,comments_count,created_at,post_kind,metadata",
+    )
     .in("id", ids)
     .eq("is_published", true);
 
@@ -1941,18 +1395,31 @@ export async function getSavedDiscussionsForUser(params: {
     .filter(Boolean) as PostRow[];
 
   return Promise.all(
-    ordered.map(async (post) => ({
-      id: post.id,
-      author: await buildAuthor(post.author_id, authorMap),
-      title: post.title,
-      disciplina: normalizeDocenteDisciplina(post.disciplina),
-      tags: post.tags || [],
-      createdAt: post.created_at,
-      commentsCount: post.comments_count,
-      likesCount: post.likes_count,
-      likedByMe: false,
-      savedByMe: true,
-    })),
+    ordered.map(async (post) => {
+      const isAchievement = post.post_kind === "achievement";
+      const meta = (post.metadata || {}) as Record<string, unknown>;
+      return {
+        id: post.id,
+        author: await buildAuthor(post.author_id, authorMap),
+        title: post.title,
+        body: post.body || "",
+        disciplina: normalizeDocenteDisciplina(post.disciplina),
+        tags: post.tags || [],
+        createdAt: post.created_at,
+        commentsCount: post.comments_count,
+        likesCount: post.likes_count,
+        likedByMe: false,
+        savedByMe: true,
+        kind: isAchievement ? ("achievement" as const) : ("text" as const),
+        achievementBadge: isAchievement
+          ? {
+              name: String(meta.badgeName || post.title),
+              color: String(meta.badgeColor || "#0891B2"),
+              icon: String(meta.badgeIcon || "trophy"),
+            }
+          : undefined,
+      };
+    }),
   );
 }
 

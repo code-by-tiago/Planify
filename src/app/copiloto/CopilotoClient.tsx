@@ -5,6 +5,7 @@ import { GoogleDocumentExportBar } from "@/components/google/GoogleDocumentExpor
 import { MaterialPreviewSkeleton } from "@/components/materiais/MaterialPreviewSkeleton";
 import { MaterialTypedPreview } from "@/components/materiais/preview/MaterialTypedPreview";
 import { MaterialToolPageShell } from "@/components/pro/MaterialToolPageShell";
+import { MaterialToolMobileSubmitBar } from "@/components/pro/MaterialToolMobileSubmitBar";
 import { PlanifyOwlGenerationCoach } from "@/components/pro/PlanifyOwlGenerationCoach";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import {
@@ -52,6 +53,7 @@ import {
   HUD_FIELD_CLASS,
   HUD_SECTION_LABEL,
   HUD_TEXTAREA_CLASS,
+  HUD_TOUCH_BTN,
 } from "@/lib/pro/hud-form-styles";
 import { getPlanifyTool } from "@/lib/pro/planifyTools";
 import type { MaterialEngineInput } from "@/server/materials/material-engine-types";
@@ -444,7 +446,9 @@ export function CopilotoClient({
         });
       }, 1000);
     } catch {
-      setError("Permissão de microfone negada. Digite o pedido ou libere o microfone.");
+      setError(
+        "Microfone bloqueado. Toque em “Tentar de novo” após liberar o microfone nas configurações do navegador, ou digite o pedido.",
+      );
       stopWaveform();
       stopTracks();
       setPhase(resultHtml ? "ready" : "idle");
@@ -592,7 +596,7 @@ export function CopilotoClient({
     phase === "refining";
 
   const form = (
-    <div className="flex h-full min-h-0 flex-col gap-5 overflow-y-auto p-4 sm:p-5">
+    <div className="flex h-full min-h-0 flex-col gap-5 p-4 max-lg:pb-24 sm:p-5">
       <div className="rounded-2xl border border-cyan-400/20 bg-gradient-to-br from-cyan-50/80 to-white p-5">
         <p className="text-sm font-bold text-slate-800">Fale o pedido</p>
         <p className="mt-1 text-sm font-medium text-slate-600">
@@ -675,7 +679,20 @@ export function CopilotoClient({
         </button>
       </div>
 
-      {error ? <GenerationErrorBanner message={error} /> : null}
+      {error ? (
+        <div className="space-y-2">
+          <GenerationErrorBanner message={error} />
+          {/microfone|áudio|grav/i.test(error) ? (
+            <button
+              type="button"
+              onClick={() => void startRecording("brief")}
+              className={`${HUD_TOUCH_BTN} w-full border border-cyan-300 bg-cyan-50 text-cyan-900`}
+            >
+              Tentar microfone de novo
+            </button>
+          ) : null}
+        </div>
+      ) : null}
 
       {phase === "ready" || brief.tema ? (
         <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-4">
@@ -924,11 +941,28 @@ export function CopilotoClient({
               !brief.tema.trim()
             }
             onClick={() => void generateMaterial()}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#26C6DA] px-4 py-3 text-sm font-extrabold text-[#0A192F] shadow-sm transition hover:brightness-105 disabled:opacity-50"
+            className={`${HUD_TOUCH_BTN} hidden w-full bg-[#26C6DA] text-[#0A192F] shadow-sm transition hover:brightness-105 disabled:opacity-50 lg:inline-flex`}
           >
             <PlanifyIcon name="spark" className="h-4 w-4" />
             {phase === "generating" ? "Gerando material…" : "Gerar material"}
           </button>
+
+          <MaterialToolMobileSubmitBar>
+            <button
+              type="button"
+              disabled={
+                busy ||
+                lowConfidenceCritical ||
+                needsAssumptionConfirm ||
+                !brief.tema.trim()
+              }
+              onClick={() => void generateMaterial()}
+              className={`${HUD_TOUCH_BTN} flex-1 bg-[#26C6DA] text-[#0A192F] shadow-sm disabled:opacity-50`}
+            >
+              <PlanifyIcon name="spark" className="h-4 w-4" />
+              {phase === "generating" ? "Gerando…" : "Gerar material"}
+            </button>
+          </MaterialToolMobileSubmitBar>
         </div>
       ) : null}
     </div>
@@ -1032,7 +1066,7 @@ export function CopilotoClient({
                 <button
                   type="button"
                   onClick={stopRecording}
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-rose-500 text-white"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-rose-500 text-white"
                   aria-label="Parar gravação do ajuste"
                 >
                   <span className="h-3 w-3 rounded-sm bg-white" />
@@ -1042,7 +1076,7 @@ export function CopilotoClient({
                   type="button"
                   disabled={busy}
                   onClick={() => void startRecording("refine")}
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#0A192F] text-white disabled:opacity-50"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#0A192F] text-white disabled:opacity-50"
                   aria-label="Gravar ajuste"
                 >
                   <PlanifyIcon name="mic" className="h-4 w-4" />
@@ -1067,7 +1101,7 @@ export function CopilotoClient({
               type="button"
               disabled={busy || refineText.trim().length < 6}
               onClick={() => void refineMaterial()}
-              className="mt-2 inline-flex items-center justify-center rounded-lg bg-cyan-600 px-3 py-2 text-xs font-bold text-white disabled:opacity-50"
+              className={`${HUD_TOUCH_BTN} mt-2 bg-cyan-600 text-white disabled:opacity-50`}
             >
               Aplicar ajuste
             </button>

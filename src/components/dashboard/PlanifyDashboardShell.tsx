@@ -51,7 +51,28 @@ export default function PlanifyDashboardShell() {
   useEffect(() => {
     if (!access.loading && access.authenticated) {
       setHistorySupabaseSync(true);
-      void syncLocalHistoryToSupabase();
+      const run = () => {
+        void syncLocalHistoryToSupabase();
+      };
+      const idle = (
+        window as Window & {
+          requestIdleCallback?: (
+            cb: () => void,
+            opts?: { timeout: number },
+          ) => number;
+          cancelIdleCallback?: (id: number) => void;
+        }
+      ).requestIdleCallback;
+      if (typeof idle === "function") {
+        const id = idle(run, { timeout: 4000 });
+        return () => {
+          (
+            window as Window & { cancelIdleCallback?: (id: number) => void }
+          ).cancelIdleCallback?.(id);
+        };
+      }
+      const timer = globalThis.setTimeout(run, 1200);
+      return () => globalThis.clearTimeout(timer);
     }
   }, [access.authenticated, access.loading]);
 

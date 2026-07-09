@@ -40,3 +40,8 @@ tsconfig.tsbuildinfo
 .tmp-export-verify/
 tmp/
 test-results/
+
+# Vídeos locais pesados / rascunhos (não deployar)
+public/videos/fffffff.mp4
+.tmp-video-preview/
+

@@ -10,12 +10,15 @@ const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
   display: "swap",
+  weight: ["400", "600", "700"],
 });
 
 const display = Plus_Jakarta_Sans({
   subsets: ["latin"],
   variable: "--font-display",
   display: "swap",
+  weight: ["600", "700", "800"],
+  preload: false,
 });
 
 export const viewport: Viewport = {

@@ -10,17 +10,25 @@ export const HUD_TEXTAREA_CLASS =
 export const HUD_SCROLLABLE_TEXTAREA_CLASS =
   `${HUD_TEXTAREA_CLASS} planify-conteudos-textarea block h-[10.5rem] min-h-[10.5rem] max-h-[10.5rem] overflow-y-scroll overflow-x-hidden overscroll-y-contain [scrollbar-gutter:stable]`;
 
+/** Botão/ação com alvo de toque mínimo 44px (polegar). */
+export const HUD_TOUCH_BTN =
+  "inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-xl px-4 text-sm font-bold";
+
+/** Chip/filtro com altura confortável no mobile. */
+export const HUD_TOUCH_CHIP =
+  "inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full px-3 text-sm font-semibold";
+
 export const HUD_CHIP_ACTIVE =
-  "rounded-full border border-cyan-500 bg-cyan-600 px-3 py-2 text-xs font-bold text-white shadow-sm";
+  "rounded-full border border-cyan-500 bg-cyan-600 px-3 py-2.5 text-sm font-bold text-white shadow-sm min-h-11";
 
 export const HUD_CHIP_INACTIVE =
-  "rounded-full border border-cyan-400/20 bg-white px-3 py-2 text-xs font-bold text-slate-600 transition hover:border-cyan-400/45 hover:text-slate-950";
+  "rounded-full border border-cyan-400/20 bg-white px-3 py-2.5 text-sm font-bold text-slate-600 transition hover:border-cyan-400/45 hover:text-slate-950 min-h-11";
 
 export const HUD_FILTER_CHIP_ACTIVE =
-  "flex shrink-0 items-center gap-2 rounded-full border border-cyan-500 bg-cyan-600 px-4 py-2 text-sm font-bold text-white shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:ring-offset-2";
+  "flex shrink-0 items-center gap-2 rounded-full border border-cyan-500 bg-cyan-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:ring-offset-2 min-h-11";
 
 export const HUD_FILTER_CHIP_INACTIVE =
-  "flex shrink-0 items-center gap-2 rounded-full border border-cyan-400/20 bg-white px-4 py-2 text-sm font-bold text-slate-600 transition hover:border-cyan-400/40 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:ring-offset-2";
+  "flex shrink-0 items-center gap-2 rounded-full border border-cyan-400/20 bg-white px-4 py-2.5 text-sm font-bold text-slate-600 transition hover:border-cyan-400/40 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:ring-offset-2 min-h-11";
 
 export const HUD_SECTION_LABEL =
   "mb-2 block text-sm font-bold text-slate-700";

@@ -983,7 +983,7 @@ export function MateriaisClient({
       previewLoading={loading || elevatingQuality || retryingExam}
       fullWidth={isExamTool && examCreationSource === "banco"}
       form={
-        <form onSubmit={gerarMaterial} className="space-y-1 max-lg:pb-2">
+        <form onSubmit={gerarMaterial} className="space-y-1 max-lg:space-y-3 max-lg:pb-2">
           <div className="flex flex-wrap items-start justify-between gap-3">
             {studioMode ? (
               <p className="text-[10px] font-bold uppercase tracking-wide text-cyan-600">

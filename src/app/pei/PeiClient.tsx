@@ -373,7 +373,7 @@ export function PeiClient({
       previewReady={Boolean(resultado)}
       previewLoading={loading}
       form={
-        <form onSubmit={handleSubmit} className="space-y-4 max-lg:pb-2">
+        <form onSubmit={handleSubmit} className="space-y-4 max-lg:space-y-3 max-lg:pb-2">
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label className={HUD_SECTION_LABEL} htmlFor="pei-estudante">

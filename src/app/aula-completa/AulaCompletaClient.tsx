@@ -15,6 +15,7 @@ import { GoogleDocumentExportBar } from "@/components/google/GoogleDocumentExpor
 import { MaterialTypedPreview } from "@/components/materiais/preview/MaterialTypedPreview";
 import { MaterialPreviewSkeleton } from "@/components/materiais/MaterialPreviewSkeleton";
 import { MaterialToolPageShell } from "@/components/pro/MaterialToolPageShell";
+import { MaterialToolMobileSubmitBar } from "@/components/pro/MaterialToolMobileSubmitBar";
 import { SwipeTabPanel } from "@/components/pro/SwipeTabPanel";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { PlanifyOwlGenerationCoach } from "@/components/pro/PlanifyOwlGenerationCoach";
@@ -450,7 +451,7 @@ export function AulaCompletaClient({
       previewReady={successItems.length > 0}
       previewLoading={loading}
       form={
-        <form onSubmit={gerarPacote} className="space-y-4 pb-20 max-lg:pb-24">
+        <form onSubmit={gerarPacote} className="space-y-4 max-lg:pb-2">
           <div>
             <label className={HUD_SECTION_LABEL} htmlFor="aula-conteudo">
               {formFields.conteudoLabel}
@@ -565,18 +566,16 @@ export function AulaCompletaClient({
             retrying={loading}
           />
 
-          <div className="fixed inset-x-0 bottom-0 z-20 border-t border-cyan-400/20 bg-white/95 px-4 py-3 backdrop-blur lg:hidden pb-[env(safe-area-inset-bottom)]">
-            <div className="mx-auto flex max-w-lg items-center gap-3">
-              <button
-                type="submit"
-                disabled={loading}
-                className="pl-hud-btn flex-1 rounded-xl px-5 py-3 text-sm font-bold disabled:opacity-60"
-              >
-                {loading ? "Gerando pacote…" : "Gerar aula completa"}
-              </button>
-              <CreditsBalancePill />
-            </div>
-          </div>
+          <MaterialToolMobileSubmitBar>
+            <button
+              type="submit"
+              disabled={loading}
+              className="pl-hud-btn flex-1 rounded-xl px-5 py-3 text-sm font-bold disabled:opacity-60"
+            >
+              {loading ? "Gerando pacote…" : "Gerar aula completa"}
+            </button>
+            <CreditsBalancePill />
+          </MaterialToolMobileSubmitBar>
         </form>
       }
       preview={

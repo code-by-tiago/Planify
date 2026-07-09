@@ -214,6 +214,7 @@ export async function getCommunityDocenteOverview(params: {
   etapa?: string | null;
   tipoMaterial?: string | null;
   tag?: string | null;
+  anoSerie?: string | null;
   hiddenFeedMode?: "exclude" | "only";
   isAdmin?: boolean;
 }): Promise<CommunityDocenteOverview> {
@@ -224,6 +225,7 @@ export async function getCommunityDocenteOverview(params: {
   const etapaFilter = String(params.etapa || "").trim();
   const tipoMaterialFilter = String(params.tipoMaterial || "").trim();
   const tagFilter = String(params.tag || "").trim().toLowerCase();
+  const anoSerieFilter = String(params.anoSerie || "").trim();
   const hiddenFeedMode = params.hiddenFeedMode || "exclude";
 
   let hiddenMaterialIds = new Set<string>();
@@ -265,6 +267,9 @@ export async function getCommunityDocenteOverview(params: {
   }
   if (etapaFilter) {
     materialsQuery = materialsQuery.eq("etapa", etapaFilter);
+  }
+  if (anoSerieFilter) {
+    materialsQuery = materialsQuery.ilike("ano_serie", `%${anoSerieFilter}%`);
   }
   if (tipoMaterialFilter) {
     materialsQuery = materialsQuery.ilike("tipo_material", `%${tipoMaterialFilter}%`);
@@ -504,6 +509,8 @@ export async function getCommunityDocenteOverview(params: {
     feedMaterials.map(async (row) => {
       const userId = row.user_id || "unknown";
       const likes = likesSummary.get(row.id);
+      const tags = Array.isArray(row.tags) ? row.tags.map(String) : [];
+      const downloadsCount = row.downloads_count || 0;
       return {
         id: row.id,
         title: row.title,
@@ -512,7 +519,9 @@ export async function getCommunityDocenteOverview(params: {
         author: await buildAuthor(userId, authorMap, row.author_name, authorStatsCache),
         tipoMaterial: row.tipo_material || row.title,
         componenteRaw: row.componente || undefined,
-        viewsCount: row.downloads_count || 0,
+        tags,
+        viewsCount: downloadsCount,
+        downloadsCount,
         likesCount: likes?.likesCount || 0,
         likedByMe: likes?.likedByMe || false,
         savedByMe: savedMaterialIds.has(row.id),
@@ -524,7 +533,7 @@ export async function getCommunityDocenteOverview(params: {
   const filteredMaterials = materials
     .filter((m) => {
       if (!search) return true;
-      const hay = `${m.title} ${m.author.name} ${m.disciplina}`.toLowerCase();
+      const hay = `${m.title} ${m.author.name} ${m.disciplina} ${m.anoSerie} ${m.tipoMaterial} ${m.tags.join(" ")}`.toLowerCase();
       return hay.includes(search);
     })
     .slice(0, 8);

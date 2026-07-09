@@ -21,6 +21,7 @@ export async function GET(request: NextRequest) {
   const disciplina = request.nextUrl.searchParams.get("disciplina") || "";
   const componente = request.nextUrl.searchParams.get("componente") || "";
   const etapa = request.nextUrl.searchParams.get("etapa") || "";
+  const anoSerie = request.nextUrl.searchParams.get("anoSerie") || "";
   const tipoMaterial = request.nextUrl.searchParams.get("tipoMaterial") || "";
   const tag = request.nextUrl.searchParams.get("tag") || "";
   const mineOnly = request.nextUrl.searchParams.get("mine") === "true";
@@ -38,6 +39,7 @@ export async function GET(request: NextRequest) {
       disciplina: disciplina || null,
       componente: componente || null,
       etapa: etapa || null,
+      anoSerie: anoSerie || null,
       tipoMaterial: tipoMaterial || null,
       tag: tag || null,
       mineOnly,

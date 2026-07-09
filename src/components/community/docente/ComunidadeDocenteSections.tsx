@@ -393,6 +393,7 @@ export function ComunidadeDocenteSalvos({
   onSave,
   onSaveDiscussion,
   onOpenDiscussion,
+  onOpenMaterial,
   onDownload,
   downloadingMaterialId,
   onBrowseMaterials,
@@ -404,6 +405,7 @@ export function ComunidadeDocenteSalvos({
   onSave: (id: string) => void;
   onSaveDiscussion?: (id: string) => void;
   onOpenDiscussion?: (id: string) => void;
+  onOpenMaterial?: (id: string) => void;
   onDownload?: (id: string) => void;
   downloadingMaterialId?: string | null;
   onBrowseMaterials?: () => void;
@@ -462,6 +464,7 @@ export function ComunidadeDocenteSalvos({
             key={material.id}
             material={material}
             embedded={embedded}
+            onOpen={onOpenMaterial}
             onLike={onLike}
             onSave={onSave}
             onDownload={onDownload}

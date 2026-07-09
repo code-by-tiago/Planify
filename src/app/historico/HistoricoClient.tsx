@@ -12,6 +12,7 @@ import { getHistoryPlanningPayload } from "@/lib/documents/document-export-conte
 import { extractComponenteFromPlanningPayload } from "@/lib/marketplace/marketplace-publish";
 import { PlanifyMaterialHubCard } from "@/components/materials/PlanifyMaterialHubCard";
 import { MarketplacePublishButton } from "@/components/marketplace/MarketplacePublishButton";
+import { ShareMaterialLinkButton } from "@/components/share/ShareMaterialLinkButton";
 import {
   buildHistoryContentPreview,
   historyItemContentToHtml,
@@ -27,7 +28,17 @@ import {
   loadHistoryItemsWithSync,
   removeHistoryItem,
   removeHistoryItems,
+  upsertHistoryItem,
 } from "../../lib/history/history-storage";
+import {
+  assignHistoryItemFolder,
+  buildFolderTree,
+  ensureMaterialFolder,
+  filterItemsByFolder,
+  getHistoryFolderMeta,
+  loadMaterialFolders,
+  type MaterialFolder,
+} from "../../lib/history/material-folders";
 import { saveEditorDocument } from "../../lib/editor/editor-storage";
 import { resolveHistoryItemForEditor } from "../../lib/history/history-editor-open";
 import {
@@ -118,6 +129,9 @@ function resolveHistoricoComponente(item: HistoryItem): string | undefined {
 export function HistoricoClient() {
   const router = useRouter();
   const [items, setItems] = useState<HistoryItem[]>([]);
+  const [folders, setFolders] = useState<MaterialFolder[]>([]);
+  const [activeFolderId, setActiveFolderId] = useState<string | null>(null);
+  const [folderDrawerOpen, setFolderDrawerOpen] = useState(false);
   const [filter, setFilter] = useState<HistoryFilter>(initialFilter);
   const [selectedItem, setSelectedItem] = useState<HistoryItem | null>(null);
   const [status, setStatus] = useState<StatusState | null>(null);
@@ -133,10 +147,27 @@ export function HistoricoClient() {
   useEffect(() => {
     let cancelled = false;
 
-    void refreshHistoryState().then((loaded) => {
+    void refreshHistoryState().then(async (loaded) => {
       if (cancelled) return;
-      setItems(loaded);
-      setSelectedItem(loaded[0] ?? null);
+
+      for (const item of loaded) {
+        const meta = getHistoryFolderMeta(item);
+        if (!meta.folderId && meta.classLabel) {
+          const folder = ensureMaterialFolder({
+            schoolLabel: meta.schoolLabel,
+            classLabel: meta.classLabel,
+          });
+          if (folder) {
+            upsertHistoryItem(assignHistoryItemFolder(item, folder));
+          }
+        }
+      }
+
+      const next = await refreshHistoryState();
+      if (cancelled) return;
+      setFolders(loadMaterialFolders());
+      setItems(next);
+      setSelectedItem(next[0] ?? null);
     });
 
     return () => {
@@ -165,10 +196,15 @@ export function HistoricoClient() {
   }, []);
 
   const typeOptions = useMemo(() => getHistoryTypeOptions(items), [items]);
-  const filteredItems = useMemo(
-    () => filterHistoryItems(items, filter),
-    [items, filter],
+  const folderTree = useMemo(() => buildFolderTree(folders, items), [folders, items]);
+  const inboxCount = useMemo(
+    () => filterItemsByFolder(items, "__inbox__").length,
+    [items],
   );
+  const filteredItems = useMemo(() => {
+    const byFolder = filterItemsByFolder(items, activeFolderId);
+    return filterHistoryItems(byFolder, filter);
+  }, [items, filter, activeFolderId]);
   const filteredItemIds = useMemo(
     () => filteredItems.map((item) => item.id),
     [filteredItems],
@@ -372,11 +408,132 @@ export function HistoricoClient() {
           badge="Meus materiais"
           icon="history"
           title="Tudo que você gerou"
-          description="Planejamentos, materiais e rascunhos do editor — sincronizados com sua conta."
+          description="Organize por escola e turma para não perder o ano letivo. Planejamentos, materiais e rascunhos sincronizados com sua conta."
         />
       }
     >
-      <div className="grid gap-6">
+      <div className="grid gap-6 lg:grid-cols-[240px_minmax(0,1fr)]">
+        <aside className="hidden lg:block">
+          <div className="sticky top-4 space-y-2 rounded-2xl border border-slate-200 bg-white p-3">
+            <p className="px-2 text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400">
+              Pastas
+            </p>
+            <button
+              type="button"
+              onClick={() => setActiveFolderId(null)}
+              className={[
+                "flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-xs font-bold transition",
+                !activeFolderId
+                  ? "bg-[#0F172A] text-white"
+                  : "text-slate-600 hover:bg-slate-50",
+              ].join(" ")}
+            >
+              <span>Todos</span>
+              <span>{totals.todos}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveFolderId("__inbox__")}
+              className={[
+                "flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-xs font-bold transition",
+                activeFolderId === "__inbox__"
+                  ? "bg-[#0F172A] text-white"
+                  : "text-slate-600 hover:bg-slate-50",
+              ].join(" ")}
+            >
+              <span>Sem pasta</span>
+              <span>{inboxCount}</span>
+            </button>
+            {folderTree.map((school) => (
+              <div key={school.schoolLabel} className="pt-2">
+                <p className="px-2 text-[11px] font-extrabold text-slate-800">
+                  {school.schoolLabel}
+                </p>
+                <div className="mt-1 space-y-1">
+                  {school.classes.map(({ folder, count }) => (
+                    <button
+                      key={folder.id}
+                      type="button"
+                      onClick={() => setActiveFolderId(folder.id)}
+                      className={[
+                        "flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-xs font-bold transition",
+                        activeFolderId === folder.id
+                          ? "bg-cyan-500 text-white"
+                          : "text-slate-600 hover:bg-slate-50",
+                      ].join(" ")}
+                    >
+                      <span className="truncate">{folder.classLabel}</span>
+                      <span>{count}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+            {folderTree.length === 0 ? (
+              <p className="px-2 py-3 text-xs font-medium text-slate-500">
+                Organize por escola e turma para não perder o ano letivo.
+              </p>
+            ) : null}
+          </div>
+        </aside>
+
+        <div className="grid min-w-0 gap-6">
+        <div className="flex flex-wrap items-center gap-3 lg:hidden">
+          <button
+            type="button"
+            onClick={() => setFolderDrawerOpen((v) => !v)}
+            className="pl-hud-btn-secondary min-h-11 rounded-xl px-4 py-2 text-xs font-semibold"
+          >
+            {folderDrawerOpen ? "Fechar pastas" : "Pastas Escola/Turma"}
+          </button>
+        </div>
+        {folderDrawerOpen ? (
+          <div className="space-y-2 rounded-2xl border border-slate-200 bg-white p-3 lg:hidden">
+            <button
+              type="button"
+              onClick={() => {
+                setActiveFolderId(null);
+                setFolderDrawerOpen(false);
+              }}
+              className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-xs font-bold text-slate-700"
+            >
+              <span>Todos</span>
+              <span>{totals.todos}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setActiveFolderId("__inbox__");
+                setFolderDrawerOpen(false);
+              }}
+              className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-xs font-bold text-slate-700"
+            >
+              <span>Sem pasta</span>
+              <span>{inboxCount}</span>
+            </button>
+            {folderTree.map((school) => (
+              <div key={school.schoolLabel}>
+                <p className="px-2 pt-2 text-[11px] font-extrabold text-slate-800">
+                  {school.schoolLabel}
+                </p>
+                {school.classes.map(({ folder, count }) => (
+                  <button
+                    key={folder.id}
+                    type="button"
+                    onClick={() => {
+                      setActiveFolderId(folder.id);
+                      setFolderDrawerOpen(false);
+                    }}
+                    className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-xs font-bold text-slate-700"
+                  >
+                    <span>{folder.classLabel}</span>
+                    <span>{count}</span>
+                  </button>
+                ))}
+              </div>
+            ))}
+          </div>
+        ) : null}
         <div className="flex flex-wrap items-center gap-3">
           {[
             ["Total", totals.todos],
@@ -535,13 +692,30 @@ export function HistoricoClient() {
                   onSelect={() => setSelectedItem(item)}
                   footer={
                     <div className="space-y-2">
+                      {(() => {
+                        const folderMeta = getHistoryFolderMeta(item);
+                        return folderMeta.classLabel ? (
+                          <p className="text-[10px] font-bold text-slate-500">
+                            {(folderMeta.schoolLabel || "Sem escola") + " · " + folderMeta.classLabel}
+                          </p>
+                        ) : null;
+                      })()}
                       <HistoryDocumentExportBar
                         item={item}
                         onStatus={handleExportStatus}
                         onError={handleExportError}
                         classroomMode="popover"
                       />
-                      <div className="flex gap-1.5">
+                      <div className="flex flex-wrap gap-1.5">
+                        <ShareMaterialLinkButton
+                          title={item.title}
+                          getHtml={() => historyItemContentToHtml(item.content)}
+                          toolId={item.type}
+                          compact
+                          onStatus={(message) =>
+                            setStatus({ type: "success", message })
+                          }
+                        />
                         <button
                           type="button"
                           onClick={() => void openInEditor(item)}
@@ -679,6 +853,7 @@ export function HistoricoClient() {
             </div>
           </div>
         ) : null}
+        </div>
       </div>
     </PlanifyWorkspacePane>
   );

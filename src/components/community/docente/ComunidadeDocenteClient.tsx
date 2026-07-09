@@ -14,6 +14,7 @@ import { ComunidadeDocenteProfileModal } from "@/components/community/docente/Co
 import { ComunidadeDocenteDiscussions } from "@/components/community/docente/ComunidadeDocenteDiscussions";
 import { ComunidadeDocenteHero } from "@/components/community/docente/ComunidadeDocenteHero";
 import { ComunidadeDocenteMaterials } from "@/components/community/docente/ComunidadeDocenteMaterials";
+import { ComunidadeMaterialPreviewModal } from "@/components/community/docente/ComunidadeMaterialPreviewModal";
 import { ComunidadeDocenteRightSidebar } from "@/components/community/docente/ComunidadeDocenteRightSidebar";
 import {
   ComunidadeDocenteDesafios,
@@ -114,9 +115,9 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
   const [friendsOnly, setFriendsOnly] = useState(false);
   const [savedOnly, setSavedOnly] = useState(false);
   const [showHidden, setShowHidden] = useState(false);
-  const [etapaFilter, setEtapaFilter] = useState("");
+  const [anoSerieFilter, setAnoSerieFilter] = useState("");
   const [tipoMaterialFilter, setTipoMaterialFilter] = useState("");
-  const [tagFilter, setTagFilter] = useState("");
+  const [previewMaterialId, setPreviewMaterialId] = useState<string | null>(null);
   const [bnccOpen, setBnccOpen] = useState(false);
   const [hiddenMaterialIds, setHiddenMaterialIdsState] = useState<Set<string>>(() =>
     getHiddenFeedMaterialIds(),
@@ -167,7 +168,7 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
     if (!effectiveSearch.trim()) return list;
     const q = effectiveSearch.toLowerCase();
     return list.filter((m) =>
-      `${m.title} ${m.author.name} ${m.disciplina}`.toLowerCase().includes(q),
+      `${m.title} ${m.author.name} ${m.disciplina} ${m.anoSerie} ${m.tipoMaterial} ${(m.tags || []).join(" ")}`.toLowerCase().includes(q),
     );
   }, [materials, effectiveSearch, tipoFilter]);
 
@@ -212,9 +213,8 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
       const qs = buildOverviewQueryParams({
         search,
         disciplina: selectedDisciplina,
-        etapa: etapaFilter || null,
+        anoSerie: anoSerieFilter || null,
         tipoMaterial: tipoMaterialFilter || null,
-        tag: tagFilter || null,
         mineOnly,
         friendsOnly,
         savedOnly,
@@ -257,7 +257,7 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
     } finally {
       setLoading(false);
     }
-  }, [embedded, selectedDisciplina, etapaFilter, tipoMaterialFilter, tagFilter, mineOnly, friendsOnly, savedOnly, showHidden]);
+  }, [embedded, selectedDisciplina, anoSerieFilter, tipoMaterialFilter, mineOnly, friendsOnly, savedOnly, showHidden]);
 
   useEffect(() => {
     const aba = parseDocenteMenuItem(searchParams.get("aba"));
@@ -491,7 +491,15 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
           fallbackFileName: downloadParams.fallbackFileName,
         });
         setMaterials((prev) =>
-          prev.map((m) => (m.id === id ? { ...m, viewsCount: m.viewsCount + 1 } : m)),
+          prev.map((m) =>
+            m.id === id
+              ? {
+                  ...m,
+                  viewsCount: m.viewsCount + 1,
+                  downloadsCount: (m.downloadsCount ?? m.viewsCount) + 1,
+                }
+              : m,
+          ),
         );
         showToast("Download iniciado!");
         void refreshAfterAction();
@@ -837,6 +845,7 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
           onSave={handleSaveMaterial}
           onSaveDiscussion={handleSaveDiscussion}
           onOpenDiscussion={handleOpenDiscussion}
+          onOpenMaterial={setPreviewMaterialId}
           onDownload={handleDownloadMaterial}
           downloadingMaterialId={downloadingMaterialId}
           onBrowseMaterials={() => setActiveMenu("materiais")}
@@ -855,17 +864,20 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
             savedOnly={savedOnly}
             showHidden={showHidden}
             selectedDisciplina={selectedDisciplina}
-            etapa={etapaFilter}
+            anoSerie={anoSerieFilter}
             tipoMaterial={tipoMaterialFilter}
-            tag={tagFilter}
+            searchQuery={effectiveSearch}
             onToggleMineOnly={() => setMineOnly((v) => !v)}
             onToggleFriendsOnly={() => setFriendsOnly((v) => !v)}
             onToggleSavedOnly={() => setSavedOnly((v) => !v)}
             onToggleShowHidden={() => setShowHidden((v) => !v)}
             onSelectDisciplina={setSelectedDisciplina}
-            onEtapaChange={setEtapaFilter}
+            onAnoSerieChange={setAnoSerieFilter}
             onTipoMaterialChange={setTipoMaterialFilter}
-            onTagChange={setTagFilter}
+            onSearchChange={(value) => {
+              setSearchQuery(value);
+              setHeroSearch(value);
+            }}
           />
         )}
 
@@ -931,9 +943,9 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
         {(activeMenu === "inicio" || activeMenu === "materiais") && (
           <ComunidadeDocenteMaterials
             materials={filteredMaterials}
+            onOpen={setPreviewMaterialId}
             onLike={handleLikeMaterial}
             onSave={handleSaveMaterial}
-            onComment={handleCommentMaterial}
             onDownload={handleDownloadMaterial}
             downloadingMaterialId={downloadingMaterialId}
             onShowAll={() => setActiveMenu("materiais")}
@@ -942,6 +954,7 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
             onUnhideMaterial={handleUnhideMaterial}
             showHidden={showHidden}
             embedded={embedded}
+            title={activeMenu === "materiais" ? "Materiais da Comunidade" : "Materiais mais acessados"}
           />
         )}
       </>
@@ -1059,6 +1072,22 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
         onSubmit={async (body) => {
           if (!commentTarget) return;
           await submitComment(commentTarget.id, body);
+        }}
+      />
+
+      <ComunidadeMaterialPreviewModal
+        open={Boolean(previewMaterialId)}
+        materialId={previewMaterialId || ""}
+        onClose={() => setPreviewMaterialId(null)}
+        onCloned={(downloadsCount) => {
+          if (!previewMaterialId) return;
+          setMaterials((prev) =>
+            prev.map((item) =>
+              item.id === previewMaterialId
+                ? { ...item, downloadsCount, viewsCount: downloadsCount }
+                : item,
+            ),
+          );
         }}
       />
 

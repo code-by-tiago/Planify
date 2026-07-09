@@ -120,6 +120,51 @@ export function getDisciplinaColor(disciplina: DocenteDisciplina): string {
   return DISCIPLINA_COLORS[disciplina] ?? "bg-slate-100 text-slate-700";
 }
 
+const BNCC_CODE_RE = /\b((?:EF|EM|EI)\d{2}[A-Z]{2}\d{2})\b/gi;
+
+/** Extrai códigos BNCC de tags/tema/título para exibir no card. */
+export function extractBnccCodesFromText(...parts: Array<string | null | undefined>): string[] {
+  const found = new Set<string>();
+  for (const part of parts) {
+    const text = String(part || "");
+    for (const match of text.matchAll(BNCC_CODE_RE)) {
+      found.add(match[1].toUpperCase());
+    }
+  }
+  return Array.from(found).slice(0, 6);
+}
+
+export const DOCENTE_ANO_OPTIONS = [
+  "Educação Infantil",
+  "1º ano",
+  "2º ano",
+  "3º ano",
+  "4º ano",
+  "5º ano",
+  "6º ano",
+  "7º ano",
+  "8º ano",
+  "9º ano",
+  "1º ano EM",
+  "2º ano EM",
+  "3º ano EM",
+] as const;
+
+export const DOCENTE_TIPO_OPTIONS = [
+  "Apostila",
+  "Slides",
+  "Prova",
+  "Plano de aula",
+  "Atividade",
+  "Resumo",
+] as const;
+
+export function firstNameFromFullName(name: string | null | undefined): string {
+  const trimmed = String(name || "").trim();
+  if (!trimmed) return "Professor(a)";
+  return trimmed.split(/\s+/)[0] || trimmed;
+}
+
 /** Returns disciplina label for display, or null when Multidisciplinar (hidden from UI). */
 export function formatDisciplinaMeta(
   disciplina: DocenteDisciplina | string | null | undefined,
@@ -250,6 +295,7 @@ export type DocenteOverviewFilters = {
   disciplina?: string | null;
   componente?: string | null;
   etapa?: string | null;
+  anoSerie?: string | null;
   tipoMaterial?: string | null;
   tag?: string | null;
   mineOnly?: boolean;
@@ -264,6 +310,7 @@ export function buildOverviewQueryParams(filters: DocenteOverviewFilters): strin
   if (filters.disciplina) params.set("disciplina", filters.disciplina);
   if (filters.componente) params.set("componente", filters.componente);
   if (filters.etapa) params.set("etapa", filters.etapa);
+  if (filters.anoSerie) params.set("anoSerie", filters.anoSerie);
   if (filters.tipoMaterial) params.set("tipoMaterial", filters.tipoMaterial);
   if (filters.tag) params.set("tag", filters.tag);
   if (filters.mineOnly) params.set("mine", "true");

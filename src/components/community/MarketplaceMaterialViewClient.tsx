@@ -22,6 +22,7 @@ import {
   type MarketplaceDownloadFormat,
 } from "@/lib/marketplace/marketplace-download-client";
 import { openMarketplaceMaterialInEditor } from "@/lib/marketplace/marketplace-editor-open";
+import { cloneAndOpenInEditor } from "@/lib/marketplace/marketplace-clone-client";
 import type { MarketplacePreviewKind } from "@/server/marketplace/marketplace-preview";
 import { comunidadeRoutes } from "@/lib/community/docente-utils";
 import Link from "next/link";
@@ -204,10 +205,20 @@ export function MarketplaceMaterialViewClient({
     setError("");
 
     try {
-      await openMarketplaceMaterialInEditor(material);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Não foi possível abrir no editor.");
-      setOpeningEditor(false);
+      await cloneAndOpenInEditor(material.id);
+    } catch (cloneErr) {
+      try {
+        await openMarketplaceMaterialInEditor(material);
+      } catch (err) {
+        setError(
+          err instanceof Error
+            ? err.message
+            : cloneErr instanceof Error
+              ? cloneErr.message
+              : "Não foi possível abrir no editor.",
+        );
+        setOpeningEditor(false);
+      }
     }
   }
 
@@ -268,7 +279,7 @@ export function MarketplaceMaterialViewClient({
       className="pl-hud-btn inline-flex w-full items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold disabled:opacity-60"
     >
       <PlanifyIcon name="editor" className="h-3.5 w-3.5" />
-      {openingEditor ? "Abrindo…" : "Abrir no editor"}
+      {openingEditor ? "Clonando…" : "Clonar e Editar"}
     </button>
   ) : null;
 

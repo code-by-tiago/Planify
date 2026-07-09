@@ -52,9 +52,12 @@ export type DocenteMaterial = {
   author: DocenteAuthor;
   tipoMaterial: string;
   componenteRaw?: string;
+  tags: string[];
   /** @deprecated Use MaterialTypeCover with tipoMaterial instead */
   coverUrl?: string;
+  /** Contagem de usos/clones (downloads_count no backend). */
   viewsCount: number;
+  downloadsCount: number;
   likesCount: number;
   likedByMe: boolean;
   savedByMe: boolean;

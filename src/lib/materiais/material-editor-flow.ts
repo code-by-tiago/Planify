@@ -7,6 +7,10 @@ import {
   saveHistoryItems,
   upsertHistoryItem,
 } from "@/lib/history/history-storage";
+import {
+  assignHistoryItemFolder,
+  ensureMaterialFolder,
+} from "@/lib/history/material-folders";
 import type { MaterialAIOutput } from "@/types/ai";
 import type { MaterialEngineInput } from "@/server/materials/material-engine-types";
 import type { MaterialEngineResponse } from "@/server/materials/material-engine-types";
@@ -37,6 +41,10 @@ export type MaterialEditorMeta = {
   qualityIssues?: string[];
   generationPayload?: MaterialEngineInput | null;
   serverMaterialId?: string | null;
+  schoolLabel?: string | null;
+  classLabel?: string | null;
+  className?: string | null;
+  folderId?: string | null;
   /** Snapshot para reimportar questões no banco e fluxos derivados. */
   estrutura?: MaterialAIOutput | MaterialEngineResponse | null;
 };
@@ -116,6 +124,19 @@ export function persistGeneratedMaterial(
     }
   }
 
+  const classLabel =
+    String(meta.classLabel || meta.className || meta.generationPayload?.className || "").trim() ||
+    null;
+  const schoolLabel = String(meta.schoolLabel || "").trim() || null;
+  const folder = ensureMaterialFolder({ schoolLabel, classLabel });
+
+  const enrichedMeta: MaterialEditorMeta = {
+    ...meta,
+    schoolLabel: folder?.schoolLabel || schoolLabel,
+    classLabel: folder?.classLabel || classLabel,
+    folderId: folder?.id || null,
+  };
+
   const document = createEditorDocument({
     id: resolveMaterialDocumentId(meta),
     source: "material",
@@ -123,11 +144,15 @@ export function persistGeneratedMaterial(
     subtitle: `${meta.componente} · ${meta.anoSerie}`,
     type: `material:${meta.toolId}`,
     content: html,
-    raw: meta,
+    raw: enrichedMeta,
   });
 
   saveEditorDocument(document);
-  return editorDocumentToHistoryItem(document);
+  const historyItem = editorDocumentToHistoryItem(document);
+  if (!folder) return historyItem;
+  const withFolder = assignHistoryItemFolder(historyItem, folder);
+  upsertHistoryItem(withFolder);
+  return withFolder;
 }
 
 export function openMaterialInEditor(

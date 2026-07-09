@@ -28,11 +28,11 @@ export function LandingTeacherProof() {
         <div className="mt-12 grid items-stretch gap-8 lg:grid-cols-[1.05fr_0.95fr]">
           <div className="relative min-h-[360px] overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 sm:min-h-[440px]">
             <Image
-              src="/brand/planify-owl-graduate.png"
+              src="/depoimentos/helena-lopes.jpg"
               alt="Professora Helena Lopes em sala de aula apresentando atividades de Português geradas no Planify em lousa digital"
               fill
               sizes="(min-width: 1024px) 52vw, 100vw"
-              className="object-cover object-center opacity-90"
+              className="object-cover object-center"
               priority={false}
             />
             <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#0A192F]/85 via-[#0A192F]/35 to-transparent p-6 pt-20 text-white">

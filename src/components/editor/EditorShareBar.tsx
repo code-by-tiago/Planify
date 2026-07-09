@@ -3,6 +3,7 @@
 import { GoogleDocumentExportBar } from "@/components/google/GoogleDocumentExportBar";
 import { GoogleClassroomConnectionIndicator } from "@/components/google/GoogleClassroomConnectionIndicator";
 import { MarketplacePublishButton } from "@/components/marketplace/MarketplacePublishButton";
+import { ShareMaterialLinkButton } from "@/components/share/ShareMaterialLinkButton";
 import { useAutoGoogleExport } from "@/hooks/useAutoGoogleExport";
 import { useMemo } from "react";
 import { extractComponenteFromPlanningPayload } from "@/lib/marketplace/marketplace-publish";
@@ -82,6 +83,13 @@ export function EditorShareBar({
         label={compact ? "Comunidade" : "Comunidade"}
         compact
         className={comunidadeClass}
+      />
+      <ShareMaterialLinkButton
+        title={title}
+        getHtml={getHtml}
+        toolId={documentType}
+        compact
+        onStatus={onStatus}
       />
       <div className="flex min-w-0 flex-1 items-center gap-1.5">
         <GoogleClassroomConnectionIndicator returnTo={returnTo} />

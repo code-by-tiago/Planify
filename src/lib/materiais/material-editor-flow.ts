@@ -47,6 +47,8 @@ export type MaterialEditorMeta = {
   folderId?: string | null;
   /** Snapshot para reimportar questões no banco e fluxos derivados. */
   estrutura?: MaterialAIOutput | MaterialEngineResponse | null;
+  /** Superfície que originou a geração (ex.: copiloto). */
+  generationSource?: string | null;
 };
 
 export type MaterialHistoryPreview = {

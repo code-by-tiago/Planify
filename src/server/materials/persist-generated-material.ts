@@ -165,7 +165,11 @@ function buildTrackingFields(
   const requestHash = idempotencyKey;
 
   return {
-    material_type: String(input.tipo || "material").slice(0, 120),
+    material_type: (() => {
+      const source = String(input.requestPayload?.generationSource || "").trim();
+      const tipo = String(input.tipo || "material");
+      return (source ? `${source}:${tipo}` : tipo).slice(0, 120);
+    })(),
     request_payload: (input.requestPayload || {}) as Json,
     response_json: (input.responseJson || {}) as Json,
     html_editor: String(input.contentHtml || ""),

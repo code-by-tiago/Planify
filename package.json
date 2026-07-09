@@ -23,6 +23,7 @@
     "verify:unification-u4": "node scripts/verify-unification-u4.mjs",
     "verify:ecosystem": "node scripts/verify-ecosystem.mjs",
     "verify:comunidade-docente": "node scripts/verify-comunidade-docente.mjs",
+    "verify:copiloto": "node scripts/verify-copiloto.mjs",
     "verify:pedagogical-p1": "node scripts/verify-pedagogical-p1.mjs",
     "verify:pedagogical-p3": "node scripts/verify-pedagogical-p3.mjs",
     "verify:pedagogical-ecosystem": "node scripts/verify-pedagogical-ecosystem.mjs",

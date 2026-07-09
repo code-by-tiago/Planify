@@ -22,8 +22,26 @@ function conf(
   return brief.confianca?.[key];
 }
 
+function mentionsYearInText(text: string): boolean {
+  return /\d+\s*º\s*ano|\d+\s*ª\s*s[eé]rie|eja|ber[cç]ário|maternal|pr[eé]/i.test(
+    text,
+  );
+}
+
+function mentionsQuantityInText(text: string): boolean {
+  return /\b\d+\s*(quest|exerc|item|per[ií]odo|texto|din[aâ]mic)/i.test(text);
+}
+
+function temaLooksConfirmed(brief: CopilotoBrief, text: string): boolean {
+  const tema = brief.tema.trim();
+  if (tema.length < 3) return false;
+  if (conf(brief, "tema") === "alta") return true;
+  return text.toLowerCase().includes(tema.toLowerCase().slice(0, Math.min(12, tema.length)));
+}
+
 /**
  * Premissas inteligentes + perguntas ativas quando o pedido veio incompleto.
+ * Usa o brief atual (não só o transcript original) para não bloquear após edição manual.
  */
 export function buildCopilotoGapFill(brief: CopilotoBrief): {
   assumptions: CopilotoAssumption[];
@@ -31,26 +49,19 @@ export function buildCopilotoGapFill(brief: CopilotoBrief): {
 } {
   const assumptions: CopilotoAssumption[] = [];
   const pendingQuestions: CopilotoPendingQuestion[] = [];
-  const transcript = `${brief.transcript} ${brief.conteudo}`.toLowerCase();
+  const contextText = `${brief.transcript} ${brief.conteudo} ${brief.tema}`.trim();
 
-  const mentionedYear =
-    /\d+\s*º\s*ano|\d+\s*ª\s*s[eé]rie|eja|ber[cç]ário|maternal|pr[eé]/i.test(
-      transcript,
-    );
-  const mentionedQty = /\b\d+\s*(quest|exerc|item|per[ií]odo|texto)/i.test(
-    transcript,
-  );
-  const mentionedTema =
-    brief.tema.trim().length >= 3 &&
-    (conf(brief, "tema") === "alta" ||
-      transcript.includes(brief.tema.toLowerCase().slice(0, Math.min(12, brief.tema.length))));
+  const yearConfirmed =
+    mentionsYearInText(contextText) ||
+    conf(brief, "anoSerie") === "alta" ||
+    conf(brief, "etapa") === "alta";
 
-  if (!mentionedYear || conf(brief, "anoSerie") === "baixa" || conf(brief, "etapa") === "baixa") {
+  if (!yearConfirmed) {
     assumptions.push({
       field: "anoSerie",
       label: "Ano/série",
       value: `${brief.etapa} · ${brief.anoSerie}`,
-      reason: "Não ficou claro no áudio; assumimos o mais comum para o tema.",
+      reason: "Não ficou claro no pedido; assumimos o mais comum para o tema.",
     });
     pendingQuestions.push({
       id: "anoSerie",
@@ -58,9 +69,12 @@ export function buildCopilotoGapFill(brief: CopilotoBrief): {
     });
   }
 
+  const quantityConfirmed =
+    mentionsQuantityInText(contextText) || conf(brief, "tipoMaterial") === "alta";
+
   if (
     (brief.tipoMaterial === "lista" || brief.tipoMaterial === "prova") &&
-    !mentionedQty
+    !quantityConfirmed
   ) {
     assumptions.push({
       field: "quantidade",
@@ -74,7 +88,7 @@ export function buildCopilotoGapFill(brief: CopilotoBrief): {
     });
   }
 
-  if (!mentionedTema || conf(brief, "tema") === "baixa") {
+  if (!temaLooksConfirmed(brief, contextText)) {
     if (brief.tema.trim()) {
       assumptions.push({
         field: "tema",

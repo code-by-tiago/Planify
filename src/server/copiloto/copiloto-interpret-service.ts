@@ -169,7 +169,7 @@ export async function interpretCopilotoTranscript(
   const necessidades = asStringList(raw.inclusao?.necessidades);
   const adaptacoes = asStringList(raw.inclusao?.adaptacoesSugeridas);
 
-  const alinhamento = await buildCopilotoAlinhamento({
+  const alignmentResult = await buildCopilotoAlinhamento({
     etapa: education.etapa,
     anoSerie: education.anoSerie,
     areaConhecimento: education.areaConhecimento,
@@ -177,6 +177,7 @@ export async function interpretCopilotoTranscript(
     tema,
     conteudo,
   });
+  const { aviso: alinhamentoAviso, ...alinhamento } = alignmentResult;
 
   const quantidade = capCopilotoQuantity(
     tipo,
@@ -208,5 +209,6 @@ export async function interpretCopilotoTranscript(
     confianca: raw.confianca || {},
     resumoPedido: asText(raw.resumoPedido) || tema,
     remapNotice,
+    alinhamentoAviso: alinhamentoAviso || null,
   };
 }

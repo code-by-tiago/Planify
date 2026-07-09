@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { GoogleDocumentExportBar } from "@/components/google/GoogleDocumentExportBar";
 import { MaterialPreviewSkeleton } from "@/components/materiais/MaterialPreviewSkeleton";
 import { MaterialTypedPreview } from "@/components/materiais/preview/MaterialTypedPreview";
@@ -20,6 +21,12 @@ import {
   requestCopilotoInterpretation,
   requestCopilotoTranscription,
 } from "@/lib/copiloto/copiloto-client";
+import { CopilotoApiError } from "@/lib/copiloto/copiloto-api-contract";
+import {
+  COPILOTO_SOURCE,
+  copilotoQuantityBounds,
+  createCopilotoIdempotencyKey,
+} from "@/lib/copiloto/copiloto-utils";
 import {
   buildCopilotoGapFill,
   COPILOTO_PROGRESS_STAGES,
@@ -46,8 +53,11 @@ import {
   type MaterialEditorMeta,
 } from "@/lib/materiais/material-editor-flow";
 import {
+  dispatchCreditsChangedIfNeeded,
   formatGenerationError,
   GenerationErrorBanner,
+  useRetryableAction,
+  type FormattedGenerationError,
 } from "@/lib/pro/generation-error-ui";
 import {
   HUD_FIELD_CLASS,
@@ -98,7 +108,60 @@ function emptyBrief(transcript = ""): CopilotoBrief {
     confianca: {},
     resumoPedido: "",
     remapNotice: null,
+    alinhamentoAviso: null,
   };
+}
+
+function enrichCopilotoError(
+  formatted: FormattedGenerationError,
+  error: unknown,
+): FormattedGenerationError {
+  const status =
+    error instanceof CopilotoApiError
+      ? error.status
+      : error && typeof error === "object" && "status" in error
+        ? Number((error as { status?: unknown }).status)
+        : undefined;
+
+  if (status === 401) {
+    return {
+      ...formatted,
+      retryable: false,
+      cta: (
+        <Link href="/login?redirect=/dashboard%3Ftipo%3Dcopiloto" className="font-bold underline">
+          Fazer login
+        </Link>
+      ),
+    };
+  }
+
+  if (status === 403) {
+    return {
+      ...formatted,
+      retryable: false,
+      cta: (
+        <Link href="/planos" className="font-bold underline">
+          Ver planos
+        </Link>
+      ),
+    };
+  }
+
+  if (
+    error instanceof DOMException &&
+    error.name === "AbortError"
+  ) {
+    return {
+      message: "Operação cancelada.",
+      retryable: false,
+    };
+  }
+
+  return formatted;
+}
+
+function canGenerateCopilotoBrief(brief: CopilotoBrief): boolean {
+  return Boolean(brief.tema.trim() || brief.conteudo.trim());
 }
 
 function confidenceBadge(level?: string) {
@@ -124,13 +187,17 @@ export function CopilotoClient({
   const [phase, setPhase] = useState<Phase>("idle");
   const [transcript, setTranscript] = useState(initialTema);
   const [brief, setBrief] = useState<CopilotoBrief>(() => emptyBrief(initialTema));
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState("");
+  const [errorCta, setErrorCta] = useState<ReactNode>(null);
+  const [errorRetryable, setErrorRetryable] = useState(false);
+  const [sttNotice, setSttNotice] = useState<string | null>(null);
   const [resultHtml, setResultHtml] = useState<string | null>(null);
   const [exportStatus, setExportStatus] = useState("");
   const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [resultTitle, setResultTitle] = useState("");
   const [seconds, setSeconds] = useState(0);
   const [lastPayload, setLastPayload] = useState<MaterialEngineInput | null>(null);
+  const [lastEditorMeta, setLastEditorMeta] = useState<MaterialEditorMeta | null>(null);
   const [refineText, setRefineText] = useState("");
   const [progressLabel, setProgressLabel] = useState("");
   const [waveLevels, setWaveLevels] = useState<number[]>([]);
@@ -148,6 +215,11 @@ export function CopilotoClient({
   const progressTimerRef = useRef<number | null>(null);
   const liveTranscriptRef = useRef("");
   const recordModeRef = useRef<"brief" | "refine">("brief");
+  const generationAbortRef = useRef<AbortController | null>(null);
+  const generationIdempotencyRef = useRef<string | null>(null);
+  const stopRecordingRef = useRef<() => void>(() => undefined);
+
+  const { runWithRetry, retrying: retryingGeneration } = useRetryableAction();
 
   const yearOptions = useMemo(() => getYearOptions(brief.etapa), [brief.etapa]);
   const areaOptions = useMemo(() => getAreaOptions(brief.etapa), [brief.etapa]);
@@ -159,6 +231,53 @@ export function CopilotoClient({
   const gapFill = useMemo(() => buildCopilotoGapFill(brief), [brief]);
   const needsAssumptionConfirm =
     gapFill.assumptions.length > 0 && !assumptionsAccepted;
+
+  const quantityBounds = useMemo(
+    () => copilotoQuantityBounds(brief.tipoMaterial),
+    [brief.tipoMaterial],
+  );
+
+  const applyCopilotoError = useCallback((err: unknown) => {
+    const formatted = enrichCopilotoError(formatGenerationError(err), err);
+    setError(formatted.message);
+    setErrorCta(formatted.cta ?? null);
+    setErrorRetryable(formatted.retryable);
+    dispatchCreditsChangedIfNeeded(err);
+  }, []);
+
+  const clearCopilotoError = useCallback(() => {
+    setError("");
+    setErrorCta(null);
+    setErrorRetryable(false);
+  }, []);
+
+  const buildEditorMeta = useCallback(
+    (
+      payload: MaterialEngineInput,
+      result: {
+        pipeline?: string;
+        qualityScore?: number;
+        qualityIssues?: string[];
+        materialId?: string | null;
+        estrutura?: unknown;
+      },
+    ): MaterialEditorMeta => ({
+      toolId: brief.tipoMaterial,
+      tema: brief.tema,
+      componente: brief.componenteCurricular,
+      anoSerie: brief.anoSerie,
+      etapa: brief.etapa,
+      areaConhecimento: brief.areaConhecimento,
+      pipeline: result.pipeline,
+      qualityScore: result.qualityScore,
+      qualityIssues: result.qualityIssues,
+      generationPayload: payload,
+      generationSource: COPILOTO_SOURCE,
+      serverMaterialId: result.materialId ?? null,
+      estrutura: result.estrutura as MaterialEditorMeta["estrutura"],
+    }),
+    [brief],
+  );
 
   const stopTracks = useCallback(() => {
     streamRef.current?.getTracks().forEach((t) => t.stop());
@@ -217,8 +336,16 @@ export function CopilotoClient({
   }, [clearProgressTimer, clearTimer, stopTracks, stopWaveform]);
 
   function patchBrief(patch: Partial<CopilotoBrief>) {
-    if (patch.tipoMaterial != null || patch.tema != null || patch.etapa != null) {
+    if (
+      patch.tipoMaterial != null ||
+      patch.tema != null ||
+      patch.etapa != null ||
+      patch.quantidade != null ||
+      patch.anoSerie != null ||
+      patch.conteudo != null
+    ) {
       setAssumptionsAccepted(true);
+      generationIdempotencyRef.current = null;
     }
     setBrief((prev) => {
       const next = { ...prev, ...patch };
@@ -234,6 +361,8 @@ export function CopilotoClient({
           ...(patch.tipoMaterial != null ? { tipoMaterial: "alta" as const } : {}),
           ...(patch.tema != null ? { tema: "alta" as const } : {}),
           ...(patch.etapa != null ? { etapa: "alta" as const } : {}),
+          ...(patch.anoSerie != null ? { anoSerie: "alta" as const } : {}),
+          ...(patch.quantidade != null ? { tipoMaterial: "alta" as const } : {}),
         };
       }
       if (
@@ -270,20 +399,22 @@ export function CopilotoClient({
     brief.confianca.tema === "baixa" ||
     brief.confianca.etapa === "baixa";
 
-  const quantityMax =
-    brief.tipoMaterial === "redacao"
-      ? 5
-      : brief.tipoMaterial === "plano-aula" || brief.tipoMaterial === "atividade"
-        ? 3
-        : 15;
+  function cancelActiveGeneration() {
+    generationAbortRef.current?.abort();
+    generationAbortRef.current = null;
+    clearProgressTimer();
+    setPhase(resultHtml ? "ready" : "idle");
+  }
 
   async function interpretText(text: string) {
     const cleaned = correctPedagogicalTranscript(text);
     if (cleaned.length < 8) {
       setError("Descreva o pedido com um pouco mais de detalhe.");
+      setErrorCta(null);
+      setErrorRetryable(false);
       return;
     }
-    setError(null);
+    clearCopilotoError();
     setAssumptionsAccepted(false);
     setPhase("interpreting");
     startProgressCycle("interpreting");
@@ -293,7 +424,7 @@ export function CopilotoClient({
       setTranscript(next.transcript);
       setPhase("ready");
     } catch (err) {
-      setError(formatGenerationError(err).message);
+      applyCopilotoError(err);
       setPhase("idle");
     } finally {
       clearProgressTimer();
@@ -303,16 +434,25 @@ export function CopilotoClient({
   async function handleAudioBlob(blob: Blob, liveTranscript: string) {
     setPhase("transcribing");
     startProgressCycle("transcribing");
-    setError(null);
+    clearCopilotoError();
+    setSttNotice(null);
     try {
       let text = correctPedagogicalTranscript(liveTranscript.trim());
+      let usedBrowserFallback = false;
       try {
         text = await requestCopilotoTranscription(blob);
       } catch {
         if (!text) throw new Error("Não foi possível transcrever o áudio.");
+        usedBrowserFallback = true;
       }
 
-      if (recordMode === "refine") {
+      if (usedBrowserFallback) {
+        setSttNotice(
+          "A transcrição do servidor falhou; usamos o reconhecimento local do navegador. Revise o texto antes de gerar.",
+        );
+      }
+
+      if (recordModeRef.current === "refine") {
         setRefineText(text);
         setPhase("ready");
         clearProgressTimer();
@@ -322,7 +462,7 @@ export function CopilotoClient({
       setTranscript(text);
       await interpretText(text);
     } catch (err) {
-      setError(formatGenerationError(err).message);
+      applyCopilotoError(err);
       setPhase(resultHtml ? "ready" : "idle");
       clearProgressTimer();
     }
@@ -357,7 +497,8 @@ export function CopilotoClient({
   }
 
   async function startRecording(mode: "brief" | "refine" = "brief") {
-    setError(null);
+    clearCopilotoError();
+    setSttNotice(null);
     setRecordMode(mode);
     recordModeRef.current = mode;
     liveTranscriptRef.current = "";
@@ -414,6 +555,21 @@ export function CopilotoClient({
           if (recordModeRef.current === "refine") setRefineText(live);
           else setTranscript(live);
         };
+        recognition.onerror = () => {
+          setSttNotice(
+            "O reconhecimento de voz local encontrou um problema. Você pode digitar o pedido ou tentar gravar de novo.",
+          );
+        };
+        recognition.onend = () => {
+          if (
+            mediaRecorderRef.current?.state === "recording" &&
+            !liveTranscriptRef.current.trim()
+          ) {
+            setSttNotice(
+              "Não captamos fala clara no microfone local. Revise o texto ou grave novamente.",
+            );
+          }
+        };
         recognition.start();
         speechRef.current = recognition;
       }
@@ -436,18 +592,19 @@ export function CopilotoClient({
 
       recorder.start(250);
       setPhase("recording");
+      let elapsed = 0;
       timerRef.current = window.setInterval(() => {
-        setSeconds((s) => {
-          if (s + 1 >= MAX_RECORD_MS / 1000) {
-            stopRecording();
-            return s + 1;
-          }
-          return s + 1;
-        });
+        elapsed += 1;
+        setSeconds(elapsed);
+        if (elapsed >= MAX_RECORD_MS / 1000) {
+          stopRecordingRef.current();
+        }
       }, 1000);
     } catch {
-      setError(
-        "Microfone bloqueado. Toque em “Tentar de novo” após liberar o microfone nas configurações do navegador, ou digite o pedido.",
+      applyCopilotoError(
+        new Error(
+          "Microfone bloqueado. Toque em “Tentar de novo” após liberar o microfone nas configurações do navegador, ou digite o pedido.",
+        ),
       );
       stopWaveform();
       stopTracks();
@@ -463,55 +620,72 @@ export function CopilotoClient({
     mediaRecorderRef.current = null;
   }
 
+  stopRecordingRef.current = stopRecording;
+
   async function generateMaterial() {
-    if (!brief.tema.trim() && !brief.conteudo.trim()) {
+    if (!canGenerateCopilotoBrief(brief)) {
       setError("Revise o brief: tema ou conteúdo é obrigatório.");
+      setErrorCta(null);
+      setErrorRetryable(false);
       return;
     }
     if (needsAssumptionConfirm) {
       setError("Confirme as premissas inteligentes abaixo antes de gerar.");
+      setErrorCta(null);
+      setErrorRetryable(false);
       return;
     }
-    setError(null);
+    clearCopilotoError();
     setPhase("generating");
     startProgressCycle("generating");
     setResultHtml(null);
 
+    generationAbortRef.current?.abort();
+    const abortController = new AbortController();
+    generationAbortRef.current = abortController;
+
+    if (!generationIdempotencyRef.current) {
+      generationIdempotencyRef.current = createCopilotoIdempotencyKey();
+    }
+
     try {
-      const payload = buildCopilotoGenerationPayload(brief);
-      const result = await requestMaterialGeneration(payload);
-      if (!result.html) {
-        throw new Error(result.message || "A geração não retornou HTML.");
-      }
+      await runWithRetry(async () => {
+        const payload = buildCopilotoGenerationPayload(
+          brief,
+          generationIdempotencyRef.current || undefined,
+        );
+        const result = await requestMaterialGeneration(payload, {
+          signal: abortController.signal,
+        });
+        if (!result.html) {
+          throw new Error(result.message || "A geração não retornou HTML.");
+        }
 
-      const title =
-        brief.tema.trim() ||
-        `${brief.tipoMaterial} — ${brief.componenteCurricular}`;
-      const meta: MaterialEditorMeta = {
-        toolId: brief.tipoMaterial,
-        tema: brief.tema,
-        componente: brief.componenteCurricular,
-        anoSerie: brief.anoSerie,
-        etapa: brief.etapa,
-        areaConhecimento: brief.areaConhecimento,
-        pipeline: result.pipeline,
-        qualityScore: result.qualityScore,
-        qualityIssues: result.qualityIssues,
-        generationPayload: payload,
-        serverMaterialId: result.materialId ?? null,
-        estrutura: result.estrutura as MaterialEditorMeta["estrutura"],
-      };
+        const title =
+          brief.tema.trim() ||
+          `${brief.tipoMaterial} — ${brief.componenteCurricular}`;
+        const meta = buildEditorMeta(payload, result);
 
-      persistGeneratedMaterial(result.html, title, meta);
-      setLastPayload(payload);
-      setResultHtml(result.html);
-      setResultTitle(title);
-      setRefineText("");
-      setPhase("ready");
+        persistGeneratedMaterial(result.html, title, meta);
+        setLastPayload(payload);
+        setLastEditorMeta(meta);
+        setResultHtml(result.html);
+        setResultTitle(title);
+        setRefineText("");
+        generationIdempotencyRef.current = null;
+        setPhase("ready");
+      }, { onError: dispatchCreditsChangedIfNeeded });
     } catch (err) {
-      setError(formatGenerationError(err).message);
+      if (
+        err instanceof DOMException &&
+        err.name === "AbortError"
+      ) {
+        return;
+      }
+      applyCopilotoError(err);
       setPhase("ready");
     } finally {
+      generationAbortRef.current = null;
       clearProgressTimer();
     }
   }
@@ -519,71 +693,76 @@ export function CopilotoClient({
   async function refineMaterial() {
     if (!lastPayload || !resultHtml) {
       setError("Gere um material antes de pedir ajustes.");
+      setErrorCta(null);
+      setErrorRetryable(false);
       return;
     }
     const instruction = correctPedagogicalTranscript(refineText);
     if (instruction.length < 6) {
       setError("Diga o que quer mudar (ex.: mude a questão 3 para dissertativa).");
+      setErrorCta(null);
+      setErrorRetryable(false);
       return;
     }
 
-    setError(null);
+    clearCopilotoError();
     setPhase("refining");
     startProgressCycle("refining");
 
-    try {
-      const payload = buildCopilotoRefinePayload(
-        lastPayload,
-        instruction,
-        resultTitle || brief.tema,
-      );
-      const result = await requestMaterialGeneration(payload);
-      if (!result.html) {
-        throw new Error(result.message || "Não foi possível aplicar o ajuste.");
-      }
+    generationAbortRef.current?.abort();
+    const abortController = new AbortController();
+    generationAbortRef.current = abortController;
 
-      const title = resultTitle || brief.tema;
-      persistGeneratedMaterial(result.html, title, {
-        toolId: brief.tipoMaterial,
-        tema: brief.tema,
-        componente: brief.componenteCurricular,
-        anoSerie: brief.anoSerie,
-        etapa: brief.etapa,
-        areaConhecimento: brief.areaConhecimento,
-        pipeline: result.pipeline,
-        qualityScore: result.qualityScore,
-        qualityIssues: result.qualityIssues,
-        generationPayload: payload,
-        serverMaterialId: result.materialId ?? null,
-        estrutura: result.estrutura as MaterialEditorMeta["estrutura"],
-      });
-      setLastPayload(payload);
-      setResultHtml(result.html);
-      setRefineText("");
-      setPhase("ready");
+    try {
+      await runWithRetry(async () => {
+        const payload = buildCopilotoRefinePayload(
+          lastPayload,
+          instruction,
+          resultTitle || brief.tema,
+        );
+        const result = await requestMaterialGeneration(payload, {
+          signal: abortController.signal,
+        });
+        if (!result.html) {
+          throw new Error(result.message || "Não foi possível aplicar o ajuste.");
+        }
+
+        const title = resultTitle || brief.tema;
+        const meta = buildEditorMeta(payload, result);
+        persistGeneratedMaterial(result.html, title, meta);
+        setLastPayload(payload);
+        setLastEditorMeta(meta);
+        setResultHtml(result.html);
+        setRefineText("");
+        setPhase("ready");
+      }, { onError: dispatchCreditsChangedIfNeeded });
     } catch (err) {
-      setError(formatGenerationError(err).message);
+      if (
+        err instanceof DOMException &&
+        err.name === "AbortError"
+      ) {
+        return;
+      }
+      applyCopilotoError(err);
       setPhase("ready");
     } finally {
+      generationAbortRef.current = null;
       clearProgressTimer();
     }
   }
 
   function openEditor() {
     if (!resultHtml) return;
-    const payload = buildCopilotoGenerationPayload(brief);
+    const meta =
+      lastEditorMeta ||
+      buildEditorMeta(
+        lastPayload || buildCopilotoGenerationPayload(brief),
+        {},
+      );
     openMaterialInEditor(
       resultHtml,
       resultTitle || brief.tema,
-      {
-        toolId: brief.tipoMaterial,
-        tema: brief.tema,
-        componente: brief.componenteCurricular,
-        anoSerie: brief.anoSerie,
-        etapa: brief.etapa,
-        areaConhecimento: brief.areaConhecimento,
-        generationPayload: payload,
-      },
+      meta,
       { from: "copiloto" },
     );
   }
@@ -679,9 +858,26 @@ export function CopilotoClient({
         </button>
       </div>
 
+      {sttNotice ? (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-900">
+          {sttNotice}
+        </div>
+      ) : null}
+
       {error ? (
         <div className="space-y-2">
-          <GenerationErrorBanner message={error} />
+          <GenerationErrorBanner
+            message={error}
+            cta={errorCta}
+            retryable={errorRetryable}
+            onRetry={() => {
+              if (phase === "generating") void generateMaterial();
+              else if (phase === "refining") void refineMaterial();
+              else if (/interpret/i.test(progressLabel)) void interpretText(transcript);
+              else void startRecording("brief");
+            }}
+            retrying={retryingGeneration || phase === "generating" || phase === "refining"}
+          />
           {/microfone|áudio|grav/i.test(error) ? (
             <button
               type="button"
@@ -845,15 +1041,17 @@ export function CopilotoClient({
               </select>
             </div>
             <div>
-              <label className={HUD_SECTION_LABEL}>Quantidade</label>
+              <label className={HUD_SECTION_LABEL}>
+                Quantidade ({quantityBounds.min}–{quantityBounds.max})
+              </label>
               <input
                 type="number"
-                min={1}
-                max={quantityMax}
+                min={quantityBounds.min}
+                max={quantityBounds.max}
                 className={HUD_FIELD_CLASS}
                 value={brief.quantidade}
                 onChange={(e) =>
-                  patchBrief({ quantidade: Number(e.target.value) || 10 })
+                  patchBrief({ quantidade: Number(e.target.value) || quantityBounds.min })
                 }
               />
             </div>
@@ -902,6 +1100,12 @@ export function CopilotoClient({
             </div>
           ) : null}
 
+          {brief.alinhamentoAviso ? (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-900">
+              {brief.alinhamentoAviso}
+            </div>
+          ) : null}
+
           {brief.alinhamento.resumo ? (
             <div className="rounded-xl border border-indigo-200 bg-indigo-50/60 p-3">
               <p className="text-xs font-extrabold uppercase tracking-wide text-indigo-800">
@@ -938,7 +1142,7 @@ export function CopilotoClient({
               busy ||
               lowConfidenceCritical ||
               needsAssumptionConfirm ||
-              !brief.tema.trim()
+              !canGenerateCopilotoBrief(brief)
             }
             onClick={() => void generateMaterial()}
             className={`${HUD_TOUCH_BTN} hidden w-full bg-[#26C6DA] text-[#0A192F] shadow-sm transition hover:brightness-105 disabled:opacity-50 lg:inline-flex`}
@@ -954,7 +1158,7 @@ export function CopilotoClient({
                 busy ||
                 lowConfidenceCritical ||
                 needsAssumptionConfirm ||
-                !brief.tema.trim()
+                !canGenerateCopilotoBrief(brief)
               }
               onClick={() => void generateMaterial()}
               className={`${HUD_TOUCH_BTN} flex-1 bg-[#26C6DA] text-[#0A192F] shadow-sm disabled:opacity-50`}
@@ -993,6 +1197,13 @@ export function CopilotoClient({
                 : [...COPILOTO_PROGRESS_STAGES.generating]
             }
           />
+          <button
+            type="button"
+            onClick={cancelActiveGeneration}
+            className={`${HUD_TOUCH_BTN} w-full border border-slate-300 bg-white text-slate-800`}
+          >
+            Cancelar {phase === "refining" ? "ajuste" : "geração"}
+          </button>
           <MaterialPreviewSkeleton />
         </div>
       ) : resultHtml ? (
@@ -1066,7 +1277,7 @@ export function CopilotoClient({
                 <button
                   type="button"
                   onClick={stopRecording}
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-rose-500 text-white"
+                  className="flex h-12 w-12 min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-full bg-rose-500 text-white"
                   aria-label="Parar gravação do ajuste"
                 >
                   <span className="h-3 w-3 rounded-sm bg-white" />
@@ -1076,7 +1287,7 @@ export function CopilotoClient({
                   type="button"
                   disabled={busy}
                   onClick={() => void startRecording("refine")}
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#0A192F] text-white disabled:opacity-50"
+                  className="flex h-12 w-12 min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-full bg-[#0A192F] text-white disabled:opacity-50"
                   aria-label="Gravar ajuste"
                 >
                   <PlanifyIcon name="mic" className="h-4 w-4" />

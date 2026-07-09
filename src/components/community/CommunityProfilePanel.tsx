@@ -68,6 +68,7 @@ export function CommunityProfilePanel() {
   const [savingVisibility, setSavingVisibility] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
+  const [removingMaterialId, setRemovingMaterialId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [status, setStatus] = useState("");
   const [badges, setBadges] = useState<BadgeProgressItem[]>([]);
@@ -330,6 +331,58 @@ export function CommunityProfilePanel() {
     void navigator.clipboard.writeText(url).then(() => {
       setStatus("Link do seu perfil copiado.");
     });
+  }
+
+  async function removeFromPortfolio(material: PortfolioMaterial) {
+    if (removingMaterialId) return;
+
+    const confirmed = window.confirm(
+      `Remover "${material.title}" do seu portfólio?\n\nEle deixará de aparecer no seu perfil e na Comunidade, mas não será apagado do seu histórico.`,
+    );
+
+    if (!confirmed) return;
+
+    setRemovingMaterialId(material.id);
+    setError("");
+    setStatus("");
+
+    try {
+      const response = await fetch(
+        `/api/community/profile/portfolio/${encodeURIComponent(material.id)}`,
+        {
+          method: "DELETE",
+          credentials: "include",
+        },
+      );
+      const data = await parseJsonResponse<{
+        ok?: boolean;
+        error?: { message?: string };
+      }>(response);
+
+      if (!response.ok || !data?.ok) {
+        throw new Error(data?.error?.message || "Não foi possível remover do portfólio.");
+      }
+
+      setPortfolioMaterials((current) =>
+        current.filter((item) => item.id !== material.id),
+      );
+      setProfile((current) =>
+        current
+          ? {
+              ...current,
+              stats: {
+                ...current.stats,
+                materialsCount: Math.max(0, current.stats.materialsCount - 1),
+              },
+            }
+          : current,
+      );
+      setStatus("Material removido do portfólio.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao remover do portfólio.");
+    } finally {
+      setRemovingMaterialId(null);
+    }
   }
 
   if (loading) {
@@ -750,23 +803,34 @@ export function CommunityProfilePanel() {
           ) : (
             <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
               {filteredPortfolio.map((material) => (
-                <Link
+                <article
                   key={material.id}
-                  href={comunidadeRoutes.material(material.id)}
                   className="group flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md"
                 >
-                  <div className="flex h-20 items-center justify-center bg-gradient-to-br from-blue-400 to-indigo-500 text-white">
-                    <PlanifyIcon name="fileText" className="h-6 w-6" />
+                  <Link href={comunidadeRoutes.material(material.id)} className="block">
+                    <div className="flex h-20 items-center justify-center bg-gradient-to-br from-blue-400 to-indigo-500 text-white">
+                      <PlanifyIcon name="fileText" className="h-6 w-6" />
+                    </div>
+                    <div className="p-2.5">
+                      <p className="line-clamp-2 text-[11px] font-bold leading-snug text-slate-800 group-hover:text-blue-700">
+                        {material.title}
+                      </p>
+                      <p className="mt-1 text-[10px] font-semibold text-slate-400">
+                        {formatDocenteNumber(material.downloadsCount)} downloads
+                      </p>
+                    </div>
+                  </Link>
+                  <div className="mt-auto border-t border-slate-100 px-2.5 py-2">
+                    <button
+                      type="button"
+                      disabled={removingMaterialId === material.id}
+                      onClick={() => void removeFromPortfolio(material)}
+                      className="w-full rounded-lg px-2 py-1.5 text-[10px] font-bold text-rose-600 transition hover:bg-rose-50 disabled:cursor-wait disabled:opacity-60"
+                    >
+                      {removingMaterialId === material.id ? "Removendo..." : "Remover do portfólio"}
+                    </button>
                   </div>
-                  <div className="p-2.5">
-                    <p className="line-clamp-2 text-[11px] font-bold leading-snug text-slate-800 group-hover:text-blue-700">
-                      {material.title}
-                    </p>
-                    <p className="mt-1 text-[10px] font-semibold text-slate-400">
-                      {formatDocenteNumber(material.downloadsCount)} downloads
-                    </p>
-                  </div>
-                </Link>
+                </article>
               ))}
             </div>
           )}

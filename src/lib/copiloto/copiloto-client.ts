@@ -1,5 +1,14 @@
 import { EDITOR_COMPLEMENTARY_ADJUST_MARKER } from "@/lib/ai/material-generation-policy";
 import {
+  type CopilotoApiErrorBody,
+  isCopilotoApiFailure,
+  throwCopilotoApiError,
+} from "@/lib/copiloto/copiloto-api-contract";
+import {
+  COPILOTO_SOURCE,
+  createCopilotoIdempotencyKey,
+} from "@/lib/copiloto/copiloto-utils";
+import {
   COPILOTO_TEXTO_FONTE_MARKER,
   capCopilotoQuantity,
   detectCopilotoReadingIntent,
@@ -12,8 +21,12 @@ import type { MaterialEngineInput } from "@/server/materials/material-engine-typ
 export type { CopilotoBrief };
 export { correctPedagogicalTranscript };
 
+const TRANSCRIBE_TIMEOUT_MS = 65_000;
+const INTERPRET_TIMEOUT_MS = 115_000;
+
 export async function requestCopilotoTranscription(
   audioBlob: Blob,
+  options?: { signal?: AbortSignal },
 ): Promise<string> {
   const form = new FormData();
   const ext =
@@ -24,20 +37,35 @@ export async function requestCopilotoTranscription(
         : "webm";
   form.append("audio", audioBlob, `copiloto.${ext}`);
 
-  const response = await fetch("/api/copiloto/transcrever", {
-    method: "POST",
-    credentials: "include",
-    body: form,
-  });
+  let response: Response;
+  try {
+    response = await fetch("/api/copiloto/transcrever", {
+      method: "POST",
+      credentials: "include",
+      body: form,
+      signal: options?.signal ?? AbortSignal.timeout(TRANSCRIBE_TIMEOUT_MS),
+    });
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "TimeoutError") {
+      throwCopilotoApiError(
+        new Response(null, { status: 504 }),
+        { message: "A transcrição demorou demais. Tente gravar de novo ou digite o pedido." },
+        "A transcrição demorou demais. Tente gravar de novo ou digite o pedido.",
+      );
+    }
+    throw error;
+  }
 
-  const data = (await response.json().catch(() => null)) as {
-    ok?: boolean;
-    transcript?: string;
-    message?: string;
-  } | null;
+  const data = (await response.json().catch(() => null)) as
+    | (CopilotoApiErrorBody & { transcript?: string })
+    | null;
 
-  if (!response.ok || !data?.ok || !data.transcript) {
-    throw new Error(data?.message || "Não foi possível transcrever o áudio.");
+  if (isCopilotoApiFailure(response, data) || !data?.transcript) {
+    throwCopilotoApiError(
+      response,
+      data,
+      "Não foi possível transcrever o áudio.",
+    );
   }
 
   return correctPedagogicalTranscript(data.transcript);
@@ -45,24 +73,40 @@ export async function requestCopilotoTranscription(
 
 export async function requestCopilotoInterpretation(
   transcript: string,
+  options?: { signal?: AbortSignal },
 ): Promise<CopilotoBrief> {
-  const response = await fetch("/api/copiloto/interpretar", {
-    method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      transcript: correctPedagogicalTranscript(transcript),
-    }),
-  });
+  let response: Response;
+  try {
+    response = await fetch("/api/copiloto/interpretar", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        transcript: correctPedagogicalTranscript(transcript),
+      }),
+      signal: options?.signal ?? AbortSignal.timeout(INTERPRET_TIMEOUT_MS),
+    });
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "TimeoutError") {
+      throwCopilotoApiError(
+        new Response(null, { status: 504 }),
+        { message: "A interpretação demorou demais. Tente novamente com um pedido mais curto." },
+        "A interpretação demorou demais. Tente novamente com um pedido mais curto.",
+      );
+    }
+    throw error;
+  }
 
-  const data = (await response.json().catch(() => null)) as {
-    ok?: boolean;
-    brief?: CopilotoBrief;
-    message?: string;
-  } | null;
+  const data = (await response.json().catch(() => null)) as
+    | (CopilotoApiErrorBody & { brief?: CopilotoBrief })
+    | null;
 
-  if (!response.ok || !data?.ok || !data.brief) {
-    throw new Error(data?.message || "Não foi possível interpretar o pedido.");
+  if (isCopilotoApiFailure(response, data) || !data?.brief) {
+    throwCopilotoApiError(
+      response,
+      data,
+      "Não foi possível interpretar o pedido.",
+    );
   }
 
   return data.brief;
@@ -113,14 +157,17 @@ function typeSpecificBlock(brief: CopilotoBrief): string {
 
   return [
     "Gere DINÂMICA / PRÁTICA DE SALA (não lista/prova).",
+    "Inclua estímulo ou texto-fonte concreto (mín. 80 palavras aplicáveis) quando o tema exigir contexto.",
+    "Estrutura obrigatória: Objetivo, Tempo total, Materiais, Desenvolvimento (passos numerados), Itens a)–e) específicos ao tema, Critérios de avaliação observável.",
     "Objetivo, tempo, materiais, desenvolvimento passo a passo, itens a)–e) específicos ao tema e avaliação observável.",
-    "PROIBIDO: 'Complete a tarefa orientada pelo professor' ou itens idênticos.",
+    "PROIBIDO: 'Complete a tarefa orientada pelo professor', itens idênticos ou placeholders genéricos.",
     `Quantidade de dinâmicas: ${brief.quantidade}.`,
   ].join("\n");
 }
 
 export function buildCopilotoGenerationPayload(
   brief: CopilotoBrief,
+  idempotencyKey = createCopilotoIdempotencyKey(),
 ): MaterialEngineInput {
   const tipo = brief.tipoMaterial as CopilotoMaterialType;
   const quantidade = capCopilotoQuantity(tipo, brief.quantidade);
@@ -183,6 +230,7 @@ export function buildCopilotoGenerationPayload(
     quantidade,
     dificuldade: brief.dificuldade,
     incluirGabarito,
+    generationSource: COPILOTO_SOURCE,
     observacoes: [
       brief.inclusao.ativa ? brief.inclusao.resumo : "",
       typeBlock.includes(COPILOTO_TEXTO_FONTE_MARKER)
@@ -196,6 +244,7 @@ export function buildCopilotoGenerationPayload(
       descricao: h.descricao,
       conteudo: brief.tema,
     })),
+    idempotencyKey,
   };
 }
 
@@ -215,15 +264,13 @@ export function buildCopilotoRefinePayload(
   return {
     ...base,
     elevarQualidade: true,
+    generationSource: base.generationSource || COPILOTO_SOURCE,
     problemasQualidade: [
       `Ajuste solicitado pelo professor via Copiloto: ${trimmed}`,
     ],
     observacoes: [base.observacoes?.trim(), adjustBlock]
       .filter(Boolean)
       .join("\n\n"),
-    idempotencyKey:
-      typeof crypto !== "undefined" && "randomUUID" in crypto
-        ? crypto.randomUUID()
-        : `copiloto-refine-${Date.now()}`,
+    idempotencyKey: createCopilotoIdempotencyKey(),
   };
 }

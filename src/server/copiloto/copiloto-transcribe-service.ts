@@ -1,19 +1,11 @@
 import { generateGeminiTextFromMedia } from "@/server/ai/gemini-client";
+import { isAllowedCopilotoAudioMime } from "@/lib/copiloto/copiloto-utils";
 import {
   buildPedagogicalSttContextBlock,
   correctPedagogicalTranscript,
 } from "@/lib/copiloto/pedagogical-glossary";
 
 const MAX_AUDIO_BYTES = 5 * 1024 * 1024;
-const ALLOWED_MIME = new Set([
-  "audio/webm",
-  "audio/mp4",
-  "audio/mpeg",
-  "audio/wav",
-  "audio/ogg",
-  "audio/x-m4a",
-  "audio/webm;codecs=opus",
-]);
 
 function normalizeMime(raw: string): string {
   const base = raw.split(";")[0]?.trim().toLowerCase() || "";
@@ -24,14 +16,14 @@ function normalizeMime(raw: string): string {
 
 export type CopilotoTranscribeResult =
   | { ok: true; transcript: string }
-  | { ok: false; message: string; status: number };
+  | { ok: false; message: string; status: number; code?: string };
 
 export async function transcribeCopilotoAudio(input: {
   buffer: Buffer;
   mimeType: string;
 }): Promise<CopilotoTranscribeResult> {
   if (!input.buffer.length) {
-    return { ok: false, message: "Áudio vazio.", status: 400 };
+    return { ok: false, message: "Áudio vazio.", status: 400, code: "empty_audio" };
   }
 
   if (input.buffer.length > MAX_AUDIO_BYTES) {
@@ -39,15 +31,20 @@ export async function transcribeCopilotoAudio(input: {
       ok: false,
       message: "Áudio muito grande. Grave até cerca de 60 segundos.",
       status: 413,
+      code: "audio_too_large",
     };
   }
 
   const mime = normalizeMime(input.mimeType);
-  if (!ALLOWED_MIME.has(mime) && !ALLOWED_MIME.has(input.mimeType.toLowerCase())) {
+  if (
+    !isAllowedCopilotoAudioMime(mime) &&
+    !isAllowedCopilotoAudioMime(input.mimeType.toLowerCase())
+  ) {
     return {
       ok: false,
       message: "Formato de áudio não suportado. Use WebM, MP4, WAV ou OGG.",
       status: 415,
+      code: "unsupported_audio",
     };
   }
 
@@ -93,6 +90,7 @@ export async function transcribeCopilotoAudio(input: {
         ok: false,
         message: "Não foi possível entender o áudio. Tente gravar de novo.",
         status: 422,
+        code: "inaudible",
       };
     }
 
@@ -103,6 +101,7 @@ export async function transcribeCopilotoAudio(input: {
       ok: false,
       message: "Falha ao transcrever o áudio. Tente novamente.",
       status: 502,
+      code: "transcribe_failed",
     };
   }
 }

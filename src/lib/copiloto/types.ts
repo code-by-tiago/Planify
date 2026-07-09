@@ -70,6 +70,8 @@ export type CopilotoBrief = {
   resumoPedido: string;
   /** Aviso quando o pedido foi remapeado (ex.: cruzadinha → lista). */
   remapNotice?: string | null;
+  /** Aviso quando BNCC/banco não retornaram alinhamento útil. */
+  alinhamentoAviso?: string | null;
 };
 
 /** Marcador injetado no payload para o promptEngine liberar texto-fonte. */

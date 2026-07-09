@@ -80,7 +80,7 @@ function aggregateTendencias(
 
 export async function buildCopilotoAlinhamento(
   input: AlignmentInput,
-): Promise<CopilotoAlinhamento> {
+): Promise<CopilotoAlinhamento & { aviso: string | null }> {
   const tema = input.tema.trim();
   const conteudo = input.conteudo.trim() || tema;
 
@@ -165,5 +165,9 @@ export async function buildCopilotoAlinhamento(
     habilidades,
     tendencias,
     resumo: `${bnccPart} ${trendPart}`.trim(),
+    aviso:
+      habilidades.length === 0 && tendencias.length === 0
+        ? "Não encontramos habilidades BNCC nem tendências de banco para este tema. Revise etapa, componente ou tema antes de gerar."
+        : null,
   };
 }

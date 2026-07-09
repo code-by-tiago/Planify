@@ -642,12 +642,16 @@ export async function generateGeminiTextFromMedia(options: {
 
   for (const model of models) {
     for (let attempt = 0; attempt < MAX_RETRIES_PER_MODEL; attempt += 1) {
-      const json = await callGeminiGenerateContentMultimodal(model, {
-        systemInstruction: options.systemInstruction,
-        prompt: options.prompt,
-        media: options.media,
-        maxOutputTokens: options.maxOutputTokens ?? 8192,
-      });
+      const json = await withGeminiCallTimeout(
+        callGeminiGenerateContentMultimodal(model, {
+          systemInstruction: options.systemInstruction,
+          prompt: options.prompt,
+          media: options.media,
+          maxOutputTokens: options.maxOutputTokens ?? 8192,
+        }),
+        "Transcrição multimodal",
+        55_000,
+      );
 
       if (json.httpStatus >= 200 && json.httpStatus < 300 && !json.error) {
         return json.text;

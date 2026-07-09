@@ -312,12 +312,14 @@ export default function PlanifyDashboardShell() {
                 </Link>
               </div>
             </div>
-            <PlanifyQuickNav
-              activeTool={Boolean(selectedToolId)}
-              activeSection={selectedSectionId}
-              onSelectInicio={selectInicio}
-              onSelectSection={selectSection}
-            />
+            {selectedSectionId !== "marketplace" ? (
+              <PlanifyQuickNav
+                activeTool={Boolean(selectedToolId)}
+                activeSection={selectedSectionId}
+                onSelectInicio={selectInicio}
+                onSelectSection={selectSection}
+              />
+            ) : null}
           </header>
         ) : (
           <header className="pl-hud-hub-shell-header relative shrink-0 px-3 py-2 pt-[max(0.5rem,env(safe-area-inset-top))] sm:px-5 sm:py-2.5">

@@ -220,9 +220,9 @@ function normalizeLista(
         options: undefined,
       } satisfies LessonSimulatorQuestion;
     })
-    .filter((item): item is LessonSimulatorQuestion => Boolean(item))
+    .filter((item): item is NonNullable<typeof item> => item != null)
     .slice(0, MAX_QUESTIONS)
-    .map((item, index) => ({ ...item, number: index + 1 }));
+    .map((item, index): LessonSimulatorQuestion => ({ ...item, number: index + 1 }));
 
   if (questions.length < MIN_QUESTIONS) {
     throw new LessonSimulatorError("invalid_payload");

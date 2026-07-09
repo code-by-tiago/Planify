@@ -16,7 +16,6 @@ import { ShareMaterialLinkButton } from "@/components/share/ShareMaterialLinkBut
 import {
   buildHistoryContentPreview,
   historyItemContentToHtml,
-  isHistoryHtmlContent,
   resolveHistoryTypeLabel,
 } from "../../lib/history/history-preview";
 import { removeHistoryItemFromAPI } from "../../lib/history/history-api-client";
@@ -101,19 +100,6 @@ function refreshHistoryState(): Promise<HistoryItem[]> {
   return loadHistoryItemsWithSync();
 }
 
-function getSourceBadgeClass(source: string): string {
-  if (source === "planejamento") {
-    return "border-cyan-200 bg-cyan-50 text-cyan-700";
-  }
-  if (source === "material") {
-    return "border-slate-200 bg-slate-50 text-slate-700";
-  }
-  if (source === "manual") {
-    return "border-emerald-200 bg-emerald-50 text-emerald-700";
-  }
-  return "border-slate-200 bg-slate-50 text-slate-700";
-}
-
 function resolveMarketplaceTipo(item: HistoryItem): string {
   if (item.source === "planejamento") return "Planejamento";
   if (item.source === "manual") return "Material do editor";
@@ -135,7 +121,6 @@ export function HistoricoClient() {
   const [folders, setFolders] = useState<MaterialFolder[]>([]);
   const [activeFolderId, setActiveFolderId] = useState<string | null>(null);
   const [filter, setFilter] = useState<HistoryFilter>(initialFilter);
-  const [selectedItem, setSelectedItem] = useState<HistoryItem | null>(null);
   const [status, setStatus] = useState<StatusState | null>(null);
   const [exportError, setExportError] = useState("");
   const [exportErrorCta, setExportErrorCta] = useState<
@@ -189,7 +174,6 @@ export function HistoricoClient() {
       const next = await refreshHistoryState();
       if (cancelled) return;
       setItems(next);
-      setSelectedItem(scopeItems(next)[0] ?? null);
 
       const synced = await syncMaterialFoldersFromAPI();
       if (cancelled) return;
@@ -205,14 +189,6 @@ export function HistoricoClient() {
     function handleRefresh() {
       void refreshHistoryState().then((loaded) => {
         setItems(loaded);
-        setSelectedItem((current) => {
-          const scoped = scopeItems(loaded);
-          if (current) {
-            const stillInScope = scoped.find((item) => item.id === current.id);
-            if (stillInScope) return stillInScope;
-          }
-          return scoped[0] ?? null;
-        });
       });
     }
 
@@ -222,7 +198,7 @@ export function HistoricoClient() {
       window.removeEventListener("focus", handleRefresh);
       window.removeEventListener("planify:history-changed", handleRefresh);
     };
-  }, [scopeItems]);
+  }, []);
 
   const typeOptions = useMemo(() => getHistoryTypeOptions(items), [items]);
   const folderTree = useMemo(() => buildFolderTree(folders, items), [folders, items]);
@@ -312,13 +288,8 @@ export function HistoricoClient() {
   }
 
   function syncRemovedItems(removedIds: string[]) {
-    const removedIdSet = new Set(removedIds);
     const next = removeHistoryItems(removedIds);
     setItems(next);
-
-    if (selectedItem && removedIdSet.has(selectedItem.id)) {
-      setSelectedItem(scopeItems(next)[0] ?? null);
-    }
 
     setSelectedIds((current) => {
       const nextSelected = new Set(current);
@@ -387,7 +358,6 @@ export function HistoricoClient() {
   function clearAll() {
     clearHistoryItems();
     setItems([]);
-    setSelectedItem(null);
     exitSelectionMode();
     setStatus({
       type: "info",
@@ -398,18 +368,12 @@ export function HistoricoClient() {
   function reloadHistory() {
     void refreshHistoryState().then((loaded) => {
       setItems(loaded);
-      setSelectedItem(scopeItems(loaded)[0] ?? null);
       setStatus({
         type: "success",
         message: "Materiais recarregados.",
       });
     });
   }
-
-  const getSelectedHtml = useCallback(() => {
-    if (!selectedItem) return "";
-    return historyItemContentToHtml(selectedItem.content);
-  }, [selectedItem]);
 
   function handleExportStatus(message: string) {
     setExportError("");
@@ -439,15 +403,7 @@ export function HistoricoClient() {
   function moveItemToFolder(item: HistoryItem, folder: MaterialFolder | null) {
     const updated = assignHistoryItemFolder(item, folder);
     upsertHistoryItem(updated);
-    const nextItems = items.map((i) => (i.id === item.id ? updated : i));
-    setItems(nextItems);
-    setSelectedItem((current) => {
-      if (current?.id !== item.id) return current;
-      const scoped = scopeItems(nextItems);
-      return scoped.some((i) => i.id === updated.id)
-        ? updated
-        : scoped[0] ?? null;
-    });
+    setItems((current) => current.map((i) => (i.id === item.id ? updated : i)));
     setStatus({
       type: "success",
       message: folder
@@ -537,11 +493,6 @@ export function HistoricoClient() {
             ? assignHistoryItemFolder(item, null)
             : item,
         ),
-      );
-      setSelectedItem((current) =>
-        current && affected.some((a) => a.id === current.id)
-          ? assignHistoryItemFolder(current, null)
-          : current,
       );
     }
 
@@ -879,7 +830,6 @@ export function HistoricoClient() {
         {filteredItems.length > 0 ? (
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {filteredItems.map((item) => {
-              const selected = selectedItem?.id === item.id;
               const checked = selectedIds.has(item.id);
               const typeLabel = resolveHistoryTypeLabel(item.type);
               return (
@@ -890,11 +840,9 @@ export function HistoricoClient() {
                   description={buildHistoryContentPreview(item.content)}
                   metaPrimary={item.subtitle || sourceLabels[item.source] || undefined}
                   metaSecondary={formatDate(item.updatedAt)}
-                  selected={selected}
                   selectionMode={selectionMode}
                   checked={checked}
                   onToggleCheck={() => toggleItemSelection(item.id)}
-                  onSelect={() => setSelectedItem(item)}
                   footer={
                     <div className="space-y-2">
                       <label className="flex items-center gap-1.5">
@@ -918,6 +866,21 @@ export function HistoricoClient() {
                           onStatus={(message) =>
                             setStatus({ type: "success", message })
                           }
+                        />
+                        <MarketplacePublishButton
+                          title={item.title}
+                          getHtml={() => historyItemContentToHtml(item.content)}
+                          getPlanningPayload={
+                            String(item.type || "").includes("planejamento")
+                              ? () => getHistoryPlanningPayload(item)
+                              : undefined
+                          }
+                          tipoMaterial={resolveMarketplaceTipo(item)}
+                          componente={resolveHistoricoComponente(item)}
+                          tema={item.subtitle || item.title}
+                          label="Comunidade"
+                          compact
+                          className="inline-flex min-h-9 shrink-0 items-center justify-center rounded-lg border border-fuchsia-200 bg-fuchsia-50 px-2.5 py-1 text-[10px] font-black text-fuchsia-800 transition hover:bg-fuchsia-100"
                         />
                         <button
                           type="button"
@@ -987,97 +950,6 @@ export function HistoricoClient() {
             </div>
           </div>
         )}
-
-        {selectedItem ? (
-          <div className="rounded-2xl border border-cyan-400/20 bg-white p-5 sm:p-6">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-              <div className="min-w-0">
-                <span
-                  className={`inline-flex rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${getSourceBadgeClass(selectedItem.source)}`}
-                >
-                  {sourceLabels[selectedItem.source] || selectedItem.source}
-                </span>
-                <h2 className="mt-2 text-sm font-semibold tracking-tight text-slate-900 sm:text-base">
-                  {selectedItem.title}
-                </h2>
-                {selectedItem.subtitle ? (
-                  <p className="mt-1 text-sm font-semibold text-cyan-700">
-                    {selectedItem.subtitle}
-                  </p>
-                ) : null}
-                <p className="mt-2 text-xs text-slate-500">
-                  Atualizado em {formatDate(selectedItem.updatedAt)}
-                </p>
-                <label className="mt-3 flex items-center gap-1.5">
-                  <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
-                    Pasta
-                  </span>
-                  {renderMoveSelect(selectedItem)}
-                </label>
-              </div>
-              <div className="flex shrink-0 flex-col items-end gap-3">
-                <div className="flex flex-wrap items-center justify-end gap-2">
-                  <MarketplacePublishButton
-                    title={selectedItem.title}
-                    getHtml={getSelectedHtml}
-                    getPlanningPayload={
-                      String(selectedItem.type || "").includes("planejamento")
-                        ? () => getHistoryPlanningPayload(selectedItem)
-                        : undefined
-                    }
-                    tipoMaterial={resolveMarketplaceTipo(selectedItem)}
-                    componente={resolveHistoricoComponente(selectedItem)}
-                    tema={selectedItem.subtitle || selectedItem.title}
-                    label="Comunidade"
-                    compact
-                    className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-fuchsia-200 bg-fuchsia-50 px-3 py-2 text-xs font-black text-fuchsia-800 transition hover:bg-fuchsia-100"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => void openInEditor(selectedItem)}
-                    disabled={openingId === selectedItem.id}
-                    className="pl-hud-btn rounded-xl px-4 py-2 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {openingId === selectedItem.id ? "Abrindo..." : "Abrir no Editor"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => removeItem(selectedItem)}
-                    className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-xs font-semibold text-rose-700"
-                  >
-                    Excluir permanentemente
-                  </button>
-                </div>
-                <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-                  <p className="text-[10px] font-black uppercase tracking-wide text-slate-500">
-                    Exportar
-                  </p>
-                  <div className="mt-1.5">
-                    <HistoryDocumentExportBar
-                      item={selectedItem}
-                      classroomMode="popover"
-                      onStatus={handleExportStatus}
-                      onError={handleExportError}
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-5 max-h-[360px] overflow-auto rounded-xl border border-slate-200 bg-slate-50 p-4">
-              {isHistoryHtmlContent(selectedItem.content) ? (
-                <article
-                  className="planify-history-preview text-sm leading-7 text-slate-800 [&_.planify-flashcards]:flex [&_.planify-flashcards]:flex-wrap [&_.planify-flashcards]:gap-4 [&_h1]:text-2xl [&_h1]:font-black [&_h2]:mt-4 [&_h2]:text-lg [&_h2]:font-black [&_h3]:mt-3 [&_h3]:font-black [&_li]:ml-5 [&_ol]:list-decimal [&_p]:my-2 [&_table]:w-full [&_table]:border-collapse [&_td]:border [&_td]:border-slate-200 [&_td]:p-2 [&_th]:border [&_th]:border-slate-200 [&_th]:p-2 [&_ul]:list-disc"
-                  dangerouslySetInnerHTML={{ __html: selectedItem.content }}
-                />
-              ) : (
-                <p className="whitespace-pre-wrap text-sm leading-7 text-slate-700">
-                  {selectedItem.content}
-                </p>
-              )}
-            </div>
-          </div>
-        ) : null}
       </div>
     </PlanifyWorkspacePane>
   );

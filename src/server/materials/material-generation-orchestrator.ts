@@ -10,6 +10,7 @@ import {
 } from "./question-bank-first-policy";
 import { generateMaterialByEngine } from "./material-engine-service";
 import { buildQualityRetryPrompt } from "./material-engine-quality";
+import { enrichInputWithAutoBnccRag } from "./material-bncc-auto-rag";
 import { assessUnifiedQualityGate } from "@/lib/materiais/unified-quality-gate";
 import {
   finalizeUnifiedDelivery,
@@ -315,8 +316,9 @@ export async function generatePlanifyMaterial(
 
   emitStage(options, "context", "Enriquecendo contexto pedagógico…");
   const withBank = await enrichInputWithBankPrefetch(input, request, options);
+  const withBncc = await enrichInputWithAutoBnccRag(withBank);
   const enrichedInput = await enrichInputWithPedagogicalContext(
-    withBank,
+    withBncc,
     options?.userId,
   );
 

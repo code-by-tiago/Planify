@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { GoogleDocumentExportBar } from "@/components/google/GoogleDocumentExportBar";
 import { MaterialPreviewSkeleton } from "@/components/materiais/MaterialPreviewSkeleton";
 import { MaterialTypedPreview } from "@/components/materiais/preview/MaterialTypedPreview";
 import { MaterialToolPageShell } from "@/components/pro/MaterialToolPageShell";
@@ -10,6 +11,7 @@ import {
   CopilotoProgress,
   CopilotoWaveform,
 } from "@/components/copiloto/CopilotoVoiceUx";
+import { downloadEditorExport } from "@/lib/downloads/editor-export-client";
 import {
   buildCopilotoGenerationPayload,
   buildCopilotoRefinePayload,
@@ -122,6 +124,8 @@ export function CopilotoClient({
   const [brief, setBrief] = useState<CopilotoBrief>(() => emptyBrief(initialTema));
   const [error, setError] = useState<string | null>(null);
   const [resultHtml, setResultHtml] = useState<string | null>(null);
+  const [exportStatus, setExportStatus] = useState("");
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [resultTitle, setResultTitle] = useState("");
   const [seconds, setSeconds] = useState(0);
   const [lastPayload, setLastPayload] = useState<MaterialEngineInput | null>(null);
@@ -959,15 +963,61 @@ export function CopilotoClient({
         </div>
       ) : resultHtml ? (
         <div className="flex h-full min-h-0 flex-col">
-          <div className="flex shrink-0 items-center justify-between gap-2 border-b border-slate-200 px-4 py-3">
-            <p className="truncate text-sm font-bold text-slate-800">{resultTitle}</p>
-            <button
-              type="button"
-              onClick={openEditor}
-              className="rounded-lg bg-[#0A192F] px-3 py-2 text-xs font-bold text-white"
-            >
-              Abrir no editor
-            </button>
+          <div className="flex shrink-0 flex-col gap-2 border-b border-slate-200 px-4 py-3">
+            <div className="flex items-center justify-between gap-2">
+              <p className="truncate text-sm font-bold text-slate-800">{resultTitle}</p>
+              <button
+                type="button"
+                onClick={openEditor}
+                className="rounded-lg bg-[#0A192F] px-3 py-2 text-xs font-bold text-white"
+              >
+                Abrir no editor
+              </button>
+            </div>
+            <GoogleDocumentExportBar
+              title={resultTitle || "Material Copiloto"}
+              getHtml={() => resultHtml}
+              documentType={`material:${brief.tipoMaterial}`}
+              returnTo="/dashboard?tipo=copiloto"
+              compact
+              classroomMode="popover"
+              disabled={!resultHtml}
+              onStatus={setExportStatus}
+              onExportError={(error) => {
+                const message =
+                  error instanceof Error
+                    ? error.message
+                    : "Falha na exportação para o Google.";
+                setExportStatus(`Falha na exportação — ${message}`);
+              }}
+              downloadingPdf={downloadingPdf}
+              onDownloadPdf={() => {
+                void (async () => {
+                  if (!resultHtml) return;
+                  setDownloadingPdf(true);
+                  try {
+                    await downloadEditorExport({
+                      title: resultTitle || "Material Copiloto",
+                      html: resultHtml,
+                      format: "pdf",
+                      documentType: `material:${brief.tipoMaterial}`,
+                    });
+                    setExportStatus("PDF baixado.");
+                  } catch (error) {
+                    const message =
+                      error instanceof Error
+                        ? error.message
+                        : "Não foi possível baixar o PDF.";
+                    setExportStatus(message);
+                  } finally {
+                    setDownloadingPdf(false);
+                  }
+                })();
+              }}
+            />
+            {exportStatus ? (
+              <p className="text-[11px] font-semibold text-slate-500">{exportStatus}</p>
+            ) : null}
           </div>
 
           <div className="shrink-0 border-b border-slate-200 bg-slate-50 px-4 py-3">

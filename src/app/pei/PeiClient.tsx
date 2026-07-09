@@ -723,6 +723,7 @@ export function PeiClient({
                   compact
                   classroomMode="popover"
                   disabled={!resultado.html}
+                  onDownloadPdf={() => void baixarPdf()}
                 />
               </div>
 

@@ -14,12 +14,12 @@ import {
   wrapProfessionalDocument,
 } from "@/lib/materiais/material-document-layout";
 import {
-  generateGeminiJSON,
   isGeminiQuotaError,
   isGeminiServiceUnavailableError,
   isGeminiTransientOverloadError,
   resolveGeminiFailureCode,
 } from "../ai/gemini-client";
+import { runPlanifyAiJson } from "../ai/planify-ai-middleware";
 import {
   usesDedicatedEngineRenderer,
   usesPlanifyMaterialEngine,
@@ -30,6 +30,7 @@ import {
   toPromptEngineInput,
 } from "./material-layout-adapter";
 import { getMaterialLayoutSchema } from "./material-layout-schema";
+import { MaterialLayoutZodSchema } from "./material-layout.zod";
 import { buildPromptEngine } from "./promptEngine";
 import {
   buildQualityRetryPrompt,
@@ -1358,23 +1359,43 @@ export async function generateMaterialByEngine(
         request,
         remainingForGeneration,
       );
-      const generateLayout = generateGeminiJSON<MaterialLayout>({
+      const generateLayout = runPlanifyAiJson({
+        toolId: request.tipoMaterial,
         systemInstruction,
         prompt: activePrompt,
-        cacheProfile: `material-engine:${request.tipoMaterial}`,
+        cacheProfile: `material-engine:${request.tipoMaterial}` as const,
         tier: modelTier,
         temperature: modelTier === "advanced" ? 0.22 : 0.32,
         topP: modelTier === "advanced" ? 0.82 : 0.86,
         maxOutputTokens,
         responseSchema: schema,
+        zodSchema: MaterialLayoutZodSchema,
         timeoutMs: contentTimeoutMs,
         maxAttempts: geminiCallMaxAttempts(request.tipoMaterial),
+        schemaRetryAttempts: 1,
       });
-      const layoutRaw = await withMaterialStepTimeout(
+      const layoutResult = await withMaterialStepTimeout(
         generateLayout,
         contentTimeoutMs,
         `A geração de ${request.tipoMaterial}`,
       );
+
+      if (!layoutResult.ok) {
+        if (attempt < maxAttempts - 1 && !isPastGenerationDeadline()) {
+          activePrompt = `${basePrompt}\n\n${buildQualityRetryPrompt(
+            request,
+            layoutResult.issues,
+            { teachyDepth: attempt >= 1 },
+          )}`;
+          continue;
+        }
+        throw new Error(
+          layoutResult.message ||
+            "A IA retornou JSON fora do contrato MaterialLayout.",
+        );
+      }
+
+      const layoutRaw = layoutResult.data as MaterialLayout;
 
       options?.onStage?.(buildStageEvent("quality", "Revisando qualidade pedagógica…"));
 

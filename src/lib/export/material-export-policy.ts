@@ -203,6 +203,9 @@ const DEFAULT_TEXT_POLICY: MaterialExportPolicy = {
   hint: TEXT_DOC_HINT,
 };
 
+/** Tipos dedicados fora do MaterialEngineType, mas com a mesma política textual. */
+const EXTENDED_TEXT_TOOL_IDS = new Set(["pei", "inclusao", "correcao-ia", "copiloto"]);
+
 /** Extrai o id da ferramenta de `material:cruzadinha`, `cruzadinha`, etc. */
 export function parseMaterialToolId(
   documentType?: string | null,
@@ -252,6 +255,11 @@ export function resolveMaterialExportPolicy(
   const fromType = parseMaterialToolId(documentType);
   if (fromType) {
     return MATERIAL_EXPORT_POLICIES[fromType];
+  }
+
+  const rawId = type.startsWith("material:") ? type.slice("material:".length) : type;
+  if (EXTENDED_TEXT_TOOL_IDS.has(rawId)) {
+    return DEFAULT_TEXT_POLICY;
   }
 
   const fromHtml = html ? inferMaterialToolFromHtml(html) : null;

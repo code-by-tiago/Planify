@@ -152,6 +152,21 @@ export function getEngineOutputIssues(
         );
       }
     }
+
+    const questions = output.exam?.questions ?? [];
+    if (questions.length >= 4) {
+      const lengths = questions.map(
+        (question) => question.statement?.trim().length ?? 0,
+      );
+      const mid = Math.ceil(lengths.length / 2);
+      const avg = (values: number[]) =>
+        values.reduce((sum, value) => sum + value, 0) / Math.max(values.length, 1);
+      if (avg(lengths.slice(mid)) + 12 < avg(lengths.slice(0, mid))) {
+        issues.push(
+          "Progressão Bloom: reordene as questões do mais acessível ao mais desafiador.",
+        );
+      }
+    }
     return issues;
   }
 
@@ -315,6 +330,22 @@ export function getEngineOutputIssues(
       if (uniqueTypes.size < 2) {
         issues.push(
           "Lista: varie tipos de exercício (múltipla escolha, completar, dissertativa curta etc.).",
+        );
+      }
+    }
+
+    if (questions.length >= 4) {
+      const lengths = questions.map(
+        (question) => question.statement?.trim().length ?? 0,
+      );
+      const firstHalf = lengths.slice(0, Math.ceil(lengths.length / 2));
+      const secondHalf = lengths.slice(Math.ceil(lengths.length / 2));
+      const avg = (values: number[]) =>
+        values.reduce((sum, value) => sum + value, 0) / Math.max(values.length, 1);
+      // Heurística leve de progressão Bloom: segunda metade tende a enunciados mais densos.
+      if (avg(secondHalf) + 12 < avg(firstHalf)) {
+        issues.push(
+          "Progressão Bloom: reordene as questões do mais acessível ao mais desafiador.",
         );
       }
     }

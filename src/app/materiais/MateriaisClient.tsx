@@ -304,6 +304,7 @@ export function MateriaisClient({
   const [historico, setHistorico] = useState<MaterialHistoryPreview[]>([]);
   const [materialSalvo, setMaterialSalvo] = useState(false);
   const [hintFeedback, setHintFeedback] = useState("");
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [pedagogicalEntries, setPedagogicalEntries] = useState<
     PedagogicalContextEntry[]
   >([]);
@@ -1491,6 +1492,33 @@ export function MateriaisClient({
                         ? error.message
                         : "Falha na exportação para o Google.";
                     setHintFeedback(`Falha na exportação — ${message}`);
+                  }}
+                  downloadingPdf={downloadingPdf}
+                  onDownloadPdf={() => {
+                    void (async () => {
+                      if (!resultadoHtml) return;
+                      setDownloadingPdf(true);
+                      try {
+                        const { downloadEditorExport } = await import(
+                          "@/lib/downloads/editor-export-client"
+                        );
+                        await downloadEditorExport({
+                          title: buildTitle(tipo, "", conteudo),
+                          html: resultadoHtml,
+                          format: "pdf",
+                          documentType: `material:${tipo}`,
+                        });
+                        setHintFeedback("PDF baixado.");
+                      } catch (error) {
+                        const message =
+                          error instanceof Error
+                            ? error.message
+                            : "Não foi possível baixar o PDF.";
+                        setHintFeedback(message);
+                      } finally {
+                        setDownloadingPdf(false);
+                      }
+                    })();
                   }}
                 />
                 <Link

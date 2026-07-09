@@ -4,6 +4,7 @@ import { FormEvent, useMemo, useRef, useState } from "react";
 import { CreditsBalancePill } from "@/components/credits/CreditsBalancePill";
 import { DailyGenerationsBar } from "@/components/credits/DailyGenerationsBar";
 import { GenerationCostHint } from "@/components/credits/GenerationCostHint";
+import { GoogleDocumentExportBar } from "@/components/google/GoogleDocumentExportBar";
 import { MaterialTypedPreview } from "@/components/materiais/preview/MaterialTypedPreview";
 import { MaterialPreviewSkeleton } from "@/components/materiais/MaterialPreviewSkeleton";
 import { MaterialToolPageShell } from "@/components/pro/MaterialToolPageShell";
@@ -191,6 +192,7 @@ export function InclusaoClient({
         title: exportTitle,
         html: resultadoHtml,
         format: "pdf",
+        documentType: "material:inclusao",
         fallbackFileName: `${exportTitle.replace(/[\\/:*?"<>|]/g, "-")}.pdf`,
       });
     } catch (error) {
@@ -378,7 +380,7 @@ export function InclusaoClient({
             </div>
           ) : resultadoHtml ? (
             <div>
-              <div className="mb-4 flex flex-wrap justify-end gap-2">
+              <div className="mb-4 flex flex-wrap items-center justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => void copiarResultado()}
@@ -386,14 +388,16 @@ export function InclusaoClient({
                 >
                   Copiar
                 </button>
-                <button
-                  type="button"
-                  onClick={() => void baixarPdf()}
-                  className="pl-hud-btn-secondary inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold"
-                >
-                  <PlanifyIcon name="download" className="h-4 w-4" />
-                  Baixar PDF
-                </button>
+                <GoogleDocumentExportBar
+                  title={exportTitle}
+                  getHtml={() => resultadoHtml}
+                  documentType="material:inclusao"
+                  returnTo="/dashboard?tipo=inclusao"
+                  compact
+                  classroomMode="popover"
+                  disabled={!resultadoHtml}
+                  onDownloadPdf={() => void baixarPdf()}
+                />
                 <button
                   type="button"
                   onClick={() => void executarGeracao()}

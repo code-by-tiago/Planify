@@ -5,6 +5,7 @@
 
 import { resolveSlideTheme } from "./slide-design-themes";
 import { buildTeachyContractForType } from "@/lib/materiais/teachy-document-contract";
+import { PLANIFY_PEDAGOGICAL_DNA } from "@/server/ai/prompts/planify-pedagogical-dna";
 import type {
   BnccSkillAnchor,
   PromptEngineInput,
@@ -111,11 +112,12 @@ function buildToolRules(input: PromptEngineInput): string[] {
       return [
         `Crie UMA seção tipo "questoes" com exatamente ${q} questões.`,
         `TEMA ÂNCORA obrigatório em cada enunciado: "${tema}".`,
+        "PROGRESSÃO BLOOM obrigatória: ordene as questões do mais acessível ao mais desafiador (lembrar → compreender → aplicar → analisar → avaliar/criar conforme a quantidade).",
         "Cada questão DEVE ter exatamente 5 alternativas (A, B, C, D, E) em alternativas[].",
         "Alternativas: frases completas (mín. 35 caracteres), plausíveis, distintas e contextualizadas — proibido 'todas/nenhuma das anteriores'.",
         "Apenas UMA alternativa correta — preencha respostaCorreta com a letra (A–E).",
         "respostaCorreta + justificativa juntas: máximo 120 caracteres — gabarito enxuto, sem tom de aula.",
-        "justificativa isolada: máximo 80 caracteres, objetiva.",
+        "justificativa isolada: máximo 80 caracteres, objetiva e passo a passo.",
         "Variar tipos (objetiva + dissertativa quando q >= 2).",
         "Enunciados diretos — máximo 3 frases curtas; sem 'Questão N:', sem preâmbulos.",
         incluirGabarito === false
@@ -308,6 +310,7 @@ export type PromptEngineOutput = {
 
 export function buildSystemInstruction(tipoFerramenta: TipoFerramenta): string {
   return [
+    PLANIFY_PEDAGOGICAL_DNA,
     ROLE_INSTRUCTION,
     `Especialidade ativa: ${TYPE_LABELS[tipoFerramenta]}.`,
     GOLDEN_RULES,

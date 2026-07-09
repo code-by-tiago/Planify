@@ -33,10 +33,12 @@ import {
 import {
   assignHistoryItemFolder,
   buildFolderTree,
+  createMaterialFolder,
   ensureMaterialFolder,
   filterItemsByFolder,
   getHistoryFolderMeta,
   loadMaterialFolders,
+  syncMaterialFoldersFromAPI,
   type MaterialFolder,
 } from "../../lib/history/material-folders";
 import { saveEditorDocument } from "../../lib/editor/editor-storage";
@@ -143,6 +145,12 @@ export function HistoricoClient() {
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [openingId, setOpeningId] = useState<string | null>(null);
+  const [newFolderOpen, setNewFolderOpen] = useState(false);
+  const [newFolderSchool, setNewFolderSchool] = useState("");
+  const [newFolderClass, setNewFolderClass] = useState("");
+  const [savingFolder, setSavingFolder] = useState(false);
+  const [pendingMoveItemId, setPendingMoveItemId] = useState<string | null>(null);
+  const NEW_FOLDER_OPTION = "__new_folder__";
 
   useEffect(() => {
     let cancelled = false;
@@ -165,9 +173,12 @@ export function HistoricoClient() {
 
       const next = await refreshHistoryState();
       if (cancelled) return;
-      setFolders(loadMaterialFolders());
       setItems(next);
       setSelectedItem(next[0] ?? null);
+
+      const synced = await syncMaterialFoldersFromAPI();
+      if (cancelled) return;
+      setFolders(synced.length > 0 ? synced : loadMaterialFolders());
     });
 
     return () => {
@@ -401,6 +412,101 @@ export function HistoricoClient() {
     });
   }
 
+  function openNewFolderForm(forItemId?: string) {
+    setPendingMoveItemId(forItemId ?? null);
+    setNewFolderSchool("");
+    setNewFolderClass("");
+    setNewFolderOpen(true);
+    setFolderDrawerOpen(false);
+  }
+
+  function moveItemToFolder(item: HistoryItem, folder: MaterialFolder | null) {
+    const updated = assignHistoryItemFolder(item, folder);
+    upsertHistoryItem(updated);
+    setItems((current) => current.map((i) => (i.id === item.id ? updated : i)));
+    setSelectedItem((current) => (current?.id === item.id ? updated : current));
+    setStatus({
+      type: "success",
+      message: folder
+        ? `Movido para ${folder.schoolLabel} · ${folder.classLabel}.`
+        : "Removido da pasta.",
+    });
+  }
+
+  function handleMoveSelectChange(item: HistoryItem, value: string) {
+    if (value === NEW_FOLDER_OPTION) {
+      openNewFolderForm(item.id);
+      return;
+    }
+    if (!value) {
+      moveItemToFolder(item, null);
+      return;
+    }
+    const folder = folders.find((f) => f.id === value) || null;
+    moveItemToFolder(item, folder);
+  }
+
+  async function handleCreateFolder() {
+    const classLabel = newFolderClass.trim();
+    if (!classLabel) {
+      setStatus({ type: "warning", message: "Informe a turma para criar a pasta." });
+      return;
+    }
+
+    setSavingFolder(true);
+    try {
+      const folder = await createMaterialFolder(newFolderSchool, classLabel);
+      if (!folder) {
+        setStatus({ type: "warning", message: "Não foi possível criar a pasta." });
+        return;
+      }
+
+      setFolders((current) => {
+        const exists = current.some((f) => f.id === folder.id);
+        return exists ? current : [folder, ...current];
+      });
+
+      if (pendingMoveItemId) {
+        const item = items.find((i) => i.id === pendingMoveItemId);
+        if (item) moveItemToFolder(item, folder);
+      } else {
+        setActiveFolderId(folder.id);
+      }
+
+      setStatus({
+        type: "success",
+        message: `Pasta "${folder.schoolLabel} · ${folder.classLabel}" criada.`,
+      });
+      setNewFolderOpen(false);
+      setPendingMoveItemId(null);
+    } finally {
+      setSavingFolder(false);
+    }
+  }
+
+  function renderMoveSelect(item: HistoryItem, compact = false) {
+    const meta = getHistoryFolderMeta(item);
+    return (
+      <select
+        value={meta.folderId || ""}
+        onChange={(event) => handleMoveSelectChange(item, event.target.value)}
+        className={[
+          "min-h-9 rounded-xl border border-slate-200 bg-white text-[10px] font-bold text-slate-600 outline-none focus:border-cyan-400",
+          compact ? "px-2 py-1.5" : "px-3 py-2 text-xs",
+        ].join(" ")}
+        aria-label="Mover para pasta"
+      >
+        <option value="">Sem pasta</option>
+        {folders.map((folder) => (
+          <option key={folder.id} value={folder.id}>
+            {folder.schoolLabel} · {folder.classLabel}
+          </option>
+        ))}
+        <option value={NEW_FOLDER_OPTION}>+ Nova pasta…</option>
+      </select>
+    );
+  }
+
   return (
     <PlanifyWorkspacePane
       header={
@@ -415,9 +521,18 @@ export function HistoricoClient() {
       <div className="grid gap-6 lg:grid-cols-[240px_minmax(0,1fr)]">
         <aside className="hidden lg:block">
           <div className="sticky top-4 space-y-2 rounded-2xl border border-slate-200 bg-white p-3">
-            <p className="px-2 text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400">
-              Pastas
-            </p>
+            <div className="flex items-center justify-between px-2">
+              <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400">
+                Pastas
+              </p>
+              <button
+                type="button"
+                onClick={() => openNewFolderForm()}
+                className="min-h-9 rounded-lg px-2 py-1 text-[11px] font-bold text-cyan-600 hover:bg-cyan-50"
+              >
+                + Nova pasta
+              </button>
+            </div>
             <button
               type="button"
               onClick={() => setActiveFolderId(null)}
@@ -477,6 +592,57 @@ export function HistoricoClient() {
           </div>
         </aside>
 
+        {newFolderOpen ? (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4">
+            <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-5 shadow-xl">
+              <h3 className="text-sm font-bold text-slate-900">Nova pasta</h3>
+              <p className="mt-1 text-xs text-slate-500">
+                Organize por escola e turma para encontrar rápido depois.
+              </p>
+              <div className="mt-4 grid gap-3">
+                <label className="grid gap-1.5">
+                  <span className="text-xs font-semibold text-slate-600">Escola</span>
+                  <input
+                    value={newFolderSchool}
+                    onChange={(event) => setNewFolderSchool(event.target.value)}
+                    placeholder="Ex.: Escola Objetivo"
+                    className="min-h-11 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:border-cyan-400 focus:bg-white"
+                  />
+                </label>
+                <label className="grid gap-1.5">
+                  <span className="text-xs font-semibold text-slate-600">Turma</span>
+                  <input
+                    value={newFolderClass}
+                    onChange={(event) => setNewFolderClass(event.target.value)}
+                    placeholder="Ex.: 6º Ano A"
+                    className="min-h-11 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:border-cyan-400 focus:bg-white"
+                  />
+                </label>
+              </div>
+              <div className="mt-5 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setNewFolderOpen(false);
+                    setPendingMoveItemId(null);
+                  }}
+                  className="min-h-11 rounded-xl border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-600"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void handleCreateFolder()}
+                  disabled={savingFolder || !newFolderClass.trim()}
+                  className="pl-hud-btn min-h-11 rounded-xl px-4 text-xs font-bold disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {savingFolder ? "Criando…" : "Criar pasta"}
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : null}
+
         <div className="grid min-w-0 gap-6">
         <div className="flex flex-wrap items-center gap-3 lg:hidden">
           <button
@@ -485,6 +651,13 @@ export function HistoricoClient() {
             className="pl-hud-btn-secondary min-h-11 rounded-xl px-4 py-2 text-xs font-semibold"
           >
             {folderDrawerOpen ? "Fechar pastas" : "Pastas Escola/Turma"}
+          </button>
+          <button
+            type="button"
+            onClick={() => openNewFolderForm()}
+            className="min-h-11 rounded-xl border border-cyan-200 bg-cyan-50 px-4 py-2 text-xs font-bold text-cyan-700"
+          >
+            + Nova pasta
           </button>
         </div>
         {folderDrawerOpen ? (
@@ -692,14 +865,12 @@ export function HistoricoClient() {
                   onSelect={() => setSelectedItem(item)}
                   footer={
                     <div className="space-y-2">
-                      {(() => {
-                        const folderMeta = getHistoryFolderMeta(item);
-                        return folderMeta.classLabel ? (
-                          <p className="text-[10px] font-bold text-slate-500">
-                            {(folderMeta.schoolLabel || "Sem escola") + " · " + folderMeta.classLabel}
-                          </p>
-                        ) : null;
-                      })()}
+                      <label className="flex items-center gap-1.5">
+                        <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                          Pasta
+                        </span>
+                        {renderMoveSelect(item, true)}
+                      </label>
                       <HistoryDocumentExportBar
                         item={item}
                         onStatus={handleExportStatus}
@@ -789,6 +960,12 @@ export function HistoricoClient() {
                 <p className="mt-2 text-xs text-slate-500">
                   Atualizado em {formatDate(selectedItem.updatedAt)}
                 </p>
+                <label className="mt-3 flex items-center gap-1.5">
+                  <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                    Pasta
+                  </span>
+                  {renderMoveSelect(selectedItem)}
+                </label>
               </div>
               <div className="flex shrink-0 flex-col items-end gap-3">
                 <div className="flex flex-wrap items-center justify-end gap-2">

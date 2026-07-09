@@ -1,4 +1,5 @@
 import type { HistoryItem } from "@/types/history";
+import { planifyAuthenticatedFetch } from "@/lib/auth/authenticated-fetch";
 
 const FOLDERS_KEY = "planify:material-folders";
 
@@ -43,6 +44,20 @@ export function folderKey(schoolLabel: string, classLabel: string): string {
   return `${schoolLabel.trim().toLowerCase()}::${classLabel.trim().toLowerCase()}`;
 }
 
+function mergeFolders(
+  current: MaterialFolder[],
+  incoming: MaterialFolder[],
+): MaterialFolder[] {
+  const byKey = new Map<string, MaterialFolder>();
+  for (const folder of current) {
+    byKey.set(folderKey(folder.schoolLabel, folder.classLabel), folder);
+  }
+  for (const folder of incoming) {
+    byKey.set(folderKey(folder.schoolLabel, folder.classLabel), folder);
+  }
+  return Array.from(byKey.values());
+}
+
 export function ensureMaterialFolder(input: {
   schoolLabel?: string | null;
   classLabel?: string | null;
@@ -58,6 +73,82 @@ export function ensureMaterialFolder(input: {
       folderKey(schoolLabel, classLabel),
   );
   if (existing) return existing;
+
+  const created: MaterialFolder = {
+    id: `folder-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    schoolLabel,
+    classLabel,
+    createdAt: new Date().toISOString(),
+  };
+  saveMaterialFolders([created, ...folders]);
+
+  // Mantém o servidor consistente sem bloquear o fluxo local/offline.
+  void planifyAuthenticatedFetch("/api/history/folders", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ schoolLabel, classLabel }),
+  }).catch(() => {
+    /* segue local-first se a sincronização falhar */
+  });
+
+  return created;
+}
+
+/** Busca pastas salvas na conta e mescla com o localStorage (multi-dispositivo). */
+export async function syncMaterialFoldersFromAPI(): Promise<MaterialFolder[]> {
+  try {
+    const response = await planifyAuthenticatedFetch("/api/history/folders");
+    const data = (await response.json()) as {
+      success?: boolean;
+      folders?: MaterialFolder[];
+    };
+    if (!response.ok || !data.success || !Array.isArray(data.folders)) {
+      return loadMaterialFolders();
+    }
+    const merged = mergeFolders(loadMaterialFolders(), data.folders);
+    saveMaterialFolders(merged);
+    return merged;
+  } catch {
+    return loadMaterialFolders();
+  }
+}
+
+/** Cria uma pasta explicitamente a pedido do professor (UI "Nova pasta"). */
+export async function createMaterialFolder(
+  schoolLabelInput: string,
+  classLabelInput: string,
+): Promise<MaterialFolder | null> {
+  const schoolLabel = schoolLabelInput.trim() || "Sem escola";
+  const classLabel = classLabelInput.trim();
+  if (!classLabel) return null;
+
+  const folders = loadMaterialFolders();
+  const existing = folders.find(
+    (folder) =>
+      folderKey(folder.schoolLabel, folder.classLabel) ===
+      folderKey(schoolLabel, classLabel),
+  );
+  if (existing) return existing;
+
+  try {
+    const response = await planifyAuthenticatedFetch("/api/history/folders", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ schoolLabel, classLabel }),
+    });
+    const data = (await response.json()) as {
+      success?: boolean;
+      folder?: MaterialFolder;
+      error?: { message?: string };
+    };
+
+    if (response.ok && data.success && data.folder) {
+      saveMaterialFolders(mergeFolders(folders, [data.folder]));
+      return data.folder;
+    }
+  } catch {
+    /* cai para criação local-only abaixo */
+  }
 
   const created: MaterialFolder = {
     id: `folder-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,

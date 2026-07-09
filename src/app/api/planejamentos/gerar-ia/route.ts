@@ -65,6 +65,22 @@ async function handlePost(
       return jsonPlanningError(validationError, 400);
     }
 
+    const { assertHabilidadesSelecionadasAgainstDb, filterHabilidadesSelecionadasAgainstDb } =
+      await import("@/server/bncc/validate-bncc-codes-against-db");
+    payload.habilidadesSelecionadas = await filterHabilidadesSelecionadasAgainstDb(
+      payload.habilidadesSelecionadas,
+    );
+    const bnccDbError = await assertHabilidadesSelecionadasAgainstDb(
+      payload.habilidadesSelecionadas,
+    );
+    if (bnccDbError) {
+      await finalizeGenerationFailure(user?.id, tipo, charge, {
+        eventType: "planning_generation_failed",
+        errorCode: "validation_error",
+      });
+      return jsonPlanningError(bnccDbError, 400);
+    }
+
     const result = await generatePlanningWithAI(payload, { userId: user?.id ?? null });
 
     logGenerationSuccessEvent({

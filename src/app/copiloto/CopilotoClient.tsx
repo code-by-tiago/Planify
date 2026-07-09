@@ -194,6 +194,7 @@ export function CopilotoClient({
   const [resultHtml, setResultHtml] = useState<string | null>(null);
   const [exportStatus, setExportStatus] = useState("");
   const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const [downloadingDocx, setDownloadingDocx] = useState(false);
   const [resultTitle, setResultTitle] = useState("");
   const [seconds, setSeconds] = useState(0);
   const [lastPayload, setLastPayload] = useState<MaterialEngineInput | null>(null);
@@ -1236,6 +1237,13 @@ export function CopilotoClient({
                 setExportStatus(`Falha na exportação — ${message}`);
               }}
               downloadingPdf={downloadingPdf}
+              downloadingDocx={downloadingDocx}
+              classroomMetadata={{
+                disciplina: brief.componenteCurricular,
+                anoSerie: brief.anoSerie,
+                etapa: brief.etapa,
+                tema: brief.tema,
+              }}
               onDownloadPdf={() => {
                 void (async () => {
                   if (!resultHtml) return;
@@ -1256,6 +1264,29 @@ export function CopilotoClient({
                     setExportStatus(message);
                   } finally {
                     setDownloadingPdf(false);
+                  }
+                })();
+              }}
+              onDownloadDocx={() => {
+                void (async () => {
+                  if (!resultHtml) return;
+                  setDownloadingDocx(true);
+                  try {
+                    await downloadEditorExport({
+                      title: resultTitle || "Material Copiloto",
+                      html: resultHtml,
+                      format: "docx",
+                      documentType: `material:${brief.tipoMaterial}`,
+                    });
+                    setExportStatus("DOCX baixado.");
+                  } catch (error) {
+                    const message =
+                      error instanceof Error
+                        ? error.message
+                        : "Não foi possível baixar o DOCX.";
+                    setExportStatus(message);
+                  } finally {
+                    setDownloadingDocx(false);
                   }
                 })();
               }}

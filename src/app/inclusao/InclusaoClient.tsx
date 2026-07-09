@@ -198,8 +198,26 @@ export function InclusaoClient({
     } catch (error) {
       const formatted = formatGenerationError(error);
       setErro(formatted.message);
-      setErroCta(formatted.cta ?? null);
-      setErroRetryable(formatted.retryable);
+    }
+  }
+
+  async function baixarDocx() {
+    if (!resultadoHtml) {
+      setErro("Gere um material antes de baixar.");
+      return;
+    }
+
+    try {
+      await downloadEditorExport({
+        title: exportTitle,
+        html: resultadoHtml,
+        format: "docx",
+        documentType: "material:inclusao",
+        fallbackFileName: `${exportTitle.replace(/[\\/:*?"<>|]/g, "-")}.docx`,
+      });
+    } catch (error) {
+      const formatted = formatGenerationError(error);
+      setErro(formatted.message);
     }
   }
 
@@ -396,7 +414,11 @@ export function InclusaoClient({
                   compact
                   classroomMode="popover"
                   disabled={!resultadoHtml}
+                  classroomMetadata={{
+                    tema: exportTitle,
+                  }}
                   onDownloadPdf={() => void baixarPdf()}
+                  onDownloadDocx={() => void baixarDocx()}
                 />
                 <button
                   type="button"

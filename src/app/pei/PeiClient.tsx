@@ -362,6 +362,23 @@ export function PeiClient({
     }
   }
 
+  async function baixarDocx() {
+    if (!resultado?.html) return;
+    try {
+      await downloadEditorExport({
+        title: exportTitle,
+        html: resultado.html,
+        format: "docx",
+        documentType: "material:pei",
+      });
+    } catch (error) {
+      const formatted = formatGenerationError(error);
+      setErro(formatted.message);
+      setErroCta(formatted.cta);
+      setErroRetryable(formatted.retryable);
+    }
+  }
+
   const painelCriacao = modalAberto ? (
     <MaterialToolPageShell
       tool={tool}
@@ -723,7 +740,14 @@ export function PeiClient({
                   compact
                   classroomMode="popover"
                   disabled={!resultado.html}
+                  classroomMetadata={{
+                    disciplina,
+                    anoSerie,
+                    etapa,
+                    tema: conteudos.trim() || undefined,
+                  }}
                   onDownloadPdf={() => void baixarPdf()}
+                  onDownloadDocx={() => void baixarDocx()}
                 />
               </div>
 

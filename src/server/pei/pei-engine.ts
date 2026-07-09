@@ -359,21 +359,54 @@ function buildPrompt(payload: PeiGenerationRequest): string {
   ].join("\n");
 }
 
+function resolveOfficialHabilidade(
+  conteudo: string,
+  aiHabilidade: string,
+  skills: BnccSelectedSkillPayload[],
+  fallbackHabilidade: string,
+): string {
+  const matchedSkill = findSkillForConteudo(conteudo, skills);
+  if (matchedSkill) {
+    return formatBnccSkillLabel(matchedSkill);
+  }
+
+  const normalizedAi = aiHabilidade.toUpperCase();
+  const codeMatch = skills.find((skill) =>
+    normalizedAi.includes(String(skill.codigo || "").trim().toUpperCase()),
+  );
+  if (codeMatch) {
+    return formatBnccSkillLabel(codeMatch);
+  }
+
+  return fallbackHabilidade;
+}
+
 function normalizeAiOutput(
   raw: PeiAiOutput,
   fallback: PeiStructuredOutput,
+  payload: PeiGenerationRequest,
 ): PeiStructuredOutput {
+  const selectedSkills = resolveSelectedSkills(payload);
+
   const curricularRows = Array.isArray(raw.curricularRows)
     ? raw.curricularRows
-        .map((row, index) => ({
-          conteudo:
+        .map((row, index) => {
+          const conteudo =
             cleanText(row?.conteudo, 220) ||
             fallback.curricularRows[index % fallback.curricularRows.length]?.conteudo ||
-            "",
-          habilidade:
-            cleanText(row?.habilidade, 320) ||
+            "";
+          const fallbackHabilidade =
             fallback.curricularRows[index % fallback.curricularRows.length]?.habilidade ||
-            "",
+            "";
+
+          return {
+          conteudo,
+          habilidade: resolveOfficialHabilidade(
+            conteudo,
+            cleanText(row?.habilidade, 320),
+            selectedSkills,
+            fallbackHabilidade,
+          ),
           objetivo:
             cleanText(row?.objetivo, 500) ||
             fallback.curricularRows[index % fallback.curricularRows.length]?.objetivo ||
@@ -382,7 +415,8 @@ function normalizeAiOutput(
             cleanText(row?.adaptacao, 500) ||
             fallback.curricularRows[index % fallback.curricularRows.length]?.adaptacao ||
             "",
-        }))
+        };
+        })
         .filter((row) => row.conteudo && row.habilidade)
     : [];
 
@@ -659,7 +693,7 @@ export async function generatePeiDocument(
       throw new Error(aiResult.message);
     }
 
-    const output = normalizeAiOutput(aiResult.data as PeiAiOutput, fallback);
+    const output = normalizeAiOutput(aiResult.data as PeiAiOutput, fallback, normalized);
     const html = renderPeiHtml(normalized, output);
 
     return {

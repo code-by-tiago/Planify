@@ -12,6 +12,7 @@ import {
   resolveMaterialExportPolicy,
 } from "@/lib/export/material-export-policy";
 import { useGoogleOAuthResume } from "@/hooks/useGoogleOAuthResume";
+import type { ClassroomExportMetadata } from "@/hooks/useGoogleClassroomExport";
 import { useEffect, useMemo, useState } from "react";
 
 export type GoogleDocumentExportBarProps = {
@@ -32,6 +33,7 @@ export type GoogleDocumentExportBarProps = {
   downloadingPdf?: boolean;
   onDownloadDocx?: () => void;
   downloadingDocx?: boolean;
+  classroomMetadata?: ClassroomExportMetadata | null;
 };
 
 export function GoogleDocumentExportBar({
@@ -52,6 +54,7 @@ export function GoogleDocumentExportBar({
   downloadingPdf = false,
   onDownloadDocx,
   downloadingDocx = false,
+  classroomMetadata,
 }: GoogleDocumentExportBarProps) {
   useGoogleOAuthResume({
     getHtml,
@@ -104,7 +107,8 @@ export function GoogleDocumentExportBar({
     materialExportAllows("google-classroom", documentType, getHtml());
   const driveIsPdf = exportPolicy.driveFormat === "pdf";
   const showPdfDownload = Boolean(onDownloadPdf);
-  const showDocxDownload = Boolean(onDownloadDocx);
+  const showDocxDownload =
+    Boolean(onDownloadDocx) && exportPolicy.driveFormat === "docx";
   const hasAnyDownload = showPdfDownload || showDocxDownload;
 
   if (disabled && !hasAnyDownload) {
@@ -169,6 +173,7 @@ export function GoogleDocumentExportBar({
             onStatus={onStatus}
             returnTo={returnTo}
             documentType={documentType}
+            classroomMetadata={classroomMetadata}
           />
         ) : (
           <GoogleClassroomPanel
@@ -178,6 +183,7 @@ export function GoogleDocumentExportBar({
             onStatus={onStatus}
             returnTo={returnTo}
             documentType={documentType}
+            classroomMetadata={classroomMetadata}
           />
         )
       ) : null}

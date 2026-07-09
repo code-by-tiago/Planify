@@ -6,6 +6,7 @@ import {
   UnifiedQualityGateError,
 } from "@/lib/materiais/unified-quality-gate";
 import { generateGeminiJSON } from "../ai/gemini-client";
+import { PLANNING_PEDAGOGICAL_VOICE } from "../ai/prompts/planify-pedagogical-dna";
 import {
   buildPlanningQualityRetryNote,
   computePlanningQualityScore,
@@ -17,6 +18,7 @@ import {
   parsePlanningCargaHorariaStrict,
 } from "./planning-lesson-allocation";
 import { splitPlanningConteudos } from "./planning-validation";
+import { PLANNING_RESPONSE_SCHEMA } from "./planning-response-schema";
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -54,6 +56,8 @@ export type PlanningAiPayload = {
   turma?: string | null;
   discipline?: string | null;
   disciplina?: string | null;
+  annualContext?: string;
+  parentAnnualKey?: string;
 };
 
 export type PlanningMatrixItem = {
@@ -573,6 +577,8 @@ function buildPlanningPrompt(
       : "";
 
   return `
+${PLANNING_PEDAGOGICAL_VOICE}
+
 Você é uma IA especialista em planejamento pedagógico brasileiro.
 
 Gere SOMENTE JSON válido, sem markdown.
@@ -594,6 +600,7 @@ ${selectedSkills.map((skill) => `- ${skill.codigo} — ${skill.descricao} | cont
 
 ${buildSpanishPlanningRules(payload)}
 
+${normalizeText(payload.annualContext) ? `${normalizeText(payload.annualContext)}\n` : ""}
 Regras obrigatórias:
 1. Retorne uma matriz em planejamento.conteudos.
 2. Cada linha representa UMA aula para UM conteúdo informado pelo professor.
@@ -673,6 +680,7 @@ async function requestPlanningJson(
   return generateGeminiJSON<unknown>({
     systemInstruction: PLANNING_SYSTEM_INSTRUCTION,
     prompt,
+    responseSchema: PLANNING_RESPONSE_SCHEMA,
     cacheProfile: "planning-matrix",
     tier: getModelTierForPlanning({
       elevarQualidade: payload.elevarQualidade,

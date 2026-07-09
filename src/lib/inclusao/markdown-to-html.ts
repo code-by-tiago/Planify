@@ -20,6 +20,8 @@ export function markdownToHtml(markdown: string): string {
   const lines = markdown.replace(/\r\n/g, "\n").split("\n");
   const parts: string[] = [];
   let inList = false;
+  let inCodeFence = false;
+  const codeLines: string[] = [];
 
   function closeList() {
     if (inList) {
@@ -28,8 +30,31 @@ export function markdownToHtml(markdown: string): string {
     }
   }
 
+  function flushCodeFence() {
+    if (!inCodeFence) return;
+    parts.push(`<pre><code>${escapeHtml(codeLines.join("\n"))}</code></pre>`);
+    codeLines.length = 0;
+    inCodeFence = false;
+  }
+
   for (const rawLine of lines) {
     const line = rawLine.trimEnd();
+    const fence = line.trim().match(/^```(\w*)?$/);
+
+    if (fence) {
+      closeList();
+      if (inCodeFence) {
+        flushCodeFence();
+      } else {
+        inCodeFence = true;
+      }
+      continue;
+    }
+
+    if (inCodeFence) {
+      codeLines.push(rawLine);
+      continue;
+    }
 
     if (!line.trim()) {
       closeList();
@@ -67,5 +92,6 @@ export function markdownToHtml(markdown: string): string {
   }
 
   closeList();
+  flushCodeFence();
   return parts.join("\n");
 }

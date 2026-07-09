@@ -70,7 +70,15 @@ async function handlePost(
 
   if (!prepared.ok) return prepared.response;
 
-  const { user, payload, tipo, charge } = prepared;
+  const { user, payload: rawPayload, tipo, charge } = prepared;
+  const { assertHabilidadesSelecionadasAgainstDb, filterHabilidadesSelecionadasAgainstDb } =
+    await import("@/server/bncc/validate-bncc-codes-against-db");
+  const payload: PeiGenerationRequest = {
+    ...rawPayload,
+    habilidadesSelecionadas: await filterHabilidadesSelecionadasAgainstDb(
+      rawPayload.habilidadesSelecionadas,
+    ),
+  };
   const validationError = validatePeiPayload(payload);
 
   if (validationError) {

@@ -49,6 +49,13 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 export const CLASSROOM_OPEN_AFTER_OAUTH_KEY = "planify:classroom-open-after-oauth";
 const DEFAULT_CLASSROOM_DUE_TIME = "23:59";
 
+export type ClassroomExportMetadata = {
+  disciplina?: string;
+  anoSerie?: string;
+  tema?: string;
+  etapa?: string;
+};
+
 type UseGoogleClassroomExportOptions = {
   title: string;
   getHtml: () => string;
@@ -56,6 +63,7 @@ type UseGoogleClassroomExportOptions = {
   returnTo?: string;
   documentType?: string | null;
   enabled?: boolean;
+  classroomMetadata?: ClassroomExportMetadata | null;
 };
 
 export type ClassroomExportSuccess = {
@@ -68,8 +76,19 @@ export type ClassroomExportSuccess = {
   errors: Array<{ courseId: string; message: string }>;
 };
 
-function defaultClassroomDescription(title: string): string {
-  return `Material "${title || "Planify"}" preparado no Planify.`;
+function defaultClassroomDescription(
+  title: string,
+  metadata?: ClassroomExportMetadata | null,
+): string {
+  const parts = [
+    `Material "${title || "Planify"}" preparado no Planify.`,
+    metadata?.disciplina ? `Disciplina: ${metadata.disciplina}.` : "",
+    metadata?.anoSerie ? `Ano/série: ${metadata.anoSerie}.` : "",
+    metadata?.etapa ? `Etapa: ${metadata.etapa}.` : "",
+    metadata?.tema ? `Tema: ${metadata.tema}.` : "",
+  ].filter(Boolean);
+
+  return parts.join(" ");
 }
 
 function getCourseLabel(course: ClassroomCourseOption | null | undefined): string {
@@ -84,13 +103,16 @@ export function useGoogleClassroomExport({
   returnTo,
   documentType,
   enabled = true,
+  classroomMetadata,
 }: UseGoogleClassroomExportOptions) {
   const exportTitle = title.trim() || "Material Planify";
   const [status, setStatus] = useState<GoogleIntegrationStatus | null>(null);
   const [institutionalEmail, setInstitutionalEmail] = useState("");
   const [courses, setCourses] = useState<ClassroomCourseOption[]>([]);
   const [selectedCourseIds, setSelectedCourseIds] = useState<string[]>([]);
-  const [description, setDescription] = useState(defaultClassroomDescription(exportTitle));
+  const [description, setDescription] = useState(
+    defaultClassroomDescription(exportTitle, classroomMetadata),
+  );
   const [shareType, setShareType] = useState<ClassroomShareType>("material");
   const [dueDate, setDueDate] = useState("");
   const [dueTime, setDueTime] = useState("");
@@ -115,9 +137,11 @@ export function useGoogleClassroomExport({
 
   useEffect(() => {
     setDescription((current) =>
-      current.trim() ? current : defaultClassroomDescription(exportTitle),
+      current.trim()
+        ? current
+        : defaultClassroomDescription(exportTitle, classroomMetadata),
     );
-  }, [exportTitle]);
+  }, [exportTitle, classroomMetadata?.disciplina, classroomMetadata?.anoSerie, classroomMetadata?.etapa, classroomMetadata?.tema]);
 
   useEffect(() => {
     if (!status?.planifyEmail) return;

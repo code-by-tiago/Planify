@@ -25,17 +25,11 @@ function asList(items: string[], ordered = false): string {
 function renderSections(output: MaterialAIOutput): string {
   return output.secoes
     .map((section) => {
-      const visual =
-        section.visualHtml && section.visualHtml.trim()
-          ? `<div class="planify-section-visual">${section.visualHtml}</div>`
-          : "";
-
       return `
         <section class="planify-doc-section">
           <h2>${escapeHtml(section.titulo)}</h2>
           ${section.conteudo ? `<p>${escapeHtml(section.conteudo)}</p>` : ""}
           ${asList(section.itens)}
-          ${visual}
         </section>
       `;
     })
@@ -191,8 +185,6 @@ export function renderMaterialAIOutputToHtml(
   request: MaterialEngineRequest,
 ): string {
   const incluirGabarito = request.incluirGabarito;
-  const visualBlock = [output.printHtml, output.visualHtml]
-    .find((value) => typeof value === "string" && value.trim());
 
   const blocks = [
     output.introducao
@@ -210,7 +202,7 @@ export function renderMaterialAIOutputToHtml(
     .filter(Boolean)
     .join("");
 
-  const doc = wrapProfessionalDocument(
+  return wrapProfessionalDocument(
     {
       title: output.titulo,
       subtitle: output.subtitulo,
@@ -221,10 +213,4 @@ export function renderMaterialAIOutputToHtml(
     },
     blocks,
   );
-
-  if (visualBlock) {
-    return `${doc}<div class="planify-visual-bundle">${visualBlock}</div>`;
-  }
-
-  return doc;
 }

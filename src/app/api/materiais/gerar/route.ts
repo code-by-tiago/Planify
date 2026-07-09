@@ -31,7 +31,27 @@ async function handlePost(
 
   if (!prepared.ok) return prepared.response;
 
-  const { user, payload, tipo, charge } = prepared;
+  const { user, payload: rawPayload, tipo, charge } = prepared;
+  const { assertHabilidadesSelecionadasAgainstDb, filterHabilidadesSelecionadasAgainstDb } =
+    await import("@/server/bncc/validate-bncc-codes-against-db");
+  const payload: MaterialEngineInput = {
+    ...rawPayload,
+    habilidadesSelecionadas: await filterHabilidadesSelecionadasAgainstDb(
+      rawPayload.habilidadesSelecionadas,
+    ),
+  };
+  const bnccDbError = await assertHabilidadesSelecionadasAgainstDb(
+    payload.habilidadesSelecionadas,
+    { min: payload.habilidadesSelecionadas?.length ? 1 : 0 },
+  );
+  if (payload.habilidadesSelecionadas?.length && bnccDbError) {
+    await finalizeGenerationFailure(user?.id, tipo, charge, {
+      eventType: "material_generation_failed",
+      errorCode: "validation_error",
+    });
+    return jsonGenerationValidationError(bnccDbError);
+  }
+
   const normalizedRequest = normalizeMaterialEngineRequest(payload);
   const validationErrors = validateMaterialEngineRequest(normalizedRequest);
 

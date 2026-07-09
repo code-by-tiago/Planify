@@ -72,6 +72,11 @@ import {
   trimestralCargaHorariaLabel,
   type TrimestralPlanningLike,
 } from "@/lib/planejamentos/planning-trimestral-from-annual";
+import {
+  buildPlanningAnnualContextBlock,
+  readPlanningAnnualSnapshot,
+  savePlanningAnnualSnapshot,
+} from "@/lib/planejamentos/planning-annual-snapshot";
 import { useBnccEducationOptions } from "@/hooks/useBnccEducationOptions";
 import type { MaterialEducationFields } from "@/lib/educacao/education-options";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -425,18 +430,31 @@ function Pill({
 }
 
 
-function saveAnnualMatrixSnapshot(form: FormState, planning: GeneratedPlanning) {
-  if (form.tipoPlanejamento !== "anual") {
-    return;
-  }
-
-  const snapshot = {
-    form,
-    planning,
-    updatedAt: new Date().toISOString(),
-  };
-
-  localStorage.setItem("planify_matriz_anual", JSON.stringify(snapshot));
+function saveAnnualMatrixSnapshot(
+  form: FormState,
+  planning: GeneratedPlanning,
+  options?: { parentAnnualKey?: string },
+) {
+  savePlanningAnnualSnapshot(
+    {
+      escola: form.escola,
+      professor: form.professor,
+      etapa: form.etapa,
+      anoSerie: form.anoSerie,
+      areaConhecimento: form.areaConhecimento,
+      componenteCurricular: form.componenteCurricular,
+      cargaHoraria: form.cargaHoraria,
+      objetivos: form.objetivos,
+      observacoes: form.observacoes,
+      tipoPlanejamento: form.tipoPlanejamento,
+    },
+    {
+      titulo: planning.titulo,
+      resumo: planning.resumo,
+      conteudos: planning.conteudos,
+    },
+    options,
+  );
 }
 
 export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean }) {
@@ -801,6 +819,13 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
   }
 
   function buildBasePayload() {
+    const annualSnapshot =
+      form.tipoPlanejamento === "trimestral" ? readPlanningAnnualSnapshot() : null;
+    const annualContext =
+      annualSnapshot && form.tipoPlanejamento === "trimestral"
+        ? buildPlanningAnnualContextBlock(annualSnapshot)
+        : undefined;
+
     return {
       tipoPlanejamento: form.tipoPlanejamento,
       escola: form.escola,
@@ -823,6 +848,10 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
         componente: skill.componente || form.componenteCurricular,
         conteudo: skill.conteudo,
       })),
+      ...(annualContext ? { annualContext } : {}),
+      ...(annualSnapshot?.parentAnnualKey
+        ? { parentAnnualKey: annualSnapshot.parentAnnualKey }
+        : {}),
       ...school.turmaPayload,
       discipline: form.componenteCurricular.trim() || undefined,
       disciplina: form.componenteCurricular.trim() || undefined,
@@ -1204,7 +1233,9 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
 
       setGeneratedPlanning(planning);
       setGeneratedTrimestralPlans(trimestralPlans);
-      saveAnnualMatrixSnapshot(form, planning);
+      saveAnnualMatrixSnapshot(form, planning, {
+        parentAnnualKey: serverMaterialId,
+      });
       setUsedAI(Boolean(data.usedAI));
       const issues = applyQualityFromResponse(data);
       setLastGenerationPayload(payload);
@@ -1361,7 +1392,9 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
 
       const planning = data.planejamento as GeneratedPlanning;
       setGeneratedPlanning(planning);
-      saveAnnualMatrixSnapshot(form, planning);
+      saveAnnualMatrixSnapshot(form, planning, {
+        parentAnnualKey: serverMaterialId,
+      });
       setUsedAI(Boolean(data.usedAI));
       const issues = applyQualityFromResponse(data);
       setLastGenerationPayload(payload);
@@ -1731,9 +1764,18 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
               </fieldset>
             ) : (
               <p className="mt-6 rounded-2xl border border-amber-200/80 bg-amber-50/80 px-4 py-3 text-sm font-medium leading-6 text-amber-900">
-                Para trimestrais 100% coerentes com o anual, gere o{" "}
-                <strong>Planejamento Anual</strong> e escolha a opção de extrair os trimestres
-                desejados.
+                {readPlanningAnnualSnapshot() ? (
+                  <>
+                    O trimestral será gerado em <strong>consonância com o plano anual</strong>{" "}
+                    salvo neste dispositivo.
+                  </>
+                ) : (
+                  <>
+                    Para trimestrais 100% coerentes com o anual, gere o{" "}
+                    <strong>Planejamento Anual</strong> primeiro — ou escolha a opção de extrair
+                    os trimestres desejados do anual.
+                  </>
+                )}
               </p>
             )}
 

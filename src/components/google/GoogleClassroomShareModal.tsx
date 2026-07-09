@@ -6,6 +6,7 @@ import { PlanifyModal, PlanifyModalFooter } from "@/components/ui/PlanifyModal";
 import {
   CLASSROOM_OPEN_AFTER_OAUTH_KEY,
   useGoogleClassroomExport,
+  type ClassroomExportMetadata,
   type ClassroomExportSuccess,
 } from "@/hooks/useGoogleClassroomExport";
 import {
@@ -27,6 +28,7 @@ type GoogleClassroomShareModalProps = {
   returnTo?: string;
   documentType?: string | null;
   oauthButtonId?: string;
+  classroomMetadata?: ClassroomExportMetadata | null;
 };
 
 function shareTypeLabel(value: ClassroomShareType): string {
@@ -42,6 +44,7 @@ export function GoogleClassroomShareModal({
   returnTo,
   documentType,
   oauthButtonId,
+  classroomMetadata,
 }: GoogleClassroomShareModalProps) {
   const [materialTitle, setMaterialTitle] = useState(
     title.trim() || "Material Planify",
@@ -56,6 +59,7 @@ export function GoogleClassroomShareModal({
     returnTo,
     documentType,
     enabled: open,
+    classroomMetadata,
   });
 
   const needsOAuth = needsClassroomGoogleOAuth(classroom.status);

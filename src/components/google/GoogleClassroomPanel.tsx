@@ -8,6 +8,8 @@ import {
 } from "@/components/google/google-icon-button-styles";
 import { useEffect, useState } from "react";
 
+import type { ClassroomExportMetadata } from "@/hooks/useGoogleClassroomExport";
+
 type GoogleClassroomPanelProps = {
   title: string;
   getHtml: () => string;
@@ -15,6 +17,7 @@ type GoogleClassroomPanelProps = {
   compact?: boolean;
   returnTo?: string;
   documentType?: string | null;
+  classroomMetadata?: ClassroomExportMetadata | null;
 };
 
 function hasPublishableDocument(title: string, getHtml: () => string): boolean {
@@ -34,6 +37,7 @@ export function GoogleClassroomPanel({
   compact = false,
   returnTo,
   documentType,
+  classroomMetadata,
 }: GoogleClassroomPanelProps) {
   const [open, setOpen] = useState(false);
   const [visible, setVisible] = useState(() =>
@@ -58,6 +62,7 @@ export function GoogleClassroomPanel({
       onStatus={onStatus}
       returnTo={returnTo}
       documentType={documentType}
+      classroomMetadata={classroomMetadata}
     />
   );
 

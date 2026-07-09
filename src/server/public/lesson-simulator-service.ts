@@ -7,6 +7,7 @@ import {
   type MaterialEducationFields,
 } from "@/lib/educacao/education-options";
 import { generateGeminiJSON } from "../ai/gemini-client";
+import { suggestBnccByConteudos } from "../bncc/bncc-suggestion-engine";
 import {
   buildLessonSimulatorPrompt,
   LESSON_SIMULATOR_RESPONSE_SCHEMA,
@@ -167,6 +168,7 @@ function normalizeLista(
   raw: Partial<LessonSimulatorLista>,
   theme: string,
   education: MaterialEducationFields,
+  verifiedBnccHint: string,
 ): LessonSimulatorLista {
   const questionsRaw = Array.isArray(raw.questions) ? raw.questions : [];
   const answersRaw = Array.isArray(raw.answerKey) ? raw.answerKey : [];
@@ -256,10 +258,37 @@ function normalizeLista(
       raw.instructions,
       "Leia com atenção e responda às atividades a seguir.",
     ),
-    bnccHint: asCleanString(raw.bnccHint, "Habilidade BNCC sugerida conforme o tema."),
+    bnccHint: verifiedBnccHint,
     questions,
     answerKey,
   };
+}
+
+async function resolveVerifiedBnccHint(
+  theme: string,
+  education: MaterialEducationFields,
+): Promise<string> {
+  try {
+    const suggestion = await suggestBnccByConteudos({
+      etapa: education.etapa,
+      anoSerie: education.anoSerie,
+      areaConhecimento: education.areaConhecimento,
+      componenteCurricular: education.componente,
+      tema: theme,
+      conteudos: theme,
+    });
+
+    const skills = (suggestion.habilidades || []).slice(0, 3);
+    if (skills.length === 0) {
+      return "Consulte o catálogo BNCC para habilidades deste tema.";
+    }
+
+    return skills
+      .map((skill) => `${skill.codigo} — ${skill.descricao}`)
+      .join("; ");
+  } catch {
+    return "Habilidade BNCC sugerida conforme o tema.";
+  }
 }
 
 export async function generateLessonSimulatorLista(
@@ -279,12 +308,13 @@ export async function generateLessonSimulatorLista(
     throw new LessonSimulatorError("invalid_payload");
   }
   const education = educationResult.education;
+  const verifiedBnccHint = await resolveVerifiedBnccHint(safeTheme, education);
 
   let raw: Partial<LessonSimulatorLista>;
 
   try {
     raw = await generateGeminiJSON<Partial<LessonSimulatorLista>>({
-      prompt: buildLessonSimulatorPrompt(safeTheme, education),
+      prompt: buildLessonSimulatorPrompt(safeTheme, education, verifiedBnccHint),
       systemInstruction: LESSON_SIMULATOR_SYSTEM_INSTRUCTION,
       responseSchema: LESSON_SIMULATOR_RESPONSE_SCHEMA,
       temperature: 0.35,
@@ -301,7 +331,7 @@ export async function generateLessonSimulatorLista(
     throw new LessonSimulatorError("generation_failed");
   }
 
-  const lista = normalizeLista(raw, safeTheme, education);
+  const lista = normalizeLista(raw, safeTheme, education, verifiedBnccHint);
   const html = buildLessonSimulatorListaHtml(lista, safeTheme);
 
   let pdfBuffer: Buffer;

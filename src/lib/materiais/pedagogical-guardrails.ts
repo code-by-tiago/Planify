@@ -1,8 +1,12 @@
 /** Guardrails compartilhados — motor unificado, inclusão e correção IA. */
 
+export const PEDAGOGICAL_FORBIDDEN_PHRASES = `
+PROIBIDO: "Aqui está seu material", "Segue a prova", "Claro!", "Com certeza", "Espero que ajude", menções a IA, prompts ou modelos.
+`.trim();
+
 export const PEDAGOGICAL_ZERO_CHITCHAT = `
 ZERO conversas, saudações, justificativas ou meta-comentários.
-PROIBIDO: "Aqui está seu material", "Segue a prova", "Claro!", "Com certeza", "Espero que ajude", menções a IA, prompts ou modelos.
+${PEDAGOGICAL_FORBIDDEN_PHRASES}
 `.trim();
 
 export const PEDAGOGICAL_BNCC_ANTI_HALLUCINATION = `

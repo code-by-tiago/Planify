@@ -7,6 +7,7 @@ import {
   GOOGLE_PRODUCT_ICON_CLASS,
 } from "@/components/google/google-icon-button-styles";
 import { CLASSROOM_OPEN_AFTER_OAUTH_KEY } from "@/hooks/useGoogleClassroomExport";
+import type { ClassroomExportMetadata } from "@/hooks/useGoogleClassroomExport";
 import { normalizeGoogleOAuthReturnTo } from "@/lib/google/document-type-detection";
 import { peekGoogleOAuthResumeIntent } from "@/lib/google/google-export-resume";
 import { GOOGLE_STATUS_CHANGED_EVENT } from "@/lib/google/google-status-events";
@@ -44,6 +45,7 @@ type GoogleClassroomPopoverButtonProps = {
   onStatus?: (message: string) => void;
   returnTo?: string;
   documentType?: string | null;
+  classroomMetadata?: ClassroomExportMetadata | null;
 };
 
 function hasPublishableDocument(title: string, getHtml: () => string): boolean {
@@ -62,6 +64,7 @@ export function GoogleClassroomPopoverButton({
   onStatus,
   returnTo,
   documentType,
+  classroomMetadata,
 }: GoogleClassroomPopoverButtonProps) {
   const [open, setOpen] = useState(false);
   const [visible, setVisible] = useState(() =>
@@ -145,6 +148,7 @@ export function GoogleClassroomPopoverButton({
         returnTo={returnTo}
         documentType={documentType}
         oauthButtonId={buttonId}
+        classroomMetadata={classroomMetadata}
       />
     </>
   );

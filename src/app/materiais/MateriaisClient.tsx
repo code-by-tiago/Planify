@@ -305,6 +305,7 @@ export function MateriaisClient({
   const [materialSalvo, setMaterialSalvo] = useState(false);
   const [hintFeedback, setHintFeedback] = useState("");
   const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const [downloadingDocx, setDownloadingDocx] = useState(false);
   const [pedagogicalEntries, setPedagogicalEntries] = useState<
     PedagogicalContextEntry[]
   >([]);
@@ -1494,6 +1495,13 @@ export function MateriaisClient({
                     setHintFeedback(`Falha na exportação — ${message}`);
                   }}
                   downloadingPdf={downloadingPdf}
+                  downloadingDocx={downloadingDocx}
+                  classroomMetadata={{
+                    disciplina: componente,
+                    anoSerie,
+                    etapa,
+                    tema: conteudo,
+                  }}
                   onDownloadPdf={() => {
                     void (async () => {
                       if (!resultadoHtml) return;
@@ -1517,6 +1525,32 @@ export function MateriaisClient({
                         setHintFeedback(message);
                       } finally {
                         setDownloadingPdf(false);
+                      }
+                    })();
+                  }}
+                  onDownloadDocx={() => {
+                    void (async () => {
+                      if (!resultadoHtml) return;
+                      setDownloadingDocx(true);
+                      try {
+                        const { downloadEditorExport } = await import(
+                          "@/lib/downloads/editor-export-client"
+                        );
+                        await downloadEditorExport({
+                          title: buildTitle(tipo, "", conteudo),
+                          html: resultadoHtml,
+                          format: "docx",
+                          documentType: `material:${tipo}`,
+                        });
+                        setHintFeedback("DOCX baixado.");
+                      } catch (error) {
+                        const message =
+                          error instanceof Error
+                            ? error.message
+                            : "Não foi possível baixar o DOCX.";
+                        setHintFeedback(message);
+                      } finally {
+                        setDownloadingDocx(false);
                       }
                     })();
                   }}

@@ -141,16 +141,22 @@ export function getPlanningOutputIssues(
     );
   }
 
-  const emptyFields = items.filter(
-    (item) =>
-      !item.objetivos?.trim() ||
-      !item.metodologia?.trim() ||
-      !item.avaliacao?.trim(),
-  ).length;
+  const emptyFields = items.filter((item) => {
+    const required = [
+      item.objetivos,
+      item.metodologia,
+      item.materiais,
+      item.recursos,
+      item.etapas,
+      item.avaliacao,
+      item.evidencias,
+    ];
+    return required.some((value) => !String(value || "").trim());
+  }).length;
 
-  if (emptyFields > Math.floor(items.length / 2)) {
+  if (emptyFields > 0) {
     issues.push(
-      "Preencha objetivos, metodologia e avaliacao em cada linha da matriz.",
+      `Preencha objetivos, metodologia, materiais, recursos, etapas, avaliacao e evidencias em cada linha da matriz (${emptyFields} linha(s) incompleta(s)).`,
     );
   }
 

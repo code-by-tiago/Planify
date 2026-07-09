@@ -5,6 +5,10 @@
 
 import { resolveSlideTheme } from "./slide-design-themes";
 import { buildTeachyContractForType } from "@/lib/materiais/teachy-document-contract";
+import {
+  PEDAGOGICAL_BNCC_ANTI_HALLUCINATION,
+  PEDAGOGICAL_FORBIDDEN_PHRASES,
+} from "@/lib/materiais/pedagogical-guardrails";
 import { PLANIFY_PEDAGOGICAL_DNA } from "@/server/ai/prompts/planify-pedagogical-dna";
 import type {
   BnccSkillAnchor,
@@ -43,9 +47,9 @@ const TYPE_LABELS: Record<TipoFerramenta, string> = {
 const GOLDEN_RULES = `
 REGRA DE OURO — INVIOLÁVEL:
 - ZERO conversas, saudações, justificativas ou meta-comentários fora do JSON.
-- PROIBIDO: "Aqui está seu material", "Segue a prova", "Claro!", "Com certeza", "Espero que ajude".
+- ${PEDAGOGICAL_FORBIDDEN_PHRASES}
 - PROIBIDO: markdown literal (cercas de codigo, #, | tabelas markdown), HTML, blocos de codigo.
-- PROIBIDO: inventar códigos BNCC — use SOMENTE os fornecidos na âncora RAG.
+- ${PEDAGOGICAL_BNCC_ANTI_HALLUCINATION}
 - A resposta da API é EXCLUSIVAMENTE um objeto JSON válido no schema MaterialLayout.
 `.trim();
 
@@ -132,6 +136,7 @@ function buildToolRules(input: PromptEngineInput): string[] {
     case "plano-aula":
       return [
         `Planejar ${q} período(s) de 50 minutos em um único plano.`,
+        "Use storytelling leve e metodologias ativas (investigação, cooperação, problematização) nas etapas — evite aula apenas expositiva.",
         "OBRIGATÓRIO: seção tipo tabela com cronograma (cabeçalhos Etapa | Duração | Atividade | Recursos) — mínimo 4 linhas incluindo Abertura e Fechamento.",
         "OBRIGATÓRIO: lessonPlan.steps com mínimo 5 etapas (Abertura → Fechamento), cada uma com stage, duration, description (40+ caracteres: ações do professor e estudantes) e resources.",
         "OBRIGATÓRIO: seção texto 'Atividade em sala' com objective, Tempo:, Material: (2+), Desenvolvimento:, itens a)-e) e Avaliação:.",
@@ -142,6 +147,7 @@ function buildToolRules(input: PromptEngineInput): string[] {
     case "slides":
       return [
         `Crie UMA seção tipo "slide" com exatamente ${q} slides.`,
+        "Use narrativa visual e storytelling leve para conectar os slides ao cotidiano dos estudantes.",
         `TEMA VISUAL (renderização): ${resolveSlideTheme(input.designSlides).label}.`,
         ...(input.modeloSlides ? [`MODELO DO PROFESSOR: ${input.modeloSlides}`] : []),
         "MÁXIMO 4 tópicos escaneáveis por slide (array topicos).",
@@ -183,6 +189,7 @@ function buildToolRules(input: PromptEngineInput): string[] {
     case "atividade":
       return [
         `Crie ${q} seções tipo "texto" — uma por atividade (título descritivo da atividade).`,
+        "Cada atividade deve envolver metodologias ativas e um gancho narrativo breve ligado ao tema.",
         "Cada atividade DEVE ser uma dinâmica/prática de sala robusta e pronta para aplicar.",
         'Em conteudo.paragrafos: "Objetivo: ..." (35+ caracteres, específico ao tema) e "Desenvolvimento: ..." (80+ caracteres com orientação passo a passo).',
         'Em conteudo.bullets: "Tempo: XX minutos", 2+ bullets "Material: ...", exatamente 5 itens "a) ...", "b) ...", "c) ...", "d) ...", "e) ..." e "Avaliação: ..." (45+ caracteres com critérios observáveis).',
@@ -195,6 +202,7 @@ function buildToolRules(input: PromptEngineInput): string[] {
     case "sequencia":
       return [
         `Organize ${q} seções tipo "texto" — uma por aula/encontro.`,
+        "Construa progressão com storytelling leve e metodologias ativas em cada encontro.",
         "Cada seção: objetivos, conteúdos, atividades e avaliação formativa.",
         "Encadear progressão didática entre as aulas.",
       ];
@@ -255,7 +263,7 @@ function buildToolRules(input: PromptEngineInput): string[] {
       return [
         "Pacote coeso: plano (tabela cronometrada) + slides (máx. 4 tópicos/slide) + atividade + lista (questoes).",
         "Mínimo 4 seções com tipos distintos: tabela, slide, texto, questoes.",
-        "Manter sequência pedagógica única ao longo de todas as seções.",
+        "Manter sequência pedagógica única com storytelling leve e metodologias ativas ao longo de todas as seções.",
       ];
 
     case "correcao-ia":

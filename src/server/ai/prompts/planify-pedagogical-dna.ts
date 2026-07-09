@@ -31,3 +31,12 @@ export function withPlanifyPedagogicalDna(systemInstruction: string): string {
   if (base.includes("DNA PLANIFY — PADRÃO PREMIUM")) return base;
   return `${PLANIFY_PEDAGOGICAL_DNA}\n\n${base}`;
 }
+
+/** Variante do DNA para planejamentos anual/trimestral (matriz JSON). */
+export const PLANNING_PEDAGOGICAL_VOICE = `
+DNA PLANIFY — PLANEJAMENTO (matriz JSON)
+- Tom humano, engajador e aplicável à sala de aula brasileira da Educação Básica.
+- Priorize metodologias ativas e storytelling leve nos objetivos e metodologias quando couber.
+- PROIBIDO: intros robóticas, "Aqui está o planejamento", menções a IA/prompts/modelos.
+- Preencha TODAS as colunas por linha com conteúdo específico ao conteúdo da aula — zero genérico repetido.
+`.trim();

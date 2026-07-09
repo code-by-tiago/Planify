@@ -9,6 +9,7 @@ import {
   extractConteudosFromPayload,
   suggestBnccByConteudos,
 } from "../bncc/bncc-suggestion-engine";
+import { filterBnccCodesAgainstDb } from "../bncc/validate-bncc-codes-against-db";
 import { getSupabaseAdminClient } from "../supabase/admin-client";
 import { getPrimarySchoolIdForUser } from "../schools/school-access";
 import { upsertTeacherClass } from "../schools/teacher-classes-service";
@@ -389,6 +390,14 @@ async function persistGenerationRecord(
     );
 
     const extracted = filterExtractedBnccByStage(rawExtracted, etapa, anoSerie);
+    const verifiedCodes = await filterBnccCodesAgainstDb(extracted.codes);
+    const verifiedSkills = extracted.skills.filter((skill) =>
+      verifiedCodes.includes(skill.codigo),
+    );
+    const verifiedExtracted = {
+      codes: verifiedCodes,
+      skills: verifiedSkills,
+    };
 
     const schoolId =
       params.schoolId ||
@@ -452,8 +461,8 @@ async function persistGenerationRecord(
       responseJson: params.result ?? null,
       tipo: params.tipo,
       title: title || params.tipo,
-      bnccSkillCodes: extracted.codes,
-      bnccSkills: extracted.skills as Json,
+      bnccSkillCodes: verifiedExtracted.codes,
+      bnccSkills: verifiedExtracted.skills as Json,
       contentPreview: preview,
       contentHtml: params.contentHtml || htmlContent,
       raw: {

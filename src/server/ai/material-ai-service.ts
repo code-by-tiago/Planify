@@ -135,7 +135,6 @@ function normalizeSection(section: Partial<MaterialAISection> & { descricao?: st
     titulo: String(section.titulo || "Seção").trim(),
     conteudo: String(section.conteudo || section.descricao || "").trim(),
     itens: normalizeStringArray(section.itens),
-    visualHtml: section.visualHtml,
   };
 }
 

@@ -545,7 +545,17 @@ export async function generateGeminiJSON<T>(
 }
 
 export type GeminiMediaPart = {
-  mimeType: "image/jpeg" | "image/png" | "image/webp" | "application/pdf";
+  mimeType:
+    | "image/jpeg"
+    | "image/png"
+    | "image/webp"
+    | "application/pdf"
+    | "audio/webm"
+    | "audio/mp4"
+    | "audio/mpeg"
+    | "audio/wav"
+    | "audio/ogg"
+    | "audio/x-m4a";
   base64: string;
 };
 

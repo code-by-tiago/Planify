@@ -43,7 +43,10 @@ export function OwnerFooterLink({ className = "" }: OwnerFooterLinkProps) {
   return (
     <Link
       href="/admin"
-      className={`text-[10px] font-medium text-slate-600/40 transition hover:text-cyan-500/70 ${className}`}
+      className={
+        className ||
+        "text-[10px] font-medium text-slate-600/40 transition hover:text-cyan-500/70"
+      }
       title="Administração do proprietário"
     >
       Administração

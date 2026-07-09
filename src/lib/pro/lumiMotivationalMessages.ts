@@ -104,6 +104,11 @@ const toolMessages: Partial<Record<PlanifyToolId, string[]>> = {
     "Aplicando rubrica e preparando devolutiva útil em sala.",
     "Feedback formativo quase pronto para seus alunos.",
   ],
+  copiloto: [
+    "Seu pedido está virando material com BNCC e qualidade máxima.",
+    "A coruja Planify está lapidando enunciados e gabarito.",
+    "Quase lá — o material do Copiloto está tomando forma.",
+  ],
 };
 
 function uniqueMessages(items: string[]): string[] {

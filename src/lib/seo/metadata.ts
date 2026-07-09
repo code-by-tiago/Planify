@@ -11,6 +11,12 @@ type PageMetadataOptions = {
 
 export function buildGlobalMetadata(): Metadata {
   const siteUrl = getSiteUrl();
+  const ogImage = {
+    url: `${siteUrl}${SEO.ogImagePath}`,
+    width: SEO.ogImageWidth,
+    height: SEO.ogImageHeight,
+    alt: SEO.brand,
+  };
 
   return {
     metadataBase: new URL(siteUrl),
@@ -33,11 +39,13 @@ export function buildGlobalMetadata(): Metadata {
       siteName: SEO.brand,
       title: DEFAULT_TITLE,
       description: SEO.descriptionFull,
+      images: [ogImage],
     },
     twitter: {
       card: "summary_large_image",
       title: DEFAULT_TITLE,
       description: SEO.descriptionShort,
+      images: [ogImage.url],
     },
     robots: {
       index: true,
@@ -59,6 +67,12 @@ export function buildPageMetadata({
   const canonical = `${siteUrl}${path}`;
   const desc = description ?? SEO.descriptionFull;
   const ogTitle = `${title} | ${SEO.brand}`;
+  const ogImage = {
+    url: `${siteUrl}${SEO.ogImagePath}`,
+    width: SEO.ogImageWidth,
+    height: SEO.ogImageHeight,
+    alt: SEO.brand,
+  };
 
   return {
     title,
@@ -73,11 +87,13 @@ export function buildPageMetadata({
       siteName: SEO.brand,
       locale: SEO.locale,
       type: "website",
+      images: [ogImage],
     },
     twitter: {
       card: "summary_large_image",
       title: ogTitle,
       description: desc,
+      images: [ogImage.url],
     },
     ...(noIndex
       ? {

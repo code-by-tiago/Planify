@@ -5,10 +5,14 @@ import Link from "next/link";
 import { PlanifyBrand } from "@/components/pro/PlanifyBrand";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { usePlanifySession } from "@/hooks/usePlanifySession";
+import { INSTAGRAM_URL, InstagramIcon } from "./InstagramIcon";
 import { ppBtnPrimarySm } from "./theme";
 
 const navLinkClass =
   "rounded-lg px-3 py-2 text-sm font-semibold text-[#0A192F]/80 transition hover:bg-[#F0F9FA] hover:text-[#0A192F]";
+
+const instagramLinkClass =
+  "inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white transition hover:border-[#E1306C]/40 hover:bg-[#FDF2F8]";
 
 export function LandingHeader() {
   const [open, setOpen] = useState(false);
@@ -47,6 +51,16 @@ export function LandingHeader() {
         </div>
 
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+          <a
+            href={INSTAGRAM_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Instagram do Planify"
+            className={instagramLinkClass}
+          >
+            <InstagramIcon className="h-5 w-5" variant="brand" />
+          </a>
+
           {showPainel ? (
             <>
               <Link href="/contato" className={`${navLinkClass} inline-flex`}>
@@ -93,6 +107,16 @@ export function LandingHeader() {
       {open && !showPainel ? (
         <div className="border-t border-slate-100 bg-white px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] md:hidden">
           <nav className="flex flex-col gap-1">
+            <a
+              href={INSTAGRAM_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => setOpen(false)}
+              className="inline-flex items-center gap-3 rounded-xl px-4 py-3 text-base font-semibold text-slate-800 hover:bg-pink-50"
+            >
+              <InstagramIcon className="h-5 w-5" variant="brand" />
+              Instagram
+            </a>
             <Link
               href="/escolas"
               onClick={() => setOpen(false)}

@@ -2566,3 +2566,38 @@ html:has(.pl-single-screen) body {
     position: static;
   }
 }
+
+/*
+  Landing professor-primeiro: CTA final + footer escuros.
+  Os overrides legados (body [class*="text-white"] / text-slate-100…)
+  forçam texto escuro; aqui restauramos contraste no navy.
+*/
+.planify-hud-landing [data-pp-dark],
+.planify-hud-landing [data-pp-dark] :where(p, span, li, a, h2, h3, nav, small) {
+  color: #ffffff !important;
+}
+
+.planify-hud-landing [data-pp-dark] a:hover {
+  color: #26c6da !important;
+}
+
+/* Botões claros sobre o navy (CTA) mantêm texto escuro */
+.planify-hud-landing [data-pp-dark] a[class*="bg-[#26C6DA]"],
+.planify-hud-landing [data-pp-dark] a[class*="bg-white"] {
+  color: #0a192f !important;
+}
+
+.planify-hud-landing [data-pp-dark] a[class*="bg-[#26C6DA]"]:hover,
+.planify-hud-landing [data-pp-dark] a[class*="bg-white"]:hover {
+  color: #0a192f !important;
+}
+
+/* Ícones ciano nos benefícios */
+.planify-hud-landing [data-pp-dark] [class*="text-[#26C6DA]"] {
+  color: #26c6da !important;
+}
+
+/* Logo Instagram (gradiente da marca) não herda branco do footer */
+.planify-hud-landing [data-pp-dark] a[aria-label*="Instagram"] {
+  color: inherit !important;
+}

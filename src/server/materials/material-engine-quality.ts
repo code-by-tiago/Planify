@@ -14,6 +14,26 @@ const COUNT_TOLERANCE = 1;
 const MAX_STATEMENT_CHARS = 320;
 const MIN_MC_OPTIONS = 4;
 
+const ACTIVITY_PLACEHOLDER_RE =
+  /complete a tarefa orientada pelo professor|registrando racioc[ií]nio e resposta no caderno|aplicar o conte[uú]do em contexto escolar/i;
+
+const COPILOTO_READING_MARKER = "COPILOTO_TEXTO_FONTE";
+
+function hasCopilotoReadingRequest(
+  request: Pick<MaterialEngineRequest, "conteudo" | "observacoes">,
+): boolean {
+  const blob = `${request.conteudo || ""}\n${request.observacoes || ""}`;
+  return blob.includes(COPILOTO_READING_MARKER);
+}
+
+function looksLikeReadingSourceSection(title: string, content: string): boolean {
+  const hay = `${title}\n${content}`.toLowerCase();
+  return (
+    /texto para leitura|texto[- ]fonte|cr[oô]nica|conto|poema|trecho/.test(hay) &&
+    content.trim().length >= 280
+  );
+}
+
 function countStatementSentences(text: string): number {
   return text
     .split(/[.!?]+/)
@@ -112,7 +132,27 @@ export function getEngineOutputIssues(
   output: MaterialEngineResponse,
 ): string[] {
   if (request.tipoMaterial === "prova") {
-    return validateProvaEngineOutput(request, output);
+    const issues = validateProvaEngineOutput(request, output);
+    if (hasCopilotoReadingRequest(request)) {
+      const sections = output.sections ?? [];
+      const hasReading = sections.some((section) =>
+        looksLikeReadingSourceSection(
+          section.title || "",
+          `${section.content || ""} ${(section.bullets ?? []).join(" ")}`,
+        ),
+      );
+      const examHasReading = (output.exam?.questions ?? []).some((question) =>
+        /texto para leitura|cr[oô]nica|conto|poema/i.test(
+          question.statement || "",
+        ),
+      );
+      if (!hasReading && !examHasReading) {
+        issues.push(
+          "Prova com texto-fonte: inclua seção 'Texto para leitura' com texto utilizável em sala antes das questões.",
+        );
+      }
+    }
+    return issues;
   }
 
   const issues: string[] = [];
@@ -423,12 +463,52 @@ export function getEngineOutputIssues(
           break;
         }
       }
+      if (ACTIVITY_PLACEHOLDER_RE.test(joinedItems)) {
+        issues.push(
+          `Atividade ${n}: remova comandos genéricos/placeholder e escreva itens específicos ao tema.`,
+        );
+      }
+      const uniqueItems = new Set(
+        items.map((item) => item.replace(/^\s*[a-e]\)\s*/i, "").trim().toLowerCase()),
+      );
+      if (items.length >= 3 && uniqueItems.size < Math.min(3, items.length)) {
+        issues.push(`Atividade ${n}: itens repetidos — cada letra deve ter comando distinto.`);
+      }
+      for (const item of items) {
+        const body = item.replace(/^\s*[a-e]\)\s*/i, "").trim();
+        if (body.length > 0 && body.length < 28) {
+          issues.push(`Atividade ${n}: itens devem ser enunciados completos (mín. 28 caracteres).`);
+          break;
+        }
+        if (isGenericEducationalText(body)) {
+          issues.push(`Atividade ${n}: evite itens genéricos; contextualize no tema.`);
+          break;
+        }
+      }
       if (!activity.evaluation?.trim()) {
         issues.push(`Atividade ${index + 1}: preencha 'evaluation'.`);
       } else if ((activity.evaluation?.trim().length ?? 0) < 45) {
         issues.push(`Atividade ${n}: avaliacao deve ter criterios observaveis.`);
       }
       if (issues.length >= 12) break;
+    }
+  }
+
+  if (tipo === "lista" && hasCopilotoReadingRequest(request)) {
+    const sections = output.sections ?? [];
+    const hasReading = sections.some((section) =>
+      looksLikeReadingSourceSection(
+        section.title || "",
+        `${section.content || ""} ${(section.bullets ?? []).join(" ")}`,
+      ),
+    );
+    const examHasReading = (output.exam?.questions ?? []).some((question) =>
+      /texto para leitura|cr[oô]nica|conto|poema/i.test(question.statement || ""),
+    );
+    if (!hasReading && !examHasReading) {
+      issues.push(
+        "Lista com texto-fonte: inclua seção 'Texto para leitura' com texto utilizável em sala antes das questões.",
+      );
     }
   }
 

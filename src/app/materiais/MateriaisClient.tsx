@@ -25,6 +25,7 @@ import { DailyGenerationsBar } from "@/components/credits/DailyGenerationsBar";
 import { MaterialPreviewSkeleton } from "@/components/materiais/MaterialPreviewSkeleton";
 import { MaterialToolPageShell } from "@/components/pro/MaterialToolPageShell";
 import { MaterialToolMobileSubmitBar } from "@/components/pro/MaterialToolMobileSubmitBar";
+import { PlanifyOwlGenerationCoach } from "@/components/pro/PlanifyOwlGenerationCoach";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { PlanifyPageHero } from "@/components/pro/PlanifyPageHero";
 import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
@@ -978,7 +979,7 @@ export function MateriaisClient({
       formScrollAttr={studioMode}
       previewScrollAttr={studioMode}
       previewReady={Boolean(resultadoHtml)}
-      previewLoading={loading}
+      previewLoading={loading || elevatingQuality || retryingExam}
       fullWidth={isExamTool && examCreationSource === "banco"}
       form={
         <form onSubmit={gerarMaterial} className="space-y-1 max-lg:pb-2">
@@ -1346,36 +1347,24 @@ export function MateriaisClient({
       }
       preview={
         <>
-          {loading ? (
+          {loading || elevatingQuality || retryingExam ? (
             <div className="space-y-4 p-2">
-              <div className="rounded-lg border border-blue-100 bg-white px-4 py-3 shadow-sm">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-[10px] font-black uppercase tracking-wide text-blue-700">
-                      Gerando material
-                    </p>
-                    <p className="mt-1 line-clamp-2 text-sm font-black text-slate-900">
-                      {progressLabel || mode.loadingTitle}
-                    </p>
-                  </div>
-                  <span className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-black tabular-nums text-blue-700">
-                    {typeof realGenerationProgress === "number"
-                      ? `${Math.round(realGenerationProgress)}%`
-                      : "IA"}
-                  </span>
-                </div>
-                <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100">
-                  <div
-                    className="h-full rounded-full bg-blue-600 transition-[width] duration-500"
-                    style={{
-                      width: `${Math.max(
-                        12,
-                        Math.min(100, Math.round(realGenerationProgress ?? 36)),
-                      )}%`,
-                    }}
-                  />
-                </div>
-              </div>
+              <PlanifyOwlGenerationCoach
+                active
+                title={
+                  elevatingQuality
+                    ? "Elevando qualidade do material…"
+                    : retryingExam
+                      ? "Corrigindo questões fracas…"
+                      : progressLabel || mode.loadingTitle
+                }
+                description={mode.loadingDescription}
+                context="material"
+                toolId={mode.id}
+                realProgressPercent={
+                  loading ? realGenerationProgress : undefined
+                }
+              />
               {showPatienceMessage ? (
                 <p className="text-center text-sm font-semibold text-slate-600">
                   Materiais complexos podem levar alguns minutos. Não feche esta página.

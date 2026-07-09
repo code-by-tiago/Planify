@@ -54,7 +54,11 @@ export type PlanifyIconName =
   | "trash"
   | "settings"
   | "message"
-  | "layers";
+  | "layers"
+  | "play"
+  | "shieldCheck"
+  | "grid"
+  | "mic";
 
 export type ToolCategoryId =
   | "todos"
@@ -81,7 +85,8 @@ export type PlanifyToolId =
   | "pei"
   | "aula-completa"
   | "correcao-ia"
-  | "cruzadinha";
+  | "cruzadinha"
+  | "copiloto";
 
 export type PlanifyTool = {
   id: PlanifyToolId;
@@ -298,6 +303,22 @@ export const planifyTools: PlanifyTool[] = [
     loadingTitle: "Criando mapa mental",
     loadingDescription: "Relacionando conceitos e tópicos essenciais.",
     accent: "from-purple-300 via-fuchsia-300 to-indigo-300",
+  },
+  {
+    id: "copiloto",
+    title: "Copiloto por Voz",
+    shortTitle: "Copiloto",
+    description:
+      "Fale o pedido: gera lista, prova, redação, plano de aula ou dinâmica — com BNCC e qualidade máxima.",
+    category: "preparar-aulas",
+    href: dashboardToolHref("copiloto"),
+    icon: "mic",
+    popular: true,
+    primaryFieldLabel: "Pedido falado ou digitado",
+    loadingTitle: "Interpretando seu pedido",
+    loadingDescription:
+      "Transcrevendo, estruturando o brief e cruzando BNCC com tendências de cobrança.",
+    accent: "from-cyan-300 via-sky-300 to-indigo-300",
   },
   {
     id: "inclusao",

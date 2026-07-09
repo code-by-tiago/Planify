@@ -73,6 +73,7 @@ import { formatGenerationError } from "@/lib/pro/generation-error-ui";
 import type { MaterialEditorMeta } from "@/lib/materiais/material-editor-flow";
 import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
 import { PlanifyPageHero } from "@/components/pro/PlanifyPageHero";
+import { PlanifyOwlGenerationCoach } from "@/components/pro/PlanifyOwlGenerationCoach";
 import {
   ChangeEvent,
   ClipboardEvent,
@@ -2269,6 +2270,27 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
 
   const main = (
     <>
+      {elevatingQuality ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/30 p-4 backdrop-blur-[2px]">
+          <div className="w-full max-w-lg">
+            <PlanifyOwlGenerationCoach
+              active
+              title={
+                planningMeta
+                  ? "Elevando qualidade do planejamento…"
+                  : "Elevando qualidade do material…"
+              }
+              description="A coruja Planify está regenerando com foco em qualidade pedagógica."
+              context={planningMeta ? "planejamento" : "material"}
+              toolId={
+                planningMeta
+                  ? "planejamento"
+                  : materialMeta?.toolId || "prova"
+              }
+            />
+          </div>
+        </div>
+      ) : null}
       {originHint ? (
         <div
           className={

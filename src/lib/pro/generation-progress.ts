@@ -20,6 +20,7 @@ const TOOL_DURATION_MS: Partial<Record<PlanifyToolId | string, number>> = {
   "aula-completa": 360_000,
   cruzadinha: 90_000,
   "correcao-ia": 60_000,
+  copiloto: 90_000,
 };
 
 const CONTEXT_DURATION_MS: Record<LumiCoachContext, number> = {

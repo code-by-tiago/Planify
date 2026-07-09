@@ -4,25 +4,25 @@ import styles from "./landing-create-block.module.css";
 
 const showcaseItems = [
   {
-    title: "Planejamento – Anual + Trimestrais",
+    title: "Planejamento: Anual + Trimestrais",
     href: "/planejamento-escolar-com-ia",
     image: "/marketing/create-showcase/planejamento-anual.png",
     alt: "Prévia de um planejamento anual com tabela trimestral",
   },
   {
-    title: "PEI – Plano Individualizado",
+    title: "PEI: Plano Individualizado",
     href: "/pei",
     image: "/marketing/create-showcase/pei-plano-individualizado.png",
     alt: "Prévia de um PEI individualizado",
   },
   {
-    title: "Avaliação – Google Forms",
+    title: "Avaliação: Google Forms",
     href: "/gerador-de-provas-com-ia",
     image: "/marketing/create-showcase/avaliacao-google-forms.png",
     alt: "Prévia de avaliação no Google Forms",
   },
   {
-    title: "Atividade – Cruzadinha",
+    title: "Atividade: Cruzadinha",
     href: "/cruzadinha",
     image: "/marketing/create-showcase/atividade-cruzadinha.png",
     alt: "Prévia de atividade de cruzadinha",

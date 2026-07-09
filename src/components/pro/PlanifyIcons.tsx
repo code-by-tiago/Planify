@@ -225,6 +225,15 @@ export function PlanifyIcon({ name, className }: IconProps) {
           <path d="m9 15-3 3" />
         </BaseIcon>
       );
+    case "mic":
+      return (
+        <BaseIcon className={className}>
+          <rect x="9" y="2" width="6" height="11" rx="3" />
+          <path d="M5 10a7 7 0 0 0 14 0" />
+          <path d="M12 17v4" />
+          <path d="M8 21h8" />
+        </BaseIcon>
+      );
     case "user":
       return (
         <BaseIcon className={className}>
@@ -348,6 +357,28 @@ export function PlanifyIcon({ name, className }: IconProps) {
       return (
         <BaseIcon className={className}>
           <path d="M21 11.5a8.4 8.4 0 0 1-1.1 4.2 8.5 8.5 0 0 1-7.4 4.3 8.4 8.4 0 0 1-3.9-1L3 20l1.2-3.6a8.4 8.4 0 0 1-1.1-3.9 8.5 8.5 0 0 1 4.3-7.4 8.4 8.4 0 0 1 4.2-1.1h.4a8.5 8.5 0 0 1 8.3 8.3Z" />
+        </BaseIcon>
+      );
+    case "play":
+      return (
+        <BaseIcon className={className}>
+          <path d="M7 4.5v15l13-7.5-13-7.5Z" fill="currentColor" stroke="none" />
+        </BaseIcon>
+      );
+    case "shieldCheck":
+      return (
+        <BaseIcon className={className}>
+          <path d="M12 3 4.5 5.5v5.2c0 4.6 3.2 8.4 7.5 9.8 4.3-1.4 7.5-5.2 7.5-9.8V5.5L12 3Z" />
+          <path d="m9 12 2 2 4-4" />
+        </BaseIcon>
+      );
+    case "grid":
+      return (
+        <BaseIcon className={className}>
+          <rect x="3.5" y="3.5" width="7" height="7" rx="1.2" />
+          <rect x="13.5" y="3.5" width="7" height="7" rx="1.2" />
+          <rect x="3.5" y="13.5" width="7" height="7" rx="1.2" />
+          <rect x="13.5" y="13.5" width="7" height="7" rx="1.2" />
         </BaseIcon>
       );
     default:

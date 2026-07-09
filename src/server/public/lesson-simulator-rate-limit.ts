@@ -3,8 +3,8 @@ import { getSupabaseAdminClient } from "../supabase/admin-client";
 
 export const SIMULATOR_FP_COOKIE = "planify_sim_fp";
 export const SIMULATOR_USED_COOKIE = "planify_sim_used";
-const WINDOW_MS = 24 * 60 * 60 * 1000;
-const FP_MAX_AGE = 60 * 60 * 24 * 365;
+/** Cookie/fingerprint lifetime — 1 uso vitalício por dispositivo. */
+const COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 const DEV_IP_FALLBACK = "dev-local";
 
 export type RateLimitState = {
@@ -19,14 +19,6 @@ type SupabaseLoose = {
 };
 
 const memoryUsage = new Map<string, number>();
-
-function pruneMemoryStore(now = Date.now()): void {
-  for (const [key, usedAt] of memoryUsage) {
-    if (now - usedAt >= WINDOW_MS) {
-      memoryUsage.delete(key);
-    }
-  }
-}
 
 function db(): SupabaseLoose | null {
   try {
@@ -139,7 +131,7 @@ function readUsedAtFromCookie(request: NextRequest): number | null {
   return Number.isFinite(usedAt) && usedAt > 0 ? usedAt : null;
 }
 
-function readMemoryUsage(request: NextRequest, fingerprint: string, ip: string | null): number {
+function readMemoryUsage(_request: NextRequest, fingerprint: string, ip: string | null): number {
   const effectiveIp = resolveEffectiveIp(ip);
   const compositeUsedAt = memoryUsage.get(buildRateLimitKey(effectiveIp, fingerprint)) ?? 0;
   const ipUsedAt = ip ? (memoryUsage.get(buildIpOnlyKey(ip)) ?? 0) : 0;
@@ -150,40 +142,41 @@ function readMemoryUsage(request: NextRequest, fingerprint: string, ip: string |
 function writeMemoryUsage(ip: string | null, fingerprint: string, usedAt: number): void {
   const effectiveIp = resolveEffectiveIp(ip);
 
-  memoryUsage.set(buildRateLimitKey(effectiveIp, fingerprint), usedAt);
+  // Não sobrescrever o primeiro uso — limite vitalício.
+  const key = buildRateLimitKey(effectiveIp, fingerprint);
+  if (!memoryUsage.has(key)) {
+    memoryUsage.set(key, usedAt);
+  }
 
   if (ip) {
-    memoryUsage.set(buildIpOnlyKey(ip), usedAt);
+    const ipKey = buildIpOnlyKey(ip);
+    if (!memoryUsage.has(ipKey)) {
+      memoryUsage.set(ipKey, usedAt);
+    }
   }
 }
 
-function buildLimitedState(
-  fingerprint: string,
-  usedAt: number,
-  now: number,
-): RateLimitState {
+function buildLimitedState(fingerprint: string): RateLimitState {
   return {
     limited: true,
     fingerprint,
-    retryAfterMs: WINDOW_MS - (now - usedAt),
   };
 }
 
 export async function checkLessonSimulatorRateLimit(
   request: NextRequest,
 ): Promise<RateLimitState> {
-  const now = Date.now();
-  pruneMemoryStore(now);
-
   const fingerprint = resolveSimulatorFingerprint(request);
+
+  // Em desenvolvimento, não aplicar o limite vitalício para facilitar testes locais.
+  if (process.env.NODE_ENV !== "production") {
+    return { limited: false, fingerprint };
+  }
+
   const ip = getClientIp(request);
 
-  if (!ip && process.env.NODE_ENV === "production") {
-    return {
-      limited: true,
-      fingerprint,
-      retryAfterMs: WINDOW_MS,
-    };
+  if (!ip) {
+    return buildLimitedState(fingerprint);
   }
 
   const persistedUsedAt = await readPersistedUsage(ip, fingerprint);
@@ -191,8 +184,9 @@ export async function checkLessonSimulatorRateLimit(
   const memoryUsedAt = readMemoryUsage(request, fingerprint, ip);
   const usedAt = Math.max(persistedUsedAt ?? 0, cookieUsedAt, memoryUsedAt);
 
-  if (usedAt > 0 && now - usedAt < WINDOW_MS) {
-    return buildLimitedState(fingerprint, usedAt, now);
+  // Qualquer uso anterior bloqueia para sempre (1 teste por dispositivo/IP).
+  if (usedAt > 0) {
+    return buildLimitedState(fingerprint);
   }
 
   return { limited: false, fingerprint };
@@ -222,7 +216,7 @@ export function applyLessonSimulatorUsageCookies(
       httpOnly: true,
       sameSite: "lax",
       secure: process.env.NODE_ENV === "production",
-      maxAge: FP_MAX_AGE,
+      maxAge: COOKIE_MAX_AGE,
       path: "/",
     });
   }
@@ -231,7 +225,7 @@ export function applyLessonSimulatorUsageCookies(
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
-    maxAge: Math.ceil(WINDOW_MS / 1000),
+    maxAge: COOKIE_MAX_AGE,
     path: "/",
   });
 }

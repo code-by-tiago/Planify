@@ -1120,48 +1120,34 @@ function enrichLessonPlanSteps(
   });
 }
 
+/**
+ * Normaliza atividades sem inventar conteúdo genérico.
+ * Itens/objetivo fracos devem falhar no quality gate e disparar retry —
+ * nunca completar com placeholders do tipo "Complete a tarefa orientada pelo professor…".
+ */
 function enrichActivitiesForQuality(
   activities: MaterialEngineResponse["activities"],
 ): MaterialEngineResponse["activities"] {
-  return activities.map((activity) => {
+  return (activities ?? []).map((activity) => {
     const objective = String(activity.objective || "").trim();
     const instructions = String(activity.instructions || "").trim();
     const evaluation = String(activity.evaluation || "").trim();
-    let estimatedTime = String(activity.estimatedTime || "").trim();
-    if (!estimatedTime) {
-      estimatedTime = "Tempo: 30 minutos";
-    }
-    const materials = activity.materials?.length
-      ? activity.materials
-      : ["Caderno de registro", "Material impresso da atividade"];
-    let items = activity.items?.length ? [...activity.items] : [];
-    const letters = ["a", "b", "c", "d", "e"];
-    for (const letter of letters) {
-      if (items.some((item) => new RegExp(`^\\s*${letter}\\)`, "i").test(item))) {
-        continue;
-      }
-      items.push(
-        `${letter}) Complete a tarefa orientada pelo professor, registrando raciocínio e resposta no caderno.`,
-      );
-    }
+    const estimatedTime = String(activity.estimatedTime || "").trim();
+    const materials = (activity.materials ?? [])
+      .map((item) => String(item || "").trim())
+      .filter(Boolean);
+    const items = (activity.items ?? [])
+      .map((item) => String(item || "").trim())
+      .filter(Boolean);
 
     return {
       ...activity,
-      objective:
-        objective.length >= 35
-          ? objective
-          : `${objective || "Aplicar o conteúdo"} em contexto escolar, com registro individual e participação ativa.`,
+      objective,
       estimatedTime,
-      materials: materials.length >= 2 ? materials : [...materials, "Lápis e borracha"],
-      instructions:
-        instructions.length >= 80
-          ? instructions
-          : `${instructions || "Organize a turma em duplas."} Oriente leitura do comando, circulação para mediação, registro individual das respostas e socialização final com critérios de participação.`,
-      items: items.slice(0, Math.max(items.length, 5)),
-      evaluation:
-        evaluation.length >= 45
-          ? evaluation
-          : `${evaluation || "Participação"} Observar registro das respostas, clareza do raciocínio e colaboração nas duplas.`,
+      materials,
+      instructions,
+      items,
+      evaluation,
     };
   });
 }

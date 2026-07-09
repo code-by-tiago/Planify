@@ -51,6 +51,12 @@ const PeiClient = dynamic(
   { ssr: false, loading: PanelLoading },
 );
 
+const CopilotoClient = dynamic(
+  () =>
+    import("@/app/copiloto/CopilotoClient").then((m) => m.CopilotoClient),
+  { ssr: false, loading: PanelLoading },
+);
+
 const PlanejamentosClient = dynamic(
   () =>
     import("@/app/planejamentos/PlanejamentosClient").then(
@@ -183,6 +189,22 @@ export function PlanifyDashboardMain({
           <div className="planify-hud planify-materiais-studio flex h-full min-h-0 w-full flex-col overflow-hidden bg-[var(--planify-canvas)]">
             <div className="min-h-0 flex-1 overflow-hidden">
               <PeiClient
+                studioMode
+                onStudioClose={onClosePanel}
+                initialTema={initialTopic}
+              />
+            </div>
+          </div>
+        </PlanifyWorkspaceProvider>
+      );
+    }
+
+    if (toolId === "copiloto") {
+      return (
+        <PlanifyWorkspaceProvider embeddedInDashboard>
+          <div className="planify-hud planify-materiais-studio flex h-full min-h-0 w-full flex-col overflow-hidden bg-[var(--planify-canvas)]">
+            <div className="min-h-0 flex-1 overflow-hidden">
+              <CopilotoClient
                 studioMode
                 onStudioClose={onClosePanel}
                 initialTema={initialTopic}

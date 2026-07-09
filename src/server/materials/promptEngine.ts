@@ -101,6 +101,9 @@ REGRAS DA ÂNCORA:
 function buildToolRules(input: PromptEngineInput): string[] {
   const { tipoFerramenta: tipo, quantidade, tema, incluirGabarito } = input;
   const q = quantidade;
+  const wantsReadingSource = `${input.conteudo || ""}\n${input.observacoes || ""}`.includes(
+    "COPILOTO_TEXTO_FONTE",
+  );
 
   switch (tipo) {
     case "prova":
@@ -118,7 +121,10 @@ function buildToolRules(input: PromptEngineInput): string[] {
         incluirGabarito === false
           ? "Sem gabarito: respostaCorreta e justificativa podem ser vazias."
           : "Gabarito obrigatório: respostaCorreta (letra ou valor) + justificativa mínima dentro do limite de 120 caracteres no total.",
-        "NÃO crie seções tipo texto com introdução longa — material direto para aplicar.",
+        wantsReadingSource
+          ? 'OBRIGATÓRIO: além das questões, crie UMA seção tipo "texto" com título exatamente "Texto para leitura", contendo um texto completo utilizável em sala (mín. 280 caracteres). Se a obra pedida for protegida por direitos autorais, use trecho pedagógico inspirado no estilo / domínio público — NÃO invente que é a obra integral. Todas as questões devem ancorar-se nesse texto.'
+          : "NÃO crie seções tipo texto com introdução longa — material direto para aplicar.",
+        "PROIBIDO: alternativas idênticas, placeholders genéricos ou comandos do tipo 'complete a tarefa orientada pelo professor'.",
       ];
 
     case "plano-aula":
@@ -175,11 +181,13 @@ function buildToolRules(input: PromptEngineInput): string[] {
     case "atividade":
       return [
         `Crie ${q} seções tipo "texto" — uma por atividade (título descritivo da atividade).`,
-        "Cada atividade DEVE ser robusta e pronta para aplicar em sala.",
+        "Cada atividade DEVE ser uma dinâmica/prática de sala robusta e pronta para aplicar.",
         'Em conteudo.paragrafos: "Objetivo: ..." (35+ caracteres, específico ao tema) e "Desenvolvimento: ..." (80+ caracteres com orientação passo a passo).',
         'Em conteudo.bullets: "Tempo: XX minutos", 2+ bullets "Material: ...", exatamente 5 itens "a) ...", "b) ...", "c) ...", "d) ...", "e) ..." e "Avaliação: ..." (45+ caracteres com critérios observáveis).',
         "Os itens a)-e) devem ter progressão cognitiva: observar/ler, interpretar, aplicar, justificar e produzir/sintetizar.",
         "Use enunciados completos contextualizados no tema — proibido comandos genéricos de uma linha.",
+        "PROIBIDO: 'Complete a tarefa orientada pelo professor', itens idênticos, ou qualquer placeholder genérico.",
+        "NÃO transforme em lista/prova de múltipla escolha; foque no percurso prático em sala.",
       ];
 
     case "sequencia":

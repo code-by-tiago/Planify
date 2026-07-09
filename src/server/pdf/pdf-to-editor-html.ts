@@ -1,10 +1,6 @@
-import { createRequire } from "node:module";
-import { pathToFileURL } from "node:url";
 import { createCanvas } from "@napi-rs/canvas";
 
 type PdfJsModule = typeof import("pdfjs-dist/legacy/build/pdf.mjs");
-
-const requireFromHere = createRequire(import.meta.url);
 
 const MAX_PAGES_DEFAULT = 20;
 const RENDER_SCALE = 1.75;
@@ -18,11 +14,8 @@ function escapeHtml(value: string): string {
 }
 
 async function loadPdfJs(): Promise<PdfJsModule> {
-  const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
-  pdfjs.GlobalWorkerOptions.workerSrc = pathToFileURL(
-    requireFromHere.resolve("pdfjs-dist/legacy/build/pdf.worker.mjs"),
-  ).toString();
-  return pdfjs;
+  // Worker desabilitado em getDocument; não precisa resolver workerSrc no bundle.
+  return import("pdfjs-dist/legacy/build/pdf.mjs");
 }
 
 /**

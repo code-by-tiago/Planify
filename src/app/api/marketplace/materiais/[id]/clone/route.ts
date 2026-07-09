@@ -3,7 +3,6 @@ import { randomUUID } from "node:crypto";
 import { requireApiPremiumAccess } from "@/server/auth/api-access";
 import { getSupabaseAdminClient } from "@/server/supabase/admin-client";
 import { convertSimpleDocxToHtml } from "@/server/docx/simple-docx-to-html";
-import { convertPdfToEditorHtml } from "@/server/pdf/pdf-to-editor-html";
 import {
   buildPreviewHtmlContent,
   resolveMarketplacePreviewKind,
@@ -96,6 +95,9 @@ export async function POST(
             material.title || "Material",
           );
         } else if (previewKind === "pdf") {
+          const { convertPdfToEditorHtml } = await import(
+            "@/server/pdf/pdf-to-editor-html"
+          );
           const converted = await convertPdfToEditorHtml(
             storedBuffer,
             material.title || "Material PDF",

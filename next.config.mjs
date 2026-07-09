@@ -11,6 +11,7 @@ const nextConfig = {
   },
   serverExternalPackages: [
     "@google/genai",
+    "@napi-rs/canvas",
     "@sparticuz/chromium-min",
     "puppeteer-core",
     "linkedom",

@@ -6,8 +6,6 @@ import { ComunidadeDocenteCreatePostModal, type ComposerIntent } from "@/compone
 import { ComunidadeDocenteBnccChallengeModal } from "@/components/community/docente/ComunidadeDocenteBnccChallengeModal";
 import { ComunidadeDocenteComposer } from "@/components/community/docente/ComunidadeDocenteComposer";
 import { ComunidadeDocenteDiscussions } from "@/components/community/docente/ComunidadeDocenteDiscussions";
-import { ComunidadeDocenteFeedFilters } from "@/components/community/docente/ComunidadeDocenteFeedFilters";
-import { ComunidadeDocenteMaterials } from "@/components/community/docente/ComunidadeDocenteMaterials";
 import { ComunidadeMaterialPreviewModal } from "@/components/community/docente/ComunidadeMaterialPreviewModal";
 import { ComunidadeDocenteRightSidebar } from "@/components/community/docente/ComunidadeDocenteRightSidebar";
 import {
@@ -124,19 +122,6 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
     }
     return list.map((d) => ({ ...d, author: decorateAuthor(d.author) }));
   }, [discussions, effectiveSearch, decorateAuthor]);
-
-  const filteredMaterials = useMemo(() => {
-    let list = materials;
-    if (effectiveSearch.trim()) {
-      const q = effectiveSearch.toLowerCase();
-      list = list.filter((m) =>
-        `${m.title} ${m.author.name} ${m.disciplina || ""} ${m.tipoMaterial || ""} ${m.tags?.join(" ") || ""}`
-          .toLowerCase()
-          .includes(q),
-      );
-    }
-    return list.map((m) => ({ ...m, author: decorateAuthor(m.author) }));
-  }, [materials, effectiveSearch, decorateAuthor]);
 
   const effectiveHiddenMaterialIds = useMemo(() => {
     void hiddenRevision;
@@ -732,24 +717,6 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
           onShare={openCreatePost}
           suggestedTitle={shareSuggestion}
         />
-        <ComunidadeDocenteFeedFilters
-          mineOnly={mineOnly}
-          friendsOnly={friendsOnly}
-          savedOnly={savedOnly}
-          showHidden={showHidden}
-          selectedDisciplina={selectedDisciplina}
-          anoSerie={anoSerieFilter}
-          tipoMaterial={tipoMaterialFilter}
-          searchQuery={searchQuery}
-          onToggleMineOnly={() => setMineOnly((v) => !v)}
-          onToggleFriendsOnly={() => setFriendsOnly((v) => !v)}
-          onToggleSavedOnly={() => setSavedOnly((v) => !v)}
-          onToggleShowHidden={() => setShowHidden((v) => !v)}
-          onSelectDisciplina={setSelectedDisciplina}
-          onAnoSerieChange={setAnoSerieFilter}
-          onTipoMaterialChange={setTipoMaterialFilter}
-          onSearchChange={setSearchQuery}
-        />
         <ComunidadeDocenteTrending
           materials={trendingMaterials}
           onOpen={(id) => {
@@ -768,20 +735,6 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
             }
             if (first) setPreviewMaterialId(first.id);
           }}
-        />
-        <ComunidadeDocenteMaterials
-          materials={filteredMaterials}
-          embedded={embedded}
-          showHidden={showHidden}
-          downloadingMaterialId={downloadingMaterialId}
-          onOpen={setPreviewMaterialId}
-          onLike={handleLikeMaterial}
-          onSave={handleSaveMaterial}
-          onDownload={handleDownloadMaterial}
-          onHideMaterial={handleHideMaterial}
-          onUnhideMaterial={handleUnhideMaterial}
-          onCreateMaterial={() => openCreatePost("materiais")}
-          title="Materiais da Comunidade"
         />
         <ComunidadeDocenteDiscussions
           discussions={filteredDiscussions}

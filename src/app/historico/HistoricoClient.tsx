@@ -513,8 +513,8 @@ export function HistoricoClient() {
         value={meta.folderId || ""}
         onChange={(event) => handleMoveSelectChange(item, event.target.value)}
         className={[
-          "min-h-9 rounded-xl border border-slate-200 bg-white text-[10px] font-bold text-slate-600 outline-none focus:border-cyan-400",
-          compact ? "px-2 py-1.5" : "px-3 py-2 text-xs",
+          "rounded-lg border border-slate-200 bg-white font-medium text-slate-600 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100",
+          compact ? "h-8 px-2 text-[11px]" : "h-10 px-3 text-xs",
         ].join(" ")}
         aria-label="Mover para pasta"
       >
@@ -540,36 +540,36 @@ export function HistoricoClient() {
         />
       }
     >
-      <div className="grid gap-6">
+      <div className="mx-auto max-w-6xl space-y-6">
         {activeFolder ? (
-          <div className="rounded-2xl border border-cyan-400/30 bg-white p-4 sm:p-5">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
+          <div className="pl-hud-glass rounded-2xl p-5 sm:p-6">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div className="flex min-w-0 items-center gap-3">
                 <button
                   type="button"
                   onClick={() => setActiveFolderId(null)}
-                  className="flex min-h-9 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 transition hover:bg-slate-50"
+                  aria-label="Voltar para Meus materiais"
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:border-cyan-200 hover:text-cyan-700"
                 >
-                  <PlanifyIcon name="arrowLeft" className="h-3.5 w-3.5" />
-                  Meus materiais
+                  <PlanifyIcon name="arrowLeft" className="h-4 w-4" />
                 </button>
-                <div className="flex items-center gap-2">
-                  <PlanifyIcon name="folder" className="h-8 w-8 text-cyan-600" />
-                  <div>
-                    <p className="text-sm font-black leading-tight text-slate-900">
-                      {activeFolder.classLabel}
-                    </p>
-                    <p className="text-xs font-semibold leading-tight text-slate-500">
-                      {activeFolder.schoolLabel} · {filteredItems.length}{" "}
-                      {filteredItems.length === 1 ? "item" : "itens"}
-                    </p>
-                  </div>
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-cyan-50 text-cyan-600">
+                  <PlanifyIcon name="folder" className="h-5 w-5" />
+                </span>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-slate-900">
+                    {activeFolder.classLabel}
+                  </p>
+                  <p className="truncate text-xs text-slate-400">
+                    {activeFolder.schoolLabel} · {filteredItems.length}{" "}
+                    {filteredItems.length === 1 ? "item" : "itens"}
+                  </p>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => void handleDeleteFolder(activeFolder)}
-                className="flex min-h-9 items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-700 transition hover:bg-rose-100"
+                className="flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold text-slate-500 transition hover:bg-rose-50 hover:text-rose-600"
               >
                 <PlanifyIcon name="trash" className="h-3.5 w-3.5" />
                 Excluir pasta
@@ -577,32 +577,34 @@ export function HistoricoClient() {
             </div>
           </div>
         ) : (
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400">
-                Pastas · Escola / Turma
+          <div className="pl-hud-glass rounded-2xl p-5 sm:p-6">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+                Pastas · escola / turma
               </p>
-              <span className="text-[11px] font-semibold text-slate-400">
-                Clique para abrir · use a lixeira para excluir
+              <span className="text-[11px] font-medium text-slate-400">
+                Toque para abrir · lixeira para excluir
               </span>
             </div>
 
-            <div className="mt-3 grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
+            <div className="mt-4 grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
               {flatFolders.map(({ folder, count }) => (
                 <div key={folder.id} className="group relative">
                   <button
                     type="button"
                     onClick={() => setActiveFolderId(folder.id)}
-                    className="flex w-full flex-col items-center gap-1 rounded-2xl border border-slate-200 bg-white p-3 text-center transition hover:border-cyan-200 hover:bg-cyan-50/40"
+                    className="flex w-full flex-col items-center gap-2 rounded-2xl border border-slate-200 bg-white p-4 text-center transition hover:border-cyan-200 hover:shadow-sm"
                   >
-                    <PlanifyIcon name="folder" className="h-9 w-9 text-amber-400" />
-                    <span className="line-clamp-1 text-xs font-bold text-slate-800">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-50 text-cyan-600">
+                      <PlanifyIcon name="folder" className="h-5 w-5" />
+                    </span>
+                    <span className="line-clamp-1 text-xs font-semibold text-slate-800">
                       {folder.classLabel}
                     </span>
-                    <span className="line-clamp-1 text-[10px] font-semibold text-slate-400">
+                    <span className="line-clamp-1 text-[11px] text-slate-400">
                       {folder.schoolLabel}
                     </span>
-                    <span className="text-[10px] font-semibold text-slate-400">
+                    <span className="text-[10px] font-medium text-slate-400">
                       {count} {count === 1 ? "item" : "itens"}
                     </span>
                   </button>
@@ -612,7 +614,7 @@ export function HistoricoClient() {
                       event.stopPropagation();
                       void handleDeleteFolder(folder);
                     }}
-                    className="absolute -right-1.5 -top-1.5 flex h-6 w-6 items-center justify-center rounded-full border border-rose-200 bg-white text-rose-600 opacity-80 shadow-sm transition hover:bg-rose-50 hover:opacity-100 focus:opacity-100"
+                    className="absolute -right-1.5 -top-1.5 flex h-6 w-6 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400 opacity-0 shadow-sm transition group-hover:opacity-100 hover:border-rose-200 hover:text-rose-600 focus:opacity-100 focus-visible:opacity-100"
                     title="Excluir pasta"
                     aria-label={`Excluir pasta ${folder.schoolLabel} ${folder.classLabel}`}
                   >
@@ -624,15 +626,19 @@ export function HistoricoClient() {
               <button
                 type="button"
                 onClick={() => openNewFolderForm()}
-                className="flex flex-col items-center justify-center gap-1.5 rounded-2xl border-2 border-dashed border-slate-300 p-3 text-center text-slate-500 transition hover:border-cyan-300 hover:bg-cyan-50/40 hover:text-cyan-700"
+                className="group flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-slate-200 p-4 text-center transition hover:border-cyan-300 hover:bg-cyan-50/30"
               >
-                <PlanifyIcon name="plus" className="h-9 w-9" />
-                <span className="text-xs font-bold">Nova pasta</span>
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-400 transition group-hover:bg-cyan-100 group-hover:text-cyan-600">
+                  <PlanifyIcon name="plus" className="h-5 w-5" />
+                </span>
+                <span className="text-xs font-semibold text-slate-500 transition group-hover:text-cyan-700">
+                  Nova pasta
+                </span>
               </button>
             </div>
 
             {folderTree.length === 0 ? (
-              <p className="mt-3 text-xs font-medium text-slate-500">
+              <p className="mt-4 text-xs text-slate-400">
                 Organize por escola e turma para não perder o ano letivo. Materiais sem pasta aparecem abaixo, em "Meus materiais".
               </p>
             ) : null}
@@ -640,20 +646,20 @@ export function HistoricoClient() {
         )}
 
         {newFolderOpen ? (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4">
-            <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-5 shadow-xl">
-              <h3 className="text-sm font-bold text-slate-900">Nova pasta</h3>
-              <p className="mt-1 text-xs text-slate-500">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-sm">
+            <div className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl">
+              <h3 className="text-base font-semibold text-slate-900">Nova pasta</h3>
+              <p className="mt-1 text-sm text-slate-500">
                 Organize por escola e turma para encontrar rápido depois.
               </p>
-              <div className="mt-4 grid gap-3">
+              <div className="mt-5 grid gap-4">
                 <label className="grid gap-1.5">
                   <span className="text-xs font-semibold text-slate-600">Escola</span>
                   <input
                     value={newFolderSchool}
                     onChange={(event) => setNewFolderSchool(event.target.value)}
                     placeholder="Ex.: Escola Objetivo"
-                    className="min-h-11 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:border-cyan-400 focus:bg-white"
+                    className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
                   />
                 </label>
                 <label className="grid gap-1.5">
@@ -662,18 +668,18 @@ export function HistoricoClient() {
                     value={newFolderClass}
                     onChange={(event) => setNewFolderClass(event.target.value)}
                     placeholder="Ex.: 6º Ano A"
-                    className="min-h-11 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:border-cyan-400 focus:bg-white"
+                    className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
                   />
                 </label>
               </div>
-              <div className="mt-5 flex justify-end gap-2">
+              <div className="mt-6 flex justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => {
                     setNewFolderOpen(false);
                     setPendingMoveItemId(null);
                   }}
-                  className="min-h-11 rounded-xl border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-600"
+                  className="rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-500 transition hover:bg-slate-50"
                 >
                   Cancelar
                 </button>
@@ -681,7 +687,7 @@ export function HistoricoClient() {
                   type="button"
                   onClick={() => void handleCreateFolder()}
                   disabled={savingFolder || !newFolderClass.trim()}
-                  className="pl-hud-btn min-h-11 rounded-xl px-4 text-xs font-bold disabled:cursor-not-allowed disabled:opacity-50"
+                  className="pl-hud-btn rounded-xl px-5 py-2.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {savingFolder ? "Criando…" : "Criar pasta"}
                 </button>
@@ -691,22 +697,24 @@ export function HistoricoClient() {
         ) : null}
 
         <div className="flex flex-wrap items-center gap-3">
-          {[
-            ["Total geral", totals.todos],
-            ["Planejamentos", totals.planejamentos],
-            ["Materiais", totals.materiais],
-            ["Editor", totals.editor],
-          ].map(([label, value]) => (
-            <div
-              key={label}
-              className="rounded-xl border border-cyan-400/15 bg-white px-4 py-2.5"
-            >
-              <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">
-                {label}
-              </p>
-              <p className="text-lg font-extrabold text-slate-950">{value}</p>
-            </div>
-          ))}
+          <div className="flex flex-wrap gap-2">
+            {[
+              ["Total geral", totals.todos],
+              ["Planejamentos", totals.planejamentos],
+              ["Materiais", totals.materiais],
+              ["Editor", totals.editor],
+            ].map(([label, value]) => (
+              <div
+                key={label}
+                className="rounded-xl border border-cyan-400/15 bg-white px-4 py-2.5"
+              >
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                  {label}
+                </p>
+                <p className="text-lg font-semibold text-slate-900">{value}</p>
+              </div>
+            ))}
+          </div>
           <div className="ml-auto flex flex-wrap gap-2">
             {selectionMode ? (
               <>
@@ -723,14 +731,14 @@ export function HistoricoClient() {
                   type="button"
                   onClick={removeSelectedItems}
                   disabled={selectedCount === 0}
-                  className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-xs font-semibold text-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="rounded-xl px-4 py-2 text-xs font-semibold text-rose-600 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   Excluir selecionados{selectedCount > 0 ? ` (${selectedCount})` : ""}
                 </button>
                 <button
                   type="button"
                   onClick={exitSelectionMode}
-                  className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-600"
+                  className="rounded-xl px-4 py-2 text-xs font-semibold text-slate-500 transition hover:bg-slate-50"
                 >
                   Cancelar
                 </button>
@@ -755,23 +763,29 @@ export function HistoricoClient() {
             <button
               type="button"
               onClick={clearAll}
-              className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-xs font-semibold text-rose-700"
+              className="rounded-xl px-4 py-2 text-xs font-semibold text-rose-600 transition hover:bg-rose-50"
             >
               Limpar tudo
             </button>
           </div>
         </div>
 
-        <div className="rounded-2xl border border-cyan-400/15 bg-white p-4 sm:p-5">
+        <div className="pl-hud-glass rounded-2xl p-4 sm:p-5">
           <div className="grid gap-4 md:grid-cols-4">
             <label className="grid gap-2 md:col-span-2">
               <span className="text-xs font-semibold text-slate-600">Busca</span>
-              <input
-                value={filter.query}
-                onChange={(event) => updateFilter("query", event.target.value)}
-                placeholder="Buscar por título, conteúdo, tipo..."
-                className="h-11 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-950 outline-none focus:border-cyan-400 focus:bg-white"
-              />
+              <div className="relative">
+                <PlanifyIcon
+                  name="search"
+                  className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+                />
+                <input
+                  value={filter.query}
+                  onChange={(event) => updateFilter("query", event.target.value)}
+                  placeholder="Buscar por título, conteúdo, tipo..."
+                  className="h-11 w-full rounded-xl border border-cyan-400/20 bg-white/90 pl-9 pr-3 text-sm font-medium text-slate-900 outline-none placeholder:text-slate-400 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+                />
+              </div>
             </label>
             <label className="grid gap-2">
               <span className="text-xs font-semibold text-slate-600">Fonte</span>
@@ -783,7 +797,7 @@ export function HistoricoClient() {
                     event.target.value as HistoryFilter["source"],
                   )
                 }
-                className="h-11 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:border-cyan-400 focus:bg-white"
+                className="h-11 rounded-xl border border-cyan-400/20 bg-white/90 px-3 text-sm font-medium text-slate-900 outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
               >
                 {Object.entries(sourceLabels).map(([value, label]) => (
                   <option key={value} value={value}>
@@ -797,7 +811,7 @@ export function HistoricoClient() {
               <select
                 value={filter.type}
                 onChange={(event) => updateFilter("type", event.target.value)}
-                className="h-11 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:border-cyan-400 focus:bg-white"
+                className="h-11 rounded-xl border border-cyan-400/20 bg-white/90 px-3 text-sm font-medium text-slate-900 outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
               >
                 <option value="todos">Todos</option>
                 {typeOptions.map((type) => (
@@ -844,9 +858,9 @@ export function HistoricoClient() {
                   checked={checked}
                   onToggleCheck={() => toggleItemSelection(item.id)}
                   footer={
-                    <div className="space-y-2">
-                      <label className="flex items-center gap-1.5">
-                        <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                    <div className="space-y-2.5">
+                      <label className="flex items-center gap-2">
+                        <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
                           Pasta
                         </span>
                         {renderMoveSelect(item, true)}
@@ -863,6 +877,7 @@ export function HistoricoClient() {
                           getHtml={() => historyItemContentToHtml(item.content)}
                           toolId={item.type}
                           compact
+                          className="inline-flex h-8 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white px-2.5 text-[10px] font-semibold text-slate-600 transition hover:border-cyan-200 hover:text-cyan-700 disabled:opacity-60"
                           onStatus={(message) =>
                             setStatus({ type: "success", message })
                           }
@@ -880,13 +895,15 @@ export function HistoricoClient() {
                           tema={item.subtitle || item.title}
                           label="Comunidade"
                           compact
-                          className="inline-flex min-h-9 shrink-0 items-center justify-center rounded-lg border border-fuchsia-200 bg-fuchsia-50 px-2.5 py-1 text-[10px] font-black text-fuchsia-800 transition hover:bg-fuchsia-100"
+                          className="inline-flex h-8 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white px-2.5 text-[10px] font-semibold text-slate-600 transition hover:border-cyan-200 hover:text-cyan-700 disabled:opacity-60"
                         />
+                      </div>
+                      <div className="flex items-center gap-1.5">
                         <button
                           type="button"
                           onClick={() => void openInEditor(item)}
                           disabled={selectionMode || openingId === item.id}
-                          className="pl-hud-btn min-h-9 flex-1 rounded-xl py-1.5 text-[10px] font-bold disabled:cursor-not-allowed disabled:opacity-50"
+                          className="pl-hud-btn flex h-8 flex-1 items-center justify-center rounded-lg text-[10px] font-semibold disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           {openingId === item.id ? "Abrindo..." : "Abrir no editor"}
                         </button>
@@ -894,11 +911,11 @@ export function HistoricoClient() {
                           type="button"
                           onClick={() => removeItem(item)}
                           disabled={selectionMode}
-                          className="min-h-9 rounded-xl border border-rose-200 bg-rose-50 px-2 py-1.5 text-[10px] font-bold text-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
+                          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-rose-50 hover:text-rose-600 disabled:cursor-not-allowed disabled:opacity-40"
                           title="Excluir permanentemente"
                           aria-label={`Excluir permanentemente ${item.title}`}
                         >
-                          Excluir
+                          <PlanifyIcon name="trash" className="h-3.5 w-3.5" />
                         </button>
                       </div>
                     </div>
@@ -908,8 +925,11 @@ export function HistoricoClient() {
             })}
           </div>
         ) : (
-          <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center">
-            <p className="text-xs font-bold uppercase tracking-wide text-cyan-600">
+          <div className="pl-hud-glass flex flex-col items-center rounded-2xl px-6 py-14 text-center">
+            <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-50 text-cyan-600">
+              <PlanifyIcon name="folder" className="h-6 w-6" />
+            </span>
+            <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-cyan-600">
               Vazio
             </p>
             <h3 className="mt-2 text-sm font-semibold text-slate-900">
@@ -917,7 +937,7 @@ export function HistoricoClient() {
                 ? "Esta pasta ainda não tem materiais"
                 : "Nenhum material encontrado"}
             </h3>
-            <p className="mt-2 text-sm text-slate-600">
+            <p className="mt-2 max-w-sm text-sm text-slate-500">
               {activeFolder
                 ? 'Volte em "Meus materiais" e use o campo Pasta em qualquer card para mover um material para aqui.'
                 : "Gere um planejamento ou material para vê-lo aqui."}

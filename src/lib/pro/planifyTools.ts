@@ -58,7 +58,8 @@ export type PlanifyIconName =
   | "play"
   | "shieldCheck"
   | "grid"
-  | "mic";
+  | "mic"
+  | "folder";
 
 export type ToolCategoryId =
   | "todos"

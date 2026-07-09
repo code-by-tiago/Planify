@@ -34,6 +34,7 @@ import {
   assignHistoryItemFolder,
   buildFolderTree,
   createMaterialFolder,
+  deleteMaterialFolder,
   ensureMaterialFolder,
   filterItemsByFolder,
   getHistoryFolderMeta,
@@ -133,7 +134,6 @@ export function HistoricoClient() {
   const [items, setItems] = useState<HistoryItem[]>([]);
   const [folders, setFolders] = useState<MaterialFolder[]>([]);
   const [activeFolderId, setActiveFolderId] = useState<string | null>(null);
-  const [folderDrawerOpen, setFolderDrawerOpen] = useState(false);
   const [filter, setFilter] = useState<HistoryFilter>(initialFilter);
   const [selectedItem, setSelectedItem] = useState<HistoryItem | null>(null);
   const [status, setStatus] = useState<StatusState | null>(null);
@@ -208,6 +208,10 @@ export function HistoricoClient() {
 
   const typeOptions = useMemo(() => getHistoryTypeOptions(items), [items]);
   const folderTree = useMemo(() => buildFolderTree(folders, items), [folders, items]);
+  const flatFolders = useMemo(
+    () => folderTree.flatMap((school) => school.classes),
+    [folderTree],
+  );
   const inboxCount = useMemo(
     () => filterItemsByFolder(items, "__inbox__").length,
     [items],
@@ -417,7 +421,6 @@ export function HistoricoClient() {
     setNewFolderSchool("");
     setNewFolderClass("");
     setNewFolderOpen(true);
-    setFolderDrawerOpen(false);
   }
 
   function moveItemToFolder(item: HistoryItem, folder: MaterialFolder | null) {
@@ -484,6 +487,54 @@ export function HistoricoClient() {
     }
   }
 
+  async function handleDeleteFolder(folder: MaterialFolder) {
+    const affected = items.filter(
+      (item) => getHistoryFolderMeta(item).folderId === folder.id,
+    );
+
+    const confirmed = window.confirm(
+      `Excluir a pasta "${folder.schoolLabel} · ${folder.classLabel}"?\n\n${
+        affected.length > 0
+          ? `${affected.length} material${affected.length === 1 ? "" : "is"} voltará${
+              affected.length === 1 ? "" : "ão"
+            } para "Sem pasta". `
+          : ""
+      }Esta ação não pode ser desfeita.`,
+    );
+    if (!confirmed) return;
+
+    await deleteMaterialFolder(folder.id);
+
+    setFolders((current) => current.filter((f) => f.id !== folder.id));
+
+    if (affected.length > 0) {
+      for (const item of affected) {
+        upsertHistoryItem(assignHistoryItemFolder(item, null));
+      }
+      setItems((current) =>
+        current.map((item) =>
+          affected.some((a) => a.id === item.id)
+            ? assignHistoryItemFolder(item, null)
+            : item,
+        ),
+      );
+      setSelectedItem((current) =>
+        current && affected.some((a) => a.id === current.id)
+          ? assignHistoryItemFolder(current, null)
+          : current,
+      );
+    }
+
+    if (activeFolderId === folder.id) {
+      setActiveFolderId(null);
+    }
+
+    setStatus({
+      type: "success",
+      message: `Pasta "${folder.schoolLabel} · ${folder.classLabel}" excluída.`,
+    });
+  }
+
   function renderMoveSelect(item: HistoryItem, compact = false) {
     const meta = getHistoryFolderMeta(item);
     return (
@@ -518,79 +569,128 @@ export function HistoricoClient() {
         />
       }
     >
-      <div className="grid gap-6 lg:grid-cols-[240px_minmax(0,1fr)]">
-        <aside className="hidden lg:block">
-          <div className="sticky top-4 space-y-2 rounded-2xl border border-slate-200 bg-white p-3">
-            <div className="flex items-center justify-between px-2">
-              <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400">
-                Pastas
-              </p>
-              <button
-                type="button"
-                onClick={() => openNewFolderForm()}
-                className="min-h-9 rounded-lg px-2 py-1 text-[11px] font-bold text-cyan-600 hover:bg-cyan-50"
-              >
-                + Nova pasta
-              </button>
-            </div>
+      <div className="grid gap-6">
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400">
+              Pastas · Escola / Turma
+            </p>
+            <span className="text-[11px] font-semibold text-slate-400">
+              Clique para abrir · use a lixeira para excluir
+            </span>
+          </div>
+
+          <div className="mt-3 grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
             <button
               type="button"
               onClick={() => setActiveFolderId(null)}
               className={[
-                "flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-xs font-bold transition",
+                "flex flex-col items-center gap-1.5 rounded-2xl border p-3 text-center transition",
                 !activeFolderId
-                  ? "bg-[#0F172A] text-white"
-                  : "text-slate-600 hover:bg-slate-50",
+                  ? "border-cyan-400 bg-cyan-50"
+                  : "border-slate-200 bg-white hover:border-cyan-200 hover:bg-cyan-50/40",
               ].join(" ")}
             >
-              <span>Todos</span>
-              <span>{totals.todos}</span>
+              <PlanifyIcon
+                name="folder"
+                className={[
+                  "h-9 w-9",
+                  !activeFolderId ? "text-cyan-600" : "text-slate-400",
+                ].join(" ")}
+              />
+              <span className="line-clamp-1 text-xs font-bold text-slate-800">
+                Todos
+              </span>
+              <span className="text-[10px] font-semibold text-slate-400">
+                {totals.todos} {totals.todos === 1 ? "item" : "itens"}
+              </span>
             </button>
+
             <button
               type="button"
               onClick={() => setActiveFolderId("__inbox__")}
               className={[
-                "flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-xs font-bold transition",
+                "flex flex-col items-center gap-1.5 rounded-2xl border p-3 text-center transition",
                 activeFolderId === "__inbox__"
-                  ? "bg-[#0F172A] text-white"
-                  : "text-slate-600 hover:bg-slate-50",
+                  ? "border-cyan-400 bg-cyan-50"
+                  : "border-slate-200 bg-white hover:border-cyan-200 hover:bg-cyan-50/40",
               ].join(" ")}
             >
-              <span>Sem pasta</span>
-              <span>{inboxCount}</span>
+              <PlanifyIcon
+                name="folder"
+                className={[
+                  "h-9 w-9",
+                  activeFolderId === "__inbox__" ? "text-cyan-600" : "text-slate-400",
+                ].join(" ")}
+              />
+              <span className="line-clamp-1 text-xs font-bold text-slate-800">
+                Sem pasta
+              </span>
+              <span className="text-[10px] font-semibold text-slate-400">
+                {inboxCount} {inboxCount === 1 ? "item" : "itens"}
+              </span>
             </button>
-            {folderTree.map((school) => (
-              <div key={school.schoolLabel} className="pt-2">
-                <p className="px-2 text-[11px] font-extrabold text-slate-800">
-                  {school.schoolLabel}
-                </p>
-                <div className="mt-1 space-y-1">
-                  {school.classes.map(({ folder, count }) => (
-                    <button
-                      key={folder.id}
-                      type="button"
-                      onClick={() => setActiveFolderId(folder.id)}
-                      className={[
-                        "flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-xs font-bold transition",
-                        activeFolderId === folder.id
-                          ? "bg-cyan-500 text-white"
-                          : "text-slate-600 hover:bg-slate-50",
-                      ].join(" ")}
-                    >
-                      <span className="truncate">{folder.classLabel}</span>
-                      <span>{count}</span>
-                    </button>
-                  ))}
-                </div>
+
+            {flatFolders.map(({ folder, count }) => (
+              <div key={folder.id} className="group relative">
+                <button
+                  type="button"
+                  onClick={() => setActiveFolderId(folder.id)}
+                  className={[
+                    "flex w-full flex-col items-center gap-1 rounded-2xl border p-3 text-center transition",
+                    activeFolderId === folder.id
+                      ? "border-cyan-400 bg-cyan-50"
+                      : "border-slate-200 bg-white hover:border-cyan-200 hover:bg-cyan-50/40",
+                  ].join(" ")}
+                >
+                  <PlanifyIcon
+                    name="folder"
+                    className={[
+                      "h-9 w-9",
+                      activeFolderId === folder.id ? "text-cyan-600" : "text-amber-400",
+                    ].join(" ")}
+                  />
+                  <span className="line-clamp-1 text-xs font-bold text-slate-800">
+                    {folder.classLabel}
+                  </span>
+                  <span className="line-clamp-1 text-[10px] font-semibold text-slate-400">
+                    {folder.schoolLabel}
+                  </span>
+                  <span className="text-[10px] font-semibold text-slate-400">
+                    {count} {count === 1 ? "item" : "itens"}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    void handleDeleteFolder(folder);
+                  }}
+                  className="absolute -right-1.5 -top-1.5 flex h-6 w-6 items-center justify-center rounded-full border border-rose-200 bg-white text-rose-600 opacity-80 shadow-sm transition hover:bg-rose-50 hover:opacity-100 focus:opacity-100"
+                  title="Excluir pasta"
+                  aria-label={`Excluir pasta ${folder.schoolLabel} ${folder.classLabel}`}
+                >
+                  <PlanifyIcon name="trash" className="h-3.5 w-3.5" />
+                </button>
               </div>
             ))}
-            {folderTree.length === 0 ? (
-              <p className="px-2 py-3 text-xs font-medium text-slate-500">
-                Organize por escola e turma para não perder o ano letivo.
-              </p>
-            ) : null}
+
+            <button
+              type="button"
+              onClick={() => openNewFolderForm()}
+              className="flex flex-col items-center justify-center gap-1.5 rounded-2xl border-2 border-dashed border-slate-300 p-3 text-center text-slate-500 transition hover:border-cyan-300 hover:bg-cyan-50/40 hover:text-cyan-700"
+            >
+              <PlanifyIcon name="plus" className="h-9 w-9" />
+              <span className="text-xs font-bold">Nova pasta</span>
+            </button>
           </div>
-        </aside>
+
+          {folderTree.length === 0 ? (
+            <p className="mt-3 text-xs font-medium text-slate-500">
+              Organize por escola e turma para não perder o ano letivo.
+            </p>
+          ) : null}
+        </div>
 
         {newFolderOpen ? (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4">
@@ -643,70 +743,6 @@ export function HistoricoClient() {
           </div>
         ) : null}
 
-        <div className="grid min-w-0 gap-6">
-        <div className="flex flex-wrap items-center gap-3 lg:hidden">
-          <button
-            type="button"
-            onClick={() => setFolderDrawerOpen((v) => !v)}
-            className="pl-hud-btn-secondary min-h-11 rounded-xl px-4 py-2 text-xs font-semibold"
-          >
-            {folderDrawerOpen ? "Fechar pastas" : "Pastas Escola/Turma"}
-          </button>
-          <button
-            type="button"
-            onClick={() => openNewFolderForm()}
-            className="min-h-11 rounded-xl border border-cyan-200 bg-cyan-50 px-4 py-2 text-xs font-bold text-cyan-700"
-          >
-            + Nova pasta
-          </button>
-        </div>
-        {folderDrawerOpen ? (
-          <div className="space-y-2 rounded-2xl border border-slate-200 bg-white p-3 lg:hidden">
-            <button
-              type="button"
-              onClick={() => {
-                setActiveFolderId(null);
-                setFolderDrawerOpen(false);
-              }}
-              className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-xs font-bold text-slate-700"
-            >
-              <span>Todos</span>
-              <span>{totals.todos}</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setActiveFolderId("__inbox__");
-                setFolderDrawerOpen(false);
-              }}
-              className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-xs font-bold text-slate-700"
-            >
-              <span>Sem pasta</span>
-              <span>{inboxCount}</span>
-            </button>
-            {folderTree.map((school) => (
-              <div key={school.schoolLabel}>
-                <p className="px-2 pt-2 text-[11px] font-extrabold text-slate-800">
-                  {school.schoolLabel}
-                </p>
-                {school.classes.map(({ folder, count }) => (
-                  <button
-                    key={folder.id}
-                    type="button"
-                    onClick={() => {
-                      setActiveFolderId(folder.id);
-                      setFolderDrawerOpen(false);
-                    }}
-                    className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-xs font-bold text-slate-700"
-                  >
-                    <span>{folder.classLabel}</span>
-                    <span>{count}</span>
-                  </button>
-                ))}
-              </div>
-            ))}
-          </div>
-        ) : null}
         <div className="flex flex-wrap items-center gap-3">
           {[
             ["Total", totals.todos],
@@ -1030,7 +1066,6 @@ export function HistoricoClient() {
             </div>
           </div>
         ) : null}
-        </div>
       </div>
     </PlanifyWorkspacePane>
   );

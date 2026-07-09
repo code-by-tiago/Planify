@@ -160,6 +160,22 @@ export async function createMaterialFolder(
   return created;
 }
 
+/** Exclui a pasta na conta e localmente. Local-first: some da UI mesmo se a API falhar. */
+export async function deleteMaterialFolder(folderId: string): Promise<boolean> {
+  const folders = loadMaterialFolders();
+  saveMaterialFolders(folders.filter((folder) => folder.id !== folderId));
+
+  try {
+    const response = await planifyAuthenticatedFetch(
+      `/api/history/folders/${encodeURIComponent(folderId)}`,
+      { method: "DELETE" },
+    );
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
 export function getHistoryFolderMeta(item: HistoryItem): HistoryFolderMeta {
   const raw = (item.raw || {}) as Record<string, unknown>;
   return {

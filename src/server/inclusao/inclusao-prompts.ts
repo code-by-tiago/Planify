@@ -4,7 +4,6 @@ import type {
   InclusaoNeedId,
 } from "@/lib/inclusao/inclusao-config";
 import { getInclusaoModeLabel, getInclusaoNeedLabel } from "@/lib/inclusao/inclusao-config";
-import { appendPedagogicalGuardrails } from "@/lib/materiais/pedagogical-guardrails";
 
 const NEED_TECHNIQUES: Record<InclusaoNeedId, string> = {
   tea: [
@@ -49,10 +48,11 @@ const NEED_TECHNIQUES: Record<InclusaoNeedId, string> = {
   ].join("; "),
 };
 
-export const INCLUSAO_SYSTEM_INSTRUCTION = appendPedagogicalGuardrails(`Você é especialista em psicopedagogia e educação inclusiva no contexto escolar brasileiro.
+export const INCLUSAO_SYSTEM_INSTRUCTION = `Você é especialista em psicopedagogia e educação inclusiva no contexto escolar brasileiro.
 Produza conteúdo pedagógico de alta qualidade, em português do Brasil, em markdown limpo.
 Use títulos ## e ###, listas com -, negrito com ** quando necessário.
-Respeite a BNCC e práticas inclusivas éticas — adapte sem infantilizar indevidamente nem reduzir expectativas sem fundamento.`);
+Respeite a BNCC e práticas inclusivas éticas — adapte sem infantilizar indevidamente nem reduzir expectativas sem fundamento.
+PROIBIDO: saudações, "Aqui está a adaptação", meta-comentários ou menções a IA.`;
 
 function modeInstructions(mode: InclusaoModeId): string {
   switch (mode) {

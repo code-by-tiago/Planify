@@ -11,12 +11,15 @@ import {
 import { CreditsBalancePill } from "@/components/credits/CreditsBalancePill";
 import { GenerationCostHint } from "@/components/credits/GenerationCostHint";
 import { DailyGenerationsBar } from "@/components/credits/DailyGenerationsBar";
+import { GoogleDocumentExportBar } from "@/components/google/GoogleDocumentExportBar";
 import { MaterialTypedPreview } from "@/components/materiais/preview/MaterialTypedPreview";
 import { MaterialPreviewSkeleton } from "@/components/materiais/MaterialPreviewSkeleton";
 import { MaterialToolPageShell } from "@/components/pro/MaterialToolPageShell";
 import { SwipeTabPanel } from "@/components/pro/SwipeTabPanel";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { PlanifyOwlGenerationCoach } from "@/components/pro/PlanifyOwlGenerationCoach";
+import { downloadEditorExport } from "@/lib/downloads/editor-export-client";
+import { openMaterialInEditor } from "@/lib/materiais/material-editor-flow";
 import {
   DEFAULT_LESSON_BUNDLE_TOOLS,
   getLessonBundleCreditCost,
@@ -40,7 +43,6 @@ import {
   getMaterialFormFieldConfig,
   resolveMaterialDisplayTema,
 } from "@/lib/educacao/material-form-config";
-import { openMaterialInEditor } from "@/lib/materiais/material-editor-flow";
 import { useSchoolClasses } from "@/hooks/useSchoolClasses";
 import { TurmaCombobox } from "@/components/school/TurmaCombobox";
 import {
@@ -97,6 +99,8 @@ export function AulaCompletaClient({
   );
   const [activeTab, setActiveTab] = useState<PlanifyToolId | null>(null);
   const [modalAberto, setModalAberto] = useState(studioMode);
+  const [exportStatus, setExportStatus] = useState("");
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const loadingStartedAtRef = useRef<number | null>(null);
 
@@ -336,6 +340,29 @@ export function AulaCompletaClient({
       serverMaterialId: item.materialId ?? null,
       estrutura: item.estrutura ?? null,
     }, { from: "aula-completa" });
+  }
+
+  async function baixarPdfItem(item = activeItem) {
+    if (!item?.html) return;
+    const titulo = `${getPlanifyTool(item.toolId).shortTitle} — ${resolveMaterialDisplayTema("", conteudo) || "Aula"}`;
+    setDownloadingPdf(true);
+    try {
+      await downloadEditorExport({
+        title: titulo,
+        html: item.html,
+        format: "pdf",
+        documentType: `material:${item.toolId}`,
+      });
+      setExportStatus("PDF baixado.");
+    } catch (error) {
+      setExportStatus(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível baixar o PDF.",
+      );
+    } finally {
+      setDownloadingPdf(false);
+    }
   }
 
   const durationBadge = formatDurationEstimateBadge(estimatedDurationMs);
@@ -589,7 +616,7 @@ export function AulaCompletaClient({
                 />
               ) : activeItem?.html ? (
                 <>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <button
                       type="button"
                       onClick={() => abrirNoEditor()}
@@ -597,7 +624,24 @@ export function AulaCompletaClient({
                     >
                       Abrir no editor
                     </button>
+                    <GoogleDocumentExportBar
+                      title={`${getPlanifyTool(activeItem.toolId).shortTitle} — ${resolveMaterialDisplayTema("", conteudo) || "Aula"}`}
+                      getHtml={() => activeItem.html || ""}
+                      documentType={`material:${activeItem.toolId}`}
+                      returnTo="/dashboard?tipo=aula-completa"
+                      compact
+                      classroomMode="popover"
+                      disabled={!activeItem.html}
+                      onStatus={setExportStatus}
+                      downloadingPdf={downloadingPdf}
+                      onDownloadPdf={() => void baixarPdfItem()}
+                    />
                   </div>
+                  {exportStatus ? (
+                    <p className="text-[11px] font-semibold text-slate-500">
+                      {exportStatus}
+                    </p>
+                  ) : null}
                   <MaterialTypedPreview
                     html={activeItem.html}
                     tipoMaterial={activeItem.toolId}

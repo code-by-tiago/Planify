@@ -1,4 +1,3 @@
-import { appendPedagogicalGuardrails } from "@/lib/materiais/pedagogical-guardrails";
 import type { BnccSelectedSkillPayload } from "@/lib/bncc/bncc-suggestion-ui";
 import {
   getPeiCidOptions,
@@ -7,7 +6,11 @@ import {
   type PeiGenerationResult,
   type PeiTrimestre,
 } from "@/lib/pei/pei-options";
-import { generateGeminiJSON } from "@/server/ai/gemini-client";
+import { runPlanifyAiJson } from "@/server/ai/planify-ai-middleware";
+import {
+  PEI_RESPONSE_SCHEMA,
+  PeiAiOutputZodSchema,
+} from "@/server/pei/pei-ai-schema";
 
 type PeiCurricularRow = {
   conteudo: string;
@@ -43,11 +46,12 @@ export type PeiEngineResult =
       estrutura: PeiStructuredOutput;
     });
 
-const SYSTEM_INSTRUCTION = appendPedagogicalGuardrails(`Você é um especialista brasileiro em educação inclusiva, AEE e elaboração de Plano Educacional Individualizado (PEI).
+const SYSTEM_INSTRUCTION = `Você é um especialista brasileiro em educação inclusiva, AEE e elaboração de Plano Educacional Individualizado (PEI).
 Produza conteúdo pedagógico, colaborativo e institucional para o professor regente e o professor do Atendimento Educacional Especializado.
 O CID ou perfil informado é referência fornecida pela escola/professor; não diagnostique, não prescreva tratamento e não substitua laudo ou avaliação multiprofissional.
 O PEI deve promover desenvolvimento integral, autonomia, acessibilidade curricular ou enriquecimento para Altas Habilidades/Superdotação.
-Retorne SOMENTE JSON válido, sem markdown, sem HTML, com linguagem profissional e objetiva.`);
+Retorne SOMENTE JSON válido, sem markdown, sem HTML, com linguagem profissional e objetiva.
+PROIBIDO: saudações, "Aqui está o PEI", meta-comentários ou menções a IA.`;
 
 const PERIODS_BY_TRIMESTER: Record<PeiTrimestre, string[]> = {
   "1": ["Fevereiro", "Março", "Abril"],
@@ -639,15 +643,23 @@ export async function generatePeiDocument(
   }
 
   try {
-    const generated = await generateGeminiJSON<PeiAiOutput>({
+    const aiResult = await runPlanifyAiJson({
+      toolId: "pei",
       systemInstruction: SYSTEM_INSTRUCTION,
       prompt: buildPrompt(normalized),
+      responseSchema: PEI_RESPONSE_SCHEMA,
+      zodSchema: PeiAiOutputZodSchema,
       tier: "advanced",
       temperature: 0.35,
       maxOutputTokens: 8192,
+      schemaRetryAttempts: 1,
     });
 
-    const output = normalizeAiOutput(generated, fallback);
+    if (!aiResult.ok) {
+      throw new Error(aiResult.message);
+    }
+
+    const output = normalizeAiOutput(aiResult.data as PeiAiOutput, fallback);
     const html = renderPeiHtml(normalized, output);
 
     return {

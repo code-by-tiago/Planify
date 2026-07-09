@@ -1,13 +1,18 @@
 /**
  * Middleware base de IA Planify — JSON strict + DNA pedagógico.
- * Uso: geração de materiais. NÃO usar em planejamento anual/trimestral.
+ * Uso: geração de materiais / PEI / inclusão / correção.
+ * NÃO usar em planejamento anual/trimestral.
  */
 
 import { z } from "zod";
 import type { AIModelTier } from "@/lib/ai/aiConfig";
-import { generateGeminiJSON } from "@/server/ai/gemini-client";
+import {
+  generateGeminiJSON,
+  generateGeminiText,
+} from "@/server/ai/gemini-client";
 import { withPlanifyPedagogicalDna } from "@/server/ai/prompts/planify-pedagogical-dna";
 import type { GeminiCacheProfile } from "@/server/ai/gemini-static-context";
+import { PEDAGOGICAL_BNCC_ANTI_HALLUCINATION } from "@/lib/materiais/pedagogical-guardrails";
 
 export type PlanifyAiJsonOptions<T> = {
   /** Identificador da ferramenta (telemetria / cache). */
@@ -27,6 +32,8 @@ export type PlanifyAiJsonOptions<T> = {
   maxAttempts?: number;
   /** Retries extras só para falha de schema Zod (além dos maxAttempts do Gemini). */
   schemaRetryAttempts?: number;
+  /** Inclui anti-alucinação BNCC no system (default true). */
+  includeBnccGuard?: boolean;
 };
 
 export type PlanifyAiJsonSuccess<T> = {
@@ -40,6 +47,27 @@ export type PlanifyAiJsonFailure = {
   message: string;
   issues: string[];
 };
+
+export type PlanifyAiTextOptions = {
+  toolId: string;
+  systemInstruction: string;
+  prompt: string;
+  tier?: AIModelTier;
+  temperature?: number;
+  topP?: number;
+  maxOutputTokens?: number;
+  includeBnccGuard?: boolean;
+};
+
+function composeSystemInstruction(
+  systemInstruction: string,
+  includeBnccGuard = true,
+): string {
+  const withDna = withPlanifyPedagogicalDna(systemInstruction);
+  if (!includeBnccGuard) return withDna;
+  if (withDna.includes("BNCC — anti-alucinação")) return withDna;
+  return `${withDna}\n\n${PEDAGOGICAL_BNCC_ANTI_HALLUCINATION}`;
+}
 
 function formatZodIssues(error: z.ZodError): string[] {
   return error.issues.slice(0, 8).map((issue) => {
@@ -68,7 +96,10 @@ export async function runPlanifyAiJson<T>(
   let schemaRetries = 0;
   let lastIssues: string[] = [];
 
-  const systemInstruction = withPlanifyPedagogicalDna(options.systemInstruction);
+  const systemInstruction = composeSystemInstruction(
+    options.systemInstruction,
+    options.includeBnccGuard !== false,
+  );
 
   for (let attempt = 0; attempt <= schemaRetriesMax; attempt += 1) {
     const raw = await generateGeminiJSON<unknown>({
@@ -101,4 +132,43 @@ export async function runPlanifyAiJson<T>(
     message: `A IA retornou JSON fora do contrato (${options.toolId}).`,
     issues: lastIssues,
   };
+}
+
+/**
+ * Texto livre com DNA pedagógico (ex.: Inclusão em markdown).
+ */
+export async function runPlanifyAiText(
+  options: PlanifyAiTextOptions,
+): Promise<{ ok: true; text: string } | { ok: false; message: string }> {
+  try {
+    const text = await generateGeminiText({
+      systemInstruction: composeSystemInstruction(
+        options.systemInstruction,
+        options.includeBnccGuard !== false,
+      ),
+      prompt: options.prompt,
+      tier: options.tier,
+      temperature: options.temperature,
+      topP: options.topP,
+      maxOutputTokens: options.maxOutputTokens,
+    });
+
+    const trimmed = String(text || "").trim();
+    if (!trimmed) {
+      return {
+        ok: false,
+        message: `A IA não retornou conteúdo (${options.toolId}).`,
+      };
+    }
+
+    return { ok: true, text: trimmed };
+  } catch (error) {
+    return {
+      ok: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : `Falha na geração (${options.toolId}).`,
+    };
+  }
 }

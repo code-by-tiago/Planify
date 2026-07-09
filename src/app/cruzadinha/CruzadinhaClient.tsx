@@ -718,6 +718,7 @@ export function CruzadinhaClient({
                   compact
                   classroomMode="popover"
                   disabled={!resultadoHtml}
+                  onDownloadPdf={() => void baixarPdf()}
                 />
               </div>
               <MaterialTypedPreview

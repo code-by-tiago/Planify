@@ -6,7 +6,7 @@ import type {
   InclusaoNeedId,
 } from "@/lib/inclusao/inclusao-config";
 import { markdownToHtml } from "@/lib/inclusao/markdown-to-html";
-import { generateGeminiText } from "../ai/gemini-client";
+import { runPlanifyAiText } from "../ai/planify-ai-middleware";
 import {
   buildInclusaoPrompt,
   INCLUSAO_SYSTEM_INSTRUCTION,
@@ -90,7 +90,8 @@ export async function generateInclusaoWithAI(
   const tier = getModelTierForMaterialType(INCLUSAO_GENERATION_TYPE);
 
   try {
-    const markdown = await generateGeminiText({
+    const aiResult = await runPlanifyAiText({
+      toolId: "inclusao",
       systemInstruction: INCLUSAO_SYSTEM_INSTRUCTION,
       prompt,
       tier,
@@ -98,19 +99,18 @@ export async function generateInclusaoWithAI(
       maxOutputTokens: 8192,
     });
 
-    const trimmed = markdown.trim();
-    if (!trimmed) {
+    if (!aiResult.ok) {
       return {
         ok: false,
         status: 502,
-        message: "A IA não retornou conteúdo. Tente novamente.",
+        message: aiResult.message,
       };
     }
 
     return {
       ok: true,
-      markdown: trimmed,
-      html: markdownToHtml(trimmed),
+      markdown: aiResult.text,
+      html: markdownToHtml(aiResult.text),
       usedAI: true,
     };
   } catch (error) {

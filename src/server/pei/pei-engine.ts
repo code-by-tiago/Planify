@@ -505,19 +505,19 @@ function renderPeiHtml(
   return `
 <article class="planify-doc planify-pei-doc">
   <style>
-    .planify-pei-doc{color:#0f172a;font-family:Arial,Helvetica,sans-serif;line-height:1.55}
-    .planify-pei-doc h1{font-size:1.7rem;margin:0 0 .35rem;font-weight:800}
-    .planify-pei-doc h2{font-size:1.02rem;margin:1.35rem 0 .55rem;font-weight:800;color:#0f766e}
-    .planify-pei-doc h3{font-size:.92rem;margin:1rem 0 .45rem;font-weight:800}
-    .planify-pei-doc .pei-eyebrow{font-size:.72rem;text-transform:uppercase;letter-spacing:.12em;font-weight:800;color:#0891b2}
-    .planify-pei-doc .pei-note{border-left:4px solid #06b6d4;background:#ecfeff;padding:.85rem 1rem;border-radius:.5rem;margin:1rem 0}
-    .planify-pei-doc table{width:100%;border-collapse:collapse;margin:.65rem 0 1rem;font-size:.88rem}
-    .planify-pei-doc th,.planify-pei-doc td{border:1px solid #cbd5e1;padding:.55rem .65rem;vertical-align:top}
-    .planify-pei-doc th{background:#f0fdfa;text-align:left;font-weight:800}
-    .planify-pei-doc ul{margin:.35rem 0 .8rem;padding-left:1.15rem}
-    .planify-pei-doc li{margin:.22rem 0}
-    .planify-pei-doc .pei-signatures{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem;margin-top:1.5rem}
-    .planify-pei-doc .pei-signature{border-top:1px solid #94a3b8;padding-top:.4rem;text-align:center;font-size:.82rem}
+    .planify-pei-doc,.planify-editor-page .planify-pei-doc{color:#0f172a;font-family:Arial,Helvetica,sans-serif;line-height:1.55}
+    .planify-pei-doc h1,.planify-editor-page .planify-pei-doc h1{font-size:1.7rem;margin:0 0 .35rem;font-weight:800}
+    .planify-pei-doc h2,.planify-editor-page .planify-pei-doc h2{font-size:1.02rem;margin:1.35rem 0 .55rem;font-weight:800;color:#0f766e}
+    .planify-pei-doc h3,.planify-editor-page .planify-pei-doc h3{font-size:.92rem;margin:1rem 0 .45rem;font-weight:800}
+    .planify-pei-doc .pei-eyebrow,.planify-editor-page .planify-pei-doc .pei-eyebrow{font-size:.72rem;text-transform:uppercase;letter-spacing:.12em;font-weight:800;color:#0891b2}
+    .planify-pei-doc .pei-note,.planify-editor-page .planify-pei-doc .pei-note{border-left:4px solid #06b6d4;background:#ecfeff;padding:.85rem 1rem;border-radius:.5rem;margin:1rem 0}
+    .planify-pei-doc table,.planify-editor-page .planify-pei-doc table{width:100%;border-collapse:collapse;margin:.65rem 0 1rem;font-size:.88rem}
+    .planify-pei-doc th,.planify-pei-doc td,.planify-editor-page .planify-pei-doc th,.planify-editor-page .planify-pei-doc td{border:1px solid #cbd5e1;padding:.55rem .65rem;vertical-align:top}
+    .planify-pei-doc th,.planify-editor-page .planify-pei-doc th{background:#f0fdfa;text-align:left;font-weight:800}
+    .planify-pei-doc ul,.planify-editor-page .planify-pei-doc ul{margin:.35rem 0 .8rem;padding-left:1.15rem}
+    .planify-pei-doc li,.planify-editor-page .planify-pei-doc li{margin:.22rem 0}
+    .planify-pei-doc .pei-signatures,.planify-editor-page .planify-pei-doc .pei-signatures{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem;margin-top:1.5rem}
+    .planify-pei-doc .pei-signature,.planify-editor-page .planify-pei-doc .pei-signature{border-top:1px solid #94a3b8;padding-top:.4rem;text-align:center;font-size:.82rem}
   </style>
 
   <header>

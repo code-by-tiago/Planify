@@ -17,6 +17,10 @@ import { extractIdempotencyKey } from "@/server/generation/usage-quota-policy";
 import { UnifiedQualityGateError } from "@/lib/materiais/unified-quality-gate";
 import { jsonPlanningError } from "@/server/generation/generation-api-contract";
 import { withOperationalCapture } from "@/server/telemetry/with-operational-capture";
+import { buildOfficialPlanningPayloadFromGeneration } from "@/lib/planejamentos/planning-google-export-payload";
+import { normalizeOfficialPayloadInput } from "@/lib/planejamentos/planning-official-editor-html-client";
+import { buildOfficialPlanningEditorHtml } from "@/server/planejamentos/official-planning-editor-html";
+import type { OfficialPlanningPayload } from "@/server/planejamentos/official-planning-docx";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -119,18 +123,65 @@ async function handlePost(
         ? "O planejamento foi gerado, mas não foi possível registrá-lo no Progresso BNCC. Tente gerar novamente em instantes."
         : null;
 
+    let editorHtml: string | null = null;
+    if (result.success && result.planejamento) {
+      const officialPayload = buildOfficialPlanningPayloadFromGeneration(
+        normalizeOfficialPayloadInput({
+          tipoPlanejamento: payload.tipoPlanejamento,
+          escola: payload.escola,
+          professor: payload.professor,
+          etapa: payload.etapa,
+          anoSerie: payload.anoSerie,
+          turma: payload.turma ?? payload.className,
+          areaConhecimento: payload.areaConhecimento,
+          componenteCurricular: payload.componenteCurricular,
+          cargaHoraria: payload.cargaHoraria,
+          trimestre: payload.trimestre,
+          matrizPlanejamento: result.planejamento,
+          planifyQuality: {
+            qualityScore:
+              typeof result.qualityScore === "number" ? result.qualityScore : null,
+            qualityIssues: Array.isArray(result.qualityIssues)
+              ? result.qualityIssues.map((item) => String(item)).filter(Boolean)
+              : [],
+          },
+        }),
+      );
+
+      if (officialPayload) {
+        try {
+          editorHtml = buildOfficialPlanningEditorHtml(
+            officialPayload as OfficialPlanningPayload,
+            {
+              documentType: `planejamento:${String(payload.tipoPlanejamento || "anual")}`,
+            },
+          ).html;
+        } catch {
+          editorHtml = null;
+        }
+      }
+    }
+
     const resultRecord = result as Record<string, unknown>;
     const existingAlertas = Array.isArray(resultRecord.alertas)
       ? resultRecord.alertas.map((item) => String(item)).filter(Boolean)
       : [];
 
+    const editorHtmlWarning =
+      result.success && result.planejamento && !editorHtml
+        ? "O planejamento foi gerado, mas o editor não recebeu o layout oficial. Tente abrir novamente pelo botão Editar ou regenere."
+        : null;
+
     return NextResponse.json({
       ...result,
+      editorHtml,
       materialId,
       persistWarning,
-      alertas: persistWarning
-        ? [...existingAlertas, persistWarning]
-        : existingAlertas,
+      alertas: [
+        ...existingAlertas,
+        ...(persistWarning ? [persistWarning] : []),
+        ...(editorHtmlWarning ? [editorHtmlWarning] : []),
+      ],
     });
   } catch (error) {
     if (error instanceof UnifiedQualityGateError) {

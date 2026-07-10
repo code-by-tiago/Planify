@@ -109,6 +109,26 @@ function toBundleTab(
   const tipoFromType = doc.type.includes("trimestral") ? "trimestral" : "anual";
   const trimestreFromId = doc.id.match(/_trim([123])\b/i)?.[1];
 
+  if (
+    process.env.NODE_ENV !== "production" &&
+    !content.includes('data-planify-html-source="official-docx"')
+  ) {
+    console.warn(
+      `[planning-bundle] tab ${doc.id} sem marcador official-docx (type=${doc.type})`,
+    );
+  }
+
+  if (
+    process.env.NODE_ENV !== "production" &&
+    tipoFromType === "trimestral" &&
+    (!doc.planning ||
+      !Array.isArray((doc.planning as { conteudos?: unknown }).conteudos))
+  ) {
+    console.warn(
+      `[planning-bundle] tab trimestral ${doc.id} sem matriz trimPlan`,
+    );
+  }
+
   return {
     id: doc.id,
     label: doc.label,

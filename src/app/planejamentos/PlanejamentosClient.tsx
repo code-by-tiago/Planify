@@ -11,7 +11,7 @@ import {
   formatGenerationError,
   GenerationErrorBanner,
 } from "@/lib/pro/generation-error-ui";
-import { MarketplacePublishButton } from "@/components/marketplace/MarketplacePublishButton";
+import { PlanningMarketplacePublishButton } from "@/components/planejamentos/PlanningMarketplacePublishButton";
 import { PlanifyOwlGenerationCoach } from "@/components/pro/PlanifyOwlGenerationCoach";
 import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
 import { useSchoolClasses } from "@/hooks/useSchoolClasses";
@@ -20,8 +20,10 @@ import { PlanifyPageHero } from "@/components/pro/PlanifyPageHero";
 import { usePlanifyWorkspace } from "@/components/pro/planify-workspace-context";
 import {
   HUD_FIELD_CLASS,
+  HUD_FORM_GRID_CLASS,
   HUD_SCROLLABLE_TEXTAREA_CLASS,
   HUD_TEXTAREA_CLASS,
+  HUD_TOOL_HUB_CLASS,
 } from "@/lib/pro/hud-form-styles";
 import type { LumiCoachContext } from "@/lib/pro/lumiMotivationalMessages";
 import {
@@ -55,26 +57,20 @@ import {
 } from "@/lib/planejamentos/planning-trial-bundle";
 import { PlanningTrialExportBar } from "@/components/planejamentos/PlanningTrialExportBar";
 import { PlanningTrialProtectedZone } from "@/components/planejamentos/PlanningTrialProtectedZone";
-import { buildPlanningEditorHtml } from "@/lib/planejamentos/planning-editor-html";
+import { resolvePlanningEditorHtml, normalizeOfficialPayloadInput, PlanningOfficialHtmlError } from "@/lib/planejamentos/planning-official-editor-html-client";
 import type {
   PlanningAiPayload,
   PlanningMatrixItem,
 } from "@/server/planejamentos/planning-ai-service";
 import { readPlanejamentoPrefill } from "@/lib/planejamentos/planejamento-prefill";
 import { PlanningOfficialExportBar } from "@/components/planejamentos/PlanningOfficialExportBar";
-import {
-  PlanningWizardStepper,
-  type PlanningWizardStep,
-} from "@/components/planejamentos/PlanningWizardStepper";
-import { buildOfficialPlanningPayloadFromGeneration } from "@/lib/planejamentos/planning-google-export-payload";
+import { type PlanningWizardStep } from "@/components/planejamentos/PlanningWizardStepper";
 import {
   buildTrimestralPlansFromAnnual,
   trimestralCargaHorariaLabel,
   type TrimestralPlanningLike,
 } from "@/lib/planejamentos/planning-trimestral-from-annual";
 import {
-  buildPlanningAnnualContextBlock,
-  readPlanningAnnualSnapshot,
   savePlanningAnnualSnapshot,
 } from "@/lib/planejamentos/planning-annual-snapshot";
 import { useBnccEducationOptions } from "@/hooks/useBnccEducationOptions";
@@ -259,35 +255,6 @@ function normalizeEducationalFields(current: FormState, patch: Partial<FormState
 
   return next;
 }
-
-const exemplos = {
-  fundamental: {
-    etapa: "Ensino Fundamental",
-    anoSerie: "5º ano",
-    areaConhecimento: "Ciências Humanas",
-    componenteCurricular: "História",
-    cargaHoraria: "60 períodos",
-    conteudos:
-      "Povos originários do Brasil\nChegada dos portugueses e primeiros contatos\nColonização e organização do território\nCultura, memória e diversidade",
-    objetivos:
-      "Compreender processos históricos, reconhecer diferentes grupos sociais e relacionar fontes históricas ao estudo do passado.",
-    observacoes:
-      "Turma com foco em leitura, debate, registros no caderno e atividades de interpretação histórica.",
-  },
-  medio: {
-    etapa: "Ensino Médio",
-    anoSerie: "3ª série",
-    areaConhecimento: "Linguagens e suas Tecnologias",
-    componenteCurricular: "Língua Portuguesa",
-    cargaHoraria: "80 períodos",
-    conteudos:
-      "Tipos de texto: descrição e narração\nEstrutura dissertativa-argumentativa: tese e parágrafos\nCompetências do ENEM: norma padrão e coesão\nRepertório sociocultural em argumentos\nProdução e revisão de textos dissertativos\nAnálise de propostas de intervenção do ENEM",
-    objetivos:
-      "Desenvolver competências de leitura, análise, argumentação, escrita e revisão de textos.",
-    observacoes:
-      "Turma com foco em preparação para avaliações externas e produção textual orientada.",
-  },
-};
 
 const planningProgressSteps = [
   "Lendo os dados informados",
@@ -548,19 +515,13 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
 
   useEffect(() => {
     const prefill = readPlanejamentoPrefill();
-    const matriz =
-      typeof window !== "undefined"
-        ? new URLSearchParams(window.location.search).get("matriz")
-        : null;
-    const tipoFromUrl =
-      matriz === "anual" || matriz === "trimestral" ? matriz : undefined;
 
-    if (!prefill && !tipoFromUrl) return;
+    if (!prefill) return;
 
     setForm((current) => {
       const next = { ...current };
-      if (prefill?.tipo) next.tipoPlanejamento = prefill.tipo;
-      else if (tipoFromUrl) next.tipoPlanejamento = tipoFromUrl;
+      // Trimestrais só via extração do anual — ignora tipo=trimestral do prefill.
+      next.tipoPlanejamento = "anual";
       if (prefill?.conteudos) next.conteudos = prefill.conteudos;
       return next;
     });
@@ -634,10 +595,8 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
     [topicLineCount, conteudosComBncc, groups, selectedSkills.length, generatedPlanning],
   );
 
-  const canGoToWizardStep2 = conteudosPreenchido;
   const canGeneratePlanning =
     conteudosPreenchido && selectedSkills.length > 0 && !loadingPlan;
-  const canGoToWizardStep3 = Boolean(generatedPlanning);
 
   useEffect(() => {
     if (generatedPlanning) {
@@ -731,7 +690,14 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
   }
 
   function updateField<K extends keyof FormState>(key: K, value: FormState[K]) {
-    setForm((current) => normalizeEducationalFields(current, { [key]: value }));
+    setForm((current) => {
+      const patch = { [key]: value } as Partial<FormState>;
+      // Trimestrais só via extração do anual.
+      if (key === "tipoPlanejamento") {
+        patch.tipoPlanejamento = "anual";
+      }
+      return normalizeEducationalFields(current, patch);
+    });
 
     if (
       key === "conteudos" ||
@@ -744,16 +710,6 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
     ) {
       invalidateConteudosDependents();
     }
-  }
-
-  function applyExample(kind: keyof typeof exemplos) {
-    setForm((current) => normalizeEducationalFields(current, exemplos[kind]));
-    setGroups([]);
-    setSelectedSkills([]);
-    setContentRefreshOffsets({});
-    invalidateGenerated();
-    setStatus("Exemplo preenchido. Agora sugira as habilidades BNCC.");
-    setError("");
   }
 
   function clearAll() {
@@ -769,6 +725,7 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
     setSelectedSkills([]);
     setContentRefreshOffsets({});
     invalidateGenerated();
+    setWizardStep(1);
     setStatus("Aguardando");
     setError("");
   }
@@ -819,15 +776,8 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
   }
 
   function buildBasePayload() {
-    const annualSnapshot =
-      form.tipoPlanejamento === "trimestral" ? readPlanningAnnualSnapshot() : null;
-    const annualContext =
-      annualSnapshot && form.tipoPlanejamento === "trimestral"
-        ? buildPlanningAnnualContextBlock(annualSnapshot)
-        : undefined;
-
     return {
-      tipoPlanejamento: form.tipoPlanejamento,
+      tipoPlanejamento: "anual" as const,
       escola: form.escola,
       professor: form.professor,
       etapa: form.etapa,
@@ -848,10 +798,6 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
         componente: skill.componente || form.componenteCurricular,
         conteudo: skill.conteudo,
       })),
-      ...(annualContext ? { annualContext } : {}),
-      ...(annualSnapshot?.parentAnnualKey
-        ? { parentAnnualKey: annualSnapshot.parentAnnualKey }
-        : {}),
       ...school.turmaPayload,
       discipline: form.componenteCurricular.trim() || undefined,
       disciplina: form.componenteCurricular.trim() || undefined,
@@ -1052,7 +998,7 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
     return issues;
   }
 
-  function persistGeneratedPlanning(
+  async function persistGeneratedPlanning(
     planning: GeneratedPlanning,
     payload: PlanningAiPayload,
     quality: {
@@ -1060,8 +1006,32 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
       qualityIssues?: string[];
       serverMaterialId?: string;
     },
+    preloadedHtml?: string | null,
   ) {
-    const html = buildPlanningEditorHtml(form, planning);
+    const { html } = await resolvePlanningEditorHtml({
+      officialPayloadInput: normalizeOfficialPayloadInput({
+        tipoPlanejamento: payload.tipoPlanejamento,
+        escola: payload.escola ?? form.escola,
+        professor: payload.professor ?? form.professor,
+        etapa: payload.etapa ?? form.etapa,
+        anoSerie: payload.anoSerie ?? form.anoSerie,
+        turma: payload.turma ?? payload.className,
+        areaConhecimento: payload.areaConhecimento ?? form.areaConhecimento,
+        componenteCurricular:
+          payload.componenteCurricular ?? form.componenteCurricular,
+        cargaHoraria: payload.cargaHoraria ?? form.cargaHoraria,
+        trimestre: payload.trimestre,
+        matrizPlanejamento: planning,
+        planifyQuality: {
+          qualityScore:
+            typeof quality.qualityScore === "number" ? quality.qualityScore : null,
+          qualityIssues: quality.qualityIssues ?? [],
+        },
+      }),
+      fallbackForm: form,
+      fallbackPlanning: planning,
+      preloadedHtml,
+    });
     const titulo = planning.titulo || "Planejamento";
     const meta = buildPlanningEditorMeta({
       generationPayload: payload,
@@ -1075,7 +1045,7 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
     return html;
   }
 
-  function buildPlanningBundleDocuments(
+  async function buildPlanningBundleDocuments(
     planning: GeneratedPlanning,
     trimestres: number[],
     payload: PlanningAiPayload,
@@ -1085,7 +1055,8 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
       serverMaterialId?: string;
     },
     trimestralPlans: Partial<Record<number, TrimestralPlanningLike>>,
-  ): PlanningBundleDocumentInput[] {
+    preloadedAnnualHtml?: string | null,
+  ): Promise<PlanningBundleDocumentInput[]> {
     const idempotencyKey = String(payload.idempotencyKey || "").trim();
     const sharedMeta = buildPlanningEditorMeta({
       generationPayload: payload,
@@ -1099,7 +1070,33 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
       ...form,
       tipoPlanejamento: "anual" as const,
     };
-    const anualHtml = buildPlanningEditorHtml(anualForm, planning);
+    const { html: anualHtml } = await resolvePlanningEditorHtml({
+      officialPayloadInput: normalizeOfficialPayloadInput({
+        tipoPlanejamento: "anual",
+        escola: payload.escola ?? form.escola,
+        professor: payload.professor ?? form.professor,
+        etapa: payload.etapa ?? form.etapa,
+        anoSerie: payload.anoSerie ?? form.anoSerie,
+        turma: payload.turma ?? payload.className,
+        areaConhecimento: payload.areaConhecimento ?? form.areaConhecimento,
+        componenteCurricular:
+          payload.componenteCurricular ?? form.componenteCurricular,
+        cargaHoraria: payload.cargaHoraria ?? form.cargaHoraria,
+        matrizPlanejamento: planning,
+        planifyQuality: {
+          qualityScore:
+            typeof quality.qualityScore === "number" ? quality.qualityScore : null,
+          qualityIssues: quality.qualityIssues ?? [],
+        },
+      }),
+      fallbackForm: anualForm,
+      fallbackPlanning: planning,
+      preloadedHtml: preloadedAnnualHtml,
+      exportContext: {
+        documentId: buildPlanningBundleDocumentId(idempotencyKey, "anual"),
+        documentType: "planejamento:anual",
+      },
+    });
 
     const annualGenerationPayload = sharedMeta.generationPayload
       ? { ...sharedMeta.generationPayload, tipoPlanejamento: "anual" as const }
@@ -1144,14 +1141,41 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
           }
         : sharedMeta.generationPayload;
 
+      const trimDocumentId = buildPlanningBundleDocumentId(
+        idempotencyKey,
+        `trim${trimestre}` as "trim1" | "trim2" | "trim3",
+      );
+
+      const { html: trimHtml } = await resolvePlanningEditorHtml({
+        officialPayloadInput: normalizeOfficialPayloadInput({
+          tipoPlanejamento: "trimestral",
+          escola: payload.escola ?? form.escola,
+          professor: payload.professor ?? form.professor,
+          etapa: payload.etapa ?? form.etapa,
+          anoSerie: payload.anoSerie ?? form.anoSerie,
+          turma: payload.turma ?? payload.className,
+          areaConhecimento: payload.areaConhecimento ?? form.areaConhecimento,
+          componenteCurricular:
+            payload.componenteCurricular ?? form.componenteCurricular,
+          cargaHoraria: trimCargaHoraria,
+          trimestre: String(trimestre),
+          matrizPlanejamento: trimPlan,
+          planifyQuality: {
+            qualityScore:
+              typeof quality.qualityScore === "number" ? quality.qualityScore : null,
+            qualityIssues: quality.qualityIssues ?? [],
+          },
+        }),
+        fallbackForm: trimForm,
+        fallbackPlanning: trimPlan,
+        exportContext: { documentId: trimDocumentId, documentType: "planejamento:trimestral" },
+      });
+
       documents.push({
-        id: buildPlanningBundleDocumentId(
-          idempotencyKey,
-          `trim${trimestre}` as "trim1" | "trim2" | "trim3",
-        ),
+        id: trimDocumentId,
         label: `${trimestre}º trimestre`,
         title: trimPlan.titulo || `${trimestre}º trimestre`,
-        html: buildPlanningEditorHtml(trimForm, trimPlan),
+        html: trimHtml,
         type: "planejamento:trimestral",
         meta: {
           ...sharedMeta,
@@ -1203,7 +1227,7 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
         ...buildBasePayload(),
         conteudos: conteudosText,
         idempotencyKey,
-        ...(trialMode ? { tipoPlanejamento: "anual" as const } : {}),
+        tipoPlanejamento: "anual" as const,
       };
       const data = trialMode
         ? await requestPlanningTrialGeneration(payload)
@@ -1222,10 +1246,9 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
           : undefined;
 
       const planning = data.planejamento as GeneratedPlanning;
-      const trimestresSelecionados =
-        form.tipoPlanejamento === "anual"
-          ? pacoteTrimestralAnualToTrimestres(form.pacoteTrimestralAnual)
-          : [];
+      const trimestresSelecionados = pacoteTrimestralAnualToTrimestres(
+        form.pacoteTrimestralAnual,
+      );
       const trimestralPlans =
         trimestresSelecionados.length > 0
           ? buildTrimestralPlansFromAnnual(planning, trimestresSelecionados)
@@ -1276,15 +1299,18 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
         qualityIssues: issues,
         serverMaterialId,
       };
+      const generatedEditorHtml =
+        "editorHtml" in data ? data.editorHtml ?? null : null;
 
       const bundleDocuments =
         trimestresSelecionados.length > 0 && trimestralPlans
-          ? buildPlanningBundleDocuments(
+          ? await buildPlanningBundleDocuments(
               planning,
               trimestresSelecionados,
               payload,
               qualityContext,
               trimestralPlans,
+              generatedEditorHtml,
             )
           : null;
 
@@ -1294,7 +1320,29 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
           return;
         }
 
-        const html = buildPlanningEditorHtml(form, planning);
+        const { html } = await resolvePlanningEditorHtml({
+          officialPayloadInput: normalizeOfficialPayloadInput({
+            tipoPlanejamento: payload.tipoPlanejamento,
+            escola: payload.escola ?? form.escola,
+            professor: payload.professor ?? form.professor,
+            etapa: payload.etapa ?? form.etapa,
+            anoSerie: payload.anoSerie ?? form.anoSerie,
+            turma: payload.turma ?? payload.className,
+            areaConhecimento: payload.areaConhecimento ?? form.areaConhecimento,
+            componenteCurricular:
+              payload.componenteCurricular ?? form.componenteCurricular,
+            cargaHoraria: payload.cargaHoraria ?? form.cargaHoraria,
+            trimestre: payload.trimestre,
+            matrizPlanejamento: planning,
+            planifyQuality: {
+              qualityScore: qualityContext.qualityScore,
+              qualityIssues: issues,
+            },
+          }),
+          fallbackForm: form,
+          fallbackPlanning: planning,
+          preloadedHtml: generatedEditorHtml,
+        });
         const titulo = planning.titulo || "Planejamento";
         openPlanningInEditor(
           html,
@@ -1314,11 +1362,11 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
       if (bundleDocuments && bundleDocuments.length > 1) {
         persistPlanningBundleDocuments(bundleDocuments);
       } else {
-        persistGeneratedPlanning(planning, payload, {
+        await persistGeneratedPlanning(planning, payload, {
           qualityScore: data.qualityScore,
           qualityIssues: issues,
           serverMaterialId,
-        });
+        }, generatedEditorHtml);
       }
 
       const trimestresExtraidos = trimestresSelecionados
@@ -1340,6 +1388,13 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
       }
     } catch (err) {
       dispatchCreditsChangedIfNeeded(err);
+      if (err instanceof PlanningOfficialHtmlError) {
+        setError(err.message);
+        setErrorCta(null);
+        setErrorRetryable(true);
+        setStatus("Erro ao renderizar modelo oficial no editor");
+        return;
+      }
       const formatted = formatGenerationError(err);
       setError(formatted.message);
       if (trialMode && formatted.code === "trial_limit_reached") {
@@ -1399,11 +1454,41 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
       const issues = applyQualityFromResponse(data);
       setLastGenerationPayload(payload);
 
-      persistGeneratedPlanning(planning, payload, {
-        qualityScore: data.qualityScore,
+      const trimestresSelecionados = pacoteTrimestralAnualToTrimestres(
+        form.pacoteTrimestralAnual,
+      );
+      const trimestralPlans =
+        trimestresSelecionados.length > 0
+          ? buildTrimestralPlansFromAnnual(planning, trimestresSelecionados)
+          : null;
+      setGeneratedTrimestralPlans(trimestralPlans);
+
+      const qualityContext = {
+        qualityScore:
+          typeof data.qualityScore === "number" ? data.qualityScore : undefined,
         qualityIssues: issues,
         serverMaterialId,
-      });
+      };
+      const generatedEditorHtml = data.editorHtml ?? null;
+
+      if (trimestresSelecionados.length > 0 && trimestralPlans) {
+        const bundleDocuments = await buildPlanningBundleDocuments(
+          planning,
+          trimestresSelecionados,
+          payload,
+          {
+            qualityScore:
+              typeof data.qualityScore === "number" ? data.qualityScore : null,
+            qualityIssues: issues,
+            serverMaterialId,
+          },
+          trimestralPlans,
+          generatedEditorHtml,
+        );
+        persistPlanningBundleDocuments(bundleDocuments);
+      } else {
+        await persistGeneratedPlanning(planning, payload, qualityContext, generatedEditorHtml);
+      }
 
       setStatus(
         data.usedAI
@@ -1433,7 +1518,7 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
     }
   }
 
-  function sendToEditor() {
+  async function sendToEditor() {
     if (!activePreviewPlanning) {
       setError("Gere o planejamento com IA antes de enviar para o Editor.");
       return;
@@ -1488,7 +1573,39 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
           }
         : form;
 
-    const html = buildPlanningEditorHtml(editorForm, activePreviewPlanning);
+    const generationPayload =
+      lastGenerationPayload ??
+      ({
+        ...buildBasePayload(),
+        tipoPlanejamento: editorForm.tipoPlanejamento,
+        trimestre: editorForm.trimestre,
+        cargaHoraria: editorForm.cargaHoraria,
+      } as PlanningAiPayload);
+
+    const { html } = await resolvePlanningEditorHtml({
+      officialPayloadInput: normalizeOfficialPayloadInput({
+        tipoPlanejamento: editorForm.tipoPlanejamento,
+        escola: generationPayload.escola ?? form.escola,
+        professor: generationPayload.professor ?? form.professor,
+        etapa: generationPayload.etapa ?? form.etapa,
+        anoSerie: generationPayload.anoSerie ?? form.anoSerie,
+        turma: generationPayload.turma ?? generationPayload.className,
+        areaConhecimento:
+          generationPayload.areaConhecimento ?? form.areaConhecimento,
+        componenteCurricular:
+          generationPayload.componenteCurricular ?? form.componenteCurricular,
+        cargaHoraria: editorForm.cargaHoraria ?? generationPayload.cargaHoraria,
+        trimestre: editorForm.trimestre,
+        matrizPlanejamento: activePreviewPlanning,
+        planifyQuality: {
+          qualityScore: typeof qualityScore === "number" ? qualityScore : null,
+          qualityIssues,
+        },
+      }),
+      fallbackForm: editorForm,
+      fallbackPlanning: activePreviewPlanning,
+    });
+
     openPlanningInEditor(
       html,
       activePreviewPlanning.titulo || "Planejamento",
@@ -1503,7 +1620,7 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
   }
 
   const workspaceContent = (
-    <div className="planify-hud pl-hud-hub mx-auto max-w-7xl space-y-5 px-3 sm:px-4 lg:px-0">
+    <div className={HUD_TOOL_HUB_CLASS}>
         {!embeddedInDashboard && !trialMode ? (
           <div className="pl-hud-page-hero overflow-hidden rounded-2xl border border-cyan-400/15">
             <PlanifyPageHero
@@ -1544,80 +1661,23 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
           </div>
         ) : null}
 
-        <PlanningWizardStepper
-          step={wizardStep}
-          onStepChange={setWizardStep}
-          stats={{
-            conteudos: stats.conteudos,
-            conteudosComBncc: stats.conteudosComBncc,
-            selecionadas: stats.selecionadas,
-            matriz: stats.matriz,
-          }}
-          canGoToStep2={canGoToWizardStep2}
-          canGoToStep3={canGoToWizardStep3}
-        />
-
       <section className="space-y-6">
           {wizardStep < 3 ? (
           <>
           <div className="pl-hud-glass rounded-2xl border border-cyan-400/20 p-5 sm:p-6">
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-600">
-              Escolha o tipo
+              Planejamento anual
             </p>
             <h2 className="mt-2 text-sm font-semibold tracking-tight text-slate-900 sm:text-base">
               {trialMode
                 ? "Planejamento anual com trimestres coerentes"
-                : "Planejamento anual ou trimestral"}
+                : "Gere o anual e extraia os trimestres"}
             </h2>
             <p className="mt-1.5 max-w-2xl text-xs leading-snug text-slate-500">
               {trialMode
                 ? "Uma geração de teste inclui o anual e os três trimestres extraídos da mesma matriz BNCC."
-                : "Informe os conteúdos, deixe a IA montar a matriz BNCC e exporte ao Google Docs com os modelos oficiais. O trimestral usa a mesma base do anual — sem retrabalho."}
+                : "Informe os conteúdos, deixe a IA montar a matriz BNCC e exporte ao Google Docs com os modelos oficiais. Os trimestrais são sempre extraídos do anual — mesma matriz, sem retrabalho."}
             </p>
-            <div className="mt-5 grid gap-3 sm:grid-cols-2">
-              <button
-                type="button"
-                onClick={() => updateField("tipoPlanejamento", "anual")}
-                className={`rounded-xl border p-5 text-left transition ${
-                  form.tipoPlanejamento === "anual"
-                    ? "border-cyan-500 bg-cyan-600 text-white shadow-md"
-                    : "border-cyan-400/20 bg-white text-slate-950 hover:border-cyan-400/50"
-                } ${trialMode ? "sm:col-span-2" : ""}`}
-              >
-                <p className="text-sm font-black">Planejamento Anual</p>
-                <p
-                  className={`mt-1 text-xs font-semibold ${
-                    form.tipoPlanejamento === "anual"
-                      ? "text-cyan-100"
-                      : "text-slate-500"
-                  }`}
-                >
-                  Matriz do ano letivo · modelo oficial completo
-                </p>
-              </button>
-              {!trialMode ? (
-              <button
-                type="button"
-                onClick={() => updateField("tipoPlanejamento", "trimestral")}
-                className={`rounded-xl border p-5 text-left transition ${
-                  form.tipoPlanejamento === "trimestral"
-                    ? "border-cyan-500 bg-cyan-600 text-white shadow-md"
-                    : "border-cyan-400/20 bg-white text-slate-950 hover:border-cyan-400/50"
-                }`}
-              >
-                <p className="text-sm font-black">Planejamento Trimestral</p>
-                <p
-                  className={`mt-1 text-xs font-semibold ${
-                    form.tipoPlanejamento === "trimestral"
-                      ? "text-cyan-100"
-                      : "text-slate-500"
-                  }`}
-                >
-                  1º, 2º ou 3º trimestre · coerente com o anual
-                </p>
-              </button>
-              ) : null}
-            </div>
           </div>
 
           <div className="pl-hud-glass rounded-2xl p-5 sm:p-6">
@@ -1631,7 +1691,7 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
               </button>
             </div>
 
-            <div className="mt-8 grid gap-5 md:grid-cols-2">
+            <div className={`mt-8 ${HUD_FORM_GRID_CLASS}`}>
               <label className="grid gap-2">
                 <span className="text-sm font-bold text-slate-500">Escola</span>
                 <input value={form.escola} onChange={(event) => updateField("escola", event.target.value)} placeholder="Nome da escola" className={HUD_FIELD_CLASS} />
@@ -1701,25 +1761,6 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
                 <span className="text-sm font-bold text-slate-500">Carga horária</span>
                 <input value={form.cargaHoraria} onChange={(event) => updateField("cargaHoraria", event.target.value)} placeholder="Ex.: 80 períodos" className={HUD_FIELD_CLASS} />
               </label>
-              {!trialMode ? (
-              <label className="grid gap-2">
-                <span className="text-sm font-bold text-slate-500">Tipo</span>
-                <select value={form.tipoPlanejamento} onChange={(event) => updateField("tipoPlanejamento", event.target.value as TipoPlanejamento)} className={HUD_FIELD_CLASS}>
-                  <option value="anual">Anual</option>
-                  <option value="trimestral">Trimestral</option>
-                </select>
-              </label>
-              ) : null}
-              {!trialMode && form.tipoPlanejamento === "trimestral" ? (
-                <label className="grid gap-2">
-                  <span className="text-sm font-bold text-slate-500">Trimestre</span>
-                  <select value={form.trimestre} onChange={(event) => updateField("trimestre", event.target.value)} className={HUD_FIELD_CLASS}>
-                    <option value="1">1º trimestre</option>
-                    <option value="2">2º trimestre</option>
-                    <option value="3">3º trimestre</option>
-                  </select>
-                </label>
-              ) : null}
             </div>
 
             {trialMode ? (
@@ -1730,7 +1771,7 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
                   coerência da ferramenta completa.
                 </p>
               </div>
-            ) : form.tipoPlanejamento === "anual" ? (
+            ) : (
               <fieldset className="relative z-10 mt-6 rounded-2xl border border-cyan-400/20 bg-cyan-50/40 p-5">
                 <legend className="px-1 text-sm font-black text-slate-950">
                   Extrair trimestres do anual
@@ -1762,21 +1803,6 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
                   ))}
                 </div>
               </fieldset>
-            ) : (
-              <p className="mt-6 rounded-2xl border border-amber-200/80 bg-amber-50/80 px-4 py-3 text-sm font-medium leading-6 text-amber-900">
-                {readPlanningAnnualSnapshot() ? (
-                  <>
-                    O trimestral será gerado em <strong>consonância com o plano anual</strong>{" "}
-                    salvo neste dispositivo.
-                  </>
-                ) : (
-                  <>
-                    Para trimestrais 100% coerentes com o anual, gere o{" "}
-                    <strong>Planejamento Anual</strong> primeiro — ou escolha a opção de extrair
-                    os trimestres desejados do anual.
-                  </>
-                )}
-              </p>
             )}
 
             {!trialMode && wizardStep >= 2 ? (
@@ -1840,20 +1866,6 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
 
             {wizardStep === 1 ? (
               <div className="mt-8 flex flex-wrap items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => applyExample("fundamental")}
-                  className="pl-hud-btn-secondary rounded-xl px-4 py-2.5 text-sm font-semibold"
-                >
-                  Exemplo Fundamental
-                </button>
-                <button
-                  type="button"
-                  onClick={() => applyExample("medio")}
-                  className="pl-hud-btn-secondary rounded-xl px-4 py-2.5 text-sm font-semibold"
-                >
-                  Exemplo Ensino Médio
-                </button>
                 <button
                   type="button"
                   disabled={!conteudosPreenchido}
@@ -2110,45 +2122,24 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
                   >
                     {trialMode ? "Ver documento completo" : "Editar no editor"}
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => setWizardStep(2)}
+                    className="rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-600 transition hover:border-cyan-300 hover:text-slate-900"
+                  >
+                    Ajustar conteúdos e BNCC
+                  </button>
                   {!trialMode ? (
-                  <MarketplacePublishButton
+                  <PlanningMarketplacePublishButton
                     title={activePreviewPlanning?.titulo || generatedPlanning.titulo || "Planejamento"}
-                    getHtml={() => {
-                      const planning = activePreviewPlanning || generatedPlanning;
-                      const editorForm =
-                        previewMatrizKey !== "anual"
-                          ? {
-                              ...form,
-                              tipoPlanejamento: "trimestral" as const,
-                              trimestre: String(previewMatrizKey),
-                              cargaHoraria: trimestralCargaHorariaLabel(planning.conteudos),
-                            }
-                          : form;
-                      return buildPlanningEditorHtml(editorForm, planning);
-                    }}
-                    getPlanningPayload={() => {
-                      const planning = activePreviewPlanning || generatedPlanning;
-                      const mode =
-                        previewMatrizKey !== "anual" ? ("trimestral" as const) : ("anual" as const);
-                      return buildOfficialPlanningPayloadFromGeneration({
-                        tipoPlanejamento: mode,
-                        escola: form.escola,
-                        professor: form.professor,
-                        etapa: form.etapa,
-                        anoSerie: form.anoSerie,
-                        turma: school.turmaPayload.turma,
-                        areaConhecimento: form.areaConhecimento,
-                        componenteCurricular: form.componenteCurricular,
-                        cargaHoraria:
-                          mode === "trimestral"
-                            ? trimestralCargaHorariaLabel(planning.conteudos)
-                            : form.cargaHoraria,
-                        trimestre:
-                          mode === "trimestral" ? String(previewMatrizKey) : form.trimestre,
-                        matrizPlanejamento: planning,
-                      });
-                    }}
-                    tipoMaterial="Planejamento"
+                    form={{ ...form, turma: school.turmaPayload.turma }}
+                    mode={previewMatrizKey !== "anual" ? "trimestral" : "anual"}
+                    trimestre={
+                      previewMatrizKey !== "anual" ? Number(previewMatrizKey) : undefined
+                    }
+                    matriz={activePreviewPlanning || generatedPlanning}
+                    qualityScore={qualityScore}
+                    qualityIssues={qualityIssues}
                     tema={form.componenteCurricular}
                     componente={form.componenteCurricular}
                     etapa={form.etapa}
@@ -2163,22 +2154,7 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
                   </div>
                 ) : null}
 
-                {!trialMode && form.tipoPlanejamento === "trimestral" ? (
-                  <div className="mt-6 rounded-xl border border-white/80 bg-white/90 px-4 py-3">
-                    <PlanningOfficialExportBar
-                      title={generatedPlanning.titulo || "Planejamento trimestral"}
-                      form={{ ...form, turma: school.turmaPayload.turma }}
-                      mode="trimestral"
-                      trimestre={Number(form.trimestre || 1)}
-                      matriz={generatedPlanning}
-                      qualityScore={qualityScore}
-                      qualityIssues={qualityIssues}
-                      onStatus={(message) => setStatus(message)}
-                    />
-                  </div>
-                ) : null}
-
-                {!trialMode && form.tipoPlanejamento === "anual" ? (
+                {!trialMode ? (
                   <div className="mt-6 space-y-3">
                     <div className="rounded-xl border border-white/80 bg-white/90 px-4 py-3">
                       <p className="text-[10px] font-black uppercase tracking-wide text-slate-500">

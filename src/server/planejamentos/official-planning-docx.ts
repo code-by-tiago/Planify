@@ -2,7 +2,10 @@ import fs from "node:fs";
 import path from "node:path";
 import { deflateRawSync, inflateRawSync } from "node:zlib";
 import type { PlanningAiResult, PlanningMatrixItem, PlanningSkill } from "./planning-ai-service";
-import { extractAnnualItemsForTrimester } from "@/lib/planejamentos/planning-trimestral-from-annual";
+import {
+  extractAnnualItemsForTrimester,
+  resolveMatrixForDocument,
+} from "@/lib/planejamentos/planning-trimestral-from-annual";
 import {
   enrichTrimestralMatrixItem,
   formatExperienciasAprendizagem,
@@ -1586,28 +1589,14 @@ function fillReferenceTrimestralTemplate(
   return documentXml.slice(0, lessonTable.start) + filledBlocks + documentXml.slice(projectTable.end);
 }
 
-function resolveTrimestralMatrixItems(
-  matrix: PlanningMatrixItem[],
-  trimester: number,
-): PlanningMatrixItem[] {
-  const markedTrimesters = new Set(
-    matrix
-      .map((item) => Number(item.trimestre))
-      .filter((value) => Number.isFinite(value) && value >= 1 && value <= 3),
-  );
-
-  // Matriz já extraída de um único trimestre (pacote anual + trimestres no editor).
-  if (markedTrimesters.size === 1) {
-    return matrix;
-  }
-
-  return extractAnnualItemsForTrimester(matrix, trimester);
-}
-
 function fillTrimestralPlanningTable(documentXml: string, payload: OfficialPlanningPayload): string {
   const matrix = getMatrix(payload);
   const trimester = getTrimestre(payload);
-  const baseItems = resolveTrimestralMatrixItems(matrix, trimester);
+  const baseItems = resolveMatrixForDocument({
+    tipoPlanejamento: "trimestral",
+    trimestre: trimester,
+    matriz: matrix,
+  });
 
   const tables = parseTables(documentXml);
   const referenceFilled = fillReferenceTrimestralTemplate(

@@ -55,9 +55,10 @@ import {
   requestPlanningGeneration,
 } from "@/lib/planejamentos/elevate-planning-client";
 import {
-  buildPlanningEditorHtml,
   planningPayloadToHtmlContext,
+  type GeneratedPlanningHtml,
 } from "@/lib/planejamentos/planning-editor-html";
+import { resolvePlanningEditorHtml, normalizeOfficialPayloadInput, PlanningOfficialHtmlError } from "@/lib/planejamentos/planning-official-editor-html-client";
 import type { PlanningEditorMeta } from "@/lib/planejamentos/planning-editor-flow";
 import {
   loadPlanningEditorBundle,
@@ -387,8 +388,10 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
   const [elevatingQuality, setElevatingQuality] = useState(false);
   const [planningBundle, setPlanningBundle] = useState<PlanningEditorBundle | null>(null);
   const [activeBundleIndex, setActiveBundleIndex] = useState(0);
+  const [planningOfficialLoading, setPlanningOfficialLoading] = useState(false);
   const activeBundleIndexRef = useRef(0);
   const skipBundleAutoSaveRef = useRef(true);
+  const planningResolveSeqRef = useRef(0);
 
   useEffect(() => {
     activeBundleIndexRef.current = activeBundleIndex;
@@ -433,6 +436,118 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
       title: activeBundleTab?.title ?? documentSource?.title,
     });
   }, [documentSource, planningMeta, planningBundle, exportDocumentType]);
+
+  useEffect(() => {
+    if (!isLoaded || !planningMeta) {
+      return;
+    }
+
+    const rawPayload = documentSource?.payload as
+      | { raw?: PlanningEditorMeta & { matrizPlanejamento?: unknown }; id?: string }
+      | undefined;
+    const matriz = rawPayload?.raw?.matrizPlanejamento;
+    if (!matriz) {
+      return;
+    }
+
+    const currentHtml = editorRef.current?.innerHTML || "";
+    if (currentHtml.includes('data-planify-html-source="official-docx"')) {
+      setPlanningOfficialLoading(false);
+      return;
+    }
+
+    const generation = planningMeta.generationPayload;
+    const bundleTab = planningBundle?.tabs[activeBundleIndexRef.current];
+    const seq = ++planningResolveSeqRef.current;
+    setPlanningOfficialLoading(true);
+    setStatus("Carregando modelo oficial do planejamento…");
+
+    void (async () => {
+      try {
+        const { html, source } = await resolvePlanningEditorHtml({
+          officialPayloadInput: normalizeOfficialPayloadInput({
+            tipoPlanejamento: planningMeta.tipoPlanejamento,
+            escola: generation?.escola ?? planningMeta.escola,
+            professor: generation?.professor ?? planningMeta.professor,
+            etapa: generation?.etapa ?? planningMeta.etapa,
+            anoSerie: generation?.anoSerie ?? planningMeta.anoSerie,
+            turma: generation?.turma ?? generation?.className,
+            areaConhecimento: generation?.areaConhecimento,
+            componenteCurricular:
+              generation?.componenteCurricular ?? planningMeta.componente,
+            cargaHoraria: generation?.cargaHoraria,
+            trimestre: planningMeta.trimestre ?? generation?.trimestre,
+            matrizPlanejamento: matriz,
+            planifyQuality: {
+              qualityScore:
+                typeof planningMeta.qualityScore === "number"
+                  ? planningMeta.qualityScore
+                  : null,
+              qualityIssues: planningMeta.qualityIssues ?? [],
+            },
+          }),
+          fallbackForm: generation
+            ? planningPayloadToHtmlContext(generation)
+            : {
+                tipoPlanejamento: planningMeta.tipoPlanejamento,
+                trimestre: planningMeta.trimestre,
+                componenteCurricular: planningMeta.componente,
+                anoSerie: planningMeta.anoSerie,
+                etapa: planningMeta.etapa,
+              },
+          fallbackPlanning: matriz as GeneratedPlanningHtml,
+          exportContext: {
+            documentType: bundleTab?.type ?? exportDocumentType,
+            documentId: bundleTab?.id ?? rawPayload?.id,
+          },
+        });
+
+        if (seq !== planningResolveSeqRef.current) {
+          return;
+        }
+
+        if (
+          !editorRef.current ||
+          source === "fallback" ||
+          !html.includes('data-planify-html-source="official-docx"')
+        ) {
+          setPlanningOfficialLoading(false);
+          setStatus(
+            "Não foi possível carregar o modelo oficial. Exporte ao Google Docs ou regenere o planejamento.",
+          );
+          return;
+        }
+
+        editorRef.current.innerHTML = html;
+        prepareImagesInsideEditor();
+        updateWordCount();
+        seedUndoStack(html);
+
+        if (planningBundle && bundleTab) {
+          const tabs = [...planningBundle.tabs];
+          const idx = activeBundleIndexRef.current;
+          tabs[idx] = { ...tabs[idx], content: html };
+          const nextBundle = { ...planningBundle, tabs };
+          savePlanningEditorBundle(nextBundle);
+          setPlanningBundle(nextBundle);
+        }
+
+        setPlanningOfficialLoading(false);
+        setStatus("Modelo oficial do planejamento carregado no editor.");
+      } catch (error) {
+        if (seq !== planningResolveSeqRef.current) {
+          return;
+        }
+        setPlanningOfficialLoading(false);
+        if (error instanceof PlanningOfficialHtmlError) {
+          setStatus(
+            "Não foi possível recarregar o modelo oficial. Exporte ao Google Docs ou regenere o planejamento.",
+          );
+        }
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoaded, planningMeta, documentSource, exportDocumentType, planningBundle?.tabs.length]);
 
   const canElevateMaterial = Boolean(
     materialMeta?.generationPayload &&
@@ -537,15 +652,32 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
     setDocumentSource(resolvedStoredDocument);
     setSavedDocuments(loadSavedDocuments());
 
+    const isPlanningDoc = String(resolvedStoredDocument?.type || "").includes("planejamento");
+    const hasOfficial =
+      typeof resolvedHtml === "string" &&
+      resolvedHtml.includes('data-planify-html-source="official-docx"');
+
     if (editorRef.current) {
-      editorRef.current.innerHTML = resolvedHtml;
-      prepareImagesInsideEditor();
-      updateWordCount();
-      seedUndoStack(resolvedHtml);
+      if (isPlanningDoc && !hasOfficial) {
+        editorRef.current.innerHTML =
+          '<p style="color:#64748b;padding:24px;">Carregando modelo oficial do planejamento…</p>';
+        setPlanningOfficialLoading(true);
+        updateWordCount();
+      } else {
+        editorRef.current.innerHTML = resolvedHtml;
+        prepareImagesInsideEditor();
+        updateWordCount();
+        seedUndoStack(resolvedHtml);
+        setPlanningOfficialLoading(false);
+      }
     }
 
     setIsLoaded(true);
-    setStatus(`Documento carregado. Última verificação: ${lastSavedLabel}`);
+    setStatus(
+      isPlanningDoc && !hasOfficial
+        ? "Carregando modelo oficial do planejamento…"
+        : `Documento carregado. Última verificação: ${lastSavedLabel}`,
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -1171,7 +1303,31 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
       const payload = buildElevatePlanningPayload(base, problemas);
       const data = await requestPlanningGeneration(payload);
       const planning = data.planejamento;
-      const html = buildPlanningEditorHtml(planningPayloadToHtmlContext(payload), planning);
+      const { html } = await resolvePlanningEditorHtml({
+        officialPayloadInput: normalizeOfficialPayloadInput({
+          tipoPlanejamento: payload.tipoPlanejamento,
+          escola: payload.escola,
+          professor: payload.professor,
+          etapa: payload.etapa,
+          anoSerie: payload.anoSerie,
+          turma: payload.turma ?? payload.className,
+          areaConhecimento: payload.areaConhecimento,
+          componenteCurricular: payload.componenteCurricular,
+          cargaHoraria: payload.cargaHoraria,
+          trimestre: payload.trimestre,
+          matrizPlanejamento: planning,
+          planifyQuality: {
+            qualityScore:
+              typeof data.qualityScore === "number" ? data.qualityScore : null,
+            qualityIssues: Array.isArray(data.qualityIssues)
+              ? data.qualityIssues.map((item) => String(item)).filter(Boolean)
+              : [],
+          },
+        }),
+        fallbackForm: planningPayloadToHtmlContext(payload),
+        fallbackPlanning: planning,
+        preloadedHtml: data.editorHtml,
+      });
 
       if (editorRef.current) {
         editorRef.current.innerHTML = html;
@@ -1376,7 +1532,22 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
     };
 
     setDocumentSource(nextDocumentSource);
-    applyEditorHtml(nextTab.content);
+
+    const hasOfficial =
+      typeof nextTab.content === "string" &&
+      nextTab.content.includes('data-planify-html-source="official-docx"');
+
+    if (hasOfficial) {
+      applyEditorHtml(nextTab.content);
+      setPlanningOfficialLoading(false);
+      setStatus(`Aba "${nextTab.label}" carregada.`);
+    } else {
+      applyEditorHtml(
+        '<p style="color:#64748b;padding:24px;">Carregando modelo oficial do planejamento…</p>',
+      );
+      setPlanningOfficialLoading(true);
+      setStatus(`Carregando modelo oficial — ${nextTab.label}…`);
+    }
 
     saveEditorDocument(
       createEditorDocument({
@@ -1388,8 +1559,6 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
         raw: nextTab.raw,
       }),
     );
-
-    setStatus(`Aba "${nextTab.label}" carregada.`);
   }
 
   function saveVersion() {
@@ -3181,12 +3350,19 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
           )}
 
           <div
-            className={`planify-editor-document-scroll min-h-0 flex-1 rounded-lg border border-slate-200 bg-white shadow-sm ${
+            className={`planify-editor-document-scroll relative min-h-0 flex-1 rounded-lg border border-slate-200 bg-white shadow-sm ${
               embedded
                 ? "overflow-y-auto overscroll-contain p-0.5 sm:p-1"
                 : "overflow-y-auto overscroll-contain p-1 sm:p-2"
             }`}
           >
+            {planningOfficialLoading ? (
+              <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-white/70 backdrop-blur-[1px]">
+                <div className="rounded-xl border border-cyan-200 bg-white px-4 py-3 text-sm font-semibold text-cyan-800 shadow-sm">
+                  Carregando modelo oficial…
+                </div>
+              </div>
+            ) : null}
             <div
               className={`bg-slate-100 ${
                 embedded ? "rounded-md p-1 sm:p-1.5" : "rounded-xl p-1.5 sm:p-2"
@@ -3194,7 +3370,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
             >
               <div
                 ref={editorRef}
-                contentEditable
+                contentEditable={!planningOfficialLoading}
                 suppressContentEditableWarning
                 onClick={handleEditorClick}
                 onMouseDown={handleEditorMouseDown}
@@ -3237,6 +3413,21 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
         ${PLANIFY_EXPORT_DOC_COMPONENT_CSS}
         ${PLANIFY_GAME_EXPORT_CSS}
 
+        .planify-editor-page .planify-doc {
+          font-family: Arial, Helvetica, sans-serif;
+          line-height: 1.55;
+          color: #0f172a;
+          text-align: left;
+        }
+
+        .planify-editor-page .planify-planning-official,
+        .planify-editor-page .planify-planning-official table,
+        .planify-editor-page .planify-planning-official th,
+        .planify-editor-page .planify-planning-official td,
+        .planify-editor-page .planify-planning-official p {
+          font-family: Arial, Helvetica, sans-serif;
+        }
+
         .planify-editor-page.planify-abnt-page {
           padding: 3cm 2cm 2cm 3cm !important;
           text-align: justify;
@@ -3246,6 +3437,18 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
           font-size: 2rem;
           font-weight: 800;
           margin: 0 0 1rem;
+        }
+
+        .planify-editor-page .planify-doc h1,
+        .planify-editor-page .planify-doc h2,
+        .planify-editor-page .planify-doc h3,
+        .planify-editor-page .planify-doc p,
+        .planify-editor-page .planify-doc ul,
+        .planify-editor-page .planify-doc ol {
+          font-size: inherit;
+          font-weight: inherit;
+          margin: inherit;
+          padding: inherit;
         }
 
         .planify-editor-page h2 {
@@ -3281,6 +3484,30 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
           border: 1px solid #cbd5e1;
           padding: 0.55rem;
           vertical-align: top;
+        }
+
+        .planify-editor-page .planify-planning-official table {
+          margin: 10px 0 16px;
+        }
+
+        .planify-editor-page .planify-planning-official th,
+        .planify-editor-page .planify-planning-official td {
+          border: 1px solid #111827;
+          padding: 6px 8px;
+          vertical-align: top;
+        }
+
+        .planify-editor-page .planify-planning-official th {
+          background: #d9e2f3;
+          font-weight: 800;
+          text-align: center;
+          font-size: 10pt;
+        }
+
+        .planify-editor-page .planify-planning-official .planify-official-id td:first-child,
+        .planify-editor-page .planify-planning-official .planify-official-support td:first-child {
+          background: #f3f4f6;
+          font-weight: 700;
         }
 
         .planify-editor-page img {

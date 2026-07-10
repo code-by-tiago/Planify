@@ -15,6 +15,7 @@ export type PlanningGenerationApiResult = PlanningAiResult & {
   materialId?: string | null;
   persistWarning?: string | null;
   alertas?: string[];
+  editorHtml?: string | null;
 };
 
 export async function requestPlanningGeneration(

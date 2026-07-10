@@ -1,4 +1,5 @@
 import { enrichTrimestralMatrixItem } from "@/lib/planejamentos/planning-trimestral-fields";
+import { extractAnnualItemsForTrimester } from "@/lib/planejamentos/planning-trimestral-from-annual";
 import type {
   PlanningAiPayload,
   PlanningMatrixItem,
@@ -78,16 +79,7 @@ function editorUnitFor(form: PlanningEditorHtmlContext, item: PlanningMatrixItem
 }
 
 function editorItemsByTrimester(planning: GeneratedPlanningHtml, trimester: number) {
-  const explicit = planning.conteudos.filter((item) => Number(item.trimestre) === trimester);
-
-  if (explicit.length > 0) {
-    return explicit;
-  }
-
-  const chunkSize = Math.max(1, Math.ceil(planning.conteudos.length / 3));
-  const start = (trimester - 1) * chunkSize;
-
-  return planning.conteudos.slice(start, start + chunkSize);
+  return extractAnnualItemsForTrimester(planning.conteudos, trimester);
 }
 
 export function planningPayloadToHtmlContext(
@@ -106,6 +98,10 @@ export function planningPayloadToHtmlContext(
   };
 }
 
+/**
+ * @deprecated Trial/demo only. Produção deve usar `resolvePlanningEditorHtml`
+ * (pipeline DOCX oficial → official-docx).
+ */
 export function buildPlanningEditorHtml(
   form: PlanningEditorHtmlContext,
   planning: GeneratedPlanningHtml,
@@ -139,10 +135,7 @@ export function buildPlanningEditorHtml(
 
   if (tipo.includes("tri")) {
     const trimester = Number(form.trimestre || 1);
-    const items =
-      planning.conteudos.filter((item) => Number(item.trimestre) === trimester).length > 0
-        ? planning.conteudos.filter((item) => Number(item.trimestre) === trimester)
-        : planning.conteudos;
+    const items = extractAnnualItemsForTrimester(planning.conteudos, trimester);
 
     const tables = items
       .map((item) => {
@@ -168,7 +161,7 @@ export function buildPlanningEditorHtml(
 
     return `
       ${baseStyles}
-      <article class="planify-doc">
+      <article class="planify-doc" data-planify-html-source="simplified-fallback">
         <h1>PLANEJAMENTO TRIMESTRAL — ${trimester}º TRIMESTRE</h1>
         ${identity}
         ${tables}
@@ -226,7 +219,7 @@ export function buildPlanningEditorHtml(
 
   return `
     ${baseStyles}
-    <article class="planify-doc">
+    <article class="planify-doc" data-planify-html-source="simplified-fallback">
       <h1>PLANEJAMENTO ANUAL</h1>
       ${identity}
       ${trimesterBlocks}

@@ -1,6 +1,6 @@
 "use client";
 
-import { GoogleDocumentExportBar } from "@/components/google/GoogleDocumentExportBar";
+import { MarketplacePublishButton } from "@/components/marketplace/MarketplacePublishButton";
 import type { GeneratedPlanningHtml } from "@/lib/planejamentos/planning-editor-html";
 import {
   normalizeOfficialPayloadInput,
@@ -8,7 +8,6 @@ import {
 } from "@/lib/planejamentos/planning-official-editor-html-client";
 import { buildOfficialPlanningPayloadFromGeneration } from "@/lib/planejamentos/planning-google-export-payload";
 import { trimestralCargaHorariaLabel } from "@/lib/planejamentos/planning-trimestral-from-annual";
-import { passesExportQualityGate } from "@/lib/materiais/unified-quality-gate";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 type PlanningFormSlice = {
@@ -23,7 +22,7 @@ type PlanningFormSlice = {
   trimestre: string;
 };
 
-type PlanningOfficialExportBarProps = {
+type PlanningMarketplacePublishButtonProps = {
   title: string;
   form: PlanningFormSlice;
   mode: "anual" | "trimestral";
@@ -31,13 +30,16 @@ type PlanningOfficialExportBarProps = {
   matriz: GeneratedPlanningHtml;
   qualityScore?: number | null;
   qualityIssues?: string[];
-  onStatus?: (message: string) => void;
-  returnTo?: string;
-  /** HTML oficial já resolvido (evita re-fetch). */
-  officialHtml?: string | null;
+  tema?: string;
+  componente?: string;
+  etapa?: string;
+  anoSerie?: string;
+  className?: string;
+  label?: string;
+  compact?: boolean;
 };
 
-export function PlanningOfficialExportBar({
+export function PlanningMarketplacePublishButton({
   title,
   form,
   mode,
@@ -45,23 +47,15 @@ export function PlanningOfficialExportBar({
   matriz,
   qualityScore = null,
   qualityIssues = [],
-  onStatus,
-  returnTo = "/dashboard?secao=planejamentos",
-  officialHtml = null,
-}: PlanningOfficialExportBarProps) {
-  const [cachedOfficialHtml, setCachedOfficialHtml] = useState(
-    typeof officialHtml === "string" && officialHtml.includes('data-planify-html-source="official-docx"')
-      ? officialHtml
-      : "",
-  );
-
-  const exportBlocked = useMemo(
-    () => !passesExportQualityGate(qualityScore, qualityIssues),
-    [qualityScore, qualityIssues],
-  );
-  const exportBlockedTitle = exportBlocked
-    ? "A matriz não atingiu o padrão mínimo Planify (88/100). Use Elevar qualidade antes de exportar."
-    : undefined;
+  tema,
+  componente,
+  etapa,
+  anoSerie,
+  className,
+  label,
+  compact,
+}: PlanningMarketplacePublishButtonProps) {
+  const [cachedOfficialHtml, setCachedOfficialHtml] = useState("");
 
   const editorForm = useMemo(
     () =>
@@ -77,14 +71,6 @@ export function PlanningOfficialExportBar({
   );
 
   useEffect(() => {
-    if (
-      typeof officialHtml === "string" &&
-      officialHtml.includes('data-planify-html-source="official-docx"')
-    ) {
-      setCachedOfficialHtml(officialHtml);
-      return;
-    }
-
     let cancelled = false;
 
     void (async () => {
@@ -130,16 +116,7 @@ export function PlanningOfficialExportBar({
     return () => {
       cancelled = true;
     };
-  }, [
-    officialHtml,
-    mode,
-    form,
-    trimestre,
-    matriz,
-    qualityScore,
-    qualityIssues,
-    editorForm,
-  ]);
+  }, [mode, form, trimestre, matriz, qualityScore, qualityIssues, editorForm]);
 
   const getHtml = useCallback(() => cachedOfficialHtml, [cachedOfficialHtml]);
 
@@ -169,23 +146,19 @@ export function PlanningOfficialExportBar({
   );
 
   return (
-    <GoogleDocumentExportBar
+    <MarketplacePublishButton
       title={title || matriz.titulo || "Planejamento"}
       getHtml={getHtml}
       getPlanningPayload={getPlanningPayload}
-      documentType={`planejamento:${mode}`}
-      returnTo={returnTo}
-      onStatus={onStatus}
-      disabled={exportBlocked || !cachedOfficialHtml}
-      disabledTitle={
-        exportBlocked
-          ? exportBlockedTitle
-          : !cachedOfficialHtml
-            ? "Carregando modelo oficial…"
-            : undefined
-      }
-      compact
-      classroomMode="popover"
+      tipoMaterial="Planejamento"
+      tema={tema}
+      componente={componente}
+      etapa={etapa}
+      anoSerie={anoSerie}
+      disabled={!cachedOfficialHtml}
+      className={className}
+      label={label}
+      compact={compact}
     />
   );
 }

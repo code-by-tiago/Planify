@@ -112,3 +112,39 @@ export function buildTrimestralPlansFromAnnual(
 
   return result;
 }
+
+/**
+ * Fonte única de matriz para render/export de um documento (anual ou trimestral).
+ * Preferir `trimPlanMatrix` quando o pacote já extraiu o trimestre do anual.
+ */
+export function resolveMatrixForDocument(params: {
+  tipoPlanejamento: string;
+  trimestre?: number | string | null;
+  matriz: PlanningMatrixItem[];
+  trimPlanMatrix?: PlanningMatrixItem[] | null;
+}): PlanningMatrixItem[] {
+  const tipo = String(params.tipoPlanejamento || "anual").toLowerCase();
+  const matrix = Array.isArray(params.matriz) ? params.matriz : [];
+
+  if (!tipo.includes("tri")) {
+    return matrix;
+  }
+
+  if (Array.isArray(params.trimPlanMatrix) && params.trimPlanMatrix.length > 0) {
+    return params.trimPlanMatrix;
+  }
+
+  const trimester = Math.min(3, Math.max(1, Number(params.trimestre) || 1));
+  const markedTrimesters = new Set(
+    matrix
+      .map((item) => Number(item.trimestre))
+      .filter((value) => Number.isFinite(value) && value >= 1 && value <= 3),
+  );
+
+  // Matriz já extraída de um único trimestre (aba do pacote no editor).
+  if (markedTrimesters.size === 1) {
+    return matrix;
+  }
+
+  return extractAnnualItemsForTrimester(matrix, trimester);
+}

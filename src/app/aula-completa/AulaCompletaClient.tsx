@@ -263,7 +263,10 @@ export function AulaCompletaClient({
 
       setItems(result.items);
       const firstOk = result.items.find((item) => item.ok && item.html);
-      if (firstOk) setActiveTab(firstOk.toolId);
+      if (firstOk) {
+        setActiveTab(firstOk.toolId);
+        abrirNoEditor(firstOk);
+      }
       setProgressLabel("");
     } catch (error) {
       dispatchCreditsChangedIfNeeded(error);
@@ -447,11 +450,8 @@ export function AulaCompletaClient({
       onBack={fecharPainel}
       backLabel={studioMode ? "Início" : "Catálogo"}
       formScrollAttr={studioMode}
-      previewScrollAttr={studioMode}
-      previewReady={successItems.length > 0}
-      previewLoading={loading}
       form={
-        <form onSubmit={gerarPacote} className="space-y-4 max-lg:pb-2">
+        <form onSubmit={gerarPacote} className="space-y-5 max-lg:pb-2">
           <div>
             <label className={HUD_SECTION_LABEL} htmlFor="aula-conteudo">
               {formFields.conteudoLabel}
@@ -566,6 +566,27 @@ export function AulaCompletaClient({
             retrying={loading}
           />
 
+          {loading ? (
+            <div className="space-y-4">
+              <PlanifyOwlGenerationCoach
+                active
+                title={progressLabel || tool.loadingTitle}
+                description={tool.loadingDescription}
+                toolId="aula-completa"
+              />
+              {showPatienceMessage ? (
+                <p className="text-center text-sm font-semibold text-slate-600">
+                  O pacote pode levar alguns minutos. Não feche esta página.
+                </p>
+              ) : null}
+              <MaterialPreviewSkeleton />
+            </div>
+          ) : null}
+
+          <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-900">
+            Após gerar, o primeiro material do pacote abre direto no editor.
+          </div>
+
           <MaterialToolMobileSubmitBar>
             <button
               type="submit"
@@ -577,92 +598,6 @@ export function AulaCompletaClient({
             <CreditsBalancePill />
           </MaterialToolMobileSubmitBar>
         </form>
-      }
-      preview={
-        <div className="space-y-4">
-          {loading ? (
-            <>
-              <PlanifyOwlGenerationCoach
-                active={loading}
-                title={tool.loadingTitle}
-                description={progressLabel || tool.loadingDescription}
-                toolId="aula-completa"
-                estimatedDurationMs={estimatedDurationMs}
-              />
-              <MaterialPreviewSkeleton />
-              {checklist}
-              {showPatienceMessage ? (
-                <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-800">
-                  Pacote grande em andamento — aguarde, não feche a aba.
-                </p>
-              ) : null}
-            </>
-          ) : successItems.length ? (
-            <>
-              {!loading && (failedItems.length > 0 || items.some((item) => !item.ok)) ? (
-                <>
-                  {checklist}
-                  <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800">
-                    {successItems.length} de {orderedTools.length} prontos — regenere o item que falhou.
-                  </p>
-                </>
-              ) : null}
-              {successItems.length > 1 && activeTab ? (
-                <SwipeTabPanel
-                  tabs={previewTabs}
-                  activeId={activeTab}
-                  onChange={(id) => setActiveTab(id as PlanifyToolId)}
-                />
-              ) : activeItem?.html ? (
-                <>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => abrirNoEditor()}
-                      className="pl-hud-btn rounded-xl px-4 py-2 text-xs font-semibold"
-                    >
-                      Abrir no editor
-                    </button>
-                    <GoogleDocumentExportBar
-                      title={`${getPlanifyTool(activeItem.toolId).shortTitle} — ${resolveMaterialDisplayTema("", conteudo) || "Aula"}`}
-                      getHtml={() => activeItem.html || ""}
-                      documentType={`material:${activeItem.toolId}`}
-                      returnTo="/dashboard?tipo=aula-completa"
-                      compact
-                      classroomMode="popover"
-                      disabled={!activeItem.html}
-                      onStatus={setExportStatus}
-                      downloadingPdf={downloadingPdf}
-                      onDownloadPdf={() => void baixarPdfItem()}
-                    />
-                  </div>
-                  {exportStatus ? (
-                    <p className="text-[11px] font-semibold text-slate-500">
-                      {exportStatus}
-                    </p>
-                  ) : null}
-                  <MaterialTypedPreview
-                    html={activeItem.html}
-                    tipoMaterial={activeItem.toolId}
-                  />
-                </>
-              ) : null}
-            </>
-          ) : (
-            <div className="rounded-2xl border border-dashed border-cyan-400/25 bg-white/70 px-6 py-12 text-center">
-              <p className="text-xs font-bold uppercase tracking-wide text-cyan-600">
-                Aula completa
-              </p>
-              <h3 className="mt-2 text-sm font-semibold text-slate-900">
-                Um fluxo, quatro entregas
-              </h3>
-              <p className="mt-2 text-sm font-medium text-slate-600">
-                Informe o tema e gere plano, atividade e avaliação alinhados
-                no mesmo pacote.
-              </p>
-            </div>
-          )}
-        </div>
       }
     />
   ) : null;

@@ -675,6 +675,7 @@ export function CopilotoClient({
         setRefineText("");
         generationIdempotencyRef.current = null;
         setPhase("ready");
+        openMaterialInEditor(result.html, title, meta, { from: "copiloto" });
       }, { onError: dispatchCreditsChangedIfNeeded });
     } catch (err) {
       if (
@@ -736,6 +737,7 @@ export function CopilotoClient({
         setResultHtml(result.html);
         setRefineText("");
         setPhase("ready");
+        openMaterialInEditor(result.html, title, meta, { from: "copiloto" });
       }, { onError: dispatchCreditsChangedIfNeeded });
     } catch (err) {
       if (
@@ -776,7 +778,7 @@ export function CopilotoClient({
     phase === "refining";
 
   const form = (
-    <div className="flex h-full min-h-0 flex-col gap-5 p-4 max-lg:pb-24 sm:p-5">
+    <div className="flex h-full min-h-0 flex-col gap-5 max-lg:pb-24">
       <div className="rounded-2xl border border-cyan-400/20 bg-gradient-to-br from-cyan-50/80 to-white p-5">
         <p className="text-sm font-bold text-slate-800">Fale o pedido</p>
         <p className="mt-1 text-sm font-medium text-slate-600">
@@ -1173,199 +1175,6 @@ export function CopilotoClient({
     </div>
   );
 
-  const preview = (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden">
-      {phase === "generating" || phase === "refining" ? (
-        <div className="flex h-full flex-col gap-4 p-6">
-          <PlanifyOwlGenerationCoach
-            active
-            title={
-              progressLabel ||
-              (phase === "refining"
-                ? "Aplicando seu ajuste…"
-                : tool.loadingTitle)
-            }
-            description={
-              phase === "refining"
-                ? "Preservando o que já estava bom e reescrevendo o pedido."
-                : tool.loadingDescription
-            }
-            context="material"
-            toolId={brief.tipoMaterial || "copiloto"}
-            progressSteps={
-              phase === "refining"
-                ? [...COPILOTO_PROGRESS_STAGES.refining]
-                : [...COPILOTO_PROGRESS_STAGES.generating]
-            }
-          />
-          <button
-            type="button"
-            onClick={cancelActiveGeneration}
-            className={`${HUD_TOUCH_BTN} w-full border border-slate-300 bg-white text-slate-800`}
-          >
-            Cancelar {phase === "refining" ? "ajuste" : "geração"}
-          </button>
-          <MaterialPreviewSkeleton />
-        </div>
-      ) : resultHtml ? (
-        <div className="flex h-full min-h-0 flex-col">
-          <div className="flex shrink-0 flex-col gap-2 border-b border-slate-200 px-4 py-3">
-            <div className="flex items-center justify-between gap-2">
-              <p className="truncate text-sm font-bold text-slate-800">{resultTitle}</p>
-              <button
-                type="button"
-                onClick={openEditor}
-                className="rounded-lg bg-[#0A192F] px-3 py-2 text-xs font-bold text-white"
-              >
-                Abrir no editor
-              </button>
-            </div>
-            <GoogleDocumentExportBar
-              title={resultTitle || "Material Copiloto"}
-              getHtml={() => resultHtml}
-              documentType={`material:${brief.tipoMaterial}`}
-              returnTo="/dashboard?tipo=copiloto"
-              compact
-              classroomMode="popover"
-              disabled={!resultHtml}
-              onStatus={setExportStatus}
-              onExportError={(error) => {
-                const message =
-                  error instanceof Error
-                    ? error.message
-                    : "Falha na exportação para o Google.";
-                setExportStatus(`Falha na exportação — ${message}`);
-              }}
-              downloadingPdf={downloadingPdf}
-              downloadingDocx={downloadingDocx}
-              classroomMetadata={{
-                disciplina: brief.componenteCurricular,
-                anoSerie: brief.anoSerie,
-                etapa: brief.etapa,
-                tema: brief.tema,
-              }}
-              onDownloadPdf={() => {
-                void (async () => {
-                  if (!resultHtml) return;
-                  setDownloadingPdf(true);
-                  try {
-                    await downloadEditorExport({
-                      title: resultTitle || "Material Copiloto",
-                      html: resultHtml,
-                      format: "pdf",
-                      documentType: `material:${brief.tipoMaterial}`,
-                    });
-                    setExportStatus("PDF baixado.");
-                  } catch (error) {
-                    const message =
-                      error instanceof Error
-                        ? error.message
-                        : "Não foi possível baixar o PDF.";
-                    setExportStatus(message);
-                  } finally {
-                    setDownloadingPdf(false);
-                  }
-                })();
-              }}
-              onDownloadDocx={() => {
-                void (async () => {
-                  if (!resultHtml) return;
-                  setDownloadingDocx(true);
-                  try {
-                    await downloadEditorExport({
-                      title: resultTitle || "Material Copiloto",
-                      html: resultHtml,
-                      format: "docx",
-                      documentType: `material:${brief.tipoMaterial}`,
-                    });
-                    setExportStatus("DOCX baixado.");
-                  } catch (error) {
-                    const message =
-                      error instanceof Error
-                        ? error.message
-                        : "Não foi possível baixar o DOCX.";
-                    setExportStatus(message);
-                  } finally {
-                    setDownloadingDocx(false);
-                  }
-                })();
-              }}
-            />
-            {exportStatus ? (
-              <p className="text-[11px] font-semibold text-slate-500">{exportStatus}</p>
-            ) : null}
-          </div>
-
-          <div className="shrink-0 border-b border-slate-200 bg-slate-50 px-4 py-3">
-            <p className="text-xs font-extrabold uppercase tracking-wide text-slate-600">
-              Refinar com voz ou texto
-            </p>
-            <p className="mt-1 text-xs font-medium text-slate-500">
-              Ex.: “Mude a questão 3 para dissertativa e adicione um texto de apoio no início.”
-            </p>
-            <div className="mt-3 flex items-start gap-2">
-              {phase === "recording" && recordMode === "refine" ? (
-                <button
-                  type="button"
-                  onClick={stopRecording}
-                  className="flex h-12 w-12 min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-full bg-rose-500 text-white"
-                  aria-label="Parar gravação do ajuste"
-                >
-                  <span className="h-3 w-3 rounded-sm bg-white" />
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={() => void startRecording("refine")}
-                  className="flex h-12 w-12 min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-full bg-[#0A192F] text-white disabled:opacity-50"
-                  aria-label="Gravar ajuste"
-                >
-                  <PlanifyIcon name="mic" className="h-4 w-4" />
-                </button>
-              )}
-              <textarea
-                className={`${HUD_TEXTAREA_CLASS} min-h-[72px] flex-1`}
-                value={refineText}
-                disabled={busy}
-                onChange={(e) =>
-                  setRefineText(correctPedagogicalTranscript(e.target.value))
-                }
-                placeholder="Descreva o ajuste…"
-              />
-            </div>
-            {phase === "recording" && recordMode === "refine" ? (
-              <div className="mt-2">
-                <CopilotoWaveform active levels={waveLevels} />
-              </div>
-            ) : null}
-            <button
-              type="button"
-              disabled={busy || refineText.trim().length < 6}
-              onClick={() => void refineMaterial()}
-              className={`${HUD_TOUCH_BTN} mt-2 bg-cyan-600 text-white disabled:opacity-50`}
-            >
-              Aplicar ajuste
-            </button>
-          </div>
-
-          <div className="min-h-0 flex-1 overflow-auto p-4">
-            <MaterialTypedPreview html={resultHtml} tipoMaterial={brief.tipoMaterial} />
-          </div>
-        </div>
-      ) : (
-        <div className="flex h-full flex-col items-center justify-center gap-3 p-8 text-center">
-          <PlanifyIcon name="mic" className="h-10 w-10 text-cyan-500" />
-          <p className="text-sm font-bold text-slate-800">Copiloto por voz</p>
-          <p className="max-w-sm text-sm font-medium text-slate-500">
-            Grave ou digite o pedido. A IA monta o brief e gera lista, prova, redação, plano
-            de aula ou dinâmica — com BNCC e qualidade máxima.
-          </p>
-        </div>
-      )}
-    </div>
-  );
-
   return (
     <MaterialToolPageShell
       tool={tool}
@@ -1373,9 +1182,6 @@ export function CopilotoClient({
       onBack={studioMode ? onStudioClose : undefined}
       backLabel={studioMode ? "Início" : "Voltar"}
       form={form}
-      preview={preview}
-      previewReady={Boolean(resultHtml)}
-      previewLoading={phase === "generating" || phase === "refining"}
     />
   );
 }

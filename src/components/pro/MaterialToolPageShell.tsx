@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { HUD_FORM_PANEL_CLASS } from "@/lib/pro/hud-form-styles";
+import type { ReactNode } from "react";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import type { PlanifyTool } from "@/lib/pro/planifyTools";
-
-type MobilePanel = "form" | "preview";
 
 type MaterialToolPageShellProps = {
   tool: PlanifyTool;
@@ -12,18 +11,15 @@ type MaterialToolPageShellProps = {
   onBack?: () => void;
   backLabel?: string;
   form: ReactNode;
-  preview: ReactNode;
   formScrollAttr?: boolean;
-  previewScrollAttr?: boolean;
-  /** When true on mobile, switches to the preview tab (e.g. after generation). */
-  previewReady?: boolean;
-  previewLoading?: boolean;
   fullWidth?: boolean;
+  /** Quando falso, não envolve o formulário no painel vidro padrão (ex.: embeds complexos). */
+  wrapFormPanel?: boolean;
 };
 
 /**
- * Split layout chrome for material IA tools — form left, preview right.
- * On mobile: tabbed panels (Configurar | Resultado) for full-height usability.
+ * Layout das ferramentas de material IA — apenas formulário.
+ * Após gerar, o conteúdo abre no editor (sem painel de prévia).
  */
 export function MaterialToolPageShell({
   tool,
@@ -31,32 +27,11 @@ export function MaterialToolPageShell({
   onBack,
   backLabel = "Voltar",
   form,
-  preview,
   formScrollAttr = false,
-  previewScrollAttr = false,
-  previewReady = false,
-  previewLoading = false,
   fullWidth = false,
+  wrapFormPanel = true,
 }: MaterialToolPageShellProps) {
-  const [mobilePanel, setMobilePanel] = useState<MobilePanel>("form");
-  const showPreviewPanel = !fullWidth && (previewReady || previewLoading);
-
-  useEffect(() => {
-    if (fullWidth) {
-      setMobilePanel("form");
-      return;
-    }
-    if (previewReady) {
-      setMobilePanel("preview");
-    }
-  }, [fullWidth, previewReady]);
-
-  useEffect(() => {
-    if (fullWidth) return;
-    if (previewLoading) {
-      setMobilePanel("preview");
-    }
-  }, [fullWidth, previewLoading]);
+  void fullWidth;
 
   return (
     <div
@@ -97,76 +72,19 @@ export function MaterialToolPageShell({
         </div>
       ) : null}
 
-      <div
-        className={`shrink-0 gap-2 border-b border-slate-200 bg-white px-3 py-2 lg:hidden ${
-          fullWidth || !showPreviewPanel ? "hidden" : "flex"
-        }`}
-        role="tablist"
-        aria-label="Painel da ferramenta"
-      >
-        <button
-          type="button"
-          role="tab"
-          aria-selected={mobilePanel === "form"}
-          onClick={() => setMobilePanel("form")}
-          className={`flex-1 rounded-lg px-3 py-2.5 text-sm font-bold transition ${
-            mobilePanel === "form"
-              ? "bg-blue-600 text-white shadow-sm"
-              : "bg-slate-100 text-slate-700"
-          }`}
-        >
-          Configurar
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={mobilePanel === "preview"}
-          onClick={() => setMobilePanel("preview")}
-          className={`flex-1 rounded-lg px-3 py-2.5 text-sm font-bold transition ${
-            mobilePanel === "preview"
-              ? "bg-blue-600 text-white shadow-sm"
-              : "bg-slate-100 text-slate-700"
-          }`}
-        >
-          {previewLoading ? "Gerando…" : previewReady ? "Resultado" : "Prévia"}
-        </button>
-      </div>
-
-      <div
-        className={`grid min-h-0 flex-1 max-lg:grid-cols-1 ${
-          fullWidth || !showPreviewPanel ? "lg:grid-cols-1" : "lg:grid-cols-[0.88fr_1.12fr]"
-        } ${studioMode ? "min-h-0" : "min-h-0 lg:min-h-[680px]"}`}
-      >
+      <div className={`min-h-0 flex-1 ${studioMode ? "min-h-0" : "min-h-0 lg:min-h-[680px]"}`}>
         <div
           {...(formScrollAttr ? { "data-planify-scroll": "" } : {})}
-          className={`min-h-0 overflow-y-auto overscroll-contain bg-white/50 p-4 sm:p-5 lg:max-h-none ${
-            fullWidth || !showPreviewPanel ? "" : "lg:border-r lg:border-slate-200"
-          } ${
-            fullWidth || !showPreviewPanel || mobilePanel === "form"
-              ? "max-lg:flex max-lg:flex-1 max-lg:flex-col"
-              : "max-lg:hidden"
-          }`}
+          className="flex h-full min-h-0 flex-col overflow-y-auto overscroll-contain p-3 sm:p-4 lg:p-5"
         >
-          <div
-            className={`max-lg:pb-[max(5.5rem,env(safe-area-inset-bottom))] ${
-              fullWidth || showPreviewPanel ? "" : "mx-auto w-full max-w-3xl"
-            }`}
-          >
-            {form}
+          <div className="max-lg:pb-[max(5.5rem,env(safe-area-inset-bottom))]">
+            {wrapFormPanel ? (
+              <div className={HUD_FORM_PANEL_CLASS}>{form}</div>
+            ) : (
+              form
+            )}
           </div>
         </div>
-        {showPreviewPanel ? (
-          <div
-            {...(previewScrollAttr ? { "data-planify-scroll": "" } : {})}
-            className={`min-h-0 overflow-y-auto overscroll-contain bg-slate-50 p-3 pb-[max(1rem,env(safe-area-inset-bottom))] sm:p-5 ${
-              mobilePanel === "preview" ? "max-lg:flex max-lg:flex-1 max-lg:flex-col" : "max-lg:hidden"
-            }`}
-          >
-            <div className="min-h-[220px] flex-1 rounded-lg border border-slate-200 bg-white p-3 shadow-sm sm:p-5">
-              {preview}
-            </div>
-          </div>
-        ) : null}
       </div>
     </div>
   );

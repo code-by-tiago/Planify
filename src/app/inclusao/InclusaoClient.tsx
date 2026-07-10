@@ -14,6 +14,7 @@ import { PlanifyOwlGenerationCoach } from "@/components/pro/PlanifyOwlGeneration
 import { PlanifyOwlMark } from "@/components/pro/PlanifyOwlMark";
 import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
 import { downloadEditorExport } from "@/lib/downloads/editor-export-client";
+import { openMaterialInEditor } from "@/lib/materiais/material-editor-flow";
 import { INCLUSAO_GENERATION_TYPE } from "@/lib/inclusao/inclusao-config";
 import {
   INCLUSAO_EDUCATION_LEVELS,
@@ -43,6 +44,7 @@ import {
   HUD_FIELD_CLASS,
   HUD_SECTION_LABEL,
   HUD_TEXTAREA_CLASS,
+  HUD_TOOL_HUB_CLASS,
 } from "@/lib/pro/hud-form-styles";
 
 type InclusaoClientProps = {
@@ -149,6 +151,13 @@ export function InclusaoClient({
 
         setResultadoMarkdown(result.markdown);
         setResultadoHtml(result.html);
+        openMaterialInEditor(result.html, exportTitle, {
+          toolId: "inclusao",
+          tema: exportTitle,
+          componente: school.selectedClass?.discipline?.trim() || "Inclusão",
+          anoSerie: etapaEnsino,
+          etapa: etapaEnsino,
+        }, { from: "inclusao" });
       }, { onError: dispatchCreditsChangedIfNeeded });
     } catch (error) {
       dispatchCreditsChangedIfNeeded(error);
@@ -240,11 +249,8 @@ export function InclusaoClient({
       onBack={fecharPainel}
       backLabel={studioMode ? "Início" : "Catálogo"}
       formScrollAttr={studioMode}
-      previewScrollAttr={studioMode}
-      previewReady={Boolean(resultadoHtml)}
-      previewLoading={loading}
       form={
-        <form onSubmit={gerarMaterial} className="space-y-4 max-lg:pb-2">
+        <form onSubmit={gerarMaterial} className="space-y-5 max-lg:pb-2">
           <div>
             <label className={HUD_SECTION_LABEL} htmlFor="inclusao-modo">
               Modo
@@ -355,6 +361,27 @@ export function InclusaoClient({
             className="mt-2"
           />
 
+          {loading ? (
+            <div className="space-y-4">
+              <PlanifyOwlGenerationCoach
+                active
+                title={tool.loadingTitle}
+                description={tool.loadingDescription}
+                toolId="inclusao"
+              />
+              {showPatienceMessage ? (
+                <p className="text-center text-sm font-semibold text-slate-600">
+                  A adaptação inclusiva pode levar alguns minutos. Não feche esta página.
+                </p>
+              ) : null}
+              <MaterialPreviewSkeleton />
+            </div>
+          ) : null}
+
+          <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-900">
+            Após gerar, o material adaptado abre direto no editor para revisão e exportação.
+          </div>
+
           <div className="hidden flex-wrap items-center gap-3 pt-1 lg:flex">
             <button
               type="submit"
@@ -379,76 +406,6 @@ export function InclusaoClient({
           </MaterialToolMobileSubmitBar>
         </form>
       }
-      preview={
-        <>
-          {loading ? (
-            <div className="space-y-4 p-2">
-              <PlanifyOwlGenerationCoach
-                active
-                title={tool.loadingTitle}
-                description={tool.loadingDescription}
-                toolId="inclusao"
-              />
-              {showPatienceMessage ? (
-                <p className="text-center text-sm font-semibold text-slate-600">
-                  A adaptação inclusiva pode levar alguns minutos. Não feche esta página.
-                </p>
-              ) : null}
-              <MaterialPreviewSkeleton />
-            </div>
-          ) : resultadoHtml ? (
-            <div>
-              <div className="mb-4 flex flex-wrap items-center justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => void copiarResultado()}
-                  className="pl-hud-btn-secondary inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold"
-                >
-                  Copiar
-                </button>
-                <GoogleDocumentExportBar
-                  title={exportTitle}
-                  getHtml={() => resultadoHtml}
-                  documentType="material:inclusao"
-                  returnTo="/dashboard?tipo=inclusao"
-                  compact
-                  classroomMode="popover"
-                  disabled={!resultadoHtml}
-                  classroomMetadata={{
-                    tema: exportTitle,
-                  }}
-                  onDownloadPdf={() => void baixarPdf()}
-                  onDownloadDocx={() => void baixarDocx()}
-                />
-                <button
-                  type="button"
-                  onClick={() => void executarGeracao()}
-                  disabled={loading}
-                  className="pl-hud-btn-secondary inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  <PlanifyIcon name="spark" className="h-4 w-4" />
-                  Regenerar
-                </button>
-              </div>
-              <MaterialTypedPreview html={resultadoHtml} tipoMaterial="inclusao" />
-            </div>
-          ) : (
-            <div className="flex h-full min-h-[280px] flex-col items-center justify-center px-4 py-8 text-center">
-              <PlanifyOwlMark size={72} glow />
-              <p className="mt-4 text-[10px] font-bold uppercase tracking-wide text-cyan-600">
-                Pré-visualização
-              </p>
-              <h3 className="mt-2 text-sm font-semibold text-slate-900">
-                Inclusão escolar com IA
-              </h3>
-              <p className="mt-2 max-w-sm text-sm font-semibold leading-6 text-slate-500">
-                Selecione o modo, a necessidade e cole o conteúdo. O resultado
-                aparece aqui com opções de copiar e baixar PDF.
-              </p>
-            </div>
-          )}
-        </>
-      }
     />
   ) : null;
 
@@ -462,7 +419,7 @@ export function InclusaoClient({
 
   return (
     <PlanifyWorkspacePane>
-      <div className="planify-hud pl-hud-hub mx-auto max-w-6xl space-y-5">
+      <div className={HUD_TOOL_HUB_CLASS}>
         {!modalAberto ? (
           <section className="pl-hud-glass rounded-2xl p-5 sm:p-6">
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-600">

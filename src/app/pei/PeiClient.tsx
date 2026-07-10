@@ -56,6 +56,8 @@ import {
   HUD_SCROLLABLE_TEXTAREA_CLASS,
   HUD_SECTION_LABEL,
   HUD_TEXTAREA_CLASS,
+  HUD_FORM_GRID_CLASS,
+  HUD_TOOL_HUB_CLASS,
 } from "@/lib/pro/hud-form-styles";
 import { getPlanifyTool } from "@/lib/pro/planifyTools";
 import type { MaterialEngineInput } from "@/server/materials/material-engine-types";
@@ -304,7 +306,9 @@ export function PeiClient({
         }
 
         setResultado(result);
-        persistGeneratedMaterial(result.html, result.title, buildMeta(payload, result));
+        openMaterialInEditor(result.html, result.title, buildMeta(payload, result), {
+          from: "pei",
+        });
       });
     } catch (error) {
       const formatted = formatGenerationError(error);
@@ -386,12 +390,9 @@ export function PeiClient({
       onBack={studioMode ? onStudioClose : () => setModalAberto(false)}
       backLabel={studioMode ? "Início" : "Catálogo"}
       formScrollAttr={studioMode}
-      previewScrollAttr={studioMode}
-      previewReady={Boolean(resultado)}
-      previewLoading={loading}
       form={
-        <form onSubmit={handleSubmit} className="space-y-4 max-lg:space-y-3 max-lg:pb-2">
-          <div className="grid gap-4 sm:grid-cols-2">
+        <form onSubmit={handleSubmit} className="space-y-5 max-lg:space-y-3 max-lg:pb-2">
+          <div className={HUD_FORM_GRID_CLASS}>
             <div>
               <label className={HUD_SECTION_LABEL} htmlFor="pei-estudante">
                 Nome do estudante
@@ -418,7 +419,7 @@ export function PeiClient({
             </div>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid gap-5 sm:grid-cols-3">
             <div>
               <label className={HUD_SECTION_LABEL} htmlFor="pei-etapa">
                 Etapa
@@ -474,7 +475,7 @@ export function PeiClient({
 
           <TurmaCombobox school={school} listId="pei-turma-suggestions" />
 
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className={HUD_FORM_GRID_CLASS}>
             <div>
               <label className={HUD_SECTION_LABEL} htmlFor="pei-professor-regente">
                 Professor regente
@@ -543,7 +544,7 @@ export function PeiClient({
             </div>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className={HUD_FORM_GRID_CLASS}>
             <div>
               <label className={HUD_SECTION_LABEL} htmlFor="pei-disciplina">
                 Disciplina
@@ -663,6 +664,27 @@ export function PeiClient({
             className="mt-2"
           />
 
+          {loading ? (
+            <div className="space-y-4">
+              <PlanifyOwlGenerationCoach
+                active
+                title={tool.loadingTitle}
+                description={tool.loadingDescription}
+                toolId={PEI_GENERATION_TYPE}
+              />
+              {showPatienceMessage ? (
+                <p className="text-center text-sm font-semibold text-slate-600">
+                  O PEI pode levar alguns minutos para ficar consistente. Não feche esta página.
+                </p>
+              ) : null}
+              <MaterialPreviewSkeleton />
+            </div>
+          ) : null}
+
+          <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-900">
+            Após gerar, o PEI abre direto no editor para revisão e exportação.
+          </div>
+
           <div className="hidden flex-wrap items-center gap-3 pt-1 lg:flex">
             <button
               type="submit"
@@ -687,127 +709,6 @@ export function PeiClient({
           </MaterialToolMobileSubmitBar>
         </form>
       }
-      preview={
-        <>
-          {loading ? (
-            <div className="space-y-4 p-2">
-              <PlanifyOwlGenerationCoach
-                active
-                title={tool.loadingTitle}
-                description={tool.loadingDescription}
-                toolId={PEI_GENERATION_TYPE}
-              />
-              {showPatienceMessage ? (
-                <p className="text-center text-sm font-semibold text-slate-600">
-                  O PEI pode levar alguns minutos para ficar consistente. Não feche esta página.
-                </p>
-              ) : null}
-              <MaterialPreviewSkeleton />
-            </div>
-          ) : resultado ? (
-            <div className="space-y-4">
-              <div className="flex flex-wrap justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={abrirNoEditor}
-                  className="pl-hud-btn-secondary inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold"
-                >
-                  <PlanifyIcon name="editor" className="h-4 w-4" />
-                  Editar
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void baixarPdf()}
-                  className="pl-hud-btn-secondary inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold"
-                >
-                  <PlanifyIcon name="download" className="h-4 w-4" />
-                  PDF
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void executarGeracao()}
-                  disabled={loading}
-                  className="pl-hud-btn-secondary inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold disabled:opacity-60"
-                >
-                  <PlanifyIcon name="spark" className="h-4 w-4" />
-                  Regenerar
-                </button>
-                <GoogleDocumentExportBar
-                  title={exportTitle}
-                  getHtml={() => resultado.html}
-                  documentType="material:pei"
-                  returnTo="/dashboard?tipo=pei"
-                  compact
-                  classroomMode="popover"
-                  disabled={!resultado.html}
-                  classroomMetadata={{
-                    disciplina,
-                    anoSerie,
-                    etapa,
-                    tema: conteudos.trim() || undefined,
-                  }}
-                  onDownloadPdf={() => void baixarPdf()}
-                  onDownloadDocx={() => void baixarDocx()}
-                />
-              </div>
-
-              {resultado.alertas.length ? (
-                <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900">
-                  {resultado.alertas[0]}
-                </div>
-              ) : null}
-
-              {gerarParecer && resultado.parecer ? (
-                <section className="rounded-2xl border border-cyan-400/20 bg-white/90 p-4 shadow-sm">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-[10px] font-bold uppercase tracking-wide text-cyan-600">
-                        Parecer do aluno
-                      </p>
-                      <h3 className="mt-1 text-sm font-extrabold text-slate-950">
-                        Parecer pedagógico individualizado
-                      </h3>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => void copiarParecer()}
-                      className="pl-hud-btn-secondary rounded-xl px-3 py-2 text-xs font-bold"
-                    >
-                      {copied ? "Copiado" : "Copiar"}
-                    </button>
-                  </div>
-                  <p className="mt-3 text-sm font-medium leading-7 text-slate-700">
-                    {resultado.parecer}
-                  </p>
-                </section>
-              ) : null}
-
-              <MaterialTypedPreview html={resultado.html} tipoMaterial={PEI_GENERATION_TYPE} />
-            </div>
-          ) : (
-            <div className="flex h-full min-h-[280px] flex-col items-center justify-center px-4 py-8 text-center">
-              <PlanifyOwlMark size={72} glow />
-              <p className="mt-4 text-[10px] font-bold uppercase tracking-wide text-cyan-600">
-                PEI
-              </p>
-              <h3 className="mt-2 text-lg font-extrabold text-slate-950">
-                Documento institucional com parecer lateral
-              </h3>
-              <div className="mt-4 max-w-md rounded-2xl border border-cyan-400/20 bg-white/80 p-4 text-left">
-                <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                  Referência atual
-                </p>
-                <p className="mt-2 text-sm font-semibold text-slate-800">
-                  {selectedCidOptions.map((option) => option.label).join("; ")}
-                </p>
-                <p className="mt-2 text-sm font-medium text-slate-600">
-                  {areaConhecimento} - {disciplina}
-                </p>
-              </div>
-            </div>
-          )}
-        </>
-      }
     />
   ) : null;
 
@@ -821,7 +722,7 @@ export function PeiClient({
 
   return (
     <PlanifyWorkspacePane>
-      <div className="planify-hud pl-hud-hub mx-auto max-w-6xl space-y-5">
+      <div className={HUD_TOOL_HUB_CLASS}>
         {!modalAberto ? (
           <section className="pl-hud-glass rounded-2xl p-5 sm:p-6">
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-600">

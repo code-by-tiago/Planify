@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
@@ -33,8 +33,10 @@ import {
   HUD_FIELD_CLASS,
   HUD_FILTER_CHIP_ACTIVE,
   HUD_FILTER_CHIP_INACTIVE,
+  HUD_FORM_GRID_CLASS,
   HUD_SECTION_LABEL,
   HUD_TEXTAREA_CLASS,
+  HUD_TOOL_HUB_CLASS,
 } from "@/lib/pro/hud-form-styles";
 import {
   DEFAULT_MATERIAL_EDUCATION,
@@ -597,21 +599,7 @@ export function MateriaisClient({
   }
 
   function reabrirHistorico(item: MaterialHistoryPreview) {
-    setTipo(item.tipo);
-    setConteudo(item.tema);
-    setComponente(item.componente);
-    setAnoSerie(item.anoSerie);
-    setResultadoHtml(item.html);
-    setErro("");
-    setMaterialSalvo(true);
-    setModalAberto(true);
-    const payload =
-      item.generationPayload ??
-      loadMaterialMetaFromHistoryId(item.id)?.generationPayload ??
-      null;
-    if (payload) {
-      setLastGenerationPayload(payload);
-    }
+    abrirHistoricoNoEditor(item);
   }
 
   function abrirHistoricoNoEditor(item: MaterialHistoryPreview) {
@@ -894,7 +882,6 @@ export function MateriaisClient({
       openMaterialInEditor(html, titulo, meta, {
         from: "materiais",
       });
-      setResultadoHtml(html);
       setMaterialSalvo(true);
       setHistorico(loadMaterialHistoryPreview());
     } catch (error) {
@@ -923,7 +910,6 @@ export function MateriaisClient({
         estrutura: resultadoEstrutura,
       });
       window.dispatchEvent(new Event("planify:credits-changed"));
-      setResultadoHtml(result.html);
       setResultadoEstrutura(result.estrutura);
       if (typeof result.qualityScore === "number") {
         setQualityScore(result.qualityScore);
@@ -979,12 +965,10 @@ export function MateriaisClient({
       onBack={fecharPainel}
       backLabel={studioMode ? "Início" : "Catálogo"}
       formScrollAttr={studioMode}
-      previewScrollAttr={studioMode}
-      previewReady={Boolean(resultadoHtml)}
-      previewLoading={loading || elevatingQuality || retryingExam}
       fullWidth={isExamTool && examCreationSource === "banco"}
+      wrapFormPanel={!(isExamTool && examCreationSource === "banco")}
       form={
-        <form onSubmit={gerarMaterial} className="space-y-1 max-lg:space-y-3 max-lg:pb-2">
+        <form onSubmit={gerarMaterial} className="space-y-5 max-lg:space-y-3 max-lg:pb-2">
           <div className="flex flex-wrap items-start justify-between gap-3">
             {studioMode ? (
               <p className="text-[10px] font-bold uppercase tracking-wide text-cyan-600">
@@ -1069,7 +1053,7 @@ export function MateriaisClient({
             </p>
           ) : null}
 
-          <div className="mt-5 grid gap-4 md:grid-cols-2">
+          <div className={`mt-5 ${HUD_FORM_GRID_CLASS}`}>
             <label>
               <span className={HUD_SECTION_LABEL}>
                 Etapa de ensino
@@ -1158,7 +1142,7 @@ export function MateriaisClient({
             />
           </label>
 
-          <div className="mt-5 grid gap-4 md:grid-cols-2">
+          <div className={`mt-5 ${HUD_FORM_GRID_CLASS}`}>
             <TurmaCombobox school={school} className="md:col-span-2" listId="materiais-turma-suggestions" />
 
             <label className="md:col-span-2">
@@ -1316,6 +1300,33 @@ export function MateriaisClient({
             className="mt-4"
           />
 
+          {loading || elevatingQuality || retryingExam ? (
+            <div className="space-y-4">
+              <PlanifyOwlGenerationCoach
+                active
+                title={
+                  elevatingQuality
+                    ? "Elevando qualidade do material…"
+                    : retryingExam
+                      ? "Corrigindo questões fracas…"
+                      : progressLabel || mode.loadingTitle
+                }
+                description={mode.loadingDescription}
+                context="material"
+                toolId={mode.id}
+                realProgressPercent={
+                  loading ? realGenerationProgress : undefined
+                }
+              />
+              {showPatienceMessage ? (
+                <p className="text-center text-sm font-semibold text-slate-600">
+                  Materiais complexos podem levar alguns minutos. Não feche esta página.
+                </p>
+              ) : null}
+              <MaterialPreviewSkeleton />
+            </div>
+          ) : null}
+
           <div className="hidden lg:block">
           <button
             type="submit"
@@ -1347,243 +1358,6 @@ export function MateriaisClient({
           )}
         </form>
       }
-      preview={
-        <>
-          {loading || elevatingQuality || retryingExam ? (
-            <div className="space-y-4 p-2">
-              <PlanifyOwlGenerationCoach
-                active
-                title={
-                  elevatingQuality
-                    ? "Elevando qualidade do material…"
-                    : retryingExam
-                      ? "Corrigindo questões fracas…"
-                      : progressLabel || mode.loadingTitle
-                }
-                description={mode.loadingDescription}
-                context="material"
-                toolId={mode.id}
-                realProgressPercent={
-                  loading ? realGenerationProgress : undefined
-                }
-              />
-              {showPatienceMessage ? (
-                <p className="text-center text-sm font-semibold text-slate-600">
-                  Materiais complexos podem levar alguns minutos. Não feche esta página.
-                </p>
-              ) : null}
-              <MaterialPreviewSkeleton />
-            </div>
-          ) : resultadoHtml ? (
-            <div>
-              {generationSummary ? (
-                <MaterialGenerationSummaryPanel summary={generationSummary} />
-              ) : null}
-              {typeof qualityScore === "number" ? (
-                <MaterialQualityScoreBar
-                  score={qualityScore}
-                  issues={qualityIssues}
-                  onElevate={
-                    lastGenerationPayload ? () => void elevarQualidadeMaterial() : undefined
-                  }
-                  elevating={elevatingQuality}
-                />
-              ) : null}
-              {canRetryExamQuestions ? (
-                <div className="mb-4 flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() => void regenerarQuestoesFracas()}
-                    disabled={loading || retryingExam}
-                    className="rounded-full border border-amber-200 bg-amber-50 px-4 py-2 text-xs font-black text-amber-900 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {retryingExam ? "Corrigindo questões…" : "Corrigir questões fracas"}
-                  </button>
-                </div>
-              ) : null}
-              {(pipelineGeracao || alertasGeracao.length > 0) && (
-                <div className="mb-4 space-y-3">
-                  {pipelineGeracao ? (
-                    <p className="text-xs font-bold text-slate-500">
-                      Origem:{" "}
-                      <span className="inline-flex rounded-full border border-cyan-200 bg-cyan-50 px-2.5 py-0.5 text-[11px] font-black uppercase tracking-wide text-cyan-800">
-                        {pipelineGeracao}
-                      </span>
-                    </p>
-                  ) : null}
-                  {alertasGeracao.length > 0 ? (
-                    <aside className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
-                      <p className="font-black">Avisos do Planify</p>
-                      <ul className="mt-2 list-disc space-y-1 pl-5 font-semibold">
-                        {alertasGeracao.map((item) => (
-                          <li key={item}>{item}</li>
-                        ))}
-                      </ul>
-                    </aside>
-                  ) : null}
-                </div>
-              )}
-              {materialSalvo ? (
-                <aside className="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
-                  <p className="font-black">Salvo no histórico do Planify</p>
-                  <p className="mt-1 font-semibold">
-                    Revise e complemente no editor antes de exportar. Todas as{" "}
-                    {planifyToolCount} ferramentas seguem o mesmo fluxo.
-                  </p>
-                </aside>
-              ) : null}
-              {isPlanoAula ? (
-                <aside className="mb-4 rounded-2xl border border-cyan-300 bg-gradient-to-r from-cyan-50 to-sky-50 px-5 py-4 text-sm text-cyan-950">
-                  <p className="font-black">Próximo passo: refine no editor</p>
-                  <p className="mt-1 font-semibold">
-                    O preview mostra o rascunho. No editor você ajusta sequência, atividades e
-                    tempo antes de exportar para Google Docs.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={abrirNoEditor}
-                    className="pl-hud-btn mt-3 inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold"
-                  >
-                    <PlanifyIcon name="editor" className="h-4 w-4" />
-                    Abrir plano no editor
-                  </button>
-                </aside>
-              ) : null}
-              <div className="mb-4 flex flex-wrap justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={abrirNoEditor}
-                  className="pl-hud-btn inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold"
-                >
-                  <PlanifyIcon name="editor" className="h-4 w-4" />
-                  Editar no editor
-                </button>
-                <MarketplacePublishButton
-                  title={buildTitle(tipo, "", conteudo)}
-                  getHtml={() => resultadoHtml}
-                  tipoMaterial={mode.title}
-                  tema={displayTema}
-                  componente={componente}
-                  etapa={etapa}
-                  anoSerie={anoSerie}
-                  disabled={!resultadoHtml}
-                  className="pl-hud-btn-secondary inline-flex items-center gap-2 rounded-xl border border-cyan-400/25 bg-cyan-50 px-4 py-2.5 text-sm font-bold text-cyan-900 transition hover:bg-cyan-100"
-                />
-                <button
-                  type="button"
-                  onClick={() => void executarGeracao()}
-                  disabled={loading}
-                  className="pl-hud-btn-secondary inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  <PlanifyIcon name="spark" className="h-4 w-4" />
-                  Regenerar
-                </button>
-                <GoogleDocumentExportBar
-                  title={buildTitle(tipo, "", conteudo)}
-                  getHtml={() => resultadoHtml}
-                  documentType={`material:${tipo}`}
-                  returnTo="/dashboard"
-                  compact
-                  classroomMode="popover"
-                  disabled={!resultadoHtml}
-                  onStatus={setHintFeedback}
-                  onExportError={(error) => {
-                    const message =
-                      error instanceof Error
-                        ? error.message
-                        : "Falha na exportação para o Google.";
-                    setHintFeedback(`Falha na exportação — ${message}`);
-                  }}
-                  downloadingPdf={downloadingPdf}
-                  downloadingDocx={downloadingDocx}
-                  classroomMetadata={{
-                    disciplina: componente,
-                    anoSerie,
-                    etapa,
-                    tema: conteudo,
-                  }}
-                  onDownloadPdf={() => {
-                    void (async () => {
-                      if (!resultadoHtml) return;
-                      setDownloadingPdf(true);
-                      try {
-                        const { downloadEditorExport } = await import(
-                          "@/lib/downloads/editor-export-client"
-                        );
-                        await downloadEditorExport({
-                          title: buildTitle(tipo, "", conteudo),
-                          html: resultadoHtml,
-                          format: "pdf",
-                          documentType: `material:${tipo}`,
-                        });
-                        setHintFeedback("PDF baixado.");
-                      } catch (error) {
-                        const message =
-                          error instanceof Error
-                            ? error.message
-                            : "Não foi possível baixar o PDF.";
-                        setHintFeedback(message);
-                      } finally {
-                        setDownloadingPdf(false);
-                      }
-                    })();
-                  }}
-                  onDownloadDocx={() => {
-                    void (async () => {
-                      if (!resultadoHtml) return;
-                      setDownloadingDocx(true);
-                      try {
-                        const { downloadEditorExport } = await import(
-                          "@/lib/downloads/editor-export-client"
-                        );
-                        await downloadEditorExport({
-                          title: buildTitle(tipo, "", conteudo),
-                          html: resultadoHtml,
-                          format: "docx",
-                          documentType: `material:${tipo}`,
-                        });
-                        setHintFeedback("DOCX baixado.");
-                      } catch (error) {
-                        const message =
-                          error instanceof Error
-                            ? error.message
-                            : "Não foi possível baixar o DOCX.";
-                        setHintFeedback(message);
-                      } finally {
-                        setDownloadingDocx(false);
-                      }
-                    })();
-                  }}
-                />
-                <Link
-                  href="/historico"
-                  className="pl-hud-btn-secondary inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold"
-                >
-                  <PlanifyIcon name="history" className="h-4 w-4" />
-                  Histórico
-                </Link>
-              </div>
-              <MaterialTypedPreview html={resultadoHtml} tipoMaterial={tipo} />
-            </div>
-          ) : (
-            <div className="flex h-full min-h-[180px] flex-col items-center justify-center rounded-lg border border-dashed border-slate-200 bg-white px-4 py-6 text-center">
-              <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 text-blue-700">
-                <PlanifyIcon name="editor" className="h-5 w-5" />
-              </span>
-              <p className="mt-4 text-[10px] font-bold uppercase tracking-wide text-cyan-600">
-                Editor automático
-              </p>
-              <h3 className="mt-2 text-sm font-semibold text-slate-900">
-                Pronto para criar
-              </h3>
-              <p className="mt-2 max-w-sm text-sm font-semibold leading-6 text-slate-500">
-                Preencha disciplina, ano escolar e assunto. O resultado aparece
-                aqui e pode ir direto para o Editor.
-              </p>
-            </div>
-          )}
-        </>
-      }
     />
   ) : null;
 
@@ -1606,7 +1380,7 @@ export function MateriaisClient({
         />
       }
     >
-    <div className="planify-hud pl-hud-hub mx-auto max-w-6xl space-y-5">
+    <div className={HUD_TOOL_HUB_CLASS}>
       {/* Catálogo (visível quando painel fechado) */}
       {!modalAberto ? (
         <>

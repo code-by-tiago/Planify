@@ -6,6 +6,7 @@ import { ppBtnOnDark, ppBtnPrimary } from "./theme";
 
 export function LandingFinalCta() {
   return (
+<<<<<<< HEAD
     <section className="bg-[#0A192F] px-5 py-16 sm:px-8 sm:py-20">
       <div className="mx-auto max-w-4xl text-center">
         <h2 className="font-[family-name:var(--font-display)] text-3xl font-extrabold text-white sm:text-4xl">
@@ -14,6 +15,19 @@ export function LandingFinalCta() {
         <p className="mx-auto mt-4 max-w-xl text-base font-medium leading-7 text-slate-300">
           Escolha um plano, descreva o tema da aula e revise cada material antes de levar para
           a turma — com BNCC, editor e exportação Google no mesmo fluxo.
+=======
+    <section
+      data-pp-dark
+      className="bg-[#0A192F] px-5 py-16 text-white sm:px-8 sm:py-20"
+    >
+      <div className="mx-auto max-w-4xl text-center">
+        <h2 className="font-[family-name:var(--font-display)] text-3xl font-extrabold !text-white sm:text-4xl">
+          Pronto para transformar seu planejamento?
+        </h2>
+        <p className="mx-auto mt-4 max-w-xl text-base font-medium leading-7 !text-white/90">
+          Escolha um plano, descreva o tema da aula e revise cada material antes de levar para
+          a turma, com BNCC, editor e exportação Google no mesmo fluxo.
+>>>>>>> origin/aplicar-melhorias-na-producao
         </p>
 
         <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
@@ -29,7 +43,11 @@ export function LandingFinalCta() {
           {FINAL_BENEFITS.map((benefit) => (
             <li
               key={benefit.label}
+<<<<<<< HEAD
               className="flex items-center gap-2 text-sm font-semibold text-slate-300"
+=======
+              className="flex items-center gap-2 text-sm font-semibold !text-white"
+>>>>>>> origin/aplicar-melhorias-na-producao
             >
               <PlanifyIcon name={benefit.icon as PlanifyIconName} className="h-4 w-4 shrink-0 text-[#26C6DA]" />
               {benefit.label}

@@ -4,6 +4,7 @@ import { PlanifyBrand } from "@/components/pro/PlanifyBrand";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import {
   IconBookmark,
+<<<<<<< HEAD
   IconCalendar,
   IconChat,
   IconFolder,
@@ -11,6 +12,11 @@ import {
   IconHome,
   IconTrophy,
   IconUsers,
+=======
+  IconGraduation,
+  IconHome,
+  IconTrophy,
+>>>>>>> origin/aplicar-melhorias-na-producao
   getDisciplinaIconColor,
 } from "@/components/community/docente/docente-icons";
 import { DOCENTE_DISCIPLINAS } from "@/lib/community/docente-utils";
@@ -18,10 +24,13 @@ import type { DocenteDisciplina, DocenteMenuItem } from "@/lib/community/docente
 
 const MENU_ITEMS: { id: DocenteMenuItem; label: string; icon: typeof IconHome }[] = [
   { id: "inicio", label: "Início", icon: IconHome },
+<<<<<<< HEAD
   { id: "discussoes", label: "Discussões", icon: IconChat },
   { id: "materiais", label: "Materiais", icon: IconFolder },
   { id: "eventos", label: "Eventos", icon: IconCalendar },
   { id: "grupos", label: "Grupos", icon: IconUsers },
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
   { id: "professores", label: "Professores", icon: IconGraduation },
   { id: "desafios", label: "Desafios", icon: IconTrophy },
   { id: "salvos", label: "Salvos", icon: IconBookmark },
@@ -119,7 +128,11 @@ export function ComunidadeDocenteSidebar({
                     type="button"
                     onClick={() => {
                       onSelectDisciplina(selectedDisciplina === disciplina ? null : disciplina);
+<<<<<<< HEAD
                       onSelectItem("materiais");
+=======
+                      onSelectItem("inicio");
+>>>>>>> origin/aplicar-melhorias-na-producao
                       onClose?.();
                     }}
                     className={[
@@ -141,7 +154,11 @@ export function ComunidadeDocenteSidebar({
                   type="button"
                   onClick={() => {
                     onSelectDisciplina(null);
+<<<<<<< HEAD
                     onSelectItem("materiais");
+=======
+                    onSelectItem("inicio");
+>>>>>>> origin/aplicar-melhorias-na-producao
                     onClose?.();
                   }}
                   className="mt-1 px-2 text-xs font-bold text-cyan-600 hover:text-cyan-700"
@@ -160,7 +177,11 @@ export function ComunidadeDocenteSidebar({
                 title={disciplina}
                 onClick={() => {
                   onSelectDisciplina(selectedDisciplina === disciplina ? null : disciplina);
+<<<<<<< HEAD
                   onSelectItem("materiais");
+=======
+                  onSelectItem("inicio");
+>>>>>>> origin/aplicar-melhorias-na-producao
                   onClose?.();
                 }}
                 className={[

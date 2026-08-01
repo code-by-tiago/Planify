@@ -56,6 +56,11 @@ import {
   HUD_SCROLLABLE_TEXTAREA_CLASS,
   HUD_SECTION_LABEL,
   HUD_TEXTAREA_CLASS,
+<<<<<<< HEAD
+=======
+  HUD_FORM_GRID_CLASS,
+  HUD_TOOL_HUB_CLASS,
+>>>>>>> origin/aplicar-melhorias-na-producao
 } from "@/lib/pro/hud-form-styles";
 import { getPlanifyTool } from "@/lib/pro/planifyTools";
 import type { MaterialEngineInput } from "@/server/materials/material-engine-types";
@@ -304,7 +309,13 @@ export function PeiClient({
         }
 
         setResultado(result);
+<<<<<<< HEAD
         persistGeneratedMaterial(result.html, result.title, buildMeta(payload, result));
+=======
+        openMaterialInEditor(result.html, result.title, buildMeta(payload, result), {
+          from: "pei",
+        });
+>>>>>>> origin/aplicar-melhorias-na-producao
       });
     } catch (error) {
       const formatted = formatGenerationError(error);
@@ -362,6 +373,26 @@ export function PeiClient({
     }
   }
 
+<<<<<<< HEAD
+=======
+  async function baixarDocx() {
+    if (!resultado?.html) return;
+    try {
+      await downloadEditorExport({
+        title: exportTitle,
+        html: resultado.html,
+        format: "docx",
+        documentType: "material:pei",
+      });
+    } catch (error) {
+      const formatted = formatGenerationError(error);
+      setErro(formatted.message);
+      setErroCta(formatted.cta);
+      setErroRetryable(formatted.retryable);
+    }
+  }
+
+>>>>>>> origin/aplicar-melhorias-na-producao
   const painelCriacao = modalAberto ? (
     <MaterialToolPageShell
       tool={tool}
@@ -369,12 +400,18 @@ export function PeiClient({
       onBack={studioMode ? onStudioClose : () => setModalAberto(false)}
       backLabel={studioMode ? "Início" : "Catálogo"}
       formScrollAttr={studioMode}
+<<<<<<< HEAD
       previewScrollAttr={studioMode}
       previewReady={Boolean(resultado)}
       previewLoading={loading}
       form={
         <form onSubmit={handleSubmit} className="space-y-4 max-lg:pb-2">
           <div className="grid gap-4 sm:grid-cols-2">
+=======
+      form={
+        <form onSubmit={handleSubmit} className="space-y-5 max-lg:space-y-3 max-lg:pb-2">
+          <div className={HUD_FORM_GRID_CLASS}>
+>>>>>>> origin/aplicar-melhorias-na-producao
             <div>
               <label className={HUD_SECTION_LABEL} htmlFor="pei-estudante">
                 Nome do estudante
@@ -401,7 +438,11 @@ export function PeiClient({
             </div>
           </div>
 
+<<<<<<< HEAD
           <div className="grid gap-4 sm:grid-cols-3">
+=======
+          <div className="grid gap-5 sm:grid-cols-3">
+>>>>>>> origin/aplicar-melhorias-na-producao
             <div>
               <label className={HUD_SECTION_LABEL} htmlFor="pei-etapa">
                 Etapa
@@ -457,7 +498,11 @@ export function PeiClient({
 
           <TurmaCombobox school={school} listId="pei-turma-suggestions" />
 
+<<<<<<< HEAD
           <div className="grid gap-4 sm:grid-cols-2">
+=======
+          <div className={HUD_FORM_GRID_CLASS}>
+>>>>>>> origin/aplicar-melhorias-na-producao
             <div>
               <label className={HUD_SECTION_LABEL} htmlFor="pei-professor-regente">
                 Professor regente
@@ -526,7 +571,11 @@ export function PeiClient({
             </div>
           </div>
 
+<<<<<<< HEAD
           <div className="grid gap-4 sm:grid-cols-2">
+=======
+          <div className={HUD_FORM_GRID_CLASS}>
+>>>>>>> origin/aplicar-melhorias-na-producao
             <div>
               <label className={HUD_SECTION_LABEL} htmlFor="pei-disciplina">
                 Disciplina
@@ -646,6 +695,30 @@ export function PeiClient({
             className="mt-2"
           />
 
+<<<<<<< HEAD
+=======
+          {loading ? (
+            <div className="space-y-4">
+              <PlanifyOwlGenerationCoach
+                active
+                title={tool.loadingTitle}
+                description={tool.loadingDescription}
+                toolId={PEI_GENERATION_TYPE}
+              />
+              {showPatienceMessage ? (
+                <p className="text-center text-sm font-semibold text-slate-600">
+                  O PEI pode levar alguns minutos para ficar consistente. Não feche esta página.
+                </p>
+              ) : null}
+              <MaterialPreviewSkeleton />
+            </div>
+          ) : null}
+
+          <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-900">
+            Após gerar, o PEI abre direto no editor para revisão e exportação.
+          </div>
+
+>>>>>>> origin/aplicar-melhorias-na-producao
           <div className="hidden flex-wrap items-center gap-3 pt-1 lg:flex">
             <button
               type="submit"
@@ -670,6 +743,7 @@ export function PeiClient({
           </MaterialToolMobileSubmitBar>
         </form>
       }
+<<<<<<< HEAD
       preview={
         <>
           {loading ? (
@@ -783,6 +857,8 @@ export function PeiClient({
           )}
         </>
       }
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
     />
   ) : null;
 
@@ -796,7 +872,11 @@ export function PeiClient({
 
   return (
     <PlanifyWorkspacePane>
+<<<<<<< HEAD
       <div className="planify-hud pl-hud-hub mx-auto max-w-6xl space-y-5">
+=======
+      <div className={HUD_TOOL_HUB_CLASS}>
+>>>>>>> origin/aplicar-melhorias-na-producao
         {!modalAberto ? (
           <section className="pl-hud-glass rounded-2xl p-5 sm:p-6">
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-600">

@@ -4,25 +4,41 @@ import styles from "./landing-create-block.module.css";
 
 const showcaseItems = [
   {
+<<<<<<< HEAD
     title: "Planejamento – Anual + Trimestrais",
+=======
+    title: "Planejamento: Anual + Trimestrais",
+>>>>>>> origin/aplicar-melhorias-na-producao
     href: "/planejamento-escolar-com-ia",
     image: "/marketing/create-showcase/planejamento-anual.png",
     alt: "Prévia de um planejamento anual com tabela trimestral",
   },
   {
+<<<<<<< HEAD
     title: "PEI – Plano Individualizado",
+=======
+    title: "PEI: Plano Individualizado",
+>>>>>>> origin/aplicar-melhorias-na-producao
     href: "/pei",
     image: "/marketing/create-showcase/pei-plano-individualizado.png",
     alt: "Prévia de um PEI individualizado",
   },
   {
+<<<<<<< HEAD
     title: "Avaliação – Google Forms",
+=======
+    title: "Avaliação: Google Forms",
+>>>>>>> origin/aplicar-melhorias-na-producao
     href: "/gerador-de-provas-com-ia",
     image: "/marketing/create-showcase/avaliacao-google-forms.png",
     alt: "Prévia de avaliação no Google Forms",
   },
   {
+<<<<<<< HEAD
     title: "Atividade – Cruzadinha",
+=======
+    title: "Atividade: Cruzadinha",
+>>>>>>> origin/aplicar-melhorias-na-producao
     href: "/cruzadinha",
     image: "/marketing/create-showcase/atividade-cruzadinha.png",
     alt: "Prévia de atividade de cruzadinha",

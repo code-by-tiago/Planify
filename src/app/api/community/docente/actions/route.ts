@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+<<<<<<< HEAD
 import { resolveAdminAccess } from "@/server/auth/admin-access";
 import {
   getRequestAccessToken,
+=======
+import {
+>>>>>>> origin/aplicar-melhorias-na-producao
   requireApiPremiumAccess,
 } from "@/server/auth/api-access";
 import {
@@ -11,6 +15,7 @@ import {
 import { completeCommunityChallenge } from "@/server/community/community-badge-service";
 import {
   addCommunityPostComment,
+<<<<<<< HEAD
   createCommunityEvent,
   createCommunityGroup,
   createCommunityPost,
@@ -26,6 +31,15 @@ import {
   toggleSavedPost,
   transferCommunityGroupOwnership,
   updateCommunityEvent,
+=======
+  createCommunityPost,
+  createCommunityPostWithAttachments,
+  deleteCommunityPost,
+  inviteCommunityPostParticipants,
+  toggleCommunityFollow,
+  toggleCommunityPostLike,
+  toggleSavedPost,
+>>>>>>> origin/aplicar-melhorias-na-producao
   updateCommunityPost,
 } from "@/server/community/community-docente-service";
 import { linkPostAttachments } from "@/server/community/community-post-attachments-service";
@@ -47,7 +61,10 @@ export async function POST(request: NextRequest) {
 
   const body = await request.json().catch(() => ({}));
   const action = String(body.action || "create_post");
+<<<<<<< HEAD
   const token = getRequestAccessToken(request);
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
 
   try {
     await consumeCommunityRateLimit({
@@ -58,6 +75,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (action === "create_post") {
+<<<<<<< HEAD
       const title = String(body.title || "").trim();
       const content = String(body.body || "").trim();
       const disciplina = String(body.disciplina || "Multidisciplinar").trim();
@@ -70,6 +88,51 @@ export async function POST(request: NextRequest) {
       const groupId = body.groupId ? String(body.groupId).trim() : null;
 
       if (title.length < 3) return jsonError("Informe um título com pelo menos 3 caracteres.");
+=======
+      const content = String(body.body || "").trim().slice(0, 8000);
+      const rawTitle = String(body.title || "").trim();
+      const hasAttachments = Boolean(body.hasAttachments) ||
+        (Array.isArray(body.attachments) && body.attachments.length > 0);
+      let title =
+        rawTitle ||
+        content
+          .split(/\r?\n/)
+          .map((line: string) => line.trim())
+          .find(Boolean)
+          ?.slice(0, 80) ||
+        "";
+
+      // Banco exige título com pelo menos 3 caracteres (community_posts_title_check).
+      if (title.trim().length < 3) {
+        title = hasAttachments
+          ? "Publicação com anexo"
+          : content.trim().length > 0
+            ? `${content.trim().slice(0, 40)} — publicação`.slice(0, 80)
+            : "Publicação na comunidade";
+      }
+      title = title.trim().slice(0, 300);
+
+      const disciplina = String(body.disciplina || "Multidisciplinar").trim();
+      const tags = Array.isArray(body.tags)
+        ? body.tags.map((t: unknown) => String(t).trim()).filter(Boolean).slice(0, 20)
+        : [];
+      const participantUserIds: string[] = Array.isArray(body.participantUserIds)
+        ? Array.from(
+            new Set(
+              (body.participantUserIds as unknown[])
+                .map((id) => String(id).trim())
+                .filter((id) => id.length > 0),
+            ),
+          ).slice(0, 30)
+        : [];
+
+      if (!content && !rawTitle && !hasAttachments) {
+        return jsonError("Escreva uma mensagem ou anexe um arquivo para publicar.");
+      }
+      if (title.trim().length < 3) {
+        return jsonError("O título da publicação precisa ter pelo menos 3 caracteres.");
+      }
+>>>>>>> origin/aplicar-melhorias-na-producao
 
       const post = await createCommunityPost({
         authorId: userId,
@@ -78,11 +141,87 @@ export async function POST(request: NextRequest) {
         disciplina,
         tags,
         participantUserIds,
+<<<<<<< HEAD
         groupId,
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
       });
       return NextResponse.json({ ok: true, postId: post?.id });
     }
 
+<<<<<<< HEAD
+=======
+    if (action === "create_post_with_attachments") {
+      const content = String(body.body || "").trim().slice(0, 8000);
+      const rawTitle = String(body.title || "").trim();
+      const attachments = Array.isArray(body.attachments) ? body.attachments : [];
+      const hasAttachments = attachments.length > 0;
+      let title =
+        rawTitle ||
+        content
+          .split(/\r?\n/)
+          .map((line: string) => line.trim())
+          .find(Boolean)
+          ?.slice(0, 80) ||
+        "";
+
+      if (title.trim().length < 3) {
+        title = hasAttachments
+          ? "Publicação com anexo"
+          : content.trim().length > 0
+            ? `${content.trim().slice(0, 40)} — publicação`.slice(0, 80)
+            : "Publicação na comunidade";
+      }
+      title = title.trim().slice(0, 300);
+
+      const disciplina = String(body.disciplina || "Multidisciplinar").trim();
+      const tags = Array.isArray(body.tags)
+        ? body.tags.map((t: unknown) => String(t).trim()).filter(Boolean).slice(0, 20)
+        : [];
+      const participantUserIds: string[] = Array.isArray(body.participantUserIds)
+        ? Array.from(
+            new Set(
+              (body.participantUserIds as unknown[])
+                .map((id) => String(id).trim())
+                .filter((id) => id.length > 0),
+            ),
+          ).slice(0, 30)
+        : [];
+
+      if (!content && !rawTitle && !hasAttachments) {
+        return jsonError("Escreva uma mensagem ou anexe um arquivo para publicar.");
+      }
+
+      const normalized = attachments
+        .map((item: unknown, index: number) => {
+          const row = item as Record<string, unknown>;
+          return {
+            materialId: String(row.materialId || "").trim(),
+            fileName: String(row.fileName || "anexo").trim(),
+            fileMime: row.fileMime ? String(row.fileMime) : null,
+            sortOrder: typeof row.sortOrder === "number" ? row.sortOrder : index,
+          };
+        })
+        .filter((item: { materialId: string }) => item.materialId)
+        .slice(0, 5);
+
+      const result = await createCommunityPostWithAttachments({
+        authorId: userId,
+        title,
+        body: content,
+        disciplina,
+        tags,
+        participantUserIds,
+        attachments: normalized,
+      });
+      return NextResponse.json({
+        ok: true,
+        postId: result.postId,
+        linked: result.linked,
+      });
+    }
+
+>>>>>>> origin/aplicar-melhorias-na-producao
     if (action === "link_post_attachments") {
       const postId = String(body.postId || "").trim();
       const attachments = Array.isArray(body.attachments) ? body.attachments : [];
@@ -161,6 +300,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: true, ...result });
     }
 
+<<<<<<< HEAD
     if (action === "event_rsvp") {
       const eventId = String(body.eventId || "").trim();
       const statusRaw = String(body.status || "going").trim();
@@ -278,6 +418,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: true, ...result });
     }
 
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
     if (action === "participate_challenge") {
       const challengeSlug = String(body.challengeSlug || "desafio-bncc").trim();
       const reflection = body.reflection != null ? String(body.reflection) : null;
@@ -294,8 +436,14 @@ export async function POST(request: NextRequest) {
 
     if (action === "comment_post") {
       const postId = String(body.postId || "").trim();
+<<<<<<< HEAD
       const comment = String(body.body || "").trim();
       if (!postId || !comment) return jsonError("Post e comentário são obrigatórios.");
+=======
+      const comment = String(body.body || "").trim().slice(0, 4000);
+      if (!postId || !comment) return jsonError("Post e comentário são obrigatórios.");
+      if (comment.length < 1) return jsonError("Comentário vazio.");
+>>>>>>> origin/aplicar-melhorias-na-producao
       const result = await addCommunityPostComment({
         authorId: userId,
         postId,
@@ -311,6 +459,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: true, ...result });
     }
 
+<<<<<<< HEAD
     if (action === "transfer_group_ownership") {
       const groupId = String(body.groupId || "").trim();
       const newOwnerId = String(body.newOwnerId || "").trim();
@@ -333,6 +482,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: true, ...result });
     }
 
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
     if (action === "hide_feed_material") {
       const materialId = String(body.materialId || "").trim();
       if (!materialId) return jsonError("Material não informado.");

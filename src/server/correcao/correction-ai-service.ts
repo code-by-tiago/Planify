@@ -1,6 +1,15 @@
+<<<<<<< HEAD
 import { appendPedagogicalGuardrails } from "@/lib/materiais/pedagogical-guardrails";
 import type { CorrectionAiOutput, TeacherCorrectionProfile } from "@/types/correction";
 import { generateGeminiJSON } from "../ai/gemini-client";
+=======
+import type { CorrectionAiOutput, TeacherCorrectionProfile } from "@/types/correction";
+import { runPlanifyAiJson } from "@/server/ai/planify-ai-middleware";
+import {
+  CORRECTION_RESPONSE_SCHEMA,
+  CorrectionAiOutputZodSchema,
+} from "@/server/correcao/correction-ai-schema";
+>>>>>>> origin/aplicar-melhorias-na-producao
 
 export type CorrectionAiPayload = {
   respostaAluno: string;
@@ -14,12 +23,21 @@ export type CorrectionAiPayload = {
   teacherProfile?: TeacherCorrectionProfile;
 };
 
+<<<<<<< HEAD
 const SYSTEM_INSTRUCTION = appendPedagogicalGuardrails(`Você é um assistente pedagógico brasileiro especializado em correção formativa (estilo Teachy).
+=======
+const SYSTEM_INSTRUCTION = `Você é um assistente pedagógico brasileiro especializado em correção formativa (estilo Teachy).
+>>>>>>> origin/aplicar-melhorias-na-producao
 Avalie a resposta do estudante com base na rubrica e no gabarito quando fornecidos.
 Devolutiva curta e acionável: feedbackGeral em no máximo 3 frases; comentários por critério em 1–2 frases.
 Inclua nota numérica, percentual e sugestão breve para o professor usar em sala.
 Seja justo, específico e útil — sem texto genérico ou repetitivo.
+<<<<<<< HEAD
 Responda SOMENTE em JSON válido, sem markdown.`);
+=======
+PROIBIDO: saudações, "Aqui está a correção", meta-comentários ou menções a IA.
+Responda SOMENTE em JSON válido, sem markdown.`;
+>>>>>>> origin/aplicar-melhorias-na-producao
 
 function buildPrompt(payload: CorrectionAiPayload): string {
   const profile = payload.teacherProfile;
@@ -114,6 +132,7 @@ export async function evaluateCorrectionWithAI(
     return { ok: false, status: 400, message: validationError };
   }
 
+<<<<<<< HEAD
   const tier = "advanced" as const;
 
   try {
@@ -125,6 +144,31 @@ export async function evaluateCorrectionWithAI(
       maxOutputTokens: 4096,
     });
 
+=======
+  try {
+    const aiResult = await runPlanifyAiJson({
+      toolId: "correcao-ia",
+      systemInstruction: SYSTEM_INSTRUCTION,
+      prompt: buildPrompt(payload),
+      responseSchema: CORRECTION_RESPONSE_SCHEMA,
+      zodSchema: CorrectionAiOutputZodSchema,
+      tier: "advanced",
+      temperature: 0.35,
+      maxOutputTokens: 4096,
+      schemaRetryAttempts: 1,
+      includeBnccGuard: false,
+    });
+
+    if (!aiResult.ok) {
+      return {
+        ok: false,
+        status: 502,
+        message: aiResult.message || "A IA não conseguiu corrigir a resposta.",
+      };
+    }
+
+    const generated = aiResult.data;
+>>>>>>> origin/aplicar-melhorias-na-producao
     const { nota, notaMaxima, percentual } = normalizeCorrectionScores(
       generated,
       payload.notaMaxima,
@@ -134,12 +178,30 @@ export async function evaluateCorrectionWithAI(
       ok: true,
       usedAI: true,
       result: {
+<<<<<<< HEAD
         ...generated,
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
         nota,
         notaMaxima,
         percentual,
         feedbackGeral: String(generated.feedbackGeral || "").trim(),
+<<<<<<< HEAD
         criterios: Array.isArray(generated.criterios) ? generated.criterios : [],
+=======
+        criterios: Array.isArray(generated.criterios)
+          ? generated.criterios.map((item) => ({
+              criterio: String(item.criterio || "").trim(),
+              atendido:
+                typeof item.atendido === "boolean"
+                  ? item.atendido
+                  : String(item.atendido || "").toLowerCase() === "true",
+              pontos: Number(item.pontos ?? 0),
+              pontosMaximos: Number(item.pontosMaximos ?? 0),
+              comentario: String(item.comentario || "").trim(),
+            }))
+          : [],
+>>>>>>> origin/aplicar-melhorias-na-producao
         pontosFortes: Array.isArray(generated.pontosFortes)
           ? generated.pontosFortes.map(String)
           : [],

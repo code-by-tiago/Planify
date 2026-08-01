@@ -3,6 +3,10 @@
 import { GoogleDocumentExportBar } from "@/components/google/GoogleDocumentExportBar";
 import { GoogleClassroomConnectionIndicator } from "@/components/google/GoogleClassroomConnectionIndicator";
 import { MarketplacePublishButton } from "@/components/marketplace/MarketplacePublishButton";
+<<<<<<< HEAD
+=======
+import { ShareMaterialLinkButton } from "@/components/share/ShareMaterialLinkButton";
+>>>>>>> origin/aplicar-melhorias-na-producao
 import { useAutoGoogleExport } from "@/hooks/useAutoGoogleExport";
 import { useMemo } from "react";
 import { extractComponenteFromPlanningPayload } from "@/lib/marketplace/marketplace-publish";
@@ -83,6 +87,16 @@ export function EditorShareBar({
         compact
         className={comunidadeClass}
       />
+<<<<<<< HEAD
+=======
+      <ShareMaterialLinkButton
+        title={title}
+        getHtml={getHtml}
+        toolId={documentType}
+        compact
+        onStatus={onStatus}
+      />
+>>>>>>> origin/aplicar-melhorias-na-producao
       <div className="flex min-w-0 flex-1 items-center gap-1.5">
         <GoogleClassroomConnectionIndicator returnTo={returnTo} />
         {compact ? (

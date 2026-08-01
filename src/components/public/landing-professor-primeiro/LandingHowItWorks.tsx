@@ -4,7 +4,11 @@ import { INTEGRATION_FEATURES } from "./constants";
 export function LandingHowItWorks() {
   return (
     <section
+<<<<<<< HEAD
       id="como-funciona"
+=======
+      id="integracoes"
+>>>>>>> origin/aplicar-melhorias-na-producao
       className="scroll-mt-24 bg-[#F0F9FA] px-5 py-14 sm:px-8 sm:py-16"
     >
       <div className="mx-auto grid max-w-7xl items-center gap-10 lg:grid-cols-2 lg:gap-14">

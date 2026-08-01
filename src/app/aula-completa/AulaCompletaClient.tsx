@@ -11,12 +11,25 @@ import {
 import { CreditsBalancePill } from "@/components/credits/CreditsBalancePill";
 import { GenerationCostHint } from "@/components/credits/GenerationCostHint";
 import { DailyGenerationsBar } from "@/components/credits/DailyGenerationsBar";
+<<<<<<< HEAD
 import { MaterialTypedPreview } from "@/components/materiais/preview/MaterialTypedPreview";
 import { MaterialPreviewSkeleton } from "@/components/materiais/MaterialPreviewSkeleton";
 import { MaterialToolPageShell } from "@/components/pro/MaterialToolPageShell";
 import { SwipeTabPanel } from "@/components/pro/SwipeTabPanel";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { PlanifyOwlGenerationCoach } from "@/components/pro/PlanifyOwlGenerationCoach";
+=======
+import { GoogleDocumentExportBar } from "@/components/google/GoogleDocumentExportBar";
+import { MaterialTypedPreview } from "@/components/materiais/preview/MaterialTypedPreview";
+import { MaterialPreviewSkeleton } from "@/components/materiais/MaterialPreviewSkeleton";
+import { MaterialToolPageShell } from "@/components/pro/MaterialToolPageShell";
+import { MaterialToolMobileSubmitBar } from "@/components/pro/MaterialToolMobileSubmitBar";
+import { SwipeTabPanel } from "@/components/pro/SwipeTabPanel";
+import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
+import { PlanifyOwlGenerationCoach } from "@/components/pro/PlanifyOwlGenerationCoach";
+import { downloadEditorExport } from "@/lib/downloads/editor-export-client";
+import { openMaterialInEditor } from "@/lib/materiais/material-editor-flow";
+>>>>>>> origin/aplicar-melhorias-na-producao
 import {
   DEFAULT_LESSON_BUNDLE_TOOLS,
   getLessonBundleCreditCost,
@@ -40,7 +53,10 @@ import {
   getMaterialFormFieldConfig,
   resolveMaterialDisplayTema,
 } from "@/lib/educacao/material-form-config";
+<<<<<<< HEAD
 import { openMaterialInEditor } from "@/lib/materiais/material-editor-flow";
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
 import { useSchoolClasses } from "@/hooks/useSchoolClasses";
 import { TurmaCombobox } from "@/components/school/TurmaCombobox";
 import {
@@ -97,6 +113,11 @@ export function AulaCompletaClient({
   );
   const [activeTab, setActiveTab] = useState<PlanifyToolId | null>(null);
   const [modalAberto, setModalAberto] = useState(studioMode);
+<<<<<<< HEAD
+=======
+  const [exportStatus, setExportStatus] = useState("");
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+>>>>>>> origin/aplicar-melhorias-na-producao
   const abortRef = useRef<AbortController | null>(null);
   const loadingStartedAtRef = useRef<number | null>(null);
 
@@ -258,7 +279,14 @@ export function AulaCompletaClient({
 
       setItems(result.items);
       const firstOk = result.items.find((item) => item.ok && item.html);
+<<<<<<< HEAD
       if (firstOk) setActiveTab(firstOk.toolId);
+=======
+      if (firstOk) {
+        setActiveTab(firstOk.toolId);
+        abrirNoEditor(firstOk);
+      }
+>>>>>>> origin/aplicar-melhorias-na-producao
       setProgressLabel("");
     } catch (error) {
       dispatchCreditsChangedIfNeeded(error);
@@ -338,6 +366,32 @@ export function AulaCompletaClient({
     }, { from: "aula-completa" });
   }
 
+<<<<<<< HEAD
+=======
+  async function baixarPdfItem(item = activeItem) {
+    if (!item?.html) return;
+    const titulo = `${getPlanifyTool(item.toolId).shortTitle} — ${resolveMaterialDisplayTema("", conteudo) || "Aula"}`;
+    setDownloadingPdf(true);
+    try {
+      await downloadEditorExport({
+        title: titulo,
+        html: item.html,
+        format: "pdf",
+        documentType: `material:${item.toolId}`,
+      });
+      setExportStatus("PDF baixado.");
+    } catch (error) {
+      setExportStatus(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível baixar o PDF.",
+      );
+    } finally {
+      setDownloadingPdf(false);
+    }
+  }
+
+>>>>>>> origin/aplicar-melhorias-na-producao
   const durationBadge = formatDurationEstimateBadge(estimatedDurationMs);
 
   const previewTabs = successItems.map((item) => ({
@@ -419,11 +473,16 @@ export function AulaCompletaClient({
       onBack={fecharPainel}
       backLabel={studioMode ? "Início" : "Catálogo"}
       formScrollAttr={studioMode}
+<<<<<<< HEAD
       previewScrollAttr={studioMode}
       previewReady={successItems.length > 0}
       previewLoading={loading}
       form={
         <form onSubmit={gerarPacote} className="space-y-4 pb-20 max-lg:pb-24">
+=======
+      form={
+        <form onSubmit={gerarPacote} className="space-y-5 max-lg:pb-2">
+>>>>>>> origin/aplicar-melhorias-na-producao
           <div>
             <label className={HUD_SECTION_LABEL} htmlFor="aula-conteudo">
               {formFields.conteudoLabel}
@@ -538,6 +597,7 @@ export function AulaCompletaClient({
             retrying={loading}
           />
 
+<<<<<<< HEAD
           <div className="fixed inset-x-0 bottom-0 z-20 border-t border-cyan-400/20 bg-white/95 px-4 py-3 backdrop-blur lg:hidden pb-[env(safe-area-inset-bottom)]">
             <div className="mx-auto flex max-w-lg items-center gap-3">
               <button
@@ -620,6 +680,40 @@ export function AulaCompletaClient({
             </div>
           )}
         </div>
+=======
+          {loading ? (
+            <div className="space-y-4">
+              <PlanifyOwlGenerationCoach
+                active
+                title={progressLabel || tool.loadingTitle}
+                description={tool.loadingDescription}
+                toolId="aula-completa"
+              />
+              {showPatienceMessage ? (
+                <p className="text-center text-sm font-semibold text-slate-600">
+                  O pacote pode levar alguns minutos. Não feche esta página.
+                </p>
+              ) : null}
+              <MaterialPreviewSkeleton />
+            </div>
+          ) : null}
+
+          <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-900">
+            Após gerar, o primeiro material do pacote abre direto no editor.
+          </div>
+
+          <MaterialToolMobileSubmitBar>
+            <button
+              type="submit"
+              disabled={loading}
+              className="pl-hud-btn flex-1 rounded-xl px-5 py-3 text-sm font-bold disabled:opacity-60"
+            >
+              {loading ? "Gerando pacote…" : "Gerar aula completa"}
+            </button>
+            <CreditsBalancePill />
+          </MaterialToolMobileSubmitBar>
+        </form>
+>>>>>>> origin/aplicar-melhorias-na-producao
       }
     />
   ) : null;

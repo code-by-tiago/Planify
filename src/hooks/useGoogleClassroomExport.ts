@@ -49,6 +49,16 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 export const CLASSROOM_OPEN_AFTER_OAUTH_KEY = "planify:classroom-open-after-oauth";
 const DEFAULT_CLASSROOM_DUE_TIME = "23:59";
 
+<<<<<<< HEAD
+=======
+export type ClassroomExportMetadata = {
+  disciplina?: string;
+  anoSerie?: string;
+  tema?: string;
+  etapa?: string;
+};
+
+>>>>>>> origin/aplicar-melhorias-na-producao
 type UseGoogleClassroomExportOptions = {
   title: string;
   getHtml: () => string;
@@ -56,6 +66,10 @@ type UseGoogleClassroomExportOptions = {
   returnTo?: string;
   documentType?: string | null;
   enabled?: boolean;
+<<<<<<< HEAD
+=======
+  classroomMetadata?: ClassroomExportMetadata | null;
+>>>>>>> origin/aplicar-melhorias-na-producao
 };
 
 export type ClassroomExportSuccess = {
@@ -68,8 +82,24 @@ export type ClassroomExportSuccess = {
   errors: Array<{ courseId: string; message: string }>;
 };
 
+<<<<<<< HEAD
 function defaultClassroomDescription(title: string): string {
   return `Material "${title || "Planify"}" preparado no Planify.`;
+=======
+function defaultClassroomDescription(
+  title: string,
+  metadata?: ClassroomExportMetadata | null,
+): string {
+  const parts = [
+    `Material "${title || "Planify"}" preparado no Planify.`,
+    metadata?.disciplina ? `Disciplina: ${metadata.disciplina}.` : "",
+    metadata?.anoSerie ? `Ano/série: ${metadata.anoSerie}.` : "",
+    metadata?.etapa ? `Etapa: ${metadata.etapa}.` : "",
+    metadata?.tema ? `Tema: ${metadata.tema}.` : "",
+  ].filter(Boolean);
+
+  return parts.join(" ");
+>>>>>>> origin/aplicar-melhorias-na-producao
 }
 
 function getCourseLabel(course: ClassroomCourseOption | null | undefined): string {
@@ -84,13 +114,23 @@ export function useGoogleClassroomExport({
   returnTo,
   documentType,
   enabled = true,
+<<<<<<< HEAD
+=======
+  classroomMetadata,
+>>>>>>> origin/aplicar-melhorias-na-producao
 }: UseGoogleClassroomExportOptions) {
   const exportTitle = title.trim() || "Material Planify";
   const [status, setStatus] = useState<GoogleIntegrationStatus | null>(null);
   const [institutionalEmail, setInstitutionalEmail] = useState("");
   const [courses, setCourses] = useState<ClassroomCourseOption[]>([]);
   const [selectedCourseIds, setSelectedCourseIds] = useState<string[]>([]);
+<<<<<<< HEAD
   const [description, setDescription] = useState(defaultClassroomDescription(exportTitle));
+=======
+  const [description, setDescription] = useState(
+    defaultClassroomDescription(exportTitle, classroomMetadata),
+  );
+>>>>>>> origin/aplicar-melhorias-na-producao
   const [shareType, setShareType] = useState<ClassroomShareType>("material");
   const [dueDate, setDueDate] = useState("");
   const [dueTime, setDueTime] = useState("");
@@ -115,9 +155,17 @@ export function useGoogleClassroomExport({
 
   useEffect(() => {
     setDescription((current) =>
+<<<<<<< HEAD
       current.trim() ? current : defaultClassroomDescription(exportTitle),
     );
   }, [exportTitle]);
+=======
+      current.trim()
+        ? current
+        : defaultClassroomDescription(exportTitle, classroomMetadata),
+    );
+  }, [exportTitle, classroomMetadata?.disciplina, classroomMetadata?.anoSerie, classroomMetadata?.etapa, classroomMetadata?.tema]);
+>>>>>>> origin/aplicar-melhorias-na-producao
 
   useEffect(() => {
     if (!status?.planifyEmail) return;

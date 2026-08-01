@@ -1,17 +1,26 @@
 "use client";
 
+<<<<<<< HEAD
 import { useEffect, useState, type ReactNode } from "react";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import type { PlanifyTool } from "@/lib/pro/planifyTools";
 
 type MobilePanel = "form" | "preview";
 
+=======
+import { HUD_FORM_PANEL_CLASS } from "@/lib/pro/hud-form-styles";
+import type { ReactNode } from "react";
+import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
+import type { PlanifyTool } from "@/lib/pro/planifyTools";
+
+>>>>>>> origin/aplicar-melhorias-na-producao
 type MaterialToolPageShellProps = {
   tool: PlanifyTool;
   studioMode?: boolean;
   onBack?: () => void;
   backLabel?: string;
   form: ReactNode;
+<<<<<<< HEAD
   preview: ReactNode;
   formScrollAttr?: boolean;
   previewScrollAttr?: boolean;
@@ -24,6 +33,17 @@ type MaterialToolPageShellProps = {
 /**
  * Split layout chrome for material IA tools — form left, preview right.
  * On mobile: tabbed panels (Configurar | Resultado) for full-height usability.
+=======
+  formScrollAttr?: boolean;
+  fullWidth?: boolean;
+  /** Quando falso, não envolve o formulário no painel vidro padrão (ex.: embeds complexos). */
+  wrapFormPanel?: boolean;
+};
+
+/**
+ * Layout das ferramentas de material IA — apenas formulário.
+ * Após gerar, o conteúdo abre no editor (sem painel de prévia).
+>>>>>>> origin/aplicar-melhorias-na-producao
  */
 export function MaterialToolPageShell({
   tool,
@@ -31,6 +51,7 @@ export function MaterialToolPageShell({
   onBack,
   backLabel = "Voltar",
   form,
+<<<<<<< HEAD
   preview,
   formScrollAttr = false,
   previewScrollAttr = false,
@@ -57,6 +78,13 @@ export function MaterialToolPageShell({
       setMobilePanel("preview");
     }
   }, [fullWidth, previewLoading]);
+=======
+  formScrollAttr = false,
+  fullWidth = false,
+  wrapFormPanel = true,
+}: MaterialToolPageShellProps) {
+  void fullWidth;
+>>>>>>> origin/aplicar-melhorias-na-producao
 
   return (
     <div
@@ -97,6 +125,7 @@ export function MaterialToolPageShell({
         </div>
       ) : null}
 
+<<<<<<< HEAD
       <div
         className={`shrink-0 gap-2 border-b border-slate-200 bg-white px-3 py-2 lg:hidden ${
           fullWidth || !showPreviewPanel ? "hidden" : "flex"
@@ -167,6 +196,21 @@ export function MaterialToolPageShell({
             </div>
           </div>
         ) : null}
+=======
+      <div className={`min-h-0 flex-1 ${studioMode ? "min-h-0" : "min-h-0 lg:min-h-[680px]"}`}>
+        <div
+          {...(formScrollAttr ? { "data-planify-scroll": "" } : {})}
+          className="flex h-full min-h-0 flex-col overflow-y-auto overscroll-contain p-3 sm:p-4 lg:p-5"
+        >
+          <div className="max-lg:pb-[max(5.5rem,env(safe-area-inset-bottom))]">
+            {wrapFormPanel ? (
+              <div className={HUD_FORM_PANEL_CLASS}>{form}</div>
+            ) : (
+              form
+            )}
+          </div>
+        </div>
+>>>>>>> origin/aplicar-melhorias-na-producao
       </div>
     </div>
   );

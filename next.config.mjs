@@ -6,8 +6,17 @@ const sentryDsn =
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+<<<<<<< HEAD
   serverExternalPackages: [
     "@google/genai",
+=======
+  images: {
+    formats: ["image/avif", "image/webp"],
+  },
+  serverExternalPackages: [
+    "@google/genai",
+    "@napi-rs/canvas",
+>>>>>>> origin/aplicar-melhorias-na-producao
     "@sparticuz/chromium-min",
     "puppeteer-core",
     "linkedom",
@@ -33,6 +42,22 @@ const nextConfig = {
           },
         ],
       },
+<<<<<<< HEAD
+=======
+      {
+        source: "/sw.js",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=0, must-revalidate",
+          },
+          {
+            key: "Service-Worker-Allowed",
+            value: "/",
+          },
+        ],
+      },
+>>>>>>> origin/aplicar-melhorias-na-producao
     ];
   },
 };

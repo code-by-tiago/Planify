@@ -2,7 +2,10 @@
 
 import dynamic from "next/dynamic";
 import type { ReactNode } from "react";
+<<<<<<< HEAD
 import { ComunidadeDashboardRouter } from "@/components/community/docente/ComunidadeDashboardRouter";
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
 import TeachyStudioHome from "@/components/dashboard/TeachyStudioHome";
 import { TeachyMateriaisStudio } from "@/components/dashboard/TeachyMateriaisStudio";
 import { PlanifyWorkspaceProvider } from "@/components/pro/planify-workspace-context";
@@ -20,6 +23,17 @@ function PanelLoading() {
   );
 }
 
+<<<<<<< HEAD
+=======
+const ComunidadeDashboardRouter = dynamic(
+  () =>
+    import("@/components/community/docente/ComunidadeDashboardRouter").then(
+      (m) => m.ComunidadeDashboardRouter,
+    ),
+  { ssr: false, loading: PanelLoading },
+);
+
+>>>>>>> origin/aplicar-melhorias-na-producao
 const InclusaoClient = dynamic(
   () =>
     import("@/app/inclusao/InclusaoClient").then((m) => m.InclusaoClient),
@@ -51,6 +65,15 @@ const PeiClient = dynamic(
   { ssr: false, loading: PanelLoading },
 );
 
+<<<<<<< HEAD
+=======
+const CopilotoClient = dynamic(
+  () =>
+    import("@/app/copiloto/CopilotoClient").then((m) => m.CopilotoClient),
+  { ssr: false, loading: PanelLoading },
+);
+
+>>>>>>> origin/aplicar-melhorias-na-producao
 const PlanejamentosClient = dynamic(
   () =>
     import("@/app/planejamentos/PlanejamentosClient").then(
@@ -193,6 +216,25 @@ export function PlanifyDashboardMain({
       );
     }
 
+<<<<<<< HEAD
+=======
+    if (toolId === "copiloto") {
+      return (
+        <PlanifyWorkspaceProvider embeddedInDashboard>
+          <div className="planify-hud planify-materiais-studio flex h-full min-h-0 w-full flex-col overflow-hidden bg-[var(--planify-canvas)]">
+            <div className="min-h-0 flex-1 overflow-hidden">
+              <CopilotoClient
+                studioMode
+                onStudioClose={onClosePanel}
+                initialTema={initialTopic}
+              />
+            </div>
+          </div>
+        </PlanifyWorkspaceProvider>
+      );
+    }
+
+>>>>>>> origin/aplicar-melhorias-na-producao
     return (
       <TeachyMateriaisStudio
         toolId={toolId}

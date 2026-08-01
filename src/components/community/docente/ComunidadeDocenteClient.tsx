@@ -1,5 +1,6 @@
 "use client";
 
+<<<<<<< HEAD
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -24,10 +25,28 @@ import {
 import { ComunidadeDocenteSidebar } from "@/components/community/docente/ComunidadeDocenteSidebar";
 import { ComunidadeDocenteStats } from "@/components/community/docente/ComunidadeDocenteStats";
 import { ComunidadeDocenteTopBar } from "@/components/community/docente/ComunidadeDocenteTopBar";
+=======
+import { useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { ComunidadeDocenteCreatePostModal, type ComposerIntent } from "@/components/community/docente/ComunidadeDocenteCreatePostModal";
+import { ComunidadeDocenteBnccChallengeModal } from "@/components/community/docente/ComunidadeDocenteBnccChallengeModal";
+import { ComunidadeDocenteComposer } from "@/components/community/docente/ComunidadeDocenteComposer";
+import { ComunidadeDocenteDiscussions } from "@/components/community/docente/ComunidadeDocenteDiscussions";
+import { ComunidadeMaterialPreviewModal } from "@/components/community/docente/ComunidadeMaterialPreviewModal";
+import { ComunidadeDocenteRightSidebar } from "@/components/community/docente/ComunidadeDocenteRightSidebar";
+import {
+  ComunidadeDocenteDesafios,
+  ComunidadeDocenteSalvos,
+} from "@/components/community/docente/ComunidadeDocenteSections";
+import { ComunidadeDocenteSharePrompt } from "@/components/community/docente/ComunidadeDocenteSharePrompt";
+import { ComunidadeDocenteTopBar } from "@/components/community/docente/ComunidadeDocenteTopBar";
+import { ComunidadeDocenteTrending } from "@/components/community/docente/ComunidadeDocenteTrending";
+>>>>>>> origin/aplicar-melhorias-na-producao
 import { IconX } from "@/components/community/docente/docente-icons";
 import type {
   DocenteAuthor,
   DocenteBadgeProgress,
+<<<<<<< HEAD
   DocenteCreateGroupInput,
   DocenteCreatePostInput,
   DocenteDiscussion,
@@ -36,6 +55,13 @@ import type {
   DocenteMaterial,
   DocenteMenuItem,
   DocenteRecentPublication,
+=======
+  DocenteCreatePostInput,
+  DocenteDiscussion,
+  DocenteDisciplina,
+  DocenteMaterial,
+  DocenteMenuItem,
+>>>>>>> origin/aplicar-melhorias-na-producao
   DocenteStats,
 } from "@/lib/community/docente-types";
 import {
@@ -47,7 +73,10 @@ import {
 } from "@/lib/community/docente-utils";
 import { downloadMarketplaceMaterial, resolveMarketplaceDownloadParams } from "@/lib/marketplace/marketplace-download-client";
 import { submitDocenteCreatePost } from "@/lib/community/docente-create-post-client";
+<<<<<<< HEAD
 import { usePersistedSidebarCollapsed } from "@/hooks/usePersistedSidebarCollapsed";
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
 import {
   getHiddenFeedMaterialIds,
   hideFeedMaterialOnServer,
@@ -55,11 +84,24 @@ import {
   setHiddenFeedMaterialIds,
   unhideFeedMaterialOnServer,
 } from "@/lib/community/hidden-feed-materials";
+<<<<<<< HEAD
+=======
+import {
+  markGoogleDrivePickerResumeReady,
+  readGoogleDrivePickerPending,
+} from "@/lib/google/google-drive-picker";
+import {
+  clearGoogleOAuthReturnParams,
+  peekGoogleOAuthResumeIntent,
+} from "@/lib/google/google-export-resume";
+import { GOOGLE_STATUS_CHANGED_EVENT } from "@/lib/google/google-status-events";
+>>>>>>> origin/aplicar-melhorias-na-producao
 
 const EMPTY_STATS: DocenteStats = {
   activeTeachers: 0,
   sharedMaterials: 0,
   openDiscussions: 0,
+<<<<<<< HEAD
   studyGroups: 0,
 };
 
@@ -96,6 +138,8 @@ type OverviewPayload = {
   isAdmin?: boolean;
   featuredTeacher: DocenteAuthor | null;
   teachers?: DocenteAuthor[];
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
 };
 
 export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boolean }) {
@@ -105,27 +149,52 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
   const [selectedDisciplina, setSelectedDisciplina] = useState<DocenteDisciplina | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [heroSearch, setHeroSearch] = useState("");
+<<<<<<< HEAD
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [createPostOpen, setCreatePostOpen] = useState(false);
   const [createGroupOpen, setCreateGroupOpen] = useState(false);
   const [createEventOpen, setCreateEventOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+=======
+  const [createPostOpen, setCreatePostOpen] = useState(false);
+  const [createPostIntent, setCreatePostIntent] = useState<ComposerIntent>("texto");
+>>>>>>> origin/aplicar-melhorias-na-producao
   const [mineOnly, setMineOnly] = useState(false);
   const [friendsOnly, setFriendsOnly] = useState(false);
   const [savedOnly, setSavedOnly] = useState(false);
   const [showHidden, setShowHidden] = useState(false);
+<<<<<<< HEAD
   const [etapaFilter, setEtapaFilter] = useState("");
   const [tipoMaterialFilter, setTipoMaterialFilter] = useState("");
   const [tagFilter, setTagFilter] = useState("");
+=======
+  const [anoSerieFilter, setAnoSerieFilter] = useState("");
+  const [tipoMaterialFilter, setTipoMaterialFilter] = useState("");
+  const [previewMaterialId, setPreviewMaterialId] = useState<string | null>(null);
+>>>>>>> origin/aplicar-melhorias-na-producao
   const [bnccOpen, setBnccOpen] = useState(false);
   const [hiddenMaterialIds, setHiddenMaterialIdsState] = useState<Set<string>>(() =>
     getHiddenFeedMaterialIds(),
   );
   const [hiddenRevision, setHiddenRevision] = useState(0);
+<<<<<<< HEAD
   const [commentTarget, setCommentTarget] = useState<{ id: string; title: string } | null>(null);
   const [commentLoading, setCommentLoading] = useState(false);
   const [downloadingMaterialId, setDownloadingMaterialId] = useState<string | null>(null);
   const [viewerName, setViewerName] = useState("Professor(a)");
+=======
+  const [downloadingMaterialId, setDownloadingMaterialId] = useState<string | null>(null);
+  const [viewerName, setViewerName] = useState("Professor(a)");
+  const [viewerProfile, setViewerProfile] = useState<{
+    userId: string;
+    displayName: string;
+    avatarUrl: string | null;
+    coverUrl: string | null;
+    topComponentes: string[];
+    schoolName: string | null;
+  } | null>(null);
+  const [followingIds, setFollowingIds] = useState<Set<string>>(new Set());
+>>>>>>> origin/aplicar-melhorias-na-producao
   const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
@@ -133,6 +202,7 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
   const [stats, setStats] = useState<DocenteStats>(EMPTY_STATS);
   const [discussions, setDiscussions] = useState<DocenteDiscussion[]>([]);
   const [materials, setMaterials] = useState<DocenteMaterial[]>([]);
+<<<<<<< HEAD
   const [recentPublications, setRecentPublications] = useState<DocenteRecentPublication[]>([]);
   const [events, setEvents] = useState<DocenteEvent[]>([]);
   const [groups, setGroups] = useState<OverviewPayload["groups"]>([]);
@@ -155,12 +225,40 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
       `${d.title} ${d.author.name} ${d.disciplina} ${d.tags.join(" ")}`.toLowerCase().includes(q),
     );
   }, [discussions, effectiveSearch, tipoFilter]);
+=======
+  const [trendingMaterials, setTrendingMaterials] = useState<DocenteMaterial[]>([]);
+  const [badgeProgress, setBadgeProgress] = useState<DocenteBadgeProgress[]>([]);
+  const [featuredTeacher, setFeaturedTeacher] = useState<DocenteAuthor | null>(null);
+  const [savedDiscussions, setSavedDiscussions] = useState<DocenteDiscussion[]>([]);
+
+  void stats;
+
+  const effectiveSearch = searchQuery || heroSearch;
+
+  const decorateAuthor = useCallback(
+    (author: DocenteAuthor): DocenteAuthor =>
+      followingIds.has(author.id) ? { ...author, isFollowing: true } : author,
+    [followingIds],
+  );
+
+  const filteredDiscussions = useMemo(() => {
+    let list = discussions;
+    if (effectiveSearch.trim()) {
+      const q = effectiveSearch.toLowerCase();
+      list = list.filter((d) =>
+        `${d.title} ${d.body || ""} ${d.author.name} ${d.disciplina} ${d.tags.join(" ")}`.toLowerCase().includes(q),
+      );
+    }
+    return list.map((d) => ({ ...d, author: decorateAuthor(d.author) }));
+  }, [discussions, effectiveSearch, decorateAuthor]);
+>>>>>>> origin/aplicar-melhorias-na-producao
 
   const effectiveHiddenMaterialIds = useMemo(() => {
     void hiddenRevision;
     return hiddenMaterialIds;
   }, [hiddenMaterialIds, hiddenRevision]);
 
+<<<<<<< HEAD
   const filteredMaterials = useMemo(() => {
     if (tipoFilter === "posts") return [];
     let list = materials;
@@ -182,6 +280,32 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
       events.length === 0,
     [loading, loadError, activeMenu, discussions.length, materials.length, groups.length, events.length],
   );
+=======
+  void effectiveHiddenMaterialIds;
+
+  const suggestedTeachers = useMemo(() => {
+    const seen = new Set<string>();
+    const candidates: DocenteAuthor[] = [];
+
+    const consider = (author: DocenteAuthor | null | undefined) => {
+      if (!author || !author.id) return;
+      if (author.id === viewerProfile?.userId) return;
+      if (seen.has(author.id)) return;
+      seen.add(author.id);
+      candidates.push(author);
+    };
+
+    consider(featuredTeacher);
+    materials.forEach((m) => consider(m.author));
+    discussions.forEach((d) => consider(d.author));
+
+    return candidates
+      .map(decorateAuthor)
+      .filter((author) => !author.isFollowing)
+      .sort((a, b) => b.reputation + b.materialsCount - (a.reputation + a.materialsCount))
+      .slice(0, 4);
+  }, [featuredTeacher, materials, discussions, viewerProfile?.userId, decorateAuthor]);
+>>>>>>> origin/aplicar-melhorias-na-producao
 
   const navigateToMenu = useCallback(
     (item: DocenteMenuItem) => {
@@ -204,17 +328,30 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
     window.setTimeout(() => setStatus(""), 3200);
   }, []);
 
+<<<<<<< HEAD
   const loadOverview = useCallback(async (search = "") => {
     setLoading(true);
+=======
+  const loadOverview = useCallback(async (search = "", options?: { silent?: boolean }) => {
+    const silent = Boolean(options?.silent);
+    if (!silent) {
+      setLoading(true);
+    }
+>>>>>>> origin/aplicar-melhorias-na-producao
     setLoadError("");
 
     try {
       const qs = buildOverviewQueryParams({
         search,
         disciplina: selectedDisciplina,
+<<<<<<< HEAD
         etapa: etapaFilter || null,
         tipoMaterial: tipoMaterialFilter || null,
         tag: tagFilter || null,
+=======
+        anoSerie: anoSerieFilter || null,
+        tipoMaterial: tipoMaterialFilter || null,
+>>>>>>> origin/aplicar-melhorias-na-producao
         mineOnly,
         friendsOnly,
         savedOnly,
@@ -231,6 +368,7 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
       }
 
       setStats(data.stats || EMPTY_STATS);
+<<<<<<< HEAD
       const nextDiscussions = (data.discussions || []).map((d: DocenteDiscussion) => ({
         ...d,
       }));
@@ -243,6 +381,26 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
       setBadgeProgress(data.badgeProgress || []);
       setIsAdmin(Boolean(data.isAdmin));
       setFeaturedTeacher(data.featuredTeacher || null);
+=======
+      setDiscussions((data.discussions || []).map((d: DocenteDiscussion) => ({ ...d })));
+      setSavedDiscussions(data.savedDiscussions || []);
+      setMaterials(data.materials || []);
+      setTrendingMaterials(data.trendingMaterials || []);
+      setBadgeProgress(data.badgeProgress || []);
+      setFeaturedTeacher(data.featuredTeacher || null);
+
+      const followedFromServer = new Set<string>();
+      for (const d of (data.discussions || []) as DocenteDiscussion[]) {
+        if (d.author?.isFollowing && d.author.id) followedFromServer.add(d.author.id);
+      }
+      for (const m of (data.materials || []) as DocenteMaterial[]) {
+        if (m.author?.isFollowing && m.author.id) followedFromServer.add(m.author.id);
+      }
+      if (data.featuredTeacher?.isFollowing && data.featuredTeacher.id) {
+        followedFromServer.add(String(data.featuredTeacher.id));
+      }
+      setFollowingIds(followedFromServer);
+>>>>>>> origin/aplicar-melhorias-na-producao
       const serverHiddenIds = Array.isArray(data.hiddenMaterialIds)
         ? data.hiddenMaterialIds.map((id: unknown) => String(id)).filter(Boolean)
         : [];
@@ -255,9 +413,17 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
       const message = error instanceof Error ? error.message : "Erro ao carregar comunidade.";
       setLoadError(message);
     } finally {
+<<<<<<< HEAD
       setLoading(false);
     }
   }, [embedded, selectedDisciplina, etapaFilter, tipoMaterialFilter, tagFilter, mineOnly, friendsOnly, savedOnly, showHidden]);
+=======
+      if (!silent) {
+        setLoading(false);
+      }
+    }
+  }, [selectedDisciplina, anoSerieFilter, tipoMaterialFilter, mineOnly, friendsOnly, savedOnly, showHidden]);
+>>>>>>> origin/aplicar-melhorias-na-producao
 
   useEffect(() => {
     const aba = parseDocenteMenuItem(searchParams.get("aba"));
@@ -276,10 +442,48 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
         if (data?.ok && data.profile?.fullName) {
           setViewerName(String(data.profile.fullName));
         }
+<<<<<<< HEAD
+=======
+        if (data?.ok && data.profile?.userId) {
+          setViewerProfile({
+            userId: String(data.profile.userId),
+            displayName: String(data.profile.fullName || data.profile.email || "Professor(a)"),
+            avatarUrl: data.profile.avatarUrl || null,
+            coverUrl: data.profile.coverUrl || null,
+            topComponentes: Array.isArray(data.profile.topComponentes)
+              ? data.profile.topComponentes.map((item: unknown) => String(item))
+              : [],
+            schoolName: data.profile.schoolName || null,
+          });
+        }
+>>>>>>> origin/aplicar-melhorias-na-producao
       })
       .catch(() => {});
   }, [loadOverview]);
 
+<<<<<<< HEAD
+=======
+  // Reabre o composer após OAuth do Google Drive.
+  useEffect(() => {
+    const maybeReopenCreatePost = () => {
+      const pending = readGoogleDrivePickerPending();
+      if (!pending?.reopenCreatePost) return;
+      const oauthIntent = peekGoogleOAuthResumeIntent();
+      if (!oauthIntent?.connected) return;
+      markGoogleDrivePickerResumeReady();
+      setCreatePostIntent("texto");
+      setCreatePostOpen(true);
+      clearGoogleOAuthReturnParams();
+    };
+
+    maybeReopenCreatePost();
+    window.addEventListener(GOOGLE_STATUS_CHANGED_EVENT, maybeReopenCreatePost);
+    return () => {
+      window.removeEventListener(GOOGLE_STATUS_CHANGED_EVENT, maybeReopenCreatePost);
+    };
+  }, []);
+
+>>>>>>> origin/aplicar-melhorias-na-producao
   useEffect(() => {
     const discussaoId = searchParams.get("discussao");
     if (discussaoId) {
@@ -287,12 +491,28 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
     }
   }, [router, searchParams, embedded]);
 
+<<<<<<< HEAD
   const refreshAfterAction = useCallback(async () => {
     await loadOverview(effectiveSearch);
+=======
+  // Busca no feed: debounce silencioso (sem apagar a tela).
+  useEffect(() => {
+    const q = searchQuery.trim();
+    if (!q) return;
+    const timer = window.setTimeout(() => {
+      void loadOverview(q, { silent: true });
+    }, 350);
+    return () => window.clearTimeout(timer);
+  }, [searchQuery, loadOverview]);
+
+  const refreshAfterAction = useCallback(async () => {
+    await loadOverview(effectiveSearch, { silent: true });
+>>>>>>> origin/aplicar-melhorias-na-producao
   }, [effectiveSearch, loadOverview]);
 
   const handleLikeDiscussion = useCallback(
     async (id: string) => {
+<<<<<<< HEAD
       if (isMaterialDiscussion(id)) {
         const materialId = materialIdFromDiscussion(id);
         const liked = discussions.find((d) => d.id === id)?.likedByMe;
@@ -316,6 +536,8 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
         return;
       }
 
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
       const response = await fetch("/api/community/docente/actions", {
         method: "POST",
         credentials: "include",
@@ -334,7 +556,11 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
         showToast(data?.error?.message || "Não foi possível curtir.");
       }
     },
+<<<<<<< HEAD
     [discussions, refreshAfterAction, showToast],
+=======
+    [refreshAfterAction, showToast],
+>>>>>>> origin/aplicar-melhorias-na-producao
   );
 
   const handleSaveMaterial = useCallback(
@@ -362,10 +588,13 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
 
   const handleSaveDiscussion = useCallback(
     async (id: string) => {
+<<<<<<< HEAD
       if (isMaterialDiscussion(id)) {
         await handleSaveMaterial(materialIdFromDiscussion(id));
         return;
       }
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
       const response = await fetch("/api/community/docente/actions", {
         method: "POST",
         credentials: "include",
@@ -377,17 +606,33 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
         setDiscussions((prev) =>
           prev.map((d) => (d.id === id ? { ...d, savedByMe: data.saved } : d)),
         );
+<<<<<<< HEAD
         showToast(data.saved ? "Discussão salva!" : "Removida dos salvos.");
+=======
+        showToast(data.saved ? "Publicação salva!" : "Removida dos salvos.");
+>>>>>>> origin/aplicar-melhorias-na-producao
         void refreshAfterAction();
       } else {
         showToast(data?.error?.message || "Não foi possível salvar.");
       }
     },
+<<<<<<< HEAD
     [handleSaveMaterial, refreshAfterAction, showToast],
+=======
+    [refreshAfterAction, showToast],
+  );
+
+  const handleOpenDiscussion = useCallback(
+    (id: string) => {
+      router.push(comunidadeRoutes.discussao(id, embedded));
+    },
+    [router, embedded],
+>>>>>>> origin/aplicar-melhorias-na-producao
   );
 
   const submitComment = useCallback(
     async (id: string, body: string) => {
+<<<<<<< HEAD
       setCommentLoading(true);
       try {
         if (isMaterialDiscussion(id)) {
@@ -412,6 +657,9 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
           return;
         }
 
+=======
+      try {
+>>>>>>> origin/aplicar-melhorias-na-producao
         const response = await fetch("/api/community/docente/actions", {
           method: "POST",
           credentials: "include",
@@ -421,22 +669,32 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
         const data = await response.json();
         if (response.ok && data.ok) {
           setDiscussions((prev) =>
+<<<<<<< HEAD
             prev.map((d) =>
               d.id === id ? { ...d, commentsCount: data.commentsCount } : d,
             ),
+=======
+            prev.map((d) => (d.id === id ? { ...d, commentsCount: data.commentsCount } : d)),
+>>>>>>> origin/aplicar-melhorias-na-producao
           );
           showToast("Comentário publicado!");
           void refreshAfterAction();
         } else {
           showToast(data?.error?.message || "Não foi possível comentar.");
         }
+<<<<<<< HEAD
       } finally {
         setCommentLoading(false);
+=======
+      } catch {
+        showToast("Não foi possível comentar.");
+>>>>>>> origin/aplicar-melhorias-na-producao
       }
     },
     [refreshAfterAction, showToast],
   );
 
+<<<<<<< HEAD
   const handleCommentDiscussion = useCallback((id: string) => {
     const discussion = discussions.find((d) => d.id === id);
     if (!discussion) return;
@@ -460,6 +718,11 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
         ? comunidadeRoutes.material(materialIdFromDiscussion(id), embedded)
         : comunidadeRoutes.discussao(id, embedded);
       const url = `${window.location.origin}${path}`;
+=======
+  const handleShareDiscussion = useCallback(
+    (id: string) => {
+      const url = `${window.location.origin}${comunidadeRoutes.discussao(id, embedded)}`;
+>>>>>>> origin/aplicar-melhorias-na-producao
       void navigator.clipboard.writeText(url).then(() => {
         showToast("Link copiado para a área de transferência!");
       });
@@ -467,6 +730,7 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
     [embedded, showToast],
   );
 
+<<<<<<< HEAD
 
   const handleCommentMaterial = useCallback(
     (id: string) => {
@@ -475,6 +739,26 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
       setCommentTarget({ id: `mat-disc-${id}`, title: material.title });
     },
     [materials],
+=======
+  const handleDeleteDiscussion = useCallback(
+    async (id: string) => {
+      const response = await fetch("/api/community/docente/actions", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "delete_post", postId: id }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data.ok) {
+        showToast(data?.error?.message || "Não foi possível excluir a publicação.");
+        return;
+      }
+      setDiscussions((prev) => prev.filter((d) => d.id !== id));
+      setSavedDiscussions((prev) => prev.filter((d) => d.id !== id));
+      showToast("Publicação excluída.");
+    },
+    [showToast],
+>>>>>>> origin/aplicar-melhorias-na-producao
   );
 
   const handleDownloadMaterial = useCallback(
@@ -491,7 +775,19 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
           fallbackFileName: downloadParams.fallbackFileName,
         });
         setMaterials((prev) =>
+<<<<<<< HEAD
           prev.map((m) => (m.id === id ? { ...m, viewsCount: m.viewsCount + 1 } : m)),
+=======
+          prev.map((m) =>
+            m.id === id
+              ? {
+                  ...m,
+                  viewsCount: m.viewsCount + 1,
+                  downloadsCount: (m.downloadsCount ?? m.viewsCount) + 1,
+                }
+              : m,
+          ),
+>>>>>>> origin/aplicar-melhorias-na-producao
         );
         showToast("Download iniciado!");
         void refreshAfterAction();
@@ -551,6 +847,15 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
           : author;
 
       setFeaturedTeacher((prev) => (prev ? updateAuthor(prev) : prev));
+<<<<<<< HEAD
+=======
+      setFollowingIds((prev) => {
+        const next = new Set(prev);
+        if (data.following) next.add(authorId);
+        else next.delete(authorId);
+        return next;
+      });
+>>>>>>> origin/aplicar-melhorias-na-producao
       showToast(
         data.following
           ? "Você seguiu o professor! O professor receberá uma notificação."
@@ -565,7 +870,11 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
       try {
         await submitDocenteCreatePost({ input, viewerName });
         showToast("Publicação criada com sucesso!");
+<<<<<<< HEAD
         await loadOverview(effectiveSearch);
+=======
+        await loadOverview(effectiveSearch, { silent: true });
+>>>>>>> origin/aplicar-melhorias-na-producao
       } catch (error) {
         throw error instanceof Error ? error : new Error("create_post_failed");
       }
@@ -573,6 +882,7 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
     [effectiveSearch, loadOverview, showToast, viewerName],
   );
 
+<<<<<<< HEAD
   const handleCreateGroup = useCallback(
     async (input: DocenteCreateGroupInput) => {
       const response = await fetch("/api/community/docente/actions", {
@@ -680,6 +990,8 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
     [showToast],
   );
 
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
   const handleParticipateChallenge = useCallback(
     async (challengeSlug: string) => {
       if (challengeSlug === "desafio-bncc") {
@@ -699,7 +1011,11 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
             ? `Desafio concluído! Novo selo: ${data.newlyAwarded.join(", ")}`
             : "Desafio registrado! Continue participando para desbloquear selos.",
         );
+<<<<<<< HEAD
         await loadOverview(effectiveSearch);
+=======
+        await loadOverview(effectiveSearch, { silent: true });
+>>>>>>> origin/aplicar-melhorias-na-producao
       } else {
         showToast(data?.error?.message || "Não foi possível registrar o desafio.");
       }
@@ -722,7 +1038,11 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
       const data = await response.json();
       if (response.ok && data.ok) {
         showToast("Desafio BNCC concluído com sucesso!");
+<<<<<<< HEAD
         await loadOverview(effectiveSearch);
+=======
+        await loadOverview(effectiveSearch, { silent: true });
+>>>>>>> origin/aplicar-melhorias-na-producao
       } else {
         showToast(data?.error?.message || "Não foi possível concluir o desafio.");
         throw new Error("bncc failed");
@@ -737,7 +1057,11 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
     showToast("Material oculto do seu feed.");
     try {
       await hideFeedMaterialOnServer(id);
+<<<<<<< HEAD
       await loadOverview(effectiveSearch);
+=======
+      await loadOverview(effectiveSearch, { silent: true });
+>>>>>>> origin/aplicar-melhorias-na-producao
     } catch {
       setHiddenMaterialIdsState((current) => {
         const next = new Set(current);
@@ -759,7 +1083,11 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
     showToast("Material restaurado no seu feed.");
     try {
       await unhideFeedMaterialOnServer(id);
+<<<<<<< HEAD
       await loadOverview(effectiveSearch);
+=======
+      await loadOverview(effectiveSearch, { silent: true });
+>>>>>>> origin/aplicar-melhorias-na-producao
     } catch {
       setHiddenMaterialIdsState((current) => new Set([...current, id]));
       setHiddenRevision((v) => v + 1);
@@ -767,12 +1095,23 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
     }
   }, [effectiveSearch, loadOverview, showToast]);
 
+<<<<<<< HEAD
   const openCreatePost = useCallback(() => setCreatePostOpen(true), []);
 
   const handleHeroSearch = useCallback(() => {
     setSearchQuery(heroSearch);
     void loadOverview(heroSearch);
   }, [heroSearch, loadOverview]);
+=======
+  const openCreatePost = useCallback((intent: ComposerIntent = "texto") => {
+    setCreatePostIntent(intent);
+    setCreatePostOpen(true);
+  }, []);
+  const openOwnProfile = useCallback(() => {
+    if (!viewerProfile?.userId) return;
+    router.push(comunidadeRoutes.professor(viewerProfile.userId, embedded));
+  }, [router, viewerProfile?.userId, embedded]);
+>>>>>>> origin/aplicar-melhorias-na-producao
 
   const renderMainContent = () => {
     if (loading) {
@@ -798,6 +1137,7 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
       );
     }
 
+<<<<<<< HEAD
     if (activeMenu === "eventos") {
       return (
         <ComunidadeDocenteEventos
@@ -819,6 +1159,8 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
         />
       );
     }
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
     if (activeMenu === "desafios") {
       return (
         <ComunidadeDocenteDesafios
@@ -827,6 +1169,10 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
         />
       );
     }
+<<<<<<< HEAD
+=======
+
+>>>>>>> origin/aplicar-melhorias-na-producao
     if (activeMenu === "salvos") {
       return (
         <ComunidadeDocenteSalvos
@@ -837,13 +1183,21 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
           onSave={handleSaveMaterial}
           onSaveDiscussion={handleSaveDiscussion}
           onOpenDiscussion={handleOpenDiscussion}
+<<<<<<< HEAD
           onDownload={handleDownloadMaterial}
           downloadingMaterialId={downloadingMaterialId}
           onBrowseMaterials={() => setActiveMenu("materiais")}
+=======
+          onOpenMaterial={setPreviewMaterialId}
+          onDownload={handleDownloadMaterial}
+          downloadingMaterialId={downloadingMaterialId}
+          onBrowseMaterials={() => setActiveMenu("inicio")}
+>>>>>>> origin/aplicar-melhorias-na-producao
         />
       );
     }
 
+<<<<<<< HEAD
     return (
       <>
         {(activeMenu === "inicio" ||
@@ -945,10 +1299,65 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
           />
         )}
       </>
+=======
+    // início — home Teachy: composer + CTA + destaques + Para você
+    const shareSuggestion =
+      materials[0]?.title || trendingMaterials[0]?.title || null;
+
+    return (
+      <div className="mx-auto w-full max-w-[680px] space-y-4">
+        <ComunidadeDocenteComposer
+          viewerName={viewerName}
+          viewerAvatarUrl={viewerProfile?.avatarUrl}
+          viewerUserId={viewerProfile?.userId}
+          onOpenComposer={openCreatePost}
+        />
+        <ComunidadeDocenteSharePrompt
+          onShare={openCreatePost}
+          suggestedTitle={shareSuggestion}
+        />
+        <ComunidadeDocenteTrending
+          materials={trendingMaterials}
+          onOpen={(id) => {
+            const item = trendingMaterials.find((m) => m.id === id);
+            if (item?.externalUrl) {
+              window.open(item.externalUrl, "_blank", "noopener,noreferrer");
+              return;
+            }
+            setPreviewMaterialId(id);
+          }}
+          onShowAll={() => {
+            const first = trendingMaterials[0];
+            if (first?.externalUrl) {
+              window.open(first.externalUrl, "_blank", "noopener,noreferrer");
+              return;
+            }
+            if (first) setPreviewMaterialId(first.id);
+          }}
+        />
+        <ComunidadeDocenteDiscussions
+          discussions={filteredDiscussions}
+          onLike={handleLikeDiscussion}
+          onSave={handleSaveDiscussion}
+          onShare={handleShareDiscussion}
+          onDelete={handleDeleteDiscussion}
+          onOpen={handleOpenDiscussion}
+          onFollow={handleFollowTeacher}
+          onReply={submitComment}
+          viewerName={viewerName}
+          viewerAvatarUrl={viewerProfile?.avatarUrl}
+          viewerUserId={viewerProfile?.userId}
+        />
+      </div>
+>>>>>>> origin/aplicar-melhorias-na-producao
     );
   };
 
   const openMessagesPanel = searchParams.get("painel") === "mensagens";
+<<<<<<< HEAD
+=======
+  const showRightSidebar = activeMenu === "inicio" || activeMenu === "salvos" || activeMenu === "desafios";
+>>>>>>> origin/aplicar-melhorias-na-producao
 
   return (
     <div
@@ -961,21 +1370,35 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
         searchQuery={searchQuery}
         onSearchChange={(value) => {
           setSearchQuery(value);
+<<<<<<< HEAD
           if (value.trim()) void loadOverview(value);
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
         }}
         onSearchSubmit={(value) => {
           const q = value.trim();
           if (q.length >= 2) {
             router.push(buscaHref(q, embedded));
+<<<<<<< HEAD
           }
         }}
         onCreatePost={openCreatePost}
         onOpenMenu={() => setSidebarOpen(true)}
         onOpenProfile={() => setProfileOpen(true)}
+=======
+          } else if (!q) {
+            void loadOverview("", { silent: true });
+          }
+        }}
+        onCreatePost={openCreatePost}
+        onSelectMenu={navigateToMenu}
+        activeMenu={activeMenu}
+>>>>>>> origin/aplicar-melhorias-na-producao
         initialOpenMessages={openMessagesPanel}
       />
 
       <div className="relative flex min-h-0 flex-1 overflow-hidden">
+<<<<<<< HEAD
         {sidebarOpen ? (
           <button
             type="button"
@@ -1059,6 +1482,60 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
         onSubmit={async (body) => {
           if (!commentTarget) return;
           await submitComment(commentTarget.id, body);
+=======
+        <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden">
+          <main className="min-h-0 flex-1 overflow-y-auto bg-[#f8fafc]">
+            <div
+              className={[
+                "mx-auto w-full px-4 py-6 sm:px-6",
+                activeMenu === "inicio" ? "max-w-[720px]" : "max-w-3xl lg:max-w-none lg:px-8",
+              ].join(" ")}
+            >
+              {renderMainContent()}
+            </div>
+
+            {showRightSidebar ? (
+              <div className="px-4 pb-8 xl:hidden">
+                <ComunidadeDocenteRightSidebar
+                  suggestedTeachers={suggestedTeachers}
+                  viewerProfile={viewerProfile}
+                  onFollow={handleFollowTeacher}
+                  onOpenProfile={openOwnProfile}
+                />
+              </div>
+            ) : null}
+          </main>
+
+          {showRightSidebar ? (
+            <div className="hidden shrink-0 overflow-y-auto border-l border-slate-200/80 bg-[#f8fafc] p-5 xl:block">
+              <ComunidadeDocenteRightSidebar
+                suggestedTeachers={suggestedTeachers}
+                viewerProfile={viewerProfile}
+                onFollow={handleFollowTeacher}
+                onOpenProfile={openOwnProfile}
+              />
+            </div>
+          ) : null}
+        </div>
+      </div>
+
+      <ComunidadeMaterialPreviewModal
+        open={Boolean(previewMaterialId)}
+        materialId={previewMaterialId || ""}
+        onClose={() => setPreviewMaterialId(null)}
+        onCloned={(downloadsCount) => {
+          if (!previewMaterialId) return;
+          setMaterials((prev) =>
+            prev.map((item) =>
+              item.id === previewMaterialId ? { ...item, downloadsCount } : item,
+            ),
+          );
+          setTrendingMaterials((prev) =>
+            prev.map((item) =>
+              item.id === previewMaterialId ? { ...item, downloadsCount } : item,
+            ),
+          );
+>>>>>>> origin/aplicar-melhorias-na-producao
         }}
       />
 
@@ -1066,6 +1543,7 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
         open={createPostOpen}
         onClose={() => setCreatePostOpen(false)}
         onSubmit={handleCreatePost}
+<<<<<<< HEAD
       />
 
       <ComunidadeDocenteCreateGroupModal
@@ -1083,6 +1561,10 @@ export function ComunidadeDocenteClient({ embedded = false }: { embedded?: boole
       <ComunidadeDocenteProfileModal
         open={profileOpen}
         onClose={() => setProfileOpen(false)}
+=======
+        intent={createPostIntent}
+        viewerName={viewerName}
+>>>>>>> origin/aplicar-melhorias-na-producao
       />
 
       <ComunidadeDocenteBnccChallengeModal

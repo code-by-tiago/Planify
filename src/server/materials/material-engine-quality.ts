@@ -14,6 +14,29 @@ const COUNT_TOLERANCE = 1;
 const MAX_STATEMENT_CHARS = 320;
 const MIN_MC_OPTIONS = 4;
 
+<<<<<<< HEAD
+=======
+const ACTIVITY_PLACEHOLDER_RE =
+  /complete a tarefa orientada pelo professor|registrando racioc[ií]nio e resposta no caderno|aplicar o conte[uú]do em contexto escolar/i;
+
+const COPILOTO_READING_MARKER = "COPILOTO_TEXTO_FONTE";
+
+function hasCopilotoReadingRequest(
+  request: Pick<MaterialEngineRequest, "conteudo" | "observacoes">,
+): boolean {
+  const blob = `${request.conteudo || ""}\n${request.observacoes || ""}`;
+  return blob.includes(COPILOTO_READING_MARKER);
+}
+
+function looksLikeReadingSourceSection(title: string, content: string): boolean {
+  const hay = `${title}\n${content}`.toLowerCase();
+  return (
+    /texto para leitura|texto[- ]fonte|cr[oô]nica|conto|poema|trecho/.test(hay) &&
+    content.trim().length >= 280
+  );
+}
+
+>>>>>>> origin/aplicar-melhorias-na-producao
 function countStatementSentences(text: string): number {
   return text
     .split(/[.!?]+/)
@@ -112,7 +135,46 @@ export function getEngineOutputIssues(
   output: MaterialEngineResponse,
 ): string[] {
   if (request.tipoMaterial === "prova") {
+<<<<<<< HEAD
     return validateProvaEngineOutput(request, output);
+=======
+    const issues = validateProvaEngineOutput(request, output);
+    if (hasCopilotoReadingRequest(request)) {
+      const sections = output.sections ?? [];
+      const hasReading = sections.some((section) =>
+        looksLikeReadingSourceSection(
+          section.title || "",
+          `${section.content || ""} ${(section.bullets ?? []).join(" ")}`,
+        ),
+      );
+      const examHasReading = (output.exam?.questions ?? []).some((question) =>
+        /texto para leitura|cr[oô]nica|conto|poema/i.test(
+          question.statement || "",
+        ),
+      );
+      if (!hasReading && !examHasReading) {
+        issues.push(
+          "Prova com texto-fonte: inclua seção 'Texto para leitura' com texto utilizável em sala antes das questões.",
+        );
+      }
+    }
+
+    const questions = output.exam?.questions ?? [];
+    if (questions.length >= 4) {
+      const lengths = questions.map(
+        (question) => question.statement?.trim().length ?? 0,
+      );
+      const mid = Math.ceil(lengths.length / 2);
+      const avg = (values: number[]) =>
+        values.reduce((sum, value) => sum + value, 0) / Math.max(values.length, 1);
+      if (avg(lengths.slice(mid)) + 12 < avg(lengths.slice(0, mid))) {
+        issues.push(
+          "Progressão Bloom: reordene as questões do mais acessível ao mais desafiador.",
+        );
+      }
+    }
+    return issues;
+>>>>>>> origin/aplicar-melhorias-na-producao
   }
 
   const issues: string[] = [];
@@ -278,6 +340,25 @@ export function getEngineOutputIssues(
         );
       }
     }
+<<<<<<< HEAD
+=======
+
+    if (questions.length >= 4) {
+      const lengths = questions.map(
+        (question) => question.statement?.trim().length ?? 0,
+      );
+      const firstHalf = lengths.slice(0, Math.ceil(lengths.length / 2));
+      const secondHalf = lengths.slice(Math.ceil(lengths.length / 2));
+      const avg = (values: number[]) =>
+        values.reduce((sum, value) => sum + value, 0) / Math.max(values.length, 1);
+      // Heurística leve de progressão Bloom: segunda metade tende a enunciados mais densos.
+      if (avg(secondHalf) + 12 < avg(firstHalf)) {
+        issues.push(
+          "Progressão Bloom: reordene as questões do mais acessível ao mais desafiador.",
+        );
+      }
+    }
+>>>>>>> origin/aplicar-melhorias-na-producao
   }
 
   if (tipo === "mapa-mental") {
@@ -423,6 +504,31 @@ export function getEngineOutputIssues(
           break;
         }
       }
+<<<<<<< HEAD
+=======
+      if (ACTIVITY_PLACEHOLDER_RE.test(joinedItems)) {
+        issues.push(
+          `Atividade ${n}: remova comandos genéricos/placeholder e escreva itens específicos ao tema.`,
+        );
+      }
+      const uniqueItems = new Set(
+        items.map((item) => item.replace(/^\s*[a-e]\)\s*/i, "").trim().toLowerCase()),
+      );
+      if (items.length >= 3 && uniqueItems.size < Math.min(3, items.length)) {
+        issues.push(`Atividade ${n}: itens repetidos — cada letra deve ter comando distinto.`);
+      }
+      for (const item of items) {
+        const body = item.replace(/^\s*[a-e]\)\s*/i, "").trim();
+        if (body.length > 0 && body.length < 28) {
+          issues.push(`Atividade ${n}: itens devem ser enunciados completos (mín. 28 caracteres).`);
+          break;
+        }
+        if (isGenericEducationalText(body)) {
+          issues.push(`Atividade ${n}: evite itens genéricos; contextualize no tema.`);
+          break;
+        }
+      }
+>>>>>>> origin/aplicar-melhorias-na-producao
       if (!activity.evaluation?.trim()) {
         issues.push(`Atividade ${index + 1}: preencha 'evaluation'.`);
       } else if ((activity.evaluation?.trim().length ?? 0) < 45) {
@@ -432,6 +538,27 @@ export function getEngineOutputIssues(
     }
   }
 
+<<<<<<< HEAD
+=======
+  if (tipo === "lista" && hasCopilotoReadingRequest(request)) {
+    const sections = output.sections ?? [];
+    const hasReading = sections.some((section) =>
+      looksLikeReadingSourceSection(
+        section.title || "",
+        `${section.content || ""} ${(section.bullets ?? []).join(" ")}`,
+      ),
+    );
+    const examHasReading = (output.exam?.questions ?? []).some((question) =>
+      /texto para leitura|cr[oô]nica|conto|poema/i.test(question.statement || ""),
+    );
+    if (!hasReading && !examHasReading) {
+      issues.push(
+        "Lista com texto-fonte: inclua seção 'Texto para leitura' com texto utilizável em sala antes das questões.",
+      );
+    }
+  }
+
+>>>>>>> origin/aplicar-melhorias-na-producao
   if (tipo === "apostila") {
     const titles = (output.sections ?? []).map(
       (section) => section.title?.toLowerCase() || "",

@@ -61,12 +61,39 @@ async function launchBrowser() {
 
 export type PdfRenderProfile = "document" | "slides";
 
+<<<<<<< HEAD
 const SLIDE_PAGE = { width: "338mm", height: "190mm" } as const;
 const DOCUMENT_PAGE = { format: "A4" as const };
 
 export async function renderHtmlToPdfBuffer(
   html: string,
   profile: PdfRenderProfile = "document",
+=======
+export type PdfRenderOptions = {
+  /** Rodapé HTML renderizado em cada página via displayHeaderFooter do Puppeteer. */
+  footerHtml?: string;
+};
+
+const SLIDE_PAGE = { width: "338mm", height: "190mm" } as const;
+const DOCUMENT_PAGE = { format: "A4" as const };
+
+function escapeFooterText(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+export function buildPdfFooterTemplate(text: string): string {
+  return `<div style="width:100%;font-size:8px;color:#94a3b8;text-align:center;padding:0 12mm 4mm;font-family:Segoe UI,system-ui,sans-serif;border-top:1px solid #e2e8f0;margin:0 12mm;padding-top:3mm;box-sizing:border-box;">${escapeFooterText(text)}</div>`;
+}
+
+export async function renderHtmlToPdfBuffer(
+  html: string,
+  profile: PdfRenderProfile = "document",
+  options?: PdfRenderOptions,
+>>>>>>> origin/aplicar-melhorias-na-producao
 ): Promise<Buffer> {
   const browser = await launchBrowser();
 
@@ -95,12 +122,16 @@ export async function renderHtmlToPdfBuffer(
       );
     });
 
+<<<<<<< HEAD
     const slideCount =
       profile === "slides"
         ? await page.evaluate(
             () => document.querySelectorAll(".planify-slide").length,
           )
         : 0;
+=======
+    const hasFooter = Boolean(options?.footerHtml?.trim()) && profile === "document";
+>>>>>>> origin/aplicar-melhorias-na-producao
 
     const pdfOptions =
       profile === "slides"
@@ -114,6 +145,7 @@ export async function renderHtmlToPdfBuffer(
         : {
             format: DOCUMENT_PAGE.format,
             printBackground: true,
+<<<<<<< HEAD
             preferCSSPageSize: true,
             margin: {
               top: "12mm",
@@ -121,6 +153,22 @@ export async function renderHtmlToPdfBuffer(
               bottom: "12mm",
               left: "12mm",
             },
+=======
+            preferCSSPageSize: !hasFooter,
+            margin: {
+              top: "12mm",
+              right: "12mm",
+              bottom: hasFooter ? "18mm" : "12mm",
+              left: "12mm",
+            },
+            ...(hasFooter
+              ? {
+                  displayHeaderFooter: true,
+                  headerTemplate: "<span></span>",
+                  footerTemplate: options!.footerHtml!,
+                }
+              : {}),
+>>>>>>> origin/aplicar-melhorias-na-producao
           };
 
     const pdf = await page.pdf(pdfOptions);

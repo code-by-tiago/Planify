@@ -6,6 +6,10 @@ import {
   UnifiedQualityGateError,
 } from "@/lib/materiais/unified-quality-gate";
 import { generateGeminiJSON } from "../ai/gemini-client";
+<<<<<<< HEAD
+=======
+import { PLANNING_PEDAGOGICAL_VOICE } from "../ai/prompts/planify-pedagogical-dna";
+>>>>>>> origin/aplicar-melhorias-na-producao
 import {
   buildPlanningQualityRetryNote,
   computePlanningQualityScore,
@@ -17,6 +21,10 @@ import {
   parsePlanningCargaHorariaStrict,
 } from "./planning-lesson-allocation";
 import { splitPlanningConteudos } from "./planning-validation";
+<<<<<<< HEAD
+=======
+import { PLANNING_RESPONSE_SCHEMA } from "./planning-response-schema";
+>>>>>>> origin/aplicar-melhorias-na-producao
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -54,6 +62,11 @@ export type PlanningAiPayload = {
   turma?: string | null;
   discipline?: string | null;
   disciplina?: string | null;
+<<<<<<< HEAD
+=======
+  annualContext?: string;
+  parentAnnualKey?: string;
+>>>>>>> origin/aplicar-melhorias-na-producao
 };
 
 export type PlanningMatrixItem = {
@@ -573,6 +586,11 @@ function buildPlanningPrompt(
       : "";
 
   return `
+<<<<<<< HEAD
+=======
+${PLANNING_PEDAGOGICAL_VOICE}
+
+>>>>>>> origin/aplicar-melhorias-na-producao
 Você é uma IA especialista em planejamento pedagógico brasileiro.
 
 Gere SOMENTE JSON válido, sem markdown.
@@ -594,6 +612,10 @@ ${selectedSkills.map((skill) => `- ${skill.codigo} — ${skill.descricao} | cont
 
 ${buildSpanishPlanningRules(payload)}
 
+<<<<<<< HEAD
+=======
+${normalizeText(payload.annualContext) ? `${normalizeText(payload.annualContext)}\n` : ""}
+>>>>>>> origin/aplicar-melhorias-na-producao
 Regras obrigatórias:
 1. Retorne uma matriz em planejamento.conteudos.
 2. Cada linha representa UMA aula para UM conteúdo informado pelo professor.
@@ -673,6 +695,10 @@ async function requestPlanningJson(
   return generateGeminiJSON<unknown>({
     systemInstruction: PLANNING_SYSTEM_INSTRUCTION,
     prompt,
+<<<<<<< HEAD
+=======
+    responseSchema: PLANNING_RESPONSE_SCHEMA,
+>>>>>>> origin/aplicar-melhorias-na-producao
     cacheProfile: "planning-matrix",
     tier: getModelTierForPlanning({
       elevarQualidade: payload.elevarQualidade,

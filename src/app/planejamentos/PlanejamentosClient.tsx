@@ -11,7 +11,11 @@ import {
   formatGenerationError,
   GenerationErrorBanner,
 } from "@/lib/pro/generation-error-ui";
+<<<<<<< HEAD
 import { MarketplacePublishButton } from "@/components/marketplace/MarketplacePublishButton";
+=======
+import { PlanningMarketplacePublishButton } from "@/components/planejamentos/PlanningMarketplacePublishButton";
+>>>>>>> origin/aplicar-melhorias-na-producao
 import { PlanifyOwlGenerationCoach } from "@/components/pro/PlanifyOwlGenerationCoach";
 import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
 import { useSchoolClasses } from "@/hooks/useSchoolClasses";
@@ -20,8 +24,15 @@ import { PlanifyPageHero } from "@/components/pro/PlanifyPageHero";
 import { usePlanifyWorkspace } from "@/components/pro/planify-workspace-context";
 import {
   HUD_FIELD_CLASS,
+<<<<<<< HEAD
   HUD_SCROLLABLE_TEXTAREA_CLASS,
   HUD_TEXTAREA_CLASS,
+=======
+  HUD_FORM_GRID_CLASS,
+  HUD_SCROLLABLE_TEXTAREA_CLASS,
+  HUD_TEXTAREA_CLASS,
+  HUD_TOOL_HUB_CLASS,
+>>>>>>> origin/aplicar-melhorias-na-producao
 } from "@/lib/pro/hud-form-styles";
 import type { LumiCoachContext } from "@/lib/pro/lumiMotivationalMessages";
 import {
@@ -55,23 +66,37 @@ import {
 } from "@/lib/planejamentos/planning-trial-bundle";
 import { PlanningTrialExportBar } from "@/components/planejamentos/PlanningTrialExportBar";
 import { PlanningTrialProtectedZone } from "@/components/planejamentos/PlanningTrialProtectedZone";
+<<<<<<< HEAD
 import { buildPlanningEditorHtml } from "@/lib/planejamentos/planning-editor-html";
+=======
+import { resolvePlanningEditorHtml, normalizeOfficialPayloadInput, PlanningOfficialHtmlError } from "@/lib/planejamentos/planning-official-editor-html-client";
+>>>>>>> origin/aplicar-melhorias-na-producao
 import type {
   PlanningAiPayload,
   PlanningMatrixItem,
 } from "@/server/planejamentos/planning-ai-service";
 import { readPlanejamentoPrefill } from "@/lib/planejamentos/planejamento-prefill";
 import { PlanningOfficialExportBar } from "@/components/planejamentos/PlanningOfficialExportBar";
+<<<<<<< HEAD
 import {
   PlanningWizardStepper,
   type PlanningWizardStep,
 } from "@/components/planejamentos/PlanningWizardStepper";
 import { buildOfficialPlanningPayloadFromGeneration } from "@/lib/planejamentos/planning-google-export-payload";
+=======
+import { type PlanningWizardStep } from "@/components/planejamentos/PlanningWizardStepper";
+>>>>>>> origin/aplicar-melhorias-na-producao
 import {
   buildTrimestralPlansFromAnnual,
   trimestralCargaHorariaLabel,
   type TrimestralPlanningLike,
 } from "@/lib/planejamentos/planning-trimestral-from-annual";
+<<<<<<< HEAD
+=======
+import {
+  savePlanningAnnualSnapshot,
+} from "@/lib/planejamentos/planning-annual-snapshot";
+>>>>>>> origin/aplicar-melhorias-na-producao
 import { useBnccEducationOptions } from "@/hooks/useBnccEducationOptions";
 import type { MaterialEducationFields } from "@/lib/educacao/education-options";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -255,6 +280,7 @@ function normalizeEducationalFields(current: FormState, patch: Partial<FormState
   return next;
 }
 
+<<<<<<< HEAD
 const exemplos = {
   fundamental: {
     etapa: "Ensino Fundamental",
@@ -284,6 +310,8 @@ const exemplos = {
   },
 };
 
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
 const planningProgressSteps = [
   "Lendo os dados informados",
   "Organizando conteúdos e habilidades",
@@ -425,6 +453,7 @@ function Pill({
 }
 
 
+<<<<<<< HEAD
 function saveAnnualMatrixSnapshot(form: FormState, planning: GeneratedPlanning) {
   if (form.tipoPlanejamento !== "anual") {
     return;
@@ -437,6 +466,33 @@ function saveAnnualMatrixSnapshot(form: FormState, planning: GeneratedPlanning) 
   };
 
   localStorage.setItem("planify_matriz_anual", JSON.stringify(snapshot));
+=======
+function saveAnnualMatrixSnapshot(
+  form: FormState,
+  planning: GeneratedPlanning,
+  options?: { parentAnnualKey?: string },
+) {
+  savePlanningAnnualSnapshot(
+    {
+      escola: form.escola,
+      professor: form.professor,
+      etapa: form.etapa,
+      anoSerie: form.anoSerie,
+      areaConhecimento: form.areaConhecimento,
+      componenteCurricular: form.componenteCurricular,
+      cargaHoraria: form.cargaHoraria,
+      objetivos: form.objetivos,
+      observacoes: form.observacoes,
+      tipoPlanejamento: form.tipoPlanejamento,
+    },
+    {
+      titulo: planning.titulo,
+      resumo: planning.resumo,
+      conteudos: planning.conteudos,
+    },
+    options,
+  );
+>>>>>>> origin/aplicar-melhorias-na-producao
 }
 
 export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean }) {
@@ -530,6 +586,7 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
 
   useEffect(() => {
     const prefill = readPlanejamentoPrefill();
+<<<<<<< HEAD
     const matriz =
       typeof window !== "undefined"
         ? new URLSearchParams(window.location.search).get("matriz")
@@ -543,6 +600,15 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
       const next = { ...current };
       if (prefill?.tipo) next.tipoPlanejamento = prefill.tipo;
       else if (tipoFromUrl) next.tipoPlanejamento = tipoFromUrl;
+=======
+
+    if (!prefill) return;
+
+    setForm((current) => {
+      const next = { ...current };
+      // Trimestrais só via extração do anual — ignora tipo=trimestral do prefill.
+      next.tipoPlanejamento = "anual";
+>>>>>>> origin/aplicar-melhorias-na-producao
       if (prefill?.conteudos) next.conteudos = prefill.conteudos;
       return next;
     });
@@ -616,10 +682,15 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
     [topicLineCount, conteudosComBncc, groups, selectedSkills.length, generatedPlanning],
   );
 
+<<<<<<< HEAD
   const canGoToWizardStep2 = conteudosPreenchido;
   const canGeneratePlanning =
     conteudosPreenchido && selectedSkills.length > 0 && !loadingPlan;
   const canGoToWizardStep3 = Boolean(generatedPlanning);
+=======
+  const canGeneratePlanning =
+    conteudosPreenchido && selectedSkills.length > 0 && !loadingPlan;
+>>>>>>> origin/aplicar-melhorias-na-producao
 
   useEffect(() => {
     if (generatedPlanning) {
@@ -713,7 +784,18 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
   }
 
   function updateField<K extends keyof FormState>(key: K, value: FormState[K]) {
+<<<<<<< HEAD
     setForm((current) => normalizeEducationalFields(current, { [key]: value }));
+=======
+    setForm((current) => {
+      const patch = { [key]: value } as Partial<FormState>;
+      // Trimestrais só via extração do anual.
+      if (key === "tipoPlanejamento") {
+        patch.tipoPlanejamento = "anual";
+      }
+      return normalizeEducationalFields(current, patch);
+    });
+>>>>>>> origin/aplicar-melhorias-na-producao
 
     if (
       key === "conteudos" ||
@@ -728,6 +810,7 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
     }
   }
 
+<<<<<<< HEAD
   function applyExample(kind: keyof typeof exemplos) {
     setForm((current) => normalizeEducationalFields(current, exemplos[kind]));
     setGroups([]);
@@ -738,6 +821,8 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
     setError("");
   }
 
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
   function clearAll() {
     if (trialMode) {
       clearPlanningTrialDocument();
@@ -751,6 +836,10 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
     setSelectedSkills([]);
     setContentRefreshOffsets({});
     invalidateGenerated();
+<<<<<<< HEAD
+=======
+    setWizardStep(1);
+>>>>>>> origin/aplicar-melhorias-na-producao
     setStatus("Aguardando");
     setError("");
   }
@@ -802,7 +891,11 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
 
   function buildBasePayload() {
     return {
+<<<<<<< HEAD
       tipoPlanejamento: form.tipoPlanejamento,
+=======
+      tipoPlanejamento: "anual" as const,
+>>>>>>> origin/aplicar-melhorias-na-producao
       escola: form.escola,
       professor: form.professor,
       etapa: form.etapa,
@@ -1023,7 +1116,11 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
     return issues;
   }
 
+<<<<<<< HEAD
   function persistGeneratedPlanning(
+=======
+  async function persistGeneratedPlanning(
+>>>>>>> origin/aplicar-melhorias-na-producao
     planning: GeneratedPlanning,
     payload: PlanningAiPayload,
     quality: {
@@ -1031,8 +1128,37 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
       qualityIssues?: string[];
       serverMaterialId?: string;
     },
+<<<<<<< HEAD
   ) {
     const html = buildPlanningEditorHtml(form, planning);
+=======
+    preloadedHtml?: string | null,
+  ) {
+    const { html } = await resolvePlanningEditorHtml({
+      officialPayloadInput: normalizeOfficialPayloadInput({
+        tipoPlanejamento: payload.tipoPlanejamento,
+        escola: payload.escola ?? form.escola,
+        professor: payload.professor ?? form.professor,
+        etapa: payload.etapa ?? form.etapa,
+        anoSerie: payload.anoSerie ?? form.anoSerie,
+        turma: payload.turma ?? payload.className,
+        areaConhecimento: payload.areaConhecimento ?? form.areaConhecimento,
+        componenteCurricular:
+          payload.componenteCurricular ?? form.componenteCurricular,
+        cargaHoraria: payload.cargaHoraria ?? form.cargaHoraria,
+        trimestre: payload.trimestre,
+        matrizPlanejamento: planning,
+        planifyQuality: {
+          qualityScore:
+            typeof quality.qualityScore === "number" ? quality.qualityScore : null,
+          qualityIssues: quality.qualityIssues ?? [],
+        },
+      }),
+      fallbackForm: form,
+      fallbackPlanning: planning,
+      preloadedHtml,
+    });
+>>>>>>> origin/aplicar-melhorias-na-producao
     const titulo = planning.titulo || "Planejamento";
     const meta = buildPlanningEditorMeta({
       generationPayload: payload,
@@ -1046,7 +1172,11 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
     return html;
   }
 
+<<<<<<< HEAD
   function buildPlanningBundleDocuments(
+=======
+  async function buildPlanningBundleDocuments(
+>>>>>>> origin/aplicar-melhorias-na-producao
     planning: GeneratedPlanning,
     trimestres: number[],
     payload: PlanningAiPayload,
@@ -1056,7 +1186,12 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
       serverMaterialId?: string;
     },
     trimestralPlans: Partial<Record<number, TrimestralPlanningLike>>,
+<<<<<<< HEAD
   ): PlanningBundleDocumentInput[] {
+=======
+    preloadedAnnualHtml?: string | null,
+  ): Promise<PlanningBundleDocumentInput[]> {
+>>>>>>> origin/aplicar-melhorias-na-producao
     const idempotencyKey = String(payload.idempotencyKey || "").trim();
     const sharedMeta = buildPlanningEditorMeta({
       generationPayload: payload,
@@ -1070,7 +1205,37 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
       ...form,
       tipoPlanejamento: "anual" as const,
     };
+<<<<<<< HEAD
     const anualHtml = buildPlanningEditorHtml(anualForm, planning);
+=======
+    const { html: anualHtml } = await resolvePlanningEditorHtml({
+      officialPayloadInput: normalizeOfficialPayloadInput({
+        tipoPlanejamento: "anual",
+        escola: payload.escola ?? form.escola,
+        professor: payload.professor ?? form.professor,
+        etapa: payload.etapa ?? form.etapa,
+        anoSerie: payload.anoSerie ?? form.anoSerie,
+        turma: payload.turma ?? payload.className,
+        areaConhecimento: payload.areaConhecimento ?? form.areaConhecimento,
+        componenteCurricular:
+          payload.componenteCurricular ?? form.componenteCurricular,
+        cargaHoraria: payload.cargaHoraria ?? form.cargaHoraria,
+        matrizPlanejamento: planning,
+        planifyQuality: {
+          qualityScore:
+            typeof quality.qualityScore === "number" ? quality.qualityScore : null,
+          qualityIssues: quality.qualityIssues ?? [],
+        },
+      }),
+      fallbackForm: anualForm,
+      fallbackPlanning: planning,
+      preloadedHtml: preloadedAnnualHtml,
+      exportContext: {
+        documentId: buildPlanningBundleDocumentId(idempotencyKey, "anual"),
+        documentType: "planejamento:anual",
+      },
+    });
+>>>>>>> origin/aplicar-melhorias-na-producao
 
     const annualGenerationPayload = sharedMeta.generationPayload
       ? { ...sharedMeta.generationPayload, tipoPlanejamento: "anual" as const }
@@ -1115,6 +1280,7 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
           }
         : sharedMeta.generationPayload;
 
+<<<<<<< HEAD
       documents.push({
         id: buildPlanningBundleDocumentId(
           idempotencyKey,
@@ -1123,6 +1289,43 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
         label: `${trimestre}º trimestre`,
         title: trimPlan.titulo || `${trimestre}º trimestre`,
         html: buildPlanningEditorHtml(trimForm, trimPlan),
+=======
+      const trimDocumentId = buildPlanningBundleDocumentId(
+        idempotencyKey,
+        `trim${trimestre}` as "trim1" | "trim2" | "trim3",
+      );
+
+      const { html: trimHtml } = await resolvePlanningEditorHtml({
+        officialPayloadInput: normalizeOfficialPayloadInput({
+          tipoPlanejamento: "trimestral",
+          escola: payload.escola ?? form.escola,
+          professor: payload.professor ?? form.professor,
+          etapa: payload.etapa ?? form.etapa,
+          anoSerie: payload.anoSerie ?? form.anoSerie,
+          turma: payload.turma ?? payload.className,
+          areaConhecimento: payload.areaConhecimento ?? form.areaConhecimento,
+          componenteCurricular:
+            payload.componenteCurricular ?? form.componenteCurricular,
+          cargaHoraria: trimCargaHoraria,
+          trimestre: String(trimestre),
+          matrizPlanejamento: trimPlan,
+          planifyQuality: {
+            qualityScore:
+              typeof quality.qualityScore === "number" ? quality.qualityScore : null,
+            qualityIssues: quality.qualityIssues ?? [],
+          },
+        }),
+        fallbackForm: trimForm,
+        fallbackPlanning: trimPlan,
+        exportContext: { documentId: trimDocumentId, documentType: "planejamento:trimestral" },
+      });
+
+      documents.push({
+        id: trimDocumentId,
+        label: `${trimestre}º trimestre`,
+        title: trimPlan.titulo || `${trimestre}º trimestre`,
+        html: trimHtml,
+>>>>>>> origin/aplicar-melhorias-na-producao
         type: "planejamento:trimestral",
         meta: {
           ...sharedMeta,
@@ -1174,7 +1377,11 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
         ...buildBasePayload(),
         conteudos: conteudosText,
         idempotencyKey,
+<<<<<<< HEAD
         ...(trialMode ? { tipoPlanejamento: "anual" as const } : {}),
+=======
+        tipoPlanejamento: "anual" as const,
+>>>>>>> origin/aplicar-melhorias-na-producao
       };
       const data = trialMode
         ? await requestPlanningTrialGeneration(payload)
@@ -1193,10 +1400,16 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
           : undefined;
 
       const planning = data.planejamento as GeneratedPlanning;
+<<<<<<< HEAD
       const trimestresSelecionados =
         form.tipoPlanejamento === "anual"
           ? pacoteTrimestralAnualToTrimestres(form.pacoteTrimestralAnual)
           : [];
+=======
+      const trimestresSelecionados = pacoteTrimestralAnualToTrimestres(
+        form.pacoteTrimestralAnual,
+      );
+>>>>>>> origin/aplicar-melhorias-na-producao
       const trimestralPlans =
         trimestresSelecionados.length > 0
           ? buildTrimestralPlansFromAnnual(planning, trimestresSelecionados)
@@ -1204,7 +1417,13 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
 
       setGeneratedPlanning(planning);
       setGeneratedTrimestralPlans(trimestralPlans);
+<<<<<<< HEAD
       saveAnnualMatrixSnapshot(form, planning);
+=======
+      saveAnnualMatrixSnapshot(form, planning, {
+        parentAnnualKey: serverMaterialId,
+      });
+>>>>>>> origin/aplicar-melhorias-na-producao
       setUsedAI(Boolean(data.usedAI));
       const issues = applyQualityFromResponse(data);
       setLastGenerationPayload(payload);
@@ -1245,15 +1464,28 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
         qualityIssues: issues,
         serverMaterialId,
       };
+<<<<<<< HEAD
 
       const bundleDocuments =
         trimestresSelecionados.length > 0 && trimestralPlans
           ? buildPlanningBundleDocuments(
+=======
+      const generatedEditorHtml =
+        "editorHtml" in data ? data.editorHtml ?? null : null;
+
+      const bundleDocuments =
+        trimestresSelecionados.length > 0 && trimestralPlans
+          ? await buildPlanningBundleDocuments(
+>>>>>>> origin/aplicar-melhorias-na-producao
               planning,
               trimestresSelecionados,
               payload,
               qualityContext,
               trimestralPlans,
+<<<<<<< HEAD
+=======
+              generatedEditorHtml,
+>>>>>>> origin/aplicar-melhorias-na-producao
             )
           : null;
 
@@ -1263,7 +1495,33 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
           return;
         }
 
+<<<<<<< HEAD
         const html = buildPlanningEditorHtml(form, planning);
+=======
+        const { html } = await resolvePlanningEditorHtml({
+          officialPayloadInput: normalizeOfficialPayloadInput({
+            tipoPlanejamento: payload.tipoPlanejamento,
+            escola: payload.escola ?? form.escola,
+            professor: payload.professor ?? form.professor,
+            etapa: payload.etapa ?? form.etapa,
+            anoSerie: payload.anoSerie ?? form.anoSerie,
+            turma: payload.turma ?? payload.className,
+            areaConhecimento: payload.areaConhecimento ?? form.areaConhecimento,
+            componenteCurricular:
+              payload.componenteCurricular ?? form.componenteCurricular,
+            cargaHoraria: payload.cargaHoraria ?? form.cargaHoraria,
+            trimestre: payload.trimestre,
+            matrizPlanejamento: planning,
+            planifyQuality: {
+              qualityScore: qualityContext.qualityScore,
+              qualityIssues: issues,
+            },
+          }),
+          fallbackForm: form,
+          fallbackPlanning: planning,
+          preloadedHtml: generatedEditorHtml,
+        });
+>>>>>>> origin/aplicar-melhorias-na-producao
         const titulo = planning.titulo || "Planejamento";
         openPlanningInEditor(
           html,
@@ -1283,11 +1541,19 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
       if (bundleDocuments && bundleDocuments.length > 1) {
         persistPlanningBundleDocuments(bundleDocuments);
       } else {
+<<<<<<< HEAD
         persistGeneratedPlanning(planning, payload, {
           qualityScore: data.qualityScore,
           qualityIssues: issues,
           serverMaterialId,
         });
+=======
+        await persistGeneratedPlanning(planning, payload, {
+          qualityScore: data.qualityScore,
+          qualityIssues: issues,
+          serverMaterialId,
+        }, generatedEditorHtml);
+>>>>>>> origin/aplicar-melhorias-na-producao
       }
 
       const trimestresExtraidos = trimestresSelecionados
@@ -1309,6 +1575,16 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
       }
     } catch (err) {
       dispatchCreditsChangedIfNeeded(err);
+<<<<<<< HEAD
+=======
+      if (err instanceof PlanningOfficialHtmlError) {
+        setError(err.message);
+        setErrorCta(null);
+        setErrorRetryable(true);
+        setStatus("Erro ao renderizar modelo oficial no editor");
+        return;
+      }
+>>>>>>> origin/aplicar-melhorias-na-producao
       const formatted = formatGenerationError(err);
       setError(formatted.message);
       if (trialMode && formatted.code === "trial_limit_reached") {
@@ -1361,16 +1637,60 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
 
       const planning = data.planejamento as GeneratedPlanning;
       setGeneratedPlanning(planning);
+<<<<<<< HEAD
       saveAnnualMatrixSnapshot(form, planning);
+=======
+      saveAnnualMatrixSnapshot(form, planning, {
+        parentAnnualKey: serverMaterialId,
+      });
+>>>>>>> origin/aplicar-melhorias-na-producao
       setUsedAI(Boolean(data.usedAI));
       const issues = applyQualityFromResponse(data);
       setLastGenerationPayload(payload);
 
+<<<<<<< HEAD
       persistGeneratedPlanning(planning, payload, {
         qualityScore: data.qualityScore,
         qualityIssues: issues,
         serverMaterialId,
       });
+=======
+      const trimestresSelecionados = pacoteTrimestralAnualToTrimestres(
+        form.pacoteTrimestralAnual,
+      );
+      const trimestralPlans =
+        trimestresSelecionados.length > 0
+          ? buildTrimestralPlansFromAnnual(planning, trimestresSelecionados)
+          : null;
+      setGeneratedTrimestralPlans(trimestralPlans);
+
+      const qualityContext = {
+        qualityScore:
+          typeof data.qualityScore === "number" ? data.qualityScore : undefined,
+        qualityIssues: issues,
+        serverMaterialId,
+      };
+      const generatedEditorHtml = data.editorHtml ?? null;
+
+      if (trimestresSelecionados.length > 0 && trimestralPlans) {
+        const bundleDocuments = await buildPlanningBundleDocuments(
+          planning,
+          trimestresSelecionados,
+          payload,
+          {
+            qualityScore:
+              typeof data.qualityScore === "number" ? data.qualityScore : null,
+            qualityIssues: issues,
+            serverMaterialId,
+          },
+          trimestralPlans,
+          generatedEditorHtml,
+        );
+        persistPlanningBundleDocuments(bundleDocuments);
+      } else {
+        await persistGeneratedPlanning(planning, payload, qualityContext, generatedEditorHtml);
+      }
+>>>>>>> origin/aplicar-melhorias-na-producao
 
       setStatus(
         data.usedAI
@@ -1400,7 +1720,11 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
     }
   }
 
+<<<<<<< HEAD
   function sendToEditor() {
+=======
+  async function sendToEditor() {
+>>>>>>> origin/aplicar-melhorias-na-producao
     if (!activePreviewPlanning) {
       setError("Gere o planejamento com IA antes de enviar para o Editor.");
       return;
@@ -1455,7 +1779,43 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
           }
         : form;
 
+<<<<<<< HEAD
     const html = buildPlanningEditorHtml(editorForm, activePreviewPlanning);
+=======
+    const generationPayload =
+      lastGenerationPayload ??
+      ({
+        ...buildBasePayload(),
+        tipoPlanejamento: editorForm.tipoPlanejamento,
+        trimestre: editorForm.trimestre,
+        cargaHoraria: editorForm.cargaHoraria,
+      } as PlanningAiPayload);
+
+    const { html } = await resolvePlanningEditorHtml({
+      officialPayloadInput: normalizeOfficialPayloadInput({
+        tipoPlanejamento: editorForm.tipoPlanejamento,
+        escola: generationPayload.escola ?? form.escola,
+        professor: generationPayload.professor ?? form.professor,
+        etapa: generationPayload.etapa ?? form.etapa,
+        anoSerie: generationPayload.anoSerie ?? form.anoSerie,
+        turma: generationPayload.turma ?? generationPayload.className,
+        areaConhecimento:
+          generationPayload.areaConhecimento ?? form.areaConhecimento,
+        componenteCurricular:
+          generationPayload.componenteCurricular ?? form.componenteCurricular,
+        cargaHoraria: editorForm.cargaHoraria ?? generationPayload.cargaHoraria,
+        trimestre: editorForm.trimestre,
+        matrizPlanejamento: activePreviewPlanning,
+        planifyQuality: {
+          qualityScore: typeof qualityScore === "number" ? qualityScore : null,
+          qualityIssues,
+        },
+      }),
+      fallbackForm: editorForm,
+      fallbackPlanning: activePreviewPlanning,
+    });
+
+>>>>>>> origin/aplicar-melhorias-na-producao
     openPlanningInEditor(
       html,
       activePreviewPlanning.titulo || "Planejamento",
@@ -1470,7 +1830,11 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
   }
 
   const workspaceContent = (
+<<<<<<< HEAD
     <div className="planify-hud pl-hud-hub mx-auto max-w-7xl space-y-5 px-3 sm:px-4 lg:px-0">
+=======
+    <div className={HUD_TOOL_HUB_CLASS}>
+>>>>>>> origin/aplicar-melhorias-na-producao
         {!embeddedInDashboard && !trialMode ? (
           <div className="pl-hud-page-hero overflow-hidden rounded-2xl border border-cyan-400/15">
             <PlanifyPageHero
@@ -1511,6 +1875,7 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
           </div>
         ) : null}
 
+<<<<<<< HEAD
         <PlanningWizardStepper
           step={wizardStep}
           onStepChange={setWizardStep}
@@ -1524,21 +1889,32 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
           canGoToStep3={canGoToWizardStep3}
         />
 
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
       <section className="space-y-6">
           {wizardStep < 3 ? (
           <>
           <div className="pl-hud-glass rounded-2xl border border-cyan-400/20 p-5 sm:p-6">
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-600">
+<<<<<<< HEAD
               Escolha o tipo
+=======
+              Planejamento anual
+>>>>>>> origin/aplicar-melhorias-na-producao
             </p>
             <h2 className="mt-2 text-sm font-semibold tracking-tight text-slate-900 sm:text-base">
               {trialMode
                 ? "Planejamento anual com trimestres coerentes"
+<<<<<<< HEAD
                 : "Planejamento anual ou trimestral"}
+=======
+                : "Gere o anual e extraia os trimestres"}
+>>>>>>> origin/aplicar-melhorias-na-producao
             </h2>
             <p className="mt-1.5 max-w-2xl text-xs leading-snug text-slate-500">
               {trialMode
                 ? "Uma geração de teste inclui o anual e os três trimestres extraídos da mesma matriz BNCC."
+<<<<<<< HEAD
                 : "Informe os conteúdos, deixe a IA montar a matriz BNCC e exporte ao Google Docs com os modelos oficiais. O trimestral usa a mesma base do anual — sem retrabalho."}
             </p>
             <div className="mt-5 grid gap-3 sm:grid-cols-2">
@@ -1585,6 +1961,10 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
               </button>
               ) : null}
             </div>
+=======
+                : "Informe os conteúdos, deixe a IA montar a matriz BNCC e exporte ao Google Docs com os modelos oficiais. Os trimestrais são sempre extraídos do anual — mesma matriz, sem retrabalho."}
+            </p>
+>>>>>>> origin/aplicar-melhorias-na-producao
           </div>
 
           <div className="pl-hud-glass rounded-2xl p-5 sm:p-6">
@@ -1598,7 +1978,11 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
               </button>
             </div>
 
+<<<<<<< HEAD
             <div className="mt-8 grid gap-5 md:grid-cols-2">
+=======
+            <div className={`mt-8 ${HUD_FORM_GRID_CLASS}`}>
+>>>>>>> origin/aplicar-melhorias-na-producao
               <label className="grid gap-2">
                 <span className="text-sm font-bold text-slate-500">Escola</span>
                 <input value={form.escola} onChange={(event) => updateField("escola", event.target.value)} placeholder="Nome da escola" className={HUD_FIELD_CLASS} />
@@ -1668,6 +2052,7 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
                 <span className="text-sm font-bold text-slate-500">Carga horária</span>
                 <input value={form.cargaHoraria} onChange={(event) => updateField("cargaHoraria", event.target.value)} placeholder="Ex.: 80 períodos" className={HUD_FIELD_CLASS} />
               </label>
+<<<<<<< HEAD
               {!trialMode ? (
               <label className="grid gap-2">
                 <span className="text-sm font-bold text-slate-500">Tipo</span>
@@ -1687,6 +2072,8 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
                   </select>
                 </label>
               ) : null}
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
             </div>
 
             {trialMode ? (
@@ -1697,7 +2084,11 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
                   coerência da ferramenta completa.
                 </p>
               </div>
+<<<<<<< HEAD
             ) : form.tipoPlanejamento === "anual" ? (
+=======
+            ) : (
+>>>>>>> origin/aplicar-melhorias-na-producao
               <fieldset className="relative z-10 mt-6 rounded-2xl border border-cyan-400/20 bg-cyan-50/40 p-5">
                 <legend className="px-1 text-sm font-black text-slate-950">
                   Extrair trimestres do anual
@@ -1729,12 +2120,15 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
                   ))}
                 </div>
               </fieldset>
+<<<<<<< HEAD
             ) : (
               <p className="mt-6 rounded-2xl border border-amber-200/80 bg-amber-50/80 px-4 py-3 text-sm font-medium leading-6 text-amber-900">
                 Para trimestrais 100% coerentes com o anual, gere o{" "}
                 <strong>Planejamento Anual</strong> e escolha a opção de extrair os trimestres
                 desejados.
               </p>
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
             )}
 
             {!trialMode && wizardStep >= 2 ? (
@@ -1800,6 +2194,7 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
               <div className="mt-8 flex flex-wrap items-center gap-3">
                 <button
                   type="button"
+<<<<<<< HEAD
                   onClick={() => applyExample("fundamental")}
                   className="pl-hud-btn-secondary rounded-xl px-4 py-2.5 text-sm font-semibold"
                 >
@@ -1814,6 +2209,8 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
                 </button>
                 <button
                   type="button"
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
                   disabled={!conteudosPreenchido}
                   onClick={() => setWizardStep(2)}
                   className="pl-hud-btn rounded-xl px-5 py-2.5 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-50"
@@ -2068,6 +2465,7 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
                   >
                     {trialMode ? "Ver documento completo" : "Editar no editor"}
                   </button>
+<<<<<<< HEAD
                   {!trialMode ? (
                   <MarketplacePublishButton
                     title={activePreviewPlanning?.titulo || generatedPlanning.titulo || "Planejamento"}
@@ -2107,6 +2505,26 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
                       });
                     }}
                     tipoMaterial="Planejamento"
+=======
+                  <button
+                    type="button"
+                    onClick={() => setWizardStep(2)}
+                    className="rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-600 transition hover:border-cyan-300 hover:text-slate-900"
+                  >
+                    Ajustar conteúdos e BNCC
+                  </button>
+                  {!trialMode ? (
+                  <PlanningMarketplacePublishButton
+                    title={activePreviewPlanning?.titulo || generatedPlanning.titulo || "Planejamento"}
+                    form={{ ...form, turma: school.turmaPayload.turma }}
+                    mode={previewMatrizKey !== "anual" ? "trimestral" : "anual"}
+                    trimestre={
+                      previewMatrizKey !== "anual" ? Number(previewMatrizKey) : undefined
+                    }
+                    matriz={activePreviewPlanning || generatedPlanning}
+                    qualityScore={qualityScore}
+                    qualityIssues={qualityIssues}
+>>>>>>> origin/aplicar-melhorias-na-producao
                     tema={form.componenteCurricular}
                     componente={form.componenteCurricular}
                     etapa={form.etapa}
@@ -2121,6 +2539,7 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
                   </div>
                 ) : null}
 
+<<<<<<< HEAD
                 {!trialMode && form.tipoPlanejamento === "trimestral" ? (
                   <div className="mt-6 rounded-xl border border-white/80 bg-white/90 px-4 py-3">
                     <PlanningOfficialExportBar
@@ -2137,6 +2556,9 @@ export function PlanejamentosClient({ trialMode = false }: { trialMode?: boolean
                 ) : null}
 
                 {!trialMode && form.tipoPlanejamento === "anual" ? (
+=======
+                {!trialMode ? (
+>>>>>>> origin/aplicar-melhorias-na-producao
                   <div className="mt-6 space-y-3">
                     <div className="rounded-xl border border-white/80 bg-white/90 px-4 py-3">
                       <p className="text-[10px] font-black uppercase tracking-wide text-slate-500">

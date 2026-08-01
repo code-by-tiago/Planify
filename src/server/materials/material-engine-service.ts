@@ -14,12 +14,19 @@ import {
   wrapProfessionalDocument,
 } from "@/lib/materiais/material-document-layout";
 import {
+<<<<<<< HEAD
   generateGeminiJSON,
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
   isGeminiQuotaError,
   isGeminiServiceUnavailableError,
   isGeminiTransientOverloadError,
   resolveGeminiFailureCode,
 } from "../ai/gemini-client";
+<<<<<<< HEAD
+=======
+import { runPlanifyAiJson } from "../ai/planify-ai-middleware";
+>>>>>>> origin/aplicar-melhorias-na-producao
 import {
   usesDedicatedEngineRenderer,
   usesPlanifyMaterialEngine,
@@ -30,6 +37,10 @@ import {
   toPromptEngineInput,
 } from "./material-layout-adapter";
 import { getMaterialLayoutSchema } from "./material-layout-schema";
+<<<<<<< HEAD
+=======
+import { MaterialLayoutZodSchema } from "./material-layout.zod";
+>>>>>>> origin/aplicar-melhorias-na-producao
 import { buildPromptEngine } from "./promptEngine";
 import {
   buildQualityRetryPrompt,
@@ -1120,6 +1131,7 @@ function enrichLessonPlanSteps(
   });
 }
 
+<<<<<<< HEAD
 function enrichActivitiesForQuality(
   activities: MaterialEngineResponse["activities"],
 ): MaterialEngineResponse["activities"] {
@@ -1162,6 +1174,36 @@ function enrichActivitiesForQuality(
         evaluation.length >= 45
           ? evaluation
           : `${evaluation || "Participação"} Observar registro das respostas, clareza do raciocínio e colaboração nas duplas.`,
+=======
+/**
+ * Normaliza atividades sem inventar conteúdo genérico.
+ * Itens/objetivo fracos devem falhar no quality gate e disparar retry —
+ * nunca completar com placeholders do tipo "Complete a tarefa orientada pelo professor…".
+ */
+function enrichActivitiesForQuality(
+  activities: MaterialEngineResponse["activities"],
+): MaterialEngineResponse["activities"] {
+  return (activities ?? []).map((activity) => {
+    const objective = String(activity.objective || "").trim();
+    const instructions = String(activity.instructions || "").trim();
+    const evaluation = String(activity.evaluation || "").trim();
+    const estimatedTime = String(activity.estimatedTime || "").trim();
+    const materials = (activity.materials ?? [])
+      .map((item) => String(item || "").trim())
+      .filter(Boolean);
+    const items = (activity.items ?? [])
+      .map((item) => String(item || "").trim())
+      .filter(Boolean);
+
+    return {
+      ...activity,
+      objective,
+      estimatedTime,
+      materials,
+      instructions,
+      items,
+      evaluation,
+>>>>>>> origin/aplicar-melhorias-na-producao
     };
   });
 }
@@ -1372,24 +1414,61 @@ export async function generateMaterialByEngine(
         request,
         remainingForGeneration,
       );
+<<<<<<< HEAD
       const generateLayout = generateGeminiJSON<MaterialLayout>({
         systemInstruction,
         prompt: activePrompt,
         cacheProfile: `material-engine:${request.tipoMaterial}`,
+=======
+      const generateLayout = runPlanifyAiJson({
+        toolId: request.tipoMaterial,
+        systemInstruction,
+        prompt: activePrompt,
+        cacheProfile: `material-engine:${request.tipoMaterial}` as const,
+>>>>>>> origin/aplicar-melhorias-na-producao
         tier: modelTier,
         temperature: modelTier === "advanced" ? 0.22 : 0.32,
         topP: modelTier === "advanced" ? 0.82 : 0.86,
         maxOutputTokens,
         responseSchema: schema,
+<<<<<<< HEAD
         timeoutMs: contentTimeoutMs,
         maxAttempts: geminiCallMaxAttempts(request.tipoMaterial),
       });
       const layoutRaw = await withMaterialStepTimeout(
+=======
+        zodSchema: MaterialLayoutZodSchema,
+        timeoutMs: contentTimeoutMs,
+        maxAttempts: geminiCallMaxAttempts(request.tipoMaterial),
+        schemaRetryAttempts: 1,
+      });
+      const layoutResult = await withMaterialStepTimeout(
+>>>>>>> origin/aplicar-melhorias-na-producao
         generateLayout,
         contentTimeoutMs,
         `A geração de ${request.tipoMaterial}`,
       );
 
+<<<<<<< HEAD
+=======
+      if (!layoutResult.ok) {
+        if (attempt < maxAttempts - 1 && !isPastGenerationDeadline()) {
+          activePrompt = `${basePrompt}\n\n${buildQualityRetryPrompt(
+            request,
+            layoutResult.issues,
+            { teachyDepth: attempt >= 1 },
+          )}`;
+          continue;
+        }
+        throw new Error(
+          layoutResult.message ||
+            "A IA retornou JSON fora do contrato MaterialLayout.",
+        );
+      }
+
+      const layoutRaw = layoutResult.data as MaterialLayout;
+
+>>>>>>> origin/aplicar-melhorias-na-producao
       options?.onStage?.(buildStageEvent("quality", "Revisando qualidade pedagógica…"));
 
       const layoutIssues = validateMaterialLayout(promptInput, layoutRaw);

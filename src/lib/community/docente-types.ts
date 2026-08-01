@@ -1,9 +1,12 @@
 export type DocenteMenuItem =
   | "inicio"
+<<<<<<< HEAD
   | "discussoes"
   | "materiais"
   | "eventos"
   | "grupos"
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
   | "professores"
   | "desafios"
   | "salvos";
@@ -31,10 +34,34 @@ export type DocenteAuthor = {
   isFollowing?: boolean;
 };
 
+<<<<<<< HEAD
+=======
+export type DocenteDiscussionAttachment = {
+  id: string;
+  materialId: string;
+  title: string;
+  fileName: string;
+  fileType: "pdf" | "docx" | "pptx" | "image";
+  fileMime?: string | null;
+  /** URL assinada para exibir imagem inline no feed. */
+  previewUrl?: string | null;
+};
+
+export type DocenteAchievementBadge = {
+  name: string;
+  color: string;
+  icon: string;
+};
+
+>>>>>>> origin/aplicar-melhorias-na-producao
 export type DocenteDiscussion = {
   id: string;
   author: DocenteAuthor;
   title: string;
+<<<<<<< HEAD
+=======
+  body?: string;
+>>>>>>> origin/aplicar-melhorias-na-producao
   disciplina: DocenteDisciplina;
   tags: string[];
   createdAt: string;
@@ -42,6 +69,22 @@ export type DocenteDiscussion = {
   likesCount: number;
   likedByMe: boolean;
   savedByMe: boolean;
+<<<<<<< HEAD
+=======
+  /** "text" para publicações comuns, "achievement" para conquistas (selos). */
+  kind?: "text" | "achievement";
+  achievementBadge?: DocenteAchievementBadge;
+  /** Prévia de comentários no feed (evita N+1). */
+  commentsPreview?: DocenteComment[];
+  attachments?: DocenteDiscussionAttachment[];
+};
+
+export type DocenteComment = {
+  id: string;
+  body: string;
+  createdAt: string;
+  author: DocenteAuthor;
+>>>>>>> origin/aplicar-melhorias-na-producao
 };
 
 export type DocenteMaterial = {
@@ -52,13 +95,28 @@ export type DocenteMaterial = {
   author: DocenteAuthor;
   tipoMaterial: string;
   componenteRaw?: string;
+<<<<<<< HEAD
   /** @deprecated Use MaterialTypeCover with tipoMaterial instead */
   coverUrl?: string;
   viewsCount: number;
+=======
+  tags: string[];
+  /** @deprecated Use MaterialTypeCover with tipoMaterial instead */
+  coverUrl?: string;
+  /** Contagem de usos/clones (downloads_count no backend). */
+  viewsCount: number;
+  downloadsCount: number;
+>>>>>>> origin/aplicar-melhorias-na-producao
   likesCount: number;
   likedByMe: boolean;
   savedByMe: boolean;
   fileType: "pdf" | "docx" | "pptx" | "image";
+<<<<<<< HEAD
+=======
+  /** Conteúdo importado/destacado pelo admin (abre fora do site). */
+  externalUrl?: string | null;
+  featuredSource?: "admin" | "import" | "community" | "external" | null;
+>>>>>>> origin/aplicar-melhorias-na-producao
 };
 
 export type DocenteRecentPublication = {
@@ -73,6 +131,7 @@ export type DocenteRecentPublication = {
   href?: string;
 };
 
+<<<<<<< HEAD
 export type DocenteEvent = {
   id: string;
   title: string;
@@ -83,11 +142,16 @@ export type DocenteEvent = {
   month: string;
 };
 
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
 export type DocenteStats = {
   activeTeachers: number;
   sharedMaterials: number;
   openDiscussions: number;
+<<<<<<< HEAD
   studyGroups: number;
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
 };
 
 export type DocenteCreatePostInput = {
@@ -97,6 +161,7 @@ export type DocenteCreatePostInput = {
   tags: string[];
   files: File[];
   participantUserIds?: string[];
+<<<<<<< HEAD
   groupId?: string;
 };
 
@@ -105,6 +170,8 @@ export type DocenteCreateGroupInput = {
   description: string;
   disciplina: DocenteDisciplina;
   memberUserIds?: string[];
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
 };
 
 export type DocenteBadgeProgress = {

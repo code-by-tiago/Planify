@@ -1,5 +1,6 @@
 "use client";
 
+<<<<<<< HEAD
 import Link from "next/link";
 import { ComunidadeDocenteMaterialCard } from "@/components/community/docente/ComunidadeDocenteMaterialCard";
 import { communityProfileHref } from "@/components/community/CommunityAuthorLink";
@@ -19,6 +20,11 @@ type GroupItem = {
   members_count: number;
   joinedByMe?: boolean;
 };
+=======
+import { ComunidadeDocenteMaterialCard } from "@/components/community/docente/ComunidadeDocenteMaterialCard";
+import { formatDocenteNumber } from "@/lib/community/docente-utils";
+import type { DocenteBadgeProgress, DocenteDiscussion, DocenteMaterial } from "@/lib/community/docente-types";
+>>>>>>> origin/aplicar-melhorias-na-producao
 
 function EmptyState({
   title,
@@ -48,6 +54,7 @@ function EmptyState({
   );
 }
 
+<<<<<<< HEAD
 export function ComunidadeDocenteEventos({
   events,
   isAdmin,
@@ -302,6 +309,8 @@ export function ComunidadeDocenteProfessores({
   );
 }
 
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
 function BadgeProgressBar({ current, target }: { current: number; target: number }) {
   const pct = target > 0 ? Math.min(100, Math.round((current / target) * 100)) : 0;
   return (
@@ -393,6 +402,10 @@ export function ComunidadeDocenteSalvos({
   onSave,
   onSaveDiscussion,
   onOpenDiscussion,
+<<<<<<< HEAD
+=======
+  onOpenMaterial,
+>>>>>>> origin/aplicar-melhorias-na-producao
   onDownload,
   downloadingMaterialId,
   onBrowseMaterials,
@@ -404,6 +417,10 @@ export function ComunidadeDocenteSalvos({
   onSave: (id: string) => void;
   onSaveDiscussion?: (id: string) => void;
   onOpenDiscussion?: (id: string) => void;
+<<<<<<< HEAD
+=======
+  onOpenMaterial?: (id: string) => void;
+>>>>>>> origin/aplicar-melhorias-na-producao
   onDownload?: (id: string) => void;
   downloadingMaterialId?: string | null;
   onBrowseMaterials?: () => void;
@@ -462,6 +479,10 @@ export function ComunidadeDocenteSalvos({
             key={material.id}
             material={material}
             embedded={embedded}
+<<<<<<< HEAD
+=======
+            onOpen={onOpenMaterial}
+>>>>>>> origin/aplicar-melhorias-na-producao
             onLike={onLike}
             onSave={onSave}
             onDownload={onDownload}

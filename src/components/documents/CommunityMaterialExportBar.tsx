@@ -70,9 +70,24 @@ export function CommunityMaterialExportBar({
     : error ||
       "Conteúdo ainda não carregado. Abra no editor ou aguarde o carregamento.";
 
+<<<<<<< HEAD
   const canDownloadPdf =
     materialExportAllows("pdf-download", documentType, html || undefined) ||
     String(item.fileMime || "").includes("pdf");
+=======
+  const mime = String(item.fileMime || "").toLowerCase();
+  const name = String(item.fileName || item.title || "").toLowerCase();
+  const canDownloadPdf =
+    materialExportAllows("pdf-download", documentType, html || undefined) ||
+    mime.includes("pdf") ||
+    name.endsWith(".pdf");
+  const canDownloadDocx =
+    mime.includes("word") ||
+    mime.includes("document") ||
+    name.endsWith(".docx") ||
+    name.endsWith(".doc") ||
+    Boolean(html && html.trim().length >= 20);
+>>>>>>> origin/aplicar-melhorias-na-producao
 
   return (
     <div className="space-y-1.5">
@@ -100,6 +115,13 @@ export function CommunityMaterialExportBar({
             canDownloadPdf ? () => onDownload(item, "pdf") : undefined
           }
           downloadingPdf={downloadingKey === `${item.id}:pdf`}
+<<<<<<< HEAD
+=======
+          onDownloadDocx={
+            canDownloadDocx ? () => onDownload(item, "docx") : undefined
+          }
+          downloadingDocx={downloadingKey === `${item.id}:docx`}
+>>>>>>> origin/aplicar-melhorias-na-producao
         />
       </div>
       {exportStatus ? (

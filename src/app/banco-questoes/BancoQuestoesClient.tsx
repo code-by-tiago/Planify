@@ -2,6 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
+<<<<<<< HEAD
+=======
+import { PlanifyOwlGenerationCoach } from "@/components/pro/PlanifyOwlGenerationCoach";
+>>>>>>> origin/aplicar-melhorias-na-producao
 import { PlanifyPageHero } from "@/components/pro/PlanifyPageHero";
 import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
 import { MaterialTypedPreview } from "@/components/materiais/preview/MaterialTypedPreview";
@@ -402,6 +406,12 @@ export function BancoQuestoesClient({
   const [remixDraft, setRemixDraft] = useState<RemixDraft | null>(null);
   const [publishingId, setPublishingId] = useState<string | null>(null);
   const [assembling, setAssembling] = useState(false);
+<<<<<<< HEAD
+=======
+  const [assemblingTipo, setAssemblingTipo] = useState<"prova" | "lista" | null>(
+    null,
+  );
+>>>>>>> origin/aplicar-melhorias-na-producao
   const [curationSummary, setCurationSummary] =
     useState<QuestionBankCurationSummary | null>(null);
   const [embeddedBankStep, setEmbeddedBankStep] = useState<EmbeddedBankStep>(
@@ -1015,6 +1025,10 @@ export function BancoQuestoesClient({
     }
 
     setAssembling(true);
+<<<<<<< HEAD
+=======
+    setAssemblingTipo(tipoMaterial);
+>>>>>>> origin/aplicar-melhorias-na-producao
     setImportError("");
     setImportStatus("");
 
@@ -1079,6 +1093,10 @@ export function BancoQuestoesClient({
       applyImportError(error);
     } finally {
       setAssembling(false);
+<<<<<<< HEAD
+=======
+      setAssemblingTipo(null);
+>>>>>>> origin/aplicar-melhorias-na-producao
     }
   }
 
@@ -2743,13 +2761,61 @@ export function BancoQuestoesClient({
 
   if (embedded) {
     return (
+<<<<<<< HEAD
       <section className="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+=======
+      <section className="relative mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        {assembling ? (
+          <div className="absolute inset-0 z-30 flex items-center justify-center bg-white/90 p-4 backdrop-blur-[2px]">
+            <div className="w-full max-w-lg">
+              <PlanifyOwlGenerationCoach
+                active
+                title={
+                  assemblingTipo === "lista"
+                    ? "Montando sua lista…"
+                    : "Montando sua prova…"
+                }
+                description="Organizando as questões selecionadas no formato pedagógico."
+                context="material"
+                toolId={assemblingTipo ?? targetMaterial ?? "prova"}
+              />
+            </div>
+          </div>
+        ) : null}
+>>>>>>> origin/aplicar-melhorias-na-producao
         {embeddedBankContent}
       </section>
     );
   }
 
+<<<<<<< HEAD
   return <PlanifyWorkspacePane header={pageHeader}>{content}</PlanifyWorkspacePane>;
+=======
+  return (
+    <PlanifyWorkspacePane header={pageHeader}>
+      <div className="relative">
+        {assembling ? (
+          <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/25 p-4 backdrop-blur-[2px]">
+            <div className="w-full max-w-lg">
+              <PlanifyOwlGenerationCoach
+                active
+                title={
+                  assemblingTipo === "lista"
+                    ? "Montando sua lista…"
+                    : "Montando sua prova…"
+                }
+                description="Organizando as questões selecionadas no formato pedagógico."
+                context="material"
+                toolId={assemblingTipo ?? "prova"}
+              />
+            </div>
+          </div>
+        ) : null}
+        {content}
+      </div>
+    </PlanifyWorkspacePane>
+  );
+>>>>>>> origin/aplicar-melhorias-na-producao
 }
 
 export default BancoQuestoesClient;

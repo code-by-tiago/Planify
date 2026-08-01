@@ -1,6 +1,10 @@
 import { getSupabaseAdminClient } from "../supabase/admin-client";
 
+<<<<<<< HEAD
 export type CommunityReportTarget = "material" | "comment" | "user" | "group_message" | "post" | "post_comment";
+=======
+export type CommunityReportTarget = "material" | "comment" | "user" | "post" | "post_comment";
+>>>>>>> origin/aplicar-melhorias-na-producao
 
 function isMissingTableError(message: string): boolean {
   return /schema cache|does not exist|relation.*not found/i.test(message);

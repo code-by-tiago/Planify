@@ -56,8 +56,21 @@ export function sanitizePreviewHtml(html: string): string {
     .replace(/<iframe[\s\S]*?<\/iframe>/gi, "")
     .replace(/<object[\s\S]*?<\/object>/gi, "")
     .replace(/<embed[^>]*>/gi, "")
+<<<<<<< HEAD
     .replace(/\son\w+\s*=\s*(".*?"|'.*?'|[^\s>]+)/gi, "")
     .replace(/javascript:/gi, "")
+=======
+    .replace(/<svg[\s\S]*?<\/svg>/gi, "")
+    .replace(/<math[\s\S]*?<\/math>/gi, "")
+    .replace(/<link[^>]*>/gi, "")
+    .replace(/<meta[^>]*>/gi, "")
+    .replace(/<base[^>]*>/gi, "")
+    .replace(/<form[\s\S]*?<\/form>/gi, "")
+    .replace(/\son\w+\s*=\s*(".*?"|'.*?'|[^\s>]+)/gi, "")
+    .replace(/\s(href|src|xlink:href|action)\s*=\s*(['"])\s*javascript:[^'"]*\2/gi, ' $1="#"')
+    .replace(/javascript:/gi, "")
+    .replace(/data:text\/html/gi, "data:blocked")
+>>>>>>> origin/aplicar-melhorias-na-producao
     .trim();
 }
 
@@ -101,5 +114,10 @@ export function resolvePreviewDownloadFormats(
     return ["docx"];
   }
 
+<<<<<<< HEAD
   return ["docx", "pdf"];
+=======
+  // PPTX/imagem/binário: "html" no download devolve o arquivo original.
+  return ["html"];
+>>>>>>> origin/aplicar-melhorias-na-producao
 }

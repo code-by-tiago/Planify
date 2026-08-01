@@ -57,10 +57,17 @@ export default function PremiumAccessGate({
 
         for (
           let attempt = 0;
+<<<<<<< HEAD
           attempt < 3 && !snapshot.authenticated && !snapshot.token;
           attempt += 1
         ) {
           await new Promise((resolve) => setTimeout(resolve, 700 * (attempt + 1)));
+=======
+          attempt < 2 && !snapshot.authenticated && !snapshot.token;
+          attempt += 1
+        ) {
+          await new Promise((resolve) => setTimeout(resolve, 400 * (attempt + 1)));
+>>>>>>> origin/aplicar-melhorias-na-producao
           if (!active) return;
           snapshot = await resolveClientPlanifyAccess();
         }
@@ -102,6 +109,7 @@ export default function PremiumAccessGate({
 
   if (status.loading) {
     return (
+<<<<<<< HEAD
       <main className="flex h-full min-h-[280px] flex-1 items-center justify-center p-4">
         <div className="planify-hud planify-ui3 planify-hud-app w-full max-w-sm rounded-2xl border border-cyan-400/20 bg-white/90 p-8 text-center shadow-lg backdrop-blur-sm">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-blue-500 text-white">
@@ -117,6 +125,17 @@ export default function PremiumAccessGate({
             <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-slate-200 border-t-slate-950" />
             <span className="text-xs font-bold text-slate-400">Aguarde</span>
           </div>
+=======
+      <main className="flex h-full min-h-[200px] flex-1 flex-col bg-[var(--planify-canvas,#f8fafc)]">
+        <div className="flex items-center gap-3 border-b border-cyan-400/15 bg-white/90 px-4 py-3">
+          <span className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-cyan-200 border-t-cyan-500" />
+          <p className="text-sm font-semibold text-cyan-800">Abrindo seu painel…</p>
+        </div>
+        <div className="flex-1 animate-pulse p-4">
+          <div className="h-10 max-w-md rounded-xl bg-slate-200/70" />
+          <div className="mt-4 h-40 rounded-2xl bg-slate-200/50" />
+          <div className="mt-3 h-24 rounded-2xl bg-slate-200/40" />
+>>>>>>> origin/aplicar-melhorias-na-producao
         </div>
       </main>
     );

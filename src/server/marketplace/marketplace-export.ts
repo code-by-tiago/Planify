@@ -67,12 +67,20 @@ export async function buildMarketplaceExportBuffer(params: {
         buffer: storedBuffer,
         contentType:
           "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+<<<<<<< HEAD
         filename: buildMarketplaceExportFilename(row.title, "docx"),
+=======
+        filename: buildMarketplaceDownloadFilename(row.file_name, row.title),
+>>>>>>> origin/aplicar-melhorias-na-producao
       };
     }
 
     throw new Error(
+<<<<<<< HEAD
       "Este material foi publicado como documento anexo. Use a exportação Google Docs.",
+=======
+      "Este material foi publicado como DOCX. Use o botão Baixar DOCX.",
+>>>>>>> origin/aplicar-melhorias-na-producao
     );
   }
 

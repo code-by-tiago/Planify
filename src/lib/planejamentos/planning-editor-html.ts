@@ -1,4 +1,8 @@
 import { enrichTrimestralMatrixItem } from "@/lib/planejamentos/planning-trimestral-fields";
+<<<<<<< HEAD
+=======
+import { extractAnnualItemsForTrimester } from "@/lib/planejamentos/planning-trimestral-from-annual";
+>>>>>>> origin/aplicar-melhorias-na-producao
 import type {
   PlanningAiPayload,
   PlanningMatrixItem,
@@ -78,6 +82,7 @@ function editorUnitFor(form: PlanningEditorHtmlContext, item: PlanningMatrixItem
 }
 
 function editorItemsByTrimester(planning: GeneratedPlanningHtml, trimester: number) {
+<<<<<<< HEAD
   const explicit = planning.conteudos.filter((item) => Number(item.trimestre) === trimester);
 
   if (explicit.length > 0) {
@@ -88,6 +93,9 @@ function editorItemsByTrimester(planning: GeneratedPlanningHtml, trimester: numb
   const start = (trimester - 1) * chunkSize;
 
   return planning.conteudos.slice(start, start + chunkSize);
+=======
+  return extractAnnualItemsForTrimester(planning.conteudos, trimester);
+>>>>>>> origin/aplicar-melhorias-na-producao
 }
 
 export function planningPayloadToHtmlContext(
@@ -106,6 +114,13 @@ export function planningPayloadToHtmlContext(
   };
 }
 
+<<<<<<< HEAD
+=======
+/**
+ * @deprecated Trial/demo only. Produção deve usar `resolvePlanningEditorHtml`
+ * (pipeline DOCX oficial → official-docx).
+ */
+>>>>>>> origin/aplicar-melhorias-na-producao
 export function buildPlanningEditorHtml(
   form: PlanningEditorHtmlContext,
   planning: GeneratedPlanningHtml,
@@ -139,10 +154,14 @@ export function buildPlanningEditorHtml(
 
   if (tipo.includes("tri")) {
     const trimester = Number(form.trimestre || 1);
+<<<<<<< HEAD
     const items =
       planning.conteudos.filter((item) => Number(item.trimestre) === trimester).length > 0
         ? planning.conteudos.filter((item) => Number(item.trimestre) === trimester)
         : planning.conteudos;
+=======
+    const items = extractAnnualItemsForTrimester(planning.conteudos, trimester);
+>>>>>>> origin/aplicar-melhorias-na-producao
 
     const tables = items
       .map((item) => {
@@ -168,7 +187,11 @@ export function buildPlanningEditorHtml(
 
     return `
       ${baseStyles}
+<<<<<<< HEAD
       <article class="planify-doc">
+=======
+      <article class="planify-doc" data-planify-html-source="simplified-fallback">
+>>>>>>> origin/aplicar-melhorias-na-producao
         <h1>PLANEJAMENTO TRIMESTRAL — ${trimester}º TRIMESTRE</h1>
         ${identity}
         ${tables}
@@ -226,7 +249,11 @@ export function buildPlanningEditorHtml(
 
   return `
     ${baseStyles}
+<<<<<<< HEAD
     <article class="planify-doc">
+=======
+    <article class="planify-doc" data-planify-html-source="simplified-fallback">
+>>>>>>> origin/aplicar-melhorias-na-producao
       <h1>PLANEJAMENTO ANUAL</h1>
       ${identity}
       ${trimesterBlocks}

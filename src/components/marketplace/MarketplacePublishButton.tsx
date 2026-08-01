@@ -2,7 +2,12 @@
 
 import { publishHtmlToMarketplace, extractComponenteFromPlanningPayload } from "@/lib/marketplace/marketplace-publish";
 import Link from "next/link";
+<<<<<<< HEAD
 import { useState } from "react";
+=======
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
+>>>>>>> origin/aplicar-melhorias-na-producao
 
 export type MarketplacePublishButtonProps = {
   title: string;
@@ -42,6 +47,23 @@ export function MarketplacePublishButton({
   const [error, setError] = useState("");
   const [successId, setSuccessId] = useState<string | null>(null);
 
+<<<<<<< HEAD
+=======
+  useEffect(() => {
+    if (!open) return;
+    function handleKey(event: KeyboardEvent) {
+      if (event.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("keydown", handleKey);
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", handleKey);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [open]);
+
+>>>>>>> origin/aplicar-melhorias-na-producao
   async function handlePublish() {
     setBusy(true);
     setError("");
@@ -109,11 +131,26 @@ export function MarketplacePublishButton({
         </span>
       ) : null}
 
+<<<<<<< HEAD
       {open ? (
         <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/50 p-4">
           <div
             role="dialog"
             aria-labelledby="marketplace-publish-title"
+=======
+      {open && typeof document !== "undefined"
+        ? createPortal(
+        <div
+          className="fixed inset-0 z-[2000] flex items-center justify-center p-4"
+          style={{ backgroundColor: "rgba(2, 6, 23, 0.55)" }}
+          onClick={() => setOpen(false)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="marketplace-publish-title"
+            onClick={(event) => event.stopPropagation()}
+>>>>>>> origin/aplicar-melhorias-na-producao
             className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-2xl"
           >
             <h3
@@ -180,8 +217,15 @@ export function MarketplacePublishButton({
               </button>
             </div>
           </div>
+<<<<<<< HEAD
         </div>
       ) : null}
+=======
+        </div>,
+            document.body,
+          )
+        : null}
+>>>>>>> origin/aplicar-melhorias-na-producao
     </>
   );
 }

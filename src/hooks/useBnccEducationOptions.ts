@@ -83,7 +83,36 @@ export function useBnccEducationOptions(
   }, [fields.etapa, fields.anoSerie, fields.areaConhecimento]);
 
   useEffect(() => {
+<<<<<<< HEAD
     void load();
+=======
+    let cancelled = false;
+    const run = () => {
+      if (!cancelled) void load();
+    };
+
+    const win = window as Window & {
+      requestIdleCallback?: (
+        cb: () => void,
+        opts?: { timeout: number },
+      ) => number;
+      cancelIdleCallback?: (id: number) => void;
+    };
+
+    if (typeof win.requestIdleCallback === "function") {
+      const id = win.requestIdleCallback(run, { timeout: 2500 });
+      return () => {
+        cancelled = true;
+        win.cancelIdleCallback?.(id);
+      };
+    }
+
+    const timer = globalThis.setTimeout(run, 350);
+    return () => {
+      cancelled = true;
+      globalThis.clearTimeout(timer);
+    };
+>>>>>>> origin/aplicar-melhorias-na-producao
   }, [load]);
 
   const stageOptions = useMemo(() => {

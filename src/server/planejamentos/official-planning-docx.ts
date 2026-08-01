@@ -2,7 +2,14 @@ import fs from "node:fs";
 import path from "node:path";
 import { deflateRawSync, inflateRawSync } from "node:zlib";
 import type { PlanningAiResult, PlanningMatrixItem, PlanningSkill } from "./planning-ai-service";
+<<<<<<< HEAD
 import { extractAnnualItemsForTrimester } from "@/lib/planejamentos/planning-trimestral-from-annual";
+=======
+import {
+  extractAnnualItemsForTrimester,
+  resolveMatrixForDocument,
+} from "@/lib/planejamentos/planning-trimestral-from-annual";
+>>>>>>> origin/aplicar-melhorias-na-producao
 import {
   enrichTrimestralMatrixItem,
   formatExperienciasAprendizagem,
@@ -1586,6 +1593,7 @@ function fillReferenceTrimestralTemplate(
   return documentXml.slice(0, lessonTable.start) + filledBlocks + documentXml.slice(projectTable.end);
 }
 
+<<<<<<< HEAD
 function resolveTrimestralMatrixItems(
   matrix: PlanningMatrixItem[],
   trimester: number,
@@ -1608,6 +1616,16 @@ function fillTrimestralPlanningTable(documentXml: string, payload: OfficialPlann
   const matrix = getMatrix(payload);
   const trimester = getTrimestre(payload);
   const baseItems = resolveTrimestralMatrixItems(matrix, trimester);
+=======
+function fillTrimestralPlanningTable(documentXml: string, payload: OfficialPlanningPayload): string {
+  const matrix = getMatrix(payload);
+  const trimester = getTrimestre(payload);
+  const baseItems = resolveMatrixForDocument({
+    tipoPlanejamento: "trimestral",
+    trimestre: trimester,
+    matriz: matrix,
+  });
+>>>>>>> origin/aplicar-melhorias-na-producao
 
   const tables = parseTables(documentXml);
   const referenceFilled = fillReferenceTrimestralTemplate(

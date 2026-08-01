@@ -89,7 +89,16 @@ export function IconSearch({ className = "h-5 w-5", ...props }: IconProps) {
 export function IconBell({ className = "h-5 w-5", ...props }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} className={className} {...props}>
+<<<<<<< HEAD
       <path strokeLinecap="round" strokeLinejoin="round" d="M15 17H9l-1-2H6a4 4 0 0 1 4-4v-.5a4 4 0 1 1 8 0V11a4 4 0 0 1 4 4h-2l-1 2ZM10 20a2 2 0 0 0 4 0" />
+=======
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"
+      />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+>>>>>>> origin/aplicar-melhorias-na-producao
     </svg>
   );
 }
@@ -183,6 +192,17 @@ export function IconDownload({ className = "h-5 w-5", ...props }: IconProps) {
   );
 }
 
+<<<<<<< HEAD
+=======
+export function IconSend({ className = "h-5 w-5", ...props }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} className={className} {...props}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M21 3 3 10.5l7 2.5m0 0 2.5 7L21 3M10 13l6.5-6.5" />
+    </svg>
+  );
+}
+
+>>>>>>> origin/aplicar-melhorias-na-producao
 export function IconUpload({ className = "h-5 w-5", ...props }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} className={className} {...props}>

@@ -1,15 +1,25 @@
 "use client";
 
+<<<<<<< HEAD
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { CommunityAuthorAvatar } from "@/components/community/CommunityAuthorAvatar";
+=======
+import { useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
+import { CommunityProfilePanel } from "@/components/community/CommunityProfilePanel";
+import { CommunityPublicProfile } from "@/components/community/docente/CommunityPublicProfile";
+>>>>>>> origin/aplicar-melhorias-na-producao
 import { ComunidadeDocenteDetailShell } from "@/components/community/docente/ComunidadeDocenteDetailShell";
 import type { CommunityTeacherDetail } from "@/server/community/community-docente-service";
 import {
   comunidadeRoutes,
+<<<<<<< HEAD
   formatDocenteNumber,
   formatDocenteTimeAgo,
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
   homeWithAba,
   isComunidadeEmbedded,
 } from "@/lib/community/docente-utils";
@@ -29,7 +39,10 @@ export function ComunidadeDocenteProfessorDetailClient({
   const [teacher, setTeacher] = useState<CommunityTeacherDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+<<<<<<< HEAD
   const [activeTab, setActiveTab] = useState<"materiais" | "discussoes" | "grupos">("materiais");
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
   const [messaging, setMessaging] = useState(false);
 
   const load = useCallback(async () => {
@@ -145,6 +158,7 @@ export function ComunidadeDocenteProfessorDetailClient({
   return (
     <ComunidadeDocenteDetailShell
       embedded={embedded}
+<<<<<<< HEAD
       activeMenu="professores"
       breadcrumbs={[{ label: "Professores", href: homeHref }]}
       title={profile.name}
@@ -330,6 +344,25 @@ export function ComunidadeDocenteProfessorDetailClient({
           )
         ) : null}
       </section>
+=======
+      wide
+      activeMenu={teacher.isOwnProfile ? "inicio" : "professores"}
+      breadcrumbs={teacher.isOwnProfile ? [] : [{ label: "Professores", href: homeHref }]}
+      title={teacher.isOwnProfile ? "Meu perfil" : profile.name}
+      subtitle={undefined}
+    >
+      {teacher.isOwnProfile ? (
+        <CommunityProfilePanel />
+      ) : (
+        <CommunityPublicProfile
+          teacher={teacher}
+          embedded={embedded}
+          onFollow={() => void handleFollow()}
+          onMessage={() => void handleMessage()}
+          messaging={messaging}
+        />
+      )}
+>>>>>>> origin/aplicar-melhorias-na-producao
     </ComunidadeDocenteDetailShell>
   );
 }

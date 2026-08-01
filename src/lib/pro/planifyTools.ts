@@ -54,7 +54,16 @@ export type PlanifyIconName =
   | "trash"
   | "settings"
   | "message"
+<<<<<<< HEAD
   | "layers";
+=======
+  | "layers"
+  | "play"
+  | "shieldCheck"
+  | "grid"
+  | "mic"
+  | "folder";
+>>>>>>> origin/aplicar-melhorias-na-producao
 
 export type ToolCategoryId =
   | "todos"
@@ -81,7 +90,12 @@ export type PlanifyToolId =
   | "pei"
   | "aula-completa"
   | "correcao-ia"
+<<<<<<< HEAD
   | "cruzadinha";
+=======
+  | "cruzadinha"
+  | "copiloto";
+>>>>>>> origin/aplicar-melhorias-na-producao
 
 export type PlanifyTool = {
   id: PlanifyToolId;
@@ -300,6 +314,25 @@ export const planifyTools: PlanifyTool[] = [
     accent: "from-purple-300 via-fuchsia-300 to-indigo-300",
   },
   {
+<<<<<<< HEAD
+=======
+    id: "copiloto",
+    title: "Copiloto por Voz",
+    shortTitle: "Copiloto",
+    description:
+      "Fale o pedido: gera lista, prova, redação, plano de aula ou dinâmica — com BNCC e qualidade máxima.",
+    category: "preparar-aulas",
+    href: dashboardToolHref("copiloto"),
+    icon: "mic",
+    popular: true,
+    primaryFieldLabel: "Pedido falado ou digitado",
+    loadingTitle: "Interpretando seu pedido",
+    loadingDescription:
+      "Transcrevendo, estruturando o brief e cruzando BNCC com tendências de cobrança.",
+    accent: "from-cyan-300 via-sky-300 to-indigo-300",
+  },
+  {
+>>>>>>> origin/aplicar-melhorias-na-producao
     id: "inclusao",
     title: "Adaptação Curricular — Inclusão",
     shortTitle: "Inclusão",

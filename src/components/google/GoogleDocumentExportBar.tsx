@@ -12,6 +12,10 @@ import {
   resolveMaterialExportPolicy,
 } from "@/lib/export/material-export-policy";
 import { useGoogleOAuthResume } from "@/hooks/useGoogleOAuthResume";
+<<<<<<< HEAD
+=======
+import type { ClassroomExportMetadata } from "@/hooks/useGoogleClassroomExport";
+>>>>>>> origin/aplicar-melhorias-na-producao
 import { useEffect, useMemo, useState } from "react";
 
 export type GoogleDocumentExportBarProps = {
@@ -30,6 +34,12 @@ export type GoogleDocumentExportBarProps = {
   className?: string;
   onDownloadPdf?: () => void;
   downloadingPdf?: boolean;
+<<<<<<< HEAD
+=======
+  onDownloadDocx?: () => void;
+  downloadingDocx?: boolean;
+  classroomMetadata?: ClassroomExportMetadata | null;
+>>>>>>> origin/aplicar-melhorias-na-producao
 };
 
 export function GoogleDocumentExportBar({
@@ -48,6 +58,12 @@ export function GoogleDocumentExportBar({
   className = "",
   onDownloadPdf,
   downloadingPdf = false,
+<<<<<<< HEAD
+=======
+  onDownloadDocx,
+  downloadingDocx = false,
+  classroomMetadata,
+>>>>>>> origin/aplicar-melhorias-na-producao
 }: GoogleDocumentExportBarProps) {
   useGoogleOAuthResume({
     getHtml,
@@ -90,6 +106,7 @@ export function GoogleDocumentExportBar({
   const gap = compact ? "gap-1" : "gap-1.5 sm:gap-2";
   const wrapTitle = disabled ? disabledTitle : exportPolicy.hint;
 
+<<<<<<< HEAD
   const showDocsExport = materialExportAllows("google-docs", documentType, getHtml());
   const showDriveExport = materialExportAllows("google-drive", documentType, getHtml());
   const canShowClassroomExport = showClassroomExport && materialExportAllows(
@@ -101,6 +118,23 @@ export function GoogleDocumentExportBar({
   const showPdfDownload = Boolean(onDownloadPdf);
 
   if (disabled) {
+=======
+  const showDocsExport =
+    !disabled && materialExportAllows("google-docs", documentType, getHtml());
+  const showDriveExport =
+    !disabled && materialExportAllows("google-drive", documentType, getHtml());
+  const canShowClassroomExport =
+    !disabled &&
+    showClassroomExport &&
+    materialExportAllows("google-classroom", documentType, getHtml());
+  const driveIsPdf = exportPolicy.driveFormat === "pdf";
+  const showPdfDownload = Boolean(onDownloadPdf);
+  const showDocxDownload =
+    Boolean(onDownloadDocx) && exportPolicy.driveFormat === "docx";
+  const hasAnyDownload = showPdfDownload || showDocxDownload;
+
+  if (disabled && !hasAnyDownload) {
+>>>>>>> origin/aplicar-melhorias-na-producao
     return (
       <div
         className={`flex min-w-0 flex-wrap items-center opacity-50 ${gap} ${className}`}
@@ -144,7 +178,11 @@ export function GoogleDocumentExportBar({
           }
         />
       ) : null}
+<<<<<<< HEAD
       {showFormsExport ? (
+=======
+      {!disabled && showFormsExport ? (
+>>>>>>> origin/aplicar-melhorias-na-producao
         <GoogleFormsExportButton
           title={title}
           getHtml={getHtml}
@@ -162,6 +200,10 @@ export function GoogleDocumentExportBar({
             onStatus={onStatus}
             returnTo={returnTo}
             documentType={documentType}
+<<<<<<< HEAD
+=======
+            classroomMetadata={classroomMetadata}
+>>>>>>> origin/aplicar-melhorias-na-producao
           />
         ) : (
           <GoogleClassroomPanel
@@ -171,6 +213,7 @@ export function GoogleDocumentExportBar({
             onStatus={onStatus}
             returnTo={returnTo}
             documentType={documentType}
+<<<<<<< HEAD
           />
         )
       ) : null}
@@ -178,6 +221,18 @@ export function GoogleDocumentExportBar({
         <DocumentDownloadIconBar
           onDownloadPdf={onDownloadPdf}
           downloadingPdf={downloadingPdf}
+=======
+            classroomMetadata={classroomMetadata}
+          />
+        )
+      ) : null}
+      {hasAnyDownload ? (
+        <DocumentDownloadIconBar
+          onDownloadPdf={onDownloadPdf}
+          downloadingPdf={downloadingPdf}
+          onDownloadDocx={onDownloadDocx}
+          downloadingDocx={downloadingDocx}
+>>>>>>> origin/aplicar-melhorias-na-producao
         />
       ) : null}
     </>

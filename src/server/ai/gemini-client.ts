@@ -545,7 +545,21 @@ export async function generateGeminiJSON<T>(
 }
 
 export type GeminiMediaPart = {
+<<<<<<< HEAD
   mimeType: "image/jpeg" | "image/png" | "image/webp" | "application/pdf";
+=======
+  mimeType:
+    | "image/jpeg"
+    | "image/png"
+    | "image/webp"
+    | "application/pdf"
+    | "audio/webm"
+    | "audio/mp4"
+    | "audio/mpeg"
+    | "audio/wav"
+    | "audio/ogg"
+    | "audio/x-m4a";
+>>>>>>> origin/aplicar-melhorias-na-producao
   base64: string;
 };
 
@@ -632,12 +646,25 @@ export async function generateGeminiTextFromMedia(options: {
 
   for (const model of models) {
     for (let attempt = 0; attempt < MAX_RETRIES_PER_MODEL; attempt += 1) {
+<<<<<<< HEAD
       const json = await callGeminiGenerateContentMultimodal(model, {
         systemInstruction: options.systemInstruction,
         prompt: options.prompt,
         media: options.media,
         maxOutputTokens: options.maxOutputTokens ?? 8192,
       });
+=======
+      const json = await withGeminiCallTimeout(
+        callGeminiGenerateContentMultimodal(model, {
+          systemInstruction: options.systemInstruction,
+          prompt: options.prompt,
+          media: options.media,
+          maxOutputTokens: options.maxOutputTokens ?? 8192,
+        }),
+        "Transcrição multimodal",
+        55_000,
+      );
+>>>>>>> origin/aplicar-melhorias-na-producao
 
       if (json.httpStatus >= 200 && json.httpStatus < 300 && !json.error) {
         return json.text;

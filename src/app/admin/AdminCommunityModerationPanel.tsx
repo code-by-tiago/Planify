@@ -1,6 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+<<<<<<< HEAD
+=======
+import { AdminCommunityFeaturedPanel } from "./AdminCommunityFeaturedPanel";
+>>>>>>> origin/aplicar-melhorias-na-producao
 import {
   AdminPanel,
   adminButtonPrimaryClassName,
@@ -86,10 +90,19 @@ export function AdminCommunityModerationPanel() {
   }
 
   return (
+<<<<<<< HEAD
     <div className="space-y-4">
       <AdminPanel
         title="Moderação · Comunidade Docente"
         subtitle="Fila de denúncias de posts, comentários, materiais, chat de grupos e perfis."
+=======
+    <div className="space-y-6">
+      <AdminCommunityFeaturedPanel />
+
+      <AdminPanel
+        title="Moderação · Comunidade Docente"
+        subtitle="Fila de denúncias de posts, comentários, materiais e perfis."
+>>>>>>> origin/aplicar-melhorias-na-producao
       >
         <div className="mb-4 flex flex-wrap items-center gap-2">
           {(["open", "resolved", "dismissed", "all"] as const).map((value) => (

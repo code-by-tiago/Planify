@@ -6,7 +6,10 @@ import {
   type BadgeProgress,
 } from "./community-badge-service";
 import {
+<<<<<<< HEAD
   getMaterialCommentsBatch,
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
   getMaterialLikesSummary,
   resolveCommunityAuthors,
 } from "./marketplace-social-service";
@@ -14,6 +17,7 @@ import { listSavedMaterialIds } from "./community-saved-materials-service";
 import { listPostAttachments, type CommunityPostAttachment } from "./community-post-attachments-service";
 import { listSavedPostIds } from "./community-saved-posts-service";
 import { listHiddenFeedMaterialIds } from "./community-hidden-feed-materials-service";
+<<<<<<< HEAD
 import {
   formatEventMonth,
   formatEventDateTime,
@@ -24,6 +28,16 @@ import type {
   DocenteDiscussion,
   DocenteDisciplina,
   DocenteEvent,
+=======
+import { listFeaturedCommunityMaterials } from "./community-featured-service";
+import { normalizeDocenteDisciplina } from "@/lib/community/docente-utils";
+import type {
+  DocenteAchievementBadge,
+  DocenteAuthor,
+  DocenteComment,
+  DocenteDiscussion,
+  DocenteDisciplina,
+>>>>>>> origin/aplicar-melhorias-na-producao
   DocenteMaterial,
   DocenteRecentPublication,
   DocenteStats,
@@ -64,6 +78,7 @@ type PostRow = {
   likes_count: number;
   comments_count: number;
   created_at: string;
+<<<<<<< HEAD
   group_id?: string | null;
 };
 
@@ -82,6 +97,10 @@ type GroupRow = {
   disciplina: string;
   members_count: number;
   joinedByMe?: boolean;
+=======
+  post_kind?: string | null;
+  metadata?: Record<string, unknown> | null;
+>>>>>>> origin/aplicar-melhorias-na-producao
 };
 
 type BadgeRow = {
@@ -98,9 +117,14 @@ export type CommunityDocenteOverview = {
   stats: DocenteStats;
   discussions: DocenteDiscussion[];
   materials: DocenteMaterial[];
+<<<<<<< HEAD
   recentPublications: DocenteRecentPublication[];
   events: DocenteEvent[];
   groups: GroupRow[];
+=======
+  trendingMaterials: DocenteMaterial[];
+  recentPublications: DocenteRecentPublication[];
+>>>>>>> origin/aplicar-melhorias-na-producao
   badges: BadgeRow[];
   badgeProgress: BadgeProgress[];
   hiddenMaterialIds: string[];
@@ -203,6 +227,64 @@ async function buildAuthor(
   };
 }
 
+<<<<<<< HEAD
+=======
+/** Últimos N comentários por post (para o feed, evita N+1). */
+async function fetchCommentsPreviewByPostIds(
+  postIds: string[],
+  limitPerPost = 2,
+): Promise<Map<string, DocenteComment[]>> {
+  const result = new Map<string, DocenteComment[]>();
+  if (!postIds.length) return result;
+
+  const supabase = getSupabaseAdminClient();
+  const { data: rows, error } = await supabase
+    .from("community_comments")
+    .select("id,post_id,author_id,body,created_at")
+    .in("post_id", postIds)
+    .order("created_at", { ascending: false })
+    .limit(Math.max(postIds.length * limitPerPost, limitPerPost));
+
+  if (error || !rows?.length) return result;
+
+  const grouped = new Map<string, typeof rows>();
+  for (const row of rows) {
+    const postId = String(row.post_id || "");
+    if (!postId) continue;
+    const list = grouped.get(postId) || [];
+    if (list.length >= limitPerPost) continue;
+    list.push(row);
+    grouped.set(postId, list);
+  }
+
+  const authorIds = [
+    ...new Set(rows.map((row) => String(row.author_id || "")).filter(Boolean)),
+  ];
+  const authorMap = await resolveCommunityAuthors(authorIds);
+  const authorStatsCache = await resolveAuthorStatsBatch(authorIds);
+
+  for (const [postId, commentRows] of grouped) {
+    const chronological = [...commentRows].reverse();
+    const comments: DocenteComment[] = await Promise.all(
+      chronological.map(async (row) => ({
+        id: String(row.id),
+        body: String(row.body || ""),
+        createdAt: String(row.created_at || ""),
+        author: await buildAuthor(
+          String(row.author_id),
+          authorMap,
+          undefined,
+          authorStatsCache,
+        ),
+      })),
+    );
+    result.set(postId, comments);
+  }
+
+  return result;
+}
+
+>>>>>>> origin/aplicar-melhorias-na-producao
 export async function getCommunityDocenteOverview(params: {
   viewerUserId?: string | null;
   search?: string;
@@ -214,6 +296,10 @@ export async function getCommunityDocenteOverview(params: {
   etapa?: string | null;
   tipoMaterial?: string | null;
   tag?: string | null;
+<<<<<<< HEAD
+=======
+  anoSerie?: string | null;
+>>>>>>> origin/aplicar-melhorias-na-producao
   hiddenFeedMode?: "exclude" | "only";
   isAdmin?: boolean;
 }): Promise<CommunityDocenteOverview> {
@@ -224,6 +310,10 @@ export async function getCommunityDocenteOverview(params: {
   const etapaFilter = String(params.etapa || "").trim();
   const tipoMaterialFilter = String(params.tipoMaterial || "").trim();
   const tagFilter = String(params.tag || "").trim().toLowerCase();
+<<<<<<< HEAD
+=======
+  const anoSerieFilter = String(params.anoSerie || "").trim();
+>>>>>>> origin/aplicar-melhorias-na-producao
   const hiddenFeedMode = params.hiddenFeedMode || "exclude";
 
   let hiddenMaterialIds = new Set<string>();
@@ -234,7 +324,13 @@ export async function getCommunityDocenteOverview(params: {
 
   let postsQuery = supabase
     .from("community_posts")
+<<<<<<< HEAD
     .select("id,author_id,title,body,disciplina,tags,likes_count,comments_count,created_at")
+=======
+    .select(
+      "id,author_id,title,body,disciplina,tags,likes_count,comments_count,created_at,post_kind,metadata",
+    )
+>>>>>>> origin/aplicar-melhorias-na-producao
     .eq("is_published", true)
     .order("created_at", { ascending: false })
     .limit(24);
@@ -266,6 +362,12 @@ export async function getCommunityDocenteOverview(params: {
   if (etapaFilter) {
     materialsQuery = materialsQuery.eq("etapa", etapaFilter);
   }
+<<<<<<< HEAD
+=======
+  if (anoSerieFilter) {
+    materialsQuery = materialsQuery.ilike("ano_serie", `%${anoSerieFilter}%`);
+  }
+>>>>>>> origin/aplicar-melhorias-na-producao
   if (tipoMaterialFilter) {
     materialsQuery = materialsQuery.ilike("tipo_material", `%${tipoMaterialFilter}%`);
   }
@@ -286,13 +388,20 @@ export async function getCommunityDocenteOverview(params: {
     postsResult,
     invitedPostsResult,
     materialsResult,
+<<<<<<< HEAD
     eventsResult,
     groupsResult,
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
     badgesResult,
     teachersCount,
     materialsCount,
     postsCount,
+<<<<<<< HEAD
     groupsCount,
+=======
+    trendingMaterials,
+>>>>>>> origin/aplicar-melhorias-na-producao
   ] = await Promise.all([
     postsQuery,
     params.viewerUserId
@@ -305,6 +414,7 @@ export async function getCommunityDocenteOverview(params: {
       : Promise.resolve({ data: [], error: null }),
     materialsQuery,
     supabase
+<<<<<<< HEAD
       .from("community_events")
       .select("id,title,presenter_name,starts_at,is_online")
       .gte("starts_at", new Date().toISOString())
@@ -318,6 +428,8 @@ export async function getCommunityDocenteOverview(params: {
       .order("members_count", { ascending: false })
       .limit(8),
     supabase
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
       .from("community_badges")
       .select("id,slug,name,description,icon,color,min_reputation")
       .order("min_reputation", { ascending: true }),
@@ -333,11 +445,15 @@ export async function getCommunityDocenteOverview(params: {
       .from("community_posts")
       .select("id", { count: "exact", head: true })
       .eq("is_published", true),
+<<<<<<< HEAD
     supabase
       .from("community_groups")
       .select("id", { count: "exact", head: true })
       .eq("is_public", true)
       .gt("members_count", 0),
+=======
+    listFeaturedCommunityMaterials(12),
+>>>>>>> origin/aplicar-melhorias-na-producao
   ]);
 
   const posts = (postsResult.data || []) as PostRow[];
@@ -349,7 +465,13 @@ export async function getCommunityDocenteOverview(params: {
   if (invitedPostIds.length > 0) {
     const { data: invitedPostRows } = await supabase
       .from("community_posts")
+<<<<<<< HEAD
       .select("id,author_id,title,body,disciplina,tags,likes_count,comments_count,created_at")
+=======
+      .select(
+        "id,author_id,title,body,disciplina,tags,likes_count,comments_count,created_at,post_kind,metadata",
+      )
+>>>>>>> origin/aplicar-melhorias-na-producao
       .in("id", invitedPostIds)
       .eq("is_published", true);
     invitedPosts = (invitedPostRows || []) as PostRow[];
@@ -376,12 +498,19 @@ export async function getCommunityDocenteOverview(params: {
   let savedMaterialIds = new Set<string>();
   let savedPostIds = new Set<string>();
   let followingIds = new Set<string>();
+<<<<<<< HEAD
   let joinedGroupIds = new Set<string>();
   let badgeProgress: BadgeProgress[] = [];
 
   if (params.viewerUserId) {
     const [likes, matLikes, savedIds, savedPosts, following, groupMemberships] =
       await Promise.all([
+=======
+  let badgeProgress: BadgeProgress[] = [];
+
+  if (params.viewerUserId) {
+    const [likes, matLikes, savedIds, savedPosts, following] = await Promise.all([
+>>>>>>> origin/aplicar-melhorias-na-producao
       supabase
         .from("community_likes")
         .select("post_id")
@@ -398,17 +527,23 @@ export async function getCommunityDocenteOverview(params: {
         .from("community_followers")
         .select("following_id")
         .eq("follower_id", params.viewerUserId),
+<<<<<<< HEAD
       supabase
         .from("community_group_members")
         .select("group_id")
         .eq("user_id", params.viewerUserId),
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
     ]);
     likedPostIds = new Set((likes.data || []).map((r) => r.post_id as string));
     likedMaterialIds = new Set((matLikes.data || []).map((r) => r.material_id as string));
     savedMaterialIds = new Set(savedIds);
     savedPostIds = new Set(savedPosts);
     followingIds = new Set((following.data || []).map((r) => r.following_id as string));
+<<<<<<< HEAD
     joinedGroupIds = new Set((groupMemberships.data || []).map((r) => r.group_id as string));
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
 
     await awardEligibleBadges(params.viewerUserId);
     badgeProgress = await getBadgeProgressForUser(params.viewerUserId);
@@ -427,6 +562,10 @@ export async function getCommunityDocenteOverview(params: {
 
   if (params.savedOnly && params.viewerUserId) {
     feedMaterials = feedMaterials.filter((row) => savedMaterialIds.has(row.id));
+<<<<<<< HEAD
+=======
+    feedPosts = feedPosts.filter((post) => savedPostIds.has(post.id));
+>>>>>>> origin/aplicar-melhorias-na-producao
   }
 
   if (tagFilter) {
@@ -448,6 +587,7 @@ export async function getCommunityDocenteOverview(params: {
   ];
   const authorStatsCache = await resolveAuthorStatsBatch(allAuthorIds);
 
+<<<<<<< HEAD
   const discussionsFromPosts: DocenteDiscussion[] = await Promise.all(
     feedPosts.map(async (post) => ({
       id: post.id,
@@ -488,22 +628,81 @@ export async function getCommunityDocenteOverview(params: {
         likesCount: likes?.likesCount || 0,
         likedByMe: likes?.likedByMe || false,
         savedByMe: savedMaterialIds.has(row.id),
+=======
+  const previewPostIds = feedPosts.slice(0, 12).map((post) => post.id);
+  const commentsPreviewMap = await fetchCommentsPreviewByPostIds(previewPostIds, 2);
+
+  const discussionsFromPosts: DocenteDiscussion[] = await Promise.all(
+    feedPosts.slice(0, 12).map(async (post) => {
+      const isAchievement = post.post_kind === "achievement";
+      const meta = (post.metadata || {}) as Record<string, unknown>;
+      const attachments = isAchievement ? [] : await listPostAttachments(post.id);
+      return {
+        id: post.id,
+        author: await buildAuthor(post.author_id, authorMap, undefined, authorStatsCache),
+        title: post.title,
+        body: post.body || "",
+        disciplina: normalizeDocenteDisciplina(post.disciplina),
+        tags: post.tags || [],
+        createdAt: post.created_at,
+        commentsCount: post.comments_count,
+        likesCount: post.likes_count,
+        likedByMe: likedPostIds.has(post.id),
+        savedByMe: savedPostIds.has(post.id),
+        kind: isAchievement ? ("achievement" as const) : ("text" as const),
+        achievementBadge: isAchievement
+          ? {
+              name: String(meta.badgeName || post.title),
+              color: String(meta.badgeColor || "#0891B2"),
+              icon: String(meta.badgeIcon || "trophy"),
+            }
+          : undefined,
+        commentsPreview: commentsPreviewMap.get(post.id) || [],
+        attachments: attachments.map((a) => ({
+          id: a.id,
+          materialId: a.materialId,
+          title: a.title,
+          fileName: a.fileName,
+          fileType: a.fileType,
+          fileMime: a.fileMime,
+          previewUrl: a.previewUrl,
+        })),
+>>>>>>> origin/aplicar-melhorias-na-producao
       };
     }),
   );
 
+<<<<<<< HEAD
   const discussions = [...discussionsFromPosts, ...discussionsFromMaterials]
+=======
+  const materialIds = feedMaterials.map((m) => m.id);
+  const likesSummary = await getMaterialLikesSummary({
+    materialIds,
+    viewerUserId: params.viewerUserId || null,
+  });
+
+  const discussions = discussionsFromPosts
+>>>>>>> origin/aplicar-melhorias-na-producao
     .filter((d) => {
       if (!search) return true;
       const hay = `${d.title} ${d.author.name} ${d.disciplina} ${d.tags.join(" ")}`.toLowerCase();
       return hay.includes(search);
     })
+<<<<<<< HEAD
     .slice(0, 8);
+=======
+    .slice(0, 12);
+>>>>>>> origin/aplicar-melhorias-na-producao
 
   const materials: DocenteMaterial[] = await Promise.all(
     feedMaterials.map(async (row) => {
       const userId = row.user_id || "unknown";
       const likes = likesSummary.get(row.id);
+<<<<<<< HEAD
+=======
+      const tags = Array.isArray(row.tags) ? row.tags.map(String) : [];
+      const downloadsCount = row.downloads_count || 0;
+>>>>>>> origin/aplicar-melhorias-na-producao
       return {
         id: row.id,
         title: row.title,
@@ -512,7 +711,13 @@ export async function getCommunityDocenteOverview(params: {
         author: await buildAuthor(userId, authorMap, row.author_name, authorStatsCache),
         tipoMaterial: row.tipo_material || row.title,
         componenteRaw: row.componente || undefined,
+<<<<<<< HEAD
         viewsCount: row.downloads_count || 0,
+=======
+        tags,
+        viewsCount: downloadsCount,
+        downloadsCount,
+>>>>>>> origin/aplicar-melhorias-na-producao
         likesCount: likes?.likesCount || 0,
         likedByMe: likes?.likedByMe || false,
         savedByMe: savedMaterialIds.has(row.id),
@@ -524,7 +729,11 @@ export async function getCommunityDocenteOverview(params: {
   const filteredMaterials = materials
     .filter((m) => {
       if (!search) return true;
+<<<<<<< HEAD
       const hay = `${m.title} ${m.author.name} ${m.disciplina}`.toLowerCase();
+=======
+      const hay = `${m.title} ${m.author.name} ${m.disciplina} ${m.anoSerie} ${m.tipoMaterial} ${m.tags.join(" ")}`.toLowerCase();
+>>>>>>> origin/aplicar-melhorias-na-producao
       return hay.includes(search);
     })
     .slice(0, 8);
@@ -556,6 +765,7 @@ export async function getCommunityDocenteOverview(params: {
     );
   }
 
+<<<<<<< HEAD
   const events: DocenteEvent[] = ((eventsResult.data || []) as EventRow[]).map((e) => {
     const { day, month } = formatEventMonth(e.starts_at);
     return {
@@ -573,6 +783,8 @@ export async function getCommunityDocenteOverview(params: {
     ...group,
     joinedByMe: joinedGroupIds.has(group.id),
   }));
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
   const badges = (badgesResult.data || []) as BadgeRow[];
 
   const topTeacherId = marketplaceRows[0]?.user_id;
@@ -620,8 +832,24 @@ export async function getCommunityDocenteOverview(params: {
     }
   }
 
+<<<<<<< HEAD
   if (featuredTeacher && params.viewerUserId) {
     featuredTeacher.isFollowing = followingIds.has(featuredTeacher.id);
+=======
+  if (params.viewerUserId) {
+    if (featuredTeacher) {
+      featuredTeacher.isFollowing = followingIds.has(featuredTeacher.id);
+    }
+    for (const discussion of discussions) {
+      discussion.author.isFollowing = followingIds.has(discussion.author.id);
+    }
+    for (const material of filteredMaterials) {
+      material.author.isFollowing = followingIds.has(material.author.id);
+    }
+    for (const material of trendingMaterials) {
+      material.author.isFollowing = followingIds.has(material.author.id);
+    }
+>>>>>>> origin/aplicar-melhorias-na-producao
   }
 
   return {
@@ -629,6 +857,7 @@ export async function getCommunityDocenteOverview(params: {
       activeTeachers: teachersCount.count || 0,
       sharedMaterials: materialsCount.count || 0,
       openDiscussions: postsCount.count || discussions.length,
+<<<<<<< HEAD
       studyGroups: groupsCount.count || 0,
     },
     discussions,
@@ -636,6 +865,13 @@ export async function getCommunityDocenteOverview(params: {
     recentPublications,
     events,
     groups,
+=======
+    },
+    discussions,
+    materials: filteredMaterials,
+    trendingMaterials,
+    recentPublications,
+>>>>>>> origin/aplicar-melhorias-na-producao
     badges,
     badgeProgress,
     hiddenMaterialIds: [...hiddenMaterialIds],
@@ -651,6 +887,7 @@ export async function createCommunityPost(params: {
   disciplina: string;
   tags: string[];
   participantUserIds?: string[];
+<<<<<<< HEAD
   groupId?: string | null;
 }) {
   const supabase = getSupabaseAdminClient();
@@ -675,13 +912,22 @@ export async function createCommunityPost(params: {
     tags: string[];
     group_id?: string;
   } = {
+=======
+}) {
+  const supabase = getSupabaseAdminClient();
+
+  const insertPayload = {
+>>>>>>> origin/aplicar-melhorias-na-producao
     author_id: params.authorId,
     title: params.title,
     body: params.body,
     disciplina: params.disciplina,
     tags: params.tags,
   };
+<<<<<<< HEAD
   if (params.groupId) insertPayload.group_id = params.groupId;
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
 
   const { data, error } = await supabase
     .from("community_posts")
@@ -717,9 +963,46 @@ export async function createCommunityPost(params: {
       uniqueParticipants.map((userId) =>
         createCommunityNotification({
           userId,
+<<<<<<< HEAD
           type: "message",
           actorUserId: params.authorId,
           bodyPreview: `Você foi convidado(a) para a discussão "${params.title}".`,
+=======
+          type: "mention",
+          actorUserId: params.authorId,
+          bodyPreview: `Você foi adicionado(a) na publicação "${params.title}".`,
+          targetType: "post",
+          targetId: data.id,
+          href: `/comunidade/discussao/${data.id}`,
+        }),
+      ),
+    );
+  }
+
+  // Notifica seguidores sobre nova publicação no feed
+  const { data: followers } = await supabase
+    .from("community_followers")
+    .select("follower_id")
+    .eq("following_id", params.authorId)
+    .limit(200);
+
+  const followerIds = [
+    ...new Set(
+      (followers || [])
+        .map((row) => String(row.follower_id || ""))
+        .filter((id) => id && id !== params.authorId && !uniqueParticipants.includes(id)),
+    ),
+  ];
+
+  if (followerIds.length > 0) {
+    await Promise.all(
+      followerIds.map((userId) =>
+        createCommunityNotification({
+          userId,
+          type: "post",
+          actorUserId: params.authorId,
+          bodyPreview: params.title.slice(0, 120) || "Nova publicação no feed",
+>>>>>>> origin/aplicar-melhorias-na-producao
           targetType: "post",
           targetId: data.id,
           href: `/comunidade/discussao/${data.id}`,
@@ -732,6 +1015,56 @@ export async function createCommunityPost(params: {
   return data;
 }
 
+<<<<<<< HEAD
+=======
+/** Cria post e vincula anexos; se o link falhar, remove o post. */
+export async function createCommunityPostWithAttachments(params: {
+  authorId: string;
+  title: string;
+  body: string;
+  disciplina: string;
+  tags: string[];
+  participantUserIds?: string[];
+  attachments: Array<{
+    materialId: string;
+    fileName: string;
+    fileMime?: string | null;
+    sortOrder?: number;
+  }>;
+}): Promise<{ postId: string; linked: number }> {
+  const post = await createCommunityPost({
+    authorId: params.authorId,
+    title: params.title,
+    body: params.body,
+    disciplina: params.disciplina,
+    tags: params.tags,
+    participantUserIds: params.participantUserIds,
+  });
+
+  if (!params.attachments.length) {
+    return { postId: post.id, linked: 0 };
+  }
+
+  try {
+    const { linkPostAttachments } = await import(
+      "@/server/community/community-post-attachments-service"
+    );
+    const result = await linkPostAttachments({
+      authorId: params.authorId,
+      postId: post.id,
+      attachments: params.attachments,
+    });
+    return { postId: post.id, linked: result.linked };
+  } catch (error) {
+    await deleteCommunityPost({
+      authorId: params.authorId,
+      postId: post.id,
+    }).catch(() => undefined);
+    throw error;
+  }
+}
+
+>>>>>>> origin/aplicar-melhorias-na-producao
 export async function toggleCommunityPostLike(params: {
   userId: string;
   postId: string;
@@ -855,7 +1188,11 @@ export async function toggleCommunityFollow(params: {
 
   void createCommunityNotification({
     userId: params.followingId,
+<<<<<<< HEAD
     type: "message",
+=======
+    type: "follow",
+>>>>>>> origin/aplicar-melhorias-na-producao
     actorUserId: params.followerId,
     bodyPreview: "começou a seguir você.",
     targetType: "professor",
@@ -866,6 +1203,7 @@ export async function toggleCommunityFollow(params: {
   return { following: true };
 }
 
+<<<<<<< HEAD
 export async function createCommunityGroup(params: {
   ownerId: string;
   name: string;
@@ -1140,6 +1478,8 @@ export async function deleteCommunityEvent(params: { adminId: string; eventId: s
   if (error) throw new Error(error.message);
 }
 
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
 export type CommunityDiscussionComment = {
   id: string;
   body: string;
@@ -1163,13 +1503,19 @@ export type CommunityDiscussionDetail = {
   savedByMe: boolean;
   isAuthor: boolean;
   viewerUserId: string | null;
+<<<<<<< HEAD
   groupId: string | null;
+=======
+  kind?: "text" | "achievement";
+  achievementBadge?: DocenteAchievementBadge;
+>>>>>>> origin/aplicar-melhorias-na-producao
   comments: CommunityDiscussionComment[];
   participants: DocenteAuthor[];
   relatedDiscussions: DocenteDiscussion[];
   attachments: CommunityPostAttachment[];
 };
 
+<<<<<<< HEAD
 export type CommunityGroupDetail = {
   id: string;
   name: string;
@@ -1206,17 +1552,34 @@ export type CommunityEventDetail = {
   participantsInterested: DocenteAuthor[];
 };
 
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
 export type CommunityTeacherDetail = {
   profile: DocenteAuthor;
   schoolName: string | null;
   bio: string | null;
+<<<<<<< HEAD
+=======
+  coverUrl: string | null;
+>>>>>>> origin/aplicar-melhorias-na-producao
   topComponentes: string[];
   badges: Array<{ slug: string; name: string; color: string; awardedAt: string | null }>;
   materials: Array<{ id: string; title: string; disciplina: string; downloadsCount: number }>;
   discussions: DocenteDiscussion[];
+<<<<<<< HEAD
   groups: Array<{ id: string; name: string; disciplina: string; membersCount: number }>;
   isFollowing: boolean;
   isOwnProfile: boolean;
+=======
+  isFollowing: boolean;
+  isOwnProfile: boolean;
+  stats: {
+    classesCount: number;
+    materialsCount: number;
+    followersCount: number;
+    followingCount: number;
+  };
+>>>>>>> origin/aplicar-melhorias-na-producao
 };
 
 export async function getCommunityDiscussionDetail(params: {
@@ -1228,7 +1591,11 @@ export async function getCommunityDiscussionDetail(params: {
   const { data: post } = await supabase
     .from("community_posts")
     .select(
+<<<<<<< HEAD
       "id,author_id,title,body,disciplina,tags,likes_count,comments_count,created_at,group_id",
+=======
+      "id,author_id,title,body,disciplina,tags,likes_count,comments_count,created_at,post_kind,metadata",
+>>>>>>> origin/aplicar-melhorias-na-producao
     )
     .eq("id", params.postId)
     .eq("is_published", true)
@@ -1288,11 +1655,16 @@ export async function getCommunityDiscussionDetail(params: {
     ),
   );
 
+<<<<<<< HEAD
   let relatedRowsQuery = supabase
+=======
+  const relatedRowsQuery = supabase
+>>>>>>> origin/aplicar-melhorias-na-producao
     .from("community_posts")
     .select("id,author_id,title,body,disciplina,tags,likes_count,comments_count,created_at")
     .eq("is_published", true)
     .neq("id", params.postId)
+<<<<<<< HEAD
     .order("created_at", { ascending: false })
     .limit(4);
 
@@ -1302,6 +1674,12 @@ export async function getCommunityDiscussionDetail(params: {
     relatedRowsQuery = relatedRowsQuery.eq("disciplina", postRow.disciplina);
   }
 
+=======
+    .eq("disciplina", postRow.disciplina)
+    .order("created_at", { ascending: false })
+    .limit(4);
+
+>>>>>>> origin/aplicar-melhorias-na-producao
   const { data: relatedRows } = await relatedRowsQuery;
 
   const relatedDiscussions: DocenteDiscussion[] = await Promise.all(
@@ -1321,6 +1699,12 @@ export async function getCommunityDiscussionDetail(params: {
 
   const attachments = await listPostAttachments(params.postId);
 
+<<<<<<< HEAD
+=======
+  const isAchievement = postRow.post_kind === "achievement";
+  const meta = (postRow.metadata || {}) as Record<string, unknown>;
+
+>>>>>>> origin/aplicar-melhorias-na-producao
   return {
     id: postRow.id,
     title: postRow.title,
@@ -1335,7 +1719,18 @@ export async function getCommunityDiscussionDetail(params: {
     savedByMe,
     isAuthor: params.viewerUserId === postRow.author_id,
     viewerUserId: params.viewerUserId || null,
+<<<<<<< HEAD
     groupId: (postRow.group_id as string | null) || null,
+=======
+    kind: isAchievement ? ("achievement" as const) : ("text" as const),
+    achievementBadge: isAchievement
+      ? {
+          name: String(meta.badgeName || postRow.title),
+          color: String(meta.badgeColor || "#0891B2"),
+          icon: String(meta.badgeIcon || "trophy"),
+        }
+      : undefined,
+>>>>>>> origin/aplicar-melhorias-na-producao
     comments,
     participants,
     relatedDiscussions,
@@ -1343,6 +1738,7 @@ export async function getCommunityDiscussionDetail(params: {
   };
 }
 
+<<<<<<< HEAD
 export async function getCommunityGroupDetail(params: {
   groupId: string;
   viewerUserId?: string | null;
@@ -1505,6 +1901,8 @@ export async function getCommunityEventDetail(params: {
   };
 }
 
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
 export async function getCommunityTeacherDetail(params: {
   userId: string;
   viewerUserId?: string | null;
@@ -1513,7 +1911,11 @@ export async function getCommunityTeacherDetail(params: {
 
   const { data: profile } = await supabase
     .from("profiles")
+<<<<<<< HEAD
     .select("id,full_name,bio,school_name,community_public,community_reputation,teaching_areas")
+=======
+    .select("id,full_name,bio,school_name,community_public,community_reputation,teaching_areas,cover_url,avatar_url")
+>>>>>>> origin/aplicar-melhorias-na-producao
     .eq("id", params.userId)
     .maybeSingle();
 
@@ -1528,7 +1930,11 @@ export async function getCommunityTeacherDetail(params: {
     { data: materials },
     { data: posts },
     { data: userBadges },
+<<<<<<< HEAD
     { data: groupMemberships },
+=======
+    { count: followingCount },
+>>>>>>> origin/aplicar-melhorias-na-producao
   ] = await Promise.all([
     supabase
       .from("marketplace_materials")
@@ -1549,9 +1955,15 @@ export async function getCommunityTeacherDetail(params: {
       .select("awarded_at,badge:community_badges(slug,name,color)")
       .eq("user_id", params.userId),
     supabase
+<<<<<<< HEAD
       .from("community_group_members")
       .select("group_id,group:community_groups(id,name,disciplina,members_count,is_public)")
       .eq("user_id", params.userId),
+=======
+      .from("community_followers")
+      .select("id", { count: "exact", head: true })
+      .eq("follower_id", params.userId),
+>>>>>>> origin/aplicar-melhorias-na-producao
   ]);
 
   let isFollowing = false;
@@ -1612,6 +2024,7 @@ export async function getCommunityTeacherDetail(params: {
   ].slice(0, 3);
   const topComponentes = teachingAreas.length > 0 ? teachingAreas : inferredComponentes;
 
+<<<<<<< HEAD
   const groups = (groupMemberships || [])
     .map((row) => {
       const group = row.group as {
@@ -1631,10 +2044,16 @@ export async function getCommunityTeacherDetail(params: {
     })
     .filter(Boolean) as CommunityTeacherDetail["groups"];
 
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
   return {
     profile: profileAuthor,
     schoolName: (profile.school_name as string | null) || null,
     bio: (profile.bio as string | null) || null,
+<<<<<<< HEAD
+=======
+    coverUrl: (profile.cover_url as string | null) || null,
+>>>>>>> origin/aplicar-melhorias-na-producao
     topComponentes,
     badges,
     materials: (materials || []).map((m) => ({
@@ -1644,6 +2063,7 @@ export async function getCommunityTeacherDetail(params: {
       downloadsCount: (m.downloads_count as number) || 0,
     })),
     discussions,
+<<<<<<< HEAD
     groups,
     isFollowing,
     isOwnProfile,
@@ -1719,6 +2139,19 @@ export async function inviteCommunityGroupMembers(params: {
   return { invited: toInvite.length };
 }
 
+=======
+    isFollowing,
+    isOwnProfile,
+    stats: {
+      classesCount: 0,
+      materialsCount: profileAuthor.materialsCount,
+      followersCount: profileAuthor.followersCount,
+      followingCount: followingCount || 0,
+    },
+  };
+}
+
+>>>>>>> origin/aplicar-melhorias-na-producao
 export async function updateCommunityPost(params: {
   authorId: string;
   postId: string;
@@ -1820,9 +2253,15 @@ export async function inviteCommunityPostParticipants(params: {
     toInvite.map((userId) =>
       createCommunityNotification({
         userId,
+<<<<<<< HEAD
         type: "message",
         actorUserId: params.authorId,
         bodyPreview: `Você foi convidado(a) para a discussão "${post.title}".`,
+=======
+        type: "mention",
+        actorUserId: params.authorId,
+        bodyPreview: `Você foi adicionado(a) na publicação "${post.title}".`,
+>>>>>>> origin/aplicar-melhorias-na-producao
         targetType: "post",
         targetId: params.postId,
         href: `/comunidade/discussao/${params.postId}`,
@@ -1833,6 +2272,7 @@ export async function inviteCommunityPostParticipants(params: {
   return { invited: toInvite.length };
 }
 
+<<<<<<< HEAD
 export async function toggleCommunityEventRsvp(params: {
   userId: string;
   eventId: string;
@@ -1906,6 +2346,8 @@ export async function toggleCommunityEventRsvp(params: {
   return { status: finalStatus, goingCount, interestedCount };
 }
 
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
 export async function getSavedDiscussionsForUser(params: {
   userId: string;
   limit?: number;
@@ -1917,7 +2359,13 @@ export async function getSavedDiscussionsForUser(params: {
   const ids = savedIds.slice(0, params.limit || 20);
   const { data: posts } = await supabase
     .from("community_posts")
+<<<<<<< HEAD
     .select("id,author_id,title,body,disciplina,tags,likes_count,comments_count,created_at")
+=======
+    .select(
+      "id,author_id,title,body,disciplina,tags,likes_count,comments_count,created_at,post_kind,metadata",
+    )
+>>>>>>> origin/aplicar-melhorias-na-producao
     .in("id", ids)
     .eq("is_published", true);
 
@@ -1932,6 +2380,7 @@ export async function getSavedDiscussionsForUser(params: {
     .filter(Boolean) as PostRow[];
 
   return Promise.all(
+<<<<<<< HEAD
     ordered.map(async (post) => ({
       id: post.id,
       author: await buildAuthor(post.author_id, authorMap),
@@ -1944,6 +2393,33 @@ export async function getSavedDiscussionsForUser(params: {
       likedByMe: false,
       savedByMe: true,
     })),
+=======
+    ordered.map(async (post) => {
+      const isAchievement = post.post_kind === "achievement";
+      const meta = (post.metadata || {}) as Record<string, unknown>;
+      return {
+        id: post.id,
+        author: await buildAuthor(post.author_id, authorMap),
+        title: post.title,
+        body: post.body || "",
+        disciplina: normalizeDocenteDisciplina(post.disciplina),
+        tags: post.tags || [],
+        createdAt: post.created_at,
+        commentsCount: post.comments_count,
+        likesCount: post.likes_count,
+        likedByMe: false,
+        savedByMe: true,
+        kind: isAchievement ? ("achievement" as const) : ("text" as const),
+        achievementBadge: isAchievement
+          ? {
+              name: String(meta.badgeName || post.title),
+              color: String(meta.badgeColor || "#0891B2"),
+              icon: String(meta.badgeIcon || "trophy"),
+            }
+          : undefined,
+      };
+    }),
+>>>>>>> origin/aplicar-melhorias-na-producao
   );
 }
 

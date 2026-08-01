@@ -4,6 +4,10 @@ import { FormEvent, useMemo, useRef, useState } from "react";
 import { CreditsBalancePill } from "@/components/credits/CreditsBalancePill";
 import { DailyGenerationsBar } from "@/components/credits/DailyGenerationsBar";
 import { GenerationCostHint } from "@/components/credits/GenerationCostHint";
+<<<<<<< HEAD
+=======
+import { GoogleDocumentExportBar } from "@/components/google/GoogleDocumentExportBar";
+>>>>>>> origin/aplicar-melhorias-na-producao
 import { MaterialTypedPreview } from "@/components/materiais/preview/MaterialTypedPreview";
 import { MaterialPreviewSkeleton } from "@/components/materiais/MaterialPreviewSkeleton";
 import { MaterialToolPageShell } from "@/components/pro/MaterialToolPageShell";
@@ -13,6 +17,10 @@ import { PlanifyOwlGenerationCoach } from "@/components/pro/PlanifyOwlGeneration
 import { PlanifyOwlMark } from "@/components/pro/PlanifyOwlMark";
 import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
 import { downloadEditorExport } from "@/lib/downloads/editor-export-client";
+<<<<<<< HEAD
+=======
+import { openMaterialInEditor } from "@/lib/materiais/material-editor-flow";
+>>>>>>> origin/aplicar-melhorias-na-producao
 import { INCLUSAO_GENERATION_TYPE } from "@/lib/inclusao/inclusao-config";
 import {
   INCLUSAO_EDUCATION_LEVELS,
@@ -42,6 +50,10 @@ import {
   HUD_FIELD_CLASS,
   HUD_SECTION_LABEL,
   HUD_TEXTAREA_CLASS,
+<<<<<<< HEAD
+=======
+  HUD_TOOL_HUB_CLASS,
+>>>>>>> origin/aplicar-melhorias-na-producao
 } from "@/lib/pro/hud-form-styles";
 
 type InclusaoClientProps = {
@@ -148,6 +160,16 @@ export function InclusaoClient({
 
         setResultadoMarkdown(result.markdown);
         setResultadoHtml(result.html);
+<<<<<<< HEAD
+=======
+        openMaterialInEditor(result.html, exportTitle, {
+          toolId: "inclusao",
+          tema: exportTitle,
+          componente: school.selectedClass?.discipline?.trim() || "Inclusão",
+          anoSerie: etapaEnsino,
+          etapa: etapaEnsino,
+        }, { from: "inclusao" });
+>>>>>>> origin/aplicar-melhorias-na-producao
       }, { onError: dispatchCreditsChangedIfNeeded });
     } catch (error) {
       dispatchCreditsChangedIfNeeded(error);
@@ -191,13 +213,40 @@ export function InclusaoClient({
         title: exportTitle,
         html: resultadoHtml,
         format: "pdf",
+<<<<<<< HEAD
+=======
+        documentType: "material:inclusao",
+>>>>>>> origin/aplicar-melhorias-na-producao
         fallbackFileName: `${exportTitle.replace(/[\\/:*?"<>|]/g, "-")}.pdf`,
       });
     } catch (error) {
       const formatted = formatGenerationError(error);
       setErro(formatted.message);
+<<<<<<< HEAD
       setErroCta(formatted.cta ?? null);
       setErroRetryable(formatted.retryable);
+=======
+    }
+  }
+
+  async function baixarDocx() {
+    if (!resultadoHtml) {
+      setErro("Gere um material antes de baixar.");
+      return;
+    }
+
+    try {
+      await downloadEditorExport({
+        title: exportTitle,
+        html: resultadoHtml,
+        format: "docx",
+        documentType: "material:inclusao",
+        fallbackFileName: `${exportTitle.replace(/[\\/:*?"<>|]/g, "-")}.docx`,
+      });
+    } catch (error) {
+      const formatted = formatGenerationError(error);
+      setErro(formatted.message);
+>>>>>>> origin/aplicar-melhorias-na-producao
     }
   }
 
@@ -220,11 +269,16 @@ export function InclusaoClient({
       onBack={fecharPainel}
       backLabel={studioMode ? "Início" : "Catálogo"}
       formScrollAttr={studioMode}
+<<<<<<< HEAD
       previewScrollAttr={studioMode}
       previewReady={Boolean(resultadoHtml)}
       previewLoading={loading}
       form={
         <form onSubmit={gerarMaterial} className="space-y-4 max-lg:pb-2">
+=======
+      form={
+        <form onSubmit={gerarMaterial} className="space-y-5 max-lg:pb-2">
+>>>>>>> origin/aplicar-melhorias-na-producao
           <div>
             <label className={HUD_SECTION_LABEL} htmlFor="inclusao-modo">
               Modo
@@ -335,6 +389,30 @@ export function InclusaoClient({
             className="mt-2"
           />
 
+<<<<<<< HEAD
+=======
+          {loading ? (
+            <div className="space-y-4">
+              <PlanifyOwlGenerationCoach
+                active
+                title={tool.loadingTitle}
+                description={tool.loadingDescription}
+                toolId="inclusao"
+              />
+              {showPatienceMessage ? (
+                <p className="text-center text-sm font-semibold text-slate-600">
+                  A adaptação inclusiva pode levar alguns minutos. Não feche esta página.
+                </p>
+              ) : null}
+              <MaterialPreviewSkeleton />
+            </div>
+          ) : null}
+
+          <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-900">
+            Após gerar, o material adaptado abre direto no editor para revisão e exportação.
+          </div>
+
+>>>>>>> origin/aplicar-melhorias-na-producao
           <div className="hidden flex-wrap items-center gap-3 pt-1 lg:flex">
             <button
               type="submit"
@@ -359,6 +437,7 @@ export function InclusaoClient({
           </MaterialToolMobileSubmitBar>
         </form>
       }
+<<<<<<< HEAD
       preview={
         <>
           {loading ? (
@@ -423,6 +502,8 @@ export function InclusaoClient({
           )}
         </>
       }
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
     />
   ) : null;
 
@@ -436,7 +517,11 @@ export function InclusaoClient({
 
   return (
     <PlanifyWorkspacePane>
+<<<<<<< HEAD
       <div className="planify-hud pl-hud-hub mx-auto max-w-6xl space-y-5">
+=======
+      <div className={HUD_TOOL_HUB_CLASS}>
+>>>>>>> origin/aplicar-melhorias-na-producao
         {!modalAberto ? (
           <section className="pl-hud-glass rounded-2xl p-5 sm:p-6">
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-600">

@@ -47,8 +47,15 @@ import { useSchoolClasses } from "@/hooks/useSchoolClasses";
 import { TurmaCombobox } from "@/components/school/TurmaCombobox";
 import {
   HUD_FIELD_CLASS,
+<<<<<<< HEAD
   HUD_SECTION_LABEL,
   HUD_TEXTAREA_CLASS,
+=======
+  HUD_FORM_GRID_CLASS,
+  HUD_SECTION_LABEL,
+  HUD_TEXTAREA_CLASS,
+  HUD_TOOL_HUB_CLASS,
+>>>>>>> origin/aplicar-melhorias-na-producao
 } from "@/lib/pro/hud-form-styles";
 
 type CruzadinhaClientProps = {
@@ -359,11 +366,16 @@ export function CruzadinhaClient({
       onBack={studioMode ? onStudioClose : () => setModalAberto(false)}
       backLabel={studioMode ? "Início" : "Catálogo"}
       formScrollAttr={studioMode}
+<<<<<<< HEAD
       previewScrollAttr={studioMode}
       previewReady={loading || openingEditor}
       previewLoading={loading}
       form={
         <form onSubmit={handleSubmit} className="space-y-4">
+=======
+      form={
+        <form onSubmit={handleSubmit} className="space-y-5">
+>>>>>>> origin/aplicar-melhorias-na-producao
           <div>
             <label htmlFor="cruzadinha-conteudo" className={HUD_SECTION_LABEL}>
               {formFields.conteudoLabel}
@@ -378,7 +390,11 @@ export function CruzadinhaClient({
             />
           </div>
 
+<<<<<<< HEAD
           <div className="grid gap-4 sm:grid-cols-2">
+=======
+          <div className={HUD_FORM_GRID_CLASS}>
+>>>>>>> origin/aplicar-melhorias-na-producao
             <div>
               <label htmlFor="cruzadinha-etapa" className={HUD_SECTION_LABEL}>
                 Etapa
@@ -427,7 +443,11 @@ export function CruzadinhaClient({
             </div>
           </div>
 
+<<<<<<< HEAD
           <div className="grid gap-4 sm:grid-cols-2">
+=======
+          <div className={HUD_FORM_GRID_CLASS}>
+>>>>>>> origin/aplicar-melhorias-na-producao
             <div>
               <label htmlFor="cruzadinha-area" className={HUD_SECTION_LABEL}>
                 Área do conhecimento
@@ -642,6 +662,38 @@ export function CruzadinhaClient({
             className="mt-2"
           />
 
+<<<<<<< HEAD
+=======
+          {loading || openingEditor ? (
+            <div className="space-y-4">
+              <PlanifyOwlGenerationCoach
+                active
+                title={
+                  openingEditor
+                    ? "Salvando e abrindo no editor"
+                    : tool.loadingTitle
+                }
+                description={
+                  openingEditor
+                    ? "Redirecionando para o editor…"
+                    : progressLabel || tool.loadingDescription
+                }
+                toolId={CRUZADINHA_GENERATION_TYPE}
+              />
+              {!openingEditor && showPatienceMessage ? (
+                <p className="text-center text-sm font-semibold text-slate-600">
+                  A montagem da grade pode levar alguns instantes. Não feche esta página.
+                </p>
+              ) : null}
+              <MaterialPreviewSkeleton />
+            </div>
+          ) : null}
+
+          <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-900">
+            Após gerar, a cruzadinha abre direto no editor para revisão e exportação.
+          </div>
+
+>>>>>>> origin/aplicar-melhorias-na-producao
           <div className="hidden pt-1 lg:block">
             <button
               type="submit"
@@ -664,6 +716,7 @@ export function CruzadinhaClient({
           </MaterialToolMobileSubmitBar>
         </form>
       }
+<<<<<<< HEAD
       preview={
         <>
           {loading ? (
@@ -742,6 +795,8 @@ export function CruzadinhaClient({
           )}
         </>
       }
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
     />
   ) : null;
 
@@ -755,7 +810,11 @@ export function CruzadinhaClient({
 
   return (
     <PlanifyWorkspacePane>
+<<<<<<< HEAD
       <div className="planify-hud pl-hud-hub mx-auto max-w-6xl space-y-5">
+=======
+      <div className={HUD_TOOL_HUB_CLASS}>
+>>>>>>> origin/aplicar-melhorias-na-producao
         {!modalAberto ? (
           <section className="pl-hud-glass rounded-2xl p-5 sm:p-6">
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-600">

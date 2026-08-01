@@ -54,7 +54,11 @@ export function resolveQuizDocument(
   }
 }
 
+<<<<<<< HEAD
 /** Google Forms — provas/listas com questões estruturadas (não jogos visuais). */
+=======
+/** Google Forms — apenas provas/listas Planify com questões estruturadas. */
+>>>>>>> origin/aplicar-melhorias-na-producao
 export function resolveFormsExportCompatible(
   getHtml: () => string,
   documentType?: string | null,
@@ -69,6 +73,7 @@ export function resolveFormsExportCompatible(
     if (/planify-game-table|planify-jogo-visual|planify-game-section/i.test(html)) {
       return false;
     }
+<<<<<<< HEAD
     if (type.includes("prova") || type.includes("lista")) {
       return true;
     }
@@ -79,6 +84,18 @@ export function resolveFormsExportCompatible(
       return materialExportAllows("google-forms", documentType);
     }
     return materialExportAllows("google-forms", documentType);
+=======
+    // Exige markup nativo do motor Planify — nunca PDF/DOC convertidos.
+    if (!/planify-questao/i.test(html)) {
+      return false;
+    }
+    if (type.includes("prova") || type.includes("lista") || type.includes("quiz")) {
+      return true;
+    }
+    return true;
+  } catch {
+    return false;
+>>>>>>> origin/aplicar-melhorias-na-producao
   }
 }
 

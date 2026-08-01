@@ -238,12 +238,57 @@ export async function awardEligibleBadges(userId: string): Promise<string[]> {
     if (!error) {
       newlyAwarded.push(badge.slug);
       earnedIds.add(badge.id);
+<<<<<<< HEAD
+=======
+      await publishAchievementPost(userId, badge);
+>>>>>>> origin/aplicar-melhorias-na-producao
     }
   }
 
   return newlyAwarded;
 }
 
+<<<<<<< HEAD
+=======
+/** Publica automaticamente um post de conquista no feed quando o professor ganha um selo. */
+async function publishAchievementPost(userId: string, badge: BadgeRow): Promise<void> {
+  const supabase = getSupabaseAdminClient();
+  try {
+    const { error } = await supabase.from("community_posts").insert({
+      author_id: userId,
+      title: badge.name,
+      body: "Feliz em compartilhar que recebi uma nova conquista aqui no Planify!",
+      disciplina: "Multidisciplinar",
+      tags: [],
+      is_published: true,
+      post_kind: "achievement",
+      metadata: {
+        badgeSlug: badge.slug,
+        badgeName: badge.name,
+        badgeColor: badge.color,
+        badgeIcon: badge.icon,
+        badgeDescription: badge.description,
+      },
+    });
+    // Supabase não lança em erro de query — precisamos inspecionar { error }.
+    if (error) {
+      console.error("planify:achievement-post-failed", {
+        userId,
+        badgeSlug: badge.slug,
+        message: error.message,
+      });
+    }
+  } catch (err) {
+    // Não bloqueia a premiação do selo caso a publicação falhe.
+    console.error("planify:achievement-post-failed", {
+      userId,
+      badgeSlug: badge.slug,
+      message: err instanceof Error ? err.message : String(err),
+    });
+  }
+}
+
+>>>>>>> origin/aplicar-melhorias-na-producao
 export async function getBadgeProgressForUser(userId: string): Promise<BadgeProgress[]> {
   const supabase = getSupabaseAdminClient();
   const metrics = await getCommunityUserMetrics(userId);

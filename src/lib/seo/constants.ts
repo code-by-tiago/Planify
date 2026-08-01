@@ -21,6 +21,12 @@ export const SEO = {
   creator: "Planify IA Educacional",
   publisher: "Planify IA Educacional",
   logoPath: "/brand/planify-owl-graduate.png",
+<<<<<<< HEAD
+=======
+  ogImagePath: "/marketing/og/og-image.jpg",
+  ogImageWidth: 1200,
+  ogImageHeight: 630,
+>>>>>>> origin/aplicar-melhorias-na-producao
   sameAs: [] as string[],
 } as const;
 

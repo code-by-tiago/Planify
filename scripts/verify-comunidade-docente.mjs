@@ -14,14 +14,20 @@ const baseUrl = process.env.BASE_URL || "";
 const requiredFiles = [
   "src/components/community/docente/ComunidadeDocenteClient.tsx",
   "src/components/community/docente/ComunidadeDashboardRouter.tsx",
+<<<<<<< HEAD
   "src/components/community/docente/ComunidadeDocenteGroupChat.tsx",
   "src/server/community/community-group-messages-service.ts",
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
   "src/server/community/community-rate-limit-service.ts",
   "src/server/community/community-hidden-feed-materials-service.ts",
   "src/server/community/community-bncc-challenge-service.ts",
   "src/app/api/community/docente/route.ts",
   "src/app/api/community/docente/actions/route.ts",
+<<<<<<< HEAD
   "src/app/api/community/docente/grupo/[id]/messages/route.ts",
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
   "src/app/api/community/docente/challenges/bncc/route.ts",
   "src/app/api/community/hidden-feed-materials/route.ts",
   "supabase/migrations/20260614060300_community_docente_v3.sql",
@@ -33,10 +39,13 @@ const requiredFiles = [
 
 const requiredSnippets = [
   {
+<<<<<<< HEAD
     file: "src/server/community/community-group-messages-service.ts",
     includes: ["notifyGroupChatMembers", "consumeCommunityRateLimit"],
   },
   {
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
     file: "src/app/api/community/docente/actions/route.ts",
     includes: ["consumeCommunityRateLimit"],
   },
@@ -57,10 +66,13 @@ const requiredSnippets = [
     includes: ["linkPostAttachments", "listPostAttachments"],
   },
   {
+<<<<<<< HEAD
     file: "src/server/community/community-group-messages-service.ts",
     includes: ["downloadCommunityGroupMessageFile", "CHAT_FILES_BUCKET"],
   },
   {
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
     file: "src/server/community/community-reports-moderation-service.ts",
     includes: ["listCommunityReportsForAdmin", "updateCommunityReportStatus"],
   },

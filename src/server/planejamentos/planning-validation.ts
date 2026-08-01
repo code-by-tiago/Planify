@@ -112,6 +112,17 @@ export function validatePlanningPayload(
     return "As observações estão muito longas.";
   }
 
+<<<<<<< HEAD
+=======
+  const tipo = normalizeText(payload.tipoPlanejamento).toLowerCase();
+  if (tipo.includes("tri")) {
+    return (
+      "O planejamento trimestral é gerado a partir do anual. " +
+      "Gere o planejamento anual e escolha extrair os trimestres desejados."
+    );
+  }
+
+>>>>>>> origin/aplicar-melhorias-na-producao
   return null;
 }
 

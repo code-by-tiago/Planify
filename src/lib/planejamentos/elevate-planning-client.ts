@@ -15,6 +15,10 @@ export type PlanningGenerationApiResult = PlanningAiResult & {
   materialId?: string | null;
   persistWarning?: string | null;
   alertas?: string[];
+<<<<<<< HEAD
+=======
+  editorHtml?: string | null;
+>>>>>>> origin/aplicar-melhorias-na-producao
 };
 
 export async function requestPlanningGeneration(

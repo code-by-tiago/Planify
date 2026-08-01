@@ -23,10 +23,7 @@
     "verify:unification-u4": "node scripts/verify-unification-u4.mjs",
     "verify:ecosystem": "node scripts/verify-ecosystem.mjs",
     "verify:comunidade-docente": "node scripts/verify-comunidade-docente.mjs",
-<<<<<<< HEAD
-=======
     "verify:copiloto": "node scripts/verify-copiloto.mjs",
->>>>>>> origin/aplicar-melhorias-na-producao
     "verify:pedagogical-p1": "node scripts/verify-pedagogical-p1.mjs",
     "verify:pedagogical-p3": "node scripts/verify-pedagogical-p3.mjs",
     "verify:pedagogical-ecosystem": "node scripts/verify-pedagogical-ecosystem.mjs",
@@ -34,10 +31,7 @@
     "sync:corpus-candidates": "node scripts/corpus-mining/sync-corpus-candidates.mjs",
     "verify:corpus-mining": "node scripts/verify-corpus-mining.mjs",
     "verify:classroom-export-safety": "node scripts/verify-classroom-export-safety.mjs",
-<<<<<<< HEAD
-=======
     "verify:mobile-budget": "node scripts/verify-mobile-budget.mjs",
->>>>>>> origin/aplicar-melhorias-na-producao
     "seed:community-questions": "node scripts/seed-community-questions.mjs",
     "seed:comunidade-docente": "node scripts/seed-comunidade-docente.mjs",
     "seed:pedagogical-themes": "node scripts/seed-pedagogical-themes.mjs",
@@ -56,21 +50,15 @@
     "verify:generators-live": "node scripts/verify-generators-live.mjs",
     "verify:staging": "node scripts/verify-generators-live.mjs --suite=sprint1",
     "verify:planejamento-docx": "node scripts/verify-planejamento-docx.mjs",
-<<<<<<< HEAD
-=======
     "verify:planning-editor-html": "node scripts/verify-planning-editor-html.mjs",
     "verify:planning-parity": "node scripts/verify-planning-parity.mjs",
->>>>>>> origin/aplicar-melhorias-na-producao
     "verify:planning-allocation": "node scripts/verify-planning-allocation.mjs",
     "verify:planning-bncc": "node scripts/verify-planning-bncc-suggestions.mjs",
     "verify:custom-template-docx": "node scripts/verify-custom-template-docx.mjs",
     "verify:export-pipeline": "node scripts/verify-export-pipeline.mjs",
-<<<<<<< HEAD
     "verify:all": "npm run verify:material-quality && npm run verify:generators && npm run verify:export-pipeline && node scripts/verify-export-motors.mjs && node scripts/verify-forms-export-payload.mjs && npm run verify:planning-allocation && npm run verify:planning-bncc && npm run verify:planejamento-docx && node scripts/verify-google-export-readiness.mjs",
-=======
     "verify:all": "npm run verify:material-quality && npm run verify:generators && npm run verify:export-pipeline && node scripts/verify-export-motors.mjs && node scripts/verify-forms-export-payload.mjs && npm run verify:planning-allocation && npm run verify:planning-bncc && npm run verify:planejamento-docx && npm run verify:planning-parity && node scripts/verify-google-export-readiness.mjs && npm run verify:copiloto && npm run verify:classroom-export-safety && node scripts/verify-planning-consonancia.mjs",
     "verify:planning-consonancia": "node scripts/verify-planning-consonancia.mjs",
->>>>>>> origin/aplicar-melhorias-na-producao
     "verify:go-live": "node scripts/verify-go-live.mjs",
     "test:e2e": "playwright test",
     "test:e2e:install": "playwright install chromium",
@@ -79,10 +67,7 @@
   },
   "dependencies": {
     "@google/genai": "^2.8.0",
-<<<<<<< HEAD
-=======
     "@napi-rs/canvas": "^1.0.2",
->>>>>>> origin/aplicar-melhorias-na-producao
     "@sparticuz/chromium-min": "^149.0.0",
     "@supabase/ssr": "0.10.3",
     "@supabase/supabase-js": "2.106.2",
@@ -100,12 +85,9 @@
     "react": "19.2.6",
     "react-dom": "19.2.6",
     "recharts": "^3.8.1",
-<<<<<<< HEAD
     "stripe": "22.2.0"
-=======
     "stripe": "22.2.0",
     "zod": "^3.25.76"
->>>>>>> origin/aplicar-melhorias-na-producao
   },
   "devDependencies": {
     "@playwright/test": "^1.60.0",

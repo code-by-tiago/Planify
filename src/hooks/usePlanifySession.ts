@@ -1,0 +1,112 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import {
+  formatDisplayNameFromEmail,
+  formatPlanLabel,
+} from "@/lib/auth/format-plan-label";
+import {
+  clearPlanifyAccessStatusCache,
+  fetchFullPlanifyAccessStatus,
+} from "@/lib/auth/access-client";
+import { ensurePremiumSessionCookies } from "@/lib/auth/session-client";
+import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
+
+export type PlanifySession = {
+  loading: boolean;
+  authenticated: boolean;
+  premium: boolean;
+  email: string;
+  displayName: string;
+  avatarUrl: string | null;
+  planLabel: string;
+  isAdmin: boolean;
+  isOwner: boolean;
+};
+
+const initial: PlanifySession = {
+  loading: true,
+  authenticated: false,
+  premium: false,
+  email: "",
+  displayName: "",
+  avatarUrl: null,
+  planLabel: "",
+  isAdmin: false,
+  isOwner: false,
+};
+
+export function usePlanifySession() {
+  const [session, setSession] = useState<PlanifySession>(initial);
+
+  useEffect(() => {
+    let active = true;
+    const supabase = getSupabaseBrowserClient();
+
+    async function load() {
+      try {
+        await ensurePremiumSessionCookies();
+
+        const data = await fetchFullPlanifyAccessStatus();
+
+        if (!active) return;
+
+        const email = data?.email || "";
+        const displayName =
+          typeof data?.displayName === "string" && data.displayName.trim()
+            ? data.displayName.trim()
+            : email
+              ? formatDisplayNameFromEmail(email)
+              : "Professora";
+        const avatarUrl =
+          typeof data?.avatarUrl === "string" && data.avatarUrl.trim()
+            ? data.avatarUrl.trim()
+            : null;
+
+        setSession({
+          loading: false,
+          authenticated: Boolean(data?.authenticated),
+          premium: Boolean(data?.premium),
+          email,
+          displayName,
+          avatarUrl,
+          planLabel: formatPlanLabel(data?.planKey, {
+            isAdmin: data?.isAdmin,
+            isOwner: data?.isOwner,
+          }),
+          isAdmin: Boolean(data?.isAdmin),
+          isOwner: Boolean(data?.isOwner),
+        });
+      } catch {
+        if (!active) return;
+        setSession({ ...initial, loading: false });
+      }
+    }
+
+    void load();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event) => {
+      if (
+        event === "SIGNED_IN" ||
+        event === "SIGNED_OUT" ||
+        event === "TOKEN_REFRESHED"
+      ) {
+        if (!active) {
+          return;
+        }
+        clearPlanifyAccessStatusCache();
+        setSession((current) => ({ ...current, loading: true }));
+        void load();
+      }
+    });
+
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  return session;
+}

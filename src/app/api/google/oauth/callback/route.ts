@@ -1,0 +1,82 @@
+import { NextRequest, NextResponse } from "next/server";
+import {
+  exchangeGoogleAuthCode,
+  getGoogleConfigStatus,
+} from "../../../../../server/google/google-oauth";
+import { verifyGoogleOAuthState } from "../../../../../server/google/google-auth";
+import { saveGoogleTokensForUser, getGoogleTokensForUser } from "../../../../../server/google/google-token-store";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+function redirectWith(
+  request: NextRequest,
+  path: string,
+  params: Record<string, string>,
+): NextResponse {
+  const url = new URL(path, request.url);
+
+  for (const [key, value] of Object.entries(params)) {
+    url.searchParams.set(key, value);
+  }
+
+  return NextResponse.redirect(url);
+}
+
+export async function GET(request: NextRequest) {
+  const config = getGoogleConfigStatus();
+
+  if (!config.configured) {
+    return redirectWith(request, "/dashboard", {
+      secao: "editor",
+      google_error: "Google OAuth não configurado no servidor.",
+    });
+  }
+
+  const code = request.nextUrl.searchParams.get("code");
+  const stateRaw = request.nextUrl.searchParams.get("state");
+  const state = stateRaw ? verifyGoogleOAuthState(stateRaw) : null;
+  const returnTo = state?.returnTo || "/dashboard?secao=editor";
+
+  const error = request.nextUrl.searchParams.get("error");
+
+  if (error) {
+    return redirectWith(request, "/google/retorno", {
+      returnTo,
+      google_error:
+        error === "access_denied"
+          ? "Autorização Google cancelada. Conecte novamente para exportar."
+          : `Autorização cancelada ou negada (${error}).`,
+    });
+  }
+
+  if (!code || !state) {
+    return redirectWith(request, "/google/retorno", {
+      returnTo,
+      google_error: "Resposta OAuth inválida. Tente conectar de novo.",
+    });
+  }
+
+  try {
+    const existing = await getGoogleTokensForUser(state.userId);
+    const tokens = await exchangeGoogleAuthCode(code);
+    await saveGoogleTokensForUser(state.userId, tokens, {
+      existingRefreshToken: existing?.refreshToken,
+      preserveScopes: existing?.scopes,
+      preserveGoogleEmail: existing?.googleEmail,
+    });
+
+    return redirectWith(request, "/google/retorno", {
+      returnTo: state.returnTo || "/dashboard?secao=editor",
+      google: "connected",
+    });
+  } catch (err) {
+    const message =
+      err instanceof Error ? err.message : "Erro ao conectar conta Google.";
+
+    return redirectWith(request, "/google/retorno", {
+      returnTo: state.returnTo || "/dashboard?secao=editor",
+      google_error: message,
+    });
+  }
+}

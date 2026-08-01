@@ -1,0 +1,280 @@
+import type { MaterialAIInput, MaterialAIQuestion, MaterialAISection } from "../../types/ai";
+import { canonicalMaterialType, normalizeForPedagogy } from "./material-specialist-blueprints";
+
+export function buildMaterialStructureContract(input: MaterialAIInput): string {
+  const kind = canonicalMaterialType(input.tipo);
+  const theme = input.tema || "tema estudado";
+
+  const universal = [
+    "A estrutura visual do material deve combinar com o tipo solicitado; não entregue tudo como texto corrido.",
+    "Não use parágrafos longos para atividades, exercícios, listas, provas ou revisões. Use questões numeradas, tópicos, itens e comandos claros.",
+    "Não coloque exercícios escondidos dentro de seções em forma de texto. Quando houver questão, ela deve estar no array questoes.",
+    "Não compacte várias perguntas em uma única questão usando a), b), c), d) ou frases soltas em sequência. Cada pergunta principal deve ser objeto separado ou subitem visual claro.",
+    "Quando uma questão usar várias frases para análise, separe comando e frases em tópicos; nunca deixe exemplos colados no título ou em parágrafo corrido.",
+    "A versão do aluno deve ser limpa, imprimível e pronta para uso. O gabarito deve ficar separado para o professor.",
+    "Cada seção deve ter função real: ensinar, orientar, praticar, revisar, avaliar ou produzir. Nada de seção decorativa.",
+  ];
+
+  if (["atividade", "lista", "revisao"].includes(kind)) {
+    return [
+      ...universal,
+      `Para ${kind}, use formato de folha de atividade: cabeçalho, comandos curtos, uma questão por item e espaço de resposta.`,
+      "Cada questão deve ser direta e organizada em tópicos quando tiver mais de uma ação: • observe, • responda, • justifique, • registre.",
+      "Evite texto explicativo antes das questões; explique apenas dentro do enunciado quando for indispensável para resolver.",
+      "Não entregue uma questão gigante com várias letras dentro; transforme cada item relevante em questão própria ou em subitens visuais curtos.",
+      "Varie o formato das questões: completar, relacionar, classificar, interpretar, justificar, comparar, produzir e desafio final.",
+      "O gabarito deve repetir a numeração da versão do aluno e trazer resposta esperada objetiva.",
+    ].join("\n");
+  }
+
+  if (kind === "prova") {
+    return [
+      ...universal,
+      "Para prova, use formato avaliativo: cabeçalho, instruções breves, questões numeradas, alternativas quando houver e gabarito no final.",
+      "Não ensine o conteúdo na prova; contextualize apenas o suficiente para avaliar.",
+      "Combine questões objetivas e discursivas quando fizer sentido, com critérios de correção para as discursivas.",
+      "Cada questão deve avaliar uma habilidade ou aspecto claro do conteúdo.",
+    ].join("\n");
+  }
+
+  if (kind === "apostila") {
+    return [
+      ...universal,
+      `Para apostila sobre ${theme}, use formato de pequeno livro didático.`,
+      "Estruture em capa textual, apresentação curta, capítulos/unidades, explicações progressivas, exemplos, boxes, vocabulário, síntese e exercícios finais.",
+      "A apostila deve ensinar antes de exercitar. Não comece com uma lista de perguntas.",
+      "Os capítulos devem ter títulos claros, explicação consistente, tópicos internos e exemplos conectados ao componente curricular.",
+      "Exercícios devem aparecer ao final de capítulos ou no fim da apostila, com gabarito separado.",
+      "Não entregue apostila como parágrafo único, nem como plano de aula, nem como atividade simples.",
+    ].join("\n");
+  }
+
+  if (kind === "sequencia") {
+    return [
+      ...universal,
+      "Para sequência didática, use formato de aulas/momentos: Aula 1, Aula 2, Aula 3 ou Etapa 1, Etapa 2, Etapa 3.",
+      "Cada aula deve ter objetivo, tempo, recursos, ação do professor, ação dos estudantes, evidência e avaliação.",
+      "Não transforme sequência em lista de exercícios.",
+    ].join("\n");
+  }
+
+  if (kind === "projeto") {
+    return [
+      ...universal,
+      "Para projeto, use estrutura investigativa: problema norteador, justificativa curta, etapas, cronograma, produto final, socialização e rubrica.",
+      "Não transforme projeto em atividade de perguntas. As tarefas devem ser etapas de produção, pesquisa, investigação ou intervenção.",
+    ].join("\n");
+  }
+
+  if (kind === "roteiro") {
+    return [
+      ...universal,
+      "Para roteiro de estudo, use passos de estudo autônomo: antes, durante, depois, checagem e autoavaliação.",
+      "Use comandos curtos e progressivos para o aluno seguir sem depender de explicação longa.",
+    ].join("\n");
+  }
+
+  if (kind === "jogo") {
+    return [
+      ...universal,
+      "Para jogo, entregue peças, cartas, grade, cartelas, pistas, regras e gabarito conforme o modelo escolhido.",
+      "Não entregue apenas explicação do jogo; o professor precisa do material jogável/imprimível.",
+    ].join("\n");
+  }
+
+  if (kind === "plano-aula") {
+    return [
+      ...universal,
+      `Para plano de aula sobre ${theme}, use etapas cronológicas com tempo, recursos, mediação e avaliação.`,
+      "Referencie BNCC quando aplicável. Não entregue lista de exercícios como estrutura principal.",
+    ].join("\n");
+  }
+
+  if (kind === "redacao") {
+    return [
+      ...universal,
+      "Para redação, entregue proposta com motivadores, comando e critérios — não corrija texto do aluno.",
+      "Separe claramente textos motivadores, preparação e critérios de avaliação.",
+    ].join("\n");
+  }
+
+  if (kind === "resumo") {
+    return [
+      ...universal,
+      `Para resumo sobre ${theme}, use blocos temáticos sintéticos e seção de fixação.`,
+      "Priorize bullets e hierarquia; evite parágrafos extensos.",
+    ].join("\n");
+  }
+
+  return universal.join("\n");
+}
+
+export function shouldUseBulletStructure(kind: string): boolean {
+  return ["atividade", "lista", "revisao", "prova"].includes(canonicalMaterialType(kind));
+}
+
+export function removeQuestionPreamble(value: unknown): string {
+  return String(value || "")
+    .replace(/^quest[aã]o\s*\d+\s*[:.)-]\s*/i, "")
+    .replace(/^(leia com aten[cç][aã]o\s*[:.-]?\s*)/i, "")
+    .replace(/^(responda\s*[aà]s?\s+quest[oõ]es?\s+abaixo\s*[:.-]?\s*)/i, "")
+    .trim();
+}
+
+function splitSentences(value: string): string[] {
+  return value
+    .split(/(?<=[.!?])\s+/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function splitCommandExamples(value: string): { command: string; items: string[] } | null {
+  const text = String(value || "")
+    .replace(/\s+•\s+/g, "\n• ")
+    .replace(/\s+([a-jA-J])\)\s+/g, "\n$1) ")
+    .trim();
+  const colonIndex = text.indexOf(":");
+  if (colonIndex < 18) return null;
+
+  const command = text.slice(0, colonIndex).trim();
+  const rest = text.slice(colonIndex + 1).trim();
+  if (!command || rest.length < 12) return null;
+
+  const lineItems = rest
+    .split(/\r?\n/g)
+    .map((item) => item.trim().replace(/^[-•]\s*/, "").replace(/^[;,.\-–—]+/, "").trim())
+    .filter((item) => item.length >= 4);
+
+  if (lineItems.length >= 2) return { command, items: lineItems };
+
+  const bulletItems = rest
+    .split(/\s*[•]\s*/g)
+    .map((item) => item.trim().replace(/^[;,.\-–—]+/, "").trim())
+    .filter((item) => item.length >= 4);
+
+  if (bulletItems.length >= 2) return { command, items: bulletItems };
+
+  const sentenceItems = rest
+    .split(/(?<=[.!?])\s+(?=[A-ZÁÉÍÓÚÂÊÔÃÕÇ"“])/g)
+    .map((item) => item.trim().replace(/^[;,.\-–—]+/, "").trim())
+    .filter((item) => item.length >= 8 && item.length <= 180);
+
+  if (sentenceItems.length >= 3) return { command, items: sentenceItems };
+
+  const semicolonItems = rest
+    .split(/;|\s{2,}/g)
+    .map((item) => item.trim().replace(/^[;,.\-–—]+/, "").trim())
+    .filter((item) => item.length >= 8 && item.length <= 180);
+
+  return semicolonItems.length >= 3 ? { command, items: semicolonItems } : null;
+}
+
+export function enforceQuestionBulletStructure(value: unknown): string {
+  const cleaned = removeQuestionPreamble(value);
+  if (!cleaned) return "Resolva o item com atenção.\n• Registre sua resposta no espaço indicado.\n• Justifique quando o comando solicitar.";
+
+  const split = splitCommandExamples(cleaned);
+  if (split) {
+    return [split.command, ...split.items.slice(0, 8).map((item) => `• ${item.replace(/^[-•]\s*/, "")}`)].join("\n");
+  }
+
+  if (/\n\s*[-•]/.test(cleaned) || /^\s*[-•]/m.test(cleaned)) return cleaned;
+
+  const sentences = splitSentences(cleaned);
+  if (sentences.length <= 1 && cleaned.length <= 180) return cleaned;
+
+  const first = sentences.shift() || cleaned;
+  const actions = sentences.length ? sentences : ["Registre sua resposta de forma organizada."];
+  return [first, ...actions.slice(0, 5).map((sentence) => `• ${sentence.replace(/^[-•]\s*/, "")}`)].join("\n");
+}
+
+
+
+type LetteredSplit = {
+  intro: string;
+  items: string[];
+};
+
+export function splitLetteredSubitems(value: unknown): LetteredSplit | null {
+  const text = String(value || "").trim();
+  const markerRegex = /(^|\s)([a-jA-J])\)\s*/g;
+  const markers = Array.from(text.matchAll(markerRegex));
+  if (markers.length < 3) return null;
+
+  const firstMarker = markers[0];
+  const intro = text.slice(0, firstMarker.index).trim().replace(/[:;,.\-–—]+$/, "");
+  const items = markers
+    .map((marker, index) => {
+      const start = Number(marker.index) + marker[0].length;
+      const end = index + 1 < markers.length ? Number(markers[index + 1].index) : text.length;
+      return text.slice(start, end).trim().replace(/^[;,.\-–—]+/, "").trim();
+    })
+    .filter((item) => item.length >= 3);
+
+  return items.length >= 3 ? { intro, items } : null;
+}
+
+function inferActionFromIntro(intro: string): string {
+  const clean = intro.trim().replace(/[:;,.\-–—]+$/, "");
+  if (!clean) return "Resolva o item";
+  return clean.length > 150 ? clean.slice(0, 147).trim() + "..." : clean;
+}
+
+export function expandPackedQuestion(question: Partial<MaterialAIQuestion>): Partial<MaterialAIQuestion>[] {
+  const split = splitLetteredSubitems(question.enunciado);
+  if (!split) return [question];
+
+  const action = inferActionFromIntro(split.intro);
+  return split.items.map((item, index) => ({
+    ...question,
+    tipo: question.tipo || "item estruturado",
+    enunciado: `${action}:\n• ${item}`,
+    alternativas: [],
+    respostaEsperada: question.respostaEsperada || "Resposta esperada conforme o comando e o conteúdo estudado.",
+    criterioCorrecao: question.criterioCorrecao || "Avaliar se o estudante resolveu o item com clareza, coerência e domínio do conteúdo.",
+    numero: index + 1,
+  }));
+}
+export function structureSectionsForMaterial(kindValue: unknown, sections: MaterialAISection[], theme: string): MaterialAISection[] {
+  const kind = canonicalMaterialType(kindValue);
+  const cleanTheme = String(theme || "tema estudado").trim() || "tema estudado";
+
+  if (kind === "apostila") {
+    return sections.map((section, index) => {
+      const title = section.titulo || `Capítulo ${index + 1}`;
+      const normalizedTitle = normalizeForPedagogy(title);
+      const isBookPart = /capitulo|capítulo|unidade|apresentacao|apresentação|glossario|glossário|sintese|síntese|exercicios|exercícios|referencias|referências/.test(normalizedTitle);
+      return {
+        ...section,
+        titulo: isBookPart ? title : `Capítulo ${index + 1} — ${title}`,
+        itens: section.itens?.length ? section.itens : [
+          `Ideia central do capítulo sobre ${cleanTheme}.`,
+          "Exemplo contextualizado para o ano/série.",
+          "Ponto de atenção para leitura e estudo.",
+        ],
+      };
+    });
+  }
+
+  if (kind === "sequencia") {
+    return sections.map((section, index) => {
+      const title = section.titulo || `Aula ${index + 1}`;
+      const normalizedTitle = normalizeForPedagogy(title);
+      return {
+        ...section,
+        titulo: /aula|momento|etapa/.test(normalizedTitle) ? title : `Aula ${index + 1} — ${title}`,
+        itens: section.itens?.length ? section.itens : ["Objetivo", "Tempo estimado", "Ação do professor", "Ação dos estudantes", "Evidência de aprendizagem"],
+      };
+    });
+  }
+
+  if (kind === "projeto") {
+    return sections.map((section, index) => ({
+      ...section,
+      titulo: section.titulo || `Etapa ${index + 1}`,
+      itens: section.itens?.length ? section.itens : ["Tarefa da etapa", "Registro esperado", "Critério de acompanhamento"],
+    }));
+  }
+
+  return sections;
+}

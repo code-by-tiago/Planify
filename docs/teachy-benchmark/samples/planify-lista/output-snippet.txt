@@ -1,0 +1,14 @@
+<section class="planify-doc-professional">
+<section class="planify-doc-header-compact">
+<p>Matemática · 5º ano · Aluno(a): __________ · Data: ___/___/___</p>
+</section>
+<section class="planify-questoes-block planify-questoes-block-direct">
+<article class="planify-questao-card"><span class="planify-questao-num">1</span><p>João comeu 2/8 de uma pizza. Qual fração representa o que sobrou?</p><ol class="planify-alternativas"><li>a) 6/8</li><li>b) 2/6</li><li>c) 4/8</li><li>d) 8/2</li></ol></article>
+<article class="planify-questao-card"><span class="planify-questao-num">2</span><p>Compare 1/2 e 2/5 usando MMC.</p></article>
+</section>
+<section class="planify-gabarito-block">
+<h2>Gabarito</h2>
+<table class="planify-gabarito-table"><thead><tr><th>#</th><th>Resposta</th></tr></thead>
+<tbody><tr><td>1</td><td>6/8</td></tr><tr><td>2</td><td>1/2 = 5/10; 2/5 = 4/10; 1/2 é maior.</td></tr></tbody></table>
+</section>
+</section>

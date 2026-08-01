@@ -1,0 +1,140 @@
+.section {
+  position: relative;
+  z-index: 1;
+  clear: both;
+  background: #f0fbfc;
+  overflow: hidden;
+  padding: 36px 24px 54px;
+}
+
+.header {
+  margin: 0 auto 26px;
+  max-width: 1372px;
+  text-align: center;
+}
+
+.title {
+  margin: 0;
+  color: #0a192f;
+  font-size: 28px;
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 38px;
+  margin: 0 auto;
+  max-width: 1372px;
+  min-width: 0;
+}
+
+.card {
+  contain: layout paint;
+  display: flex;
+  min-height: 293px;
+  min-width: 0;
+  flex-direction: column;
+  background: #ffffff;
+  color: #0a192f;
+  text-decoration: none;
+  box-shadow: 0 16px 32px rgba(15, 23, 42, 0.08);
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 20px 38px rgba(15, 23, 42, 0.11);
+}
+
+.media {
+  position: relative;
+  display: block;
+  height: 202px;
+  margin: 18px 18px 0;
+  overflow: hidden;
+  background: #f8fafc;
+}
+
+.image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.caption {
+  display: grid;
+  grid-template-columns: 3px minmax(0, 1fr);
+  gap: 13px;
+  align-items: start;
+  padding: 19px 28px 22px 18px;
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.18;
+}
+
+.accent {
+  display: block;
+  width: 3px;
+  height: 18px;
+  margin-top: 1px;
+  background: #26c6da;
+}
+
+@media (max-width: 1180px) {
+  .grid {
+    gap: 24px;
+  }
+}
+
+@media (max-width: 920px) {
+  .section {
+    padding: 32px 20px 44px;
+  }
+
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .section {
+    margin-top: 0;
+    padding: 32px 18px 40px;
+  }
+
+  .header {
+    margin-bottom: 22px;
+  }
+
+  .title {
+    font-size: 24px;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+    max-width: 100%;
+  }
+
+  .card {
+    min-height: 0;
+    border-radius: 18px;
+    overflow: hidden;
+  }
+
+  .media {
+    height: auto;
+    aspect-ratio: 552 / 404;
+    margin: 14px 14px 0;
+  }
+
+  .caption {
+    padding: 16px 18px 18px 14px;
+    font-size: 15px;
+  }
+}

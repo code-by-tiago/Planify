@@ -1,0 +1,219 @@
+import { requireGoogleConfig } from "./google-config";
+
+export type DriveUploadResult = {
+  fileId: string;
+  name: string;
+  webViewLink: string | null;
+};
+
+/** Opens Google Drive UI (folder or My Drive), not a Docs preview. */
+export function buildGoogleDriveDestinationUrl(folderId?: string | null): string {
+  const id = String(folderId || "").trim();
+  if (id) {
+    return `https://drive.google.com/drive/folders/${id}`;
+  }
+  return "https://drive.google.com/drive/my-drive";
+}
+
+export async function uploadBufferToGoogleDrive(params: {
+  accessToken: string;
+  filename: string;
+  mimeType: string;
+  buffer: Buffer;
+}): Promise<DriveUploadResult> {
+  const { driveFolderId } = requireGoogleConfig();
+  const metadata: Record<string, unknown> = {
+    name: params.filename,
+  };
+
+  if (driveFolderId) {
+    metadata.parents = [driveFolderId];
+  }
+
+  const boundary = `planify_${Date.now()}`;
+  const multipartBody = Buffer.concat([
+    Buffer.from(
+      `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(metadata)}\r\n`,
+    ),
+    Buffer.from(
+      `--${boundary}\r\nContent-Type: ${params.mimeType}\r\n\r\n`,
+    ),
+    params.buffer,
+    Buffer.from(`\r\n--${boundary}--`),
+  ]);
+
+  const response = await fetch(
+    "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${params.accessToken}`,
+        "Content-Type": `multipart/related; boundary=${boundary}`,
+      },
+      body: multipartBody,
+    },
+  );
+
+  const data = (await response.json()) as {
+    id?: string;
+    name?: string;
+    webViewLink?: string;
+    error?: { message?: string };
+  };
+
+  if (!response.ok || !data.id) {
+    throw new Error(
+      data.error?.message || "Não foi possível enviar o arquivo para o Google Drive.",
+    );
+  }
+
+  const fileId = data.id;
+
+  return {
+    fileId,
+    name: data.name || params.filename,
+    webViewLink: data.webViewLink || `https://drive.google.com/file/d/${fileId}/view`,
+  };
+}
+
+const PPTX_MIME =
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+const GOOGLE_PRESENTATION_MIME = "application/vnd.google-apps.presentation";
+const GOOGLE_PRESENTATION_UPLOAD_TIMEOUT_MS = 90_000;
+
+/** Envia PPTX e converte para Google Apresentações nativo. */
+export async function uploadPptxAsGooglePresentation(params: {
+  accessToken: string;
+  filename: string;
+  buffer: Buffer;
+}): Promise<DriveUploadResult> {
+  const { driveFolderId } = requireGoogleConfig();
+  const baseName = params.filename.replace(/\.pptx$/i, "");
+  const metadata: Record<string, unknown> = {
+    name: baseName,
+    mimeType: GOOGLE_PRESENTATION_MIME,
+  };
+
+  if (driveFolderId) {
+    metadata.parents = [driveFolderId];
+  }
+
+  const boundary = `planify_slides_${Date.now()}`;
+  const multipartBody = Buffer.concat([
+    Buffer.from(
+      `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(metadata)}\r\n`,
+    ),
+    Buffer.from(`--${boundary}\r\nContent-Type: ${PPTX_MIME}\r\n\r\n`),
+    params.buffer,
+    Buffer.from(`\r\n--${boundary}--\r\n`),
+  ]);
+
+  const response = await fetch(
+    "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink,mimeType",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${params.accessToken}`,
+        "Content-Type": `multipart/related; boundary=${boundary}`,
+      },
+      body: multipartBody,
+      signal: AbortSignal.timeout(GOOGLE_PRESENTATION_UPLOAD_TIMEOUT_MS),
+    },
+  );
+
+  const data = (await response.json()) as {
+    id?: string;
+    name?: string;
+    webViewLink?: string;
+    mimeType?: string;
+    error?: { message?: string };
+  };
+
+  if (!response.ok || !data.id) {
+    throw new Error(
+      data.error?.message ||
+        "Não foi possível criar a apresentação no Google Apresentações.",
+    );
+  }
+
+  if (data.mimeType !== GOOGLE_PRESENTATION_MIME) {
+    throw new Error(
+      "O Google Drive não confirmou a conversão para Google Apresentações. Tente novamente.",
+    );
+  }
+
+  const fileId = data.id;
+  const presentationUrl = `https://docs.google.com/presentation/d/${fileId}/edit`;
+
+  return {
+    fileId,
+    name: data.name || baseName,
+    webViewLink: data.webViewLink || presentationUrl,
+  };
+}
+
+const DOCX_MIME =
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+
+/** Envia DOCX e converte para Google Docs nativo. */
+export async function uploadDocxAsGoogleDocument(params: {
+  accessToken: string;
+  filename: string;
+  buffer: Buffer;
+}): Promise<DriveUploadResult> {
+  const { driveFolderId } = requireGoogleConfig();
+  const baseName = params.filename.replace(/\.docx$/i, "");
+  const metadata: Record<string, unknown> = {
+    name: baseName,
+    mimeType: "application/vnd.google-apps.document",
+  };
+
+  if (driveFolderId) {
+    metadata.parents = [driveFolderId];
+  }
+
+  const boundary = `planify_docs_${Date.now()}`;
+  const multipartBody = Buffer.concat([
+    Buffer.from(
+      `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(metadata)}\r\n`,
+    ),
+    Buffer.from(`--${boundary}\r\nContent-Type: ${DOCX_MIME}\r\n\r\n`),
+    params.buffer,
+    Buffer.from(`\r\n--${boundary}--`),
+  ]);
+
+  const response = await fetch(
+    "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink,mimeType",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${params.accessToken}`,
+        "Content-Type": `multipart/related; boundary=${boundary}`,
+      },
+      body: multipartBody,
+    },
+  );
+
+  const data = (await response.json()) as {
+    id?: string;
+    name?: string;
+    webViewLink?: string;
+    error?: { message?: string };
+  };
+
+  if (!response.ok || !data.id) {
+    throw new Error(
+      data.error?.message ||
+        "Não foi possível criar o documento no Google Docs.",
+    );
+  }
+
+  const fileId = data.id;
+  const documentUrl = `https://docs.google.com/document/d/${fileId}/edit`;
+
+  return {
+    fileId,
+    name: data.name || baseName,
+    webViewLink: data.webViewLink || documentUrl,
+  };
+}

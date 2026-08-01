@@ -1,0 +1,726 @@
+/**
+ * Cliente de IA do Planify — uso exclusivo do servidor.
+ *
+ * - Lê GEMINI_API_KEY somente aqui. Nunca exposta ao frontend.
+ * - Gemini 2.5 Flash é o modelo padrão para a maioria das ferramentas.
+ * - Gemini 2.5 Pro fica preparado para tarefas avançadas via tier "advanced".
+ * - A interface do professor nunca exibe nomes de modelos ou referências à IA subjacente.
+ */
+
+import type { AIModelTier } from "../../lib/ai/aiConfig";
+import type { GeminiGenerateJSONOptions } from "../../types/ai";
+import { getPlatformSettingsSync } from "../admin/platform-settings-service";
+import { resolveGeminiCachedContentName } from "./gemini-context-cache";
+import { getGeminiSdk } from "./gemini-sdk";
+import {
+  resolveGeminiCacheBundle,
+  type GeminiCacheProfile,
+} from "./gemini-static-context";
+import { logOperationalEvent } from "../telemetry/operational-telemetry";
+
+type GeminiCallResult = {
+  text: string;
+  httpStatus: number;
+  error?: { message: string };
+};
+
+/** Modelos legados descontinuados — normaliza para equivalentes atuais. */
+const LEGACY_MODEL_MAP: Record<string, string> = {
+  "gemini-1.5-flash": "gemini-2.5-flash",
+  "gemini-1.5-flash-8b": "gemini-2.5-flash",
+  "gemini-1.5-pro": "gemini-2.5-pro",
+  "gemini-1.5-pro-latest": "gemini-2.5-pro",
+  "gemini-2.0-flash": "gemini-2.5-flash",
+  "gemini-2.0-flash-001": "gemini-2.5-flash",
+  "gemini-2.0-flash-lite": "gemini-2.5-flash",
+  "gemini-2.0-flash-lite-001": "gemini-2.5-flash",
+};
+
+const DEFAULT_MODEL_FALLBACKS = [
+  "gemini-2.5-flash",
+] as const;
+
+const ADVANCED_MODEL_FALLBACKS = [
+  "gemini-2.5-flash",
+  "gemini-2.5-pro",
+] as const;
+
+function normalizeModelName(model: string): string {
+  const trimmed = model.trim();
+  return LEGACY_MODEL_MAP[trimmed] ?? trimmed;
+}
+
+/**
+ * Resolve o nome do modelo a partir do tier solicitado.
+ *
+ * Cadeia de fallback (retrocompatibilidade preservada):
+ *   tier "advanced" → GEMINI_MODEL_ADVANCED → "gemini-2.5-flash"
+ *   tier "default"  → GEMINI_MODEL_DEFAULT  → GEMINI_MODEL (legado) → "gemini-2.5-flash"
+ *   model literal   → valor passado diretamente (uso legado)
+ */
+function resolveModel(
+  tier?: AIModelTier,
+  legacyModel?: string,
+): string {
+  if (tier === "advanced") {
+    return normalizeModelName(
+      process.env.GEMINI_MODEL_ADVANCED ?? "gemini-2.5-flash",
+    );
+  }
+
+  if (legacyModel) {
+    return normalizeModelName(legacyModel);
+  }
+
+  const settingsModel = getPlatformSettingsSync().defaultAiModel;
+  const fromEnv =
+    settingsModel ||
+    process.env.GEMINI_MODEL_DEFAULT ||
+    process.env.GEMINI_MODEL ||
+    "gemini-2.5-flash";
+
+  return normalizeModelName(fromEnv);
+}
+
+function resolveModelCandidates(
+  tier?: AIModelTier,
+  legacyModel?: string,
+): string[] {
+  const primary = resolveModel(tier, legacyModel);
+  const pool =
+    tier === "advanced"
+      ? [...ADVANCED_MODEL_FALLBACKS]
+      : [...DEFAULT_MODEL_FALLBACKS];
+
+  return [...new Set([primary, ...pool])];
+}
+
+export function isGeminiBillingDepletedError(message: string): boolean {
+  return /prepayment credits are depleted|billing.*depleted|credits are depleted|enable billing|insufficient.*billing|recarregue.*saldo/i.test(
+    message,
+  );
+}
+
+export function isGeminiAuthError(message: string): boolean {
+  return (
+    /GEMINI_API_KEY/i.test(message) ||
+    /API key not valid|API_KEY_INVALID|invalid api key|permission denied|unauthorized|invalid authentication credentials|ACCESS_TOKEN_TYPE_UNSUPPORTED/i.test(
+      message,
+    )
+  );
+}
+
+export function isGeminiNonRetryableError(message: string, status = 0): boolean {
+  return (
+    isGeminiBillingDepletedError(message) ||
+    isGeminiAuthError(message) ||
+    status === 403
+  );
+}
+
+export function resolveGeminiFailureCode(
+  message: string,
+): "ai_billing" | "ai_unavailable" {
+  if (isGeminiBillingDepletedError(message)) return "ai_billing";
+  return "ai_unavailable";
+}
+
+export function isGeminiQuotaError(message: string, status = 0): boolean {
+  if (isGeminiNonRetryableError(message, status)) return false;
+
+  return (
+    status === 429 ||
+    /quota exceeded|rate limit|resource exhausted|too many requests/i.test(
+      message,
+    )
+  );
+}
+
+export function isGeminiModelUnavailableError(
+  message: string,
+  status = 0,
+): boolean {
+  return (
+    status === 404 ||
+    /no longer available|not found|NOT_FOUND|model.*not.*supported/i.test(
+      message,
+    )
+  );
+}
+
+export function isGeminiTransientOverloadError(
+  message: string,
+  status = 0,
+): boolean {
+  return (
+    status === 503 ||
+    /overloaded|high demand|try again later/i.test(message)
+  );
+}
+
+export function isGeminiServiceUnavailableError(
+  message: string,
+  status = 0,
+): boolean {
+  if (isGeminiTransientOverloadError(message, status)) {
+    return false;
+  }
+
+  return /UNAVAILABLE|temporarily unavailable/i.test(message);
+}
+
+export function humanizeGeminiError(message: string): string {
+  if (isGeminiBillingDepletedError(message)) {
+    return (
+      "Créditos de IA esgotados no Google AI Studio. Recarregue o saldo ou habilite faturação em ai.google.dev " +
+      "e tente novamente em alguns minutos."
+    );
+  }
+
+  if (isGeminiQuotaError(message)) {
+    const retry = message.match(/retry in ([\d.]+)s/i);
+    const wait = retry ? ` Aguarde cerca de ${Math.ceil(parseFloat(retry[1]))} segundos` : "";
+
+    return (
+      `Limite de uso da IA atingido neste minuto.${wait} e tente de novo. ` +
+      "Se o problema continuar, habilite faturação no Google AI Studio ou use uma chave com cota maior."
+    );
+  }
+
+  if (isGeminiTransientOverloadError(message)) {
+    return (
+      "A IA está com alta demanda no momento. Aguarde alguns segundos e tente novamente — " +
+      "o sistema repete a chamada e, se necessário, usa outro modelo Gemini (ex.: 2.0 Flash)."
+    );
+  }
+
+  if (isGeminiServiceUnavailableError(message)) {
+    return (
+      "Não foi possível acessar a IA do Google. Confira no AI Studio (ai.google.dev) se a chave " +
+      "GEMINI_API_KEY está ativa e se há cota ou faturamento habilitado. Chaves gratuitas têm " +
+      "limite de requisições por minuto."
+    );
+  }
+
+  if (isGeminiAuthError(message)) {
+    if (/GEMINI_API_KEY/i.test(message)) {
+      return "Chave GEMINI_API_KEY ausente ou inválida no servidor.";
+    }
+
+    return (
+      "Chave GEMINI_API_KEY rejeitada pelo Google. No AI Studio, use o botão Copiar na chave (formato AQ. ou AIza), cole sem espaços na Vercel, confira restrições da chave e faça redeploy."
+    );
+  }
+
+  return message;
+}
+
+function parseRetryDelayMs(message: string, attempt = 0): number {
+  const match = message.match(/retry in ([\d.]+)s/i);
+  if (match) {
+    return Math.ceil(parseFloat(match[1]) * 1000) + 800;
+  }
+  if (isGeminiTransientOverloadError(message)) {
+    return 1200 + attempt * 1500;
+  }
+  return 4000;
+}
+
+const MAX_RETRIES_PER_MODEL = 3;
+const GEMINI_CALL_TIMEOUT_MS = 120_000;
+const MIN_GEMINI_CALL_TIMEOUT_MS = 5_000;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+function sanitizeGeminiErrorSnippet(message: string): string {
+  return message
+    .replace(/AIza[A-Za-z0-9_-]{10,}/gi, "[REDACTED]")
+    .replace(/AQ\.[A-Za-z0-9_.-]+/gi, "[REDACTED]")
+    .replace(/GEMINI_API_KEY[=:\s]*\S+/gi, "GEMINI_API_KEY=[REDACTED]")
+    .slice(0, 400);
+}
+
+function logGeminiOperationalError(
+  model: string,
+  httpStatus: number,
+  message: string,
+  options?: { exhaustedRetries?: boolean },
+): void {
+  logOperationalEvent({
+    eventType: "gemini_api_error",
+    toolTipo: "gemini",
+    ok: false,
+    errorCode: httpStatus > 0 ? String(httpStatus) : undefined,
+    metadata: {
+      model,
+      httpStatus,
+      errorSnippet: sanitizeGeminiErrorSnippet(message),
+      ...(options?.exhaustedRetries ? { exhaustedRetries: true } : {}),
+    },
+  });
+}
+
+async function withGeminiCallTimeout<T>(
+  promise: Promise<T>,
+  label = "Chamada à IA",
+  timeoutMs = GEMINI_CALL_TIMEOUT_MS,
+): Promise<T> {
+  const safeTimeoutMs = Math.min(
+    GEMINI_CALL_TIMEOUT_MS,
+    Math.max(MIN_GEMINI_CALL_TIMEOUT_MS, Math.round(timeoutMs)),
+  );
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<T>((_, reject) => {
+        timeoutId = setTimeout(() => {
+          reject(
+            new Error(
+              `${label} passou do tempo limite (${Math.round(safeTimeoutMs / 1000)}s). Tente novamente.`,
+            ),
+          );
+        }, safeTimeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+  }
+}
+
+function shouldRetryGeminiCall(message: string, status: number): boolean {
+  if (isGeminiNonRetryableError(message, status)) {
+    return false;
+  }
+
+  return (
+    isGeminiQuotaError(message, status) ||
+    isGeminiTransientOverloadError(message, status)
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Utilitários internos
+// ---------------------------------------------------------------------------
+
+function stripJsonFence(text: string): string {
+  const trimmed = text.trim();
+
+  if (trimmed.startsWith("```json")) {
+    return trimmed.replace(/^```json\s*/i, "").replace(/\s*```$/i, "").trim();
+  }
+
+  if (trimmed.startsWith("```")) {
+    return trimmed.replace(/^```\s*/i, "").replace(/\s*```$/i, "").trim();
+  }
+
+  return trimmed;
+}
+
+// ---------------------------------------------------------------------------
+// Chamadas à API
+// ---------------------------------------------------------------------------
+
+/**
+ * Gera uma resposta JSON estruturada via IA.
+ * Usar para materiais com schema definido (planejamentos, materiais avançados).
+ */
+type GenerateContentPlan = {
+  contents: string;
+  config: Record<string, unknown>;
+};
+
+async function buildGeneratePlan(
+  options: {
+    systemInstruction: string;
+    prompt: string;
+    temperature?: number;
+    topP?: number;
+    maxOutputTokens?: number;
+    responseSchema?: unknown;
+    responseMimeType?: string;
+    cacheProfile?: GeminiCacheProfile;
+    tier?: AIModelTier;
+    model?: string;
+  },
+  model: string,
+): Promise<GenerateContentPlan> {
+  const config: Record<string, unknown> = {
+    temperature: options.temperature ?? 0.2,
+    topP: options.topP ?? 0.8,
+    maxOutputTokens: options.maxOutputTokens ?? 8192,
+  };
+
+  if (options.responseMimeType) {
+    config.responseMimeType = options.responseMimeType;
+  }
+
+  if (options.responseSchema) {
+    config.responseSchema = options.responseSchema;
+  }
+
+  if (options.cacheProfile) {
+    const bundle = resolveGeminiCacheBundle(options.cacheProfile);
+
+    if (bundle) {
+      const cachedContent = await resolveGeminiCachedContentName(
+        options.cacheProfile,
+        model,
+        bundle,
+      );
+
+      if (cachedContent) {
+        return {
+          contents: options.prompt,
+          config: {
+            ...config,
+            cachedContent,
+          },
+        };
+      }
+
+      const mergedPrompt = bundle.staticContext
+        ? `${bundle.staticContext}\n\n${options.prompt}`
+        : options.prompt;
+
+      return {
+        contents: mergedPrompt,
+        config: {
+          ...config,
+          systemInstruction: bundle.systemInstruction,
+        },
+      };
+    }
+  }
+
+  return {
+    contents: options.prompt,
+    config: {
+      ...config,
+      systemInstruction: options.systemInstruction,
+    },
+  };
+}
+
+async function callGeminiGenerateContent(
+  model: string,
+  plan: GenerateContentPlan,
+  timeoutMs?: number,
+): Promise<GeminiCallResult> {
+  try {
+    const response = await withGeminiCallTimeout(
+      getGeminiSdk().models.generateContent({
+        model,
+        contents: plan.contents,
+        config: plan.config,
+      }),
+      "Geração de conteúdo",
+      timeoutMs,
+    );
+
+    const text = response.text?.trim() ?? "";
+
+    if (!text) {
+      return {
+        text: "",
+        httpStatus: 502,
+        error: { message: "A IA não retornou conteúdo textual." },
+      };
+    }
+
+    return { text, httpStatus: 200 };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Erro ao chamar a IA.";
+    const status =
+      typeof error === "object" &&
+      error !== null &&
+      "status" in error &&
+      typeof (error as { status?: unknown }).status === "number"
+        ? Number((error as { status: number }).status)
+        : 500;
+
+    logGeminiOperationalError(model, status, message);
+
+    return {
+      text: "",
+      httpStatus: status,
+      error: { message },
+    };
+  }
+}
+
+function handleGeminiCallFailure(
+  message: string,
+  httpStatus: number,
+  attempt: number,
+  maxAttempts = MAX_RETRIES_PER_MODEL,
+): "retry" | "next_model" | "fail" {
+  if (isGeminiNonRetryableError(message, httpStatus)) {
+    throw new Error(humanizeGeminiError(message));
+  }
+
+  if (isGeminiModelUnavailableError(message, httpStatus)) {
+    return "next_model";
+  }
+
+  if (
+    shouldRetryGeminiCall(message, httpStatus) &&
+    attempt < maxAttempts - 1
+  ) {
+    return "retry";
+  }
+
+  return "next_model";
+}
+
+export async function generateGeminiJSON<T>(
+  options: GeminiGenerateJSONOptions,
+): Promise<T> {
+  const models = resolveModelCandidates(options.tier, options.model);
+  const maxAttempts = Math.min(
+    MAX_RETRIES_PER_MODEL,
+    Math.max(1, Math.round(options.maxAttempts ?? MAX_RETRIES_PER_MODEL)),
+  );
+
+  let lastError = "Erro ao chamar a IA.";
+  let lastHttpStatus = 0;
+  let lastModel = models[0] ?? "unknown";
+
+  for (const model of models) {
+    lastModel = model;
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+      const plan = await buildGeneratePlan(
+        {
+          ...options,
+          responseMimeType: "application/json",
+        },
+        model,
+      );
+      const json = await callGeminiGenerateContent(model, plan, options.timeoutMs);
+
+      if (json.httpStatus >= 200 && json.httpStatus < 300 && !json.error) {
+        const cleaned = stripJsonFence(json.text);
+
+        try {
+          return JSON.parse(cleaned) as T;
+        } catch {
+          throw new Error("A IA retornou um JSON inválido.");
+        }
+      }
+
+      const message =
+        json.error?.message ??
+        `Erro ao chamar a IA. Status HTTP: ${json.httpStatus}`;
+
+      lastError = message;
+      lastHttpStatus = json.httpStatus;
+
+      const failureAction = handleGeminiCallFailure(
+        message,
+        json.httpStatus,
+        attempt,
+        maxAttempts,
+      );
+
+      if (failureAction === "retry") {
+        await sleep(parseRetryDelayMs(message, attempt));
+        continue;
+      }
+
+      break;
+    }
+  }
+
+  logGeminiOperationalError(lastModel, lastHttpStatus, lastError, {
+    exhaustedRetries: true,
+  });
+  throw new Error(humanizeGeminiError(lastError));
+}
+
+export type GeminiMediaPart = {
+  mimeType: "image/jpeg" | "image/png" | "image/webp" | "application/pdf";
+  base64: string;
+};
+
+async function callGeminiGenerateContentMultimodal(
+  model: string,
+  options: {
+    systemInstruction: string;
+    prompt: string;
+    media: GeminiMediaPart[];
+    temperature?: number;
+    topP?: number;
+    maxOutputTokens?: number;
+  },
+): Promise<GeminiCallResult> {
+  try {
+    const parts: Array<{ text?: string; inlineData?: { mimeType: string; data: string } }> =
+      [];
+
+    for (const item of options.media) {
+      parts.push({
+        inlineData: {
+          mimeType: item.mimeType,
+          data: item.base64,
+        },
+      });
+    }
+
+    parts.push({ text: options.prompt });
+
+    const response = await getGeminiSdk().models.generateContent({
+      model,
+      contents: [{ role: "user", parts }],
+      config: {
+        systemInstruction: options.systemInstruction,
+        temperature: options.temperature ?? 0.2,
+        topP: options.topP ?? 0.8,
+        maxOutputTokens: options.maxOutputTokens ?? 8192,
+      },
+    });
+
+    const text = response.text?.trim() ?? "";
+
+    if (!text) {
+      return {
+        text: "",
+        httpStatus: 502,
+        error: { message: "A IA não retornou conteúdo textual." },
+      };
+    }
+
+    return { text, httpStatus: 200 };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Erro ao chamar a IA.";
+    const status =
+      typeof error === "object" &&
+      error !== null &&
+      "status" in error &&
+      typeof (error as { status?: unknown }).status === "number"
+        ? Number((error as { status: number }).status)
+        : 500;
+
+    return {
+      text: "",
+      httpStatus: status,
+      error: { message },
+    };
+  }
+}
+
+/**
+ * Gera texto a partir de mídia (OCR, leitura de PDF/imagem).
+ * Modelo padrão: gemini-2.5-flash (rápido e econômico).
+ */
+export async function generateGeminiTextFromMedia(options: {
+  systemInstruction: string;
+  prompt: string;
+  media: GeminiMediaPart[];
+  tier?: "default" | "advanced";
+  maxOutputTokens?: number;
+}): Promise<string> {
+  const models = resolveModelCandidates(options.tier);
+
+  let lastError = "Erro ao chamar a IA.";
+
+  for (const model of models) {
+    for (let attempt = 0; attempt < MAX_RETRIES_PER_MODEL; attempt += 1) {
+      const json = await callGeminiGenerateContentMultimodal(model, {
+        systemInstruction: options.systemInstruction,
+        prompt: options.prompt,
+        media: options.media,
+        maxOutputTokens: options.maxOutputTokens ?? 8192,
+      });
+
+      if (json.httpStatus >= 200 && json.httpStatus < 300 && !json.error) {
+        return json.text;
+      }
+
+      const message =
+        json.error?.message ??
+        `Erro ao chamar a IA. Status HTTP: ${json.httpStatus}`;
+
+      lastError = message;
+
+      const failureAction = handleGeminiCallFailure(
+        message,
+        json.httpStatus,
+        attempt,
+      );
+
+      if (failureAction === "retry") {
+        await sleep(parseRetryDelayMs(message, attempt));
+        continue;
+      }
+
+      break;
+    }
+  }
+
+  throw new Error(humanizeGeminiError(lastError));
+}
+
+/**
+ * Gera conteúdo em texto livre (HTML, Markdown, etc.) via IA.
+ * Usar para materiais didáticos com saída em HTML estruturado.
+ */
+export async function generateGeminiText(options: {
+  systemInstruction: string;
+  prompt: string;
+  temperature?: number;
+  topP?: number;
+  maxOutputTokens?: number;
+  tier?: AIModelTier;
+  model?: string;
+  cacheProfile?: GeminiCacheProfile;
+}): Promise<string> {
+  const models = resolveModelCandidates(options.tier, options.model);
+
+  let lastError = "Erro ao chamar a IA.";
+
+  for (const model of models) {
+    for (let attempt = 0; attempt < MAX_RETRIES_PER_MODEL; attempt += 1) {
+      const plan = await buildGeneratePlan(
+        {
+          ...options,
+          temperature: options.temperature ?? 0.5,
+          topP: options.topP ?? 0.9,
+        },
+        model,
+      );
+      const json = await callGeminiGenerateContent(model, plan);
+
+      if (json.httpStatus >= 200 && json.httpStatus < 300 && !json.error) {
+        return json.text;
+      }
+
+      const message =
+        json.error?.message ??
+        `Erro ao chamar a IA. Status HTTP: ${json.httpStatus}`;
+
+      lastError = message;
+
+      const failureAction = handleGeminiCallFailure(
+        message,
+        json.httpStatus,
+        attempt,
+      );
+
+      if (failureAction === "retry") {
+        await sleep(parseRetryDelayMs(message, attempt));
+        continue;
+      }
+
+      break;
+    }
+  }
+
+  throw new Error(humanizeGeminiError(lastError));
+}

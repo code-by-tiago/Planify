@@ -1,0 +1,202 @@
+#!/usr/bin/env node
+/**
+ * Gate de go-live — smoke estático + scripts verify principais.
+ * Run: npm run verify:go-live
+ */
+import { spawnSync } from "node:child_process";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { join } from "node:path";
+
+const root = process.cwd();
+let failed = 0;
+
+function fail(message) {
+  console.error(`FAIL  ${message}`);
+  failed += 1;
+}
+
+function ok(message) {
+  console.log(`OK    ${message}`);
+}
+
+function runStep(command) {
+  console.log(`\n→ ${command}`);
+  const [cmd, ...args] = command.split(" ");
+  const result = spawnSync(cmd, args, { cwd: root, stdio: "inherit", shell: true });
+  if (result.status !== 0) {
+    fail(`step failed: ${command}`);
+  }
+}
+
+function read(relative) {
+  return readFileSync(join(root, relative), "utf8");
+}
+
+// --- Static checks ---
+const proxy = read("src/proxy.ts");
+if (proxy.includes("/comunidade") && proxy.includes("allowGracePass")) {
+  ok("proxy protege /comunidade com grace premium");
+} else {
+  fail("proxy.ts incompleto (comunidade/grace)");
+}
+
+if (!read("src/proxy.ts").includes("127.0.0.1:7616")) {
+  ok("sem telemetria debug no proxy");
+} else {
+  fail("telemetria debug ainda presente");
+}
+
+if (read("src/proxy.ts").includes("export async function proxy")) {
+  ok("proxy.ts registrado (Next.js 16 route protection)");
+} else {
+  fail("src/proxy.ts sem export async function proxy");
+}
+
+
+
+
+if (existsSync("src/app/(app)/error.tsx")) {
+  ok("error boundary (app) presente");
+} else {
+  fail("falta src/app/(app)/error.tsx");
+}
+
+if (!existsSync("src/app/login/LoginClient.tsx")) {
+  ok("LoginClient legado removido");
+} else {
+  fail("LoginClient legado ainda existe");
+}
+
+const layout = read("src/app/(app)/layout.tsx");
+if (layout.includes("PremiumAccessGate") && !layout.includes("PremiumRouteGuard")) {
+  ok("gate premium centralizado no layout (app)");
+} else {
+  fail("layout (app) sem PremiumAccessGate centralizado");
+}
+
+function walkPages(dir, acc = []) {
+  for (const entry of readdirSync(dir)) {
+    const full = join(dir, entry);
+    if (statSync(full).isDirectory()) walkPages(full, acc);
+    else if (entry === "page.tsx") acc.push(full);
+  }
+  return acc;
+}
+
+const appRoot = join(root, "src", "app", "(app)");
+let duplicateGates = 0;
+for (const pagePath of walkPages(appRoot)) {
+  if (pagePath.endsWith("layout.tsx")) continue;
+  const page = readFileSync(pagePath, "utf8");
+  if (page.includes("PremiumAccessGate")) {
+    fail(`gate duplicado em ${pagePath.replace(root, "")}`);
+    duplicateGates += 1;
+  }
+}
+if (duplicateGates === 0) {
+  ok("nenhuma page (app) com PremiumAccessGate duplicado");
+}
+
+const envExample = read(".env.example");
+for (const key of [
+  "NEXT_PUBLIC_SUPABASE_URL",
+  "SUPABASE_SERVICE_ROLE_KEY",
+  "GEMINI_API_KEY",
+  "STRIPE_SECRET_KEY",
+  "STRIPE_WEBHOOK_SECRET",
+  "CRON_SECRET",
+  "GOOGLE_OAUTH_STATE_SECRET",
+  "SENTRY_DSN",
+]) {
+  if (envExample.includes(key)) {
+    ok(`.env.example contém ${key}`);
+  } else {
+    fail(`.env.example falta ${key}`);
+  }
+}
+
+if (read("instrumentation-client.ts").includes("Sentry.init")) {
+  ok("Sentry client init em instrumentation-client.ts");
+} else {
+  fail("instrumentation-client.ts sem Sentry.init");
+}
+
+const activateAccount = read("src/app/api/stripe/activate-account/route.ts");
+if (
+  activateAccount.includes("consumePublicApiRateLimit") &&
+  activateAccount.includes("claimSubscriptionActivationEmail")
+) {
+  ok("activate-account endurecido (rate-limit + claim)");
+} else {
+  fail("activate-account sem endurecimento Fase 1");
+}
+
+const checkoutStatus = read("src/app/api/public/checkout-account-status/route.ts");
+if (checkoutStatus.includes("consumePublicApiRateLimit")) {
+  ok("checkout-account-status com rate-limit");
+} else {
+  fail("checkout-account-status sem rate-limit");
+}
+
+const publicPaths = read("src/lib/seo/public-paths.ts");
+if (publicPaths.includes('path: "/planos/ativar"')) {
+  ok("/planos/ativar indexável no sitemap");
+} else {
+  fail("sitemap sem /planos/ativar");
+}
+if (!/PRIVATE_ROBOTS_DISALLOW[\s\S]*"\/planos\/ativar"/.test(publicPaths)) {
+  ok("/planos/ativar fora do robots disallow");
+} else {
+  fail("/planos/ativar bloqueado no robots (contradição SEO)");
+}
+
+const migrationDir = join(root, "supabase", "migrations");
+const migrationNames = readdirSync(migrationDir).filter((f) => f.endsWith(".sql"));
+const migrationPrefixes = migrationNames.map((f) => f.slice(0, 14));
+const dupPrefixes = migrationPrefixes.filter(
+  (p, i) => migrationPrefixes.indexOf(p) !== i,
+);
+if (dupPrefixes.length === 0) {
+  ok("migrations sem timestamp duplicado (prefixo 14 chars)");
+} else {
+  fail(`migrations com timestamp duplicado: ${[...new Set(dupPrefixes)].join(", ")}`);
+}
+
+if (existsSync("supabase/migrations/20260701120000_phase1_security_profiles_plan_activation.sql")) {
+  ok("migration Fase 1 segurança presente");
+} else {
+  fail("falta migration phase1_security_profiles_plan_activation");
+}
+
+if (read("src/app/global-error.tsx").includes("captureException")) {
+  ok("global-error reporta ao Sentry");
+} else {
+  fail("global-error.tsx sem Sentry");
+}
+
+// --- Verify suites ---
+const steps = [
+  "npm run verify:material-quality",
+  "npm run verify:generators",
+  "npm run verify:export-pipeline",
+  "npm run verify:prova-engine-contract",
+  "npm run verify:question-bank-match",
+  "npm run verify:planejamento-docx",
+  "npm run verify:comunidade-docente",
+  "node scripts/verify-export-motors.mjs",
+  "node scripts/verify-forms-export-payload.mjs",
+  "node scripts/verify-google-export-readiness.mjs",
+];
+
+for (const step of steps) {
+  runStep(step);
+}
+
+console.log("");
+if (failed > 0) {
+  console.error(`verify:go-live FAILED (${failed} issue(s))`);
+  process.exit(1);
+}
+
+console.log("verify:go-live: OK — pronto para deploy");
+process.exit(0);

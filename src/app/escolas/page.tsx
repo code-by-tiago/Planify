@@ -1,0 +1,286 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { PublicProfessorPrimeiroLayout } from "@/components/public/PublicProfessorPrimeiroLayout";
+import { buildPageMetadata } from "@/lib/seo/metadata";
+import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
+import {
+  ppBadge,
+  ppBtnOnDark,
+  ppBtnPrimary,
+  ppBtnSecondary,
+  ppCtaBand,
+  ppCtaEyebrow,
+  ppCtaLead,
+  ppCtaTitle,
+  ppEyebrow,
+  ppLead,
+  ppPlanHighlight,
+  ppSectionAlt,
+  ppTitle,
+  ppTitleAccent,
+} from "@/components/public/landing-professor-primeiro/theme";
+import { institutionalPlans } from "@/lib/public/escolasCommercial";
+import { EscolasContactForm } from "./EscolasContactForm";
+import { EscolasPlanActions } from "./EscolasPlanActions";
+
+export const metadata: Metadata = buildPageMetadata({
+  title: "Planify para escolas",
+  description:
+    "Plataforma institucional Planify IA Educacional para gestores escolares: controle pedagógico, conformidade BNCC, portal do gestor e licenciamento por professor.",
+  path: "/escolas",
+});
+
+const benefits = [
+  {
+    icon: "listChecks" as const,
+    title: "Auditoria Pedagógica Contínua",
+    description:
+      "Monitore habilidades da BNCC por turma, identifique lacunas pedagógicas e antecipe atrasos antes que impactem o calendário letivo.",
+  },
+  {
+    icon: "clipboard" as const,
+    title: "Gestão de Equipe Eficiente",
+    description:
+      "Acompanhe a produtividade docente, quais materiais didáticos foram aplicados e o andamento dos planejamentos em um único painel executivo.",
+  },
+  {
+    icon: "lock" as const,
+    title: "Autonomia de Acessos",
+    description:
+      "Portal exclusivo para diretores e gestores. Convide ou revogue licenças da equipe por e-mail em um clique.",
+  },
+];
+
+const comparisonRows = [
+  { label: "Portal exclusivo do gestor", values: [true, true, true] },
+  { label: "Painel BNCC por turma", values: [true, true, true] },
+  { label: "Painel de conformidade BNCC", values: [true, true, true] },
+  { label: "Licenciamento por e-mail", values: [true, true, true] },
+  { label: "Feed de materiais + alertas de lacunas BNCC", values: [false, true, true] },
+  { label: "Métricas de produtividade docente", values: [false, true, true] },
+  { label: "Onboarding institucional assistido", values: [false, true, true] },
+  { label: "Acordo comercial personalizado", values: [false, false, true] },
+  { label: "Implementação e treinamento dedicado", values: [false, false, true] },
+];
+
+export default function EscolasPage() {
+  return (
+    <PublicProfessorPrimeiroLayout>
+      <section className="mx-auto w-full max-w-7xl px-5 py-14 sm:px-8 lg:py-20">
+        <div className="max-w-4xl">
+          <p className={ppEyebrow}>Solução institucional Planify</p>
+          <h1 className={`${ppTitle} mt-4 lg:text-[3.25rem]`}>
+            O controle pedagógico e a conformidade com a BNCC da sua escola em um único{" "}
+            <span className={ppTitleAccent}>painel inteligente</span>
+          </h1>
+          <p className={`mt-6 max-w-3xl ${ppLead}`}>
+            O Planify automatiza a burocracia docente — planejamentos, materiais e registros
+            pedagógicos — e entrega relatórios atualizados automaticamente no painel à coordenação e à direção. Sua
+            equipe ganha produtividade; sua gestão ganha visibilidade, conformidade e
+            tranquilidade institucional.
+          </p>
+          <div className="mt-8 flex flex-wrap gap-3">
+            <a href="#contato" className={ppBtnPrimary}>
+              Solicitar uma Demonstração Gratuita
+              <PlanifyIcon name="arrowRight" className="h-4 w-4" />
+            </a>
+            <Link href="/login?portal=escola" className={ppBtnSecondary}>
+              Acessar Portal da Escola
+            </Link>
+          </div>
+          <ul className="mt-8 flex flex-wrap gap-2">
+            {[
+              "Conformidade BNCC",
+              "Relatórios executivos",
+              "Licenças institucionais",
+              "Suporte comercial dedicado",
+            ].map((item) => (
+              <span key={item} className={ppBadge}>
+                <PlanifyIcon name="checkCircle" className="h-3.5 w-3.5" />
+                {item}
+              </span>
+            ))}
+          </ul>
+        </div>
+      </section>
+
+      {/* Benefícios para o Gestor */}
+      <section className={`${ppSectionAlt} py-16 sm:py-20`}>
+        <div className="mx-auto max-w-7xl px-5 sm:px-8">
+          <div className="max-w-2xl">
+            <p className={ppEyebrow}>Benefícios para o Gestor</p>
+            <h2 className={`${ppTitle} mt-4 text-3xl sm:text-4xl`}>
+              Visibilidade pedagógica{" "}
+              <span className={ppTitleAccent}>sem aumentar a carga operacional</span>
+            </h2>
+            <p className="mt-4 text-base font-medium leading-7 text-slate-600">
+              Ferramentas corporativas pensadas para diretores, mantenedores e coordenadores
+              pedagógicos de escolas privadas que exigem rigor, previsibilidade e conformidade
+              curricular.
+            </p>
+          </div>
+
+          <div className="mt-10 grid gap-6 md:grid-cols-3">
+            {benefits.map((item) => (
+              <article
+                key={item.title}
+                className="flex h-full flex-col rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm"
+              >
+                <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-50 text-cyan-700">
+                  <PlanifyIcon name={item.icon} className="h-6 w-6" />
+                </span>
+                <h3 className="mt-5 text-lg font-black text-slate-950">{item.title}</h3>
+                <p className="mt-3 flex-1 text-sm font-medium leading-7 text-slate-600">
+                  {item.description}
+                </p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Planos Institucionais */}
+      <section id="planos" className="scroll-mt-28 mx-auto max-w-7xl px-5 py-16 sm:px-8 sm:py-20">
+        <div className="max-w-2xl">
+          <p className={ppEyebrow}>Planos Institucionais</p>
+          <h2 className={`${ppTitle} mt-4 text-3xl sm:text-4xl`}>
+            Solução sob medida{" "}
+            <span className={ppTitleAccent}>para o porte da sua instituição</span>
+          </h2>
+          <p className="mt-4 text-base font-medium leading-7 text-slate-600">
+            Planos corporativos com licenciamento por professor, portal do gestor e suporte
+            comercial dedicado. Valores e proposta formal mediante contato com nossa equipe.
+          </p>
+        </div>
+
+        <div className="mt-10 grid items-stretch gap-6 lg:grid-cols-3">
+          {institutionalPlans.map((plan) => (
+            <article
+              key={plan.key}
+              className={`relative flex h-full flex-col rounded-2xl border p-7 transition hover:shadow-md ${
+                plan.highlighted ? ppPlanHighlight : "border-slate-200 bg-white shadow-sm"
+              }`}
+            >
+              {plan.highlighted ? (
+                <span className="absolute right-6 top-6 rounded-lg bg-cyan-600 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-white">
+                  Recomendado
+                </span>
+              ) : null}
+
+              <p className="pr-24 text-xs font-black uppercase tracking-[0.2em] text-cyan-700">
+                {plan.name}
+              </p>
+              <p className="mt-2 text-sm font-bold text-slate-500">{plan.teacherLimit}</p>
+
+              <div className="mt-5 rounded-xl border border-cyan-100 bg-cyan-50/80 px-4 py-3">
+                <p className="text-lg font-black text-slate-950">Sob consulta</p>
+                <p className="mt-1 text-xs font-medium leading-5 text-slate-600">
+                  Proposta personalizada conforme número de licenças e necessidades da escola.
+                </p>
+              </div>
+
+              <p className="mt-5 text-sm font-medium leading-6 text-slate-600">
+                {plan.description}
+              </p>
+
+              <ul className="mt-6 grid flex-1 gap-3 text-sm font-medium leading-6 text-slate-700">
+                {plan.features.map((feature) => (
+                  <li key={feature} className="flex items-start gap-2.5">
+                    <PlanifyIcon
+                      name="checkCircle"
+                      className="mt-0.5 h-4 w-4 shrink-0 text-cyan-600"
+                    />
+                    {feature}
+                  </li>
+                ))}
+              </ul>
+
+              <EscolasPlanActions planName={plan.name} highlighted={plan.highlighted} />
+            </article>
+          ))}
+        </div>
+
+        <div className="mt-12 overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[720px] border-collapse text-left">
+              <thead>
+                <tr className="border-b border-slate-200 bg-slate-50/80">
+                  <th className="px-6 py-5 text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+                    Recurso institucional
+                  </th>
+                  {institutionalPlans.map((plan) => (
+                    <th
+                      key={plan.key}
+                      className={`px-6 py-5 text-sm font-black ${
+                        plan.highlighted ? "text-cyan-700" : "text-slate-700"
+                      }`}
+                    >
+                      {plan.name}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {comparisonRows.map((row) => (
+                  <tr key={row.label} className="border-b border-slate-100 last:border-0">
+                    <td className="px-6 py-4 text-sm font-bold text-slate-700">{row.label}</td>
+                    {row.values.map((included, index) => (
+                      <td key={index} className="px-6 py-4">
+                        {included ? (
+                          <PlanifyIcon name="checkCircle" className="h-5 w-5 text-cyan-600" />
+                        ) : (
+                          <span className="text-slate-300">—</span>
+                        )}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+                <tr className="border-t border-slate-200 bg-slate-50/50">
+                  <td className="px-6 py-5 text-sm font-bold text-slate-700">Contato comercial</td>
+                  {institutionalPlans.map((plan) => (
+                    <td key={plan.key} className="px-6 py-5">
+                      <a
+                        href="#contato"
+                        className="inline-flex items-center gap-1.5 text-sm font-bold text-cyan-700 hover:text-cyan-900"
+                      >
+                        Falar com Consultor
+                        <PlanifyIcon name="arrowRight" className="h-4 w-4" />
+                      </a>
+                    </td>
+                  ))}
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA band */}
+      <section className="mx-auto max-w-7xl px-5 pb-4 sm:px-8">
+        <div className={ppCtaBand}>
+          <p className={ppCtaEyebrow}>Próximo passo institucional</p>
+          <h2 className={`mt-2 text-2xl sm:text-3xl ${ppCtaTitle}`}>
+            Transforme a gestão pedagógica da sua escola
+          </h2>
+          <p className={`mx-auto mt-3 max-w-2xl ${ppCtaLead}`}>
+            Agende uma demonstração gratuita com nossa equipe comercial. Apresentaremos o
+            portal do gestor, o painel BNCC e as opções de licenciamento para o porte da sua
+            instituição.
+          </p>
+          <div className="mt-7 flex flex-wrap justify-center gap-3">
+            <a href="#contato" className={ppBtnPrimary}>
+              Solicitar Demonstração Gratuita
+              <PlanifyIcon name="arrowRight" className="h-4 w-4" />
+            </a>
+            <Link href="/login?portal=escola" className={ppBtnOnDark}>
+              Portal da Escola
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      <EscolasContactForm />
+
+    </PublicProfessorPrimeiroLayout>
+  );
+}

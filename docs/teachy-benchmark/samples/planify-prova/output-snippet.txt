@@ -1,0 +1,13 @@
+<section class="planify-doc-professional">
+<section class="planify-doc-header-compact">
+<p>Matemática · 5º ano · Aluno(a): __________ · Data: ___/___/___</p>
+</section>
+<section class="planify-questoes-block planify-questoes-block-direct">
+<article class="planify-questao-card"><span class="planify-questao-num">1</span><p>Qual fração é equivalente a 1/2?</p><ol class="planify-alternativas"><li>a) 2/4</li><li>b) 1/3</li><li>c) 3/5</li><li>d) 2/3</li></ol></article>
+</section>
+<section class="planify-gabarito-block">
+<h2>Gabarito</h2>
+<table class="planify-gabarito-table"><thead><tr><th>#</th><th>Resposta</th></tr></thead>
+<tbody><tr><td>1</td><td>a) 2/4</td></tr></tbody></table>
+</section>
+</section>

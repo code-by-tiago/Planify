@@ -1,0 +1,1643 @@
+﻿PLANIFY - DIAGNÓSTICO CIRÚRGICO /planejamentos
+Etapa: 9.20.12
+Data/Hora: 2026-05-31 14:54:22
+Raiz analisada: C:\planify
+
+IMPORTANTE: este diagnóstico não lê valores de .env e não altera arquivos do projeto.
+
+============================================================
+1. Ambiente local básico
+============================================================
+Pasta atual:
+C:\planify
+
+Node:
+v25.8.2
+
+NPM:
+11.11.1
+
+Arquivos .env existentes, sem mostrar conteúdo:
+- .env.example | Modificado: 05/31/2026 11:57:16
+- .env.example.planify-template | Modificado: 05/31/2026 11:56:40
+- .env.local | Modificado: 05/31/2026 06:17:43
+
+============================================================
+2. Git - branch, remotes, últimos commits e estado
+============================================================
+Branch atual:
+main
+
+Remotes:
+origin	https://github.com/code-by-tiago/Planify.git (fetch)
+origin	https://github.com/code-by-tiago/Planify.git (push)
+
+Últimos 8 commits:
+4728662 fix: ajustar campos inteligentes e filtro BNCC em planejamentos
+1c26e4f release: preparar Planify para GitHub e deploy seguro
+a7621aa Initial commit from Create Next App
+
+Status:
+?? docs/auditorias/auditoria-planejamentos-campos-bncc-9-21-1-2026-05-31T17-15-04-122Z.md
+?? scripts/diagnostico-planejamentos-9-20-12-report.txt
+?? scripts/diagnostico-planejamentos-9-20-12.ps1
+
+============================================================
+3. Arquivos de configuração relevantes
+============================================================
+ENCONTRADO: package.json | Modificado: 05/31/2026 07:03:24 | Tamanho: 631 bytes
+NÃO encontrado: next.config.js
+ENCONTRADO: next.config.mjs | Modificado: 05/30/2026 00:18:48 | Tamanho: 91 bytes
+NÃO encontrado: next.config.ts
+NÃO encontrado: vercel.json
+NÃO encontrado: .vercel\project.json
+ENCONTRADO: tsconfig.json | Modificado: 05/30/2026 00:19:05 | Tamanho: 704 bytes
+NÃO encontrado: tailwind.config.js
+ENCONTRADO: tailwind.config.ts | Modificado: 05/30/2026 00:18:48 | Tamanho: 334 bytes
+
+============================================================
+4. package.json - scripts disponíveis
+============================================================
+dev: next dev
+build: next build --webpack
+start: next start
+typecheck: tsc --noEmit
+
+============================================================
+5. Candidatos diretos para a rota /planejamentos
+============================================================
+ENCONTRADO: src\app\planejamentos\page.tsx
+  Modificado: 05/30/2026 23:56:49
+  Tamanho: 144 bytes
+  SHA256: 4BFC46DAD81838052CDE3B55E4C8BC06DD10D643F4D87950AF81BD0D049E6843
+NÃO encontrado: src\app\planejamentos\page.ts
+NÃO encontrado: app\planejamentos\page.tsx
+NÃO encontrado: app\planejamentos\page.ts
+NÃO encontrado: src\pages\planejamentos.tsx
+NÃO encontrado: src\pages\planejamentos.ts
+NÃO encontrado: src\pages\planejamentos\index.tsx
+NÃO encontrado: src\pages\planejamentos\index.ts
+NÃO encontrado: pages\planejamentos.tsx
+NÃO encontrado: pages\planejamentos.ts
+NÃO encontrado: pages\planejamentos\index.tsx
+NÃO encontrado: pages\planejamentos\index.ts
+
+============================================================
+6. Todos os arquivos com nome relacionado a Planejamentos
+============================================================
+- docs\9-14-2-integracao-planejamentos.md | Modificado: 05/30/2026 23:56:49 | 1145 bytes
+- docs\9-14-planejamento-docx-oficial.md | Modificado: 05/30/2026 23:31:33 | 1831 bytes
+- docs\9-21-1-planejamentos-campos-bncc-pos-deploy.md | Modificado: 05/31/2026 14:14:29 | 2120 bytes
+- docs\auditorias\auditoria-planejamentos-campos-bncc-9-21-1-2026-05-31T17-15-04-122Z.md | Modificado: 05/31/2026 14:15:04 | 1053 bytes
+- docs\etapa9-1-2-planejamentos-ia-tela.md | Modificado: 05/30/2026 18:03:07 | 769 bytes
+- docs\etapa9-1-gemini-planejamento.md | Modificado: 05/30/2026 17:39:34 | 1025 bytes
+- src\app\planejamentos\PlanejamentosClient.tsx | Modificado: 05/31/2026 03:26:45 | 49943 bytes
+- src\components\PlanifyBrandLogo.tsx | Modificado: 05/31/2026 10:17:24 | 1942 bytes
+- src\components\PlanifyFieldEnhancer.tsx | Modificado: 05/31/2026 14:14:28 | 21785 bytes
+- src\lib\ai\planejamento-client.ts | Modificado: 05/30/2026 17:39:34 | 498 bytes
+- src\lib\planejamentos\download-planejamento-oficial.ts | Modificado: 05/30/2026 23:31:33 | 1144 bytes
+- src\server\ai\planejamento-ai-service.ts | Modificado: 05/30/2026 17:57:44 | 8293 bytes
+- src\server\ai\prompts\planejamento-prompt.ts | Modificado: 05/30/2026 17:57:44 | 4438 bytes
+
+============================================================
+7. Imports do arquivo que provavelmente renderiza /planejamentos
+============================================================
+Arquivo analisado: src\app\planejamentos\page.tsx
+
+Linha 1: import { PlanejamentosClient } from "./PlanejamentosClient";
+
+Export default encontrado?
+Linha 1: import { PlanejamentosClient } from "./PlanejamentosClient";
+Linha 3: export default function PlanejamentosPage() {
+Linha 4: return <PlanejamentosClient />;
+
+============================================================
+8. Busca por strings críticas no código
+============================================================
+
+--- PADRÃO: Língua Portuguesa ---
+Total de ocorrências: 517
+data\bncc\processado\bncc-habilidades.json:994: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:1026: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:1060: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:1090: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:1118: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:1147: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:1173: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:1199: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:1230: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:1260: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:1287: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:1318: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:1346: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:1377: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:1411: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:1442: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:1491: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:1546: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:1592: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:1624: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:1669: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:1715: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:1760: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:1811: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:1852: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:1894: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:3927: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:3970: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:4002: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:4037: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:4070: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:4099: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:4128: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:4158: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:4186: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:4214: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:4251: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:4280: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:4325: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:4367: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:4407: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:4435: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:4476: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:4522: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:4570: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:4624: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:4660: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:4693: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:4742: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:4776: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:4830: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:4871: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:4904: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:4932: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:4967: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:7161: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:7199: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:7233: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:7260: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:7295: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:7326: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:7356: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:7393: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:7425: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:7454: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:7490: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:7542: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:7589: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:7635: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:7683: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:7717: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:7767: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:7813: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:7864: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:7904: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:7955: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:8001: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:8053: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:8090: "componente": "Língua Portuguesa",
+data\bncc\processado\bncc-habilidades.json:8127: "componente": "Língua Portuguesa",
+... resultado limitado a 80 linhas para este padrão.
+
+--- PADRÃO: Lingua Portuguesa ---
+Total de ocorrências: 3
+src\app\planejamentos\PlanejamentosClient.tsx:229: if (component.includes("lingua portuguesa") || component.includes("portugues")) {
+src\server\bncc\bncc-suggestion-engine.ts:562: if (componente.includes("lingua portuguesa") && /LP|LGG/.test(candidate.codigo)) {
+src\server\planejamentos\official-planning-docx.ts:762: if (component.includes("lingua portuguesa") || component.includes("portugues")) {
+
+--- PADRÃO: Língua Espanhola ---
+Total de ocorrências: 3
+docs\9-21-1-planejamentos-campos-bncc-pos-deploy.md:6: Língua Espanhola não aparecia nas opções do Ensino Médio
+docs\9-21-1-planejamentos-campos-bncc-pos-deploy.md:19: Ensino Médio mostra Língua Espanhola em Linguagens e suas Tecnologias
+docs\9-21-1-planejamentos-campos-bncc-pos-deploy.md:79: 5. Verifique Língua Espanhola
+
+--- PADRÃO: Lingua Espanhola ---
+Total de ocorrências: 1
+src\app\globals.css:1671: - Lingua Espanhola no Ensino Medio
+
+--- PADRÃO: Espanhol ---
+Total de ocorrências: 8
+data\bncc\processado\bncc-habilidades.json:26738: "descricao": "Identificar e explicar os protagonismos e a atuação de diferentes grupos sociais e étnicos nas lutas de independência no Brasil, na América espanhola e no Haiti.",
+data\bncc\processado\bncc-habilidades.json:26760: "espanhola",
+docs\9-21-1-planejamentos-campos-bncc-pos-deploy.md:6: Língua Espanhola não aparecia nas opções do Ensino Médio
+docs\9-21-1-planejamentos-campos-bncc-pos-deploy.md:19: Ensino Médio mostra Língua Espanhola em Linguagens e suas Tecnologias
+docs\9-21-1-planejamentos-campos-bncc-pos-deploy.md:79: 5. Verifique Língua Espanhola
+docs\auditorias\auditoria-planejamentos-campos-bncc-9-21-1-2026-05-31T17-15-04-122Z.md:7: [OK] Enhancer contem: L\u00edngua Espanhola
+src\app\globals.css:1671: - Lingua Espanhola no Ensino Medio
+src\components\PlanifyFieldEnhancer.tsx:58: [AREA_LINGUAGENS_MEDIO]: ["L\u00edngua Portuguesa", "Arte", "Educa\u00e7\u00e3o F\u00edsica", "L\u00edngua Inglesa", "L\u00edngua Espanhola"],
+
+--- PADRÃO: Espanhola ---
+Total de ocorrências: 8
+data\bncc\processado\bncc-habilidades.json:26738: "descricao": "Identificar e explicar os protagonismos e a atuação de diferentes grupos sociais e étnicos nas lutas de independência no Brasil, na América espanhola e no Haiti.",
+data\bncc\processado\bncc-habilidades.json:26760: "espanhola",
+docs\9-21-1-planejamentos-campos-bncc-pos-deploy.md:6: Língua Espanhola não aparecia nas opções do Ensino Médio
+docs\9-21-1-planejamentos-campos-bncc-pos-deploy.md:19: Ensino Médio mostra Língua Espanhola em Linguagens e suas Tecnologias
+docs\9-21-1-planejamentos-campos-bncc-pos-deploy.md:79: 5. Verifique Língua Espanhola
+docs\auditorias\auditoria-planejamentos-campos-bncc-9-21-1-2026-05-31T17-15-04-122Z.md:7: [OK] Enhancer contem: L\u00edngua Espanhola
+src\app\globals.css:1671: - Lingua Espanhola no Ensino Medio
+src\components\PlanifyFieldEnhancer.tsx:58: [AREA_LINGUAGENS_MEDIO]: ["L\u00edngua Portuguesa", "Arte", "Educa\u00e7\u00e3o F\u00edsica", "L\u00edngua Inglesa", "L\u00edngua Espanhola"],
+
+--- PADRÃO: Arte ---
+Total de ocorrências: 304
+data\bncc\processado\bncc-habilidades.json:45: "descricao": "Localizar, nomear e representar graficamente (por meio de desenhos) partes do corpo humano e explicar suas funções.",
+data\bncc\processado\bncc-habilidades.json:61: "partes",
+data\bncc\processado\bncc-habilidades.json:1195: "descricao": "Relacionar elementos sonoros (sílabas, fonemas, partes de palavras) com sua representação escrita.",
+data\bncc\processado\bncc-habilidades.json:1210: "partes",
+data\bncc\processado\bncc-habilidades.json:2707: "descricao": "Identificar de que materiais (metais, madeira, vidro etc.) são feitos os objetos que fazem parte da vida cotidiana, como esses objetos são utilizados e com quais materiais eram produzidos no passado.",
+data\bncc\processado\bncc-habilidades.json:2726: "parte",
+data\bncc\processado\bncc-habilidades.json:2815: "descricao": "Descrever características de plantas e animais (tamanho, forma, cor, fase da vida, local onde se desenvolvem etc.) que fazem parte de seu cotidiano e relacioná-las ao ambiente em que eles vivem.",
+data\bncc\processado\bncc-habilidades.json:2837: "parte",
+data\bncc\processado\bncc-habilidades.json:2884: "descricao": "Identificar as principais partes de uma planta (raiz, caule, folhas, flores e frutos) e a função desempenhada por cada uma delas, e analisar as relações entre as plantas, o ambiente e os demais seres vivos.",
+data\bncc\processado\bncc-habilidades.json:2896: "partes",
+data\bncc\processado\bncc-habilidades.json:5251: "descricao": "Resolver e elaborar problemas envolvendo dobro, metade, triplo e terça parte, com o suporte de imagens ou material manipulável, utilizando estratégias pessoais.",
+data\bncc\processado\bncc-habilidades.json:5269: "parte",
+data\bncc\processado\bncc-habilidades.json:6273: "descricao": "Caracterizar as práticas celebrativas como parte integrante do conjunto das manifestações religiosas de diferentes culturas e sociedades.",
+data\bncc\processado\bncc-habilidades.json:6286: "parte",
+data\bncc\processado\bncc-habilidades.json:6587: "descricao": "Relacionar a produção de lixo doméstico ou da escola aos problemas causados pelo consumo excessivo e construir propostas para o consumo consciente, considerando a ampliação de hábitos de redução, reúso e reciclagem/descarte de materiais consumidos em casa, na escola e/ou no entorno.",
+data\bncc\processado\bncc-habilidades.json:6615: "descarte",
+data\bncc\processado\bncc-habilidades.json:8538: "descricao": "Associar o quociente de uma divisão com resto zero de um número natural por 2, 3, 4, 5 e 10 às ideias de metade, terça, quarta, quinta e décima partes.",
+data\bncc\processado\bncc-habilidades.json:8561: "partes",
+data\bncc\processado\bncc-habilidades.json:9764: "descricao": "Identificar representações religiosas em diferentes expressões artísticas (pinturas, arquitetura, esculturas, ícones, símbolos, imagens), reconhecendo-as como parte da identidade de diferentes culturas e tradições religiosas.",
+data\bncc\processado\bncc-habilidades.json:9787: "parte",
+data\bncc\processado\bncc-habilidades.json:12826: "descricao": "Construir propostas coletivas para um consumo mais consciente e criar soluções tecnológicas para o descarte adequado e a reutilização ou reciclagem de materiais consumidos na escola e/ou na vida cotidiana.",
+data\bncc\processado\bncc-habilidades.json:12845: "descarte",
+data\bncc\processado\bncc-habilidades.json:14311: "descricao": "Identificar, em textos, o uso de conjunções e a relação que estabelecem entre partes do texto: adição, oposição, tempo, causa, condição, finalidade.",
+data\bncc\processado\bncc-habilidades.json:14327: "partes",
+data\bncc\processado\bncc-habilidades.json:15242: "descricao": "Identificar e representar frações (menores e maiores que a unidade), associando-as ao resultado de uma divisão ou à ideia de parte de um todo, utilizando a reta numérica como recurso.",
+data\bncc\processado\bncc-habilidades.json:15262: "parte",
+data\bncc\processado\bncc-habilidades.json:15336: "descricao": "Associar as representações 10%, 25%, 50%, 75% e 100% respectivamente à décima parte, quarta parte, metade, três quartos e um inteiro, para calcular porcentagens, utilizando estratégias pessoais, cálculo mental e calculadora, em contextos de educação financeira, entre outros.",
+data\bncc\processado\bncc-habilidades.json:15351: "parte",
+data\bncc\processado\bncc-habilidades.json:15623: "descricao": "Resolver problemas envolvendo a partilha de uma quantidade em duas partes desiguais, tais como dividir uma quantidade em duas partes, de modo que uma seja o dobro da outra, com compreensão da ideia de razão entre as partes e delas com o todo.",
+data\bncc\processado\bncc-habilidades.json:15639: "partes",
+data\bncc\processado\bncc-habilidades.json:15663: "descricao": "Utilizar e compreender diferentes representações para a localização de objetos no plano, como mapas, células em planilhas eletrônicas e coordenadas geográficas, a fim de desenvolver as primeiras noções de coordenadas cartesianas.",
+data\bncc\processado\bncc-habilidades.json:15690: "cartesianas",
+data\bncc\processado\bncc-habilidades.json:15702: "descricao": "Interpretar, descrever e representar a localização ou movimentação de objetos no plano cartesiano (1º quadrante), utilizando coordenadas cartesianas, indicando mudanças de direção e de sentido e giros.",
+data\bncc\processado\bncc-habilidades.json:15719: "cartesiano",
+data\bncc\processado\bncc-habilidades.json:15723: "cartesianas",
+data\bncc\processado\bncc-habilidades.json:17651: "descricao": "Conceituar “império” no mundo antigo, com vistas à análise das diferentes formas de equilíbrio e desequilíbrio entre as partes envolvidas.",
+data\bncc\processado\bncc-habilidades.json:17671: "partes",
+data\bncc\processado\bncc-habilidades.json:19320: "descricao": "Compreender, comparar e ordenar frações associadas às ideias de partes de inteiros e resultado de divisão, identificando frações equivalentes.",
+data\bncc\processado\bncc-habilidades.json:19336: "partes",
+data\bncc\processado\bncc-habilidades.json:19622: "descricao": "Resolver e elaborar problemas que envolvam a partilha de uma quantidade em duas partes desiguais, envolvendo relações aditivas e multiplicativas, bem como a razão entre as partes e entre uma das partes e o todo.",
+data\bncc\processado\bncc-habilidades.json:19639: "partes",
+data\bncc\processado\bncc-habilidades.json:19659: "descricao": "Associar pares ordenados de números a pontos do plano cartesiano do 1º quadrante, em situações como a localização dos vértices de um polígono.",
+data\bncc\processado\bncc-habilidades.json:19675: "cartesiano",
+data\bncc\processado\bncc-habilidades.json:19832: "descricao": "Construir figuras planas semelhantes em situações de ampliação e de redução, com o uso de malhas quadriculadas, plano cartesiano ou tecnologias digitais.",
+data\bncc\processado\bncc-habilidades.json:19853: "cartesiano",
+data\bncc\processado\bncc-habilidades.json:22378: "descricao": "Identificar a(s) informação(ões)-chave de partes de um texto em língua inglesa (parágrafos).",
+data\bncc\processado\bncc-habilidades.json:22392: "partes",
+data\bncc\processado\bncc-habilidades.json:22407: "descricao": "Relacionar as partes de um texto (parágrafos) para construir seu sentido global.",
+data\bncc\processado\bncc-habilidades.json:22418: "partes",
+data\bncc\processado\bncc-habilidades.json:23339: "descricao": "Estabelecer relações entre partes do texto, identificando substituições lexicais (de substantivos por sinônimos) ou pronominais (uso de pronomes anafóricos – pessoais, possessivos, demonstrativos), que contribuem para a continuidade do texto.",
+data\bncc\processado\bncc-habilidades.json:23351: "partes",
+data\bncc\processado\bncc-habilidades.json:23646: "descricao": "Comparar e ordenar frações associadas às ideias de partes de inteiros, resultado da divisão, razão e operador.",
+data\bncc\processado\bncc-habilidades.json:23661: "partes",
+data\bncc\processado\bncc-habilidades.json:23678: "descricao": "Utilizar, na resolução de problemas, a associação entre razão e fração, como a fração 2/3 para expressar a razão de duas partes de uma grandeza para três partes da mesma ou três partes de outra grandeza.",
+data\bncc\processado\bncc-habilidades.json:23696: "partes",
+data\bncc\processado\bncc-habilidades.json:23836: "descricao": "Classificar sequências em recursivas e não recursivas, reconhecendo que o conceito de recursão está presente não apenas na matemática, mas também nas artes e na literatura.",
+data\bncc\processado\bncc-habilidades.json:23859: "artes",
+data\bncc\processado\bncc-habilidades.json:24007: "descricao": "Realizar transformações de polígonos representados no plano cartesiano, decorrentes da multiplicação das coordenadas de seus vértices por um número inteiro.",
+data\bncc\processado\bncc-habilidades.json:24022: "cartesiano",
+data\bncc\processado\bncc-habilidades.json:24040: "descricao": "Reconhecer e representar, no plano cartesiano, o simétrico de figuras em relação aos eixos e à origem.",
+data\bncc\processado\bncc-habilidades.json:24053: "cartesiano",
+data\bncc\processado\bncc-habilidades.json:24070: "descricao": "Reconhecer e construir figuras obtidas por simetrias de translação, rotação e reflexão, usando instrumentos de desenho ou softwares de geometria dinâmica e vincular esse estudo a representações planas de obras de arte, elementos arquitetônicos, entre outros.",
+data\bncc\processado\bncc-habilidades.json:24100: "arte",
+data\bncc\processado\bncc-habilidades.json:24225: "descricao": "Reconhecer a rigidez geométrica dos triângulos e suas aplicações, como na construção de estruturas arquitetônicas (telhados, estruturas metálicas e outras) ou nas artes plásticas.",
+data\bncc\processado\bncc-habilidades.json:24246: "artes",
+data\bncc\processado\bncc-habilidades.json:27109: "descricao": "Discutir o papel das culturas letradas, não letradas e das artes na produção das identidades no Brasil do século XIX.",
+data\bncc\processado\bncc-habilidades.json:27124: "artes",
+data\bncc\processado\bncc-habilidades.json:27380: "descricao": "Construir o sentido global de textos orais, relacionando suas partes, o assunto principal e informações relevantes.",
+data\bncc\processado\bncc-habilidades.json:27396: "partes",
+data\bncc\processado\bncc-habilidades.json:27892: "descricao": "Construir repertório cultural por meio do contato com manifestações artístico-culturais vinculadas à língua inglesa (artes plásticas e visuais, literatura, música, cinema, dança, festividades, entre outros), valorizando a diversidade entre culturas.",
+data\bncc\processado\bncc-habilidades.json:27913: "artes",
+data\bncc\processado\bncc-habilidades.json:28528: "descricao": "Estabelecer relações entre partes do texto, identificando o antecedente de um pronome relativo ou o referente comum de uma cadeia de substituições lexicais.",
+data\bncc\processado\bncc-habilidades.json:28540: "partes",
+data\bncc\processado\bncc-habilidades.json:28792: "descricao": "Associar uma equação linear de 1º grau com duas incógnitas a uma reta no plano cartesiano.",
+data\bncc\processado\bncc-habilidades.json:28810: "cartesiano",
+data\bncc\processado\bncc-habilidades.json:28822: "descricao": "Resolver e elaborar problemas relacionados ao seu contexto próximo, que possam ser representados por sistemas de equações de 1º grau com duas incógnitas e interpretá-los, utilizando, inclusive, o plano cartesiano como recurso.",
+data\bncc\processado\bncc-habilidades.json:28851: "cartesiano",
+data\bncc\processado\bncc-habilidades.json:28969: "descricao": "Identificar a natureza da variação de duas grandezas, diretamente, inversamente proporcionais ou não proporcionais, expressando a relação existente por meio de sentença algébrica e representá-la no plano cartesiano.",
+data\bncc\processado\bncc-habilidades.json:28996: "cartesiano",
+data\bncc\processado\bncc-habilidades.json:33647: "descricao": "Resolver e elaborar problemas que envolvam relações de proporcionalidade direta e inversa entre duas ou mais grandezas, inclusive escalas, divisão em partes proporcionais e taxa de variação, em contextos socioculturais, ambientais e de outras áreas.",
+... resultado limitado a 80 linhas para este padrão.
+
+--- PADRÃO: Ciências ---
+Total de ocorrências: 250
+data\bncc\processado\bncc-habilidades.json:9: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:49: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:81: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:121: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:153: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:189: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:2711: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:2749: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:2785: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:2819: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:2859: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:2888: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:2929: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:2961: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:5822: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:5855: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:5902: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:5936: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:5969: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:6003: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:6040: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:6080: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:6116: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:6151: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:9270: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:9301: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:9334: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:9372: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:9411: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:9444: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:9475: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:9504: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:9542: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:9575: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:9609: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:12675: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:12716: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:12759: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:12794: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:12830: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:12869: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:12906: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:12938: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:12977: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:13016: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:13054: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:13084: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:13119: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:16116: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:16148: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:16189: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:16228: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:16263: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:16294: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:16330: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:16366: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:16406: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:16438: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:16468: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:16500: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:16532: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:16559: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:20349: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:20383: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:20414: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:20462: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:20496: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:20536: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:20576: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:20617: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:20659: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:20706: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:20745: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:20780: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:20813: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:20861: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:20899: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:20935: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:24691: "componente": "Ciências",
+data\bncc\processado\bncc-habilidades.json:24724: "componente": "Ciências",
+... resultado limitado a 80 linhas para este padrão.
+
+--- PADRÃO: Ciencias ---
+Total de ocorrências: 182
+data\bncc\processado\bncc-habilidades.json:37: "ciencias"
+data\bncc\processado\bncc-habilidades.json:69: "ciencias"
+data\bncc\processado\bncc-habilidades.json:109: "ciencias"
+data\bncc\processado\bncc-habilidades.json:141: "ciencias"
+data\bncc\processado\bncc-habilidades.json:177: "ciencias"
+data\bncc\processado\bncc-habilidades.json:211: "ciencias"
+data\bncc\processado\bncc-habilidades.json:2737: "ciencias"
+data\bncc\processado\bncc-habilidades.json:2773: "ciencias"
+data\bncc\processado\bncc-habilidades.json:2807: "ciencias"
+data\bncc\processado\bncc-habilidades.json:2847: "ciencias"
+data\bncc\processado\bncc-habilidades.json:2876: "ciencias"
+data\bncc\processado\bncc-habilidades.json:2917: "ciencias"
+data\bncc\processado\bncc-habilidades.json:2949: "ciencias"
+data\bncc\processado\bncc-habilidades.json:2986: "ciencias"
+data\bncc\processado\bncc-habilidades.json:5843: "ciencias"
+data\bncc\processado\bncc-habilidades.json:5890: "ciencias"
+data\bncc\processado\bncc-habilidades.json:5924: "ciencias"
+data\bncc\processado\bncc-habilidades.json:5957: "ciencias"
+data\bncc\processado\bncc-habilidades.json:5991: "ciencias"
+data\bncc\processado\bncc-habilidades.json:6028: "ciencias"
+data\bncc\processado\bncc-habilidades.json:6068: "ciencias"
+data\bncc\processado\bncc-habilidades.json:6104: "ciencias"
+data\bncc\processado\bncc-habilidades.json:6139: "ciencias"
+data\bncc\processado\bncc-habilidades.json:6174: "ciencias"
+data\bncc\processado\bncc-habilidades.json:9289: "ciencias"
+data\bncc\processado\bncc-habilidades.json:9322: "ciencias"
+data\bncc\processado\bncc-habilidades.json:9360: "ciencias"
+data\bncc\processado\bncc-habilidades.json:9399: "ciencias"
+data\bncc\processado\bncc-habilidades.json:9432: "ciencias"
+data\bncc\processado\bncc-habilidades.json:9463: "ciencias"
+data\bncc\processado\bncc-habilidades.json:9492: "ciencias"
+data\bncc\processado\bncc-habilidades.json:9530: "ciencias"
+data\bncc\processado\bncc-habilidades.json:9563: "ciencias"
+data\bncc\processado\bncc-habilidades.json:9597: "ciencias"
+data\bncc\processado\bncc-habilidades.json:9633: "ciencias"
+data\bncc\processado\bncc-habilidades.json:12704: "ciencias"
+data\bncc\processado\bncc-habilidades.json:12747: "ciencias"
+data\bncc\processado\bncc-habilidades.json:12782: "ciencias"
+data\bncc\processado\bncc-habilidades.json:12818: "ciencias"
+data\bncc\processado\bncc-habilidades.json:12857: "ciencias"
+data\bncc\processado\bncc-habilidades.json:12894: "ciencias"
+data\bncc\processado\bncc-habilidades.json:12926: "ciencias"
+data\bncc\processado\bncc-habilidades.json:12965: "ciencias"
+data\bncc\processado\bncc-habilidades.json:13004: "ciencias"
+data\bncc\processado\bncc-habilidades.json:13042: "ciencias"
+data\bncc\processado\bncc-habilidades.json:13072: "ciencias"
+data\bncc\processado\bncc-habilidades.json:13107: "ciencias"
+data\bncc\processado\bncc-habilidades.json:13147: "ciencias"
+data\bncc\processado\bncc-habilidades.json:16136: "ciencias"
+data\bncc\processado\bncc-habilidades.json:16177: "ciencias"
+data\bncc\processado\bncc-habilidades.json:16216: "ciencias"
+data\bncc\processado\bncc-habilidades.json:16251: "ciencias"
+data\bncc\processado\bncc-habilidades.json:16282: "ciencias"
+data\bncc\processado\bncc-habilidades.json:16318: "ciencias"
+data\bncc\processado\bncc-habilidades.json:16354: "ciencias"
+data\bncc\processado\bncc-habilidades.json:16394: "ciencias"
+data\bncc\processado\bncc-habilidades.json:16426: "ciencias"
+data\bncc\processado\bncc-habilidades.json:16456: "ciencias"
+data\bncc\processado\bncc-habilidades.json:16488: "ciencias"
+data\bncc\processado\bncc-habilidades.json:16520: "ciencias"
+data\bncc\processado\bncc-habilidades.json:16547: "ciencias"
+data\bncc\processado\bncc-habilidades.json:16595: "ciencias"
+data\bncc\processado\bncc-habilidades.json:20371: "ciencias"
+data\bncc\processado\bncc-habilidades.json:20402: "ciencias"
+data\bncc\processado\bncc-habilidades.json:20450: "ciencias"
+data\bncc\processado\bncc-habilidades.json:20484: "ciencias"
+data\bncc\processado\bncc-habilidades.json:20524: "ciencias"
+data\bncc\processado\bncc-habilidades.json:20564: "ciencias"
+data\bncc\processado\bncc-habilidades.json:20605: "ciencias"
+data\bncc\processado\bncc-habilidades.json:20647: "ciencias"
+data\bncc\processado\bncc-habilidades.json:20694: "ciencias"
+data\bncc\processado\bncc-habilidades.json:20733: "ciencias"
+data\bncc\processado\bncc-habilidades.json:20768: "ciencias"
+data\bncc\processado\bncc-habilidades.json:20801: "ciencias"
+data\bncc\processado\bncc-habilidades.json:20849: "ciencias"
+data\bncc\processado\bncc-habilidades.json:20887: "ciencias"
+data\bncc\processado\bncc-habilidades.json:20923: "ciencias"
+data\bncc\processado\bncc-habilidades.json:20953: "ciencias"
+data\bncc\processado\bncc-habilidades.json:24712: "ciencias"
+data\bncc\processado\bncc-habilidades.json:24745: "ciencias"
+... resultado limitado a 80 linhas para este padrão.
+
+--- PADRÃO: BNCC ---
+Total de ocorrências: 1821
+data\bncc\processado\bncc-habilidades.json:39: "fonte": "BNCC oficial PDF, página 335",
+data\bncc\processado\bncc-habilidades.json:71: "fonte": "BNCC oficial PDF, página 335",
+data\bncc\processado\bncc-habilidades.json:111: "fonte": "BNCC oficial PDF, página 335",
+data\bncc\processado\bncc-habilidades.json:143: "fonte": "BNCC oficial PDF, página 335",
+data\bncc\processado\bncc-habilidades.json:179: "fonte": "BNCC oficial PDF, página 335",
+data\bncc\processado\bncc-habilidades.json:213: "fonte": "BNCC oficial PDF, página 335",
+data\bncc\processado\bncc-habilidades.json:239: "fonte": "BNCC oficial PDF, página 445",
+data\bncc\processado\bncc-habilidades.json:266: "fonte": "BNCC oficial PDF, página 445",
+data\bncc\processado\bncc-habilidades.json:293: "fonte": "BNCC oficial PDF, página 445",
+data\bncc\processado\bncc-habilidades.json:318: "fonte": "BNCC oficial PDF, página 445",
+data\bncc\processado\bncc-habilidades.json:346: "fonte": "BNCC oficial PDF, página 445",
+data\bncc\processado\bncc-habilidades.json:378: "fonte": "BNCC oficial PDF, página 445",
+data\bncc\processado\bncc-habilidades.json:410: "fonte": "BNCC oficial PDF, página 373",
+data\bncc\processado\bncc-habilidades.json:439: "fonte": "BNCC oficial PDF, página 373",
+data\bncc\processado\bncc-habilidades.json:472: "fonte": "BNCC oficial PDF, página 373",
+data\bncc\processado\bncc-habilidades.json:503: "fonte": "BNCC oficial PDF, página 373",
+data\bncc\processado\bncc-habilidades.json:540: "fonte": "BNCC oficial PDF, página 373",
+data\bncc\processado\bncc-habilidades.json:577: "fonte": "BNCC oficial PDF, página 373",
+data\bncc\processado\bncc-habilidades.json:604: "fonte": "BNCC oficial PDF, página 373",
+data\bncc\processado\bncc-habilidades.json:636: "fonte": "BNCC oficial PDF, página 373",
+data\bncc\processado\bncc-habilidades.json:679: "fonte": "BNCC oficial PDF, página 373",
+data\bncc\processado\bncc-habilidades.json:710: "fonte": "BNCC oficial PDF, página 373",
+data\bncc\processado\bncc-habilidades.json:743: "fonte": "BNCC oficial PDF, página 373",
+data\bncc\processado\bncc-habilidades.json:774: "fonte": "BNCC oficial PDF, página 409",
+data\bncc\processado\bncc-habilidades.json:800: "fonte": "BNCC oficial PDF, página 409",
+data\bncc\processado\bncc-habilidades.json:829: "fonte": "BNCC oficial PDF, página 409",
+data\bncc\processado\bncc-habilidades.json:863: "fonte": "BNCC oficial PDF, página 409",
+data\bncc\processado\bncc-habilidades.json:893: "fonte": "BNCC oficial PDF, página 409",
+data\bncc\processado\bncc-habilidades.json:924: "fonte": "BNCC oficial PDF, página 409",
+data\bncc\processado\bncc-habilidades.json:951: "fonte": "BNCC oficial PDF, página 409",
+data\bncc\processado\bncc-habilidades.json:984: "fonte": "BNCC oficial PDF, página 409",
+data\bncc\processado\bncc-habilidades.json:1016: "fonte": "BNCC oficial PDF, página 101",
+data\bncc\processado\bncc-habilidades.json:1050: "fonte": "BNCC oficial PDF, página 101",
+data\bncc\processado\bncc-habilidades.json:1080: "fonte": "BNCC oficial PDF, página 101",
+data\bncc\processado\bncc-habilidades.json:1108: "fonte": "BNCC oficial PDF, página 101",
+data\bncc\processado\bncc-habilidades.json:1137: "fonte": "BNCC oficial PDF, página 101",
+data\bncc\processado\bncc-habilidades.json:1163: "fonte": "BNCC oficial PDF, página 101",
+data\bncc\processado\bncc-habilidades.json:1189: "fonte": "BNCC oficial PDF, página 101",
+data\bncc\processado\bncc-habilidades.json:1220: "fonte": "BNCC oficial PDF, página 103",
+data\bncc\processado\bncc-habilidades.json:1250: "fonte": "BNCC oficial PDF, página 103",
+data\bncc\processado\bncc-habilidades.json:1277: "fonte": "BNCC oficial PDF, página 103",
+data\bncc\processado\bncc-habilidades.json:1308: "fonte": "BNCC oficial PDF, página 103",
+data\bncc\processado\bncc-habilidades.json:1336: "fonte": "BNCC oficial PDF, página 103",
+data\bncc\processado\bncc-habilidades.json:1367: "fonte": "BNCC oficial PDF, página 103",
+data\bncc\processado\bncc-habilidades.json:1401: "fonte": "BNCC oficial PDF, página 103",
+data\bncc\processado\bncc-habilidades.json:1432: "fonte": "BNCC oficial PDF, página 103",
+data\bncc\processado\bncc-habilidades.json:1481: "fonte": "BNCC oficial PDF, página 105",
+data\bncc\processado\bncc-habilidades.json:1536: "fonte": "BNCC oficial PDF, página 105",
+data\bncc\processado\bncc-habilidades.json:1582: "fonte": "BNCC oficial PDF, página 105",
+data\bncc\processado\bncc-habilidades.json:1614: "fonte": "BNCC oficial PDF, página 105",
+data\bncc\processado\bncc-habilidades.json:1659: "fonte": "BNCC oficial PDF, página 107",
+data\bncc\processado\bncc-habilidades.json:1705: "fonte": "BNCC oficial PDF, página 109",
+data\bncc\processado\bncc-habilidades.json:1750: "fonte": "BNCC oficial PDF, página 111",
+data\bncc\processado\bncc-habilidades.json:1801: "fonte": "BNCC oficial PDF, página 111",
+data\bncc\processado\bncc-habilidades.json:1842: "fonte": "BNCC oficial PDF, página 113",
+data\bncc\processado\bncc-habilidades.json:1884: "fonte": "BNCC oficial PDF, página 113",
+data\bncc\processado\bncc-habilidades.json:1916: "fonte": "BNCC oficial PDF, página 113",
+data\bncc\processado\bncc-habilidades.json:1955: "fonte": "BNCC oficial PDF, página 281",
+data\bncc\processado\bncc-habilidades.json:1986: "fonte": "BNCC oficial PDF, página 281",
+data\bncc\processado\bncc-habilidades.json:2023: "fonte": "BNCC oficial PDF, página 281",
+data\bncc\processado\bncc-habilidades.json:2064: "fonte": "BNCC oficial PDF, página 281",
+data\bncc\processado\bncc-habilidades.json:2096: "fonte": "BNCC oficial PDF, página 281",
+data\bncc\processado\bncc-habilidades.json:2127: "fonte": "BNCC oficial PDF, página 281",
+data\bncc\processado\bncc-habilidades.json:2169: "fonte": "BNCC oficial PDF, página 281",
+data\bncc\processado\bncc-habilidades.json:2214: "fonte": "BNCC oficial PDF, página 281",
+data\bncc\processado\bncc-habilidades.json:2247: "fonte": "BNCC oficial PDF, página 281",
+data\bncc\processado\bncc-habilidades.json:2282: "fonte": "BNCC oficial PDF, página 281",
+data\bncc\processado\bncc-habilidades.json:2317: "fonte": "BNCC oficial PDF, página 281",
+data\bncc\processado\bncc-habilidades.json:2359: "fonte": "BNCC oficial PDF, página 281",
+data\bncc\processado\bncc-habilidades.json:2393: "fonte": "BNCC oficial PDF, página 281",
+data\bncc\processado\bncc-habilidades.json:2430: "fonte": "BNCC oficial PDF, página 281",
+data\bncc\processado\bncc-habilidades.json:2474: "fonte": "BNCC oficial PDF, página 283",
+data\bncc\processado\bncc-habilidades.json:2507: "fonte": "BNCC oficial PDF, página 283",
+data\bncc\processado\bncc-habilidades.json:2538: "fonte": "BNCC oficial PDF, página 283",
+data\bncc\processado\bncc-habilidades.json:2569: "fonte": "BNCC oficial PDF, página 283",
+data\bncc\processado\bncc-habilidades.json:2603: "fonte": "BNCC oficial PDF, página 283",
+data\bncc\processado\bncc-habilidades.json:2637: "fonte": "BNCC oficial PDF, página 283",
+data\bncc\processado\bncc-habilidades.json:2665: "fonte": "BNCC oficial PDF, página 283",
+data\bncc\processado\bncc-habilidades.json:2701: "fonte": "BNCC oficial PDF, página 283",
+data\bncc\processado\bncc-habilidades.json:2739: "fonte": "BNCC oficial PDF, página 337",
+... resultado limitado a 80 linhas para este padrão.
+
+--- PADRÃO: habilidades ---
+Total de ocorrências: 199
+data\bncc\processado\bncc-habilidades.json:22791: "descricao": "Empregar, de forma inteligível, o verbo modal can para descrever habilidades (no presente e no passado).",
+data\bncc\processado\bncc-habilidades.json:22808: "habilidades",
+data\bncc\processado\bncc-habilidades.json:39152: "descricao": "Praticar um ou mais esportes de marca, precisão, invasão e técnico-combinatórios oferecidos pela escola, usando habilidades técnico-táticas básicas e respeitando regras.",
+data\bncc\processado\bncc-habilidades.json:39173: "habilidades",
+docs\9-14-1-bncc-por-conteudo.md:5: Garantir que a sugestão de habilidades BNCC use a caixa `Conteúdos` como fonte principal.
+docs\9-14-1-bncc-por-conteudo.md:10: Conteúdos + etapa + ano/série + área/componente = suficientes para sugerir habilidades BNCC.
+docs\9-14-1-bncc-por-conteudo.md:25: src/app/api/planejamentos/habilidades/route.ts
+docs\9-14-1-bncc-por-conteudo.md:35: 3. Busca habilidades no JSON local em data/bncc.
+docs\9-14-1-bncc-por-conteudo.md:37: 5. Retorna 2 ou 3 habilidades por conteúdo.
+docs\9-14-1-bncc-por-conteudo.md:45: /api/planejamentos/habilidades
+docs\9-14-10-padrao-professor-anual.md:41: ### Habilidades BNCC
+docs\9-14-10-padrao-professor-anual.md:43: A coluna Habilidades recebe:
+docs\9-14-11-trimestre3-editor-oficial.md:18: ### 2. Habilidades BNCC
+docs\9-14-11-trimestre3-editor-oficial.md:35: Habilidades BNCC
+docs\9-14-13-matriz-anual-downloads.md:36: - Usa as mesmas habilidades BNCC.
+docs\9-14-2-integracao-planejamentos.md:14: 5. Seleção/remarcação de habilidades.
+docs\9-14-2-integracao-planejamentos.md:41: 3. Clicar em Sugerir habilidades BNCC.
+docs\9-14-2-integracao-planejamentos.md:43: 5. Selecionar/remover habilidades.
+docs\9-14-3-modelos-oficiais-reais.md:49: 6. Preenche conteúdos, aulas, habilidades BNCC, objetivos, metodologia, recursos e avaliação.
+docs\9-14-8-mapeamento-orientacoes-template.md:27: Habilidades
+docs\9-14-8-mapeamento-orientacoes-template.md:40: Habilidades -> códigos BNCC selecionados
+docs\9-14-8-mapeamento-orientacoes-template.md:61: Habilidades BNCC
+docs\9-14-planejamento-docx-oficial.md:35: 4. Até 3 habilidades BNCC por conteúdo.
+docs\9-14-planejamento-docx-oficial.md:36: 5. Habilidades aparecem com código + descrição.
+docs\9-14-planejamento-docx-oficial.md:40: 9. Se houver habilidades selecionadas, elas são priorizadas.
+docs\9-14-planejamento-docx-oficial.md:72: - habilidades com código + descrição
+docs\9-15-1-biblioteca-admin-robusta.md:39: Habilidades BNCC
+docs\9-15-14-biblioteca-admin-simples-definitiva.md:40: Habilidades BNCC
+docs\9-21-1-planejamentos-campos-bncc-pos-deploy.md:23: - até 3 habilidades por conteúdo
+docs\bncc.md:14: data/bncc/processado/bncc-habilidades.json
+docs\bncc.md:19: O Planify não inventa habilidades BNCC.
+docs\bncc.md:24: data/bncc/processado/bncc-habilidades.json
+docs\bncc.md:30: Nenhuma base BNCC oficial foi instalada ainda. Coloque o arquivo processado em data/bncc/processado/bncc-habilidades.json.
+docs\bncc.md:74: A busca retorna no máximo 3 habilidades por conteúdo informado.
+docs\correcao-etapa9-1-habilidades-completas.md:1: # Correção Etapa 9.1 — Habilidades completas no planejamento
+docs\correcao-etapa9-1-habilidades-completas.md:20: habilidadesBnccCodigos = uso interno e validação de segurança
+docs\correcao-etapa9-1-habilidades-completas.md:21: habilidadesBncc = uso na tela, editor e DOCX com código + descrição oficial
+docs\correcao-etapa9-1-habilidades-completas.md:30: O backend cruza os códigos com as habilidades oficiais selecionadas pelo professor e monta a descrição final a partir da fonte oficial já selecionada.
+docs\database.md:105: Tabela para habilidades BNCC oficiais.
+docs\etapa9-1-2-planejamentos-ia-tela.md:15: 2. Clica em Sugerir habilidades BNCC.
+docs\etapa9-1-2-planejamentos-ia-tela.md:16: 3. Sistema mostra até 3 habilidades oficiais.
+docs\etapa9-1-2-planejamentos-ia-tela.md:20: 7. Backend garante que as habilidades da tabela venham com código + descrição oficial.
+docs\etapa9-1-3-ensino-medio-area-componente.md:32: Para buscar habilidades no Ensino Médio, o sistema envia a área como filtro principal e também envia a disciplina como dado auxiliar.
+docs\etapa9-1-gemini-planejamento.md:21: Não cria habilidades BNCC.
+docs\etapa9-1-gemini-planejamento.md:28: A Gemini só pode usar habilidades enviadas no campo:
+docs\etapa9-1-gemini-planejamento.md:31: habilidadesSelecionadas
+docs\revisao-final-etapa8.md:44: inventar habilidades BNCC
+docs\revisao-final-etapa8.md:55: usar somente habilidades BNCC selecionadas pelo professor
+src\app\globals.css:1673: - Filtro visual de habilidades BNCC repetidas/excessivas
+src\app\page.tsx:56: title: "Escolha as habilidades",
+src\app\page.tsx:201: <span>objetivos, aulas e habilidades alinhadas</span>
+src\app\admin\AdminClient.tsx:133: title: "Modelo de planejamento anual por habilidades",
+src\app\admin\AdminClient.tsx:188: description: "Base processada instalada com habilidades EF e EM.",
+src\app\admin\AdminClient.tsx:206: { label: "BNCC", value: "1.487", detail: "habilidades processadas" },
+src\app\admin\biblioteca\AdminBibliotecaClient.tsx:19: habilidadesBncc: string[];
+src\app\api\admin\biblioteca\materiais\route.ts:25: habilidades_bncc?: string[] | null;
+src\app\api\admin\biblioteca\materiais\route.ts:109: habilidadesBncc: row.habilidades_bncc || [],
+src\app\api\admin\biblioteca\materiais\route.ts:168: const habilidadesBncc = parseList(normalizeText(formData.get("habilidadesBncc")));
+src\app\api\admin\biblioteca\materiais\route.ts:235: habilidades_bncc: habilidadesBncc,
+src\app\api\biblioteca\materiais\route.ts:29: habilidades_bncc?: string[] | null;
+src\app\api\biblioteca\materiais\route.ts:150: habilidadesBncc: row.habilidades_bncc || [],
+src\app\api\bncc\sugerir\route.ts:26: : "Não foi possível sugerir habilidades BNCC.",
+src\app\api\planejamentos\habilidades\route.ts:26: : "Não foi possível sugerir habilidades BNCC.",
+src\app\biblioteca\BibliotecaClient.tsx:19: habilidadesBncc?: string[];
+src\app\contato\ContatoClient.tsx:68: description: "Use a BNCC oficial, selecione habilidades e gere a prévia estruturada.",
+src\app\dashboard\page.tsx:8: "Crie planejamentos pedagógicos com organização por conteúdos, habilidades, aulas e avaliação.",
+src\app\planejamentos\PlanejamentosClient.tsx:24: habilidades: BnccSkill[];
+src\app\planejamentos\PlanejamentosClient.tsx:32: habilidades: Array<{ codigo: string; descricao: string; conteudo?: string }>;
+src\app\planejamentos\PlanejamentosClient.tsx:162: habilidades: Array.isArray(group?.habilidades)
+src\app\planejamentos\PlanejamentosClient.tsx:163: ? group.habilidades.map((skill: any) => normalizeSkill(skill, conteudo))
+src\app\planejamentos\PlanejamentosClient.tsx:173: habilidades: [],
+src\app\planejamentos\PlanejamentosClient.tsx:367: <tr><td><strong>Habilidades BNCC</strong></td><td>${nl2br(item.habilidades.map(skillFullText).join("\n"))}</td></tr>
+src\app\planejamentos\PlanejamentosClient.tsx:397: <td>${nl2br(item.habilidades.map(skillFullText).join("\n"))}</td>
+src\app\planejamentos\PlanejamentosClient.tsx:415: <th>Habilidades</th>
+src\app\planejamentos\PlanejamentosClient.tsx:458: sugeridas: groups.reduce((total, group) => total + group.habilidades.length, 0),
+src\app\planejamentos\PlanejamentosClient.tsx:498: setStatus("Exemplo preenchido. Agora sugira as habilidades BNCC.");
+src\app\planejamentos\PlanejamentosClient.tsx:527: for (const skill of group.habilidades.slice(0, 3)) map.set(skill.id, skill);
+src\app\planejamentos\PlanejamentosClient.tsx:535: current.filter((skill) => !group.habilidades.some((item) => item.id === skill.id)),
+src\app\planejamentos\PlanejamentosClient.tsx:553: habilidadesSelecionadas: selectedSkills.map((skill) => ({
+src\app\planejamentos\PlanejamentosClient.tsx:574: setStatus("Buscando habilidades BNCC pelos conteúdos...");
+... resultado limitado a 80 linhas para este padrão.
+
+--- PADRÃO: habilidade ---
+Total de ocorrências: 230
+data\bncc\processado\bncc-habilidades.json:22791: "descricao": "Empregar, de forma inteligível, o verbo modal can para descrever habilidades (no presente e no passado).",
+data\bncc\processado\bncc-habilidades.json:22808: "habilidades",
+data\bncc\processado\bncc-habilidades.json:39152: "descricao": "Praticar um ou mais esportes de marca, precisão, invasão e técnico-combinatórios oferecidos pela escola, usando habilidades técnico-táticas básicas e respeitando regras.",
+data\bncc\processado\bncc-habilidades.json:39173: "habilidades",
+docs\9-14-1-bncc-por-conteudo.md:5: Garantir que a sugestão de habilidades BNCC use a caixa `Conteúdos` como fonte principal.
+docs\9-14-1-bncc-por-conteudo.md:10: Conteúdos + etapa + ano/série + área/componente = suficientes para sugerir habilidades BNCC.
+docs\9-14-1-bncc-por-conteudo.md:25: src/app/api/planejamentos/habilidades/route.ts
+docs\9-14-1-bncc-por-conteudo.md:35: 3. Busca habilidades no JSON local em data/bncc.
+docs\9-14-1-bncc-por-conteudo.md:37: 5. Retorna 2 ou 3 habilidades por conteúdo.
+docs\9-14-1-bncc-por-conteudo.md:38: 6. Cada habilidade vem com código + descrição.
+docs\9-14-1-bncc-por-conteudo.md:45: /api/planejamentos/habilidades
+docs\9-14-10-padrao-professor-anual.md:41: ### Habilidades BNCC
+docs\9-14-10-padrao-professor-anual.md:43: A coluna Habilidades recebe:
+docs\9-14-11-trimestre3-editor-oficial.md:18: ### 2. Habilidades BNCC
+docs\9-14-11-trimestre3-editor-oficial.md:35: Habilidades BNCC
+docs\9-14-13-matriz-anual-downloads.md:36: - Usa as mesmas habilidades BNCC.
+docs\9-14-2-integracao-planejamentos.md:14: 5. Seleção/remarcação de habilidades.
+docs\9-14-2-integracao-planejamentos.md:41: 3. Clicar em Sugerir habilidades BNCC.
+docs\9-14-2-integracao-planejamentos.md:43: 5. Selecionar/remover habilidades.
+docs\9-14-3-modelos-oficiais-reais.md:49: 6. Preenche conteúdos, aulas, habilidades BNCC, objetivos, metodologia, recursos e avaliação.
+docs\9-14-8-mapeamento-orientacoes-template.md:27: Habilidades
+docs\9-14-8-mapeamento-orientacoes-template.md:40: Habilidades -> códigos BNCC selecionados
+docs\9-14-8-mapeamento-orientacoes-template.md:61: Habilidades BNCC
+docs\9-14-planejamento-docx-oficial.md:35: 4. Até 3 habilidades BNCC por conteúdo.
+docs\9-14-planejamento-docx-oficial.md:36: 5. Habilidades aparecem com código + descrição.
+docs\9-14-planejamento-docx-oficial.md:40: 9. Se houver habilidades selecionadas, elas são priorizadas.
+docs\9-14-planejamento-docx-oficial.md:72: - habilidades com código + descrição
+docs\9-15-1-biblioteca-admin-robusta.md:39: Habilidades BNCC
+docs\9-15-14-biblioteca-admin-simples-definitiva.md:40: Habilidades BNCC
+docs\9-21-1-planejamentos-campos-bncc-pos-deploy.md:23: - até 3 habilidades por conteúdo
+docs\bncc.md:14: data/bncc/processado/bncc-habilidades.json
+docs\bncc.md:19: O Planify não inventa habilidades BNCC.
+docs\bncc.md:24: data/bncc/processado/bncc-habilidades.json
+docs\bncc.md:30: Nenhuma base BNCC oficial foi instalada ainda. Coloque o arquivo processado em data/bncc/processado/bncc-habilidades.json.
+docs\bncc.md:41: "descricao": "Texto oficial da habilidade...",
+docs\bncc.md:74: A busca retorna no máximo 3 habilidades por conteúdo informado.
+docs\correcao-etapa9-1-habilidades-completas.md:1: # Correção Etapa 9.1 — Habilidades completas no planejamento
+docs\correcao-etapa9-1-habilidades-completas.md:5: No planejamento real, principalmente na tabela oficial, a habilidade deve aparecer com:
+docs\correcao-etapa9-1-habilidades-completas.md:20: habilidadesBnccCodigos = uso interno e validação de segurança
+docs\correcao-etapa9-1-habilidades-completas.md:21: habilidadesBncc = uso na tela, editor e DOCX com código + descrição oficial
+docs\correcao-etapa9-1-habilidades-completas.md:30: O backend cruza os códigos com as habilidades oficiais selecionadas pelo professor e monta a descrição final a partir da fonte oficial já selecionada.
+docs\database.md:105: Tabela para habilidades BNCC oficiais.
+docs\etapa9-1-2-planejamentos-ia-tela.md:15: 2. Clica em Sugerir habilidades BNCC.
+docs\etapa9-1-2-planejamentos-ia-tela.md:16: 3. Sistema mostra até 3 habilidades oficiais.
+docs\etapa9-1-2-planejamentos-ia-tela.md:20: 7. Backend garante que as habilidades da tabela venham com código + descrição oficial.
+docs\etapa9-1-2-planejamentos-ia-tela.md:26: A Gemini não inventa habilidade.
+docs\etapa9-1-3-ensino-medio-area-componente.md:32: Para buscar habilidades no Ensino Médio, o sistema envia a área como filtro principal e também envia a disciplina como dado auxiliar.
+docs\etapa9-1-gemini-planejamento.md:21: Não cria habilidades BNCC.
+docs\etapa9-1-gemini-planejamento.md:28: A Gemini só pode usar habilidades enviadas no campo:
+docs\etapa9-1-gemini-planejamento.md:31: habilidadesSelecionadas
+docs\revisao-final-etapa8.md:44: inventar habilidades BNCC
+docs\revisao-final-etapa8.md:55: usar somente habilidades BNCC selecionadas pelo professor
+src\app\globals.css:1673: - Filtro visual de habilidades BNCC repetidas/excessivas
+src\app\page.tsx:56: title: "Escolha as habilidades",
+src\app\page.tsx:201: <span>objetivos, aulas e habilidades alinhadas</span>
+src\app\admin\AdminClient.tsx:133: title: "Modelo de planejamento anual por habilidades",
+src\app\admin\AdminClient.tsx:188: description: "Base processada instalada com habilidades EF e EM.",
+src\app\admin\AdminClient.tsx:206: { label: "BNCC", value: "1.487", detail: "habilidades processadas" },
+src\app\admin\biblioteca\AdminBibliotecaClient.tsx:19: habilidadesBncc: string[];
+src\app\api\admin\biblioteca\materiais\route.ts:25: habilidades_bncc?: string[] | null;
+src\app\api\admin\biblioteca\materiais\route.ts:109: habilidadesBncc: row.habilidades_bncc || [],
+src\app\api\admin\biblioteca\materiais\route.ts:168: const habilidadesBncc = parseList(normalizeText(formData.get("habilidadesBncc")));
+src\app\api\admin\biblioteca\materiais\route.ts:235: habilidades_bncc: habilidadesBncc,
+src\app\api\biblioteca\materiais\route.ts:29: habilidades_bncc?: string[] | null;
+src\app\api\biblioteca\materiais\route.ts:150: habilidadesBncc: row.habilidades_bncc || [],
+src\app\api\bncc\sugerir\route.ts:26: : "Não foi possível sugerir habilidades BNCC.",
+src\app\api\planejamentos\habilidades\route.ts:26: : "Não foi possível sugerir habilidades BNCC.",
+src\app\biblioteca\BibliotecaClient.tsx:19: habilidadesBncc?: string[];
+src\app\contato\ContatoClient.tsx:68: description: "Use a BNCC oficial, selecione habilidades e gere a prévia estruturada.",
+src\app\dashboard\page.tsx:8: "Crie planejamentos pedagógicos com organização por conteúdos, habilidades, aulas e avaliação.",
+src\app\planejamentos\PlanejamentosClient.tsx:24: habilidades: BnccSkill[];
+src\app\planejamentos\PlanejamentosClient.tsx:32: habilidades: Array<{ codigo: string; descricao: string; conteudo?: string }>;
+src\app\planejamentos\PlanejamentosClient.tsx:162: habilidades: Array.isArray(group?.habilidades)
+src\app\planejamentos\PlanejamentosClient.tsx:163: ? group.habilidades.map((skill: any) => normalizeSkill(skill, conteudo))
+src\app\planejamentos\PlanejamentosClient.tsx:173: habilidades: [],
+src\app\planejamentos\PlanejamentosClient.tsx:367: <tr><td><strong>Habilidades BNCC</strong></td><td>${nl2br(item.habilidades.map(skillFullText).join("\n"))}</td></tr>
+src\app\planejamentos\PlanejamentosClient.tsx:397: <td>${nl2br(item.habilidades.map(skillFullText).join("\n"))}</td>
+src\app\planejamentos\PlanejamentosClient.tsx:415: <th>Habilidades</th>
+src\app\planejamentos\PlanejamentosClient.tsx:458: sugeridas: groups.reduce((total, group) => total + group.habilidades.length, 0),
+src\app\planejamentos\PlanejamentosClient.tsx:498: setStatus("Exemplo preenchido. Agora sugira as habilidades BNCC.");
+... resultado limitado a 80 linhas para este padrão.
+
+--- PADRÃO: conteúdo ---
+Total de ocorrências: 146
+data\bncc\processado\bncc-habilidades.json:27547: "descricao": "Analisar, criticamente, o conteúdo de textos, comparando diferentes perspectivas apresentadas sobre um mesmo assunto.",
+data\bncc\processado\bncc-habilidades.json:27579: "descricao": "Avaliar a própria produção escrita e a de colegas, com base no contexto de comunicação (finalidade e adequação ao público, conteúdo a ser comunicado, organização textual, legibilidade, estrutura de frases).",
+data\bncc\processado\bncc-habilidades.json:43744: "descricao": "Posicionar-se em relação a conteúdos veiculados em práticas não institucionalizadas de participação social, sobretudo àquelas vinculadas a manifestações artísticas, produções culturais, intervenções urbanas e práticas próprias das culturas juvenis que pretendam denunciar, expor uma problemática ou “convocar” para uma reflexão/ação, relacionando esse texto/produção com seu contexto de produção e relacionando as partes e semioses presentes para a construção de sentidos.",
+data\bncc\processado\bncc-habilidades.json:44232: "descricao": "Comparar, com a ajuda do professor, conteúdos, dados e informações de diferentes fontes, levando em conta seus contextos de produção e referências, identificando coincidências, complementaridades e contradições, de forma a poder identificar erros/imprecisões conceituais, compreender e posicionar-se criticamente sobre os conteúdos e informações em questão.",
+data\bncc\processado\bncc-habilidades.json:44281: "descricao": "Utilizar pistas linguísticas – tais como “em primeiro/segundo/terceiro lugar”, “por outro lado”, “dito de outro modo”, isto é”, “por exemplo” – para compreender a hierarquização das proposições, sintetizando o conteúdo dos textos.",
+data\bncc\processado\bncc-habilidades.json:44371: "descricao": "Articular o verbal com os esquemas, infográficos, imagens variadas etc. na (re)construção dos sentidos dos textos de divulgação científica e retextualizar do discursivo para o esquemático – infográfico, esquema, tabela, gráfico, ilustração etc. – e, ao contrário, transformar o conteúdo das tabelas, esquemas, infográficos, ilustrações etc. em texto discursivo, como forma de ampliar as possibilidades de compreensão desses textos e analisar as características das multissemioses e dos gêneros em questão.",
+data\bncc\processado\bncc-habilidades.json:44427: "descricao": "Grifar as partes essenciais do texto, tendo em vista os objetivos de leitura, produzir marginálias (ou tomar notas em outro suporte), sínteses organizadas em itens, quadro sinóptico, quadro comparativo, esquema, resumo ou resenha do texto lido (com ou sem comentário/análise), mapa conceitual, dependendo do que for mais adequado, como forma de possibilitar uma maior compreensão do texto, a sistematização de conteúdos e informações e um posicionamento frente aos textos, se esse for o caso.",
+data\bncc\processado\bncc-habilidades.json:44749: "descricao": "Analisar, em gravações de seminários, conferências rápidas, trechos de palestras, dentre outros, a construção composicional dos gêneros de apresentação – abertura/saudação, introdução ao tema, apresentação do plano de exposição, desenvolvimento dos conteúdos, por meio do encadeamento de temas e subtemas (coesão temática), síntese final e/ou conclusão, encerramento –, os elementos paralinguísticos (tais como: tom e volume da voz, pausas e hesitações – que, em geral, devem ser minimizadas –, modulação de voz e entonação, ritmo, respiração etc.) e cinésicos (tais como: postura corporal, movimentos e gestualidade significativa, expressão facial, contato de olho com plateia, modulação de voz e entonação, sincronia da fala com ferramenta de apoio etc.), para melhor performar apresentações orais no campo da divulgação do conhecimento.",
+data\bncc\processado\bncc-habilidades.json:44805: "descricao": "Usar adequadamente ferramentas de apoio a apresentações orais, escolhendo e usando tipos e tamanhos de fontes que permitam boa visualização, topicalizando e/ou organizando o conteúdo em itens, inserindo de forma adequada imagens, gráficos, tabelas, formas e elementos gráficos, dimensionando a quantidade de texto (e imagem) por slide, usando progressivamente e de forma harmônica recursos mais sofisticados como efeitos de transição, slides mestres, layouts personalizados etc.",
+data\bncc\processado\bncc-habilidades.json:47862: "descricao": "Analisar e utilizar modalização epistêmica, isto é, modos de indicar uma avaliação sobre o valor de verdade e as condições de verdade de uma proposição, tais como os asseverativos – quando se concorda com (“realmente, evidentemente, naturalmente, efetivamente, claro, certo, lógico, sem dúvida” etc.) ou discorda de (“de jeito nenhum, de forma alguma”) uma ideia; e os quase-asseverativos, que indicam que se considera o conteúdo como quase certo (“talvez, assim, possivelmente, provavelmente, eventualmente”).",
+data\bncc\processado\bncc-habilidades.json:53607: "descricao": "Selecionar informações e dados necessários para uma dada pesquisa (sem excedê-los) em diferentes fontes (orais, impressas, digitais etc.) e comparar autonomamente esses conteúdos, levando em conta seus contextos de produção, referências e índices de confiabilidade, e percebendo coincidências, complementaridades, contradições, erros ou imprecisões conceituais e de dados, de forma a compreender e posicionar-se criticamente sobre esses conteúdos e estabelecer recortes precisos.",
+data\bncc\processado\bncc-habilidades.json:53663: "descricao": "Selecionar, elaborar e utilizar instrumentos de coleta de dados e informações (questionários, enquetes, mapeamentos, opinários) e de tratamento e análise dos conteúdos obtidos, que atendam adequadamente a diferentes objetivos de pesquisa.",
+data\bncc\processado\bncc-habilidades.json:53761: "descricao": "Utilizar adequadamente ferramentas de apoio a apresentações orais, escolhendo e usando tipos e tamanhos de fontes que permitam boa visualização, topicalizando e/ou organizando o conteúdo em itens, inserindo de forma adequada imagens, gráficos, tabelas, formas e elementos gráficos, dimensionando a quantidade de texto e imagem por slide e usando, de forma harmônica, recursos (efeitos de transição, slides mestres, layouts personalizados, gravação de áudios em slides etc.).",
+data\bncc\processado\bncc-habilidades.json:54124: "descricao": "Acompanhar, analisar e discutir a cobertura da mídia diante de acontecimentos e questões de relevância social, local e global, comparando diferentes enfoques e perspectivas, por meio do uso de ferramentas de curadoria (como agregadores de conteúdo) e da consulta a serviços e fontes de checagem e curadoria de informação, de forma a aprofundar o entendimento sobre um determinado fato ou questão, identificar o enfoque preponderante da mídia e manter-se implicado, de forma crítica, com os fatos e as questões que afetam a coletividade.",
+docs\9-13-motor-docx-real.md:37: O importante é preservar as tabelas úteis, remover/substituir textos vermelhos e preencher com conteúdo real do Planify.
+docs\9-14-1-bncc-por-conteudo.md:1: # Planify — 9.14.1 — BNCC por Conteúdo
+docs\9-14-1-bncc-por-conteudo.md:5: Garantir que a sugestão de habilidades BNCC use a caixa `Conteúdos` como fonte principal.
+docs\9-14-1-bncc-por-conteudo.md:10: Conteúdos + etapa + ano/série + área/componente = suficientes para sugerir habilidades BNCC.
+docs\9-14-1-bncc-por-conteudo.md:33: 1. Lê os conteúdos digitados pelo professor.
+docs\9-14-1-bncc-por-conteudo.md:34: 2. Separa um conteúdo por linha.
+docs\9-14-1-bncc-por-conteudo.md:37: 5. Retorna 2 ou 3 habilidades por conteúdo.
+docs\9-14-10-padrao-professor-anual.md:11: Os conteúdos são distribuídos entre os trimestres.
+docs\9-14-10-padrao-professor-anual.md:35: Cada conteúdo ocupa:
+docs\9-14-11-1-hotfix-expand-template-rows.md:24: Quando a IA envia poucos conteúdos para um trimestre, o motor completa as linhas faltantes usando desdobramentos pedagógicos do próprio conteúdo.
+docs\9-14-11-trimestre3-editor-oficial.md:16: Se a IA devolver poucos conteúdos para o 3º trimestre, o motor completa as linhas com desdobramentos pedagógicos do próprio conteúdo, preservando o padrão anual.
+docs\9-14-11-trimestre3-editor-oficial.md:47: A página `/editor` foi reforçada para ler o documento enviado, exibir conteúdo editável e permitir:
+docs\9-14-13-matriz-anual-downloads.md:35: - Usa os mesmos conteúdos.
+docs\9-14-2-integracao-planejamentos.md:5: Integrar a tela `/planejamentos` ao motor BNCC por conteúdo e ao motor DOCX oficial.
+docs\9-14-2-integracao-planejamentos.md:11: 2. Sugestão BNCC usa Conteúdos + etapa + ano/série + área + componente.
+docs\9-14-2-integracao-planejamentos.md:13: 4. Cards BNCC agrupados por conteúdo.
+docs\9-14-2-integracao-planejamentos.md:40: 2. Informar etapa, ano/série, área, componente e conteúdos.
+docs\9-14-2-integracao-planejamentos.md:42: 4. Ver cards por conteúdo.
+docs\9-14-3-modelos-oficiais-reais.md:49: 6. Preenche conteúdos, aulas, habilidades BNCC, objetivos, metodologia, recursos e avaliação.
+docs\9-14-6-preenchimento-fiel-template.md:13: - Substitui somente conteúdos de células.
+docs\9-14-6-preenchimento-fiel-template.md:15: - No trimestral, identifica a tabela principal e repete a própria tabela do modelo por conteúdo.
+docs\9-14-8-mapeamento-orientacoes-template.md:33: E distribui conteúdos por trimestre.
+docs\9-14-8-mapeamento-orientacoes-template.md:38: Unidade Temática -> gerada por componente + conteúdo
+docs\9-14-8-mapeamento-orientacoes-template.md:39: Objetos de Conhecimento -> conteúdo informado
+docs\9-14-8-mapeamento-orientacoes-template.md:42: Previsão de carga horária -> períodos do conteúdo
+docs\9-14-planejamento-docx-oficial.md:33: 2. Planejamento trimestral com uma tabela por conteúdo.
+docs\9-14-planejamento-docx-oficial.md:34: 3. Um conteúdo específico por linha/seção.
+docs\9-14-planejamento-docx-oficial.md:35: 4. Até 3 habilidades BNCC por conteúdo.
+docs\9-14-planejamento-docx-oficial.md:37: 6. Aulas progridem conforme os conteúdos.
+docs\9-14-planejamento-docx-oficial.md:70: - conteúdo legível
+docs\9-15-1-biblioteca-admin-robusta.md:35: Tema/conteúdo principal
+docs\9-15-14-biblioteca-admin-simples-definitiva.md:23: Tema/conteúdo
+docs\9-19-0-auditoria-marketplace.md:16: Conteúdo fictício/mock
+docs\9-20-0-editor-word-avancado.md:35: O editor lê os conteúdos já usados pelo Planify:
+docs\9-20-0-editor-word-avancado.md:42: Assim, quando Planejamentos, Biblioteca ou Marketplace enviarem algo para o Editor, ele abre o conteúdo.
+docs\9-20-0-editor-word-avancado.md:81: 9. Confirme que o conteúdo vindo do planejamento continua abrindo.
+docs\9-20-11-1-fix-textos-landing.md:77: BNCC por conteúdo
+docs\9-21-1-planejamentos-campos-bncc-pos-deploy.md:8: Campo Conteúdos abria lista indevida
+docs\9-21-1-planejamentos-campos-bncc-pos-deploy.md:20: Campo Conteúdos não abre mais menu inteligente
+docs\9-21-1-planejamentos-campos-bncc-pos-deploy.md:23: - até 3 habilidades por conteúdo
+docs\9-21-1-planejamentos-campos-bncc-pos-deploy.md:81: 7. Clique em Conteúdos: não deve abrir lista de área/componente
+docs\bncc.md:74: A busca retorna no máximo 3 habilidades por conteúdo informado.
+docs\database.md:128: Conteúdo premium exige assinatura ativa.
+docs\etapa9-3-editor-integrado.md:9: O editor permite editar título, subtítulo e conteúdo.
+docs\etapa9-3-editor-integrado.md:26: 3. O /editor abre com conteúdo preenchido.
+docs\etapa9-3-editor-integrado.md:28: 5. Salve localmente ou copie o conteúdo.
+docs\etapa9-8-admin-owner.md:29: Cole o conteúdo de database/09-8-admin-owner-safe.sql
+docs\revisao-final-etapa8.md:58: retornar conteúdo pronto para prévia e editor
+docs\auditorias\auditoria-fix-textos-landing-9-20-11-1-2026-05-31T14-48-33-079Z.md:10: [OK] Texto correto na Home: BNCC por conteúdo
+docs\auditorias\auditoria-marketplace-2026-05-31T10-24-46-487Z.md:54: ## Conteúdo fictício/mock
+docs\auditorias\auditoria-marketplace-2026-05-31T10-24-46-487Z.md:55: [AVISO] Possíveis conteúdos fictícios/mock encontrados (26).
+docs\auditorias\auditoria-marketplace-2026-05-31T10-24-46-487Z.md:66: - src/app/historico/HistoricoClient.tsx:264: placeholder="Buscar por título, conteúdo, tipo..."
+src\app\page.tsx:13: text: "Anual e trimestral com BNCC, conteúdos e modelos DOCX oficiais.",
+src\app\page.tsx:53: text: "Informe etapa, turma, componente, conteúdos e carga horária.",
+src\app\page.tsx:153: <span>BNCC por conteúdo</span>
+src\app\page.tsx:184: <span>BNCC + conteúdo</span>
+src\app\page.tsx:273: <span>Conteúdos premium</span>
+src\app\admin\AdminClient.tsx:337: ["Biblioteca", "Cadastrar materiais oficiais e destacar conteúdos premium."],
+src\app\admin\biblioteca\AdminBibliotecaClient.tsx:405: placeholder="Tema/conteúdo. Ex.: Frações, leitura, biomas..."
+src\app\dashboard\page.tsx:8: "Crie planejamentos pedagógicos com organização por conteúdos, habilidades, aulas e avaliação.",
+src\app\historico\HistoricoClient.tsx:264: placeholder="Buscar por título, conteúdo, tipo..."
+src\app\marketplace\MarketplaceClient.tsx:429: placeholder="Tema/conteúdo"
+src\app\materiais\MateriaisClient.tsx:286: return "Informe ao menos um conteúdo.";
+src\app\materiais\MateriaisClient.tsx:320: descricao: `Atividades orientadas para desenvolver o conteúdo "${conteudo}" de forma progressiva e contextualizada.`,
+src\app\materiais\MateriaisClient.tsx:323: "Exploração guiada do conteúdo.",
+src\app\materiais\MateriaisClient.tsx:333: "Resposta coerente com o conteúdo estudado, com justificativa clara.",
+... resultado limitado a 80 linhas para este padrão.
+
+--- PADRÃO: conteudo ---
+Total de ocorrências: 253
+data\bncc\processado\bncc-habilidades.json:27559: "conteudo",
+data\bncc\processado\bncc-habilidades.json:27600: "conteudo",
+data\bncc\processado\bncc-habilidades.json:43756: "conteudos",
+data\bncc\processado\bncc-habilidades.json:44245: "conteudos",
+data\bncc\processado\bncc-habilidades.json:44309: "conteudo",
+data\bncc\processado\bncc-habilidades.json:44402: "conteudo",
+data\bncc\processado\bncc-habilidades.json:44474: "conteudos",
+data\bncc\processado\bncc-habilidades.json:44779: "conteudos",
+data\bncc\processado\bncc-habilidades.json:44831: "conteudo",
+data\bncc\processado\bncc-habilidades.json:47904: "conteudo",
+data\bncc\processado\bncc-habilidades.json:53633: "conteudos",
+data\bncc\processado\bncc-habilidades.json:53686: "conteudos",
+data\bncc\processado\bncc-habilidades.json:53787: "conteudo",
+data\bncc\processado\bncc-habilidades.json:54155: "conteudo",
+docs\9-14-1-bncc-por-conteudo.md:26: scripts/planify/patch-9-14-1-bncc-conteudos.cjs
+docs\9-14-1-bncc-por-conteudo.md:27: scripts/planify/planejamentos/testar-bncc-por-conteudo.cjs
+docs\9-14-1-bncc-por-conteudo.md:61: node scripts\planify\planejamentos\testar-bncc-por-conteudo.cjs
+src\app\globals.css:1672: - Campo Conteudos sem menu indevido
+src\app\api\bncc\sugerir\route.ts:2: import { suggestBnccByConteudos } from "../../../../server/bncc/bncc-suggestion-engine";
+src\app\api\bncc\sugerir\route.ts:10: const result = suggestBnccByConteudos(payload || {});
+src\app\api\bncc\sugerir\route.ts:39: "Rota de sugestão BNCC ativa. Use POST com etapa, anoSerie, componenteCurricular e conteudos.",
+src\app\api\planejamentos\docx-pacote\route.ts:177: if (!payload?.matrizPlanejamento?.conteudos?.length) {
+src\app\api\planejamentos\habilidades\route.ts:2: import { suggestBnccByConteudos } from "../../../../server/bncc/bncc-suggestion-engine";
+src\app\api\planejamentos\habilidades\route.ts:10: const result = suggestBnccByConteudos(payload || {});
+src\app\api\planejamentos\habilidades\route.ts:39: "Rota de sugestão BNCC ativa. Use POST com etapa, anoSerie, componenteCurricular e conteudos.",
+src\app\materiais\MateriaisClient.tsx:29: conteudos: string;
+src\app\materiais\MateriaisClient.tsx:89: conteudos: "",
+src\app\materiais\MateriaisClient.tsx:107: conteudos:
+src\app\materiais\MateriaisClient.tsx:128: conteudos:
+src\app\materiais\MateriaisClient.tsx:285: if (splitLines(form.conteudos).length === 0) {
+src\app\materiais\MateriaisClient.tsx:296: const conteudos = splitLines(form.conteudos);
+src\app\materiais\MateriaisClient.tsx:318: secoes: conteudos.map((conteudo, index) => ({
+src\app\materiais\MateriaisClient.tsx:319: titulo: `Seção ${index + 1}: ${conteudo}`,
+src\app\materiais\MateriaisClient.tsx:320: descricao: `Atividades orientadas para desenvolver o conteúdo "${conteudo}" de forma progressiva e contextualizada.`,
+src\app\materiais\MateriaisClient.tsx:413: const conteudos = useMemo(() => splitLines(form.conteudos), [form.conteudos]);
+src\app\materiais\MateriaisClient.tsx:564: ["Conteúdos", String(conteudos.length)],
+src\app\materiais\MateriaisClient.tsx:824: value={form.conteudos}
+src\app\materiais\MateriaisClient.tsx:826: updateField("conteudos", event.target.value)
+src\app\planejamentos\PlanejamentosClient.tsx:18: conteudo: string;
+src\app\planejamentos\PlanejamentosClient.tsx:23: conteudo: string;
+src\app\planejamentos\PlanejamentosClient.tsx:28: conteudo: string;
+src\app\planejamentos\PlanejamentosClient.tsx:32: habilidades: Array<{ codigo: string; descricao: string; conteudo?: string }>;
+src\app\planejamentos\PlanejamentosClient.tsx:44: conteudos: PlanningMatrixItem[];
+src\app\planejamentos\PlanejamentosClient.tsx:57: conteudos: string;
+src\app\planejamentos\PlanejamentosClient.tsx:72: conteudos: "",
+src\app\planejamentos\PlanejamentosClient.tsx:84: conteudos:
+src\app\planejamentos\PlanejamentosClient.tsx:97: conteudos:
+src\app\planejamentos\PlanejamentosClient.tsx:106: function splitConteudos(text: string) {
+src\app\planejamentos\PlanejamentosClient.tsx:125: function normalizeSkill(skill: any, fallbackConteudo = ""): BnccSkill {
+src\app\planejamentos\PlanejamentosClient.tsx:137: `${codigo}-${fallbackConteudo}-${descricao}`.slice(0, 160),
+src\app\planejamentos\PlanejamentosClient.tsx:146: conteudo: String(skill?.conteudo || fallbackConteudo || "Conteúdo informado"),
+src\app\planejamentos\PlanejamentosClient.tsx:151: function groupSkillsFromResponse(data: any, conteudos: string[]) {
+src\app\planejamentos\PlanejamentosClient.tsx:154: if (Array.isArray(data?.conteudos)) {
+src\app\planejamentos\PlanejamentosClient.tsx:155: for (const group of data.conteudos) {
+src\app\planejamentos\PlanejamentosClient.tsx:156: const conteudo = String(group?.conteudo || "").trim();
+src\app\planejamentos\PlanejamentosClient.tsx:158: if (!conteudo) continue;
+src\app\planejamentos\PlanejamentosClient.tsx:161: conteudo,
+src\app\planejamentos\PlanejamentosClient.tsx:163: ? group.habilidades.map((skill: any) => normalizeSkill(skill, conteudo))
+src\app\planejamentos\PlanejamentosClient.tsx:171: return conteudos.map((conteudo) => ({
+src\app\planejamentos\PlanejamentosClient.tsx:172: conteudo,
+src\app\planejamentos\PlanejamentosClient.tsx:224: const content = item.conteudo
+src\app\planejamentos\PlanejamentosClient.tsx:289: conteudo: missing ? refineEditorContent(source.conteudo, index) : source.conteudo,
+src\app\planejamentos\PlanejamentosClient.tsx:299: const explicit = planning.conteudos.filter((item) => Number(item.trimestre) === trimester);
+src\app\planejamentos\PlanejamentosClient.tsx:305: const chunkSize = Math.max(1, Math.ceil(planning.conteudos.length / 3));
+src\app\planejamentos\PlanejamentosClient.tsx:308: return planning.conteudos.slice(start, start + chunkSize);
+src\app\planejamentos\PlanejamentosClient.tsx:354: planning.conteudos.filter((item) => Number(item.trimestre) === trimester).length
+src\app\planejamentos\PlanejamentosClient.tsx:355: ? planning.conteudos.filter((item) => Number(item.trimestre) === trimester)
+src\app\planejamentos\PlanejamentosClient.tsx:356: : planning.conteudos,
+src\app\planejamentos\PlanejamentosClient.tsx:358: Math.max(1, planning.conteudos.length),
+src\app\planejamentos\PlanejamentosClient.tsx:366: <tr><td><strong>Objetos de conhecimento</strong></td><td>${escapeHtml(item.conteudo)}</td></tr>
+src\app\planejamentos\PlanejamentosClient.tsx:396: <td>${escapeHtml(item.conteudo)}</td>
+src\app\planejamentos\PlanejamentosClient.tsx:406: const projectText = items.map((item) => item.conteudo).join("; ");
+src\app\planejamentos\PlanejamentosClient.tsx:453: const conteudos = useMemo(() => splitConteudos(form.conteudos), [form.conteudos]);
+src\app\planejamentos\PlanejamentosClient.tsx:457: conteudos: conteudos.length,
+src\app\planejamentos\PlanejamentosClient.tsx:460: matriz: generatedPlanning?.conteudos?.length || 0,
+src\app\planejamentos\PlanejamentosClient.tsx:462: [conteudos.length, groups, selectedSkills.length, generatedPlanning],
+src\app\planejamentos\PlanejamentosClient.tsx:477: key === "conteudos" ||
+src\app\planejamentos\PlanejamentosClient.tsx:550: conteudos: form.conteudos,
+src\app\planejamentos\PlanejamentosClient.tsx:560: conteudo: skill.conteudo,
+src\app\planejamentos\PlanejamentosClient.tsx:568: if (conteudos.length === 0) {
+... resultado limitado a 80 linhas para este padrão.
+
+--- PADRÃO: conteúdos ---
+Total de ocorrências: 65
+data\bncc\processado\bncc-habilidades.json:43744: "descricao": "Posicionar-se em relação a conteúdos veiculados em práticas não institucionalizadas de participação social, sobretudo àquelas vinculadas a manifestações artísticas, produções culturais, intervenções urbanas e práticas próprias das culturas juvenis que pretendam denunciar, expor uma problemática ou “convocar” para uma reflexão/ação, relacionando esse texto/produção com seu contexto de produção e relacionando as partes e semioses presentes para a construção de sentidos.",
+data\bncc\processado\bncc-habilidades.json:44232: "descricao": "Comparar, com a ajuda do professor, conteúdos, dados e informações de diferentes fontes, levando em conta seus contextos de produção e referências, identificando coincidências, complementaridades e contradições, de forma a poder identificar erros/imprecisões conceituais, compreender e posicionar-se criticamente sobre os conteúdos e informações em questão.",
+data\bncc\processado\bncc-habilidades.json:44427: "descricao": "Grifar as partes essenciais do texto, tendo em vista os objetivos de leitura, produzir marginálias (ou tomar notas em outro suporte), sínteses organizadas em itens, quadro sinóptico, quadro comparativo, esquema, resumo ou resenha do texto lido (com ou sem comentário/análise), mapa conceitual, dependendo do que for mais adequado, como forma de possibilitar uma maior compreensão do texto, a sistematização de conteúdos e informações e um posicionamento frente aos textos, se esse for o caso.",
+data\bncc\processado\bncc-habilidades.json:44749: "descricao": "Analisar, em gravações de seminários, conferências rápidas, trechos de palestras, dentre outros, a construção composicional dos gêneros de apresentação – abertura/saudação, introdução ao tema, apresentação do plano de exposição, desenvolvimento dos conteúdos, por meio do encadeamento de temas e subtemas (coesão temática), síntese final e/ou conclusão, encerramento –, os elementos paralinguísticos (tais como: tom e volume da voz, pausas e hesitações – que, em geral, devem ser minimizadas –, modulação de voz e entonação, ritmo, respiração etc.) e cinésicos (tais como: postura corporal, movimentos e gestualidade significativa, expressão facial, contato de olho com plateia, modulação de voz e entonação, sincronia da fala com ferramenta de apoio etc.), para melhor performar apresentações orais no campo da divulgação do conhecimento.",
+data\bncc\processado\bncc-habilidades.json:53607: "descricao": "Selecionar informações e dados necessários para uma dada pesquisa (sem excedê-los) em diferentes fontes (orais, impressas, digitais etc.) e comparar autonomamente esses conteúdos, levando em conta seus contextos de produção, referências e índices de confiabilidade, e percebendo coincidências, complementaridades, contradições, erros ou imprecisões conceituais e de dados, de forma a compreender e posicionar-se criticamente sobre esses conteúdos e estabelecer recortes precisos.",
+data\bncc\processado\bncc-habilidades.json:53663: "descricao": "Selecionar, elaborar e utilizar instrumentos de coleta de dados e informações (questionários, enquetes, mapeamentos, opinários) e de tratamento e análise dos conteúdos obtidos, que atendam adequadamente a diferentes objetivos de pesquisa.",
+docs\9-14-1-bncc-por-conteudo.md:5: Garantir que a sugestão de habilidades BNCC use a caixa `Conteúdos` como fonte principal.
+docs\9-14-1-bncc-por-conteudo.md:10: Conteúdos + etapa + ano/série + área/componente = suficientes para sugerir habilidades BNCC.
+docs\9-14-1-bncc-por-conteudo.md:33: 1. Lê os conteúdos digitados pelo professor.
+docs\9-14-10-padrao-professor-anual.md:11: Os conteúdos são distribuídos entre os trimestres.
+docs\9-14-11-1-hotfix-expand-template-rows.md:24: Quando a IA envia poucos conteúdos para um trimestre, o motor completa as linhas faltantes usando desdobramentos pedagógicos do próprio conteúdo.
+docs\9-14-11-trimestre3-editor-oficial.md:16: Se a IA devolver poucos conteúdos para o 3º trimestre, o motor completa as linhas com desdobramentos pedagógicos do próprio conteúdo, preservando o padrão anual.
+docs\9-14-13-matriz-anual-downloads.md:35: - Usa os mesmos conteúdos.
+docs\9-14-2-integracao-planejamentos.md:11: 2. Sugestão BNCC usa Conteúdos + etapa + ano/série + área + componente.
+docs\9-14-2-integracao-planejamentos.md:40: 2. Informar etapa, ano/série, área, componente e conteúdos.
+docs\9-14-3-modelos-oficiais-reais.md:49: 6. Preenche conteúdos, aulas, habilidades BNCC, objetivos, metodologia, recursos e avaliação.
+docs\9-14-6-preenchimento-fiel-template.md:13: - Substitui somente conteúdos de células.
+docs\9-14-8-mapeamento-orientacoes-template.md:33: E distribui conteúdos por trimestre.
+docs\9-14-planejamento-docx-oficial.md:37: 6. Aulas progridem conforme os conteúdos.
+docs\9-20-0-editor-word-avancado.md:35: O editor lê os conteúdos já usados pelo Planify:
+docs\9-21-1-planejamentos-campos-bncc-pos-deploy.md:8: Campo Conteúdos abria lista indevida
+docs\9-21-1-planejamentos-campos-bncc-pos-deploy.md:20: Campo Conteúdos não abre mais menu inteligente
+docs\9-21-1-planejamentos-campos-bncc-pos-deploy.md:81: 7. Clique em Conteúdos: não deve abrir lista de área/componente
+docs\auditorias\auditoria-marketplace-2026-05-31T10-24-46-487Z.md:55: [AVISO] Possíveis conteúdos fictícios/mock encontrados (26).
+src\app\page.tsx:13: text: "Anual e trimestral com BNCC, conteúdos e modelos DOCX oficiais.",
+src\app\page.tsx:53: text: "Informe etapa, turma, componente, conteúdos e carga horária.",
+src\app\page.tsx:273: <span>Conteúdos premium</span>
+src\app\admin\AdminClient.tsx:337: ["Biblioteca", "Cadastrar materiais oficiais e destacar conteúdos premium."],
+src\app\dashboard\page.tsx:8: "Crie planejamentos pedagógicos com organização por conteúdos, habilidades, aulas e avaliação.",
+src\app\materiais\MateriaisClient.tsx:373: "Compreensão dos conteúdos trabalhados.",
+src\app\materiais\MateriaisClient.tsx:564: ["Conteúdos", String(conteudos.length)],
+src\app\materiais\MateriaisClient.tsx:822: <span className="text-sm font-bold text-slate-300">Conteúdos</span>
+src\app\materiais\MateriaisClient.tsx:1011: Preencha os dados do material, informe conteúdos claros e clique
+src\app\planejamentos\PlanejamentosClient.tsx:424: <tr><td><strong>Projetos interdisciplinares / Temas integradores</strong></td><td>Integração dos conteúdos do trimestre (${escapeHtml(projectText)}) por meio de leitura, pesquisa, produção, participação coletiva e socialização das aprendizagens.</td></tr>
+src\app\planejamentos\PlanejamentosClient.tsx:569: setError("Informe pelo menos um conteúdo. A sugestão BNCC usa a caixa Conteúdos como base principal.");
+src\app\planejamentos\PlanejamentosClient.tsx:574: setStatus("Buscando habilidades BNCC pelos conteúdos...");
+src\app\planejamentos\PlanejamentosClient.tsx:608: setError("Informe os conteúdos antes de gerar o planejamento.");
+src\app\planejamentos\PlanejamentosClient.tsx:807: <p className="text-xs font-black uppercase tracking-[0.25em] text-cyan-200">Conteúdos</p>
+src\app\planejamentos\PlanejamentosClient.tsx:836: os mesmos conteúdos e as mesmas habilidades BNCC. Não há nova
+src\app\planejamentos\PlanejamentosClient.tsx:974: <span className="text-sm font-bold text-slate-300">Conteúdos</span>
+src\app\planejamentos\PlanejamentosClient.tsx:1023: os mesmos conteúdos e as mesmas habilidades BNCC. Não há nova
+src\app\planejamentos\PlanejamentosClient.tsx:1097: Nenhuma sugestão ainda. Preencha os conteúdos e clique em <strong className="text-white">Sugerir BNCC</strong>.
+src\lib\navigation.ts:214: description: "Gerencie usuários, assinaturas e conteúdos.",
+src\lib\navigation.ts:257: panelItems: ["Dados da escola", "Conteúdos", "BNCC oficial", "Prévia estruturada"],
+src\lib\navigation.ts:275: panelDescription: "Organize tipo, tema, conteúdos, objetivos e orientações.",
+src\lib\navigation.ts:276: panelItems: ["Tipo de material", "Tema", "Conteúdos", "Objetivos", "Prévia"],
+src\lib\navigation.ts:281: { title: "Preencher dados", description: "Informe tema, conteúdos e objetivos." },
+src\lib\navigation.ts:364: description: "Gestão visual de usuários, assinaturas, conteúdos e sistema.",
+src\lib\navigation.ts:376: { title: "Moderar", description: "Controle conteúdos." },
+src\lib\editor\format-ai-output.ts:65: parts.push(listSection("Conteúdos organizados", plan.conteudosOrganizados));
+src\lib\editor\format-ai-output.ts:81: "Conteúdos:",
+src\lib\editor\format-ai-output.ts:145: parts.push(listSection("Conteúdos", material.conteudos));
+src\server\ai\prompts\material-prompt.ts:138: CONTEÚDOS:
+src\server\ai\prompts\planejamento-prompt.ts:58: CONTEÚDOS INFORMADOS:
+src\server\ai\prompts\planejamento-prompt.ts:75: 5. Distribua os conteúdos em etapas pedagógicas coerentes.
+src\server\ai\prompts\planejamento-prompt.ts:76: 6. Cada etapa deve conter conteúdos específicos.
+src\server\bncc\bncc-suggestion-engine.ts:663: ? "Habilidades sugeridas a partir dos conteúdos informados."
+src\server\bncc\bncc-suggestion-engine.ts:664: : "Nenhuma habilidade encontrada para os conteúdos informados.",
+src\server\planejamentos\official-planning-docx.ts:797: return custom || `Integração entre os conteúdos do período (${contentList}) por meio de leitura, pesquisa, produção, socialização, resolução de problemas e participação coletiva.`;
+src\server\planejamentos\planning-ai-service.ts:242: "Planejamento estruturado em modo seguro a partir dos conteúdos, habilidades selecionadas e dados pedagógicos informados.",
+src\server\planejamentos\planning-ai-service.ts:275: return fallbackPlanning(payload, "A IA respondeu sem matriz de conteúdos. Foi usado modo seguro.");
+src\server\planejamentos\planning-ai-service.ts:337: "Planejamento estruturado pela IA a partir dos conteúdos e habilidades selecionadas.",
+src\server\planejamentos\planning-ai-service.ts:371: - Conteúdos, um por linha:
+src\server\planejamentos\planning-ai-service.ts:383: 6. No planejamento anual, distribua os conteúdos entre 1º, 2º e 3º trimestre.
+src\server\planejamentos\planning-ai-service.ts:384: 7. No planejamento anual, gere no mínimo 12 linhas: 4 conteúdos/linhas para cada trimestre.
+
+--- PADRÃO: conteudos ---
+Total de ocorrências: 144
+data\bncc\processado\bncc-habilidades.json:43756: "conteudos",
+data\bncc\processado\bncc-habilidades.json:44245: "conteudos",
+data\bncc\processado\bncc-habilidades.json:44474: "conteudos",
+data\bncc\processado\bncc-habilidades.json:44779: "conteudos",
+data\bncc\processado\bncc-habilidades.json:53633: "conteudos",
+data\bncc\processado\bncc-habilidades.json:53686: "conteudos",
+docs\9-14-1-bncc-por-conteudo.md:26: scripts/planify/patch-9-14-1-bncc-conteudos.cjs
+src\app\globals.css:1672: - Campo Conteudos sem menu indevido
+src\app\api\bncc\sugerir\route.ts:2: import { suggestBnccByConteudos } from "../../../../server/bncc/bncc-suggestion-engine";
+src\app\api\bncc\sugerir\route.ts:10: const result = suggestBnccByConteudos(payload || {});
+src\app\api\bncc\sugerir\route.ts:39: "Rota de sugestão BNCC ativa. Use POST com etapa, anoSerie, componenteCurricular e conteudos.",
+src\app\api\planejamentos\docx-pacote\route.ts:177: if (!payload?.matrizPlanejamento?.conteudos?.length) {
+src\app\api\planejamentos\habilidades\route.ts:2: import { suggestBnccByConteudos } from "../../../../server/bncc/bncc-suggestion-engine";
+src\app\api\planejamentos\habilidades\route.ts:10: const result = suggestBnccByConteudos(payload || {});
+src\app\api\planejamentos\habilidades\route.ts:39: "Rota de sugestão BNCC ativa. Use POST com etapa, anoSerie, componenteCurricular e conteudos.",
+src\app\materiais\MateriaisClient.tsx:29: conteudos: string;
+src\app\materiais\MateriaisClient.tsx:89: conteudos: "",
+src\app\materiais\MateriaisClient.tsx:107: conteudos:
+src\app\materiais\MateriaisClient.tsx:128: conteudos:
+src\app\materiais\MateriaisClient.tsx:285: if (splitLines(form.conteudos).length === 0) {
+src\app\materiais\MateriaisClient.tsx:296: const conteudos = splitLines(form.conteudos);
+src\app\materiais\MateriaisClient.tsx:318: secoes: conteudos.map((conteudo, index) => ({
+src\app\materiais\MateriaisClient.tsx:413: const conteudos = useMemo(() => splitLines(form.conteudos), [form.conteudos]);
+src\app\materiais\MateriaisClient.tsx:564: ["Conteúdos", String(conteudos.length)],
+src\app\materiais\MateriaisClient.tsx:824: value={form.conteudos}
+src\app\materiais\MateriaisClient.tsx:826: updateField("conteudos", event.target.value)
+src\app\planejamentos\PlanejamentosClient.tsx:44: conteudos: PlanningMatrixItem[];
+src\app\planejamentos\PlanejamentosClient.tsx:57: conteudos: string;
+src\app\planejamentos\PlanejamentosClient.tsx:72: conteudos: "",
+src\app\planejamentos\PlanejamentosClient.tsx:84: conteudos:
+src\app\planejamentos\PlanejamentosClient.tsx:97: conteudos:
+src\app\planejamentos\PlanejamentosClient.tsx:106: function splitConteudos(text: string) {
+src\app\planejamentos\PlanejamentosClient.tsx:151: function groupSkillsFromResponse(data: any, conteudos: string[]) {
+src\app\planejamentos\PlanejamentosClient.tsx:154: if (Array.isArray(data?.conteudos)) {
+src\app\planejamentos\PlanejamentosClient.tsx:155: for (const group of data.conteudos) {
+src\app\planejamentos\PlanejamentosClient.tsx:171: return conteudos.map((conteudo) => ({
+src\app\planejamentos\PlanejamentosClient.tsx:299: const explicit = planning.conteudos.filter((item) => Number(item.trimestre) === trimester);
+src\app\planejamentos\PlanejamentosClient.tsx:305: const chunkSize = Math.max(1, Math.ceil(planning.conteudos.length / 3));
+src\app\planejamentos\PlanejamentosClient.tsx:308: return planning.conteudos.slice(start, start + chunkSize);
+src\app\planejamentos\PlanejamentosClient.tsx:354: planning.conteudos.filter((item) => Number(item.trimestre) === trimester).length
+src\app\planejamentos\PlanejamentosClient.tsx:355: ? planning.conteudos.filter((item) => Number(item.trimestre) === trimester)
+src\app\planejamentos\PlanejamentosClient.tsx:356: : planning.conteudos,
+src\app\planejamentos\PlanejamentosClient.tsx:358: Math.max(1, planning.conteudos.length),
+src\app\planejamentos\PlanejamentosClient.tsx:453: const conteudos = useMemo(() => splitConteudos(form.conteudos), [form.conteudos]);
+src\app\planejamentos\PlanejamentosClient.tsx:457: conteudos: conteudos.length,
+src\app\planejamentos\PlanejamentosClient.tsx:460: matriz: generatedPlanning?.conteudos?.length || 0,
+src\app\planejamentos\PlanejamentosClient.tsx:462: [conteudos.length, groups, selectedSkills.length, generatedPlanning],
+src\app\planejamentos\PlanejamentosClient.tsx:477: key === "conteudos" ||
+src\app\planejamentos\PlanejamentosClient.tsx:550: conteudos: form.conteudos,
+src\app\planejamentos\PlanejamentosClient.tsx:568: if (conteudos.length === 0) {
+src\app\planejamentos\PlanejamentosClient.tsx:589: const nextGroups = groupSkillsFromResponse(data, conteudos);
+src\app\planejamentos\PlanejamentosClient.tsx:607: if (conteudos.length === 0) {
+src\app\planejamentos\PlanejamentosClient.tsx:808: <p className="mt-2 text-3xl font-black">{stats.conteudos}</p>
+src\app\planejamentos\PlanejamentosClient.tsx:975: <textarea value={form.conteudos} onChange={(event) => updateField("conteudos", event.target.value)} rows={6} placeholder={"Digite um conteúdo por linha.\nEx.: Estrutura dissertativa-argumentativa\nEx.: Repertório sociocultural"} className="rounded-2xl border border-white/10 bg-slate-950/65 px-5 py-4 text-sm leading-7 text-white outline-none transition focus:border-cyan-300/60" />
+src\app\planejamentos\PlanejamentosClient.tsx:1145: {generatedPlanning.conteudos.map((item) => (
+src\components\PlanifyFieldEnhancer.tsx:368: return label.includes("conteudos") || placeholder.includes("conteudo por linha");
+src\lib\editor\format-ai-output.ts:65: parts.push(listSection("Conteúdos organizados", plan.conteudosOrganizados));
+src\lib\editor\format-ai-output.ts:82: list(etapa.conteudos),
+src\lib\editor\format-ai-output.ts:145: parts.push(listSection("Conteúdos", material.conteudos));
+src\server\ai\material-ai-service.ts:14: function normalizeConteudos(conteudos: MaterialAIInput["conteudos"]): string[] {
+src\server\ai\material-ai-service.ts:15: if (Array.isArray(conteudos)) {
+src\server\ai\material-ai-service.ts:16: return conteudos.map((item) => String(item).trim()).filter(Boolean);
+src\server\ai\material-ai-service.ts:19: return String(conteudos)
+src\server\ai\material-ai-service.ts:82: if (normalizeConteudos(input.conteudos).length === 0) {
+src\server\ai\material-ai-service.ts:148: conteudos:
+src\server\ai\material-ai-service.ts:149: normalizeStringArray(output.conteudos).length > 0
+src\server\ai\material-ai-service.ts:150: ? normalizeStringArray(output.conteudos)
+src\server\ai\material-ai-service.ts:151: : normalizeConteudos(input.conteudos),
+src\server\ai\material-ai-service.ts:182: conteudos: normalizeConteudos(rawInput.conteudos),
+src\server\ai\planejamento-ai-service.ts:15: function normalizeConteudos(conteudos: PlanejamentoAIInput["conteudos"]): string[] {
+src\server\ai\planejamento-ai-service.ts:16: if (Array.isArray(conteudos)) {
+src\server\ai\planejamento-ai-service.ts:17: return conteudos.map((item) => String(item).trim()).filter(Boolean);
+src\server\ai\planejamento-ai-service.ts:20: return String(conteudos)
+src\server\ai\planejamento-ai-service.ts:97: if (normalizeConteudos(input.conteudos).length === 0) {
+src\server\ai\planejamento-ai-service.ts:131: conteudos: normalizeStringArray(value.conteudos),
+src\server\ai\planejamento-ai-service.ts:216: conteudosOrganizados: Array.isArray(output.conteudosOrganizados)
+src\server\ai\planejamento-ai-service.ts:217: ? output.conteudosOrganizados
+src\server\ai\planejamento-ai-service.ts:218: : normalizeConteudos(input.conteudos),
+src\server\ai\planejamento-ai-service.ts:248: conteudos: normalizeConteudos(rawInput.conteudos),
+src\server\ai\prompts\material-prompt.ts:3: function normalizeConteudos(conteudos: MaterialAIInput["conteudos"]): string[] {
+... resultado limitado a 80 linhas para este padrão.
+
+--- PADRÃO: conteudosSugeridos ---
+Nenhuma ocorrência.
+
+--- PADRÃO: conteúdosSugeridos ---
+Nenhuma ocorrência.
+
+--- PADRÃO: componentesCurriculares ---
+Nenhuma ocorrência.
+
+--- PADRÃO: componentes ---
+Total de ocorrências: 31
+data\bncc\processado\bncc-habilidades.json:3422: "descricao": "Identificar e elaborar diferentes formas de representação (desenhos, mapas mentais, maquetes) para representar componentes da paisagem dos lugares de vivência.",
+data\bncc\processado\bncc-habilidades.json:3442: "componentes",
+data\bncc\processado\bncc-habilidades.json:9407: "descricao": "Descrever e destacar semelhanças e diferenças entre o ciclo da matéria e o fluxo de energia entre os componentes vivos e não vivos de um ecossistema.",
+data\bncc\processado\bncc-habilidades.json:9425: "componentes",
+data\bncc\processado\bncc-habilidades.json:10143: "descricao": "Utilizar as direções cardeais na localização de componentes físicos e humanos nas paisagens rurais e urbanas.",
+data\bncc\processado\bncc-habilidades.json:10157: "componentes",
+data\bncc\processado\bncc-habilidades.json:16914: "descricao": "Descrever o ciclo da água, comparando o escoamento superficial no ambiente urbano e rural, reconhecendo os principais componentes da morfologia das bacias e das redes hidrográficas e a sua localização no modelado da superfície terrestre e da cobertura vegetal.",
+data\bncc\processado\bncc-habilidades.json:16935: "componentes",
+data\bncc\processado\bncc-habilidades.json:17153: "descricao": "Analisar distintas interações das sociedades com a natureza, com base na distribuição dos componentes físico-naturais, incluindo as transformações da biodiversidade local e do mundo.",
+data\bncc\processado\bncc-habilidades.json:17170: "componentes",
+data\bncc\processado\bncc-habilidades.json:20613: "descricao": "Avaliar como os impactos provocados por catástrofes naturais ou mudanças nos componentes físicos, biológicos ou sociais de um ecossistema afetam suas populações, podendo ameaçar ou provocar a extinção de espécies, alteração de hábitos, migração etc.",
+data\bncc\processado\bncc-habilidades.json:20629: "componentes",
+data\bncc\processado\bncc-habilidades.json:21558: "descricao": "Caracterizar dinâmicas dos componentes físico-naturais no território nacional, bem como sua distribuição e biodiversidade (Florestas Tropicais, Cerrados, Caatingas, Campos Sulinos e Matas de Araucária).",
+data\bncc\processado\bncc-habilidades.json:21570: "componentes",
+data\bncc\processado\bncc-habilidades.json:30635: "descricao": "Analisar os componentes físico-naturais da Eurásia e os determinantes histórico-geográficos de sua divisão em Europa e Ásia.",
+data\bncc\processado\bncc-habilidades.json:30646: "componentes",
+data\bncc\processado\bncc-habilidades.json:50052: "descricao": "Realizar previsões qualitativas e quantitativas sobre o funcionamento de geradores, motores elétricos e seus componentes, bobinas, transformadores, pilhas, baterias e dispositivos eletrônicos, com base na análise dos processos de transformação e condução de energia envolvidos – com ou sem o uso de dispositivos e aplicativos digitais –, para propor ações que visem a sustentabilidade.",
+data\bncc\processado\bncc-habilidades.json:50070: "componentes",
+docs\9-15-1-biblioteca-admin-robusta.md:51: Ensino Fundamental -> anos e componentes adequados
+docs\9-15-1-biblioteca-admin-robusta.md:52: Ensino Médio -> séries, áreas e componentes adequados
+docs\9-20-9-navegacao-inteligente-textos.md:38: - Componentes filtrados por área
+docs\9-20-9-navegacao-inteligente-textos.md:45: - Componentes filtrados por área
+docs\etapa9-1-3-ensino-medio-area-componente.md:21: ## Componentes
+src\app\materiais\MateriaisClient.tsx:153: const componentesByEtapa: Record<string, string[]> = {
+src\app\materiais\MateriaisClient.tsx:183: const componentesEnsinoMedio: Record<string, string[]> = {
+src\app\materiais\MateriaisClient.tsx:267: function getComponentesDisponiveis(form: FormState) {
+src\app\materiais\MateriaisClient.tsx:270: ? componentesEnsinoMedio[form.areaConhecimento] || []
+src\app\materiais\MateriaisClient.tsx:274: return componentesByEtapa[form.etapa] || [];
+src\app\materiais\MateriaisClient.tsx:414: const componentesDisponiveis = useMemo(
+src\app\materiais\MateriaisClient.tsx:415: () => getComponentesDisponiveis(form),
+src\app\materiais\MateriaisClient.tsx:744: {componentesDisponiveis.map((item) => (
+
+--- PADRÃO: Componente curricular ---
+Total de ocorrências: 17
+docs\9-15-1-biblioteca-admin-robusta.md:32: Componente curricular
+docs\9-20-9-navegacao-inteligente-textos.md:90: - Clique em Componente curricular
+docs\9-21-1-planejamentos-campos-bncc-pos-deploy.md:78: 4. Clique em Componente curricular
+src\app\globals.css:1670: - Componente curricular compativel com etapa/area
+src\app\materiais\MateriaisClient.tsx:283: if (!form.componenteCurricular) return "Selecione o componente curricular.";
+src\app\materiais\MateriaisClient.tsx:558: componente curricular.
+src\app\materiais\MateriaisClient.tsx:730: Componente curricular
+src\app\planejamentos\PlanejamentosClient.tsx:946: <span className="text-sm font-bold text-slate-300">Componente curricular</span>
+src\components\PlanifyFieldEnhancer.tsx:169: if (/(componente curricular|componente|disciplina|curricular)/.test(label)) return "component";
+src\lib\editor\format-ai-output.ts:55: `Componente curricular: ${plan.dadosGerais.componenteCurricular}`,
+src\lib\editor\format-ai-output.ts:135: `Componente curricular: ${material.dadosGerais.componenteCurricular}`,
+src\server\ai\material-ai-service.ts:71: return "Informe o componente curricular.";
+src\server\ai\planejamento-ai-service.ts:90: return "Informe o componente curricular.";
+src\server\ai\prompts\material-prompt.ts:132: Componente curricular: ${input.componenteCurricular}
+src\server\ai\prompts\planejamento-prompt.ts:53: Componente curricular: ${input.componenteCurricular}
+src\server\docx\document-normalizer.ts:123: "Componente curricular": dados.componenteCurricular,
+src\server\planejamentos\official-planning-docx.ts:826: return getString(payload, ["componenteCurricular", "componente"], "Componente curricular");
+
+--- PADRÃO: componenteCurricular ---
+Total de ocorrências: 63
+docs\auditorias\auditoria-final-local-2026-05-31T09-46-06-188Z.md:91: - src/app/materiais/MateriaisClient.tsx:101: componenteCurricular: "LÃ­ngua Portuguesa",
+docs\auditorias\auditoria-final-local-2026-05-31T09-51-49-275Z.md:91: - src/app/materiais/MateriaisClient.tsx:101: componenteCurricular: "LÃ­ngua Portuguesa",
+src\app\api\bncc\sugerir\route.ts:39: "Rota de sugestão BNCC ativa. Use POST com etapa, anoSerie, componenteCurricular e conteudos.",
+src\app\api\planejamentos\docx-pacote\route.ts:203: typeof payload.componenteCurricular === "string"
+src\app\api\planejamentos\docx-pacote\route.ts:204: ? payload.componenteCurricular
+src\app\api\planejamentos\habilidades\route.ts:39: "Rota de sugestão BNCC ativa. Use POST com etapa, anoSerie, componenteCurricular e conteudos.",
+src\app\materiais\MateriaisClient.tsx:23: componenteCurricular: string;
+src\app\materiais\MateriaisClient.tsx:47: componenteCurricular?: string;
+src\app\materiais\MateriaisClient.tsx:83: componenteCurricular: "",
+src\app\materiais\MateriaisClient.tsx:101: componenteCurricular: "Língua Portuguesa",
+src\app\materiais\MateriaisClient.tsx:121: componenteCurricular: "Matemática",
+src\app\materiais\MateriaisClient.tsx:283: if (!form.componenteCurricular) return "Selecione o componente curricular.";
+src\app\materiais\MateriaisClient.tsx:307: componenteCurricular: form.componenteCurricular,
+src\app\materiais\MateriaisClient.tsx:385: subtitle: `${material.tipo} â€¢ ${material.dadosGerais.componenteCurricular || "Componente não informado"}`,
+src\app\materiais\MateriaisClient.tsx:429: next.componenteCurricular = "";
+src\app\materiais\MateriaisClient.tsx:433: next.componenteCurricular = "";
+src\app\materiais\MateriaisClient.tsx:733: value={form.componenteCurricular}
+src\app\materiais\MateriaisClient.tsx:735: updateField("componenteCurricular", event.target.value)
+src\app\planejamentos\PlanejamentosClient.tsx:53: componenteCurricular: string;
+src\app\planejamentos\PlanejamentosClient.tsx:68: componenteCurricular: "Língua Portuguesa",
+src\app\planejamentos\PlanejamentosClient.tsx:82: componenteCurricular: "História",
+src\app\planejamentos\PlanejamentosClient.tsx:95: componenteCurricular: "Língua Portuguesa",
+src\app\planejamentos\PlanejamentosClient.tsx:220: const component = form.componenteCurricular
+src\app\planejamentos\PlanejamentosClient.tsx:346: <tr><td>Área / Componente</td><td>${escapeHtml(form.areaConhecimento)} — ${escapeHtml(form.componenteCurricular)}</td></tr>
+src\app\planejamentos\PlanejamentosClient.tsx:481: key === "componenteCurricular" ||
+src\app\planejamentos\PlanejamentosClient.tsx:547: componenteCurricular: form.componenteCurricular,
+src\app\planejamentos\PlanejamentosClient.tsx:559: componente: skill.componente || form.componenteCurricular,
+src\app\planejamentos\PlanejamentosClient.tsx:690: ? `planejamento-trimestral-${trimester}-${form.componenteCurricular}-${form.anoSerie}`
+src\app\planejamentos\PlanejamentosClient.tsx:691: : `planejamento-anual-${form.componenteCurricular}-${form.anoSerie}`;
+src\app\planejamentos\PlanejamentosClient.tsx:752: anchor.download = `${safeFilename(`planify-anual-trimestrais-${form.componenteCurricular}-${form.anoSerie}`)}.zip`;
+src\app\planejamentos\PlanejamentosClient.tsx:947: <input value={form.componenteCurricular} onChange={(event) => updateField("componenteCurricular", event.target.value)} placeholder="Ex.: Língua Portuguesa" className="rounded-2xl border border-white/10 bg-slate-950/65 px-5 py-4 text-sm text-white outline-none transition focus:border-cyan-300/60" />
+src\lib\editor\format-ai-output.ts:55: `Componente curricular: ${plan.dadosGerais.componenteCurricular}`,
+src\lib\editor\format-ai-output.ts:135: `Componente curricular: ${material.dadosGerais.componenteCurricular}`,
+src\server\ai\material-ai-service.ts:70: if (!String(input.componenteCurricular || "").trim()) {
+src\server\ai\material-ai-service.ts:134: subtitulo: output.subtitulo || `${input.tipo} de ${input.componenteCurricular}`,
+src\server\ai\material-ai-service.ts:143: componenteCurricular: input.componenteCurricular,
+src\server\ai\planejamento-ai-service.ts:89: if (!String(input.componenteCurricular || "").trim()) {
+src\server\ai\planejamento-ai-service.ts:198: titulo: output.titulo || `Planejamento de ${input.componenteCurricular}`,
+src\server\ai\planejamento-ai-service.ts:205: componenteCurricular: input.componenteCurricular,
+src\server\ai\prompts\material-prompt.ts:132: Componente curricular: ${input.componenteCurricular}
+src\server\ai\prompts\material-prompt.ts:178: "componenteCurricular": "string",
+src\server\ai\prompts\planejamento-prompt.ts:53: Componente curricular: ${input.componenteCurricular}
+src\server\ai\prompts\planejamento-prompt.ts:95: "componenteCurricular": "string",
+src\server\bncc\bncc-service.ts:234: const componente = getRecordString(item, ["componente", "componenteCurricular", "subject", "disciplina"]);
+src\server\bncc\bncc-service.ts:378: if (request.componenteCurricular && componentMatches(skill, request.componenteCurricular)) {
+src\server\bncc\bncc-service.ts:427: const componenteCurricular = request.componenteCurricular || "";
+src\server\bncc\bncc-service.ts:452: if (!componentMatches(skill, componenteCurricular)) {
+src\server\bncc\bncc-service.ts:470: componenteCurricular,
+src\server\bncc\bncc-suggestion-engine.ts:28: componenteCurricular?: string;
+src\server\bncc\bncc-suggestion-engine.ts:375: getRecordValue(record, ["componente", "componenteCurricular", "disciplina"]),
+src\server\bncc\bncc-suggestion-engine.ts:515: getString(payload, ["componenteCurricular", "componente"]),
+src\server\docx\document-normalizer.ts:123: "Componente curricular": dados.componenteCurricular,
+src\server\planejamentos\official-planning-docx.ts:20: componenteCurricular?: string;
+src\server\planejamentos\official-planning-docx.ts:759: const component = normalizeSearch(getString(payload, ["componenteCurricular", "componente"]));
+src\server\planejamentos\official-planning-docx.ts:826: return getString(payload, ["componenteCurricular", "componente"], "Componente curricular");
+src\server\planejamentos\official-planning-docx.ts:1307: const componente = getString(payload, ["componenteCurricular", "componente"], "planejamento");
+src\server\planejamentos\planning-ai-service.ts:20: componenteCurricular?: string;
+src\server\planejamentos\planning-ai-service.ts:368: - Componente: ${normalizeText(payload.componenteCurricular)}
+src\types\ai.ts:39: componenteCurricular: string;
+src\types\ai.ts:69: componenteCurricular: string;
+src\types\ai.ts:104: componenteCurricular: string;
+src\types\ai.ts:152: componenteCurricular: string;
+src\types\bncc.ts:28: componenteCurricular?: string;
+
+--- PADRÃO: conteudoSelecionado ---
+Nenhuma ocorrência.
+
+--- PADRÃO: conteudoDigitado ---
+Nenhuma ocorrência.
+
+--- PADRÃO: habilidadesSelecionadas ---
+Total de ocorrências: 16
+docs\etapa9-1-gemini-planejamento.md:31: habilidadesSelecionadas
+src\app\planejamentos\PlanejamentosClient.tsx:553: habilidadesSelecionadas: selectedSkills.map((skill) => ({
+src\server\ai\planejamento-ai-service.ts:101: if (!Array.isArray(input.habilidadesSelecionadas)) {
+src\server\ai\planejamento-ai-service.ts:105: if (deduplicateSkills(input.habilidadesSelecionadas).length === 0) {
+src\server\ai\planejamento-ai-service.ts:245: const selectedSkills = deduplicateSkills(rawInput.habilidadesSelecionadas);
+src\server\ai\planejamento-ai-service.ts:249: habilidadesSelecionadas: selectedSkills,
+src\server\ai\prompts\planejamento-prompt.ts:29: "Você só pode usar as habilidades BNCC enviadas em habilidadesSelecionadas.",
+src\server\ai\prompts\planejamento-prompt.ts:43: const skills = input.habilidadesSelecionadas;
+src\server\planejamentos\planning-ai-service.ts:27: habilidadesSelecionadas?: PlanningSkill[];
+src\server\planejamentos\planning-ai-service.ts:193: const skills = Array.isArray(payload.habilidadesSelecionadas)
+src\server\planejamentos\planning-ai-service.ts:194: ? payload.habilidadesSelecionadas.map(normalizeSkill)
+src\server\planejamentos\planning-ai-service.ts:279: const selectedSkills = Array.isArray(payload.habilidadesSelecionadas)
+src\server\planejamentos\planning-ai-service.ts:280: ? payload.habilidadesSelecionadas.map(normalizeSkill)
+src\server\planejamentos\planning-ai-service.ts:354: const selectedSkills = Array.isArray(payload.habilidadesSelecionadas)
+src\server\planejamentos\planning-ai-service.ts:355: ? payload.habilidadesSelecionadas.map(normalizeSkill)
+src\types\ai.ts:46: habilidadesSelecionadas: SelectedBNCCSkill[];
+
+--- PADRÃO: habilidadesSugeridas ---
+Nenhuma ocorrência.
+
+============================================================
+9. Possíveis constantes/listas de componentes curriculares e conteúdos
+============================================================
+
+--- REGEX: const\s+\w*component\w* ---
+Total de ocorrências: 18
+src\app\admin\biblioteca\AdminBibliotecaClient.tsx:61: const componenteOptions = [
+src\app\api\admin\biblioteca\materiais\route.ts:164: const componente = normalizeText(formData.get("componente"), "Multicomponente");
+src\app\api\marketplace\materiais\route.ts:317: const componente = normalizeText(formData.get("componente"), "Multicomponente");
+src\app\api\planejamentos\docx-pacote\route.ts:202: const component =
+src\app\marketplace\MarketplaceClient.tsx:59: const componenteOptions = [
+src\app\marketplace\novo\NewMarketplaceItemClient.tsx:39: const componenteOptions = [
+src\app\materiais\MateriaisClient.tsx:153: const componentesByEtapa: Record<string, string[]> = {
+src\app\materiais\MateriaisClient.tsx:183: const componentesEnsinoMedio: Record<string, string[]> = {
+src\app\materiais\MateriaisClient.tsx:414: const componentesDisponiveis = useMemo(
+src\app\planejamentos\PlanejamentosClient.tsx:220: const component = form.componenteCurricular
+src\components\PlanifyFieldEnhancer.tsx:304: const componentField = findFieldByKind("component");
+src\components\PlanifyFieldEnhancer.tsx:312: const componentOptions = getOptionsForKind("component");
+src\server\bncc\bncc-service.ts:178: const component = normalizeText(skill.componente || "");
+src\server\bncc\bncc-service.ts:234: const componente = getRecordString(item, ["componente", "componenteCurricular", "subject", "disciplina"]);
+src\server\bncc\bncc-service.ts:427: const componenteCurricular = request.componenteCurricular || "";
+src\server\bncc\bncc-suggestion-engine.ts:514: const componente = normalizeSearch(
+src\server\planejamentos\official-planning-docx.ts:759: const component = normalizeSearch(getString(payload, ["componenteCurricular", "componente"]));
+src\server\planejamentos\official-planning-docx.ts:1307: const componente = getString(payload, ["componenteCurricular", "componente"], "planejamento");
+
+--- REGEX: const\s+\w*Componente\w* ---
+Total de ocorrências: 12
+src\app\admin\biblioteca\AdminBibliotecaClient.tsx:61: const componenteOptions = [
+src\app\api\admin\biblioteca\materiais\route.ts:164: const componente = normalizeText(formData.get("componente"), "Multicomponente");
+src\app\api\marketplace\materiais\route.ts:317: const componente = normalizeText(formData.get("componente"), "Multicomponente");
+src\app\marketplace\MarketplaceClient.tsx:59: const componenteOptions = [
+src\app\marketplace\novo\NewMarketplaceItemClient.tsx:39: const componenteOptions = [
+src\app\materiais\MateriaisClient.tsx:153: const componentesByEtapa: Record<string, string[]> = {
+src\app\materiais\MateriaisClient.tsx:183: const componentesEnsinoMedio: Record<string, string[]> = {
+src\app\materiais\MateriaisClient.tsx:414: const componentesDisponiveis = useMemo(
+src\server\bncc\bncc-service.ts:234: const componente = getRecordString(item, ["componente", "componenteCurricular", "subject", "disciplina"]);
+src\server\bncc\bncc-service.ts:427: const componenteCurricular = request.componenteCurricular || "";
+src\server\bncc\bncc-suggestion-engine.ts:514: const componente = normalizeSearch(
+src\server\planejamentos\official-planning-docx.ts:1307: const componente = getString(payload, ["componenteCurricular", "componente"], "planejamento");
+
+--- REGEX: componentesCurriculares\s*= ---
+Nenhuma ocorrência.
+
+--- REGEX: COMPONENTES ---
+Total de ocorrências: 31
+data\bncc\processado\bncc-habilidades.json:3422: "descricao": "Identificar e elaborar diferentes formas de representação (desenhos, mapas mentais, maquetes) para representar componentes da paisagem dos lugares de vivência.",
+data\bncc\processado\bncc-habilidades.json:3442: "componentes",
+data\bncc\processado\bncc-habilidades.json:9407: "descricao": "Descrever e destacar semelhanças e diferenças entre o ciclo da matéria e o fluxo de energia entre os componentes vivos e não vivos de um ecossistema.",
+data\bncc\processado\bncc-habilidades.json:9425: "componentes",
+data\bncc\processado\bncc-habilidades.json:10143: "descricao": "Utilizar as direções cardeais na localização de componentes físicos e humanos nas paisagens rurais e urbanas.",
+data\bncc\processado\bncc-habilidades.json:10157: "componentes",
+data\bncc\processado\bncc-habilidades.json:16914: "descricao": "Descrever o ciclo da água, comparando o escoamento superficial no ambiente urbano e rural, reconhecendo os principais componentes da morfologia das bacias e das redes hidrográficas e a sua localização no modelado da superfície terrestre e da cobertura vegetal.",
+data\bncc\processado\bncc-habilidades.json:16935: "componentes",
+data\bncc\processado\bncc-habilidades.json:17153: "descricao": "Analisar distintas interações das sociedades com a natureza, com base na distribuição dos componentes físico-naturais, incluindo as transformações da biodiversidade local e do mundo.",
+data\bncc\processado\bncc-habilidades.json:17170: "componentes",
+data\bncc\processado\bncc-habilidades.json:20613: "descricao": "Avaliar como os impactos provocados por catástrofes naturais ou mudanças nos componentes físicos, biológicos ou sociais de um ecossistema afetam suas populações, podendo ameaçar ou provocar a extinção de espécies, alteração de hábitos, migração etc.",
+data\bncc\processado\bncc-habilidades.json:20629: "componentes",
+data\bncc\processado\bncc-habilidades.json:21558: "descricao": "Caracterizar dinâmicas dos componentes físico-naturais no território nacional, bem como sua distribuição e biodiversidade (Florestas Tropicais, Cerrados, Caatingas, Campos Sulinos e Matas de Araucária).",
+data\bncc\processado\bncc-habilidades.json:21570: "componentes",
+data\bncc\processado\bncc-habilidades.json:30635: "descricao": "Analisar os componentes físico-naturais da Eurásia e os determinantes histórico-geográficos de sua divisão em Europa e Ásia.",
+data\bncc\processado\bncc-habilidades.json:30646: "componentes",
+data\bncc\processado\bncc-habilidades.json:50052: "descricao": "Realizar previsões qualitativas e quantitativas sobre o funcionamento de geradores, motores elétricos e seus componentes, bobinas, transformadores, pilhas, baterias e dispositivos eletrônicos, com base na análise dos processos de transformação e condução de energia envolvidos – com ou sem o uso de dispositivos e aplicativos digitais –, para propor ações que visem a sustentabilidade.",
+data\bncc\processado\bncc-habilidades.json:50070: "componentes",
+docs\9-15-1-biblioteca-admin-robusta.md:51: Ensino Fundamental -> anos e componentes adequados
+docs\9-15-1-biblioteca-admin-robusta.md:52: Ensino Médio -> séries, áreas e componentes adequados
+docs\9-20-9-navegacao-inteligente-textos.md:38: - Componentes filtrados por área
+docs\9-20-9-navegacao-inteligente-textos.md:45: - Componentes filtrados por área
+docs\etapa9-1-3-ensino-medio-area-componente.md:21: ## Componentes
+src\app\materiais\MateriaisClient.tsx:153: const componentesByEtapa: Record<string, string[]> = {
+src\app\materiais\MateriaisClient.tsx:183: const componentesEnsinoMedio: Record<string, string[]> = {
+src\app\materiais\MateriaisClient.tsx:267: function getComponentesDisponiveis(form: FormState) {
+src\app\materiais\MateriaisClient.tsx:270: ? componentesEnsinoMedio[form.areaConhecimento] || []
+src\app\materiais\MateriaisClient.tsx:274: return componentesByEtapa[form.etapa] || [];
+src\app\materiais\MateriaisClient.tsx:414: const componentesDisponiveis = useMemo(
+src\app\materiais\MateriaisClient.tsx:415: () => getComponentesDisponiveis(form),
+src\app\materiais\MateriaisClient.tsx:744: {componentesDisponiveis.map((item) => (
+
+--- REGEX: componentes\s*: ---
+Nenhuma ocorrência.
+
+--- REGEX: conteudosSugeridos\s*= ---
+Nenhuma ocorrência.
+
+--- REGEX: conteúdosSugeridos\s*= ---
+Nenhuma ocorrência.
+
+--- REGEX: SUGEST ---
+Total de ocorrências: 25
+data\bncc\processado\bncc-habilidades.json:11149: "descricao": "Distinguir fatos de opiniões/sugestões em textos (informativos, jornalísticos, publicitários etc.).",
+data\bncc\processado\bncc-habilidades.json:11162: "sugestoes",
+docs\9-14-1-bncc-por-conteudo.md:5: Garantir que a sugestão de habilidades BNCC use a caixa `Conteúdos` como fonte principal.
+docs\9-14-2-integracao-planejamentos.md:11: 2. Sugestão BNCC usa Conteúdos + etapa + ano/série + área + componente.
+docs\9-21-1-planejamentos-campos-bncc-pos-deploy.md:10: Sugestões BNCC vinham em excesso e repetidas visualmente
+docs\9-21-1-planejamentos-campos-bncc-pos-deploy.md:82: 8. Gere sugestões BNCC: lista deve aparecer mais enxuta, sem duplicações visuais
+src\app\globals.css:1292: - Sugestões roláveis em campos de Planejamentos/Materiais
+src\app\page.tsx:57: text: "Use sugestões compatíveis com etapa, área e componente.",
+src\app\api\bncc\sugerir\route.ts:39: "Rota de sugestão BNCC ativa. Use POST com etapa, anoSerie, componenteCurricular e conteudos.",
+src\app\api\planejamentos\habilidades\route.ts:39: "Rota de sugestão BNCC ativa. Use POST com etapa, anoSerie, componenteCurricular e conteudos.",
+src\app\contato\ContatoClient.tsx:6: type ContactType = "suporte" | "assinatura" | "erro" | "sugestao" | "parceria" | "pedagogico";
+src\app\contato\ContatoClient.tsx:43: value: "sugestao",
+src\app\contato\ContatoClient.tsx:44: label: "Sugestão",
+src\app\contato\ContatoClient.tsx:418: ["Funcionalidade", "Sugestões para planejamentos, materiais e editor."],
+src\app\contato\page.tsx:13: description="Envie dúvidas sobre assinatura, acesso, erros, sugestões, parcerias ou suporte pedagógico."
+src\app\planejamentos\PlanejamentosClient.tsx:488: setStatus("Aguardando nova sugestão");
+src\app\planejamentos\PlanejamentosClient.tsx:569: setError("Informe pelo menos um conteúdo. A sugestão BNCC usa a caixa Conteúdos como base principal.");
+src\app\planejamentos\PlanejamentosClient.tsx:598: setStatus("Erro na sugestão");
+src\app\planejamentos\PlanejamentosClient.tsx:1097: Nenhuma sugestão ainda. Preencha os conteúdos e clique em <strong className="text-white">Sugerir BNCC</strong>.
+src\components\PlanifyFieldEnhancer.tsx:404: notice.textContent = `Sugest\u00f5es refinadas: ${visibleCount} habilidades exibidas, sem repeti\u00e7\u00f5es e com limite pedag\u00f3gico por conte\u00fado.`;
+src\lib\editor\format-ai-output.ts:258: parts.push(listSection("Sugestões de uso", material.sugestoesUso));
+src\server\ai\material-ai-service.ts:165: sugestoesUso: normalizeStringArray(output.sugestoesUso),
+src\server\ai\prompts\material-prompt.ts:210: "sugestoesUso": ["string"],
+src\server\bncc\bncc-suggestion-engine.ts:430: // Ignora JSON inválido sem travar a sugestão.
+src\types\ai.ts:179: sugestoesUso: string[];
+
+--- REGEX: sugestoes ---
+Total de ocorrências: 5
+data\bncc\processado\bncc-habilidades.json:11162: "sugestoes",
+src\lib\editor\format-ai-output.ts:258: parts.push(listSection("Sugestões de uso", material.sugestoesUso));
+src\server\ai\material-ai-service.ts:165: sugestoesUso: normalizeStringArray(output.sugestoesUso),
+src\server\ai\prompts\material-prompt.ts:210: "sugestoesUso": ["string"],
+src\types\ai.ts:179: sugestoesUso: string[];
+
+--- REGEX: sugestões ---
+Total de ocorrências: 8
+data\bncc\processado\bncc-habilidades.json:11149: "descricao": "Distinguir fatos de opiniões/sugestões em textos (informativos, jornalísticos, publicitários etc.).",
+docs\9-21-1-planejamentos-campos-bncc-pos-deploy.md:10: Sugestões BNCC vinham em excesso e repetidas visualmente
+docs\9-21-1-planejamentos-campos-bncc-pos-deploy.md:82: 8. Gere sugestões BNCC: lista deve aparecer mais enxuta, sem duplicações visuais
+src\app\globals.css:1292: - Sugestões roláveis em campos de Planejamentos/Materiais
+src\app\page.tsx:57: text: "Use sugestões compatíveis com etapa, área e componente.",
+src\app\contato\ContatoClient.tsx:418: ["Funcionalidade", "Sugestões para planejamentos, materiais e editor."],
+src\app\contato\page.tsx:13: description="Envie dúvidas sobre assinatura, acesso, erros, sugestões, parcerias ou suporte pedagógico."
+src\lib\editor\format-ai-output.ts:258: parts.push(listSection("Sugestões de uso", material.sugestoesUso));
+
+============================================================
+10. APIs e lógica BNCC relacionadas a Planejamentos
+============================================================
+Total de ocorrências em arquivos de API/lib/data/services: 1589
+data\bncc\processado\bncc-habilidades.json:39: "fonte": "BNCC oficial PDF, página 335",
+data\bncc\processado\bncc-habilidades.json:71: "fonte": "BNCC oficial PDF, página 335",
+data\bncc\processado\bncc-habilidades.json:111: "fonte": "BNCC oficial PDF, página 335",
+data\bncc\processado\bncc-habilidades.json:143: "fonte": "BNCC oficial PDF, página 335",
+data\bncc\processado\bncc-habilidades.json:179: "fonte": "BNCC oficial PDF, página 335",
+data\bncc\processado\bncc-habilidades.json:213: "fonte": "BNCC oficial PDF, página 335",
+data\bncc\processado\bncc-habilidades.json:239: "fonte": "BNCC oficial PDF, página 445",
+data\bncc\processado\bncc-habilidades.json:266: "fonte": "BNCC oficial PDF, página 445",
+data\bncc\processado\bncc-habilidades.json:293: "fonte": "BNCC oficial PDF, página 445",
+data\bncc\processado\bncc-habilidades.json:318: "fonte": "BNCC oficial PDF, página 445",
+data\bncc\processado\bncc-habilidades.json:346: "fonte": "BNCC oficial PDF, página 445",
+data\bncc\processado\bncc-habilidades.json:378: "fonte": "BNCC oficial PDF, página 445",
+data\bncc\processado\bncc-habilidades.json:410: "fonte": "BNCC oficial PDF, página 373",
+data\bncc\processado\bncc-habilidades.json:439: "fonte": "BNCC oficial PDF, página 373",
+data\bncc\processado\bncc-habilidades.json:472: "fonte": "BNCC oficial PDF, página 373",
+data\bncc\processado\bncc-habilidades.json:503: "fonte": "BNCC oficial PDF, página 373",
+data\bncc\processado\bncc-habilidades.json:540: "fonte": "BNCC oficial PDF, página 373",
+data\bncc\processado\bncc-habilidades.json:577: "fonte": "BNCC oficial PDF, página 373",
+data\bncc\processado\bncc-habilidades.json:604: "fonte": "BNCC oficial PDF, página 373",
+data\bncc\processado\bncc-habilidades.json:636: "fonte": "BNCC oficial PDF, página 373",
+data\bncc\processado\bncc-habilidades.json:679: "fonte": "BNCC oficial PDF, página 373",
+data\bncc\processado\bncc-habilidades.json:710: "fonte": "BNCC oficial PDF, página 373",
+data\bncc\processado\bncc-habilidades.json:743: "fonte": "BNCC oficial PDF, página 373",
+data\bncc\processado\bncc-habilidades.json:774: "fonte": "BNCC oficial PDF, página 409",
+data\bncc\processado\bncc-habilidades.json:800: "fonte": "BNCC oficial PDF, página 409",
+data\bncc\processado\bncc-habilidades.json:829: "fonte": "BNCC oficial PDF, página 409",
+data\bncc\processado\bncc-habilidades.json:863: "fonte": "BNCC oficial PDF, página 409",
+data\bncc\processado\bncc-habilidades.json:893: "fonte": "BNCC oficial PDF, página 409",
+data\bncc\processado\bncc-habilidades.json:924: "fonte": "BNCC oficial PDF, página 409",
+data\bncc\processado\bncc-habilidades.json:951: "fonte": "BNCC oficial PDF, página 409",
+data\bncc\processado\bncc-habilidades.json:984: "fonte": "BNCC oficial PDF, página 409",
+data\bncc\processado\bncc-habilidades.json:1016: "fonte": "BNCC oficial PDF, página 101",
+data\bncc\processado\bncc-habilidades.json:1050: "fonte": "BNCC oficial PDF, página 101",
+data\bncc\processado\bncc-habilidades.json:1080: "fonte": "BNCC oficial PDF, página 101",
+data\bncc\processado\bncc-habilidades.json:1108: "fonte": "BNCC oficial PDF, página 101",
+data\bncc\processado\bncc-habilidades.json:1137: "fonte": "BNCC oficial PDF, página 101",
+data\bncc\processado\bncc-habilidades.json:1163: "fonte": "BNCC oficial PDF, página 101",
+data\bncc\processado\bncc-habilidades.json:1189: "fonte": "BNCC oficial PDF, página 101",
+data\bncc\processado\bncc-habilidades.json:1220: "fonte": "BNCC oficial PDF, página 103",
+data\bncc\processado\bncc-habilidades.json:1250: "fonte": "BNCC oficial PDF, página 103",
+data\bncc\processado\bncc-habilidades.json:1277: "fonte": "BNCC oficial PDF, página 103",
+data\bncc\processado\bncc-habilidades.json:1308: "fonte": "BNCC oficial PDF, página 103",
+data\bncc\processado\bncc-habilidades.json:1336: "fonte": "BNCC oficial PDF, página 103",
+data\bncc\processado\bncc-habilidades.json:1367: "fonte": "BNCC oficial PDF, página 103",
+data\bncc\processado\bncc-habilidades.json:1401: "fonte": "BNCC oficial PDF, página 103",
+data\bncc\processado\bncc-habilidades.json:1432: "fonte": "BNCC oficial PDF, página 103",
+data\bncc\processado\bncc-habilidades.json:1481: "fonte": "BNCC oficial PDF, página 105",
+data\bncc\processado\bncc-habilidades.json:1536: "fonte": "BNCC oficial PDF, página 105",
+data\bncc\processado\bncc-habilidades.json:1582: "fonte": "BNCC oficial PDF, página 105",
+data\bncc\processado\bncc-habilidades.json:1614: "fonte": "BNCC oficial PDF, página 105",
+data\bncc\processado\bncc-habilidades.json:1659: "fonte": "BNCC oficial PDF, página 107",
+data\bncc\processado\bncc-habilidades.json:1705: "fonte": "BNCC oficial PDF, página 109",
+data\bncc\processado\bncc-habilidades.json:1750: "fonte": "BNCC oficial PDF, página 111",
+data\bncc\processado\bncc-habilidades.json:1801: "fonte": "BNCC oficial PDF, página 111",
+data\bncc\processado\bncc-habilidades.json:1842: "fonte": "BNCC oficial PDF, página 113",
+data\bncc\processado\bncc-habilidades.json:1884: "fonte": "BNCC oficial PDF, página 113",
+data\bncc\processado\bncc-habilidades.json:1916: "fonte": "BNCC oficial PDF, página 113",
+data\bncc\processado\bncc-habilidades.json:1955: "fonte": "BNCC oficial PDF, página 281",
+data\bncc\processado\bncc-habilidades.json:1986: "fonte": "BNCC oficial PDF, página 281",
+data\bncc\processado\bncc-habilidades.json:2023: "fonte": "BNCC oficial PDF, página 281",
+data\bncc\processado\bncc-habilidades.json:2064: "fonte": "BNCC oficial PDF, página 281",
+data\bncc\processado\bncc-habilidades.json:2096: "fonte": "BNCC oficial PDF, página 281",
+data\bncc\processado\bncc-habilidades.json:2127: "fonte": "BNCC oficial PDF, página 281",
+data\bncc\processado\bncc-habilidades.json:2169: "fonte": "BNCC oficial PDF, página 281",
+data\bncc\processado\bncc-habilidades.json:2214: "fonte": "BNCC oficial PDF, página 281",
+data\bncc\processado\bncc-habilidades.json:2247: "fonte": "BNCC oficial PDF, página 281",
+data\bncc\processado\bncc-habilidades.json:2282: "fonte": "BNCC oficial PDF, página 281",
+data\bncc\processado\bncc-habilidades.json:2317: "fonte": "BNCC oficial PDF, página 281",
+data\bncc\processado\bncc-habilidades.json:2359: "fonte": "BNCC oficial PDF, página 281",
+data\bncc\processado\bncc-habilidades.json:2393: "fonte": "BNCC oficial PDF, página 281",
+data\bncc\processado\bncc-habilidades.json:2430: "fonte": "BNCC oficial PDF, página 281",
+data\bncc\processado\bncc-habilidades.json:2474: "fonte": "BNCC oficial PDF, página 283",
+data\bncc\processado\bncc-habilidades.json:2507: "fonte": "BNCC oficial PDF, página 283",
+data\bncc\processado\bncc-habilidades.json:2538: "fonte": "BNCC oficial PDF, página 283",
+data\bncc\processado\bncc-habilidades.json:2569: "fonte": "BNCC oficial PDF, página 283",
+data\bncc\processado\bncc-habilidades.json:2603: "fonte": "BNCC oficial PDF, página 283",
+data\bncc\processado\bncc-habilidades.json:2637: "fonte": "BNCC oficial PDF, página 283",
+data\bncc\processado\bncc-habilidades.json:2665: "fonte": "BNCC oficial PDF, página 283",
+data\bncc\processado\bncc-habilidades.json:2701: "fonte": "BNCC oficial PDF, página 283",
+data\bncc\processado\bncc-habilidades.json:2739: "fonte": "BNCC oficial PDF, página 337",
+data\bncc\processado\bncc-habilidades.json:2775: "fonte": "BNCC oficial PDF, página 337",
+data\bncc\processado\bncc-habilidades.json:2809: "fonte": "BNCC oficial PDF, página 337",
+data\bncc\processado\bncc-habilidades.json:2849: "fonte": "BNCC oficial PDF, página 337",
+data\bncc\processado\bncc-habilidades.json:2878: "fonte": "BNCC oficial PDF, página 337",
+data\bncc\processado\bncc-habilidades.json:2919: "fonte": "BNCC oficial PDF, página 337",
+data\bncc\processado\bncc-habilidades.json:2951: "fonte": "BNCC oficial PDF, página 337",
+data\bncc\processado\bncc-habilidades.json:2988: "fonte": "BNCC oficial PDF, página 337",
+data\bncc\processado\bncc-habilidades.json:3013: "fonte": "BNCC oficial PDF, página 447",
+data\bncc\processado\bncc-habilidades.json:3043: "fonte": "BNCC oficial PDF, página 447",
+data\bncc\processado\bncc-habilidades.json:3076: "fonte": "BNCC oficial PDF, página 447",
+data\bncc\processado\bncc-habilidades.json:3103: "fonte": "BNCC oficial PDF, página 447",
+data\bncc\processado\bncc-habilidades.json:3134: "fonte": "BNCC oficial PDF, página 447",
+data\bncc\processado\bncc-habilidades.json:3164: "fonte": "BNCC oficial PDF, página 447",
+data\bncc\processado\bncc-habilidades.json:3193: "fonte": "BNCC oficial PDF, página 447",
+data\bncc\processado\bncc-habilidades.json:3220: "fonte": "BNCC oficial PDF, página 375",
+data\bncc\processado\bncc-habilidades.json:3254: "fonte": "BNCC oficial PDF, página 375",
+data\bncc\processado\bncc-habilidades.json:3290: "fonte": "BNCC oficial PDF, página 375",
+data\bncc\processado\bncc-habilidades.json:3322: "fonte": "BNCC oficial PDF, página 375",
+data\bncc\processado\bncc-habilidades.json:3352: "fonte": "BNCC oficial PDF, página 375",
+data\bncc\processado\bncc-habilidades.json:3384: "fonte": "BNCC oficial PDF, página 375",
+data\bncc\processado\bncc-habilidades.json:3416: "fonte": "BNCC oficial PDF, página 375",
+data\bncc\processado\bncc-habilidades.json:3451: "fonte": "BNCC oficial PDF, página 375",
+data\bncc\processado\bncc-habilidades.json:3485: "fonte": "BNCC oficial PDF, página 375",
+data\bncc\processado\bncc-habilidades.json:3526: "fonte": "BNCC oficial PDF, página 375",
+data\bncc\processado\bncc-habilidades.json:3565: "fonte": "BNCC oficial PDF, página 375",
+data\bncc\processado\bncc-habilidades.json:3598: "fonte": "BNCC oficial PDF, página 411",
+data\bncc\processado\bncc-habilidades.json:3628: "fonte": "BNCC oficial PDF, página 411",
+data\bncc\processado\bncc-habilidades.json:3657: "fonte": "BNCC oficial PDF, página 411",
+data\bncc\processado\bncc-habilidades.json:3692: "fonte": "BNCC oficial PDF, página 411",
+data\bncc\processado\bncc-habilidades.json:3724: "fonte": "BNCC oficial PDF, página 411",
+data\bncc\processado\bncc-habilidades.json:3759: "fonte": "BNCC oficial PDF, página 411",
+data\bncc\processado\bncc-habilidades.json:3789: "fonte": "BNCC oficial PDF, página 411",
+data\bncc\processado\bncc-habilidades.json:3817: "fonte": "BNCC oficial PDF, página 411",
+data\bncc\processado\bncc-habilidades.json:3855: "fonte": "BNCC oficial PDF, página 411",
+data\bncc\processado\bncc-habilidades.json:3886: "fonte": "BNCC oficial PDF, página 411",
+data\bncc\processado\bncc-habilidades.json:3917: "fonte": "BNCC oficial PDF, página 411",
+data\bncc\processado\bncc-habilidades.json:3960: "fonte": "BNCC oficial PDF, página 101",
+data\bncc\processado\bncc-habilidades.json:3992: "fonte": "BNCC oficial PDF, página 101",
+data\bncc\processado\bncc-habilidades.json:4027: "fonte": "BNCC oficial PDF, página 101",
+data\bncc\processado\bncc-habilidades.json:4060: "fonte": "BNCC oficial PDF, página 103",
+data\bncc\processado\bncc-habilidades.json:4089: "fonte": "BNCC oficial PDF, página 103",
+data\bncc\processado\bncc-habilidades.json:4118: "fonte": "BNCC oficial PDF, página 103",
+data\bncc\processado\bncc-habilidades.json:4148: "fonte": "BNCC oficial PDF, página 103",
+data\bncc\processado\bncc-habilidades.json:4176: "fonte": "BNCC oficial PDF, página 103",
+data\bncc\processado\bncc-habilidades.json:4204: "fonte": "BNCC oficial PDF, página 103",
+data\bncc\processado\bncc-habilidades.json:4241: "fonte": "BNCC oficial PDF, página 103",
+data\bncc\processado\bncc-habilidades.json:4270: "fonte": "BNCC oficial PDF, página 103",
+data\bncc\processado\bncc-habilidades.json:4315: "fonte": "BNCC oficial PDF, página 105",
+data\bncc\processado\bncc-habilidades.json:4357: "fonte": "BNCC oficial PDF, página 105",
+data\bncc\processado\bncc-habilidades.json:4397: "fonte": "BNCC oficial PDF, página 105",
+data\bncc\processado\bncc-habilidades.json:4425: "fonte": "BNCC oficial PDF, página 105",
+data\bncc\processado\bncc-habilidades.json:4466: "fonte": "BNCC oficial PDF, página 107",
+data\bncc\processado\bncc-habilidades.json:4512: "fonte": "BNCC oficial PDF, página 107",
+data\bncc\processado\bncc-habilidades.json:4560: "fonte": "BNCC oficial PDF, página 109",
+data\bncc\processado\bncc-habilidades.json:4614: "fonte": "BNCC oficial PDF, página 109",
+data\bncc\processado\bncc-habilidades.json:4650: "fonte": "BNCC oficial PDF, página 111",
+data\bncc\processado\bncc-habilidades.json:4683: "fonte": "BNCC oficial PDF, página 111",
+data\bncc\processado\bncc-habilidades.json:4732: "fonte": "BNCC oficial PDF, página 111",
+data\bncc\processado\bncc-habilidades.json:4766: "fonte": "BNCC oficial PDF, página 111",
+data\bncc\processado\bncc-habilidades.json:4820: "fonte": "BNCC oficial PDF, página 111",
+data\bncc\processado\bncc-habilidades.json:4861: "fonte": "BNCC oficial PDF, página 113",
+data\bncc\processado\bncc-habilidades.json:4894: "fonte": "BNCC oficial PDF, página 113",
+data\bncc\processado\bncc-habilidades.json:4922: "fonte": "BNCC oficial PDF, página 113",
+data\bncc\processado\bncc-habilidades.json:4957: "fonte": "BNCC oficial PDF, página 113",
+data\bncc\processado\bncc-habilidades.json:4988: "fonte": "BNCC oficial PDF, página 113",
+data\bncc\processado\bncc-habilidades.json:5025: "fonte": "BNCC oficial PDF, página 285",
+data\bncc\processado\bncc-habilidades.json:5062: "fonte": "BNCC oficial PDF, página 285",
+data\bncc\processado\bncc-habilidades.json:5101: "fonte": "BNCC oficial PDF, página 285",
+data\bncc\processado\bncc-habilidades.json:5135: "fonte": "BNCC oficial PDF, página 285",
+data\bncc\processado\bncc-habilidades.json:5166: "fonte": "BNCC oficial PDF, página 285",
+data\bncc\processado\bncc-habilidades.json:5205: "fonte": "BNCC oficial PDF, página 285",
+data\bncc\processado\bncc-habilidades.json:5245: "fonte": "BNCC oficial PDF, página 285",
+data\bncc\processado\bncc-habilidades.json:5282: "fonte": "BNCC oficial PDF, página 285",
+data\bncc\processado\bncc-habilidades.json:5316: "fonte": "BNCC oficial PDF, página 285",
+data\bncc\processado\bncc-habilidades.json:5347: "fonte": "BNCC oficial PDF, página 285",
+data\bncc\processado\bncc-habilidades.json:5378: "fonte": "BNCC oficial PDF, página 285",
+data\bncc\processado\bncc-habilidades.json:5417: "fonte": "BNCC oficial PDF, página 285",
+data\bncc\processado\bncc-habilidades.json:5451: "fonte": "BNCC oficial PDF, página 285",
+data\bncc\processado\bncc-habilidades.json:5489: "fonte": "BNCC oficial PDF, página 285",
+data\bncc\processado\bncc-habilidades.json:5528: "fonte": "BNCC oficial PDF, página 285",
+data\bncc\processado\bncc-habilidades.json:5568: "fonte": "BNCC oficial PDF, página 287",
+data\bncc\processado\bncc-habilidades.json:5605: "fonte": "BNCC oficial PDF, página 287",
+data\bncc\processado\bncc-habilidades.json:5611: "descricao": "Indicar a duração de intervalos de tempo entre duas datas, como dias da semana e meses do ano, utilizando calendário, para planejamentos e organização de agenda.",
+data\bncc\processado\bncc-habilidades.json:5633: "planejamentos",
+data\bncc\processado\bncc-habilidades.json:5640: "fonte": "BNCC oficial PDF, página 287",
+data\bncc\processado\bncc-habilidades.json:5672: "fonte": "BNCC oficial PDF, página 287",
+data\bncc\processado\bncc-habilidades.json:5704: "fonte": "BNCC oficial PDF, página 287",
+data\bncc\processado\bncc-habilidades.json:5735: "fonte": "BNCC oficial PDF, página 287",
+data\bncc\processado\bncc-habilidades.json:5773: "fonte": "BNCC oficial PDF, página 287",
+data\bncc\processado\bncc-habilidades.json:5812: "fonte": "BNCC oficial PDF, página 287",
+data\bncc\processado\bncc-habilidades.json:5845: "fonte": "BNCC oficial PDF, página 339",
+data\bncc\processado\bncc-habilidades.json:5892: "fonte": "BNCC oficial PDF, página 339",
+data\bncc\processado\bncc-habilidades.json:5926: "fonte": "BNCC oficial PDF, página 339",
+data\bncc\processado\bncc-habilidades.json:5959: "fonte": "BNCC oficial PDF, página 339",
+data\bncc\processado\bncc-habilidades.json:5993: "fonte": "BNCC oficial PDF, página 339",
+data\bncc\processado\bncc-habilidades.json:6030: "fonte": "BNCC oficial PDF, página 339",
+data\bncc\processado\bncc-habilidades.json:6070: "fonte": "BNCC oficial PDF, página 339",
+data\bncc\processado\bncc-habilidades.json:6106: "fonte": "BNCC oficial PDF, página 339",
+data\bncc\processado\bncc-habilidades.json:6141: "fonte": "BNCC oficial PDF, página 339",
+data\bncc\processado\bncc-habilidades.json:6176: "fonte": "BNCC oficial PDF, página 339",
+... resultado limitado a 180 linhas.
+
+============================================================
+11. Duplicidade provável de componentes de Planejamentos
+============================================================
+docs\9-14-2-integracao-planejamentos.md:23: src/app/planejamentos/PlanejamentosClient.tsx
+docs\9-14-4-diagnostico-ia-docx-cirurgico.md:23: src/app/planejamentos/PlanejamentosClient.tsx
+src\app\planejamentos\page.tsx:1: import { PlanejamentosClient } from "./PlanejamentosClient";
+src\app\planejamentos\page.tsx:3: export default function PlanejamentosPage() {
+src\app\planejamentos\page.tsx:4: return <PlanejamentosClient />;
+src\app\planejamentos\PlanejamentosClient.tsx:441: export function PlanejamentosClient() {
+src\server\planejamentos\planning-ai-service.ts:267: const planejamento = (record.planejamento || record) as UnknownRecord;
+
+============================================================
+12. Verificação do build gerado em .next, se existir
+============================================================
+EXISTE: .next\server\app\planejamentos\page.js | Modificado: 05/31/2026 14:15:40
+EXISTE: .next\server\app\planejamentos\page_client-reference-manifest.js | Modificado: 05/31/2026 14:15:54
+EXISTE: .next\static | Modificado: 05/31/2026 14:15:54
+
+Busca dentro do build .next/server/app/planejamentos/page.js:
+Build contém 'Língua Espanhola': NÃO
+Build contém 'Espanhol': NÃO
+Build contém 'componentesCurriculares': NÃO
+Build contém 'conteudosSugeridos': NÃO
+Build contém 'BNCC': SIM (3 ocorrência(s))
+Build contém 'habilidades': SIM (5 ocorrência(s))
+
+============================================================
+13. Arquivos modificados recentemente
+============================================================
+docs\auditorias\auditoria-planejamentos-campos-bncc-9-21-1-2026-05-31T17-15-04-122Z.md | Modificado: 05/31/2026 14:15:04 | 1053 bytes
+src\app\globals.css | Modificado: 05/31/2026 14:15:04 | 40130 bytes
+docs\9-21-1-planejamentos-campos-bncc-pos-deploy.md | Modificado: 05/31/2026 14:14:29 | 2120 bytes
+src\components\PlanifyFieldEnhancer.tsx | Modificado: 05/31/2026 14:14:28 | 21785 bytes
+docs\auditorias\auditoria-anti-vazamento-9-21-0-2026-05-31T15-00-13-847Z.md | Modificado: 05/31/2026 12:00:13 | 646 bytes
+next-env.d.ts | Modificado: 05/31/2026 11:59:38 | 247 bytes
+docs\auditorias\auditoria-google-classroom-ready-9-21-0-2026-05-31T14-57-17-449Z.md | Modificado: 05/31/2026 11:57:17 | 1110 bytes
+docs\auditorias\auditoria-release-final-9-21-0-2026-05-31T14-57-17-256Z.md | Modificado: 05/31/2026 11:57:17 | 3839 bytes
+docs\auditorias\auditoria-anti-vazamento-9-21-0-2026-05-31T14-57-16-757Z.md | Modificado: 05/31/2026 11:57:16 | 646 bytes
+docs\deploy\DEPLOY-CHECKLIST.md | Modificado: 05/31/2026 11:57:16 | 957 bytes
+docs\google\google-drive-classroom-roadmap.md | Modificado: 05/31/2026 11:56:41 | 689 bytes
+docs\9-21-0-release-final-github-deploy-seguro.md | Modificado: 05/31/2026 11:56:41 | 1863 bytes
+docs\auditorias\auditoria-fix-textos-landing-9-20-11-1-2026-05-31T14-48-33-079Z.md | Modificado: 05/31/2026 11:48:33 | 1181 bytes
+src\app\page.tsx | Modificado: 05/31/2026 11:48:32 | 11332 bytes
+src\app\materiais\MateriaisClient.tsx | Modificado: 05/31/2026 11:48:32 | 36670 bytes
+docs\9-20-11-1-fix-textos-landing.md | Modificado: 05/31/2026 11:47:59 | 1154 bytes
+docs\auditorias\auditoria-landing-final-conversao-9-20-11-2026-05-31T14-29-26-361Z.md | Modificado: 05/31/2026 11:29:26 | 978 bytes
+docs\9-20-11-landing-final-conversao.md | Modificado: 05/31/2026 11:26:52 | 1073 bytes
+docs\auditorias\auditoria-pos-visual-campos-9-20-10-2026-05-31T14-22-33-495Z.md | Modificado: 05/31/2026 11:22:33 | 5276 bytes
+docs\9-20-10-auditoria-pos-visual-campos.md | Modificado: 05/31/2026 11:21:47 | 1278 bytes
+docs\auditorias\auditoria-navegacao-inteligente-textos-9-20-9-2026-05-31T14-09-18-691Z.md | Modificado: 05/31/2026 11:09:18 | 648 bytes
+src\app\contato\ContatoClient.tsx | Modificado: 05/31/2026 11:09:18 | 16358 bytes
+src\app\biblioteca\BibliotecaClient.tsx | Modificado: 05/31/2026 11:09:18 | 15607 bytes
+src\app\biblioteca\page.tsx | Modificado: 05/31/2026 11:09:18 | 807 bytes
+src\app\layout.tsx | Modificado: 05/31/2026 11:09:18 | 550 bytes
+docs\9-20-9-navegacao-inteligente-textos.md | Modificado: 05/31/2026 11:08:58 | 2069 bytes
+docs\auditorias\auditoria-refinamento-paginas-internas-9-20-8-2026-05-31T13-54-53-842Z.md | Modificado: 05/31/2026 10:54:53 | 634 bytes
+docs\9-20-8-refinamento-paginas-internas.md | Modificado: 05/31/2026 10:54:17 | 1529 bytes
+docs\auditorias\auditoria-home-compacta-planos-limpo-9-20-7-2026-05-31T13-44-32-486Z.md | Modificado: 05/31/2026 10:44:32 | 496 bytes
+src\app\planos\page.tsx | Modificado: 05/31/2026 10:44:32 | 6021 bytes
+docs\9-20-7-home-compacta-planos-limpo.md | Modificado: 05/31/2026 10:44:05 | 860 bytes
+docs\auditorias\auditoria-landing-video-9-20-6-2026-05-31T13-18-00-174Z.md | Modificado: 05/31/2026 10:18:00 | 598 bytes
+docs\9-20-6-landing-hero-video-premium.md | Modificado: 05/31/2026 10:17:24 | 1717 bytes
+src\components\PlanifyBrandLogo.tsx | Modificado: 05/31/2026 10:17:24 | 1942 bytes
+docs\auditorias\auditoria-interface-clean-9-20-5-2026-05-31T11-59-35-845Z.md | Modificado: 05/31/2026 08:59:35 | 604 bytes
+docs\9-20-5-interface-clean-saas-educacional.md | Modificado: 05/31/2026 08:57:47 | 1718 bytes
+docs\auditorias\auditoria-identidade-visual-9-20-4-2026-05-31T11-50-47-483Z.md | Modificado: 05/31/2026 08:50:47 | 518 bytes
+src\components\PageShell.tsx | Modificado: 05/31/2026 08:50:47 | 3789 bytes
+docs\9-20-4-identidade-visual-premium.md | Modificado: 05/31/2026 08:50:14 | 1882 bytes
+docs\auditorias\auditoria-visual-9-20-3-2026-05-31T11-29-47-423Z.md | Modificado: 05/31/2026 08:29:47 | 574 bytes
+docs\9-20-3-clareamento-visual-seguro.md | Modificado: 05/31/2026 08:29:11 | 1360 bytes
+docs\9-20-2-editor-fontes-imagens-abnt.md | Modificado: 05/31/2026 08:10:11 | 1707 bytes
+src\app\editor\EditorClient.tsx | Modificado: 05/31/2026 08:10:11 | 47260 bytes
+docs\9-20-0-editor-word-avancado.md | Modificado: 05/31/2026 07:42:18 | 1603 bytes
+src\app\editor\page.tsx | Modificado: 05/31/2026 07:42:17 | 761 bytes
+docs\9-19-1-marketplace-real.md | Modificado: 05/31/2026 07:28:49 | 1410 bytes
+src\app\marketplace\page.tsx | Modificado: 05/31/2026 07:28:48 | 778 bytes
+src\app\marketplace\MarketplaceClient.tsx | Modificado: 05/31/2026 07:28:48 | 23848 bytes
+src\app\api\marketplace\materiais\route.ts | Modificado: 05/31/2026 07:28:48 | 12472 bytes
+docs\auditorias\auditoria-marketplace-2026-05-31T10-24-46-487Z.md | Modificado: 05/31/2026 07:24:46 | 6183 bytes
+docs\9-19-0-auditoria-marketplace.md | Modificado: 05/31/2026 07:23:04 | 1129 bytes
+docs\auditorias\teste-controlado-assinatura-2026-05-31T10-16-10-048Z.md | Modificado: 05/31/2026 07:16:10 | 1554 bytes
+docs\9-18-0-teste-controlado-assinatura.md | Modificado: 05/31/2026 07:15:08 | 1886 bytes
+docs\auditorias\auditoria-stripe-assinaturas-2026-05-31T10-09-12-090Z.md | Modificado: 05/31/2026 07:09:12 | 5232 bytes
+docs\9-17-1-1-hotfix-script-inspecionar-webhook.md | Modificado: 05/31/2026 07:07:37 | 731 bytes
+docs\auditorias\auditoria-stripe-assinaturas-2026-05-31T10-03-24-714Z.md | Modificado: 05/31/2026 07:03:24 | 5232 bytes
+package-lock.json | Modificado: 05/31/2026 07:03:24 | 76782 bytes
+package.json | Modificado: 05/31/2026 07:03:24 | 631 bytes
+docs\auditorias\auditoria-stripe-assinaturas-2026-05-31T09-58-51-483Z.md | Modificado: 05/31/2026 06:58:51 | 5241 bytes
+docs\9-17-0-auditoria-stripe-assinaturas.md | Modificado: 05/31/2026 06:57:45 | 1654 bytes
+
+============================================================
+14. Resumo objetivo para decisão
+============================================================
+Verifique principalmente:
+1. Se src\app\planejamentos\page.tsx existe e é o arquivo de rota real.
+2. Se ele importa outro componente, como PlanejamentosClient, GeradorPlanejamento ou similar.
+3. Se as opções antigas aparecem em outro arquivo importado, não diretamente na page.tsx.
+4. Se existem duas versões da tela: uma em src/app e outra em app/pages/components.
+5. Se Língua Espanhola foi adicionada em arquivo que não é usado pela rota real.
+6. Se conteudosSugeridos ou componentesCurriculares aparecem duplicados.
+7. Se .next ainda não contém as mudanças esperadas após build.
+8. Se Git/Vercel pode estar usando branch diferente da branch local atual.
+
+FIM DO RELATÓRIO.

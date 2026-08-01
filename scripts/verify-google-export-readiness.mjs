@@ -1,0 +1,306 @@
+/**
+ * Pré-commit: valida motores de exportação Google (offline) e grava debug-f33ae7.log
+ * Run: node scripts/verify-google-export-readiness.mjs
+ */
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { createRequire } from "node:module";
+
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const LOG_PATH = path.join(root, "debug-f33ae7.log");
+const require = createRequire(import.meta.url);
+const moduleCache = new Map();
+
+function auditLog(hypothesisId, location, message, data = {}) {
+  fs.appendFileSync(
+    LOG_PATH,
+    `${JSON.stringify({
+      sessionId: "f33ae7",
+      runId: "pre-commit-audit",
+      hypothesisId,
+      location,
+      message,
+      data,
+      timestamp: Date.now(),
+    })}\n`,
+  );
+}
+
+function loadTsModule(relativePath) {
+  const normalized = relativePath.replace(/\\/g, "/");
+  if (moduleCache.has(normalized)) return moduleCache.get(normalized);
+
+  const ts = require("typescript");
+  const sourcePath = path.join(root, relativePath);
+  const source = fs.readFileSync(sourcePath, "utf8");
+  const transpiled = ts.transpileModule(source, {
+    compilerOptions: {
+      module: ts.ModuleKind.CommonJS,
+      target: ts.ScriptTarget.ES2020,
+      esModuleInterop: true,
+    },
+    fileName: sourcePath,
+  }).outputText;
+
+  const module = { exports: {} };
+  const localRequire = (specifier) => {
+    if (specifier.startsWith(".")) {
+      const resolved = path.join(path.dirname(sourcePath), specifier);
+      for (const candidate of [`${resolved}.ts`, `${resolved}.js`]) {
+        if (candidate.endsWith(".ts")) {
+          const rel = candidate.slice(root.length + 1).replace(/\\/g, "/");
+          return loadTsModule(rel);
+        }
+      }
+    }
+    if (specifier.startsWith("@/")) {
+      const rel = `src/${specifier.slice(2)}`;
+      for (const candidate of [`${rel}.ts`, `${rel}.tsx`]) {
+        try {
+          fs.readFileSync(path.join(root, candidate));
+          return loadTsModule(candidate.replace(/\\/g, "/"));
+        } catch {
+          /* continue */
+        }
+      }
+    }
+    return require(specifier);
+  };
+
+  const evaluator = new Function(
+    "exports",
+    "require",
+    "module",
+    "__dirname",
+    "__filename",
+    transpiled,
+  );
+  evaluator(module.exports, localRequire, module, path.dirname(sourcePath), sourcePath);
+  moduleCache.set(normalized, module.exports);
+  return module.exports;
+}
+
+const SAMPLE_MATRIX = {
+  titulo: "Planejamento anual História 5º ano",
+  tipoPlanejamento: "anual",
+  resumo: "Resumo",
+  conteudos: [
+    {
+      conteudo: "Brasil colonial",
+      trimestre: 1,
+      habilidades: [{ codigo: "EF05HI01", descricao: "Habilidade teste" }],
+      objetivos: "Objetivo",
+      metodologia: "Metodologia",
+      avaliacao: "Avaliação",
+    },
+  ],
+};
+
+const PAYLOAD_ANUAL = {
+  tipoPlanejamento: "anual",
+  escola: "Escola Teste",
+  professor: "Prof",
+  etapa: "Ensino Fundamental",
+  anoSerie: "5º ano",
+  componenteCurricular: "História",
+  cargaHoraria: "80h",
+  matrizPlanejamento: SAMPLE_MATRIX,
+};
+
+const PAYLOAD_TRIM = {
+  ...PAYLOAD_ANUAL,
+  tipoPlanejamento: "trimestral",
+  trimestre: "1",
+};
+
+function main() {
+  if (fs.existsSync(LOG_PATH)) fs.unlinkSync(LOG_PATH);
+
+  const annualTemplateBytes = fs.statSync(
+    path.join(root, "data", "modelos-oficiais", "modelo-anual.docx"),
+  ).size;
+  const trimestralTemplateBytes = fs.statSync(
+    path.join(root, "data", "modelos-oficiais", "modelo-trimestral.docx"),
+  ).size;
+  const minimumGeneratedBytes = (templateBytes) =>
+    Math.max(4096, Math.floor(templateBytes * 0.5));
+  const isZipDocument = (buffer) =>
+    buffer.length >= 4 &&
+    buffer.subarray(0, 4).equals(Buffer.from([0x50, 0x4b, 0x03, 0x04]));
+
+  const {
+    buildOfficialPlanningDocx,
+    getOfficialPlanningTipo,
+    normalizeOfficialPlanningPayload,
+  } = loadTsModule("src/server/planejamentos/official-planning-docx.ts");
+  const {
+    resolveSlidesExportCompatible,
+    resolveSlideDeck,
+  } = loadTsModule("src/lib/google/document-type-detection.ts");
+  const { buildOfficialPlanningPayloadFromGeneration } = loadTsModule(
+    "src/lib/planejamentos/planning-google-export-payload.ts",
+  );
+  const {
+    buildOfficialPlanningPayloadFromEditorMeta,
+    inferPlanningTipoFromExportContext,
+  } = loadTsModule("src/lib/planejamentos/planning-google-export-payload.ts");
+  const {
+    embedPlanningPayloadInHtml,
+    extractPlanningPayloadFromHtml,
+  } = loadTsModule("src/lib/planejamentos/planning-export-embed.ts");
+
+  // Hypothesis A: official motor produces valid buffers
+  const anualBuf = buildOfficialPlanningDocx(PAYLOAD_ANUAL);
+  const trimBuf = buildOfficialPlanningDocx(PAYLOAD_TRIM);
+  auditLog("A", "verify-google-export-readiness.mjs", "official docx buffers", {
+    anualBytes: anualBuf.length,
+    trimBytes: trimBuf.length,
+    annualTemplateBytes,
+    trimestralTemplateBytes,
+    anualOk:
+      anualBuf.length >= minimumGeneratedBytes(annualTemplateBytes) && isZipDocument(anualBuf),
+    trimOk:
+      trimBuf.length >= minimumGeneratedBytes(trimestralTemplateBytes) && isZipDocument(trimBuf),
+    distinctTemplates: !anualBuf.equals(trimBuf),
+  });
+
+  const trimTipo = getOfficialPlanningTipo(
+    normalizeOfficialPlanningPayload(PAYLOAD_TRIM, "planejamento:trimestral", "plan_key_trim2"),
+  );
+  const trim2Buf = buildOfficialPlanningDocx(
+    normalizeOfficialPlanningPayload(
+      { ...PAYLOAD_ANUAL, trimestre: "2" },
+      "planejamento:trimestral",
+      "plan_key_trim2",
+    ),
+    { documentType: "planejamento:trimestral", documentId: "plan_key_trim2" },
+  );
+  auditLog("TRIM", "verify-google-export-readiness.mjs", "trimestral template routing", {
+    trimTipo,
+    trim2DistinctFromAnual: !trim2Buf.equals(anualBuf),
+    trim2MatchesTrim1: trim2Buf.equals(trimBuf),
+  });
+
+  const bundleMetaPayload = buildOfficialPlanningPayloadFromEditorMeta(
+    {
+      componente: "História",
+      anoSerie: "5º ano",
+      etapa: "EF",
+      tipoPlanejamento: undefined,
+      generationPayload: { tipoPlanejamento: "anual", trimestre: "1" },
+      matrizPlanejamento: {
+        tipoPlanejamento: "trimestral",
+        conteudos: SAMPLE_MATRIX.conteudos.map((item) => ({ ...item, trimestre: 2 })),
+      },
+    },
+    {
+      documentType: "planejamento:trimestral",
+      documentId: "plan_demo_trim2",
+      title: "Planejamento trimestral — 2º trimestre",
+    },
+  );
+  auditLog("TRIM", "verify-google-export-readiness.mjs", "bundle tab payload inference", {
+    inferredTipo: bundleMetaPayload?.tipoPlanejamento,
+    inferredTrimestre: bundleMetaPayload?.trimestre,
+    contextTipo: inferPlanningTipoFromExportContext({
+      documentType: "planejamento:trimestral",
+      documentId: "plan_demo_trim2",
+    }),
+  });
+
+  // Hypothesis B/F: missing matrix must throw (no generic fallback for planejamento)
+  let missingMatrixThrows = false;
+  try {
+    buildOfficialPlanningDocx({ tipoPlanejamento: "anual", matrizPlanejamento: { conteudos: [] } });
+  } catch (err) {
+    missingMatrixThrows = true;
+    auditLog("B-F", "verify-google-export-readiness.mjs", "empty matrix rejected", {
+      error: err instanceof Error ? err.message : String(err),
+    });
+  }
+  auditLog("B-F", "verify-google-export-readiness.mjs", "missing matrix guard", {
+    missingMatrixThrows,
+  });
+
+  // Hypothesis C/D: slides compatibility
+  const slideHtml = '<div class="planify-slide-deck"><section class="planify-slide"></section></div>';
+  const apostilaHtml = "<p>Apostila simples</p>";
+  auditLog("C-D", "verify-google-export-readiness.mjs", "slides detection", {
+    slidesDeck: resolveSlideDeck(() => slideHtml, "material:slides", false),
+    slidesCompatDeck: resolveSlidesExportCompatible(() => slideHtml, "material:slides", false),
+    apostilaSlides: resolveSlidesExportCompatible(() => apostilaHtml, "material:apostila", false),
+    pdfTypeSlides: resolveSlidesExportCompatible(() => apostilaHtml, "material:pdf", false),
+  });
+
+  // Payload builder for client export
+  const built = buildOfficialPlanningPayloadFromGeneration({
+    tipoPlanejamento: "anual",
+    escola: "E",
+    professor: "P",
+    etapa: "EF",
+    anoSerie: "5",
+    componenteCurricular: "História",
+    cargaHoraria: "80h",
+    matrizPlanejamento: SAMPLE_MATRIX,
+  });
+  auditLog("A", "verify-google-export-readiness.mjs", "payload from generation", {
+    hasPayload: Boolean(built),
+    hasMatrix: Boolean(built?.matrizPlanejamento),
+    tipo: built?.tipoPlanejamento,
+  });
+
+  // Hypothesis B: embed/extract for community publish
+  const embedded = embedPlanningPayloadInHtml("<p>Planejamento</p>", PAYLOAD_ANUAL);
+  const extracted = extractPlanningPayloadFromHtml(embedded);
+  auditLog("B", "verify-google-export-readiness.mjs", "planning embed roundtrip", {
+    embedded: embedded.includes("planify-planning-export-data"),
+    extractedOk: Boolean(extracted?.matrizPlanejamento),
+    tipo: extracted?.tipoPlanejamento ?? null,
+  });
+
+  // Hypothesis E: scan user-facing DOCX strings in app (not landing)
+  const appFiles = [
+    "src/app/biblioteca/BibliotecaClient.tsx",
+    "src/app/materiais/MateriaisClient.tsx",
+    "src/app/planejamentos/PlanejamentosClient.tsx",
+  ];
+  const docxMentions = [];
+  for (const rel of appFiles) {
+    const content = fs.readFileSync(path.join(root, rel), "utf8");
+    if (/Baixar DOCX|DOCX oficial|baixarWord/i.test(content)) {
+      docxMentions.push(rel);
+    }
+  }
+  auditLog("E", "verify-google-export-readiness.mjs", "user-facing docx in core app", {
+    filesWithDocxUi: docxMentions,
+  });
+
+  const failed =
+    anualBuf.length < minimumGeneratedBytes(annualTemplateBytes) ||
+    trimBuf.length < minimumGeneratedBytes(trimestralTemplateBytes) ||
+    !isZipDocument(anualBuf) ||
+    !isZipDocument(trimBuf) ||
+    anualBuf.equals(trimBuf) ||
+    trimTipo !== "trimestral" ||
+    trim2Buf.equals(anualBuf) ||
+    bundleMetaPayload?.tipoPlanejamento !== "trimestral" ||
+    bundleMetaPayload?.trimestre !== "2" ||
+    !missingMatrixThrows ||
+    !built?.matrizPlanejamento ||
+    !extracted?.matrizPlanejamento ||
+    docxMentions.length > 0;
+
+  auditLog("SUMMARY", "verify-google-export-readiness.mjs", failed ? "FAIL" : "PASS", {
+    failed,
+  });
+
+  if (failed) {
+    console.error("verify-google-export-readiness: FAIL — see debug-f33ae7.log");
+    process.exit(1);
+  }
+
+  console.log("verify-google-export-readiness: PASS");
+}
+
+main();

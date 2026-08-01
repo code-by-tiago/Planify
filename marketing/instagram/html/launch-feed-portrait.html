@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Planify — Feed 4:5</title>
+    <link rel="stylesheet" href="shared-launch.css" />
+    <style>
+      .portrait {
+        width: 1080px;
+        height: 1350px;
+      }
+      .portrait .inner {
+        padding: 72px 64px;
+        justify-content: space-between;
+      }
+      .portrait h1 {
+        margin-top: 32px;
+        font-size: 68px;
+        max-width: 900px;
+      }
+      .portrait .lead {
+        margin-top: 24px;
+        font-size: 28px;
+      }
+      .stats {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin-top: 36px;
+      }
+      .stat {
+        padding: 24px;
+        border-radius: 20px;
+        border: 1px solid rgba(148, 163, 184, 0.28);
+        background: rgba(15, 23, 42, 0.72);
+      }
+      .stat-num {
+        font-size: 42px;
+        font-weight: 900;
+        color: #22d3ee;
+        line-height: 1;
+      }
+      .stat-label {
+        margin-top: 8px;
+        font-size: 18px;
+        font-weight: 700;
+        color: #cbd5e1;
+        line-height: 1.35;
+      }
+    </style>
+  </head>
+  <body>
+    <section class="canvas portrait card" id="portrait-feed">
+      <div class="grid-overlay"></div>
+      <div class="inner">
+        <div>
+          <span class="eyebrow">Planify Professor</span>
+          <h1>Tudo para o <span class="accent">ano letivo</span> em um plano</h1>
+          <p class="lead">
+            IA pedagógica, BNCC, editor, exportação Google e Comunidade docente —
+            sem pagar três assinaturas diferentes.
+          </p>
+          <div class="stats">
+            <div class="stat">
+              <div class="stat-num">13+</div>
+              <div class="stat-label">ferramentas com IA</div>
+            </div>
+            <div class="stat">
+              <div class="stat-num">BNCC</div>
+              <div class="stat-label">planejamento oficial</div>
+            </div>
+            <div class="stat">
+              <div class="stat-num">PDF</div>
+              <div class="stat-label">Docs e Classroom</div>
+            </div>
+            <div class="stat">
+              <div class="stat-num" style="font-size: 34px">R$ 24,90</div>
+              <div class="stat-label">preço de lançamento/mês</div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="cta" style="width: 100%">Assinar por R$ 24,90/mês</div>
+          <div class="url" style="margin-top: 16px; text-align: center">iaplanify.com.br/planos</div>
+        </div>
+      </div>
+    </section>
+  </body>
+</html>

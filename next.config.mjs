@@ -61,3 +61,5 @@ export default sentryDsn
       disableClientWebpackPlugin: true,
     })
   : nextConfig;
+
+// trigger_melhorias=true

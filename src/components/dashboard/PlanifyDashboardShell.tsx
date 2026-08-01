@@ -51,6 +51,9 @@ export default function PlanifyDashboardShell() {
   useEffect(() => {
     if (!access.loading && access.authenticated) {
       setHistorySupabaseSync(true);
+<<<<<<< HEAD
+      void syncLocalHistoryToSupabase();
+=======
       const run = () => {
         void syncLocalHistoryToSupabase();
       };
@@ -73,6 +76,7 @@ export default function PlanifyDashboardShell() {
       }
       const timer = globalThis.setTimeout(run, 1200);
       return () => globalThis.clearTimeout(timer);
+>>>>>>> origin/aplicar-melhorias-na-producao
     }
   }, [access.authenticated, access.loading]);
 
@@ -312,6 +316,14 @@ export default function PlanifyDashboardShell() {
                 </Link>
               </div>
             </div>
+<<<<<<< HEAD
+            <PlanifyQuickNav
+              activeTool={Boolean(selectedToolId)}
+              activeSection={selectedSectionId}
+              onSelectInicio={selectInicio}
+              onSelectSection={selectSection}
+            />
+=======
             {selectedSectionId !== "marketplace" ? (
               <PlanifyQuickNav
                 activeTool={Boolean(selectedToolId)}
@@ -320,6 +332,7 @@ export default function PlanifyDashboardShell() {
                 onSelectSection={selectSection}
               />
             ) : null}
+>>>>>>> origin/aplicar-melhorias-na-producao
           </header>
         ) : (
           <header className="pl-hud-hub-shell-header relative shrink-0 px-3 py-2 pt-[max(0.5rem,env(safe-area-inset-top))] sm:px-5 sm:py-2.5">

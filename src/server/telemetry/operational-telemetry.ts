@@ -17,9 +17,13 @@ export type OperationalEventType =
   | "pedagogical_cache_miss"
   | "pedagogical_inject_skipped"
   | "pedagogical_format_only"
+<<<<<<< HEAD
+  | "gemini_api_error";
+=======
   | "gemini_api_error"
   | "copiloto_transcribe"
   | "copiloto_interpret";
+>>>>>>> origin/aplicar-melhorias-na-producao
 
 export function logOperationalEvent(event: {
   eventType: OperationalEventType;

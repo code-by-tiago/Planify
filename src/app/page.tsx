@@ -3,15 +3,24 @@ import { redirect } from "next/navigation";
 import { StructuredData } from "@/components/seo/StructuredData";
 import { LandingProfessorPrimeiroPage } from "@/components/public/landing-professor-primeiro/LandingProfessorPrimeiroPage";
 import { buildPageMetadata } from "@/lib/seo/metadata";
+<<<<<<< HEAD
+import { SEO } from "@/lib/seo/constants";
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
 
 type HomePageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
 export const metadata: Metadata = buildPageMetadata({
+<<<<<<< HEAD
+  title: SEO.descriptionShort,
+  description: SEO.descriptionFull,
+=======
   title: "Gere uma lista de atividades com IA agora, sem cadastro",
   description:
     "Planify é o assistente de IA para professores: gere listas de atividades, provas e planejamentos alinhados à BNCC em segundos. Teste grátis, sem criar conta.",
+>>>>>>> origin/aplicar-melhorias-na-producao
   path: "/",
 });
 

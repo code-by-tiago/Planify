@@ -38,10 +38,13 @@ export function canOpenMarketplaceMaterialInEditor(item: {
     return true;
   }
 
+<<<<<<< HEAD
+=======
   if (name.endsWith(".pdf") || mime.includes("pdf")) {
     return true;
   }
 
+>>>>>>> origin/aplicar-melhorias-na-producao
   return false;
 }
 
@@ -93,9 +96,15 @@ export async function openMarketplaceMaterialInEditor(
   if (previewHtml) {
     html = previewHtml;
     title = data.material?.title || item.title;
+<<<<<<< HEAD
+  } else if (previewKind === "pdf" || previewKind === "binary") {
+    throw new Error(
+      "Abrir no editor disponível para DOCX e HTML. Use Baixar para outros formatos.",
+=======
   } else if (previewKind === "binary") {
     throw new Error(
       "Abrir no editor disponível para PDF, DOCX e HTML. Use Baixar para outros formatos.",
+>>>>>>> origin/aplicar-melhorias-na-producao
     );
   }
 

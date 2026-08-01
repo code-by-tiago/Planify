@@ -3,12 +3,20 @@
 type ComunidadeDocenteOnboardingProps = {
   onOpenProfile: () => void;
   onCreatePost: () => void;
+<<<<<<< HEAD
+  onCreateGroup: () => void;
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
   onBrowseTeachers: () => void;
 };
 
 export function ComunidadeDocenteOnboarding({
   onOpenProfile,
   onCreatePost,
+<<<<<<< HEAD
+  onCreateGroup,
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
   onBrowseTeachers,
 }: ComunidadeDocenteOnboardingProps) {
   const steps = [
@@ -21,15 +29,31 @@ export function ComunidadeDocenteOnboarding({
     },
     {
       step: "2",
+<<<<<<< HEAD
+      title: "Publique sua primeira discussão",
+=======
       title: "Publique sua primeira publicação",
+>>>>>>> origin/aplicar-melhorias-na-producao
       description: "Compartilhe uma dúvida, experiência ou material com a rede docente.",
       action: "Criar publicação",
       onClick: onCreatePost,
     },
     {
       step: "3",
+<<<<<<< HEAD
+      title: "Crie ou entre em um grupo",
+      description: "Grupos de estudo ajudam a trocar ideias por disciplina ou tema.",
+      action: "Criar grupo",
+      onClick: onCreateGroup,
+    },
+    {
+      step: "4",
+      title: "Encontre colegas",
+      description: "Busque professores, siga perfis e convide participantes nas publicações.",
+=======
       title: "Siga outros professores",
       description: "Busque colegas, siga perfis e monte seu feed com quem inspira você.",
+>>>>>>> origin/aplicar-melhorias-na-producao
       action: "Buscar professores",
       onClick: onBrowseTeachers,
     },

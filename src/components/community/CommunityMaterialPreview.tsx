@@ -25,6 +25,8 @@ const documentPreviewClassName =
 const slidePreviewClassName =
   "planify-community-material-html w-full min-w-0 break-words text-sm leading-7 text-slate-800 [&_.planify-export-document]:mx-auto [&_.planify-flashcards]:flex [&_.planify-flashcards]:flex-wrap [&_.planify-flashcards]:gap-4 [&_.planify-flashcards_.planify-flashcard]:min-w-0 [&_.planify-flashcards_.planify-flashcard]:max-w-full [&_.planify-flashcards_.planify-flashcard]:flex-[1_1_100%] [&_.planify-flashcards_.planify-flashcard]:sm:flex-[1_1_260px] [&_.planify-slide-deck]:w-full [&_h1]:text-xl [&_h1]:font-black [&_h1]:sm:text-2xl [&_h2]:mt-4 [&_h2]:text-lg [&_h2]:font-black [&_h3]:mt-3 [&_h3]:font-black [&_img]:max-w-full [&_li]:ml-5 [&_ol]:list-decimal [&_p]:my-2 [&_table]:w-full [&_table]:max-w-full [&_table]:border-collapse [&_td]:border [&_td]:border-slate-200 [&_td]:p-2 [&_th]:border [&_th]:border-slate-200 [&_th]:p-2 [&_ul]:list-disc";
 
+<<<<<<< HEAD
+=======
 function hasUsableHtml(html: string | null | undefined): boolean {
   const value = String(html || "").trim();
   if (value.length < 40) return false;
@@ -122,6 +124,7 @@ function FramePreview({
   );
 }
 
+>>>>>>> origin/aplicar-melhorias-na-producao
 export function CommunityMaterialPreview({
   kind,
   title,
@@ -133,6 +136,57 @@ export function CommunityMaterialPreview({
 }: CommunityMaterialPreviewProps) {
   const pageScroll = scrollMode === "page";
 
+<<<<<<< HEAD
+  if (kind === "html" && htmlContent) {
+    const slideMode = Boolean(isSlidePreview);
+
+    return (
+      <div
+        className={`w-full min-w-0 rounded-2xl border border-cyan-400/15 bg-white shadow-sm ${
+          pageScroll ? "" : "overflow-hidden"
+        }`}
+      >
+        <style>
+          {slideMode
+            ? PLANIFY_COMMUNITY_SLIDE_PREVIEW_CSS
+            : `${PLANIFY_COMMUNITY_DOCUMENT_SCREEN_CSS}${PLANIFY_EXPORT_DOC_COMPONENT_CSS}${PLANIFY_COMMUNITY_DOCUMENT_PREVIEW_CSS}`}
+        </style>
+        <div
+          className={`w-full min-w-0 bg-white ${
+            slideMode ? "p-3 sm:p-5" : "px-4 py-5 sm:px-8 sm:py-8"
+          } ${
+            pageScroll
+              ? ""
+              : "max-h-[min(78vh,920px)] overflow-x-hidden overflow-y-auto overscroll-contain [touch-action:pan-y]"
+          }`}
+        >
+          <div
+            className={`${slideMode ? slidePreviewClassName : documentPreviewClassName} ${slideMode ? "planify-community-material-slides" : ""}`}
+            dangerouslySetInnerHTML={{
+              __html: slideMode
+                ? `<div class="planify-export-document">${htmlContent}</div>`
+                : htmlContent,
+            }}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  if (kind === "pdf" && signedUrl) {
+    return (
+      <div
+        className={`w-full min-w-0 rounded-2xl border border-cyan-400/15 bg-white shadow-sm ${
+          pageScroll ? "" : "overflow-hidden"
+        }`}
+      >
+        <iframe
+          title={title}
+          src={`${signedUrl}#toolbar=1&navpanes=0&view=FitH`}
+          className={`w-full bg-slate-100 ${pageScroll ? "min-h-[70vh]" : "h-[min(78vh,920px)]"}`}
+        />
+      </div>
+=======
   // PDF: iframe nativo do browser (arquivo original)
   if (kind === "pdf" && signedUrl) {
     return (
@@ -176,6 +230,7 @@ export function CommunityMaterialPreview({
         isSlidePreview={isSlidePreview}
         pageScroll={pageScroll}
       />
+>>>>>>> origin/aplicar-melhorias-na-producao
     );
   }
 
@@ -183,10 +238,13 @@ export function CommunityMaterialPreview({
     return <DocxFallback title={title} fileName={fileName} />;
   }
 
+<<<<<<< HEAD
+=======
   if (kind === "pdf") {
     return <PdfFallback title={title} fileName={fileName} />;
   }
 
+>>>>>>> origin/aplicar-melhorias-na-producao
   return <BinaryFallback title={title} fileName={fileName} kind={kind} />;
 }
 
@@ -194,6 +252,14 @@ function DocxFallback({ title, fileName }: { title: string; fileName?: string })
   return (
     <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-cyan-400/25 bg-gradient-to-b from-white to-cyan-50/40 px-6 py-14 text-center">
       <span className="rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-[10px] font-bold uppercase tracking-wide text-indigo-700">
+<<<<<<< HEAD
+        Documento
+      </span>
+      <h3 className="mt-4 text-lg font-extrabold text-slate-950">{title}</h3>
+      <p className="mt-2 max-w-md text-sm leading-6 text-slate-600">
+        Este material foi publicado como arquivo anexo. Use os botões de exportação Google
+        ou baixe o PDF quando disponível.
+=======
         Documento Word
       </span>
       <h3 className="mt-4 text-lg font-extrabold text-slate-950">{title}</h3>
@@ -217,6 +283,7 @@ function PdfFallback({ title, fileName }: { title: string; fileName?: string }) 
       <h3 className="mt-4 text-lg font-extrabold text-slate-950">{title}</h3>
       <p className="mt-2 max-w-md text-sm leading-6 text-slate-600">
         Não foi possível carregar a prévia embutida. Use <strong>Baixar PDF</strong>.
+>>>>>>> origin/aplicar-melhorias-na-producao
       </p>
       {fileName ? (
         <p className="mt-3 text-xs font-semibold text-slate-500">{fileName}</p>
@@ -241,7 +308,11 @@ function BinaryFallback({
       </span>
       <h3 className="mt-4 text-lg font-extrabold text-slate-950">{title}</h3>
       <p className="mt-2 max-w-md text-sm leading-6 text-slate-600">
+<<<<<<< HEAD
+        Pré-visualização indisponível para este formato. Use os botões de download abaixo.
+=======
         Pré-visualização indisponível para este formato. Use os botões de download ao lado.
+>>>>>>> origin/aplicar-melhorias-na-producao
       </p>
       {fileName ? (
         <p className="mt-3 text-xs font-semibold text-slate-500">{fileName}</p>

@@ -225,6 +225,8 @@ export function PlanifyIcon({ name, className }: IconProps) {
           <path d="m9 15-3 3" />
         </BaseIcon>
       );
+<<<<<<< HEAD
+=======
     case "mic":
       return (
         <BaseIcon className={className}>
@@ -234,6 +236,7 @@ export function PlanifyIcon({ name, className }: IconProps) {
           <path d="M8 21h8" />
         </BaseIcon>
       );
+>>>>>>> origin/aplicar-melhorias-na-producao
     case "user":
       return (
         <BaseIcon className={className}>
@@ -346,12 +349,15 @@ export function PlanifyIcon({ name, className }: IconProps) {
           <path d="M9 7V4h6v3" />
         </BaseIcon>
       );
+<<<<<<< HEAD
+=======
     case "folder":
       return (
         <BaseIcon className={className}>
           <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z" />
         </BaseIcon>
       );
+>>>>>>> origin/aplicar-melhorias-na-producao
     case "settings":
       return (
         <BaseIcon className={className}>
@@ -365,6 +371,8 @@ export function PlanifyIcon({ name, className }: IconProps) {
           <path d="M21 11.5a8.4 8.4 0 0 1-1.1 4.2 8.5 8.5 0 0 1-7.4 4.3 8.4 8.4 0 0 1-3.9-1L3 20l1.2-3.6a8.4 8.4 0 0 1-1.1-3.9 8.5 8.5 0 0 1 4.3-7.4 8.4 8.4 0 0 1 4.2-1.1h.4a8.5 8.5 0 0 1 8.3 8.3Z" />
         </BaseIcon>
       );
+<<<<<<< HEAD
+=======
     case "play":
       return (
         <BaseIcon className={className}>
@@ -387,6 +395,7 @@ export function PlanifyIcon({ name, className }: IconProps) {
           <rect x="13.5" y="13.5" width="7" height="7" rx="1.2" />
         </BaseIcon>
       );
+>>>>>>> origin/aplicar-melhorias-na-producao
     default:
       return (
         <BaseIcon className={className}>

@@ -112,6 +112,8 @@ export function buildTrimestralPlansFromAnnual(
 
   return result;
 }
+<<<<<<< HEAD
+=======
 
 /**
  * Fonte única de matriz para render/export de um documento (anual ou trimestral).
@@ -148,3 +150,4 @@ export function resolveMatrixForDocument(params: {
 
   return extractAnnualItemsForTrimester(matrix, trimester);
 }
+>>>>>>> origin/aplicar-melhorias-na-producao

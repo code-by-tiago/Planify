@@ -9,7 +9,10 @@ import {
   extractConteudosFromPayload,
   suggestBnccByConteudos,
 } from "../bncc/bncc-suggestion-engine";
+<<<<<<< HEAD
+=======
 import { filterBnccCodesAgainstDb } from "../bncc/validate-bncc-codes-against-db";
+>>>>>>> origin/aplicar-melhorias-na-producao
 import { getSupabaseAdminClient } from "../supabase/admin-client";
 import { getPrimarySchoolIdForUser } from "../schools/school-access";
 import { upsertTeacherClass } from "../schools/teacher-classes-service";
@@ -166,11 +169,15 @@ function buildTrackingFields(
   const requestHash = idempotencyKey;
 
   return {
+<<<<<<< HEAD
+    material_type: String(input.tipo || "material").slice(0, 120),
+=======
     material_type: (() => {
       const source = String(input.requestPayload?.generationSource || "").trim();
       const tipo = String(input.tipo || "material");
       return (source ? `${source}:${tipo}` : tipo).slice(0, 120);
     })(),
+>>>>>>> origin/aplicar-melhorias-na-producao
     request_payload: (input.requestPayload || {}) as Json,
     response_json: (input.responseJson || {}) as Json,
     html_editor: String(input.contentHtml || ""),
@@ -390,6 +397,8 @@ async function persistGenerationRecord(
     );
 
     const extracted = filterExtractedBnccByStage(rawExtracted, etapa, anoSerie);
+<<<<<<< HEAD
+=======
     const verifiedCodes = await filterBnccCodesAgainstDb(extracted.codes);
     const verifiedSkills = extracted.skills.filter((skill) =>
       verifiedCodes.includes(skill.codigo),
@@ -398,6 +407,7 @@ async function persistGenerationRecord(
       codes: verifiedCodes,
       skills: verifiedSkills,
     };
+>>>>>>> origin/aplicar-melhorias-na-producao
 
     const schoolId =
       params.schoolId ||
@@ -461,8 +471,13 @@ async function persistGenerationRecord(
       responseJson: params.result ?? null,
       tipo: params.tipo,
       title: title || params.tipo,
+<<<<<<< HEAD
+      bnccSkillCodes: extracted.codes,
+      bnccSkills: extracted.skills as Json,
+=======
       bnccSkillCodes: verifiedExtracted.codes,
       bnccSkills: verifiedExtracted.skills as Json,
+>>>>>>> origin/aplicar-melhorias-na-producao
       contentPreview: preview,
       contentHtml: params.contentHtml || htmlContent,
       raw: {

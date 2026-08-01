@@ -90,11 +90,18 @@ export function resolveMarketplaceDownloadMime(meta: MarketplaceFileMeta): strin
 
 export function resolveMarketplaceStoredMime(file: File): string {
   const name = (file.name || "").toLowerCase();
+<<<<<<< HEAD
+=======
   const type = String(file.type || "").toLowerCase();
+>>>>>>> origin/aplicar-melhorias-na-producao
 
   if (name.endsWith(".html") || name.endsWith(".htm")) {
     return "text/html; charset=utf-8";
   }
+<<<<<<< HEAD
+
+  return file.type || "application/octet-stream";
+=======
   if (type.startsWith("image/")) return type;
   if (name.endsWith(".png")) return "image/png";
   if (name.endsWith(".jpg") || name.endsWith(".jpeg")) return "image/jpeg";
@@ -111,6 +118,7 @@ export function resolveMarketplaceStoredMime(file: File): string {
   if (name.endsWith(".ppt")) return "application/vnd.ms-powerpoint";
 
   return type || "application/octet-stream";
+>>>>>>> origin/aplicar-melhorias-na-producao
 }
 
 function safeMarketplaceTitle(title: string): string {

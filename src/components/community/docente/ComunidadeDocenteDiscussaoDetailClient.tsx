@@ -7,7 +7,11 @@ import { CommunityAuthorAvatar } from "@/components/community/CommunityAuthorAva
 import { CommunityAuthorLink } from "@/components/community/CommunityAuthorLink";
 import { CommunityReportButton } from "@/components/community/CommunityReportButton";
 import { ComunidadeDocenteDetailShell } from "@/components/community/docente/ComunidadeDocenteDetailShell";
+<<<<<<< HEAD
+import { downloadMarketplaceMaterial } from "@/lib/marketplace/marketplace-download-client";
+=======
 import { ComunidadeDocentePostAttachments } from "@/components/community/docente/ComunidadeDocentePostAttachments";
+>>>>>>> origin/aplicar-melhorias-na-producao
 import { ComunidadeDocenteUserPicker } from "@/components/community/docente/ComunidadeDocenteUserPicker";
 import { IconBookmark, IconHeart, IconShare } from "@/components/community/docente/docente-icons";
 import type { CommunityProfileSearchResult } from "@/lib/community/types";
@@ -15,7 +19,10 @@ import type { CommunityDiscussionDetail } from "@/server/community/community-doc
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 import { getCurrentAccessToken } from "@/lib/auth/session-client";
 import {
+<<<<<<< HEAD
+=======
   badgeEmoji,
+>>>>>>> origin/aplicar-melhorias-na-producao
   comunidadeRoutes,
   formatDocenteNumber,
   formatDocenteTimeAgo,
@@ -47,6 +54,10 @@ export function ComunidadeDocenteDiscussaoDetailClient({
   const [editBody, setEditBody] = useState("");
   const [inviteOpen, setInviteOpen] = useState(false);
   const [inviteUsers, setInviteUsers] = useState<CommunityProfileSearchResult[]>([]);
+<<<<<<< HEAD
+  const [downloadingMaterialId, setDownloadingMaterialId] = useState<string | null>(null);
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -125,6 +136,24 @@ export function ComunidadeDocenteDiscussaoDetailClient({
     window.setTimeout(() => setStatus(""), 3000);
   };
 
+<<<<<<< HEAD
+  const handleDownloadAttachment = async (materialId: string, fileName: string) => {
+    setDownloadingMaterialId(materialId);
+    try {
+      await downloadMarketplaceMaterial({
+        id: materialId,
+        fallbackFileName: fileName,
+      });
+      showToast("Download iniciado.");
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Não foi possível baixar.");
+    } finally {
+      setDownloadingMaterialId(null);
+    }
+  };
+
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
   const handleLike = async () => {
     if (!discussion || submitting) return;
     setSubmitting(true);
@@ -278,14 +307,23 @@ export function ComunidadeDocenteDiscussaoDetailClient({
     }
   };
 
+<<<<<<< HEAD
+  const homeHref = homeWithAba("discussoes", embedded);
+=======
   const homeHref = homeWithAba("inicio", embedded);
+>>>>>>> origin/aplicar-melhorias-na-producao
 
   if (loading) {
     return (
       <ComunidadeDocenteDetailShell
         embedded={embedded}
+<<<<<<< HEAD
+        activeMenu="discussoes"
+        breadcrumbs={[{ label: "Discussões", href: homeHref }]}
+=======
         activeMenu="inicio"
         breadcrumbs={[{ label: "Comunidade", href: homeHref }]}
+>>>>>>> origin/aplicar-melhorias-na-producao
         title="Carregando…"
       >
         <div className="flex min-h-[200px] items-center justify-center rounded-3xl border border-slate-200 bg-white">
@@ -299,8 +337,13 @@ export function ComunidadeDocenteDiscussaoDetailClient({
     return (
       <ComunidadeDocenteDetailShell
         embedded={embedded}
+<<<<<<< HEAD
+        activeMenu="discussoes"
+        breadcrumbs={[{ label: "Discussões", href: homeHref }]}
+=======
         activeMenu="inicio"
         breadcrumbs={[{ label: "Comunidade", href: homeHref }]}
+>>>>>>> origin/aplicar-melhorias-na-producao
         title="Discussão"
       >
         <div className="rounded-3xl border border-red-200 bg-red-50 p-6 text-center">
@@ -320,8 +363,18 @@ export function ComunidadeDocenteDiscussaoDetailClient({
   return (
     <ComunidadeDocenteDetailShell
       embedded={embedded}
+<<<<<<< HEAD
+      activeMenu="discussoes"
+      breadcrumbs={[
+        { label: "Discussões", href: homeHref },
+        ...(discussion.groupId
+          ? [{ label: "Grupo", href: comunidadeRoutes.grupo(discussion.groupId, embedded) }]
+          : []),
+      ]}
+=======
       activeMenu="inicio"
       breadcrumbs={[{ label: "Comunidade", href: homeHref }]}
+>>>>>>> origin/aplicar-melhorias-na-producao
       title={discussion.title}
       subtitle={`${discussion.author.name} · ${formatDocenteTimeAgo(discussion.createdAt)}`}
       actions={
@@ -435,6 +488,8 @@ export function ComunidadeDocenteDiscussaoDetailClient({
                   {discussion.disciplina}
                 </span>
               </div>
+<<<<<<< HEAD
+=======
               {discussion.kind === "achievement" && discussion.achievementBadge ? (
                 <div
                   className="mt-4 flex flex-col items-center gap-3 rounded-2xl px-4 py-8 text-center text-white shadow-inner"
@@ -453,6 +508,7 @@ export function ComunidadeDocenteDiscussaoDetailClient({
                   </span>
                 </div>
               ) : null}
+>>>>>>> origin/aplicar-melhorias-na-producao
               <div className="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-slate-700">
                 {discussion.body || "Sem conteúdo adicional."}
               </div>
@@ -469,6 +525,36 @@ export function ComunidadeDocenteDiscussaoDetailClient({
                 </div>
               ) : null}
               {discussion.attachments.length > 0 ? (
+<<<<<<< HEAD
+                <div className="mt-5 rounded-2xl border border-slate-100 bg-slate-50/60 p-4">
+                  <h3 className="text-xs font-extrabold uppercase tracking-wide text-slate-500">
+                    Materiais anexados ({discussion.attachments.length})
+                  </h3>
+                  <ul className="mt-3 space-y-2">
+                    {discussion.attachments.map((attachment) => (
+                      <li
+                        key={attachment.id}
+                        className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-white bg-white px-3 py-2.5 shadow-sm"
+                      >
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-bold text-[#0F172A]">{attachment.title}</p>
+                          <p className="truncate text-[11px] text-slate-500">{attachment.fileName}</p>
+                        </div>
+                        <button
+                          type="button"
+                          disabled={downloadingMaterialId === attachment.materialId}
+                          onClick={() =>
+                            void handleDownloadAttachment(attachment.materialId, attachment.fileName)
+                          }
+                          className="shrink-0 rounded-lg bg-cyan-600 px-3 py-1.5 text-[11px] font-bold text-white disabled:opacity-60"
+                        >
+                          {downloadingMaterialId === attachment.materialId ? "Baixando…" : "Baixar"}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+=======
                 <ComunidadeDocentePostAttachments
                   attachments={discussion.attachments.map((attachment) => ({
                     id: attachment.id,
@@ -481,6 +567,7 @@ export function ComunidadeDocenteDiscussaoDetailClient({
                   }))}
                   className="mt-5"
                 />
+>>>>>>> origin/aplicar-melhorias-na-producao
               ) : null}
             </div>
           </div>

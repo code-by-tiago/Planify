@@ -97,12 +97,15 @@ const MATERIAL_STEPS: Partial<Record<PlanifyToolId, string[]>> = {
     "Preparando devolutiva personalizada...",
     "Finalizando nota e feedback...",
   ],
+<<<<<<< HEAD
+=======
   copiloto: [
     "Escolhendo o agente especializado...",
     "Formatando o material pedido...",
     "Criando enunciados e gabarito...",
     "Revisando qualidade pedagógica...",
   ],
+>>>>>>> origin/aplicar-melhorias-na-producao
 };
 
 const DEFAULT_MATERIAL_STEPS = [

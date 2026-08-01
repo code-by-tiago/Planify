@@ -2,8 +2,12 @@
 
 import { publishHtmlToMarketplace, extractComponenteFromPlanningPayload } from "@/lib/marketplace/marketplace-publish";
 import Link from "next/link";
+<<<<<<< HEAD
+import { useState } from "react";
+=======
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+>>>>>>> origin/aplicar-melhorias-na-producao
 
 export type MarketplacePublishButtonProps = {
   title: string;
@@ -43,6 +47,8 @@ export function MarketplacePublishButton({
   const [error, setError] = useState("");
   const [successId, setSuccessId] = useState<string | null>(null);
 
+<<<<<<< HEAD
+=======
   useEffect(() => {
     if (!open) return;
     function handleKey(event: KeyboardEvent) {
@@ -57,6 +63,7 @@ export function MarketplacePublishButton({
     };
   }, [open]);
 
+>>>>>>> origin/aplicar-melhorias-na-producao
   async function handlePublish() {
     setBusy(true);
     setError("");
@@ -124,6 +131,13 @@ export function MarketplacePublishButton({
         </span>
       ) : null}
 
+<<<<<<< HEAD
+      {open ? (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/50 p-4">
+          <div
+            role="dialog"
+            aria-labelledby="marketplace-publish-title"
+=======
       {open && typeof document !== "undefined"
         ? createPortal(
         <div
@@ -136,6 +150,7 @@ export function MarketplacePublishButton({
             aria-modal="true"
             aria-labelledby="marketplace-publish-title"
             onClick={(event) => event.stopPropagation()}
+>>>>>>> origin/aplicar-melhorias-na-producao
             className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-2xl"
           >
             <h3
@@ -202,10 +217,15 @@ export function MarketplacePublishButton({
               </button>
             </div>
           </div>
+<<<<<<< HEAD
+        </div>
+      ) : null}
+=======
         </div>,
             document.body,
           )
         : null}
+>>>>>>> origin/aplicar-melhorias-na-producao
     </>
   );
 }

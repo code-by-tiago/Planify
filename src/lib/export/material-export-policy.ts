@@ -54,7 +54,11 @@ export const MATERIAL_EXPORT_POLICIES: Record<MaterialEngineType, MaterialExport
         "google-drive",
         "google-classroom",
       ],
+<<<<<<< HEAD
+      driveFormat: "pdf",
+=======
       driveFormat: "docx",
+>>>>>>> origin/aplicar-melhorias-na-producao
       classroomFormat: "pdf",
       pdfProfile: "document",
       hint: ASSESSMENT_HINT,
@@ -66,7 +70,11 @@ export const MATERIAL_EXPORT_POLICIES: Record<MaterialEngineType, MaterialExport
         "google-drive",
         "google-classroom",
       ],
+<<<<<<< HEAD
+      driveFormat: "pdf",
+=======
       driveFormat: "docx",
+>>>>>>> origin/aplicar-melhorias-na-producao
       classroomFormat: "pdf",
       pdfProfile: "document",
       hint: ASSESSMENT_HINT,
@@ -201,9 +209,12 @@ const DEFAULT_TEXT_POLICY: MaterialExportPolicy = {
   hint: TEXT_DOC_HINT,
 };
 
+<<<<<<< HEAD
+=======
 /** Tipos dedicados fora do MaterialEngineType, mas com a mesma política textual. */
 const EXTENDED_TEXT_TOOL_IDS = new Set(["pei", "inclusao", "correcao-ia", "copiloto"]);
 
+>>>>>>> origin/aplicar-melhorias-na-producao
 /** Extrai o id da ferramenta de `material:cruzadinha`, `cruzadinha`, etc. */
 export function parseMaterialToolId(
   documentType?: string | null,
@@ -255,11 +266,14 @@ export function resolveMaterialExportPolicy(
     return MATERIAL_EXPORT_POLICIES[fromType];
   }
 
+<<<<<<< HEAD
+=======
   const rawId = type.startsWith("material:") ? type.slice("material:".length) : type;
   if (EXTENDED_TEXT_TOOL_IDS.has(rawId)) {
     return DEFAULT_TEXT_POLICY;
   }
 
+>>>>>>> origin/aplicar-melhorias-na-producao
   const fromHtml = html ? inferMaterialToolFromHtml(html) : null;
   if (fromHtml) {
     return MATERIAL_EXPORT_POLICIES[fromHtml];

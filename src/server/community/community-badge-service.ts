@@ -238,13 +238,18 @@ export async function awardEligibleBadges(userId: string): Promise<string[]> {
     if (!error) {
       newlyAwarded.push(badge.slug);
       earnedIds.add(badge.id);
+<<<<<<< HEAD
+=======
       await publishAchievementPost(userId, badge);
+>>>>>>> origin/aplicar-melhorias-na-producao
     }
   }
 
   return newlyAwarded;
 }
 
+<<<<<<< HEAD
+=======
 /** Publica automaticamente um post de conquista no feed quando o professor ganha um selo. */
 async function publishAchievementPost(userId: string, badge: BadgeRow): Promise<void> {
   const supabase = getSupabaseAdminClient();
@@ -283,6 +288,7 @@ async function publishAchievementPost(userId: string, badge: BadgeRow): Promise<
   }
 }
 
+>>>>>>> origin/aplicar-melhorias-na-producao
 export async function getBadgeProgressForUser(userId: string): Promise<BadgeProgress[]> {
   const supabase = getSupabaseAdminClient();
   const metrics = await getCommunityUserMetrics(userId);

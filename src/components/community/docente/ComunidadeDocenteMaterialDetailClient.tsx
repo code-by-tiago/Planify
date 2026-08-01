@@ -14,14 +14,23 @@ export function ComunidadeDocenteMaterialDetailClient({
 }) {
   const searchParams = useSearchParams();
   const embedded = isComunidadeEmbedded(searchParams, forceEmbedded);
+<<<<<<< HEAD
+  const homeHref = homeWithAba("materiais", embedded);
+=======
   const homeHref = homeWithAba("inicio", embedded);
+>>>>>>> origin/aplicar-melhorias-na-producao
 
   return (
     <ComunidadeDocenteDetailShell
       embedded={embedded}
       wide
+<<<<<<< HEAD
+      activeMenu="materiais"
+      breadcrumbs={[{ label: "Materiais", href: homeHref }]}
+=======
       activeMenu="inicio"
       breadcrumbs={[{ label: "Feed", href: homeHref }]}
+>>>>>>> origin/aplicar-melhorias-na-producao
       title="Material"
       subtitle="Visualize, baixe e interaja com o material."
     >

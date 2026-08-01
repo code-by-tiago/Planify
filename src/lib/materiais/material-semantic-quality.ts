@@ -12,9 +12,12 @@ const GENERIC_PHRASES = [
   /sobre o assunto estudado/i,
   /resposta pessoal/i,
   /a crit[eé]rio do professor/i,
+<<<<<<< HEAD
+=======
   /complete a tarefa orientada pelo professor/i,
   /fa[cç]a a atividade conforme orienta[cç][aã]o/i,
   /aqui est[aá] (o|a|seu|sua) (material|prova|lista|atividade)/i,
+>>>>>>> origin/aplicar-melhorias-na-producao
 ];
 
 const PREAMBLE_PHRASES = [

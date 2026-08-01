@@ -98,8 +98,11 @@ export type MaterialEngineInput = {
   modoGeracao?: MaterialGenerationMode;
   idempotencyKey?: string;
   idempotency_key?: string;
+<<<<<<< HEAD
+=======
   /** Origem da geração para auditoria (ex.: copiloto, materiais). */
   generationSource?: string;
+>>>>>>> origin/aplicar-melhorias-na-producao
   classId?: string | null;
   className?: string | null;
   turma?: string | null;

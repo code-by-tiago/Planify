@@ -1,3 +1,7 @@
+<<<<<<< HEAD
+import { appendPedagogicalGuardrails } from "@/lib/materiais/pedagogical-guardrails";
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
 import type { BnccSelectedSkillPayload } from "@/lib/bncc/bncc-suggestion-ui";
 import {
   getPeiCidOptions,
@@ -6,11 +10,15 @@ import {
   type PeiGenerationResult,
   type PeiTrimestre,
 } from "@/lib/pei/pei-options";
+<<<<<<< HEAD
+import { generateGeminiJSON } from "@/server/ai/gemini-client";
+=======
 import { runPlanifyAiJson } from "@/server/ai/planify-ai-middleware";
 import {
   PEI_RESPONSE_SCHEMA,
   PeiAiOutputZodSchema,
 } from "@/server/pei/pei-ai-schema";
+>>>>>>> origin/aplicar-melhorias-na-producao
 
 type PeiCurricularRow = {
   conteudo: string;
@@ -46,12 +54,20 @@ export type PeiEngineResult =
       estrutura: PeiStructuredOutput;
     });
 
+<<<<<<< HEAD
+const SYSTEM_INSTRUCTION = appendPedagogicalGuardrails(`Você é um especialista brasileiro em educação inclusiva, AEE e elaboração de Plano Educacional Individualizado (PEI).
+Produza conteúdo pedagógico, colaborativo e institucional para o professor regente e o professor do Atendimento Educacional Especializado.
+O CID ou perfil informado é referência fornecida pela escola/professor; não diagnostique, não prescreva tratamento e não substitua laudo ou avaliação multiprofissional.
+O PEI deve promover desenvolvimento integral, autonomia, acessibilidade curricular ou enriquecimento para Altas Habilidades/Superdotação.
+Retorne SOMENTE JSON válido, sem markdown, sem HTML, com linguagem profissional e objetiva.`);
+=======
 const SYSTEM_INSTRUCTION = `Você é um especialista brasileiro em educação inclusiva, AEE e elaboração de Plano Educacional Individualizado (PEI).
 Produza conteúdo pedagógico, colaborativo e institucional para o professor regente e o professor do Atendimento Educacional Especializado.
 O CID ou perfil informado é referência fornecida pela escola/professor; não diagnostique, não prescreva tratamento e não substitua laudo ou avaliação multiprofissional.
 O PEI deve promover desenvolvimento integral, autonomia, acessibilidade curricular ou enriquecimento para Altas Habilidades/Superdotação.
 Retorne SOMENTE JSON válido, sem markdown, sem HTML, com linguagem profissional e objetiva.
 PROIBIDO: saudações, "Aqui está o PEI", meta-comentários ou menções a IA.`;
+>>>>>>> origin/aplicar-melhorias-na-producao
 
 const PERIODS_BY_TRIMESTER: Record<PeiTrimestre, string[]> = {
   "1": ["Fevereiro", "Março", "Abril"],
@@ -359,6 +375,23 @@ function buildPrompt(payload: PeiGenerationRequest): string {
   ].join("\n");
 }
 
+<<<<<<< HEAD
+function normalizeAiOutput(
+  raw: PeiAiOutput,
+  fallback: PeiStructuredOutput,
+): PeiStructuredOutput {
+  const curricularRows = Array.isArray(raw.curricularRows)
+    ? raw.curricularRows
+        .map((row, index) => ({
+          conteudo:
+            cleanText(row?.conteudo, 220) ||
+            fallback.curricularRows[index % fallback.curricularRows.length]?.conteudo ||
+            "",
+          habilidade:
+            cleanText(row?.habilidade, 320) ||
+            fallback.curricularRows[index % fallback.curricularRows.length]?.habilidade ||
+            "",
+=======
 function resolveOfficialHabilidade(
   conteudo: string,
   aiHabilidade: string,
@@ -407,6 +440,7 @@ function normalizeAiOutput(
             selectedSkills,
             fallbackHabilidade,
           ),
+>>>>>>> origin/aplicar-melhorias-na-producao
           objetivo:
             cleanText(row?.objetivo, 500) ||
             fallback.curricularRows[index % fallback.curricularRows.length]?.objetivo ||
@@ -415,8 +449,12 @@ function normalizeAiOutput(
             cleanText(row?.adaptacao, 500) ||
             fallback.curricularRows[index % fallback.curricularRows.length]?.adaptacao ||
             "",
+<<<<<<< HEAD
+        }))
+=======
         };
         })
+>>>>>>> origin/aplicar-melhorias-na-producao
         .filter((row) => row.conteudo && row.habilidade)
     : [];
 
@@ -505,6 +543,21 @@ function renderPeiHtml(
   return `
 <article class="planify-doc planify-pei-doc">
   <style>
+<<<<<<< HEAD
+    .planify-pei-doc{color:#0f172a;font-family:Arial,Helvetica,sans-serif;line-height:1.55}
+    .planify-pei-doc h1{font-size:1.7rem;margin:0 0 .35rem;font-weight:800}
+    .planify-pei-doc h2{font-size:1.02rem;margin:1.35rem 0 .55rem;font-weight:800;color:#0f766e}
+    .planify-pei-doc h3{font-size:.92rem;margin:1rem 0 .45rem;font-weight:800}
+    .planify-pei-doc .pei-eyebrow{font-size:.72rem;text-transform:uppercase;letter-spacing:.12em;font-weight:800;color:#0891b2}
+    .planify-pei-doc .pei-note{border-left:4px solid #06b6d4;background:#ecfeff;padding:.85rem 1rem;border-radius:.5rem;margin:1rem 0}
+    .planify-pei-doc table{width:100%;border-collapse:collapse;margin:.65rem 0 1rem;font-size:.88rem}
+    .planify-pei-doc th,.planify-pei-doc td{border:1px solid #cbd5e1;padding:.55rem .65rem;vertical-align:top}
+    .planify-pei-doc th{background:#f0fdfa;text-align:left;font-weight:800}
+    .planify-pei-doc ul{margin:.35rem 0 .8rem;padding-left:1.15rem}
+    .planify-pei-doc li{margin:.22rem 0}
+    .planify-pei-doc .pei-signatures{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem;margin-top:1.5rem}
+    .planify-pei-doc .pei-signature{border-top:1px solid #94a3b8;padding-top:.4rem;text-align:center;font-size:.82rem}
+=======
     .planify-pei-doc,.planify-editor-page .planify-pei-doc{color:#0f172a;font-family:Arial,Helvetica,sans-serif;line-height:1.55}
     .planify-pei-doc h1,.planify-editor-page .planify-pei-doc h1{font-size:1.7rem;margin:0 0 .35rem;font-weight:800}
     .planify-pei-doc h2,.planify-editor-page .planify-pei-doc h2{font-size:1.02rem;margin:1.35rem 0 .55rem;font-weight:800;color:#0f766e}
@@ -518,6 +571,7 @@ function renderPeiHtml(
     .planify-pei-doc li,.planify-editor-page .planify-pei-doc li{margin:.22rem 0}
     .planify-pei-doc .pei-signatures,.planify-editor-page .planify-pei-doc .pei-signatures{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem;margin-top:1.5rem}
     .planify-pei-doc .pei-signature,.planify-editor-page .planify-pei-doc .pei-signature{border-top:1px solid #94a3b8;padding-top:.4rem;text-align:center;font-size:.82rem}
+>>>>>>> origin/aplicar-melhorias-na-producao
   </style>
 
   <header>
@@ -677,6 +731,17 @@ export async function generatePeiDocument(
   }
 
   try {
+<<<<<<< HEAD
+    const generated = await generateGeminiJSON<PeiAiOutput>({
+      systemInstruction: SYSTEM_INSTRUCTION,
+      prompt: buildPrompt(normalized),
+      tier: "advanced",
+      temperature: 0.35,
+      maxOutputTokens: 8192,
+    });
+
+    const output = normalizeAiOutput(generated, fallback);
+=======
     const aiResult = await runPlanifyAiJson({
       toolId: "pei",
       systemInstruction: SYSTEM_INSTRUCTION,
@@ -694,6 +759,7 @@ export async function generatePeiDocument(
     }
 
     const output = normalizeAiOutput(aiResult.data as PeiAiOutput, fallback, normalized);
+>>>>>>> origin/aplicar-melhorias-na-producao
     const html = renderPeiHtml(normalized, output);
 
     return {

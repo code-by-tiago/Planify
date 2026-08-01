@@ -1,20 +1,33 @@
 "use client";
 
+<<<<<<< HEAD
+import type { ReactNode } from "react";
+=======
 import { useEffect, useState, type ReactNode } from "react";
+>>>>>>> origin/aplicar-melhorias-na-producao
 
 type MaterialToolMobileSubmitBarProps = {
   children: ReactNode;
   className?: string;
 };
 
+<<<<<<< HEAD
+/** Fixed bottom action bar for mobile generator forms (safe-area aware). */
+=======
 /**
  * Fixed bottom action bar for mobile generator forms.
  * Keyboard-safe via visualViewport + safe-area inset.
  */
+>>>>>>> origin/aplicar-melhorias-na-producao
 export function MaterialToolMobileSubmitBar({
   children,
   className = "",
 }: MaterialToolMobileSubmitBarProps) {
+<<<<<<< HEAD
+  return (
+    <div
+      className={`fixed inset-x-0 bottom-0 z-20 border-t border-cyan-400/20 bg-white/95 px-4 py-3 backdrop-blur lg:hidden pb-[env(safe-area-inset-bottom)] ${className}`}
+=======
   const [keyboardOffset, setKeyboardOffset] = useState(0);
 
   useEffect(() => {
@@ -48,6 +61,7 @@ export function MaterialToolMobileSubmitBar({
           keyboardOffset > 0 ? `translateY(-${keyboardOffset}px)` : undefined,
       }}
       data-planify-mobile-cta="true"
+>>>>>>> origin/aplicar-melhorias-na-producao
     >
       <div className="mx-auto flex max-w-lg items-center gap-3">{children}</div>
     </div>

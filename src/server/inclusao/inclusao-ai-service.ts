@@ -6,7 +6,11 @@ import type {
   InclusaoNeedId,
 } from "@/lib/inclusao/inclusao-config";
 import { markdownToHtml } from "@/lib/inclusao/markdown-to-html";
+<<<<<<< HEAD
+import { generateGeminiText } from "../ai/gemini-client";
+=======
 import { runPlanifyAiText } from "../ai/planify-ai-middleware";
+>>>>>>> origin/aplicar-melhorias-na-producao
 import {
   buildInclusaoPrompt,
   INCLUSAO_SYSTEM_INSTRUCTION,
@@ -90,8 +94,12 @@ export async function generateInclusaoWithAI(
   const tier = getModelTierForMaterialType(INCLUSAO_GENERATION_TYPE);
 
   try {
+<<<<<<< HEAD
+    const markdown = await generateGeminiText({
+=======
     const aiResult = await runPlanifyAiText({
       toolId: "inclusao",
+>>>>>>> origin/aplicar-melhorias-na-producao
       systemInstruction: INCLUSAO_SYSTEM_INSTRUCTION,
       prompt,
       tier,
@@ -99,18 +107,32 @@ export async function generateInclusaoWithAI(
       maxOutputTokens: 8192,
     });
 
+<<<<<<< HEAD
+    const trimmed = markdown.trim();
+    if (!trimmed) {
+      return {
+        ok: false,
+        status: 502,
+        message: "A IA não retornou conteúdo. Tente novamente.",
+=======
     if (!aiResult.ok) {
       return {
         ok: false,
         status: 502,
         message: aiResult.message,
+>>>>>>> origin/aplicar-melhorias-na-producao
       };
     }
 
     return {
       ok: true,
+<<<<<<< HEAD
+      markdown: trimmed,
+      html: markdownToHtml(trimmed),
+=======
       markdown: aiResult.text,
       html: markdownToHtml(aiResult.text),
+>>>>>>> origin/aplicar-melhorias-na-producao
       usedAI: true,
     };
   } catch (error) {

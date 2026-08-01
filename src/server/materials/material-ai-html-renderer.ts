@@ -25,11 +25,23 @@ function asList(items: string[], ordered = false): string {
 function renderSections(output: MaterialAIOutput): string {
   return output.secoes
     .map((section) => {
+<<<<<<< HEAD
+      const visual =
+        section.visualHtml && section.visualHtml.trim()
+          ? `<div class="planify-section-visual">${section.visualHtml}</div>`
+          : "";
+
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
       return `
         <section class="planify-doc-section">
           <h2>${escapeHtml(section.titulo)}</h2>
           ${section.conteudo ? `<p>${escapeHtml(section.conteudo)}</p>` : ""}
           ${asList(section.itens)}
+<<<<<<< HEAD
+          ${visual}
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
         </section>
       `;
     })
@@ -185,6 +197,11 @@ export function renderMaterialAIOutputToHtml(
   request: MaterialEngineRequest,
 ): string {
   const incluirGabarito = request.incluirGabarito;
+<<<<<<< HEAD
+  const visualBlock = [output.printHtml, output.visualHtml]
+    .find((value) => typeof value === "string" && value.trim());
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
 
   const blocks = [
     output.introducao
@@ -202,7 +219,11 @@ export function renderMaterialAIOutputToHtml(
     .filter(Boolean)
     .join("");
 
+<<<<<<< HEAD
+  const doc = wrapProfessionalDocument(
+=======
   return wrapProfessionalDocument(
+>>>>>>> origin/aplicar-melhorias-na-producao
     {
       title: output.titulo,
       subtitle: output.subtitulo,
@@ -213,4 +234,13 @@ export function renderMaterialAIOutputToHtml(
     },
     blocks,
   );
+<<<<<<< HEAD
+
+  if (visualBlock) {
+    return `${doc}<div class="planify-visual-bundle">${visualBlock}</div>`;
+  }
+
+  return doc;
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
 }

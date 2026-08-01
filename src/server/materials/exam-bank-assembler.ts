@@ -1,9 +1,13 @@
 import { scoreQuestionBankMatch } from "@/lib/banco-questoes/question-bank-match";
 import { normalizeQuestionOptions, trimTeachyStatement } from "@/lib/materiais/material-document-layout";
 import { computeQualityScore } from "@/lib/materiais/material-quality-score";
+<<<<<<< HEAD
+import type { QuestionBankItem } from "@/types/question-bank";
+=======
 import { PEDAGOGICAL_FORBIDDEN_PHRASES } from "@/lib/materiais/pedagogical-guardrails";
 import type { QuestionBankItem } from "@/types/question-bank";
 import { withPlanifyPedagogicalDna } from "../ai/prompts/planify-pedagogical-dna";
+>>>>>>> origin/aplicar-melhorias-na-producao
 import { generateGeminiJSON } from "../ai/gemini-client";
 import {
   getQuestionsByIds,
@@ -280,9 +284,14 @@ async function generateMissingQuestions(
   ].join("\n");
 
   const generated = await generateGeminiJSON<{ questions: ExamQuestion[] }>({
+<<<<<<< HEAD
+    systemInstruction:
+      "Você gera questões escolares em JSON. Responda apenas com o schema solicitado.",
+=======
     systemInstruction: withPlanifyPedagogicalDna(
       `Você gera questões escolares em JSON. Responda apenas com o schema solicitado.\n${PEDAGOGICAL_FORBIDDEN_PHRASES}`,
     ),
+>>>>>>> origin/aplicar-melhorias-na-producao
     prompt,
     cacheProfile: `material-engine:${request.tipoMaterial}`,
     tier: "default",

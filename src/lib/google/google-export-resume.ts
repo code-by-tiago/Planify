@@ -274,6 +274,9 @@ export async function waitForFormsExportReady<T extends {
 }
 
 export function openGoogleExportUrl(url: string): boolean {
+<<<<<<< HEAD
+  const opened = window.open(url, "_blank", "noopener,noreferrer");
+=======
   // window.open com "noopener" nas features retorna sempre null (spec HTML),
   // o que fazia o caller acreditar que o pop-up foi bloqueado e disparar o
   // fallback de navegar a aba atual — abrindo o documento em 2 abas.
@@ -288,5 +291,6 @@ export function openGoogleExportUrl(url: string): boolean {
     }
   }
 
+>>>>>>> origin/aplicar-melhorias-na-producao
   return opened !== null;
 }

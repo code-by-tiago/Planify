@@ -31,6 +31,9 @@ async function handlePost(
 
   if (!prepared.ok) return prepared.response;
 
+<<<<<<< HEAD
+  const { user, payload, tipo, charge } = prepared;
+=======
   const { user, payload: rawPayload, tipo, charge } = prepared;
   const { assertHabilidadesSelecionadasAgainstDb, filterHabilidadesSelecionadasAgainstDb } =
     await import("@/server/bncc/validate-bncc-codes-against-db");
@@ -52,6 +55,7 @@ async function handlePost(
     return jsonGenerationValidationError(bnccDbError);
   }
 
+>>>>>>> origin/aplicar-melhorias-na-producao
   const normalizedRequest = normalizeMaterialEngineRequest(payload);
   const validationErrors = validateMaterialEngineRequest(normalizedRequest);
 

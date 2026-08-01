@@ -1,6 +1,16 @@
 "use client";
 
 import { GoogleDocumentExportBar } from "@/components/google/GoogleDocumentExportBar";
+<<<<<<< HEAD
+import {
+  buildPlanningEditorHtml,
+  type GeneratedPlanningHtml,
+} from "@/lib/planejamentos/planning-editor-html";
+import { buildOfficialPlanningPayloadFromGeneration } from "@/lib/planejamentos/planning-google-export-payload";
+import { trimestralCargaHorariaLabel } from "@/lib/planejamentos/planning-trimestral-from-annual";
+import { passesExportQualityGate } from "@/lib/materiais/unified-quality-gate";
+import { useCallback, useMemo } from "react";
+=======
 import type { GeneratedPlanningHtml } from "@/lib/planejamentos/planning-editor-html";
 import {
   normalizeOfficialPayloadInput,
@@ -10,6 +20,7 @@ import { buildOfficialPlanningPayloadFromGeneration } from "@/lib/planejamentos/
 import { trimestralCargaHorariaLabel } from "@/lib/planejamentos/planning-trimestral-from-annual";
 import { passesExportQualityGate } from "@/lib/materiais/unified-quality-gate";
 import { useCallback, useEffect, useMemo, useState } from "react";
+>>>>>>> origin/aplicar-melhorias-na-producao
 
 type PlanningFormSlice = {
   escola: string;
@@ -33,8 +44,11 @@ type PlanningOfficialExportBarProps = {
   qualityIssues?: string[];
   onStatus?: (message: string) => void;
   returnTo?: string;
+<<<<<<< HEAD
+=======
   /** HTML oficial já resolvido (evita re-fetch). */
   officialHtml?: string | null;
+>>>>>>> origin/aplicar-melhorias-na-producao
 };
 
 export function PlanningOfficialExportBar({
@@ -47,6 +61,9 @@ export function PlanningOfficialExportBar({
   qualityIssues = [],
   onStatus,
   returnTo = "/dashboard?secao=planejamentos",
+<<<<<<< HEAD
+}: PlanningOfficialExportBarProps) {
+=======
   officialHtml = null,
 }: PlanningOfficialExportBarProps) {
   const [cachedOfficialHtml, setCachedOfficialHtml] = useState(
@@ -55,6 +72,7 @@ export function PlanningOfficialExportBar({
       : "",
   );
 
+>>>>>>> origin/aplicar-melhorias-na-producao
   const exportBlocked = useMemo(
     () => !passesExportQualityGate(qualityScore, qualityIssues),
     [qualityScore, qualityIssues],
@@ -62,6 +80,23 @@ export function PlanningOfficialExportBar({
   const exportBlockedTitle = exportBlocked
     ? "A matriz não atingiu o padrão mínimo Planify (88/100). Use Elevar qualidade antes de exportar."
     : undefined;
+<<<<<<< HEAD
+  const editorForm =
+    mode === "trimestral" && trimestre
+      ? {
+          ...form,
+          tipoPlanejamento: "trimestral" as const,
+          trimestre: String(trimestre),
+          cargaHoraria: trimestralCargaHorariaLabel(matriz.conteudos),
+        }
+      : { ...form, tipoPlanejamento: "anual" as const };
+
+  const getHtml = useCallback(
+    () => buildPlanningEditorHtml(editorForm, matriz),
+    [editorForm, matriz],
+  );
+
+=======
 
   const editorForm = useMemo(
     () =>
@@ -143,6 +178,7 @@ export function PlanningOfficialExportBar({
 
   const getHtml = useCallback(() => cachedOfficialHtml, [cachedOfficialHtml]);
 
+>>>>>>> origin/aplicar-melhorias-na-producao
   const getPlanningPayload = useCallback(
     () =>
       buildOfficialPlanningPayloadFromGeneration({
@@ -176,6 +212,10 @@ export function PlanningOfficialExportBar({
       documentType={`planejamento:${mode}`}
       returnTo={returnTo}
       onStatus={onStatus}
+<<<<<<< HEAD
+      disabled={exportBlocked}
+      disabledTitle={exportBlockedTitle}
+=======
       disabled={exportBlocked || !cachedOfficialHtml}
       disabledTitle={
         exportBlocked
@@ -184,6 +224,7 @@ export function PlanningOfficialExportBar({
             ? "Carregando modelo oficial…"
             : undefined
       }
+>>>>>>> origin/aplicar-melhorias-na-producao
       compact
       classroomMode="popover"
     />

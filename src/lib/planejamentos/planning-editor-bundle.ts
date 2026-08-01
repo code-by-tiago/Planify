@@ -109,6 +109,8 @@ function toBundleTab(
   const tipoFromType = doc.type.includes("trimestral") ? "trimestral" : "anual";
   const trimestreFromId = doc.id.match(/_trim([123])\b/i)?.[1];
 
+<<<<<<< HEAD
+=======
   if (
     process.env.NODE_ENV !== "production" &&
     !content.includes('data-planify-html-source="official-docx"')
@@ -129,6 +131,7 @@ function toBundleTab(
     );
   }
 
+>>>>>>> origin/aplicar-melhorias-na-producao
   return {
     id: doc.id,
     label: doc.label,

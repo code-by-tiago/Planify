@@ -17,6 +17,10 @@ const VALID_TARGETS: CommunityReportTarget[] = [
   "material",
   "comment",
   "user",
+<<<<<<< HEAD
+  "group_message",
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
   "post",
   "post_comment",
 ];

@@ -9,12 +9,25 @@ import {
 type DocumentDownloadIconBarProps = {
   onDownloadPdf?: () => void;
   downloadingPdf?: boolean;
+<<<<<<< HEAD
+=======
   onDownloadDocx?: () => void;
   downloadingDocx?: boolean;
+>>>>>>> origin/aplicar-melhorias-na-producao
   disabled?: boolean;
   className?: string;
 };
 
+<<<<<<< HEAD
+/** Download local em PDF — ícone na barra de exportação ao lado do Google. */
+export function DocumentDownloadIconBar({
+  onDownloadPdf,
+  downloadingPdf = false,
+  disabled = false,
+  className = "",
+}: DocumentDownloadIconBarProps) {
+  if (!onDownloadPdf) {
+=======
 function DocxProductIcon({ className = "h-5 w-5" }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" className={className} aria-hidden>
@@ -39,11 +52,24 @@ export function DocumentDownloadIconBar({
   className = "",
 }: DocumentDownloadIconBarProps) {
   if (!onDownloadPdf && !onDownloadDocx) {
+>>>>>>> origin/aplicar-melhorias-na-producao
     return null;
   }
 
   return (
     <div className={`flex items-center gap-1 ${className}`}>
+<<<<<<< HEAD
+      <button
+        type="button"
+        disabled={disabled || downloadingPdf}
+        onClick={onDownloadPdf}
+        className={GOOGLE_ICON_ONLY_BUTTON_CLASS}
+        aria-label={downloadingPdf ? "Gerando PDF…" : "Baixar PDF"}
+        title={downloadingPdf ? "Gerando PDF…" : "Baixar PDF"}
+      >
+        <PdfProductIcon className={GOOGLE_PRODUCT_ICON_CLASS} />
+      </button>
+=======
       {onDownloadDocx ? (
         <button
           type="button"
@@ -68,6 +94,7 @@ export function DocumentDownloadIconBar({
           <PdfProductIcon className={GOOGLE_PRODUCT_ICON_CLASS} />
         </button>
       ) : null}
+>>>>>>> origin/aplicar-melhorias-na-producao
     </div>
   );
 }

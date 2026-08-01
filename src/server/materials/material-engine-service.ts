@@ -14,12 +14,19 @@ import {
   wrapProfessionalDocument,
 } from "@/lib/materiais/material-document-layout";
 import {
+<<<<<<< HEAD
+  generateGeminiJSON,
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
   isGeminiQuotaError,
   isGeminiServiceUnavailableError,
   isGeminiTransientOverloadError,
   resolveGeminiFailureCode,
 } from "../ai/gemini-client";
+<<<<<<< HEAD
+=======
 import { runPlanifyAiJson } from "../ai/planify-ai-middleware";
+>>>>>>> origin/aplicar-melhorias-na-producao
 import {
   usesDedicatedEngineRenderer,
   usesPlanifyMaterialEngine,
@@ -30,7 +37,10 @@ import {
   toPromptEngineInput,
 } from "./material-layout-adapter";
 import { getMaterialLayoutSchema } from "./material-layout-schema";
+<<<<<<< HEAD
+=======
 import { MaterialLayoutZodSchema } from "./material-layout.zod";
+>>>>>>> origin/aplicar-melhorias-na-producao
 import { buildPromptEngine } from "./promptEngine";
 import {
   buildQualityRetryPrompt,
@@ -1121,6 +1131,50 @@ function enrichLessonPlanSteps(
   });
 }
 
+<<<<<<< HEAD
+function enrichActivitiesForQuality(
+  activities: MaterialEngineResponse["activities"],
+): MaterialEngineResponse["activities"] {
+  return activities.map((activity) => {
+    const objective = String(activity.objective || "").trim();
+    const instructions = String(activity.instructions || "").trim();
+    const evaluation = String(activity.evaluation || "").trim();
+    let estimatedTime = String(activity.estimatedTime || "").trim();
+    if (!estimatedTime) {
+      estimatedTime = "Tempo: 30 minutos";
+    }
+    const materials = activity.materials?.length
+      ? activity.materials
+      : ["Caderno de registro", "Material impresso da atividade"];
+    let items = activity.items?.length ? [...activity.items] : [];
+    const letters = ["a", "b", "c", "d", "e"];
+    for (const letter of letters) {
+      if (items.some((item) => new RegExp(`^\\s*${letter}\\)`, "i").test(item))) {
+        continue;
+      }
+      items.push(
+        `${letter}) Complete a tarefa orientada pelo professor, registrando raciocínio e resposta no caderno.`,
+      );
+    }
+
+    return {
+      ...activity,
+      objective:
+        objective.length >= 35
+          ? objective
+          : `${objective || "Aplicar o conteúdo"} em contexto escolar, com registro individual e participação ativa.`,
+      estimatedTime,
+      materials: materials.length >= 2 ? materials : [...materials, "Lápis e borracha"],
+      instructions:
+        instructions.length >= 80
+          ? instructions
+          : `${instructions || "Organize a turma em duplas."} Oriente leitura do comando, circulação para mediação, registro individual das respostas e socialização final com critérios de participação.`,
+      items: items.slice(0, Math.max(items.length, 5)),
+      evaluation:
+        evaluation.length >= 45
+          ? evaluation
+          : `${evaluation || "Participação"} Observar registro das respostas, clareza do raciocínio e colaboração nas duplas.`,
+=======
 /**
  * Normaliza atividades sem inventar conteúdo genérico.
  * Itens/objetivo fracos devem falhar no quality gate e disparar retry —
@@ -1149,6 +1203,7 @@ function enrichActivitiesForQuality(
       instructions,
       items,
       evaluation,
+>>>>>>> origin/aplicar-melhorias-na-producao
     };
   });
 }
@@ -1359,27 +1414,43 @@ export async function generateMaterialByEngine(
         request,
         remainingForGeneration,
       );
+<<<<<<< HEAD
+      const generateLayout = generateGeminiJSON<MaterialLayout>({
+        systemInstruction,
+        prompt: activePrompt,
+        cacheProfile: `material-engine:${request.tipoMaterial}`,
+=======
       const generateLayout = runPlanifyAiJson({
         toolId: request.tipoMaterial,
         systemInstruction,
         prompt: activePrompt,
         cacheProfile: `material-engine:${request.tipoMaterial}` as const,
+>>>>>>> origin/aplicar-melhorias-na-producao
         tier: modelTier,
         temperature: modelTier === "advanced" ? 0.22 : 0.32,
         topP: modelTier === "advanced" ? 0.82 : 0.86,
         maxOutputTokens,
         responseSchema: schema,
+<<<<<<< HEAD
+        timeoutMs: contentTimeoutMs,
+        maxAttempts: geminiCallMaxAttempts(request.tipoMaterial),
+      });
+      const layoutRaw = await withMaterialStepTimeout(
+=======
         zodSchema: MaterialLayoutZodSchema,
         timeoutMs: contentTimeoutMs,
         maxAttempts: geminiCallMaxAttempts(request.tipoMaterial),
         schemaRetryAttempts: 1,
       });
       const layoutResult = await withMaterialStepTimeout(
+>>>>>>> origin/aplicar-melhorias-na-producao
         generateLayout,
         contentTimeoutMs,
         `A geração de ${request.tipoMaterial}`,
       );
 
+<<<<<<< HEAD
+=======
       if (!layoutResult.ok) {
         if (attempt < maxAttempts - 1 && !isPastGenerationDeadline()) {
           activePrompt = `${basePrompt}\n\n${buildQualityRetryPrompt(
@@ -1397,6 +1468,7 @@ export async function generateMaterialByEngine(
 
       const layoutRaw = layoutResult.data as MaterialLayout;
 
+>>>>>>> origin/aplicar-melhorias-na-producao
       options?.onStage?.(buildStageEvent("quality", "Revisando qualidade pedagógica…"));
 
       const layoutIssues = validateMaterialLayout(promptInput, layoutRaw);

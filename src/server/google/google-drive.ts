@@ -154,14 +154,27 @@ export async function uploadPptxAsGooglePresentation(params: {
 
 const DOCX_MIME =
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+<<<<<<< HEAD
+
+/** Envia DOCX e converte para Google Docs nativo. */
+=======
 const DOC_MIME = "application/msword";
 const GOOGLE_DOCUMENT_MIME = "application/vnd.google-apps.document";
 
 /** Envia DOCX/DOC e converte para Google Docs nativo (arquivo original). */
+>>>>>>> origin/aplicar-melhorias-na-producao
 export async function uploadDocxAsGoogleDocument(params: {
   accessToken: string;
   filename: string;
   buffer: Buffer;
+<<<<<<< HEAD
+}): Promise<DriveUploadResult> {
+  const { driveFolderId } = requireGoogleConfig();
+  const baseName = params.filename.replace(/\.docx$/i, "");
+  const metadata: Record<string, unknown> = {
+    name: baseName,
+    mimeType: "application/vnd.google-apps.document",
+=======
   sourceMimeType?: string | null;
 }): Promise<DriveUploadResult> {
   const { driveFolderId } = requireGoogleConfig();
@@ -175,6 +188,7 @@ export async function uploadDocxAsGoogleDocument(params: {
   const metadata: Record<string, unknown> = {
     name: baseName,
     mimeType: GOOGLE_DOCUMENT_MIME,
+>>>>>>> origin/aplicar-melhorias-na-producao
   };
 
   if (driveFolderId) {
@@ -186,7 +200,11 @@ export async function uploadDocxAsGoogleDocument(params: {
     Buffer.from(
       `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(metadata)}\r\n`,
     ),
+<<<<<<< HEAD
+    Buffer.from(`--${boundary}\r\nContent-Type: ${DOCX_MIME}\r\n\r\n`),
+=======
     Buffer.from(`--${boundary}\r\nContent-Type: ${sourceMime}\r\n\r\n`),
+>>>>>>> origin/aplicar-melhorias-na-producao
     params.buffer,
     Buffer.from(`\r\n--${boundary}--`),
   ]);
@@ -226,6 +244,8 @@ export async function uploadDocxAsGoogleDocument(params: {
     webViewLink: data.webViewLink || documentUrl,
   };
 }
+<<<<<<< HEAD
+=======
 
 export type DriveDownloadedFile = {
   buffer: Buffer;
@@ -325,3 +345,4 @@ export async function downloadDriveFile(params: {
     mimeType,
   };
 }
+>>>>>>> origin/aplicar-melhorias-na-producao

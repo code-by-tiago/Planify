@@ -1,12 +1,19 @@
 "use client";
 
+<<<<<<< HEAD
+import { useState } from "react";
+import { MateriaisClient } from "@/app/materiais/MateriaisClient";
+=======
 import dynamic from "next/dynamic";
 import { useState } from "react";
+>>>>>>> origin/aplicar-melhorias-na-producao
 import { PlanifyWorkspaceProvider } from "@/components/pro/planify-workspace-context";
 import type { PlanifyToolId } from "@/lib/pro/planifyTools";
 
 const TEMA_KEY = "planify-studio-tema";
 
+<<<<<<< HEAD
+=======
 const MateriaisClient = dynamic(
   () =>
     import("@/app/materiais/MateriaisClient").then((m) => m.MateriaisClient),
@@ -23,6 +30,7 @@ const MateriaisClient = dynamic(
   },
 );
 
+>>>>>>> origin/aplicar-melhorias-na-producao
 type TeachyMateriaisStudioProps = {
   toolId: PlanifyToolId;
   temaFromUrl?: string;

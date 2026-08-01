@@ -1,5 +1,10 @@
 /** Guardrails compartilhados — motor unificado, inclusão e correção IA. */
 
+<<<<<<< HEAD
+export const PEDAGOGICAL_ZERO_CHITCHAT = `
+ZERO conversas, saudações, justificativas ou meta-comentários.
+PROIBIDO: "Aqui está seu material", "Segue a prova", "Claro!", "Com certeza", "Espero que ajude", menções a IA, prompts ou modelos.
+=======
 export const PEDAGOGICAL_FORBIDDEN_PHRASES = `
 PROIBIDO: "Aqui está seu material", "Segue a prova", "Claro!", "Com certeza", "Espero que ajude", menções a IA, prompts ou modelos.
 `.trim();
@@ -7,6 +12,7 @@ PROIBIDO: "Aqui está seu material", "Segue a prova", "Claro!", "Com certeza", "
 export const PEDAGOGICAL_ZERO_CHITCHAT = `
 ZERO conversas, saudações, justificativas ou meta-comentários.
 ${PEDAGOGICAL_FORBIDDEN_PHRASES}
+>>>>>>> origin/aplicar-melhorias-na-producao
 `.trim();
 
 export const PEDAGOGICAL_BNCC_ANTI_HALLUCINATION = `

@@ -22,7 +22,10 @@ export type MaterialGenerationApiResult = {
 
 export async function requestMaterialGeneration(
   payload: MaterialEngineInput,
+<<<<<<< HEAD
+=======
   options?: { signal?: AbortSignal },
+>>>>>>> origin/aplicar-melhorias-na-producao
 ): Promise<MaterialGenerationApiResult> {
   let response: Response;
   try {
@@ -31,6 +34,11 @@ export async function requestMaterialGeneration(
       credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
+<<<<<<< HEAD
+      signal: AbortSignal.timeout(GENERATION_CLIENT_TIMEOUT_MS),
+    });
+  } catch (error) {
+=======
       signal: options?.signal ?? AbortSignal.timeout(GENERATION_CLIENT_TIMEOUT_MS),
     });
   } catch (error) {
@@ -43,6 +51,7 @@ export async function requestMaterialGeneration(
       aborted.status = 499;
       throw aborted;
     }
+>>>>>>> origin/aplicar-melhorias-na-producao
     if (isFetchTimeoutError(error)) {
       throw createGenerationTimeoutError("material");
     }

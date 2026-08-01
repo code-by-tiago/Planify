@@ -3,9 +3,13 @@
 import { CommunityAuthorAvatar } from "@/components/community/CommunityAuthorAvatar";
 import { CommunityAuthorLink } from "@/components/community/CommunityAuthorLink";
 import { CommunityMaterialPreview } from "@/components/community/CommunityMaterialPreview";
+<<<<<<< HEAD
+import { GoogleDocumentExportBar } from "@/components/google/GoogleDocumentExportBar";
+=======
 import { DocumentDownloadIconBar } from "@/components/documents/DocumentDownloadIconBar";
 import { GoogleDocumentExportBar } from "@/components/google/GoogleDocumentExportBar";
 import { OpenMaterialInGoogleDocsButton } from "@/components/google/OpenMaterialInGoogleDocsButton";
+>>>>>>> origin/aplicar-melhorias-na-producao
 import { materialExportAllows } from "@/lib/export/material-export-policy";
 import { MaterialLikeButton } from "@/components/community/MaterialLikeButton";
 import { MarketplaceComments } from "@/components/marketplace/MarketplaceComments";
@@ -24,7 +28,10 @@ import {
   type MarketplaceDownloadFormat,
 } from "@/lib/marketplace/marketplace-download-client";
 import { openMarketplaceMaterialInEditor } from "@/lib/marketplace/marketplace-editor-open";
+<<<<<<< HEAD
+=======
 import { cloneAndOpenInEditor } from "@/lib/marketplace/marketplace-clone-client";
+>>>>>>> origin/aplicar-melhorias-na-producao
 import type { MarketplacePreviewKind } from "@/server/marketplace/marketplace-preview";
 import { comunidadeRoutes } from "@/lib/community/docente-utils";
 import Link from "next/link";
@@ -207,6 +214,12 @@ export function MarketplaceMaterialViewClient({
     setError("");
 
     try {
+<<<<<<< HEAD
+      await openMarketplaceMaterialInEditor(material);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Não foi possível abrir no editor.");
+      setOpeningEditor(false);
+=======
       await cloneAndOpenInEditor(material.id);
     } catch (cloneErr) {
       try {
@@ -221,6 +234,7 @@ export function MarketplaceMaterialViewClient({
         );
         setOpeningEditor(false);
       }
+>>>>>>> origin/aplicar-melhorias-na-producao
     }
   }
 
@@ -250,6 +264,9 @@ export function MarketplaceMaterialViewClient({
     data?.viewerUserId && material && data.viewerUserId === material.userId,
   );
   const exportHtml = preview?.htmlContent || "";
+<<<<<<< HEAD
+  const canGoogleExport = preview?.kind === "html" && exportHtml.trim().length >= 20;
+=======
   const isDocxMaterial = preview?.kind === "docx";
   const isPdfMaterial = preview?.kind === "pdf";
   const hasExportHtml =
@@ -260,6 +277,7 @@ export function MarketplaceMaterialViewClient({
   // DOCX/DOC: download + Abrir no Google Docs (arquivo original).
   const canGoogleExport =
     hasExportHtml && preview?.kind === "html" && !isDocxMaterial && !isPdfMaterial;
+>>>>>>> origin/aplicar-melhorias-na-producao
   const documentType = material
     ? resolveDocumentTypeFromMarketplaceItem({
         tipoMaterial: material.tipoMaterial,
@@ -279,6 +297,10 @@ export function MarketplaceMaterialViewClient({
     !canGoogleExport || (isPlanningMaterial && !planningPayloadReady);
   const googleDisabledTitle = isPlanningMaterial && !planningPayloadReady
     ? "Planejamento publicado sem matriz oficial. Abra no editor e republica na Comunidade para exportar com o modelo oficial."
+<<<<<<< HEAD
+    : "Exportação Google indisponível para este formato.";
+  const canOpenEditor = preview?.kind === "html" || preview?.kind === "docx";
+=======
     : isPdfMaterial
       ? "PDF: use Baixar PDF."
       : isDocxMaterial
@@ -295,6 +317,7 @@ export function MarketplaceMaterialViewClient({
       materialExportAllows("pdf-download", documentType, exportHtml) ||
       isPdfMaterial);
   const canDownloadDocx = Boolean(preview) && isDocxMaterial;
+>>>>>>> origin/aplicar-melhorias-na-producao
 
   const openEditorButton = canOpenEditor ? (
     <button
@@ -304,6 +327,34 @@ export function MarketplaceMaterialViewClient({
       className="pl-hud-btn inline-flex w-full items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold disabled:opacity-60"
     >
       <PlanifyIcon name="editor" className="h-3.5 w-3.5" />
+<<<<<<< HEAD
+      {openingEditor ? "Abrindo…" : "Abrir no editor"}
+    </button>
+  ) : null;
+
+  const exportBar = material && preview ? (
+    <GoogleDocumentExportBar
+      title={material.title}
+      getHtml={() => exportHtml}
+      getPlanningPayload={
+        documentType?.includes("planejamento") ? getPlanningPayload : undefined
+      }
+      documentType={documentType}
+      returnTo={`/marketplace/material/${material.id}`}
+      compact
+      classroomMode="popover"
+      disabled={googleExportDisabled}
+      disabledTitle={googleDisabledTitle}
+      onDownloadPdf={
+        materialExportAllows("pdf-download", documentType, exportHtml) ||
+        preview.downloadFormats.includes("pdf")
+          ? () => void handleDownload("pdf")
+          : undefined
+      }
+      downloadingPdf={downloadingKey === `${material.id}:pdf`}
+    />
+  ) : null;
+=======
       {openingEditor ? "Clonando…" : "Clonar e Editar"}
     </button>
   ) : null;
@@ -352,6 +403,7 @@ export function MarketplaceMaterialViewClient({
         downloadingDocx={downloadingKey === `${material.id}:docx`}
       />
     ) : null;
+>>>>>>> origin/aplicar-melhorias-na-producao
 
   const moderationActions = material ? (
     !isOwnMaterial ? (

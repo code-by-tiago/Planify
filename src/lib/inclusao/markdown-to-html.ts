@@ -20,8 +20,11 @@ export function markdownToHtml(markdown: string): string {
   const lines = markdown.replace(/\r\n/g, "\n").split("\n");
   const parts: string[] = [];
   let inList = false;
+<<<<<<< HEAD
+=======
   let inCodeFence = false;
   const codeLines: string[] = [];
+>>>>>>> origin/aplicar-melhorias-na-producao
 
   function closeList() {
     if (inList) {
@@ -30,6 +33,10 @@ export function markdownToHtml(markdown: string): string {
     }
   }
 
+<<<<<<< HEAD
+  for (const rawLine of lines) {
+    const line = rawLine.trimEnd();
+=======
   function flushCodeFence() {
     if (!inCodeFence) return;
     parts.push(`<pre><code>${escapeHtml(codeLines.join("\n"))}</code></pre>`);
@@ -55,6 +62,7 @@ export function markdownToHtml(markdown: string): string {
       codeLines.push(rawLine);
       continue;
     }
+>>>>>>> origin/aplicar-melhorias-na-producao
 
     if (!line.trim()) {
       closeList();
@@ -92,6 +100,9 @@ export function markdownToHtml(markdown: string): string {
   }
 
   closeList();
+<<<<<<< HEAD
+=======
   flushCodeFence();
+>>>>>>> origin/aplicar-melhorias-na-producao
   return parts.join("\n");
 }

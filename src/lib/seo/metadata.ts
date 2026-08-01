@@ -11,12 +11,15 @@ type PageMetadataOptions = {
 
 export function buildGlobalMetadata(): Metadata {
   const siteUrl = getSiteUrl();
+<<<<<<< HEAD
+=======
   const ogImage = {
     url: `${siteUrl}${SEO.ogImagePath}`,
     width: SEO.ogImageWidth,
     height: SEO.ogImageHeight,
     alt: SEO.brand,
   };
+>>>>>>> origin/aplicar-melhorias-na-producao
 
   return {
     metadataBase: new URL(siteUrl),
@@ -39,13 +42,19 @@ export function buildGlobalMetadata(): Metadata {
       siteName: SEO.brand,
       title: DEFAULT_TITLE,
       description: SEO.descriptionFull,
+<<<<<<< HEAD
+=======
       images: [ogImage],
+>>>>>>> origin/aplicar-melhorias-na-producao
     },
     twitter: {
       card: "summary_large_image",
       title: DEFAULT_TITLE,
       description: SEO.descriptionShort,
+<<<<<<< HEAD
+=======
       images: [ogImage.url],
+>>>>>>> origin/aplicar-melhorias-na-producao
     },
     robots: {
       index: true,
@@ -67,12 +76,15 @@ export function buildPageMetadata({
   const canonical = `${siteUrl}${path}`;
   const desc = description ?? SEO.descriptionFull;
   const ogTitle = `${title} | ${SEO.brand}`;
+<<<<<<< HEAD
+=======
   const ogImage = {
     url: `${siteUrl}${SEO.ogImagePath}`,
     width: SEO.ogImageWidth,
     height: SEO.ogImageHeight,
     alt: SEO.brand,
   };
+>>>>>>> origin/aplicar-melhorias-na-producao
 
   return {
     title,
@@ -87,13 +99,19 @@ export function buildPageMetadata({
       siteName: SEO.brand,
       locale: SEO.locale,
       type: "website",
+<<<<<<< HEAD
+=======
       images: [ogImage],
+>>>>>>> origin/aplicar-melhorias-na-producao
     },
     twitter: {
       card: "summary_large_image",
       title: ogTitle,
       description: desc,
+<<<<<<< HEAD
+=======
       images: [ogImage.url],
+>>>>>>> origin/aplicar-melhorias-na-producao
     },
     ...(noIndex
       ? {

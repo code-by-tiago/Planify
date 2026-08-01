@@ -47,10 +47,15 @@ import { useSchoolClasses } from "@/hooks/useSchoolClasses";
 import { TurmaCombobox } from "@/components/school/TurmaCombobox";
 import {
   HUD_FIELD_CLASS,
+<<<<<<< HEAD
+  HUD_SECTION_LABEL,
+  HUD_TEXTAREA_CLASS,
+=======
   HUD_FORM_GRID_CLASS,
   HUD_SECTION_LABEL,
   HUD_TEXTAREA_CLASS,
   HUD_TOOL_HUB_CLASS,
+>>>>>>> origin/aplicar-melhorias-na-producao
 } from "@/lib/pro/hud-form-styles";
 
 type CruzadinhaClientProps = {
@@ -361,8 +366,16 @@ export function CruzadinhaClient({
       onBack={studioMode ? onStudioClose : () => setModalAberto(false)}
       backLabel={studioMode ? "Início" : "Catálogo"}
       formScrollAttr={studioMode}
+<<<<<<< HEAD
+      previewScrollAttr={studioMode}
+      previewReady={loading || openingEditor}
+      previewLoading={loading}
+      form={
+        <form onSubmit={handleSubmit} className="space-y-4">
+=======
       form={
         <form onSubmit={handleSubmit} className="space-y-5">
+>>>>>>> origin/aplicar-melhorias-na-producao
           <div>
             <label htmlFor="cruzadinha-conteudo" className={HUD_SECTION_LABEL}>
               {formFields.conteudoLabel}
@@ -377,7 +390,11 @@ export function CruzadinhaClient({
             />
           </div>
 
+<<<<<<< HEAD
+          <div className="grid gap-4 sm:grid-cols-2">
+=======
           <div className={HUD_FORM_GRID_CLASS}>
+>>>>>>> origin/aplicar-melhorias-na-producao
             <div>
               <label htmlFor="cruzadinha-etapa" className={HUD_SECTION_LABEL}>
                 Etapa
@@ -426,7 +443,11 @@ export function CruzadinhaClient({
             </div>
           </div>
 
+<<<<<<< HEAD
+          <div className="grid gap-4 sm:grid-cols-2">
+=======
           <div className={HUD_FORM_GRID_CLASS}>
+>>>>>>> origin/aplicar-melhorias-na-producao
             <div>
               <label htmlFor="cruzadinha-area" className={HUD_SECTION_LABEL}>
                 Área do conhecimento
@@ -641,6 +662,8 @@ export function CruzadinhaClient({
             className="mt-2"
           />
 
+<<<<<<< HEAD
+=======
           {loading || openingEditor ? (
             <div className="space-y-4">
               <PlanifyOwlGenerationCoach
@@ -670,6 +693,7 @@ export function CruzadinhaClient({
             Após gerar, a cruzadinha abre direto no editor para revisão e exportação.
           </div>
 
+>>>>>>> origin/aplicar-melhorias-na-producao
           <div className="hidden pt-1 lg:block">
             <button
               type="submit"
@@ -692,6 +716,87 @@ export function CruzadinhaClient({
           </MaterialToolMobileSubmitBar>
         </form>
       }
+<<<<<<< HEAD
+      preview={
+        <>
+          {loading ? (
+            <div className="space-y-4 p-2">
+              <PlanifyOwlGenerationCoach
+                active
+                title={
+                  openingEditor
+                    ? "Salvando e abrindo no editor"
+                    : tool.loadingTitle
+                }
+                description={
+                  openingEditor
+                    ? "O material foi salvo em Meus materiais. Redirecionando para o editor…"
+                    : progressLabel || tool.loadingDescription
+                }
+                toolId={CRUZADINHA_GENERATION_TYPE}
+              />
+              {!openingEditor && showPatienceMessage ? (
+                <p className="text-center text-sm font-semibold text-slate-600">
+                  A montagem da grade pode levar alguns instantes. Não feche esta
+                  página.
+                </p>
+              ) : null}
+              <MaterialPreviewSkeleton />
+            </div>
+          ) : resultadoHtml ? (
+            <div>
+              <div className="mb-4 flex flex-wrap justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => void baixarPdf()}
+                  className="pl-hud-btn-secondary inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold"
+                >
+                  <PlanifyIcon name="download" className="h-4 w-4" />
+                  Baixar PDF
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void executarGeracao()}
+                  disabled={loading}
+                  className="pl-hud-btn-secondary inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <PlanifyIcon name="spark" className="h-4 w-4" />
+                  Regenerar
+                </button>
+                <GoogleDocumentExportBar
+                  title={exportTitle}
+                  getHtml={() => resultadoHtml}
+                  documentType="material:cruzadinha"
+                  returnTo="/dashboard?tipo=cruzadinha"
+                  compact
+                  classroomMode="popover"
+                  disabled={!resultadoHtml}
+                />
+              </div>
+              <MaterialTypedPreview
+                html={resultadoHtml}
+                tipoMaterial={CRUZADINHA_GENERATION_TYPE}
+              />
+            </div>
+          ) : (
+            <div className="flex h-full min-h-[280px] flex-col items-center justify-center px-4 py-8 text-center">
+              <PlanifyOwlMark size={72} glow />
+              <p className="mt-4 text-[10px] font-bold uppercase tracking-wide text-cyan-600">
+                Pré-visualização
+              </p>
+              <h3 className="mt-2 text-xl font-extrabold text-slate-950">
+                Cruzadinha pronta para imprimir
+              </h3>
+              <p className="mt-2 max-w-sm text-sm font-semibold leading-6 text-slate-500">
+                Informe o tema e a turma. A grade visual com pistas aparece aqui
+                — exporte em PDF ou envie ao Google Classroom.
+              </p>
+            </div>
+          )}
+        </>
+      }
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
     />
   ) : null;
 
@@ -705,7 +810,11 @@ export function CruzadinhaClient({
 
   return (
     <PlanifyWorkspacePane>
+<<<<<<< HEAD
+      <div className="planify-hud pl-hud-hub mx-auto max-w-6xl space-y-5">
+=======
       <div className={HUD_TOOL_HUB_CLASS}>
+>>>>>>> origin/aplicar-melhorias-na-producao
         {!modalAberto ? (
           <section className="pl-hud-glass rounded-2xl p-5 sm:p-6">
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-600">

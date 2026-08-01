@@ -25,6 +25,8 @@ const PREMIUM_COOKIE_NAME = "planify_access";
 const ADMIN_COOKIE_NAME = "planify_admin_access";
 const OWNER_COOKIE_NAME = "planify_owner_access";
 const BUCKET_NAME = "marketplace-materiais";
+<<<<<<< HEAD
+=======
 const MAX_UPLOAD_BYTES = 25 * 1024 * 1024;
 
 const ALLOWED_UPLOAD_EXTENSIONS =
@@ -50,6 +52,7 @@ function isAllowedMarketplaceUpload(file: File): boolean {
     (allowed) => mime === allowed || mime.startsWith(`${allowed};`),
   );
 }
+>>>>>>> origin/aplicar-melhorias-na-producao
 
 type MarketplaceRow = {
   id: string;
@@ -553,6 +556,8 @@ export async function POST(request: NextRequest) {
     return jsonError("O arquivo anexado está vazio.");
   }
 
+<<<<<<< HEAD
+=======
   if (fileValue.size > MAX_UPLOAD_BYTES) {
     return jsonError("Arquivo muito grande (máx. 25 MB).", 413);
   }
@@ -563,6 +568,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
+>>>>>>> origin/aplicar-melhorias-na-producao
   const supabase = getSupabaseAdminClient();
   const id = randomUUID();
   const originalName = safeFilename(fileValue.name || "material");
@@ -633,6 +639,8 @@ export async function POST(request: NextRequest) {
   const baseItem = await withSignedUrl(data as MarketplaceRow);
   const [item] = await enrichMarketplaceItems([baseItem], access.userId || null);
 
+<<<<<<< HEAD
+=======
   if (isPublished && access.userId) {
     try {
       const { createCommunityNotification } = await import(
@@ -671,6 +679,7 @@ export async function POST(request: NextRequest) {
     }
   }
 
+>>>>>>> origin/aplicar-melhorias-na-producao
   return NextResponse.json({
     success: true,
     item,

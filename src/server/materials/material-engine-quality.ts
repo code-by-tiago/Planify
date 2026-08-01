@@ -14,6 +14,8 @@ const COUNT_TOLERANCE = 1;
 const MAX_STATEMENT_CHARS = 320;
 const MIN_MC_OPTIONS = 4;
 
+<<<<<<< HEAD
+=======
 const ACTIVITY_PLACEHOLDER_RE =
   /complete a tarefa orientada pelo professor|registrando racioc[ií]nio e resposta no caderno|aplicar o conte[uú]do em contexto escolar/i;
 
@@ -34,6 +36,7 @@ function looksLikeReadingSourceSection(title: string, content: string): boolean 
   );
 }
 
+>>>>>>> origin/aplicar-melhorias-na-producao
 function countStatementSentences(text: string): number {
   return text
     .split(/[.!?]+/)
@@ -132,6 +135,9 @@ export function getEngineOutputIssues(
   output: MaterialEngineResponse,
 ): string[] {
   if (request.tipoMaterial === "prova") {
+<<<<<<< HEAD
+    return validateProvaEngineOutput(request, output);
+=======
     const issues = validateProvaEngineOutput(request, output);
     if (hasCopilotoReadingRequest(request)) {
       const sections = output.sections ?? [];
@@ -168,6 +174,7 @@ export function getEngineOutputIssues(
       }
     }
     return issues;
+>>>>>>> origin/aplicar-melhorias-na-producao
   }
 
   const issues: string[] = [];
@@ -333,6 +340,8 @@ export function getEngineOutputIssues(
         );
       }
     }
+<<<<<<< HEAD
+=======
 
     if (questions.length >= 4) {
       const lengths = questions.map(
@@ -349,6 +358,7 @@ export function getEngineOutputIssues(
         );
       }
     }
+>>>>>>> origin/aplicar-melhorias-na-producao
   }
 
   if (tipo === "mapa-mental") {
@@ -494,6 +504,8 @@ export function getEngineOutputIssues(
           break;
         }
       }
+<<<<<<< HEAD
+=======
       if (ACTIVITY_PLACEHOLDER_RE.test(joinedItems)) {
         issues.push(
           `Atividade ${n}: remova comandos genéricos/placeholder e escreva itens específicos ao tema.`,
@@ -516,6 +528,7 @@ export function getEngineOutputIssues(
           break;
         }
       }
+>>>>>>> origin/aplicar-melhorias-na-producao
       if (!activity.evaluation?.trim()) {
         issues.push(`Atividade ${index + 1}: preencha 'evaluation'.`);
       } else if ((activity.evaluation?.trim().length ?? 0) < 45) {
@@ -525,6 +538,8 @@ export function getEngineOutputIssues(
     }
   }
 
+<<<<<<< HEAD
+=======
   if (tipo === "lista" && hasCopilotoReadingRequest(request)) {
     const sections = output.sections ?? [];
     const hasReading = sections.some((section) =>
@@ -543,6 +558,7 @@ export function getEngineOutputIssues(
     }
   }
 
+>>>>>>> origin/aplicar-melhorias-na-producao
   if (tipo === "apostila") {
     const titles = (output.sections ?? []).map(
       (section) => section.title?.toLowerCase() || "",

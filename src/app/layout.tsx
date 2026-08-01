@@ -10,15 +10,21 @@ const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
   display: "swap",
+<<<<<<< HEAD
+=======
   weight: ["400", "600", "700"],
+>>>>>>> origin/aplicar-melhorias-na-producao
 });
 
 const display = Plus_Jakarta_Sans({
   subsets: ["latin"],
   variable: "--font-display",
   display: "swap",
+<<<<<<< HEAD
+=======
   weight: ["600", "700", "800"],
   preload: false,
+>>>>>>> origin/aplicar-melhorias-na-producao
 });
 
 export const viewport: Viewport = {

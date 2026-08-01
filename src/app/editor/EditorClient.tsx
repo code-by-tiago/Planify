@@ -55,10 +55,16 @@ import {
   requestPlanningGeneration,
 } from "@/lib/planejamentos/elevate-planning-client";
 import {
+<<<<<<< HEAD
+  buildPlanningEditorHtml,
+  planningPayloadToHtmlContext,
+} from "@/lib/planejamentos/planning-editor-html";
+=======
   planningPayloadToHtmlContext,
   type GeneratedPlanningHtml,
 } from "@/lib/planejamentos/planning-editor-html";
 import { resolvePlanningEditorHtml, normalizeOfficialPayloadInput, PlanningOfficialHtmlError } from "@/lib/planejamentos/planning-official-editor-html-client";
+>>>>>>> origin/aplicar-melhorias-na-producao
 import type { PlanningEditorMeta } from "@/lib/planejamentos/planning-editor-flow";
 import {
   loadPlanningEditorBundle,
@@ -74,7 +80,10 @@ import { formatGenerationError } from "@/lib/pro/generation-error-ui";
 import type { MaterialEditorMeta } from "@/lib/materiais/material-editor-flow";
 import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
 import { PlanifyPageHero } from "@/components/pro/PlanifyPageHero";
+<<<<<<< HEAD
+=======
 import { PlanifyOwlGenerationCoach } from "@/components/pro/PlanifyOwlGenerationCoach";
+>>>>>>> origin/aplicar-melhorias-na-producao
 import {
   ChangeEvent,
   ClipboardEvent,
@@ -388,10 +397,15 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
   const [elevatingQuality, setElevatingQuality] = useState(false);
   const [planningBundle, setPlanningBundle] = useState<PlanningEditorBundle | null>(null);
   const [activeBundleIndex, setActiveBundleIndex] = useState(0);
+<<<<<<< HEAD
+  const activeBundleIndexRef = useRef(0);
+  const skipBundleAutoSaveRef = useRef(true);
+=======
   const [planningOfficialLoading, setPlanningOfficialLoading] = useState(false);
   const activeBundleIndexRef = useRef(0);
   const skipBundleAutoSaveRef = useRef(true);
   const planningResolveSeqRef = useRef(0);
+>>>>>>> origin/aplicar-melhorias-na-producao
 
   useEffect(() => {
     activeBundleIndexRef.current = activeBundleIndex;
@@ -437,6 +451,8 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
     });
   }, [documentSource, planningMeta, planningBundle, exportDocumentType]);
 
+<<<<<<< HEAD
+=======
   useEffect(() => {
     if (!isLoaded || !planningMeta) {
       return;
@@ -549,6 +565,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoaded, planningMeta, documentSource, exportDocumentType, planningBundle?.tabs.length]);
 
+>>>>>>> origin/aplicar-melhorias-na-producao
   const canElevateMaterial = Boolean(
     materialMeta?.generationPayload &&
       String(documentSource?.type || "").includes("material"),
@@ -652,6 +669,17 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
     setDocumentSource(resolvedStoredDocument);
     setSavedDocuments(loadSavedDocuments());
 
+<<<<<<< HEAD
+    if (editorRef.current) {
+      editorRef.current.innerHTML = resolvedHtml;
+      prepareImagesInsideEditor();
+      updateWordCount();
+      seedUndoStack(resolvedHtml);
+    }
+
+    setIsLoaded(true);
+    setStatus(`Documento carregado. Última verificação: ${lastSavedLabel}`);
+=======
     const isPlanningDoc = String(resolvedStoredDocument?.type || "").includes("planejamento");
     const hasOfficial =
       typeof resolvedHtml === "string" &&
@@ -678,6 +706,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
         ? "Carregando modelo oficial do planejamento…"
         : `Documento carregado. Última verificação: ${lastSavedLabel}`,
     );
+>>>>>>> origin/aplicar-melhorias-na-producao
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -1303,6 +1332,9 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
       const payload = buildElevatePlanningPayload(base, problemas);
       const data = await requestPlanningGeneration(payload);
       const planning = data.planejamento;
+<<<<<<< HEAD
+      const html = buildPlanningEditorHtml(planningPayloadToHtmlContext(payload), planning);
+=======
       const { html } = await resolvePlanningEditorHtml({
         officialPayloadInput: normalizeOfficialPayloadInput({
           tipoPlanejamento: payload.tipoPlanejamento,
@@ -1328,6 +1360,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
         fallbackPlanning: planning,
         preloadedHtml: data.editorHtml,
       });
+>>>>>>> origin/aplicar-melhorias-na-producao
 
       if (editorRef.current) {
         editorRef.current.innerHTML = html;
@@ -1532,6 +1565,9 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
     };
 
     setDocumentSource(nextDocumentSource);
+<<<<<<< HEAD
+    applyEditorHtml(nextTab.content);
+=======
 
     const hasOfficial =
       typeof nextTab.content === "string" &&
@@ -1548,6 +1584,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
       setPlanningOfficialLoading(true);
       setStatus(`Carregando modelo oficial — ${nextTab.label}…`);
     }
+>>>>>>> origin/aplicar-melhorias-na-producao
 
     saveEditorDocument(
       createEditorDocument({
@@ -1559,6 +1596,11 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
         raw: nextTab.raw,
       }),
     );
+<<<<<<< HEAD
+
+    setStatus(`Aba "${nextTab.label}" carregada.`);
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
   }
 
   function saveVersion() {
@@ -2439,6 +2481,8 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
 
   const main = (
     <>
+<<<<<<< HEAD
+=======
       {elevatingQuality ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/30 p-4 backdrop-blur-[2px]">
           <div className="w-full max-w-lg">
@@ -2460,6 +2504,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
           </div>
         </div>
       ) : null}
+>>>>>>> origin/aplicar-melhorias-na-producao
       {originHint ? (
         <div
           className={
@@ -3350,12 +3395,18 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
           )}
 
           <div
+<<<<<<< HEAD
+            className={`planify-editor-document-scroll min-h-0 flex-1 rounded-lg border border-slate-200 bg-white shadow-sm ${
+=======
             className={`planify-editor-document-scroll relative min-h-0 flex-1 rounded-lg border border-slate-200 bg-white shadow-sm ${
+>>>>>>> origin/aplicar-melhorias-na-producao
               embedded
                 ? "overflow-y-auto overscroll-contain p-0.5 sm:p-1"
                 : "overflow-y-auto overscroll-contain p-1 sm:p-2"
             }`}
           >
+<<<<<<< HEAD
+=======
             {planningOfficialLoading ? (
               <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-white/70 backdrop-blur-[1px]">
                 <div className="rounded-xl border border-cyan-200 bg-white px-4 py-3 text-sm font-semibold text-cyan-800 shadow-sm">
@@ -3363,6 +3414,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
                 </div>
               </div>
             ) : null}
+>>>>>>> origin/aplicar-melhorias-na-producao
             <div
               className={`bg-slate-100 ${
                 embedded ? "rounded-md p-1 sm:p-1.5" : "rounded-xl p-1.5 sm:p-2"
@@ -3370,7 +3422,11 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
             >
               <div
                 ref={editorRef}
+<<<<<<< HEAD
+                contentEditable
+=======
                 contentEditable={!planningOfficialLoading}
+>>>>>>> origin/aplicar-melhorias-na-producao
                 suppressContentEditableWarning
                 onClick={handleEditorClick}
                 onMouseDown={handleEditorMouseDown}
@@ -3413,6 +3469,8 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
         ${PLANIFY_EXPORT_DOC_COMPONENT_CSS}
         ${PLANIFY_GAME_EXPORT_CSS}
 
+<<<<<<< HEAD
+=======
         .planify-editor-page .planify-doc {
           font-family: Arial, Helvetica, sans-serif;
           line-height: 1.55;
@@ -3428,6 +3486,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
           font-family: Arial, Helvetica, sans-serif;
         }
 
+>>>>>>> origin/aplicar-melhorias-na-producao
         .planify-editor-page.planify-abnt-page {
           padding: 3cm 2cm 2cm 3cm !important;
           text-align: justify;
@@ -3439,6 +3498,8 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
           margin: 0 0 1rem;
         }
 
+<<<<<<< HEAD
+=======
         .planify-editor-page .planify-doc h1,
         .planify-editor-page .planify-doc h2,
         .planify-editor-page .planify-doc h3,
@@ -3451,6 +3512,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
           padding: inherit;
         }
 
+>>>>>>> origin/aplicar-melhorias-na-producao
         .planify-editor-page h2 {
           font-size: 1.55rem;
           font-weight: 800;
@@ -3486,6 +3548,8 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
           vertical-align: top;
         }
 
+<<<<<<< HEAD
+=======
         .planify-editor-page .planify-planning-official table {
           margin: 10px 0 16px;
         }
@@ -3510,6 +3574,7 @@ export function EditorClient({ embedded = false }: EditorClientProps) {
           font-weight: 700;
         }
 
+>>>>>>> origin/aplicar-melhorias-na-producao
         .planify-editor-page img {
           max-width: 100%;
           height: auto;

@@ -1,9 +1,17 @@
+<<<<<<< HEAD
+﻿"use client";
+=======
 "use client";
+>>>>>>> origin/aplicar-melhorias-na-producao
 
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { GoogleDocumentExportBar } from "@/components/google/GoogleDocumentExportBar";
+<<<<<<< HEAD
+import { useAutoGoogleExport } from "@/hooks/useAutoGoogleExport";
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
 import { MaterialGenerationSummaryPanel } from "@/components/materiais/MaterialGenerationSummary";
 import { MaterialQualityScoreBar } from "@/components/materiais/MaterialQualityScoreBar";
 import { MaterialTypedPreview } from "@/components/materiais/preview/MaterialTypedPreview";
@@ -25,7 +33,10 @@ import { DailyGenerationsBar } from "@/components/credits/DailyGenerationsBar";
 import { MaterialPreviewSkeleton } from "@/components/materiais/MaterialPreviewSkeleton";
 import { MaterialToolPageShell } from "@/components/pro/MaterialToolPageShell";
 import { MaterialToolMobileSubmitBar } from "@/components/pro/MaterialToolMobileSubmitBar";
+<<<<<<< HEAD
+=======
 import { PlanifyOwlGenerationCoach } from "@/components/pro/PlanifyOwlGenerationCoach";
+>>>>>>> origin/aplicar-melhorias-na-producao
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import { PlanifyPageHero } from "@/components/pro/PlanifyPageHero";
 import { PlanifyWorkspacePane } from "@/components/pro/PlanifyWorkspacePane";
@@ -33,10 +44,15 @@ import {
   HUD_FIELD_CLASS,
   HUD_FILTER_CHIP_ACTIVE,
   HUD_FILTER_CHIP_INACTIVE,
+<<<<<<< HEAD
+  HUD_SECTION_LABEL,
+  HUD_TEXTAREA_CLASS,
+=======
   HUD_FORM_GRID_CLASS,
   HUD_SECTION_LABEL,
   HUD_TEXTAREA_CLASS,
   HUD_TOOL_HUB_CLASS,
+>>>>>>> origin/aplicar-melhorias-na-producao
 } from "@/lib/pro/hud-form-styles";
 import {
   DEFAULT_MATERIAL_EDUCATION,
@@ -59,6 +75,13 @@ import {
 } from "@/lib/materiais/material-editor-flow";
 import { buildMaterialGenerationSummary } from "@/lib/materiais/material-generation-summary";
 import {
+<<<<<<< HEAD
+  resolveGoogleProductForTool,
+  saveAutoGoogleExportIntent,
+} from "@/lib/google/google-auto-export";
+import {
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
   activePlanifyTools,
   getPlanifyTool,
   isActivePlanifyToolId,
@@ -231,6 +254,24 @@ function buildTitle(mode: PlanifyToolId, tema: string, conteudo = ""): string {
   return `${config.shortTitle} — ${label}`;
 }
 
+<<<<<<< HEAD
+function queueAutoGoogleExportForMaterial(params: {
+  toolId: PlanifyToolId;
+  title: string;
+  returnTo: string;
+}): void {
+  const product = resolveGoogleProductForTool(params.toolId);
+  if (!product) return;
+
+  saveAutoGoogleExportIntent({
+    product,
+    title: params.title,
+    returnTo: params.returnTo,
+  });
+}
+
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
 function formatDate(value: string): string {
   try {
     return new Date(value).toLocaleDateString("pt-BR", {
@@ -306,13 +347,29 @@ export function MateriaisClient({
   const [historico, setHistorico] = useState<MaterialHistoryPreview[]>([]);
   const [materialSalvo, setMaterialSalvo] = useState(false);
   const [hintFeedback, setHintFeedback] = useState("");
+<<<<<<< HEAD
+=======
   const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [downloadingDocx, setDownloadingDocx] = useState(false);
+>>>>>>> origin/aplicar-melhorias-na-producao
   const [pedagogicalEntries, setPedagogicalEntries] = useState<
     PedagogicalContextEntry[]
   >([]);
   const pedagogicalDebounceRef = useRef<number | null>(null);
 
+<<<<<<< HEAD
+  useAutoGoogleExport({
+    title: buildTitle(tipo, "", conteudo),
+    getHtml: () => resultadoHtml,
+    returnTo:
+      typeof window !== "undefined"
+        ? `${window.location.pathname}${window.location.search}` || "/dashboard"
+        : "/dashboard",
+    onStatus: setHintFeedback,
+  });
+
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
   useEffect(() => {
     if (studioMode && initialTipo) {
       setTipo(initialTipo);
@@ -599,7 +656,25 @@ export function MateriaisClient({
   }
 
   function reabrirHistorico(item: MaterialHistoryPreview) {
+<<<<<<< HEAD
+    setTipo(item.tipo);
+    setConteudo(item.tema);
+    setComponente(item.componente);
+    setAnoSerie(item.anoSerie);
+    setResultadoHtml(item.html);
+    setErro("");
+    setMaterialSalvo(true);
+    setModalAberto(true);
+    const payload =
+      item.generationPayload ??
+      loadMaterialMetaFromHistoryId(item.id)?.generationPayload ??
+      null;
+    if (payload) {
+      setLastGenerationPayload(payload);
+    }
+=======
     abrirHistoricoNoEditor(item);
+>>>>>>> origin/aplicar-melhorias-na-producao
   }
 
   function abrirHistoricoNoEditor(item: MaterialHistoryPreview) {
@@ -783,6 +858,14 @@ export function MateriaisClient({
       }
 
       const titulo = buildTitle(tipo, "", conteudo);
+<<<<<<< HEAD
+      queueAutoGoogleExportForMaterial({
+        toolId: tipo,
+        title: titulo,
+        returnTo: "/dashboard?secao=editor",
+      });
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
       const record =
         data && typeof data === "object" ? (data as Record<string, unknown>) : {};
       const scoreValue =
@@ -882,6 +965,10 @@ export function MateriaisClient({
       openMaterialInEditor(html, titulo, meta, {
         from: "materiais",
       });
+<<<<<<< HEAD
+      setResultadoHtml(html);
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
       setMaterialSalvo(true);
       setHistorico(loadMaterialHistoryPreview());
     } catch (error) {
@@ -910,6 +997,10 @@ export function MateriaisClient({
         estrutura: resultadoEstrutura,
       });
       window.dispatchEvent(new Event("planify:credits-changed"));
+<<<<<<< HEAD
+      setResultadoHtml(result.html);
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
       setResultadoEstrutura(result.estrutura);
       if (typeof result.qualityScore === "number") {
         setQualityScore(result.qualityScore);
@@ -965,10 +1056,19 @@ export function MateriaisClient({
       onBack={fecharPainel}
       backLabel={studioMode ? "Início" : "Catálogo"}
       formScrollAttr={studioMode}
+<<<<<<< HEAD
+      previewScrollAttr={studioMode}
+      previewReady={Boolean(resultadoHtml)}
+      previewLoading={loading}
+      fullWidth={isExamTool && examCreationSource === "banco"}
+      form={
+        <form onSubmit={gerarMaterial} className="space-y-1 max-lg:pb-2">
+=======
       fullWidth={isExamTool && examCreationSource === "banco"}
       wrapFormPanel={!(isExamTool && examCreationSource === "banco")}
       form={
         <form onSubmit={gerarMaterial} className="space-y-5 max-lg:space-y-3 max-lg:pb-2">
+>>>>>>> origin/aplicar-melhorias-na-producao
           <div className="flex flex-wrap items-start justify-between gap-3">
             {studioMode ? (
               <p className="text-[10px] font-bold uppercase tracking-wide text-cyan-600">
@@ -1053,7 +1153,11 @@ export function MateriaisClient({
             </p>
           ) : null}
 
+<<<<<<< HEAD
+          <div className="mt-5 grid gap-4 md:grid-cols-2">
+=======
           <div className={`mt-5 ${HUD_FORM_GRID_CLASS}`}>
+>>>>>>> origin/aplicar-melhorias-na-producao
             <label>
               <span className={HUD_SECTION_LABEL}>
                 Etapa de ensino
@@ -1142,7 +1246,11 @@ export function MateriaisClient({
             />
           </label>
 
+<<<<<<< HEAD
+          <div className="mt-5 grid gap-4 md:grid-cols-2">
+=======
           <div className={`mt-5 ${HUD_FORM_GRID_CLASS}`}>
+>>>>>>> origin/aplicar-melhorias-na-producao
             <TurmaCombobox school={school} className="md:col-span-2" listId="materiais-turma-suggestions" />
 
             <label className="md:col-span-2">
@@ -1300,6 +1408,8 @@ export function MateriaisClient({
             className="mt-4"
           />
 
+<<<<<<< HEAD
+=======
           {loading || elevatingQuality || retryingExam ? (
             <div className="space-y-4">
               <PlanifyOwlGenerationCoach
@@ -1327,6 +1437,7 @@ export function MateriaisClient({
             </div>
           ) : null}
 
+>>>>>>> origin/aplicar-melhorias-na-producao
           <div className="hidden lg:block">
           <button
             type="submit"
@@ -1358,6 +1469,198 @@ export function MateriaisClient({
           )}
         </form>
       }
+<<<<<<< HEAD
+      preview={
+        <>
+          {loading ? (
+            <div className="space-y-4 p-2">
+              <div className="rounded-lg border border-blue-100 bg-white px-4 py-3 shadow-sm">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-black uppercase tracking-wide text-blue-700">
+                      Gerando material
+                    </p>
+                    <p className="mt-1 line-clamp-2 text-sm font-black text-slate-900">
+                      {progressLabel || mode.loadingTitle}
+                    </p>
+                  </div>
+                  <span className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-black tabular-nums text-blue-700">
+                    {typeof realGenerationProgress === "number"
+                      ? `${Math.round(realGenerationProgress)}%`
+                      : "IA"}
+                  </span>
+                </div>
+                <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100">
+                  <div
+                    className="h-full rounded-full bg-blue-600 transition-[width] duration-500"
+                    style={{
+                      width: `${Math.max(
+                        12,
+                        Math.min(100, Math.round(realGenerationProgress ?? 36)),
+                      )}%`,
+                    }}
+                  />
+                </div>
+              </div>
+              {showPatienceMessage ? (
+                <p className="text-center text-sm font-semibold text-slate-600">
+                  Materiais complexos podem levar alguns minutos. Não feche esta página.
+                </p>
+              ) : null}
+              <MaterialPreviewSkeleton />
+            </div>
+          ) : resultadoHtml ? (
+            <div>
+              {generationSummary ? (
+                <MaterialGenerationSummaryPanel summary={generationSummary} />
+              ) : null}
+              {typeof qualityScore === "number" ? (
+                <MaterialQualityScoreBar
+                  score={qualityScore}
+                  issues={qualityIssues}
+                  onElevate={
+                    lastGenerationPayload ? () => void elevarQualidadeMaterial() : undefined
+                  }
+                  elevating={elevatingQuality}
+                />
+              ) : null}
+              {canRetryExamQuestions ? (
+                <div className="mb-4 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => void regenerarQuestoesFracas()}
+                    disabled={loading || retryingExam}
+                    className="rounded-full border border-amber-200 bg-amber-50 px-4 py-2 text-xs font-black text-amber-900 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {retryingExam ? "Corrigindo questões…" : "Corrigir questões fracas"}
+                  </button>
+                </div>
+              ) : null}
+              {(pipelineGeracao || alertasGeracao.length > 0) && (
+                <div className="mb-4 space-y-3">
+                  {pipelineGeracao ? (
+                    <p className="text-xs font-bold text-slate-500">
+                      Origem:{" "}
+                      <span className="inline-flex rounded-full border border-cyan-200 bg-cyan-50 px-2.5 py-0.5 text-[11px] font-black uppercase tracking-wide text-cyan-800">
+                        {pipelineGeracao}
+                      </span>
+                    </p>
+                  ) : null}
+                  {alertasGeracao.length > 0 ? (
+                    <aside className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+                      <p className="font-black">Avisos do Planify</p>
+                      <ul className="mt-2 list-disc space-y-1 pl-5 font-semibold">
+                        {alertasGeracao.map((item) => (
+                          <li key={item}>{item}</li>
+                        ))}
+                      </ul>
+                    </aside>
+                  ) : null}
+                </div>
+              )}
+              {materialSalvo ? (
+                <aside className="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+                  <p className="font-black">Salvo no histórico do Planify</p>
+                  <p className="mt-1 font-semibold">
+                    Revise e complemente no editor antes de exportar. Todas as{" "}
+                    {planifyToolCount} ferramentas seguem o mesmo fluxo.
+                  </p>
+                </aside>
+              ) : null}
+              {isPlanoAula ? (
+                <aside className="mb-4 rounded-2xl border border-cyan-300 bg-gradient-to-r from-cyan-50 to-sky-50 px-5 py-4 text-sm text-cyan-950">
+                  <p className="font-black">Próximo passo: refine no editor</p>
+                  <p className="mt-1 font-semibold">
+                    O preview mostra o rascunho. No editor você ajusta sequência, atividades e
+                    tempo antes de exportar para Google Docs.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={abrirNoEditor}
+                    className="pl-hud-btn mt-3 inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold"
+                  >
+                    <PlanifyIcon name="editor" className="h-4 w-4" />
+                    Abrir plano no editor
+                  </button>
+                </aside>
+              ) : null}
+              <div className="mb-4 flex flex-wrap justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={abrirNoEditor}
+                  className="pl-hud-btn inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold"
+                >
+                  <PlanifyIcon name="editor" className="h-4 w-4" />
+                  Editar no editor
+                </button>
+                <MarketplacePublishButton
+                  title={buildTitle(tipo, "", conteudo)}
+                  getHtml={() => resultadoHtml}
+                  tipoMaterial={mode.title}
+                  tema={displayTema}
+                  componente={componente}
+                  etapa={etapa}
+                  anoSerie={anoSerie}
+                  disabled={!resultadoHtml}
+                  className="pl-hud-btn-secondary inline-flex items-center gap-2 rounded-xl border border-cyan-400/25 bg-cyan-50 px-4 py-2.5 text-sm font-bold text-cyan-900 transition hover:bg-cyan-100"
+                />
+                <button
+                  type="button"
+                  onClick={() => void executarGeracao()}
+                  disabled={loading}
+                  className="pl-hud-btn-secondary inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <PlanifyIcon name="spark" className="h-4 w-4" />
+                  Regenerar
+                </button>
+                <GoogleDocumentExportBar
+                  title={buildTitle(tipo, "", conteudo)}
+                  getHtml={() => resultadoHtml}
+                  documentType={`material:${tipo}`}
+                  returnTo="/dashboard"
+                  compact
+                  classroomMode="popover"
+                  disabled={!resultadoHtml}
+                  onStatus={setHintFeedback}
+                  onExportError={(error) => {
+                    const message =
+                      error instanceof Error
+                        ? error.message
+                        : "Falha na exportação para o Google.";
+                    setHintFeedback(`Falha na exportação — ${message}`);
+                  }}
+                />
+                <Link
+                  href="/historico"
+                  className="pl-hud-btn-secondary inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold"
+                >
+                  <PlanifyIcon name="history" className="h-4 w-4" />
+                  Histórico
+                </Link>
+              </div>
+              <MaterialTypedPreview html={resultadoHtml} tipoMaterial={tipo} />
+            </div>
+          ) : (
+            <div className="flex h-full min-h-[180px] flex-col items-center justify-center rounded-lg border border-dashed border-slate-200 bg-white px-4 py-6 text-center">
+              <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 text-blue-700">
+                <PlanifyIcon name="editor" className="h-5 w-5" />
+              </span>
+              <p className="mt-4 text-[10px] font-bold uppercase tracking-wide text-cyan-600">
+                Editor automático
+              </p>
+              <h3 className="mt-2 text-sm font-semibold text-slate-900">
+                Pronto para criar
+              </h3>
+              <p className="mt-2 max-w-sm text-sm font-semibold leading-6 text-slate-500">
+                Preencha disciplina, ano escolar e assunto. O resultado aparece
+                aqui e pode ir direto para o Editor.
+              </p>
+            </div>
+          )}
+        </>
+      }
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
     />
   ) : null;
 
@@ -1380,7 +1683,11 @@ export function MateriaisClient({
         />
       }
     >
+<<<<<<< HEAD
+    <div className="planify-hud pl-hud-hub mx-auto max-w-6xl space-y-5">
+=======
     <div className={HUD_TOOL_HUB_CLASS}>
+>>>>>>> origin/aplicar-melhorias-na-producao
       {/* Catálogo (visível quando painel fechado) */}
       {!modalAberto ? (
         <>

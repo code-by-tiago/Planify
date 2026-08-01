@@ -59,12 +59,20 @@ export const ppCtaBand =
 export const ppCtaEyebrow =
   "text-[10px] font-bold uppercase tracking-[0.22em] text-[#26C6DA]";
 
+<<<<<<< HEAD
+export const ppCtaLead = "text-sm font-medium leading-7 text-slate-300";
+=======
 export const ppCtaLead = "text-sm font-medium leading-7 text-slate-100";
+>>>>>>> origin/aplicar-melhorias-na-producao
 
 export const ppCtaTitle = "font-extrabold !text-white";
 
 export const ppCtaLinkOnDark =
+<<<<<<< HEAD
+  "inline-flex items-center gap-2 text-sm font-semibold text-slate-300 underline-offset-4 transition hover:text-white hover:underline";
+=======
   "inline-flex items-center gap-2 text-sm font-semibold text-slate-100 underline-offset-4 transition hover:text-white hover:underline";
+>>>>>>> origin/aplicar-melhorias-na-producao
 
 export const ppSectionAlt = "border-y border-slate-200/80 bg-[#F0F9FA]";
 

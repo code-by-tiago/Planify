@@ -22,7 +22,10 @@ export type Database = {
           email: string;
           full_name: string | null;
           avatar_url: string | null;
+<<<<<<< HEAD
+=======
           cover_url: string | null;
+>>>>>>> origin/aplicar-melhorias-na-producao
           role: Database["public"]["Enums"]["app_role"];
           status: Database["public"]["Enums"]["profile_status"];
           is_admin: boolean;
@@ -45,7 +48,10 @@ export type Database = {
           email: string;
           full_name?: string | null;
           avatar_url?: string | null;
+<<<<<<< HEAD
+=======
           cover_url?: string | null;
+>>>>>>> origin/aplicar-melhorias-na-producao
           role?: Database["public"]["Enums"]["app_role"];
           status?: Database["public"]["Enums"]["profile_status"];
           is_admin?: boolean;
@@ -68,7 +74,10 @@ export type Database = {
           email?: string;
           full_name?: string | null;
           avatar_url?: string | null;
+<<<<<<< HEAD
+=======
           cover_url?: string | null;
+>>>>>>> origin/aplicar-melhorias-na-producao
           role?: Database["public"]["Enums"]["app_role"];
           status?: Database["public"]["Enums"]["profile_status"];
           is_admin?: boolean;
@@ -527,10 +536,13 @@ export type Database = {
           file_mime: string | null;
           file_size: number | null;
           is_published: boolean | null;
+<<<<<<< HEAD
+=======
           is_featured: boolean;
           featured_at: string | null;
           featured_source: string;
           external_url: string | null;
+>>>>>>> origin/aplicar-melhorias-na-producao
           downloads_count: number | null;
           created_at: string | null;
           updated_at: string | null;
@@ -553,10 +565,13 @@ export type Database = {
           file_mime?: string | null;
           file_size?: number | null;
           is_published?: boolean | null;
+<<<<<<< HEAD
+=======
           is_featured?: boolean;
           featured_at?: string | null;
           featured_source?: string;
           external_url?: string | null;
+>>>>>>> origin/aplicar-melhorias-na-producao
           downloads_count?: number | null;
           created_at?: string | null;
           updated_at?: string | null;
@@ -579,10 +594,13 @@ export type Database = {
           file_mime?: string | null;
           file_size?: number | null;
           is_published?: boolean | null;
+<<<<<<< HEAD
+=======
           is_featured?: boolean;
           featured_at?: string | null;
           featured_source?: string;
           external_url?: string | null;
+>>>>>>> origin/aplicar-melhorias-na-producao
           downloads_count?: number | null;
           created_at?: string | null;
           updated_at?: string | null;
@@ -763,8 +781,12 @@ export type Database = {
           likes_count: number;
           comments_count: number;
           is_published: boolean;
+<<<<<<< HEAD
+          group_id: string | null;
+=======
           post_kind: string;
           metadata: Record<string, unknown>;
+>>>>>>> origin/aplicar-melhorias-na-producao
           created_at: string;
           updated_at: string;
         },
@@ -778,8 +800,12 @@ export type Database = {
           likes_count?: number;
           comments_count?: number;
           is_published?: boolean;
+<<<<<<< HEAD
+          group_id?: string | null;
+=======
           post_kind?: string;
           metadata?: Record<string, unknown>;
+>>>>>>> origin/aplicar-melhorias-na-producao
           created_at?: string;
           updated_at?: string;
         },
@@ -793,8 +819,12 @@ export type Database = {
           likes_count?: number;
           comments_count?: number;
           is_published?: boolean;
+<<<<<<< HEAD
+          group_id?: string | null;
+=======
           post_kind?: string;
           metadata?: Record<string, unknown>;
+>>>>>>> origin/aplicar-melhorias-na-producao
           created_at?: string;
           updated_at?: string;
         }

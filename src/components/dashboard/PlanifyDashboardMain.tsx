@@ -2,6 +2,10 @@
 
 import dynamic from "next/dynamic";
 import type { ReactNode } from "react";
+<<<<<<< HEAD
+import { ComunidadeDashboardRouter } from "@/components/community/docente/ComunidadeDashboardRouter";
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
 import TeachyStudioHome from "@/components/dashboard/TeachyStudioHome";
 import { TeachyMateriaisStudio } from "@/components/dashboard/TeachyMateriaisStudio";
 import { PlanifyWorkspaceProvider } from "@/components/pro/planify-workspace-context";
@@ -19,6 +23,8 @@ function PanelLoading() {
   );
 }
 
+<<<<<<< HEAD
+=======
 const ComunidadeDashboardRouter = dynamic(
   () =>
     import("@/components/community/docente/ComunidadeDashboardRouter").then(
@@ -27,6 +33,7 @@ const ComunidadeDashboardRouter = dynamic(
   { ssr: false, loading: PanelLoading },
 );
 
+>>>>>>> origin/aplicar-melhorias-na-producao
 const InclusaoClient = dynamic(
   () =>
     import("@/app/inclusao/InclusaoClient").then((m) => m.InclusaoClient),
@@ -58,12 +65,15 @@ const PeiClient = dynamic(
   { ssr: false, loading: PanelLoading },
 );
 
+<<<<<<< HEAD
+=======
 const CopilotoClient = dynamic(
   () =>
     import("@/app/copiloto/CopilotoClient").then((m) => m.CopilotoClient),
   { ssr: false, loading: PanelLoading },
 );
 
+>>>>>>> origin/aplicar-melhorias-na-producao
 const PlanejamentosClient = dynamic(
   () =>
     import("@/app/planejamentos/PlanejamentosClient").then(
@@ -206,6 +216,8 @@ export function PlanifyDashboardMain({
       );
     }
 
+<<<<<<< HEAD
+=======
     if (toolId === "copiloto") {
       return (
         <PlanifyWorkspaceProvider embeddedInDashboard>
@@ -222,6 +234,7 @@ export function PlanifyDashboardMain({
       );
     }
 
+>>>>>>> origin/aplicar-melhorias-na-producao
     return (
       <TeachyMateriaisStudio
         toolId={toolId}

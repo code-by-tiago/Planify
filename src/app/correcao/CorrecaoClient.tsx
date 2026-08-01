@@ -381,8 +381,16 @@ export function CorrecaoClient({
       onBack={fecharPainel}
       backLabel={studioMode ? "Início" : "Catálogo"}
       formScrollAttr={studioMode}
+<<<<<<< HEAD
+      previewScrollAttr={studioMode}
+      previewReady={Boolean(resultado || resultadosLote.length)}
+      previewLoading={loading}
+      form={
+        <form onSubmit={corrigir} className="space-y-4 max-lg:pb-2">
+=======
       form={
         <form onSubmit={corrigir} className="space-y-5 max-lg:pb-2">
+>>>>>>> origin/aplicar-melhorias-na-producao
           <div
             className="flex flex-wrap gap-2"
             role="tablist"
@@ -663,9 +671,18 @@ export function CorrecaoClient({
               Colar manualmente
             </button>
           ) : null}
+<<<<<<< HEAD
+        </form>
+      }
+      preview={
+        <div className="space-y-4">
+          {loading ? (
+            <>
+=======
 
           {loading ? (
             <div className="space-y-4">
+>>>>>>> origin/aplicar-melhorias-na-producao
               <PlanifyOwlGenerationCoach
                 active={loading}
                 title={tool.loadingTitle}
@@ -673,11 +690,17 @@ export function CorrecaoClient({
                 toolId="correcao-ia"
               />
               <MaterialPreviewSkeleton />
+<<<<<<< HEAD
+            </>
+          ) : resultadosLote.length ? (
+            <>
+=======
             </div>
           ) : null}
 
           {resultadosLote.length ? (
             <div className="space-y-4">
+>>>>>>> origin/aplicar-melhorias-na-producao
               {resultadosLote.map((item, index) => (
                 <div
                   key={`lote-${index}`}
@@ -717,11 +740,17 @@ export function CorrecaoClient({
                   {pdfLoading ? "Gerando PDF…" : "Baixar PDF"}
                 </button>
               </div>
+<<<<<<< HEAD
+            </>
+          ) : resultado ? (
+            <>
+=======
             </div>
           ) : null}
 
           {resultado && !resultadosLote.length ? (
             <div className="space-y-4">
+>>>>>>> origin/aplicar-melhorias-na-producao
               <div className="rounded-2xl border border-cyan-400/20 bg-white p-5 shadow-sm">
                 <p className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-500">
                   Resultado
@@ -781,9 +810,28 @@ export function CorrecaoClient({
                   {pdfLoading ? "Gerando PDF…" : "Baixar PDF"}
                 </button>
               </div>
+<<<<<<< HEAD
+            </>
+          ) : (
+            <div className="rounded-2xl border border-dashed border-cyan-400/25 bg-white/70 px-6 py-12 text-center">
+              <p className="text-xs font-bold uppercase tracking-wide text-cyan-600">
+                Corretor de provas em papel
+              </p>
+              <h3 className="mt-2 text-sm font-semibold text-slate-900">
+                Foto ou PDF → rubrica → devolutiva
+              </h3>
+              <p className="mt-2 text-sm font-medium text-slate-600">
+                Envie foto da prova ou redação, aplique rubrica e receba nota,
+                critérios e feedback alinhado ao seu estilo pedagógico.
+              </p>
+            </div>
+          )}
+        </div>
+=======
             </div>
           ) : null}
         </form>
+>>>>>>> origin/aplicar-melhorias-na-producao
       }
     />
   ) : null;

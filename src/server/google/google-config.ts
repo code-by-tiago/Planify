@@ -103,6 +103,8 @@ export function requireGoogleConfig(): {
   };
 }
 
+<<<<<<< HEAD
+=======
 /** Config pública do Google Picker (API Key + Client ID + project number). */
 export function getGooglePickerConfig(): {
   configured: boolean;
@@ -134,6 +136,7 @@ export function getGooglePickerConfig(): {
   };
 }
 
+>>>>>>> origin/aplicar-melhorias-na-producao
 export function getGoogleOAuthStateSecret(): string {
   const secret = String(process.env.GOOGLE_OAUTH_STATE_SECRET || "").trim();
 

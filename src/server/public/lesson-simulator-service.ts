@@ -1,3 +1,14 @@
+<<<<<<< HEAD
+import { getGeminiSdk } from "../ai/gemini-sdk";
+import {
+  buildLessonSimulatorPrompt,
+  LESSON_SIMULATOR_SYSTEM_INSTRUCTION,
+  sanitizeLessonSimulatorTheme,
+} from "../ai/prompts/lesson-simulator-prompt";
+
+const MAX_THEME_LENGTH = 100;
+const SIMULATOR_TIMEOUT_MS = 25_000;
+=======
 import {
   DEFAULT_MATERIAL_EDUCATION,
   getAreaOptions,
@@ -60,13 +71,18 @@ export type LessonSimulatorResult = {
   pdfBase64: string;
   filename: string;
 };
+>>>>>>> origin/aplicar-melhorias-na-producao
 
 export type LessonSimulatorErrorCode =
   | "generation_failed"
   | "empty_response"
+<<<<<<< HEAD
+  | "timeout";
+=======
   | "timeout"
   | "invalid_payload"
   | "pdf_failed";
+>>>>>>> origin/aplicar-melhorias-na-producao
 
 export class LessonSimulatorError extends Error {
   readonly code: LessonSimulatorErrorCode;
@@ -100,6 +116,9 @@ export function validateLessonSimulatorTheme(theme: unknown): string | null {
   return null;
 }
 
+<<<<<<< HEAD
+export async function generateLessonSimulatorSkeleton(theme: string): Promise<string> {
+=======
 function asCleanString(value: unknown, fallback = ""): string {
   return typeof value === "string" ? value.replace(/\s+/g, " ").trim() : fallback;
 }
@@ -295,12 +314,47 @@ export async function generateLessonSimulatorLista(
   theme: string,
   educationInput?: Partial<MaterialEducationFields>,
 ): Promise<LessonSimulatorResult> {
+>>>>>>> origin/aplicar-melhorias-na-producao
   const safeTheme = sanitizeLessonSimulatorTheme(theme.trim());
 
   if (!safeTheme) {
     throw new LessonSimulatorError("generation_failed");
   }
 
+<<<<<<< HEAD
+  const generatePromise = getGeminiSdk().models.generateContent({
+    model: "gemini-2.5-flash",
+    contents: buildLessonSimulatorPrompt(safeTheme),
+    config: {
+      systemInstruction: LESSON_SIMULATOR_SYSTEM_INSTRUCTION,
+      temperature: 0.3,
+      maxOutputTokens: 1024,
+    },
+  });
+
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    setTimeout(() => {
+      reject(new LessonSimulatorError("timeout"));
+    }, SIMULATOR_TIMEOUT_MS);
+  });
+
+  try {
+    const response = await Promise.race([generatePromise, timeoutPromise]);
+    const text = response.text?.trim();
+
+    if (!text) {
+      throw new LessonSimulatorError("empty_response");
+    }
+
+    return text;
+  } catch (error) {
+    if (error instanceof LessonSimulatorError) {
+      throw error;
+    }
+
+    throw new LessonSimulatorError("generation_failed");
+  }
+=======
   const educationResult = validateLessonSimulatorEducation(
     educationInput ?? DEFAULT_MATERIAL_EDUCATION,
   );
@@ -362,4 +416,5 @@ export async function generateLessonSimulatorLista(
 export async function generateLessonSimulatorSkeleton(theme: string): Promise<string> {
   const result = await generateLessonSimulatorLista(theme);
   return result.lista.title;
+>>>>>>> origin/aplicar-melhorias-na-producao
 }

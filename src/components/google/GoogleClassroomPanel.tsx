@@ -8,8 +8,11 @@ import {
 } from "@/components/google/google-icon-button-styles";
 import { useEffect, useState } from "react";
 
+<<<<<<< HEAD
+=======
 import type { ClassroomExportMetadata } from "@/hooks/useGoogleClassroomExport";
 
+>>>>>>> origin/aplicar-melhorias-na-producao
 type GoogleClassroomPanelProps = {
   title: string;
   getHtml: () => string;
@@ -17,7 +20,10 @@ type GoogleClassroomPanelProps = {
   compact?: boolean;
   returnTo?: string;
   documentType?: string | null;
+<<<<<<< HEAD
+=======
   classroomMetadata?: ClassroomExportMetadata | null;
+>>>>>>> origin/aplicar-melhorias-na-producao
 };
 
 function hasPublishableDocument(title: string, getHtml: () => string): boolean {
@@ -37,7 +43,10 @@ export function GoogleClassroomPanel({
   compact = false,
   returnTo,
   documentType,
+<<<<<<< HEAD
+=======
   classroomMetadata,
+>>>>>>> origin/aplicar-melhorias-na-producao
 }: GoogleClassroomPanelProps) {
   const [open, setOpen] = useState(false);
   const [visible, setVisible] = useState(() =>
@@ -62,7 +71,10 @@ export function GoogleClassroomPanel({
       onStatus={onStatus}
       returnTo={returnTo}
       documentType={documentType}
+<<<<<<< HEAD
+=======
       classroomMetadata={classroomMetadata}
+>>>>>>> origin/aplicar-melhorias-na-producao
     />
   );
 

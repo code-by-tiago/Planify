@@ -86,7 +86,11 @@ export const RESOURCES = [
   {
     title: "BNCC local",
     description:
+<<<<<<< HEAD
+      "Habilidades sugeridas conforme etapa, ano/série e componente — com base na matriz curricular, para você revisar.",
+=======
       "Base com 1.487 habilidades da BNCC mapeadas por etapa, ano/série e componente, sugeridas automaticamente para você revisar.",
+>>>>>>> origin/aplicar-melhorias-na-producao
     icon: "checkCircle" as const,
   },
   {

@@ -66,7 +66,11 @@ export default function PlanosPage() {
               </span>
 
               <h1 className="mt-6 font-[family-name:var(--font-display)] text-4xl font-extrabold leading-[1.08] tracking-tight text-slate-900 sm:text-5xl lg:text-[3.25rem]">
+<<<<<<< HEAD
+                Menos tempo montando.{" "}
+=======
                 Menos tempo elaborando.{" "}
+>>>>>>> origin/aplicar-melhorias-na-producao
                 <span className="text-cyan-600">Mais tempo ensinando.</span>
               </h1>
 

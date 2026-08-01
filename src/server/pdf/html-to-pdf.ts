@@ -61,6 +61,14 @@ async function launchBrowser() {
 
 export type PdfRenderProfile = "document" | "slides";
 
+<<<<<<< HEAD
+const SLIDE_PAGE = { width: "338mm", height: "190mm" } as const;
+const DOCUMENT_PAGE = { format: "A4" as const };
+
+export async function renderHtmlToPdfBuffer(
+  html: string,
+  profile: PdfRenderProfile = "document",
+=======
 export type PdfRenderOptions = {
   /** Rodapé HTML renderizado em cada página via displayHeaderFooter do Puppeteer. */
   footerHtml?: string;
@@ -85,6 +93,7 @@ export async function renderHtmlToPdfBuffer(
   html: string,
   profile: PdfRenderProfile = "document",
   options?: PdfRenderOptions,
+>>>>>>> origin/aplicar-melhorias-na-producao
 ): Promise<Buffer> {
   const browser = await launchBrowser();
 
@@ -113,7 +122,16 @@ export async function renderHtmlToPdfBuffer(
       );
     });
 
+<<<<<<< HEAD
+    const slideCount =
+      profile === "slides"
+        ? await page.evaluate(
+            () => document.querySelectorAll(".planify-slide").length,
+          )
+        : 0;
+=======
     const hasFooter = Boolean(options?.footerHtml?.trim()) && profile === "document";
+>>>>>>> origin/aplicar-melhorias-na-producao
 
     const pdfOptions =
       profile === "slides"
@@ -127,6 +145,15 @@ export async function renderHtmlToPdfBuffer(
         : {
             format: DOCUMENT_PAGE.format,
             printBackground: true,
+<<<<<<< HEAD
+            preferCSSPageSize: true,
+            margin: {
+              top: "12mm",
+              right: "12mm",
+              bottom: "12mm",
+              left: "12mm",
+            },
+=======
             preferCSSPageSize: !hasFooter,
             margin: {
               top: "12mm",
@@ -141,6 +168,7 @@ export async function renderHtmlToPdfBuffer(
                   footerTemplate: options!.footerHtml!,
                 }
               : {}),
+>>>>>>> origin/aplicar-melhorias-na-producao
           };
 
     const pdf = await page.pdf(pdfOptions);

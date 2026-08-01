@@ -100,6 +100,16 @@ export async function GET(
   let isSlidePreview = false;
 
   if (row.file_path) {
+<<<<<<< HEAD
+    if (previewKind === "pdf") {
+      const { data } = await (supabase.storage.from(BUCKET_NAME) as any).createSignedUrl(
+        row.file_path,
+        SIGNED_URL_TTL_SECONDS,
+      );
+
+      signedUrl = data?.signedUrl || null;
+    } else if (previewKind === "html") {
+=======
     // PDF, DOCX e binários: URL assinada para visualizador embutido / download
     if (previewKind === "pdf" || previewKind === "docx" || previewKind === "binary") {
       const { data } = await (supabase.storage.from(BUCKET_NAME) as any).createSignedUrl(
@@ -110,6 +120,7 @@ export async function GET(
     }
 
     if (previewKind === "html") {
+>>>>>>> origin/aplicar-melhorias-na-producao
       const { data: fileData, error: downloadError } = await (
         supabase.storage.from(BUCKET_NAME) as any
       ).download(row.file_path);
@@ -122,6 +133,15 @@ export async function GET(
         );
       }
     } else if (previewKind === "docx") {
+<<<<<<< HEAD
+      const { data: fileData, error: downloadError } = await (
+        supabase.storage.from(BUCKET_NAME) as any
+      ).download(row.file_path);
+
+      if (!downloadError && fileData) {
+        const storedBuffer = Buffer.from(await fileData.arrayBuffer());
+        htmlContent = convertSimpleDocxToHtml(storedBuffer, row.title);
+=======
       // Prévia HTML só para .docx (ZIP/XML). .doc legado usa Office Online via signedUrl.
       const isLegacyDoc =
         String(row.file_name || "").toLowerCase().endsWith(".doc") &&
@@ -135,6 +155,7 @@ export async function GET(
           const storedBuffer = Buffer.from(await fileData.arrayBuffer());
           htmlContent = convertSimpleDocxToHtml(storedBuffer, row.title || "Documento");
         }
+>>>>>>> origin/aplicar-melhorias-na-producao
       }
     }
   }

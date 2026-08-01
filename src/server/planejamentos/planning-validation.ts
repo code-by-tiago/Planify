@@ -112,6 +112,8 @@ export function validatePlanningPayload(
     return "As observações estão muito longas.";
   }
 
+<<<<<<< HEAD
+=======
   const tipo = normalizeText(payload.tipoPlanejamento).toLowerCase();
   if (tipo.includes("tri")) {
     return (
@@ -120,6 +122,7 @@ export function validatePlanningPayload(
     );
   }
 
+>>>>>>> origin/aplicar-melhorias-na-producao
   return null;
 }
 

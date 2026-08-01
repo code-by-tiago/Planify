@@ -140,12 +140,15 @@ function scanTextForIssues(label: string, text: string | undefined): string[] {
   if (/```/.test(trimmed)) {
     issues.push(`${label}: contém bloco de código markdown.`);
   }
+<<<<<<< HEAD
+=======
   if (/\*\*[^*]+\*\*/.test(trimmed) || /__[^_]+__/.test(trimmed)) {
     issues.push(`${label}: contém markdown inline (** ou __) — use campos JSON estruturados.`);
   }
   if (/(^|[^*])\*[^*\s][^*]*\*([^*]|$)/.test(trimmed)) {
     issues.push(`${label}: contém markdown inline (*) — use campos JSON estruturados.`);
   }
+>>>>>>> origin/aplicar-melhorias-na-producao
   return issues;
 }
 

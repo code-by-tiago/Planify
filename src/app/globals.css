@@ -2566,6 +2566,8 @@ html:has(.pl-single-screen) body {
     position: static;
   }
 }
+<<<<<<< HEAD
+=======
 
 /*
   Landing professor-primeiro: CTA final + footer escuros.
@@ -2601,3 +2603,4 @@ html:has(.pl-single-screen) body {
 .planify-hud-landing [data-pp-dark] a[aria-label*="Instagram"] {
   color: inherit !important;
 }
+>>>>>>> origin/aplicar-melhorias-na-producao

@@ -7,10 +7,13 @@ import {
   saveHistoryItems,
   upsertHistoryItem,
 } from "@/lib/history/history-storage";
+<<<<<<< HEAD
+=======
 import {
   assignHistoryItemFolder,
   ensureMaterialFolder,
 } from "@/lib/history/material-folders";
+>>>>>>> origin/aplicar-melhorias-na-producao
 import type { MaterialAIOutput } from "@/types/ai";
 import type { MaterialEngineInput } from "@/server/materials/material-engine-types";
 import type { MaterialEngineResponse } from "@/server/materials/material-engine-types";
@@ -41,6 +44,10 @@ export type MaterialEditorMeta = {
   qualityIssues?: string[];
   generationPayload?: MaterialEngineInput | null;
   serverMaterialId?: string | null;
+<<<<<<< HEAD
+  /** Snapshot para reimportar questões no banco e fluxos derivados. */
+  estrutura?: MaterialAIOutput | MaterialEngineResponse | null;
+=======
   schoolLabel?: string | null;
   classLabel?: string | null;
   className?: string | null;
@@ -49,6 +56,7 @@ export type MaterialEditorMeta = {
   estrutura?: MaterialAIOutput | MaterialEngineResponse | null;
   /** Superfície que originou a geração (ex.: copiloto). */
   generationSource?: string | null;
+>>>>>>> origin/aplicar-melhorias-na-producao
 };
 
 export type MaterialHistoryPreview = {
@@ -126,6 +134,8 @@ export function persistGeneratedMaterial(
     }
   }
 
+<<<<<<< HEAD
+=======
   const classLabel =
     String(meta.classLabel || meta.className || meta.generationPayload?.className || "").trim() ||
     null;
@@ -139,6 +149,7 @@ export function persistGeneratedMaterial(
     folderId: folder?.id || null,
   };
 
+>>>>>>> origin/aplicar-melhorias-na-producao
   const document = createEditorDocument({
     id: resolveMaterialDocumentId(meta),
     source: "material",
@@ -146,6 +157,13 @@ export function persistGeneratedMaterial(
     subtitle: `${meta.componente} · ${meta.anoSerie}`,
     type: `material:${meta.toolId}`,
     content: html,
+<<<<<<< HEAD
+    raw: meta,
+  });
+
+  saveEditorDocument(document);
+  return editorDocumentToHistoryItem(document);
+=======
     raw: enrichedMeta,
   });
 
@@ -155,6 +173,7 @@ export function persistGeneratedMaterial(
   const withFolder = assignHistoryItemFolder(historyItem, folder);
   upsertHistoryItem(withFolder);
   return withFolder;
+>>>>>>> origin/aplicar-melhorias-na-producao
 }
 
 export function openMaterialInEditor(

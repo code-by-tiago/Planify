@@ -1,5 +1,16 @@
 "use client";
 
+<<<<<<< HEAD
+import { useRef, useState } from "react";
+import { PlanifyModal } from "@/components/ui/PlanifyModal";
+import { ComunidadeDocenteUserPicker } from "@/components/community/docente/ComunidadeDocenteUserPicker";
+import { IconUpload, IconX } from "@/components/community/docente/docente-icons";
+import { DOCENTE_DISCIPLINAS } from "@/lib/community/docente-utils";
+import type { CommunityProfileSearchResult } from "@/lib/community/types";
+import type { DocenteCreatePostInput, DocenteDisciplina } from "@/lib/community/docente-types";
+
+const ACCEPTED_FILES = ".pdf,.doc,.docx,.ppt,.pptx,.png,.jpg,.jpeg,.webp";
+=======
 import { useEffect, useRef, useState } from "react";
 import { PlanifyModal } from "@/components/ui/PlanifyModal";
 import { ComunidadeDocenteUserPicker } from "@/components/community/docente/ComunidadeDocenteUserPicker";
@@ -21,6 +32,7 @@ export type ComposerIntent = "texto" | "aulas" | "materiais" | "imagem" | "arqui
 
 const ACCEPTED_FILES = ".pdf,.doc,.docx,.ppt,.pptx,.png,.jpg,.jpeg,.webp";
 const IMAGE_ACCEPT = "image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp";
+>>>>>>> origin/aplicar-melhorias-na-producao
 const ACCEPTED_MIMES = [
   "application/pdf",
   "application/msword",
@@ -32,6 +44,8 @@ const ACCEPTED_MIMES = [
   "image/webp",
 ];
 
+<<<<<<< HEAD
+=======
 const BODY_MAX = 2000;
 const BODY_MIN = 1;
 
@@ -103,13 +117,17 @@ function derivePostTitle(params: {
   return "Publicação na comunidade";
 }
 
+>>>>>>> origin/aplicar-melhorias-na-producao
 type ComunidadeDocenteCreatePostModalProps = {
   open: boolean;
   onClose: () => void;
   onSubmit: (input: DocenteCreatePostInput) => void | Promise<void>;
   defaultDisciplina?: DocenteDisciplina;
+<<<<<<< HEAD
+=======
   intent?: ComposerIntent;
   viewerName?: string;
+>>>>>>> origin/aplicar-melhorias-na-producao
 };
 
 export function ComunidadeDocenteCreatePostModal({
@@ -117,6 +135,12 @@ export function ComunidadeDocenteCreatePostModal({
   onClose,
   onSubmit,
   defaultDisciplina = "Multidisciplinar",
+<<<<<<< HEAD
+}: ComunidadeDocenteCreatePostModalProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [title, setTitle] = useState("");
+  const [body, setBody] = useState("");
+=======
   intent = "texto",
   viewerName = "Professor(a)",
 }: ComunidadeDocenteCreatePostModalProps) {
@@ -125,12 +149,19 @@ export function ComunidadeDocenteCreatePostModal({
   const [body, setBody] = useState("");
   const [title, setTitle] = useState("");
   const [showAdvanced, setShowAdvanced] = useState(false);
+>>>>>>> origin/aplicar-melhorias-na-producao
   const [disciplina, setDisciplina] = useState<DocenteDisciplina>(defaultDisciplina);
   const [tagsInput, setTagsInput] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const [selectedParticipants, setSelectedParticipants] = useState<CommunityProfileSearchResult[]>([]);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+<<<<<<< HEAD
+
+  function reset() {
+    setTitle("");
+    setBody("");
+=======
   const [dragActive, setDragActive] = useState(false);
   const [fileAccept, setFileAccept] = useState(ACCEPTED_FILES);
   const [importingDrive, setImportingDrive] = useState(false);
@@ -139,15 +170,19 @@ export function ComunidadeDocenteCreatePostModal({
     setBody("");
     setTitle("");
     setShowAdvanced(false);
+>>>>>>> origin/aplicar-melhorias-na-producao
     setDisciplina(defaultDisciplina);
     setTagsInput("");
     setFiles([]);
     setSelectedParticipants([]);
     setError("");
     setSubmitting(false);
+<<<<<<< HEAD
+=======
     setDragActive(false);
     setFileAccept(ACCEPTED_FILES);
     setImportingDrive(false);
+>>>>>>> origin/aplicar-melhorias-na-producao
   }
 
   function handleClose() {
@@ -156,6 +191,8 @@ export function ComunidadeDocenteCreatePostModal({
     onClose();
   }
 
+<<<<<<< HEAD
+=======
   useEffect(() => {
     if (!open) return;
     const timer = window.setTimeout(() => textareaRef.current?.focus(), 50);
@@ -230,6 +267,7 @@ export function ComunidadeDocenteCreatePostModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- retoma só ao abrir o modal / status Google
   }, [open]);
 
+>>>>>>> origin/aplicar-melhorias-na-producao
   function handleFilesSelected(selected: FileList | null) {
     if (!selected) return;
     const valid = Array.from(selected).filter((f) =>
@@ -243,6 +281,8 @@ export function ComunidadeDocenteCreatePostModal({
     setFiles((prev) => [...prev, ...valid].slice(0, 5));
   }
 
+<<<<<<< HEAD
+=======
   function handleDrop(event: React.DragEvent) {
     event.preventDefault();
     setDragActive(false);
@@ -250,10 +290,19 @@ export function ComunidadeDocenteCreatePostModal({
     handleFilesSelected(event.dataTransfer?.files ?? null);
   }
 
+>>>>>>> origin/aplicar-melhorias-na-producao
   function removeFile(index: number) {
     setFiles((prev) => prev.filter((_, i) => i !== index));
   }
 
+<<<<<<< HEAD
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!title.trim()) {
+      setError("Informe um título para a publicação.");
+      return;
+    }
+=======
   async function handlePickFromDrive() {
     if (submitting || importingDrive) return;
     setImportingDrive(true);
@@ -294,23 +343,32 @@ export function ComunidadeDocenteCreatePostModal({
       return;
     }
 
+>>>>>>> origin/aplicar-melhorias-na-producao
     const tags = tagsInput
       .split(",")
       .map((t) => t.trim())
       .filter(Boolean);
 
+<<<<<<< HEAD
+=======
     const resolvedTitle = derivePostTitle({
       explicitTitle: title,
       body: trimmedBody,
       fileName: files[0]?.name || null,
     });
 
+>>>>>>> origin/aplicar-melhorias-na-producao
     setSubmitting(true);
     setError("");
     try {
       await onSubmit({
+<<<<<<< HEAD
+        title: title.trim(),
+        body: body.trim(),
+=======
         title: resolvedTitle,
         body: trimmedBody,
+>>>>>>> origin/aplicar-melhorias-na-producao
         disciplina,
         tags,
         files,
@@ -318,16 +376,123 @@ export function ComunidadeDocenteCreatePostModal({
       });
       reset();
       onClose();
+<<<<<<< HEAD
+    } catch {
+      setError("Não foi possível publicar. Tente novamente.");
+=======
     } catch (err) {
       setError(
         err instanceof Error && err.message
           ? err.message
           : "Não foi possível publicar. Tente novamente.",
       );
+>>>>>>> origin/aplicar-melhorias-na-producao
       setSubmitting(false);
     }
   }
 
+<<<<<<< HEAD
+  return (
+    <PlanifyModal open={open} onClose={handleClose} title="Criar publicação">
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-500">
+            Título
+          </label>
+          <input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Ex.: Sequência didática sobre sustentabilidade"
+            disabled={submitting}
+            className="h-11 w-full rounded-xl border border-slate-200 px-3 text-sm font-semibold text-[#0F172A] outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100 disabled:opacity-60"
+          />
+        </div>
+
+        <div>
+          <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-500">
+            Conteúdo
+          </label>
+          <textarea
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+            rows={4}
+            placeholder="Compartilhe sua experiência, dúvida ou material..."
+            disabled={submitting}
+            className="w-full resize-none rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-medium text-[#0F172A] outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100 disabled:opacity-60"
+          />
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-500">
+              Disciplina
+            </label>
+            <select
+              value={disciplina}
+              onChange={(e) => setDisciplina(e.target.value as DocenteDisciplina)}
+              disabled={submitting}
+              className="h-11 w-full rounded-xl border border-slate-200 px-3 text-sm font-semibold text-[#0F172A] outline-none focus:border-cyan-400 disabled:opacity-60"
+            >
+              {DOCENTE_DISCIPLINAS.map((d) => (
+                <option key={d} value={d}>
+                  {d}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-500">
+              Tags
+            </label>
+            <input
+              value={tagsInput}
+              onChange={(e) => setTagsInput(e.target.value)}
+              placeholder="BNCC, atividade, 6º ano"
+              disabled={submitting}
+              className="h-11 w-full rounded-xl border border-slate-200 px-3 text-sm font-semibold text-[#0F172A] outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100 disabled:opacity-60"
+            />
+          </div>
+        </div>
+
+        <ComunidadeDocenteUserPicker
+          label="Convidar participantes (opcional)"
+          hint="Professores convidados verão esta discussão no feed."
+          selected={selectedParticipants}
+          onChange={setSelectedParticipants}
+          maxUsers={8}
+        />
+
+        <div>
+          <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-500">
+            Anexos (PDF, DOCX, PPTX, imagens)
+          </label>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept={ACCEPTED_FILES}
+            multiple
+            className="hidden"
+            disabled={submitting}
+            onChange={(e) => handleFilesSelected(e.target.files)}
+          />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={submitting}
+            className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-200 py-6 text-sm font-semibold text-slate-500 transition hover:border-cyan-300 hover:bg-cyan-50/50 hover:text-cyan-700 disabled:opacity-60"
+          >
+            <IconUpload className="h-5 w-5" />
+            Arraste ou clique para enviar arquivos
+          </button>
+          {files.length > 0 ? (
+            <ul className="mt-2 space-y-1.5">
+              {files.map((file, i) => (
+                <li
+                  key={`${file.name}-${i}`}
+                  className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-600"
+                >
+                  <span className="truncate">{file.name}</span>
+=======
   const canPublish =
     (body.trim().length >= BODY_MIN || files.length > 0) && !importingDrive;
 
@@ -456,16 +621,30 @@ export function ComunidadeDocenteCreatePostModal({
                     <p className="truncate text-xs font-bold text-[#0F172A]">{file.name}</p>
                     <p className="text-[11px] font-medium text-slate-400">{formatFileSize(file.size)}</p>
                   </div>
+>>>>>>> origin/aplicar-melhorias-na-producao
                   <button
                     type="button"
                     onClick={() => removeFile(i)}
                     disabled={submitting}
+<<<<<<< HEAD
+                    className="ml-2 shrink-0 text-slate-400 hover:text-red-500 disabled:opacity-60"
+=======
                     className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-rose-50 hover:text-rose-500 disabled:opacity-60"
+>>>>>>> origin/aplicar-melhorias-na-producao
                     aria-label="Remover arquivo"
                   >
                     <IconX className="h-4 w-4" />
                   </button>
                 </li>
+<<<<<<< HEAD
+              ))}
+            </ul>
+          ) : null}
+        </div>
+
+        {error ? (
+          <p className="rounded-xl bg-red-50 px-3 py-2 text-xs font-semibold text-red-600">
+=======
               );
             })}
           </ul>
@@ -558,23 +737,37 @@ export function ComunidadeDocenteCreatePostModal({
 
         {error ? (
           <p className="rounded-xl border border-rose-100 bg-rose-50 px-3.5 py-2.5 text-xs font-semibold text-rose-600">
+>>>>>>> origin/aplicar-melhorias-na-producao
             {error}
           </p>
         ) : null}
 
+<<<<<<< HEAD
+        <div className="flex gap-3 pt-2">
+=======
         <div className="flex items-center justify-end gap-3 border-t border-slate-100 pt-4">
+>>>>>>> origin/aplicar-melhorias-na-producao
           <button
             type="button"
             onClick={handleClose}
             disabled={submitting}
+<<<<<<< HEAD
+            className="flex-1 rounded-2xl border border-slate-200 py-3 text-sm font-bold text-slate-600 transition hover:bg-slate-50 disabled:opacity-60"
+=======
             className="rounded-2xl px-5 py-3 text-sm font-bold text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 disabled:opacity-60"
+>>>>>>> origin/aplicar-melhorias-na-producao
           >
             Cancelar
           </button>
           <button
             type="submit"
+<<<<<<< HEAD
+            disabled={submitting}
+            className="flex-1 rounded-2xl bg-cyan-500 py-3 text-sm font-bold text-white shadow-md transition hover:bg-cyan-600 disabled:opacity-60"
+=======
             disabled={submitting || !canPublish}
             className="inline-flex items-center gap-2 rounded-2xl bg-cyan-500 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-cyan-200/60 transition hover:bg-cyan-600 disabled:cursor-not-allowed disabled:opacity-50"
+>>>>>>> origin/aplicar-melhorias-na-producao
           >
             {submitting ? "Publicando…" : "Publicar"}
           </button>

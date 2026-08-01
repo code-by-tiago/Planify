@@ -12,10 +12,17 @@ import { getHistoryPlanningPayload } from "@/lib/documents/document-export-conte
 import { extractComponenteFromPlanningPayload } from "@/lib/marketplace/marketplace-publish";
 import { PlanifyMaterialHubCard } from "@/components/materials/PlanifyMaterialHubCard";
 import { MarketplacePublishButton } from "@/components/marketplace/MarketplacePublishButton";
+<<<<<<< HEAD
+import {
+  buildHistoryContentPreview,
+  historyItemContentToHtml,
+  isHistoryHtmlContent,
+=======
 import { ShareMaterialLinkButton } from "@/components/share/ShareMaterialLinkButton";
 import {
   buildHistoryContentPreview,
   historyItemContentToHtml,
+>>>>>>> origin/aplicar-melhorias-na-producao
   resolveHistoryTypeLabel,
 } from "../../lib/history/history-preview";
 import { removeHistoryItemFromAPI } from "../../lib/history/history-api-client";
@@ -27,6 +34,9 @@ import {
   loadHistoryItemsWithSync,
   removeHistoryItem,
   removeHistoryItems,
+<<<<<<< HEAD
+} from "../../lib/history/history-storage";
+=======
   upsertHistoryItem,
 } from "../../lib/history/history-storage";
 import {
@@ -41,6 +51,7 @@ import {
   syncMaterialFoldersFromAPI,
   type MaterialFolder,
 } from "../../lib/history/material-folders";
+>>>>>>> origin/aplicar-melhorias-na-producao
 import { saveEditorDocument } from "../../lib/editor/editor-storage";
 import { resolveHistoryItemForEditor } from "../../lib/history/history-editor-open";
 import {
@@ -100,6 +111,22 @@ function refreshHistoryState(): Promise<HistoryItem[]> {
   return loadHistoryItemsWithSync();
 }
 
+<<<<<<< HEAD
+function getSourceBadgeClass(source: string): string {
+  if (source === "planejamento") {
+    return "border-cyan-200 bg-cyan-50 text-cyan-700";
+  }
+  if (source === "material") {
+    return "border-slate-200 bg-slate-50 text-slate-700";
+  }
+  if (source === "manual") {
+    return "border-emerald-200 bg-emerald-50 text-emerald-700";
+  }
+  return "border-slate-200 bg-slate-50 text-slate-700";
+}
+
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
 function resolveMarketplaceTipo(item: HistoryItem): string {
   if (item.source === "planejamento") return "Planejamento";
   if (item.source === "manual") return "Material do editor";
@@ -118,9 +145,14 @@ function resolveHistoricoComponente(item: HistoryItem): string | undefined {
 export function HistoricoClient() {
   const router = useRouter();
   const [items, setItems] = useState<HistoryItem[]>([]);
+<<<<<<< HEAD
+  const [filter, setFilter] = useState<HistoryFilter>(initialFilter);
+  const [selectedItem, setSelectedItem] = useState<HistoryItem | null>(null);
+=======
   const [folders, setFolders] = useState<MaterialFolder[]>([]);
   const [activeFolderId, setActiveFolderId] = useState<string | null>(null);
   const [filter, setFilter] = useState<HistoryFilter>(initialFilter);
+>>>>>>> origin/aplicar-melhorias-na-producao
   const [status, setStatus] = useState<StatusState | null>(null);
   const [exportError, setExportError] = useState("");
   const [exportErrorCta, setExportErrorCta] = useState<
@@ -130,6 +162,8 @@ export function HistoricoClient() {
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [openingId, setOpeningId] = useState<string | null>(null);
+<<<<<<< HEAD
+=======
   const [newFolderOpen, setNewFolderOpen] = useState(false);
   const [newFolderSchool, setNewFolderSchool] = useState("");
   const [newFolderClass, setNewFolderClass] = useState("");
@@ -151,10 +185,17 @@ export function HistoricoClient() {
       filterItemsByFolder(list, activeFolderId || "__inbox__"),
     [activeFolderId],
   );
+>>>>>>> origin/aplicar-melhorias-na-producao
 
   useEffect(() => {
     let cancelled = false;
 
+<<<<<<< HEAD
+    void refreshHistoryState().then((loaded) => {
+      if (cancelled) return;
+      setItems(loaded);
+      setSelectedItem(loaded[0] ?? null);
+=======
     void refreshHistoryState().then(async (loaded) => {
       if (cancelled) return;
 
@@ -178,6 +219,7 @@ export function HistoricoClient() {
       const synced = await syncMaterialFoldersFromAPI();
       if (cancelled) return;
       setFolders(synced.length > 0 ? synced : loadMaterialFolders());
+>>>>>>> origin/aplicar-melhorias-na-producao
     });
 
     return () => {
@@ -189,6 +231,14 @@ export function HistoricoClient() {
     function handleRefresh() {
       void refreshHistoryState().then((loaded) => {
         setItems(loaded);
+<<<<<<< HEAD
+        setSelectedItem((current) =>
+          current
+            ? loaded.find((item) => item.id === current.id) ?? loaded[0] ?? null
+            : loaded[0] ?? null,
+        );
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
       });
     }
 
@@ -201,6 +251,12 @@ export function HistoricoClient() {
   }, []);
 
   const typeOptions = useMemo(() => getHistoryTypeOptions(items), [items]);
+<<<<<<< HEAD
+  const filteredItems = useMemo(
+    () => filterHistoryItems(items, filter),
+    [items, filter],
+  );
+=======
   const folderTree = useMemo(() => buildFolderTree(folders, items), [folders, items]);
   const flatFolders = useMemo(
     () => folderTree.flatMap((school) => school.classes),
@@ -209,6 +265,7 @@ export function HistoricoClient() {
   const filteredItems = useMemo(() => {
     return filterHistoryItems(scopeItems(items), filter);
   }, [items, filter, scopeItems]);
+>>>>>>> origin/aplicar-melhorias-na-producao
   const filteredItemIds = useMemo(
     () => filteredItems.map((item) => item.id),
     [filteredItems],
@@ -288,9 +345,20 @@ export function HistoricoClient() {
   }
 
   function syncRemovedItems(removedIds: string[]) {
+<<<<<<< HEAD
+    const removedIdSet = new Set(removedIds);
     const next = removeHistoryItems(removedIds);
     setItems(next);
 
+    if (selectedItem && removedIdSet.has(selectedItem.id)) {
+      setSelectedItem(next[0] ?? null);
+    }
+
+=======
+    const next = removeHistoryItems(removedIds);
+    setItems(next);
+
+>>>>>>> origin/aplicar-melhorias-na-producao
     setSelectedIds((current) => {
       const nextSelected = new Set(current);
       for (const id of removedIds) {
@@ -358,6 +426,10 @@ export function HistoricoClient() {
   function clearAll() {
     clearHistoryItems();
     setItems([]);
+<<<<<<< HEAD
+    setSelectedItem(null);
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
     exitSelectionMode();
     setStatus({
       type: "info",
@@ -368,6 +440,10 @@ export function HistoricoClient() {
   function reloadHistory() {
     void refreshHistoryState().then((loaded) => {
       setItems(loaded);
+<<<<<<< HEAD
+      setSelectedItem(loaded[0] ?? null);
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
       setStatus({
         type: "success",
         message: "Materiais recarregados.",
@@ -375,6 +451,14 @@ export function HistoricoClient() {
     });
   }
 
+<<<<<<< HEAD
+  const getSelectedHtml = useCallback(() => {
+    if (!selectedItem) return "";
+    return historyItemContentToHtml(selectedItem.content);
+  }, [selectedItem]);
+
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
   function handleExportStatus(message: string) {
     setExportError("");
     setExportErrorCta(null);
@@ -393,6 +477,8 @@ export function HistoricoClient() {
     });
   }
 
+<<<<<<< HEAD
+=======
   function openNewFolderForm(forItemId?: string) {
     setPendingMoveItemId(forItemId ?? null);
     setNewFolderSchool("");
@@ -529,6 +615,7 @@ export function HistoricoClient() {
     );
   }
 
+>>>>>>> origin/aplicar-melhorias-na-producao
   return (
     <PlanifyWorkspacePane
       header={
@@ -536,6 +623,30 @@ export function HistoricoClient() {
           badge="Meus materiais"
           icon="history"
           title="Tudo que você gerou"
+<<<<<<< HEAD
+          description="Planejamentos, materiais e rascunhos do editor — sincronizados com sua conta."
+        />
+      }
+    >
+      <div className="grid gap-6">
+        <div className="flex flex-wrap items-center gap-3">
+          {[
+            ["Total", totals.todos],
+            ["Planejamentos", totals.planejamentos],
+            ["Materiais", totals.materiais],
+            ["Editor", totals.editor],
+          ].map(([label, value]) => (
+            <div
+              key={label}
+              className="rounded-xl border border-cyan-400/15 bg-white px-4 py-2.5"
+            >
+              <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                {label}
+              </p>
+              <p className="text-lg font-extrabold text-slate-950">{value}</p>
+            </div>
+          ))}
+=======
           description="Organize por escola e turma para não perder o ano letivo. Planejamentos, materiais e rascunhos sincronizados com sua conta."
         />
       }
@@ -715,6 +826,7 @@ export function HistoricoClient() {
               </div>
             ))}
           </div>
+>>>>>>> origin/aplicar-melhorias-na-producao
           <div className="ml-auto flex flex-wrap gap-2">
             {selectionMode ? (
               <>
@@ -731,14 +843,22 @@ export function HistoricoClient() {
                   type="button"
                   onClick={removeSelectedItems}
                   disabled={selectedCount === 0}
+<<<<<<< HEAD
+                  className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-xs font-semibold text-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
+=======
                   className="rounded-xl px-4 py-2 text-xs font-semibold text-rose-600 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-40"
+>>>>>>> origin/aplicar-melhorias-na-producao
                 >
                   Excluir selecionados{selectedCount > 0 ? ` (${selectedCount})` : ""}
                 </button>
                 <button
                   type="button"
                   onClick={exitSelectionMode}
+<<<<<<< HEAD
+                  className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-600"
+=======
                   className="rounded-xl px-4 py-2 text-xs font-semibold text-slate-500 transition hover:bg-slate-50"
+>>>>>>> origin/aplicar-melhorias-na-producao
                 >
                   Cancelar
                 </button>
@@ -763,13 +883,29 @@ export function HistoricoClient() {
             <button
               type="button"
               onClick={clearAll}
+<<<<<<< HEAD
+              className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-xs font-semibold text-rose-700"
+=======
               className="rounded-xl px-4 py-2 text-xs font-semibold text-rose-600 transition hover:bg-rose-50"
+>>>>>>> origin/aplicar-melhorias-na-producao
             >
               Limpar tudo
             </button>
           </div>
         </div>
 
+<<<<<<< HEAD
+        <div className="rounded-2xl border border-cyan-400/15 bg-white p-4 sm:p-5">
+          <div className="grid gap-4 md:grid-cols-4">
+            <label className="grid gap-2 md:col-span-2">
+              <span className="text-xs font-semibold text-slate-600">Busca</span>
+              <input
+                value={filter.query}
+                onChange={(event) => updateFilter("query", event.target.value)}
+                placeholder="Buscar por título, conteúdo, tipo..."
+                className="h-11 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-950 outline-none focus:border-cyan-400 focus:bg-white"
+              />
+=======
         <div className="pl-hud-glass rounded-2xl p-4 sm:p-5">
           <div className="grid gap-4 md:grid-cols-4">
             <label className="grid gap-2 md:col-span-2">
@@ -786,6 +922,7 @@ export function HistoricoClient() {
                   className="h-11 w-full rounded-xl border border-cyan-400/20 bg-white/90 pl-9 pr-3 text-sm font-medium text-slate-900 outline-none placeholder:text-slate-400 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
                 />
               </div>
+>>>>>>> origin/aplicar-melhorias-na-producao
             </label>
             <label className="grid gap-2">
               <span className="text-xs font-semibold text-slate-600">Fonte</span>
@@ -797,7 +934,11 @@ export function HistoricoClient() {
                     event.target.value as HistoryFilter["source"],
                   )
                 }
+<<<<<<< HEAD
+                className="h-11 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:border-cyan-400 focus:bg-white"
+=======
                 className="h-11 rounded-xl border border-cyan-400/20 bg-white/90 px-3 text-sm font-medium text-slate-900 outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+>>>>>>> origin/aplicar-melhorias-na-producao
               >
                 {Object.entries(sourceLabels).map(([value, label]) => (
                   <option key={value} value={value}>
@@ -811,7 +952,11 @@ export function HistoricoClient() {
               <select
                 value={filter.type}
                 onChange={(event) => updateFilter("type", event.target.value)}
+<<<<<<< HEAD
+                className="h-11 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:border-cyan-400 focus:bg-white"
+=======
                 className="h-11 rounded-xl border border-cyan-400/20 bg-white/90 px-3 text-sm font-medium text-slate-900 outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+>>>>>>> origin/aplicar-melhorias-na-producao
               >
                 <option value="todos">Todos</option>
                 {typeOptions.map((type) => (
@@ -844,6 +989,10 @@ export function HistoricoClient() {
         {filteredItems.length > 0 ? (
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {filteredItems.map((item) => {
+<<<<<<< HEAD
+              const selected = selectedItem?.id === item.id;
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
               const checked = selectedIds.has(item.id);
               const typeLabel = resolveHistoryTypeLabel(item.type);
               return (
@@ -854,6 +1003,15 @@ export function HistoricoClient() {
                   description={buildHistoryContentPreview(item.content)}
                   metaPrimary={item.subtitle || sourceLabels[item.source] || undefined}
                   metaSecondary={formatDate(item.updatedAt)}
+<<<<<<< HEAD
+                  selected={selected}
+                  selectionMode={selectionMode}
+                  checked={checked}
+                  onToggleCheck={() => toggleItemSelection(item.id)}
+                  onSelect={() => setSelectedItem(item)}
+                  footer={
+                    <div className="space-y-2">
+=======
                   selectionMode={selectionMode}
                   checked={checked}
                   onToggleCheck={() => toggleItemSelection(item.id)}
@@ -865,12 +1023,16 @@ export function HistoricoClient() {
                         </span>
                         {renderMoveSelect(item, true)}
                       </label>
+>>>>>>> origin/aplicar-melhorias-na-producao
                       <HistoryDocumentExportBar
                         item={item}
                         onStatus={handleExportStatus}
                         onError={handleExportError}
                         classroomMode="popover"
                       />
+<<<<<<< HEAD
+                      <div className="flex gap-1.5">
+=======
                       <div className="flex flex-wrap gap-1.5">
                         <ShareMaterialLinkButton
                           title={item.title}
@@ -899,11 +1061,16 @@ export function HistoricoClient() {
                         />
                       </div>
                       <div className="flex items-center gap-1.5">
+>>>>>>> origin/aplicar-melhorias-na-producao
                         <button
                           type="button"
                           onClick={() => void openInEditor(item)}
                           disabled={selectionMode || openingId === item.id}
+<<<<<<< HEAD
+                          className="pl-hud-btn min-h-9 flex-1 rounded-xl py-1.5 text-[10px] font-bold disabled:cursor-not-allowed disabled:opacity-50"
+=======
                           className="pl-hud-btn flex h-8 flex-1 items-center justify-center rounded-lg text-[10px] font-semibold disabled:cursor-not-allowed disabled:opacity-50"
+>>>>>>> origin/aplicar-melhorias-na-producao
                         >
                           {openingId === item.id ? "Abrindo..." : "Abrir no editor"}
                         </button>
@@ -911,11 +1078,19 @@ export function HistoricoClient() {
                           type="button"
                           onClick={() => removeItem(item)}
                           disabled={selectionMode}
+<<<<<<< HEAD
+                          className="min-h-9 rounded-xl border border-rose-200 bg-rose-50 px-2 py-1.5 text-[10px] font-bold text-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
+                          title="Excluir permanentemente"
+                          aria-label={`Excluir permanentemente ${item.title}`}
+                        >
+                          Excluir
+=======
                           className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-rose-50 hover:text-rose-600 disabled:cursor-not-allowed disabled:opacity-40"
                           title="Excluir permanentemente"
                           aria-label={`Excluir permanentemente ${item.title}`}
                         >
                           <PlanifyIcon name="trash" className="h-3.5 w-3.5" />
+>>>>>>> origin/aplicar-melhorias-na-producao
                         </button>
                       </div>
                     </div>
@@ -925,6 +1100,119 @@ export function HistoricoClient() {
             })}
           </div>
         ) : (
+<<<<<<< HEAD
+          <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center">
+            <p className="text-xs font-bold uppercase tracking-wide text-cyan-600">
+              Vazio
+            </p>
+            <h3 className="mt-2 text-sm font-semibold text-slate-900">
+              Nenhum material encontrado
+            </h3>
+            <p className="mt-2 text-sm text-slate-600">
+              Gere um planejamento ou material para vê-lo aqui.
+            </p>
+            <div className="mt-6 flex flex-wrap justify-center gap-3">
+              <Link
+                href="/planejamentos"
+                className="pl-hud-btn rounded-xl px-5 py-2.5 text-xs font-semibold"
+              >
+                Novo planejamento
+              </Link>
+              <Link
+                href="/materiais"
+                className="pl-hud-btn-secondary rounded-xl px-5 py-2.5 text-xs font-semibold"
+              >
+                Novo material
+              </Link>
+            </div>
+          </div>
+        )}
+
+        {selectedItem ? (
+          <div className="rounded-2xl border border-cyan-400/20 bg-white p-5 sm:p-6">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div className="min-w-0">
+                <span
+                  className={`inline-flex rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${getSourceBadgeClass(selectedItem.source)}`}
+                >
+                  {sourceLabels[selectedItem.source] || selectedItem.source}
+                </span>
+                <h2 className="mt-2 text-sm font-semibold tracking-tight text-slate-900 sm:text-base">
+                  {selectedItem.title}
+                </h2>
+                {selectedItem.subtitle ? (
+                  <p className="mt-1 text-sm font-semibold text-cyan-700">
+                    {selectedItem.subtitle}
+                  </p>
+                ) : null}
+                <p className="mt-2 text-xs text-slate-500">
+                  Atualizado em {formatDate(selectedItem.updatedAt)}
+                </p>
+              </div>
+              <div className="flex shrink-0 flex-col items-end gap-3">
+                <div className="flex flex-wrap items-center justify-end gap-2">
+                  <MarketplacePublishButton
+                    title={selectedItem.title}
+                    getHtml={getSelectedHtml}
+                    getPlanningPayload={
+                      String(selectedItem.type || "").includes("planejamento")
+                        ? () => getHistoryPlanningPayload(selectedItem)
+                        : undefined
+                    }
+                    tipoMaterial={resolveMarketplaceTipo(selectedItem)}
+                    componente={resolveHistoricoComponente(selectedItem)}
+                    tema={selectedItem.subtitle || selectedItem.title}
+                    label="Comunidade"
+                    compact
+                    className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-fuchsia-200 bg-fuchsia-50 px-3 py-2 text-xs font-black text-fuchsia-800 transition hover:bg-fuchsia-100"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => void openInEditor(selectedItem)}
+                    disabled={openingId === selectedItem.id}
+                    className="pl-hud-btn rounded-xl px-4 py-2 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {openingId === selectedItem.id ? "Abrindo..." : "Abrir no Editor"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => removeItem(selectedItem)}
+                    className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-xs font-semibold text-rose-700"
+                  >
+                    Excluir permanentemente
+                  </button>
+                </div>
+                <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                  <p className="text-[10px] font-black uppercase tracking-wide text-slate-500">
+                    Exportar
+                  </p>
+                  <div className="mt-1.5">
+                    <HistoryDocumentExportBar
+                      item={selectedItem}
+                      classroomMode="popover"
+                      onStatus={handleExportStatus}
+                      onError={handleExportError}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-5 max-h-[360px] overflow-auto rounded-xl border border-slate-200 bg-slate-50 p-4">
+              {isHistoryHtmlContent(selectedItem.content) ? (
+                <article
+                  className="planify-history-preview text-sm leading-7 text-slate-800 [&_.planify-flashcards]:flex [&_.planify-flashcards]:flex-wrap [&_.planify-flashcards]:gap-4 [&_h1]:text-2xl [&_h1]:font-black [&_h2]:mt-4 [&_h2]:text-lg [&_h2]:font-black [&_h3]:mt-3 [&_h3]:font-black [&_li]:ml-5 [&_ol]:list-decimal [&_p]:my-2 [&_table]:w-full [&_table]:border-collapse [&_td]:border [&_td]:border-slate-200 [&_td]:p-2 [&_th]:border [&_th]:border-slate-200 [&_th]:p-2 [&_ul]:list-disc"
+                  dangerouslySetInnerHTML={{ __html: selectedItem.content }}
+                />
+              ) : (
+                <p className="whitespace-pre-wrap text-sm leading-7 text-slate-700">
+                  {selectedItem.content}
+                </p>
+              )}
+            </div>
+          </div>
+        ) : null}
+=======
           <div className="pl-hud-glass flex flex-col items-center rounded-2xl px-6 py-14 text-center">
             <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-50 text-cyan-600">
               <PlanifyIcon name="folder" className="h-6 w-6" />
@@ -970,6 +1258,7 @@ export function HistoricoClient() {
             </div>
           </div>
         )}
+>>>>>>> origin/aplicar-melhorias-na-producao
       </div>
     </PlanifyWorkspacePane>
   );

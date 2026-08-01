@@ -83,6 +83,9 @@ export function useBnccEducationOptions(
   }, [fields.etapa, fields.anoSerie, fields.areaConhecimento]);
 
   useEffect(() => {
+<<<<<<< HEAD
+    void load();
+=======
     let cancelled = false;
     const run = () => {
       if (!cancelled) void load();
@@ -109,6 +112,7 @@ export function useBnccEducationOptions(
       cancelled = true;
       globalThis.clearTimeout(timer);
     };
+>>>>>>> origin/aplicar-melhorias-na-producao
   }, [load]);
 
   const stageOptions = useMemo(() => {

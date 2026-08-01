@@ -141,6 +141,18 @@ export function getPlanningOutputIssues(
     );
   }
 
+<<<<<<< HEAD
+  const emptyFields = items.filter(
+    (item) =>
+      !item.objetivos?.trim() ||
+      !item.metodologia?.trim() ||
+      !item.avaliacao?.trim(),
+  ).length;
+
+  if (emptyFields > Math.floor(items.length / 2)) {
+    issues.push(
+      "Preencha objetivos, metodologia e avaliacao em cada linha da matriz.",
+=======
   const emptyFields = items.filter((item) => {
     const required = [
       item.objetivos,
@@ -157,6 +169,7 @@ export function getPlanningOutputIssues(
   if (emptyFields > 0) {
     issues.push(
       `Preencha objetivos, metodologia, materiais, recursos, etapas, avaliacao e evidencias em cada linha da matriz (${emptyFields} linha(s) incompleta(s)).`,
+>>>>>>> origin/aplicar-melhorias-na-producao
     );
   }
 

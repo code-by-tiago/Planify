@@ -5,11 +5,14 @@
 
 import { resolveSlideTheme } from "./slide-design-themes";
 import { buildTeachyContractForType } from "@/lib/materiais/teachy-document-contract";
+<<<<<<< HEAD
+=======
 import {
   PEDAGOGICAL_BNCC_ANTI_HALLUCINATION,
   PEDAGOGICAL_FORBIDDEN_PHRASES,
 } from "@/lib/materiais/pedagogical-guardrails";
 import { PLANIFY_PEDAGOGICAL_DNA } from "@/server/ai/prompts/planify-pedagogical-dna";
+>>>>>>> origin/aplicar-melhorias-na-producao
 import type {
   BnccSkillAnchor,
   PromptEngineInput,
@@ -47,9 +50,15 @@ const TYPE_LABELS: Record<TipoFerramenta, string> = {
 const GOLDEN_RULES = `
 REGRA DE OURO — INVIOLÁVEL:
 - ZERO conversas, saudações, justificativas ou meta-comentários fora do JSON.
+<<<<<<< HEAD
+- PROIBIDO: "Aqui está seu material", "Segue a prova", "Claro!", "Com certeza", "Espero que ajude".
+- PROIBIDO: markdown literal (cercas de codigo, #, | tabelas markdown), HTML, blocos de codigo.
+- PROIBIDO: inventar códigos BNCC — use SOMENTE os fornecidos na âncora RAG.
+=======
 - ${PEDAGOGICAL_FORBIDDEN_PHRASES}
 - PROIBIDO: markdown literal (cercas de codigo, #, | tabelas markdown), HTML, blocos de codigo.
 - ${PEDAGOGICAL_BNCC_ANTI_HALLUCINATION}
+>>>>>>> origin/aplicar-melhorias-na-producao
 - A resposta da API é EXCLUSIVAMENTE um objeto JSON válido no schema MaterialLayout.
 `.trim();
 
@@ -106,9 +115,12 @@ REGRAS DA ÂNCORA:
 function buildToolRules(input: PromptEngineInput): string[] {
   const { tipoFerramenta: tipo, quantidade, tema, incluirGabarito } = input;
   const q = quantidade;
+<<<<<<< HEAD
+=======
   const wantsReadingSource = `${input.conteudo || ""}\n${input.observacoes || ""}`.includes(
     "COPILOTO_TEXTO_FONTE",
   );
+>>>>>>> origin/aplicar-melhorias-na-producao
 
   switch (tipo) {
     case "prova":
@@ -116,27 +128,41 @@ function buildToolRules(input: PromptEngineInput): string[] {
       return [
         `Crie UMA seção tipo "questoes" com exatamente ${q} questões.`,
         `TEMA ÂNCORA obrigatório em cada enunciado: "${tema}".`,
+<<<<<<< HEAD
+=======
         "PROGRESSÃO BLOOM obrigatória: ordene as questões do mais acessível ao mais desafiador (lembrar → compreender → aplicar → analisar → avaliar/criar conforme a quantidade).",
+>>>>>>> origin/aplicar-melhorias-na-producao
         "Cada questão DEVE ter exatamente 5 alternativas (A, B, C, D, E) em alternativas[].",
         "Alternativas: frases completas (mín. 35 caracteres), plausíveis, distintas e contextualizadas — proibido 'todas/nenhuma das anteriores'.",
         "Apenas UMA alternativa correta — preencha respostaCorreta com a letra (A–E).",
         "respostaCorreta + justificativa juntas: máximo 120 caracteres — gabarito enxuto, sem tom de aula.",
+<<<<<<< HEAD
+        "justificativa isolada: máximo 80 caracteres, objetiva.",
+=======
         "justificativa isolada: máximo 80 caracteres, objetiva e passo a passo.",
+>>>>>>> origin/aplicar-melhorias-na-producao
         "Variar tipos (objetiva + dissertativa quando q >= 2).",
         "Enunciados diretos — máximo 3 frases curtas; sem 'Questão N:', sem preâmbulos.",
         incluirGabarito === false
           ? "Sem gabarito: respostaCorreta e justificativa podem ser vazias."
           : "Gabarito obrigatório: respostaCorreta (letra ou valor) + justificativa mínima dentro do limite de 120 caracteres no total.",
+<<<<<<< HEAD
+        "NÃO crie seções tipo texto com introdução longa — material direto para aplicar.",
+=======
         wantsReadingSource
           ? 'OBRIGATÓRIO: além das questões, crie UMA seção tipo "texto" com título exatamente "Texto para leitura", contendo um texto completo utilizável em sala (mín. 280 caracteres). Se a obra pedida for protegida por direitos autorais, use trecho pedagógico inspirado no estilo / domínio público — NÃO invente que é a obra integral. Todas as questões devem ancorar-se nesse texto.'
           : "NÃO crie seções tipo texto com introdução longa — material direto para aplicar.",
         "PROIBIDO: alternativas idênticas, placeholders genéricos ou comandos do tipo 'complete a tarefa orientada pelo professor'.",
+>>>>>>> origin/aplicar-melhorias-na-producao
       ];
 
     case "plano-aula":
       return [
         `Planejar ${q} período(s) de 50 minutos em um único plano.`,
+<<<<<<< HEAD
+=======
         "Use storytelling leve e metodologias ativas (investigação, cooperação, problematização) nas etapas — evite aula apenas expositiva.",
+>>>>>>> origin/aplicar-melhorias-na-producao
         "OBRIGATÓRIO: seção tipo tabela com cronograma (cabeçalhos Etapa | Duração | Atividade | Recursos) — mínimo 4 linhas incluindo Abertura e Fechamento.",
         "OBRIGATÓRIO: lessonPlan.steps com mínimo 5 etapas (Abertura → Fechamento), cada uma com stage, duration, description (40+ caracteres: ações do professor e estudantes) e resources.",
         "OBRIGATÓRIO: seção texto 'Atividade em sala' com objective, Tempo:, Material: (2+), Desenvolvimento:, itens a)-e) e Avaliação:.",
@@ -147,7 +173,10 @@ function buildToolRules(input: PromptEngineInput): string[] {
     case "slides":
       return [
         `Crie UMA seção tipo "slide" com exatamente ${q} slides.`,
+<<<<<<< HEAD
+=======
         "Use narrativa visual e storytelling leve para conectar os slides ao cotidiano dos estudantes.",
+>>>>>>> origin/aplicar-melhorias-na-producao
         `TEMA VISUAL (renderização): ${resolveSlideTheme(input.designSlides).label}.`,
         ...(input.modeloSlides ? [`MODELO DO PROFESSOR: ${input.modeloSlides}`] : []),
         "MÁXIMO 4 tópicos escaneáveis por slide (array topicos).",
@@ -189,20 +218,30 @@ function buildToolRules(input: PromptEngineInput): string[] {
     case "atividade":
       return [
         `Crie ${q} seções tipo "texto" — uma por atividade (título descritivo da atividade).`,
+<<<<<<< HEAD
+        "Cada atividade DEVE ser robusta e pronta para aplicar em sala.",
+=======
         "Cada atividade deve envolver metodologias ativas e um gancho narrativo breve ligado ao tema.",
         "Cada atividade DEVE ser uma dinâmica/prática de sala robusta e pronta para aplicar.",
+>>>>>>> origin/aplicar-melhorias-na-producao
         'Em conteudo.paragrafos: "Objetivo: ..." (35+ caracteres, específico ao tema) e "Desenvolvimento: ..." (80+ caracteres com orientação passo a passo).',
         'Em conteudo.bullets: "Tempo: XX minutos", 2+ bullets "Material: ...", exatamente 5 itens "a) ...", "b) ...", "c) ...", "d) ...", "e) ..." e "Avaliação: ..." (45+ caracteres com critérios observáveis).',
         "Os itens a)-e) devem ter progressão cognitiva: observar/ler, interpretar, aplicar, justificar e produzir/sintetizar.",
         "Use enunciados completos contextualizados no tema — proibido comandos genéricos de uma linha.",
+<<<<<<< HEAD
+=======
         "PROIBIDO: 'Complete a tarefa orientada pelo professor', itens idênticos, ou qualquer placeholder genérico.",
         "NÃO transforme em lista/prova de múltipla escolha; foque no percurso prático em sala.",
+>>>>>>> origin/aplicar-melhorias-na-producao
       ];
 
     case "sequencia":
       return [
         `Organize ${q} seções tipo "texto" — uma por aula/encontro.`,
+<<<<<<< HEAD
+=======
         "Construa progressão com storytelling leve e metodologias ativas em cada encontro.",
+>>>>>>> origin/aplicar-melhorias-na-producao
         "Cada seção: objetivos, conteúdos, atividades e avaliação formativa.",
         "Encadear progressão didática entre as aulas.",
       ];
@@ -263,7 +302,11 @@ function buildToolRules(input: PromptEngineInput): string[] {
       return [
         "Pacote coeso: plano (tabela cronometrada) + slides (máx. 4 tópicos/slide) + atividade + lista (questoes).",
         "Mínimo 4 seções com tipos distintos: tabela, slide, texto, questoes.",
+<<<<<<< HEAD
+        "Manter sequência pedagógica única ao longo de todas as seções.",
+=======
         "Manter sequência pedagógica única com storytelling leve e metodologias ativas ao longo de todas as seções.",
+>>>>>>> origin/aplicar-melhorias-na-producao
       ];
 
     case "correcao-ia":
@@ -318,7 +361,10 @@ export type PromptEngineOutput = {
 
 export function buildSystemInstruction(tipoFerramenta: TipoFerramenta): string {
   return [
+<<<<<<< HEAD
+=======
     PLANIFY_PEDAGOGICAL_DNA,
+>>>>>>> origin/aplicar-melhorias-na-producao
     ROLE_INSTRUCTION,
     `Especialidade ativa: ${TYPE_LABELS[tipoFerramenta]}.`,
     GOLDEN_RULES,

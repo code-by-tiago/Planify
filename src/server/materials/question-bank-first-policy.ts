@@ -5,7 +5,11 @@ import type { MaterialEngineRequest } from "./material-engine-types";
 export const FULL_BANK_ASSEMBLY_TYPES = new Set<MaterialEngineType>([
   "lista",
   "prova",
+<<<<<<< HEAD
+  "atividade",
+=======
   // atividade fora: bank-first reempacota questões em cards genéricos a)–e)
+>>>>>>> origin/aplicar-melhorias-na-producao
 ]);
 
 /** IA gera o material, mas recebe questões fortes do banco no contexto. */

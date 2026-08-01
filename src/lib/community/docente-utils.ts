@@ -2,6 +2,13 @@ import type { DocenteDisciplina, DocenteMenuItem } from "@/lib/community/docente
 
 const VALID_MENU_ITEMS: DocenteMenuItem[] = [
   "inicio",
+<<<<<<< HEAD
+  "discussoes",
+  "materiais",
+  "eventos",
+  "grupos",
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
   "professores",
   "desafios",
   "salvos",
@@ -18,6 +25,11 @@ export function formatDocenteNumber(value: number): string {
   return new Intl.NumberFormat("pt-BR").format(value);
 }
 
+<<<<<<< HEAD
+export function formatDocenteTimeAgo(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const minutes = Math.floor(diff / 60000);
+=======
 /** Emoji correspondente ao ícone de um selo/conquista da comunidade. */
 export function badgeEmoji(icon?: string | null): string {
   switch ((icon || "").toLowerCase()) {
@@ -40,6 +52,7 @@ export function formatDocenteTimeAgo(iso: string): string {
   const diff = Math.max(0, Date.now() - parsed);
   const minutes = Math.floor(diff / 60000);
   if (minutes < 1) return "agora";
+>>>>>>> origin/aplicar-melhorias-na-producao
   if (minutes < 60) return `há ${minutes} min`;
   const hours = Math.floor(minutes / 60);
   if (hours < 24) return `há ${hours} hora${hours > 1 ? "s" : ""}`;
@@ -47,6 +60,45 @@ export function formatDocenteTimeAgo(iso: string): string {
   return `há ${days} dia${days > 1 ? "s" : ""}`;
 }
 
+<<<<<<< HEAD
+export function formatEventMonth(iso: string): { day: number; month: string } {
+  const date = new Date(iso);
+  const months = ["JAN", "FEV", "MAR", "ABR", "MAI", "JUN", "JUL", "AGO", "SET", "OUT", "NOV", "DEZ"];
+  return { day: date.getDate(), month: months[date.getMonth()] || "JUN" };
+}
+
+export function formatEventDateTime(iso: string): { dateLabel: string; timeLabel: string } {
+  try {
+    const date = new Date(iso);
+    const dateLabel = new Intl.DateTimeFormat("pt-BR", {
+      weekday: "long",
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    }).format(date);
+    const timeLabel = new Intl.DateTimeFormat("pt-BR", {
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(date);
+    return { dateLabel, timeLabel };
+  } catch {
+    return { dateLabel: "", timeLabel: "" };
+  }
+}
+
+export function formatEventShortTime(iso: string): string {
+  try {
+    return new Intl.DateTimeFormat("pt-BR", {
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(new Date(iso));
+  } catch {
+    return "";
+  }
+}
+
+=======
+>>>>>>> origin/aplicar-melhorias-na-producao
 export const DOCENTE_DISCIPLINAS: DocenteDisciplina[] = [
   "Língua Portuguesa",
   "Matemática",
@@ -99,6 +151,8 @@ export function getDisciplinaColor(disciplina: DocenteDisciplina): string {
   return DISCIPLINA_COLORS[disciplina] ?? "bg-slate-100 text-slate-700";
 }
 
+<<<<<<< HEAD
+=======
 const BNCC_CODE_RE = /\b((?:EF|EM|EI)\d{2}[A-Z]{2}\d{2})\b/gi;
 
 /** Extrai códigos BNCC de tags/tema/título para exibir no card. */
@@ -144,6 +198,7 @@ export function firstNameFromFullName(name: string | null | undefined): string {
   return trimmed.split(/\s+/)[0] || trimmed;
 }
 
+>>>>>>> origin/aplicar-melhorias-na-producao
 /** Returns disciplina label for display, or null when Multidisciplinar (hidden from UI). */
 export function formatDisciplinaMeta(
   disciplina: DocenteDisciplina | string | null | undefined,
@@ -197,9 +252,29 @@ export function mapComunidadeHrefToEmbed(href: string): string {
   const discussao = href.match(/^\/comunidade\/discussao\/([^/?#]+)/);
   if (discussao) return comunidadeRoutes.discussao(discussao[1], true);
 
+<<<<<<< HEAD
+  const grupo = href.match(/^\/comunidade\/grupo\/([^/?#]+)/);
+  if (grupo) {
+    try {
+      const url = new URL(href, "https://planify.local");
+      const tab = url.searchParams.get("tab");
+      return comunidadeRoutes.grupo(grupo[1], true, tab || undefined);
+    } catch {
+      return comunidadeRoutes.grupo(grupo[1], true);
+    }
+  }
+
   const professor = href.match(/^\/comunidade\/professor\/([^/?#]+)/);
   if (professor) return comunidadeRoutes.professor(professor[1], true);
 
+  const evento = href.match(/^\/comunidade\/evento\/([^/?#]+)/);
+  if (evento) return comunidadeRoutes.evento(evento[1], true);
+
+=======
+  const professor = href.match(/^\/comunidade\/professor\/([^/?#]+)/);
+  if (professor) return comunidadeRoutes.professor(professor[1], true);
+
+>>>>>>> origin/aplicar-melhorias-na-producao
   const material = href.match(/^\/comunidade\/material\/([^/?#]+)/);
   if (material) return comunidadeRoutes.material(material[1], true);
 
@@ -260,7 +335,10 @@ export type DocenteOverviewFilters = {
   disciplina?: string | null;
   componente?: string | null;
   etapa?: string | null;
+<<<<<<< HEAD
+=======
   anoSerie?: string | null;
+>>>>>>> origin/aplicar-melhorias-na-producao
   tipoMaterial?: string | null;
   tag?: string | null;
   mineOnly?: boolean;
@@ -275,7 +353,10 @@ export function buildOverviewQueryParams(filters: DocenteOverviewFilters): strin
   if (filters.disciplina) params.set("disciplina", filters.disciplina);
   if (filters.componente) params.set("componente", filters.componente);
   if (filters.etapa) params.set("etapa", filters.etapa);
+<<<<<<< HEAD
+=======
   if (filters.anoSerie) params.set("anoSerie", filters.anoSerie);
+>>>>>>> origin/aplicar-melhorias-na-producao
   if (filters.tipoMaterial) params.set("tipoMaterial", filters.tipoMaterial);
   if (filters.tag) params.set("tag", filters.tag);
   if (filters.mineOnly) params.set("mine", "true");
@@ -297,8 +378,27 @@ export const comunidadeRoutes = {
   homeEmbedded: "/dashboard?secao=marketplace",
   discussao: (id: string, embedded?: boolean) =>
     embedded ? dashboardView("discussao", id) : `/comunidade/discussao/${id}`,
+<<<<<<< HEAD
+  grupo: (id: string, embedded?: boolean, tab?: string) => {
+    if (embedded) {
+      const params = new URLSearchParams({
+        secao: "marketplace",
+        comunidadeView: "grupo",
+        comunidadeId: id,
+      });
+      if (tab) params.set("tab", tab);
+      return `/dashboard?${params.toString()}`;
+    }
+    return tab ? `/comunidade/grupo/${id}?tab=${encodeURIComponent(tab)}` : `/comunidade/grupo/${id}`;
+  },
   professor: (id: string, embedded?: boolean) =>
     embedded ? dashboardView("professor", id) : `/comunidade/professor/${id}`,
+  evento: (id: string, embedded?: boolean) =>
+    embedded ? dashboardView("evento", id) : `/comunidade/evento/${id}`,
+=======
+  professor: (id: string, embedded?: boolean) =>
+    embedded ? dashboardView("professor", id) : `/comunidade/professor/${id}`,
+>>>>>>> origin/aplicar-melhorias-na-producao
   material: (id: string, embedded?: boolean) =>
     embedded ? dashboardView("material", id) : `/comunidade/material/${id}`,
   desafios: "/comunidade/desafios",

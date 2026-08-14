@@ -56,9 +56,8 @@ export type LessonSimulatorLista = {
 
 export type LessonSimulatorResult = {
   lista: LessonSimulatorLista;
-  html: string;
-  pdfBase64: string;
   filename: string;
+  theme: string;
 };
 
 export type LessonSimulatorErrorCode =
@@ -102,6 +101,18 @@ export function validateLessonSimulatorTheme(theme: unknown): string | null {
 
 function asCleanString(value: unknown, fallback = ""): string {
   return typeof value === "string" ? value.replace(/\s+/g, " ").trim() : fallback;
+}
+
+export function buildLessonSimulatorFilename(title: string): string {
+  const safeFilename = asCleanString(title)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 60)
+    .toLowerCase();
+
+  return `${safeFilename || "lista-de-atividades-planify"}.pdf`;
 }
 
 /** Valida e normaliza os campos de educação contra o catálogo estático do produto. */
@@ -332,30 +343,58 @@ export async function generateLessonSimulatorLista(
   }
 
   const lista = normalizeLista(raw, safeTheme, education, verifiedBnccHint);
+
+  return {
+    lista,
+    filename: buildLessonSimulatorFilename(lista.title),
+    theme: safeTheme,
+  };
+}
+
+export async function renderLessonSimulatorListaPdf(
+  listaInput: unknown,
+  themeInput: unknown,
+): Promise<{ buffer: Buffer; filename: string }> {
+  const themeError = validateLessonSimulatorTheme(themeInput);
+  if (themeError) {
+    throw new LessonSimulatorError("invalid_payload");
+  }
+
+  const safeTheme = sanitizeLessonSimulatorTheme(String(themeInput).trim());
+  if (!safeTheme || !listaInput || typeof listaInput !== "object") {
+    throw new LessonSimulatorError("invalid_payload");
+  }
+
+  const raw = listaInput as Partial<LessonSimulatorLista>;
+  const educationResult = validateLessonSimulatorEducation({
+    etapa: raw.etapa,
+    anoSerie: raw.anoSerie,
+    areaConhecimento: raw.areaConhecimento,
+    componente: raw.componenteCurricular,
+  });
+
+  if (!educationResult.ok) {
+    throw new LessonSimulatorError("invalid_payload");
+  }
+
+  const lista = normalizeLista(
+    raw,
+    safeTheme,
+    educationResult.education,
+    asCleanString(raw.bnccHint, "Habilidade BNCC sugerida conforme o tema."),
+  );
   const html = buildLessonSimulatorListaHtml(lista, safeTheme);
 
-  let pdfBuffer: Buffer;
   try {
-    pdfBuffer = await renderLessonSimulatorPdf(lista.title, html);
+    const buffer = await renderLessonSimulatorPdf(lista.title, html);
+    return {
+      buffer,
+      filename: buildLessonSimulatorFilename(lista.title),
+    };
   } catch (error) {
     console.error("[lesson-simulator] pdf failed:", error);
     throw new LessonSimulatorError("pdf_failed");
   }
-
-  const safeFilename = lista.title
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-zA-Z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 60)
-    .toLowerCase();
-
-  return {
-    lista,
-    html,
-    pdfBase64: pdfBuffer.toString("base64"),
-    filename: `${safeFilename || "lista-de-atividades-planify"}.pdf`,
-  };
 }
 
 /** @deprecated Use generateLessonSimulatorLista — kept for older callers during transition. */

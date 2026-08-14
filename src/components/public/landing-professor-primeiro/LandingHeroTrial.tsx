@@ -4,6 +4,12 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { PlanifyIcon } from "@/components/pro/PlanifyIcons";
 import {
+  filenameFromContentDisposition,
+  openPendingDownloadWindow,
+  readDownloadBlob,
+  saveOrDownloadFile,
+} from "@/lib/downloads/trigger-browser-download";
+import {
   DEFAULT_MATERIAL_EDUCATION,
   EDUCATION_STAGES,
   getAreaOptions,
@@ -30,27 +36,12 @@ type ListaPreview = {
   componenteCurricular: string;
   anoSerie: string;
   etapa?: string;
+  areaConhecimento?: string;
   instructions: string;
   bnccHint: string;
   questions: ListaQuestion[];
+  answerKey?: Array<{ number: number; answer: string }>;
 };
-
-function downloadPdfFromBase64(base64: string, filename: string) {
-  const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i += 1) {
-    bytes[i] = binary.charCodeAt(i);
-  }
-  const blob = new Blob([bytes], { type: "application/pdf" });
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = filename;
-  document.body.appendChild(anchor);
-  anchor.click();
-  anchor.remove();
-  URL.revokeObjectURL(url);
-}
 
 function ListaPreviewCard({ lista }: { lista: ListaPreview }) {
   const previewQuestions = lista.questions.slice(0, 4);
@@ -118,8 +109,9 @@ export function LandingHeroTrial() {
   const [theme, setTheme] = useState("");
   const [loading, setLoading] = useState(false);
   const [lista, setLista] = useState<ListaPreview | null>(null);
-  const [pdfBase64, setPdfBase64] = useState<string | null>(null);
+  const [generatedTheme, setGeneratedTheme] = useState("");
   const [pdfFilename, setPdfFilename] = useState("lista-de-atividades-planify.pdf");
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [showResult, setShowResult] = useState(false);
   const [limited, setLimited] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -170,7 +162,7 @@ export function LandingHeroTrial() {
     setError(null);
     setShowResult(false);
     setLista(null);
-    setPdfBase64(null);
+    setGeneratedTheme("");
 
     try {
       const response = await fetch("/api/public/lesson-simulator", {
@@ -189,8 +181,8 @@ export function LandingHeroTrial() {
         success?: boolean;
         data?: {
           lista?: ListaPreview;
-          pdfBase64?: string;
           filename?: string;
+          theme?: string;
         };
         error?: { code?: string; message?: string };
       };
@@ -200,7 +192,7 @@ export function LandingHeroTrial() {
         return;
       }
 
-      if (!response.ok || !json.success || !json.data?.lista || !json.data.pdfBase64) {
+      if (!response.ok || !json.success || !json.data?.lista) {
         setError(
           json.error?.message || "Não foi possível gerar a lista de atividades. Tente novamente.",
         );
@@ -208,7 +200,7 @@ export function LandingHeroTrial() {
       }
 
       setLista(json.data.lista);
-      setPdfBase64(json.data.pdfBase64);
+      setGeneratedTheme(json.data.theme || trimmed);
       setPdfFilename(json.data.filename || "lista-de-atividades-planify.pdf");
       setShowResult(true);
       const isLocalDev =
@@ -224,9 +216,41 @@ export function LandingHeroTrial() {
     }
   };
 
-  const handleDownloadPdf = () => {
-    if (!pdfBase64) return;
-    downloadPdfFromBase64(pdfBase64, pdfFilename);
+  const handleDownloadPdf = async () => {
+    if (!lista || downloadingPdf) return;
+
+    const pendingWindow = openPendingDownloadWindow();
+    setDownloadingPdf(true);
+    setError(null);
+
+    try {
+      const response = await fetch("/api/public/lesson-simulator/pdf", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          lista,
+          theme: generatedTheme || theme.trim(),
+          filename: pdfFilename,
+        }),
+      });
+
+      const blob = await readDownloadBlob(response);
+      const filename =
+        response.headers.get("X-Planify-Filename") ||
+        filenameFromContentDisposition(response.headers.get("Content-Disposition")) ||
+        pdfFilename;
+
+      await saveOrDownloadFile(blob, filename, pendingWindow);
+    } catch (downloadError) {
+      pendingWindow?.close();
+      setError(
+        downloadError instanceof Error
+          ? downloadError.message
+          : "Não foi possível baixar o PDF completo. Tente novamente.",
+      );
+    } finally {
+      setDownloadingPdf(false);
+    }
   };
 
   return (
@@ -390,11 +414,19 @@ export function LandingHeroTrial() {
           <div className="mt-7 flex flex-col gap-2.5 border-t border-slate-100 pt-6">
             <button
               type="button"
-              onClick={handleDownloadPdf}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#0A192F] px-6 py-3.5 text-sm font-bold text-white transition hover:bg-[#132844]"
+              onClick={() => void handleDownloadPdf()}
+              disabled={downloadingPdf}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#0A192F] px-6 py-3.5 text-sm font-bold text-white transition hover:bg-[#132844] disabled:cursor-wait disabled:opacity-70"
             >
-              Baixar PDF para imprimir
-              <PlanifyIcon name="download" className="h-4 w-4" />
+              {downloadingPdf ? "Preparando PDF completo…" : "Baixar PDF para imprimir"}
+              {downloadingPdf ? (
+                <span
+                  className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"
+                  aria-hidden
+                />
+              ) : (
+                <PlanifyIcon name="download" className="h-4 w-4" />
+              )}
             </button>
             <p className="text-center text-xs font-medium text-slate-400">
               O PDF inclui rodapé discreto do Planify. Remova-o assinando um plano.

@@ -13,7 +13,77 @@ export function triggerBrowserDownload(blob: Blob, filename: string) {
   window.setTimeout(() => {
     anchor.remove();
     URL.revokeObjectURL(url);
-  }, 1500);
+  }, 60_000);
+}
+
+function isAppleTouchDevice(): boolean {
+  if (typeof navigator === "undefined") {
+    return false;
+  }
+
+  return (
+    /iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
+  );
+}
+
+/** Abre a aba no clique (gesto do usuário) para o iOS não bloquear o PDF depois do fetch. */
+export function openPendingDownloadWindow(): Window | null {
+  if (typeof window === "undefined" || !isAppleTouchDevice()) {
+    return null;
+  }
+
+  return window.open("about:blank", "_blank");
+}
+
+/**
+ * Salva o arquivo completo no celular (share sheet / visualizador nativo)
+ * e faz download tradicional no desktop.
+ */
+export async function saveOrDownloadFile(
+  blob: Blob,
+  filename: string,
+  pendingWindow?: Window | null,
+): Promise<void> {
+  const type = blob.type || "application/octet-stream";
+  const file = new File([blob], filename, { type });
+
+  const isMobile =
+    isAppleTouchDevice() ||
+    (typeof navigator !== "undefined" && /Android/i.test(navigator.userAgent));
+
+  if (
+    isMobile &&
+    typeof navigator.canShare === "function" &&
+    navigator.canShare({ files: [file] })
+  ) {
+    try {
+      await navigator.share({ files: [file], title: filename });
+      pendingWindow?.close();
+      return;
+    } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") {
+        pendingWindow?.close();
+        return;
+      }
+    }
+  }
+
+  const url = URL.createObjectURL(blob);
+
+  if (pendingWindow && !pendingWindow.closed) {
+    pendingWindow.location.href = url;
+    window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    return;
+  }
+
+  if (isAppleTouchDevice()) {
+    window.location.assign(url);
+    return;
+  }
+
+  URL.revokeObjectURL(url);
+  triggerBrowserDownload(blob, filename);
 }
 
 export function filenameFromContentDisposition(header: string | null): string | null {

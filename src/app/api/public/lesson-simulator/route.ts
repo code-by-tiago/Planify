@@ -159,9 +159,8 @@ export async function POST(request: NextRequest) {
       success: true,
       data: {
         lista: result.lista,
-        html: result.html,
-        pdfBase64: result.pdfBase64,
         filename: result.filename,
+        theme: result.theme,
       },
     });
 
@@ -177,18 +176,13 @@ export async function POST(request: NextRequest) {
     if (error instanceof LessonSimulatorError) {
       console.error("[lesson-simulator] generation failed:", error.code);
 
-      const message =
-        error.code === "pdf_failed"
-          ? "A lista foi gerada, mas o PDF falhou. Tente novamente em alguns instantes."
-          : GENERIC_FAILURE_MESSAGE;
-
       return buildErrorResponse(
         request,
         rateState.fingerprint,
         reservedAt,
         500,
-        error.code === "pdf_failed" ? "pdf_failed" : "generation_failed",
-        message,
+        "generation_failed",
+        GENERIC_FAILURE_MESSAGE,
       );
     }
 

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { buildContentDispositionAttachment } from "../../../../../server/marketplace/marketplace-download";
-import { checkLessonSimulatorRateLimit } from "../../../../../server/public/lesson-simulator-rate-limit";
 import {
   LessonSimulatorError,
   renderLessonSimulatorListaPdf,
@@ -13,21 +12,6 @@ export const maxDuration = 60;
 const MAX_BODY_BYTES = 80_000;
 
 export async function POST(request: NextRequest) {
-  const rateState = await checkLessonSimulatorRateLimit(request);
-
-  if (process.env.NODE_ENV === "production" && !rateState.limited) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: {
-          code: "generate_first",
-          message: "Gere a lista de atividades antes de baixar o PDF.",
-        },
-      },
-      { status: 403 },
-    );
-  }
-
   try {
     const rawBody = await request.text();
 

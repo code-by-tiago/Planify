@@ -167,6 +167,7 @@ export function LandingHeroTrial() {
     try {
       const response = await fetch("/api/public/lesson-simulator", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           theme: trimmed,
@@ -226,6 +227,7 @@ export function LandingHeroTrial() {
     try {
       const response = await fetch("/api/public/lesson-simulator/pdf", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           lista,

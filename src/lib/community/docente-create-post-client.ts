@@ -135,19 +135,37 @@ export async function submitDocenteCreatePost(params: {
       credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        action: "create_post_with_attachments",
+        action: "create_post",
         title: ensuredTitle,
         body: input.body,
         disciplina: input.disciplina,
         tags: input.tags,
         participantUserIds: input.participantUserIds || [],
-        attachments: linked,
+        hasAttachments: true,
       }),
     });
     const data = (await response.json()) as CreatePostResponse;
 
     if (!response.ok || !data.ok || !data.postId) {
       throw new Error(data?.error?.message || "Não foi possível publicar.");
+    }
+
+    const linkResponse = await fetch("/api/community/docente/actions", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "link_post_attachments",
+        postId: data.postId,
+        attachments: linked,
+      }),
+    });
+    const linkData = (await linkResponse.json()) as CreatePostResponse;
+
+    if (!linkResponse.ok || !linkData.ok) {
+      throw new Error(
+        linkData?.error?.message || "Não foi possível vincular os anexos.",
+      );
     }
 
     return { postId: data.postId };

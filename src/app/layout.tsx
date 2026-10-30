@@ -1,25 +1,9 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 import { PlanifySessionSync } from "@/components/auth/PlanifySessionSync";
 import { buildGlobalMetadata } from "@/lib/seo/metadata";
 import "./planify-hud.css";
 import "./globals.css";
 import "./responsive-nav.css";
-
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-inter",
-  display: "swap",
-  weight: ["400", "600", "700"],
-});
-
-const display = Plus_Jakarta_Sans({
-  subsets: ["latin"],
-  variable: "--font-display",
-  display: "swap",
-  weight: ["600", "700", "800"],
-  preload: false,
-});
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -42,7 +26,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-BR" className={`${inter.variable} ${display.variable}`}>
+    <html lang="pt-BR">
       <body className="font-sans antialiased">
         <PlanifySessionSync />
         {children}

@@ -2088,14 +2088,14 @@ export function buildVisualGameMaterial(input: MaterialAIInput, aiOutput?: Mater
           ${renderCrosswordGrid(board, true, cellSize)}
           <ul class="planify-crossword-answer-list">${board.placements.map((item) => `<li><strong>${item.number}. ${escapeHtml(item.answer)}</strong> &mdash; ${escapeHtml(displayCrosswordClue(item))}</li>`).join("")}</ul>
           <h3>Termos e pistas de apoio</h3>
-          <ul>${(extractAiSeeds(aiOutput).length ? extractAiSeeds(aiOutput) : seeds).map((item) => `<li><strong>${escapeHtml(item.answer)}</strong> &mdash; ${escapeHtml(item.clue)}</li>`).join("")}</ul>
+          ${extractAiSeeds(aiOutput).length ? `<h3>Termos e pistas de apoio</h3><ul>${extractAiSeeds(aiOutput).map((item) => `<li><strong>${escapeHtml(item.answer)}</strong> &mdash; ${escapeHtml(item.clue)}</li>`).join("")}</ul>` : ""}
         </div>
       </section>`;
     sections = [
       dataSection("Cruzadinha visual conectada", `A cruzadinha foi montada com ${placedCount} termos na grade, ${intersectionCount} cruzamentos, pistas horizontais/verticais e gabarito.`),
       dataSection("Pistas da cruzadinha", "Pistas para os estudantes:", board.placements.map((row) => `${row.number}. ${displayCrosswordClue(row)}`)),
     ];
-    gabarito = board.placements.map((row) => `${row.number}. ${row.answer} - ${displayCrosswordClue(row)}`);
+    gabarito = board.placements.map((row) => `${row.number}. ${displayCrosswordAnswer(row)} - ${displayCrosswordClue(row)}`);
   }
 
   if (model === "bingo") {

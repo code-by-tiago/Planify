@@ -32,6 +32,10 @@ function loadTsModule(relativePath) {
 
   const module = { exports: {} };
   const localRequire = (specifier) => {
+    if (specifier === "server-only") {
+      return {};
+    }
+
     if (specifier.startsWith(".")) {
       const resolved = join(dirname(sourcePath), specifier);
       const candidates = [
@@ -54,11 +58,8 @@ function loadTsModule(relativePath) {
       const candidates = [`${rel}.ts`, `${rel}.tsx`, join(rel, "index.ts")];
       for (const candidate of candidates) {
         const full = join(root, candidate);
-        try {
-          readFileSync(full);
+        if (existsSync(full)) {
           return loadTsModule(candidate.replace(/\\/g, "/"));
-        } catch {
-          // try next
         }
       }
     }

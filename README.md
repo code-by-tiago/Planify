@@ -6,7 +6,7 @@ Comunidade Docente e exportação para DOCX, PDF, Google e Classroom.
 
 ![CI](https://github.com/code-by-tiago/Planify/actions/workflows/ci.yml/badge.svg)
 
-> **Site oficial:** [iaplanify.com.br](https://iaplanify.com.br)  
+> **Site oficial:** [iaplanify.com.br](https://iaplanify.com.br)
 > **Código-fonte:** [github.com/code-by-tiago/Planify](https://github.com/code-by-tiago/Planify)
 >
 > O site público está temporariamente em manutenção enquanto as integrações

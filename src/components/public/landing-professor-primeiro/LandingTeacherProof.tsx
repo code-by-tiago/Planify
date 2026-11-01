@@ -6,7 +6,7 @@ import { ppBtnSecondary, ppEyebrow } from "./theme";
 const proofHighlights = [
   "Atividades organizadas no painel Planify",
   "Material pronto para projetar na lousa ou imprimir",
-  "Professor no controle da revisÃ£o antes da aula",
+  "Professor no controle da revisão antes da aula",
 ] as const;
 
 export function LandingTeacherProof() {
@@ -16,11 +16,11 @@ export function LandingTeacherProof() {
         <div className="mx-auto max-w-2xl text-center">
           <p className={ppEyebrow}>Prova real em sala</p>
           <h2 className="mt-3 font-[family-name:var(--font-display)] text-3xl font-extrabold text-[#0A192F] sm:text-4xl">
-            Do painel Ã  lousa: material que o professor realmente usa com a turma.
+            Do painel à lousa: material que o professor realmente usa com a turma.
           </h2>
           <p className="mt-4 text-base font-medium leading-7 text-slate-600">
-            A professora Exemplo Prático cria atividades de PortuguÃªs no Planify, revisa no editor e
-            leva o conteÃºdo para a lousa digital, com a mesma clareza pedagÃ³gica que a plataforma
+            A professora Exemplo Prático cria atividades de Português no Planify, revisa no editor e
+            leva o conteúdo para a lousa digital, com a mesma clareza pedagógica que a plataforma
             promete desde o planejamento.
           </p>
         </div>
@@ -29,7 +29,7 @@ export function LandingTeacherProof() {
           <div className="relative min-h-[360px] overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 sm:min-h-[440px]">
             <Image
               src="/depoimentos/helena-lopes.jpg"
-              alt="Professora Exemplo Prático em sala de aula apresentando atividades de PortuguÃªs geradas no Planify em lousa digital"
+              alt="Professora Exemplo Prático em sala de aula apresentando atividades de Português geradas no Planify em lousa digital"
               fill
               sizes="(min-width: 1024px) 52vw, 100vw"
               className="object-bottom object-cover object-center"
@@ -37,10 +37,10 @@ export function LandingTeacherProof() {
             />
             <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#0A192F]/85 via-[#0A192F]/35 to-transparent p-6 pt-20 text-white">
               <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-[#26C6DA]">
-                Exemplo Prático Â· Professora de PortuguÃªs
+                Exemplo Prático · Professora de Português
               </p>
               <p className="mt-2 max-w-md text-2xl font-extrabold leading-tight">
-                Atividades de PortuguÃªs prontas para conduzir a aula na lousa.
+                Atividades de Português prontas para conduzir a aula na lousa.
               </p>
             </div>
           </div>
@@ -55,15 +55,15 @@ export function LandingTeacherProof() {
               <h3 className="mt-6 font-[family-name:var(--font-display)] text-2xl font-extrabold leading-tight text-[#0A192F] sm:text-3xl">
                 Exemplo Prático
               </h3>
-              <p className="mt-2 text-sm font-bold text-[#26C6DA]">Professora de PortuguÃªs</p>
+              <p className="mt-2 text-sm font-bold text-[#26C6DA]">Professora de Português</p>
 
               <div className="mt-8 border-l-4 border-[#26C6DA] bg-[#F0F9FA] py-4 pl-5 pr-4">
                 <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-[#0A192F]/70">
-                  SÃ­ntese do uso em sala
+                  Síntese do uso em sala
                 </p>
                 <p className="mt-3 text-xl font-extrabold leading-8 text-[#0A192F]">
-                  O Planify organiza as atividades no painel, a professora revisa com seguranÃ§a e
-                  o material segue direto para a lousa, sem perder o fio pedagÃ³gico da aula.
+                  O Planify organiza as atividades no painel, a professora revisa com segurança e
+                  o material segue direto para a lousa, sem perder o fio pedagógico da aula.
                 </p>
               </div>
             </div>

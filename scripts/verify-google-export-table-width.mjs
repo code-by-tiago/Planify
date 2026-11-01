@@ -23,11 +23,32 @@ function loadTs(relativePath) {
   const module = { exports: {} };
   const localRequire = (specifier) => {
     if (specifier === "linkedom") return require("linkedom");
+    if (specifier.startsWith("@/")) {
+      const mapped = path.join(root, "src", specifier.slice(2));
+      for (const candidate of [
+        mapped,
+        `${mapped}.ts`,
+        `${mapped}.tsx`,
+        `${mapped}.js`,
+      ]) {
+        try {
+          if (candidate.endsWith(".ts") || candidate.endsWith(".tsx")) {
+            return loadTs(path.relative(root, candidate));
+          }
+          return require(candidate);
+        } catch {
+          // try next
+        }
+      }
+    }
     if (specifier.startsWith(".")) {
       const base = path.join(path.dirname(sourcePath), specifier);
       const candidates = [base, `${base}.ts`, `${base}.js`];
       for (const candidate of candidates) {
         try {
+          if (candidate.endsWith(".ts")) {
+            return loadTs(path.relative(root, candidate));
+          }
           return require(candidate);
         } catch {
           // try next
@@ -91,9 +112,9 @@ const outPath = path.join(root, "tmp/verify-google-export-layout.docx");
 fs.mkdirSync(path.dirname(outPath), { recursive: true });
 fs.writeFileSync(outPath, buffer);
 
-const AdmZip = require("adm-zip");
-const zip = new AdmZip(buffer);
-const docXml = zip.readAsText("word/document.xml");
+const JSZip = require("jszip");
+const zip = await JSZip.loadAsync(buffer);
+const docXml = await zip.file("word/document.xml").async("string");
 const tableWidths = [...docXml.matchAll(/<w:tblW w:w="(\d+)"/g)].map((m) => Number(m[1]));
 const gridCols = [...docXml.matchAll(/<w:gridCol w:w="(\d+)"/g)].map((m) => Number(m[1]));
 

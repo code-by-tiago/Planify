@@ -27,6 +27,9 @@ function loadTs(relativePath) {
       const mapped = path.join(root, "src", specifier.slice(2));
       for (const candidate of [mapped, `${mapped}.ts`, `${mapped}.js`]) {
         try {
+          if (candidate.endsWith(".ts")) {
+            return loadTs(path.relative(root, candidate));
+          }
           return require(candidate);
         } catch {
           // continue
@@ -37,6 +40,9 @@ function loadTs(relativePath) {
       const base = path.join(path.dirname(sourcePath), specifier);
       for (const candidate of [base, `${base}.ts`, `${base}.js`]) {
         try {
+          if (candidate.endsWith(".ts")) {
+            return loadTs(path.relative(root, candidate));
+          }
           return require(candidate);
         } catch {
           // continue

@@ -6,6 +6,13 @@ Comunidade Docente e exportação para DOCX, PDF, Google e Classroom.
 
 ![CI](https://github.com/code-by-tiago/Planify/actions/workflows/ci.yml/badge.svg)
 
+> **Site oficial:** [iaplanify.com.br](https://iaplanify.com.br)  
+> **Código-fonte:** [github.com/code-by-tiago/Planify](https://github.com/code-by-tiago/Planify)
+>
+> O site público está temporariamente em manutenção enquanto as integrações
+> externas são homologadas. Para avaliação técnica, execute o projeto localmente
+> seguindo as instruções abaixo.
+
 ## Principais recursos
 
 - Planejamentos, provas, listas, slides, jogos e materiais visuais.

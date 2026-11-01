@@ -48,6 +48,15 @@ ficam em `src/lib` e `src/server`; migrações e políticas ficam em `supabase/`
 O deploy recomendado é Vercel conectado à branch `main`, com as variáveis de
 ambiente configuradas no painel do projeto.
 
+### Demonstração e modo de manutenção
+
+O deploy de produção permanece em modo de manutenção até que as integrações
+externas sejam homologadas com credenciais reais. O código continua disponível
+para avaliação no GitHub e pode ser executado localmente com `npm ci`, `.env.local`
+e `npm run dev`. Para reativar uma implantação Vercel após a homologação, defina
+`SITE_OFFLINE=0` no ambiente Production e faça um novo deploy. Em ambiente local,
+o modo de manutenção não é ativado por padrão.
+
 ## CI
 
 Push e pull requests para `main` executam smoke de qualidade, typecheck e build de produção (`.github/workflows/ci.yml`).

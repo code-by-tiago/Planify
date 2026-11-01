@@ -21,6 +21,7 @@ import {
 import {
   ensurePremiumSessionCookies,
   requestPasswordReset,
+  signInWithGoogle,
   signInAndSyncPremiumAccess,
 } from "@/lib/auth/session-client";
 import { landingPublicToolCount } from "@/lib/pro/teachyLanding";
@@ -143,6 +144,11 @@ export function LoginPageClient({ initialSearchParams }: LoginPageClientProps) {
         );
 
         if (!hasAppAccess) {
+          forceNavigate(
+            `/planos?premium=required&redirect=${encodeURIComponent(
+              safeRedirect || "/dashboard",
+            )}`,
+          );
           return;
         }
 
@@ -178,6 +184,22 @@ export function LoginPageClient({ initialSearchParams }: LoginPageClientProps) {
       );
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleGoogleSignIn() {
+    setLoading(true);
+    setMessage("");
+
+    try {
+      await signInWithGoogle(safeRedirect || "/dashboard");
+    } catch (error) {
+      setLoading(false);
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível iniciar o acesso com o Google.",
+      );
     }
   }
 
@@ -354,6 +376,18 @@ export function LoginPageClient({ initialSearchParams }: LoginPageClientProps) {
                 {loading ? "Aguarde..." : copy.submitLabel}
               </button>
             </form>
+
+            <div className="mt-4">
+              <button
+                type="button"
+                onClick={() => void handleGoogleSignIn()}
+                disabled={loading}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-bold text-[#0A192F] transition hover:border-[#26C6DA] hover:bg-[#F0F9FA] disabled:cursor-wait disabled:opacity-60"
+              >
+                <PlanifyIcon name="spark" className="h-4 w-4 text-[#26C6DA]" />
+                {loading ? "Abrindo acesso Google..." : "Entrar com Google"}
+              </button>
+            </div>
 
             <div className="mt-6 space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-cyan-100 bg-cyan-50/80 px-4 py-3">

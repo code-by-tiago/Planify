@@ -9,15 +9,15 @@ type HomePageProps = {
 };
 
 export const metadata: Metadata = buildPageMetadata({
-  title: "Gere uma lista de atividades com IA agora, sem cadastro",
+  title: "Planify | Plataforma de IA pedagógica para professores",
   description:
-    "Planify é o assistente de IA para professores: gere listas de atividades, provas e planejamentos alinhados à BNCC em segundos. Teste grátis, sem criar conta.",
+    "Planify é a plataforma de IA pedagógica para professores: planeje aulas, crie materiais e exporte documentos alinhados à BNCC com acesso seguro.",
   path: "/",
 });
 
 /**
- * A raiz "/" é a landing pública do Planify (sem login).
- * O painel (/dashboard) é que exige login/plano via proxy.ts.
+ * A raiz "/" apresenta o produto e inicia o acesso Google.
+ * O uso do painel (/dashboard) exige login e plano via proxy.ts.
  *
  * Deep links antigos (/?tipo=slides&tema=...) continuam a abrir o painel,
  * para não quebrar links já partilhados.

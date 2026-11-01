@@ -20,7 +20,7 @@ type LoginPageProps = {
 export const metadata: Metadata = buildPageMetadata({
   title: "Entrar",
   description:
-    "Entre no Planify com o e-mail e senha criados após a assinatura do plano Professor.",
+    "Entre no Planify com sua conta Google ou com o e-mail e senha vinculados ao plano Professor.",
   path: "/login",
 });
 

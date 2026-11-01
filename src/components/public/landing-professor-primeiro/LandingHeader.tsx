@@ -132,13 +132,6 @@ export function LandingHeader() {
               Contato e suporte
             </Link>
             <Link
-              href="/testar-planejamento"
-              onClick={() => setOpen(false)}
-              className="rounded-xl px-4 py-3 text-base font-semibold text-slate-800 hover:bg-cyan-50"
-            >
-              Testar planejamento grátis
-            </Link>
-            <Link
               href="/login"
               onClick={() => setOpen(false)}
               className="rounded-xl px-4 py-3 text-base font-semibold text-slate-800 hover:bg-cyan-50 sm:hidden"

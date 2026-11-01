@@ -108,6 +108,29 @@ export type LoginResult = {
   needsEmailConfirmation?: boolean;
 };
 
+export async function signInWithGoogle(redirectTo = "/dashboard") {
+  const supabase = getSupabaseBrowserClient();
+  const callbackUrl = new URL("/login", window.location.origin);
+  callbackUrl.searchParams.set("redirect", redirectTo);
+
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo: callbackUrl.toString(),
+      queryParams: {
+        access_type: "offline",
+        prompt: "consent",
+      },
+    },
+  });
+
+  if (error) {
+    throw new Error(
+      error.message || "Não foi possível iniciar o acesso com sua conta Google.",
+    );
+  }
+}
+
 function timeout(ms: number): Promise<void> {
   return new Promise((resolve) => {
     window.setTimeout(resolve, ms);

@@ -5,7 +5,6 @@ import { INSTAGRAM_URL, InstagramIcon } from "./InstagramIcon";
 
 const FOOTER_LINKS = [
   { href: "/escolas", label: "Para escolas" },
-  { href: "/testar-planejamento", label: "Teste grátis" },
   { href: "/inclusao", label: "Inclusão" },
   { href: "/pei", label: "PEI" },
   { href: "/correcao", label: "Corretor IA" },
